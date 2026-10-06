@@ -10,7 +10,7 @@
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { App } from "../../../src/http/context.ts";
-import { loadBlackouts } from "../../../src/domain/occupancy.ts";
+import { loadBlackouts } from "../../../src/domain/booking/occupancy.ts";
 import { appFor, fakeDependencies, markDatabase, NOW, request } from "../helpers.ts";
 
 let ops: App;

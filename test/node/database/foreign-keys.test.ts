@@ -15,9 +15,11 @@ import { describe, expect, it } from "vitest";
 const HANDLED: Readonly<Record<string, string>> = {
   "technician_devices.session_id -> sessions":
     "src/scheduled/sweeper.ts clears it in the batch that deletes the session",
-  "photos.photo_set_id -> photo_sets": "src/domain/erasure.ts deletes a set's photographs first",
-  "checkins.address_id -> addresses": "src/domain/erasure.ts blanks an address a check-in points at, and keeps it",
-  "otp_challenges.number_change_id -> number_change_requests": "src/domain/erasure.ts deletes the change's codes first",
+  "photos.photo_set_id -> photo_sets": "src/domain/privacy/erasure.ts deletes a set's photographs first",
+  "checkins.address_id -> addresses":
+    "src/domain/privacy/erasure.ts blanks an address a check-in points at, and keeps it",
+  "otp_challenges.number_change_id -> number_change_requests":
+    "src/domain/privacy/erasure.ts deletes the change's codes first",
 };
 
 function sourceFiles(folder: string): string[] {

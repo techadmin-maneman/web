@@ -1,5 +1,5 @@
 // Home's prompts: "One card, one prompt, nothing else." The first that applies leads, in the order below; an invoice just issued is a line of its own beneath whichever leads, and holds the replacement back while
-// it shows. src/domain/home-prompt.ts reads what each turns on; how long an invoice is shown is ops' to set
+// it shows. src/domain/clients/home-prompt.ts reads what each turns on; how long an invoice is shown is ops' to set
 // (`invoice_prompt`, src/policy/next-visit.ts).
 
 /** Each prompt, the first to lead first. */

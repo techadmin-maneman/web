@@ -23,7 +23,7 @@ import { actorOf } from "../../http/audit.ts";
 import type { App, AppEnv } from "../../http/context.ts";
 import { BOOKING_WINDOWS } from "../../config/scheduling.ts";
 import { VISIT_TYPES } from "../../config/visit-types.ts";
-import type { AuditEntry } from "../../domain/audit.ts";
+import type { AuditEntry } from "../../domain/ops/audit.ts";
 import {
   BOARD_DAYS,
   boardVersion,
@@ -32,8 +32,8 @@ import {
   recordToldByPhone,
   dispatchRoomFor,
   type MoveInput,
-} from "../../domain/dispatch.ts";
-import { isWithin, techniciansWithin } from "../../domain/places.ts";
+} from "../../domain/dispatch/dispatch.ts";
+import { isWithin, techniciansWithin } from "../../domain/clients/places.ts";
 import { errorBody, errorResponse, refuse } from "../../http/errors.ts";
 import { opsInputs } from "../../http/ops-inputs.ts";
 import { json } from "../../http/openapi.ts";

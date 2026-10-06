@@ -20,8 +20,8 @@
 import type { Context } from "hono";
 import type { AppEnv } from "./context.ts";
 import type { LoginSettings } from "../config/settings.ts";
-import { alertCeilingReached, ceilingReached, withinCeiling, type Ceiling } from "../domain/ceilings.ts";
-import { countOne, takeOne, type CountedAt } from "../domain/rate-limit.ts";
+import { alertCeilingReached, ceilingReached, withinCeiling, type Ceiling } from "../domain/platform/ceilings.ts";
+import { countOne, takeOne, type CountedAt } from "../domain/sign-in/rate-limit.ts";
 import { scrubString } from "../log.ts";
 import { heldBack, skipsAddressLimits } from "../policy/staging-test-records.ts";
 import type { CodeChannel } from "../providers/codes.ts";
@@ -67,7 +67,7 @@ export async function mayAskForCode(
     readonly mobileHash: string;
     readonly ipHash: string;
     readonly now: Date;
-    /** Whether the number is a test record's (src/domain/test-records.ts). */
+    /** Whether the number is a test record's (src/domain/platform/test-records.ts). */
     readonly testRecord: boolean;
   },
 ): Promise<CodeGate> {

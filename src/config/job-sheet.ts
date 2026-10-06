@@ -3,10 +3,10 @@
 //
 // Ops set the job sheet in the console (docs/decisions/0087-consumables-and-stock.md), so the lists here are what a
 // kind of visit takes until ops save its checklist, and what the reasons are until ops save theirs
-// (src/domain/job-sheet-settings.ts). Every label the design does not draw is a placeholder (open point 28).
+// (src/domain/field/job-sheet-settings.ts). Every label the design does not draw is a placeholder (open point 28).
 //
 // Consumables are not here: ops keep their catalogue, and what each service is
-// expected to use, in the console (src/domain/consumables.ts).
+// expected to use, in the console (src/domain/field/consumables.ts).
 
 import type { VisitType } from "./visit-types.ts";
 

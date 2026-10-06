@@ -10,7 +10,7 @@
 import { createRoute, z } from "@hono/zod-openapi";
 import { actorOf } from "../../http/audit.ts";
 import type { App } from "../../http/context.ts";
-import { ADJUST_REASONS, adjustCredits } from "../../domain/credits.ts";
+import { ADJUST_REASONS, adjustCredits } from "../../domain/money/credits.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
 import { json } from "../../http/openapi.ts";
 import { withinRouteReach } from "../../http/staff-access.ts";

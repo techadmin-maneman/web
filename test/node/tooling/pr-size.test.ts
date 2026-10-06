@@ -6,7 +6,7 @@ import { handWrittenLines, isGenerated } from "../../../scripts/lib/pr-size.ts";
 
 describe("the lines a pull request changes by hand", () => {
   it("adds the lines added and deleted in each file", () => {
-    expect(handWrittenLines("10\t2\tsrc/domain/refunds.ts\n5\t0\ttest/worker/refunds.test.ts\n")).toBe(17);
+    expect(handWrittenLines("10\t2\tsrc/domain/money/refunds.ts\n5\t0\ttest/worker/refunds.test.ts\n")).toBe(17);
   });
 
   it("leaves out what npm run openapi, schema and types write, and the lockfile", () => {

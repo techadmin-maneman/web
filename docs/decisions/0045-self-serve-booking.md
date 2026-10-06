@@ -19,7 +19,7 @@ The prompt's P2-M5: "availability, holds, Razorpay checkout, credit redemption, 
 
 **A hold** (`POST /api/holds`) takes the window for ten minutes: the regular technician if free, else whoever has least that day. It carries the price at that moment, the late fee a first fit or replacement would cost to move inside 24 hours, and when moving stops being free (24 hours before the window opens). A client has one hold at a time in the app; a new one lets the old go, unless it is paid for (ADR 0068).
 
-**Paying** (`POST /api/bookings`, `src/domain/bookings.ts`): the hold's Razorpay order, made once, whose notes carry the hold and the person, and what Checkout opens with. A free visit, a consultation, skips payment and goes straight to the queue.
+**Paying** (`POST /api/bookings`, `src/domain/booking/bookings.ts`): the hold's Razorpay order, made once, whose notes carry the hold and the person, and what Checkout opens with. A free visit, a consultation, skips payment and goes straight to the queue.
 
 **Razorpay's webhook is the authority** (ADR 0044). On `payment.captured` whose notes name a hold, the hook confirms the hold and puts it on the fsm-sync queue. The consumer then:
 

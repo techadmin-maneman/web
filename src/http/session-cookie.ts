@@ -4,7 +4,7 @@
 
 import type { Context } from "hono";
 import { deleteCookie, getCookie, setCookie } from "hono/cookie";
-import { SESSION_TTL_MS } from "../domain/sessions.ts";
+import { SESSION_TTL_MS } from "../domain/sign-in/sessions.ts";
 import type { AppEnv } from "./context.ts";
 
 interface SessionCookie {

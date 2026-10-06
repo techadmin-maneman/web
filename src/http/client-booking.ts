@@ -4,10 +4,10 @@
 import { shortDate } from "@maneman/web-kit/dates";
 import type { Context } from "hono";
 import { VISIT_TYPE_NAMES, type VisitType } from "../config/visit-types.ts";
-import { startBooking } from "../domain/bookings.ts";
-import { checkoutHold } from "../domain/holds.ts";
-import type { Moving } from "../domain/occupancy.ts";
-import { changeableVisit, changeTerms, termsInForce, type ChangeTerms } from "../domain/visit-changes.ts";
+import { startBooking } from "../domain/booking/bookings.ts";
+import { checkoutHold } from "../domain/booking/holds.ts";
+import type { Moving } from "../domain/booking/occupancy.ts";
+import { changeableVisit, changeTerms, termsInForce, type ChangeTerms } from "../domain/visits/visit-changes.ts";
 import { bookHold } from "./book-hold.ts";
 import type { AppEnv } from "./context.ts";
 import { opsInputs } from "./ops-inputs.ts";

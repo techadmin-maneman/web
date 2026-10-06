@@ -2,7 +2,7 @@
 // history of what they have tried.
 //
 // The technician records it at a consultation and at a consultation and fit in one visit, ops correct it in the
-// console, and every change is a new version (src/domain/hair-profiles.ts). The history is recorded with the fit
+// console, and every change is a new version (src/domain/clients/hair-profiles.ts). The history is recorded with the fit
 // spec, on no consent of its own: it is what the client has told us.
 //
 // The lists below are codes; their words are each app's. There is no CHECK on them in the database, so a new code

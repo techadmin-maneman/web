@@ -1,11 +1,11 @@
-// What a Books receipt says the money was for (src/domain/books-sync.ts): its description of supply, which Books prints
+// What a Books receipt says the money was for (src/domain/books/books-sync.ts): its description of supply, which Books prints
 // under the amount. NOW is Monday 21 September 2026, 12 noon in India. Every name and number here is made up.
 
 import { env } from "cloudflare:workers";
 import { beforeEach, expect, it } from "vitest";
 import { NO_GST } from "../../../src/config/gst.ts";
-import { createAlertOnce, createResolveAlert } from "../../../src/domain/alerts.ts";
-import { syncBooks } from "../../../src/domain/books-sync.ts";
+import { createAlertOnce, createResolveAlert } from "../../../src/domain/ops/alerts.ts";
+import { syncBooks } from "../../../src/domain/books/books-sync.ts";
 import { createCallBudget } from "../../../src/lib/call-budget.ts";
 import { createLogger } from "../../../src/log.ts";
 import { createStubBooks } from "../../../src/providers/books/stub.ts";

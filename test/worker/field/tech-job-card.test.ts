@@ -6,7 +6,7 @@
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { App } from "../../../src/http/context.ts";
-import { openTechnicianSession } from "../../../src/domain/technicians.ts";
+import { openTechnicianSession } from "../../../src/domain/dispatch/technicians.ts";
 import { appFor, d1TripsOf, fakeDependencies, markDatabase, NOW, request } from "../helpers.ts";
 import { syntheticJpeg } from "../tryon-fixtures.ts";
 import { visit } from "../visits.ts";

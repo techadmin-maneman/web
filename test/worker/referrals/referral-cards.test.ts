@@ -6,9 +6,9 @@ import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import { HOUSE_CARD } from "../../../src/config/house-card.ts";
 import { renderMessage } from "../../../src/config/message-templates.ts";
-import { openSession } from "../../../src/domain/sessions.ts";
-import { readMeter } from "../../../src/domain/storage-meter.ts";
-import { composeLaunchAlert } from "../../../src/domain/waitlist.ts";
+import { openSession } from "../../../src/domain/sign-in/sessions.ts";
+import { readMeter } from "../../../src/domain/platform/storage-meter.ts";
+import { composeLaunchAlert } from "../../../src/domain/booking/waitlist.ts";
 import { INVITE_MISSES_PER_ADDRESS_HOURLY } from "../../../src/policy/invites.ts";
 import { REFERRERS_PAGE, WAITLIST_AREAS } from "../../../src/routes/ops/waitlist.ts";
 import {

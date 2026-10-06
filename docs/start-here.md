@@ -35,7 +35,7 @@ this map, or when the map names something that no longer exists.
 
 ### Booking a visit
 
-- **Database work** (`src/domain/`): `availability`, `open-windows`, `asked-windows`, `occupancy`, `slot-times`,
+- **Database work** (`src/domain/booking/`): `availability`, `open-windows`, `asked-windows`, `occupancy`, `slot-times`,
   `technician-choice`, `technician-rotation`, `hold-slot`, `holds`, `hold-stages`, `booked-hold`, `unbooked-holds`,
   `give-back`, `bookings`, `visit-booking`, `move-in-place`, `public-booking`, `form-person`, `proposed-visits`,
   `waitlist`, `services`
@@ -50,7 +50,7 @@ this map, or when the map names something that no longer exists.
 
 ### A visit, and changing it
 
-- **Database work** (`src/domain/`): `visit-status`, `visit-times`, `visit-changes`, `visit-facts`, `visit-begun`,
+- **Database work** (`src/domain/visits/`): `visit-status`, `visit-times`, `visit-changes`, `visit-facts`, `visit-begun`,
   `client-visits`, `client-history`, `check-ins`, `next-visit`, `one-visit`, `hand-close`
 - **Rules** (`src/policy/`): `check-in`, `next-visit`, `one-visit`
 - **Routes** (`src/routes/`): `client/visits`, `ops/visits`, `ops/visit-changes`
@@ -60,7 +60,7 @@ this map, or when the map names something that no longer exists.
 
 ### Dispatch
 
-- **Database work** (`src/domain/`): `dispatch`, `dispatch-utilisation`, `technicians`, `technician-roster`,
+- **Database work** (`src/domain/dispatch/`): `dispatch`, `dispatch-utilisation`, `technicians`, `technician-roster`,
   `technician-work`, `leave`, `blackouts`, `cities`
 - **Rules** (`src/policy/`): `dispatch`, `technician-work`
 - **Routes** (`src/routes/`): `ops/dispatch`, `ops/blackouts`, `ops/technicians`
@@ -70,7 +70,7 @@ this map, or when the map names something that no longer exists.
 
 ### The technician's work in the field
 
-- **Database work** (`src/domain/`): `tech-jobs`, `job-events`, `job-event-bodies`, `job-record`, `job-use`,
+- **Database work** (`src/domain/field/`): `tech-jobs`, `job-events`, `job-event-bodies`, `job-record`, `job-use`,
   `job-sheet-settings`, `tech-photos`, `visit-photos`, `photo-views`, `pieces`, `stock`, `low-stock`, `consumables`
 - **Rules** (`src/policy/`): `in-job-steps`, `piece-step`, `job-visibility`, `phone-clock`, `stock`
 - **Data** (`src/config/`): `job-sheet`, `pieces`, `consumables`
@@ -81,7 +81,7 @@ this map, or when the map names something that no longer exists.
 
 ### No-shows and disputes
 
-- **Database work** (`src/domain/`): `no-shows`, `no-show-disputes`, `no-show-rulings`, `ruling-claims`,
+- **Database work** (`src/domain/no-shows/`): `no-shows`, `no-show-disputes`, `no-show-rulings`, `ruling-claims`,
   `after-a-ruling`
 - **Rules** (`src/policy/`): `no-show`
 - **Routes** (`src/routes/`): `client/disputes`, `ops/disputes`, `ops/no-show-rulings`
@@ -91,7 +91,7 @@ this map, or when the map names something that no longer exists.
 
 ### Money
 
-- **Database work** (`src/domain/`): `payments`, `payment-links`, `client-payments`, `client-billing`, `refunds`,
+- **Database work** (`src/domain/money/`): `payments`, `payment-links`, `client-payments`, `client-billing`, `refunds`,
   `auto-refunds`, `cancel-refunds`, `credits`, `credit-reminders`, `discount-codes`, `discount-code-holds`,
   `discount-code-uses`, `requested-codes`, `day-money`, `one-visit-money`, `price-book`, `razorpay-catch-up`
 - **Rules** (`src/policy/`): `prices`, `prepayment`, `pay-by-link`, `discount-codes`, `credit-reminders`,
@@ -105,13 +105,13 @@ this map, or when the map names something that no longer exists.
 
 ### Books, the accounts
 
-- **Database work** (`src/domain/`): `books-*`, `receipt-supply`, `vendor-pass`
+- **Database work** (`src/domain/books/`): `books-*`, `receipt-supply`, `vendor-pass`
 - **Vendor** (`src/providers/`): `books/`
 - **Tests:** `test/worker/vendors/books-*`
 
 ### Clients
 
-- **Database work** (`src/domain/`): `people`, `profile`, `fitted`, `hair-profiles`, `client-notes`,
+- **Database work** (`src/domain/clients/`): `people`, `profile`, `fitted`, `hair-profiles`, `client-notes`,
   `address-change`, `number-change`, `number-codes`, `home-prompt`, `places`, `area-names`, `service-area`
 - **Rules** (`src/policy/`): `hair-profile`, `address-change`, `number-proof`, `client-notes`, `home-prompt`
 - **Vendor** (`src/providers/`): `geocode/`
@@ -124,7 +124,7 @@ this map, or when the map names something that no longer exists.
 
 ### Leads and the CRM
 
-- **Database work** (`src/domain/`): `leads`, `lead-notice`
+- **Database work** (`src/domain/leads/`): `leads`, `lead-notice`
 - **Data** (`src/config/`): `crm`, `pipeline`
 - **Vendor** (`src/providers/`): `crm/`
 - **Jobs** (`src/queues/`): `crm-sync`
@@ -132,7 +132,7 @@ this map, or when the map names something that no longer exists.
 
 ### Referrals
 
-- **Database work** (`src/domain/`): `referrals`, `referral-grants`, `referral-cards`, `referral-messages`,
+- **Database work** (`src/domain/referrals/`): `referrals`, `referral-grants`, `referral-cards`, `referral-messages`,
   `invite-lookups`
 - **Rules** (`src/policy/`): `referral-reward`, `invites`
 - **Data** (`src/config/`): `referral-cards`, `invite-codes`, `house-card`, `card-overlay`
@@ -143,7 +143,7 @@ this map, or when the map names something that no longer exists.
 
 ### The try-on
 
-- **Database work** (`src/domain/`): `tryon`, `tryon-claims`, `client-try-ons`, `kept-try-ons`, `render-choice`,
+- **Database work** (`src/domain/try-on/`): `tryon`, `tryon-claims`, `client-try-ons`, `kept-try-ons`, `render-choice`,
   `photo`
 - **Rules** (`src/policy/`): `tryon-delivery`, `kept-try-ons`
 - **Data** (`src/config/`): `tryon`
@@ -156,7 +156,7 @@ this map, or when the map names something that no longer exists.
 
 ### Privacy
 
-- **Database work** (`src/domain/`): `consents`, `booking-consents`, `deletion`, `erasure`, `data-export`,
+- **Database work** (`src/domain/privacy/`): `consents`, `booking-consents`, `deletion`, `erasure`, `data-export`,
   `my-data-page`, `retention`
 - **Rules** (`src/policy/`): `consents`, `account-deletion`, `retention`, `personal-data`
 - **Data** (`src/config/`): `notices`, `my-data`
@@ -167,7 +167,7 @@ this map, or when the map names something that no longer exists.
 
 ### Messages
 
-- **Database work** (`src/domain/`): `queued-messages`, `visit-messages`, `stop-messages`, `paced-line`
+- **Database work** (`src/domain/messages/`): `queued-messages`, `visit-messages`, `stop-messages`, `paced-line`
 - **Rules** (`src/policy/`): `message-pacing`
 - **Data** (`src/config/`): `message-templates`, `message-kinds`
 - **Vendor** (`src/providers/`): `messaging/`
@@ -178,7 +178,7 @@ this map, or when the map names something that no longer exists.
 
 ### Ops' own work
 
-- **Database work** (`src/domain/`): `alerts`, `needs-a-hand`, `tasks`, `task-closures`, `task-owners`,
+- **Database work** (`src/domain/ops/`): `alerts`, `needs-a-hand`, `tasks`, `task-closures`, `task-owners`,
   `grievances`, `ops-settings`, `site-notices`, `audit`, `staff`
 - **Rules** (`src/policy/`): `tasks`, `alerts`, `grievances`, `ops-settings`, `console-routes`, `access`,
   `decision-reasons`
@@ -190,7 +190,7 @@ this map, or when the map names something that no longer exists.
 
 ### Signing in
 
-- **Database work** (`src/domain/`): `login`, `sessions`, `one-time-codes`, `rate-limit`
+- **Database work** (`src/domain/sign-in/`): `login`, `sessions`, `one-time-codes`, `rate-limit`
 - **Rules** (`src/policy/`): `one-time-code`, `rate-limits`
 - **Data** (`src/config/`): `limits`
 - **Vendor** (`src/providers/`): `codes`, `turnstile`, `cloudflare-access`
@@ -201,7 +201,7 @@ this map, or when the map names something that no longer exists.
 
 ### The platform
 
-- **Database work** (`src/domain/`): `cron-runs`, `maintenance`, `storage-meter`, `ceilings`, `test-records`,
+- **Database work** (`src/domain/platform/`): `cron-runs`, `maintenance`, `storage-meter`, `ceilings`, `test-records`,
   `enqueue`
 - **Rules** (`src/policy/`): `database-size`, `storage-share`, `launch`, `staging-test-records`
 - **Jobs:** `src/scheduled/`, `src/queues/consumer`
@@ -221,7 +221,7 @@ Here is how to find everything that change touches.
    git grep -n DELETION_DECIDED_WITHIN_DAYS -- src apps site
    ```
 
-   `src/domain/deletion.ts` alerts ops a few days before the deadline. `src/policy/tasks.ts` gives the ops task its
+   `src/domain/privacy/deletion.ts` alerts ops a few days before the deadline. `src/policy/tasks.ts` gives the ops task its
    deadline.
 
 3. **Find the words that state it.** Copy says the number in words, so searching for the name misses it. Search for

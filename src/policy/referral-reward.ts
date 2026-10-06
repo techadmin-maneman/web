@@ -1,6 +1,6 @@
 // What a referral earns, which ops set in the console, each side apart
 // (docs/decisions/0107-referral-rewards-in-the-console.md).
-// The grant is src/domain/referral-grants.ts and the ledger src/domain/credits.ts (docs/decisions/0048-referrals.md).
+// The grant is src/domain/referrals/referral-grants.ts and the ledger src/domain/money/credits.ts (docs/decisions/0048-referrals.md).
 
 import type { VisitType } from "../config/visit-types.ts";
 import { addDays, indiaDate, indiaInstant } from "../lib/india-time.ts";

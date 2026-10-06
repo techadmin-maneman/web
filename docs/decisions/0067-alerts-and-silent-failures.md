@@ -14,7 +14,7 @@ The audit of 24 September 2026 found that much of what goes wrong reached nobody
 
 ## Decision
 
-**Alerts are kept in D1, and told once** (`src/domain/alerts.ts`, migration 0038).
+**Alerts are kept in D1, and told once** (`src/domain/ops/alerts.ts`, migration 0038).
 
 - An alert is raised under a key naming what went wrong and to what, such as `books_refund_refused:<refundId>`. Raising it again only counts it.
 - The chat is told the first time, and again while it stays open ("Told again on a clock"). A failure expected now and then waits for its `after`-th sighting before anyone is told.

@@ -5,7 +5,7 @@
 
 import { createRoute, z } from "@hono/zod-openapi";
 import type { App } from "../../http/context.ts";
-import { resendLink } from "../../domain/payment-links.ts";
+import { resendLink } from "../../domain/money/payment-links.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
 import { json } from "../../http/openapi.ts";
 

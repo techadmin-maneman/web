@@ -8,7 +8,7 @@ import type { Surface } from "./config/environments.ts";
 import { productionDependencies, type DependencyFactory } from "./dependencies.ts";
 import { auditCall } from "./http/audit.ts";
 import { createCachedIdentityCheck, type IdentityCheck, type StaticConfig } from "./guard.ts";
-import { createCachedOpsInputs, type ReadOpsInputs } from "./domain/ops-settings.ts";
+import { createCachedOpsInputs, type ReadOpsInputs } from "./domain/ops/ops-settings.ts";
 import { requireAccess } from "./http/access.ts";
 import { requireStaffAccess } from "./http/staff-access.ts";
 import { REQUEST_ID_HEADER, type App, type AppEnv } from "./http/context.ts";

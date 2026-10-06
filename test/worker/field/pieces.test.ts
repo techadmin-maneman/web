@@ -1,12 +1,17 @@
-// The pieces tab and the technician's label lookup (src/domain/pieces.ts), and the utilisation the board writes to
+// The pieces tab and the technician's label lookup (src/domain/field/pieces.ts), and the utilisation the board writes to
 // events. NOW is Monday 21 September 2026, 12 noon in India. Every code is made up.
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { App } from "../../../src/http/context.ts";
-import { recordUtilisation } from "../../../src/domain/dispatch-utilisation.ts";
-import { failedPieceStatement, fittedPieceStatement, piecesOf, type FittedPiece } from "../../../src/domain/pieces.ts";
-import { openTechnicianSession } from "../../../src/domain/technicians.ts";
+import { recordUtilisation } from "../../../src/domain/dispatch/dispatch-utilisation.ts";
+import {
+  failedPieceStatement,
+  fittedPieceStatement,
+  piecesOf,
+  type FittedPiece,
+} from "../../../src/domain/field/pieces.ts";
+import { openTechnicianSession } from "../../../src/domain/dispatch/technicians.ts";
 import { appFor, fakeDependencies, markDatabase, NOW, request } from "../helpers.ts";
 
 const PERSON = "11111111-1111-4111-8111-111111111111";

@@ -1,5 +1,5 @@
-// Free service visits running out: when the client is reminded (src/domain/credit-reminders.ts), and that a booking
-// made before they expire keeps its credit (src/domain/credits.ts). Days are India's, YYYY-MM-DD; the visits' last day
+// Free service visits running out: when the client is reminded (src/domain/money/credit-reminders.ts), and that a booking
+// made before they expire keeps its credit (src/domain/money/credits.ts). Days are India's, YYYY-MM-DD; the visits' last day
 // is the one they expire at the end of.
 
 import { addDays } from "../lib/india-time.ts";

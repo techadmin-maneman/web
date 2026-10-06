@@ -82,7 +82,7 @@ describe("tasks", () => {
   });
 
   // The members of staff are those who have signed in to the
-  // console, as Access named them (src/domain/task-owners.ts).
+  // console, as Access named them (src/domain/ops/task-owners.ts).
   it("lets a task be owned only by someone on the Staff list, whatever the case of their e-mail", () => {
     const staff = ["anil@maneman.in", "priya@maneman.in"];
     expect(mayOwnTasks("priya@maneman.in", staff)).toBe(true);

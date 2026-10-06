@@ -1,4 +1,4 @@
-// A client's dispute of a no-show's charge, behind Access (src/domain/no-show-disputes.ts, docs/decisions/0096-a-no-shows-charge-and-its-dispute.md):
+// A client's dispute of a no-show's charge, behind Access (src/domain/no-shows/no-show-disputes.ts, docs/decisions/0096-a-no-shows-charge-and-its-dispute.md):
 //   GET  /api/no-shows/disputes                  the disputes still to rule on, each with its case's evidence
 //   POST /api/no-shows/disputes/:id/ruling       Refund or Uphold, with a reason
 //
@@ -9,9 +9,9 @@
 import { createRoute, z } from "@hono/zod-openapi";
 import { actorOf } from "../../http/audit.ts";
 import type { App } from "../../http/context.ts";
-import { openDisputes, ruleOnDispute } from "../../domain/no-show-disputes.ts";
-import { MESSAGE_STATES } from "../../domain/no-shows.ts";
-import { afterRuling } from "../../domain/after-a-ruling.ts";
+import { openDisputes, ruleOnDispute } from "../../domain/no-shows/no-show-disputes.ts";
+import { MESSAGE_STATES } from "../../domain/no-shows/no-shows.ts";
+import { afterRuling } from "../../domain/no-shows/after-a-ruling.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
 import { json } from "../../http/openapi.ts";
 import { opsInputs } from "../../http/ops-inputs.ts";

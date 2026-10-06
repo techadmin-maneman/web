@@ -3,7 +3,7 @@
 
 import { env } from "cloudflare:workers";
 import { describe, expect, it } from "vitest";
-import { openTechnicianSession } from "../../../src/domain/technicians.ts";
+import { openTechnicianSession } from "../../../src/domain/dispatch/technicians.ts";
 import { NOW, request } from "../helpers.ts";
 import {
   ADDRESS,

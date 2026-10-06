@@ -4,7 +4,7 @@
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import { uuidv7 } from "../../../apps/tech/src/store/uuidv7.ts";
-import { occupancy, placement } from "../../../src/domain/occupancy.ts";
+import { occupancy, placement } from "../../../src/domain/booking/occupancy.ts";
 import { NOW, request } from "../helpers.ts";
 import {
   AS_THE_BOARD_SHOWS_IT,

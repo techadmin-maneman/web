@@ -4,8 +4,8 @@
 import type { OpenAPIHono } from "@hono/zod-openapi";
 import type { Surface } from "../config/environments.ts";
 import type { Dependencies } from "../dependencies.ts";
-import type { ReadOpsInputs } from "../domain/ops-settings.ts";
-import type { Session } from "../domain/sessions.ts";
+import type { ReadOpsInputs } from "../domain/ops/ops-settings.ts";
+import type { Session } from "../domain/sign-in/sessions.ts";
 import type { CallerAccess } from "../policy/access.ts";
 import type { IdentityCheck, StaticConfig } from "../guard.ts";
 import type { Logger } from "../log.ts";

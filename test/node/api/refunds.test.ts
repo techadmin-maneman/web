@@ -1,7 +1,7 @@
-// A refund, made once however often it is asked for (src/domain/refunds.ts; docs/open-points.md, item 161).
+// A refund, made once however often it is asked for (src/domain/money/refunds.ts; docs/open-points.md, item 161).
 
 import { describe, expect, it } from "vitest";
-import { askRefund, refundReceipt } from "../../../src/domain/refunds.ts";
+import { askRefund, refundReceipt } from "../../../src/domain/money/refunds.ts";
 import type { PaymentsProvider } from "../../../src/providers/payments/index.ts";
 import { PaymentUnanswered } from "../../../src/providers/provider-error.ts";
 

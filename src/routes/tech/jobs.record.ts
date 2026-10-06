@@ -4,7 +4,7 @@
 import { z } from "@hono/zod-openapi";
 import type { Context } from "hono";
 import type { AppEnv } from "../../http/context.ts";
-import { arrivalOfEvent } from "../../domain/check-ins.ts";
+import { arrivalOfEvent } from "../../domain/visits/check-ins.ts";
 import {
   eventByClientId,
   landJobEvent,
@@ -14,10 +14,10 @@ import {
   type Landing,
   type MovedTo,
   type Superseding,
-} from "../../domain/job-events.ts";
-import { jobRecordOf, type LandingStep } from "../../domain/job-record.ts";
-import { type PieceField } from "../../domain/pieces.ts";
-import { progressOf, workableJob, type WorkableJob } from "../../domain/tech-jobs.ts";
+} from "../../domain/field/job-events.ts";
+import { jobRecordOf, type LandingStep } from "../../domain/field/job-record.ts";
+import { type PieceField } from "../../domain/field/pieces.ts";
+import { progressOf, workableJob, type WorkableJob } from "../../domain/field/tech-jobs.ts";
 import { errorBody, type ErrorResponse, refuse } from "../../http/errors.ts";
 import { technicianOf } from "../../http/technician-session.ts";
 import { timeOfUuidV7 } from "../../lib/uuidv7.ts";
@@ -110,7 +110,7 @@ export function refusalOf(c: Ctx, refused: Extract<StepResult, { ok: false }>): 
   return body;
 }
 
-/** What the write's step records, written with the event (src/domain/job-record.ts). */
+/** What the write's step records, written with the event (src/domain/field/job-record.ts). */
 export async function recordsOf(c: Ctx, write: EventInput): Promise<D1PreparedStatement[]> {
   const { pieceCycleDays } = await opsInputs(c);
   const step: LandingStep = {

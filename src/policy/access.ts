@@ -84,7 +84,7 @@ export function can(
 
 /**
  * The places a caller's work in a department reaches: everywhere, or only some cities. A record is in one city, found
- * by src/domain/places.ts; a record whose city cannot be found is reached only everywhere.
+ * by src/domain/clients/places.ts; a record whose city cannot be found is reached only everywhere.
  */
 export type PlacesReached =
   { readonly kind: "everywhere" } | { readonly kind: "cities"; readonly cities: ReadonlySet<string> };

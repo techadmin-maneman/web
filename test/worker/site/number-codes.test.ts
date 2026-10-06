@@ -5,8 +5,8 @@ import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { Settings } from "../../../src/config/settings.ts";
 import type { App } from "../../../src/http/context.ts";
-import { ceilingReached } from "../../../src/domain/ceilings.ts";
-import { mobileHashOf, numberProved } from "../../../src/domain/number-codes.ts";
+import { ceilingReached } from "../../../src/domain/platform/ceilings.ts";
+import { mobileHashOf, numberProved } from "../../../src/domain/clients/number-codes.ts";
 import {
   appFor,
   fakeDependencies,

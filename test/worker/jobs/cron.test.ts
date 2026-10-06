@@ -1,8 +1,8 @@
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { NO_GST } from "../../../src/config/gst.ts";
-import { CALLS_PER_VISIT as BOOKS_CALLS_PER_VISIT } from "../../../src/domain/books-invoices.ts";
-import { CUT_SHORT_ALERT, finishRun, lastCompletedAt, startRun } from "../../../src/domain/cron-runs.ts";
+import { CALLS_PER_VISIT as BOOKS_CALLS_PER_VISIT } from "../../../src/domain/books/books-invoices.ts";
+import { CUT_SHORT_ALERT, finishRun, lastCompletedAt, startRun } from "../../../src/domain/platform/cron-runs.ts";
 import type { StaticConfig } from "../../../src/guard.ts";
 import { createLogger } from "../../../src/log.ts";
 import {
@@ -462,7 +462,7 @@ describe("the schedule", () => {
     expect(minuteOfJob("invoices")).toBeLessThan(minuteOfJob("books_sync"));
   });
 
-  // checkBooksItems does nothing after the hour's first five minutes (src/domain/books-items.ts).
+  // checkBooksItems does nothing after the hour's first five minutes (src/domain/books/books-items.ts).
   it("checks Books' items in the hour's first five minutes, the only ones its check works in", () => {
     const items = CRON_JOBS.find((each) => each.name === "books_items");
     expect(items).toMatchObject({ every: 60 });

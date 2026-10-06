@@ -4,11 +4,11 @@
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
-import { eraseBooksCustomers } from "../../../src/domain/books-erasure.ts";
-import { alertAgedDeletions } from "../../../src/domain/deletion.ts";
-import { tellOfNewGrievances } from "../../../src/domain/grievances.ts";
-import { logPhotoView } from "../../../src/domain/photo-views.ts";
-import { openSession } from "../../../src/domain/sessions.ts";
+import { eraseBooksCustomers } from "../../../src/domain/books/books-erasure.ts";
+import { alertAgedDeletions } from "../../../src/domain/privacy/deletion.ts";
+import { tellOfNewGrievances } from "../../../src/domain/ops/grievances.ts";
+import { logPhotoView } from "../../../src/domain/field/photo-views.ts";
+import { openSession } from "../../../src/domain/sign-in/sessions.ts";
 import { createCallBudget } from "../../../src/lib/call-budget.ts";
 import { createLogger } from "../../../src/log.ts";
 import { createStubBooks } from "../../../src/providers/books/stub.ts";

@@ -5,7 +5,7 @@ import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { Surface } from "../../../src/config/environments.ts";
 import type { App } from "../../../src/http/context.ts";
-import { openTechnicianSession } from "../../../src/domain/technicians.ts";
+import { openTechnicianSession } from "../../../src/domain/dispatch/technicians.ts";
 import { appFor, captureLogs, fakeDependencies, markDatabase, NOW, request } from "../helpers.ts";
 import type { TestDependencies } from "../helpers.ts";
 

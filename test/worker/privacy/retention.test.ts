@@ -1,9 +1,9 @@
-// What the retention periods let go of (src/domain/retention.ts, src/scheduled/retention.ts). NOW is Monday
+// What the retention periods let go of (src/domain/privacy/retention.ts, src/scheduled/retention.ts). NOW is Monday
 // 21 September 2026, 12 noon in India. Every name and number here is made up.
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
-import { blankOldCoordinates, dormantPeople, dropLaunchedWaitlist } from "../../../src/domain/retention.ts";
+import { blankOldCoordinates, dormantPeople, dropLaunchedWaitlist } from "../../../src/domain/privacy/retention.ts";
 import { createLogger } from "../../../src/log.ts";
 import { CRON_JOBS, runCronJobs } from "../../../src/scheduled/cron.ts";
 import { fakeDependencies, fakeQueue, LOCAL_CONFIG, markDatabase, NOW } from "../helpers.ts";

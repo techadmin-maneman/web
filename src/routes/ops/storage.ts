@@ -10,7 +10,7 @@ import { createRoute, z } from "@hono/zod-openapi";
 import type { App } from "../../http/context.ts";
 import { errorResponse } from "../../http/errors.ts";
 import { json } from "../../http/openapi.ts";
-import { readDatabaseBytes, readMeter } from "../../domain/storage-meter.ts";
+import { readDatabaseBytes, readMeter } from "../../domain/platform/storage-meter.ts";
 import { DATABASE_LIMIT_BYTES } from "../../policy/database-size.ts";
 import { RUNAWAY_CEILING_BYTES, SHARE_BYTES } from "../../policy/storage-share.ts";
 

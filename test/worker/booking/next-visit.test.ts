@@ -1,4 +1,4 @@
-// The next visit, offered and reminded of (src/domain/next-visit.ts, src/policy/next-visit.ts;
+// The next visit, offered and reminded of (src/domain/visits/next-visit.ts, src/policy/next-visit.ts;
 // docs/decisions/0086-the-next-visit-is-offered.md): what GET /api/me offers the client next, the first fit's lead
 // time and the horizon a visit may be booked within, and the WhatsApp reminder of the next service. NOW is Monday
 // 21 September 2026, 12 noon in India, so tomorrow is Tuesday the 22nd. Every name and number here is made up.
@@ -7,8 +7,8 @@ import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import { renderMessage } from "../../../src/config/message-templates.ts";
 import type { Settings } from "../../../src/config/settings.ts";
-import { queueNextServiceReminders } from "../../../src/domain/next-visit.ts";
-import { openSession } from "../../../src/domain/sessions.ts";
+import { queueNextServiceReminders } from "../../../src/domain/visits/next-visit.ts";
+import { openSession } from "../../../src/domain/sign-in/sessions.ts";
 import type { StaticConfig } from "../../../src/guard.ts";
 import type { App } from "../../../src/http/context.ts";
 import { createLogger } from "../../../src/log.ts";

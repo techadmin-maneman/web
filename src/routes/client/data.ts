@@ -12,11 +12,11 @@ import { clientRoute } from "../../http/session-routes.ts";
 import { z } from "@hono/zod-openapi";
 import type { Context } from "hono";
 import type { App, AppEnv } from "../../http/context.ts";
-import { auditStatementIfWritten, recordAudit } from "../../domain/audit.ts";
-import { everythingHeldAbout } from "../../domain/data-export.ts";
-import { openGrievanceInWords } from "../../domain/grievances.ts";
-import { myDataPage } from "../../domain/my-data-page.ts";
-import { takeOne } from "../../domain/rate-limit.ts";
+import { auditStatementIfWritten, recordAudit } from "../../domain/ops/audit.ts";
+import { everythingHeldAbout } from "../../domain/privacy/data-export.ts";
+import { openGrievanceInWords } from "../../domain/ops/grievances.ts";
+import { myDataPage } from "../../domain/privacy/my-data-page.ts";
+import { takeOne } from "../../domain/sign-in/rate-limit.ts";
 import { clientOf } from "../../http/client-session.ts";
 import { GRIEVANCE_MAX_CHARS } from "../../policy/grievances.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
@@ -141,7 +141,7 @@ export function registerClientData(app: App): void {
            RETURNING id`,
         )
         .bind(id, session.subjectId, text, now.toISOString()),
-      // Recorded only if the grievance above was, in the same batch (src/domain/audit.ts).
+      // Recorded only if the grievance above was, in the same batch (src/domain/ops/audit.ts).
       auditStatementIfWritten(
         db,
         {

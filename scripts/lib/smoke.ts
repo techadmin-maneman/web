@@ -270,7 +270,7 @@ const appAtRoot: Check = ({ options, site }) =>
 /** WhatsApp's crawler, as it names itself when it fetches a shared link to draw the link's preview. */
 const WHATSAPP_CRAWLER = "WhatsApp/2.23.20.0 A";
 
-/** The most WhatsApp takes as a preview's image (src/domain/referral-cards.ts). */
+/** The most WhatsApp takes as a preview's image (src/domain/referrals/referral-cards.ts). */
 const PREVIEW_MAX_BYTES = 300 * 1024;
 
 /** Where a redirect sent the crawler, for a failure's words: Access sends it to its sign-in. */

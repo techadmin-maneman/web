@@ -1,8 +1,8 @@
-// The client's address as their Books customer holds it (src/domain/profile.ts), within what Zoho keeps
+// The client's address as their Books customer holds it (src/domain/clients/profile.ts), within what Zoho keeps
 // (src/lib/zoho-text.ts).
 
 import { describe, expect, it } from "vitest";
-import { streetOf } from "../../../src/domain/profile.ts";
+import { streetOf } from "../../../src/domain/clients/profile.ts";
 import { STREET_MAX, zohoText } from "../../../src/lib/zoho-text.ts";
 
 const ADDRESS = {

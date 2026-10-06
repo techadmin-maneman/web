@@ -2,9 +2,9 @@
 // against it; on any other job that takes one, the piece fitted or the one that failed.
 
 import { z } from "@hono/zod-openapi";
-import { PieceRequestSchema } from "../../domain/job-event-bodies.ts";
-import { offeredProducts } from "../../domain/services.ts";
-import { type WorkableJob } from "../../domain/tech-jobs.ts";
+import { PieceRequestSchema } from "../../domain/field/job-event-bodies.ts";
+import { offeredProducts } from "../../domain/booking/services.ts";
+import { type WorkableJob } from "../../domain/field/tech-jobs.ts";
 import { indiaDate } from "../../lib/india-time.ts";
 import { takesStep } from "../../policy/in-job-steps.ts";
 import { pieceRecorded } from "../../policy/piece-step.ts";

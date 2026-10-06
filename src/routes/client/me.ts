@@ -3,7 +3,7 @@
 // done; a lead has a consultation, booked, or from their booking on the site
 // while it is not yet a visit; else nothing is booked. The next visit comes
 // from the visits, and
-// the credit tile, Home's one prompt and the invoice line beneath it (src/domain/home-prompt.ts).
+// the credit tile, Home's one prompt and the invoice line beneath it (src/domain/clients/home-prompt.ts).
 // What the client may book now is every service offered of each kind open to
 // them, for the booking sheet to offer (docs/decisions/0085-services-ops-can-edit.md).
 //
@@ -23,23 +23,23 @@ import type { App, AppEnv } from "../../http/context.ts";
 import { WINDOW_LABELS, type WindowLabel } from "../../config/booking.ts";
 import { BOOKING_WINDOWS, type BookingWindow } from "../../config/scheduling.ts";
 import { VISIT_TYPES } from "../../config/visit-types.ts";
-import { CLIENT_STATES, clientStateOf, isFitted, nextVisit } from "../../domain/client-visits.ts";
-import { bookingUnderWay, type BookingUnderWay } from "../../domain/holds.ts";
-import { spendableCredits } from "../../domain/credits.ts";
-import { homePrompts, promptFacts } from "../../domain/home-prompt.ts";
-import { nextVisitFacts } from "../../domain/next-visit.ts";
-import { heldOneVisitPrice, owedPayments, requestedOneVisitPrice } from "../../domain/one-visit-money.ts";
-import { bookableTypes } from "../../domain/availability.ts";
-import { offeredAmong, servicesOnDay } from "../../domain/services.ts";
-import { currentAddress, liveContact } from "../../domain/profile.ts";
+import { CLIENT_STATES, clientStateOf, isFitted, nextVisit } from "../../domain/visits/client-visits.ts";
+import { bookingUnderWay, type BookingUnderWay } from "../../domain/booking/holds.ts";
+import { spendableCredits } from "../../domain/money/credits.ts";
+import { homePrompts, promptFacts } from "../../domain/clients/home-prompt.ts";
+import { nextVisitFacts } from "../../domain/visits/next-visit.ts";
+import { heldOneVisitPrice, owedPayments, requestedOneVisitPrice } from "../../domain/money/one-visit-money.ts";
+import { bookableTypes } from "../../domain/booking/availability.ts";
+import { offeredAmong, servicesOnDay } from "../../domain/booking/services.ts";
+import { currentAddress, liveContact } from "../../domain/clients/profile.ts";
 import {
   askedFor,
   latestProposal,
   standingProposal,
   type Asked,
   type ProposedBooking,
-} from "../../domain/proposed-visits.ts";
-import { pendingInviteOf } from "../../domain/referrals.ts";
+} from "../../domain/booking/proposed-visits.ts";
+import { pendingInviteOf } from "../../domain/referrals/referrals.ts";
 import { clientOf } from "../../http/client-session.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
 import { opsInputs } from "../../http/ops-inputs.ts";

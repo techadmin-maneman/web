@@ -44,7 +44,7 @@ Three things stood in the way:
 
 **The app.** `GET /api/photos` marks a client's try-on `kept`, and gives `kept_until: null` for what is kept: the photograph until they ask, the look until their first fit is photographed. The photograph is the small copy where there is one. `TryOnGroup` says so beneath the images, and after the first fit shows the before photo alone (ADR 0025, item 65; every word a placeholder). An image is still served through the client's session, and each read still takes from the result-read ceiling (ADR 0082).
 
-**Erasure** deletes the copy and the kept look, under every key either may have (`src/domain/erasure.ts`).
+**Erasure** deletes the copy and the kept look, under every key either may have (`src/domain/privacy/erasure.ts`).
 
 **The notices, by build.** `photo-v2` and `gate-v2` say that if you book a visit, a small copy of your photograph stays in your Mane Man account as your before photo, and the look until your first fit's photographs are taken, and that both are deleted when you ask. The privacy page's try-on sentences say the same. All of it waits for counsel.
 

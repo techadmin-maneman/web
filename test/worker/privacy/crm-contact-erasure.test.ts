@@ -1,10 +1,10 @@
 // An erased client's CRM Contact, which Books' own CRM integration made of their Books customer
-// (src/domain/books-erasure.ts): read from the customer before it goes, then blanked and deleted. NOW is Monday
+// (src/domain/books/books-erasure.ts): read from the customer before it goes, then blanked and deleted. NOW is Monday
 // 21 September 2026, 12 noon in India. Every name and number here is made up.
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
-import { eraseBooksCustomers } from "../../../src/domain/books-erasure.ts";
+import { eraseBooksCustomers } from "../../../src/domain/books/books-erasure.ts";
 import { createCallBudget } from "../../../src/lib/call-budget.ts";
 import { createLogger } from "../../../src/log.ts";
 import { createStubBooks, type StubBooks } from "../../../src/providers/books/stub.ts";

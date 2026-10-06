@@ -3,7 +3,7 @@
 
 import { describe, expect, it, vi } from "vitest";
 import type { Logger } from "../../../src/log.ts";
-import { enqueue, enqueueBatch, SEND_BATCH_LIMIT } from "../../../src/domain/enqueue.ts";
+import { enqueue, enqueueBatch, SEND_BATCH_LIMIT } from "../../../src/domain/platform/enqueue.ts";
 
 type Line = { readonly event: string; readonly fields: Readonly<Record<string, unknown>> };
 

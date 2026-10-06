@@ -7,7 +7,7 @@ import { env } from "cloudflare:workers";
 import type { Settings } from "../../src/config/settings.ts";
 import type { Dependencies } from "../../src/dependencies.ts";
 import type { App } from "../../src/http/context.ts";
-import { openTechnicianSession } from "../../src/domain/technicians.ts";
+import { openTechnicianSession } from "../../src/domain/dispatch/technicians.ts";
 import { appFor, fakeDependencies, fakeQueue, NOW, request, type TestDependencies } from "./helpers.ts";
 
 export const PERSON = "11111111-1111-4111-8111-111111111111";

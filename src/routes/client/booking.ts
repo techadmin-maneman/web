@@ -14,21 +14,21 @@ import type { Context } from "hono";
 import type { App, AppEnv } from "../../http/context.ts";
 import { BOOKING_DAYS, BOOKING_WINDOWS } from "../../config/scheduling.ts";
 import { VISIT_TYPE_NAMES, VISIT_TYPES, type VisitType } from "../../config/visit-types.ts";
-import { keepShownConsents, recordBookingConsents } from "../../domain/booking-consents.ts";
-import { codeToCarry } from "../../domain/discount-code-uses.ts";
-import { spendableCredits } from "../../domain/credits.ts";
-import { lateFeeOn, priceOf, type Price } from "../../domain/price-book.ts";
-import { clientHold, releaseHold } from "../../domain/holds.ts";
-import { currentAddress } from "../../domain/profile.ts";
-import { isServed } from "../../domain/service-area.ts";
-import { availability, bookableTypes } from "../../domain/availability.ts";
-import { holdSlot } from "../../domain/hold-slot.ts";
-import { bookableService, offeredProducts, serviceOf, type PricedService } from "../../domain/services.ts";
-import { loadSlotSchedule } from "../../domain/slot-times.ts";
+import { keepShownConsents, recordBookingConsents } from "../../domain/privacy/booking-consents.ts";
+import { codeToCarry } from "../../domain/money/discount-code-uses.ts";
+import { spendableCredits } from "../../domain/money/credits.ts";
+import { lateFeeOn, priceOf, type Price } from "../../domain/money/price-book.ts";
+import { clientHold, releaseHold } from "../../domain/booking/holds.ts";
+import { currentAddress } from "../../domain/clients/profile.ts";
+import { isServed } from "../../domain/clients/service-area.ts";
+import { availability, bookableTypes } from "../../domain/booking/availability.ts";
+import { holdSlot } from "../../domain/booking/hold-slot.ts";
+import { bookableService, offeredProducts, serviceOf, type PricedService } from "../../domain/booking/services.ts";
+import { loadSlotSchedule } from "../../domain/booking/slot-times.ts";
 import { windowTimesOf } from "../../policy/slot-times.ts";
-import { termsInForce, type ChangeableVisit, type ChangeTerms } from "../../domain/visit-changes.ts";
-import { bookableDays } from "../../domain/next-visit.ts";
-import type { OpsInputs } from "../../domain/ops-settings.ts";
+import { termsInForce, type ChangeableVisit, type ChangeTerms } from "../../domain/visits/visit-changes.ts";
+import { bookableDays } from "../../domain/visits/next-visit.ts";
+import type { OpsInputs } from "../../domain/ops/ops-settings.ts";
 import { moveTermsFor, startCheckout } from "../../http/client-booking.ts";
 import { clientOf } from "../../http/client-session.ts";
 import { errorBody, errorResponse, refuse } from "../../http/errors.ts";
@@ -333,7 +333,7 @@ const releaseRoute = selfServeRoute({
   },
 });
 
-/** The days this client may book a visit of this type on, by the figures ops set (src/domain/next-visit.ts). */
+/** The days this client may book a visit of this type on, by the figures ops set (src/domain/visits/next-visit.ts). */
 const rangeFor = async (c: Context<AppEnv>, personId: string, type: VisitType) =>
   bookableDays(c.env.DB, personId, type, c.var.deps.now(), (await opsInputs(c)).nextVisitDays);
 

@@ -27,7 +27,7 @@ function consentWrites(): { file: string; columns: string[] }[] {
 
 describe("the statements that write a consent", () => {
   it("are one, in recordConsent's module", () => {
-    expect(consentWrites().map((write) => write.file)).toEqual(["src/domain/consents.ts"]);
+    expect(consentWrites().map((write) => write.file)).toEqual(["src/domain/privacy/consents.ts"]);
   });
 
   it("are found however the statement is spelt", () => {

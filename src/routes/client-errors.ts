@@ -8,7 +8,7 @@
 // out, and the hourly limits keep a page stuck in a loop from flooding the logs.
 
 import { createRoute, z } from "@hono/zod-openapi";
-import { takeOne } from "../domain/rate-limit.ts";
+import { takeOne } from "../domain/sign-in/rate-limit.ts";
 import type { App } from "../http/context.ts";
 import { errorResponse, refuse } from "../http/errors.ts";
 import { json } from "../http/openapi.ts";

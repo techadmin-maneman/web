@@ -1,11 +1,11 @@
 // Who is behind a call to the ops console, and the record of each call (docs/decisions/0031-access-and-audit.md).
-// The log itself is src/domain/audit.ts.
+// The log itself is src/domain/ops/audit.ts.
 
 import { createMiddleware } from "hono/factory";
 import { matchedRoutes } from "hono/route";
 import type { Context } from "hono";
 import { z } from "zod";
-import { auditStatement, auditStatementUnlessRepeated, type AuditActor, type AuditEntry } from "../domain/audit.ts";
+import { auditStatement, auditStatementUnlessRepeated, type AuditActor, type AuditEntry } from "../domain/ops/audit.ts";
 import { MINUTE_MS } from "../lib/durations.ts";
 import type { AccessIdentity } from "../providers/cloudflare-access.ts";
 import type { AppEnv } from "./context.ts";

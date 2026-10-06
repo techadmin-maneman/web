@@ -1,5 +1,5 @@
 // The steps of a job, one screen each, the order they run in, and the check that holds a phone to that order
-// (docs/decisions/0038-offline-writes.md). Each step lands in src/domain/job-events.ts.
+// (docs/decisions/0038-offline-writes.md). Each step lands in src/domain/field/job-events.ts.
 
 import type { VisitType } from "../config/visit-types.ts";
 import { HOUR_MS } from "../lib/durations.ts";

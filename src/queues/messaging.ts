@@ -5,13 +5,13 @@
 // just blanked (src/routes/ops/profile.ts). It sends a person the result they
 // asked for at the gate, as the result template with a signed result link that
 // expires an hour after sending; a client's messages about their visits
-// (src/domain/visit-messages.ts) and the reminder of their next one
-// (src/domain/next-visit.ts); the receipt for a hair system paid by its link
-// (src/domain/payment-links.ts); the referral, waitlist and launch messages; the
+// (src/domain/messages/visit-messages.ts) and the reminder of their next one
+// (src/domain/visits/next-visit.ts); the receipt for a hair system paid by its link
+// (src/domain/money/payment-links.ts); the referral, waitlist and launch messages; the
 // booking form's notices to a number we know; ops' rejection of a request to
 // delete an account; and the answer to a STOP reply, each composed where its
 // subject lives. A reminder or the launch alert ends with the signed link that
-// stops them (src/domain/stop-messages.ts).
+// stops them (src/domain/messages/stop-messages.ts).
 //
 // Skipped, never sent: messaging off, a person erased, an automatic kind to a
 // number outside the staging allowlist (a kind that answers the person who
@@ -36,28 +36,32 @@ import { RESULT_LINK_MESSAGE_TTL_MS } from "../config/tryon.ts";
 import type { Dependencies } from "../dependencies.ts";
 import type { StaticConfig } from "../guard.ts";
 import type { MessageKind } from "../config/message-kinds.ts";
-import { takeOne } from "../domain/rate-limit.ts";
-import { mobileHashOf } from "../domain/number-codes.ts";
+import { takeOne } from "../domain/sign-in/rate-limit.ts";
+import { mobileHashOf } from "../domain/clients/number-codes.ts";
 import { heldBack } from "../policy/staging-test-records.ts";
 
 import { firstNameOf } from "../lib/names.ts";
 import { signToken } from "../lib/signed-token.ts";
-import { composeBookingRefunded } from "../domain/auto-refunds.ts";
-import { composeCreditsExpiring } from "../domain/credit-reminders.ts";
-import { composeDeletionRejected } from "../domain/deletion.ts";
-import { composeNextServiceReminder } from "../domain/next-visit.ts";
-import { composeLinkPaid } from "../domain/payment-links.ts";
-import { readOpsInputs } from "../domain/ops-settings.ts";
-import { composeFriendCredited, composeFriendFitted, composeReferralRejected } from "../domain/referral-messages.ts";
-import { composeSiteNotice, isSiteNoticeKind } from "../domain/site-notices.ts";
-import { composeMessagesStopped, stopLink } from "../domain/stop-messages.ts";
-import { composeLaunchAlert, composeWaitlistConfirmation } from "../domain/waitlist.ts";
+import { composeBookingRefunded } from "../domain/money/auto-refunds.ts";
+import { composeCreditsExpiring } from "../domain/money/credit-reminders.ts";
+import { composeDeletionRejected } from "../domain/privacy/deletion.ts";
+import { composeNextServiceReminder } from "../domain/visits/next-visit.ts";
+import { composeLinkPaid } from "../domain/money/payment-links.ts";
+import { readOpsInputs } from "../domain/ops/ops-settings.ts";
+import {
+  composeFriendCredited,
+  composeFriendFitted,
+  composeReferralRejected,
+} from "../domain/referrals/referral-messages.ts";
+import { composeSiteNotice, isSiteNoticeKind } from "../domain/ops/site-notices.ts";
+import { composeMessagesStopped, stopLink } from "../domain/messages/stop-messages.ts";
+import { composeLaunchAlert, composeWaitlistConfirmation } from "../domain/booking/waitlist.ts";
 import {
   composeVisitMessage,
   noLongerWorthSending,
   VISIT_MESSAGE_KINDS,
   type VisitMessageKind,
-} from "../domain/visit-messages.ts";
+} from "../domain/messages/visit-messages.ts";
 import { messageFailedKey } from "../policy/alerts.ts";
 import type { SendResult } from "../providers/messaging/index.ts";
 import { scrubString, type Logger } from "../log.ts";
@@ -299,7 +303,7 @@ export async function sendMessage(
   };
 
   if (row.erased_at !== null) return skip("person erased");
-  // A record whose number a client took over (src/domain/number-change.ts) has none to send to.
+  // A record whose number a client took over (src/domain/clients/number-change.ts) has none to send to.
   if (!row.mobile_e164.startsWith("+")) return skip("no number");
   if (!messaging.enabled) return skip("messaging is off");
   if (messageHeldBack(messaging, row)) return skip("number not on the allowlist");

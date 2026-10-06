@@ -4,14 +4,14 @@ The words the code, the database and the API use for the same few things, and wh
 
 ## A visit and its records
 
-| Word            | Means                                                                                                                                                                                                    |
-| --------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **appointment** | One visit to one client at one time: a row of the `appointments` table, our own record (ADR 0110). The code's word for the row.                                                                          |
-| **visit**       | The same appointment as the client sees it: the app's _Visits_, `/api/visits`. A consultation, a service, a first fit or a replacement (`VISIT_TYPES`).                                                  |
-| **job**         | The same appointment as its technician sees it: `/api/tech/jobs`. A write to it is a **job event** (`job_events`), landed once by its event ID (ADR 0038).                                               |
-| **booking**     | Making a visit: a **hold** paid for, or free, written as a visit in the request that confirms it (`src/domain/bookings.ts`). Not a record of its own. A Phase 1 booking was a lead with a proposed date. |
-| **hold**        | A client's claim on a time while they pay, ten minutes (`slot_holds`, ADR 0045). Confirmed once paid, it keeps its time until it is booked or refunded (ADR 0068).                                       |
-| **request**     | A day and window asked for while self-serve booking is off, which ops confirm (`consultation_requests`, ADR 0060).                                                                                       |
+| Word            | Means                                                                                                                                                                                                            |
+| --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **appointment** | One visit to one client at one time: a row of the `appointments` table, our own record (ADR 0110). The code's word for the row.                                                                                  |
+| **visit**       | The same appointment as the client sees it: the app's _Visits_, `/api/visits`. A consultation, a service, a first fit or a replacement (`VISIT_TYPES`).                                                          |
+| **job**         | The same appointment as its technician sees it: `/api/tech/jobs`. A write to it is a **job event** (`job_events`), landed once by its event ID (ADR 0038).                                                       |
+| **booking**     | Making a visit: a **hold** paid for, or free, written as a visit in the request that confirms it (`src/domain/booking/bookings.ts`). Not a record of its own. A Phase 1 booking was a lead with a proposed date. |
+| **hold**        | A client's claim on a time while they pay, ten minutes (`slot_holds`, ADR 0045). Confirmed once paid, it keeps its time until it is booked or refunded (ADR 0068).                                               |
+| **request**     | A day and window asked for while self-serve booking is off, which ops confirm (`consultation_requests`, ADR 0060).                                                                                               |
 
 ## Services and prices
 
@@ -35,14 +35,14 @@ The words the code, the database and the API use for the same few things, and wh
 | **slot**              | One of the dispatch board's four columns a day (`SLOTS_PER_DAY`).                                                                                                                                                                                                                                   |
 | **unit**              | Half a slot, the grain the day is counted in: eight a day (`UNIT_STARTS`), so a replacement's slot and a half is three.                                                                                                                                                                             |
 | **claim**             | A row in `slot_claims` holding one unit, or one window, of one technician's day, for a hold (ADR 0069).                                                                                                                                                                                             |
-| **rate-limit window** | The India hour or day a counter counts in (`src/domain/rate-limit.ts`). Nothing to do with a visit's time.                                                                                                                                                                                          |
+| **rate-limit window** | The India hour or day a counter counts in (`src/domain/sign-in/rate-limit.ts`). Nothing to do with a visit's time.                                                                                                                                                                                  |
 
 ## People
 
 | Word           | Means                                                                                                                                                                                   |
 | -------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **person**     | Anyone we hold a number for: a row in `people`. The code's word for the row.                                                                                                            |
-| **client**     | A person who may sign in to the app: one with a booked consultation or a later visit (`src/domain/login.ts`). Fitted, a lead or nothing booked (`clientStateOf`).                       |
+| **client**     | A person who may sign in to the app: one with a booked consultation or a later visit (`src/domain/sign-in/login.ts`). Fitted, a lead or nothing booked (`clientStateOf`).               |
 | **lead**       | Two meanings: a row in `leads`, what a form or a try-on left, which reaches the CRM; and, as a client's state, a person booked but not yet fitted. The CRM's own record is also a Lead. |
 | **customer**   | The person's record in Books, where invoices and payments are (`books_customer_id`). Books' word, never ours.                                                                           |
 | **technician** | A field technician ops add in the console's Technicians, in `technicians`. He signs in on one phone at a time (ADR 0052).                                                               |

@@ -2,7 +2,7 @@
 // docs/decisions/0066-erasure-all-or-nothing.md).
 
 import { describe, expect, it } from "vitest";
-import { DELETION_ALERT_AFTER_MS } from "../../../src/domain/deletion.ts";
+import { DELETION_ALERT_AFTER_MS } from "../../../src/domain/privacy/deletion.ts";
 import { DAY_MS } from "../../../src/lib/durations.ts";
 import {
   DELETION_DECIDED_WITHIN_DAYS,

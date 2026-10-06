@@ -51,7 +51,7 @@ export const NEXT_VISIT_DAY_BOUNDS: Readonly<Record<NextVisitDayKey, { readonly 
   {
     first_fit_lead: { min: 0, max: 30 },
     service_cadence: { min: 14, max: 90 },
-    // Never before the visit it follows: the reminder goes a day after it at the soonest (src/domain/next-visit.ts).
+    // Never before the visit it follows: the reminder goes a day after it at the soonest (src/domain/visits/next-visit.ts).
     reminder_before_due: { min: 1, max: 14 },
     at_risk_after_due: { min: 1, max: 60 },
     first_fit_to_book: { min: 1, max: 60 },

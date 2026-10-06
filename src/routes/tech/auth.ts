@@ -1,4 +1,4 @@
-// Logging in to the technician app (src/domain/technicians.ts):
+// Logging in to the technician app (src/domain/dispatch/technicians.ts):
 //   POST /api/tech/auth/otp     a code on WhatsApp to a technician's number
 //   POST /api/tech/auth/verify  the code and the phone, for a session bound to it
 //   POST /api/tech/auth/logout
@@ -20,15 +20,15 @@ import { createRoute, z } from "@hono/zod-openapi";
 import type { Context } from "hono";
 import type { LoginSettings } from "../../config/settings.ts";
 import type { App, AppEnv } from "../../http/context.ts";
-import { mobileHashOf } from "../../domain/number-codes.ts";
-import { createChallenge } from "../../domain/one-time-codes.ts";
-import { revokeSession, deviceLabel } from "../../domain/sessions.ts";
+import { mobileHashOf } from "../../domain/clients/number-codes.ts";
+import { createChallenge } from "../../domain/sign-in/one-time-codes.ts";
+import { revokeSession, deviceLabel } from "../../domain/sign-in/sessions.ts";
 import {
   findFieldTechnician,
   openTechnicianSession,
   signedInTechnician,
   verifyTechnicianCode,
-} from "../../domain/technicians.ts";
+} from "../../domain/dispatch/technicians.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
 import { json } from "../../http/openapi.ts";
 import { firstNameOf, initialsOf } from "../../lib/names.ts";

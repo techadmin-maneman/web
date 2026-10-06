@@ -1,4 +1,4 @@
-// The edges of a one visit's payment link (src/domain/payment-links.ts) that the visit's own flow seldom reaches: a
+// The edges of a one visit's payment link (src/domain/money/payment-links.ts) that the visit's own flow seldom reaches: a
 // product ops no longer offer, a link Razorpay refused, a code that frees the visit twice, the cron out of calls, a
 // link paid that names no visit of ours, and a receipt with nothing to say yet. NOW is Monday 21 September 2026,
 // 12 noon in India; every name, number and price is made up.
@@ -14,7 +14,7 @@ import {
   sendUnsentLinks,
   type FittedVisit,
   type LinkDeps,
-} from "../../../src/domain/payment-links.ts";
+} from "../../../src/domain/money/payment-links.ts";
 import { createCallBudget } from "../../../src/lib/call-budget.ts";
 import { createLogger } from "../../../src/log.ts";
 import { captureLogs, fakeDependencies, LOCAL_SETTINGS, markDatabase, NOW, type TestDependencies } from "../helpers.ts";

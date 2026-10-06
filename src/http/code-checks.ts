@@ -4,7 +4,7 @@
 // its Turnstile check and daily limits already hold each number and address to a few bookings a day.
 
 import type { Context } from "hono";
-import { takeOne } from "../domain/rate-limit.ts";
+import { takeOne } from "../domain/sign-in/rate-limit.ts";
 import type { AppEnv } from "./context.ts";
 import { visitorOf } from "./visitor.ts";
 

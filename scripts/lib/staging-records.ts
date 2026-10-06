@@ -3,7 +3,7 @@
 // reads the org and deletes; this decides, and reaches nothing.
 //
 // Staging marks what it writes in two ways. A note or a description starts with "Staging test: "
-// (src/domain/books-sync.ts). A person our scripts invent is named "Staging test" or "Load test"
+// (src/domain/books/books-sync.ts). A person our scripts invent is named "Staging test" or "Load test"
 // (src/policy/staging-test-records.ts), and their Books customer and CRM lead carry that name.
 // Every ID staging's database keeps is staging's too, whatever the record is named now: an erased client's, say.
 

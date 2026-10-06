@@ -46,7 +46,7 @@ The designs are "Referral and Waitlist" (the card, the chat preview, and the lan
 
 **Erasure** removes a person's waitlist entries. Their code and ledger stay (ADR 0033).
 
-**The grant** (`src/domain/referral-grants.ts`) runs on the five-minute cron (`src/scheduled/referrals.ts`), with no new trigger. It takes up to ten pending referrals a pass: those whose friend has a first fit that FSM closed as done (a visit with outcome done).
+**The grant** (`src/domain/referrals/referral-grants.ts`) runs on the five-minute cron (`src/scheduled/referrals.ts`), with no new trigger. It takes up to ten pending referrals a pass: those whose friend has a first fit that FSM closed as done (a visit with outcome done).
 
 - **A lapsed invite expires.** An invite from the waitlist lapses 12 months after its area launched (ruling 1). Its friend's consultation stayed free, but carries no credits.
 - **The fraud rules run first** (`fraudSignals`):
@@ -68,7 +68,7 @@ The designs are "Referral and Waitlist" (the card, the chat preview, and the lan
 - `POST /api/referrals/:id/decision` approves, and the credits and message follow, or rejects with a reason.
 - Each decision is audited (`referral.decide`).
 
-**The card** (`src/domain/referral-cards.ts`) is a 1200 x 630 JPEG under 300 KB, made by the API from the front photographs before and after the client's first fit, with board A1's 2 px gilt rule and its lockup (`apps/app/src/refer/card-layout.ts`, from which the house card is drawn too). Cloudflare Images draws it (`src/providers/cards.ts`): each photograph cut to its half from the top, then the rule and lockup laid over them from an overlay the house card's script makes. The free plan's Images refuses work past 5,000 transformations a month and never bills. Until 5 October 2026 the phone composed the card and uploaded it, so any 1200 x 630 JPEG a client sent became their public card (the 2 October audit, PS-63); the owner ruled that the API make it instead. The app records the consent first where it is still to give, then asks for the card.
+**The card** (`src/domain/referrals/referral-cards.ts`) is a 1200 x 630 JPEG under 300 KB, made by the API from the front photographs before and after the client's first fit, with board A1's 2 px gilt rule and its lockup (`apps/app/src/refer/card-layout.ts`, from which the house card is drawn too). Cloudflare Images draws it (`src/providers/cards.ts`): each photograph cut to its half from the top, then the rule and lockup laid over them from an overlay the house card's script makes. The free plan's Images refuses work past 5,000 transformations a month and never bills. Until 5 October 2026 the phone composed the card and uploaded it, so any 1200 x 630 JPEG a client sent became their public card (the 2 October audit, PS-63); the owner ruled that the API make it instead. The app records the consent first where it is still to give, then asks for the card.
 
 - `POST /api/refer/card` makes it, only with their consent to photographs on referral cards, and stores it as the code's next version; `DELETE /api/refer/card` takes it down.
 - **Every upload or revoke is a new version,** because WhatsApp caches a link's preview by its URL: a revoke reaches new shares only, and never a card sent as a photograph (amended 27 September 2026, below).
@@ -76,7 +76,7 @@ The designs are "Referral and Waitlist" (the card, the chat preview, and the lan
 - **A card comes down by itself** when the consent is switched off, and when the client is erased: it is made of their photographs.
 - The house card is a placeholder until the owner gives us a licensed one (`docs/open-points.md`, item 52).
 
-**The waitlist and a launch** (`src/domain/waitlist.ts`), on the ops surface:
+**The waitlist and a launch** (`src/domain/booking/waitlist.ts`), on the ops surface:
 
 - `GET /api/waitlist` lists each pincode with someone waiting: how many, the longest wait, how many came through an invite, and how many asked to be told.
 - `POST /api/pincodes/:pin/launch` first answers what it would send. Confirmed, it marks the pincode served from the day given and queues a launch alert for each person who asked for one and still consents.

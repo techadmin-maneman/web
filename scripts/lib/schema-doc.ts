@@ -397,9 +397,9 @@ export const RESTORE_GROUPS: readonly RestoreGroup[] = [
 /** The `_at` columns that hold a calendar day, not an instant, and how each is read. */
 export const DAY_VALUED_AT: Readonly<Record<string, string>> = {
   "pieces.fitted_at":
-    "The day FSM's asset says the piece was installed (`Installation_Date`), or the day the technician's app fitted it (`src/domain/pieces.ts`).",
+    "The day FSM's asset says the piece was installed (`Installation_Date`), or the day the technician's app fitted it (`src/domain/field/pieces.ts`).",
   "pieces.replacement_due_at":
-    "The fitted day plus the base's cycle; the Tasks board reads it as midnight in India on that day (`instantOf`, `src/domain/tasks.ts`).",
+    "The fitted day plus the base's cycle; the Tasks board reads it as midnight in India on that day (`instantOf`, `src/domain/ops/tasks.ts`).",
 };
 
 const TABLES_READ = `SELECT name, sql FROM sqlite_master

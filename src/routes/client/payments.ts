@@ -25,8 +25,8 @@ import {
   paymentEntry,
   receiptOf,
   REFERRAL_SIDES,
-} from "../../domain/client-payments.ts";
-import { owedPayments } from "../../domain/one-visit-money.ts";
+} from "../../domain/money/client-payments.ts";
+import { owedPayments } from "../../domain/money/one-visit-money.ts";
 import { clientOf } from "../../http/client-session.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
 import { NoShowNoteSchema } from "./visits.ts";

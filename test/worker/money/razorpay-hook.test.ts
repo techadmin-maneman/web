@@ -1,6 +1,6 @@
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
-import { outstandingTasks } from "../../../src/domain/tasks.ts";
+import { outstandingTasks } from "../../../src/domain/ops/tasks.ts";
 import { TASK_SLA_HOURS } from "../../../src/policy/tasks.ts";
 import { saltedHash } from "../../../src/lib/hash.ts";
 import { LOCAL_SETTINGS, NOW, captureLogs, deliverRazorpay, markDatabase } from "../helpers.ts";

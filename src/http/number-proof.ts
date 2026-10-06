@@ -2,7 +2,7 @@
 // that act on it ask before they do.
 
 import type { Context } from "hono";
-import { mobileHashOf, numberProved } from "../domain/number-codes.ts";
+import { mobileHashOf, numberProved } from "../domain/clients/number-codes.ts";
 import type { AppEnv } from "./context.ts";
 
 /** Whether the code `codeId` proved this number, and still does. No code proves nothing. */

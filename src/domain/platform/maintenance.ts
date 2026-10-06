@@ -1,0 +1,36 @@
+// The switch set while D1 is restored. While the `maintenance` table holds its row, the cron and every queue
+// consumer stop before they read or write anything else, so none of them acts on a database being put back to an
+// earlier minute. Still on after an hour, it is a step forgotten, and ops are told.
+
+import type { AlertOnce } from "../ops/alerts.ts";
+
+interface Maintenance {
+  readonly reason: string;
+  readonly startedAt: string;
+}
+
+/** How long a queue batch turned away waits before it is delivered again. */
+export const MAINTENANCE_RETRY_SECONDS = 300;
+
+/** Longer than any restore takes. */
+const FORGOTTEN_AFTER_MS = 60 * 60 * 1000;
+
+/** The maintenance under way, or null when there is none. */
+export async function maintenanceUnderWay(db: D1Database): Promise<Maintenance | null> {
+  const row = await db
+    .prepare("SELECT reason, started_at FROM maintenance WHERE id = 1")
+    .first<{ reason: string; started_at: string }>();
+  if (row === null) return null;
+  return { reason: row.reason, startedAt: row.started_at };
+}
+
+export async function alertIfForgotten(maintenance: Maintenance, alertOnce: AlertOnce, now: Date): Promise<void> {
+  const onFor = now.getTime() - Date.parse(maintenance.startedAt);
+  if (onFor < FORGOTTEN_AFTER_MS) return;
+  await alertOnce({
+    key: `maintenance:${maintenance.startedAt}`,
+    message:
+      `The cron and the queue consumers have stood still since ${maintenance.startedAt} for maintenance ` +
+      `(${maintenance.reason}). Once the restore is done, switch it off: runbook, "Restoring D1".`,
+  });
+}

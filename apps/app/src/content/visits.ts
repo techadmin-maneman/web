@@ -19,7 +19,7 @@ export const visits = {
   partial: "Partly done",
   /*
    * The client's own record, derived from their visits and
-   * payments (src/domain/client-history.ts). No board draws it. Board B1 writes
+   * payments (src/domain/visits/client-history.ts). No board draws it. Board B1 writes
    * one sentence about a replacement, "Your replacement is due in
    * March.", and that sentence is kept word for word.
    *

@@ -1,6 +1,6 @@
 // When a referral grant waits for ops (docs/prompts/phase2-backend.md, "Business rules, decided").
 // The rules as the prompt states them, and the cap. Each is checked
-// in fraudSignals (src/domain/referral-grants.ts).
+// in fraudSignals (src/domain/referrals/referral-grants.ts).
 
 // Its rules, as the brief states them:
 // - A grant is held for ops review when any of these is true:

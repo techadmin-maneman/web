@@ -1,5 +1,5 @@
 // Stock of consumables in each technician's kit and the central store, and a job's
-// use of them (src/routes/ops/stock.ts, src/domain/job-use.ts;
+// use of them (src/routes/ops/stock.ts, src/domain/field/job-use.ts;
 // docs/decisions/0087-consumables-and-stock.md). NOW is Monday 21 September 2026,
 // 12 noon in India.
 //
@@ -13,8 +13,8 @@
 
 import { env } from "cloudflare:workers";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { recordJobUse } from "../../../src/domain/job-use.ts";
-import { count } from "../../../src/domain/stock.ts";
+import { recordJobUse } from "../../../src/domain/field/job-use.ts";
+import { count } from "../../../src/domain/field/stock.ts";
 import { markDatabase, NOW, request } from "../helpers.ts";
 import { IMRAN, JOB, SAMEER, working, type Working } from "../job-fixtures.ts";
 

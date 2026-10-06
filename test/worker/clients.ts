@@ -3,7 +3,7 @@
 // client surface the way the app's browser makes it. Every name and number here is made up.
 
 import { env } from "cloudflare:workers";
-import { openSession } from "../../src/domain/sessions.ts";
+import { openSession } from "../../src/domain/sign-in/sessions.ts";
 import { appFor, fakeDependencies, NOW, request, savedAddress, type TestDependencies } from "./helpers.ts";
 
 /** The technician most booking tests are fitted by. */
@@ -30,7 +30,7 @@ export const FITTER = "t-fit";
 
 /**
  * A first fit done on 1 August, so a service visit is the client's to book. It is the fitter's, not Imran's: a
- * technician never takes two of a client's visits in a row (src/domain/technician-rotation.ts).
+ * technician never takes two of a client's visits in a row (src/domain/booking/technician-rotation.ts).
  */
 export async function fittedInAugust(personId: string, visitId = "fit-1", technicianId = FITTER): Promise<void> {
   if (technicianId === FITTER) {

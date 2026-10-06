@@ -14,7 +14,7 @@ The owner ruled on 27 September 2026 that the flat or house number is required i
 
 **Every address given from now on carries the flat or house number.** The app's save, ops' save and the site's two booking forms refuse one without it: `400 invalid_request` naming `flat` (`address.flat` on the site's forms), from one schema (`RequiredFlatSchema`, `src/routes/client/profile.ts`). Each form marks the field as required, names it when it is left out and gives it the focus, as the other required parts do. An address saved before holds none and still reads, and still reaches FSM as it did.
 
-**FSM's two street lines hold the whole address** (`streetOf`, `src/domain/profile.ts`):
+**FSM's two street lines hold the whole address** (`streetOf`, `src/domain/clients/profile.ts`):
 
 - `Street_1` is the door: the flat, the floor, the tower and the building or street, in that order, as "Flat 402, Floor 4, Tower C, Palm Grove Society".
 - `Street_2` is the way to it: the second line, the area and the landmark, as "Golf Course Road, Sector 65, Landmark: Opposite the park".

@@ -10,13 +10,13 @@
 // payment link a one visit's client paid by and so the visit it is for
 // (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md), or the link a
 // client paid for a visit ops booked, and so the hold it waits on
-// (src/domain/visit-booking.ts). Any other is acknowledged and ignored.
+// (src/domain/booking/visit-booking.ts). Any other is acknowledged and ignored.
 
 import { createRoute, z } from "@hono/zod-openapi";
 import type { Context } from "hono";
 import type { App, AppEnv } from "../../http/context.ts";
-import { paymentsTab, type AlertOnce } from "../../domain/alerts.ts";
-import { recordBookingConsents } from "../../domain/booking-consents.ts";
+import { paymentsTab, type AlertOnce } from "../../domain/ops/alerts.ts";
+import { recordBookingConsents } from "../../domain/privacy/booking-consents.ts";
 import { rupees } from "@maneman/web-kit/money";
 import {
   keptRefund,
@@ -25,14 +25,14 @@ import {
   recordPayment,
   recordRefund,
   recordRefundedPayment,
-} from "../../domain/payments.ts";
+} from "../../domain/money/payments.ts";
 import { afterResponse } from "../../http/after-response.ts";
 import { bookHold } from "../../http/book-hold.ts";
 import { cappedBody } from "../../http/capped-body.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
 import { sha256Hex } from "../../lib/hash.ts";
-import { cancelLinkPaidElsewhere, linkPaid } from "../../domain/payment-links.ts";
-import { holdOfLink, recordHoldLinkPaid, type LinkHold } from "../../domain/visit-booking.ts";
+import { cancelLinkPaidElsewhere, linkPaid } from "../../domain/money/payment-links.ts";
+import { holdOfLink, recordHoldLinkPaid, type LinkHold } from "../../domain/booking/visit-booking.ts";
 import {
   RazorpayPaymentLinkSchema,
   RazorpayPaymentSchema,

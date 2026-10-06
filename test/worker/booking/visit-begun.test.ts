@@ -1,11 +1,11 @@
-// A visit that has begun, by the job's own events (src/domain/visit-begun.ts): the client can no longer cancel or
+// A visit that has begun, by the job's own events (src/domain/visits/visit-begun.ts): the client can no longer cancel or
 // move it, and the app reads it as under way or done. NOW is Monday 21 September 2026, 12 noon in India; the visit is
 // at 13:00. Every name and number is made up.
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { App } from "../../../src/http/context.ts";
-import { openSession } from "../../../src/domain/sessions.ts";
+import { openSession } from "../../../src/domain/sign-in/sessions.ts";
 import { appFor, captureLogs, markDatabase, NOW, request } from "../helpers.ts";
 import { IMRAN, JOB, PERSON, working, type Working } from "../job-fixtures.ts";
 

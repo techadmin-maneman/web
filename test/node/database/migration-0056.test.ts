@@ -177,7 +177,7 @@ describe("migration 0056: a first fit asked for", () => {
       { person_id: "p1", fitted_since: 1 },
       { person_id: "p3", fitted_since: 0 },
     ]);
-    // src/domain/next-visit.ts: asking again replaces the request, keeping its row.
+    // src/domain/visits/next-visit.ts: asking again replaces the request, keeping its row.
     db.exec(`INSERT INTO first_fit_requests (id, person_id, preferred_window, created_at)
              VALUES ('ff-third', 'p1', 'morning', '${AT}')
              ON CONFLICT (person_id) DO UPDATE SET preferred_window = excluded.preferred_window`);

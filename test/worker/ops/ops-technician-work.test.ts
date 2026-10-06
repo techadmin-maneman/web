@@ -74,7 +74,7 @@ async function visit(options: {
     .run();
 }
 
-/** One of the phone's outbox events, as src/domain/job-events.ts lands it. */
+/** One of the phone's outbox events, as src/domain/field/job-events.ts lands it. */
 async function event(jobId: string, technicianId: string, kind: string, occurredAt: string, superseded = 0) {
   await env.DB.prepare(
     `INSERT INTO job_events (id, appointment_id, event_id, technician_id, kind, body, occurred_at, received_at,

@@ -5,8 +5,8 @@
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
-import { openSession } from "../../../src/domain/sessions.ts";
-import { outstandingTasks } from "../../../src/domain/tasks.ts";
+import { openSession } from "../../../src/domain/sign-in/sessions.ts";
+import { outstandingTasks } from "../../../src/domain/ops/tasks.ts";
 import { TASK_SLA_HOURS } from "../../../src/policy/tasks.ts";
 import { type PaymentsProvider } from "../../../src/providers/payments/index.ts";
 import { createStubPayments, type StubPayments } from "../../../src/providers/payments/stub.ts";

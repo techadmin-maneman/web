@@ -1,4 +1,4 @@
-// The Tasks board's "Needs a hand", behind Access (src/domain/needs-a-hand.ts):
+// The Tasks board's "Needs a hand", behind Access (src/domain/ops/needs-a-hand.ts):
 //   GET  /api/alerts                    the open alerts ops have been told of, of the caller's departments
 //   POST /api/alerts/:id/resolve        mark one done
 //   POST /api/alerts/:id/send-again     send again the message, lead or CRM erasure it gave up on
@@ -12,8 +12,8 @@ import type { App, AppEnv } from "../../http/context.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
 import { json } from "../../http/openapi.ts";
 import { callerAccess, permits } from "../../http/staff-access.ts";
-import { markDone, openAlert, openAlerts, sendAgain, type OpenAlert } from "../../domain/needs-a-hand.ts";
-import type { AuditAction, AuditEntry } from "../../domain/audit.ts";
+import { markDone, openAlert, openAlerts, sendAgain, type OpenAlert } from "../../domain/ops/needs-a-hand.ts";
+import type { AuditAction, AuditEntry } from "../../domain/ops/audit.ts";
 import { maySendAgain } from "../../policy/alerts.ts";
 import { alertNeed, markDoneNeed, meetsNeed } from "../../policy/console-routes.ts";
 

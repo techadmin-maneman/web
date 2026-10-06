@@ -5,7 +5,7 @@ import { env } from "cloudflare:workers";
 import { beforeEach } from "vitest";
 import { uuidv7 } from "../../../apps/tech/src/store/uuidv7.ts";
 import type { App } from "../../../src/http/context.ts";
-import { openTechnicianSession } from "../../../src/domain/technicians.ts";
+import { openTechnicianSession } from "../../../src/domain/dispatch/technicians.ts";
 import { appFor, fakeDependencies, fakeQueue, markDatabase, NOW, request, type TestDependencies } from "../helpers.ts";
 import { visit } from "../visits.ts";
 

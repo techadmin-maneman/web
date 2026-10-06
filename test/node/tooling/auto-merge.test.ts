@@ -65,13 +65,13 @@ describe("a pull request merging itself", () => {
 });
 
 describe("a pull request touching money or personal data", () => {
-  const refunds = { ...PULL, files: ["src/domain/refunds.ts", "test/worker/refunds.test.ts"] };
+  const refunds = { ...PULL, files: ["src/domain/money/refunds.ts", "test/worker/refunds.test.ts"] };
 
   // The audit's case: nobody added the hold label, and the pull request merged on green.
   it("waits for the reviewed label with no label of any kind on it", () => {
     expect(mergeVerdict(refunds, FULL)).toEqual({
       merge: false,
-      reason: `it touches money or personal data (src/domain/refunds.ts) and waits for the ${REVIEWED_LABEL} label`,
+      reason: `it touches money or personal data (src/domain/money/refunds.ts) and waits for the ${REVIEWED_LABEL} label`,
     });
   });
 
@@ -95,10 +95,10 @@ describe("a pull request touching money or personal data", () => {
       "src/providers/payments/razorpay.ts",
       "src/providers/books/index.ts",
       "src/policy/consents.ts",
-      "src/domain/erasure.ts",
-      "src/domain/hair-profiles.ts",
-      "src/domain/discount-code-uses.ts",
-      "src/domain/no-show-disputes.ts",
+      "src/domain/privacy/erasure.ts",
+      "src/domain/clients/hair-profiles.ts",
+      "src/domain/money/discount-code-uses.ts",
+      "src/domain/no-shows/no-show-disputes.ts",
       "src/routes/hooks/razorpay.ts",
     ];
     expect(sensitiveFiles(files)).toEqual(files);
@@ -110,15 +110,15 @@ describe("a pull request touching money or personal data", () => {
       "apps/ops/src/refunds.ts",
       "scripts/lib/auto-merge.ts",
       "docs/decisions/0006-deployment-pipeline.md",
-      "src/domain/bookings.ts",
+      "src/domain/booking/bookings.ts",
     ];
     expect(sensitiveFiles(files)).toEqual([]);
   });
 
   // A file renamed away from a sensitive path is listed under its old path as well (scripts/ci/auto-merge.ts).
   it("counts a sensitive file renamed to a path outside the list", () => {
-    const renamed = ["src/domain/money-back.ts", "src/domain/refunds.ts"];
-    expect(sensitiveFiles(renamed)).toEqual(["src/domain/refunds.ts"]);
+    const renamed = ["src/domain/money-back.ts", "src/domain/money/refunds.ts"];
+    expect(sensitiveFiles(renamed)).toEqual(["src/domain/money/refunds.ts"]);
   });
 
   // A file renamed in the code would otherwise quietly fall out of the list.

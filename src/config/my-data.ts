@@ -1,4 +1,4 @@
-// The readable copy of a client's data export (GET /api/me/export.html; src/domain/my-data-page.ts): each part's
+// The readable copy of a client's data export (GET /api/me/export.html; src/domain/privacy/my-data-page.ts): each part's
 // heading, in the order the page shows them, and each field's label and how its value reads.
 
 /**

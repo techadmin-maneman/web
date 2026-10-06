@@ -4,22 +4,22 @@
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import { NO_GST, type GstRegistration } from "../../../src/config/gst.ts";
-import { createAlertOnce, createResolveAlert } from "../../../src/domain/alerts.ts";
-import { markCustomerChanged } from "../../../src/domain/books-customers.ts";
+import { createAlertOnce, createResolveAlert } from "../../../src/domain/ops/alerts.ts";
+import { markCustomerChanged } from "../../../src/domain/books/books-customers.ts";
 import {
   CALLS_PER_CUSTOMER,
   CALLS_PER_RECORD,
   syncBooks,
   type BooksSyncOptions,
   type BooksSyncSummary,
-} from "../../../src/domain/books-sync.ts";
+} from "../../../src/domain/books/books-sync.ts";
 import { createCallBudget, type CallBudget } from "../../../src/lib/call-budget.ts";
 import { createLogger } from "../../../src/log.ts";
 import { type BooksInvoice, type BooksProvider } from "../../../src/providers/books/index.ts";
 import { createStubBooks, type StubBooks } from "../../../src/providers/books/stub.ts";
 import { ZohoError } from "../../../src/providers/zoho-http.ts";
 import { captureLogs, NOW } from "../helpers.ts";
-import { RECHECK_AFTER_MS } from "../../../src/domain/vendor-pass.ts";
+import { RECHECK_AFTER_MS } from "../../../src/domain/books/vendor-pass.ts";
 
 const PERSON = "11111111-1111-4111-8111-111111111111";
 const VISIT = "22222222-2222-4222-8222-222222222222";

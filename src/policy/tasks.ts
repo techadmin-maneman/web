@@ -99,7 +99,7 @@ export type Slas = Readonly<Record<TaskGroup, number>>;
 export const TASK_SLA_HOURS: Slas = {
   // A client who does not know his visit moved will not be home for it: a call the same day.
   untold_move: 4,
-  // These two are never later than the visit itself (src/domain/tasks.ts).
+  // These two are never later than the visit itself (src/domain/ops/tasks.ts).
   leave_conflict: 48,
   address_to_confirm: 48,
   consultation_request: 48,
@@ -146,7 +146,7 @@ export const STAFF_SEEN_WITHIN_DAYS = 90;
 
 /**
  * Who may own a task: a member of staff, named by the e-mail Access signs them in with, who has used the console in
- * the last STAFF_SEEN_WITHIN_DAYS (src/domain/task-owners.ts). A typo, a service token's ID or someone long gone
+ * the last STAFF_SEEN_WITHIN_DAYS (src/domain/ops/task-owners.ts). A typo, a service token's ID or someone long gone
  * would make the task nobody's.
  */
 export const mayOwnTasks = (email: string, staff: readonly string[]): boolean => staff.includes(email.toLowerCase());

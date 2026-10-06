@@ -1,6 +1,6 @@
 // A technician's Phones tab: each phone he has logged in on, when it was last used, and whether it is signed in,
 // signed out or revoked. Revoking a phone ends its session and makes it drop its cached jobs, so it asks before it
-// sends (src/domain/technicians.ts). It also stops him signing in on any phone until ops let him again.
+// sends (src/domain/dispatch/technicians.ts). It also stops him signing in on any phone until ops let him again.
 
 import { errorText } from "@maneman/web-kit/refusal";
 import { Button } from "@maneman/ui/Button";

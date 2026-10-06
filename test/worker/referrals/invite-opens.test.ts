@@ -5,7 +5,7 @@
 
 import { env } from "cloudflare:workers";
 import { beforeEach, expect, it } from "vitest";
-import { openSession } from "../../../src/domain/sessions.ts";
+import { openSession } from "../../../src/domain/sign-in/sessions.ts";
 import { DAY_MS, HOUR_MS } from "../../../src/lib/durations.ts";
 import { INVITE_MISSES_PER_ADDRESS_HOURLY } from "../../../src/policy/invites.ts";
 import {

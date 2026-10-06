@@ -3,7 +3,7 @@
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
-import { checkLoginCode, createChallenge, type ChallengeHolder } from "../../../src/domain/one-time-codes.ts";
+import { checkLoginCode, createChallenge, type ChallengeHolder } from "../../../src/domain/sign-in/one-time-codes.ts";
 import { markDatabase, NOW } from "../helpers.ts";
 
 const PERSON = "66666666-6666-4666-8666-666666666666";

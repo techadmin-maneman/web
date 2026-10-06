@@ -12,7 +12,7 @@
 import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { isEnvironmentName } from "../../src/config/environments.ts";
-import { newReferralCode } from "../../src/domain/referrals.ts";
+import { newReferralCode } from "../../src/domain/referrals/referrals.ts";
 import { CREDIT_TTL_DAYS, CREDITS_PER_REFERRAL } from "../../src/policy/referral-reward.ts";
 import { d1Execute } from "../lib/d1.ts";
 import { sqlLiteral } from "../lib/sql-literal.ts";

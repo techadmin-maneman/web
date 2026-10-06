@@ -1,4 +1,4 @@
-// One client's history (src/domain/client-history.ts), counted from their
+// One client's history (src/domain/visits/client-history.ts), counted from their
 // visits, payments and pieces, and read by both surfaces from the one
 // derivation. NOW is Monday 21 September 2026, 12 noon in India. Every name,
 // number and piece here is made up.
@@ -6,8 +6,8 @@
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { App } from "../../../src/http/context.ts";
-import { clientHistory } from "../../../src/domain/client-history.ts";
-import { openSession } from "../../../src/domain/sessions.ts";
+import { clientHistory } from "../../../src/domain/visits/client-history.ts";
+import { openSession } from "../../../src/domain/sign-in/sessions.ts";
 import { appFor, captureLogs, fakeDependencies, markDatabase, NOW, request } from "../helpers.ts";
 
 const PERSON = "11111111-1111-4111-8111-111111111111";

@@ -3,9 +3,9 @@
 // message says only whose details changed, and a later message also carries an earlier change that could not be sent.
 
 import type { Context } from "hono";
-import { markCustomerChanged } from "../domain/books-customers.ts";
+import { markCustomerChanged } from "../domain/books/books-customers.ts";
 import type { AppEnv } from "./context.ts";
-import { enqueue, type IfLost } from "../domain/enqueue.ts";
+import { enqueue, type IfLost } from "../domain/platform/enqueue.ts";
 import { type CrmSyncMessage } from "../config/pipeline.ts";
 
 export async function queueContactSync(c: Context<AppEnv>, personId: string): Promise<void> {

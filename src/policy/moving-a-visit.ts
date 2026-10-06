@@ -1,7 +1,7 @@
 // A client moving or cancelling a visit, and ops moving one (docs/prompts/phase2-backend.md, "Business rules, decided").
 // What a client's change costs, and what a move by ops does
 // (docs/decisions/0046-moving-and-cancelling.md, docs/decisions/0096-a-no-shows-charge-and-its-dispute.md). The
-// terms are worked out in src/domain/visit-changes.ts, and a move is booked in src/domain/bookings.ts.
+// terms are worked out in src/domain/visits/visit-changes.ts, and a move is booked in src/domain/booking/bookings.ts.
 
 import type { VisitType } from "../config/visit-types.ts";
 import { HOUR_MS } from "../lib/durations.ts";

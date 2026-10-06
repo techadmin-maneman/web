@@ -21,7 +21,7 @@ export const technicians = {
   unknown: "—",
   // The board draws no console without technicians.
   empty: "No technician is active.",
-  /** The two columns counted from the jobs themselves (src/domain/technician-work.ts). */
+  /** The two columns counted from the jobs themselves (src/domain/dispatch/technician-work.ts). */
   work: {
     /** The average itself, as the board writes it: "1 h 24 m", and "48 m" under the hour. */
     average: (hours: number, minutes: number) => {

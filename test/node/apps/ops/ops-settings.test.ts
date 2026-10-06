@@ -22,7 +22,7 @@ import {
   type OpsSetting,
   type SettingValue,
 } from "../../../../src/policy/ops-settings.ts";
-import { COMMITTED, SETTINGS_TTL_MS } from "../../../../src/domain/ops-settings.ts";
+import { COMMITTED, SETTINGS_TTL_MS } from "../../../../src/domain/ops/ops-settings.ts";
 import { CHECKIN_RADIUS_M } from "../../../../src/policy/check-in.ts";
 import { UNLOCK_HOUR } from "../../../../src/policy/job-visibility.ts";
 import { NEXT_VISIT_DAY_BOUNDS, NEXT_VISIT_DAYS } from "../../../../src/policy/next-visit.ts";

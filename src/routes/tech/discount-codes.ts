@@ -11,8 +11,8 @@
 import { z } from "@hono/zod-openapi";
 import { techRoute } from "../../http/session-routes.ts";
 import type { App } from "../../http/context.ts";
-import { enterOnVisit } from "../../domain/discount-code-uses.ts";
-import { workableJob } from "../../domain/tech-jobs.ts";
+import { enterOnVisit } from "../../domain/money/discount-code-uses.ts";
+import { workableJob } from "../../domain/field/tech-jobs.ts";
 import { mayCheckCode } from "../../http/code-checks.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
 import { json } from "../../http/openapi.ts";

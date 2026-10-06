@@ -4,10 +4,10 @@ import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { VisitType } from "../../../src/config/visit-types.ts";
 import type { App } from "../../../src/http/context.ts";
-import { grantCredits, redeemCredit } from "../../../src/domain/credits.ts";
-import { findEligiblePerson } from "../../../src/domain/login.ts";
-import { openSession } from "../../../src/domain/sessions.ts";
-import type { Angle, Phase } from "../../../src/domain/visit-photos.ts";
+import { grantCredits, redeemCredit } from "../../../src/domain/money/credits.ts";
+import { findEligiblePerson } from "../../../src/domain/sign-in/login.ts";
+import { openSession } from "../../../src/domain/sign-in/sessions.ts";
+import type { Angle, Phase } from "../../../src/domain/field/visit-photos.ts";
 
 import { appFor, d1TripsOf, fakeDependencies, markDatabase, NOW, phaseOneLead, request } from "../helpers.ts";
 import { syntheticJpeg } from "../tryon-fixtures.ts";

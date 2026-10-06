@@ -10,7 +10,7 @@
 //                                     house card; the version in the link is what makes a revoke reach new shares
 //
 // Looking up a code that is not there, as the invite or as its preview, counts against the address it comes from;
-// past its misses for the hour the address is refused every code (src/domain/invite-lookups.ts).
+// past its misses for the hour the address is refused every code (src/domain/referrals/invite-lookups.ts).
 //
 // Posting takes a Turnstile token, and the same limits per number and address as the booking form. A consultation
 // takes the full address it is at, as the booking form's does (docs/decisions/0081-the-site-takes-the-address.md),
@@ -25,11 +25,11 @@ import type { App, AppEnv } from "../../http/context.ts";
 import { HOUSE_CARD } from "../../config/house-card.ts";
 import { TOLD_NOTICES, type ToldNotice } from "../../config/notices.ts";
 import { BOOKING_WINDOWS } from "../../config/scheduling.ts";
-import { countInviteMiss, countInviteOpen, inviteMissesSpent } from "../../domain/invite-lookups.ts";
-import { pincodeOf } from "../../domain/service-area.ts";
-import { liveCard } from "../../domain/referral-cards.ts";
+import { countInviteMiss, countInviteOpen, inviteMissesSpent } from "../../domain/referrals/invite-lookups.ts";
+import { pincodeOf } from "../../domain/clients/service-area.ts";
+import { liveCard } from "../../domain/referrals/referral-cards.ts";
 import { CODE_PATTERN } from "../../config/invite-codes.ts";
-import { inviteOf, type Invite } from "../../domain/referrals.ts";
+import { inviteOf, type Invite } from "../../domain/referrals/referrals.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
 import { IdempotencyKeyHeaderSchema } from "../../http/idempotency.ts";
 import { PersonNameSchema } from "../../http/openapi.ts";

@@ -31,7 +31,7 @@ import {
   PRICE_BOUNDS,
   type NumberSetting,
 } from "../../policy/ops-settings.ts";
-import { setOpsSetting, settingStates } from "../../domain/ops-settings.ts";
+import { setOpsSetting, settingStates } from "../../domain/ops/ops-settings.ts";
 import {
   correctPrice,
   PRICE_ITEMS,
@@ -40,9 +40,9 @@ import {
   setPrice,
   withdrawPrice,
   type PriceRefusal,
-} from "../../domain/price-book.ts";
-import { listCities } from "../../domain/cities.ts";
-import { addPincode, serviceArea, setServiceArea } from "../../domain/service-area.ts";
+} from "../../domain/money/price-book.ts";
+import { listCities } from "../../domain/dispatch/cities.ts";
+import { addPincode, serviceArea, setServiceArea } from "../../domain/clients/service-area.ts";
 import { errorBody, errorResponse, refuse } from "../../http/errors.ts";
 import { json } from "../../http/openapi.ts";
 import { queuePacedMessages } from "../../http/queue-message.ts";

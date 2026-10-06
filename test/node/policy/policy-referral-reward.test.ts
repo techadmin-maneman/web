@@ -2,7 +2,7 @@
 
 import { describe, expect, it } from "vitest";
 import { checkValue, settingNamed } from "../../../src/policy/ops-settings.ts";
-import { COMMITTED } from "../../../src/domain/ops-settings.ts";
+import { COMMITTED } from "../../../src/domain/ops/ops-settings.ts";
 import { indiaDate } from "../../../src/lib/india-time.ts";
 import { CREDIT_TTL_DAYS, creditExpiry, REFERRAL_REWARD, takesCredit } from "../../../src/policy/referral-reward.ts";
 

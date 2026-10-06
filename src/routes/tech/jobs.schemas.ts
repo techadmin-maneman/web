@@ -3,7 +3,7 @@
 import { z } from "@hono/zod-openapi";
 import { BOOKING_WINDOWS } from "../../config/scheduling.ts";
 import { VISIT_TYPES } from "../../config/visit-types.ts";
-import { ANGLES, PHASES } from "../../domain/visit-photos.ts";
+import { ANGLES, PHASES } from "../../domain/field/visit-photos.ts";
 import { CARD_STEPS } from "../../policy/in-job-steps.ts";
 import { PAYMENT_BADGES } from "../../policy/job-visibility.ts";
 import { BasedOnSchema, FitSpecSchema, HairProfileSchema, HistorySchema } from "../schemas/hair-profile.ts";

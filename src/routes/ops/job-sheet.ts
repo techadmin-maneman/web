@@ -19,7 +19,7 @@ import {
   type JobSheet,
   type JobSheetList,
   type ListName,
-} from "../../domain/job-sheet-settings.ts";
+} from "../../domain/field/job-sheet-settings.ts";
 import { actorOf } from "../../http/audit.ts";
 import type { App, AppEnv } from "../../http/context.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";

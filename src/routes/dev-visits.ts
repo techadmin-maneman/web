@@ -6,7 +6,7 @@
 // it (src/app.ts). It is in no API document: nothing but a developer calls it (docs/getting-started.md).
 
 import { createRoute, z } from "@hono/zod-openapi";
-import { closeVisit, moveVisit } from "../domain/visit-status.ts";
+import { closeVisit, moveVisit } from "../domain/visits/visit-status.ts";
 import type { App } from "../http/context.ts";
 import { errorResponse, refuse } from "../http/errors.ts";
 

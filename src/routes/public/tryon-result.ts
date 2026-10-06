@@ -9,8 +9,8 @@
 import { createRoute, z } from "@hono/zod-openapi";
 import type { App } from "../../http/context.ts";
 import { FAILURE_CODES, JOB_STATES } from "../../config/tryon.ts";
-import { withinCeiling } from "../../domain/ceilings.ts";
-import { loadJob } from "../../domain/tryon.ts";
+import { withinCeiling } from "../../domain/platform/ceilings.ts";
+import { loadJob } from "../../domain/try-on/tryon.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
 import { lookCookieJob } from "../../http/look-cookie.ts";
 import { verifyToken } from "../../lib/signed-token.ts";
@@ -27,7 +27,7 @@ const AvailabilitySchema = z
   .openapi("TryOnAvailability");
 
 // Only whether the browser has had its look, and whether it failed: never the image, nor what was asked of it, which
-// outlives an erasure on an expired job's row (src/domain/erasure.ts).
+// outlives an erasure on an expired job's row (src/domain/privacy/erasure.ts).
 const LookSchema = z
   .object({
     job_id: z.uuid(),

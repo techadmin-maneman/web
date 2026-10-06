@@ -1,8 +1,8 @@
 // A client's try-on, kept (docs/decisions/0084-a-clients-try-on-is-kept.md): the before photograph always, and the look
 // until the first fit is photographed (ADR 0025, item 65), and which of a person's try-ons is kept. The small copy of
 // the photograph comes up with the photograph (src/routes/public/tryon-upload.ts); the sweeper keeps a try-on, and lets
-// its look go once the first fit is photographed (src/domain/kept-try-ons.ts); the app shows it
-// (src/domain/client-try-ons.ts).
+// its look go once the first fit is photographed (src/domain/try-on/kept-try-ons.ts); the app shows it
+// (src/domain/try-on/client-try-ons.ts).
 //
 // A client is someone who has booked a visit, of any kind. Their try-on is kept only if its photograph was agreed to
 // under a notice that says so, and only if its look is still held when they are a client: before then the try-on

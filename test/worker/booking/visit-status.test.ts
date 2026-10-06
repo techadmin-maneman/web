@@ -1,4 +1,4 @@
-// The visit's status machine (src/domain/visit-status.ts): each step moves a visit only forward, from the statuses it
+// The visit's status machine (src/domain/visits/visit-status.ts): each step moves a visit only forward, from the statuses it
 // allows, and a closed visit's row is written once. NOW is Monday 21 September 2026, 12 noon in India. Every ID is
 // made up.
 
@@ -10,7 +10,7 @@ import {
   moveVisit,
   type AppointmentStatus,
   type Step,
-} from "../../../src/domain/visit-status.ts";
+} from "../../../src/domain/visits/visit-status.ts";
 import { NOW } from "../helpers.ts";
 
 const BOOKED_AT = "2026-09-20T06:30:00.000Z";

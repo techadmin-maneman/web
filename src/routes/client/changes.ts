@@ -19,7 +19,7 @@ import {
   changeTerms,
   termsInForce,
   type ChangeTerms,
-} from "../../domain/visit-changes.ts";
+} from "../../domain/visits/visit-changes.ts";
 import { opsInputs } from "../../http/ops-inputs.ts";
 import { clientOf } from "../../http/client-session.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";

@@ -13,7 +13,7 @@
 
 import { createRoute, z } from "@hono/zod-openapi";
 import { PRICE_BOUNDS } from "../../policy/ops-settings.ts";
-import { codeOnVisit, enterOnVisit, removeFromVisit } from "../../domain/discount-code-uses.ts";
+import { codeOnVisit, enterOnVisit, removeFromVisit } from "../../domain/money/discount-code-uses.ts";
 import {
   BATCH_MOST,
   listCodes,
@@ -21,7 +21,7 @@ import {
   makeCodes,
   switchOff,
   type NewCodes,
-} from "../../domain/discount-codes.ts";
+} from "../../domain/money/discount-codes.ts";
 import { actorOf } from "../../http/audit.ts";
 import type { App } from "../../http/context.ts";
 import { errorBody, errorResponse, refuse } from "../../http/errors.ts";

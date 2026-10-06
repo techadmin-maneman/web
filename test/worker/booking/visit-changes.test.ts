@@ -1,14 +1,14 @@
-// A client moving or cancelling a visit (src/routes/client/changes.ts, src/domain/visit-changes.ts, and the move
+// A client moving or cancelling a visit (src/routes/client/changes.ts, src/domain/visits/visit-changes.ts, and the move
 // in confirmBooking). NOW is Monday 21 September 2026, 12 noon in India; the price book is at 0% from 22 September.
 // Every name and number here is made up.
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
-import { confirmBooking } from "../../../src/domain/bookings.ts";
-import { clawBack, creditBalance, grantCredits, redeemCredit } from "../../../src/domain/credits.ts";
-import { listCodes, makeCodes } from "../../../src/domain/discount-codes.ts";
-import { moveJob } from "../../../src/domain/dispatch.ts";
-import { openSession } from "../../../src/domain/sessions.ts";
+import { confirmBooking } from "../../../src/domain/booking/bookings.ts";
+import { clawBack, creditBalance, grantCredits, redeemCredit } from "../../../src/domain/money/credits.ts";
+import { listCodes, makeCodes } from "../../../src/domain/money/discount-codes.ts";
+import { moveJob } from "../../../src/domain/dispatch/dispatch.ts";
+import { openSession } from "../../../src/domain/sign-in/sessions.ts";
 import { type PaymentsProvider } from "../../../src/providers/payments/index.ts";
 import { createStubPayments } from "../../../src/providers/payments/stub.ts";
 import { PaymentUnanswered } from "../../../src/providers/provider-error.ts";

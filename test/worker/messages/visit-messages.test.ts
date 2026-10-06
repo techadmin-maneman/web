@@ -1,4 +1,4 @@
-// A client's messages about their visits (src/domain/visit-messages.ts and the messaging consumer): what each
+// A client's messages about their visits (src/domain/messages/visit-messages.ts and the messaging consumer): what each
 // says, when it is sent or skipped, the day-before reminders, and that a booking, a move and a cancel queue theirs.
 // NOW is Monday 21 September 2026, 12 noon in India. Every name and number here is made up.
 
@@ -6,14 +6,14 @@ import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import { renderMessage, type TemplateName } from "../../../src/config/message-templates.ts";
 import type { Settings } from "../../../src/config/settings.ts";
-import { confirmBooking } from "../../../src/domain/bookings.ts";
-import { openSession } from "../../../src/domain/sessions.ts";
+import { confirmBooking } from "../../../src/domain/booking/bookings.ts";
+import { openSession } from "../../../src/domain/sign-in/sessions.ts";
 import {
   composeVisitMessage,
   queueReminders,
   REMINDER_DAY_MOVED,
   visitMessage,
-} from "../../../src/domain/visit-messages.ts";
+} from "../../../src/domain/messages/visit-messages.ts";
 import type { StaticConfig } from "../../../src/guard.ts";
 import { createLogger } from "../../../src/log.ts";
 import type { MessagingProvider, OutboundMessage } from "../../../src/providers/messaging/index.ts";

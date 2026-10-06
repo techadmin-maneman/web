@@ -2,9 +2,9 @@
 
 import type { App } from "../../http/context.ts";
 import { type VisitType } from "../../config/visit-types.ts";
-import { offeredForJob, serviceOfJob } from "../../domain/consumables.ts";
-import { checklistOf, declinedChecklistOf, jobSheet } from "../../domain/job-sheet-settings.ts";
-import { jobDetail, jobsOn, lastVisitPhoto } from "../../domain/tech-jobs.ts";
+import { offeredForJob, serviceOfJob } from "../../domain/field/consumables.ts";
+import { checklistOf, declinedChecklistOf, jobSheet } from "../../domain/field/job-sheet-settings.ts";
+import { jobDetail, jobsOn, lastVisitPhoto } from "../../domain/field/tech-jobs.ts";
 import { refuse } from "../../http/errors.ts";
 import { technicianOf } from "../../http/technician-session.ts";
 import { indiaDate } from "../../lib/india-time.ts";

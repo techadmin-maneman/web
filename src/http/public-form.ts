@@ -1,12 +1,12 @@
 // What the site's booking and waitlist forms check of the person sending them: their number, their Turnstile
 // token, and the day's limits per number and address (docs/decisions/0051-booking-from-the-site.md). The booking
-// itself is src/domain/public-booking.ts, handed this request as a FormRequest.
+// itself is src/domain/booking/public-booking.ts, handed this request as a FormRequest.
 
 import type { Context } from "hono";
-import type { Checked, FormRequest } from "../domain/public-booking.ts";
-import { takeOne } from "../domain/rate-limit.ts";
-import { isTestNumber } from "../domain/test-records.ts";
-import { mobileHashOf } from "../domain/number-codes.ts";
+import type { Checked, FormRequest } from "../domain/booking/public-booking.ts";
+import { takeOne } from "../domain/sign-in/rate-limit.ts";
+import { isTestNumber } from "../domain/platform/test-records.ts";
+import { mobileHashOf } from "../domain/clients/number-codes.ts";
 import { toE164 } from "../lib/mobile.ts";
 import { skipsAddressLimits } from "../policy/staging-test-records.ts";
 import { bookHold } from "./book-hold.ts";
@@ -35,7 +35,7 @@ async function checkPerson(c: Context<AppEnv>, mobile: string, token: string, na
   return { ok: true, mobile: mobileE164, ipHash: visitor.ipHash };
 }
 
-/** What src/domain/public-booking.ts needs of this request. */
+/** What src/domain/booking/public-booking.ts needs of this request. */
 export function formRequest(c: Context<AppEnv>): FormRequest {
   return {
     db: c.env.DB,

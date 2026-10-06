@@ -8,10 +8,10 @@
 import { createRoute, z } from "@hono/zod-openapi";
 import { actorOf } from "../../http/audit.ts";
 import type { App } from "../../http/context.ts";
-import { listCities } from "../../domain/cities.ts";
-import { reachBinding, withinReach } from "../../domain/places.ts";
-import { launchedPincode, pincodeOf } from "../../domain/service-area.ts";
-import { launchPincode, launchPreview, waitlistByPincode } from "../../domain/waitlist.ts";
+import { listCities } from "../../domain/dispatch/cities.ts";
+import { reachBinding, withinReach } from "../../domain/clients/places.ts";
+import { launchedPincode, pincodeOf } from "../../domain/clients/service-area.ts";
+import { launchPincode, launchPreview, waitlistByPincode } from "../../domain/booking/waitlist.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
 import { json } from "../../http/openapi.ts";
 import { queuePacedMessages } from "../../http/queue-message.ts";

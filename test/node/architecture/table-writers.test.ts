@@ -1,26 +1,26 @@
 // The tables whose writes once drifted between modules, each written by the modules listed here alone. A new writer
 // is a new place every rule on the table has to be remembered, so it is added here on purpose, or the write goes
-// through the table's owner: src/domain/people.ts, src/domain/queued-messages.ts, src/domain/credits.ts.
+// through the table's owner: src/domain/clients/people.ts, src/domain/messages/queued-messages.ts, src/domain/money/credits.ts.
 
 import { readdirSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 const WRITERS: Readonly<Record<string, readonly string[]>> = {
-  people: ["src/domain/form-person.ts", "src/domain/people.ts"],
+  people: ["src/domain/booking/form-person.ts", "src/domain/clients/people.ts"],
   outbound_messages: [
-    "src/domain/payment-links.ts",
-    "src/domain/queued-messages.ts",
-    "src/domain/referral-grants.ts",
-    "src/domain/ruling-claims.ts",
-    "src/domain/tryon-claims.ts",
-    "src/domain/visit-messages.ts",
-    "src/domain/waitlist.ts",
+    "src/domain/money/payment-links.ts",
+    "src/domain/messages/queued-messages.ts",
+    "src/domain/referrals/referral-grants.ts",
+    "src/domain/no-shows/ruling-claims.ts",
+    "src/domain/try-on/tryon-claims.ts",
+    "src/domain/messages/visit-messages.ts",
+    "src/domain/booking/waitlist.ts",
   ],
   credit_ledger: [
-    "src/domain/credits.ts",
-    "src/domain/referral-grants.ts",
-    "src/domain/ruling-claims.ts",
-    "src/domain/visit-changes.ts",
+    "src/domain/money/credits.ts",
+    "src/domain/referrals/referral-grants.ts",
+    "src/domain/no-shows/ruling-claims.ts",
+    "src/domain/visits/visit-changes.ts",
   ],
 };
 

@@ -7,7 +7,7 @@
 // one booked on /book shows as booked before it is a visit, as the site's consultation does.
 //
 // Beneath the card, a one visit's payment while the client owes it, B1's credit tile while there is a balance, its one prompt, and an invoice just issued as a line
-// beneath that (src/domain/home-prompt.ts). Where the prompt offers the next visit, it is Home's one way to book it,
+// beneath that (src/domain/clients/home-prompt.ts). Where the prompt offers the next visit, it is Home's one way to book it,
 // with the sheet opened on its day and window; a replacement is booked here like any other visit.
 
 import { BookButton, BookNext, type ChangingVisit } from "../booking/index.ts";

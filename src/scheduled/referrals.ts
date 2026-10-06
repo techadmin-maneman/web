@@ -3,8 +3,8 @@
 // close expired credits, and take back the credits of a first fit refunded under the guarantee. Each does a little
 // per pass. Returns the messages to queue.
 
-import { expireCredits } from "../domain/credits.ts";
-import { clawBackRefunded, settleReferrals } from "../domain/referral-grants.ts";
+import { expireCredits } from "../domain/money/credits.ts";
+import { clawBackRefunded, settleReferrals } from "../domain/referrals/referral-grants.ts";
 import type { Logger } from "../log.ts";
 import type { ReferralReward } from "../policy/referral-reward.ts";
 

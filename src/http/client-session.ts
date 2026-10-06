@@ -3,7 +3,7 @@
 import type { Context } from "hono";
 import { createMiddleware } from "hono/factory";
 import type { AppEnv } from "./context.ts";
-import { findSession, SESSION_TOUCH_MS, touchSession, type Session } from "../domain/sessions.ts";
+import { findSession, SESSION_TOUCH_MS, touchSession, type Session } from "../domain/sign-in/sessions.ts";
 import { refuse } from "./errors.ts";
 import { sessionCookie } from "./session-cookie.ts";
 

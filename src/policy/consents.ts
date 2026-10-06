@@ -1,5 +1,5 @@
 // What a client consents to (docs/prompts/phase2-backend.md, "Business rules, decided").
-// The purposes, each with its own date. A client switches each in src/domain/profile.ts;
+// The purposes, each with its own date. A client switches each in src/domain/clients/profile.ts;
 // ops read them in the console (src/routes/ops/clients.ts) and never write one. Each consent also records where it
 // was given (docs/decisions/0094-where-a-consent-was-given.md).
 

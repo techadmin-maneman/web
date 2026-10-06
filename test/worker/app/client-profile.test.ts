@@ -1,12 +1,12 @@
 // The client's profile and ops' side of it (docs/decisions/0042-client-profile.md),
-// against the rules in src/policy/consents.ts and src/domain/number-change.ts. Every
+// against the rules in src/policy/consents.ts and src/domain/clients/number-change.ts. Every
 // number here is made up.
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { App } from "../../../src/http/context.ts";
-import { visitAddress } from "../../../src/domain/check-ins.ts";
-import { openSession } from "../../../src/domain/sessions.ts";
+import { visitAddress } from "../../../src/domain/visits/check-ins.ts";
+import { openSession } from "../../../src/domain/sign-in/sessions.ts";
 import { checkIn } from "../../../src/policy/check-in.ts";
 import { createLogger } from "../../../src/log.ts";
 import type { MessagingProvider, OutboundMessage, SendResult } from "../../../src/providers/messaging/index.ts";

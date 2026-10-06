@@ -5,9 +5,9 @@
 import { constants, type DatabaseSync } from "node:sqlite";
 import { describe, expect, it } from "vitest";
 import { MY_DATA } from "../../../src/config/my-data.ts";
-import { EXPORT_QUERIES, everythingHeldAbout } from "../../../src/domain/data-export.ts";
-import { erasePerson } from "../../../src/domain/erasure.ts";
-import { logPhotoView } from "../../../src/domain/photo-views.ts";
+import { EXPORT_QUERIES, everythingHeldAbout } from "../../../src/domain/privacy/data-export.ts";
+import { erasePerson } from "../../../src/domain/privacy/erasure.ts";
+import { logPhotoView } from "../../../src/domain/field/photo-views.ts";
 import { createLogger } from "../../../src/log.ts";
 import { PERSONAL_COLUMNS } from "../../../src/policy/personal-data.ts";
 import { asD1, migratedDatabase } from "../d1-over-sqlite.ts";

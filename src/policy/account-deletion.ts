@@ -1,7 +1,7 @@
 // What deleting an account deletes, and when (docs/prompts/phase2-backend.md, "Business rules, decided").
 // How soon a request is decided, and what stands in the way of the erasure. A request is decided in the console
-// (src/domain/deletion.ts); the erasure that follows, which deletes the photographs at once and blanks the person
-// while the invoices stay in Books, is src/domain/erasure.ts.
+// (src/domain/privacy/deletion.ts); the erasure that follows, which deletes the photographs at once and blanks the person
+// while the invoices stay in Books, is src/domain/privacy/erasure.ts.
 
 import { VISIT_LIVE } from "../config/statuses.ts";
 

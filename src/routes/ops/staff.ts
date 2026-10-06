@@ -6,7 +6,7 @@
 //   POST /api/staff/service-tokens           a service token let in, as every caller was before the list
 //   POST /api/staff/service-tokens/remove    a service token taken off
 //
-// Every change is audited under the person who made it, in the same batch (src/domain/staff.ts).
+// Every change is audited under the person who made it, in the same batch (src/domain/ops/staff.ts).
 
 import { createRoute, z } from "@hono/zod-openapi";
 import type { Context } from "hono";
@@ -23,7 +23,7 @@ import {
   saveStaffMember,
   setEnforced,
   type StaffBook,
-} from "../../domain/staff.ts";
+} from "../../domain/ops/staff.ts";
 import {
   can,
   DEPARTMENTS,

@@ -6,8 +6,8 @@
 import { createRoute, z } from "@hono/zod-openapi";
 import { actorOf } from "../../http/audit.ts";
 import type { App } from "../../http/context.ts";
-import { auditStatement } from "../../domain/audit.ts";
-import { reachBinding, withinReach } from "../../domain/places.ts";
+import { auditStatement } from "../../domain/ops/audit.ts";
+import { reachBinding, withinReach } from "../../domain/clients/places.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
 import { json } from "../../http/openapi.ts";
 import { opsInputs } from "../../http/ops-inputs.ts";
@@ -106,7 +106,7 @@ export function registerOpsGrievances(app: App): void {
     if (open === null || !(await withinRouteReach(c, "grievance", id))) {
       return refuse(c, "not_found");
     }
-    // The answer and its audit entry, together or not at all (src/domain/audit.ts).
+    // The answer and its audit entry, together or not at all (src/domain/ops/audit.ts).
     await db.batch([
       db
         .prepare(

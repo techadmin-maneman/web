@@ -1,8 +1,8 @@
 // The cron's retention job (src/policy/retention.ts): each hour, a few dormant people erased as any erasure is, old
 // check-in coordinates blanked, and waitlist entries of areas launched a year ago deleted.
 
-import { eraseAndQueue } from "../domain/erasure.ts";
-import { blankOldCoordinates, dormantPeople, dropLaunchedWaitlist } from "../domain/retention.ts";
+import { eraseAndQueue } from "../domain/privacy/erasure.ts";
+import { blankOldCoordinates, dormantPeople, dropLaunchedWaitlist } from "../domain/privacy/retention.ts";
 import { ERASED_PER_RUN } from "../policy/retention.ts";
 import type { CronContext } from "./cron.ts";
 

@@ -6,7 +6,7 @@
 
 ## Context
 
-Three things refund a client: ops' refund of a booking FSM refused, and any other hold let go with its payment (`refundOnce`, `src/domain/give-back.ts`); a cancellation (`src/domain/visit-changes.ts`); and a no-show's ruling (`src/domain/after-a-ruling.ts`). Each took any failure of `payments.refund` as a refusal, a 10-second timeout included. But a timed-out refund may have been made, with only its answer lost:
+Three things refund a client: ops' refund of a booking FSM refused, and any other hold let go with its payment (`refundOnce`, `src/domain/booking/give-back.ts`); a cancellation (`src/domain/visits/visit-changes.ts`); and a no-show's ruling (`src/domain/no-shows/after-a-ruling.ts`). Each took any failure of `payments.refund` as a refusal, a 10-second timeout included. But a timed-out refund may have been made, with only its answer lost:
 
 - the held booking cleared its claim and waited, and the console told ops to try again **or refund it in Razorpay's dashboard**;
 - the cancellation and the ruling told ops to "refund it by hand in Razorpay, once".
@@ -17,7 +17,7 @@ Razorpay's refunds take a `receipt`, which "serves as an idempotency key": a sec
 
 ## Decision
 
-**Every refund carries a receipt of its own** (`refundReceipt`, `src/domain/refunds.ts`). There is one per hold (`h-<hold>`), one per cancellation (`c-<visit>`), and one per no-show ruling on a visit (`nw-`, `nc-` or `nd-<visit>`, for waived, charged and refunded on dispute). Each is within Razorpay's 40 characters. So a refund can be asked for again without being made twice.
+**Every refund carries a receipt of its own** (`refundReceipt`, `src/domain/money/refunds.ts`). There is one per hold (`h-<hold>`), one per cancellation (`c-<visit>`), and one per no-show ruling on a visit (`nw-`, `nc-` or `nd-<visit>`, for waived, charged and refunded on dispute). Each is within Razorpay's 40 characters. So a refund can be asked for again without being made twice.
 
 **Razorpay's silence is not its refusal.** The client (`src/providers/payments/razorpay.ts`) throws `PaymentUnanswered` where it cannot say whether a refund was made:
 

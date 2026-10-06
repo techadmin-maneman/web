@@ -2,7 +2,7 @@
 // the providers and alerts. Made for each invocation from the validated
 // config, each provider when first used; tests pass their own.
 
-import { createAlertOnce, createResolveAlert, type AlertOnce, type ResolveAlert } from "./domain/alerts.ts";
+import { createAlertOnce, createResolveAlert, type AlertOnce, type ResolveAlert } from "./domain/ops/alerts.ts";
 import type { StaticConfig } from "./guard.ts";
 import { createAccessVerifier, type AccessVerifier } from "./providers/cloudflare-access.ts";
 import { createLogger, type Logger } from "./log.ts";
@@ -24,7 +24,7 @@ export interface Dependencies {
   readonly image: ImageProvider;
   readonly messaging: MessagingProvider;
   readonly alert: Alert;
-  /** An alert kept in D1 and told once, with its IDs and console link (src/domain/alerts.ts). */
+  /** An alert kept in D1 and told once, with its IDs and console link (src/domain/ops/alerts.ts). */
   readonly alertOnce: AlertOnce;
   /** Closes a kept alert, once what it was about is put right. */
   readonly resolveAlert: ResolveAlert;

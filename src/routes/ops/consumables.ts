@@ -26,8 +26,8 @@ import {
   servicesForUse,
   setExpectedUse,
   type Consumable,
-} from "../../domain/consumables.ts";
-import { closeStaleLowStock } from "../../domain/low-stock.ts";
+} from "../../domain/field/consumables.ts";
+import { closeStaleLowStock } from "../../domain/field/low-stock.ts";
 import { actorOf } from "../../http/audit.ts";
 import type { App, AppEnv } from "../../http/context.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";

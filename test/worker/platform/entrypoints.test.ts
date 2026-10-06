@@ -3,7 +3,7 @@
 import { createScheduledController } from "cloudflare:test";
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { lastCompletedAt } from "../../../src/domain/cron-runs.ts";
+import { lastCompletedAt } from "../../../src/domain/platform/cron-runs.ts";
 import worker from "../../../src/index.ts";
 import { fakeBatch } from "../batches.ts";
 import { captureLogs, countRowsRead, fakeQueue, markDatabase } from "../helpers.ts";
