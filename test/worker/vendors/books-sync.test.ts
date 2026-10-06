@@ -10,9 +10,9 @@ import {
   CALLS_PER_CUSTOMER,
   CALLS_PER_RECORD,
   syncBooks,
-  type BooksSyncOptions,
   type BooksSyncSummary,
 } from "../../../src/domain/books/books-sync.ts";
+import type { BooksSyncOptions } from "../../../src/domain/books/books-pass.ts";
 import { createCallBudget, type CallBudget } from "../../../src/lib/call-budget.ts";
 import { createLogger } from "../../../src/log.ts";
 import { type BooksInvoice, type BooksProvider } from "../../../src/providers/books/index.ts";

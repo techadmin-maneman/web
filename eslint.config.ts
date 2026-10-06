@@ -32,7 +32,6 @@ const PINNED: Readonly<Record<string, { readonly lines?: number; readonly fn?: n
   "src/domain/privacy/erasure.ts": { lines: 525, fn: 89 },
   "src/domain/booking/hold-slot.ts": { fn: 113 },
   "src/domain/messages/visit-messages.ts": { lines: 486 },
-  "src/domain/books/books-sync.ts": { lines: 482 },
   "src/policy/personal-data.ts": { lines: 444 },
   "src/domain/money/payment-links.ts": { lines: 451 },
   "src/domain/no-shows/no-shows.ts": { lines: 406 },
