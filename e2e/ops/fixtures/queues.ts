@@ -195,7 +195,7 @@ export const TASKS = {
         {
           id: "91000000-0000-4000-8000-000000000001",
           person: { id: "22000000-0000-4000-8000-000000000002", name: "Kunal Mehta" },
-          detail: "MM-STD-4417-K 2027-09-17",
+          detail: "MM-STD-4417-K 2027-10-17",
           since: "2027-09-16T18:30:00.000Z",
           due: "2027-09-18T18:30:00.000Z",
           owner: "priya@maneman.in",
@@ -359,6 +359,7 @@ export const NUMBER_CHANGES = {
       name: CLIENT.name,
       old_mobile: CLIENT.mobile,
       new_mobile: "+919810004421",
+      new_number_held_by: null,
       requested_at: "2027-09-21T06:00:00.000Z",
       due: "2027-09-23T06:00:00.000Z",
     },

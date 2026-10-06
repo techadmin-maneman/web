@@ -1,5 +1,6 @@
 // What each of the phone's stores holds (./db.ts): one record type per store, so a read says what it gets.
 
+import type { FitForm, HistoryForm } from "@maneman/web-kit/hair-profile";
 import type { Angle, CheckIn, Job, JobSummary, Me, Phase } from "../api.ts";
 import type { Queued } from "./replay.ts";
 
@@ -51,7 +52,15 @@ export type DeviceRecord =
   /** Only ever "granted": a refusal is asked again on the next start (./persist.ts). */
   | { readonly key: "keeping"; readonly keeping: "granted" }
   /** A switched-off technician's unsent work, kept for him; the seven days run from `at` (./set-aside.ts). */
-  | { readonly key: "set_aside"; readonly technician_id: string; readonly at: number };
+  | { readonly key: "set_aside"; readonly technician_id: string; readonly at: number }
+  /** A hair profile half filled in, as typed, so closing the app loses none of it; gone once sent (../steps/Profile.tsx). */
+  | {
+      readonly key: "profile_draft";
+      readonly job_id: string;
+      readonly page: "fit" | "history";
+      readonly fit: FitForm;
+      readonly history: HistoryForm;
+    };
 
 export interface Records {
   readonly device: DeviceRecord;

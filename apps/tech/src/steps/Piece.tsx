@@ -79,6 +79,8 @@ function Fitting({
       const answer = await api.piece(code, job.id);
       if (answer.ok) {
         setLooked({ state: "found", found: answer.body });
+        // Another client's piece is refused, and its base and lot are no part of this job.
+        if (!answer.body.belongs_to_this_job) return;
         if (!given(base)) setBase(answer.body.piece.base ?? "");
         if (!given(lot)) setLot(answer.body.piece.supplier_lot ?? "");
         return;

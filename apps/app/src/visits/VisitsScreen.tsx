@@ -140,10 +140,14 @@ function Record({ history }: { history: Visits["history"] }) {
   );
 }
 
-/** A past visit's line: what it was and who did it, or that it was cancelled. */
+/** A visit's line in the history: what it was and who did it, or that it was cancelled, missed or partly done. */
 function pastLine(visit: VisitSummary): string {
-  const after = visit.status === "cancelled" ? [visits.cancelled] : technicianOf(visit);
-  return [visitTitle(visit), ...after].join(" · ");
+  const after = (): string[] => {
+    if (visit.status === "cancelled") return [visits.cancelled];
+    if (visit.status === "terminated") return [visit.not_home ? visits.notHome : visits.partial];
+    return technicianOf(visit);
+  };
+  return [visitTitle(visit), ...after()].join(" · ");
 }
 
 function Fact({ label, value, note }: { label: string; value: string; note?: string }) {

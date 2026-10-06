@@ -49,6 +49,8 @@ interface VisitSummary {
   /** Its service's name in the console, where it names more than the kind: a first fit's hair system, say. */
   readonly service: string | null;
   readonly status: AppointmentStatus;
+  /** Closed because nobody was home: a no-show. */
+  readonly not_home: boolean;
   /** Null for a closed visit. */
   readonly stage: VisitStage | null;
   /** Paid for ahead, or covered by a credit: board C1's "Prepaid". */
@@ -80,6 +82,7 @@ interface AppointmentRow {
   begun: number;
   landed_outcome: VisitOutcome | null;
   client_note: string | null;
+  not_home: number;
 }
 
 /**
@@ -93,7 +96,8 @@ const PREPAID = `(EXISTS (SELECT 1 FROM payments p WHERE p.appointment_id = a.id
 const APPOINTMENT_COLUMNS = `a.id, a.type, a.tier, a.one_visit, a.status, a.window_start, a.window_end, a.service_city,
   a.service_pincode, (SELECT s.name FROM services s WHERE s.kind = a.type AND s.tier = a.tier) AS service_name,
   t.name AS technician_name, t.initials AS technician_initials, ${PREPAID} AS prepaid,
-  ${visitBegun("a")} AS begun, ${landedOutcome("a")} AS landed_outcome, a.client_note`;
+  ${visitBegun("a")} AS begun, ${landedOutcome("a")} AS landed_outcome, a.client_note,
+  EXISTS (SELECT 1 FROM no_show_cases n WHERE n.appointment_id = a.id AND n.closed_at IS NOT NULL) AS not_home`;
 const LIVE = `a.person_id = ?1 AND a.deleted_at IS NULL AND a.window_start IS NOT NULL AND a.window_end IS NOT NULL`;
 /** The statuses of a visit not yet closed. */
 const NOT_CLOSED: readonly AppointmentStatus[] = ["scheduled", "dispatched", "in_progress"];
@@ -153,6 +157,7 @@ async function visitSummaryOf(
     type: row.type,
     service: namesMoreThanItsKind(row.tier, row.one_visit) ? row.service_name : null,
     status: row.status,
+    not_home: row.not_home === 1,
     stage: stageOf(row, now),
     prepaid: row.prepaid === 1,
     technician:

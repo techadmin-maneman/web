@@ -3,7 +3,8 @@
 export const visits = {
   title: "Visits",
   upcoming: "Upcoming",
-  past: "Past",
+  // Done, missed and cancelled visits alike, so a cancelled one still to come does not read as past.
+  past: "History",
   none: "Nothing booked yet.",
   /** Board C1: a visit paid for ahead, or covered by a credit. */
   prepaid: "Prepaid",
@@ -14,6 +15,8 @@ export const visits = {
   // Offline, the visits are not kept on the phone.
   offline: "Your visits will load when you are back online.",
   cancelled: "Cancelled",
+  notHome: "Not home",
+  partial: "Partly done",
   /*
    * The client's own record, derived from their visits and
    * payments (src/domain/client-history.ts). No board draws it. Board B1 writes

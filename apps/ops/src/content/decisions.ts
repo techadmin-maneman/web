@@ -119,6 +119,13 @@ export const numberChanges = {
     requested: (date: string) => `Requested ${date}`,
     /** The rule the change follows, quoted in migrations/0008_profile.sql. */
     proven: "A code went to both numbers, and both were entered.",
+    /** Another record holding the new number: one that never became a client gives it up; a client's refuses. */
+    heldBy: (name: string, client: boolean) => {
+      const whose = name === "" ? "another record" : `${name}'s record`;
+      return client
+        ? `This number is on ${whose}, a client's. Confirming is refused while they hold it.`
+        : `This number is on ${whose}, which never became a client. Confirming takes the number from it.`;
+    },
     effect: "Confirming moves the client to the new number. They sign in with it from then on.",
     confirm: "Confirm the change",
     reject: "Reject",

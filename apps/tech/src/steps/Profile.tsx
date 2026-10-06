@@ -11,12 +11,14 @@
 // one tap, and a second tap on what is chosen takes it off.
 
 import { capsLook } from "@maneman/ui/Caps";
-import { useId, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import type { FitSpec, HairProfile, History, Job, ProfileRequest } from "../api.ts";
 import { job as jobCopy, profile as copy, steps as stepsCopy } from "../content.ts";
 import { todayInIndia } from "../lib/when.ts";
 import { Failed, Loading } from "../states/States.tsx";
+import { deviceRecord, put, remove } from "../store/db.ts";
 import type { Queued } from "../store/outbox.ts";
+import type { DeviceRecord } from "../store/records.ts";
 import {
   bodyOf,
   COLOURS,
@@ -41,6 +43,26 @@ import { useStep } from "./useStep.ts";
 import styles from "./steps.module.css";
 
 type Page = "fit" | "history";
+
+type Draft = Extract<DeviceRecord, { readonly key: "profile_draft" }>;
+
+/** The profile half filled in for this job, kept on the phone; null for none, and while it is still being read. */
+function useDraft(jobId: string): { readonly read: boolean; readonly draft: Draft | null } {
+  const [kept, setKept] = useState<{ read: boolean; draft: Draft | null }>({ read: false, draft: null });
+  useEffect(() => {
+    let current = true;
+    const settle = (draft: Draft | null) => {
+      if (current) setKept({ read: true, draft: draft?.job_id === jobId ? draft : null });
+    };
+    deviceRecord("profile_draft").then(settle, () => {
+      settle(null);
+    });
+    return () => {
+      current = false;
+    };
+  }, [jobId]);
+  return kept;
+}
 
 interface Option<T> {
   readonly id: T;
@@ -326,19 +348,28 @@ function HistoryFields({
 function ProfileForm({
   job,
   refused,
+  draft,
   onFinish,
   onBack,
 }: {
   job: Job;
   refused: Queued | null;
+  /** What was typed before the app closed; a refusal being put right starts from what was sent instead. */
+  draft: Draft | null;
   onFinish: (body: ProfileRequest) => void;
   onBack: () => void;
 }) {
   const start = startingPoint(job, refused);
+  const kept = refused === null ? draft : null;
   const thisYear = Number(todayInIndia().slice(0, 4));
-  const [page, setPage] = useState<Page>("fit");
-  const [fit, setFit] = useState<FitForm>(() => fitFormOf(start.fit));
-  const [history, setHistory] = useState<HistoryForm>(() => historyFormOf(start.history));
+  const [page, setPage] = useState<Page>(kept?.page ?? "fit");
+  const [fit, setFit] = useState<FitForm>(() => kept?.fit ?? fitFormOf(start.fit));
+  const [history, setHistory] = useState<HistoryForm>(() => kept?.history ?? historyFormOf(start.history));
+
+  // Kept as typed: a full phone loses the draft, never the step.
+  useEffect(() => {
+    put("device", { key: "profile_draft", job_id: job.id, page, fit, history }).catch(() => undefined);
+  }, [job.id, page, fit, history]);
 
   const spec = fitOf(fit);
   const said = historyOf(history, thisYear);
@@ -374,7 +405,9 @@ function ProfileForm({
         setPage("fit");
       }}
       onAction={() => {
-        if (spec !== null && said !== null) onFinish(bodyOf(spec, said, start.basedOn));
+        if (spec === null || said === null) return;
+        remove("device", "profile_draft").catch(() => undefined);
+        onFinish(bodyOf(spec, said, start.basedOn));
       }}
     >
       <HistoryFields form={history} thisYear={thisYear} onChange={setHistory} />
@@ -384,8 +417,9 @@ function ProfileForm({
 
 export function Profile({ id }: { id: string }) {
   const { loaded, retry, refused, finish, back } = useStep(id, "profile");
+  const kept = useDraft(id);
 
-  if (loaded.state === "loading") return <Loading />;
+  if (loaded.state === "loading" || !kept.read) return <Loading />;
   if (loaded.state === "failed") {
     return <Failed message={jobCopy.failed} retry={jobCopy.retry} onRetry={retry} requestId={loaded.requestId} />;
   }
@@ -394,6 +428,7 @@ export function Profile({ id }: { id: string }) {
       key={loaded.value.id}
       job={loaded.value}
       refused={refused}
+      draft={kept.draft}
       onFinish={(body) => void finish(body)}
       onBack={back}
     />
