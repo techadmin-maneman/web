@@ -141,7 +141,7 @@ export const profile = {
   },
   deletion: {
     label: "Delete your account",
-    body: "Photographs deleted within seven days. Invoices kept eight years, by law.",
+    body: "Deleted within 30 days of your request. Invoices kept eight years, by law.",
     request: "Request deletion",
     // The design draws the button only.
     confirm: "Ask us to delete your account? We’ll confirm on WhatsApp before anything is deleted.",
