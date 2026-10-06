@@ -18,14 +18,13 @@ import type { AuditEntry } from "../../domain/ops/audit.ts";
 import { waiveCheckIn } from "../../domain/visits/check-ins.ts";
 import { closeByHand } from "../../domain/visits/hand-close.ts";
 import {
-  cancelVisit,
   changeableVisitFor,
   changeTerms,
   opsCancelTerms,
   termsInForce,
   type ChangeTerms,
-  type OpsCancel,
 } from "../../domain/visits/visit-changes.ts";
+import { cancelVisit, type OpsCancel } from "../../domain/visits/visit-cancel.ts";
 import { actorOf } from "../../http/audit.ts";
 import type { App, AppEnv } from "../../http/context.ts";
 import { errorBody, errorResponse, refuse } from "../../http/errors.ts";
