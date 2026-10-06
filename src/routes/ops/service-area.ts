@@ -18,7 +18,7 @@ import { reachesCity } from "../../policy/access.ts";
  * digit first, so a spreadsheet opening the exported list never reads it as a
  * formula, then letters, digits, spaces and . , ' ( ) & -.
  */
-export const AREA_NAME = /^[\p{L}\p{N}][\p{L}\p{N} .,'()&-]{1,39}$/u;
+const AREA_NAME = /^[\p{L}\p{N}][\p{L}\p{N} .,'()&-]{1,39}$/u;
 
 const AreaSchema = z
   .object({

@@ -37,7 +37,6 @@ import {
 
 /** One number, or one per key: the two shapes a rule of numbers takes. */
 const NumberValue = z.union([z.number().int(), z.record(z.string(), z.number().int())]);
-
 /** One choice per key: the shape a rule of choices takes. */
 const ChoiceValue = z.record(z.string(), z.string());
 
