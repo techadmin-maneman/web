@@ -71,12 +71,12 @@ test("says what photos and referral cards hold, and the database, under The cons
     share_bytes: 4e9,
     ceiling_bytes: 20e9,
     database_bytes: 212_000_000,
-    database_limit_bytes: 500e6,
+    database_limit_bytes: 10e9,
   });
   await open(page, "/settings", { "GET /api/storage": storage });
   const theConsole = page.getByRole("region", { name: "The console", exact: true });
   await expect(theConsole.getByText("Photos and referral cards: 1.24 GB of 4 GB", { exact: true })).toBeVisible();
-  await expect(theConsole.getByText("Database: 212 MB of 500 MB", { exact: true })).toBeVisible();
+  await expect(theConsole.getByText("Database: 212 MB of 10 GB", { exact: true })).toBeVisible();
 
   await open(page, "/settings/blackouts", { "GET /api/storage": storage });
   await expect(page.getByRole("heading", { name: "Closed days" })).toBeVisible();

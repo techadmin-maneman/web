@@ -535,11 +535,11 @@ describe("CRON_JOBS", () => {
   it("tells ops once when the database reaches half of D1's limit, in the same hourly look", async () => {
     const deps = fakeDependencies();
     const meter = CRON_JOBS.filter((cronJob) => cronJob.name === "storage_meter");
-    const halfFull = { ...env, DB: holding(env.DB, 260e6) };
+    const halfFull = { ...env, DB: holding(env.DB, 5.2e9) };
     for (let run = 0; run < 2; run += 1) {
       await runCronJobs(meter, { env: halfFull, deps, config: LOCAL_CONFIG, log: createLogger() });
     }
-    expect(deps.alerts).toEqual([expect.stringContaining("The database holds 260 MB, 50% of the 500 MB")]);
+    expect(deps.alerts).toEqual([expect.stringContaining("The database holds 5.20 GB, 50% of the 10 GB")]);
   });
 
   it("reads the account's usage only where the analytics token is set", async () => {
