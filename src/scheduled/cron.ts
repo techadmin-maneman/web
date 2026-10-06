@@ -23,7 +23,7 @@ import { closeStaleLowStock } from "../domain/low-stock.ts";
 import { settleOwedRefunds } from "../domain/cancel-refunds.ts";
 import { finishRun, startRun, type RunStart } from "../domain/cron-runs.ts";
 import { alertAgedDeletions } from "../domain/deletion.ts";
-import { recordUtilisation } from "../domain/dispatch.ts";
+import { recordUtilisation } from "../domain/dispatch-utilisation.ts";
 import { deleteLeftFiles } from "../domain/erasure.ts";
 import { tellOfNewGrievances } from "../domain/grievances.ts";
 import { queueCreditReminders } from "../domain/credit-reminders.ts";

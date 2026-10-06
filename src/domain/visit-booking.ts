@@ -46,7 +46,7 @@ export interface VisitAsked {
   readonly kind: VisitType;
   /** The service within the kind; left out, the kind's standard one. A first fit names the hair system. */
   readonly tier: string | undefined;
-  /** The technician ops chose; left out, whoever is free, the client's regular technician first. */
+  /** The technician ops chose; left out, whoever is free. Never the one beside the client's visit before or after it. */
   readonly technicianId: string | undefined;
   readonly date: string;
   readonly window: BookingWindow;

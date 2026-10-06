@@ -37,7 +37,7 @@
   --lh-118: 1.18; /* what a referral earns, and the consent before a card is made (boards F1, F2) */
   /* Primary buttons and fields are tokens.css's --btn-lg (56px); icon buttons and links its --tap (44px). */
   --tap-row: 64px; /* rows, tabs, the code's boxes */
-  --sp-40: 40px; /* the regular technician's initials beside the windows (board C3) */
+  --sp-40: 40px; /* initials and square marks: the dispatch board's, the share sheet's */
   --sp-64: 64px;
   --switch-width: 46px; /* a consent's switch (board G1) */
 

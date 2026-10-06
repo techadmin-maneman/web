@@ -36,8 +36,8 @@ async function freeWindows(
   const lengths = new Set(bookings.flatMap((booking) => (booking.by === "slot" ? [booking.minutes] : [])));
   const free = new Map<string, Set<BookingWindow>>();
   for (const minutes of lengths) {
-    for (const day of await availability(db, null, { minutes }, first, BOOKING_DAYS, now)) {
-      const open = day.windows.filter((offer) => offer.with !== null).map((offer) => offer.window);
+    for (const day of await availability(db, { personId: null }, { minutes }, first, BOOKING_DAYS, now)) {
+      const open = day.windows.filter((offer) => offer.open).map((offer) => offer.window);
       free.set(`${String(minutes)}/${day.date}`, new Set(open));
     }
   }

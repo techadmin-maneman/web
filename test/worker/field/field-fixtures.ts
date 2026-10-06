@@ -31,7 +31,11 @@ export let deps: TestDependencies;
 export let messageQueue: ReturnType<typeof fakeQueue>;
 export let cookie: string;
 
-export const insertJob = (id: string, options: { start: string; technician?: string | null; type?: string }) =>
+/** A job, Rohit's unless `person` says whose: null for a job that fills a technician's day for nobody we name. */
+export const insertJob = (
+  id: string,
+  options: { start: string; technician?: string | null; type?: string; person?: string | null },
+) =>
   visit(id, { person: PERSON, ...options, technician: options.technician === undefined ? IMRAN : options.technician });
 
 /** The day every field test starts from: two technicians, a client, two jobs and a signed-in phone. */

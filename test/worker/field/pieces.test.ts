@@ -4,7 +4,7 @@
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { App } from "../../../src/http/context.ts";
-import { recordUtilisation } from "../../../src/domain/dispatch.ts";
+import { recordUtilisation } from "../../../src/domain/dispatch-utilisation.ts";
 import { failedPieceStatement, fittedPieceStatement, piecesOf, type FittedPiece } from "../../../src/domain/pieces.ts";
 import { openTechnicianSession } from "../../../src/domain/technicians.ts";
 import { appFor, fakeDependencies, markDatabase, NOW, request } from "../helpers.ts";
