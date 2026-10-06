@@ -31,7 +31,7 @@ A refused call gets `403 access_required`, and the reason is logged; the token n
 
 - **The stub** calls everyone `ops@localhost`. It is for local development only: the guard refuses it in staging as well as production, unlike the other stubs, because staging's hosts are behind Access and there is nothing to lose by checking.
 - **`ACCESS_TEAM_DOMAIN`** is `summer-math-0275.cloudflareaccess.com`, the team that already guards staging (`docs/verification.md`).
-- **`ACCESS_OPS_AUD`**, the ops application's audience tag, is required once the ops surface is switched on in that environment. It is optional until then, since the owner has not created the application yet (runbook, step 11).
+- **`ACCESS_OPS_AUD`**, the ops application's audience tag, is required once the ops surface is switched on in that environment. It is optional until then, since the owner has not created the application yet (provisioning, step 11).
 
 **Every ops call is audited before it runs.** `auditCall` (`src/domain/ops/audit.ts`) follows `requireAccess`. It writes an `ops.call` entry naming the identity, the method and the route pattern (never the path, which can hold a token). If the write fails, the call is refused with `503`. The same rule, write first or refuse, will apply to each audited action as later milestones add them.
 
@@ -64,7 +64,7 @@ Actions are listed in code (`AUDIT_ACTIONS`), not in a CHECK constraint, so that
 - **No personal details in the log.** A client appears only as an opaque ID. Erasing a client (ADR 0019) blanks their details elsewhere, and their entries here still record what was done without saying who they were. The log keeps staff e-mails, which is the point of it.
 - **The log grows by about one row per ops call.** At a few thousand calls a day this is inside D1's free limits: 100,000 writes a day, and 500 MB a database (5 GB is the account's total across its databases; ADR 0009). ADR 0039's budget accounts for it. The hourly `storage_meter` cron job reads the database's size and tells ops at 50%, 80% and 95% of 500 MB (`src/policy/database-size.ts`), and Settings shows it beside R2's: past the limit every write fails, this log's first.
 - **The log is kept.** Nothing deletes from it yet. The owner chose two years on 2 October 2026, for counsel to confirm; once confirmed, a migration lets the delete trigger pass rows older than that, and the sweeper deletes them in batches.
-- **Switching on the ops surface** now needs `ACCESS_OPS_AUD` as well as its DNS record, Access application and route (runbook, step 11).
+- **Switching on the ops surface** now needs `ACCESS_OPS_AUD` as well as its DNS record, Access application and route (provisioning, step 11).
 - **The contract** gains the `access_required` error code. `docs/openapi.json`, `docs/api.md` and the site's types are regenerated.
 - **Tests** (`test/worker/ops/access.test.ts`), using keys generated in the test, so no real token or key is involved:
   - a valid person's token and a valid service token are accepted;

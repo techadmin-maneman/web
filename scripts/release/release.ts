@@ -101,7 +101,7 @@ switch (command) {
     const version = ship(target, tag, values.message ?? `release ${tag}`);
     if (version === null) {
       console.log(
-        `::notice::${name}-${environment} is not deployed yet, so it is not released (docs/runbook.md, step 11)`,
+        `::notice::${name}-${environment} is not deployed yet, so it is not released (docs/provisioning.md, step 11)`,
       );
     }
     break;

@@ -130,7 +130,7 @@ for (const worker of WORKERS) {
     `reads ${worker.name}-${environment}`,
     result.ok
       ? "allowed"
-      : `denied (HTTP ${String(result.status)}): add it to the token's Specified Workers (runbook, step 6)`,
+      : `denied (HTTP ${String(result.status)}): add it to the token's Specified Workers (provisioning, step 6)`,
   );
   expectDenied(
     `reads ${worker.name}-${otherEnvironment}`,

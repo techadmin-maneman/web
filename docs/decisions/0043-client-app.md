@@ -56,7 +56,7 @@ mm-api therefore answers as the client surface, and a write's `Origin` matches t
 
 - **The first load is 70.9 KB of gzipped JavaScript,** under half the budget, before the screens after login are added.
 - **This step builds the shell and board A1 only.** The login (A1–A3), Home, the tabs, Profile (G1–G2), and the manifest and service worker follow below. Their fidelity pairs against the boards follow in P2-F1.5, below.
-- **A new Worker's first deploy is a bootstrap** (runbook, step 5): `mm-app-staging` was bootstrapped on 22 September 2026. `mm-app-production` waits for the go-ahead.
+- **A new Worker's first deploy is a bootstrap** (provisioning, step 5): `mm-app-staging` was bootstrapped on 22 September 2026. `mm-app-production` waits for the go-ahead.
 - **The static server can now keep the Host header** (`keepHost`). The public site's tests do not use it and are unchanged.
 
 ## The login and Home (P2-F1.2)

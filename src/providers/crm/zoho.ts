@@ -236,7 +236,7 @@ export function contactRecordFor(
   return record;
 }
 
-/** The Zoho Leads fields for this lead. See docs/runbook.md, step 8, "Zoho", for the custom fields. */
+/** The Zoho Leads fields for this lead. See docs/provisioning.md, step 8, "Zoho", for the custom fields. */
 export function recordFor(
   lead: CrmLead,
   status: LeadStatus | null,

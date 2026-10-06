@@ -39,7 +39,7 @@ const BEACON = "https://static.cloudflareinsights.com/";
 
 /**
  * The refusals left once Cloudflare's own two edge scripts are set aside. Neither can be switched off, nor kept to
- * one host, on the zone's free plan, so every policy refuses them and nothing of theirs runs (runbook, section 14):
+ * one host, on the zone's free plan, so every policy refuses them and nothing of theirs runs (provisioning, step 14):
  * the beacon wherever it is refused, and one inline refusal for each challenge script Cloudflare put in the page.
  * Any other refusal stands.
  */

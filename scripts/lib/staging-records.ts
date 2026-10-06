@@ -153,7 +153,7 @@ export function crmScopeMissing(json: unknown): boolean {
 /** How the CRM's answer to DELETE /crm/v8/{module}/{id} went. */
 export function crmDeleteOutcome(status: number, json: unknown): Outcome {
   if (crmScopeMissing(json)) {
-    return "refused: the scripts' CRM token may not delete it (runbook, step 8.7); delete it in the CRM";
+    return "refused: the scripts' CRM token may not delete it (provisioning, step 8.7); delete it in the CRM";
   }
   if (crmHoldsNoSuchRecord(status, json)) return "already gone";
   if (crmCode(json) === "SUCCESS") return "deleted";

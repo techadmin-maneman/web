@@ -33,4 +33,4 @@ The owner asked "to allow for discount codes to be generated and used before inv
 
 ## Production depends on
 
-Books set to give discounts at line-item level, before tax, and one discounted visit invoiced on staging: the line-discount call has not been tried on the org (`docs/open-points.md`, item 181; runbook 11b, point 9).
+Books set to give discounts at line-item level, before tax, and one discounted visit invoiced on staging: the line-discount call has not been tried on the org (`docs/open-points.md`, item 181; provisioning, step 11b, point 9).

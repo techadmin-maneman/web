@@ -88,7 +88,7 @@ Nothing in this change writes to Zoho, creates a Zoho field or adds a lead statu
 
 **The Contact FSM has already made.** It exists, it is linked from a column we already hold, and it is where the standard reports look. Three things have to happen before anything can be written to it:
 
-1. **A CRM refresh token with `ZohoCRM.modules.contacts.ALL`.** Only the owner can mint it, as a Self Client in `https://api-console.zoho.in` (runbook, step 8). `ZohoCRM.settings.fields.ALL` is already held, so `scripts/ops/setup-crm.ts` can create the custom fields on Contacts as soon as the module can be written to. **Erasure must be extended in the same change**, never after it: a Contact we can write to is a Contact we must be able to blank, and `src/routes/erasure.ts` queues a blanking that today reaches Leads only.
+1. **A CRM refresh token with `ZohoCRM.modules.contacts.ALL`.** Only the owner can mint it, as a Self Client in `https://api-console.zoho.in` (provisioning, step 8). `ZohoCRM.settings.fields.ALL` is already held, so `scripts/ops/setup-crm.ts` can create the custom fields on Contacts as soon as the module can be written to. **Erasure must be extended in the same change**, never after it: a Contact we can write to is a Contact we must be able to blank, and `src/routes/erasure.ts` queues a blanking that today reaches Leads only.
 2. **The owner's confirmation** that FSM's auto-created Contact is the customer record they mean, and what ops should then do with the Lead — leave it, or mark it so nobody works a client as a fresh enquiry.
 3. **Counsel's ruling on the lawful basis**, below.
 

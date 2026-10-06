@@ -37,7 +37,7 @@ export function scriptRefreshToken(
   return {
     problem:
       `${names.scripts} is not set. Scripts mint their Zoho tokens from a refresh token of their own, so they never ` +
-      `spend the Worker's (docs/runbook.md, step 8.7, "A refresh token for scripts"). Add it to the --env-file, or pass ` +
+      `spend the Worker's (docs/provisioning.md, step 8.7, "A refresh token for scripts"). Add it to the --env-file, or pass ` +
       `${USE_WORKER_TOKEN} to use ${names.worker} on purpose.`,
   };
 }

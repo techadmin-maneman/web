@@ -42,7 +42,7 @@ async function lookupFailed(
     key: GOOGLE_REFUSED,
     message:
       `Google refused the address search (${failure.detail}). Clients can still type an address, but none gets ` +
-      "a pin. Check the key, its APIs and its quotas (runbook, section 13).",
+      "a pin. Check the key, its APIs and its quotas (provisioning, step 13).",
   });
 }
 

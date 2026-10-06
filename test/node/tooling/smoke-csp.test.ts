@@ -40,7 +40,7 @@ describe("where the Access token goes", () => {
   });
 });
 
-// The free plan can neither switch Cloudflare's edge scripts off nor keep the beacon to the site (runbook, section 14).
+// The free plan can neither switch Cloudflare's edge scripts off nor keep the beacon to the site (provisioning, step 14).
 describe("Cloudflare's own edge scripts", () => {
   const beacon = "script-src-elem https://static.cloudflareinsights.com/beacon.min.js/v31edd6df";
 

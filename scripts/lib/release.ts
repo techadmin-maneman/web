@@ -170,7 +170,7 @@ export function deploySplit(target: Target, splits: readonly string[], message: 
 /**
  * Uploads a version and sends it all traffic, returning its ID. An app whose
  * surface is not switched on there is left alone: null. Its first deploy is a
- * bootstrap (docs/runbook.md, step 11).
+ * bootstrap (docs/provisioning.md, step 11).
  */
 export function ship(target: Target, tag: string, message: string): string | null {
   if (currentVersion(target) === "") return null;
