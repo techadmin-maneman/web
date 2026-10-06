@@ -43,6 +43,7 @@ import { registerOpsClients } from "./routes/ops/clients.ts";
 import { registerOpsConsumables } from "./routes/ops/consumables.ts";
 import { registerOpsCredits } from "./routes/ops/credits.ts";
 import { registerOpsDispatch } from "./routes/ops/dispatch.ts";
+import { registerOpsDispatchMoves } from "./routes/ops/dispatch-moves.ts";
 import { registerOpsDisputes } from "./routes/ops/disputes.ts";
 import { registerOpsErasure } from "./routes/ops/erasure.ts";
 import { registerOpsField } from "./routes/ops/field.ts";
@@ -167,6 +168,7 @@ const SURFACE_ROUTES: Readonly<Record<Surface, readonly ((app: App) => void)[]>>
     registerOpsGrievances,
     registerOpsWaitlist,
     registerOpsDispatch,
+    registerOpsDispatchMoves,
     registerOpsNoShows,
     registerOpsClientPieces,
     registerOpsField,
