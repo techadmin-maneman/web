@@ -34,6 +34,7 @@ export interface LiveJob {
   /** 1 while a move the client has paid for, or booked free, waits to be booked onto it. */
   client_moving: number;
 }
+
 /**
  * Whether a move the client has paid for, or booked free, waits to be booked onto visit `a`. It is booked onto the visit
  * as it was when the client chose the time, so ops' move waits for it.
@@ -53,6 +54,7 @@ export function liveJob(db: D1Database, appointmentId: string): Promise<LiveJob 
     .bind(appointmentId)
     .first<LiveJob>();
 }
+
 /**
  * A job the technician has begun, by his phone's steps or its status, stays where he is working it: moved, his phone
  * would carry on with a visit now on another day or another technician's.
@@ -91,16 +93,17 @@ export function targetOf({
   const time = keepsTime ? "ahead" : targetTime(place, { date: today.date, firstUnitAhead: earliest });
   return { technicianId, date, window, keepsTime, times, earliest, time };
 }
+
 /** Whether the move puts the job onto a day ops blacked out, from another day. */
 export async function movesOntoBlackout(db: D1Database, job: LiveJob, date: string): Promise<boolean> {
   if (date === indiaDate(new Date(job.window_start))) return false;
   return (await loadBlackouts(db, date, date)).has(date);
 }
+
 /** Where the job already is: no move at all. */
 export const isWhereItIs = (job: LiveJob, target: Target): boolean =>
   target.keepsTime && target.technicianId === job.technician_id;
 /** Where a move puts a job, and whether it keeps the time it has. */
-
 interface Target {
   readonly technicianId: string;
   readonly date: string;
@@ -113,6 +116,7 @@ interface Target {
   readonly earliest: number;
   readonly time: TargetTime;
 }
+
 type Landing =
   { readonly kind: "lands"; readonly start: number } | { readonly kind: "refused"; readonly reason: MoveRefusal };
 /** A job as a move places it: how long it is, and when it starts now. */
@@ -120,6 +124,7 @@ interface Placing {
   readonly minutes: number;
   readonly start: Date;
 }
+
 /** The half-slot a job would start in on the target's day, or null where it has no room. */
 function startOn(day: Day, job: Placing, target: Target): number | null {
   const units = unitsFor(job.minutes);
@@ -127,6 +132,7 @@ function startOn(day: Day, job: Placing, target: Target): number | null {
   const start = unitAt(indiaTime(job.start), target.times);
   return fitsAt(day, start, units) ? start : null;
 }
+
 /** Where the job lands on the target's day, or why it cannot. */
 export function landingOf({
   day,
@@ -147,6 +153,7 @@ export function landingOf({
   if (refusal !== null) return { kind: "refused", reason: refusal };
   return start === null ? { kind: "refused", reason: "does_not_fit" } : { kind: "lands", start };
 }
+
 /** When the job starts and ends where it lands: its own times where it keeps them, else from its half-slot there. */
 export function timesAt(
   target: Target,

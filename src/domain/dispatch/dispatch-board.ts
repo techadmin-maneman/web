@@ -24,7 +24,6 @@ import { boardCities } from "./cities.ts";
 import { leaveBetween } from "./leave.ts";
 
 /** Seven days, as the board shows them. */
-
 export const BOARD_DAYS = 7;
 /**
  * The client of a visit, as ops need them to reach them (the job card's WhatsApp
@@ -39,6 +38,7 @@ interface BoardClient {
   /** Who invited him, by name; null when he came on his own. */
   readonly referred_by: string | null;
 }
+
 /** What every job on the board carries, on a technician's day or in the tray. */
 interface Visit {
   readonly appointment_id: string;
@@ -57,6 +57,7 @@ interface Visit {
   /** The client's note to the technician, as they last wrote it; null for none. */
   readonly client_note: string | null;
 }
+
 interface Block extends Visit {
   readonly starts_at: string;
   readonly window: BookingWindow;
@@ -68,10 +69,12 @@ interface Block extends Visit {
   /** How far the technician has got, from his phone's steps; null before he arrives. A visit begun is not moved. */
   readonly begun: Begun | null;
 }
+
 interface BoardDay {
   readonly date: string;
   readonly blocks: Block[];
 }
+
 interface BoardRow {
   readonly technician_id: string;
   readonly name: string;
@@ -79,6 +82,7 @@ interface BoardRow {
   readonly zone: string | null;
   readonly days: BoardDay[];
 }
+
 interface UnassignedJob extends Visit {
   readonly starts_at: string;
   readonly asked_window: BookingWindow | null;
@@ -87,6 +91,7 @@ interface UnassignedJob extends Visit {
   /** The technician it is still on, who was switched off and has no row; null for a job nobody holds. */
   readonly was_technician: { readonly id: string; readonly name: string } | null;
 }
+
 interface Board {
   /** The board's version when this was read: it goes up whenever something the board draws changes. */
   readonly version: number;
@@ -106,6 +111,7 @@ interface Board {
    */
   readonly leave: { technician_id: string; from: string; to: string; note: string | null }[];
 }
+
 /**
  * The latest word on WhatsApp about his visits from the client of appointment `a`: 1, 0, or NULL where he never
  * gave one. The messaging consumer reads it the same way before it sends (src/domain/messages/visit-messages.ts).
@@ -117,7 +123,6 @@ export const LATEST_VISITS_CONSENT = latestConsentSql("a.person_id", "whatsapp_v
  * move changed the time and the visit is still at the time it moved to. The Tasks board reads the same
  * (src/domain/ops/tasks.ts).
  */
-
 export const UNTOLD_MOVE = `m.fsm_write_state = 'written' AND m.was_start <> m.now_start AND m.told_at IS NULL
   AND m.now_start = a.window_start AND (m.message_id IS NULL OR EXISTS (
     SELECT 1 FROM outbound_messages o WHERE o.id = m.message_id AND o.state IN ('skipped', 'failed')))
@@ -130,7 +135,6 @@ export const UNTOLD_MOVE = `m.fsm_write_state = 'written' AND m.was_start <> m.n
  * he had not agreed to WhatsApp about his visits, or the one queued was skipped as he had taken that back; any other
  * message skipped or failed is not_sent. The Tasks board reads the same (src/domain/ops/tasks.ts).
  */
-
 export const UNTOLD_REASON = `CASE WHEN m.message_id IS NULL OR EXISTS (
     SELECT 1 FROM outbound_messages o WHERE o.id = m.message_id AND o.last_error = '${NO_VISITS_CONSENT}')
   THEN 'no_consent' ELSE 'not_sent' END`;
@@ -186,18 +190,17 @@ const EVERYWHERE: PlacesReached = { kind: "everywhere" };
  * A number that triggers raise whenever a visit, move, leave, technician or the day's slot times change, so the open
  * board reads itself again only when it has moved.
  */
-
 export async function boardVersion(db: D1Database): Promise<number> {
   const row = await db.prepare("SELECT version FROM board_version WHERE id = 1").first<{ version: number }>();
   return row?.version ?? 0;
 }
+
 /**
  * The board for seven days from `from`, optionally narrowed to one city. `noticeHours` is the notice in force, which a
  * visit no hold sold is changed under (src/domain/visits/visit-changes.ts).
  *
  * `reach` keeps it to the caller's cities: their visits, and the technicians there or holding one of those visits.
  */
-
 export async function dispatchBoard(
   db: D1Database,
   options: { from: string; city: string | null; noticeHours?: number; reach?: PlacesReached },
@@ -277,6 +280,7 @@ export async function dispatchBoard(
     leave,
   };
 }
+
 interface BoardJobRow {
   id: string;
   client_note: string | null;
@@ -313,6 +317,7 @@ interface BoardJobRow {
   started: number;
   closed: number;
 }
+
 function visitOf(job: BoardJobRow): Visit {
   return {
     appointment_id: job.id,
@@ -332,6 +337,7 @@ function visitOf(job: BoardJobRow): Visit {
     client_note: job.client_erased_at === null ? job.client_note : null,
   };
 }
+
 /** The client, unless there is none on our records or he has been erased: nothing is left to reach him by. */
 function clientOf(job: BoardJobRow): BoardClient | null {
   if (job.person_id === null || job.client_name === null || job.client_mobile === null) return null;
@@ -344,6 +350,7 @@ function clientOf(job: BoardJobRow): BoardClient | null {
     referred_by: job.referred_by,
   };
 }
+
 function blockOf(job: BoardJobRow, untold: Block["untold"], noticeInForce: number, schedule: SlotSchedule): Block {
   const start = new Date(job.window_start);
   return {
@@ -356,6 +363,7 @@ function blockOf(job: BoardJobRow, untold: Block["untold"], noticeInForce: numbe
     begun: begunFrom({ checkIn: job.checked_in === 1, start: job.started === 1, outcome: job.closed === 1 }),
   };
 }
+
 /**
  * A job no technician on the board holds: none was given it, or the one it is on was switched off with visits still
  * on him. Either way it waits in the tray.
@@ -366,6 +374,7 @@ function wasTechnicianOf(job: BoardJobRow): UnassignedJob["was_technician"] {
   if (job.technician_id === null || job.technician_name === null) return null;
   return { id: job.technician_id, name: job.technician_name };
 }
+
 function unassignedOf(job: BoardJobRow, schedule: SlotSchedule): UnassignedJob {
   const start = new Date(job.window_start);
   return {
@@ -380,6 +389,7 @@ function unassignedOf(job: BoardJobRow, schedule: SlotSchedule): UnassignedJob {
     was_technician: wasTechnicianOf(job),
   };
 }
+
 /** "Rohit M.", as the board writes a client. */
 function shortName(name: string | null): string | null {
   if (name === null) return null;
@@ -387,6 +397,7 @@ function shortName(name: string | null): string | null {
   const last = rest[rest.length - 1];
   return last === undefined ? (first ?? null) : `${first ?? ""} ${last.slice(0, 1)}.`;
 }
+
 /** Whether a technician is away on a date, by the leave the board holds; both ends are inclusive. */
 const isAway = (leave: Board["leave"], technicianId: string, date: string): boolean =>
   leave.some((period) => period.technician_id === technicianId && period.from <= date && date <= period.to);
