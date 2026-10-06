@@ -5,21 +5,9 @@
 import type { Page } from "@playwright/test";
 import { expect, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
-import {
-  atTheDoor,
-  deviceRecordOnPhone,
-  fakeTech,
-  heldOnPhone,
-  JOB_ID,
-  ONE_VISIT_CHECKLIST,
-  pageScrolls,
-  queuedOnPhone,
-  ROHITS_PIECE,
-  ROHITS_PROFILE,
-  type HairProfile,
-  type Fake,
-  type Step,
-} from "./fixtures.ts";
+import { JOB_ID, ONE_VISIT_CHECKLIST, ROHITS_PIECE, ROHITS_PROFILE, type HairProfile, type Step } from "./fixtures.ts";
+import { fakeTech, type Fake } from "./fake-tech.ts";
+import { atTheDoor, deviceRecordOnPhone, heldOnPhone, pageScrolls, queuedOnPhone } from "./on-phone.ts";
 
 const ago = (minutes: number) => new Date(Date.now() - minutes * 60_000).toISOString();
 

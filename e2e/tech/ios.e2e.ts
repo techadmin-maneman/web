@@ -15,7 +15,9 @@
 // camera's fake device is Chromium's alone.
 
 import { expect, test } from "../support.ts";
-import { fakeTech, JOB_ID, ONE_VISIT_CHECKLIST, pageScrolls } from "./fixtures.ts";
+import { JOB_ID, ONE_VISIT_CHECKLIST } from "./fixtures.ts";
+import { fakeTech } from "./fake-tech.ts";
+import { pageScrolls } from "./on-phone.ts";
 
 /** A 401 with no session: what an installed iOS app's own cookie jar produces on its first call. */
 const noSession = { status: 401, json: { error: { code: "session_required", request_id: "test" } } };

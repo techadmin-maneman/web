@@ -5,7 +5,8 @@
 import { LOCAL_LOGIN_CODE } from "../../scripts/lib/local-stack.ts";
 import { expect, outsideContract, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
-import { fakeTech, heldOnPhone, storeOnPhone } from "./fixtures.ts";
+import { fakeTech } from "./fake-tech.ts";
+import { heldOnPhone, storeOnPhone } from "./on-phone.ts";
 
 test("opens on the sign-in, as the Prototype draws it", async ({ page }) => {
   await page.goto("/");
