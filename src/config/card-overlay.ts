@@ -1,4 +1,4 @@
-// Written by scripts/build/make-house-card.ts: the referral card's gilt rule and lockup on a clear ground, 1200 x 630,
+// Written by scripts/build/make-house-card.ts: board A1's gilt rule and lockup on a clear ground, 1200 x 630,
 // the overlay the API draws over a client's two photographs (src/providers/cards.ts). Never edited by hand.
 
 export const CARD_OVERLAY_PNG =
