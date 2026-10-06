@@ -25,8 +25,8 @@ import { errorResponse, refuse } from "../../http/errors.ts";
 import { json } from "../../http/openapi.ts";
 import { anyClientInReach } from "../../http/staff-access.ts";
 import { EntrySchema } from "../client/payments.ts";
-import { HISTORY_FIGURES, VisitSummarySchema } from "../client/visits.ts";
 import { clientAddressOf, ClientAddressSchema, clientId } from "../schemas/clients.ts";
+import { HISTORY_FIGURES, VisitSummarySchema } from "../schemas/visits.ts";
 import { ClientInviteSchema } from "./client-referral.ts";
 
 const ClientVisitSchema = VisitSummarySchema.extend({
