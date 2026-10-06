@@ -22,7 +22,7 @@ import { z } from "zod";
 import type { RazorpaySettings } from "../../config/settings.ts";
 import { saltedHash, secretsMatch } from "../../lib/hash.ts";
 import type { Logger } from "../../log.ts";
-import type { PaymentsProvider } from "./index.ts";
+import type { PaymentLinkRequest, PaymentsProvider } from "./index.ts";
 import { PaymentUnanswered, ProviderError } from "../provider-error.ts";
 import { parseAnswer, vendorAnswerOf } from "../vendor-answer.ts";
 import { vendorFetch, VendorUnreachable } from "../vendor-fetch.ts";
@@ -121,6 +121,23 @@ export class RazorpayError extends ProviderError {
   }
 }
 
+/** What Razorpay is sent for a payment link: the amount in full, our reference, and the page it shows. */
+function linkBody(link: PaymentLinkRequest) {
+  return {
+    amount: link.amount,
+    currency: "INR",
+    accept_partial: false,
+    reference_id: link.reference,
+    description: link.description,
+    customer: link.customer,
+    notify: { sms: link.notify, email: false },
+    reminder_enable: link.notify,
+    notes: link.notes,
+    expire_by: Math.floor(link.closesAt.getTime() / 1000),
+    options: LINK_PAGE,
+  };
+}
+
 export function createRazorpay(
   settings: RazorpaySettings,
   deps: { fetch: typeof fetch; log: Logger },
@@ -171,24 +188,7 @@ export function createRazorpay(
       }
     },
     createPaymentLink: async (link) => {
-      const made = await call(
-        "create_payment_link",
-        "/payment_links",
-        {
-          amount: link.amount,
-          currency: "INR",
-          accept_partial: false,
-          reference_id: link.reference,
-          description: link.description,
-          customer: link.customer,
-          notify: { sms: link.notify, email: false },
-          reminder_enable: link.notify,
-          notes: link.notes,
-          expire_by: Math.floor(link.closesAt.getTime() / 1000),
-          options: LINK_PAGE,
-        },
-        LinkMade,
-      );
+      const made = await call("create_payment_link", "/payment_links", linkBody(link), LinkMade);
       return { id: made.id, shortUrl: made.short_url };
     },
     findPaymentLink: async (reference) => {
