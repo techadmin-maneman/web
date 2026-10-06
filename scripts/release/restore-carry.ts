@@ -1,5 +1,5 @@
 // Writes the carry-back file of a whole-database restore from the export taken just before it
-// (docs/runbook.md, "Restoring the whole database"):
+// (docs/runbook/restoring-d1.md, "Restoring the whole database"):
 //
 //   node scripts/release/restore-carry.ts private/restore/now.sql private/restore/carry.sql --leave photos --leave photo_sets
 //

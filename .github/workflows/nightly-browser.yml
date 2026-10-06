@@ -1,6 +1,6 @@
 # Every night, the browser tests on main, with a flaky test failing the run. A pull request's run retries a failed
 # test once and passes when the retry does, so a test that fails some of the time never shows there; here it fails
-# the run, and GitHub tells whoever watches the repository (docs/runbook.md, "Flaky browser tests").
+# the run, and GitHub tells whoever watches the repository (docs/runbook/ci-runner.md, "Flaky browser tests").
 name: nightly browser tests
 
 on:

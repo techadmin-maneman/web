@@ -1,5 +1,5 @@
-// Sets up a Zoho CRM org the way the lead sync expects (docs/runbook.md,
-// "Setting up Zoho", step 8): the custom fields on Leads, and the pick-list
+// Sets up a Zoho CRM org the way the lead sync expects (docs/provisioning.md,
+// step 8, "Zoho"): the custom fields on Leads, and the pick-list
 // values the sync writes into Lead_Status and Lead_Source. It creates only what
 // is missing, so it is safe to run again.
 //

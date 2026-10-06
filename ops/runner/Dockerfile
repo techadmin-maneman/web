@@ -1,5 +1,5 @@
 # The CI runner the owner's machine ran until 2 October 2026, kept for a private repository only: on a public one a
-# fork's pull request would run its own code on it (docs/runbook.md, "The CI runner"; ADR 0006, "The runner"). Ubuntu, as GitHub's own runners are; GitHub's runner agent and
+# fork's pull request would run its own code on it (docs/runbook/ci-runner.md, "The CI runner"; ADR 0006, "The runner"). Ubuntu, as GitHub's own runners are; GitHub's runner agent and
 # actionlint, pinned and checked. Jobs run as an unprivileged user with sudo,
 # which Playwright needs for Chromium's system libraries. Nothing from the
 # machine is mounted: a job sees only what it checks out.

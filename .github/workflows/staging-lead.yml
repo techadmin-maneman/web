@@ -1,7 +1,7 @@
 # Books one test consultation on staging through the site's form, POST /api/consultation,
 # to check that the booking path reaches Zoho: after a Zoho change, a token rotation,
 # or a deploy. Then look for its lead in the CRM and its visit in FSM, both in the
-# owner's real org (docs/runbook.md, "Checking the booking path on staging").
+# owner's real org (docs/runbook/zoho.md, "Checking the booking path on staging").
 name: staging-lead
 
 on:

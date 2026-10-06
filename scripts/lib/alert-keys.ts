@@ -1,5 +1,5 @@
 // The alert keys the code raises (src/domain/ops/alerts.ts), found in its source, and the keys the runbook's table of
-// alerts names (docs/runbook.md, "What each alert means"). Each is a key's fixed start: "cron_job" for
+// alerts names (docs/runbook/alerts.md, "What each alert means"). Each is a key's fixed start: "cron_job" for
 // `cron_job:${job}`. test/node/tooling/runbook-alerts.test.ts holds the two to each other.
 
 import { readdirSync, readFileSync, statSync } from "node:fs";
@@ -42,9 +42,9 @@ export function raisedKeys(srcDir = "src"): string[] {
 
 /** Every key the runbook's table of alerts names, by its fixed start. */
 export function documentedKeys(runbook: string): string[] {
-  const start = runbook.indexOf("### What each alert means");
-  const end = runbook.indexOf("\n## ", start);
-  const table = runbook.slice(start, end);
+  const start = runbook.indexOf("## What each alert means");
+  const next = runbook.indexOf("\n## ", start + 1);
+  const table = runbook.slice(start, next === -1 ? undefined : next);
   const keys = new Set<string>();
   for (const row of table.split("\n").filter((line) => line.startsWith("| "))) {
     const cell = row.split("|")[2] ?? "";
