@@ -12,7 +12,7 @@
 
 import { PARTIAL_REASONS } from "../../config/job-sheet.ts";
 import { addDays, indiaDate, indiaInstant } from "../../lib/india-time.ts";
-import { UNTOLD_MOVE, UNTOLD_REASON } from "../dispatch/dispatch.ts";
+import { UNTOLD_MOVE, UNTOLD_REASON } from "../dispatch/dispatch-board.ts";
 import { LEAVE_ON_THE_DAY } from "../dispatch/leave.ts";
 import { citiesOf, type PlacedId, type PlacedRecord } from "../clients/places.ts";
 import { loadSlotSchedule, type SlotSchedule } from "../booking/slot-times.ts";

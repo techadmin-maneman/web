@@ -60,7 +60,7 @@ this map, or when the map names something that no longer exists.
 
 ### Dispatch
 
-- **Database work** (`src/domain/dispatch/`): `dispatch`, `dispatch-utilisation`, `technicians`, `technician-roster`,
+- **Database work** (`src/domain/dispatch/`): `dispatch`, `dispatch-board`, `dispatch-landing`, `dispatch-utilisation`, `technicians`, `technician-roster`,
   `technician-work`, `leave`, `blackouts`, `cities`
 - **Rules** (`src/policy/`): `dispatch`, `technician-work`
 - **Routes** (`src/routes/`): `ops/dispatch`, `ops/blackouts`, `ops/technicians`
