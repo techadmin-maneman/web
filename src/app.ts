@@ -23,6 +23,7 @@ import { registerClientAddress } from "./routes/client/address.ts";
 import { registerClientConsents } from "./routes/client/consents.ts";
 import { registerClientNumberChange } from "./routes/client/number-change.ts";
 import { registerClientSessions } from "./routes/client/sessions.ts";
+import { registerClientAvailability } from "./routes/client/availability.ts";
 import { registerClientBooking } from "./routes/client/booking.ts";
 import { registerClientChanges } from "./routes/client/changes.ts";
 import { registerClientNotes } from "./routes/client/notes.ts";
@@ -139,6 +140,7 @@ const SURFACE_ROUTES: Readonly<Record<Surface, readonly ((app: App) => void)[]>>
     // After the visits: they put the session on every /api/visits/* route.
     registerClientDisputes,
     registerClientPayments,
+    registerClientAvailability,
     registerClientBooking,
     // After the booking: it puts the session and the self-serve switch on every /api/holds/* route.
     registerClientDiscountCodes,

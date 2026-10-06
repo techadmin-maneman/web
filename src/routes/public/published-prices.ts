@@ -11,12 +11,12 @@
 // nothing is booked as one.
 
 import { createRoute, z } from "@hono/zod-openapi";
-import type { App } from "../../http/context.ts";
 import { STANDARD_TIER, VISIT_TYPES, type VisitType } from "../../config/visit-types.ts";
 import { offeredServices } from "../../domain/booking/services.ts";
+import type { App } from "../../http/context.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
 import { indiaDate } from "../../lib/india-time.ts";
-import { PriceSchema } from "../client/booking.ts";
+import { PriceSchema } from "../schemas/booking.ts";
 
 const PublishedPricesSchema = z
   .object({
