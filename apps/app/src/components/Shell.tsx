@@ -29,7 +29,7 @@ interface Props {
   readonly header: Header;
   /** The tab the page sits under, marked in the bar; the profile sits under none. */
   readonly tab: Tab | null;
-  /** Kept between the page and the tabs, as board C1's "Book your next visit". */
+  /** Kept between the page and the tabs, as Visits' "Book your next visit". */
   readonly footer?: ReactNode;
   /** The page draws the Home the phone kept, so offline it says it shows the last update. */
   readonly kept?: boolean;

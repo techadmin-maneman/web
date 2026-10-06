@@ -66,7 +66,7 @@
   font-size: var(--fs-22);
 }
 
-/* A tab's title, as boards C1, D1 and E1 put it in the header. */
+/* A tab's title, as the design put it in the header. */
 .tabTitle {
   font-size: var(--fs-24);
 }
@@ -101,7 +101,7 @@
   scroll-padding-block: var(--sp-8);
 }
 
-/* Board C1's bar above the tabs. */
+/* Visits' bar above the tabs. */
 .footer {
   flex-shrink: 0;
   padding: var(--sp-16) var(--sp-20);

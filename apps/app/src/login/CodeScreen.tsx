@@ -1,4 +1,4 @@
-// A2: the code (design/phase2/Client App, board A2).
+// The code screen (design/phase2/Client App).
 
 import { IconButton } from "@maneman/ui/IconButton";
 import { apiNow } from "../lib/clock.ts";
@@ -41,7 +41,7 @@ interface Props {
   readonly onHelp: () => void;
 }
 
-/** What went wrong with the last code, in board A2's words; nothing while nothing has. */
+/** What went wrong with the last code, in the code screen's words; nothing while nothing has. */
 function problemLine(problem: CodeProblem | null): string | null {
   if (problem === null) return null;
   if (problem.kind === "mismatch") return login.code.mismatch(problem.left);

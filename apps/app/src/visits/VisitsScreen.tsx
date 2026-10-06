@@ -1,5 +1,5 @@
-// Visits (board C1): what is coming on ink, what has been done or cancelled
-// below, each opening its own page (C9 for one done). A booking's
+// Visits: what is coming on ink, what has been done or cancelled
+// below, each opening its own page. A booking's
 // consultation, not yet a visit, shows as the one upcoming, and a visit being
 // booked shows in its day's place, in Home's words. A visit not yet closed
 // stays under upcoming, saying where it stands, and "Book your next

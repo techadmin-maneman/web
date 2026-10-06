@@ -1,4 +1,4 @@
-// Board B3, step 4: the piece. A replacement's and a first fit's step only —
+// Step 4: the piece. A replacement's and a first fit's step only —
 // the API leaves it out of the other types' `steps`, so this screen is never
 // reached for them.
 //
@@ -11,9 +11,8 @@
 // says first what the client paid for, and warns when the hair profile names
 // another product.
 //
-// The board draws "Scan the piece". The owner ruled on 24 September 2026 that
-// labels carry neither a barcode nor a QR code (docs/open-points.md, "Piece
-// labels"), so the label is typed, or picked from the client's pieces the card
+// The design draws "Scan the piece", but labels carry neither a barcode nor a QR
+// code, so the label is typed, or picked from the client's pieces the card
 // carries, and checked against the API's format before Next will take it. A
 // check against the mirror needs signal; a label the mirror does not know, or
 // one checked with none, still goes on the job as the technician entered it.

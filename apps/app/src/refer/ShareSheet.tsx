@@ -1,7 +1,7 @@
-// Sharing an invite (boards F2 to F4): which card, the consent its own photographs need, and then the preview
-// of the invite. F2 and F4 fill the screen, as drawn; F3 is a sheet over the dark ground.
+// Sharing an invite: which card, the consent its own photographs need, and then the preview
+// of the invite. The card choice and the preview fill the screen, as drawn; the consent is a sheet over the dark ground.
 //
-// Choosing their own card without having agreed to the cards' lines opens those lines (F3) instead of choosing
+// Choosing their own card without having agreed to the cards' lines opens those lines instead of choosing
 // it. What the sheet does is ./share-flow.ts, and how each step draws it ./ShareSteps.tsx.
 //
 // Where the phone can share files, WhatsApp and Other apps send the card itself, as a photograph captioned with the

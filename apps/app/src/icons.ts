@@ -12,20 +12,20 @@ export const TAB_ICONS = {
   refer: ICONS_P2.share,
 } as const;
 
-/** Beside A2's "Read automatically": the WhatsApp glyph's bubble without its handset, as the design draws it. */
+/** Beside the code screen's "Read automatically": the WhatsApp glyph's bubble without its handset, as the design draws it. */
 export const BUBBLE =
   "M20 11.5 C20 16.2 16.2 20 11.5 20 C9.9 20 8.4 19.6 7.2 18.8 L3.5 19.5 L4.3 15.9 C3.5 14.6 3 13.1 3 11.5 C3 6.8 6.8 3 11.5 3 C16.2 3 20 6.8 20 11.5 Z";
 
-/** A past visit's row opens its detail (board C1). */
+/** A past visit's row opens its detail. */
 export const CHEVRON = GLYPHS.chevron;
 
-/** Beside board C4's "Slot held": a clock face. */
+/** Beside the pay step's "Slot held": a clock face. */
 export const CLOCK = "M12 3.5 A8.5 8.5 0 0 1 12 20.5 A8.5 8.5 0 0 1 12 3.5 M12 7.5 V12 L15 14.5";
 
-/** In board C4's chosen way to pay, and board F2's chosen card. */
+/** In the pay step's chosen way to pay, and the card choice's chosen card. */
 export const CHECK = GLYPHS.check;
 
-/** Board F4's two other ways to share: to another app, and by copying the link. */
+/** The preview's two other ways to share: to another app, and by copying the link. */
 export const OTHER_APPS =
   "M8 7 H6 A2 2 0 0 0 4 9 V18 A2 2 0 0 0 6 20 H18 A2 2 0 0 0 20 18 V9 A2 2 0 0 0 18 7 H16 M12 3 V13 M8.5 6.5 L12 3 L15.5 6.5";
 export const COPY_LINK =

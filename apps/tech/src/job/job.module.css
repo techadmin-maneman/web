@@ -1,5 +1,5 @@
 /*
- * Board A3: the job card, and board B5's evidence chain beneath it. The screen
+ * The job card, and the evidence chain beneath it. The screen
  * is the phone's height: the head at the top, the one action fixed at the
  * foot, and the card scrolling between them.
  */
@@ -128,7 +128,7 @@
   color: var(--paper);
 }
 
-/* ---- Board A3: the piece, and the last visit ------------------------------- */
+/* ---- The piece, and the last visit ------------------------------- */
 
 .piece {
   padding: var(--sp-16) var(--sp-20);
@@ -212,7 +212,7 @@
   color: var(--paper);
 }
 
-/* Ops changed the job under the phone: board B5's failure, across the card. */
+/* Ops changed the job under the phone: the evidence chain's failure, across the card. */
 .changed {
   padding: var(--sp-22) var(--sp-20);
   border-top: var(--rule-strong) solid var(--error-on-ink);
@@ -233,7 +233,7 @@
 }
 
 /* Gloved use: the one action, same place on every screen, 64 px and full width, clear of an iPhone's home indicator. */
-/* ---- Board B5: the evidence chain, one card per stage ---------------------- */
+/* ---- The evidence chain, one card per stage ---------------------- */
 
 .stage,
 .failed {
@@ -263,7 +263,7 @@
   color: var(--paper);
 }
 
-/* The quieter line: board B5 writes it 17 px in the soft ink. */
+/* The quieter line: the evidence chain writes it 17 px in the soft ink. */
 .stageNote {
   margin: 0;
   font-size: var(--fs-17);

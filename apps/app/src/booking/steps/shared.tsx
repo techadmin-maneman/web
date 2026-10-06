@@ -64,7 +64,7 @@ export function LastMinute({ left }: { left: number }) {
 }
 
 /**
- * The late fee's line, the same on the pay step (boards C4 and C5) and on moving a visit (C7): the
+ * The late fee's line, the same on the pay step and on moving a visit: the
  * amount charged in the sentence, and its GST split muted after it once GST applies.
  */
 export function LateFee({ fee, noticeHours }: { fee: Price; noticeHours: number }) {

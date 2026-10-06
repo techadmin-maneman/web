@@ -1,5 +1,5 @@
 // The building search on the address form (docs/decisions/0054-address-capture.md).
-// The design draws no search; it follows G2's number field, as the rest of the
+// The design draws no search; it follows the account section's number field, as the rest of the
 // address form does.
 //
 // One session token covers every keystroke and the save that follows. Google

@@ -1,5 +1,5 @@
 // A page whose data did not come: one line and "Try again". The design draws
-// this for Home only (board B3); the other pages say it more plainly. Offline,
+// this for Home only; the other pages say it more plainly. Offline,
 // the line says the page loads once the connection is back, and it then does.
 
 import { Failed } from "@maneman/ui/States";

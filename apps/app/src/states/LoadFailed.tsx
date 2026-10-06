@@ -1,4 +1,4 @@
-// Board B3's error state: the app could not load, with a way to try again and
+// The error state: the app could not load, with a way to try again and
 // a way to reach us. When the phone kept a Home with a visit on it, the visit
 // is still booked, and the screen says so.
 

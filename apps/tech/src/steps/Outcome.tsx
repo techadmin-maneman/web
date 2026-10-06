@@ -1,4 +1,4 @@
-// Board B4, step 6: Done, or Partial with a reason. The reasons are ops', set
+// Step 6: Done, or Partial with a reason. The reasons are ops', set
 // in the console and read with the job, words and all
 // (docs/decisions/0087-consumables-and-stock.md); the app invents none and
 // sends back the id it was given.

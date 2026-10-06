@@ -1,4 +1,4 @@
-/* Refer (boards F1 to F6): the invite, the card sheet, and who has been fitted. */
+/* Refer: the invite, the card sheet, and who has been fitted. */
 
 .page,
 .tracker {
@@ -27,7 +27,7 @@
   line-height: var(--lh-118);
 }
 
-/* Board F1's credit tile, ruled above and below. */
+/* Refer's credit tile, ruled above and below. */
 .credit {
   padding: var(--sp-20) 0;
   border-top: var(--hairline) solid var(--paper-line);
@@ -50,7 +50,7 @@
   line-height: var(--lh-165);
 }
 
-/* The two ways on, at the foot of the screen (board F1). */
+/* The two ways on, at the foot of the screen. */
 .actions {
   display: flex;
   flex-direction: column;
@@ -65,7 +65,7 @@
   width: 100%;
 }
 
-/* Board F1's quiet way to the tracker, and F6's way to the revoke. */
+/* Refer's quiet way to the tracker, and the empty tracker's way to the revoke. */
 .quiet {
   display: flex;
   align-items: center;
@@ -86,7 +86,7 @@
   border-bottom: var(--hairline) solid var(--paper-line);
 }
 
-/* Board F5: what the fits have earned and what is left, then each friend fitted. */
+/* What the fits have earned and what is left, then each friend fitted. */
 .figures {
   display: flex;
   gap: var(--sp-32);
@@ -148,7 +148,7 @@
   color: var(--text-muted);
 }
 
-/* Board F6: nobody fitted yet, and the invite. */
+/* Nobody fitted yet, and the invite. */
 .nobody {
   display: flex;
   flex-direction: column;
@@ -178,7 +178,7 @@
   margin-top: var(--sp-24);
 }
 
-/* Board F6's revoke, and the share failure's panel on F4. */
+/* The empty tracker's revoke, and the share failure's panel on the preview. */
 .panel,
 .failed {
   padding: var(--sp-20);
@@ -237,8 +237,8 @@
 }
 
 /*
- * The share sheet (boards F2 to F4; packages/ui/Sheet.tsx). The frame fills the screen and is clear: F2 and F4
- * fill it, as drawn, and F3 sits at its foot over the dark ground, with Close above it, where anyone can see it
+ * The share sheet (packages/ui/Sheet.tsx). The frame fills the screen and is clear: the card choice and the preview
+ * fill it, as drawn, and the consent sits at its foot over the dark ground, with Close above it, where anyone can see it
  * and reach it.
  */
 .dialog {
@@ -298,7 +298,7 @@
 }
 
 /*
- * Board F2: each card drawn, with its box ticked when it is the one chosen. A native radio button lies over the
+ * Each card drawn, with its box ticked when it is the one chosen. A native radio button lies over the
  * whole drawing, unseen: one tab stop for the pair, and the arrow keys between them.
  */
 .choice {
@@ -379,7 +379,7 @@
   margin-top: auto;
 }
 
-/* The card, drawn at 1200:630 as boards F2 and F4 draw it. */
+/* The card, drawn at 1200:630 as the design draws it. */
 .card {
   position: relative;
   display: flex;
@@ -452,7 +452,7 @@ img.card {
   height: var(--sp-7);
 }
 
-/* Board F3: the lines the photographs need agreed to, the irreversible one last. */
+/* The lines the photographs need agreed to, the irreversible one last. */
 .close {
   flex-shrink: 0;
   align-self: flex-end;
@@ -517,7 +517,7 @@ img.card {
   margin-top: var(--sp-24);
 }
 
-/* Board F4: on the dark ground, exactly as the friend will receive it, and the ways to send it. */
+/* On the dark ground, exactly as the friend will receive it, and the ways to send it. */
 .inkScreen {
   background: var(--ink-night);
   color: var(--paper);

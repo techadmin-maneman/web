@@ -1,4 +1,4 @@
-// The account's deletion card (board G2): a request to delete the account, which ops carry out or reject.
+// The account's deletion card: a request to delete the account, which ops carry out or reject.
 
 import { capsLook } from "@maneman/ui/Caps";
 import { Button } from "@maneman/ui/Button";

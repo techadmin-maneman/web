@@ -3,7 +3,7 @@
 // photographs.
 //
 // Two pages under the one step: the fit spec, then the history, the remedies the client has tried and their skin
-// conditions and allergies, which the owner ruled need no consent of their own. Each page starts from the client's
+// conditions and allergies, which need no consent of their own. Each page starts from the client's
 // profile as it stands, or from what the API refused, and the step sends the profile whole: each version is the
 // profile as it was then.
 //

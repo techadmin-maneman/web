@@ -1,6 +1,6 @@
-/* Boards G1 and G2, on paper. */
+/* The design, on paper. */
 
-/* Under the profile's header the page starts 24 px down (board G1). */
+/* Under the profile's header the page starts 24 px down. */
 .page {
   display: flex;
   flex-direction: column;
@@ -160,7 +160,7 @@
 
 /*
  * The profile's buttons (packages/ui/Button.tsx), all 48 px (size="control"). The outlined ones are edged
- * in the paper's own line, lighter than the shared ink edge, as board G2 draws them.
+ * in the paper's own line, lighter than the shared ink edge, as the account section draws them.
  */
 .primary {
   flex: 1;

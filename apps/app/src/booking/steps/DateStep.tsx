@@ -1,4 +1,4 @@
-// Board C2: the date.
+// The date.
 
 import { classes } from "@maneman/ui/classes";
 import { Button } from "@maneman/ui/Button";
@@ -24,7 +24,7 @@ interface LaterDays {
 }
 
 /**
- * Board C2: fourteen days, full ones shown but not chosen, those with a window inside the notice marked, and later
+ * Fourteen days, full ones shown but not chosen, those with a window inside the notice marked, and later
  * ones added beneath them on asking. The days are one group of native radio buttons, drawn as the design's squares:
  * one tab stop, and the arrow keys move between the days. `before`: the steps the sheet took before the date.
  * `offered`: the day the visit is offered on.

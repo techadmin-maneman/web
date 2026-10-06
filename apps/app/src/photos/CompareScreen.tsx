@@ -1,4 +1,4 @@
-// Compare (board D2): one angle from two visits, on ink and without the tabs.
+// Compare: one angle from two visits, on ink and without the tabs.
 // The earlier visit shows left of a divider that follows the finger, with no
 // easing and no snap; the keyboard moves it too. Changing the angle
 // cross-fades both sides together. It opens on the first visit with

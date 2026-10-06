@@ -1,4 +1,4 @@
-/* Board C1, the visits, and C9, one past visit, on paper. */
+/* Visits, and one past visit, on paper. */
 
 .label {
   margin: 0;
@@ -114,7 +114,7 @@
   color: var(--text-muted);
 }
 
-/* Board C1's "Book your next visit" (packages/ui/Button.tsx), the width of the page. */
+/* Visits' "Book your next visit" (packages/ui/Button.tsx), the width of the page. */
 .book {
   width: 100%;
 }
@@ -147,7 +147,7 @@
   cursor: default;
 }
 
-/* The client's own record, beneath board C1's lists; the board draws none. */
+/* The client's own record, beneath Visits' lists; the board draws none. */
 .record {
   padding-bottom: var(--sp-22);
   border-top: var(--hairline) solid var(--paper-line);
@@ -180,7 +180,7 @@
   color: var(--text-muted);
 }
 
-/* Board C9, and the visit's tax invoice beneath its facts (ADR 0056). */
+/* The visit's record, and the visit's tax invoice beneath its facts (ADR 0056). */
 .detail {
   display: flex;
   flex-direction: column;
@@ -219,7 +219,7 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* Board C9's last row: what was done, beneath its name rather than beside it. */
+/* The visit's record's last row: what was done, beneath its name rather than beside it. */
 .done {
   padding: var(--sp-15) 0;
   font-size: var(--fs-16);
@@ -260,7 +260,7 @@
   text-decoration: none;
 }
 
-/* The one document row, drawn as board E2 draws a tax document. */
+/* The one document row, drawn as an entry's page draws a tax document. */
 .invoice {
   display: flex;
   align-items: center;

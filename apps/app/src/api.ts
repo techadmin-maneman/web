@@ -82,7 +82,7 @@ export async function forgetHome(): Promise<void> {
 }
 
 /**
- * The Home the phone kept, if any: board B3's error can then say the visit is still booked. It is this release's own:
+ * The Home the phone kept, if any: the error state can then say the visit is still booked. It is this release's own:
  * the service worker drops the kept Home when a new release takes over (apps/app/sw/sw.ts).
  */
 export async function keptHome(): Promise<Me | null> {

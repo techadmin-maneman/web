@@ -6,7 +6,7 @@ export const photos = {
   basis: "Taken for your visit record.",
   compare: "Compare",
   angles: { front: "Front", top: "Top", left: "Left", right: "Right", hair: "Hair" },
-  /** The compare's three angles, as board D2 names them. */
+  /** The compare's three angles, as the compare names them. */
   compareAngles: { front: "Front", top: "Top", hair: "Hairline" },
   // A photograph's description for a screen reader; the design draws no captions.
   alt: (angle: string, phase: "before" | "after", date: string) => `${angle}, ${phase} the visit, ${date}`,

@@ -9,7 +9,7 @@ import { secondsUntil } from "../lib/clock.ts";
 
 const SCRIPT = "https://checkout.razorpay.com/v1/checkout.js";
 /**
- * How long the script may take before the payment counts as failed (board C6):
+ * How long the script may take before the payment counts as failed:
  * a script that never arrives would otherwise hold the sheet busy for ever.
  */
 const PATIENCE_MS = 15_000;
@@ -85,7 +85,7 @@ export function pay(checkout: NonNullable<Booking["checkout"]>, payBy: string): 
       // The brand's ink, for Checkout's own buttons.
       theme: { color: cssToken("--ink") },
       image: new URL(BRAND_MARK, window.location.origin).href,
-      // A failure comes back to the app's own screen (board C6), not Checkout's retry.
+      // A failure comes back to the app's own screen, not Checkout's retry.
       retry: { enabled: false },
       // No payment is taken once it would be too late to keep the hold.
       timeout: secondsToPay,

@@ -1,6 +1,6 @@
 // The technician app's policy (docs/decisions/0026-hosts-and-surfaces.md). The
 // app calls its own origin and nothing else, and grants itself the camera
-// (board B1's guided capture) and geolocation (board B5's "I have arrived"),
+// (the camera's guided capture) and geolocation (the evidence chain's "I have arrived"),
 // which no other origin may use through it.
 //
 // `connect-src 'self'` holds because a photograph goes up through mm-api, on the app's own host, and never

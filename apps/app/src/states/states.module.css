@@ -1,4 +1,4 @@
-/* Board B3: the error, on paper, and a page's own failure (its loading is packages/ui/States.tsx). */
+/* The error, on paper, and a page's own failure (its loading is packages/ui/States.tsx). */
 
 .failed {
   display: flex;
@@ -32,7 +32,7 @@
   gap: var(--sp-10);
 }
 
-/* Board B3's two ways on (packages/ui/Button.tsx), a little wider than the app's other small buttons. */
+/* The states screen's two ways on (packages/ui/Button.tsx), a little wider than the app's other small buttons. */
 .retry,
 .message {
   padding: 0 var(--sp-20);

@@ -1,4 +1,4 @@
-// Moving or cancelling a visit (boards C7 and C8; docs/decisions/0046-moving-and-cancelling.md). The sheet asks
+// Moving or cancelling a visit (docs/decisions/0046-moving-and-cancelling.md). The sheet asks
 // the API what the change costs now, and shows it before the client confirms. Moving goes on to the booking
 // sheet's date and window, then pays whatever the move costs. Cancelling is confirmed on the terms shown; if the
 // 24 hours ran out meanwhile, the new terms are shown instead.
@@ -39,7 +39,7 @@ type Step =
   | { readonly kind: "unchangeable" }
   | { readonly kind: "broken" };
 
-/** Board C8's "One left": the credits the client still has, in words. */
+/** The cancel sheet's "One left": the credits the client still has, in words. */
 const COUNTS = ["One", "Two", "Three", "Four", "Five", "Six"];
 
 /** What moving costs, in the design's words; a late fee in the pay step's own line. */
@@ -117,7 +117,7 @@ export function ChangeSheet(props: {
     void show(props.start);
   }, [show, props.start]);
 
-  // Each step's heading takes the focus the last step's button took with it: C7 to C8, and to what came of it.
+  // Each step's heading takes the focus the last step's button took with it: the move sheet to the cancel sheet, and to what came of it.
   useEffect(() => {
     focusIfLost(dialog.current?.querySelector<HTMLElement>("#change-title") ?? null);
   }, [step.kind]);

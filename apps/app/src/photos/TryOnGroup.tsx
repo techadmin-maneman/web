@@ -1,5 +1,5 @@
 // A try-on the client made on the site: the photograph they uploaded beside
-// the look made from it (ADR 0082). No board draws it, so it takes board D1's
+// the look made from it (ADR 0082). No board draws it, so it takes Photos'
 // group, the date over the images, with two where a visit has five, and says
 // beneath how long each is kept. An image already deleted stays a blank block,
 // as an angle not taken does. A client's kept try-on shows its photograph on
