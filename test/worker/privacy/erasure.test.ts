@@ -1,7 +1,7 @@
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import { confirmBooking } from "../../../src/domain/bookings.ts";
-import { alertAgedDeletions, deletionsWaiting } from "../../../src/domain/deletion.ts";
+import { alertAgedDeletions, DELETION_ALERT_AFTER_MS, deletionsWaiting } from "../../../src/domain/deletion.ts";
 import { erasePerson } from "../../../src/domain/erasure.ts";
 import { sendUnsentLinks } from "../../../src/domain/payment-links.ts";
 import { recordRefund } from "../../../src/domain/payments.ts";
@@ -262,12 +262,13 @@ describe("POST /api/clients/:id/erasure", () => {
 });
 
 /** A deletion request the client made in their app, six days ago, still waiting for ops. */
+/** A request a day past the point ops are alerted to it. */
 async function openRequest(personId: string): Promise<void> {
-  const sixDaysAgo = new Date(NOW.getTime() - 6 * 86_400_000).toISOString();
+  const aged = new Date(NOW.getTime() - DELETION_ALERT_AFTER_MS - 86_400_000).toISOString();
   await env.DB.prepare(
     "INSERT INTO deletion_requests (id, person_id, created_at, state) VALUES ('request-1', ?1, ?2, 'requested')",
   )
-    .bind(personId, sixDaysAgo)
+    .bind(personId, aged)
     .run();
 }
 

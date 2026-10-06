@@ -290,30 +290,6 @@
   color: var(--ink-soft);
 }
 
-.regular {
-  display: flex;
-  align-items: center;
-  gap: var(--sp-14);
-  margin-top: var(--sp-20);
-  padding-top: var(--sp-18);
-  border-top: var(--hairline) solid var(--paper-line);
-  font-size: var(--fs-15);
-  line-height: var(--lh-150);
-}
-
-.initials {
-  display: flex;
-  flex-shrink: 0;
-  align-items: center;
-  justify-content: center;
-  width: var(--sp-40);
-  height: var(--sp-40);
-  background: var(--paper-shade);
-  font-family: var(--font-serif);
-  font-size: var(--fs-15);
-  color: var(--text-muted);
-}
-
 /* Board C4, and C5's first fit. */
 .summary {
   border-top: var(--hairline) solid var(--text);

@@ -2,7 +2,7 @@
 // (docs/decisions/0049-dpdp.md). The API is answered from e2e/ops/fixtures.ts,
 // since only a client's own app makes a request, and nothing in these tests
 // erases anybody. The clock is fixed to the day the fixture's dates are read
-// against, so the days left of the seven mean the same thing on every run.
+// against, so the days left of the 30 mean the same thing on every run.
 //
 // An erasure cannot be undone, so what is checked here is mostly that it is
 // hard to do by accident: two steps, the consequences written out, and the
@@ -51,10 +51,10 @@ async function ask(page: Page): Promise<void> {
   await expect(page.getByRole("group", { name: "Deleting the account of Rohit Malhotra" })).toBeVisible();
 }
 
-test("lists every request with the client's number, the day, and the days left of the seven", async ({ page }) => {
+test("lists every request with the client's number, the day, and the days left of the 30", async ({ page }) => {
   await open(page);
   await expect(queue(page).getByRole("listitem")).toHaveCount(3);
-  await expect(row(page, "Rohit Malhotra")).toContainText("+91 98100 04417 · requested 20 Sep 2027");
+  await expect(row(page, "Rohit Malhotra")).toContainText("+91 98100 04417 · requested 28 Aug 2027");
   await expect(row(page, "Rohit Malhotra")).toContainText("5 days left");
   await expect(row(page, "Ashish Gill")).toContainText("5 days overdue");
   await expect(row(page, "Karan Bose")).toContainText("Due today");

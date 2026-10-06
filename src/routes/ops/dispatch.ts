@@ -271,7 +271,7 @@ const assignRoute = createRoute({
     403: errorResponse("access_required"),
     404: errorResponse("not_found: no such live job in the caller's cities"),
     409: errorResponse(
-      "past_day: the day has gone; window_passed: every start in today's window has passed; clash: the technician already holds a job in that window on that date; on_leave: they are away that day; does_not_fit: the window is free but the visit has no room in it at a start still ahead; blackout: ops blacked the day out, and no blackout_reason came; superseded: the job is not as the board showed it, and fields names what changed (technician, time, or moving: another move of it is being written); in_progress: a technician has begun the visit",
+      "past_day: the day has gone; window_passed: every start in today's window has passed; clash: the technician already holds a job in that window on that date; on_leave: they are away that day; back_to_back: they took the client's visit just before or just after this one, and a technician never takes two in a row; does_not_fit: the window is free but the visit has no room in it at a start still ahead; blackout: ops blacked the day out, and no blackout_reason came; superseded: the job is not as the board showed it, and fields names what changed (technician, time, or moving: another move of it is being written); in_progress: a technician has begun the visit",
     ),
   },
 });
@@ -289,7 +289,7 @@ const moveRoute = createRoute({
     403: errorResponse("access_required"),
     404: errorResponse("not_found: no such live job in the caller's cities"),
     409: errorResponse(
-      "past_day; window_passed; clash; on_leave; does_not_fit; blackout; superseded, with what changed in fields; in_progress: the technician has begun the visit. One he has only checked in at moves with clear_check_in; one he has started or closed stays where it is",
+      "past_day; window_passed; clash; on_leave; back_to_back; does_not_fit; blackout; superseded, with what changed in fields; in_progress: the technician has begun the visit. One he has only checked in at moves with clear_check_in; one he has started or closed stays where it is",
     ),
   },
 });

@@ -88,7 +88,8 @@ const OpsAvailabilitySchema = z
                 end: z.string(),
                 technicians: z.array(TechnicianSchema).openapi({
                   description:
-                    "Who in the caller's cities is free for the visit, the client's regular technician first.",
+                    "Who in the caller's cities is free for the visit: never the technician who took the client's visit " +
+                    "just before or just after it.",
                 }),
               })
               .strict(),
@@ -157,9 +158,16 @@ const VisitToBookSchema = z
     tier: z.string().regex(PRICE_TIER).optional().openapi({
       description: "The service; left out, the kind's standard one. A first fit names the hair system.",
     }),
-    technician: z.string().min(1).max(100).optional().openapi({
-      description: "The technician ops chose; left out, whoever is free, the client's regular one first.",
-    }),
+    technician: z
+      .string()
+      .min(1)
+      .max(100)
+      .optional()
+      .openapi({
+        description:
+          "The technician ops chose; left out, whoever is free. Never the one who took the client's visit just before or " +
+          "just after it.",
+      }),
     date: z.iso.date(),
     window: z.enum(BOOKING_WINDOWS),
     one_visit: z

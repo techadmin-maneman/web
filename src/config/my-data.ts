@@ -55,6 +55,11 @@ export const MY_DATA = {
     try_on: "Try-on",
     lapsed: "Paid after the slot's hold ran out",
     not_movable: "The visit had begun, or its technician or time had changed, so it could not be moved",
+    // A visit's status, as the client knew it.
+    scheduled: "Booked",
+    dispatched: "Booked",
+    in_progress: "Under way",
+    terminated: "Closed without a visit",
   } satisfies Readonly<Record<string, string>>,
   parts: {
     person: {
@@ -102,7 +107,8 @@ export const MY_DATA = {
       title: "Your visits",
       fields: {
         type: words("Visit"),
-        tier: words("Hair system"),
+        tier: text("Price code"),
+        hair_system: text("Hair system"),
         window_start: time("From"),
         window_end: time("Until"),
         status: words("Status"),
@@ -133,7 +139,8 @@ export const MY_DATA = {
       fields: {
         reference: text("Reference"),
         type: words("Visit"),
-        tier: words("Hair system"),
+        tier: text("Price code"),
+        hair_system: text("Hair system"),
         minutes: text("Minutes"),
         date: day("Day"),
         window_label: words("Window"),

@@ -744,9 +744,10 @@ describe("POST /api/visits: the visit written in the request", () => {
 describe("GET /api/visits/availability", () => {
   const look = (query: string) => request(opsApp(), `/api/visits/availability?${query}`);
 
-  it("offers each window's free technicians, the regular one first, with the kind's services and how it is paid", async () => {
+  it("offers each window's free technicians, never the one who took the client's last visit, with how it is paid", async () => {
+    // Imran fitted Rohit, so he does not take Rohit's next visit (docs/decisions/0111).
     await rohit("fitted");
-    await visit(null, "service", "scheduled", "2026-09-22T03:30:00.000Z", IMRAN); // Tuesday, 9 am
+    await visit(null, "service", "scheduled", "2026-09-22T03:30:00.000Z", SANDEEP); // Tuesday, 9 am
     const answer = await look(`client=${ROHIT}&kind=service`);
     expect(answer.status).toBe(200);
     const body = await answer.json<{
@@ -767,9 +768,9 @@ describe("GET /api/visits/availability", () => {
     expect(body.days[0]?.date).toBe("2026-09-22");
     const tuesday = body.days[0]?.windows.map((each) => [each.window, each.technicians.map((one) => one.id)]);
     expect(tuesday).toEqual([
-      ["morning", [SANDEEP]],
-      ["afternoon", [IMRAN, SANDEEP]],
-      ["evening", [IMRAN, SANDEEP]],
+      ["morning", []],
+      ["afternoon", [SANDEEP]],
+      ["evening", [SANDEEP]],
     ]);
   });
 

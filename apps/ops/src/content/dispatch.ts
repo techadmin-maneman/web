@@ -282,6 +282,9 @@ export const dispatch = {
       `${technician} already holds a job on ${date}, ${window}. Nothing was moved.`,
     /** Leave is named as leave, so ops know the day is off rather than merely full (ADR 0062). */
     onLeave: (technician: string, date: string) => `${technician} is away on ${date}. Nothing was moved.`,
+    /** A technician never takes two of a client's visits in a row (ADR 0111). */
+    backToBack: (technician: string) =>
+      `${technician} has this client's visit just before or after. Choose someone else. Nothing was moved.`,
     /** A move lands only at a start still ahead. */
     pastDay: (date: string) => `${date} has passed. Choose a day ahead. Nothing was moved.`,
     windowPassed: (date: string, window: string) =>

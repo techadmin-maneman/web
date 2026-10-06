@@ -54,11 +54,6 @@ export const booking = {
   window: {
     title: "Pick a time",
     full: "Full",
-    withRegular: (name: string) => `With ${name}`,
-    another: "Another technician",
-    regularLine: (name: string) => `${name}, your regular technician, is free.`,
-    // The design draws the window step with the regular technician free.
-    anotherLine: (name: string) => `${name} isn’t free then. Another technician will come.`,
     // A window already inside the notice, which no board draws.
     within: (hours: number) => `Within ${String(hours)} hours: changes are charged`,
     continue: "Continue to payment",

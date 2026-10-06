@@ -1,5 +1,5 @@
-// What mm-api's invocations spent of CPU time, from Workers analytics (scripts/ops/cpu-report.ts). The free plan allows
-// 10 ms an invocation, and Cloudflare stops a Worker that runs over it consistently. Analytics gives each
+// What mm-api's invocations spent of CPU time, from Workers analytics (scripts/ops/cpu-report.ts). Workers Paid allows
+// 30 seconds an invocation (ADR 0112), and Cloudflare stops one that runs over; the report warns at a tenth of that. Analytics gives each
 // cron run's own figure, and one for every invocation together: it does not tell a request from a queue batch.
 //
 // Reading analytics needs Account Analytics: Read, which a CI token may not have; then the report says so.
@@ -7,8 +7,9 @@
 import { z } from "zod";
 import { callCloudflare, describeAnswer, type ApiAnswer } from "./cloudflare-api.ts";
 
-/** The free plan's CPU time an invocation. */
-export const FREE_PLAN_CPU_MS = 10;
+/** Workers Paid's CPU time for a request, and for a cron run that comes more often than hourly. */
+export const CPU_LIMIT_MS = 30_000;
+const WARN_AT_MS = CPU_LIMIT_MS / 10;
 
 export interface CpuFigures {
   readonly invocations: number;
@@ -168,11 +169,11 @@ function describe(subject: string, figures: CpuFigures): ReportLine {
   const text =
     `${subject}: ${String(figures.invocations)}, CPU p50 ${figures.p50Ms.toFixed(1)} ms, ` +
     `p99 ${figures.p99Ms.toFixed(1)} ms`;
-  if (figures.p99Ms <= FREE_PLAN_CPU_MS) return { level: "ok", text };
-  return { level: "warning", text: `${text}, over the free plan's ${String(FREE_PLAN_CPU_MS)} ms` };
+  if (figures.p99Ms <= WARN_AT_MS) return { level: "ok", text };
+  return { level: "warning", text: `${text}, over a tenth of the ${String(CPU_LIMIT_MS / 1000)} s Cloudflare allows` };
 }
 
-/** A line for each figure: a warning where a p99 is over the free plan's limit, an error where Cloudflare stopped one. */
+/** A line for each figure: a warning where a p99 nears the limit, an error where Cloudflare stopped one. */
 export function judgeCpu(script: string, reading: CpuReading): ReportLine[] {
   const lines = [
     describe(`${script} cron runs`, reading.cron),

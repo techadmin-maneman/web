@@ -77,7 +77,10 @@ const opsPost = (path: string, body: unknown, deps: TestDependencies = fakeDepen
   );
 
 /** A visit booked for Imran, unless another technician is named. */
-async function booked(id: string, options: { start: string; type?: string; technician?: string }) {
+async function booked(
+  id: string,
+  options: { start: string; type?: string; technician?: string; person?: string | null },
+) {
   await env.DB.prepare(
     `INSERT INTO appointments (id, fsm_id, person_id, type, tier, status, window_start, window_end, technician_id,
        service_city, service_pincode, synced_at)
@@ -85,7 +88,7 @@ async function booked(id: string, options: { start: string; type?: string; techn
   )
     .bind(
       id,
-      PERSON,
+      options.person === undefined ? PERSON : options.person,
       options.type ?? "service",
       options.start,
       new Date(Date.parse(options.start) + 90 * 60_000).toISOString(),
@@ -570,7 +573,8 @@ describe("dispatch", () => {
   });
 
   it("refuses a move that would give one technician two jobs in one window, and writes nothing", async () => {
-    await booked(OTHER_JOB, { start: TODAY_START.toISOString(), technician: SAMEER });
+    // Another client's job: a technician never takes two of Rohit's in a row (docs/decisions/0111).
+    await booked(OTHER_JOB, { start: TODAY_START.toISOString(), technician: SAMEER, person: null });
 
     const answer = await opsPost("/api/dispatch/move", {
       appointment_id: TODAY_JOB,

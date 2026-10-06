@@ -113,7 +113,7 @@ export const TASK_SLA_HOURS: Slas = {
   no_show_decision: 48,
   no_show_dispute: 48,
   number_change: 48,
-  // What the client was promised: the 7 days run from the request to ops' decision (ADR 0049).
+  // What the client was promised: the 30 days run from the request to ops' decision (ADR 0049).
   erasure_request: DELETION_DECIDED_WITHIN_DAYS * 24,
   // The app promises an answer within 30 days at the latest (docs/open-points.md, item 51).
   grievance: 30 * 24,

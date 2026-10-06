@@ -153,7 +153,7 @@ describe("telling ops", () => {
   it("links to where Settings shows the figure", async () => {
     await setMeter(SHARE / 2);
     await tellOfStorage(env.DB, deps.alertOnce, "production");
-    await tellOfDatabaseSize(env.DB, deps.alertOnce, 250e6);
+    await tellOfDatabaseSize(env.DB, deps.alertOnce, 5e9);
     expect(deps.alerts).toEqual([
       expect.stringMatching(/\/settings#console$/),
       expect.stringMatching(/\/settings#console$/),
@@ -173,16 +173,16 @@ describe("the database's size", () => {
   });
 
   it("tells once at each of half, 80% and 95% of the limit, and not again on the next run", async () => {
-    await tellOfDatabaseSize(env.DB, deps.alertOnce, 250e6);
-    await tellOfDatabaseSize(env.DB, deps.alertOnce, 260e6);
-    await tellOfDatabaseSize(env.DB, deps.alertOnce, 400e6);
-    await tellOfDatabaseSize(env.DB, deps.alertOnce, 480e6);
-    await tellOfDatabaseSize(env.DB, deps.alertOnce, 490e6);
+    await tellOfDatabaseSize(env.DB, deps.alertOnce, 5e9);
+    await tellOfDatabaseSize(env.DB, deps.alertOnce, 5.2e9);
+    await tellOfDatabaseSize(env.DB, deps.alertOnce, 8e9);
+    await tellOfDatabaseSize(env.DB, deps.alertOnce, 9.6e9);
+    await tellOfDatabaseSize(env.DB, deps.alertOnce, 9.8e9);
 
     expect(deps.alerts).toEqual([
-      expect.stringContaining("The database holds 250 MB, 50% of the 500 MB"),
-      expect.stringContaining("The database holds 400 MB, 80% of the 500 MB"),
-      expect.stringContaining("The database holds 480 MB, 95% of the 500 MB"),
+      expect.stringContaining("The database holds 5.00 GB, 50% of the 10 GB"),
+      expect.stringContaining("The database holds 8.00 GB, 80% of the 10 GB"),
+      expect.stringContaining("The database holds 9.60 GB, 95% of the 10 GB"),
     ]);
     const { results } = await env.DB.prepare("SELECT key FROM alerts WHERE key LIKE 'd1_size:%'").all<{
       key: string;
@@ -191,8 +191,8 @@ describe("the database's size", () => {
   });
 
   it("tells only the highest mark passed since the last run, and leaves R2's marks alone", async () => {
-    await tellOfDatabaseSize(env.DB, deps.alertOnce, 420e6);
-    expect(deps.alerts).toEqual([expect.stringContaining("80% of the 500 MB")]);
+    await tellOfDatabaseSize(env.DB, deps.alertOnce, 8.4e9);
+    expect(deps.alerts).toEqual([expect.stringContaining("80% of the 10 GB")]);
     expect((await readMeter(env.DB)).toldPercent).toBe(0);
   });
 });

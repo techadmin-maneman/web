@@ -7,16 +7,9 @@ import { addDays } from "../lib/india-time.ts";
 import { unitsFor } from "../policy/visit-length.ts";
 import { FITTED } from "./fitted.ts";
 import { loadSlotSchedule } from "./slot-times.ts";
-import {
-  loadBlackouts,
-  occupancy,
-  placement,
-  regularTechnician,
-  techniciansFor,
-  type Moving,
-  type Technician,
-} from "./occupancy.ts";
+import { loadBlackouts, occupancy, placement, techniciansFor, type Moving, type Technician } from "./occupancy.ts";
 import { statusIn, VISIT_LIVE } from "../config/statuses.ts";
+import { besideIt, visitsOfClient } from "./technician-rotation.ts";
 
 /** A visit booked and still to happen. */
 const STILL_TO_HAPPEN = `deleted_at IS NULL AND ${statusIn("status", VISIT_LIVE)}`;
@@ -102,11 +95,11 @@ export async function liveVisitOf(
 
 interface WindowOffer {
   readonly window: BookingWindow;
-  /** Who would come: the client's regular technician, another, or nobody (the window is full). */
-  readonly with: "regular" | "another" | null;
+  /** Whether a technician is free to take the visit in it: never the one who took the client's visit before or after. */
+  readonly open: boolean;
 }
 
-/** A window of a day, and the technicians free to take the visit in it, the client's regular technician first. */
+/** A window of a day, and the technicians free to take the visit in it. */
 interface WindowTechnicians {
   readonly window: BookingWindow;
   readonly technicians: Technician[];
@@ -118,80 +111,78 @@ interface VisitToPlace {
   readonly until?: string | null;
 }
 
-/** Whose time is offered first: a move's own technician, else the client's regular one; nobody's for no client. */
-function firstChoice(db: D1Database, personId: string | null, moving: Moving | null): Promise<string | null> {
-  if (moving !== null) return Promise.resolve(moving.technicianId);
-  if (personId === null) return Promise.resolve(null);
-  return regularTechnician(db, personId);
+/** Whose visit it is, and what it stands in for: a move in place keeps its technician, a replaced visit gives way. */
+interface Placing {
+  readonly personId: string | null;
+  /** A move in place: only its own technician may take it, and its own time is left out. */
+  readonly moving?: Moving | null;
+  /** The visit a charged move books this one in place of, which stands next to it no longer. */
+  readonly replacing?: string | null;
+  /** The client's own unpaid holds are left out, which the app's hold would let go. */
+  readonly ownUnpaid?: boolean;
 }
 
 /**
- * Each window of each day from `from` that a visit this long can start in: the technicians free to take it, the
- * regular technician first, and who the regular technician is. A window the visit is too long to start in, as a first
- * fit's evening, is left out. A day ops black out, or from `until` on, is offered to nobody.
+ * Each window of each day from `from` that a visit this long can start in, and the technicians free to take it: none
+ * who took the client's visit just before or just after that day (src/domain/technician-rotation.ts). A window the visit
+ * is too long to start in, as a first fit's evening, is left out. A day ops black out, or from `until` on, is offered to
+ * nobody.
  */
 async function windowsOf(
   db: D1Database,
-  personId: string | null,
+  placing: Placing,
   visit: VisitToPlace,
   range: { readonly from: string; readonly days: number },
   now: Date,
-  moving: Moving | null,
-  ownUnpaidOf: string | null = null,
-): Promise<{ regular: string | null; days: { date: string; windows: WindowTechnicians[] }[] }> {
+): Promise<{ date: string; windows: WindowTechnicians[] }[]> {
+  const { personId, moving = null, replacing = null, ownUnpaid = false } = placing;
   const units = unitsFor(visit.minutes);
   const to = addDays(range.from, range.days - 1);
-  const [technicians, regular, held, closed] = await Promise.all([
+  const [technicians, held, closed, visits] = await Promise.all([
     techniciansFor(db, moving),
-    firstChoice(db, personId, moving),
-    occupancy(db, range.from, to, now, moving?.visitId ?? null, null, ownUnpaidOf),
+    occupancy(db, range.from, to, now, moving?.visitId ?? null, null, ownUnpaid ? personId : null),
     loadBlackouts(db, range.from, to),
+    visitsOfClient(db, personId, moving?.visitId ?? replacing),
   ]);
   const retired = (date: string) => visit.until !== undefined && visit.until !== null && date >= visit.until;
-  const regularFirst = [...technicians].sort((a, b) => Number(b.id === regular) - Number(a.id === regular));
   const startable = windowsFitting(units);
-  const days = Array.from({ length: range.days }, (_, index) => {
+  return Array.from({ length: range.days }, (_, index) => {
     const date = addDays(range.from, index);
+    const beside = besideIt(visits, date);
     const windows = startable.map((window): WindowTechnicians => {
       if (closed.has(date) || retired(date)) return { window, technicians: [] };
-      const free = regularFirst.filter((technician) => placement(held(technician.id, date), window, units) !== null);
+      const free = technicians.filter(
+        (technician) => !beside.has(technician.id) && placement(held(technician.id, date), window, units) !== null,
+      );
       return { window, technicians: free };
     });
     return { date, windows };
   });
-  return { regular, days };
 }
 
 /**
- * Each window of each day from `from` that a visit of this many minutes can start in: who could take it, the regular
- * technician first. A window the visit is too long to start in, as a first fit's evening, is left out. A day from
- * `until` on, the day a service is retired from, is offered to nobody. With no person, as for the site's form, nobody
- * is anyone's regular. `forTheApp` leaves out the client's own unpaid holds, which the app's hold would let go.
+ * Each window of each day from `from` that a visit of this many minutes can start in, and whether anyone can take it.
+ * A window the visit is too long to start in, as a first fit's evening, is left out. A day from `until` on, the day a
+ * service is retired from, is offered to nobody. With no person, as for the site's form, nobody stands beside it.
  */
 export async function availability(
   db: D1Database,
-  personId: string | null,
+  placing: Placing,
   visit: VisitToPlace,
   from: string,
   days: number,
   now: Date,
-  moving: Moving | null = null,
-  forTheApp = false,
 ): Promise<{ date: string; windows: WindowOffer[] }[]> {
-  const offered = await windowsOf(db, personId, visit, { from, days }, now, moving, forTheApp ? personId : null);
-  const whoComes = (free: readonly Technician[]): WindowOffer["with"] => {
-    if (free.some((technician) => technician.id === offered.regular)) return "regular";
-    return free.length > 0 ? "another" : null;
-  };
-  return offered.days.map(({ date, windows }) => ({
+  const offered = await windowsOf(db, placing, visit, { from, days }, now);
+  return offered.map(({ date, windows }) => ({
     date,
-    windows: windows.map(({ window, technicians }) => ({ window, with: whoComes(technicians) })),
+    windows: windows.map(({ window, technicians }) => ({ window, open: technicians.length > 0 })),
   }));
 }
 
 /**
- * Each window of each day from `from` that a visit this long can start in: the technicians free to take it, the
- * client's regular technician first, for ops to choose from as they book.
+ * Each window of each day from `from` that a visit this long can start in: the technicians free to take it, none who
+ * took the client's visit before or after it, for ops to choose from as they book.
  */
 export async function freeTechnicians(
   db: D1Database,
@@ -201,5 +192,5 @@ export async function freeTechnicians(
   days: number,
   now: Date,
 ): Promise<{ date: string; windows: WindowTechnicians[] }[]> {
-  return (await windowsOf(db, personId, visit, { from, days }, now, null)).days;
+  return windowsOf(db, { personId }, visit, { from, days }, now);
 }

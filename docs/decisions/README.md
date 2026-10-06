@@ -2,7 +2,7 @@
 
 Every decision this repository was built on, oldest first. A record says what was decided and why, and is not rewritten to say something else: a later record changes it, and says so in its own header (ADR 0001). **Changed by** gathers those later records, from either side, so an old record's reader knows to read on.
 
-This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. The next free number is 0111.
+This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. The next free number is 0113.
 
 | ADR | Decision | Date | Status | Changed by |
 | --- | --- | --- | --- | --- |
@@ -14,7 +14,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0006](0006-deployment-pipeline.md) | Deployment pipeline | 2026-09-21 | accepted | [0010](0010-applying-triggers.md), [0075](0075-tests-held-to-the-contract-and-the-local-stack.md) |
 | [0007](0007-platform-constraints.md) | Platform facts that block M1's definition of done | 2026-09-21 | resolved by 0008 | [0008](0008-owner-decisions-on-platform-constraints.md) |
 | [0008](0008-owner-decisions-on-platform-constraints.md) | Owner decisions on the platform constraints | 2026-09-21 | accepted |  |
-| [0009](0009-stay-inside-cloudflare-free-tier.md) | Stay inside Cloudflare's free tier | 2026-09-21 | accepted |  |
+| [0009](0009-stay-inside-cloudflare-free-tier.md) | Stay inside Cloudflare's free tier | 2026-09-21 | accepted | [0112](0112-workers-paid.md) |
 | [0010](0010-applying-triggers.md) | Applying triggers | 2026-09-21 | accepted |  |
 | [0011](0011-lead-api.md) | The lead API | 2026-09-21 | accepted | [0067](0067-alerts-and-silent-failures.md) |
 | [0012](0012-zoho-sync.md) | The Zoho sync | 2026-09-21 | accepted | [0070](0070-vendor-correctness.md) |
@@ -114,3 +114,5 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0108](0108-discount-codes.md) | Discount codes | 2026-10-01 | accepted, on the owner's rulings of 1 October 2026 |  |
 | [0109](0109-console-departments-and-access.md) | The console by departments, and who may do what in it | 2026-10-02 | accepted, on the owner's ruling of 2 October 2026 |  |
 | [0110](0110-field-work-without-fsm.md) | Field work without Zoho FSM | 2026-10-02 | accepted, on the owner's ruling of 2 October 2026 |  |
+| [0111](0111-a-technician-never-takes-two-visits-in-a-row.md) | A technician never takes two visits in a row | 2026-10-05 | accepted, on the owner's ruling of 5 October 2026 |  |
+| [0112](0112-workers-paid.md) | Workers Paid | 2026-10-06 | accepted, on the owner's purchase of 6 October 2026 |  |

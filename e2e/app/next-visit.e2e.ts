@@ -46,15 +46,15 @@ async function everyWindowOpen(page: Page): Promise<URL[]> {
         date: daysAfter(start, index),
         price,
         windows: [
-          { window: "morning", start: "09:00", end: "12:00", with: "another", change_charged: false },
-          { window: "afternoon", start: "12:00", end: "16:00", with: "another", change_charged: false },
-          { window: "evening", start: "16:00", end: "20:00", with: "another", change_charged: false },
+          { window: "morning", start: "09:00", end: "12:00", open: true, change_charged: false },
+          { window: "afternoon", start: "12:00", end: "16:00", open: true, change_charged: false },
+          { window: "evening", start: "16:00", end: "20:00", open: true, change_charged: false },
         ],
       }));
       const last = daysAfter(tomorrow(), 44);
       const type = url.searchParams.get("type");
       return route.fulfill({
-        json: { type, service: SERVICE, price, regular: null, change_notice_hours: 24, last, days },
+        json: { type, service: SERVICE, price, change_notice_hours: 24, last, days },
       });
     },
   );

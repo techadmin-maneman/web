@@ -18,7 +18,6 @@ import {
 import { createAlert, createLeadNotice } from "../../../src/providers/alerts.ts";
 import { createBooksProvider } from "../../../src/providers/books/index.ts";
 import { createAccessVerifier, ACCESS_TOKEN_HEADER } from "../../../src/providers/cloudflare-access.ts";
-import { readDailyUsage } from "../../../src/providers/cloudflare-usage.ts";
 import { createEvolutionMessaging } from "../../../src/providers/messaging/evolution.ts";
 import { pingHeartbeat } from "../../../src/providers/heartbeat.ts";
 import { createPaymentsProvider } from "../../../src/providers/payments/index.ts";
@@ -200,32 +199,6 @@ describe("the chat webhook and the heartbeat", () => {
         }) as unknown,
       }),
     );
-  });
-});
-
-describe("Cloudflare's usage figures", () => {
-  const GRAPHQL = "https://api.cloudflare.com/client/v4/graphql";
-  const query = (fetch: typeof globalThis.fetch) =>
-    readDailyUsage({ token: "analytics-read-token", accountId: "account", date: "2026-10-02", fetch, log });
-
-  it("logs the read, and never the token", async () => {
-    await query(fakeFetch({ [GRAPHQL]: () => json({ data: { viewer: { accounts: [] } } }) }).fetch);
-    expect(vendorCalls()).toEqual([{ vendor: "cloudflare-analytics", step: "daily_usage", status: 200 }]);
-    expect(JSON.stringify(logs.lines())).not.toContain("analytics-read-token");
-  });
-
-  it("says where an answer differs from what is read, an answer that is not JSON, and one that never came", async () => {
-    expect(await query(fakeFetch({ [GRAPHQL]: () => json({ data: { viewer: {} } }) }).fetch)).toEqual({
-      unreadable:
-        "Cloudflare analytics 200 UNEXPECTED_ANSWER: daily_usage: data.viewer.accounts: Invalid input: expected " +
-        "array, received undefined; data.viewer has no keys",
-    });
-    expect(await query(fakeFetch({ [GRAPHQL]: () => new Response("<html>") }).fetch)).toEqual({
-      unreadable: "Cloudflare analytics 200 UNEXPECTED_ANSWER: daily_usage: the answer is not JSON",
-    });
-    expect(await query(timedOut)).toEqual({
-      unreadable: "analytics did not answer: Cloudflare analytics 0 TIMEOUT: daily_usage got no answer within 10 s",
-    });
   });
 });
 

@@ -20,7 +20,7 @@ describe("GET /api/storage", () => {
     const answer = await request(appFor("local", fakeDependencies(), {}, "ops"), "/api/storage");
     const storage = await answer.json<{ database_bytes: number; database_limit_bytes: number }>();
     expect(storage.database_bytes).toBeGreaterThan(0);
-    expect(storage.database_limit_bytes).toBe(500e6);
+    expect(storage.database_limit_bytes).toBe(10e9);
   });
 
   it("is the console's alone", async () => {

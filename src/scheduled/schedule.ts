@@ -17,12 +17,7 @@ export interface Timing {
 }
 
 /** The jobs that call a vendor every time they run, whatever there is to do: each shares its minute with one job at most. */
-export const CALLS_EVERY_RUN: ReadonlySet<string> = new Set([
-  "whatsapp_bridge",
-  "books_items",
-  "ailab_credits",
-  "daily_allowances",
-]);
+export const CALLS_EVERY_RUN: ReadonlySet<string> = new Set(["whatsapp_bridge", "books_items", "ailab_credits"]);
 
 /**
  * Outside calls a minute's run may make. Each cost a staging run 3 to 5 ms of CPU, so a run takes one record's worth:

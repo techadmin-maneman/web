@@ -9,7 +9,6 @@ import {
   hasLaterDays,
   offeredFullLine,
   windowContinue,
-  windowNote,
   withDays,
   type Day,
 } from "../../../apps/app/src/booking/days.ts";
@@ -20,8 +19,8 @@ const day = (date: string, open: boolean): Day => ({
   date,
   price: PRICE,
   windows: [
-    { window: "morning", start: "09:00", end: "12:00", with: open ? "another" : null, change_charged: false },
-    { window: "afternoon", start: "12:00", end: "16:00", with: null, change_charged: false },
+    { window: "morning", start: "09:00", end: "12:00", open, change_charged: false },
+    { window: "afternoon", start: "12:00", end: "16:00", open: false, change_charged: false },
   ],
 });
 
@@ -29,7 +28,6 @@ const availability = (days: Day[], last: string): Availability => ({
   type: "service",
   service: { tier: "standard", name: "Service visit", minutes: 90 },
   price: PRICE,
-  regular: null,
   change_notice_hours: 24,
   last,
   days,
@@ -62,7 +60,7 @@ describe("the booking sheet's days", () => {
       "2026-10-08",
       "2026-10-09",
     ]);
-    expect(merged[3]?.windows[0]?.with).toBeNull();
+    expect(merged[3]?.windows[0]?.open).toBe(false);
   });
 });
 
@@ -86,19 +84,19 @@ describe("what the date step says of a full day offered", () => {
 });
 
 describe("the days the date step marks inside the notice", () => {
-  const withMorning = (who: "another" | null, charged: boolean): Day => {
+  const withMorning = (isOpen: boolean, charged: boolean): Day => {
     const open = day("2026-10-03", true);
-    const morning = { window: "morning" as const, start: "09:00", end: "12:00", with: who, change_charged: charged };
+    const morning = { window: "morning" as const, start: "09:00", end: "12:00", open: isOpen, change_charged: charged };
     return { ...open, windows: [morning] };
   };
 
   it("marks a day with an open window that is already charged to change", () => {
-    expect(dayInsideNotice(withMorning("another", true))).toBe(true);
-    expect(dayInsideNotice(withMorning("another", false))).toBe(false);
+    expect(dayInsideNotice(withMorning(true, true))).toBe(true);
+    expect(dayInsideNotice(withMorning(true, false))).toBe(false);
   });
 
   it("leaves a full window out of the mark, since it cannot be booked", () => {
-    expect(dayInsideNotice(withMorning(null, true))).toBe(false);
+    expect(dayInsideNotice(withMorning(false, true))).toBe(false);
   });
 });
 
@@ -110,20 +108,5 @@ describe("the window step's button", () => {
   it("only goes on for a day that costs nothing, as a consultation does", () => {
     const free = { amount_ex_gst: 0, amount: 0, gst_percent: 0 };
     expect(windowContinue({ ...day("2026-10-05", true), price: free })).toBe("Continue");
-  });
-});
-
-describe("what a window says of who would come", () => {
-  it("names the regular technician, and says another where he is busy", () => {
-    expect(windowNote("regular", "Imran")).toBe("With Imran");
-    expect(windowNote("another", "Imran")).toBe("Another technician");
-  });
-
-  it("says nothing of who to a client who has no regular technician", () => {
-    expect(windowNote("another", null)).toBeNull();
-  });
-
-  it("says a window is full", () => {
-    expect(windowNote(null, null)).toBe("Full");
   });
 });

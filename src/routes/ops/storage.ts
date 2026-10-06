@@ -28,7 +28,7 @@ const StorageSchema = z
     database_limit_bytes: z
       .number()
       .int()
-      .openapi({ description: "D1's limit on one database on the free plan; past it every write fails." }),
+      .openapi({ description: "D1's limit on one database on Workers Paid; past it every write fails." }),
   })
   .strict()
   .openapi("Storage");

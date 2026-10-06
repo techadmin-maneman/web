@@ -21,7 +21,6 @@ import { lateFeeOn, priceOf, type Price } from "../../domain/price-book.ts";
 import { clientHold, releaseHold } from "../../domain/holds.ts";
 import { currentAddress } from "../../domain/profile.ts";
 import { isServed } from "../../domain/service-area.ts";
-import { activeTechnicians, regularTechnician } from "../../domain/occupancy.ts";
 import { availability, bookableTypes } from "../../domain/availability.ts";
 import { holdSlot } from "../../domain/hold-slot.ts";
 import { bookableService, offeredProducts, serviceOf, type PricedService } from "../../domain/services.ts";
@@ -79,7 +78,6 @@ const AvailabilitySchema = z
     type: z.enum(VISIT_TYPES),
     service: ServiceSchema.openapi({ description: "The service the windows are for: a move's is its visit's." }),
     price: PriceSchema.openapi({ description: "The first day's price." }),
-    regular: z.union([TechnicianSchema, z.null()]).openapi({ description: "Whoever did the client's latest visit." }),
     change_notice_hours: z.number().int().openapi({
       description: "The notice a visit booked here is sold under: a move keeps its visit's own, else as ops set it.",
     }),
@@ -99,9 +97,11 @@ const AvailabilitySchema = z
                   .string()
                   .openapi({ description: "When the window starts that day, in India's time, as 12:00." }),
                 end: z.string().openapi({ description: "When it ends that day: ops set the day's times from a date." }),
-                with: z
-                  .union([z.enum(["regular", "another"]), z.null()])
-                  .openapi({ description: "Who would come: the regular technician, another, or nobody (full)." }),
+                open: z.boolean().openapi({
+                  description:
+                    "Whether a technician is free to take it: never the one who took the client's visit just " +
+                    "before or just after it. False when full.",
+                }),
                 change_charged: z.boolean().openapi({
                   description:
                     "Booked now, moving or cancelling it would already cost the client: it starts inside the notice, " +
@@ -428,10 +428,10 @@ export function registerClientBooking(app: App): void {
     // A move in place keeps its visit's terms, as its hold will (soldAs); anything else is sold under those in force.
     const terms = move !== null && moving !== null ? move.terms.sold : termsInForce(await opsInputs(c), type);
     const until = offered?.retired_date ?? null;
-    const [days, regularId, technicians, schedule] = await Promise.all([
-      availability(db, session.subjectId, { minutes: service.minutes, until }, start, BOOKING_DAYS, now, moving, true),
-      moving === null ? regularTechnician(db, session.subjectId) : moving.technicianId,
-      activeTechnicians(db),
+    // A charged move books a new visit in place of the old, which stands beside it no longer.
+    const placing = { personId: session.subjectId, moving, replacing: move?.moving.visitId ?? null, ownUnpaid: true };
+    const [days, schedule] = await Promise.all([
+      availability(db, placing, { minutes: service.minutes, until }, start, BOOKING_DAYS, now),
       loadSlotSchedule(db),
     ]);
     // A free or late-fee move costs the same whichever day it goes to; a new visit costs that day's price.
@@ -439,7 +439,6 @@ export function registerClientBooking(app: App): void {
       if (move !== null && move.terms.move.cost !== "charged") return price;
       return (await priceOf(db, type, date, service.tier)) ?? price;
     };
-    const regular = technicians.find((technician) => technician.id === regularId);
     // A day before the bookable days open, or past the last, is offered to nobody. Each window says its hours that day,
     // and whether a visit booked in it now would already cost the client to change.
     const strip = days.map((day) => {
@@ -448,7 +447,7 @@ export function registerClientBooking(app: App): void {
       const windows = day.windows.map((each) => {
         const times = hours[each.window];
         const changeCharged = changeChargedOnBooking(indiaInstant(day.date, times.start), now, terms);
-        return { ...each, ...times, with: shut ? null : each.with, change_charged: changeCharged };
+        return { ...each, ...times, open: !shut && each.open, change_charged: changeCharged };
       });
       return { ...day, windows };
     });
@@ -457,7 +456,6 @@ export function registerClientBooking(app: App): void {
         type,
         service: serviceBody(service),
         price,
-        regular: regular === undefined ? null : { name: regular.name, initials: regular.initials },
         change_notice_hours: terms.noticeHours,
         last: range.last,
         days: await Promise.all(strip.map(async (day) => ({ ...day, price: await priceOn(day.date) }))),

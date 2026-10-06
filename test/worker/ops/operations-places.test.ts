@@ -260,6 +260,8 @@ describe("booking a visit, for a grant of Operations in one city", () => {
   });
 
   it("offers its own technicians for a client in its city, and finds no client elsewhere", async () => {
+    // Arjun's Tuesday visit set aside, so its technician stands beside nothing booked here (docs/decisions/0111).
+    await env.DB.prepare("UPDATE appointments SET status = 'cancelled' WHERE id = ?1").bind(DELHI_VISIT).run();
     const offered = await get(delhi, `/api/visits/availability?client=${ARJUN}&kind=consultation`);
     expect(offered.status).toBe(200);
     const { days } = await offered.json<{ days: { windows: { technicians: { id: string }[] }[] }[] }>();
@@ -270,6 +272,8 @@ describe("booking a visit, for a grant of Operations in one city", () => {
   });
 
   it("books only for a client in its city, and never with a technician elsewhere", async () => {
+    // Arjun's Tuesday visit set aside, so its technician stands beside nothing booked here (docs/decisions/0111).
+    await env.DB.prepare("UPDATE appointments SET status = 'cancelled' WHERE id = ?1").bind(DELHI_VISIT).run();
     const visit = { kind: "consultation", date: WEDNESDAY, window: "afternoon" };
     expect((await post(delhi, "/api/visits", { ...visit, client: ROHIT })).status).toBe(404);
 
