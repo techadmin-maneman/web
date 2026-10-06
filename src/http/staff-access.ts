@@ -1,6 +1,7 @@
 // The Staff list on every ops call. Each route asks for a department at a level (src/policy/console-routes.ts); the
 // caller's grants answer it (src/policy/access.ts). While the list is not enforced nothing is refused or narrowed, and
-// what would have been refused is logged under the call's request ID, which its audit entry shares.
+// what would have been refused is logged under the call's request ID, which its audit entry shares. A client is
+// found by ID only within the caller's cities (clientInReach).
 
 import type { Context } from "hono";
 import { createMiddleware } from "hono/factory";
@@ -109,4 +110,29 @@ export async function permitsOn(c: Context<AppEnv>, need: RouteNeed, kind: Place
   const reached = placesReached(access, need.department, need.level);
   const allowed = meets(access, need) && (await recordWithin(c, reached, kind, id));
   return goesAhead(c, access, allowed, askedOf(need));
+}
+
+export interface PersonRow {
+  id: string;
+  name: string;
+  mobile_e164: string;
+  created_at: string;
+}
+
+/** The client by ID, erased or not; null when there is no such person or they are outside the caller's cities. */
+export async function anyClientInReach(
+  c: Context<AppEnv>,
+  id: string,
+): Promise<(PersonRow & { erased_at: string | null }) | null> {
+  const person = await c.env.DB.prepare("SELECT id, name, mobile_e164, created_at, erased_at FROM people WHERE id = ?1")
+    .bind(id)
+    .first<PersonRow & { erased_at: string | null }>();
+  if (person === null || !(await withinRouteReach(c, "client", id))) return null;
+  return person;
+}
+
+/** The client by ID; null when there is no such person, they were erased, or they are outside the caller's cities. */
+export async function clientInReach(c: Context<AppEnv>, id: string): Promise<PersonRow | null> {
+  const person = await anyClientInReach(c, id);
+  return person?.erased_at === null ? person : null;
 }

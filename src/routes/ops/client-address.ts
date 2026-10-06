@@ -18,7 +18,8 @@ import { currentAddress } from "../../domain/clients/profile.ts";
 import { errorBody, errorResponse, refuse } from "../../http/errors.ts";
 import { json } from "../../http/openapi.ts";
 import { AddressSaveSchema, addressOf, SuggestionsSchema } from "../client/profile.ts";
-import { ClientAddressSchema, clientAddressOf, clientInReach } from "./clients.ts";
+import { ClientAddressSchema, clientAddressOf } from "../schemas/clients.ts";
+import { clientInReach } from "../../http/staff-access.ts";
 
 const clientId = z.object({ id: z.uuid() });
 const unknownClient = errorResponse(

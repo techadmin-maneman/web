@@ -22,9 +22,8 @@
 
 import { createRoute, z } from "@hono/zod-openapi";
 import { typedDigits } from "@maneman/web-kit/mobile";
-import type { Context } from "hono";
 import { actorOf } from "../../http/audit.ts";
-import type { App, AppEnv } from "../../http/context.ts";
+import type { App } from "../../http/context.ts";
 import { VISIT_TYPES } from "../../config/visit-types.ts";
 import { earlierViews, logPhotoView, PHOTO_VIEW_MINUTES, viewInForce } from "../../domain/field/photo-views.ts";
 import {
@@ -44,17 +43,18 @@ import { clientVisitCodes } from "../../domain/money/discount-code-uses.ts";
 import { reachBinding, withinReach } from "../../domain/clients/places.ts";
 import { clientInviteOf } from "../../domain/referrals/referrals.ts";
 import { VISIT_OUTCOMES } from "../../domain/visits/visit-status.ts";
-import {
-  consentRecordsOf,
-  currentAddress,
-  type ConsentState,
-  type SavedAddress,
-} from "../../domain/clients/profile.ts";
+import { consentRecordsOf, currentAddress, type ConsentState } from "../../domain/clients/profile.ts";
 import { partialVisitsClosed } from "../../domain/ops/task-closures.ts";
 import { ANGLES, PHASES } from "../../domain/field/visit-photos.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
 import { json } from "../../http/openapi.ts";
-import { routeReach, withinRouteReach } from "../../http/staff-access.ts";
+import {
+  anyClientInReach,
+  clientInReach,
+  routeReach,
+  withinRouteReach,
+  type PersonRow,
+} from "../../http/staff-access.ts";
 import { indiaDate } from "../../lib/india-time.ts";
 import { INDIAN_MOBILE_PATTERN, toE164 } from "../../lib/mobile.ts";
 import { CONSENT_PURPOSES, CONSENT_SOURCES } from "../../policy/consents.ts";
@@ -63,57 +63,7 @@ import { paymentEntries } from "../../domain/money/client-payments.ts";
 import { EntrySchema } from "../client/payments.ts";
 import { ClientInviteSchema } from "./client-referral.ts";
 import { HISTORY_FIGURES, VisitSummarySchema } from "../client/visits.ts";
-
-const clientId = z.object({ id: z.uuid() });
-const unknownClient = errorResponse(
-  "not_found: no such client, or the client has been erased or is outside the caller's cities",
-);
-
-const nullable = z.union([z.string(), z.null()]);
-
-export const ClientAddressSchema = z
-  .object({
-    line1: z.string(),
-    line2: nullable,
-    locality: z.string(),
-    city: z.string(),
-    pincode: z.string(),
-    access_notes: nullable.openapi({ description: "For the technician: gate code, parking and the like." }),
-    building: nullable.openapi({ description: "The building as chosen from the suggestions; null if typed." }),
-    flat: nullable,
-    floor: nullable,
-    tower: nullable,
-    landmark: nullable,
-    given_to_ops: z
-      .union([
-        z
-          .object({
-            by: z.string().openapi({ description: "The Access e-mail of the member of staff who saved it." }),
-            at: z.iso.datetime(),
-          })
-          .strict(),
-        z.null(),
-      ])
-      .openapi({ description: "Where the client gave it to ops on the phone: who saved it, and when." }),
-  })
-  .strict()
-  .openapi("ClientAddress");
-
-/** The address visits go to now, as the client's page shows it. */
-export const clientAddressOf = (address: SavedAddress) => ({
-  line1: address.line1,
-  line2: address.line2,
-  locality: address.locality,
-  city: address.city,
-  pincode: address.pincode,
-  access_notes: address.accessNotes,
-  building: address.building,
-  flat: address.flat,
-  floor: address.floor,
-  tower: address.tower,
-  landmark: address.landmark,
-  given_to_ops: address.givenToOps === null ? null : { by: address.givenToOps.staff, at: address.givenToOps.at },
-});
+import { ClientAddressSchema, clientAddressOf, clientId, unknownClient } from "../schemas/clients.ts";
 
 const ClientVisitSchema = VisitSummarySchema.extend({
   outcome: z
@@ -527,31 +477,6 @@ function consentStateOf(consent: ConsentState): "given" | "not_given" | "withdra
 
 /** A LIKE pattern for text anywhere in the column, with LIKE's own wildcards taken as themselves. */
 const containing = (text: string): string => `%${text.replace(/[\\%_]/g, (character) => `\\${character}`)}%`;
-
-interface PersonRow {
-  id: string;
-  name: string;
-  mobile_e164: string;
-  created_at: string;
-}
-
-/** The client by ID, erased or not; null when there is no such person or they are outside the caller's cities. */
-async function anyClientInReach(
-  c: Context<AppEnv>,
-  id: string,
-): Promise<(PersonRow & { erased_at: string | null }) | null> {
-  const person = await c.env.DB.prepare("SELECT id, name, mobile_e164, created_at, erased_at FROM people WHERE id = ?1")
-    .bind(id)
-    .first<PersonRow & { erased_at: string | null }>();
-  if (person === null || !(await withinRouteReach(c, "client", id))) return null;
-  return person;
-}
-
-/** The client by ID; null when there is no such person, they were erased, or they are outside the caller's cities. */
-export async function clientInReach(c: Context<AppEnv>, id: string): Promise<PersonRow | null> {
-  const person = await anyClientInReach(c, id);
-  return person?.erased_at === null ? person : null;
-}
 
 /** The client's visits, each with how it closed, any closing of its task by hand, and its discount code. */
 async function recordVisits(db: D1Database, personId: string, now: Date) {
