@@ -183,13 +183,19 @@ const MOVE_KINDS: readonly VisitMessageKind[] = ["reschedule_confirmation", "vis
  * while it still is. An arrival notice says the technician is at the door, a reminder that the visit is tomorrow, and
  * a move the visit's new window, which a later move's message tells as well.
  */
-export async function isMessageStale(
-  db: D1Database,
-  kind: VisitMessageKind,
-  appointmentId: string,
-  writtenAt: Date,
-  now: Date,
-): Promise<string | null> {
+export async function isMessageStale({
+  db,
+  kind,
+  appointmentId,
+  writtenAt,
+  now,
+}: {
+  db: D1Database;
+  kind: VisitMessageKind;
+  appointmentId: string;
+  writtenAt: Date;
+  now: Date;
+}): Promise<string | null> {
   if (kind === "arrival_notice") return arrivalTooLate(writtenAt, now);
   if (kind === "visit_reminder") return reminderOutdated(db, appointmentId, writtenAt, now);
   if (MOVE_KINDS.includes(kind)) return laterMoveTold(db, appointmentId, writtenAt);

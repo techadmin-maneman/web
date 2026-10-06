@@ -112,31 +112,73 @@ try {
   const design = await openDesign(browser);
 
   const arrival = await openSite(browser, PHONE, null);
-  await pair(OUT, PHONE, "c1-arrival", await frame(design, "Landing · arrival"), await shot(arrival));
+  await pair({
+    dir: OUT,
+    width: PHONE,
+    name: "c1-arrival",
+    design: await frame(design, "Landing · arrival"),
+    built: await shot(arrival),
+  });
   await arrival.close();
 
   const served = await openSite(browser, PHONE, "served");
-  await pair(OUT, PHONE, "c2-served", await frame(design, "Landing · served"), await shot(served));
+  await pair({
+    dir: OUT,
+    width: PHONE,
+    name: "c2-served",
+    design: await frame(design, "Landing · served"),
+    built: await shot(served),
+  });
   await served.close();
 
   const unserved = await openSite(browser, PHONE, "unserved");
-  await pair(OUT, PHONE, "c3-not-served", await frame(design, "Landing · not served"), await shot(unserved));
+  await pair({
+    dir: OUT,
+    width: PHONE,
+    name: "c3-not-served",
+    design: await frame(design, "Landing · not served"),
+    built: await shot(unserved),
+  });
   await unserved.close();
 
   const booked = await openSite(browser, PHONE, "booked");
-  await pair(OUT, PHONE, "c4-booked", await stateFrame(design, "Consultation booked"), await shot(booked));
+  await pair({
+    dir: OUT,
+    width: PHONE,
+    name: "c4-booked",
+    design: await stateFrame(design, "Consultation booked"),
+    built: await shot(booked),
+  });
   await booked.close();
 
   const expired = await openSite(browser, PHONE, "expired");
-  await pair(OUT, PHONE, "c4-expired", await stateFrame(design, "Code expired"), await shot(expired));
+  await pair({
+    dir: OUT,
+    width: PHONE,
+    name: "c4-expired",
+    design: await stateFrame(design, "Code expired"),
+    built: await shot(expired),
+  });
   await expired.close();
 
   const listed = await openSite(browser, PHONE, "listed");
-  await pair(OUT, PHONE, "c4-on-the-list", await stateFrame(design, "On the list"), await shot(listed));
+  await pair({
+    dir: OUT,
+    width: PHONE,
+    name: "c4-on-the-list",
+    design: await stateFrame(design, "On the list"),
+    built: await shot(listed),
+  });
   await listed.close();
 
   const desktop = await openSite(browser, DESKTOP, null);
-  await pair(OUT, DESKTOP, "c5-desktop", await frame(design, "Landing · desktop", false), await shot(desktop));
+  await pair({
+    dir: OUT,
+    width: DESKTOP,
+    name: "c5-desktop",
+    design: await frame(design, "Landing · desktop", false),
+    built: await shot(desktop),
+  });
   await desktop.close();
 
   await design.close();

@@ -91,13 +91,19 @@ const HELD_THERE = `SELECT COALESCE((SELECT quantity FROM stock_balances
  * A count's row, `id`, written only while the place still holds what the count was worked out from. It answers the
  * row's ID when it is written: D1's count of changes takes in the balance a trigger moves with it.
  */
-function countStatement(
-  db: D1Database,
-  id: string,
-  movement: Movement,
-  held: number,
-  written: Written,
-): D1PreparedStatement {
+function countStatement({
+  db,
+  id,
+  movement,
+  held,
+  written,
+}: {
+  db: D1Database;
+  id: string;
+  movement: Movement;
+  held: number;
+  written: Written;
+}): D1PreparedStatement {
   return db
     .prepare(
       `INSERT INTO stock_movements (${MOVEMENT_COLUMNS})
@@ -230,7 +236,7 @@ async function writeCount(
   };
   const detail = { place: input.place ?? CENTRAL_STORE, counted: input.counted, ...found };
   const [row] = await db.batch([
-    countStatement(db, id, movement, found.held, written),
+    countStatement({ db, id, movement, held: found.held, written }),
     auditStatementIfWritten(db, entry("stock.count", input.code, written, detail), written.now, {
       table: "stock_movements",
       id,

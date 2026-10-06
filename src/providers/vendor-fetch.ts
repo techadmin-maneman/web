@@ -53,7 +53,7 @@ export class VendorUnreachable extends ProviderError {
       ? `${call.step} got no answer within ${String(call.timeoutMs / 1000)} s`
       : `${call.step} could not be reached (${reason})`;
     const code = timedOut ? "TIMEOUT" : "UNREACHABLE";
-    super(0, code, `${VENDOR_NAMES[call.vendor]} 0 ${code}: ${what}`, false);
+    super(0, code, `${VENDOR_NAMES[call.vendor]} 0 ${code}: ${what}`, { refusal: false });
     this.reason = reason;
     this.timedOut = timedOut;
     this.cause = cause;

@@ -80,7 +80,14 @@ async function pass(
       .bind(booksCustomerId, PERSON)
       .run();
   }
-  return syncBooks(env.DB, depsFor(books, now), optionsFor(overrides), now, createLogger(), budget);
+  return syncBooks({
+    db: env.DB,
+    deps: depsFor(books, now),
+    options: optionsFor(overrides),
+    now,
+    log: createLogger(),
+    budget,
+  });
 }
 
 const CLIENT_PAGE = `http://ops.localhost:4323/clients/${PERSON}`;

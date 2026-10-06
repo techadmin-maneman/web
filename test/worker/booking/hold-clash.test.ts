@@ -29,9 +29,9 @@ describe("a hold whose batch fails on another table's key", () => {
       "INSERT INTO people (id, created_at, mobile_e164, name) VALUES ('another', ?1, '+919810000001', 'Rohit Malhotra')",
     ).bind(NOW.toISOString());
 
-    const placing = holdSlot(
-      env.DB,
-      {
+    const placing = holdSlot({
+      db: env.DB,
+      input: {
         personId: PERSON,
         service: CONSULTATION,
         date: "2026-09-23",
@@ -40,9 +40,9 @@ describe("a hold whose batch fails on another table's key", () => {
         from: "site",
         alongside: [twice],
       },
-      NOW,
-      600,
-    );
+      now: NOW,
+      holdSeconds: 600,
+    });
 
     await expect(placing).rejects.toThrow("UNIQUE constraint failed: people.mobile_e164");
   });

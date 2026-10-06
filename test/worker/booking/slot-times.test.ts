@@ -152,7 +152,7 @@ describe("a day under a change of times", () => {
   it("puts a visit in the half-slot and window its time falls in that day", async () => {
     await set(EARLIEST);
     await visitOn(EARLIEST, "12:15");
-    const held = await occupancy(env.DB, EARLIEST, EARLIEST, NOW);
+    const held = await occupancy({ db: env.DB, from: EARLIEST, to: EARLIEST, now: NOW });
     const day = held(TECHNICIAN, EARLIEST);
     // The morning's second half-slot, from 11:00, under the later times; the afternoon's first under the old ones.
     expect([...day.windows]).toEqual(["morning"]);

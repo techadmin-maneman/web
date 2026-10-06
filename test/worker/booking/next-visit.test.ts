@@ -400,7 +400,13 @@ describe("the reminder of the next service", () => {
     await consent(true);
     const [id = ""] = await queueNextServiceReminders(env.DB, EVENING, NEXT_VISIT_DAYS);
     const { provider, sent } = recordingProvider();
-    await sendMessage(env.DB, config({ allowlist: [MOBILE] }), fakeDependencies({ messaging: provider }), log, id);
+    await sendMessage({
+      db: env.DB,
+      config: config({ allowlist: [MOBILE] }),
+      deps: fakeDependencies({ messaging: provider }),
+      log,
+      messageId: id,
+    });
     expect(sent).toEqual([
       { to: MOBILE, template: "next_visit_due_v1", params: ["Rohit", "service visit", "Mon 28 Sep"] },
     ]);
@@ -415,7 +421,13 @@ describe("the reminder of the next service", () => {
     await consent(true);
     const [id = ""] = await queueNextServiceReminders(env.DB, EVENING, NEXT_VISIT_DAYS);
     const { provider, sent } = recordingProvider();
-    await sendMessage(env.DB, config({ allowlist: [MOBILE] }), fakeDependencies({ messaging: provider }), log, id);
+    await sendMessage({
+      db: env.DB,
+      config: config({ allowlist: [MOBILE] }),
+      deps: fakeDependencies({ messaging: provider }),
+      log,
+      messageId: id,
+    });
     expect(sent[0]?.params).toEqual(["Rohit", "replacement", "Mon 28 Sep"]);
   });
 
@@ -425,7 +437,13 @@ describe("the reminder of the next service", () => {
     await consent(false);
     const [id = ""] = await queueNextServiceReminders(env.DB, EVENING, NEXT_VISIT_DAYS);
     const { provider, sent } = recordingProvider();
-    await sendMessage(env.DB, config({ allowlist: [MOBILE] }), fakeDependencies({ messaging: provider }), log, id);
+    await sendMessage({
+      db: env.DB,
+      config: config({ allowlist: [MOBILE] }),
+      deps: fakeDependencies({ messaging: provider }),
+      log,
+      messageId: id,
+    });
     expect(sent).toEqual([]);
     const row = await env.DB.prepare("SELECT state, last_error FROM outbound_messages").first();
     expect(row).toEqual({ state: "skipped", last_error: "no consent to WhatsApp about visits" });
@@ -437,7 +455,13 @@ describe("the reminder of the next service", () => {
     const [id = ""] = await queueNextServiceReminders(env.DB, EVENING, NEXT_VISIT_DAYS);
     await visit("service", "2026-09-26T04:30:00.000Z", "scheduled");
     const { provider, sent } = recordingProvider();
-    await sendMessage(env.DB, config({ allowlist: [MOBILE] }), fakeDependencies({ messaging: provider }), log, id);
+    await sendMessage({
+      db: env.DB,
+      config: config({ allowlist: [MOBILE] }),
+      deps: fakeDependencies({ messaging: provider }),
+      log,
+      messageId: id,
+    });
     expect(sent).toEqual([]);
     const row = await env.DB.prepare("SELECT state, last_error FROM outbound_messages").first();
     expect(row).toEqual({ state: "skipped", last_error: "a visit is booked" });

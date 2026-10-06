@@ -58,13 +58,19 @@ export function noShowWaitEnds(
 }
 
 /** Whether the technician may close the job as a no-show yet. */
-export const canCloseAsNoShow = (
-  checkIn: CheckInTimes,
-  visitStart: Date,
-  type: VisitType,
-  now: Date,
-  wait: Waits = NO_SHOW_WAIT_MIN,
-): boolean => now.getTime() >= noShowWaitEnds(checkIn, visitStart, type, wait).getTime();
+export const canCloseAsNoShow = ({
+  checkIn,
+  visitStart,
+  type,
+  now,
+  wait = NO_SHOW_WAIT_MIN,
+}: {
+  checkIn: CheckInTimes;
+  visitStart: Date;
+  type: VisitType;
+  now: Date;
+  wait?: Waits;
+}): boolean => now.getTime() >= noShowWaitEnds(checkIn, visitStart, type, wait).getTime();
 
 /** The three facts ops rule on, and nothing else. */
 export interface Evidence {

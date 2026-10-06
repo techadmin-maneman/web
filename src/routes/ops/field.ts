@@ -499,12 +499,12 @@ export function registerOpsField(app: App): void {
     const now = c.var.deps.now();
     if (!(await withinRouteReach(c, "technician", id))) return refuse(c, "not_found");
 
-    const outcome = await recordLeave(
-      c.env.DB,
-      { technicianId: id, from, to, note: note ?? null, actor: staff.id },
-      indiaDate(now),
+    const outcome = await recordLeave({
+      db: c.env.DB,
+      leave: { technicianId: id, from, to, note: note ?? null, actor: staff.id },
+      today: indiaDate(now),
       now,
-      {
+      audit: {
         surface: "ops",
         actor: staff,
         action: "technician.leave",
@@ -512,7 +512,7 @@ export function registerOpsField(app: App): void {
         requestId: c.var.requestId,
         detail: { from, to },
       },
-    );
+    });
     if (outcome.kind === "no_such_technician") return refuse(c, "not_found");
     if (outcome.kind === "bad_dates") return refuse(c, "invalid_request", ["to"]);
     return c.json({ id: outcome.id, jobs: outcome.jobs }, 200);

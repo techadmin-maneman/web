@@ -160,14 +160,21 @@ function referralCredits(
  * A side the reward gives nothing gets no credits; the friend is then told nothing, and the referrer is
  * still told of the fit.
  */
-function grantStatements(
-  db: D1Database,
-  attribution: ReferralAttribution,
-  reward: ReferralReward,
-  state: "granted" | "approved",
-  now: Date,
-  review: { staff: string; reason: string | null } | null = null,
-): { statements: D1PreparedStatement[]; messageIds: string[] } {
+function grantStatements({
+  db,
+  attribution,
+  reward,
+  state,
+  now,
+  review = null,
+}: {
+  db: D1Database;
+  attribution: ReferralAttribution;
+  reward: ReferralReward;
+  state: "granted" | "approved";
+  now: Date;
+  review?: { staff: string; reason: string | null } | null;
+}): { statements: D1PreparedStatement[]; messageIds: string[] } {
   const expiresAt = creditExpiry(now, reward.valid_days);
   const at = now.toISOString();
   const settled: Settled = { state, at };
@@ -340,7 +347,7 @@ export async function settleReferrals(
       outcome.held += 1;
       continue;
     }
-    const { statements, messageIds } = grantStatements(db, attribution, reward, "granted", now);
+    const { statements, messageIds } = grantStatements({ db, attribution, reward, state: "granted", now });
     const [granted] = await db.batch(statements);
     // Another pass settled it first, and its messages are that pass's to send.
     if (granted?.meta.changes !== 1) continue;
@@ -406,9 +413,16 @@ export async function decideHeldReferral(
     if (decided?.meta.changes !== 1) return null;
     return { state: "rejected", messageIds: told.map((message) => message.id) };
   }
-  const { statements, messageIds } = grantStatements(db, attribution, reward, "approved", input.now, {
-    staff: input.staff,
-    reason: input.reason,
+  const { statements, messageIds } = grantStatements({
+    db,
+    attribution,
+    reward,
+    state: "approved",
+    now: input.now,
+    review: {
+      staff: input.staff,
+      reason: input.reason,
+    },
   });
   const [decided] = await db.batch([...statements, audit]);
   if (decided?.meta.changes !== 1) return null;

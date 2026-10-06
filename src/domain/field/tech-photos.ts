@@ -80,14 +80,21 @@ type Stored =
 const takeKey = (slot: PhotoSlot, take: string) => `visits/${slot.appointmentId}/${slot.phase}-${slot.angle}-${take}`;
 
 /** Puts one photograph in its slot: R2 first, then the row that names it. */
-export async function storeTechnicianPhoto(
-  db: D1Database,
-  bucket: R2Bucket,
-  slot: PhotoSlot,
-  bytes: Uint8Array,
-  takenAt: Date,
-  now: Date,
-): Promise<Stored> {
+export async function storeTechnicianPhoto({
+  db,
+  bucket,
+  slot,
+  bytes,
+  takenAt,
+  now,
+}: {
+  db: D1Database;
+  bucket: R2Bucket;
+  slot: PhotoSlot;
+  bytes: Uint8Array;
+  takenAt: Date;
+  now: Date;
+}): Promise<Stored> {
   const info = inspectImage(bytes);
   if (info === null) return { kind: "not_an_image" };
 
@@ -107,7 +114,7 @@ export async function storeTechnicianPhoto(
 
   const take = crypto.randomUUID();
   const key = `${takeKey(slot, take)}.${fileExtension(info.type)}`;
-  await putCounted(db, bucket, key, bytes, info.type);
+  await putCounted({ db, bucket, key, bytes, contentType: info.type });
   const row = await db
     .prepare(
       `INSERT INTO photos (id, photo_set_id, angle, r2_key, content_type, bytes, width, height, taken_at, created_at)
@@ -149,13 +156,19 @@ type StoredThumbnail = "stored" | "held_already" | "no_photograph" | "not_a_thum
  * Keeps a take's small copy beside it. The take must still be the slot's photograph: a small copy is never held
  * without its own, and never beside a newer take.
  */
-export async function storeThumbnail(
-  db: D1Database,
-  bucket: R2Bucket,
-  slot: PhotoSlot,
-  take: string,
-  bytes: Uint8Array,
-): Promise<StoredThumbnail> {
+export async function storeThumbnail({
+  db,
+  bucket,
+  slot,
+  take,
+  bytes,
+}: {
+  db: D1Database;
+  bucket: R2Bucket;
+  slot: PhotoSlot;
+  take: string;
+  bytes: Uint8Array;
+}): Promise<StoredThumbnail> {
   if (!isThumbnail(bytes)) return "not_a_thumbnail";
   const photo = await db
     .prepare(
@@ -169,7 +182,7 @@ export async function storeThumbnail(
   const key = `${photograph}-small.jpg`;
   if (photo.thumbnail_key === key) return "held_already";
 
-  await putCounted(db, bucket, key, bytes, "image/jpeg");
+  await putCounted({ db, bucket, key, bytes, contentType: "image/jpeg" });
   const claimed = await db
     .prepare("UPDATE photos SET thumbnail_key = ?3 WHERE id = ?1 AND r2_key = ?2 RETURNING id")
     .bind(photo.id, photo.r2_key, key)

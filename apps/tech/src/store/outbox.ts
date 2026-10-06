@@ -145,7 +145,19 @@ export async function correct(seq: number, body: EventBody<EventKind>): Promise<
  * frame for the same angle — a double tap — replaces the first rather than
  * standing in for the next angle.
  */
-export async function keepFrame(jobId: string, angle: Angle, phase: Phase, frame: Blob, small?: Blob): Promise<string> {
+export async function keepFrame({
+  jobId,
+  angle,
+  phase,
+  frame,
+  small,
+}: {
+  jobId: string;
+  angle: Angle;
+  phase: Phase;
+  frame: Blob;
+  small?: Blob;
+}): Promise<string> {
   const id = `${jobId}:${phase}:${angle}`;
   const kept: Frame = {
     id,
@@ -189,14 +201,21 @@ export async function forget(jobId: string): Promise<void> {
   changed();
 }
 
-async function markAs(
-  event: Queued,
-  state: Exclude<EventState, "waiting">,
-  note: string,
-  fields: readonly string[],
-  moved: Moved | null = null,
-  requestId: string | null = null,
-): Promise<void> {
+async function markAs({
+  event,
+  state,
+  note,
+  fields,
+  moved = null,
+  requestId = null,
+}: {
+  event: Queued;
+  state: Exclude<EventState, "waiting">;
+  note: string;
+  fields: readonly string[];
+  moved?: Moved | null;
+  requestId?: string | null;
+}): Promise<void> {
   const current = await get("outbox", event.seq);
   if (current === null) return;
   await put("outbox", { ...current, state, note, fields, moved, request_id: requestId });
@@ -215,7 +234,14 @@ async function readAgainIfMoved(jobId: string, fields: readonly string[]): Promi
  */
 async function giveUp(event: Queued, refusal: Refusal): Promise<void> {
   const { answer } = refusal;
-  await markAs(event, "refused", refusal.note, refusal.fields, null, answer.requestId);
+  await markAs({
+    event,
+    state: "refused",
+    note: refusal.note,
+    fields: refusal.fields,
+    moved: null,
+    requestId: answer.requestId,
+  });
   reportClientError({
     kind: "outbox_gave_up",
     message: `${event.kind} refused: ${answer.code}`,
@@ -238,7 +264,7 @@ async function dropEarlier(event: Queued): Promise<void> {
  */
 async function keepEarly(event: Queued, code: string): Promise<void> {
   await dropEarlier(event);
-  await markAs(event, "early", code, []);
+  await markAs({ event, state: "early", note: code, fields: [] });
 }
 
 let running: Promise<Replayed> | null = null;
@@ -367,7 +393,7 @@ async function run(): Promise<Replayed> {
     else if (verdict.kind === "signed_out") return { ...round, stopped: "signed-out" };
     else if (verdict.kind === "too_early") await keepEarly(event, verdict.code);
     else if (verdict.kind === "superseded") {
-      await markAs(event, "superseded", verdict.note, verdict.fields, verdict.moved);
+      await markAs({ event, state: "superseded", note: verdict.note, fields: verdict.fields, moved: verdict.moved });
       await readAgainIfMoved(event.job_id, verdict.fields);
       round.superseded += 1;
     } else {

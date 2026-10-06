@@ -41,7 +41,7 @@ const BOOKING_TRIES = 2;
 export async function startBooking(basis: BookingBasis, holdId: string, personId: string): Promise<Started | null> {
   const { db, payments, now } = basis;
   for (let tries = 0; tries < BOOKING_TRIES; tries += 1) {
-    const started = await tryStartBooking(db, payments, holdId, personId, now);
+    const started = await tryStartBooking({ db, payments, holdId, personId, now });
     if (started !== "price_changed") return started;
   }
   return null;
@@ -53,13 +53,19 @@ export async function startBooking(basis: BookingBasis, holdId: string, personId
  * (docs/decisions/0108-discount-codes.md), and the try answers "price_changed" for the next. A credit hold whose
  * credit another booking has taken is paid for in money from then on, so the next try makes its order.
  */
-async function tryStartBooking(
-  db: D1Database,
-  payments: PaymentsProvider,
-  holdId: string,
-  personId: string,
-  now: Date,
-): Promise<Started | null | "price_changed"> {
+async function tryStartBooking({
+  db,
+  payments,
+  holdId,
+  personId,
+  now,
+}: {
+  db: D1Database;
+  payments: PaymentsProvider;
+  holdId: string;
+  personId: string;
+  now: Date;
+}): Promise<Started | null | "price_changed"> {
   const hold = await bookingHoldRow(db, holdId);
   if (hold?.person_id !== personId || hold.state !== "held" || hold.expires_at <= now.toISOString()) return null;
   if (hold.pay_by_link === 1) return null;
@@ -240,7 +246,7 @@ async function releaseLease(db: D1Database, holdId: string): Promise<void> {
 async function bookNewVisit(db: D1Database, hold: HoldRow, now: Date, options: ConfirmOptions): Promise<Confirmed> {
   const visitId = crypto.randomUUID();
   const row = await newVisit(db, hold, visitId, now);
-  await writeNewBooking(db, hold, { id: visitId, row }, now, options);
+  await writeNewBooking({ db, hold, visit: { id: visitId, row }, now, options });
   return "booked";
 }
 
@@ -282,13 +288,19 @@ async function newVisit(db: D1Database, hold: HoldRow, visitId: string, now: Dat
  * and referral linked to the visit, and the credit that pays for it redeemed. Then what follows a booking. Each
  * statement after the row names the visit only once the row is written.
  */
-async function writeNewBooking(
-  db: D1Database,
-  hold: HoldRow,
-  visit: { readonly id: string; readonly row: D1PreparedStatement },
-  now: Date,
-  options: ConfirmOptions,
-): Promise<void> {
+async function writeNewBooking({
+  db,
+  hold,
+  visit,
+  now,
+  options,
+}: {
+  db: D1Database;
+  hold: HoldRow;
+  visit: { readonly id: string; readonly row: D1PreparedStatement };
+  now: Date;
+  options: ConfirmOptions;
+}): Promise<void> {
   const at = now.toISOString();
   const visitId = "(SELECT id FROM appointments WHERE id = ?1)";
   await db.batch([

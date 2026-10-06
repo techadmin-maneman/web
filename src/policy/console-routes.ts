@@ -212,7 +212,7 @@ export const markDoneNeed = (kind: string): RouteNeed => alertNeed(kind, markDon
 export function callerMeetsNeed(caller: Caller, need: RouteNeed, zoneOf: ZoneOfCity): boolean {
   const where = need.ownPlaces === true ? "anywhere" : NATIONAL;
   const departments = need.department === OWN_DEPARTMENTS ? DEPARTMENTS : [need.department];
-  return departments.some((department) => can(caller, department, need.level, where, zoneOf));
+  return departments.some((department) => can({ caller, department, level: need.level, where, zoneOf }));
 }
 
 /** The routes a caller's calls go ahead on, as "GET /api/tasks": every one while the list is not enforced. */

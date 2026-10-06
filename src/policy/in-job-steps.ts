@@ -106,13 +106,19 @@ export const isNoShow = (kind: JobEventKind, body: Record<string, unknown>): boo
  * first, then the start, then the steps in their order. A no-show closes a job that was never started, so it needs
  * only the check-in its wait ran from.
  */
-export function stepBefore(
-  kind: JobEventKind,
-  type: VisitType,
-  done: ReadonlySet<string>,
-  body: Record<string, unknown>,
+export function stepBefore({
+  kind,
+  type,
+  done,
+  body,
   oneVisit = false,
-): JobEventKind | null {
+}: {
+  kind: JobEventKind;
+  type: VisitType;
+  done: ReadonlySet<string>;
+  body: Record<string, unknown>;
+  oneVisit?: boolean;
+}): JobEventKind | null {
   if (kind === "check_in") return null;
   if (kind === "start" || isNoShow(kind, body)) return done.has("check_in") ? null : "check_in";
   if (!done.has("start")) return "start";

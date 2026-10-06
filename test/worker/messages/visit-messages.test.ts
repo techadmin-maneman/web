@@ -295,13 +295,13 @@ describe("sending a visit message", () => {
     const message = visitMessage(env.DB, { personId: PERSON, appointmentId: VISIT, kind: "payment_receipt", now: NOW });
     await message.statement.run();
     const { provider, sent } = recordingProvider();
-    await sendMessage(
-      env.DB,
-      config({ allowlist: ["+919810000001"] }),
-      fakeDependencies({ messaging: provider }),
+    await sendMessage({
+      db: env.DB,
+      config: config({ allowlist: ["+919810000001"] }),
+      deps: fakeDependencies({ messaging: provider }),
       log,
-      message.id,
-    );
+      messageId: message.id,
+    });
     expect(sent).toEqual([
       {
         to: "+919810000001",
@@ -325,7 +325,13 @@ describe("sending a visit message", () => {
     });
     await message.statement.run();
     const { provider, sent } = recordingProvider();
-    await sendMessage(env.DB, config(), fakeDependencies({ messaging: provider }), log, message.id);
+    await sendMessage({
+      db: env.DB,
+      config: config(),
+      deps: fakeDependencies({ messaging: provider }),
+      log,
+      messageId: message.id,
+    });
     expect(sent).toEqual([]);
     const row = await env.DB.prepare("SELECT state, last_error FROM outbound_messages").first();
     expect(row).toEqual({ state: "skipped", last_error: "too late for a day-before reminder" });
@@ -343,7 +349,13 @@ describe("sending a visit message", () => {
 
     async function sendAt(at: Date, messageId: string) {
       const { provider, sent } = recordingProvider();
-      await sendMessage(env.DB, config(), fakeDependencies({ messaging: provider, now: () => at }), log, messageId);
+      await sendMessage({
+        db: env.DB,
+        config: config(),
+        deps: fakeDependencies({ messaging: provider, now: () => at }),
+        log,
+        messageId,
+      });
       return sent;
     }
 
@@ -399,7 +411,7 @@ describe("sending a visit message", () => {
     await env.DB.batch(moves.map((move) => move.statement));
     const { provider, sent } = recordingProvider();
     const deps = fakeDependencies({ messaging: provider });
-    for (const move of moves) await sendMessage(env.DB, config(), deps, log, move.id);
+    for (const move of moves) await sendMessage({ db: env.DB, config: config(), deps, log, messageId: move.id });
     expect(sent.map((message) => renderMessage(message.template, message.params))).toEqual([
       "Hi Rohit, your service visit is now on Thu 24 Sep, 12 to 4 pm, with Imran.",
     ]);
@@ -418,7 +430,13 @@ describe("sending a visit message", () => {
     const message = visitMessage(env.DB, { personId: PERSON, appointmentId: VISIT, kind: "visit_reminder", now: NOW });
     await message.statement.run();
     const { provider, sent } = recordingProvider();
-    await sendMessage(env.DB, config(), fakeDependencies({ messaging: provider }), log, message.id);
+    await sendMessage({
+      db: env.DB,
+      config: config(),
+      deps: fakeDependencies({ messaging: provider }),
+      log,
+      messageId: message.id,
+    });
     expect(sent).toEqual([]);
     const row = await env.DB.prepare("SELECT state, last_error FROM outbound_messages").first();
     expect(row).toEqual({ state: "skipped", last_error: "no consent to WhatsApp about visits" });
@@ -440,13 +458,13 @@ describe("sending a visit message", () => {
       });
       await message.statement.run();
       const { provider, sent } = recordingProvider();
-      await sendMessage(
-        env.DB,
-        config({ allowlist: ["+919810000099"] }),
-        fakeDependencies({ messaging: provider }),
+      await sendMessage({
+        db: env.DB,
+        config: config({ allowlist: ["+919810000099"] }),
+        deps: fakeDependencies({ messaging: provider }),
         log,
-        message.id,
-      );
+        messageId: message.id,
+      });
       expect(sent).toHaveLength(1);
     });
 
@@ -465,13 +483,13 @@ describe("sending a visit message", () => {
       });
       await message.statement.run();
       const { provider, sent } = recordingProvider();
-      await sendMessage(
-        env.DB,
-        config({ allowlist: ["+919810000099"] }),
-        fakeDependencies({ messaging: provider }),
+      await sendMessage({
+        db: env.DB,
+        config: config({ allowlist: ["+919810000099"] }),
+        deps: fakeDependencies({ messaging: provider }),
         log,
-        message.id,
-      );
+        messageId: message.id,
+      });
       expect(sent).toEqual([]);
       const row = await env.DB.prepare("SELECT state, last_error FROM outbound_messages").first();
       expect(row).toEqual({ state: "skipped", last_error: "number not on the allowlist" });
@@ -488,13 +506,13 @@ describe("sending a visit message", () => {
       });
       await message.statement.run();
       const { provider, sent } = recordingProvider();
-      await sendMessage(
-        env.DB,
-        config({ allowlist: ["+919810000099"] }),
-        fakeDependencies({ messaging: provider }),
+      await sendMessage({
+        db: env.DB,
+        config: config({ allowlist: ["+919810000099"] }),
+        deps: fakeDependencies({ messaging: provider }),
         log,
-        message.id,
-      );
+        messageId: message.id,
+      });
       expect(sent).toEqual([]);
       const row = await env.DB.prepare("SELECT state, last_error FROM outbound_messages").first();
       expect(row).toEqual({ state: "skipped", last_error: "number not on the allowlist" });
@@ -520,8 +538,8 @@ describe("sending a visit message", () => {
       await reminder.statement.run();
       const { provider, sent } = recordingProvider();
       const deps = fakeDependencies({ messaging: provider });
-      await sendMessage(env.DB, config(), deps, log, receipt.id);
-      await sendMessage(env.DB, config(), deps, log, reminder.id);
+      await sendMessage({ db: env.DB, config: config(), deps, log, messageId: receipt.id });
+      await sendMessage({ db: env.DB, config: config(), deps, log, messageId: reminder.id });
       expect(sent).toHaveLength(2);
     });
 
@@ -538,7 +556,13 @@ describe("sending a visit message", () => {
       });
       await message.statement.run();
       const { provider, sent } = recordingProvider();
-      await sendMessage(env.DB, config(), fakeDependencies({ messaging: provider }), log, message.id);
+      await sendMessage({
+        db: env.DB,
+        config: config(),
+        deps: fakeDependencies({ messaging: provider }),
+        log,
+        messageId: message.id,
+      });
       expect(sent).toHaveLength(1);
     });
   });

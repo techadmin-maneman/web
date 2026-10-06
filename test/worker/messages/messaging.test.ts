@@ -69,7 +69,15 @@ describe("messaging: sending a result", () => {
     await queuedMessage();
     const { provider, sent } = recordingProvider();
 
-    expect(await sendMessage(env.DB, config(), fakeDependencies({ messaging: provider }), log, "m1")).toEqual({});
+    expect(
+      await sendMessage({
+        db: env.DB,
+        config: config(),
+        deps: fakeDependencies({ messaging: provider }),
+        log,
+        messageId: "m1",
+      }),
+    ).toEqual({});
 
     expect(sent).toHaveLength(1);
     // Greeted by first name, with where to book the consultation that shows the look for real.
@@ -99,7 +107,13 @@ describe("messaging: sending a result", () => {
   it("skips, sending nothing, when messaging is off", async () => {
     await queuedMessage();
     const { provider, sent } = recordingProvider();
-    await sendMessage(env.DB, config({ enabled: false }), fakeDependencies({ messaging: provider }), log, "m1");
+    await sendMessage({
+      db: env.DB,
+      config: config({ enabled: false }),
+      deps: fakeDependencies({ messaging: provider }),
+      log,
+      messageId: "m1",
+    });
     expect(sent).toEqual([]);
     expect(await message()).toMatchObject({ state: "skipped", last_error: "messaging is off" });
   });
@@ -110,13 +124,13 @@ describe("messaging: sending a result", () => {
   it("sends the result to a number off the allowlist, since it answers the person who claimed it", async () => {
     await queuedMessage();
     const { provider, sent } = recordingProvider();
-    await sendMessage(
-      env.DB,
-      config({ allowlist: ["+919810000099"] }),
-      fakeDependencies({ messaging: provider }),
+    await sendMessage({
+      db: env.DB,
+      config: config({ allowlist: ["+919810000099"] }),
+      deps: fakeDependencies({ messaging: provider }),
       log,
-      "m1",
-    );
+      messageId: "m1",
+    });
     expect(sent).toHaveLength(1);
   });
 
@@ -124,7 +138,13 @@ describe("messaging: sending a result", () => {
     await queuedMessage();
     await env.DB.prepare("UPDATE people SET erased_at = ?").bind(NOW.toISOString()).run();
     const { provider, sent } = recordingProvider();
-    await sendMessage(env.DB, config(), fakeDependencies({ messaging: provider }), log, "m1");
+    await sendMessage({
+      db: env.DB,
+      config: config(),
+      deps: fakeDependencies({ messaging: provider }),
+      log,
+      messageId: "m1",
+    });
     expect(sent).toEqual([]);
     expect(await message()).toMatchObject({ state: "skipped", last_error: "person erased" });
   });
@@ -133,7 +153,13 @@ describe("messaging: sending a result", () => {
     await queuedMessage();
     await env.DB.prepare("UPDATE people SET mobile_e164 = 'released:' || id").run();
     const { provider, sent } = recordingProvider();
-    await sendMessage(env.DB, config(), fakeDependencies({ messaging: provider }), log, "m1");
+    await sendMessage({
+      db: env.DB,
+      config: config(),
+      deps: fakeDependencies({ messaging: provider }),
+      log,
+      messageId: "m1",
+    });
     expect(sent).toEqual([]);
     expect(await message()).toMatchObject({ state: "skipped", last_error: "no number" });
   });
@@ -150,7 +176,8 @@ describe("messaging: sending a result", () => {
         .bind(id, NOW.toISOString(), NOW.toISOString())
         .run();
     }
-    for (const id of ["m1", "m2", "m3", "m4"]) await sendMessage(env.DB, config(), deps, log, id);
+    for (const id of ["m1", "m2", "m3", "m4"])
+      await sendMessage({ db: env.DB, config: config(), deps, log, messageId: id });
     expect(sent).toHaveLength(3);
     expect(await message("m4")).toMatchObject({ state: "skipped", last_error: "daily message limit reached" });
   });
@@ -159,10 +186,24 @@ describe("messaging: sending a result", () => {
     await queuedMessage();
     const { provider, sent } = recordingProvider();
     await env.DB.prepare("UPDATE outbound_messages SET sending_at = ?").bind(NOW.toISOString()).run();
-    await sendMessage(env.DB, config(), fakeDependencies({ messaging: provider }), log, "m1");
+    await sendMessage({
+      db: env.DB,
+      config: config(),
+      deps: fakeDependencies({ messaging: provider }),
+      log,
+      messageId: "m1",
+    });
     await env.DB.prepare("UPDATE outbound_messages SET state = 'sent'").run();
-    await sendMessage(env.DB, config(), fakeDependencies({ messaging: provider }), log, "m1");
-    expect(await sendMessage(env.DB, config(), fakeDependencies(), log, "missing")).toEqual({});
+    await sendMessage({
+      db: env.DB,
+      config: config(),
+      deps: fakeDependencies({ messaging: provider }),
+      log,
+      messageId: "m1",
+    });
+    expect(
+      await sendMessage({ db: env.DB, config: config(), deps: fakeDependencies(), log, messageId: "missing" }),
+    ).toEqual({});
     expect(sent).toEqual([]);
   });
 
@@ -172,9 +213,11 @@ describe("messaging: sending a result", () => {
     const deps = fakeDependencies({ messaging: provider });
 
     for (let attempt = 1; attempt < MAX_SEND_ATTEMPTS; attempt++) {
-      expect(await sendMessage(env.DB, config(), deps, log, "m1")).toEqual({ retryAfterSeconds: 30 });
+      expect(await sendMessage({ db: env.DB, config: config(), deps, log, messageId: "m1" })).toEqual({
+        retryAfterSeconds: 30,
+      });
     }
-    expect(await sendMessage(env.DB, config(), deps, log, "m1")).toEqual({});
+    expect(await sendMessage({ db: env.DB, config: config(), deps, log, messageId: "m1" })).toEqual({});
 
     expect(await message()).toMatchObject({
       state: "failed",
@@ -194,7 +237,7 @@ describe("messaging: sending a result", () => {
     await queuedMessage();
     const { provider } = recordingProvider({ ok: false, transient: false, detail: "HTTP 400 BAD_REQUEST" });
     const deps = fakeDependencies({ messaging: provider });
-    expect(await sendMessage(env.DB, config(), deps, log, "m1")).toEqual({});
+    expect(await sendMessage({ db: env.DB, config: config(), deps, log, messageId: "m1" })).toEqual({});
     expect(await message()).toMatchObject({ state: "failed", attempts: 1 });
     expect(deps.alerts).toHaveLength(1);
   });
@@ -205,7 +248,7 @@ describe("messaging: sending a result", () => {
     const { provider } = recordingProvider({ ok: false, transient: false, bridgeDown: true, detail });
     const deps = fakeDependencies({ messaging: provider });
 
-    expect(await sendMessage(env.DB, config(), deps, log, "m1")).toEqual({});
+    expect(await sendMessage({ db: env.DB, config: config(), deps, log, messageId: "m1" })).toEqual({});
 
     expect(await message()).toMatchObject({ state: "queued", attempts: 1, last_error: detail, sending_at: null });
     expect(deps.alerts).toEqual([]);
@@ -219,7 +262,7 @@ describe("messaging: sending a result", () => {
     const { provider } = recordingProvider({ ok: false, transient: false, bridgeDown: true, detail: "HTTP 401" });
     const deps = fakeDependencies({ messaging: provider });
 
-    expect(await sendMessage(env.DB, config(), deps, log, "m1")).toEqual({});
+    expect(await sendMessage({ db: env.DB, config: config(), deps, log, messageId: "m1" })).toEqual({});
 
     expect(await message()).toMatchObject({ state: "failed", attempts: MAX_SEND_ATTEMPTS });
     expect(deps.alerts).toHaveLength(1);
@@ -234,9 +277,11 @@ describe("messaging: sending a result", () => {
     const deps = fakeDependencies({ messaging: throwing });
 
     for (let attempt = 1; attempt < MAX_SEND_ATTEMPTS; attempt++) {
-      expect(await sendMessage(env.DB, config(), deps, log, "m1")).toEqual({ retryAfterSeconds: 30 });
+      expect(await sendMessage({ db: env.DB, config: config(), deps, log, messageId: "m1" })).toEqual({
+        retryAfterSeconds: 30,
+      });
     }
-    expect(await sendMessage(env.DB, config(), deps, log, "m1")).toEqual({});
+    expect(await sendMessage({ db: env.DB, config: config(), deps, log, messageId: "m1" })).toEqual({});
 
     expect(await message()).toMatchObject({ state: "failed", attempts: MAX_SEND_ATTEMPTS, last_error: "threw Error" });
     expect(deps.alerts).toHaveLength(1);
@@ -253,7 +298,13 @@ describe("messaging: the queue batch", () => {
     });
     const { messages } = batch;
 
-    await handleMessagingBatch(batch, env.DB, config(), fakeDependencies({ messaging: provider }), log);
+    await handleMessagingBatch({
+      batch,
+      db: env.DB,
+      config: config(),
+      deps: fakeDependencies({ messaging: provider }),
+      log,
+    });
 
     expect(messages[0]?.retry).toHaveBeenCalledWith({ delaySeconds: 30 });
     expect(messages[1]?.ack).toHaveBeenCalledOnce();
@@ -280,7 +331,8 @@ describe("messaging: the queue batch", () => {
     const deps = fakeDependencies();
     const delivery = (attempts: number) =>
       fakeBatch("mm-messaging-local", [{ message_id: id, request_id: "r" }], { attempts, timestamp: NOW });
-    const deliver = (batch: ReturnType<typeof delivery>) => handleMessagingBatch(batch, env.DB, config(), deps, log);
+    const deliver = (batch: ReturnType<typeof delivery>) =>
+      handleMessagingBatch({ batch, db: env.DB, config: config(), deps, log });
 
     const third = delivery(MAX_SEND_ATTEMPTS - 1);
     await deliver(third);

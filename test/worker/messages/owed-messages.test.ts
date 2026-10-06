@@ -51,7 +51,13 @@ async function queued(kind: string, subjectKind: string, subjectId: string, pers
 /** Sends one queued message; what the client read, or why nothing went. */
 async function send(messageId: string): Promise<{ text: string | null; skipped: string | null }> {
   const { provider, sent } = recordingProvider();
-  await sendMessage(env.DB, LOCAL_CONFIG, fakeDependencies({ messaging: provider }), log, messageId);
+  await sendMessage({
+    db: env.DB,
+    config: LOCAL_CONFIG,
+    deps: fakeDependencies({ messaging: provider }),
+    log,
+    messageId,
+  });
   const row = await env.DB.prepare("SELECT state, last_error FROM outbound_messages WHERE id = ?1")
     .bind(messageId)
     .first<{ state: string; last_error: string | null }>();
@@ -105,13 +111,13 @@ describe("the arrival notice", () => {
     const messageId = await queued("arrival_notice", "appointment", VISIT);
     const { provider, sent } = recordingProvider();
     const elevenMinutesOn = new Date(NOW.getTime() + 11 * 60_000);
-    await sendMessage(
-      env.DB,
-      LOCAL_CONFIG,
-      fakeDependencies({ messaging: provider, now: () => elevenMinutesOn }),
+    await sendMessage({
+      db: env.DB,
+      config: LOCAL_CONFIG,
+      deps: fakeDependencies({ messaging: provider, now: () => elevenMinutesOn }),
       log,
       messageId,
-    );
+    });
     expect(sent).toEqual([]);
     const row = await env.DB.prepare("SELECT state, last_error FROM outbound_messages").first();
     expect(row).toEqual({ state: "skipped", last_error: "too late to tell the client the technician had arrived" });

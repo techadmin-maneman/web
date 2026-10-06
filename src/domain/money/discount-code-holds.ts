@@ -128,7 +128,7 @@ export async function enterOnHold(
 
   const onCredit = await creditStillCovers(db, hold, entry.personId, now);
   const booking = { type: hold.type, onCredit, moves: hold.moves_appointment_id !== null };
-  const checked = await checkDiscountCode(db, entry.text, booking, entry.personId, now);
+  const checked = await checkDiscountCode({ db, text: entry.text, booking, personId: entry.personId, now });
   if (!checked.ok) return { kind: "not_applicable", reason: checked.reason };
 
   const off = amountOff(termsOf(checked.code), hold.amount_ex_gst);
@@ -234,16 +234,22 @@ export interface OneVisitCode {
  * A code checked for a consultation and fit in one visit: the code, or why not. One typed on /book is judged as it
  * stood at `typedAt`.
  */
-export async function checkForOneVisit(
-  db: D1Database,
-  text: string,
-  personId: string | null,
-  now: Date,
-  typedAt: Date = now,
-): Promise<OneVisitCode | { readonly ok: false; readonly reason: Refused }> {
+export async function checkForOneVisit({
+  db,
+  text,
+  personId,
+  now,
+  typedAt = now,
+}: {
+  db: D1Database;
+  text: string;
+  personId: string | null;
+  now: Date;
+  typedAt?: Date;
+}): Promise<OneVisitCode | { readonly ok: false; readonly reason: Refused }> {
   const booking = { type: "first_fit", onCredit: false, moves: false } as const;
   // Someone new has used nothing, which no person's ID matches.
-  const checked = await checkDiscountCode(db, text, booking, personId ?? "", now, typedAt);
+  const checked = await checkDiscountCode({ db, text, booking, personId: personId ?? "", now, typedAt });
   if (!checked.ok) return checked;
   return { ok: true, codeId: checked.code.id, code: checked.code.code, terms: termsOf(checked.code) };
 }

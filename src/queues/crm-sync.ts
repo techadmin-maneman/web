@@ -212,7 +212,7 @@ export async function syncLead(
     });
     const erasedAt = (person?.results[0] as { erased_at: string | null } | undefined)?.erased_at ?? null;
     if (erasedAt !== null) {
-      await eraseAgain(db, deps, log, row.person_id, result.crmLeadId);
+      await eraseAgain({ db, deps, log, personId: row.person_id, crmLeadId: result.crmLeadId });
       return { retrySoon: false };
     }
     await deps.notifyLead(leadNotice(row));
@@ -373,13 +373,19 @@ export async function eraseInCrm(
  * write may have landed after the erasure's and put their details back. The
  * record is blanked again; if that fails, the sweeper retries the erasure.
  */
-async function eraseAgain(
-  db: D1Database,
-  deps: Dependencies,
-  log: Logger,
-  personId: string,
-  crmLeadId: string,
-): Promise<void> {
+async function eraseAgain({
+  db,
+  deps,
+  log,
+  personId,
+  crmLeadId,
+}: {
+  db: D1Database;
+  deps: Dependencies;
+  log: Logger;
+  personId: string;
+  crmLeadId: string;
+}): Promise<void> {
   try {
     await deps.crm.erasePerson(personId, crmLeadId);
     log.info("crm_erased_after_sync", { person_id: personId });

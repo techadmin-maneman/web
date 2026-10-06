@@ -46,7 +46,7 @@ export function createZohoCrm(settings: ZohoSettings, deps: ZohoDependencies): C
   async function insert(api: ZohoApi, lead: CrmLead): Promise<CrmSyncResult> {
     const status = statusForNewRecord(lead);
     assertStatusAllowed(lead, status);
-    const id = await api.insertLead(recordFor(lead, status, true), {
+    const id = await api.insertLead(recordFor({ lead, status, isNew: true }), {
       assignmentRuleId: shouldAssign(lead) ? settings.larId : null,
       runWorkflows: shouldRunWorkflows(lead),
     });
@@ -56,7 +56,7 @@ export function createZohoCrm(settings: ZohoSettings, deps: ZohoDependencies): C
   async function update(api: ZohoApi, id: string, lead: CrmLead): Promise<CrmSyncResult> {
     const status = statusForUpdate(lead);
     assertStatusAllowed(lead, status);
-    await api.updateLead(id, recordFor(lead, status, false), { runWorkflows: shouldRunWorkflows(lead) });
+    await api.updateLead(id, recordFor({ lead, status, isNew: false }), { runWorkflows: shouldRunWorkflows(lead) });
     await api.addNote(id, noteFor(lead));
     return { crmLeadId: id, created: false };
   }
@@ -237,12 +237,17 @@ export function contactRecordFor(
 }
 
 /** The Zoho Leads fields for this lead. See docs/runbook.md, step 8, "Zoho", for the custom fields. */
-export function recordFor(
-  lead: CrmLead,
-  status: LeadStatus | null,
-  isNew: boolean,
-  fields: OrgFields = { referral: CRM_ORG_HAS_REFERRAL_FIELDS },
-): Record<string, unknown> {
+export function recordFor({
+  lead,
+  status,
+  isNew,
+  fields = { referral: CRM_ORG_HAS_REFERRAL_FIELDS },
+}: {
+  lead: CrmLead;
+  status: LeadStatus | null;
+  isNew: boolean;
+  fields?: OrgFields;
+}): Record<string, unknown> {
   const record: Record<string, unknown> = {
     Last_Name: lead.name,
     Mobile: lead.mobileE164,

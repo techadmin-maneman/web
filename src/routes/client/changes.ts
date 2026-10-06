@@ -169,7 +169,12 @@ const cancelRoute = selfServeRoute({
 
 export function registerClientChanges(app: App): void {
   app.openapi(moveTermsRoute, async (c) => {
-    const move = await moveTermsFor(c, clientOf(c).subjectId, c.req.valid("param").id, null);
+    const move = await moveTermsFor({
+      c,
+      personId: clientOf(c).subjectId,
+      visitId: c.req.valid("param").id,
+      type: null,
+    });
     if (move === null) return refuse(c, "not_changeable");
     return c.json({ ...termsOf(move.terms), cost: move.terms.move.cost, price: move.terms.move.price }, 200);
   });
@@ -195,7 +200,12 @@ export function registerClientChanges(app: App): void {
     const now = deps.now();
     const visit = await changeableVisit(c.env.DB, session.subjectId, c.req.valid("param").id, now);
     if (visit === null) return refuse(c, "not_changeable");
-    const terms = await changeTerms(c.env.DB, visit, now, termsInForce(await opsInputs(c), visit.type));
+    const terms = await changeTerms({
+      db: c.env.DB,
+      visit,
+      now,
+      inForce: termsInForce(await opsInputs(c), visit.type),
+    });
     const body = c.req.valid("json");
     const shown = {
       ...termsOf(terms),
@@ -209,7 +219,7 @@ export function registerClientChanges(app: App): void {
     let outcome;
     try {
       const notify = (messageId: string) => queueMessage(c, messageId);
-      outcome = await cancelVisit(c.env.DB, { ...deps, notify }, terms, now, { log });
+      outcome = await cancelVisit({ db: c.env.DB, deps: { ...deps, notify }, terms, now, options: { log } });
     } catch (error) {
       log.error("cancel_failed", { appointment_id: visit.id, error });
       return refuse(c, "unavailable");

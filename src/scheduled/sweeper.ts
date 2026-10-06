@@ -239,9 +239,10 @@ export async function requeueTryons(
       .prepare("SELECT id FROM tryon_jobs WHERE state = 'downloading' AND provider_result_expires_at <= ?1 LIMIT ?2")
       .bind(now.toISOString(), BATCH_LIMIT),
   ]);
-  for (const id of abandoned) await failJob(db, id, "render_failed", "submit did not finish", now);
+  for (const id of abandoned)
+    await failJob({ db, jobId: id, code: "render_failed", detail: "submit did not finish", now });
   for (const id of lost) {
-    if (await failJob(db, id, "render_failed", "result URL expired before download", now)) {
+    if (await failJob({ db, jobId: id, code: "render_failed", detail: "result URL expired before download", now })) {
       await deps.alert(`Try-on job ${id}: its result was billed but never downloaded, and its URL has expired.`);
     }
   }

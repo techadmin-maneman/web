@@ -137,7 +137,13 @@ export async function recordClaim(db: D1Database, claim: NewClaim): Promise<stri
            VALUES (?, ?, ${personId}, 'tryon_result', ?, 'waiting')`,
         )
         .bind(crypto.randomUUID(), at, mobileE164, job.id),
-      recordEvent(db, "tryon_claimed", leadId, { job_id: job.id, job_state: job.state }, now),
+      recordEvent({
+        db,
+        name: "tryon_claimed",
+        subjectId: leadId,
+        payload: { job_id: job.id, job_state: job.state },
+        now,
+      }),
     ]);
   } catch (error) {
     await db.prepare("UPDATE tryon_jobs SET claimed_at = NULL WHERE id = ?1").bind(job.id).run();
