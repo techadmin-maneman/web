@@ -107,6 +107,7 @@ const refused = {
       "kind would be left with nothing to book, which a first fit may be",
   ),
 };
+
 const Path = z.object({ kind: Kind, tier: Tier });
 
 const servicesRoute = createRoute({
