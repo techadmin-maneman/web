@@ -17,7 +17,6 @@ const part = (max: number) => z.string().trim().max(max).nullish();
 const optional = (max: number) => z.string().trim().max(max).nullable();
 
 /** The one address shape, which the site's booking forms take too (src/routes/public/consultations.ts). */
-
 export const AddressSchema = z
   .object({
     line1: z.string().trim().min(1).max(120),
@@ -41,7 +40,6 @@ export const AddressSchema = z
  * The flat or house number, which every address given from now on must carry, so the technician finds the door. An
  * address saved before holds none and still reads.
  */
-
 export const RequiredFlatSchema = z.string().trim().min(1).max(40);
 
 /**
@@ -51,7 +49,6 @@ export const RequiredFlatSchema = z.string().trim().min(1).max(40);
  * coordinate is never sent: only this API may put one on an address, and only
  * by geocoding the Place ID itself.
  */
-
 export const AddressSaveSchema = AddressSchema.extend({
   flat: RequiredFlatSchema,
   session_token: part(100),
@@ -68,7 +65,6 @@ export const SuggestionsSchema = z
   .strict()
   .openapi("AddressSuggestions");
 /** An address as it was sent, a part left blank held as none. */
-
 export function addressOf(body: z.infer<typeof AddressSchema>): Address {
   return {
     line1: body.line1,
