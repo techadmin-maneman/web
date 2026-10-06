@@ -259,7 +259,7 @@ export const clients = {
     },
     /**
      * Our words, all of them: ops cancelling a client's visit, which no board draws. Free to the client unless ops
-     * apply the client's own late terms, with a reason (the owner's ruling of 2 October 2026).
+     * apply the client's own late terms, with a reason.
      */
     cancel: {
       open: "Cancel",
@@ -360,7 +360,7 @@ export const clients = {
     // "Not home" is ours; the board draws Done and Partial.
     outcomes: { done: "Done", partial: "Partial", no_show: "Not home" },
     statuses: { cancelled: "Cancelled", terminated: "Not done", other: "—" } as Readonly<Record<string, string>>,
-    /** Paid ahead, or covered by a credit: board C1 of the client app's own badge. */
+    /** Paid ahead, or covered by a credit: the client app's own badge. */
     prepaid: "Prepaid",
   },
   /*
@@ -451,7 +451,7 @@ export const clients = {
     } as Readonly<Record<string, string>>,
   },
   /*
-   * Our words, all of them: board B1 draws a Referrals tab and nothing in it. Who sent the invite heads the page; the
+   * Our words, all of them: the design draws a Referrals tab and nothing in it. Who sent the invite heads the page; the
    * tab says what it earns, or gives a way to attach one for a friend who booked away from its page.
    */
   invite: {
@@ -478,7 +478,7 @@ export const clients = {
       codeHint: "The letters and digits after maneman.in/r/ in the friend's link.",
       reason: "Why",
       reasonHint: "What the client or their friend told you.",
-      /** The rules the API holds an attach to (src/routes/ops/client-referral.ts), the late one the owner's (src/policy/fraud-holds.ts). */
+      /** The rules the API holds an attach to (src/routes/ops/client-referral.ts), the late one src/policy/fraud-holds.ts's. */
       note: "Logged under your name. Not allowed: the code's own referrer, or a client who already came with an invite. Attached after their first fit, it waits for your review in Referrals.",
       save: "Attach the invite",
       saving: "Attaching",
@@ -743,7 +743,7 @@ export const clients = {
     /** A client we have never fitted, and one whose earlier visits were never recorded here, read the same. */
     noFirstFit: "No first fit on record",
     noVisit: "No visit done yet",
-    /** The day ops order a piece against, with the piece it is for, as board D2's task queue names one. */
+    /** The day ops order a piece against, with the piece it is for, as the Tasks board names one. */
     due: (date: string, piece: string) => `${date} · ${piece}`,
     noPiece: "No piece fitted, so no date",
   },

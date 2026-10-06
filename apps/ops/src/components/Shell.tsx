@@ -1,4 +1,4 @@
-// The console's frame (design/phase2/Ops Console, boards A1 and B1): the
+// The console's frame (design/phase2/Ops Console): the
 // navigation column on ink down the left, a header naming the section with who
 // is signed in at its right, and the section's panels. The navigation groups
 // the sections by department, shows only those the person may open, and says

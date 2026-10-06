@@ -1,7 +1,7 @@
 // Areas' Served tab: where we go, and from when (docs/decisions/0061-ops-editable-inputs.md).
 //
 // 198 pincodes is more than any web form should ask anybody to work through,
-// and the owner already marks them in a spreadsheet (data/pincodes/README.md).
+// and they are already marked in a spreadsheet (data/pincodes/README.md).
 // So this screen is built for the two things they actually do: launch one
 // area, which is one row and a date, and hand over the whole file, which is an
 // upload. A city at a time keeps the table short; the bulk pair fills a city in

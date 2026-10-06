@@ -4,7 +4,7 @@
 // only after that confirmation" (docs/decisions/0042-client-profile.md).
 //
 // The design draws no board for it (docs/fidelity-method.md), so it is built as
-// board C1's review queue is. Confirming moves the client at once, and the
+// the Referrals review queue is. Confirming moves the client at once, and the
 // decision is written to the audit log as `number_change.decide`, under whoever
 // Access says is signed in (ADR 0031). A rejection needs a reason; a number
 // somebody else already holds is refused by the API, and said so here. Each

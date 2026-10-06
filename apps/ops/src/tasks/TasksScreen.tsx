@@ -1,4 +1,4 @@
-// Tasks (Ops Console, board D2): what ops still have to do, in groups, with whose
+// Tasks: what ops still have to do, in groups, with whose
 // each is and how long it has left. Nothing is decided here. A task is a row in a queue the
 // database already keeps — a consultation asked for, a held grant, an
 // undecided no-show, a disputed charge, a number change, an erasure, a grievance, a piece past its
@@ -62,7 +62,7 @@ type Group = TaskGroup["group"];
 
 const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 
-/** The fraud rules, as board C1 letters them: a held grant is the same grant on both boards. */
+/** The fraud rules, as the Referrals design letters them: a held grant is the same grant on both screens. */
 const SIGNALS: Readonly<Record<string, string>> = referrals.queue.signals;
 
 /** A window's name, as the dispatch board writes it, for the window a first fit is wanted in; null for either. */

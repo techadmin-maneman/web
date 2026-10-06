@@ -103,7 +103,7 @@
 /*
  * The name is the control: the board draws the row with no button, and its
  * five columns leave no room for one. Its underline is the only sign, quiet
- * enough to leave the table reading as a table, as board C3's pincodes are.
+ * enough to leave the table reading as a table, as Areas' pincodes are.
  */
 .choose {
   padding: var(--sp-8) 0;

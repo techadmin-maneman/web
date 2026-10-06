@@ -1,4 +1,4 @@
-// Technicians (Ops Console, board D3): who works, their zone, the jobs they
+// Technicians: who works, their zone, the jobs they
 // have finished and how those ran, one 34 px row each, as the board draws them,
 // however many there are. The board's fifth column is Skill, and nothing records
 // what a technician is trained for, so Leave stands there instead and a line

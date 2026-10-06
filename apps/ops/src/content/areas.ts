@@ -1,4 +1,4 @@
-// Areas (board C3): the waitlist by area, a launch, and the pincodes we serve.
+// Areas: the waitlist by area, a launch, and the pincodes we serve.
 
 import { NOT_PERMITTED } from "./common.ts";
 
@@ -8,11 +8,11 @@ import { NOT_PERMITTED } from "./common.ts";
  */
 export const areas = {
   title: "Areas",
-  /** No board draws Areas. Waiting is board C3's waitlist; Served was Settings · Service area. */
+  /** Waiting is the design's waitlist; Served was Settings · Service area. */
   tabs: { waiting: "Waiting", served: "Served" },
   /** Served for a person whose Growth access is not national. */
   servedClosed: "Served lists every pincode in every city, so it needs Growth access nationally.",
-  /** The board's launch panel (C3), for a pincode chosen on Waiting and for a save on Served alike. */
+  /** The launch panel, for a pincode chosen on Waiting and for a save on Served alike. */
   launch: {
     label: (pincode: string) => `Mark ${pincode} live`,
     /** The panel's head for a pincode already live. */
@@ -88,7 +88,7 @@ export const areas = {
   served: {
     title: "Every pincode we hold",
     /**
-     * The file is what the owner already edits (data/pincodes/README.md), so
+     * The file is the one already kept (data/pincodes/README.md), so
      * the screen takes it back rather than asking for 198 rows to be retyped.
      * The rows are for the one-at-a-time change, which is what a launch is.
      */
@@ -155,7 +155,7 @@ export const areas = {
   },
 } as const;
 
-/** Areas' Waiting tab, board C3: who waits in each pincode, the longest wait first. */
+/** Areas' Waiting tab: who waits in each pincode, the longest wait first. */
 export const waitlist = {
   columns: ["Pincode", "Area", "Count", "Oldest", "Came by referral", "Asked to be told"],
   /** An area or a date the pincode table has nothing for, written as the design's tables write a gap. */

@@ -1,4 +1,4 @@
-// Referrals (Ops Console, boards C1 and C2): the grants the fraud rules held,
+// Referrals: the grants the fraud rules held,
 // each approved or rejected here, over every referrer's figures. Approving a
 // grant releases its credits. The board asks for a reason on either decision,
 // the server refuses one without it, and it is kept with the decision under
@@ -38,7 +38,7 @@ type Decision =
 
 const HOUR = 3_600_000;
 
-/** "3 days held", and "5 hours held" under a day, as board C1 writes how long a grant has waited. */
+/** "3 days held", and "5 hours held" under a day, as the design writes how long a grant has waited. */
 function heldFor(since: string, now: Date): string {
   const hours = Math.max(0, Math.floor((now.getTime() - Date.parse(since)) / HOUR));
   return hours < 24 ? referrals.queue.held(hours, "hour") : referrals.queue.held(Math.floor(hours / 24), "day");

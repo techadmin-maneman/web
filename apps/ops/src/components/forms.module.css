@@ -1,11 +1,11 @@
 /*
  * Settings. The design draws the section in the navigation column and letters
  * nothing inside it, so everything here follows the frames it does draw: board
- * B1's tabs, the queues' panel with its head on a rule, board C2's table at
- * 34 px a row, board A2's square boxes, and board C1's one ink button.
+ * the client page's tabs, the queues' panel with its head on a rule, the
+ * referrers' table at 34 px a row, square boxes, and one ink button.
  *
  * The queues are drawn 484 px wide; Settings' tables carry six columns and a
- * row of boxes each, so the section takes board C1's wider 660 and never runs past
+ * row of boxes each, so the section takes the queues' wider 660 and never runs past
  * its panel.
  *
  * A form that sets a business rule is read before it is typed into, so each
@@ -340,7 +340,7 @@
   line-height: var(--lh-160);
 }
 
-/* ---- The tables: board C2's, 13 px heads over 14 px rows 34 px tall -------- */
+/* ---- The tables: 13 px heads over 14 px rows 34 px tall ------------------- */
 
 /* packages/ui/Table.tsx's rows; its cells hold controls, which make the row's height, so none has padding above or below. */
 .table {
@@ -521,7 +521,7 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* Served: board A2's square, filled in ink when it is chosen, never the browser's blue. */
+/* Served: a square, filled in ink when it is chosen, never the browser's blue. */
 .box {
   display: block;
   width: var(--ops-box);

@@ -1,4 +1,4 @@
-// Who is signed in, at the header's right where board A1 draws "AK" in a box,
+// Who is signed in, at the header's right where the design draws "AK" in a box,
 // and the way out, which the board does not draw.
 
 import { useLoad } from "@maneman/ui/useLoad";

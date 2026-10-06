@@ -10,7 +10,7 @@ import { NOT_PERMITTED } from "./common.ts";
 export const technicians = {
   title: "Technicians",
   /**
-   * Four of board D3's five columns, and Leave where it draws Skill: nothing
+   * Four of the design's five columns, and Leave where it draws Skill: nothing
    * records a skill, and a day off is what ops need to see down the roster.
    */
   columns: ["Technician", "Zone", "Jobs", "Avg service", "Leave"],

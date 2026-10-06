@@ -453,8 +453,7 @@ export const settings = {
   },
   /**
    * Every word of the consumables and of each service's expected
-   * use. No board draws them; the owner ruled on 27 September 2026 that both
-   * are set here (docs/decisions/0087-consumables-and-stock.md).
+   * use, which are set here (docs/decisions/0087-consumables-and-stock.md).
    */
   consumables: {
     title: "Consumables",

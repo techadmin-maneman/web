@@ -1,4 +1,4 @@
-// How long a queued request has left before the day it falls due, as board D2
+// How long a queued request has left before the day it falls due, as the Tasks design
 // words its last column, and in oxblood once it has run over. Every queue reads
 // its due day from the API, which counts it as the Tasks board does, so the two
 // can never disagree (src/policy/tasks.ts).

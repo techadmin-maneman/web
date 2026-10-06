@@ -1,4 +1,4 @@
-// The referrals queue and table (board C1): a grant held for review, and every referrer.
+// The referrals queue and table: a grant held for review, and every referrer.
 
 import { NOT_PERMITTED } from "./common.ts";
 
@@ -17,7 +17,7 @@ export const referrals = {
       monthly_cap: "Monthly cap exceeded",
       // The board draws the other three rules, not this one.
       same_mobile: "Same mobile number",
-      // An invite ops attached after the friend's first fit (the owner's ruling of 30 September 2026).
+      // An invite ops attached after the friend's first fit.
       attached_after_fit: "Attached after the first fit",
     },
     approve: "Approve",

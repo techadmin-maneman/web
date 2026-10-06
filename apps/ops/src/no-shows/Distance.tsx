@@ -1,4 +1,4 @@
-// How far from the address the technician checked in, against the radius in force then, as board D1 writes it:
+// How far from the address the technician checked in, against the radius in force then, as the Payments design writes it:
 // "240 m · over 200 m fence", over it in the ink the panel keeps for what argues against the charge.
 
 import { noShows } from "../content.ts";

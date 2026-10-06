@@ -1,4 +1,4 @@
-// The console's frame: its navigation by department, its header and the person signed in (board A1).
+// The console's frame: its navigation by department, its header and the person signed in.
 
 /** The five departments, as the navigation heads its sections and the Staff page names a grant. */
 export const DEPARTMENT_NAMES = {
@@ -48,7 +48,7 @@ export const shell = {
   /** The browser tab's title: "Blackout days · Settings · Mane Man operations". */
   documentTitle: (parts: readonly string[]) => [...parts, "Mane Man operations"].join(" · "),
   /**
-   * Who is signed in, where board A1 draws "AK" in a box at the
+   * Who is signed in, where the design draws "AK" in a box at the
    * header's right, and a way out, which it does not draw. Signing out ends the
    * Cloudflare Access session, which is the only session the console has.
    */

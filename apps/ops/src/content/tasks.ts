@@ -1,4 +1,4 @@
-// Tasks (board D2): every queue ops work through, a payment link's state, and the alerts that need a hand.
+// Tasks: every queue ops work through, a payment link's state, and the alerts that need a hand.
 
 import type { components } from "../api-schema.ts";
 import type { LinkState } from "../tasks/payment-link.ts";
@@ -62,7 +62,7 @@ export const tasks = {
     partial_visit: "Visit left partly done",
     referral_review: "Referral review",
     no_show_decision: "No-show decision",
-    // A group the board does not draw; board D1 letters the card "Disputed charge".
+    // A group the Tasks design does not draw; the Payments design letters the card "Disputed charge".
     no_show_dispute: "Disputed charge",
     number_change: "Number change",
     erasure_request: "Deletion request",
@@ -144,7 +144,7 @@ export const tasks = {
         ? `Consultation ${consulted} · not fitted`
         : `Consultation ${consulted}, ${when.toLowerCase()} · not fitted`,
     /**
-     * "9 weeks since the last visit · due Sat 19 Sep", as board D2 writes "9 weeks since service": the day the next
+     * "9 weeks since the last visit · due Sat 19 Sep", as the Tasks design writes "9 weeks since service": the day the next
      * service fell due, from the cadence ops set. The task goes when the client books.
      */
     at_risk_client: (weeks: number, due: string) =>
@@ -211,8 +211,8 @@ export const tasks = {
     } as Readonly<Record<string, string>>,
   },
   /**
-   * A visit left partly done closed without a follow-up, with why, as the owner ruled
-   * (docs/decisions/0092-task-owners.md). No board draws it.
+   * A visit left partly done closed without a follow-up, with why
+   * (docs/decisions/0092-task-owners.md).
    */
   close: {
     open: "Close without a follow-up",

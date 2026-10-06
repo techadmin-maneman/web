@@ -3,7 +3,7 @@
 // runbook's "Erasure within the day" is the procedure; this is where it starts.
 //
 // The design draws no board for it (docs/fidelity-method.md), so it is built as
-// board C1's review queue is. Two things are its own, and both are because an
+// the Referrals review queue is. Two things are its own, and both are because an
 // erasure cannot be undone:
 //
 //   - Deleting takes two deliberate steps. The second says what is destroyed
