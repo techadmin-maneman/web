@@ -17,10 +17,8 @@
 
 import { createRoute, z } from "@hono/zod-openapi";
 import type { Context } from "hono";
-import { PRICE_BOUNDS } from "../../policy/ops-settings.ts";
 import { VISIT_BLOCKS } from "../../config/scheduling.ts";
 import { VISIT_TYPES, type VisitType } from "../../config/visit-types.ts";
-import { priceBook, type PriceRow } from "../../domain/money/price-book.ts";
 import {
   addService,
   allServices,
@@ -32,15 +30,17 @@ import {
   setServiceLength,
   type ServiceRefusal,
 } from "../../domain/booking/services.ts";
+import { priceBook, type PriceRow } from "../../domain/money/price-book.ts";
 import { actorOf } from "../../http/audit.ts";
 import type { App, AppEnv } from "../../http/context.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
 import { json } from "../../http/openapi.ts";
 import { indiaDate } from "../../lib/india-time.ts";
 import { LATE_FEES } from "../../policy/moving-a-visit.ts";
+import { PRICE_BOUNDS } from "../../policy/ops-settings.ts";
 import { DESCRIPTION_LENGTH, isOffered, PRICE_TIER } from "../../policy/services.ts";
 import { SERVICE_MINUTES } from "../../policy/visit-length.ts";
-import { PriceRowSchema } from "./settings.ts";
+import { PriceRowSchema } from "../schemas/prices.ts";
 
 const Kind = z.enum(VISIT_TYPES);
 const Tier = z.string().regex(PRICE_TIER);
@@ -107,6 +107,7 @@ const refused = {
       "kind would be left with nothing to book, which a first fit may be",
   ),
 };
+
 const Path = z.object({ kind: Kind, tier: Tier });
 
 const servicesRoute = createRoute({

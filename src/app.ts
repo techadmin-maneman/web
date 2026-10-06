@@ -62,6 +62,8 @@ import { registerOpsAlerts } from "./routes/ops/alerts.ts";
 import { registerOpsTechnicians } from "./routes/ops/technicians.ts";
 import { registerOpsServices } from "./routes/ops/services.ts";
 import { registerOpsSettings } from "./routes/ops/settings.ts";
+import { registerOpsPrices } from "./routes/ops/prices.ts";
+import { registerOpsServiceArea } from "./routes/ops/service-area.ts";
 import { registerOpsSlotTimes } from "./routes/ops/slot-times.ts";
 import { registerOpsStaff } from "./routes/ops/staff.ts";
 import { registerOpsStock } from "./routes/ops/stock.ts";
@@ -71,6 +73,7 @@ import { registerNumberCodes } from "./routes/public/number-codes.ts";
 import { registerReferralLanding } from "./routes/public/referral-landing.ts";
 import { registerClientPayments } from "./routes/client/payments.ts";
 import { registerClientVisits } from "./routes/client/visits.ts";
+import { registerClientPhotos } from "./routes/client/photos.ts";
 import { registerDevVisits } from "./routes/dev-visits.ts";
 import { registerEvolutionHook } from "./routes/hooks/evolution.ts";
 import { registerRazorpayHook } from "./routes/hooks/razorpay.ts";
@@ -131,6 +134,7 @@ const SURFACE_ROUTES: Readonly<Record<Surface, readonly ((app: App) => void)[]>>
     registerClientDeletionRequest,
     registerClientSessions,
     registerClientVisits,
+    registerClientPhotos,
     // After the visits: they put the session on every /api/visits/* route.
     registerClientDisputes,
     registerClientPayments,
@@ -182,6 +186,8 @@ const SURFACE_ROUTES: Readonly<Record<Surface, readonly ((app: App) => void)[]>>
     registerOpsPaymentLinks,
     registerOpsTechnicians,
     registerOpsSettings,
+    registerOpsPrices,
+    registerOpsServiceArea,
     // The day's half-slot times, from a day nothing is booked or bookable on (docs/decisions/0102-window-times.md).
     registerOpsSlotTimes,
     // The days no visit is offered (docs/decisions/0088-every-policy-in-the-console.md).

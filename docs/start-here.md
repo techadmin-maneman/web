@@ -51,8 +51,8 @@ this map, or when the map names something that no longer exists.
 
 ### A visit, and changing it
 
-- **Database work** (`src/domain/visits/`): `visit-status`, `visit-times`, `visit-changes`, `visit-facts`, `visit-begun`,
-  `client-visits`, `client-history`, `check-ins`, `next-visit`, `one-visit`, `hand-close`
+- **Database work** (`src/domain/visits/`): `visit-status`, `visit-times`, `visit-changes`, `visit-cancel`, `visit-facts`,
+  `visit-begun`, `client-visits`, `client-history`, `check-ins`, `next-visit`, `one-visit`, `hand-close`
 - **Rules** (`src/policy/`): `check-in`, `next-visit`, `one-visit`
 - **Routes** (`src/routes/`): `client/visits`, `ops/visits`, `ops/visit-changes`
 - **Screens:** `apps/app/src/visits/`, `apps/ops/src/clients/`
@@ -118,7 +118,8 @@ this map, or when the map names something that no longer exists.
 - **Rules** (`src/policy/`): `hair-profile`, `address-change`, `number-proof`, `client-notes`, `home-prompt`
 - **Vendor** (`src/providers/`): `geocode/`
 - **Routes** (`src/routes/`): `client/me`, `client/profile`, `client/notes`, `ops/clients`, `ops/client-record`,
-  `ops/client-photos`, `ops/client-consents`, `ops/client-address`, `ops/hair-profile`, `ops/profile`, `public/number-codes`
+  `ops/client-photos`, `ops/client-consents`, `ops/client-address`, `ops/service-area`, `ops/hair-profile`, `ops/profile`,
+  `public/number-codes`
 - **Screens:** `apps/app/src/home/`, `apps/app/src/profile/`, `apps/ops/src/clients/`,
   `apps/ops/src/number-changes/`, `apps/ops/src/areas/`
 - **Tests:** `test/worker/app/client-*`, `test/worker/ops/ops-clients.test.ts`, `e2e/ops/clients.e2e.ts`,
