@@ -205,12 +205,6 @@ describe("validateStaticConfig: settings and secrets", () => {
     ]);
   });
 
-  it("watches the daily allowances only where CLOUDFLARE_ANALYTICS_TOKEN is set", () => {
-    expect(validateStaticConfig(production).settings.analyticsToken).toBeNull();
-    const watching = validateStaticConfig({ ...production, CLOUDFLARE_ANALYTICS_TOKEN: " analytics-token " });
-    expect(watching.settings.analyticsToken).toBe("analytics-token");
-  });
-
   it("requires every Zoho secret when the CRM is Zoho, and none when it is the stub", () => {
     const { ZOHO_REFRESH_TOKEN: _refresh, ...partialZoho } = production;
     expect(problemsOf(partialZoho)).toEqual(["ZOHO_REFRESH_TOKEN is not set"]);

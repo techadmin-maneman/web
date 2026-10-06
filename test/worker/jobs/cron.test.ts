@@ -541,23 +541,6 @@ describe("CRON_JOBS", () => {
     }
     expect(deps.alerts).toEqual([expect.stringContaining("The database holds 5.20 GB, 50% of the 10 GB")]);
   });
-
-  it("reads the account's usage only where the analytics token is set", async () => {
-    const allowances = CRON_JOBS.filter((cronJob) => cronJob.name === "daily_allowances");
-    const graphql = "https://api.cloudflare.com/client/v4/graphql";
-    const withToken: StaticConfig = {
-      ...LOCAL_CONFIG,
-      settings: { ...LOCAL_CONFIG.settings, analyticsToken: "token" },
-    };
-    const callsMade = async (config: StaticConfig) => {
-      const { fetch, calls } = fakeFetch({ [graphql]: () => new Response("Bad Gateway", { status: 502 }) });
-      await runCronJobs(allowances, { env, deps: fakeDependencies({ fetch }), config, log: createLogger() });
-      return calls.length;
-    };
-
-    expect(await callsMade(LOCAL_CONFIG)).toBe(0);
-    expect(await callsMade(withToken)).toBe(1);
-  });
 });
 
 /** The database, saying it holds `bytes` whenever its size is read. */

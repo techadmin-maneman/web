@@ -16,16 +16,15 @@ import {
   RENDER_GIVE_UP_MS,
 } from "../../src/config/pipeline.ts";
 import { MAX_COPY_BYTES, MAX_RESULT_BYTES, MAX_UPLOAD_BYTES, PHOTO_RETENTION_MS } from "../../src/config/tryon.ts";
-import { DAILY_ALLOWANCES } from "../../src/policy/daily-allowances.ts";
 import { PHASE_2_SHARE_BYTES } from "../../src/policy/storage-share.ts";
 
 /** The Workers Free plan, per Cloudflare's pricing pages (read 21 September 2026). */
 export const FREE_TIER = {
-  queueOperationsPerDay: DAILY_ALLOWANCES.queueOperations,
+  queueOperationsPerDay: 10_000,
   /** Past this the requests fail, so it is also the most work one day can ask of anything else. */
   workersRequestsPerDay: 100_000,
   /** Past this D1 refuses every query until midnight UTC (docs/decisions/0009). */
-  d1RowsReadPerDay: DAILY_ALLOWANCES.d1RowsRead,
+  d1RowsReadPerDay: 5_000_000,
   /** 10 GB-month, counted in decimal gigabytes, which is the smaller reading. */
   r2StorageBytes: 10 * 1e9,
   r2ClassAPerMonth: 1_000_000,
