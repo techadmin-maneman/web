@@ -61,7 +61,7 @@ export function TryOnGroup({ tryOn, onOpen }: { tryOn: TryOn; onOpen: (photo: Op
             link,
             alt: photos.tryOn.alt(name, date),
             title: photos.photoOf(name, date),
-            // The file's own type gives the extension (src/routes/client/visits.ts).
+            // The file's own type gives the extension (src/routes/client/photos.ts).
             fileName: `mane-man-${tryOn.made_on}-try-on-${image}`,
           };
           return (
