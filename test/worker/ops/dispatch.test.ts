@@ -7,7 +7,7 @@ import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { App } from "../../../src/http/context.ts";
 import { recordUtilisation } from "../../../src/domain/dispatch/dispatch-utilisation.ts";
-import { NO_VISITS_CONSENT } from "../../../src/domain/messages/visit-messages.ts";
+import { NO_VISITS_CONSENT } from "../../../src/domain/messages/visit-message-text.ts";
 import { appFor, fakeDependencies, fakeQueue, markDatabase, NOW, request } from "../helpers.ts";
 import { visit } from "../visits.ts";
 

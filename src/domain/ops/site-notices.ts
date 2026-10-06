@@ -11,7 +11,7 @@ import { currentAddress } from "../clients/profile.ts";
 import { isServed } from "../clients/service-area.ts";
 import { bookableTypes, liveVisitOf, type LiveVisit } from "../booking/availability.ts";
 import { loadSlotSchedule } from "../booking/slot-times.ts";
-import { hoursOfWindow, NO_VISITS_CONSENT, type Composed } from "../messages/visit-messages.ts";
+import { hoursOfWindow, NO_VISITS_CONSENT, type Composed } from "../messages/visit-message-text.ts";
 import { isOneOf } from "../../lib/one-of.ts";
 import { queueMessage } from "../messages/queued-messages.ts";
 

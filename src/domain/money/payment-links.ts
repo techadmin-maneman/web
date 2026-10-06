@@ -33,7 +33,8 @@ import { codeAsRead, priceAfterCode } from "./discount-code-uses.ts";
 import { recordPayment, referenceLink } from "./payments.ts";
 import { priceOf } from "./price-book.ts";
 import { serviceOf } from "../booking/services.ts";
-import { visitMessage, type Composed } from "../messages/visit-messages.ts";
+import { visitMessage } from "../messages/visit-messages.ts";
+import type { Composed } from "../messages/visit-message-text.ts";
 
 /** What asking for the link came to; "free" when a discount code left nothing to pay, so no link was asked for. */
 export type LinkSent = "sent" | "already_sent" | "unpriced" | "refused" | "unavailable" | "free";
