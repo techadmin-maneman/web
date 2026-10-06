@@ -52,5 +52,15 @@ The words the code, the database and the API use for the same few things, and wh
 
 | Word                 | Means                                                                                                                                                                                                                        |
 | -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **deletion request** | A client asking, in the app, for their account to be deleted (`deletion_requests`). Ops decide it within 7 days (`DELETION_DECIDED_WITHIN_DAYS`).                                                                            |
+| **deletion request** | A client asking, in the app, for their account to be deleted (`deletion_requests`). Ops decide it within the days `DELETION_DECIDED_WITHIN_DAYS` sets.                                                                       |
 | **erasure**          | The act itself (`eraseAndQueue`, ADR 0019 and 0066): photographs deleted, the person blanked, the CRM and Books told. Done in the console only: a decided deletion request, or Erase on a person's own page. All or nothing. |
+
+## Names left from FSM
+
+Zoho FSM is gone (ADR 0110), but some columns still carry its name. Phase 6 of [codebase-upgrade-plan.md](codebase-upgrade-plan.md) renames or drops them.
+
+| Name              | Means                                                                                                                                               |
+| ----------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `fsm_invoice_id`  | On `appointments`: the visit's invoice in Books.                                                                                                    |
+| `fsm_write_state` | On `job_events` and `dispatch_moves`: `written` once the row has landed. A job event a later one superseded is `rejected`.                          |
+| `fsm_id`          | On `appointments`, `pieces` and `technicians`: a column that must be filled, which a new row fills with its own ID. Nothing reads it for a purpose. |

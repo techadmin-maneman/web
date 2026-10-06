@@ -129,6 +129,7 @@ docs/                 indexed by docs/README.md
 
 | Document                  | What it is                                                                                   |
 | ------------------------- | -------------------------------------------------------------------------------------------- |
+| `docs/start-here.md`      | For a developer new to the code: the first hour, where each feature lives, a first change    |
 | `docs/walkthrough.md`     | The whole platform as its users meet it: a booking, a visit, a payment, a referral, an alert |
 | `docs/getting-started.md` | The whole system on your laptop                                                              |
 | `docs/front-ends.md`      | The four front ends: how each is built, run, tested and deployed, and what they share        |

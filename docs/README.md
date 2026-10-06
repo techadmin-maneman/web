@@ -6,6 +6,7 @@ Where to read, by what you are here to do. The repository's own `README.md` says
 
 | Document                                 | Read it for                                                                                  |
 | ---------------------------------------- | -------------------------------------------------------------------------------------------- |
+| [start-here.md](start-here.md)           | New to the code: the first hour, where each feature lives, and a first change walked through |
 | [walkthrough.md](walkthrough.md)         | The whole platform as its users meet it: a booking, a visit, a payment, a referral, an alert |
 | [getting-started.md](getting-started.md) | Everything running on your laptop, with stub vendors                                         |
 | [glossary.md](glossary.md)               | Which word means what, where one thing has several names                                     |
