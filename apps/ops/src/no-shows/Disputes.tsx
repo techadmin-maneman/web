@@ -1,4 +1,4 @@
-// Board D1's second card, one a dispute, in a queue with its count: a charge the client disputed in the app, with
+// The Payments page's second card, one a dispute, in a queue with its count: a charge the client disputed in the app, with
 // the evidence its no-show was ruled on, what the charge took, the client's own words, and Refund or Uphold, each
 // with a note the server refuses to go without (docs/decisions/0096-a-no-shows-charge-and-its-dispute.md). Refund
 // gives back what the charge took; the client is told the ruling either way, never the note. A dispute waits on the

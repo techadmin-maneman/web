@@ -57,7 +57,7 @@
 
 /* ---- The client's page --------------------------------------------------- */
 
-/* Board B1 draws the head, the tabs and the pieces table across the page; B2 and B3 are panels within it. */
+/* The design draws the head, the tabs and the pieces table across the page; photographs and consents are panels within it. */
 .client {
   flex: 1;
   min-width: 0;
@@ -177,7 +177,7 @@
   color: var(--text-muted);
 }
 
-/* Board B1's tabs (packages/ui/Tabs.tsx), set in from the page's edges as its head is. */
+/* The client page's tabs (packages/ui/Tabs.tsx), set in from the page's edges as its head is. */
 .tabs {
   padding: 0 var(--sp-28);
 }
@@ -452,7 +452,7 @@
   font-size: var(--fs-14);
 }
 
-/* ---- Board B1: the pieces ------------------------------------------------ */
+/* ---- The pieces ---------------------------------------------------------- */
 
 /* The board's own column widths; the failure and its reason take the slack. */
 .code {
@@ -500,7 +500,7 @@
   color: var(--brass-text);
 }
 
-/* ---- Board B2: the photographs ------------------------------------------- */
+/* ---- The photographs ----------------------------------------------------- */
 
 .photos {
   max-width: var(--ops-panel);
@@ -584,7 +584,7 @@
   margin-top: var(--sp-6);
 }
 
-/* ---- Board B3: the consents ---------------------------------------------- */
+/* ---- The consents -------------------------------------------------------- */
 
 .consents {
   max-width: var(--ops-panel);

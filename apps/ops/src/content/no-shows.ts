@@ -3,14 +3,14 @@
 import { NOT_PERMITTED } from "./common.ts";
 
 /**
- * Board D1, the design's Payments: the day's money over "No-shows and late
+ * The design's Payments: the day's money over "No-shows and late
  * cancellations", a disputed charge ruled on with Refund or Uphold, and the
  * no-show cases to rule on.
  */
 export const noShows = {
   title: "Payments",
   /**
-   * Board D1's first card: the day's money, over the charges it was kept on.
+   * The first card: the day's money, over the charges it was kept on.
    * The card carries no heading on the board and names no day, so both are
    * placeholders. Every figure is read from the payments and the charges
    * themselves (docs/decisions/0096-a-no-shows-charge-and-its-dispute.md).
@@ -144,7 +144,7 @@ export const noShows = {
     closedEarly:
       "Closed too early: the wait ran from a check-in before the booked start. Waive it, or say in your note why you charge.",
     /**
-     * Board D1's field beneath the evidence, "Your note · required", which the
+     * The field beneath the evidence, "Your note · required", which the
      * board draws on the dispute. A ruling needs its reason either way, and the
      * server refuses one without it (src/policy/decision-reasons.ts).
      */
@@ -212,7 +212,7 @@ export const noShows = {
     empty: "Nothing has been decided today.",
   },
   /**
-   * Board D1's second card, a disputed charge, one card a dispute. The board
+   * The second card, a disputed charge, one card a dispute. The design
    * draws its label, its four rows of evidence, its note and its two buttons; the
    * rest is placeholder (docs/decisions/0096-a-no-shows-charge-and-its-dispute.md).
    */

@@ -1,4 +1,4 @@
-// Board A1's tray, opened: a job nobody holds yet, read before it is put on a
+// The board's tray, opened: a job nobody holds yet, read before it is put on a
 // technician. The client, the window asked beside the one offered, the visit's
 // details, the block drawer's two ways to the client, and Assign, which takes
 // the job up as a drag from the tray does.

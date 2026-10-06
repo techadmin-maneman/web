@@ -1,5 +1,5 @@
 /*
- * Boards A1, A2 and A3: the week's board, the reason a move carries, and the
+ * The dispatch board: the week's board, the reason a move carries, and the
  * drawer a block opens. The board is 13 px type on 34 px of line, as the
  * console's opening note asks, and gold is kept for the navigation's selection,
  * so the one primary action here is on ink.
@@ -106,7 +106,7 @@
   color: var(--text);
 }
 
-/* ---- Board A1: technicians down, seven days across ----------------------- */
+/* ---- The week: technicians down, seven days across ----------------------- */
 
 .grid {
   width: 100%;
@@ -201,7 +201,7 @@
   background: var(--paper-shade);
 }
 
-/* Board A1's "Leave" mark, in the boards' label (components/label.module.css), not sans capitals. */
+/* The "Leave" mark, in the console's label (components/label.module.css), not sans capitals. */
 .awayMark {
   display: block;
   margin-bottom: var(--sp-2);
@@ -547,7 +547,7 @@
   outline-offset: calc(-1 * var(--focus-width));
 }
 
-/* ---- Boards A2 and A3: the panels a job opens, each a modal dialog -------- */
+/* ---- The panels a job opens, each a modal dialog ------------------------- */
 
 .panel {
   position: fixed;
@@ -647,7 +647,7 @@
   margin-top: var(--sp-20);
 }
 
-/* ---- Board A3: the drawer ------------------------------------------------ */
+/* ---- The drawer ---------------------------------------------------------- */
 
 .drawerHead {
   display: flex;

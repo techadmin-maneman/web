@@ -1,5 +1,5 @@
 /*
- * Boards A1 and B1's frame: a 196 px column on ink, a 56 px header, and the
+ * The console's frame: a 196 px column on ink, a 56 px header, and the
  * section beneath it on paper. Only the section scrolls, so the navigation and
  * the header stay where a focused control can always be reached (WCAG 2.4.11).
  */

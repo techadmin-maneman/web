@@ -1,5 +1,5 @@
 /*
- * Boards C1 and C2: the held queue over the referrers' figures, each a panel
+ * The held queue over the referrers' figures, each a panel
  * on paper. Figures are tabular so a column reads down; gold is kept for the
  * navigation's selection, so the one primary action here is on ink.
  */
@@ -26,7 +26,7 @@
   color: var(--text-muted);
 }
 
-/* ---- Board C1: one held grant ------------------------------------------- */
+/* ---- One held grant ------------------------------------------------------ */
 
 .grantHead {
   display: flex;
@@ -84,7 +84,7 @@
   margin-top: var(--sp-14);
 }
 
-/* Board C1's field, as tall as the board draws it. */
+/* The reason's field, as tall as the design draws it. */
 .reasonField {
   height: var(--skeleton-card);
 }
@@ -95,9 +95,9 @@
   color: var(--error-on-paper);
 }
 
-/* ---- Board C2: every referrer's figures ---------------------------------- */
+/* ---- Every referrer's figures -------------------------------------------- */
 
-/* Board C2's figures (packages/ui/Table.tsx), in figures of one width. */
+/* The referrers' figures (packages/ui/Table.tsx), in figures of one width. */
 .table {
   font-variant-numeric: tabular-nums;
 }

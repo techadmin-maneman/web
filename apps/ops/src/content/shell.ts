@@ -13,7 +13,7 @@ export const shell = {
   /** Who did something, where it was a service token rather than a person. */
   serviceToken: "a service token",
   /**
-   * The sidebar's own title. Boards A1 and B1 letter it "Operations", which is now the name of one of the
+   * The sidebar's own title. The design letters it "Operations", which is now the name of one of the
    * departments beneath it.
    */
   title: "Console",

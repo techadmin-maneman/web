@@ -1,4 +1,4 @@
-// Board A3: the drawer one block on the board opens. The client in full, the
+// The drawer one block on the board opens. The client in full, the
 // time and the technician, the payment badge, the visit's details, and the
 // board's two ways to the client: WhatsApp {client} and Open client.
 //

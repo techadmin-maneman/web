@@ -173,12 +173,12 @@ export const settings = {
         before_start: "Earliest check-in, before the booked start",
         held_offline: "Longest a phone may stay offline",
       },
-      // Board C4's countdown and the grace after it (docs/decisions/0068-a-paid-hold-is-kept.md).
+      // The pay sheet's countdown and the grace after it (docs/decisions/0068-a-paid-hold-is-kept.md).
       payment_hold: {
         countdown: "The countdown the client sees",
         grace: "Grace after the countdown",
       },
-      // Board D3's two figures (docs/open-points.md, item 59).
+      // The Technicians page's two figures.
       technician_work: {
         period: "Figures counted over",
         over_by: "Running over from",

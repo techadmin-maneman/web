@@ -1,4 +1,4 @@
-// Board A1's grid: technicians down, seven days across, each column headed by
+// The board's grid: technicians down, seven days across, each column headed by
 // its utilisation. The header row and the technicians' column stay put while
 // the grid scrolls under them, so a board of many technicians can be
 // read at any depth.

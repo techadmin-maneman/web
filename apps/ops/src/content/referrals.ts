@@ -23,7 +23,7 @@ export const referrals = {
     approve: "Approve",
     reject: "Reject",
     /**
-     * Board C1 requires a reason for both decisions
+     * The design requires a reason for both decisions
      * (docs/prompts/phase2-frontend.md) and draws no field for either.
      */
     reason: {

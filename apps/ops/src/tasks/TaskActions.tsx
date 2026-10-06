@@ -1,6 +1,6 @@
 // What ops do with a task on the Tasks board itself (docs/decisions/0092-task-owners.md): take it, give it to
 // another member of staff who has signed in to the console, hand it back, and, for a visit left partly done alone,
-// close it without a follow-up, with why. Board D2 draws each task's owner and none of these; they sit beneath the
+// close it without a follow-up, with why. The design draws each task's owner and none of these; they sit beneath the
 // task's own lines, as the way to where it is decided does.
 
 import { REASON_MAX_CHARS } from "../../../../src/policy/decision-reasons.ts";
