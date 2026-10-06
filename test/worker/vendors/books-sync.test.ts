@@ -493,6 +493,32 @@ describe("payments and refunds", () => {
       ]);
     });
 
+    it("of a no-show charge refunded on the client's dispute is not told, though the refund has not landed", async () => {
+      await payment();
+      await chargedNoShow(400000);
+      await env.DB.prepare(
+        `INSERT INTO no_show_disputes (id, case_id, person_id, reason, created_at, ruling, ruled_by, ruled_at)
+         VALUES ('dispute-1', 'case-1', ?1, 'Nobody rang the bell', ?2, 'refunded', 'ops@maneman.in', ?2)`,
+      )
+        .bind(PERSON, NOW.toISOString())
+        .run();
+      await pass(createStubBooks(), "books-customer-9");
+      expect(told).toEqual([]);
+    });
+
+    it("closes what it told once the payment is refunded in full", async () => {
+      await payment();
+      await chargedNoShow(400000);
+      const books = createStubBooks();
+      await pass(books, "books-customer-9");
+      expect(await openAlerts()).toEqual({ n: 1 });
+
+      await env.DB.prepare("UPDATE payments SET refunded_amount = amount WHERE id = ?1").bind(PAYMENT).run();
+      await pass(books, "books-customer-9", later(RECHECK_AFTER_MS * 2));
+      expect(await openAlerts()).toEqual({ n: 0 });
+      expect(told).toHaveLength(1);
+    });
+
     it("of a late fee is told to ops once, and never set against the visit's invoice", async () => {
       await payment();
       await secondPayment("late_fee");

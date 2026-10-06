@@ -492,7 +492,7 @@ test("shows the concerns the client raised, and our answer", async ({ page }) =>
 test("asks before requesting deletion, then says it is requested", async ({ page }) => {
   await loggedIn(page);
   await expect(
-    page.getByText("Photographs deleted within seven days. Invoices kept eight years, by law."),
+    page.getByText("Deleted within 30 days of your request. Invoices kept eight years, by law."),
   ).toBeVisible();
   await page.getByRole("button", { name: "Request deletion" }).click();
   await page.getByRole("button", { name: "Keep my account" }).click();

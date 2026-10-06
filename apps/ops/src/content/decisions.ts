@@ -36,8 +36,8 @@ export const deletions = {
   title: "Deletion requests",
   queue: {
     title: "Waiting for a decision",
-    /** The seven days a request is processed within, which run from the day it was made (ADR 0049). */
-    processDays: 7,
+    /** The 30 days a request is processed within, which run from the day it was made (ADR 0049). */
+    processDays: 30,
     requested: (mobile: string, date: string) => `${mobile} · requested ${date}`,
     delete: "Delete the account",
     reject: "Reject the request",
@@ -67,7 +67,7 @@ export const deletions = {
       items: [
         "Their visits, payments, refunds and credits, as records",
         "Their invoices in Books, eight years, by law",
-        "Their records in the CRM and Books, blanked within a few minutes",
+        "Their records in the CRM and Books, blanked within the hour",
       ],
     },
     /** The runbook's first step, "Check the request comes from the number's owner". */
@@ -91,7 +91,7 @@ export const deletions = {
     empty: "No deletion request is waiting.",
     note: (days: number) =>
       `Each request is processed within ${String(days)} days of being made. ` +
-      "Ops are alerted once when one has waited five.",
+      "Ops are alerted once when five are left.",
     errors: {
       not_permitted: NOT_PERMITTED,
       not_found: "Someone has decided this one already. Reload to see the queue as it stands.",

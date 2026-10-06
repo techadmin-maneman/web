@@ -534,7 +534,7 @@ describe("the deletion window", () => {
   beforeEach(async () => {
     const at = (days: number) => new Date(NOW.getTime() - days * 86_400_000).toISOString();
     for (const [id, days] of [
-      [AGED, 6],
+      [AGED, 26],
       [RECENT, 2],
     ] as const) {
       await env.DB.prepare(
@@ -550,13 +550,13 @@ describe("the deletion window", () => {
       .all()
       .then((answer) => answer.results);
 
-  it("tells ops once of a request that has waited 5 days, keeps the alert, and names the day it is due", async () => {
+  it("tells ops once of a request that has waited 25 days, keeps the alert, and names the day it is due", async () => {
     const deps = fakeDependencies();
     expect(await alertAgedDeletions(env.DB, NOW, deps.alertOnce)).toBe(1);
     expect(await alertAgedDeletions(env.DB, NOW, deps.alertOnce)).toBe(0);
 
     expect(deps.alerts).toEqual([
-      `Deletion request ${AGED} has waited 5 days. Decide it by 2026-09-22, within 7 days of the request. ` +
+      `Deletion request ${AGED} has waited 25 days. Decide it by 2026-09-25, within 30 days of the request. ` +
         "http://ops.localhost:4323/deletion-requests",
     ]);
     expect(await openAlerts()).toEqual([

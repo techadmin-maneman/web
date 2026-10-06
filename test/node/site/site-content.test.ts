@@ -308,12 +308,12 @@ describe("the legal pages", () => {
 
   // The notice of 22 September 2026 erased "the same day", let any visit move free by message, took payment
   // on the day of the fit, and offered a call.
-  it("say what Phase 2 does: erasure decided within seven days, visits paid at booking, changes in the app", () => {
+  it("say what Phase 2 does: erasure decided within 30 days, visits paid at booking, changes in the app", () => {
     const privacy = textOf(site.legalPages.privacy);
     const terms = textOf(site.legalPages.terms);
     expect(privacy).not.toContain("the same day");
-    expect(DELETION_DECIDED_WITHIN_DAYS).toBe(7);
-    expect(privacy).toContain("We decide a request to erase within seven days.");
+    expect(DELETION_DECIDED_WITHIN_DAYS).toBe(30);
+    expect(privacy).toContain("We decide a request to erase within 30 days.");
     expect(privacy).toContain("Invoices are kept for eight years, as the law requires.");
     expect(terms).not.toMatch(/on the day of the fit|by messaging us, at no charge|\bcall\b|\bwith him\b|\bpiece\b/);
     expect(terms).toContain("A visit you book in the app is paid when you book it");

@@ -406,11 +406,11 @@ describe("GET /api/tasks", () => {
     ]);
   });
 
-  it("holds an erasure request until it is decided, for the seven days the client was promised", async () => {
+  it("holds an erasure request until it is decided, for the 30 days the client was promised", async () => {
     await erasureRequest("requested");
     // The Deletion requests section counts down to the same day.
     expect(tasksIn(await tasks(), "erasure_request")).toMatchObject([
-      { id: ERASURE, detail: null, since: "2026-09-20T06:00:00.000Z", due: "2026-09-27T06:00:00.000Z" },
+      { id: ERASURE, detail: null, since: "2026-09-20T06:00:00.000Z", due: "2026-10-20T06:00:00.000Z" },
     ]);
 
     await env.DB.prepare("UPDATE deletion_requests SET state = 'rejected'").run();
