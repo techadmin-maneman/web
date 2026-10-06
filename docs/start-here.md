@@ -93,10 +93,10 @@ this map, or when the map names something that no longer exists.
 
 ### Money
 
-- **Database work** (`src/domain/money/`): `payments`, `payment-links`, `client-payments`, `client-billing`, `refunds`,
-  `auto-refunds`, `cancel-refunds`, `credits`, `credit-reminders`, `discount-codes`, `discount-code-holds`,
-  `discount-code-uses`, `discount-code-visits`, `requested-codes`, `day-money`, `one-visit-money`, `price-book`,
-  `razorpay-catch-up`
+- **Database work** (`src/domain/money/`): `payments`, `payment-links`, `payment-links-paid`, `client-payments`,
+  `client-billing`, `refunds`, `auto-refunds`, `cancel-refunds`, `credits`, `credit-reminders`, `discount-codes`,
+  `discount-code-holds`, `discount-code-uses`, `discount-code-visits`, `requested-codes`, `day-money`,
+  `one-visit-money`, `price-book`, `razorpay-catch-up`
 - **Rules** (`src/policy/`): `prices`, `prepayment`, `pay-by-link`, `discount-codes`, `credit-reminders`,
   `fraud-holds`
 - **Data** (`src/config/`): `gst`

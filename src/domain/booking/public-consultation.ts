@@ -17,7 +17,7 @@ import { type OneVisitCode, useOnNewHold, codeOnHold, checkForOneVisit } from ".
 import type { LeadAttribution } from "../leads/leads.ts";
 import type { Invite, InviteState } from "../referrals/referrals.ts";
 import { liveVisitOf, bookableTypes, availability } from "./availability.ts";
-import { siteVisit } from "./site-visit.ts";
+import { siteVisit, type SiteVisit } from "./site-visit.ts";
 import { offeredProducts } from "./services.ts";
 import {
   type FormRequest,
@@ -155,12 +155,14 @@ export interface Booked {
 export type StandingCode = Pick<OneVisitCode, "code" | "terms">;
 
 /**
- * Books the free consultation, or the consultation and fit in one visit: the slot, the lead, and the invite's credits
- * where they apply.
+ * The request's own checks, before its number's: the pincode served and the day open for booking, a window the plan
+ * starts in, a product for a one visit, and the address in the pincode booked at.
  */
-export async function bookConsultation(form: FormRequest, request: ConsultationRequest): Promise<Booked | Refusal> {
-  const { db, log, now } = form;
-
+async function checkRequest(
+  db: D1Database,
+  request: ConsultationRequest,
+  now: Date,
+): Promise<{ ok: true; pincode: Pincode } | Refusal> {
   const first = addDays(indiaDate(now), 1);
   const oneVisit = request.plan === "one_visit";
   const [pincode, products] = await Promise.all([
@@ -179,6 +181,153 @@ export async function bookConsultation(form: FormRequest, request: ConsultationR
   if (request.address.pincode !== request.pincode) {
     return { ok: false, status: 400, code: "invalid_request", fields: ["address.pincode"] };
   }
+  return { ok: true, pincode };
+}
+
+/**
+ * The person a booking is for, and what stands or falls with it: their consent, and the address where it is theirs
+ * now, or the WhatsApp that tells its owner one is on the account already.
+ */
+function bookingPerson(
+  form: FormRequest,
+  {
+    request,
+    knownId,
+    checked,
+    hasSavedAddress,
+  }: {
+    request: ConsultationRequest;
+    knownId: string | null;
+    checked: { mobile: string; ipHash: string };
+    hasSavedAddress: boolean;
+  },
+) {
+  const { db, now } = form;
+  const person = formPerson(db, {
+    knownId,
+    mobile: checked.mobile,
+    name: request.name,
+    testRecord: testRecordAtCreation(form.environment, request.name),
+    purpose: "whatsapp_visits",
+    notice: CONSULTATION_NOTICES[request.source],
+    source: request.source,
+    ipHash: checked.ipHash,
+    now,
+  });
+  const address = typedAddress({ hasSavedAddress });
+  // The page says nothing of an address already on the account; its owner is told on WhatsApp.
+  const addressNotice =
+    address === "on_account" ? siteNotice(db, { personId: person.id, kind: "address_on_account", now }) : null;
+  const alongside = [
+    ...person.statements,
+    ...(address === "saved" ? [firstAddressStatement(db, person.id, request.address, now)] : []),
+    ...(addressNotice === null ? [] : [addressNotice.statement]),
+  ];
+  return { person, address, addressNotice, alongside };
+}
+
+/**
+ * A slot held for the visit while the day offers it, with the code's use on it; else the request, which waits for
+ * ops. Refused when another booking took the slot first.
+ */
+async function holdOrRequest(
+  form: FormRequest,
+  {
+    request,
+    personId,
+    visit,
+    pincode,
+    alongside,
+    code,
+  }: {
+    request: ConsultationRequest;
+    personId: string;
+    visit: SiteVisit | null;
+    pincode: Pincode;
+    alongside: readonly D1PreparedStatement[];
+    code: OneVisitCode | null;
+  },
+): Promise<{ ok: true; holdId: string | null } | Refusal> {
+  const { db, now } = form;
+  const oneVisit = request.plan === "one_visit";
+  if (visit === null) {
+    const asked = { personId, pincode: pincode.pincode, date: request.date, window: request.window };
+    const kept = { oneVisit, invite: request.invite, discountCode: code?.code ?? null, now };
+    await db.batch([...alongside, requestStatement(db, { ...asked, ...kept })]);
+    return { ok: true, holdId: null };
+  }
+  const hold = await holdSlot({
+    db,
+    input: {
+      personId,
+      service: visit.service,
+      date: request.date,
+      window: request.window,
+      price: visit.price,
+      terms: visit.terms,
+      oneVisit,
+      pincode: pincode.pincode,
+      from: "site",
+      alongside,
+      afterHold: (newHold) =>
+        code === null ? [] : [useOnNewHold(db, { codeId: code.codeId, personId, holdId: newHold }, now)],
+    },
+    now,
+    holdSeconds: HOLD_SECONDS,
+  });
+  if (hold === null) return { ok: false, status: 409, code: "taken" };
+  return { ok: true, holdId: hold.id };
+}
+
+/** The invite the booking came with, on record against the consultation it produced. */
+function consultationInvite(
+  form: FormRequest,
+  request: ConsultationRequest,
+  booked: { personId: string; pincode: Pincode },
+) {
+  return applyInvite(form.db, {
+    invite: request.invite,
+    personId: booked.personId,
+    via: "consultation",
+    pincode: booked.pincode.pincode,
+    toldNotice: request.toldNotice,
+    now: form.now,
+  });
+}
+
+/** The booking's lead, for the CRM: who asked, for which day, at which pincode, and how they came. */
+function consultationLead(
+  form: FormRequest,
+  {
+    request,
+    personId,
+    mobile,
+    pincode,
+  }: { request: ConsultationRequest; personId: string; mobile: string; pincode: Pincode },
+): Promise<string> {
+  return recordLead(form, {
+    personId,
+    name: request.name,
+    mobile,
+    pincode,
+    lossExtent: request.lossExtent,
+    date: request.date,
+    attribution: request.attribution,
+    served: true,
+    now: form.now,
+  });
+}
+
+/**
+ * Books the free consultation, or the consultation and fit in one visit: the slot, the lead, and the invite's credits
+ * where they apply.
+ */
+export async function bookConsultation(form: FormRequest, request: ConsultationRequest): Promise<Booked | Refusal> {
+  const { db, log, now } = form;
+  const oneVisit = request.plan === "one_visit";
+  const asked = await checkRequest(db, request, now);
+  if (!asked.ok) return asked;
+  const { pincode } = asked;
   const checked = await form.checkPerson(request.mobile, request.turnstileToken, request.name);
   if (!checked.ok) return checked;
   // Nothing is looked up or written for a number the plan needs proved until its code was entered.
@@ -204,56 +353,22 @@ export async function bookConsultation(form: FormRequest, request: ConsultationR
   const visitPincode = savedPincode ?? pincode;
   const code = request.discountCode === null ? null : await oneVisitCode(form, request.discountCode, knownId, oneVisit);
   if (code?.ok === false) return code;
-  const person = formPerson(db, {
+  const { person, address, addressNotice, alongside } = bookingPerson(form, {
+    request,
     knownId,
-    mobile: checked.mobile,
-    name: request.name,
-    testRecord: testRecordAtCreation(form.environment, request.name),
-    purpose: "whatsapp_visits",
-    notice: CONSULTATION_NOTICES[request.source],
-    source: request.source,
-    ipHash: checked.ipHash,
-    now,
+    checked,
+    hasSavedAddress: saved !== null,
   });
-  const address = typedAddress({ hasSavedAddress: saved !== null });
-  // The page says nothing of an address already on the account; its owner is told on WhatsApp.
-  const addressNotice =
-    address === "on_account" ? siteNotice(db, { personId: person.id, kind: "address_on_account", now }) : null;
-  // What stands or falls with the booking: the person, their consent, and the address where it is theirs now.
-  const alongside = [
-    ...person.statements,
-    ...(address === "saved" ? [firstAddressStatement(db, person.id, request.address, now)] : []),
-    ...(addressNotice === null ? [] : [addressNotice.statement]),
-  ];
-
-  let holdId: string | null = null;
-  if (visit !== null) {
-    const hold = await holdSlot({
-      db,
-      input: {
-        personId: person.id,
-        service: visit.service,
-        date: request.date,
-        window: request.window,
-        price: visit.price,
-        terms: visit.terms,
-        oneVisit,
-        pincode: visitPincode.pincode,
-        from: "site",
-        alongside,
-        afterHold: (newHold) =>
-          code === null ? [] : [useOnNewHold(db, { codeId: code.codeId, personId: person.id, holdId: newHold }, now)],
-      },
-      now,
-      holdSeconds: HOLD_SECONDS,
-    });
-    if (hold === null) return { ok: false, status: 409, code: "taken" };
-    holdId = hold.id;
-  } else {
-    const asked = { personId: person.id, pincode: visitPincode.pincode, date: request.date, window: request.window };
-    const kept = { oneVisit, invite: request.invite, discountCode: code?.code ?? null, now };
-    await db.batch([...alongside, requestStatement(db, { ...asked, ...kept })]);
-  }
+  const placed = await holdOrRequest(form, {
+    request,
+    personId: person.id,
+    visit,
+    pincode: visitPincode,
+    alongside,
+    code,
+  });
+  if (!placed.ok) return placed;
+  const { holdId } = placed;
   // The code's use is written with the hold only while the code still has a use left for it, which another booking
   // may have taken a moment before.
   const codeStands = code !== null && (holdId === null || (await codeOnHold(db, holdId)) !== null);
@@ -262,27 +377,15 @@ export async function bookConsultation(form: FormRequest, request: ConsultationR
   // one, by the booking and its lead.
   if (knownId !== null && address === "saved") await form.syncContact(person.id);
   if (addressNotice !== null) await queueMessage(form, addressNotice.id);
-  const invited = await applyInvite(db, {
-    invite: request.invite,
-    personId: person.id,
-    via: "consultation",
-    pincode: visitPincode.pincode,
-    toldNotice: request.toldNotice,
-    now,
-  });
+  const invited = await consultationInvite(form, request, { personId: person.id, pincode: visitPincode });
   // Booked once the invite is on record, so the invite names the consultation it produced.
   if (holdId !== null) await form.bookHold(holdId);
 
-  const leadId = await recordLead(form, {
+  const leadId = await consultationLead(form, {
+    request,
     personId: person.id,
-    name: request.name,
     mobile: checked.mobile,
     pincode: visitPincode,
-    lossExtent: request.lossExtent,
-    date: request.date,
-    attribution: request.attribution,
-    served: true,
-    now,
   });
   const state = holdId === null ? ("requested" as const) : ("booked" as const);
   log.info("consultation_booked", {

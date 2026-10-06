@@ -6,7 +6,7 @@
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
-import { composeLinkPaid } from "../../../src/domain/money/payment-links.ts";
+import { composeLinkPaid } from "../../../src/domain/money/payment-links-paid.ts";
 import { recordPayment } from "../../../src/domain/money/payments.ts";
 import { renderMessage } from "../../../src/config/message-templates.ts";
 import { openSession } from "../../../src/domain/sign-in/sessions.ts";

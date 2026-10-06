@@ -60,16 +60,47 @@ interface NewClaim {
   readonly now: Date;
 }
 
+/** The person a claim is for, by the number it binds. */
+const PERSON_BY_MOBILE = "(SELECT id FROM people WHERE mobile_e164 = ?)";
+
+/** The claim's lead, with how the visitor came to the try-on. */
+function claimLead(
+  db: D1Database,
+  { claim, leadId, at }: { claim: NewClaim; leadId: string; at: string },
+): D1PreparedStatement {
+  const { attribution } = claim;
+  return db
+    .prepare(
+      `INSERT INTO leads (id, person_id, created_at, source, loss_extent, utm_source, utm_medium, utm_campaign,
+         utm_content, gclid, fbclid, referrer, landing_path, request_id)
+       VALUES (?, ${PERSON_BY_MOBILE}, ?, 'tryon', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    )
+    .bind(
+      leadId,
+      claim.mobileE164,
+      at,
+      claim.stage,
+      attribution.utm_source ?? null,
+      attribution.utm_medium ?? null,
+      attribution.utm_campaign ?? null,
+      attribution.utm_content ?? null,
+      attribution.gclid ?? null,
+      attribution.fbclid ?? null,
+      attribution.referrer ?? null,
+      attribution.landing_path ?? null,
+      claim.requestId,
+    );
+}
+
 /**
  * Writes a reserved job's claim in one batch, and returns its lead. The look's message waits for the render, which
  * the claim comes before (src/queues/render.ts queues it once the look is stored). If the batch fails, the job's
  * reservation is let go.
  */
 export async function recordClaim(db: D1Database, claim: NewClaim): Promise<string> {
-  const { job, mobileE164, attribution, now } = claim;
+  const { job, mobileE164, now } = claim;
   const leadId = crypto.randomUUID();
   const at = now.toISOString();
-  const personId = "(SELECT id FROM people WHERE mobile_e164 = ?)";
 
   try {
     await db.batch([
@@ -103,38 +134,18 @@ export async function recordClaim(db: D1Database, claim: NewClaim): Promise<stri
         ipHash: job.ip_hash,
         givenAt: job.photo_consent_at,
       }).statement,
-      db
-        .prepare(
-          `INSERT INTO leads (id, person_id, created_at, source, loss_extent, utm_source, utm_medium, utm_campaign,
-             utm_content, gclid, fbclid, referrer, landing_path, request_id)
-           VALUES (?, ${personId}, ?, 'tryon', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        )
-        .bind(
-          leadId,
-          mobileE164,
-          at,
-          claim.stage,
-          attribution.utm_source ?? null,
-          attribution.utm_medium ?? null,
-          attribution.utm_campaign ?? null,
-          attribution.utm_content ?? null,
-          attribution.gclid ?? null,
-          attribution.fbclid ?? null,
-          attribution.referrer ?? null,
-          attribution.landing_path ?? null,
-          claim.requestId,
-        ),
+      claimLead(db, { claim, leadId, at }),
       // The render is made for the stage the lead records (src/routes/public/tryon-generate.ts). Every claim comes with
       // its number proved by a code, so the try-on may show in its client's app.
       db
         .prepare(
-          `UPDATE tryon_jobs SET person_id = ${personId}, lead_id = ?, stage = ?, number_proved_at = ? WHERE id = ?`,
+          `UPDATE tryon_jobs SET person_id = ${PERSON_BY_MOBILE}, lead_id = ?, stage = ?, number_proved_at = ? WHERE id = ?`,
         )
         .bind(mobileE164, leadId, claim.stage, at, job.id),
       db
         .prepare(
           `INSERT INTO outbound_messages (id, created_at, person_id, kind, subject_id, state)
-           VALUES (?, ?, ${personId}, 'tryon_result', ?, 'waiting')`,
+           VALUES (?, ?, ${PERSON_BY_MOBILE}, 'tryon_result', ?, 'waiting')`,
         )
         .bind(crypto.randomUUID(), at, mobileE164, job.id),
       recordEvent({

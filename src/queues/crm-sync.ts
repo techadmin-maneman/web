@@ -134,15 +134,9 @@ const ASKED_WINDOW = `(SELECT asked FROM (
     WHERE person_id = l.person_id AND date = l.proposed_visit_date AND type = 'consultation'
   ) ORDER BY created_at DESC LIMIT 1)`;
 
-/** `retrySoon` is true only when this was the lead's first attempt and it failed. */
-export async function syncLead(
-  db: D1Database,
-  deps: Dependencies,
-  log: Logger,
-  leadId: string,
-): Promise<{ retrySoon: boolean }> {
-  const started = Date.now();
-  const row = await db
+/** The lead with its person, as the sync sends it; null for an ID no lead has. */
+function leadRowOf(db: D1Database, leadId: string): Promise<LeadRow | null> {
+  return db
     .prepare(
       `SELECT l.id AS lead_id, l.person_id, l.source, l.city, l.first_choice_window, l.loss_extent,
               l.proposed_visit_date, l.utm_source, l.utm_campaign, l.sync_state,
@@ -155,6 +149,17 @@ export async function syncLead(
     )
     .bind(leadId)
     .first<LeadRow>();
+}
+
+/** `retrySoon` is true only when this was the lead's first attempt and it failed. */
+export async function syncLead(
+  db: D1Database,
+  deps: Dependencies,
+  log: Logger,
+  leadId: string,
+): Promise<{ retrySoon: boolean }> {
+  const started = Date.now();
+  const row = await leadRowOf(db, leadId);
   // Timed, with the Zoho calls, to find where a stalled run spends its time (docs/decisions/0012).
   const readMs = Date.now() - started;
 
