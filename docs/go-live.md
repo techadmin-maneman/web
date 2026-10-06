@@ -18,6 +18,8 @@ Nothing here needs a release. The first two have dates.
 **The owner**
 
 - [ ] **Subscribe to Books Standard before its trial ends, on or about 7 October 2026** (item 4). FSM's trial lapses: no plan is bought (ADR 0110).
+- [x] **Workers Paid,** bought 6 October 2026 (ADR 0112). The zone stays on the Free website plan.
+- [x] **Zoho CRM Professional,** bought 6 October 2026: the sync writes 11 custom fields on a Lead, past Standard's 10.
 - [ ] **Start Razorpay's KYC** for live mode (item 6); it takes days and gates every live payment.
 - [ ] **Start DLT registration** for SMS login codes (item 37): the entity, a sender ID and the login-code template.
 - [ ] **A dedicated WhatsApp number** on its own Evolution instance, its webhook to us (item 38; RB 12, and "The WhatsApp number is banned" for moving a number).
@@ -148,6 +150,7 @@ These settings live only in each vendor's dashboard, where no test can read them
 | Setting                  | Expected                                                                                                                                                                                                                                                                               | Staging (test) | Production (live) |
 | ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------- | ----------------- |
 | The name a client sees   | "Mane Man", on Checkout and on a payment link's page. In test mode on 2 October 2026, a link's page read "Payment Request from ADWATE KUMAR"                                                                                                                                           |                |                   |
+| Checkout's font          | Inter: of the fonts Razorpay offers, the nearest to the apps' Instrument Sans                                                                                                                                                                                                          |
 | Logo and colour          | The Mane Man mark, `design/brand/mark-navy.svg` exported as a square PNG of at least 256 pixels, and the ink navy `#16233a`                                                                                                                                                            |                |                   |
 | The webhook              | Active, on `https://staging.maneman.in/api/hooks/razorpay` or `https://maneman.in/api/hooks/razorpay`, with that environment's `RAZORPAY_WEBHOOK_SECRET`                                                                                                                               |                |                   |
 | Its events               | These nine and no others: `order.paid`, `payment.authorized`, `payment.captured`, `payment.failed`, `refund.created`, `refund.processed`, `refund.failed`, `refund.speed_changed` and `payment_link.paid`. Staging received `settlement.processed` on 25 September 2026: switch it off |                |                   |
