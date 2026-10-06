@@ -1,4 +1,4 @@
-// A day's money, behind Access (Ops Console, board D1; src/domain/day-money.ts):
+// A day's money, behind Access (src/domain/day-money.ts):
 //   GET /api/payments?date=   what was collected and refunded, and each charge
 //
 // Nothing here takes or gives back money. The figures are read from the rows

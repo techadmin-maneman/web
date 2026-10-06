@@ -1,4 +1,4 @@
-// The same-origin rule the Phase 2 surfaces enforce on writes
+// The same-origin rule the client, ops and technician surfaces enforce on writes
 // (docs/decisions/0026-hosts-and-surfaces.md).
 
 import { createMiddleware } from "hono/factory";
@@ -8,7 +8,7 @@ import { refuse } from "./errors.ts";
 const SAFE_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
 
 /**
- * Refuses a write whose Origin is not the page's own. The Phase 2 surfaces
+ * Refuses a write whose Origin is not the page's own. Those surfaces
  * carry session cookies, and every *.maneman.in host counts as the same site,
  * so SameSite=Lax alone would let one surface's page post to another's API.
  */

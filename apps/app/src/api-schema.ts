@@ -3018,7 +3018,7 @@ export interface components {
             first_name: string;
             /** @description For the profile's button: the first letters of the first and last names. */
             initials: string;
-            /** @description A booking's consultation from the site's form, or a Phase 1 booking, before any visit of the client's is on record. Null once one is, and once its day has passed. */
+            /** @description A booking's consultation from the site's form, or its first form's, before any visit of the client's is on record. Null once one is, and once its day has passed. */
             consultation: {
                 /** Format: date */
                 date: string;
@@ -3028,13 +3028,13 @@ export interface components {
                  */
                 window: "morning" | "afternoon" | "evening";
                 /**
-                 * @description Deprecated: read `window`. The window in the Phase 1 booked page's words; null for the afternoon, which Phase 1 had no words for.
+                 * @description Deprecated: read `window`. The window in the first booked page's words; null for the afternoon, which it had no words for.
                  * @enum {string|null}
                  */
                 window_label: "before noon" | "after four" | null;
                 /** @description Where it is: the saved address (locality, city and pincode), else the booking's city. */
                 place: string;
-                /** @description Asked for with no slot held, as while self-serve booking is off or by a Phase 1 booking: ops confirm the time on WhatsApp. */
+                /** @description Asked for with no slot held, as while self-serve booking is off or by the site's first form: ops confirm the time on WhatsApp. */
                 requested: boolean;
                 /** @description A consultation and fit in one visit asked for on /book: what it costs once fitted, after the code typed there. Null for a consultation alone. */
                 one_visit: components["schemas"]["OneVisitPrice"] | null;
@@ -3060,7 +3060,7 @@ export interface components {
             payment_owed: components["schemas"]["OwedPayment"] | null;
             /** @description The credit tile: balance and earliest expiry; null with none left. */
             credits: components["schemas"]["Credits"] | null;
-            /** @description Board B1's one prompt, the first that applies, in the owner's order: no address given while something is booked; the next service due and not booked; then, once no invoice is ready, the month the piece in wear falls due, never the day, and only once that month may be booked. Null when none applies. */
+            /** @description Home's one prompt, the first that applies, in this order: no address given while something is booked; the next service due and not booked; then, once no invoice is ready, the month the piece in wear falls due, never the day, and only once that month may be booked. Null when none applies. */
             prompt: {
                 /** @enum {string} */
                 kind: "address";
@@ -3171,7 +3171,7 @@ export interface components {
             not_home: boolean;
             /** @description For a visit not yet closed: still to come, under way (the technician has checked in), closed as done from the technician's phone, or otherwise over and waiting to be closed. Null once it is closed. */
             stage: ("booked" | "in_progress" | "done" | "closing") | null;
-            /** @description Paid for ahead, or covered by a visit credit: board C1's Prepaid. */
+            /** @description Paid for ahead, or covered by a visit credit: the visit's Prepaid. */
             prepaid: boolean;
             technician: components["schemas"]["Technician"] | null;
             /** @description The saved address's area, city and pincode, else the visit's city and pincode. */
@@ -3434,7 +3434,7 @@ export interface components {
             not_home: boolean;
             /** @description For a visit not yet closed: still to come, under way (the technician has checked in), closed as done from the technician's phone, or otherwise over and waiting to be closed. Null once it is closed. */
             stage: ("booked" | "in_progress" | "done" | "closing") | null;
-            /** @description Paid for ahead, or covered by a visit credit: board C1's Prepaid. */
+            /** @description Paid for ahead, or covered by a visit credit: the visit's Prepaid. */
             prepaid: boolean;
             technician: components["schemas"]["Technician"] | null;
             /** @description The saved address's area, city and pincode, else the visit's city and pincode. */
@@ -3933,7 +3933,7 @@ export interface components {
             visit_id: string | null;
             /** @description The visit this hold moves; null for a new booking. */
             moves_visit_id: string | null;
-            /** @description A service-visit credit covers it, so payment is skipped (board C5). */
+            /** @description A service-visit credit covers it, so payment is skipped. */
             credit: {
                 /** @description Credits left once this one is used. */
                 remaining: number;

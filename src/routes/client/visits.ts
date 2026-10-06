@@ -67,7 +67,7 @@ export const VisitSummarySchema = z
         "For a visit not yet closed: still to come, under way (the technician has checked in), closed as done " +
         "from the technician's phone, or otherwise over and waiting to be closed. Null once it is closed.",
     }),
-    prepaid: z.boolean().openapi({ description: "Paid for ahead, or covered by a visit credit: board C1's Prepaid." }),
+    prepaid: z.boolean().openapi({ description: "Paid for ahead, or covered by a visit credit: the visit's Prepaid." }),
     technician: z.union([TechnicianSchema, z.null()]),
     place: z
       .string()

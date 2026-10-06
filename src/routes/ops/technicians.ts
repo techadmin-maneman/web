@@ -1,4 +1,4 @@
-// The technicians themselves, behind Access (Ops Console, board D3):
+// The technicians themselves, behind Access:
 //   GET   /api/technicians/work?from=&to=   jobs finished, and how long they took
 //   POST  /api/technicians                  add a technician
 //   PATCH /api/technicians/:id              change his name, number, zone or city

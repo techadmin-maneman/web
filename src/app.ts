@@ -210,7 +210,7 @@ export function createApp(
   // The ops console is staff only: every call needs a valid Access token, and is audited (ADR 0031); then the Staff
   // list decides what the caller may do.
   if (surface === "ops") app.use("/api/*", requireAccess, auditCall, requireStaffAccess);
-  // The public site's writes are guarded by Turnstile; the Phase 2 surfaces carry session cookies.
+  // The public site's writes are guarded by Turnstile; the other surfaces carry session cookies.
   if (surface !== "public") app.use("/api/*", requireSameOrigin);
 
   app.openAPIRegistry.register("ErrorResponse", ErrorResponseSchema);

@@ -1,5 +1,4 @@
-// What ops still have to do, behind Access (Ops Console, board D2;
-// src/policy/tasks.ts):
+// What ops still have to do, behind Access (src/policy/tasks.ts):
 //   GET /api/tasks                        the groups of the caller's departments, their counts, how many have run
 //                                         over, and whose each task is; ?person= narrows it to one client
 //   PUT /api/tasks/:group/:id/owner       make a task a member of staff's, or nobody's

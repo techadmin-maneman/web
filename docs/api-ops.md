@@ -5383,7 +5383,7 @@ Request body:
     },
     "prepaid": {
       "type": "boolean",
-      "description": "Paid for ahead, or covered by a visit credit: board C1's Prepaid."
+      "description": "Paid for ahead, or covered by a visit credit: the visit's Prepaid."
     },
     "technician": {
       "anyOf": [
@@ -5719,7 +5719,7 @@ Request body:
     },
     "prepaid": {
       "type": "boolean",
-      "description": "Paid for ahead, or covered by a visit credit: board C1's Prepaid."
+      "description": "Paid for ahead, or covered by a visit credit: the visit's Prepaid."
     },
     "technician": {
       "anyOf": [

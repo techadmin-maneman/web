@@ -25,7 +25,7 @@ export interface CrmLead {
   readonly source: LeadSource;
   readonly city: string | null;
   readonly firstChoiceWindow: VisitWindow | null;
-  /** Null for a booking made on a Phase 2 form, which does not ask (migration 0025). */
+  /** Null for a booking made on today's forms, which do not ask (migration 0025). */
   readonly lossExtent: LossExtent | null;
   readonly proposedVisitDate: string | null;
   /** The person has a contact consent: ops may call and message them. */
@@ -35,9 +35,9 @@ export interface CrmLead {
   readonly utmCampaign: string | null;
   /** The code of the friend's invite the person came through; null for one who came on their own. */
   readonly inviteCode: string | null;
-  /** The window a Phase 2 booking asked for, where the lead's own Phase 1 choice is absent. */
+  /** The window a booking asked for, where the lead carries no choice of its own from the first form. */
   readonly askedWindow: BookingWindow | null;
-  /** What a Phase 2 booking asked for: the consultation alone, or with the fit in one visit; null where none did. */
+  /** What a booking asked for: the consultation alone, or with the fit in one visit; null where none did. */
   readonly plan: Plan | null;
   /** The discount code given for a consultation and fit in one visit; null for none. */
   readonly discountCode: string | null;

@@ -252,7 +252,7 @@ export function recordFor(
   };
   if (status !== null) record.Lead_Status = status;
   if (isNew) record.Lead_Source = sourceOf(lead, fields);
-  // An invited friend, and the window a Phase 2 booking asked for (ADR 0060: "Marketing sees the person, the
+  // An invited friend, and the window a booking asked for (ADR 0060: "Marketing sees the person, the
   // source, the day and the invite").
   if (fields.referral && lead.inviteCode !== null) record.Referral_Code = lead.inviteCode;
   if (fields.referral && lead.askedWindow !== null) record.Booked_Window = BOOKED_WINDOW_NAMES[lead.askedWindow];
@@ -273,7 +273,7 @@ export function recordFor(
   return record;
 }
 
-/** The window a booking asked for, in the note's words: the Phase 1 form's own choice, else a Phase 2 window. */
+/** The window a booking asked for, in the note's words: the first form's own choice, else the window booked. */
 function windowWords(lead: CrmLead): string | null {
   if (lead.firstChoiceWindow !== null) return WINDOW_NAMES[lead.firstChoiceWindow].toLowerCase();
   return lead.askedWindow;

@@ -123,8 +123,8 @@ interface LeadRow {
 }
 
 /**
- * The window a Phase 2 booking asked for, for lead `l`: the request the site's form left while self-serve booking
- * is off, else the slot it held, for the day it proposed. A Phase 1 lead carries its own choice instead.
+ * The window a booking asked for, for lead `l`: the request the site's form left while self-serve booking is off,
+ * else the slot it held, for the day it proposed. A lead from the site's first form carries its own choice instead.
  */
 const ASKED_WINDOW = `(SELECT asked FROM (
     SELECT requested_window AS asked, created_at FROM consultation_requests
@@ -256,14 +256,14 @@ async function alertLeadGivenUp(deps: Dependencies, row: LeadRow, attempts: numb
   });
 }
 
-/** What a Phase 2 booking asked for on the lead's day, and the code given for a one visit. */
+/** What a booking asked for on the lead's day, and the code given for a one visit. */
 interface AskedPlan {
   one_visit: number;
   code: string | null;
 }
 
 /**
- * What a Phase 2 booking asked for on the lead's day, the latest first: the request the site's form left while
+ * What a booking asked for on the lead's day, the latest first: the request the site's form left while
  * self-serve booking is off, else the slot it held. Null for a lead no such booking made.
  */
 async function askedPlan(db: D1Database, row: LeadRow): Promise<AskedPlan | null> {
