@@ -17,6 +17,7 @@ Where to read, by what you are here to do. The repository's own `README.md` says
 | ---------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
 | [decisions/](decisions/README.md)                                | Every decision, as an ADR; 0025 is the register of the owner's rulings and the departures |
 | [architecture.md](architecture.md)                               | How mm-api's code is layered: what may import what, and where a new thing goes            |
+| [codebase-upgrade-plan.md](codebase-upgrade-plan.md)             | Where the code is hard for a newcomer, and the phased plan to fix it                      |
 | [../CONTRIBUTING.md](../CONTRIBUTING.md)                         | Shipping a change: the branch, the checks, the size, when a person must look              |
 | [migrations.md](migrations.md)                                   | Writing a migration D1 will take, and the contract steps waiting                          |
 | [frontend.md](frontend.md)                                       | The public site in detail: content, prices, notices, analytics                            |

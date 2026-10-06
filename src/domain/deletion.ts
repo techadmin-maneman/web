@@ -244,8 +244,8 @@ export async function lastRejectedDeletion(
   return row === null ? null : { decidedAt: row.decided_at, reason: row.reason };
 }
 
-/** Ops are told when a request has waited this long, so it is decided within DELETION_DECIDED_WITHIN_DAYS. */
-const ALERT_AFTER_DAYS = 5;
+/** Ops are told five days before a request's days run out, so it is decided within DELETION_DECIDED_WITHIN_DAYS. */
+const ALERT_AFTER_DAYS = DELETION_DECIDED_WITHIN_DAYS - 5;
 export const DELETION_ALERT_AFTER_MS = ALERT_AFTER_DAYS * DAY_MS;
 
 /**
