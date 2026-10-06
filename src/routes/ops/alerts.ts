@@ -15,7 +15,7 @@ import { callerAccess, permits } from "../../http/staff-access.ts";
 import { markDone, openAlert, openAlerts, sendAgain, type OpenAlert } from "../../domain/ops/needs-a-hand.ts";
 import type { AuditAction, AuditEntry } from "../../domain/ops/audit.ts";
 import { maySendAgain } from "../../policy/alerts.ts";
-import { alertNeed, markDoneNeed, meetsNeed } from "../../policy/console-routes.ts";
+import { alertNeed, markDoneNeed, callerMeetsNeed } from "../../policy/console-routes.ts";
 
 /** The alerts the list shows, the longest open; its count is all of them. */
 const ALERTS_SHOWN = 50;
@@ -89,7 +89,7 @@ const sendAgainRoute = createRoute({
 async function seenBy(c: Context<AppEnv>): Promise<(kind: string) => boolean> {
   const access = await callerAccess(c);
   if (!access.enforced) return () => true;
-  return (kind) => meetsNeed(access.caller, alertNeed(kind, "view"), access.zoneOf);
+  return (kind) => callerMeetsNeed(access.caller, alertNeed(kind, "view"), access.zoneOf);
 }
 
 const shown = (alert: OpenAlert) => ({

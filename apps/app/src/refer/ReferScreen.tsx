@@ -7,7 +7,7 @@
 // fitted") would not be true: the design draws Refer for a lead as reachable but empty. It says when their invite
 // opens, and names the invite they came with while its visits wait on that fit.
 
-import { ICONS_P2 } from "@maneman/brand/icons";
+import { APP_ICONS } from "@maneman/brand/icons";
 import { Button } from "@maneman/ui/Button";
 import { Icon } from "@maneman/ui/Icon";
 import { useLoad } from "@maneman/ui/useLoad";
@@ -56,7 +56,7 @@ export function ShareButton({
           setSharing(true);
         }}
       >
-        {!small && <Icon d={ICONS_P2.share} size={19} />}
+        {!small && <Icon d={APP_ICONS.share} size={19} />}
         {refer.share}
       </Button>
       {sharing && (

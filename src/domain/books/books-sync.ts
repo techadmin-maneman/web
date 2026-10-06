@@ -37,7 +37,7 @@ import type { BooksProvider } from "../../providers/books/index.ts";
 import { isRefusal } from "../../providers/provider-error.ts";
 import { paymentsTab, type AlertOnce, type ResolveAlert } from "../ops/alerts.ts";
 import { customerFor, updateCustomerOf } from "./books-customers.ts";
-import { keptMoney, keptSinceRefunded, tellKept, tellUnapplied } from "./books-kept.ts";
+import { keptMoney, keptSinceRefunded, alertKeptMoney, tellUnapplied } from "./books-kept.ts";
 import { supplyOf, type PaymentPaidFor } from "./receipt-supply.ts";
 import { rupees } from "@maneman/web-kit/money";
 import { FAILURES_BEFORE_ALERT, PER_PASS, RECHECK_AFTER_MS, tellFailure as tellPassFailure } from "./vendor-pass.ts";
@@ -118,7 +118,7 @@ export async function syncBooks(
   }
   for (const kept of await keptMoney(db)) {
     if (!budget.spend(1)) return summary;
-    await tellKept(db, deps.alertOnce, pass.at, kept);
+    await alertKeptMoney(db, deps.alertOnce, pass.at, kept);
   }
   for (const paymentId of await keptSinceRefunded(db)) await deps.resolveAlert(`books_unapplied:${paymentId}`);
   if (options.refundAccountId === null) return summary;

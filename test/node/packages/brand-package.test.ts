@@ -5,7 +5,7 @@
 import { createHash } from "node:crypto";
 import { readdirSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { GLYPHS, ICONS, ICONS_P2 } from "../../../packages/brand/icons.ts";
+import { GLYPHS, ICONS, APP_ICONS } from "../../../packages/brand/icons.ts";
 import { MARK, WORDMARK, WORDMARK_SMALL, type Drawing } from "../../../packages/brand/marks.ts";
 
 const SPEC_BOARDS = ["Client App", "Referral and Waitlist", "Technician App", "Ops Console"].map((board) =>
@@ -24,28 +24,28 @@ function customProperties(path: string): Map<string, string> {
 }
 
 describe("icons", () => {
-  it("ICONS_P2 is the design's nine new glyphs, path for path", () => {
+  it("APP_ICONS is the design's nine new glyphs, path for path", () => {
     const board = readFileSync("design/phase2/Client App.dc.html", "utf8");
     const drawn = [...board.matchAll(/\{ name: '([^']+)', d: '([^']+)' \}/g)].map((match) => [
       camelCase(match[1] ?? ""),
       match[2],
     ]);
     expect(drawn).toHaveLength(9);
-    expect(Object.entries(ICONS_P2)).toEqual(drawn);
+    expect(Object.entries(APP_ICONS)).toEqual(drawn);
   });
 
-  it("ICONS_P2 reuses none of the Phase 1 icon names", () => {
-    expect(Object.keys(ICONS_P2).filter((name) => name in ICONS)).toEqual([]);
+  it("APP_ICONS reuses none of the Phase 1 icon names", () => {
+    expect(Object.keys(APP_ICONS).filter((name) => name in ICONS)).toEqual([]);
   });
 
   it("GLYPHS, the apps' own, repeats none of the icon sets", () => {
-    const sets = new Set<string>([...Object.values(ICONS), ...Object.values(ICONS_P2)]);
+    const sets = new Set<string>([...Object.values(ICONS), ...Object.values(APP_ICONS)]);
     expect(Object.values(GLYPHS).filter((path) => sets.has(path))).toEqual([]);
   });
 
   // The technician app re-declared five of the set's glyphs, and both apps the chevron and the tick.
   it.each(["apps/app/src/icons.ts", "apps/tech/src/icons.ts"])("%s declares no glyph the brand holds", (file) => {
-    const held = new Set<string>([...Object.values(ICONS), ...Object.values(ICONS_P2), ...Object.values(GLYPHS)]);
+    const held = new Set<string>([...Object.values(ICONS), ...Object.values(APP_ICONS), ...Object.values(GLYPHS)]);
     const declared = [...readFileSync(file, "utf8").matchAll(/"(M[^"]+)"/g)].map((match) => match[1] ?? "");
     expect(declared.filter((path) => held.has(path))).toEqual([]);
   });
@@ -79,7 +79,7 @@ describe("marks", () => {
 });
 
 describe("every token", () => {
-  const files = ["packages/brand/tokens.css", "packages/brand/tokens-phase2.css"];
+  const files = ["packages/brand/tokens.css", "packages/brand/tokens-apps.css"];
   const names = files.flatMap((file) =>
     [...readFileSync(file, "utf8").matchAll(/(--[a-z0-9-]+)\s*:/g)].map((match) => match[1] ?? ""),
   );
@@ -109,21 +109,21 @@ describe("every token", () => {
 
 describe("the Phase 2 colour layer", () => {
   const core = customProperties("packages/brand/tokens.css");
-  const phase2 = customProperties("packages/brand/tokens-phase2.css");
+  const appTokens = customProperties("packages/brand/tokens-apps.css");
 
   it("adds names and redefines none of tokens.css", () => {
-    expect(phase2.size).toBeGreaterThan(0);
-    expect([...phase2.keys()].filter((name) => core.has(name))).toEqual([]);
+    expect(appTokens.size).toBeGreaterThan(0);
+    expect([...appTokens.keys()].filter((name) => core.has(name))).toEqual([]);
   });
 
   it("adds no colour tokens.css already has", () => {
     const isColour = (value: string) => /^#[0-9a-f]{3,8}$/i.test(value);
     const coreColours = new Set([...core.values()].filter(isColour));
-    expect([...phase2.values()].filter((value) => isColour(value) && coreColours.has(value))).toEqual([]);
+    expect([...appTokens.values()].filter((value) => isColour(value) && coreColours.has(value))).toEqual([]);
   });
 
   // A role that names another token (--fs-app-title is --fs-34) is checked through the token it names.
-  it.each([...phase2].filter(([, value]) => !value.startsWith("var(")))(
+  it.each([...appTokens].filter(([, value]) => !value.startsWith("var(")))(
     "%s (%s) is drawn in a Phase 2 spec board",
     (_name, value) => {
       const drawnIn = SPEC_BOARDS.filter((board) => board.toLowerCase().includes(value.toLowerCase()));
@@ -137,7 +137,7 @@ describe("the Phase 2 colour layer", () => {
 describe("the scale", () => {
   const all = new Map([
     ...customProperties("packages/brand/tokens.css"),
-    ...customProperties("packages/brand/tokens-phase2.css"),
+    ...customProperties("packages/brand/tokens-apps.css"),
   ]);
   const familyOf = (name: string) => name.replace(/^--/, "").split("-")[0] ?? "";
 

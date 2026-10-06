@@ -308,7 +308,7 @@ export async function holdForSale(
 }
 
 /** Whether the code ops typed stands on the hold: another booking may have taken its last use a moment before. */
-export async function codeStands(db: D1Database, asked: VisitAsked, holdId: string): Promise<boolean> {
+export async function codeStillApplies(db: D1Database, asked: VisitAsked, holdId: string): Promise<boolean> {
   if (asked.code === undefined) return true;
   return (await codeOnHold(db, holdId)) !== null;
 }

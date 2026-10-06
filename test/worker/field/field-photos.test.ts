@@ -5,7 +5,7 @@ import { env } from "cloudflare:workers";
 import { describe, expect, it } from "vitest";
 import { readMeter } from "../../../src/domain/platform/storage-meter.ts";
 import { MAX_PHOTO_BYTES, MAX_THUMBNAIL_BYTES } from "../../../src/domain/field/tech-photos.ts";
-import { PHASE_2_SHARE_BYTES, RUNAWAY_CEILING_BYTES } from "../../../src/policy/storage-share.ts";
+import { PHOTO_SHARE_BYTES, RUNAWAY_CEILING_BYTES } from "../../../src/policy/storage-share.ts";
 import { NOW, request } from "../helpers.ts";
 import { syntheticJpeg, syntheticPng } from "../tryon-fixtures.ts";
 import {
@@ -94,7 +94,7 @@ describe("the photographs", () => {
   it("stores a photograph when the share of R2 is full", async () => {
     await startJob();
     await env.DB.prepare("UPDATE storage_meter SET bytes = ?1")
-      .bind(PHASE_2_SHARE_BYTES * 1.5)
+      .bind(PHOTO_SHARE_BYTES * 1.5)
       .run();
     expect((await putPhoto(await opsFreeUploadLink(), syntheticJpeg(1200, 1600))).status).toBe(200);
     expect(deps.alerts).toEqual([]);

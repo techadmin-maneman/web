@@ -8,7 +8,7 @@ import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import { MAX_COPY_BYTES } from "../../../src/config/tryon.ts";
 import { erasePerson } from "../../../src/domain/privacy/erasure.ts";
-import { keepOrLetGo, type ExpiringTryOn } from "../../../src/domain/try-on/kept-try-ons.ts";
+import { settleExpiringTryOns, type ExpiringTryOn } from "../../../src/domain/try-on/kept-try-ons.ts";
 import { putCounted, readMeter } from "../../../src/domain/platform/storage-meter.ts";
 import { signToken } from "../../../src/lib/signed-token.ts";
 import { createCallBudget } from "../../../src/lib/call-budget.ts";
@@ -276,14 +276,14 @@ describe("the sweeper, on a client's try-on", () => {
     } as unknown as R2Bucket;
     const keeping = { DB: env.DB, RESULTS: results, CLIENT_PHOTOS: env.CLIENT_PHOTOS };
 
-    await keepOrLetGo(keeping, due === null ? [] : [due], NOW);
+    await settleExpiringTryOns(keeping, due === null ? [] : [due], NOW);
     // The next run finds the same try-on, still ready, now kept and with its look moved.
     const again = await env.DB.prepare(
       `SELECT id, created_at, person_id, photo_consent_version, state, result_key, expires_at, kept_at, copy_key,
          kept_look_key, number_proved_at
        FROM tryon_jobs WHERE id = 'client'`,
     ).first<ExpiringTryOn>();
-    expect(await keepOrLetGo(keeping, again === null ? [] : [again], NOW)).toBe(1);
+    expect(await settleExpiringTryOns(keeping, again === null ? [] : [again], NOW)).toBe(1);
 
     expect(reads).toBe(1);
     expect(await metered()).toBe(COPY.byteLength + LOOK.byteLength);

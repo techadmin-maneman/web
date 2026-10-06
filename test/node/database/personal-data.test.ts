@@ -5,7 +5,7 @@
 import { constants, type DatabaseSync } from "node:sqlite";
 import { describe, expect, it } from "vitest";
 import { MY_DATA } from "../../../src/config/my-data.ts";
-import { EXPORT_QUERIES, everythingHeldAbout } from "../../../src/domain/privacy/data-export.ts";
+import { EXPORT_QUERIES, readPersonData } from "../../../src/domain/privacy/data-export.ts";
 import { erasePerson } from "../../../src/domain/privacy/erasure.ts";
 import { logPhotoView } from "../../../src/domain/field/photo-views.ts";
 import { createLogger } from "../../../src/log.ts";
@@ -46,7 +46,7 @@ async function columnsExported(): Promise<Set<string>> {
       if (column.table !== null) given.add(`${column.table}.${String(column.column)}`);
     }
   };
-  await everythingHeldAbout(asD1(db, heard), PERSON);
+  await readPersonData(asD1(db, heard), PERSON);
   return given;
 }
 
@@ -158,7 +158,7 @@ describe("the readable copy's labels", () => {
       now: NOW,
     });
 
-    const held = (await everythingHeldAbout(d1, PERSON)) as {
+    const held = (await readPersonData(d1, PERSON)) as {
       hair_profile: Record<string, unknown>[];
       photo_views: Record<string, unknown>[];
     };

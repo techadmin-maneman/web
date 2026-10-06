@@ -16,7 +16,7 @@ type Held = (technicianId: string, date: string) => { readonly units: ReadonlySe
 type Candidate = { readonly technician: { readonly id: string } };
 
 /** The order to try technicians in for a hold on `date`, as a sort's compare. */
-export function inTakingOrder(held: Held, date: string) {
+export function compareTechniciansForHold(held: Held, date: string) {
   const days = Array.from({ length: TIE_REACH * 2 + 1 }, (_, day) => addDays(date, day - TIE_REACH));
   const around = (technicianId: string) => days.reduce((sum, day) => sum + held(technicianId, day).units.size, 0);
   return (a: Candidate, b: Candidate) =>

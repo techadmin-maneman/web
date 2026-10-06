@@ -58,4 +58,4 @@ export function boundedPhoneTime(
 }
 
 /** Whether a check-in or a start falls on the visit's own date, in India. */
-export const onTheVisitsDay = (at: Date, visitStart: Date): boolean => indiaDate(at) === indiaDate(visitStart);
+export const isOnVisitDay = (at: Date, visitStart: Date): boolean => indiaDate(at) === indiaDate(visitStart);

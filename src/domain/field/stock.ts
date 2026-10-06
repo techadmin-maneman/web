@@ -129,7 +129,7 @@ async function heldOf(db: D1Database, code: string, place: Place): Promise<numbe
 }
 
 /** Stock received into the central store. */
-export async function receive(
+export async function receiveStock(
   db: D1Database,
   input: { readonly code: string; readonly quantity: number; readonly note: string | null },
   written: Written,
@@ -143,7 +143,7 @@ export async function receive(
 }
 
 /** Stock moved from one place to another: two rows, out of the one and into the other. */
-export async function transfer(
+export async function transferStock(
   db: D1Database,
   input: { readonly code: string; readonly quantity: number; readonly from: Place; readonly to: Place },
   written: Written,

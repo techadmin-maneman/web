@@ -2,8 +2,8 @@
 // then holds it itself; holds nobody is paying for are let go first.
 
 import { failedUniqueOn } from "../../lib/d1-errors.ts";
-import { inTakingOrder, tieRange } from "./technician-choice.ts";
-import { besideIt, visitsOfClient } from "./technician-rotation.ts";
+import { compareTechniciansForHold, tieRange } from "./technician-choice.ts";
+import { techniciansBarredOn, visitsOfClient } from "./technician-rotation.ts";
 import { graceEnds, ownUnpaid } from "./hold-stages.ts";
 import { PAYMENT_GRACE_SECONDS, type BookingWindow } from "../../config/scheduling.ts";
 import type { VisitType } from "../../config/visit-types.ts";
@@ -60,7 +60,7 @@ const LET_GO = `SELECT id FROM slot_holds WHERE state = 'held' AND confirmed_at 
  * Lets go of the holds nobody is paying for, and, given a client, that client's own other unpaid holds too. For
  * the batch that writes new claims, so a dead hold's claims never stand in their way.
  */
-export function lettingGo(db: D1Database, now: Date, clientToo: string | null = null): D1PreparedStatement[] {
+export function releaseDeadHolds(db: D1Database, now: Date, clientToo: string | null = null): D1PreparedStatement[] {
   const ownToo = clientToo === null ? 0 : 1;
   return [
     db.prepare(`DELETE FROM slot_claims WHERE hold_id IN (${LET_GO})`).bind(now.toISOString(), clientToo, ownToo),
@@ -71,7 +71,7 @@ export function lettingGo(db: D1Database, now: Date, clientToo: string | null = 
 }
 
 /**
- * Holds a window for the client with whoever has the least (inTakingOrder), never the technician who took the client's
+ * Holds a window for the client with whoever has the least (compareTechniciansForHold), never the technician who took the client's
  * visit just before or just after it (src/domain/booking/technician-rotation.ts).
  * Holds nobody is paying for are let go first. Null when nobody is free, or the day is blacked out. The hold waits
  * `holdSeconds` for payment, and keeps its time for `graceSeconds` after, both as ops set them when it is made.
@@ -130,7 +130,7 @@ export async function holdSlot(
     visitsOfClient(db, personId, moves?.visit.visitId ?? null),
   ]);
   if (blackouts.has(date)) return null;
-  const beside = besideIt(visits, date);
+  const beside = techniciansBarredOn(visits, date);
   const chosen = technicians.filter(
     (technician) =>
       !beside.has(technician.id) && (input.technicianId === undefined || technician.id === input.technicianId),
@@ -138,7 +138,7 @@ export async function holdSlot(
   const candidates = chosen
     .map((technician) => ({ technician, start: placement(held(technician.id, date), window, units) }))
     .filter((candidate): candidate is { technician: Technician; start: number } => candidate.start !== null)
-    .sort(inTakingOrder(held, date));
+    .sort(compareTechniciansForHold(held, date));
 
   const at = now.toISOString();
   const expiresAt = new Date(now.getTime() + holdSeconds * 1000).toISOString();
@@ -148,7 +148,7 @@ export async function holdSlot(
     try {
       await db.batch([
         ...(input.alongside ?? []),
-        ...lettingGo(db, now, from === "app" ? personId : null),
+        ...releaseDeadHolds(db, now, from === "app" ? personId : null),
         insertRow(db, "slot_holds", {
           id,
           person_id: personId,
@@ -235,7 +235,7 @@ export async function retakeSlot(db: D1Database, hold: HeldTime, now: Date): Pro
   const isHeld = "EXISTS (SELECT 1 FROM slot_holds WHERE id = ?4 AND state = 'held')";
   try {
     await db.batch([
-      ...lettingGo(db, now),
+      ...releaseDeadHolds(db, now),
       db
         .prepare("UPDATE slot_holds SET state = 'held', updated_at = ?2 WHERE id = ?1 AND state = 'released'")
         .bind(hold.id, now.toISOString()),

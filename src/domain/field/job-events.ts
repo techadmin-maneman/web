@@ -24,7 +24,7 @@
 import { firstNameOf } from "../../lib/names.ts";
 import { isNoShow, landsAfterClose, stepBefore, type JobEventKind } from "../../policy/in-job-steps.ts";
 import { namesTheOtherTechnician } from "../../policy/job-visibility.ts";
-import { earliestCheckIn, onTheVisitsDay, tooEarlyToArrive, type PhoneClock } from "../../policy/phone-clock.ts";
+import { earliestCheckIn, isOnVisitDay, tooEarlyToArrive, type PhoneClock } from "../../policy/phone-clock.ts";
 import type { WorkableJob } from "./tech-jobs.ts";
 
 /** As job_events.fsm_write_state holds it: "written" once landed, "rejected" when superseded. */
@@ -118,7 +118,7 @@ export async function answerBeforeLanding(db: D1Database, input: EventInput): Pr
   const held = await eventByClientId(db, input.job.id, input.eventId);
   if (held !== null) return replayOf(db, held, input);
 
-  const superseding = await whatChanged(db, input.job, input.technicianId, input.expectedStart);
+  const superseding = await jobChangesSince(db, input.job, input.technicianId, input.expectedStart);
   if (superseding.changed.length > 0) {
     await recordSuperseded(db, input);
     return { kind: "superseded", ...superseding };
@@ -128,7 +128,7 @@ export async function answerBeforeLanding(db: D1Database, input: EventInput): Pr
   if (closed !== null && !landsAfterClose(input.kind, closed, input.now)) return { kind: "already_closed" };
 
   const startsTheDay = input.kind === "check_in" || input.kind === "start";
-  if (startsTheDay && !onTheVisitsDay(input.occurredAt, input.job.windowStart)) return { kind: "not_today" };
+  if (startsTheDay && !isOnVisitDay(input.occurredAt, input.job.windowStart)) return { kind: "not_today" };
   if (startsTheDay && tooEarlyToArrive(input.now, input.job.windowStart, input.phoneClock)) {
     return { kind: "too_early", earliest: earliestCheckIn(input.job.windowStart, input.phoneClock) };
   }
@@ -138,7 +138,7 @@ export async function answerBeforeLanding(db: D1Database, input: EventInput): Pr
 /** A write sent again: the event that landed, or, for one superseded then or since, what changed under the phone. */
 async function replayOf(db: D1Database, held: JobEvent, input: EventInput): Promise<Landing> {
   if (!held.superseded) return { kind: "landed", event: held, replayed: true };
-  return { kind: "superseded", ...(await whatChanged(db, input.job, input.technicianId, input.expectedStart)) };
+  return { kind: "superseded", ...(await jobChangesSince(db, input.job, input.technicianId, input.expectedStart)) };
 }
 
 /** Lands a write answerBeforeLanding let through: refused before a step it needs, else recorded once. */
@@ -161,7 +161,7 @@ export async function landInOrder(db: D1Database, input: LandingInput): Promise<
  * What changed under a phone that holds the job as it was: none of it when
  * nothing did. `expectedStart` is the start the phone holds, when it says.
  */
-export async function whatChanged(
+export async function jobChangesSince(
   db: D1Database,
   job: WorkableJob,
   technicianId: string,
@@ -177,7 +177,7 @@ export async function whatChanged(
  * theirs landed on it, or ops moved it from them. Only then is what changed on
  * it theirs to hear.
  */
-export async function wasTheirs(db: D1Database, job: WorkableJob, technicianId: string): Promise<boolean> {
+export async function wasTechniciansJob(db: D1Database, job: WorkableJob, technicianId: string): Promise<boolean> {
   if (job.technicianId === technicianId) return true;
   const row = await db
     .prepare(

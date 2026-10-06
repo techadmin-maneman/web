@@ -19,7 +19,7 @@ The Phase 1 site is finished and waiting for its production release, so moving t
 **npm workspaces.** The root `package.json` declares `packages/*`. `packages/brand` is `@maneman/brand` and exports:
 
 - `tokens.css`: the Phase 1 tokens, moved unchanged;
-- `tokens-phase2.css`: the colours Phase 2 adds;
+- `tokens-apps.css`: the colours Phase 2 adds;
 - `fonts.css` and `fonts/`: the self-hosted fonts and the one-glyph ₹ file, which `npm run fonts` now writes here;
 - `icons`: `ICONS`, `ICONS_P2` and `HEAD_OUTLINE`;
 - `marks`: the mark and both cuts of the wordmark.
@@ -38,7 +38,7 @@ The package owns its `@fontsource` dependencies. `fonts.css` finds them in the r
   - `#4A453C` (`--text-quiet`): a window's hours on the referral landing. The boards' captions and notes use it too.
 - **Board canvas (dropped):** `#CFCABE` is the page behind the frames.
 - **Prototype only (dropped):** `#D8D2C4`, `#EFE7D6` and `#C4BFB2`. The spec boards overrule the Prototype.
-- **Not ours:** the WhatsApp greens and greys belong to the chat previews, which draw WhatsApp's interface. **Amended 25 September 2026:** where a board draws a message as WhatsApp will show it — the client app's invite preview (F4) and the ops console's launch message (C3) — the colours are WhatsApp's, so they are kept as their own group, `--wa-*` in `tokens-phase2.css`, and used nowhere else. The console's two had been named as inks of ours (`--ink-message`).
+- **Not ours:** the WhatsApp greens and greys belong to the chat previews, which draw WhatsApp's interface. **Amended 25 September 2026:** where a board draws a message as WhatsApp will show it — the client app's invite preview (F4) and the ops console's launch message (C3) — the colours are WhatsApp's, so they are kept as their own group, `--wa-*` in `tokens-apps.css`, and used nowhere else. The console's two had been named as inks of ours (`--ink-message`).
 
 The layer only adds names; the site uses none of them. **Amended 27 September 2026:** it holds seven colours now, four of them WhatsApp's own, and the Phase 2 sizes (`packages/brand/README.md`). **Amended 26 September 2026:** it holds the Phase 2 surfaces' sizes too, the apps' targets and the ops console's frame and density among them, each still a value a spec board draws (ADR 0071).
 

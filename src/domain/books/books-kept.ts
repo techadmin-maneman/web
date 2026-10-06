@@ -66,7 +66,7 @@ function keptFor(kept: KeptRow): string {
 }
 
 /** Told once: the payment is claimed as dealt with first, so an overlapping run does not tell it again. */
-export async function tellKept(db: D1Database, alertOnce: AlertOnce, at: string, kept: KeptRow): Promise<void> {
+export async function alertKeptMoney(db: D1Database, alertOnce: AlertOnce, at: string, kept: KeptRow): Promise<void> {
   const claimed = await db
     .prepare("UPDATE payments SET books_applied_at = ?1 WHERE id = ?2 AND books_applied_at IS NULL RETURNING id")
     .bind(at, kept.id)

@@ -8,7 +8,7 @@ import { arrivalOfEvent } from "../../domain/visits/check-ins.ts";
 import {
   eventByClientId,
   landJobEvent,
-  wasTheirs,
+  wasTechniciansJob,
   type EventInput,
   type JobEvent,
   type Landing,
@@ -37,7 +37,7 @@ export type Ctx = Context<AppEnv>;
 export async function namedJob(c: Ctx, id: string): Promise<WorkableJob | null> {
   const job = await workableJob(c.env.DB, id);
   if (job === null) return null;
-  return (await wasTheirs(c.env.DB, job, technicianOf(c).technicianId)) ? job : null;
+  return (await wasTechniciansJob(c.env.DB, job, technicianOf(c).technicianId)) ? job : null;
 }
 
 /**

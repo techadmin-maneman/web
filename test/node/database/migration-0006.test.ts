@@ -12,7 +12,7 @@ function migratedTo(last: string): DatabaseSync {
   return db;
 }
 
-const PHASE_1_COLUMNS =
+const COLUMNS_BEFORE =
   "id, created_at, person_id, kind, subject_id, state, queued_at, sending_at, provider_message_id, attempts, last_error, sent_at";
 
 describe("migration 0006", () => {
@@ -22,7 +22,7 @@ describe("migration 0006", () => {
       "INSERT INTO people (id, created_at, mobile_e164, name, contactable) VALUES ('p1', '2026-09-20T00:00:00Z', '+919810000001', 'A', 1)",
     );
     const insert = db.prepare(
-      `INSERT INTO outbound_messages (${PHASE_1_COLUMNS}) VALUES (?, ?, 'p1', 'tryon_result', ?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO outbound_messages (${COLUMNS_BEFORE}) VALUES (?, ?, 'p1', 'tryon_result', ?, ?, ?, ?, ?, ?, ?, ?)`,
     );
     insert.run(
       "m-sent",
@@ -60,11 +60,11 @@ describe("migration 0006", () => {
       null,
       null,
     );
-    const before = db.prepare(`SELECT ${PHASE_1_COLUMNS} FROM outbound_messages ORDER BY id`).all();
+    const before = db.prepare(`SELECT ${COLUMNS_BEFORE} FROM outbound_messages ORDER BY id`).all();
 
     apply(db, "0006_outbound_messages_v2.sql");
 
-    expect(db.prepare(`SELECT ${PHASE_1_COLUMNS} FROM outbound_messages ORDER BY id`).all()).toEqual(before);
+    expect(db.prepare(`SELECT ${COLUMNS_BEFORE} FROM outbound_messages ORDER BY id`).all()).toEqual(before);
     expect(db.prepare("SELECT DISTINCT subject_kind, delivered_at, read_at FROM outbound_messages").all()).toEqual([
       { subject_kind: "tryon_job", delivered_at: null, read_at: null },
     ]);

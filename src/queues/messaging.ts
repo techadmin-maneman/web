@@ -38,7 +38,7 @@ import type { StaticConfig } from "../guard.ts";
 import type { MessageKind } from "../config/message-kinds.ts";
 import { takeOne } from "../domain/sign-in/rate-limit.ts";
 import { mobileHashOf } from "../domain/clients/number-codes.ts";
-import { heldBack } from "../policy/staging-test-records.ts";
+import { isMessageHeldBack } from "../policy/staging-test-records.ts";
 
 import { firstNameOf } from "../lib/names.ts";
 import { signToken } from "../lib/signed-token.ts";
@@ -58,7 +58,7 @@ import { composeMessagesStopped, stopLink } from "../domain/messages/stop-messag
 import { composeLaunchAlert, composeWaitlistConfirmation } from "../domain/booking/waitlist.ts";
 import {
   composeVisitMessage,
-  noLongerWorthSending,
+  isMessageStale,
   VISIT_MESSAGE_KINDS,
   type VisitMessageKind,
 } from "../domain/messages/visit-messages.ts";
@@ -177,7 +177,7 @@ export const messageHeldBack = (
   messaging: MessagingSettings,
   row: Pick<MessageRow, "mobile_e164" | "test_record" | "kind">,
 ): boolean =>
-  heldBack(messaging, {
+  isMessageHeldBack(messaging, {
     automatic: messageClass(row.kind) === "automatic",
     testRecord: row.test_record === 1,
     mobileE164: row.mobile_e164,
@@ -226,7 +226,7 @@ async function contentOf(db: D1Database, config: StaticConfig, row: MessageRow, 
   if (isVisitKind(row.kind)) {
     const composed = await composeVisitMessage(db, row.kind, row.subject_id, row.person_id);
     if ("skip" in composed) return composed;
-    const stale = await noLongerWorthSending(db, row.kind, row.subject_id, new Date(row.created_at), now);
+    const stale = await isMessageStale(db, row.kind, row.subject_id, new Date(row.created_at), now);
     if (stale !== null) return { skip: stale };
     return composed;
   }

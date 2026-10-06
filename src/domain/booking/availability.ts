@@ -9,7 +9,7 @@ import { FITTED } from "../clients/fitted.ts";
 import { loadSlotSchedule } from "./slot-times.ts";
 import { loadBlackouts, occupancy, placement, techniciansFor, type Moving, type Technician } from "./occupancy.ts";
 import { statusIn, VISIT_LIVE } from "../../config/statuses.ts";
-import { besideIt, visitsOfClient } from "./technician-rotation.ts";
+import { techniciansBarredOn, visitsOfClient } from "./technician-rotation.ts";
 
 /** A visit booked and still to happen. */
 const STILL_TO_HAPPEN = `deleted_at IS NULL AND ${statusIn("status", VISIT_LIVE)}`;
@@ -148,7 +148,7 @@ async function windowsOf(
   const startable = windowsFitting(units);
   return Array.from({ length: range.days }, (_, index) => {
     const date = addDays(range.from, index);
-    const beside = besideIt(visits, date);
+    const beside = techniciansBarredOn(visits, date);
     const windows = startable.map((window): WindowTechnicians => {
       if (closed.has(date) || retired(date)) return { window, technicians: [] };
       const free = technicians.filter(

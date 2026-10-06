@@ -3,7 +3,7 @@
 // does, and that a job's work stopped reaching us — ops moved the job under the
 // phone, or the API refused a step — which until now only the waiting screen said.
 
-import { ICONS_P2 } from "@maneman/brand/icons";
+import { APP_ICONS } from "@maneman/brand/icons";
 import { buttonLook } from "@maneman/ui/Button";
 import { Icon } from "@maneman/ui/Icon";
 import { Link } from "@maneman/ui/router";
@@ -36,7 +36,7 @@ export function Offline() {
   return (
     <div className={styles.offline} role="status">
       <p className={styles.offlineTitle}>
-        <Icon d={ICONS_P2.offline} size={20} stroke={STROKE} />
+        <Icon d={APP_ICONS.offline} size={20} stroke={STROKE} />
         {todayCopy.offline.title}
       </p>
       <p className={styles.offlineBody}>{todayCopy.offline.body}</p>

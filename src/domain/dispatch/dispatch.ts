@@ -60,8 +60,8 @@ import {
   placement,
   type Day,
 } from "../booking/occupancy.ts";
-import { movesBeside, visitsOfClient } from "../booking/technician-rotation.ts";
-import { lettingGo } from "../booking/hold-slot.ts";
+import { breaksRotation, visitsOfClient } from "../booking/technician-rotation.ts";
+import { releaseDeadHolds } from "../booking/hold-slot.ts";
 import { visitTimes } from "../visits/visit-times.ts";
 import { latestConsentSql } from "../privacy/consents.ts";
 import { begunPastArrival, visitBegun } from "../visits/visit-begun.ts";
@@ -715,7 +715,7 @@ export async function moveJob(db: D1Database, deps: MoveDeps, input: MoveInput, 
   ]);
   const blackoutReason = ontoBlackout ? (input.blackoutReason ?? null) : null;
   const placing = { minutes: bookedMinutes(job), start: wasStart };
-  const beside = movesBeside(clientVisits, { technicianId: job.technician_id, date: indiaDate(wasStart) }, target);
+  const beside = breaksRotation(clientVisits, { technicianId: job.technician_id, date: indiaDate(wasStart) }, target);
   const landing = landingOf(held(technicianId, date), placing, target, ontoBlackout && blackoutReason === null, beside);
   if (landing.kind === "refused") return landing;
 
@@ -747,7 +747,7 @@ async function writeMove(db: D1Database, deps: MoveDeps, move: PlannedMove, now:
   const told = await clientToldOf(db, move, now);
   try {
     await db.batch([
-      ...lettingGo(db, now),
+      ...releaseDeadHolds(db, now),
       // The message row is written before the move points at it.
       ...(told.message === null ? [] : [told.message.statement]),
       writtenMove(db, move, told.message?.id ?? null, at),
@@ -944,7 +944,7 @@ export async function dispatchRoomFor(
     BOOKING_WINDOWS.flatMap((window) => {
       const target = targetOf(job, technicianId, { date, window }, schedule, now);
       if (isWhereItIs(job, target)) return [];
-      const beside = movesBeside(clientVisits, from, target);
+      const beside = breaksRotation(clientVisits, from, target);
       const landing = landingOf(held(technicianId, date), visit, target, false, beside);
       if (landing.kind === "refused") return [];
       return [{ window, starts_at: timesAt(target, landing.start, visit, schedule).start.toISOString() }];

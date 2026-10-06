@@ -7,7 +7,7 @@
 // nothing is wiped, and it says so (apps/tech/src/App.tsx).
 
 import { capsLook } from "@maneman/ui/Caps";
-import { ICONS, ICONS_P2 } from "@maneman/brand/icons";
+import { ICONS, APP_ICONS } from "@maneman/brand/icons";
 import { Button } from "@maneman/ui/Button";
 import { Icon } from "@maneman/ui/Icon";
 import { Mark } from "@maneman/ui/Mark";
@@ -169,7 +169,7 @@ export function TodayScreen() {
 
       {(sending > 0 || unsentSets > 0) && (
         <Link className={styles.waiting} to="/waiting">
-          <Icon d={ICONS_P2.uploadQueue} size={20} className={styles.waitingIcon} stroke={STROKE} />
+          <Icon d={APP_ICONS.uploadQueue} size={20} className={styles.waitingIcon} stroke={STROKE} />
           <span className={styles.waitingLine}>
             {unsentSets > 0 ? queueCopy.waiting(unsentSets) : queueCopy.events(sending)}
           </span>

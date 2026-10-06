@@ -82,7 +82,7 @@ export interface ExpiringTryOn extends TryOnFacts {
  * Looks on their last day. A client's try-on is kept; every other's small copy goes, as its look does, which the
  * sweeper deletes after this. How many were kept.
  */
-export async function keepOrLetGo(env: KeepEnv, tryOns: readonly ExpiringTryOn[], now: Date): Promise<number> {
+export async function settleExpiringTryOns(env: KeepEnv, tryOns: readonly ExpiringTryOn[], now: Date): Promise<number> {
   const letGo: ExpiringTryOn[] = [];
   for (const tryOn of tryOns) {
     if (!(await keepOnItsDay(env, tryOn, now))) letGo.push(tryOn);

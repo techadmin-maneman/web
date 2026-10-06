@@ -56,16 +56,16 @@ interface Place {
  * Whether moving a visit from where it is to `to` puts its technician beside another of the client's visits. A move that
  * keeps its technician and day puts nobody there anew.
  */
-export function movesBeside(visits: readonly ClientVisit[], from: Place, to: Place): boolean {
+export function breaksRotation(visits: readonly ClientVisit[], from: Place, to: Place): boolean {
   if (to.technicianId === null || (to.technicianId === from.technicianId && to.date === from.date)) return false;
-  return besideIt(visits, to.date).has(to.technicianId);
+  return techniciansBarredOn(visits, to.date).has(to.technicianId);
 }
 
 /**
  * The technicians who may not take a visit of the client's on `date`: whoever has their latest visit before that day,
  * their first after it, and any on the day itself.
  */
-export function besideIt(visits: readonly ClientVisit[], date: string): ReadonlySet<string> {
+export function techniciansBarredOn(visits: readonly ClientVisit[], date: string): ReadonlySet<string> {
   const days = visits.map((visit) => visit.date).sort();
   const before = days.filter((day) => day < date).at(-1);
   const after = days.find((day) => day > date);

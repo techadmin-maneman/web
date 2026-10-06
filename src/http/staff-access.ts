@@ -15,7 +15,7 @@ import {
   type Level,
   type PlacesReached,
 } from "../policy/access.ts";
-import { meetsNeed, needOf, OWN_DEPARTMENTS, SIGNED_IN, type RouteNeed } from "../policy/console-routes.ts";
+import { callerMeetsNeed, needOf, OWN_DEPARTMENTS, SIGNED_IN, type RouteNeed } from "../policy/console-routes.ts";
 import type { AppEnv } from "./context.ts";
 import { refuse } from "./errors.ts";
 
@@ -30,7 +30,7 @@ export async function callerAccess(c: Context<AppEnv>): Promise<CallerAccess> {
   return access;
 }
 
-const meets = (access: CallerAccess, need: RouteNeed): boolean => meetsNeed(access.caller, need, access.zoneOf);
+const meets = (access: CallerAccess, need: RouteNeed): boolean => callerMeetsNeed(access.caller, need, access.zoneOf);
 
 /**
  * Whether a call goes ahead: when it is allowed, and, while the list is not enforced, when it is not, with a line in

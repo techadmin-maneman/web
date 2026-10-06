@@ -19,7 +19,7 @@
 // (docs/decisions/0071-what-ops-see-before-a-setting-changes.md).
 
 import { indiaDate, indiaInstant } from "../../lib/india-time.ts";
-import { launchesLater } from "../../policy/launch.ts";
+import { isLaunchInFuture } from "../../policy/launch.ts";
 import { namedArea } from "./area-names.ts";
 import { auditStatement, type AuditActor, type AuditEntry } from "../ops/audit.ts";
 import { isActiveCity } from "../dispatch/cities.ts";
@@ -130,7 +130,7 @@ const renamed = (was: AreaPincode, change: AreaChange) => change.area !== undefi
 /** A change that would serve a pincode from a day still to come, which /book would take bookings for at once. */
 function servesLater(was: AreaPincode, change: AreaChange, today: string): boolean {
   if (!change.served || change.launch_on === null || !servingChanged(was, change)) return false;
-  return launchesLater(change.launch_on, today);
+  return isLaunchInFuture(change.launch_on, today);
 }
 
 /**
