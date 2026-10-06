@@ -2,6 +2,7 @@
 
 - Status: accepted. Amended by ADR 0077: the scales hold each value once, a role names the scale's token, and weights, leading and motion are tokens. Amended by ADR 0076: `packages/ui` is the apps' component layer, and `packages/web-kit` holds the typed API client, India's dates, rupees and WhatsApp's links, which every front end takes from there.
 - Date: 2026-09-22
+- Topic: Platform
 
 ## Context
 

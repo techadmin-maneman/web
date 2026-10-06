@@ -2,6 +2,7 @@
 
 - Status: accepted
 - Date: 2026-09-21
+- Topic: The try-on
 
 ## Context
 

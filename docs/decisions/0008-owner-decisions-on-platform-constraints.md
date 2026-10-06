@@ -2,6 +2,7 @@
 
 - Status: accepted
 - Date: 2026-09-21
+- Topic: Platform
 - Resolves: 0007
 
 ## Decisions

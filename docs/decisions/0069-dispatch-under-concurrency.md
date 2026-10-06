@@ -2,6 +2,7 @@
 
 - Status: accepted. Amended 4 October 2026 by [0110](0110-field-work-without-fsm.md): a move is one batch in our own database; no claim waits on a write to FSM.
 - Date: 2026-09-25
+- Topic: Field work
 - Amends [0034](0034-clash-check.md); follows [0062](0062-leave-on-the-dispatch-board.md) and [0068](0068-a-paid-hold-is-kept.md)
 
 ## Context

@@ -2,6 +2,7 @@
 
 - Status: accepted. Amended by ADR 0018: one look per visitor, so there is no second look. Amended by ADR 0039: results are kept 14 days in production. Amended by ADR 0084: under the photo notice that keeps a client's try-on, a job writes the photograph's small copy too, once. Amended by [ADR 0104](0104-the-try-ons-look-on-whatsapp-only.md): the look goes to WhatsApp only, so the claim comes before the render, which refuses a job no claim has, and opens no session; `GET /api/tryon/result` and its browser link are gone; and no try-on runs while WhatsApp cannot send its look.
 - Date: 2026-09-21
+- Topic: The try-on
 
 ## Context
 

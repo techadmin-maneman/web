@@ -2,6 +2,7 @@
 
 - Status: accepted, on the owner's rulings of 30 September and 1 October 2026 (ADR 0025, item 74; `docs/open-points.md`, item 158)
 - Date: 2026-10-01
+- Topic: Booking and visits
 - Amends [0035](0035-window-slot-map.md), whose times were constants; [0088](0088-every-policy-in-the-console.md), which kept them in code
 
 ## Context

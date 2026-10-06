@@ -2,6 +2,7 @@
 
 - Status: accepted. Amended 25 September 2026: an audited action writes its entry in the same batch as its change. Amended 26 September 2026: one opening of a client's photographs is one entry, naming the client, and serves that opening's images for thirty minutes (ADR 0072). Amended 2 October 2026: an ops call's entry names the client or visit it opened and the path called, IDs only; the health check and a path no route answers write none; a GET repeated within ten minutes writes one; and the database's size is watched.
 - Date: 2026-09-22
+- Topic: The ops console
 
 ## Context
 

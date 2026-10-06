@@ -2,6 +2,7 @@
 
 - Status: accepted
 - Date: 2026-09-28
+- Topic: The ops console
 - Amends [0072](0072-ops-clients-and-queues.md), whose board drew no owner, and [0074](0074-hand-offs-and-messages.md), under which only the thing itself could close a visit left partly done or a visit with no address; follows [0031](0031-access-and-audit.md) for who is signed in, [0054](0054-address-capture.md) for how an address is saved and [0086](0086-the-next-visit-is-offered.md) for the Tasks board's reads; records the owner's answers to open points 61 and 62 of 27 September 2026 (`docs/archive/owner-answers-2026-09-27.md`), the plan's pieces C7 and C8, and departures in ADR 0025 (items 77 and 78)
 
 ## Context

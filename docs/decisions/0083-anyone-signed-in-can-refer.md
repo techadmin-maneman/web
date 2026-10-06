@@ -2,6 +2,7 @@
 
 - Status: withdrawn by the owner on 27 September 2026, the day it was made; [0048](0048-referrals.md) stands
 - Date: 2026-09-27
+- Topic: Referrals
 - Records item 64 of [0025](0025-phase-2-conflicts-register.md)
 
 ## Context

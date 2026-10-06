@@ -2,6 +2,7 @@
 
 - Status: accepted; amended 27 September 2026 by [0084](0084-a-clients-try-on-is-kept.md): a client's kept try-on is paid from Phase 2's share, which shortens the photograph runway, and the table below was worked at a result's old 6 MB; amended 28 September 2026 by [0093](0093-the-storage-meter.md): the storage meter is built, it tells ops at 50%, 80% and 100% of the share and refuses nothing at 100% on the owner's ruling, and each photograph's thumbnail shortens the runway to 444 visits (1,312 with no try-on kept)
 - Date: 2026-09-22
+- Topic: Platform
 
 ## Context
 

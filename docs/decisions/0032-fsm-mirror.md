@@ -2,6 +2,7 @@
 
 - Status: superseded by [0110](0110-field-work-without-fsm.md) on 4 October 2026: FSM's mirror is gone with FSM; our own database is the record of field work. Was: accepted. Amended 28 September 2026: the lead route that sent Phase 1's bookings to FSM as Requests is removed; the site's bookings reach FSM as work orders from their held slots (ADR 0051), and what is left of the Request path goes with `docs/open-points.md`, item 159. Amended 1 October 2026 by ADR 0101: that path is removed.
 - Date: 2026-09-22
+- Topic: Field work
 
 ## Context
 

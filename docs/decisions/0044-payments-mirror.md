@@ -2,6 +2,7 @@
 
 - Status: accepted. Amended by ADR 0068: a refusal from Books is told to ops, once, as well as logged. Amended by ADR 0068: a capture confirms its hold, and a payment keeps its GST. Amended 2 October 2026: payment links number from the same series, and a link's payment takes the reference its link was made under. Amended 4 October 2026 by [0110](0110-field-work-without-fsm.md): a payment is applied to the Books invoice we make, not to one of FSM's.
 - Date: 2026-09-22
+- Topic: Money and Books
 
 ## Context
 

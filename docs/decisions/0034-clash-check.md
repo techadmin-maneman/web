@@ -2,6 +2,7 @@
 
 - Status: accepted. Amended by ADR 0069: a move on the dispatch board claims its new time in `slot_claims` while FSM is written, a change of technician alone is checked at the visit's own half-slots, and a free window with no room is refused as `does_not_fit`. Amended 4 October 2026 by [0110](0110-field-work-without-fsm.md): the check runs before our own write, and nothing is written to FSM after it.
 - Date: 2026-09-22
+- Topic: Booking and visits
 
 ## Context
 

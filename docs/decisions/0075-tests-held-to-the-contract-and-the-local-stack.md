@@ -2,6 +2,7 @@
 
 - Status: accepted. Amended 5 October 2026: every surface’s answers are checked, the local mm-api’s too, and one technician’s day runs against the real API in CI (below).
 - Date: 2026-09-27
+- Topic: Platform
 - Amends [0006](0006-deployment-pipeline.md) (the coverage gate) and [0032](0032-fsm-mirror.md) (when the reconciliation runs); follows [0026](0026-hosts-and-surfaces.md), [0030](0030-one-time-codes.md) and [0044](0044-payments-mirror.md)
 
 ## Context
