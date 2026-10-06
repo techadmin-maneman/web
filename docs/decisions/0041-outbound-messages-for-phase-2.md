@@ -2,6 +2,7 @@
 
 - Status: accepted
 - Date: 2026-09-22
+- Topic: Messages and the CRM
 - Contract step for `migrations/0006_outbound_messages_v2.sql`
 
 ## Context
@@ -45,7 +46,7 @@ SQLite cannot change a CHECK constraint in place, so the table has to be rebuilt
 
 ## Consequences
 
-- **The owner sets up the receipts** (runbook, step 12):
+- **The owner sets up the receipts** (provisioning, step 12):
   - a secret `EVOLUTION_WEBHOOK_TOKEN` on each Worker;
   - Evolution's webhook pointed at the route, sending `MESSAGES_UPDATE` only;
   - on staging, an Access bypass for `/api/hooks/`.

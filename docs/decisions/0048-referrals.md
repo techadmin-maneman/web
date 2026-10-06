@@ -2,6 +2,7 @@
 
 - Status: accepted. Amended by ADR 0060: while self-serve booking is off, the landing records a request for ops rather than refusing. The landing page and the app's Refer screens were built in P2-F3. Amended by ADR 0080: a consent to cards given by booking a visit, on the pay step's lines, names the referrer too. Amended 27 September 2026: where the phone can share files, the card goes with the invite as a photograph (below). Amended by [ADR 0089](0089-an-invite-is-not-lost.md): attribution also happens on `/book`, with an invite the friend's browser remembered for 30 days, and when ops attach an invite on the client's page, under the same rule. Amended by [ADR 0107](0107-referral-rewards-in-the-console.md) on 1 October 2026: ops set each side's service visits and how long they last in the console, 3, 3 and 365 days to begin with; the grant gives the reward in force when the friend's first fit settles it, kept with the referral for a grant held for review. Amended 5 October 2026: the API makes the card from the client's photographs, and takes none from the phone (below).
 - Date: 2026-09-22
+- Topic: Referrals
 
 ## Context
 
@@ -108,7 +109,7 @@ The owner found invites shared from the app reaching WhatsApp with no image. The
   - A share the phone refuses is F6's "Share failed"; one the client backs out of says nothing.
   - The owner approved this on 27 September 2026, a departure from boards F4, B1 and B2, which draw the link's preview (ADR 0025, item 71). F4 still draws that preview, which is what the friend gets where the phone cannot send the file.
 - **A client's own card was a broken image in F4.** The app asked for it at `GET /api/og/:code.jpg`, which answers only on the public host (ADR 0026). `GET /api/refer/card` gives the client their own card on the app's host while it is live, exactly when the landing would show it (stored, the consent given, the client not erased), and a 404 otherwise. The phone keeps it a day, under the version in its link.
-- **Staging's Access turned WhatsApp's crawler away** from the landing and the card, as it turns away anyone without the founders' login. The owner is to let `r/`, `images/` and `api/og/` through (runbook, step 10b). `npm run smoke -- --base <host> --environment <env> --link-preview <code>` fetches both as the crawler does, with no Access token. No deploy runs it: it fails on staging until then.
+- **Staging's Access turned WhatsApp's crawler away** from the landing and the card, as it turns away anyone without the founders' login. The owner is to let `r/`, `images/` and `api/og/` through (provisioning, step 10b). `npm run smoke -- --base <host> --environment <env> --link-preview <code>` fetches both as the crawler does, with no Access token. No deploy runs it: it fails on staging until then.
 
 The landing's tags also give the card's type and its HTTPS address beside it (`og:image:type`, `og:image:secure_url`), and the preview's answer gives its length.
 

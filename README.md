@@ -133,7 +133,8 @@ docs/                 indexed by docs/README.md
 | `docs/walkthrough.md`     | The whole platform as its users meet it: a booking, a visit, a payment, a referral, an alert |
 | `docs/getting-started.md` | The whole system on your laptop                                                              |
 | `docs/front-ends.md`      | The four front ends: how each is built, run, tested and deployed, and what they share        |
-| `docs/runbook.md`         | Provisioning, incidents, alerts, restoring D1, rolling back                                  |
+| `docs/runbook.md`         | Operating an environment: incidents, alerts, restoring D1, rolling back                      |
+| `docs/provisioning.md`    | Setting an environment up, a step at a time                                                  |
 | `docs/go-live.md`         | What takes each release to production, in the owner's order                                  |
 | `docs/open-points.md`     | What is still owed before production, and what staging uses meanwhile                        |
 | `docs/decisions/`         | The ADRs, indexed in `docs/decisions/README.md`; 0025 is the register of the owner's rulings |

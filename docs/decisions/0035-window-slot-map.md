@@ -2,6 +2,7 @@
 
 - Status: accepted, with placeholder times (`docs/open-points.md`, item 53)
 - Date: 2026-09-22
+- Topic: Booking and visits
 
 ## Context
 

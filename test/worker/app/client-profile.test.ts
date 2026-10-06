@@ -305,7 +305,7 @@ describe("POST /api/address/suggestions", () => {
     await suggest(client, "mm-stub:refused", "s-2");
     const told =
       "Google refused the address search (autocomplete 403: stub: quota). Clients can still type an address, " +
-      "but none gets a pin. Check the key, its APIs and its quotas (runbook, section 13).";
+      "but none gets a pin. Check the key, its APIs and its quotas (provisioning, step 13).";
     expect(deps.alerts).toEqual([told]);
 
     const tomorrow = fakeDependencies({ now: () => new Date(NOW.getTime() + 24 * 60 * 60 * 1000) });

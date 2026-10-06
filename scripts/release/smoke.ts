@@ -5,7 +5,7 @@
 // npm run smoke -- --base https://staging.maneman.in --environment staging --link-preview <code>
 //                                                      only the invite <code> as WhatsApp's crawler fetches it,
 //                                                      without the Access token: its landing, then its card. No
-//                                                      deploy runs it (docs/runbook.md, step 10b)
+//                                                      deploy runs it (docs/provisioning.md, step 10b)
 //
 // Options:
 //   --version-id <id>         require /api/health to report this Worker version

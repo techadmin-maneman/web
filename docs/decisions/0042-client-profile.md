@@ -2,6 +2,7 @@
 
 - Status: accepted. Amended by ADR 0080: booking a visit in the app also gives the two photograph consents the client has never decided on.
 - Date: 2026-09-22
+- Topic: Privacy and accounts
 - Contract step for `migrations/0009_consents_v2.sql`
 
 ## Context

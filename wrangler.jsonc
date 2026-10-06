@@ -200,7 +200,7 @@
         "BOOKS_SAC": "",
         // Razorpay in test mode: no real money. The key secret and the webhook secret are secrets.
         "PAYMENTS_PROVIDER": "razorpay",
-        // The owner's key is in place (docs/runbook.md, section 13); production waits for the release.
+        // The owner's key is in place (docs/provisioning.md, step 13); production waits for the release.
         "GEOCODE_PROVIDER": "google",
         "SELF_SERVE_BOOKING": "true",
         "REFERRER_NAME_ON_INVITE": "true",

@@ -2,6 +2,7 @@
 
 - Status: accepted, on the owner's ruling of 1 October 2026 (ADR 0025, item 94). What the ruling left open is taken for the owner to confirm (item 94), and the words for unequal sides and for 0 await the owner's (`docs/open-points.md`, item 172).
 - Date: 2026-10-01
+- Topic: Referrals
 - Amends [0048](0048-referrals.md), whose grant gave each side 3 service visits expiring in 365 days, and the prompt's rule as `src/policy/referral-reward.ts` quotes it, "the referrer and the referred each get 3 service-visit credits"; extends [0088](0088-every-policy-in-the-console.md) by one more input; follows [0073](0073-prices-from-the-price-book.md), whose way of writing a figure into the site this takes
 
 ## Context

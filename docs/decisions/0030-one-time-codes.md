@@ -2,6 +2,7 @@
 
 - Status: accepted. Amended 30 September 2026 by [0097](0097-staging-logins-open-reminders-fenced.md): a code no longer checks staging's allowlist at all. Amended 3 October 2026: every code counts against its number and address, technicians have their own ceiling, and the client login needs Turnstile.
 - Date: 2026-09-22
+- Topic: Privacy and accounts
 
 ## Context
 

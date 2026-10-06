@@ -2,6 +2,7 @@
 
 - Status: accepted. Amended 28 September 2026: rupees are written "Rs." on the public site too, on the owner's ruling (ADR 0025, item 51).
 - Date: 2026-09-27
+- Topic: Platform
 - Amends [0037](0037-shared-packages.md)
 
 ## Context

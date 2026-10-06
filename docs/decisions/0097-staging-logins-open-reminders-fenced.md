@@ -2,6 +2,7 @@
 
 - Status: accepted
 - Date: 2026-09-30
+- Topic: Platform
 - Amends [0030](0030-one-time-codes.md), whose login codes checked staging's allowlist; [0047](0047-visit-messages.md), four of whose five kinds no longer do; and [0070](0070-vendor-correctness.md), whose try-on gate promised a WhatsApp copy only where the allowlist let one go. Follows [0009](0009-stay-inside-cloudflare-free-tier.md), [0041](0041-outbound-messages-for-phase-2.md), [0048](0048-referrals.md) and [0086](0086-the-next-visit-is-offered.md), whose message kinds this record classifies; records [0025](0025-phase-2-conflicts-register.md) item 84 and the owner's ruling of 30 September 2026.
 
 ## Context

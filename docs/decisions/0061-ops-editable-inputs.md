@@ -2,6 +2,7 @@
 
 - Status: accepted; amended by [0071](0071-what-ops-see-before-a-setting-changes.md) for the price form, the service-area file and serving a pincode, and by [0072](0072-ops-clients-and-queues.md) for the task allowances' ceiling. Extended 27 September 2026 with where each of the prompt's _config_ values went ("The prompt's config values"). Amended 27 September 2026 by [0085](0085-services-ops-can-edit.md): a price tier is a service ops name, time, order and retire, and visit lengths are each service's own. Amended 28 September 2026 by [0088](0088-every-policy-in-the-console.md): a request reads one snapshot row of the store, not a row per input, so the register is no longer held to ten; a rule may be choices as well as numbers; and every figure still in code moved in, but the window times
 - Date: 2026-09-24
+- Topic: The ops console
 - Follows [0031](0031-access-and-audit.md) for who may change one and how it is recorded, and [0009](0009-stay-inside-cloudflare-free-tier.md) for what reading one may cost
 
 ## Context

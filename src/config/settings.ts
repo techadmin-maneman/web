@@ -102,7 +102,7 @@ export interface RazorpaySettings {
 export interface GeocodeSettings {
   /**
    * Google Maps Platform, restricted to Places and Geocoding and to this
-   * Worker's IPs (docs/runbook.md, section 13). Null unless GEOCODE_PROVIDER is
+   * Worker's IPs (docs/provisioning.md, step 13). Null unless GEOCODE_PROVIDER is
    * "google".
    */
   readonly apiKey: string | null;

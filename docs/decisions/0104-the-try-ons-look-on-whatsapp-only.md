@@ -2,6 +2,7 @@
 
 - Status: accepted, on the owner's ruling D3 of 1 October 2026 (ADR 0025, item 88). Its notices await counsel (`docs/open-points.md`, item 146), its words the owner's second round (item 163), and its run in production waits on WhatsApp (item 164). Amended 2 October 2026 (audit finding PS-10; the owner's decision 7): a WhatsApp code proves the number before the claim.
 - Date: 2026-10-01
+- Topic: The try-on
 - Amends [0014](0014-try-on-api.md), [0018](0018-one-look-pro-only-lead-notices.md), [0022](0022-site-departures-from-v2.md) (items 18, 19, 21 to 24, 30, 32, 33 and 38), [0024](0024-the-browsers-own-look.md), [0070](0070-vendor-correctness.md) and [0084](0084-a-clients-try-on-is-kept.md); follows [0082](0082-try-ons-in-the-app.md) and [0103](0103-the-home-pages-first-copy-round.md)
 
 ## Context
