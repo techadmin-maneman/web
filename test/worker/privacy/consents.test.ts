@@ -2,7 +2,7 @@
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
-import { recordConsent, type ConsentAnswer, type ConsentRule } from "../../../src/domain/consents.ts";
+import { recordConsent, type ConsentAnswer, type ConsentRule } from "../../../src/domain/privacy/consents.ts";
 import { markDatabase, NOW } from "../helpers.ts";
 
 const PERSON = "55555555-5555-4555-8555-555555555555";

@@ -5,7 +5,7 @@
 //
 // They were edited by the runbook's own SQL. A change here needs no release,
 // and each records the Access identity behind it in the same batch
-// (src/domain/blackouts.ts).
+// (src/domain/dispatch/blackouts.ts).
 
 import { createRoute, z } from "@hono/zod-openapi";
 import { actorOf } from "../../http/audit.ts";
@@ -17,7 +17,7 @@ import {
   blackoutsFrom,
   periodRefusal,
   removeBlackouts,
-} from "../../domain/blackouts.ts";
+} from "../../domain/dispatch/blackouts.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
 import { json } from "../../http/openapi.ts";
 import { indiaDate } from "../../lib/india-time.ts";

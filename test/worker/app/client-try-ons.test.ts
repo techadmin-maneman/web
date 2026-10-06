@@ -6,9 +6,9 @@
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { App } from "../../../src/http/context.ts";
-import { openSession } from "../../../src/domain/sessions.ts";
-import { loadJob } from "../../../src/domain/tryon.ts";
-import { recordClaim, reserveJob } from "../../../src/domain/tryon-claims.ts";
+import { openSession } from "../../../src/domain/sign-in/sessions.ts";
+import { loadJob } from "../../../src/domain/try-on/tryon.ts";
+import { recordClaim, reserveJob } from "../../../src/domain/try-on/tryon-claims.ts";
 import { signToken } from "../../../src/lib/signed-token.ts";
 import { appFor, fakeDependencies, LOCAL_SETTINGS, markDatabase, NOW, request } from "../helpers.ts";
 import { insertJob, insertPerson, syntheticJpeg, syntheticPng } from "../tryon-fixtures.ts";
@@ -136,7 +136,7 @@ describe("GET /api/photos's try-ons", () => {
     await env.DB.prepare("UPDATE tryon_jobs SET upload_deleted_at = ?1").bind(NOW.toISOString()).run();
     expect((await tryOns()).map((tryOn) => [tryOn.photo, tryOn.look === null])).toEqual([[null, false]]);
 
-    // An erasure deletes the look and marks the photograph gone (src/domain/erasure.ts).
+    // An erasure deletes the look and marks the photograph gone (src/domain/privacy/erasure.ts).
     await env.DB.prepare("UPDATE tryon_jobs SET result_key = NULL").run();
     expect(await tryOns()).toEqual([]);
   });

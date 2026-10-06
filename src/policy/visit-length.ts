@@ -1,6 +1,6 @@
 // How long a visit takes, and how much of a technician's day it holds. Each service carries its own length (the services table, docs/decisions/0085-services-ops-can-edit.md). A visit is
 // booked for that long, and the day, counted in half-slots (docs/decisions/0035-window-slot-map.md), keeps the
-// half-slots that length needs. src/domain/occupancy.ts places a visit by them, for booking and dispatch alike.
+// half-slots that length needs. src/domain/booking/occupancy.ts places a visit by them, for booking and dispatch alike.
 
 import { UNITS_PER_DAY } from "../config/scheduling.ts";
 

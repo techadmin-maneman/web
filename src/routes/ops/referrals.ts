@@ -7,8 +7,8 @@
 import { createRoute, z } from "@hono/zod-openapi";
 import { actorOf } from "../../http/audit.ts";
 import type { App } from "../../http/context.ts";
-import { reachBinding, withinReach } from "../../domain/places.ts";
-import { decideHeldReferral } from "../../domain/referral-grants.ts";
+import { reachBinding, withinReach } from "../../domain/clients/places.ts";
+import { decideHeldReferral } from "../../domain/referrals/referral-grants.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
 import { json } from "../../http/openapi.ts";
 import { opsInputs } from "../../http/ops-inputs.ts";

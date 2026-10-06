@@ -2,7 +2,7 @@
 //
 // The address's coordinates come from the geocoder, Google where one is connected
 // (docs/decisions/0054-address-capture.md). Until an address has them there is
-// nothing to measure against, and src/domain/check-ins.ts, not this module,
+// nothing to measure against, and src/domain/visits/check-ins.ts, not this module,
 // decides what to do then.
 
 /**

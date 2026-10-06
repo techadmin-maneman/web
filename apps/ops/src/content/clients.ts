@@ -721,7 +721,7 @@ export const clients = {
     } as Readonly<Record<string, string>>,
   },
   /*
-   * The client's record in figures (src/domain/client-history.ts). The design
+   * The client's record in figures (src/domain/visits/client-history.ts). The design
    * draws no such tab, so every line below is a placeholder; the figures
    * themselves are the ones the board's own drawer implies, "Visits so far: 11
    * · last 22 Aug", and the head's "Replacement due".

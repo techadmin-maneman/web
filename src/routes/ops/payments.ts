@@ -1,4 +1,4 @@
-// A day's money, behind Access (src/domain/day-money.ts):
+// A day's money, behind Access (src/domain/money/day-money.ts):
 //   GET /api/payments?date=   what was collected and refunded, and each charge
 //
 // Nothing here takes or gives back money. The figures are read from the rows
@@ -12,7 +12,7 @@
 
 import { createRoute, z } from "@hono/zod-openapi";
 import type { App } from "../../http/context.ts";
-import { dayMoney } from "../../domain/day-money.ts";
+import { dayMoney } from "../../domain/money/day-money.ts";
 import { errorResponse } from "../../http/errors.ts";
 import { json } from "../../http/openapi.ts";
 import { routeReach } from "../../http/staff-access.ts";

@@ -1,18 +1,22 @@
-// The referral grant, its fraud holds and ops' review, credit expiry and clawback (src/domain/referral-grants.ts,
-// src/domain/credits.ts). NOW is Monday 21 September 2026, 12 noon in India. Every name and number is made up.
+// The referral grant, its fraud holds and ops' review, credit expiry and clawback (src/domain/referrals/referral-grants.ts,
+// src/domain/money/credits.ts). NOW is Monday 21 September 2026, 12 noon in India. Every name and number is made up.
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import { renderMessage } from "../../../src/config/message-templates.ts";
-import { creditBalance, expireCredits, grantCredits } from "../../../src/domain/credits.ts";
-import { clawBackRefunded, decideHeldReferral, settleReferrals } from "../../../src/domain/referral-grants.ts";
+import { creditBalance, expireCredits, grantCredits } from "../../../src/domain/money/credits.ts";
+import {
+  clawBackRefunded,
+  decideHeldReferral,
+  settleReferrals,
+} from "../../../src/domain/referrals/referral-grants.ts";
 import {
   composeFriendCredited,
   composeFriendFitted,
   composeReferralRejected,
-} from "../../../src/domain/referral-messages.ts";
-import { erasePerson } from "../../../src/domain/erasure.ts";
-import { openSession } from "../../../src/domain/sessions.ts";
+} from "../../../src/domain/referrals/referral-messages.ts";
+import { erasePerson } from "../../../src/domain/privacy/erasure.ts";
+import { openSession } from "../../../src/domain/sign-in/sessions.ts";
 import { createLogger } from "../../../src/log.ts";
 import { REFERRAL_REWARD, type ReferralReward } from "../../../src/policy/referral-reward.ts";
 import { CRON_JOBS, runCronJobs } from "../../../src/scheduled/cron.ts";

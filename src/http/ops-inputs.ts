@@ -7,7 +7,7 @@
 
 import type { Context } from "hono";
 import type { AppEnv } from "./context.ts";
-import type { OpsInputs } from "../domain/ops-settings.ts";
+import type { OpsInputs } from "../domain/ops/ops-settings.ts";
 
 export function opsInputs(c: Context<AppEnv>): Promise<OpsInputs> {
   return c.var.readOpsInputs(c.env.DB, c.var.deps.now(), (error: unknown) => {

@@ -6,9 +6,9 @@ import {
   passedArrivalStatement,
   recordFailedArrival,
   type ArrivalInput,
-} from "../../domain/check-ins.ts";
-import { allConsumables } from "../../domain/consumables.ts";
-import { profileLanded, recordAtVisit } from "../../domain/hair-profiles.ts";
+} from "../../domain/visits/check-ins.ts";
+import { allConsumables } from "../../domain/field/consumables.ts";
+import { profileLanded, recordAtVisit } from "../../domain/clients/hair-profiles.ts";
 import {
   answerBeforeLanding,
   closedAt,
@@ -16,15 +16,15 @@ import {
   landInOrder,
   whatChanged,
   type EventInput,
-} from "../../domain/job-events.ts";
-import { pieceLabelTaken, pieceStepOf } from "../../domain/pieces.ts";
-import { checklistOf, jobSheet, knownCodes } from "../../domain/job-sheet-settings.ts";
-import { recordJobUse } from "../../domain/job-use.ts";
-import { tellOfLowStock } from "../../domain/stock.ts";
-import { hasStorageRoom } from "../../domain/storage-meter.ts";
-import { noShowReadiness, openNoShowCase } from "../../domain/no-shows.ts";
-import { closeOneVisit } from "../../domain/one-visit.ts";
-import { progressOf, workableJob, type WorkableJob } from "../../domain/tech-jobs.ts";
+} from "../../domain/field/job-events.ts";
+import { pieceLabelTaken, pieceStepOf } from "../../domain/field/pieces.ts";
+import { checklistOf, jobSheet, knownCodes } from "../../domain/field/job-sheet-settings.ts";
+import { recordJobUse } from "../../domain/field/job-use.ts";
+import { tellOfLowStock } from "../../domain/field/stock.ts";
+import { hasStorageRoom } from "../../domain/platform/storage-meter.ts";
+import { noShowReadiness, openNoShowCase } from "../../domain/no-shows/no-shows.ts";
+import { closeOneVisit } from "../../domain/visits/one-visit.ts";
+import { progressOf, workableJob, type WorkableJob } from "../../domain/field/tech-jobs.ts";
 import {
   anglesHeld,
   MAX_PHOTO_BYTES,
@@ -34,8 +34,8 @@ import {
   storeThumbnail,
   uploadLink,
   type PhotoSlot,
-} from "../../domain/tech-photos.ts";
-import { type Phase } from "../../domain/visit-photos.ts";
+} from "../../domain/field/tech-photos.ts";
+import { type Phase } from "../../domain/field/visit-photos.ts";
 import { cappedBody } from "../../http/capped-body.ts";
 import { refuse } from "../../http/errors.ts";
 import { technicianOf } from "../../http/technician-session.ts";
@@ -46,7 +46,7 @@ import { noShowWaitEnds } from "../../policy/no-show.ts";
 import { boundedPhoneTime } from "../../policy/phone-clock.ts";
 import { opsInputs } from "../../http/ops-inputs.ts";
 import { queueMessage } from "../../http/queue-message.ts";
-import { arrivalNotice } from "../../domain/visit-messages.ts";
+import { arrivalNotice } from "../../domain/messages/visit-messages.ts";
 
 import {
   checkinRoute,

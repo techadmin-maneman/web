@@ -7,7 +7,7 @@ import {
   ConsumablesRequestSchema,
   OutcomeRequestSchema,
   PieceRequestSchema,
-} from "../../domain/job-event-bodies.ts";
+} from "../../domain/field/job-event-bodies.ts";
 import { errorResponse } from "../../http/errors.ts";
 import { json } from "../../http/openapi.ts";
 import {

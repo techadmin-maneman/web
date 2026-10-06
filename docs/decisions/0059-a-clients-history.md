@@ -39,7 +39,7 @@ Three things follow, and together they settle the CRM question.
 
 ### 1. One derivation, read by every surface
 
-`src/domain/client-history.ts` counts a client's record from the rows that already exist, at the moment someone looks, as board D2's tasks and board D1's money are. There is no counts table and there is not going to be one: a tally kept anywhere could drift from the visits behind it, and the client and ops would be told different numbers about the same person. One statement of scalar subqueries answers the whole record, so a client's page costs one D1 read however many visits they have had.
+`src/domain/visits/client-history.ts` counts a client's record from the rows that already exist, at the moment someone looks, as board D2's tasks and board D1's money are. There is no counts table and there is not going to be one: a tally kept anywhere could drift from the visits behind it, and the client and ops would be told different numbers about the same person. One statement of scalar subqueries answers the whole record, so a client's page costs one D1 read however many visits they have had.
 
 A visit done is a **completed** appointment with a window — the same rule `isFitted` and the client's own list of past visits already use. A visit FSM terminated did not happen and is counted nowhere.
 
@@ -75,7 +75,7 @@ The record sits **beneath** board C1's two lists rather than above them, so the 
 
 Board B1's Home prompt — the design's own place for the due line — is **not** built here. Filling it would put the history read on `/api/me`, the route the app calls every time it opens, for a line the client can also see one tap away on Visits. It stays with the credit tile as a known B1 departure.
 
-**Amended 25 September 2026.** The departure was challenged: the front-end prompt's B1 requires "the credit tile with its expiry; one contextual prompt", and the audit found Home and Visits telling a newly fitted client different things. Both are built. The credit tile reads the balance `/api/me` already carried. The prompt is not the history read: `src/domain/home-prompt.ts` answers it in one statement of its own — whether an address is given, the earliest piece in wear's due date, the latest invoice issued in a fortnight — and hands the client the month alone, as Visits does. `/api/me` gains that one statement and nothing else. The order of the three, and the fortnight, are ADR 0025, item 44.
+**Amended 25 September 2026.** The departure was challenged: the front-end prompt's B1 requires "the credit tile with its expiry; one contextual prompt", and the audit found Home and Visits telling a newly fitted client different things. Both are built. The credit tile reads the balance `/api/me` already carried. The prompt is not the history read: `src/domain/clients/home-prompt.ts` answers it in one statement of its own — whether an address is given, the earliest piece in wear's due date, the latest invoice issued in a fortnight — and hands the client the month alone, as Visits does. `/api/me` gains that one statement and nothing else. The order of the three, and the fortnight, are ADR 0025, item 44.
 
 ### 5. The CRM is not changed, and this is what it is waiting for
 

@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
 import catalog from "../../../data/ailabtools-catalog.json";
 import { isKnownTemplate, RESULT_TEMPLATE, renderMessage } from "../../../src/config/message-templates.ts";
-import { leadNotice } from "../../../src/domain/lead-notice.ts";
+import { leadNotice } from "../../../src/domain/leads/lead-notice.ts";
 import { PRESETS, findPreset } from "../../../src/config/presets.ts";
 import { MAX_UPLOAD_BYTES } from "../../../src/config/tryon.ts";
-import { checkPhoto } from "../../../src/domain/photo.ts";
-import { chooseRender } from "../../../src/domain/render-choice.ts";
+import { checkPhoto } from "../../../src/domain/try-on/photo.ts";
+import { chooseRender } from "../../../src/domain/try-on/render-choice.ts";
 import { inspectImage } from "../../../src/lib/image-bytes.ts";
 import { signToken, verifyToken } from "../../../src/lib/signed-token.ts";
 import { NOW } from "../helpers.ts";

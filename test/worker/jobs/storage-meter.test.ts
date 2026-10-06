@@ -1,4 +1,4 @@
-// The storage meter (src/domain/storage-meter.ts; docs/decisions/0093-the-storage-meter.md): what the apps' two
+// The storage meter (src/domain/platform/storage-meter.ts; docs/decisions/0093-the-storage-meter.md): what the apps' two
 // buckets hold, counted as each object is stored and deleted, and ops told once at each mark of the share.
 
 import { env } from "cloudflare:workers";
@@ -11,7 +11,7 @@ import {
   readMeter,
   tellOfDatabaseSize,
   tellOfStorage,
-} from "../../../src/domain/storage-meter.ts";
+} from "../../../src/domain/platform/storage-meter.ts";
 import { DATABASE_LIMIT_BYTES } from "../../../src/policy/database-size.ts";
 import { SHARE_BYTES } from "../../../src/policy/storage-share.ts";
 

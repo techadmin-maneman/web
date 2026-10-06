@@ -4,9 +4,9 @@
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import { uuidv7 } from "../../../apps/tech/src/store/uuidv7.ts";
-import { moveJob } from "../../../src/domain/dispatch.ts";
-import { openTechnicianSession } from "../../../src/domain/technicians.ts";
-import { eraseBooksCustomers } from "../../../src/domain/books-erasure.ts";
+import { moveJob } from "../../../src/domain/dispatch/dispatch.ts";
+import { openTechnicianSession } from "../../../src/domain/dispatch/technicians.ts";
+import { eraseBooksCustomers } from "../../../src/domain/books/books-erasure.ts";
 import { createCallBudget } from "../../../src/lib/call-budget.ts";
 import { createLogger } from "../../../src/log.ts";
 import { createStubBooks, type StubBooks } from "../../../src/providers/books/stub.ts";

@@ -13,14 +13,14 @@
 // A kind is code, and so is what it decides: the technician's steps, the booking rules and the fees. Every change
 // here is audited in the same batch as the change itself (ADR 0031), and nothing already sold moves with it: a hold
 // keeps the service's price, late fee and length it was made with. Books' items follow the services at the hourly
-// item check (src/domain/books-items.ts).
+// item check (src/domain/books/books-items.ts).
 
 import { createRoute, z } from "@hono/zod-openapi";
 import type { Context } from "hono";
 import { PRICE_BOUNDS } from "../../policy/ops-settings.ts";
 import { VISIT_BLOCKS } from "../../config/scheduling.ts";
 import { VISIT_TYPES, type VisitType } from "../../config/visit-types.ts";
-import { priceBook, type PriceRow } from "../../domain/price-book.ts";
+import { priceBook, type PriceRow } from "../../domain/money/price-book.ts";
 import {
   addService,
   allServices,
@@ -31,7 +31,7 @@ import {
   retireService,
   setServiceLength,
   type ServiceRefusal,
-} from "../../domain/services.ts";
+} from "../../domain/booking/services.ts";
 import { actorOf } from "../../http/audit.ts";
 import type { App, AppEnv } from "../../http/context.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";

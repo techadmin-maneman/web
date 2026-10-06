@@ -4,8 +4,8 @@
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
-import { openTechnicianSession } from "../../../src/domain/technicians.ts";
-import { revokeSession } from "../../../src/domain/sessions.ts";
+import { openTechnicianSession } from "../../../src/domain/dispatch/technicians.ts";
+import { revokeSession } from "../../../src/domain/sign-in/sessions.ts";
 import type { App } from "../../../src/http/context.ts";
 import { sha256Hex } from "../../../src/lib/hash.ts";
 import { appFor, captureLogs, fakeDependencies, markDatabase, NOW, request } from "../helpers.ts";

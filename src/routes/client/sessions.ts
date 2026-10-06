@@ -9,7 +9,7 @@
 import { z } from "@hono/zod-openapi";
 import { clientRoute } from "../../http/session-routes.ts";
 import type { App } from "../../http/context.ts";
-import { liveSessions, revokeByHandle, revokeOthersStatement, sessionHandle } from "../../domain/sessions.ts";
+import { liveSessions, revokeByHandle, revokeOthersStatement, sessionHandle } from "../../domain/sign-in/sessions.ts";
 import { clearClientCookie, clientOf } from "../../http/client-session.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
 import { json } from "../../http/openapi.ts";

@@ -45,7 +45,7 @@ And, around it: a timeout after FSM took a work order made a second one on the r
 - never rename the person the number belongs to (nor does the Phase 1 lead form, which wrote the same row);
 - never let go of a hold made in the app;
 - write the person, their consent and the hold in one batch, so a window that has gone leaves nothing behind;
-- answer `409 already_booked`, with the date and window, for a number with a consultation still to happen, and `422 not_bookable` for one past consultations, who books in the app. **Overturned by the owner on 2 October 2026** (audit finding PS-06; ADR 0025, item 41): the forms answer every number alike, since whoever types a number may not be its owner. Such a number gets the answer a new number would, books nothing, and is told why on WhatsApp (`src/domain/site-notices.ts`).
+- answer `409 already_booked`, with the date and window, for a number with a consultation still to happen, and `422 not_bookable` for one past consultations, who books in the app. **Overturned by the owner on 2 October 2026** (audit finding PS-06; ADR 0025, item 41): the forms answer every number alike, since whoever types a number may not be its owner. Such a number gets the answer a new number would, books nothing, and is told why on WhatsApp (`src/domain/ops/site-notices.ts`).
 - book a consultation only on a day the price book has it free; on any other, it waits for ops as a request, as it does while self-serve booking is off.
 
 **One consultation and one first fit at a time.** `bookableTypes` leaves out a consultation or a first fit while one is booked or paid for, and starting to pay for a hold checks again.

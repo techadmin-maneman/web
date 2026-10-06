@@ -17,7 +17,7 @@ The owner asked "to allow for discount codes to be generated and used before inv
 ## Settled by the owner, 1 October 2026
 
 - A move: "The code moves with it". The visit a late move books keeps the code and its discount, counted once.
-- Switched off or expired after it was entered: "Keeps it". A code typed on `/book` while booking is off is honoured as it stood when typed (owner, 2 October 2026): ops booking the one visit from the request, or entering that code on it later, judge switch-off and last day as at the request, and its uses as they stand, since typing it kept none (`src/domain/requested-codes.ts`).
+- Switched off or expired after it was entered: "Keeps it". A code typed on `/book` while booking is off is honoured as it stood when typed (owner, 2 October 2026): ops booking the one visit from the request, or entering that code on it later, judge switch-off and last day as at the request, and its uses as they stand, since typing it kept none (`src/domain/money/requested-codes.ts`).
 - After payment: "No, only before payment"; money goes back by the existing refund path.
 - The invite's page: "No code on the invite page".
 - A cancelled booking: "The use comes back", whatever was paid or refunded.

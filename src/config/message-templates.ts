@@ -118,7 +118,7 @@ export const TEMPLATES = {
     "Hi {{1}}, we couldn't move your {{2}} to {{3}}, so it stays as booked. We've refunded {{6}} to your {{8}} (5 to 7 working days).",
   move_not_made_v1: "Hi {{1}}, we couldn't move your {{2}} to {{3}}, so it stays as booked.",
   // To a number our site's booking form was just sent for, since the page tells every number the same thing
-  // (src/domain/site-notices.ts): {{1}} the first name, and for a consultation still to happen {{2}} the visit, {{3}}
+  // (src/domain/ops/site-notices.ts): {{1}} the first name, and for a consultation still to happen {{2}} the visit, {{3}}
   // its day and {{4}} its window.
   consultation_exists_v1:
     "Hi {{1}}, this number was just used to book on our site. Your {{2}} is already booked for {{3}}, {{4}}, so we haven't booked another. See or move it in the Mane Man app.",

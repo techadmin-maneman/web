@@ -1,8 +1,8 @@
-// A technician never takes two of a client's visits in a row (src/domain/technician-rotation.ts): who may not take a
+// A technician never takes two of a client's visits in a row (src/domain/booking/technician-rotation.ts): who may not take a
 // visit of the client's on a day.
 
 import { describe, expect, it } from "vitest";
-import { besideIt } from "../../../src/domain/technician-rotation.ts";
+import { besideIt } from "../../../src/domain/booking/technician-rotation.ts";
 
 const IMRAN = "t1";
 const SANDEEP = "t2";

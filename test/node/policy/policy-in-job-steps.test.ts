@@ -1,7 +1,7 @@
 // The steps of a job (src/policy/in-job-steps.ts), in the order they run.
 
 import { describe, expect, it } from "vitest";
-import { ANGLES } from "../../../src/domain/visit-photos.ts";
+import { ANGLES } from "../../../src/domain/field/visit-photos.ts";
 import { landsAfterClose, PHOTO_ANGLES, stepBefore, stepsFor, takesStep } from "../../../src/policy/in-job-steps.ts";
 
 const done = (...kinds: string[]): ReadonlySet<string> => new Set(kinds);

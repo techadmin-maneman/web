@@ -1,4 +1,4 @@
-// Who acts on an alert (src/domain/alerts.ts) on the Tasks board's "Needs a hand", which alerts' work ops may send
+// Who acts on an alert (src/domain/ops/alerts.ts) on the Tasks board's "Needs a hand", which alerts' work ops may send
 // again from there, and how often the chat is told again of one still open. An alert's kind is its key up to the
 // first colon: "crm_lead:<leadId>" is a crm_lead.
 

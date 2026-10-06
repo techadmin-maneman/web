@@ -16,7 +16,7 @@ We can now. `serviceable_pincodes` holds 198 NCR pincodes, and `GET /api/pincode
 
 ## Decision
 
-**The site's booking page is the referral landing without the invite.** One island serves both (`site/src/islands/Invite.tsx`, with a `mode`), and one path in the API serves both (`src/domain/public-booking.ts`), so the two pages cannot drift apart:
+**The site's booking page is the referral landing without the invite.** One island serves both (`site/src/islands/Invite.tsx`, with a `mode`), and one path in the API serves both (`src/domain/booking/public-booking.ts`), so the two pages cannot drift apart:
 
 - `POST /api/consultation` and `POST /api/waitlist` are the landing's two routes without the code. They take the same Turnstile token, the same daily limits per number and address, the same consent notices, and hold the same slot.
 - **Amended 27 September 2026 (audit finding FEO-21).** All four take the `Idempotency-Key` the page sends with each submission, as `POST /api/lead` did (ADR 0011): the same submission sent again gets its first answer rather than a second lead, and a refusal frees the key. They ignored it before, so a press repeated after a lost answer was refused `already_booked`, or listed the number twice.

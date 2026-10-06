@@ -3,9 +3,9 @@
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
-import { creditBalance, grantCredits, redeemCredit } from "../../../src/domain/credits.ts";
-import { newReferralCode } from "../../../src/domain/referrals.ts";
-import { openSession } from "../../../src/domain/sessions.ts";
+import { creditBalance, grantCredits, redeemCredit } from "../../../src/domain/money/credits.ts";
+import { newReferralCode } from "../../../src/domain/referrals/referrals.ts";
+import { openSession } from "../../../src/domain/sign-in/sessions.ts";
 import {
   appFor,
   captureLogs,

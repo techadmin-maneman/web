@@ -1,7 +1,7 @@
 // Booking a visit in the app (ADR 0025, items 60 and 61). A slot is held (src/routes/client/booking.ts) only once
 // the client has given the address the visit goes to (docs/decisions/0079-an-address-before-a-slot.md), and a
 // booking, once confirmed, agrees to the photograph purposes its pay step showed that the client has never decided on
-// (docs/decisions/0080-consents-given-by-booking.md), recorded by src/domain/booking-consents.ts.
+// (docs/decisions/0080-consents-given-by-booking.md), recorded by src/domain/privacy/booking-consents.ts.
 
 import type { ConsentPurpose } from "./consents.ts";
 

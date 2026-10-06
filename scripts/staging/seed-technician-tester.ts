@@ -15,7 +15,7 @@
 //
 // No device and no session are written. The whole point is that the tester
 // signs in himself, and the first sign-in enrols the phone it is made from
-// (`openTechnicianSession`, src/domain/technicians.ts).
+// (`openTechnicianSession`, src/domain/dispatch/technicians.ts).
 //
 // The login reads `technicians` in D1 and nowhere else
 // (docs/decisions/0052-technician-sessions.md). His row is marked
@@ -143,7 +143,7 @@ execute([
      VALUES ${sqlRow(personId, now, `+91${clientMobile}`, "Staging test", 1, 1)};`,
   // No lat or lng, on purpose. An address with no coordinates cannot be measured
   // against, so "I have arrived" is accepted wherever the tester is standing
-  // (src/domain/check-ins.ts). The 200 m geofence is docs/tech-field-test.md's
+  // (src/domain/visits/check-ins.ts). The 200 m geofence is docs/tech-field-test.md's
   // to measure, at real addresses.
   `INSERT INTO addresses (id, person_id, created_at, line1, line2, locality, city, pincode, access_notes, lat, lng)
      VALUES ${sqlRow(addressId, personId, now, "Tower C, 14th floor", null, SECTOR, "Gurgaon", PINCODE, "PLACEHOLDER Gate code on the test fixture", null, null)};`,

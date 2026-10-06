@@ -2,7 +2,7 @@
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
-import { createAlertOnce, createResolveAlert, type AlertOnce } from "../../../src/domain/alerts.ts";
+import { createAlertOnce, createResolveAlert, type AlertOnce } from "../../../src/domain/ops/alerts.ts";
 import { HOUR_MS } from "../../../src/lib/durations.ts";
 import { createLogger } from "../../../src/log.ts";
 import { captureLogs, NOW } from "../helpers.ts";

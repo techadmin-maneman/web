@@ -14,16 +14,16 @@ import type { Context } from "hono";
 import type { App, AppEnv } from "../../http/context.ts";
 import { PRESET_IDS, findPreset } from "../../config/presets.ts";
 import { FAILURE_CODES, HAIR_COLORS, JOB_STATES, UNKNOWN_COLOR_ROUTE } from "../../config/tryon.ts";
-import { alertCeilingReached, takeFromCeiling } from "../../domain/ceilings.ts";
-import { takeOne } from "../../domain/rate-limit.ts";
-import { chooseRender } from "../../domain/render-choice.ts";
-import { failJob, loadJob, type JobRow, type RenderChoice } from "../../domain/tryon.ts";
+import { alertCeilingReached, takeFromCeiling } from "../../domain/platform/ceilings.ts";
+import { takeOne } from "../../domain/sign-in/rate-limit.ts";
+import { chooseRender } from "../../domain/try-on/render-choice.ts";
+import { failJob, loadJob, type JobRow, type RenderChoice } from "../../domain/try-on/tryon.ts";
 import { errorBody, errorResponse, refuse } from "../../http/errors.ts";
 import { setLookCookie } from "../../http/look-cookie.ts";
 import { visitorOf } from "../../http/visitor.ts";
 import { DAY_MS } from "../../lib/durations.ts";
 import { LOOK_PER_NUMBER_DAYS, tryOnRuns } from "../../policy/tryon-delivery.ts";
-import { enqueue } from "../../domain/enqueue.ts";
+import { enqueue } from "../../domain/platform/enqueue.ts";
 import type { RenderMessage } from "../../queues/render.ts";
 
 const GenerateRequestSchema = z

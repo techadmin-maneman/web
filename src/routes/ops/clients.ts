@@ -26,7 +26,7 @@ import type { Context } from "hono";
 import { actorOf } from "../../http/audit.ts";
 import type { App, AppEnv } from "../../http/context.ts";
 import { VISIT_TYPES } from "../../config/visit-types.ts";
-import { earlierViews, logPhotoView, PHOTO_VIEW_MINUTES, viewInForce } from "../../domain/photo-views.ts";
+import { earlierViews, logPhotoView, PHOTO_VIEW_MINUTES, viewInForce } from "../../domain/field/photo-views.ts";
 import {
   CLIENT_STATES,
   clientStateOf,
@@ -35,26 +35,31 @@ import {
   UPCOMING_STATUSES,
   ownPhotoKey,
   visitOutcomes,
-} from "../../domain/client-visits.ts";
-import { AUTO_REFUND_REASONS, autoRefundsOf, type AutoRefund } from "../../domain/auto-refunds.ts";
-import { INVOICE_STATES, LINK_STATES, paymentLinksOf, visitInvoicesOf } from "../../domain/client-billing.ts";
-import { creditBalance } from "../../domain/credits.ts";
-import { fittedSql } from "../../domain/fitted.ts";
-import { clientVisitCodes } from "../../domain/discount-code-uses.ts";
-import { reachBinding, withinReach } from "../../domain/places.ts";
-import { clientInviteOf } from "../../domain/referrals.ts";
-import { VISIT_OUTCOMES } from "../../domain/visit-status.ts";
-import { consentRecordsOf, currentAddress, type ConsentState, type SavedAddress } from "../../domain/profile.ts";
-import { partialVisitsClosed } from "../../domain/task-closures.ts";
-import { ANGLES, PHASES } from "../../domain/visit-photos.ts";
+} from "../../domain/visits/client-visits.ts";
+import { AUTO_REFUND_REASONS, autoRefundsOf, type AutoRefund } from "../../domain/money/auto-refunds.ts";
+import { INVOICE_STATES, LINK_STATES, paymentLinksOf, visitInvoicesOf } from "../../domain/money/client-billing.ts";
+import { creditBalance } from "../../domain/money/credits.ts";
+import { fittedSql } from "../../domain/clients/fitted.ts";
+import { clientVisitCodes } from "../../domain/money/discount-code-uses.ts";
+import { reachBinding, withinReach } from "../../domain/clients/places.ts";
+import { clientInviteOf } from "../../domain/referrals/referrals.ts";
+import { VISIT_OUTCOMES } from "../../domain/visits/visit-status.ts";
+import {
+  consentRecordsOf,
+  currentAddress,
+  type ConsentState,
+  type SavedAddress,
+} from "../../domain/clients/profile.ts";
+import { partialVisitsClosed } from "../../domain/ops/task-closures.ts";
+import { ANGLES, PHASES } from "../../domain/field/visit-photos.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
 import { json } from "../../http/openapi.ts";
 import { routeReach, withinRouteReach } from "../../http/staff-access.ts";
 import { indiaDate } from "../../lib/india-time.ts";
 import { INDIAN_MOBILE_PATTERN, toE164 } from "../../lib/mobile.ts";
 import { CONSENT_PURPOSES, CONSENT_SOURCES } from "../../policy/consents.ts";
-import { clientHistory } from "../../domain/client-history.ts";
-import { paymentEntries } from "../../domain/client-payments.ts";
+import { clientHistory } from "../../domain/visits/client-history.ts";
+import { paymentEntries } from "../../domain/money/client-payments.ts";
 import { EntrySchema } from "../client/payments.ts";
 import { ClientInviteSchema } from "./client-referral.ts";
 import { HISTORY_FIGURES, VisitSummarySchema } from "../client/visits.ts";
@@ -155,7 +160,7 @@ const ClientVisitSchema = VisitSummarySchema.extend({
 /**
  * The same derivation the client reads of themselves, with the replacement's
  * own day beside the month: ops order a piece against a date, and the board's
- * task queue already names one (src/domain/tasks.ts).
+ * task queue already names one (src/domain/ops/tasks.ts).
  */
 const OpsHistorySchema = z
   .object({

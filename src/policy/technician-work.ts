@@ -1,7 +1,7 @@
 // The Technicians page's two figures: how far back each technician's jobs and average service are counted, and how
 // far over the length its visits were planned for an average reads as running over. Ops set both in the console
 // (docs/decisions/0088-every-policy-in-the-console.md).
-// The counting itself is src/domain/technician-work.ts's.
+// The counting itself is src/domain/dispatch/technician-work.ts's.
 
 /** How many days back the counts reach, from tomorrow, so a job finished today is in. */
 export const WORK_PERIOD_DAYS = 90;

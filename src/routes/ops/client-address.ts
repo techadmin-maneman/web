@@ -14,7 +14,7 @@ import { createRoute, z } from "@hono/zod-openapi";
 import type { App } from "../../http/context.ts";
 import { staffMemberOf, actorOf } from "../../http/audit.ts";
 import { saveClientAddress, suggestBuildings } from "../../http/address-save.ts";
-import { currentAddress } from "../../domain/profile.ts";
+import { currentAddress } from "../../domain/clients/profile.ts";
 import { errorBody, errorResponse, refuse } from "../../http/errors.ts";
 import { json } from "../../http/openapi.ts";
 import { AddressSaveSchema, addressOf, SuggestionsSchema } from "../client/profile.ts";

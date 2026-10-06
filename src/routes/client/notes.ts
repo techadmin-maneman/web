@@ -1,4 +1,4 @@
-// A client's note on one of their visits (src/domain/client-notes.ts). Behind
+// A client's note on one of their visits (src/domain/clients/client-notes.ts). Behind
 // SELF_SERVE_BOOKING, as the brief puts it among booking's routes: while it is
 // off, the app sends the note to ops on WhatsApp instead (ADR 0043).
 //
@@ -7,7 +7,7 @@
 import { z } from "@hono/zod-openapi";
 import { selfServeRoute } from "../../http/session-routes.ts";
 import type { App } from "../../http/context.ts";
-import { saveClientNote } from "../../domain/client-notes.ts";
+import { saveClientNote } from "../../domain/clients/client-notes.ts";
 import { CLIENT_NOTE_MAX_CHARS } from "../../policy/client-notes.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
 import { clientOf } from "../../http/client-session.ts";

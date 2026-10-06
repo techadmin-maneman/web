@@ -1,12 +1,12 @@
 // POST /api/stop: the site's /stop page, opened from the link a reminder or the launch alert ends with. One tap
-// withdraws the consent the message was sent under, without signing in (src/domain/stop-messages.ts). The signed
+// withdraws the consent the message was sent under, without signing in (src/domain/messages/stop-messages.ts). The signed
 // token is the only key, so the route needs no Turnstile; it is never logged, being in the body.
 
 import { createRoute, z } from "@hono/zod-openapi";
 import type { App } from "../../http/context.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
 import { visitorOf } from "../../http/visitor.ts";
-import { readStopToken, withdraw } from "../../domain/stop-messages.ts";
+import { readStopToken, withdraw } from "../../domain/messages/stop-messages.ts";
 import { MESSAGE_PURPOSES } from "../../policy/consents.ts";
 
 const StopMessagesRequestSchema = z

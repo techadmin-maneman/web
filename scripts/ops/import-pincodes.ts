@@ -44,7 +44,7 @@ const rows = lines.map((line): PincodeRow => {
   const served = allServedFrom === undefined ? at(row, "served").toLowerCase() === "yes" : true;
   const launchOn = allServedFrom ?? (at(row, "launch_on") || null);
   // Midnight in India on the day, as an instant, like every other time in the database. It is read
-  // back as India's date (src/domain/service-area.ts), never by cutting the UTC string.
+  // back as India's date (src/domain/clients/service-area.ts), never by cutting the UTC string.
   const launchedAt = launchOn === null ? null : indiaInstant(launchOn, "00:00").toISOString();
   return { pincode, area: areaOf(at(row, "office_names"), city), city, served, launchedAt };
 });

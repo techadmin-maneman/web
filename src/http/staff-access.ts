@@ -5,8 +5,8 @@
 import type { Context } from "hono";
 import { createMiddleware } from "hono/factory";
 import { routePath } from "hono/route";
-import { cityOf, type PlacedRecord } from "../domain/places.ts";
-import { callerAccessOf } from "../domain/staff.ts";
+import { cityOf, type PlacedRecord } from "../domain/clients/places.ts";
+import { callerAccessOf } from "../domain/ops/staff.ts";
 import {
   placesReached,
   reachesCity,

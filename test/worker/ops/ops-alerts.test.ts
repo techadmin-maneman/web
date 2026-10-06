@@ -3,7 +3,7 @@
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
-import type { AlertOnce } from "../../../src/domain/alerts.ts";
+import type { AlertOnce } from "../../../src/domain/ops/alerts.ts";
 import type { App } from "../../../src/http/context.ts";
 import { createLogger } from "../../../src/log.ts";
 import { MAX_SEND_ATTEMPTS } from "../../../src/config/pipeline.ts";

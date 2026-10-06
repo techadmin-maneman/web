@@ -8,8 +8,8 @@
 import type { Context } from "hono";
 import { createMiddleware } from "hono/factory";
 import type { AppEnv } from "./context.ts";
-import { findSession, revokeSession, SESSION_TOUCH_MS, touchSession } from "../domain/sessions.ts";
-import { deviceOfSession, markWiped, touchDevice } from "../domain/technicians.ts";
+import { findSession, revokeSession, SESSION_TOUCH_MS, touchSession } from "../domain/sign-in/sessions.ts";
+import { deviceOfSession, markWiped, touchDevice } from "../domain/dispatch/technicians.ts";
 import { sha256Hex } from "../lib/hash.ts";
 import { refuse } from "./errors.ts";
 import { sessionCookie } from "./session-cookie.ts";

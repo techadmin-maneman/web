@@ -50,7 +50,7 @@ export const deletions = {
     confirmLabel: (name: string) => `Deleting the account of ${name}`,
     warning:
       "This erases the client now, and tells them on WhatsApp. It cannot be undone, and there is no copy to put back.",
-    /** What the erasure destroys, in the order src/domain/erasure.ts destroys it. */
+    /** What the erasure destroys, in the order src/domain/privacy/erasure.ts destroys it. */
     deleted: {
       title: "Deleted",
       items: [

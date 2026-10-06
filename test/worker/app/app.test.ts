@@ -1,6 +1,6 @@
 import { env } from "cloudflare:workers";
 import { describe, expect, it, vi } from "vitest";
-import { openSession } from "../../../src/domain/sessions.ts";
+import { openSession } from "../../../src/domain/sign-in/sessions.ts";
 import { requireClientSession } from "../../../src/http/client-session.ts";
 import { REQUEST_ID_HEADER } from "../../../src/http/context.ts";
 import { ErrorResponseSchema } from "../../../src/http/errors.ts";

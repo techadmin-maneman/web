@@ -15,13 +15,13 @@ import type { Context } from "hono";
 import { actorOf } from "../../http/audit.ts";
 import type { App, AppEnv } from "../../http/context.ts";
 import { CODE_PATTERN } from "../../config/invite-codes.ts";
-import { attribute, clientInviteOf, GRANT_STATES, howTheyCame, inviteOf } from "../../domain/referrals.ts";
+import { attribute, clientInviteOf, GRANT_STATES, howTheyCame, inviteOf } from "../../domain/referrals/referrals.ts";
 import { errorBody, errorResponse, ErrorResponseSchema, refuse } from "../../http/errors.ts";
 import { json } from "../../http/openapi.ts";
 import { withinRouteReach } from "../../http/staff-access.ts";
 import { CRM_ORG_HAS_REFERRAL_FIELDS } from "../../config/crm.ts";
 import { REASON_MAX_CHARS } from "../../policy/decision-reasons.ts";
-import { enqueue } from "../../domain/enqueue.ts";
+import { enqueue } from "../../domain/platform/enqueue.ts";
 import { type CrmSyncMessage } from "../../config/pipeline.ts";
 
 /** The invite a client came with, as their page shows it. */

@@ -1,4 +1,4 @@
-// A client disputing a no-show's charge on one of their visits (src/domain/no-show-disputes.ts,
+// A client disputing a no-show's charge on one of their visits (src/domain/no-shows/no-show-disputes.ts,
 // docs/decisions/0096-a-no-shows-charge-and-its-dispute.md):
 //
 //   POST /api/visits/:id/dispute   { reason }: once a charge; ops rule Refund or Uphold in the console
@@ -8,7 +8,7 @@
 import { z } from "@hono/zod-openapi";
 import { clientRoute } from "../../http/session-routes.ts";
 import type { App } from "../../http/context.ts";
-import { raiseDispute } from "../../domain/no-show-disputes.ts";
+import { raiseDispute } from "../../domain/no-shows/no-show-disputes.ts";
 import { clientOf } from "../../http/client-session.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
 import { json } from "../../http/openapi.ts";

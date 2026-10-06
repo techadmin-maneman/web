@@ -57,7 +57,7 @@ reserves a technician's time.**
 - One table, `technician_leave` (migration 0034): the technician, a first and a
   last day of India's calendar, both inclusive, an optional note in ops' words,
   the Access identity that recorded it, and the identity that took it back.
-- `occupancy` (`src/domain/occupancy.ts`) reads it beside `slot_claims` and sets
+- `occupancy` (`src/domain/booking/occupancy.ts`) reads it beside `slot_claims` and sets
   `Day.onLeave`. It is a flag on the day, not eight filled half-slots: ops are
   told the technician is away, not that every window happens to be busy.
 - `placement` answers null for a day on leave, so **self-serve booking never

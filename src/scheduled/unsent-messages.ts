@@ -6,12 +6,12 @@
 // many there are.
 
 import type { Dependencies } from "../dependencies.ts";
-import { joinPacedLine } from "../domain/paced-line.ts";
+import { joinPacedLine } from "../domain/messages/paced-line.ts";
 import type { CallBudget } from "../lib/call-budget.ts";
 import { DAY_MS, MINUTE_MS } from "../lib/durations.ts";
 import { indiaDate } from "../lib/india-time.ts";
 import type { Logger } from "../log.ts";
-import { enqueueBatch } from "../domain/enqueue.ts";
+import { enqueueBatch } from "../domain/platform/enqueue.ts";
 import { SENDING_LEASE_MS } from "../queues/messaging.ts";
 import { type MessagingMessage } from "../config/pipeline.ts";
 

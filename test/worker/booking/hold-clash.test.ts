@@ -1,9 +1,9 @@
-// A hold moves on to the next technician only when another hold took his time (src/domain/hold-slot.ts, holdSlot).
+// A hold moves on to the next technician only when another hold took his time (src/domain/booking/hold-slot.ts, holdSlot).
 // NOW is Monday 21 September 2026, 12 noon in India. Every name and number here is made up.
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
-import { holdSlot } from "../../../src/domain/hold-slot.ts";
+import { holdSlot } from "../../../src/domain/booking/hold-slot.ts";
 import { markDatabase, NOW } from "../helpers.ts";
 
 const PERSON = "11111111-1111-4111-8111-111111111111";

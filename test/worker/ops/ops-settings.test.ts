@@ -12,11 +12,16 @@ import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { App } from "../../../src/http/context.ts";
 import { renderMessage } from "../../../src/config/message-templates.ts";
-import { COMMITTED, createCachedOpsInputs, readOpsInputs, SETTINGS_TTL_MS } from "../../../src/domain/ops-settings.ts";
+import {
+  COMMITTED,
+  createCachedOpsInputs,
+  readOpsInputs,
+  SETTINGS_TTL_MS,
+} from "../../../src/domain/ops/ops-settings.ts";
 import { NEXT_VISIT_DAY_BOUNDS, NEXT_VISIT_DAYS } from "../../../src/policy/next-visit.ts";
 import { REFERRAL_REWARD } from "../../../src/policy/referral-reward.ts";
-import { lateFeeOn } from "../../../src/domain/price-book.ts";
-import { composeLaunchAlert } from "../../../src/domain/waitlist.ts";
+import { lateFeeOn } from "../../../src/domain/money/price-book.ts";
+import { composeLaunchAlert } from "../../../src/domain/booking/waitlist.ts";
 import { pincodeUpsert } from "../../../scripts/lib/pincodes.ts";
 import {
   appFor,

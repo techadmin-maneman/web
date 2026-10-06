@@ -20,7 +20,7 @@ describe("the hair profile's table", () => {
     // The audit log names it too, only to write a correction's entry once its row is there, and the map of personal
     // data, to say what the export and the erasure do with it. Neither reads a column of it.
     expect(naming(/\bhair_profiles\b/).sort()).toEqual(
-      ["src/domain/audit.ts", "src/domain/hair-profiles.ts", "src/policy/personal-data.ts"].sort(),
+      ["src/domain/ops/audit.ts", "src/domain/clients/hair-profiles.ts", "src/policy/personal-data.ts"].sort(),
     );
   });
 
@@ -29,9 +29,9 @@ describe("the hair profile's table", () => {
     const users = naming(/from "(?:\.\.?\/)+(?:domain\/)?(?:[a-z-]+\/)?hair-profiles\.ts"/).sort();
     expect(users).toEqual(
       [
-        "src/domain/data-export.ts",
-        "src/domain/erasure.ts",
-        "src/domain/tech-jobs.ts",
+        "src/domain/privacy/data-export.ts",
+        "src/domain/privacy/erasure.ts",
+        "src/domain/field/tech-jobs.ts",
         "src/routes/ops/hair-profile.ts",
         "src/routes/tech/jobs.steps.ts",
       ].sort(),

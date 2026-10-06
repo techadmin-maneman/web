@@ -1,6 +1,6 @@
 // Paying for a visit (docs/prompts/phase2-backend.md, "Business rules, decided").
 // Every visit is prepaid at booking, and technicians never handle money: what that means for the tax invoice. The payment is taken in
-// src/domain/bookings.ts before anything is booked; the invoice is held or issued in src/domain/books-invoices.ts.
+// src/domain/booking/bookings.ts before anything is booked; the invoice is held or issued in src/domain/books/books-invoices.ts.
 //
 // A visit is paid for before it happens, so its tax invoice records a sale
 // already settled: it must total what the client was sold the visit for. A
@@ -20,7 +20,7 @@ export type InvoiceHold =
   | "paid_with_credit"
   /**
    * Booked on a referral credit the client no longer had by then, so nothing paid for it, and ops were told to decide
-   * the charge (src/domain/bookings.ts). The invoice waits on their decision.
+   * the charge (src/domain/booking/bookings.ts). The invoice waits on their decision.
    */
   | "credit_missing"
   /** The invoice totals something other than what the client was sold the visit for. */

@@ -4,7 +4,7 @@
 import type { Context } from "hono";
 import type { AppEnv } from "./context.ts";
 import { TURNSTILE_HOSTS } from "../config/environments.ts";
-import { countOne } from "../domain/rate-limit.ts";
+import { countOne } from "../domain/sign-in/rate-limit.ts";
 import { saltedHash } from "../lib/hash.ts";
 import { TURNSTILE_TEST_TOKEN, verifyTurnstile, type TurnstileResult } from "../providers/turnstile.ts";
 

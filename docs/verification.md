@@ -331,7 +331,7 @@ Run against `https://staging.maneman.in`, `https://app-staging.maneman.in` and `
 
 Three arrangements were made by hand, and each is named where it bears on a result:
 
-- **No one signed in.** Staging sends WhatsApp only to its allowlist, and a test number is not on it, so the login code was never delivered and could not be read (it is kept peppered). The client sessions were written straight into `sessions`, which is the SHA-256 of the cookie's token (`src/domain/sessions.ts`). **The login itself is not proven here**; it needs the owner's handset.
+- **No one signed in.** Staging sends WhatsApp only to its allowlist, and a test number is not on it, so the login code was never delivered and could not be read (it is kept peppered). The client sessions were written straight into `sessions`, which is the SHA-256 of the cookie's token (`src/domain/sign-in/sessions.ts`). **The login itself is not proven here**; it needs the owner's handset.
 - **A completed consultation** was written into `appointments` for the first-fit client, so that `bookableTypes` would offer a first fit, rather than running a second job in FSM for it.
 - **Three credits** were granted with a `credit_ledger` row of kind `grant`, source `ops`, as ops would.
 
@@ -758,7 +758,7 @@ The run above proved the code request and a wrong code, and said plainly that **
 | Three visits         | Service visits at 10:00 India on 24, 25 and 27 September, all `scheduled`: a job today, a job tomorrow, and a third that is still locked                      |
 | No device or session | On purpose. The point of this fixture is that a person signs in himself, and the first sign-in enrols the phone (`openTechnicianSession`)                     |
 
-The address has no coordinates deliberately. An address with none cannot be measured against, so the check-in is accepted wherever the phone is (`src/domain/check-ins.ts`) and the owner is not obliged to stand in Sector 45 to see the rest of the app. The 200 m geofence stays `docs/tech-field-test.md`'s to measure, at real addresses.
+The address has no coordinates deliberately. An address with none cannot be measured against, so the check-in is accepted wherever the phone is (`src/domain/visits/check-ins.ts`) and the owner is not obliged to stand in Sector 45 to see the rest of the app. The 200 m geofence stays `docs/tech-field-test.md`'s to measure, at real addresses.
 
 **The code was sent, and here is the evidence.** `POST https://tech-staging.maneman.in/api/tech/auth/otp`, with an `Origin` of the host's own and the `mm-ci-staging` Access service token, answered `202 {"challenge_id":…,"expires_in_s":600}`. The challenge row is in staging's `otp_challenges`, with `technician_login` 1, `technician_id` the row above, and `code_hash` **not null** — which only happens when the number matched an active technician, since a challenge for an unrecognised number holds no hash at all. Then, from `wrangler tail --env staging`:
 

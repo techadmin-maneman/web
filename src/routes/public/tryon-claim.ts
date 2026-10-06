@@ -6,28 +6,28 @@
 // a WhatsApp code has proved the number (src/routes/public/number-codes.ts), and
 // POST /api/tryon/generate refuses a job no claim has. A claim whose look
 // could not be sent is refused before anything is written. What a claim writes
-// is src/domain/tryon-claims.ts.
+// is src/domain/try-on/tryon-claims.ts.
 
 import { createRoute, z } from "@hono/zod-openapi";
 import type { Context } from "hono";
 import type { App, AppEnv } from "../../http/context.ts";
 import { CURRENT_NOTICE } from "../../config/notices.ts";
 import { TRYON_STAGES } from "../../config/tryon.ts";
-import { isSpent, takeOne } from "../../domain/rate-limit.ts";
-import { isTestNumber } from "../../domain/test-records.ts";
+import { isSpent, takeOne } from "../../domain/sign-in/rate-limit.ts";
+import { isTestNumber } from "../../domain/platform/test-records.ts";
 import { testRecordAtCreation } from "../../policy/staging-test-records.ts";
-import { loadJob, type JobRow } from "../../domain/tryon.ts";
-import { hadLookSince, leadOfOwnClaim, recordClaim, reserveJob } from "../../domain/tryon-claims.ts";
+import { loadJob, type JobRow } from "../../domain/try-on/tryon.ts";
+import { hadLookSince, leadOfOwnClaim, recordClaim, reserveJob } from "../../domain/try-on/tryon-claims.ts";
 import { errorResponse, type ErrorCode } from "../../http/errors.ts";
 import { answerKeyed, IdempotencyKeyHeaderSchema, onceForKey } from "../../http/idempotency.ts";
 import { provedNumber } from "../../http/number-proof.ts";
 import { PersonNameSchema } from "../../http/openapi.ts";
 import { visitorOf } from "../../http/visitor.ts";
-import { mobileHashOf } from "../../domain/number-codes.ts";
+import { mobileHashOf } from "../../domain/clients/number-codes.ts";
 import { DAY_MS } from "../../lib/durations.ts";
 import { INDIAN_MOBILE_PATTERN, toE164 } from "../../lib/mobile.ts";
 import { LOOK_PER_NUMBER_DAYS, undelivered } from "../../policy/tryon-delivery.ts";
-import { enqueue } from "../../domain/enqueue.ts";
+import { enqueue } from "../../domain/platform/enqueue.ts";
 import { messageHeldBack } from "../../queues/messaging.ts";
 import { NumberCodeIdSchema } from "./number-codes.ts";
 

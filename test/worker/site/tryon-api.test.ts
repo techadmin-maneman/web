@@ -2,7 +2,7 @@ import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { Settings } from "../../../src/config/settings.ts";
 import { MAX_UPLOAD_BYTES, RESULT_LINK_MESSAGE_TTL_MS } from "../../../src/config/tryon.ts";
-import { mobileHashOf } from "../../../src/domain/number-codes.ts";
+import { mobileHashOf } from "../../../src/domain/clients/number-codes.ts";
 import { signToken } from "../../../src/lib/signed-token.ts";
 import { toE164 } from "../../../src/lib/mobile.ts";
 import {

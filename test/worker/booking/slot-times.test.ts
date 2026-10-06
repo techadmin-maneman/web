@@ -1,12 +1,12 @@
 // The times of a working day's half-slots, set by ops from a day nothing is booked or bookable on
-// (src/domain/slot-times.ts; docs/decisions/0102-window-times.md). NOW is Monday 21 September 2026, 12 noon in India.
+// (src/domain/booking/slot-times.ts; docs/decisions/0102-window-times.md). NOW is Monday 21 September 2026, 12 noon in India.
 // Every name and number here is made up.
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
-import { heldVisitTimes } from "../../../src/domain/visit-times.ts";
-import { occupancy } from "../../../src/domain/occupancy.ts";
-import { loadSlotSchedule, setSlotTimes } from "../../../src/domain/slot-times.ts";
+import { heldVisitTimes } from "../../../src/domain/visits/visit-times.ts";
+import { occupancy } from "../../../src/domain/booking/occupancy.ts";
+import { loadSlotSchedule, setSlotTimes } from "../../../src/domain/booking/slot-times.ts";
 import { DEFAULT_SLOT_TIMES, type SlotTimes } from "../../../src/policy/slot-times.ts";
 import { markDatabase, NOW } from "../helpers.ts";
 

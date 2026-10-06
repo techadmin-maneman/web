@@ -6,7 +6,7 @@ import { describe, expect, it } from "vitest";
 import { profile } from "../../../../apps/app/src/content.ts";
 import * as ops from "../../../../apps/ops/src/content.ts";
 import { areas, BOOKING_URL, deletions, dispatch, grievances } from "../../../../apps/ops/src/content.ts";
-import { DELETION_ALERT_AFTER_MS } from "../../../../src/domain/deletion.ts";
+import { DELETION_ALERT_AFTER_MS } from "../../../../src/domain/privacy/deletion.ts";
 import { renderMessage } from "../../../../src/config/message-templates.ts";
 import { HOSTNAME } from "../../../../src/config/environments.ts";
 import { BOOKING_WINDOWS, WINDOW_TIMES } from "../../../../src/config/scheduling.ts";

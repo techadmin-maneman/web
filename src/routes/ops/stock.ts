@@ -29,8 +29,8 @@ import {
   writeOff,
   type Moved,
   type Place,
-} from "../../domain/stock.ts";
-import { isWithin, techniciansWithin } from "../../domain/places.ts";
+} from "../../domain/field/stock.ts";
+import { isWithin, techniciansWithin } from "../../domain/clients/places.ts";
 import { actorOf } from "../../http/audit.ts";
 import type { App, AppEnv } from "../../http/context.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";

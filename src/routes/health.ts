@@ -1,7 +1,7 @@
 import { createRoute, z } from "@hono/zod-openapi";
 import type { App } from "../http/context.ts";
 import { ENVIRONMENTS } from "../config/environments.ts";
-import { lastCompletedAt } from "../domain/cron-runs.ts";
+import { lastCompletedAt } from "../domain/platform/cron-runs.ts";
 import type { Logger } from "../log.ts";
 
 // The commit the bundle was built from, defined at upload (scripts/lib/release.ts); undeclared locally and in tests.

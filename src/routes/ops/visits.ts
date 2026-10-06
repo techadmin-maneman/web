@@ -1,4 +1,4 @@
-// Booking a visit for a client from the console (src/domain/visit-booking.ts), on the ops surface behind Access:
+// Booking a visit for a client from the console (src/domain/booking/visit-booking.ts), on the ops surface behind Access:
 //
 //   GET  /api/visits/availability   a client's 14 days of windows for a kind of visit, who is free in each, the kind's
 //                                   services, and how the visit would be paid
@@ -11,15 +11,15 @@ import { createRoute, z } from "@hono/zod-openapi";
 import type { Context } from "hono";
 import { BOOKING_DAYS, BOOKING_WINDOWS } from "../../config/scheduling.ts";
 import { VISIT_TYPES } from "../../config/visit-types.ts";
-import { auditStatement } from "../../domain/audit.ts";
-import { confirmUnpaid } from "../../domain/bookings.ts";
-import { giveBack } from "../../domain/give-back.ts";
-import { spendableCredits } from "../../domain/credits.ts";
-import type { Hold } from "../../domain/hold-slot.ts";
-import { freeTechnicians } from "../../domain/availability.ts";
-import { isWithin, techniciansWithin } from "../../domain/places.ts";
-import { offeredServices, type PricedService } from "../../domain/services.ts";
-import { loadSlotSchedule } from "../../domain/slot-times.ts";
+import { auditStatement } from "../../domain/ops/audit.ts";
+import { confirmUnpaid } from "../../domain/booking/bookings.ts";
+import { giveBack } from "../../domain/booking/give-back.ts";
+import { spendableCredits } from "../../domain/money/credits.ts";
+import type { Hold } from "../../domain/booking/hold-slot.ts";
+import { freeTechnicians } from "../../domain/booking/availability.ts";
+import { isWithin, techniciansWithin } from "../../domain/clients/places.ts";
+import { offeredServices, type PricedService } from "../../domain/booking/services.ts";
+import { loadSlotSchedule } from "../../domain/booking/slot-times.ts";
 import {
   bookableRange,
   codeStands,
@@ -33,7 +33,7 @@ import {
   visitOfHold,
   type Sale,
   type VisitAsked,
-} from "../../domain/visit-booking.ts";
+} from "../../domain/booking/visit-booking.ts";
 import { actorOf } from "../../http/audit.ts";
 import { bookHold } from "../../http/book-hold.ts";
 import type { App, AppEnv } from "../../http/context.ts";

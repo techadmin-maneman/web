@@ -6,11 +6,11 @@
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
-import { composeLinkPaid } from "../../../src/domain/payment-links.ts";
-import { recordPayment } from "../../../src/domain/payments.ts";
+import { composeLinkPaid } from "../../../src/domain/money/payment-links.ts";
+import { recordPayment } from "../../../src/domain/money/payments.ts";
 import { renderMessage } from "../../../src/config/message-templates.ts";
-import { openSession } from "../../../src/domain/sessions.ts";
-import { outstandingTasks } from "../../../src/domain/tasks.ts";
+import { openSession } from "../../../src/domain/sign-in/sessions.ts";
+import { outstandingTasks } from "../../../src/domain/ops/tasks.ts";
 import { createLogger } from "../../../src/log.ts";
 import { TASK_SLA_HOURS } from "../../../src/policy/tasks.ts";
 import { type PaymentsProvider } from "../../../src/providers/payments/index.ts";

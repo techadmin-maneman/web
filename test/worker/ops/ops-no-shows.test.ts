@@ -9,9 +9,9 @@
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { App } from "../../../src/http/context.ts";
-import { refundNoShow } from "../../../src/domain/after-a-ruling.ts";
-import { decideNoShow, openNoShowCase } from "../../../src/domain/no-shows.ts";
-import { NO_VISITS_CONSENT } from "../../../src/domain/visit-messages.ts";
+import { refundNoShow } from "../../../src/domain/no-shows/after-a-ruling.ts";
+import { decideNoShow, openNoShowCase } from "../../../src/domain/no-shows/no-shows.ts";
+import { NO_VISITS_CONSENT } from "../../../src/domain/messages/visit-messages.ts";
 import { FREE_CHANGE_NOTICE_HOURS, LATE_CHANGE_CHARGES } from "../../../src/policy/moving-a-visit.ts";
 import { NO_SHOW_CHARGES, WAIVER_GIVES_BACK, type Waiver } from "../../../src/policy/no-show.ts";
 import { createStubPayments } from "../../../src/providers/payments/stub.ts";

@@ -128,7 +128,7 @@ const PAST = [
 const [AUGUST, JULY, , NOVEMBER] = PAST;
 
 /**
- * What those visits and board E1's ledger add up to (src/domain/client-history.ts).
+ * What those visits and board E1's ledger add up to (src/domain/visits/client-history.ts).
  * The spend is every entry the ledger draws as paid or charged, GST included;
  * the credited visit cost nothing and the refund has not gone back yet.
  */

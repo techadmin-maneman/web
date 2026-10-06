@@ -26,7 +26,7 @@
 // (`OTP_FIXED_CODE` is refused outside local, src/config/settings.ts). So the one
 // leg of sign-in a desktop cannot walk is the right code; the proof walks the rest
 // through the app and writes the session `openTechnicianSession` would have
-// written (src/domain/technicians.ts). The token is generated here and never
+// written (src/domain/dispatch/technicians.ts). The token is generated here and never
 // printed.
 
 import { execFile } from "node:child_process";
@@ -152,7 +152,7 @@ export async function seedStaging(): Promise<StagingFixture> {
   const dates = { today: indiaDay(0), tomorrow: indiaDay(1), later: indiaDay(3) };
 
   // The cookie's token, and the SHA-256 of it that the sessions table holds
-  // (src/domain/sessions.ts). The token itself is never stored and never logged.
+  // (src/domain/sign-in/sessions.ts). The token itself is never stored and never logged.
   const sessionToken = randomBytes(32).toString("base64url");
   const sessionId = createHash("sha256").update(sessionToken).digest("hex");
   const deviceId = id();

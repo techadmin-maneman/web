@@ -5,11 +5,11 @@
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
-import { confirmBooking } from "../../../src/domain/bookings.ts";
-import { giveBack } from "../../../src/domain/give-back.ts";
-import { clawBack } from "../../../src/domain/credits.ts";
-import { enterOnHold, removeFromHold } from "../../../src/domain/discount-code-holds.ts";
-import { clientHold } from "../../../src/domain/holds.ts";
+import { confirmBooking } from "../../../src/domain/booking/bookings.ts";
+import { giveBack } from "../../../src/domain/booking/give-back.ts";
+import { clawBack } from "../../../src/domain/money/credits.ts";
+import { enterOnHold, removeFromHold } from "../../../src/domain/money/discount-code-holds.ts";
+import { clientHold } from "../../../src/domain/booking/holds.ts";
 import { createStubPayments } from "../../../src/providers/payments/stub.ts";
 import { captureLogs, markDatabase, NOW } from "../helpers.ts";
 import { createLogger } from "../../../src/log.ts";

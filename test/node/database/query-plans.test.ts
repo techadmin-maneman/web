@@ -18,8 +18,8 @@ import { DatabaseSync } from "node:sqlite";
 import ts from "typescript";
 import { describe, expect, it } from "vitest";
 import * as STATUSES from "../../../src/config/statuses.ts";
-import { graceEnds, keepingItsTime, ownUnpaid, paidNotBooked } from "../../../src/domain/hold-stages.ts";
-import { creditSpentOn } from "../../../src/domain/visit-facts.ts";
+import { graceEnds, keepingItsTime, ownUnpaid, paidNotBooked } from "../../../src/domain/booking/hold-stages.ts";
+import { creditSpentOn } from "../../../src/domain/visits/visit-facts.ts";
 
 /**
  * Each module the entry imports, and each one those import in turn: every statement the entry could run is in one of
@@ -58,13 +58,13 @@ const CRON_PATH = importedBy("src/scheduled/cron.ts").filter((file) => !NOT_STAT
 
 /** A payment and what it pays for: the hold page polls these while the client pays. */
 const PAYMENT_PATH = [
-  "src/domain/bookings.ts",
-  "src/domain/payments.ts",
-  "src/domain/visit-changes.ts",
-  "src/domain/hold-slot.ts",
-  "src/domain/occupancy.ts",
-  "src/domain/visit-times.ts",
-  "src/domain/services.ts",
+  "src/domain/booking/bookings.ts",
+  "src/domain/money/payments.ts",
+  "src/domain/visits/visit-changes.ts",
+  "src/domain/booking/hold-slot.ts",
+  "src/domain/booking/occupancy.ts",
+  "src/domain/visits/visit-times.ts",
+  "src/domain/booking/services.ts",
   "src/routes/client/payments.ts",
 ];
 
@@ -111,14 +111,17 @@ const ALLOWED = [
   {
     // A visit booked without FSM, written only while its hold waits: the guard reads the hold by its key. The scan is
     // SQLite's look for holds pointing at the new visit, which it skips while no foreign key is broken.
-    file: "src/domain/bookings.ts",
+    file: "src/domain/booking/bookings.ts",
     sql: "WHERE EXISTS (SELECT 1 FROM slot_holds WHERE id = ?12 AND state = 'held')",
   },
   // The console's own lists, in modules the cron imports for something else; the cron never runs them.
-  { file: "src/domain/waitlist.ts", sql: "FROM waitlist_entries w LEFT JOIN serviceable_pincodes p" },
-  { file: "src/domain/waitlist.ts", sql: "FROM waitlist_entries w JOIN people p ON p.id = w.person_id GROUP BY" },
-  { file: "src/domain/no-shows.ts", sql: "FROM no_show_cases n JOIN checkins c ON c.id = n.checkin_id" },
-  { file: "src/domain/discount-codes.ts", sql: "AS uses, (SELECT COALESCE(SUM(u.amount_off), 0)" },
+  { file: "src/domain/booking/waitlist.ts", sql: "FROM waitlist_entries w LEFT JOIN serviceable_pincodes p" },
+  {
+    file: "src/domain/booking/waitlist.ts",
+    sql: "FROM waitlist_entries w JOIN people p ON p.id = w.person_id GROUP BY",
+  },
+  { file: "src/domain/no-shows/no-shows.ts", sql: "FROM no_show_cases n JOIN checkins c ON c.id = n.checkin_id" },
+  { file: "src/domain/money/discount-codes.ts", sql: "AS uses, (SELECT COALESCE(SUM(u.amount_off), 0)" },
 ];
 
 /**
@@ -127,22 +130,34 @@ const ALLOWED = [
  */
 const UNPLANNED = [
   // An entry written only if the row it is about was: that row, by its key.
-  { file: "src/domain/audit.ts", source: "SELECT 1 FROM ${written.table} WHERE id = ?10" },
-  { file: "src/domain/audit.ts", source: "SELECT 1 FROM ${ruled.table} WHERE id = ?10 AND ruling_id = ?11" },
-  { file: "src/domain/audit.ts", source: "SELECT 1 FROM ${stamped.table} WHERE id = ?10 AND ${stamped.column} = ?1" },
-  { file: "src/domain/ruling-claims.ts", source: "SELECT 1 FROM ${ruled.table} WHERE id = ?6 AND ruling_id = ?7" },
-  { file: "src/domain/ruling-claims.ts", source: "SELECT 1 FROM ${ruled.table} WHERE id = ?4 AND ruling_id = ?5" },
+  { file: "src/domain/ops/audit.ts", source: "SELECT 1 FROM ${written.table} WHERE id = ?10" },
+  { file: "src/domain/ops/audit.ts", source: "SELECT 1 FROM ${ruled.table} WHERE id = ?10 AND ruling_id = ?11" },
+  {
+    file: "src/domain/ops/audit.ts",
+    source: "SELECT 1 FROM ${stamped.table} WHERE id = ?10 AND ${stamped.column} = ?1",
+  },
+  {
+    file: "src/domain/no-shows/ruling-claims.ts",
+    source: "SELECT 1 FROM ${ruled.table} WHERE id = ?6 AND ruling_id = ?7",
+  },
+  {
+    file: "src/domain/no-shows/ruling-claims.ts",
+    source: "SELECT 1 FROM ${ruled.table} WHERE id = ?4 AND ruling_id = ?5",
+  },
   // The person's latest consent for the purpose, by consents_by_person.
-  { file: "src/domain/consents.ts", source: "${ruleCondition(answer.rule, person)}" },
+  { file: "src/domain/privacy/consents.ts", source: "${ruleCondition(answer.rule, person)}" },
   // A client's versions, by hair_profiles_by_person; a version written, by its key.
-  { file: "src/domain/hair-profiles.ts", source: 'latestIdQuery("?1")' },
-  { file: "src/domain/hair-profiles.ts", source: "UPDATE hair_profiles SET ${blanked} WHERE person_id = ?1" },
-  { file: "src/domain/hair-profiles.ts", source: "VALUES (${placeholders}) ON CONFLICT (appointment_id, event_id)" },
-  { file: "src/domain/hair-profiles.ts", source: 'SELECT ${placeholders} WHERE (${latestIdQuery("?2")})' },
+  { file: "src/domain/clients/hair-profiles.ts", source: 'latestIdQuery("?1")' },
+  { file: "src/domain/clients/hair-profiles.ts", source: "UPDATE hair_profiles SET ${blanked} WHERE person_id = ?1" },
+  {
+    file: "src/domain/clients/hair-profiles.ts",
+    source: "VALUES (${placeholders}) ON CONFLICT (appointment_id, event_id)",
+  },
+  { file: "src/domain/clients/hair-profiles.ts", source: 'SELECT ${placeholders} WHERE (${latestIdQuery("?2")})' },
   // A record's city, for the console: the record by its key, its city by indexed lookups. The cron never runs it.
-  { file: "src/domain/places.ts", source: "FROM ${table} record WHERE record.id = ?1" },
+  { file: "src/domain/clients/places.ts", source: "FROM ${table} record WHERE record.id = ?1" },
   // The cities of the tasks a look at the board found: each record by its key. The cron never runs it.
-  { file: "src/domain/places.ts", source: "FROM ${RECORD_PLACES[kind].table} record WHERE record.id IN" },
+  { file: "src/domain/clients/places.ts", source: "FROM ${RECORD_PLACES[kind].table} record WHERE record.id IN" },
   // One row inserted from an object's columns, its conflict clause at most reading the row's own key.
   { file: "src/lib/sql.ts", source: 'tail === "" ? sql : `${sql} ${tail}`' },
 ];
@@ -340,11 +355,11 @@ describe("the cron's path, followed from cron.ts", () => {
     expect(CRON_PATH).toEqual(
       expect.arrayContaining([
         "src/scheduled/sweeper.ts",
-        "src/domain/ops-settings.ts",
+        "src/domain/ops/ops-settings.ts",
         "src/config/message-kinds.ts",
-        "src/domain/slot-times.ts",
-        "src/domain/price-book.ts",
-        "src/domain/audit.ts",
+        "src/domain/booking/slot-times.ts",
+        "src/domain/money/price-book.ts",
+        "src/domain/ops/audit.ts",
       ]),
     );
   });

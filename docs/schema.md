@@ -6,8 +6,8 @@ What each table in D1 holds, as the migrations leave it. This file is written by
 
 A column ending `_at` holds an instant, as ISO 8601 in UTC (`2026-09-27T06:30:00.000Z`). One ending `_date` holds a calendar day in India, `YYYY-MM-DD`, and a day is never cut from an instant's UTC string: it is read as India's date (`src/lib/india-time.ts`). Two `_at` columns hold a day, from before the rule was written (`docs/migrations.md`, rule 7):
 
-- `pieces.fitted_at`: The day FSM's asset says the piece was installed (`Installation_Date`), or the day the technician's app fitted it (`src/domain/pieces.ts`).
-- `pieces.replacement_due_at`: The fitted day plus the base's cycle; the Tasks board reads it as midnight in India on that day (`instantOf`, `src/domain/tasks.ts`).
+- `pieces.fitted_at`: The day FSM's asset says the piece was installed (`Installation_Date`), or the day the technician's app fitted it (`src/domain/field/pieces.ts`).
+- `pieces.replacement_due_at`: The fitted day plus the base's cycle; the Tasks board reads it as midnight in India on that day (`instantOf`, `src/domain/ops/tasks.ts`).
 
 ## What a restore undoes
 

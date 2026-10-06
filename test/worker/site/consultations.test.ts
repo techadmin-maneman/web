@@ -4,7 +4,7 @@
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { openSession } from "../../../src/domain/sessions.ts";
+import { openSession } from "../../../src/domain/sign-in/sessions.ts";
 import { consultationBody, lastBookableDay } from "../../../scripts/lib/test-booking.ts";
 import { MINUTE_MS } from "../../../src/lib/durations.ts";
 import {

@@ -6,7 +6,7 @@
 import { techRoute } from "../../http/session-routes.ts";
 import { z } from "@hono/zod-openapi";
 import type { App } from "../../http/context.ts";
-import { pieceWithOwner } from "../../domain/pieces.ts";
+import { pieceWithOwner } from "../../domain/field/pieces.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
 import { technicianOf } from "../../http/technician-session.ts";
 

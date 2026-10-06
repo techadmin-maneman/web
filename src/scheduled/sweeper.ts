@@ -16,16 +16,16 @@
 //   cleanup     idempotency keys after a day, login codes a day past expiry, rate counters after 3 days,
 //               try-on sessions once expired, app sessions 30 days after they ended, and holds nobody is paying for
 
-import { lettingGo } from "../domain/hold-slot.ts";
+import { lettingGo } from "../domain/booking/hold-slot.ts";
 import { DOWNLOAD_QUEUE_RETRIES, RENDER_GIVE_UP_MS } from "../config/pipeline.ts";
 import { PHOTO_RETENTION_MS } from "../config/tryon.ts";
 import type { Dependencies } from "../dependencies.ts";
-import { keepOrLetGo, letCopiesGoWith, letFittedLooksGo, type ExpiringTryOn } from "../domain/kept-try-ons.ts";
-import { failJob } from "../domain/tryon.ts";
+import { keepOrLetGo, letCopiesGoWith, letFittedLooksGo, type ExpiringTryOn } from "../domain/try-on/kept-try-ons.ts";
+import { failJob } from "../domain/try-on/tryon.ts";
 import type { CallBudget } from "../lib/call-budget.ts";
 import { addDays, indiaDate } from "../lib/india-time.ts";
 import type { Logger } from "../log.ts";
-import { enqueueBatch } from "../domain/enqueue.ts";
+import { enqueueBatch } from "../domain/platform/enqueue.ts";
 import type { RenderMessage } from "../queues/render.ts";
 import { requeueUnsentMessages } from "./unsent-messages.ts";
 import { DAY_MS, HOUR_MS, MINUTE_MS } from "../lib/durations.ts";
@@ -43,7 +43,7 @@ const DOWNLOAD_EARLY_ATTEMPTS = DOWNLOAD_QUEUE_RETRIES + 3;
 const BATCH_LIMIT = 100;
 /**
  * Most looks past their day expired a run. Keeping a client's on its day costs about eight calls to D1 and R2
- * (src/domain/kept-try-ons.ts), and a run may make 1,000 such calls in all (src/lib/call-budget.ts): 40 of them take
+ * (src/domain/try-on/kept-try-ons.ts), and a run may make 1,000 such calls in all (src/lib/call-budget.ts): 40 of them take
  * about 320, and the next run takes the rest.
  */
 const EXPIRY_BATCH = 40;
@@ -308,7 +308,7 @@ export async function checkAilabCredits(
 
 /**
  * Uploads nobody finished within an hour, and looks past their day, become `expired`. On its look's day a client's
- * try-on is kept (src/domain/kept-try-ons.ts); any other look goes, and its small copy with it.
+ * try-on is kept (src/domain/try-on/kept-try-ons.ts); any other look goes, and its small copy with it.
  */
 export async function expireTryOns(context: SweepContext): Promise<{ expired: number; kept: number }> {
   const { env, db, now, log } = sweepRun(context);
@@ -383,7 +383,7 @@ export async function deletePhotos(context: SweepContext): Promise<number> {
   return keys.length;
 }
 
-/** A client's kept look, once their first fit is photographed (src/domain/kept-try-ons.ts). */
+/** A client's kept look, once their first fit is photographed (src/domain/try-on/kept-try-ons.ts). */
 export async function letKeptLooksGo(context: SweepContext): Promise<number> {
   const { env, now, log } = sweepRun(context);
   const deleted = await letFittedLooksGo(env, now);

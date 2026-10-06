@@ -5,7 +5,7 @@
 //   POST /api/waitlist              the number, for a pincode we do not serve yet
 //
 // These are the referral landing's two routes without the invite, and they share
-// their whole path (src/domain/public-booking.ts, and src/http/public-form.ts for
+// their whole path (src/domain/booking/public-booking.ts, and src/http/public-form.ts for
 // the person): the same Turnstile check, the same daily limits per number and
 // address, the same consent notices, the same held slot booked as a visit, and the
 // same lead behind it so the CRM funnel sees every booking. Whether we come is
@@ -41,12 +41,12 @@ import type { App, AppEnv } from "../../http/context.ts";
 import { LOSS_EXTENTS } from "../../config/booking.ts";
 import { TOLD_NOTICES } from "../../config/notices.ts";
 import { BOOKING_WINDOWS } from "../../config/scheduling.ts";
-import { openDays } from "../../domain/open-windows.ts";
-import { isServed } from "../../domain/service-area.ts";
+import { openDays } from "../../domain/booking/open-windows.ts";
+import { isServed } from "../../domain/clients/service-area.ts";
 import { DISCOUNT_KINDS } from "../../policy/discount-codes.ts";
 import { PLANS, type Plan } from "../../policy/one-visit.ts";
 import { CODE_PATTERN } from "../../config/invite-codes.ts";
-import { inviteOf, type Invite } from "../../domain/referrals.ts";
+import { inviteOf, type Invite } from "../../domain/referrals/referrals.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
 import { IdempotencyKeyHeaderSchema } from "../../http/idempotency.ts";
 import { PersonNameSchema } from "../../http/openapi.ts";

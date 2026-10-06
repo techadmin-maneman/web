@@ -11,7 +11,7 @@ The backend prompt's rule: "A technician cannot hold two live jobs in one window
 
 **A technician's day is eight half-slots** (ADR 0035), and a visit takes as many as its block: consultation and service two, a replacement three, a first fit four.
 
-**What takes them** (`src/domain/occupancy.ts`, `occupancy`):
+**What takes them** (`src/domain/booking/occupancy.ts`, `occupancy`):
 
 - **Live visits in the mirror:** scheduled, dispatched or in progress, whether ops booked them in FSM or a hold became one. A visit starting between two half-slots takes the earlier.
 - **Holds not yet expired**, through their claims in `slot_claims` (migration 0016).

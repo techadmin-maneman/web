@@ -7,9 +7,9 @@
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import { MAX_COPY_BYTES } from "../../../src/config/tryon.ts";
-import { erasePerson } from "../../../src/domain/erasure.ts";
-import { keepOrLetGo, type ExpiringTryOn } from "../../../src/domain/kept-try-ons.ts";
-import { putCounted, readMeter } from "../../../src/domain/storage-meter.ts";
+import { erasePerson } from "../../../src/domain/privacy/erasure.ts";
+import { keepOrLetGo, type ExpiringTryOn } from "../../../src/domain/try-on/kept-try-ons.ts";
+import { putCounted, readMeter } from "../../../src/domain/platform/storage-meter.ts";
 import { signToken } from "../../../src/lib/signed-token.ts";
 import { createCallBudget } from "../../../src/lib/call-budget.ts";
 import { createLogger } from "../../../src/log.ts";

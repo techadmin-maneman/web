@@ -12,7 +12,7 @@ import {
   type ConsultationRequest,
   type StandingCode,
   type WaitlistRequest,
-} from "../../domain/public-booking.ts";
+} from "../../domain/booking/public-booking.ts";
 import { answerKeyed, onceForKey } from "../../http/idempotency.ts";
 import { formRequest } from "../../http/public-form.ts";
 

@@ -4,7 +4,7 @@
 // A job that throws is logged as `cron_job_failed` and the next one runs anyway, so one failing job never stops the
 // others. Each job's failed runs in a row are counted in `cron_jobs`, and a job that fails three in a row alerts
 // (docs/decisions/0067-alerts-and-silent-failures.md). Each run is noted as it starts and as it finishes, so a run
-// Cloudflare stopped part-way is told by the next (src/domain/cron-runs.ts), and an outside monitor is pinged every
+// Cloudflare stopped part-way is told by the next (src/domain/platform/cron-runs.ts), and an outside monitor is pinged every
 // five minutes, and at once when something is wrong (src/providers/heartbeat.ts).
 //
 // The jobs of a run share one budget of outside calls (CRON_CALLS, src/lib/call-budget.ts), which keeps the cron under
@@ -14,30 +14,30 @@
 import { BOOKS_ITEM_PUSH, OPS_ORIGIN } from "../config/environments.ts";
 import { NO_GST, type GstRegistration } from "../config/gst.ts";
 import type { Dependencies } from "../dependencies.ts";
-import { bookUnbookedHolds } from "../domain/unbooked-holds.ts";
-import { eraseBooksCustomers } from "../domain/books-erasure.ts";
-import { raiseBooksInvoices } from "../domain/books-invoices.ts";
-import { checkBooksItems } from "../domain/books-items.ts";
-import { syncBooks, type BooksSyncOptions } from "../domain/books-sync.ts";
-import { closeStaleLowStock } from "../domain/low-stock.ts";
-import { settleOwedRefunds } from "../domain/cancel-refunds.ts";
-import { finishRun, startRun, type RunStart } from "../domain/cron-runs.ts";
-import { alertAgedDeletions } from "../domain/deletion.ts";
-import { recordUtilisation } from "../domain/dispatch-utilisation.ts";
-import { deleteLeftFiles } from "../domain/erasure.ts";
-import { tellOfNewGrievances } from "../domain/grievances.ts";
-import { queueCreditReminders } from "../domain/credit-reminders.ts";
-import { queueNextServiceReminders } from "../domain/next-visit.ts";
-import { sendUnsentLinks } from "../domain/payment-links.ts";
-import { readOpsInputs, type OpsInputs } from "../domain/ops-settings.ts";
-import { readDatabaseBytes, tellOfDatabaseSize, tellOfStorage } from "../domain/storage-meter.ts";
-import { queueReminders } from "../domain/visit-messages.ts";
+import { bookUnbookedHolds } from "../domain/booking/unbooked-holds.ts";
+import { eraseBooksCustomers } from "../domain/books/books-erasure.ts";
+import { raiseBooksInvoices } from "../domain/books/books-invoices.ts";
+import { checkBooksItems } from "../domain/books/books-items.ts";
+import { syncBooks, type BooksSyncOptions } from "../domain/books/books-sync.ts";
+import { closeStaleLowStock } from "../domain/field/low-stock.ts";
+import { settleOwedRefunds } from "../domain/money/cancel-refunds.ts";
+import { finishRun, startRun, type RunStart } from "../domain/platform/cron-runs.ts";
+import { alertAgedDeletions } from "../domain/privacy/deletion.ts";
+import { recordUtilisation } from "../domain/dispatch/dispatch-utilisation.ts";
+import { deleteLeftFiles } from "../domain/privacy/erasure.ts";
+import { tellOfNewGrievances } from "../domain/ops/grievances.ts";
+import { queueCreditReminders } from "../domain/money/credit-reminders.ts";
+import { queueNextServiceReminders } from "../domain/visits/next-visit.ts";
+import { sendUnsentLinks } from "../domain/money/payment-links.ts";
+import { readOpsInputs, type OpsInputs } from "../domain/ops/ops-settings.ts";
+import { readDatabaseBytes, tellOfDatabaseSize, tellOfStorage } from "../domain/platform/storage-meter.ts";
+import { queueReminders } from "../domain/messages/visit-messages.ts";
 import type { StaticConfig } from "../guard.ts";
 import { createCallBudget, type CallBudget } from "../lib/call-budget.ts";
 import { meterDatabase, usageFields, usageSince, type MeteredDatabase } from "../lib/d1-meter.ts";
 import { scrubString, type Logger } from "../log.ts";
 import { pingHeartbeat } from "../providers/heartbeat.ts";
-import { enqueue, enqueueBatch } from "../domain/enqueue.ts";
+import { enqueue, enqueueBatch } from "../domain/platform/enqueue.ts";
 import { razorpayCatchUpJob } from "./razorpay-catch-up.ts";
 import { referralPass } from "./referrals.ts";
 import { retentionJob } from "./retention.ts";
@@ -279,7 +279,7 @@ export const CRON_JOBS: readonly CronJob[] = [
   { name: "cancel_refunds", needs: "nothing", every: 15, at: 13, run: cancelRefundsJob },
 
   // Every hour. The Books item each service is invoiced on, before the invoices that need one; its check still does
-  // nothing after the hour's first five minutes (src/domain/books-items.ts), so it runs in one of them.
+  // nothing after the hour's first five minutes (src/domain/books/books-items.ts), so it runs in one of them.
   { name: "books_items", needs: "books", every: 60, at: 4, run: booksItemsJob },
   { name: "expire_tryons", needs: "nothing", every: 60, at: 9, run: expireTryOns },
   { name: "ailab_credits", needs: "nothing", every: 60, at: 14, run: ailabCreditsJob },

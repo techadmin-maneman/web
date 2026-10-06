@@ -62,7 +62,7 @@ export default defineConfig({
         branches: 87,
         "src/providers/**": { lines: 90, branches: 85 },
         "src/providers/payments/razorpay.ts": { lines: 95, branches: 95 },
-        "src/domain/payments.ts": { lines: 90, branches: 90 },
+        "src/domain/money/payments.ts": { lines: 90, branches: 90 },
         // Where money is taken, held, owed back or given as credit: a branch untested there is money lost unseen.
         "src/domain/{payment-links,discount-code-holds,discount-code-uses,holds,bookings,credits,refunds,no-shows}.ts":
           { lines: 90, branches: 90 },

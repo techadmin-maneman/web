@@ -4,7 +4,7 @@
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { App } from "../../../src/http/context.ts";
-import { creditBalance, grantCredits } from "../../../src/domain/credits.ts";
+import { creditBalance, grantCredits } from "../../../src/domain/money/credits.ts";
 import { appFor, captureLogs, fakeDependencies, markDatabase, NOW, request } from "../helpers.ts";
 
 const PERSON = "11111111-1111-4111-8111-111111111111";

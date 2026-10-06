@@ -24,7 +24,7 @@ The generated OpenAPI documents write each `.extend()`ed component as the one cl
 
 ### Coverage is held on branches, with floors for the vendors
 
-`vitest.config.ts` fails a run below 90% of lines or 80% of branches in `src/`, and counts `src/` only (the pattern had also matched the apps' and the site's own `src/`). The vendor clients and the payments mirror have floors of their own: `src/providers/**` 90/85, `razorpay.ts` 95/95, `fsm-zoho.ts` 95/90, `src/domain/payments.ts` 90/90. Recorded-reply tests, in the shapes each vendor answers, are how those are met.
+`vitest.config.ts` fails a run below 90% of lines or 80% of branches in `src/`, and counts `src/` only (the pattern had also matched the apps' and the site's own `src/`). The vendor clients and the payments mirror have floors of their own: `src/providers/**` 90/85, `razorpay.ts` 95/95, `fsm-zoho.ts` 95/90, `src/domain/money/payments.ts` 90/90. Recorded-reply tests, in the shapes each vendor answers, are how those are met.
 
 ### A run whose files stop reporting ends with their names
 

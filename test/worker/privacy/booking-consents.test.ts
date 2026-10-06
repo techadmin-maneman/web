@@ -5,7 +5,7 @@
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import { HOLD_SECONDS, PAYMENT_GRACE_SECONDS } from "../../../src/config/scheduling.ts";
-import { grantCredits } from "../../../src/domain/credits.ts";
+import { grantCredits } from "../../../src/domain/money/credits.ts";
 import { saltedHash } from "../../../src/lib/hash.ts";
 import { fakeDependencies, fakeQueue, LOCAL_SETTINGS, markDatabase, NOW, deliverRazorpay } from "../helpers.ts";
 import { asClient, client, fittedInAugust, signedIn, technician } from "../clients.ts";

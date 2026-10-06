@@ -8,14 +8,14 @@
 import { createRoute, z } from "@hono/zod-openapi";
 import { BOOKING_WINDOWS } from "../../config/scheduling.ts";
 import { VISIT_TYPES } from "../../config/visit-types.ts";
-import type { AuditEntry } from "../../domain/audit.ts";
+import type { AuditEntry } from "../../domain/ops/audit.ts";
 import {
   eraseAndQueue,
   erasureBlockers,
   stillToErase,
   type ErasureBlockers,
   type ErasureSummary,
-} from "../../domain/erasure.ts";
+} from "../../domain/privacy/erasure.ts";
 import { staffMemberOf } from "../../http/audit.ts";
 import type { App } from "../../http/context.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";

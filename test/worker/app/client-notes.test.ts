@@ -4,9 +4,9 @@
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
-import { erasePerson } from "../../../src/domain/erasure.ts";
-import { openSession } from "../../../src/domain/sessions.ts";
-import { jobDetail } from "../../../src/domain/tech-jobs.ts";
+import { erasePerson } from "../../../src/domain/privacy/erasure.ts";
+import { openSession } from "../../../src/domain/sign-in/sessions.ts";
+import { jobDetail } from "../../../src/domain/field/tech-jobs.ts";
 import { createLogger } from "../../../src/log.ts";
 import { NO_SHOW_WAIT_MIN } from "../../../src/policy/no-show.ts";
 import { PHONE_CLOCK } from "../../../src/policy/phone-clock.ts";

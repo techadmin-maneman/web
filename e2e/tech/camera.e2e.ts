@@ -12,7 +12,7 @@ import { axeViolations } from "../a11y.ts";
 import { anglesOnPhone, fakeTech, heldOnPhone, JOB_ID } from "./fixtures.ts";
 
 const TARGET_BYTES = 250 * 1024;
-/** A thumbnail, at most, as the API takes it (MAX_THUMBNAIL_BYTES, src/domain/tech-photos.ts). */
+/** A thumbnail, at most, as the API takes it (MAX_THUMBNAIL_BYTES, src/domain/field/tech-photos.ts). */
 const THUMBNAIL_LIMIT = 64 * 1024;
 const BEFORE = `/jobs/${JOB_ID}/before-photos`;
 

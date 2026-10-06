@@ -3,8 +3,8 @@
 
 import { env } from "cloudflare:workers";
 import { describe, expect, it } from "vitest";
-import { readMeter } from "../../../src/domain/storage-meter.ts";
-import { MAX_PHOTO_BYTES, MAX_THUMBNAIL_BYTES } from "../../../src/domain/tech-photos.ts";
+import { readMeter } from "../../../src/domain/platform/storage-meter.ts";
+import { MAX_PHOTO_BYTES, MAX_THUMBNAIL_BYTES } from "../../../src/domain/field/tech-photos.ts";
 import { PHASE_2_SHARE_BYTES, RUNAWAY_CEILING_BYTES } from "../../../src/policy/storage-share.ts";
 import { NOW, request } from "../helpers.ts";
 import { syntheticJpeg, syntheticPng } from "../tryon-fixtures.ts";

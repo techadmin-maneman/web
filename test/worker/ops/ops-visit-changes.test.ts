@@ -4,8 +4,8 @@
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
-import { creditBalance, grantCredits, redeemCredit } from "../../../src/domain/credits.ts";
-import { outstandingTasks } from "../../../src/domain/tasks.ts";
+import { creditBalance, grantCredits, redeemCredit } from "../../../src/domain/money/credits.ts";
+import { outstandingTasks } from "../../../src/domain/ops/tasks.ts";
 import { TASK_SLA_HOURS } from "../../../src/policy/tasks.ts";
 import { type PaymentsProvider } from "../../../src/providers/payments/index.ts";
 import { createStubPayments, type StubPayments } from "../../../src/providers/payments/stub.ts";

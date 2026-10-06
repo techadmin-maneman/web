@@ -52,7 +52,7 @@ The late fees are the price book's `late_fee_first_fit` and `late_fee_replacemen
 - **A charged move** (a service visit inside 24 hours) is a new booking, with any technician. Once it is booked, the old work order is cancelled in FSM with a note, and the old visit's payment is kept as the charge. If FSM fails to cancel it, the queue's next try does it; if FSM refuses, the old visit is left as FSM has it and ops are told to cancel it by hand (ADR 0068).
 - If the visit has started or gone by the time the move is confirmed, what was paid for the move is refunded in full, as for a lapsed hold (ADR 0045).
 
-**A cancel** (`src/domain/visit-changes.ts`):
+**A cancel** (`src/domain/visits/visit-changes.ts`):
 
 1. The change is claimed first, in `visit_changes` (migration 0020), where a visit can end once. A repeated request cannot cancel or refund twice.
 2. FSM cancels the work order, with a note saying who cancelled and at what notice.
@@ -64,7 +64,7 @@ If FSM fails, the claim is let go and nothing has changed (`503 unavailable`). W
 Once the visit is cancelled it stays cancelled, whatever fails after:
 
 - A refund Razorpay refuses, or will not say it made, is left to ops, who are alerted to refund it by hand.
-- A refund the request could not ask for, or could not record, answers `202` with `refund_pending: true`. The app says the refund is on its way. At its first quarter-hourly run from ten minutes on, the cron's `cancel_refunds` job (`src/domain/cancel-refunds.ts`) asks for it again under the cancel's receipt, so Razorpay makes it once ([0100](0100-a-refund-is-made-once.md)). `visit_changes.refund_settled_at` stays empty until then. The job also finds a cancel whose Worker stopped before its refund. The request may have made the refund, so a refusal the job hears is told to ops as a refund that may have been made: look in Razorpay before refunding by hand.
+- A refund the request could not ask for, or could not record, answers `202` with `refund_pending: true`. The app says the refund is on its way. At its first quarter-hourly run from ten minutes on, the cron's `cancel_refunds` job (`src/domain/money/cancel-refunds.ts`) asks for it again under the cancel's receipt, so Razorpay makes it once ([0100](0100-a-refund-is-made-once.md)). `visit_changes.refund_settled_at` stays empty until then. The job also finds a cancel whose Worker stopped before its refund. The request may have made the refund, so a refusal the job hears is told to ops as a refund that may have been made: look in Razorpay before refunding by hand.
 - A message the queue refuses is sent by the sweeper.
 
 Where FSM holds the visit, a failure after FSM has cancelled still answers `503`, and the visit's credit is not given back; the job refunds its payment once the mirror shows it cancelled. FSM is being removed, so that path is left as it is.

@@ -1,7 +1,7 @@
 // What a technician sees of each job, and when: a job's card opens the day before its visit and locks again the day
 // after. Dates are India's, since a working day is (docs/decisions/0035-window-slot-map.md).
 //
-// src/domain/tech-jobs.ts builds a job's answer from `unlocked`: a job still
+// src/domain/field/tech-jobs.ts builds a job's answer from `unlocked`: a job still
 // locked carries no address, access notes, client, pieces, last visit or
 // reminder, and no answer to a technician carries an amount.
 

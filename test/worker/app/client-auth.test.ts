@@ -5,7 +5,7 @@ import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { App } from "../../../src/http/context.ts";
 import type { Settings } from "../../../src/config/settings.ts";
-import { openSession } from "../../../src/domain/sessions.ts";
+import { openSession } from "../../../src/domain/sign-in/sessions.ts";
 import { sha256Hex } from "../../../src/lib/hash.ts";
 
 import {

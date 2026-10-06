@@ -1,8 +1,8 @@
-// The readable copy of a client's data export (src/domain/my-data-page.ts): labelled, in India's time, and safe to
+// The readable copy of a client's data export (src/domain/privacy/my-data-page.ts): labelled, in India's time, and safe to
 // open whatever a client or ops typed.
 
 import { describe, expect, it } from "vitest";
-import { myDataPage } from "../../../src/domain/my-data-page.ts";
+import { myDataPage } from "../../../src/domain/privacy/my-data-page.ts";
 
 const EXPORTED = new Date("2026-10-04T12:00:00.000Z");
 

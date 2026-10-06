@@ -1,14 +1,14 @@
-// Booking a held window (src/domain/bookings.ts): Checkout's order, the visit
+// Booking a held window (src/domain/booking/bookings.ts): Checkout's order, the visit
 // written once Razorpay confirms the capture, and the refund when the payment
 // came too late. NOW is Monday 21 September 2026, 12 noon in India. Every name
 // and number here is made up.
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
-import { autoRefundsOf, composeBookingRefunded } from "../../../src/domain/auto-refunds.ts";
-import { confirmBooking } from "../../../src/domain/bookings.ts";
+import { autoRefundsOf, composeBookingRefunded } from "../../../src/domain/money/auto-refunds.ts";
+import { confirmBooking } from "../../../src/domain/booking/bookings.ts";
 import { createStubPayments } from "../../../src/providers/payments/stub.ts";
-import { openSession } from "../../../src/domain/sessions.ts";
+import { openSession } from "../../../src/domain/sign-in/sessions.ts";
 import {
   appFor,
   fakeDependencies,

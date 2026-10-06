@@ -2,7 +2,7 @@
 // are told (docs/decisions/0093-the-storage-meter.md). They have a share of
 // R2's free 10 GB, and R2's paid storage is accepted as the share fills, so a
 // full share is told, never refused. What is refused is a runaway, far past anything the business
-// makes. src/domain/storage-meter.ts keeps the figure these are read against.
+// makes. src/domain/platform/storage-meter.ts keeps the figure these are read against.
 
 import type { EnvironmentName } from "../config/environments.ts";
 

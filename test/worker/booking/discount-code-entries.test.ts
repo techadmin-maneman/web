@@ -6,15 +6,15 @@
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
-import { confirmBooking, startBooking } from "../../../src/domain/bookings.ts";
-import { paymentEntries, paymentEntry } from "../../../src/domain/client-payments.ts";
-import { grantCredits } from "../../../src/domain/credits.ts";
-import { codeOnHold, removeFromHold } from "../../../src/domain/discount-code-holds.ts";
-import { priceAfterCode, removeFromVisit } from "../../../src/domain/discount-code-uses.ts";
-import { composeVisitMessage } from "../../../src/domain/visit-messages.ts";
-import { listCodes, makeCodes, type NewCodes } from "../../../src/domain/discount-codes.ts";
-import { offeredProducts } from "../../../src/domain/services.ts";
-import { outstandingTasks } from "../../../src/domain/tasks.ts";
+import { confirmBooking, startBooking } from "../../../src/domain/booking/bookings.ts";
+import { paymentEntries, paymentEntry } from "../../../src/domain/money/client-payments.ts";
+import { grantCredits } from "../../../src/domain/money/credits.ts";
+import { codeOnHold, removeFromHold } from "../../../src/domain/money/discount-code-holds.ts";
+import { priceAfterCode, removeFromVisit } from "../../../src/domain/money/discount-code-uses.ts";
+import { composeVisitMessage } from "../../../src/domain/messages/visit-messages.ts";
+import { listCodes, makeCodes, type NewCodes } from "../../../src/domain/money/discount-codes.ts";
+import { offeredProducts } from "../../../src/domain/booking/services.ts";
+import { outstandingTasks } from "../../../src/domain/ops/tasks.ts";
 import { TASK_SLA_HOURS } from "../../../src/policy/tasks.ts";
 import { type PaymentsProvider } from "../../../src/providers/payments/index.ts";
 import { createStubPayments, type StubPayments } from "../../../src/providers/payments/stub.ts";

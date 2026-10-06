@@ -1,9 +1,9 @@
-// Where each record is, for staff access by place (src/domain/places.ts): a city, found through a pincode. Every
+// Where each record is, for staff access by place (src/domain/clients/places.ts): a city, found through a pincode. Every
 // name, number and ID is made up.
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
-import { cityOf, reachBinding, withinReach, type PlacedRecord } from "../../../src/domain/places.ts";
+import { cityOf, reachBinding, withinReach, type PlacedRecord } from "../../../src/domain/clients/places.ts";
 import type { PlacesReached } from "../../../src/policy/access.ts";
 import { markDatabase, NOW } from "../helpers.ts";
 

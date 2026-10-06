@@ -21,9 +21,9 @@
 
 import { createRoute, z } from "@hono/zod-openapi";
 import type { Context } from "hono";
-import { isActiveCity } from "../../domain/cities.ts";
+import { isActiveCity } from "../../domain/dispatch/cities.ts";
 import { VISIT_TYPES } from "../../config/visit-types.ts";
-import type { AuditAction, AuditEntry } from "../../domain/audit.ts";
+import type { AuditAction, AuditEntry } from "../../domain/ops/audit.ts";
 import {
   addTechnician,
   changeTechnician,
@@ -31,11 +31,11 @@ import {
   reactivateTechnician,
   rosterTechnician,
   type RosterTechnician,
-} from "../../domain/technician-roster.ts";
+} from "../../domain/dispatch/technician-roster.ts";
 import { actorOf } from "../../http/audit.ts";
 import type { App, AppEnv } from "../../http/context.ts";
-import { technicianWork, type TechnicianWork } from "../../domain/technician-work.ts";
-import { isWithin, techniciansWithin } from "../../domain/places.ts";
+import { technicianWork, type TechnicianWork } from "../../domain/dispatch/technician-work.ts";
+import { isWithin, techniciansWithin } from "../../domain/clients/places.ts";
 import { permits, routeReach } from "../../http/staff-access.ts";
 import { reachesCity } from "../../policy/access.ts";
 import { GIVING_NO_CITY } from "../../policy/console-routes.ts";

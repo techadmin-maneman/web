@@ -1,7 +1,7 @@
 // Booking from the public site, /book and an invite's /r/:code, which asks for the full address before it books
 // (ADR 0025, item 62; docs/decisions/0081-the-site-takes-the-address.md). The form needs no login, only a number,
 // so whoever types a number must not be able to move where that person's visits go, or learn anything about them.
-// src/domain/public-booking.ts applies it.
+// src/domain/booking/public-booking.ts applies it.
 //
 // The form books the consultation, or the consultation and the first fit in one visit, paid for at the visit
 // (src/policy/one-visit.ts; docs/decisions/0105-a-consultation-and-fit-in-one-visit.md). Nothing is paid on the site.

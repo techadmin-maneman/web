@@ -16,7 +16,7 @@ export function isEnvironmentName(value: unknown): value is EnvironmentName {
 
 /**
  * Whether the hourly item check makes and writes Books' items from the console's services and the price book
- * (src/domain/books-items.ts). Staging and production share one Books organisation, so only one writes: staging until
+ * (src/domain/books/books-items.ts). Staging and production share one Books organisation, so only one writes: staging until
  * production takes over in the release that launches it, which switches staging off. A constant rather than a Worker
  * var: mm-api is at the Workers Free limit of 64 variables and secrets
  * (docs/decisions/0009-stay-inside-cloudflare-free-tier.md).

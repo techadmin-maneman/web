@@ -3,13 +3,13 @@
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
-import { autoRefundsOf } from "../../../src/domain/auto-refunds.ts";
-import { bookUnbookedHolds } from "../../../src/domain/unbooked-holds.ts";
-import { confirmBooking } from "../../../src/domain/bookings.ts";
-import { giveBack } from "../../../src/domain/give-back.ts";
-import { clawBack, creditBalance, grantCredits, redeemCredit } from "../../../src/domain/credits.ts";
-import { settleOwedRefunds } from "../../../src/domain/cancel-refunds.ts";
-import { moveJob } from "../../../src/domain/dispatch.ts";
+import { autoRefundsOf } from "../../../src/domain/money/auto-refunds.ts";
+import { bookUnbookedHolds } from "../../../src/domain/booking/unbooked-holds.ts";
+import { confirmBooking } from "../../../src/domain/booking/bookings.ts";
+import { giveBack } from "../../../src/domain/booking/give-back.ts";
+import { clawBack, creditBalance, grantCredits, redeemCredit } from "../../../src/domain/money/credits.ts";
+import { settleOwedRefunds } from "../../../src/domain/money/cancel-refunds.ts";
+import { moveJob } from "../../../src/domain/dispatch/dispatch.ts";
 import {
   cancelVisit,
   changeableVisit,
@@ -17,15 +17,15 @@ import {
   opsCancelTerms,
   termsInForce,
   type OpsCancel,
-} from "../../../src/domain/visit-changes.ts";
-import { readOpsInputs } from "../../../src/domain/ops-settings.ts";
+} from "../../../src/domain/visits/visit-changes.ts";
+import { readOpsInputs } from "../../../src/domain/ops/ops-settings.ts";
 import { createCallBudget } from "../../../src/lib/call-budget.ts";
 import { createLogger } from "../../../src/log.ts";
 import { type PaymentsProvider } from "../../../src/providers/payments/index.ts";
 import { createStubPayments } from "../../../src/providers/payments/stub.ts";
 import { PaymentUnanswered } from "../../../src/providers/provider-error.ts";
 import { CRON_JOBS, runCronJobs } from "../../../src/scheduled/cron.ts";
-import { outstandingTasks } from "../../../src/domain/tasks.ts";
+import { outstandingTasks } from "../../../src/domain/ops/tasks.ts";
 import { TASK_SLA_HOURS } from "../../../src/policy/tasks.ts";
 import {
   appFor,

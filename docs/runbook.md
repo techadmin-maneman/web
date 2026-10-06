@@ -292,7 +292,7 @@ Zoho names a new field from its label, so the script reads each one back: the sy
       ZohoCRM.modules.leads.ALL,ZohoCRM.modules.notes.CREATE,ZohoSearch.securesearch.READ,ZohoCRM.settings.fields.READ,ZohoCRM.settings.assignment_rules.READ,ZohoCRM.modules.contacts.UPDATE,ZohoCRM.modules.contacts.DELETE
       ```
 
-      The first three are what the sync uses. The two `contacts` scopes let an erasure blank and delete the Contact that Books' CRM integration made of the client (`src/domain/books-erasure.ts`); a token without them leaves every such Contact to be erased by hand. The two `settings…READ` scopes let `scripts/ops/check-zoho-setup.ts` read the fields and assignment rules; they cannot change anything. Choose the longest time duration, add a description, then **Create** and pick the org.
+      The first three are what the sync uses. The two `contacts` scopes let an erasure blank and delete the Contact that Books' CRM integration made of the client (`src/domain/books/books-erasure.ts`); a token without them leaves every such Contact to be erased by hand. The two `settings…READ` scopes let `scripts/ops/check-zoho-setup.ts` read the fields and assignment rules; they cannot change anything. Choose the longest time duration, add a description, then **Create** and pick the org.
 
    3. Before the code expires, exchange it for a refresh token. Use your data centre's accounts host:
 

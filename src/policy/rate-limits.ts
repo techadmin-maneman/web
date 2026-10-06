@@ -1,4 +1,4 @@
-// Every limit counted in D1 (src/domain/rate-limit.ts), by its scope: the window it counts in, and how many uses that
+// Every limit counted in D1 (src/domain/sign-in/rate-limit.ts), by its scope: the window it counts in, and how many uses that
 // window allows. A scope is a key of this table, so a mistyped one is a type error rather than a new count with no
 // limit. A limit that differs by environment, or that a local run may raise (src/config/limits.ts), is read from the
 // settings.
@@ -59,7 +59,7 @@ export const RATE_LIMITS = {
   "client_error:ip": { per: "hour", limit: 20 },
   "client_error:all": { per: "hour", limit: 300 },
 
-  // The global daily ceilings (src/domain/ceilings.ts), and their one alert a day each.
+  // The global daily ceilings (src/domain/platform/ceilings.ts), and their one alert a day each.
   "ceiling:upload": { per: "day", limit: (settings) => settings.tryon.uploadDailyCeiling },
   "ceiling:render": { per: "day", limit: (settings) => settings.tryon.renderDailyCeiling },
   "ceiling:result_read": { per: "day", limit: (settings) => settings.tryon.resultReadDailyCeiling },

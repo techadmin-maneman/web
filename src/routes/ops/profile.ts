@@ -12,10 +12,15 @@ import type { Context } from "hono";
 import { afterResponse } from "../../http/after-response.ts";
 import { actorOf } from "../../http/audit.ts";
 import type { App, AppEnv } from "../../http/context.ts";
-import { type AuditAction, type AuditEntry } from "../../domain/audit.ts";
-import { decideDeletion, deletionDoneMessage, deletionsWaiting, type ErasedContact } from "../../domain/deletion.ts";
-import { changesAwaitingOps, decideNumberChange, type NumberHolder } from "../../domain/number-change.ts";
-import { NUMBER_CHANGE_WAITING_SINCE } from "../../domain/tasks.ts";
+import { type AuditAction, type AuditEntry } from "../../domain/ops/audit.ts";
+import {
+  decideDeletion,
+  deletionDoneMessage,
+  deletionsWaiting,
+  type ErasedContact,
+} from "../../domain/privacy/deletion.ts";
+import { changesAwaitingOps, decideNumberChange, type NumberHolder } from "../../domain/clients/number-change.ts";
+import { NUMBER_CHANGE_WAITING_SINCE } from "../../domain/ops/tasks.ts";
 import { queueContactSync } from "../../http/contact-sync.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
 import { json } from "../../http/openapi.ts";

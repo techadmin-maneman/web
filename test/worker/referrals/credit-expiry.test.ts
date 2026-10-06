@@ -5,8 +5,8 @@
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import { renderMessage } from "../../../src/config/message-templates.ts";
-import { composeCreditsExpiring, queueCreditReminders } from "../../../src/domain/credit-reminders.ts";
-import { clawBack, expireCredits, grantCredits } from "../../../src/domain/credits.ts";
+import { composeCreditsExpiring, queueCreditReminders } from "../../../src/domain/money/credit-reminders.ts";
+import { clawBack, expireCredits, grantCredits } from "../../../src/domain/money/credits.ts";
 import { createLogger } from "../../../src/log.ts";
 import { creditExpiry } from "../../../src/policy/referral-reward.ts";
 import type { MessagingProvider } from "../../../src/providers/messaging/index.ts";

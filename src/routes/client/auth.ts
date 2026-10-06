@@ -13,11 +13,11 @@
 import { createRoute, z, type RouteHandler } from "@hono/zod-openapi";
 import type { Context } from "hono";
 import type { App, AppEnv } from "../../http/context.ts";
-import { findEligiblePerson, openChallenge, replaceCode, verifyCode } from "../../domain/login.ts";
-import { mobileHashOf } from "../../domain/number-codes.ts";
-import { createChallenge, type Challenge } from "../../domain/one-time-codes.ts";
-import { liveContact } from "../../domain/profile.ts";
-import { deviceLabel, openSession, revokeSession } from "../../domain/sessions.ts";
+import { findEligiblePerson, openChallenge, replaceCode, verifyCode } from "../../domain/sign-in/login.ts";
+import { mobileHashOf } from "../../domain/clients/number-codes.ts";
+import { createChallenge, type Challenge } from "../../domain/sign-in/one-time-codes.ts";
+import { liveContact } from "../../domain/clients/profile.ts";
+import { deviceLabel, openSession, revokeSession } from "../../domain/sign-in/sessions.ts";
 import { clearClientCookie, clientSessionOf, setClientCookie } from "../../http/client-session.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
 import { json } from "../../http/openapi.ts";

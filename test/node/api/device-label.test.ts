@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { deviceLabel } from "../../../src/domain/sessions.ts";
+import { deviceLabel } from "../../../src/domain/sign-in/sessions.ts";
 
 describe("deviceLabel", () => {
   it.each([

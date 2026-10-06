@@ -134,7 +134,7 @@ export const RECORD = {
     { visit_id: VISIT_ID, date: "2027-08-22", type: "service", state: "issued", issued_at: "2027-08-22T09:00:00.000Z" },
   ],
   /*
-   * What the record adds up to (src/domain/client-history.ts): the board's own
+   * What the record adds up to (src/domain/visits/client-history.ts): the board's own
    * client, fitted in November 2026 and served since, with the piece B1 draws
    * still in wear and falling due in the month the board's head writes.
    */

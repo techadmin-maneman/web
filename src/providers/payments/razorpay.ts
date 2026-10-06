@@ -1,7 +1,7 @@
 // Razorpay, for taking payment and giving it back (docs/decisions/0045-self-serve-booking.md), and what its
 // webhook carries. Orders, refunds and payment links are made here; what happened to a payment arrives by the signed
 // webhook (docs/decisions/0044-payments-mirror.md), and the cron reads an order's payments or a link from here only
-// when the webhook may have missed one (src/domain/razorpay-catch-up.ts). Amounts are in paise. Only
+// when the webhook may have missed one (src/domain/money/razorpay-catch-up.ts). Amounts are in paise. Only
 // src/providers/payments/index.ts chooses this client.
 //
 //   POST https://api.razorpay.com/v1/orders                   { id }

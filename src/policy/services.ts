@@ -1,6 +1,6 @@
 // The services clients book. A service is a kind of visit and a tier of it; the kind is code, and the services within it are ops' (the services table,
-// docs/decisions/0085-services-ops-can-edit.md). src/domain/services.ts keeps them, and the price book prices each
-// by its kind and tier (src/domain/price-book.ts).
+// docs/decisions/0085-services-ops-can-edit.md). src/domain/booking/services.ts keeps them, and the price book prices each
+// by its kind and tier (src/domain/money/price-book.ts).
 
 import { hasStandardService, STANDARD_TIER, type VisitType } from "../config/visit-types.ts";
 import type { OneVisitState } from "./one-visit.ts";

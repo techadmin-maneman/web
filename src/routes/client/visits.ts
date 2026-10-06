@@ -16,13 +16,18 @@ import { clientRoute } from "../../http/session-routes.ts";
 import { z } from "@hono/zod-openapi";
 import type { App } from "../../http/context.ts";
 import { VISIT_TYPES } from "../../config/visit-types.ts";
-import { clientHistory } from "../../domain/client-history.ts";
-import { clientTryOns, ownTryOnImage, TRY_ON_IMAGES, TRY_ON_TOKEN_PURPOSES } from "../../domain/client-try-ons.ts";
-import { listVisits, ownPhotoKey, photoSets, visitDetail } from "../../domain/client-visits.ts";
-import { takeOne } from "../../domain/rate-limit.ts";
-import { VISIT_OUTCOMES } from "../../domain/visit-status.ts";
+import { clientHistory } from "../../domain/visits/client-history.ts";
+import {
+  clientTryOns,
+  ownTryOnImage,
+  TRY_ON_IMAGES,
+  TRY_ON_TOKEN_PURPOSES,
+} from "../../domain/try-on/client-try-ons.ts";
+import { listVisits, ownPhotoKey, photoSets, visitDetail } from "../../domain/visits/client-visits.ts";
+import { takeOne } from "../../domain/sign-in/rate-limit.ts";
+import { VISIT_OUTCOMES } from "../../domain/visits/visit-status.ts";
 import { DISPUTE_RULINGS, NO_SHOW_DECISIONS } from "../../policy/no-show.ts";
-import { ANGLES, PHASES } from "../../domain/visit-photos.ts";
+import { ANGLES, PHASES } from "../../domain/field/visit-photos.ts";
 import { clientOf } from "../../http/client-session.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
 import { fileExtension, type ImageType } from "../../lib/image-bytes.ts";
@@ -173,7 +178,7 @@ const VisitDetailSchema = VisitSummarySchema.extend({
 }).openapi("VisitDetail");
 
 /**
- * The figures src/domain/client-history.ts derives, which the client and ops
+ * The figures src/domain/visits/client-history.ts derives, which the client and ops
  * read from the one derivation. Each surface names its own replacement date
  * beside them: ops act on the day, the client is told only the month.
  */
@@ -503,7 +508,7 @@ function registerTryOnImages(app: App): void {
     }
     const object = await c.env[held.bucket].get(held.key);
     if (object === null) return refuse(c, "not_found");
-    // Each bucket holds only JPEG and PNG, each checked on its way in (src/domain/photo.ts, src/queues/render.ts).
+    // Each bucket holds only JPEG and PNG, each checked on its way in (src/domain/try-on/photo.ts, src/queues/render.ts).
     const type: ImageType = object.httpMetadata?.contentType === "image/png" ? "image/png" : "image/jpeg";
     // The app names the download the same, less the extension, which only the file's type gives.
     const filename = `mane-man-${held.madeOn}-try-on-${image}.${fileExtension(type)}`;

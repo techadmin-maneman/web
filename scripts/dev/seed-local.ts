@@ -132,7 +132,7 @@ async function seedTechnician(): Promise<void> {
     `INSERT OR IGNORE INTO people (id, created_at, mobile_e164, name, contactable)
        VALUES ${sqlRow(CLIENT.id, now, `+91${CLIENT.mobile}`, CLIENT.name, 1)};`,
     // No coordinates, as an address typed rather than chosen has none: "I have arrived" then passes anywhere,
-    // which a laptop needs, having no position to give (src/domain/check-ins.ts).
+    // which a laptop needs, having no position to give (src/domain/visits/check-ins.ts).
     `INSERT OR IGNORE INTO addresses (id, person_id, created_at, line1, line2, locality, city, pincode, access_notes,
        lat, lng) VALUES ${sqlRow(CLIENT.addressId, CLIENT.id, now, "Tower C, 14th floor", null, "Sector 65", "Gurgaon", "122018", "Gate code 4417", null, null)};`,
     `UPDATE appointments SET status = 'cancelled', synced_at = '${now}'

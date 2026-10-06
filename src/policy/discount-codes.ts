@@ -1,7 +1,7 @@
 // Discount codes (docs/decisions/0108-discount-codes.md), generated and used before invoicing. Ops generate the codes
 // in the console, and the client, the technician or ops enter one on a booking
-// (src/domain/discount-codes.ts). The invoice then shows the price, the discount and the total
-// (src/domain/books-invoices.ts).
+// (src/domain/money/discount-codes.ts). The invoice then shows the price, the discount and the total
+// (src/domain/books/books-invoices.ts).
 
 import { withGst } from "../config/gst.ts";
 import type { VisitType } from "../config/visit-types.ts";

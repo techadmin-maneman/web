@@ -1,5 +1,5 @@
 // What the site's booking form tells a number we already know, on WhatsApp rather than on the page, which gives every
-// number the same answer (src/domain/site-notices.ts). Each is written as things stand when the consumer sends it.
+// number the same answer (src/domain/ops/site-notices.ts). Each is written as things stand when the consumer sends it.
 // NOW is Monday 21 September 2026, 12 noon in India. Every name and number here is made up.
 
 import { env } from "cloudflare:workers";

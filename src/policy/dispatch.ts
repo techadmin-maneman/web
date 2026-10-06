@@ -3,7 +3,7 @@
 //
 // The board counts in slots and the day in half-slots, so a replacement's slot
 // and a half is a whole number (docs/decisions/0035-window-slot-map.md). Where a
-// visit fits inside a window is src/domain/occupancy.ts; the clash check below
+// visit fits inside a window is src/domain/booking/occupancy.ts; the clash check below
 // is the prompt's, and both booking and dispatch answer to it. A block's
 // size now comes from its service's length rather than its kind's alone, by the
 // one rule in src/policy/visit-length.ts, which gives the prompt's four sizes for
@@ -97,7 +97,7 @@ export type MoveRefusal =
 
 interface MoveCheck {
   readonly time: TargetTime;
-  /** Whether the visit has room in the window, at a start still ahead (src/domain/occupancy.ts). */
+  /** Whether the visit has room in the window, at a start still ahead (src/domain/booking/occupancy.ts). */
   readonly fits: boolean;
   /** The day is one ops blacked out, and they gave no reason for moving the visit onto it. */
   readonly blackoutWithoutReason: boolean;

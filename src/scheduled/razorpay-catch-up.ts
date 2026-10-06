@@ -1,13 +1,13 @@
 // The cron's razorpay_catch_up job: what Razorpay's webhook never told us, read from Razorpay
-// (src/domain/razorpay-catch-up.ts), and each hold found paid for booked as the webhook would book it.
+// (src/domain/money/razorpay-catch-up.ts), and each hold found paid for booked as the webhook would book it.
 
 import type { Dependencies } from "../dependencies.ts";
-import { confirmBooking } from "../domain/bookings.ts";
-import { catchUpWithRazorpay } from "../domain/razorpay-catch-up.ts";
+import { confirmBooking } from "../domain/booking/bookings.ts";
+import { catchUpWithRazorpay } from "../domain/money/razorpay-catch-up.ts";
 import type { StaticConfig } from "../guard.ts";
 import type { CallBudget } from "../lib/call-budget.ts";
 import type { Logger } from "../log.ts";
-import { enqueue } from "../domain/enqueue.ts";
+import { enqueue } from "../domain/platform/enqueue.ts";
 import { type MessagingMessage } from "../config/pipeline.ts";
 
 const REQUEST_ID = "razorpay-catch-up";

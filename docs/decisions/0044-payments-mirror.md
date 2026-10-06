@@ -23,7 +23,7 @@ Checkout, orders and refunds from our side arrive with self-serve booking (P2-M5
 - It checks the signature over the raw body before anything else. Without `RAZORPAY_WEBHOOK_SECRET` the route answers 404, as the other hooks do without their secret. The secret must be at least 32 characters, and self-serve booking does not start without it.
 - Each event is kept once in `razorpay_events`, by its event ID. A repeat is acknowledged and changes nothing.
 
-**`payments` and `refunds` follow the events** (migration 0014, `src/domain/payments.ts`).
+**`payments` and `refunds` follow the events** (migration 0014, `src/domain/money/payments.ts`).
 
 - **A payment's state only moves forward:** failed, authorized, captured, partially refunded, refunded. An authorization arriving after its capture changes nothing. A late authorization does overtake a failure, as Razorpay's late authorisations can.
 - **A refund's processed amount** sets the payment's refunded total and state.
@@ -55,7 +55,7 @@ Checkout, orders and refunds from our side arrive with self-serve booking (P2-M5
 
 A client who pays in advance is owed a receipt, then the tax invoice with the payment set against it, and a refund voucher if money goes back (plan input 11). The owner chose Books for these, and to record staging's test payments there (22 September 2026). FSM's invoices already reach Books, which is linked to FSM and syncs both ways every two to three hours.
 
-**Each captured payment is recorded in Books** as a customer payment (`src/domain/books-sync.ts`).
+**Each captured payment is recorded in Books** as a customer payment (`src/domain/books/books-sync.ts`).
 
 **Not a retainer invoice.** The backend prompt has FSM carry "the retainer invoice as the prepay record, as the roadmap sets out". FSM raises no retainer invoice, which is a Books document; whether one may carry GST was unclear; and Books offers it only from its Professional plan (`docs/archive/phase2-inputs.md`, section 6). A customer payment records the same money, gives the client a receipt, and settles against the visit's invoice once that is issued (ADR 0056), so the backend records that instead. (Recorded 27 September 2026, ADR 0025, item 56; the CA confirms the receipt serves once GST is on, `docs/open-points.md`, item 9.)
 

@@ -3,7 +3,7 @@
 // carries the delivery receipts for the messages we sent, which fill in
 // outbound_messages.delivered_at and read_at for the no-show evidence.
 // MESSAGES_UPSERT carries every message on the number; a STOP reply among them
-// withdraws its sender's WhatsApp consents (src/domain/stop-messages.ts).
+// withdraws its sender's WhatsApp consents (src/domain/messages/stop-messages.ts).
 //
 // Evolution is set to send those two events only (runbook, step 12); any other
 // event is ignored. The body names the chat and carries the instance's API key,
@@ -17,7 +17,7 @@ import type { App, AppEnv } from "../../http/context.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
 import { queueMessage } from "../../http/queue-message.ts";
 import { secretsMatch } from "../../lib/hash.ts";
-import { stopByReply } from "../../domain/stop-messages.ts";
+import { stopByReply } from "../../domain/messages/stop-messages.ts";
 import { isStopReply } from "../../policy/consents.ts";
 
 /** Receipts that say something new. SERVER_ACK (reached WhatsApp's servers) and PENDING do not. */

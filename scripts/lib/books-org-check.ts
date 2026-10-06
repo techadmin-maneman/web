@@ -1,5 +1,5 @@
 // What scripts/release/check-books-setup.ts makes of the Books org's answers: the settings no runtime check reads, which an
-// invoice depends on. The items each service is invoiced on are the Worker's own hourly check (src/domain/books-items.ts).
+// invoice depends on. The items each service is invoiced on are the Worker's own hourly check (src/domain/books/books-items.ts).
 // This decides, and reaches nothing.
 
 import { z } from "zod";

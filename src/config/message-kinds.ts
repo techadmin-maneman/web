@@ -28,13 +28,13 @@ export const MESSAGE_KINDS = [
   "referral_rejected", // to either side: ops refused a held grant
   "credits_expiring", // free service visits run out: a month before their last day, and a week before
   "launch_alert", // the person's pincode went live
-  // The site's booking form, for a number we know (src/domain/site-notices.ts): what the page tells no one.
+  // The site's booking form, for a number we know (src/domain/ops/site-notices.ts): what the page tells no one.
   "consultation_exists",
   "book_in_app",
   "address_on_account",
   "address_not_served",
-  // Ops kept the account the client asked us to delete, with their reason (src/domain/deletion.ts).
+  // Ops kept the account the client asked us to delete, with their reason (src/domain/privacy/deletion.ts).
   "deletion_rejected",
-  "messages_stopped", // the answer to a STOP reply (src/domain/stop-messages.ts)
+  "messages_stopped", // the answer to a STOP reply (src/domain/messages/stop-messages.ts)
 ] as const;
 export type MessageKind = (typeof MESSAGE_KINDS)[number];

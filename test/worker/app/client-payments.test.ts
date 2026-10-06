@@ -3,7 +3,7 @@
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { App } from "../../../src/http/context.ts";
-import { openSession } from "../../../src/domain/sessions.ts";
+import { openSession } from "../../../src/domain/sign-in/sessions.ts";
 import { appFor, fakeDependencies, markDatabase, NOW, request } from "../helpers.ts";
 
 let client: App;

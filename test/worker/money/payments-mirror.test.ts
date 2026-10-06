@@ -1,11 +1,11 @@
-// The payments mirror's edges (src/domain/payments.ts): what Razorpay's
+// The payments mirror's edges (src/domain/money/payments.ts): what Razorpay's
 // webhook sends when a field is missing, and whom a payment is put against.
 // test/worker/money/razorpay-hook.test.ts walks the webhook itself; these are the
 // branches it leaves. NOW is Monday 21 September 2026, noon in India.
 
 import { env } from "cloudflare:workers";
 import { describe, expect, it } from "vitest";
-import { paymentStatusOf, recordPayment, recordRefund } from "../../../src/domain/payments.ts";
+import { paymentStatusOf, recordPayment, recordRefund } from "../../../src/domain/money/payments.ts";
 import type { RazorpayPayment } from "../../../src/providers/payments/razorpay.ts";
 import { NOW } from "../helpers.ts";
 

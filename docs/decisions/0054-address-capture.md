@@ -14,7 +14,7 @@ That is the pattern every Indian delivery app uses: find the building on a map, 
 
 Reading the code for it found that the chain ADR 0036 describes does not exist. Each link below is a file, not an inference.
 
-**An address is six free-text fields and nothing else.** `migrations/0008_profile.sql` gives `addresses` `line1`, `line2`, `locality`, `city`, `pincode` and `access_notes`, plus `lat`, `lng` and `geocoded_at`. `saveAddress` in `src/domain/profile.ts` writes the six and never the three. There is no flat, floor, tower or landmark: `line1` is labelled "House, flat or building" in `apps/app/src/content.ts` and carries all of it.
+**An address is six free-text fields and nothing else.** `migrations/0008_profile.sql` gives `addresses` `line1`, `line2`, `locality`, `city`, `pincode` and `access_notes`, plus `lat`, `lng` and `geocoded_at`. `saveAddress` in `src/domain/clients/profile.ts` writes the six and never the three. There is no flat, floor, tower or landmark: `line1` is labelled "House, flat or building" in `apps/app/src/content.ts` and carries all of it.
 
 **The address never reaches FSM.** `createContact` in `src/providers/fsm-zoho.ts` writes `Street_1: "To be confirmed with the client"` and a city, and nothing ever updates it. Nothing reads `Service_Latitude` or `Service_Longitude` back: the mirror takes `Service_City` and `Service_Zip_Code` from an appointment and no more.
 
@@ -149,7 +149,7 @@ The coordinate lives on the **address record**, as `Latitude` and `Longitude` â€
 
 And the premise ADR 0036 rested on does not hold: **a contact created with no coordinate got none.** Its `Google_Geocodedtime` stayed null and no coordinate ever appeared. FSM did not geocode the service address at all. There was never a coordinate coming from FSM to wait for, which is the last reason to set 0036's source ruling aside.
 
-**Our coordinate wins the geofence either way.** `src/domain/check-ins.ts` reads `addresses.lat`/`lng` from our own D1 and never asks FSM. If some future FSM setting re-geocodes the street and overwrites the pin in their copy, the fence still measures against ours. FSM's copy is for the technician's own navigation; ours is the record.
+**Our coordinate wins the geofence either way.** `src/domain/visits/check-ins.ts` reads `addresses.lat`/`lng` from our own D1 and never asks FSM. If some future FSM setting re-geocodes the street and overwrites the pin in their copy, the fence still measures against ours. FSM's copy is for the technician's own navigation; ours is the record.
 
 ### Decided
 

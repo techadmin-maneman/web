@@ -20,7 +20,7 @@ The owner ruled on two of these on 27 September 2026:
 
 ## Decision
 
-**The meter is one running figure in D1, beside a row for each object** (`storage_meter` and `stored_objects`, migration 0055; `src/domain/storage-meter.ts`).
+**The meter is one running figure in D1, beside a row for each object** (`storage_meter` and `stored_objects`, migration 0055; `src/domain/platform/storage-meter.ts`).
 
 - It counts what the two Phase 2 buckets hold: `client-photos` (visit photographs, their thumbnails, a try-on's small copy and a client's kept look) and `referral-cards`.
 - Every write to and delete from those buckets goes through `putCounted` or `deleteCounted`, which write the object's row and the figure in one D1 batch, after R2 has taken the write or the delete.
@@ -47,7 +47,7 @@ The owner ruled on two of these on 27 September 2026:
 **A photograph from the technician app is at most 2 MB** (`MAX_PHOTO_BYTES`, was 12 MB).
 
 - The app sends about 250 KB. When a frame will not come down to that, it sends the smallest it tried: 900 px on its long side at its lowest quality, well under 1 MB even from a phone that ignores the quality it is asked for. 2 MB is twice that.
-- **A photograph copied from FSM** keeps FSM's size (item 125). It takes its own path, the mirror's export (`src/domain/visit-photos.ts`), which has no limit of its own and is counted like any other.
+- **A photograph copied from FSM** keeps FSM's size (item 125). It takes its own path, the mirror's export (`src/domain/field/visit-photos.ts`), which has no limit of its own and is counted like any other.
 
 **The phone makes a thumbnail of each photograph at capture.**
 
@@ -62,7 +62,7 @@ The owner ruled on two of these on 27 September 2026:
 - **A thumbnail the API refuses is let go.** The client app then shows the photograph itself.
 - **A frame kept before this build** has no thumbnail, and goes without one; an API that names no take gets the photograph alone.
 
-**The API keeps the thumbnail beside its photograph** (`src/domain/tech-photos.ts`).
+**The API keeps the thumbnail beside its photograph** (`src/domain/field/tech-photos.ts`).
 
 - **What it takes:** a JPEG of at most 64 KB and 800 px a side (`MAX_THUMBNAIL_BYTES`).
 - **Where it goes:** `visits/<appointment>/<phase>-<angle>-<take>-small.jpg`, beside its photograph, `…-<take>.jpg`, in the same bucket. The photograph's row names it in `photos.thumbnail_key`.
