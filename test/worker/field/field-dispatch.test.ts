@@ -70,10 +70,10 @@ describe("dispatch", () => {
   });
 });
 
-// A visit the technician has begun stays where he is working it: moved, his phone would carry on with a visit now
+// A visit the technician has begun stays where they are working it: moved, their phone would carry on with a visit now
 // booked for another day or another technician.
 describe("dispatch, once the technician has begun", () => {
-  // Rohit's Friday visit, Imran's too, set aside: it would stand beside a move of today's to another day with him, and
+  // Rohit's Friday visit, Imran's too, set aside: it would stand beside a move of today's to another day with them, and
   // a technician never takes two of a client's visits in a row (docs/decisions/0111).
   beforeEach(async () => {
     await env.DB.prepare("UPDATE appointments SET status = 'cancelled' WHERE id = ?1").bind(LATER_JOB).run();
@@ -227,7 +227,7 @@ describe("leave", () => {
     opsPost(`/api/technicians/${technicianId}/leave`, { from, to, ...(note === undefined ? {} : { note }) });
 
   it("refuses a job on a day the technician is away, and names it as leave, not a clash", async () => {
-    // Sameer is away on the 22nd; his day is otherwise empty.
+    // Sameer is away on the 22nd; their day is otherwise empty.
     expect((await recordLeave(SAMEER, "2026-09-22", "2026-09-23", "Family wedding")).status).toBe(200);
 
     const answer = await opsPost("/api/dispatch/move", {

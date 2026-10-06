@@ -28,7 +28,7 @@ interface NewLeave {
   readonly actor: string;
 }
 
-/** A job still booked for a technician on a day he is now away: ops move it. */
+/** A job still booked for a technician on a day they are now away: ops move it. */
 interface JobOnLeave {
   readonly appointment_id: string;
   readonly starts_at: string;

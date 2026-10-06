@@ -137,7 +137,7 @@ export async function seedFitted(): Promise<void> {
     `INSERT INTO pieces (id, fsm_id, person_id, piece_code, base, supplier_lot, fitted_at, replacement_due_at,
        appointment_id, synced_at) VALUES
        ${sqlRow(piece, `e2e-${piece}`, person, pieceCode, "Mono", "L-1109", firstFit.date, pieceDue, visits.firstFit, now)};`,
-    // What the technician ticked on the service visit's checklist, as his phone sent it (src/config/job-sheet.ts).
+    // What the technician ticked on the service visit's checklist, as their phone sent it (src/config/job-sheet.ts).
     `INSERT INTO job_events (id, appointment_id, event_id, technician_id, kind, body, occurred_at, received_at,
        fsm_write_state, updated_at) VALUES
        ${sqlRow(id(), visits.service, id(), technician, "checklist", JSON.stringify({ done: ["piece_removed", "scalp_cleaned", "piece_cleaned"] }), service.start, service.start, "written", now)};`,

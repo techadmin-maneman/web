@@ -1,5 +1,5 @@
-// The three things a technician must know whatever screen he is on: that the
-// phone has no signal (the offline banner), that it has no room left for what he
+// The three things a technician must know whatever screen they are on: that the
+// phone has no signal (the offline banner), that it has no room left for what they
 // does, and that a job's work stopped reaching us — ops moved the job under the
 // phone, or the API refused a step — which until now only the waiting screen said.
 

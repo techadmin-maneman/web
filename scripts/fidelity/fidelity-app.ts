@@ -5,7 +5,7 @@
 //   npm run build:app -- --env local && npm run fidelity:app
 //
 // The app's API is answered with the design's own example (Rohit Malhotra, a
-// consultation on Sat 21 Sep; fitted, his next service visit on Thu 19 Sep
+// consultation on Sat 21 Sep; fitted, their next service visit on Thu 19 Sep
 // with Imran), so both sides show the same things. The design's photographs
 // are ink blocks with the angle written on them; the app's are answered with
 // blocks of the same ink, and carry no captions, as the prompt has it. The phone's

@@ -23,8 +23,8 @@
 //
 // So is the first (docs/decisions/0069-dispatch-under-concurrency.md): a visit
 // ops moved to another day or window whose client has not heard of it, having
-// not agreed to WhatsApp about his visits, or the message having never gone.
-// Ops call him, and say so on the dispatch board.
+// not agreed to WhatsApp about their visits, or the message having never gone.
+// Ops call them, and say so on the dispatch board.
 //
 // And so is a grievance (docs/decisions/0072-ops-clients-and-queues.md): the
 // client has been promised an answer within a time, as with an erasure, so it
@@ -97,7 +97,7 @@ export type TaskGroup = (typeof TASK_GROUPS)[number];
 export type Slas = Readonly<Record<TaskGroup, number>>;
 
 export const TASK_SLA_HOURS: Slas = {
-  // A client who does not know his visit moved will not be home for it: a call the same day.
+  // A client who does not know their visit moved will not be home for it: a call the same day.
   untold_move: 4,
   // These two are never later than the visit itself (src/domain/ops/tasks.ts).
   leave_conflict: 48,

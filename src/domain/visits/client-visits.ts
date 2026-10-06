@@ -124,7 +124,7 @@ async function contextOf(db: D1Database, personId: string): Promise<SummaryConte
 }
 
 /**
- * The technician's steps come before the visit's status, which follows them: a visit he closed as done is done; one he closed otherwise, or whose window has ended, is being closed; one he has begun is in progress.
+ * The technician's steps come before the visit's status, which follows them: a visit they closed as done is done; one they closed otherwise, or whose window has ended, is being closed; one they have begun is in progress.
  */
 function stageOf(row: AppointmentRow, now: Date): VisitStage | null {
   if (!NOT_CLOSED.includes(row.status)) return null;
@@ -316,7 +316,7 @@ async function invoiceHeld(
 
 /**
  * What was done: the items of the job sheet's checklist that the technician
- * ticked, in the words ops gave them in the console, from the last checklist his
+ * ticked, in the words ops gave them in the console, from the last checklist their
  * phone sent that was not superseded; an item ops have since taken off is still
  * named. The committed list (src/config/job-sheet.ts) stands until ops save one.
  * A visit closed with no checklist has none.

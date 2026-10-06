@@ -6,7 +6,7 @@
 // What these hold: what a place holds is the sum of its rows; a delivery, a
 // transfer, a count and a write-off each write what they say, with the Access
 // identity behind them; a job's use comes out of the technician's kit once,
-// however often his step is replayed, and a later step corrects it by the
+// however often their step is replayed, and a later step corrects it by the
 // difference; the old step by names is still taken; a count and a job's use,
 // or two of a job's steps, landing together, each count once; and a kit that
 // falls to its level raises one alert, which closes once it is stocked again.
@@ -191,7 +191,7 @@ describe("the ledger", () => {
     expect(places.map((place) => place.technician_id)).toEqual([null, IMRAN]);
     expect(places[1]?.active).toBe(false);
 
-    // Emptied back into the store, his kit holds nothing, and its column goes.
+    // Emptied back into the store, their kit holds nothing, and its column goes.
     await job.opsPost("/api/stock/transfers", { consumable_code: "tape_strips", quantity: 5, from: IMRAN, to: null });
     expect((await stock()).places.map((place) => place.technician_id)).toEqual([null]);
   });

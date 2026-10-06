@@ -103,7 +103,7 @@ describe("the ops console's routes", () => {
       tab: "kit",
     });
     expect(routeOf(`/technicians/${TECHNICIAN}/nowhere`)).toEqual({ page: "tasks" });
-    // His tabs share one key, so moving between them does not read the roster again.
+    // Their tabs share one key, so moving between them does not read the roster again.
     expect(keyOf(routeOf(technicianPath(TECHNICIAN, "leave")))).toBe(keyOf(routeOf(technicianPath(TECHNICIAN))));
     expect(keyOf(routeOf("/technicians"))).not.toBe(keyOf(routeOf(technicianPath(TECHNICIAN))));
   });

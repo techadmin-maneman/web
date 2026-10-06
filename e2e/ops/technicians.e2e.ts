@@ -1,6 +1,6 @@
 // Technicians: the roster, one row a technician, the jobs each has
 // finished and how those ran; and each technician's own page, which the roster's
-// names open: his details, then his week, leave, phones and kit, a tab at a time.
+// names open: their details, then their week, leave, phones and kit, a tab at a time.
 // The API is answered from e2e/ops/fixtures.ts, since a local database has no
 // technician until one is added and none has logged in. The clock is fixed to
 // the day the fixture's leave is read against.
@@ -73,7 +73,7 @@ async function open(page: Page, changed: Answers = {}): Promise<void> {
   await expect(page.getByRole("heading", { level: 1, name: "Technicians" })).toBeVisible();
 }
 
-/** Opens a technician's page from the roster by his name, on the tab named, or on his week. */
+/** Opens a technician's page from the roster by their name, on the tab named, or on their week. */
 async function pageOf(page: Page, name: string, tab?: string) {
   await page.getByRole("link", { name, exact: true }).click();
   await expect(page.getByRole("heading", { level: 2, name })).toBeVisible();
@@ -95,7 +95,7 @@ test("lists every active technician with the zone the board draws", async ({ pag
   await expect(page.getByRole("row").filter({ hasText: "Faizan Ali" })).toContainText("—");
 });
 
-// Each technician took some 270 px with his phones and leave beneath him: 34,000 px for 168.
+// Each technician took some 270 px with their phones and leave beneath them: 34,000 px for 168.
 test("gives each technician one row of the board's height, however many phones and days off", async ({ page }) => {
   await open(page);
   for (const name of ["Imran Qureshi", "Sandeep Yadav", "Faizan Ali"]) {
@@ -188,7 +188,7 @@ test("says in the roster when a technician's next leave begins, or until when he
   await expect(away).toHaveCSS("font-variant-caps", "all-small-caps");
 });
 
-// A technician off sick or a lost phone meant finding him in three sections, and the panel had no address.
+// A technician off sick or a lost phone meant finding them in three sections, and the panel had no address.
 test("opens a technician's own page from his name, a tab at a time, each at an address of its own", async ({
   page,
 }) => {
@@ -247,7 +247,7 @@ test("names each phone, says when it was last used, and whether it is signed in,
   await expect(faizan.getByText("No phone logged in.")).toBeVisible();
 });
 
-// A revoke stops him signing in on any phone, since his code reaches the lost phone too; ops let him back.
+// A revoke stops them signing in on any phone, since their code reaches the lost phone too; ops let them back.
 test("says when a revoke stopped him signing in, and lets him in again", async ({ page }) => {
   const [imran, ...others] = TECHNICIANS.technicians;
   const stopped = {
@@ -333,7 +333,7 @@ test("says so when no technician is active", async ({ page }) => {
   await expect(page.getByText("No technician is active.")).toBeVisible();
 });
 
-// ---- His kit ---------------------------------------------------------------------------------------------------
+// ---- Their kit ---------------------------------------------------------------------------------------------------
 
 test("lists what his kit holds, marking what is low, with the way to Stock", async ({ page }) => {
   const kit = {
@@ -414,7 +414,7 @@ test("records leave, saying first that nobody can be booked on those days, and s
   await main.getByLabel("Last day").fill("2027-10-14");
   await main.getByLabel("Note (optional)").fill("Away");
 
-  // His leave is read again, with the new period and the job it falls on.
+  // Their leave is read again, with the new period and the job it falls on.
   const recorded = {
     leave: [
       {
@@ -635,11 +635,11 @@ test("switches a technician off only once asked, and lists the visits he no long
     "/dispatch",
   );
   await expect(main.getByRole("button", { name: "Switch Imran Qureshi back on" })).toBeVisible();
-  // Switched off, he has no phone signed in and no leave to record: his page is his details alone.
+  // Switched off, they have no phone signed in and no leave to record: their page is their details alone.
   await expect(main.getByRole("navigation", { name: /^Imran Qureshi:/ })).toBeHidden();
   expect(await axeViolations(page)).toEqual([]);
 
-  // He is off the roster's table, and listed apart.
+  // They are off the roster's table, and listed apart.
   await backToRoster(page);
   await expect(page.getByRole("row").filter({ hasText: "Imran Qureshi" })).toHaveCount(0);
   await expect(page.getByRole("region", { name: "Switched off" })).toContainText("Imran Qureshi");

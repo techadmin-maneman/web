@@ -8,7 +8,7 @@ export function visitBegun(alias: string): string {
   return begunBy(alias, "'check_in', 'start', 'outcome'");
 }
 
-/** True once the visit has begun by more than the technician's check-in: he has started or closed it, or it was paid. */
+/** True once the visit has begun by more than the technician's check-in: they have started or closed it, or it was paid. */
 export function begunPastArrival(alias: string): string {
   return begunBy(alias, "'start', 'outcome'");
 }

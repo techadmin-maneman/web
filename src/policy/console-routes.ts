@@ -172,7 +172,7 @@ export const ROUTE_NEEDS: Readonly<Record<string, RouteNeed | typeof SIGNED_IN>>
 export const WAIVING_A_NO_SHOW: RouteNeed = inOwnPlaces("finance", "manage");
 /** Refunding a disputed charge, where upholding it keeps the money, in the dispute's city. */
 export const REFUNDING_A_DISPUTE: RouteNeed = inOwnPlaces("finance", "manage");
-/** A technician with no city is seen only nationally, so leaving him without one asks Operations MANAGE nationally. */
+/** A technician with no city is seen only nationally, so leaving them without one asks Operations MANAGE nationally. */
 export const GIVING_NO_CITY: RouteNeed = need("operations", "manage");
 
 /** The department that decides each group of tasks: its people see the group on Tasks, and Act may take a task of it. */

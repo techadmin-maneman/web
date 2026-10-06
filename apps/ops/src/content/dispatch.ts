@@ -66,7 +66,7 @@ export const dispatch = {
     block: (job: string, date: string, window: string) => `${job}, ${date}, ${window}`,
     /** A block for a visit already done, which stays where it was worked and cannot be moved. */
     doneBlock: (job: string, date: string, window: string) => `${job}, ${date}, ${window}, done`,
-    /** How far the technician has got, from his phone. A visit he has begun stays where it is. */
+    /** How far the technician has got, from their phone. A visit they have begun stays where it is. */
     begun: { arrived: "Arrived", started: "Started", closed: "Closed" } as Readonly<Record<string, string>>,
     begunBlock: (job: string, date: string, window: string, begun: string) =>
       `${job}, ${date}, ${window}, ${begun.toLowerCase()}`,
@@ -124,7 +124,7 @@ export const dispatch = {
     } as Readonly<Record<string, string>>,
   },
   drawer: {
-    /** The way past the geofence, for a visit today he has not checked in to. */
+    /** The way past the geofence, for a visit today they have not checked in to. */
     letIn: "Let him check in",
     /** Beneath the name: "Fri 19 Sep · 12 to 4 pm · Imran Qureshi". */
     when: (date: string, hours: string, technician: string) => `${date} · ${hours} · ${technician}`,
@@ -157,7 +157,7 @@ export const dispatch = {
       terminated: "Not done",
       other: "Other",
     } as Readonly<Record<string, string>>,
-    /** The State row once the technician's phone says he has begun. */
+    /** The State row once the technician's phone says they have begun. */
     begun: {
       arrived: "Technician arrived",
       started: "Technician started",
@@ -172,7 +172,7 @@ export const dispatch = {
     /** The drawer's two buttons: "WhatsApp Rohit" and "Open client". */
     whatsapp: (firstName: string) => `WhatsApp ${firstName}`,
     openClient: "Open client",
-    /** A move the client has not heard of, and why, which ops tell him of by phone (ADR 0069). */
+    /** A move the client has not heard of, and why, which ops tell them of by phone (ADR 0069). */
     untold: {
       no_consent: (when: string, mobile: string) =>
         `Not told of the move to ${when}: they have not agreed to WhatsApp. Call ${mobile}, then record it here.`,
@@ -207,7 +207,7 @@ export const dispatch = {
       { reason: "zone_rebalance", label: "Zone rebalance" },
       { reason: "running_over", label: "Running over on an earlier job" },
     ],
-    /** The board's line, for a client who agreed to WhatsApp about his visits. */
+    /** The board's line, for a client who agreed to WhatsApp about their visits. */
     note: (job: string) => `${job} is messaged on WhatsApp with the new window.`,
     /** One who has not; the move goes to the Tasks board until ops say they called (ADR 0069). */
     call: (name: string, mobile: string) => `${name} has not agreed to WhatsApp — call ${mobile} with the new window.`,

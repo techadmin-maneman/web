@@ -4,8 +4,8 @@
 // sends back the id it was given.
 //
 // Nothing is chosen for the technician. The board draws Done already chosen,
-// in gold beside a gold Next, which let a gloved tap close a job he had not
-// finished; here both are outlined until he picks, and Next stays dim until he
+// in gold beside a gold Next, which let a gloved tap close a job they had not
+// finished; here both are outlined until they pick, and Next stays dim until they
 // has (ADR 0025, "The technician boards").
 //
 // The duration runs from Start job to here, and the technician never types a

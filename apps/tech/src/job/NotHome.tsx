@@ -146,7 +146,7 @@ export function NotHome({ job, queued, card }: { job: Job; queued: readonly Queu
       go(`/jobs/${job.id}/done`);
     });
 
-  /** The stage's one action: Start job once he is at the door, I have arrived before, none while a check-in has failed. */
+  /** The stage's one action: Start job once they are at the door, I have arrived before, none while a check-in has failed. */
   function doorAction(): ReactNode {
     if (here) {
       return (

@@ -36,7 +36,7 @@ const SLOTS: Readonly<Record<VisitType, number>> = { consultation: 1, service: 1
 /** Each window's first half-slot in India's time, as UTC (docs/decisions/0035-window-slot-map.md). */
 const STARTS: Readonly<Record<Window, string>> = { morning: "03:30", afternoon: "06:30", evening: "10:30" };
 
-/** Rohit Malhotra, the design's client: agreed to WhatsApp about his visits, and invited by nobody. */
+/** Rohit Malhotra, the design's client: agreed to WhatsApp about their visits, and invited by nobody. */
 export const ROHIT = {
   id: "11000000-0000-4000-8000-000000000001",
   name: "Rohit Malhotra",
@@ -45,7 +45,7 @@ export const ROHIT = {
   referred_by: null,
 } satisfies Block["person"];
 
-/** Vikram Sethi: never agreed to WhatsApp about his visits, so a move of his is told by phone (ADR 0069). */
+/** Vikram Sethi: never agreed to WhatsApp about their visits, so a move of theirs is told by phone (ADR 0069). */
 export const VIKRAM = {
   id: "11000000-0000-4000-8000-000000000002",
   name: "Vikram Sethi",

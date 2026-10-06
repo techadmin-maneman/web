@@ -2,7 +2,7 @@
 // such a booking holds no payment is still to be confirmed (open point 90).
 //
 // The site books it as a first fit marked as one visit, with nothing paid (src/domain/booking/public-booking.ts). The client
-// chooses the product with the technician, who fits it from his kit; closing the visit as done sends the client a
+// chooses the product with the technician, who fits it from their kit; closing the visit as done sends the client a
 // Razorpay payment link for it (src/domain/money/payment-links.ts). A client who decides against it ends the visit as a
 // consultation, with nothing charged.
 

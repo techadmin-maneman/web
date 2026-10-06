@@ -1,7 +1,7 @@
 // Logging in to the technician app (src/routes/tech/auth.ts). NOW is Monday
 // 21 September 2026, 12 noon in India. Every name and number here is made up.
 //
-// A technician is recognised only while he is active on the console's roster,
+// A technician is recognised only while they are active on the console's roster,
 // and a number the roster does not hold gets the same answer as one it does,
 // so the screen never says which is which.
 
@@ -210,7 +210,7 @@ describe("POST /api/tech/auth/otp, its limits", () => {
   });
 
   // Clients' logins and number changes spent the one ceiling technicians shared, so a technician on a new
-  // phone could not start his day.
+  // phone could not start their day.
   it("still sends a technician his code once the client app's ceiling is spent", async () => {
     const oneCode = { ...LOCAL_SETTINGS, login: { ...LOCAL_SETTINGS.login, codeDailyCeiling: 1 } };
     await takeFromCeiling(env.DB, "login_code", { now: NOW, settings: oneCode });
@@ -317,8 +317,8 @@ describe("a signed-in phone", () => {
     expect(Object.keys(documented)).toContain("401");
   });
 
-  // A technician who has left keeps his phone, and on it the cards of the day:
-  // clients' addresses and mobiles. Being switched off ends his session at once,
+  // A technician who has left keeps their phone, and on it the cards of the day:
+  // clients' addresses and mobiles. Being switched off ends their session at once,
   // and says why, so the phone sets aside what it has not sent rather than wipe it.
   it("is signed out on its next call once ops switch him off", async () => {
     const cookie = await signIn();
@@ -375,7 +375,7 @@ describe("the two logins", () => {
   });
 });
 
-// A revoke did not stick. The lost phone still gets his code on WhatsApp, and signing in again with it
+// A revoke did not stick. The lost phone still gets their code on WhatsApp, and signing in again with it
 // undid the revoke.
 describe("after ops revoke a phone of his", () => {
   const staff = { kind: "staff", id: "ops@maneman.test" } as const;

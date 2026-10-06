@@ -74,7 +74,7 @@ export const ERROR_CODES = [
   // ops revoked this phone, so it drops its cached jobs; the job moved under it while it
   // was offline; the step before this one has not been sent; a check-in or start on a day
   // that is not the job's; a no-show on a job already started (ADR 0065). And a technician who may not sign in
-  // until ops let him, since they revoked a phone of his.
+  // until ops let them, since they revoked a phone of theirs.
   "device_revoked",
   "sign_in_stopped",
   "superseded",
@@ -84,7 +84,7 @@ export const ERROR_CODES = [
   // A piece label already on record, for another client or as this client's piece from an earlier visit: the
   // technician corrects it on the phone.
   "piece_code",
-  // Ops switched the technician off: the phone sets his unsent work aside rather than wiping it.
+  // Ops switched the technician off: the phone sets their unsent work aside rather than wiping it.
   "technician_inactive",
   // Dispatch (docs/decisions/0034-clash-check.md): the technician already holds a job in that
   // window, is away that day (ADR 0062), or the window is free but the visit has no room in it.
@@ -98,7 +98,7 @@ export const ERROR_CODES = [
   "past_day",
   "window_passed",
   "blackout",
-  // The technician has begun the visit, so a move would leave his work on another day or with another technician.
+  // The technician has begun the visit, so a move would leave their work on another day or with another technician.
   "in_progress",
   // The no-show wait has not run out yet (src/policy/no-show.ts), or a visit ops would close by hand is still to come.
   "too_early_to_close",

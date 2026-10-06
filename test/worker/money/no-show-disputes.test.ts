@@ -50,7 +50,7 @@ beforeEach(async () => {
     env.DB.prepare(
       "INSERT INTO technicians (id, fsm_id, name, initials, active, updated_at) VALUES (?1, 'fsm-t1', 'Imran Qureshi', 'IQ', 1, ?2)",
     ).bind(TECHNICIAN, NOW.toISOString()),
-    // A first fit booked for 9 am on Saturday the 19th; he checked in 240 m away, against a 200 m radius.
+    // A first fit booked for 9 am on Saturday the 19th; they checked in 240 m away, against a 200 m radius.
     env.DB.prepare(
       `INSERT INTO appointments (id, fsm_id, person_id, type, status, fsm_status, window_start, window_end,
          technician_id, fsm_modified_at, synced_at)

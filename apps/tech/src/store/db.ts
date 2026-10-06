@@ -1,7 +1,7 @@
 // Everything the phone holds, in one IndexedDB database. It is app-private, as
 // the design's open question asks ("Needs an app-private store, not the camera
 // roll"), and it is wiped whole when the session ends or ops revoke the device. A technician ops switch off keeps
-// the work he has not sent for a while (./set-aside.ts).
+// the work they have not sent for a while (./set-aside.ts).
 //
 //   device    the device's own ID and label, made once at enrolment, and who is signed in
 //   days      today's and tomorrow's lists, so the app opens in a basement

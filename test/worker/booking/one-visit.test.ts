@@ -1,5 +1,5 @@
 // A consultation and fit in one visit, at the visit (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md):
-// the technician's card offers the products by name, his piece step records the one the client chose or that they
+// the technician's card offers the products by name, their piece step records the one the client chose or that they
 // decided against it, and closing the visit as done sends the client a Razorpay payment link, which Razorpay's
 // webhook then says is paid. NOW is Monday 21 September 2026, 12 noon in India; the visit is today at 13:00. Every
 // name, number and price is made up.

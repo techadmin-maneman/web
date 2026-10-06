@@ -10,7 +10,7 @@ export function paidFor(job: Job): string | null {
 
 /**
  * On a first fit, the product the hair profile names when it is not the one paid for, so the technician checks with
- * ops before he fits; null when they agree, or either names none.
+ * ops before they fit; null when they agree, or either names none.
  */
 export function profileNamesAnother(job: Job): string | null {
   const service = job.service ?? null;

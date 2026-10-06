@@ -140,8 +140,8 @@ test("the code request carries the phone's own ID, and a wrong code is not an er
   expect(unlistedBody.device_id ?? "").toMatch(/^[A-Za-z0-9_-]{8,64}$/);
   await expect(page.getByText("A six-digit code is on its way.")).toBeVisible();
 
-  // That request may read FSM's list again, which never names the seeded technician. He is written by hand, so
-  // the sync leaves him active (migration 0046). Before, it could switch him off, and an inactive technician's
+  // That request may read FSM's list again, which never names the seeded technician. They are written by hand, so
+  // the sync leaves them active (migration 0046). Before, it could switch them off, and an inactive technician's
   // session, the one the seed wrote, ends on its next call (ADR 0065).
   const seeded = await query<{ active: number }>(
     `SELECT active FROM technicians WHERE id = '${fixture.technicianId}';`,

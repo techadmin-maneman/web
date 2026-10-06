@@ -14,7 +14,7 @@ import {
 import { MINUTE_MS } from "../lib/durations.ts";
 
 /**
- * How long the technician waits before he may close a job as a no-show: 15 minutes for every type. It stays one
+ * How long the technician waits before they may close a job as a no-show: 15 minutes for every type. It stays one
  * number per type so a type can be given its own later without touching anything that reads it.
  */
 export type Waits = Readonly<Record<VisitType, number>>;

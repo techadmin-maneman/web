@@ -49,7 +49,7 @@ export function blockOn(board: Pick<Board, "technicians">, appointmentId: string
 /** The client the board writes on a block: "Rohit M.". */
 const clientOf = (job: Job): string | null => (job.kind === "block" ? job.block.client : job.job.client);
 
-/** The client in full, with what reaches him; none for a visit with no client, or one erased. */
+/** The client in full, with what reaches them; none for a visit with no client, or one erased. */
 export const personOf = (job: Job): BoardClient | null => (job.kind === "block" ? job.block.person : job.job.person);
 
 /** The kind of visit a job is, where it has one. */
@@ -80,7 +80,7 @@ export function whenOf(job: Job): { readonly date: string | null; readonly windo
 
 /**
  * The job as the board shows it, which a move sends so a stale board is refused. A tray job still on a
- * technician who was switched off is his until it moves.
+ * technician who was switched off is theirs until it moves.
  */
 export function shownOf(job: Job): Shown {
   if (job.kind === "block") return { technicianId: job.technician.technician_id, startsAt: job.block.starts_at };
@@ -100,7 +100,7 @@ export function changesTime(job: Job, to: Target, landsAt: string | null = null)
   return was.date !== to.date || was.window !== to.window;
 }
 
-/** A visit done stays where it was worked, and one the technician has begun where he is working it. */
+/** A visit done stays where it was worked, and one the technician has begun where they are working it. */
 export const isMovable = (block: Block): boolean =>
   block.status !== "completed" && block.status !== "in_progress" && block.begun === null;
 
@@ -108,7 +108,7 @@ export const isMovable = (block: Block): boolean =>
 export const movesIfCheckInCleared = (block: Block): boolean =>
   block.begun === "arrived" && (block.status === "scheduled" || block.status === "dispatched");
 
-/** How far the technician has got on a visit not yet done, in the board's word; null before he arrives. */
+/** How far the technician has got on a visit not yet done, in the board's word; null before they arrive. */
 export function begunWord(block: Block): string | null {
   if (block.begun === null || block.status === "completed") return null;
   return dispatch.board.begun[block.begun] ?? null;
@@ -122,7 +122,7 @@ const OPEN: readonly Block["status"][] = ["scheduled", "dispatched", "in_progres
 
 /**
  * Cancelled while it is still ahead and the technician has not begun it, or closed by hand once its time has come,
- * while neither his phone nor anyone has closed it.
+ * while neither their phone nor anyone has closed it.
  */
 export function changeOf(block: Block, now: number): VisitChange | null {
   if (Date.parse(block.starts_at) > now) {
@@ -132,7 +132,7 @@ export function changeOf(block: Block, now: number): VisitChange | null {
 }
 
 /**
- * Whether ops may let the technician check in past the geofence: a visit today he has not checked in to, as when the
+ * Whether ops may let the technician check in past the geofence: a visit today they have not checked in to, as when the
  * address's pin is far from the door.
  */
 export const mayLetIn = (block: Block, now: number): boolean =>
@@ -140,4 +140,4 @@ export const mayLetIn = (block: Block, now: number): boolean =>
   block.begun === null &&
   indiaDate(block.starts_at) === indiaDate(new Date(now).toISOString());
 
-/** "Rohit", as the drawer's WhatsApp button names him. */
+/** "Rohit", as the drawer's WhatsApp button names them. */

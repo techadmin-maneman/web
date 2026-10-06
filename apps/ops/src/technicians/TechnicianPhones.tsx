@@ -1,6 +1,6 @@
-// A technician's Phones tab: each phone he has logged in on, when it was last used, and whether it is signed in,
+// A technician's Phones tab: each phone they have logged in on, when it was last used, and whether it is signed in,
 // signed out or revoked. Revoking a phone ends its session and makes it drop its cached jobs, so it asks before it
-// sends (src/domain/dispatch/technicians.ts). It also stops him signing in on any phone until ops let him again.
+// sends (src/domain/dispatch/technicians.ts). It also stops them signing in on any phone until ops let them again.
 
 import { errorText } from "@maneman/web-kit/refusal";
 import { Button } from "@maneman/ui/Button";
@@ -110,14 +110,14 @@ function Phone({ phone, technician }: { phone: Device; technician: Technician })
   );
 }
 
-/** Where letting him sign in again is: not asked, sending, done, or refused by the API. */
+/** Where letting them sign in again is: not asked, sending, done, or refused by the API. */
 type Allowing =
   | { readonly step: "stopped" }
   | { readonly step: "sending" }
   | { readonly step: "allowed" }
   | { readonly step: "failed"; readonly code: string };
 
-/** Since a revoke, no phone of his signs in until ops let him: his code reaches a lost phone's WhatsApp too. */
+/** Since a revoke, no phone of theirs signs in until ops let them: their code reaches a lost phone's WhatsApp too. */
 function SignInStopped({ technician, since }: { technician: Technician; since: string }) {
   const [allowing, setAllowing] = useState<Allowing>({ step: "stopped" });
   const mayAllow = useAccess().mayCall("POST /api/technicians/{id}/allow-sign-in");

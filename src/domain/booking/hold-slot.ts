@@ -255,7 +255,7 @@ interface HeldTime {
 }
 
 /**
- * Whether a hold's own time is still free on its technician's day: he is not on leave, and nothing but the hold itself
+ * Whether a hold's own time is still free on its technician's day: they are not on leave, and nothing but the hold itself
  * and the visit `exceptVisitId` takes its window or its half-slots.
  */
 export async function heldTimeFree(

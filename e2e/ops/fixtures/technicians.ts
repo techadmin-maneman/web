@@ -49,7 +49,7 @@ export const TECHNICIANS = {
       "Sandeep Yadav",
       "SY",
       "Sec 1–39",
-      // Signed out on his own: not revoked, and no session live.
+      // Signed out on their own: not revoked, and no session live.
       [
         {
           device_id: "c7e4f1a8902d",
@@ -62,7 +62,7 @@ export const TECHNICIANS = {
       // Leave ops recorded here, which the dispatch board reads from the same rows (ADR 0062).
       [{ id: "89000000-0000-4000-8000-000000000001", from: "2027-10-02", to: "2027-10-06", note: "Family wedding" }],
     ),
-    // Nobody has given him a city yet, so only national staff see him.
+    // Nobody has given them a city yet, so only national staff see them.
     technician(3, "Faizan Ali", "FA", null, [], [], null),
   ],
   switched_off: [],
@@ -108,7 +108,7 @@ export const LEAVE_RECORDED = { id: "89000000-0000-4000-8000-000000000002", jobs
   "post"
 >;
 
-/** Sandeep's leave as his page reads it, with a job still booked on its days that ops have yet to move. */
+/** Sandeep's leave as their page reads it, with a job still booked on its days that ops have yet to move. */
 export const SANDEEP_LEAVE = {
   leave: [
     {
@@ -139,7 +139,7 @@ export const LEAVE_CANCELLED = { cancelled: true } satisfies OpsReply<
  * What each of them has finished, over the quarter the route counts by default.
  * Faizan's is the board's own line, "18 minutes over on services", against the
  * 90 minutes a service visit is planned for; Sandeep's average is of fewer jobs
- * than he finished, because the phone timed only thirty of them.
+ * than they finished, because the phone timed only thirty of them.
  */
 export const TECHNICIAN_WORK = {
   from: "2027-06-24",

@@ -34,7 +34,7 @@ export interface Working {
 }
 
 /**
- * Imran, his phone signed in, and today's service visit to Rohit, ready to work, with any vendor and setting a test
+ * Imran, their phone signed in, and today's service visit to Rohit, ready to work, with any vendor and setting a test
  * gives.
  */
 export async function working(

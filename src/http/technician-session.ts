@@ -1,7 +1,7 @@
 // The technician app's session, from its cookie, mm_tech (src/http/session-cookie.ts), bound to the phone it was
 // opened on (docs/decisions/0052-technician-sessions.md).
 //
-// "His sessions are bound to a device and can be revoked by ops. Revoking also
+// "Their sessions are bound to a device and can be revoked by ops. Revoking also
 // wipes the device's cached jobs on its next contact": a call from a revoked
 // phone is answered `device_revoked`, and the app drops what it cached.
 
@@ -16,7 +16,7 @@ import { sessionCookie } from "./session-cookie.ts";
 
 const TECHNICIAN = sessionCookie("__Host-mm_tech", "mm_tech");
 
-/** The technician this request is from, and the phone he is on. */
+/** The technician this request is from, and the phone they are on. */
 export interface TechnicianSession {
   readonly sessionId: string;
   readonly technicianId: string;
@@ -48,7 +48,7 @@ export const requireTechnicianSession = createMiddleware<AppEnv>(async (c, next)
   }
 
   // A technician switched off has left, or is away from the work: the app drops the clients' cards it holds and
-  // sets aside the work it has not sent, which goes once he is switched back on and signs in again.
+  // sets aside the work it has not sent, which goes once they are switched back on and sign in again.
   if (device !== null && !device.technicianActive) {
     await revokeSession(c.env.DB, sessionId, now);
     clearTechnicianCookie(c);

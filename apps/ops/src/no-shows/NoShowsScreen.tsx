@@ -6,7 +6,7 @@
 // ruled on today. A ruling reads the day's money again.
 //
 // A case is evidence a client may be charged on, so it names the client and
-// says when the visit was booked for, when the technician's phone says he
+// says when the visit was booked for, when the technician's phone says they
 // arrived and when that reached us, and what became of the reminder. A ruling
 // carries its reason, which the server refuses to go without, and a charge is
 // asked about once more, with what it keeps and refunds, before it is sent.
@@ -186,7 +186,7 @@ function messageOf(each: NoShowCase): string {
 }
 
 /**
- * How long he waited, from the check-in to the close, and not the wait the
+ * How long they waited, from the check-in to the close, and not the wait the
  * rules asked for. A check-in that reached us well after the phone's time says
  * how long it had been with us too, since that is the part our clock vouches for.
  */
