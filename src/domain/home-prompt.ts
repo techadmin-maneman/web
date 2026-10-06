@@ -1,4 +1,4 @@
-// Home's prompts, in the owner's order (src/policy/home-prompt.ts):
+// Home's prompts, in their order (src/policy/home-prompt.ts):
 //
 //   1. no address given, while something is booked;
 //   2. the next service due and not booked (src/domain/next-visit.ts), with its day and window, or the replacement

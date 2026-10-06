@@ -93,8 +93,8 @@ export async function composeFriendCredited(
 
 /**
  * A rejected grant, told to each side without ops' reason, which stays with the decision. The friend's goes with
- * their consent to WhatsApp about visits. The referrer's, like the message of a fit, needs none of its own: an
- * interim reading of the owner's ruling that the referrer is told (ADR 0025, "The messages people are owed").
+ * their consent to WhatsApp about visits. The referrer's, like the message of a fit, needs none of its own: the
+ * referrer is told (ADR 0025, "The messages people are owed").
  */
 export async function composeReferralRejected(
   db: D1Database,

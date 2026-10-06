@@ -1,6 +1,6 @@
 // What we know of one client: how often they have been served, what they have
 // bought, and when their piece falls due. Counted from the rows themselves at
-// the moment someone looks, as board D2's tasks and board D1's money are
+// the moment someone looks, as the Tasks board and the day's money are
 // (src/domain/tasks.ts, src/domain/day-money.ts). There is no counts table and
 // there is not going to be one: a tally kept anywhere could drift from the
 // visits and payments behind it, and the client and ops read the same figures.

@@ -24,7 +24,7 @@ interface EligiblePerson {
 
 /**
  * "Open to any person with a booked consultation or any later appointment."
- * A booked consultation is a visit, or a Phase 1 booking with a proposed visit
+ * A booked consultation is a visit, or a lead from the site's first form with a proposed visit
  * date (ADR 0025, item 16).
  */
 export async function findEligiblePerson(db: D1Database, mobileE164: string): Promise<EligiblePerson | null> {

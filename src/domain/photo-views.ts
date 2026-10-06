@@ -54,8 +54,7 @@ export async function viewInForce(db: D1Database, personId: string, actor: Audit
 }
 
 /**
- * Every opening of this client's photographs, the earliest first: the client's to read in their data export, as the
- * owner ruled on 27 September 2026 (docs/open-points.md, item 68).
+ * Every opening of this client's photographs, the earliest first: the client's to read in their data export.
  */
 export async function allViews(db: D1Database, personId: string): Promise<PhotoView[]> {
   const { results } = await db

@@ -279,8 +279,7 @@ interface CarriedCode {
 }
 
 /**
- * The code a visit moved late carries to the new visit booked in its place, as the owner ruled on 1 October 2026:
- * the same code and the same discount, written as a use on the new hold whatever the code's limits now say, since
+ * The code a visit moved late carries to the new visit booked in its place: the same code and the same discount, written as a use on the new hold whatever the code's limits now say, since
  * no new use is counted. The visit moved is cancelled once the new one is booked, and its use then stands no more.
  * Null for a visit with no code, or whose discount was not yet fixed.
  */

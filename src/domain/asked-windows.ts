@@ -6,7 +6,7 @@ import { windowLabel, type VisitWindow } from "../config/booking.ts";
 import type { BookingWindow } from "../config/scheduling.ts";
 
 /**
- * The window a Phase 1 booking's choice falls in: its two are morning and
+ * The window the site's first form's choice falls in: its two are morning and
  * evening (docs/decisions/0040-phase-1-alignment.md).
  */
 export const askedWindowOf = (choice: VisitWindow): BookingWindow =>

@@ -1,6 +1,6 @@
-// A day's money, as board D1 draws it: what was collected, what went back, and
+// A day's money, as the console's Payments page shows it: what was collected, what went back, and
 // each charge that was kept or ruled on. Derived from the rows Razorpay's
-// webhook and the visit changes already write, the way board D2's tasks are
+// webhook and the visit changes already write, the way the Tasks board is
 // derived (src/domain/tasks.ts); no total is accumulated anywhere, so none can
 // drift from the payments behind it.
 //
@@ -83,7 +83,7 @@ const FIGURES = `SELECT
  * 0059). One charged before that recorded nothing is listed with no amount.
  *
  * A person who has been erased is left out of the lines, as they are left out of
- * board D2's tasks: their record is gone.
+ * the Tasks board: their record is gone.
  */
 const CHARGES = `SELECT * FROM (
   SELECT 'late_cancellation' AS kind, c.id AS id, pe.id AS person_id, pe.name AS person_name,

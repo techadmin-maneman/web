@@ -1,6 +1,6 @@
 // The consumables ops keep in the console, and what each service is expected to
-// use (docs/decisions/0087-consumables-and-stock.md). The owner ruled on 27
-// September 2026 that both are set in the console, that the technician app
+// use (docs/decisions/0087-consumables-and-stock.md). Both are set in the
+// console, that the technician app
 // reads them with the job, and that a job's use is internal: kept in our
 // records, never as a line of the client's invoice.
 //
