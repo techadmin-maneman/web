@@ -66,13 +66,19 @@ const QUEUE_CONSUMERS: readonly {
   {
     prefix: "mm-render-",
     consume: (batch, workerEnv, deps, log) =>
-      handleRenderBatch(batch, workerEnv, deps, log, {
-        resultRetentionDays: config.settings.tryon.resultRetentionDays,
+      handleRenderBatch({
+        batch,
+        env: workerEnv,
+        deps,
+        log,
+        options: {
+          resultRetentionDays: config.settings.tryon.resultRetentionDays,
+        },
       }),
   },
   {
     prefix: "mm-messaging-",
-    consume: (batch, workerEnv, deps, log) => handleMessagingBatch(batch, workerEnv.DB, config, deps, log),
+    consume: (batch, workerEnv, deps, log) => handleMessagingBatch({ batch, db: workerEnv.DB, config, deps, log }),
   },
 ];
 

@@ -154,7 +154,7 @@ async function startFirstLook(c: Context<AppEnv>, job: JobRow, choice: RenderCho
 
   const at = { now, settings: c.var.config.settings };
   if (!(await takeFromCeiling(db, "render", at))) {
-    await failJob(db, job.id, "busy", null, now);
+    await failJob({ db, jobId: job.id, code: "busy", detail: null, now });
     await alertCeilingReached(db, c.var.deps.alert, "render", at);
     return { error: "busy", status: 503 };
   }

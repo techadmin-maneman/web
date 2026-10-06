@@ -333,7 +333,11 @@ describe("Zoho: access tokens", () => {
 
 describe("Zoho record and note contents", () => {
   it("never blanks booking details from a try-on", () => {
-    const record = recordFor(crmLead({ source: "tryon", city: null, firstChoiceWindow: null }), null, false);
+    const record = recordFor({
+      lead: crmLead({ source: "tryon", city: null, firstChoiceWindow: null }),
+      status: null,
+      isNew: false,
+    });
     expect(record).not.toHaveProperty("City");
     expect(record).not.toHaveProperty("Loss_Extent");
     expect(record).not.toHaveProperty("Proposed_Visit_Date");
@@ -344,7 +348,7 @@ describe("Zoho record and note contents", () => {
     const invited = crmLead({ firstChoiceWindow: null, inviteCode: "RM7K2Q", askedWindow: "afternoon" });
 
     it("names the source, the invite and the window, once the org has the fields", () => {
-      expect(recordFor(invited, "New", true, { referral: true })).toMatchObject({
+      expect(recordFor({ lead: invited, status: "New", isNew: true, fields: { referral: true } })).toMatchObject({
         Lead_Source: "Referral",
         Referral_Code: "RM7K2Q",
         Booked_Window: "Afternoon",
@@ -352,7 +356,7 @@ describe("Zoho record and note contents", () => {
     });
 
     it("writes none of them while the org has not the fields, rather than have Zoho refuse the lead", () => {
-      const record = recordFor(invited, "New", true, { referral: false });
+      const record = recordFor({ lead: invited, status: "New", isNew: true, fields: { referral: false } });
       expect(record.Lead_Source).toBe("Booking form");
       expect(record).not.toHaveProperty("Referral_Code");
       expect(record).not.toHaveProperty("Booked_Window");
@@ -371,11 +375,13 @@ describe("Zoho record and note contents", () => {
     const oneVisit = crmLead({ firstChoiceWindow: null, plan: "one_visit", discountCode: "TENPC" });
 
     it("says both in the record's Description", () => {
-      expect(recordFor(oneVisit, "New", true).Description).toBe(
+      expect(recordFor({ lead: oneVisit, status: "New", isNew: true }).Description).toBe(
         "Consultation and fit in one visit. Discount code TENPC.",
       );
-      expect(recordFor(crmLead({ plan: "consultation" }), "New", true).Description).toBe("Consultation.");
-      expect(recordFor(crmLead(), "New", true)).not.toHaveProperty("Description");
+      expect(recordFor({ lead: crmLead({ plan: "consultation" }), status: "New", isNew: true }).Description).toBe(
+        "Consultation.",
+      );
+      expect(recordFor({ lead: crmLead(), status: "New", isNew: true })).not.toHaveProperty("Description");
     });
 
     it("notes the plan on a record the CRM already has, and never the code, which an erasure would keep", () => {

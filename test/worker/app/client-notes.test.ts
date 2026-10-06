@@ -124,7 +124,7 @@ describe("POST /api/appointments/:id/note", () => {
     await note({ note: "Ring twice" });
     await env.DB.prepare("UPDATE appointments SET status = 'completed'").run();
 
-    await erasePerson(env, PERSON, NOW, createLogger());
+    await erasePerson({ env, personId: PERSON, now: NOW, log: createLogger() });
 
     expect(await env.DB.prepare("SELECT client_note FROM appointments").first()).toEqual({ client_note: null });
   });

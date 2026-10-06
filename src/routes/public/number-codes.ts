@@ -102,12 +102,12 @@ const ask: RouteHandler<typeof askRoute, AppEnv> = async (c) => {
   const asked = await mayAskForCode(c, { surface: "form", mobileHash, ipHash: visitor.ipHash, now, testRecord });
   if (asked === "busy") return refuse(c, "busy");
   if (asked !== "open") return refuse(c, "rate_limited");
-  const counted = await countCode(c, "form", mobileE164, testRecord, now);
+  const counted = await countCode({ c, surface: "form", sendsTo: mobileE164, testRecord, now });
   if (!counted) return refuse(c, "busy");
 
-  const code = knownCode(login, testRecord) ?? newLoginCode();
+  const code = knownCode({ login, testRecord }) ?? newLoginCode();
   const codeId = await createNumberCode(c.env.DB, { mobileHash, code, pepper: login.codePepper, now });
-  await sendCodeAfterResponse(c, mobileE164, testRecord, "whatsapp", code);
+  await sendCodeAfterResponse({ c, mobileE164, testRecord, channel: "whatsapp", code });
   return c.json({ code_id: codeId }, 202);
 };
 

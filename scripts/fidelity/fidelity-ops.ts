@@ -64,7 +64,19 @@ const BEFORE_THE_WEEK = new Date("2025-09-17T05:00:00Z");
 
 const person = (n: number, name: string) => ({ person_id: `11000000-0000-4000-8000-00000000000${String(n)}`, name });
 /** Each held as long before IN_2027 as the board writes: "3 days held", "1 day held", "5 hours held". */
-const held = (n: number, referrer: string, referred: string, heldSince: string, signal: string) => ({
+const held = ({
+  n,
+  referrer,
+  referred,
+  heldSince,
+  signal,
+}: {
+  n: number;
+  referrer: string;
+  referred: string;
+  heldSince: string;
+  signal: string;
+}) => ({
   id: `aa000000-0000-4000-8000-00000000000${String(n)}`,
   referrer: person(n, referrer),
   referred: person(n + 5, referred),
@@ -75,9 +87,27 @@ const held = (n: number, referrer: string, referred: string, heldSince: string, 
 });
 const HELD = {
   held: [
-    held(1, "Rohit Malhotra", "Vikram Sethi", "2027-09-19T05:00:00.000Z", "shared_address"),
-    held(2, "Ashish Gill", "Manoj Gill", "2027-09-21T05:00:00.000Z", "shared_upi"),
-    held(3, "Karan Bose", "Nikhil Arora", "2027-09-22T00:00:00.000Z", "monthly_cap"),
+    held({
+      n: 1,
+      referrer: "Rohit Malhotra",
+      referred: "Vikram Sethi",
+      heldSince: "2027-09-19T05:00:00.000Z",
+      signal: "shared_address",
+    }),
+    held({
+      n: 2,
+      referrer: "Ashish Gill",
+      referred: "Manoj Gill",
+      heldSince: "2027-09-21T05:00:00.000Z",
+      signal: "shared_upi",
+    }),
+    held({
+      n: 3,
+      referrer: "Karan Bose",
+      referred: "Nikhil Arora",
+      heldSince: "2027-09-22T00:00:00.000Z",
+      signal: "monthly_cap",
+    }),
   ],
 };
 
@@ -105,13 +135,19 @@ const REFERRERS = {
 
 // ---- Board C3: who is waiting, and the pincode about to launch ---------------
 
-const area = (
-  pincode: string,
-  name: string,
-  city: string,
-  oldest: string,
-  figures: readonly [number, number, number],
-) => ({
+const area = ({
+  pincode,
+  name,
+  city,
+  oldest,
+  figures,
+}: {
+  pincode: string;
+  name: string;
+  city: string;
+  oldest: string;
+  figures: readonly [number, number, number];
+}) => ({
   pincode,
   area: name,
   city,
@@ -124,11 +160,11 @@ const area = (
 });
 const AREAS = {
   areas: [
-    area("400050", "Bandra W", "Mumbai", "2027-02-04", [117, 31, 84]),
-    area("400026", "Cumballa", "Mumbai", "2027-03-19", [64, 12, 41]),
-    area("560034", "Koramangala", "Bengaluru", "2027-04-02", [58, 9, 44]),
-    area("110024", "Lajpat Nagar", "Delhi", "2027-01-28", [46, 18, 30]),
-    area("201301", "Noida 18", "Noida", "2027-05-11", [39, 14, 27]),
+    area({ pincode: "400050", name: "Bandra W", city: "Mumbai", oldest: "2027-02-04", figures: [117, 31, 84] }),
+    area({ pincode: "400026", name: "Cumballa", city: "Mumbai", oldest: "2027-03-19", figures: [64, 12, 41] }),
+    area({ pincode: "560034", name: "Koramangala", city: "Bengaluru", oldest: "2027-04-02", figures: [58, 9, 44] }),
+    area({ pincode: "110024", name: "Lajpat Nagar", city: "Delhi", oldest: "2027-01-28", figures: [46, 18, 30] }),
+    area({ pincode: "201301", name: "Noida 18", city: "Noida", oldest: "2027-05-11", figures: [39, 14, 27] }),
   ],
   more: false,
 };
@@ -195,7 +231,19 @@ const PHOTOS = {
 // ---- Board D3: the roster and its figures ------------------------------------
 // TECHNICIANS and TECHNICIAN_WORK are the browser tests' (e2e/ops/fixtures.ts): the board's own four, typed against the API.
 
-const consent = (purpose: string, state: string, version: string | null, at: string | null, source: string | null) => ({
+const consent = ({
+  purpose,
+  state,
+  version,
+  at,
+  source,
+}: {
+  purpose: string;
+  state: string;
+  version: string | null;
+  at: string | null;
+  source: string | null;
+}) => ({
   purpose,
   state,
   notice_version: version,
@@ -205,11 +253,35 @@ const consent = (purpose: string, state: string, version: string | null, at: str
 /** The board's sources, "App" and "Site", as the places the console names (docs/fidelity-method.md). */
 const CONSENTS = {
   consents: [
-    consent("photos_own_record", "given", "photos-own-record-v1", "2026-11-14T08:00:00.000Z", "app_profile"),
-    consent("photos_referral_cards", "given", "photos-referral-cards-v2", "2027-08-03T08:00:00.000Z", "app_profile"),
-    consent("photos_marketing", "not_given", null, null, null),
-    consent("whatsapp_visits", "given", "referral-consultation-v1", "2026-11-02T08:00:00.000Z", "site_booking"),
-    consent("whatsapp_launches", "withdrawn", "whatsapp-launches-v1", "2027-01-11T08:00:00.000Z", "app_profile"),
+    consent({
+      purpose: "photos_own_record",
+      state: "given",
+      version: "photos-own-record-v1",
+      at: "2026-11-14T08:00:00.000Z",
+      source: "app_profile",
+    }),
+    consent({
+      purpose: "photos_referral_cards",
+      state: "given",
+      version: "photos-referral-cards-v2",
+      at: "2027-08-03T08:00:00.000Z",
+      source: "app_profile",
+    }),
+    consent({ purpose: "photos_marketing", state: "not_given", version: null, at: null, source: null }),
+    consent({
+      purpose: "whatsapp_visits",
+      state: "given",
+      version: "referral-consultation-v1",
+      at: "2026-11-02T08:00:00.000Z",
+      source: "site_booking",
+    }),
+    consent({
+      purpose: "whatsapp_launches",
+      state: "withdrawn",
+      version: "whatsapp-launches-v1",
+      at: "2027-01-11T08:00:00.000Z",
+      source: "app_profile",
+    }),
   ],
   deletion: null,
 };
@@ -354,18 +426,36 @@ async function dispatch(browser: Browser, design: Page): Promise<void> {
   const block = page.getByRole("button", { name: "Rohit M., Fri 19 Sep, morning" });
   await block.waitFor();
   await settle(page);
-  await pair(OUT, SHOWN, "a1-dispatch", await frame(design, "Dispatch"), await shrink(await page.screenshot(), SHOWN));
+  await pair({
+    dir: OUT,
+    width: SHOWN,
+    name: "a1-dispatch",
+    design: await frame(design, "Dispatch"),
+    built: await shrink(await page.screenshot(), SHOWN),
+  });
 
   await block.click();
   const drawer = page.getByRole("dialog", { name: "Rohit Malhotra" });
   await drawer.getByText("Service visit · 1 slot").waitFor();
-  await pair(OUT, PANEL, "a3-block-drawer", await frame(design, "Dispatch · drawer"), await drawer.screenshot());
+  await pair({
+    dir: OUT,
+    width: PANEL,
+    name: "a3-block-drawer",
+    design: await frame(design, "Dispatch · drawer"),
+    built: await drawer.screenshot(),
+  });
 
   await page.getByRole("button", { name: "Move this visit" }).click();
   await page.getByRole("button", { name: "Move Rohit M. to Sandeep Yadav, Sat 20 Sep, morning" }).click();
   const picker = page.getByRole("dialog", { name: "Move Rohit M. to Sandeep Yadav" });
   await picker.getByText("Fri 19 Sep, 9 am → Sat 20 Sep, 9 am").waitFor();
-  await pair(OUT, PANEL, "a2-move-reason", await frame(design, "Dispatch · drag"), await picker.screenshot());
+  await pair({
+    dir: OUT,
+    width: PANEL,
+    name: "a2-move-reason",
+    design: await frame(design, "Dispatch · drag"),
+    built: await picker.screenshot(),
+  });
   await page.close();
 }
 
@@ -375,10 +465,22 @@ async function referrals(browser: Browser, design: Page): Promise<void> {
   await page.getByText("Opens and consultations stay here.").waitFor();
 
   const queue = page.getByRole("region", { name: "Held for review" });
-  await pair(OUT, QUEUE, "c1-held-for-review", await frame(design, "Referrals · queue"), await queue.screenshot());
+  await pair({
+    dir: OUT,
+    width: QUEUE,
+    name: "c1-held-for-review",
+    design: await frame(design, "Referrals · queue"),
+    built: await queue.screenshot(),
+  });
 
   const table = page.getByRole("region", { name: "All referrers" });
-  await pair(OUT, QUEUE, "c2-referrers", await frame(design, "Referrals · table"), await table.screenshot());
+  await pair({
+    dir: OUT,
+    width: QUEUE,
+    name: "c2-referrers",
+    design: await frame(design, "Referrals · table"),
+    built: await table.screenshot(),
+  });
   await page.close();
 }
 
@@ -389,7 +491,13 @@ async function waitlist(browser: Browser, design: Page): Promise<void> {
 
   // The board's frame is the table and the confirmation, one above the other, which is the section itself.
   const column = page.locator("main > div");
-  await pair(OUT, PANEL, "c3-waitlist-and-launch", await frame(design, "Waitlist"), await column.screenshot());
+  await pair({
+    dir: OUT,
+    width: PANEL,
+    name: "c3-waitlist-and-launch",
+    design: await frame(design, "Waitlist"),
+    built: await column.screenshot(),
+  });
   await page.close();
 }
 
@@ -401,12 +509,24 @@ async function photos(browser: Browser, design: Page): Promise<void> {
   const page = await openConsole(browser, `/clients/${CLIENT_ID}/photos`, AT_1042);
   const panel = page.getByRole("region", { name: "Photographs of Rohit Malhotra" });
   await panel.getByRole("heading", { name: "Photographs of Rohit Malhotra" }).waitFor();
-  await pair(OUT, PANEL, "b2-photos-locked", await panelOf(design, "Client · photos", 0), await panel.screenshot());
+  await pair({
+    dir: OUT,
+    width: PANEL,
+    name: "b2-photos-locked",
+    design: await panelOf(design, "Client · photos", 0),
+    built: await panel.screenshot(),
+  });
 
   await page.getByRole("button", { name: "View photos" }).click();
   await page.getByText("22 Aug 2027 · service visit · Imran Qureshi").waitFor();
   await settle(page);
-  await pair(OUT, PANEL, "b2-photos-open", await panelOf(design, "Client · photos", 1), await panel.screenshot());
+  await pair({
+    dir: OUT,
+    width: PANEL,
+    name: "b2-photos-open",
+    design: await panelOf(design, "Client · photos", 1),
+    built: await panel.screenshot(),
+  });
   await page.close();
 }
 
@@ -418,11 +538,23 @@ async function noShows(browser: Browser, design: Page): Promise<void> {
   const page = await openConsole(browser, "/no-shows");
   const money = page.getByRole("region", { name: /^Today/ });
   await money.getByText("Cancelled 9:14 am · visit was 10 am").waitFor();
-  await pair(OUT, PANEL, "d1-day-money", await panelOf(design, "Payments", 0), await money.screenshot());
+  await pair({
+    dir: OUT,
+    width: PANEL,
+    name: "d1-day-money",
+    design: await panelOf(design, "Payments", 0),
+    built: await money.screenshot(),
+  });
 
   const dispute = page.getByRole("region", { name: "Vikram Sethi disputes the charge" });
   await dispute.getByText("240 m · over 200 m fence").waitFor();
-  await pair(OUT, PANEL, "d1-disputed-charge", await panelOf(design, "Payments", 1), await dispute.screenshot());
+  await pair({
+    dir: OUT,
+    width: PANEL,
+    name: "d1-disputed-charge",
+    design: await panelOf(design, "Payments", 1),
+    built: await dispute.screenshot(),
+  });
   await page.close();
 }
 
@@ -435,7 +567,13 @@ async function pieces(browser: Browser, design: Page): Promise<void> {
   const page = await openConsole(browser, `/clients/${CLIENT_ID}/pieces`, IN_2027, false);
   await page.getByText("MM-STD-4417-C").waitFor();
   await settle(page);
-  await pair(OUT, SHOWN, "b1-pieces", await frame(design, "Client page"), await shrink(await page.screenshot(), SHOWN));
+  await pair({
+    dir: OUT,
+    width: SHOWN,
+    name: "b1-pieces",
+    design: await frame(design, "Client page"),
+    built: await shrink(await page.screenshot(), SHOWN),
+  });
   await page.close();
 }
 
@@ -445,7 +583,13 @@ async function tasks(browser: Browser, design: Page): Promise<void> {
   await page.getByRole("heading", { level: 1, name: "Tasks" }).waitFor();
   const panel = page.getByRole("region", { name: "Tasks" });
   await panel.waitFor();
-  await pair(OUT, PANEL, "d2-tasks", await frame(design, "Tasks"), await panel.screenshot());
+  await pair({
+    dir: OUT,
+    width: PANEL,
+    name: "d2-tasks",
+    design: await frame(design, "Tasks"),
+    built: await panel.screenshot(),
+  });
   await page.close();
 }
 
@@ -454,7 +598,13 @@ async function technicians(browser: Browser, design: Page): Promise<void> {
   const page = await openConsole(browser, "/technicians");
   const panel = page.getByRole("region", { name: "Technicians" });
   await panel.getByText("1 h 48 m").waitFor();
-  await pair(OUT, PANEL, "d3-technicians", await frame(design, "Technicians"), await panel.screenshot());
+  await pair({
+    dir: OUT,
+    width: PANEL,
+    name: "d3-technicians",
+    design: await frame(design, "Technicians"),
+    built: await panel.screenshot(),
+  });
   await page.close();
 }
 
@@ -463,7 +613,13 @@ async function consents(browser: Browser, design: Page): Promise<void> {
   const page = await openConsole(browser, `/clients/${CLIENT_ID}/consents`);
   const panel = page.getByRole("region", { name: "Consents" });
   await page.getByText("Ops cannot grant a consent.").waitFor();
-  await pair(OUT, PANEL, "b3-consents", await frame(design, "Client · consents"), await panel.screenshot());
+  await pair({
+    dir: OUT,
+    width: PANEL,
+    name: "b3-consents",
+    design: await frame(design, "Client · consents"),
+    built: await panel.screenshot(),
+  });
   await page.close();
 }
 

@@ -21,7 +21,9 @@ export class UnexpectedAnswer extends ProviderError {
 
   constructor(answer: Omit<VendorAnswer, "body">, what: string) {
     const { vendor, status, step } = answer;
-    super(status, "UNEXPECTED_ANSWER", `${vendor} ${String(status)} UNEXPECTED_ANSWER: ${step}: ${what}`, false);
+    super(status, "UNEXPECTED_ANSWER", `${vendor} ${String(status)} UNEXPECTED_ANSWER: ${step}: ${what}`, {
+      refusal: false,
+    });
   }
 }
 

@@ -195,7 +195,7 @@ async function askAboutCheckout(
   if (captures.length === 0) return false;
   const notes = { hold_id: hold.id, person_id: hold.person_id };
   for (const payment of captures) {
-    await recordPayment(db, { ...payment, notes }, "captured", deps.hashSalt, now);
+    await recordPayment({ db, payment: { ...payment, notes }, status: "captured", hashSalt: deps.hashSalt, now });
     await tellFound(deps, { payment, paidFor: `booking ${hold.id}`, personId: hold.person_id, next: BOOKING_FOLLOWS });
   }
   await sendToBeBooked(deps, hold);

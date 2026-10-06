@@ -34,12 +34,12 @@ async function booked(technicianId: string, date: string): Promise<void> {
 }
 
 const holdOn = async (date: string, window: "morning" | "afternoon") => {
-  const hold = await holdSlot(
-    env.DB,
-    { personId: await person(), service: CONSULTATION, date, window, price: FREE, from: "site" },
-    NOW,
-    600,
-  );
+  const hold = await holdSlot({
+    db: env.DB,
+    input: { personId: await person(), service: CONSULTATION, date, window, price: FREE, from: "site" },
+    now: NOW,
+    holdSeconds: 600,
+  });
   return hold?.technician.name;
 };
 

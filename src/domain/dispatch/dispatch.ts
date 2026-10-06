@@ -557,7 +557,19 @@ function startOn(day: Day, job: Placing, target: Target): number | null {
 }
 
 /** Where the job lands on the target's day, or why it cannot. */
-function landingOf(day: Day, job: Placing, target: Target, blackoutWithoutReason: boolean, beside: boolean): Landing {
+function landingOf({
+  day,
+  job,
+  target,
+  blackoutWithoutReason,
+  beside,
+}: {
+  day: Day;
+  job: Placing;
+  target: Target;
+  blackoutWithoutReason: boolean;
+  beside: boolean;
+}): Landing {
   const start = startOn(day, job, target);
   const check = { time: target.time, fits: start !== null, blackoutWithoutReason, besideTheClient: beside };
   const refusal = moveRefusal(day, target.window, check);
@@ -626,20 +638,26 @@ const isOnlyCheckedIn = (job: LiveJob): boolean =>
   job.status !== "in_progress" && job.begun === 1 && job.begun_past_arrival === 0;
 
 /** Whether the job may move as it is: not begun, or only checked in and ops chose to clear the check-in. */
-const mayMove = (job: LiveJob, clearingCheckIn: boolean): boolean =>
+const mayMove = ({ job, clearingCheckIn }: { job: LiveJob; clearingCheckIn: boolean }): boolean =>
   !isUnderWay(job) || (clearingCheckIn && isOnlyCheckedIn(job));
 
 /**
  * Where a move puts the job. A day and window that are the job's own keep its start while that start is still ahead:
  * only the technician changes. Otherwise the job takes the window's first free half-slot still to start.
  */
-function targetOf(
-  job: LiveJob,
-  technicianId: string,
-  place: { readonly date: string; readonly window: BookingWindow },
-  schedule: SlotSchedule,
-  now: Date,
-): Target {
+function targetOf({
+  job,
+  technicianId,
+  place,
+  schedule,
+  now,
+}: {
+  job: LiveJob;
+  technicianId: string;
+  place: { readonly date: string; readonly window: BookingWindow };
+  schedule: SlotSchedule;
+  now: Date;
+}): Target {
   const { date, window } = place;
   const was = schedule.at(job.window_start);
   const today = schedule.at(now);
@@ -694,7 +712,7 @@ export async function moveJob(db: D1Database, deps: MoveDeps, input: MoveInput, 
   if (changed.length > 0) return { kind: "superseded", changed };
   if (job.client_moving === 1) return { kind: "superseded", changed: ["moving"] };
   const clearCheckIn = input.clearCheckIn ?? null;
-  if (!mayMove(job, clearCheckIn !== null)) return { kind: "in_progress" };
+  if (!mayMove({ job, clearingCheckIn: clearCheckIn !== null })) return { kind: "in_progress" };
 
   const wasStart = new Date(job.window_start);
   const technicianId = input.technicianId ?? job.technician_id;
@@ -703,20 +721,26 @@ export async function moveJob(db: D1Database, deps: MoveDeps, input: MoveInput, 
   // What ops left out keeps what the job has.
   const date = input.date ?? indiaDate(wasStart);
   const window = input.window ?? schedule.at(wasStart).window;
-  const target = targetOf(job, technicianId, { date, window }, schedule, now);
+  const target = targetOf({ job, technicianId, place: { date, window }, schedule, now });
   if (isWhereItIs(job, target)) return { kind: "nothing_to_move" };
 
   // The check runs before anything is written. The job's own time does not
   // count against its own move.
   const [held, ontoBlackout, clientVisits] = await Promise.all([
-    occupancy(db, date, date, now, job.id),
+    occupancy({ db, from: date, to: date, now, exceptVisitId: job.id }),
     movesOntoBlackout(db, job, date),
     visitsOfClient(db, job.person_id, job.id),
   ]);
   const blackoutReason = ontoBlackout ? (input.blackoutReason ?? null) : null;
   const placing = { minutes: bookedMinutes(job), start: wasStart };
   const beside = breaksRotation(clientVisits, { technicianId: job.technician_id, date: indiaDate(wasStart) }, target);
-  const landing = landingOf(held(technicianId, date), placing, target, ontoBlackout && blackoutReason === null, beside);
+  const landing = landingOf({
+    day: held(technicianId, date),
+    job: placing,
+    target,
+    blackoutWithoutReason: ontoBlackout && blackoutReason === null,
+    beside,
+  });
   if (landing.kind === "refused") return landing;
 
   const times = timesAt(target, landing.start, placing, schedule);
@@ -804,7 +828,7 @@ async function changedUnder(db: D1Database, move: PlannedMove): Promise<MoveOutc
   if (job === null) return { kind: "not_found" };
   const changed = changedSince(job, { technicianId: move.job.technician_id, startsAt: move.job.window_start });
   if (changed.length > 0) return { kind: "superseded", changed };
-  if (!mayMove(job, move.clearCheckIn !== null)) return { kind: "in_progress" };
+  if (!mayMove({ job, clearingCheckIn: move.clearCheckIn !== null })) return { kind: "in_progress" };
   return { kind: "superseded", changed: ["moving"] };
 }
 
@@ -928,12 +952,12 @@ export async function dispatchRoomFor(
   now: Date,
 ): Promise<Rooms | null> {
   const job = await liveJob(db, input.appointmentId);
-  if (job === null || !mayMove(job, true)) return null;
+  if (job === null || !mayMove({ job, clearingCheckIn: true })) return null;
   const dates = weekFrom(input.from);
   const to = dates[dates.length - 1] ?? input.from;
   const [technicians, held, schedule, blackouts, clientVisits] = await Promise.all([
     activeTechnicians(db),
-    occupancy(db, input.from, to, now, job.id),
+    occupancy({ db, from: input.from, to, now, exceptVisitId: job.id }),
     loadSlotSchedule(db),
     loadBlackouts(db, input.from, to),
     visitsOfClient(db, job.person_id, job.id),
@@ -942,10 +966,16 @@ export async function dispatchRoomFor(
   const from = { technicianId: job.technician_id, date: indiaDate(visit.start) };
   const startsFor = (technicianId: string, date: string): RoomStart[] =>
     BOOKING_WINDOWS.flatMap((window) => {
-      const target = targetOf(job, technicianId, { date, window }, schedule, now);
+      const target = targetOf({ job, technicianId, place: { date, window }, schedule, now });
       if (isWhereItIs(job, target)) return [];
       const beside = breaksRotation(clientVisits, from, target);
-      const landing = landingOf(held(technicianId, date), visit, target, false, beside);
+      const landing = landingOf({
+        day: held(technicianId, date),
+        job: visit,
+        target,
+        blackoutWithoutReason: false,
+        beside,
+      });
       if (landing.kind === "refused") return [];
       return [{ window, starts_at: timesAt(target, landing.start, visit, schedule).start.toISOString() }];
     });

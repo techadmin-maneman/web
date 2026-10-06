@@ -238,14 +238,21 @@ function texture({ width, height, at }: Image, x: number, y: number): number {
 }
 
 /** Step 4. The median colour of a region in the head's box, if it is textured where it must be, and not scenery. */
-function sample(
-  image: Image,
-  skin: Skin,
-  head: Head,
-  scenery: readonly Rgb[],
-  inRegion: (x: number, y: number) => boolean,
-  mustBeTextured: boolean,
-): Rgb | null {
+function sample({
+  image,
+  skin,
+  head,
+  scenery,
+  inRegion,
+  mustBeTextured,
+}: {
+  image: Image;
+  skin: Skin;
+  head: Head;
+  scenery: readonly Rgb[];
+  inRegion: (x: number, y: number) => boolean;
+  mustBeTextured: boolean;
+}): Rgb | null {
   const points: [number, number][] = [];
   for (let y = 0; y < image.height; y++) {
     for (let x = 0; x < image.width; x++) {
@@ -293,7 +300,7 @@ export function detectHairColour(pixels: ArrayLike<number>, width: number, heigh
     between(y, brows) && x > left + faceWidth * brows.inset && x < right - faceWidth * brows.inset;
 
   const hairIn = (inRegion: (x: number, y: number) => boolean, mustBeTextured: boolean) =>
-    sample(image, skin, head, scenery, inRegion, mustBeTextured);
+    sample({ image, skin, head, scenery, inRegion, mustBeTextured });
   const hair =
     hairIn((x, y) => onCrown(x, y) || onTemples(x, y), true) ?? hairIn(onTemples, true) ?? hairIn(onBrows, false);
   return hair === null ? "unknown" : apiColour(nearestShade(hair));

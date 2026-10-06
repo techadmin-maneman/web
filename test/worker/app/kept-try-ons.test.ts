@@ -73,7 +73,14 @@ async function tryOnWithCopy(id: string, columns: Record<string, string | number
     ...columns,
   });
   await env.UPLOADS.put(`uploads/${id}`, syntheticJpeg(1200, 1600));
-  if (columns.copy_key !== null) await putCounted(env.DB, env.CLIENT_PHOTOS, copyOf(id), COPY, "image/jpeg");
+  if (columns.copy_key !== null)
+    await putCounted({
+      db: env.DB,
+      bucket: env.CLIENT_PHOTOS,
+      key: copyOf(id),
+      bytes: COPY,
+      contentType: "image/jpeg",
+    });
   await env.RESULTS.put(`results/${id}.png`, LOOK, { httpMetadata: { contentType: "image/png" } });
 }
 
@@ -393,7 +400,7 @@ describe("an erasure", () => {
     await sweepNow();
     await env.DB.prepare("UPDATE appointments SET status = 'completed'").run();
 
-    expect(await erasePerson(env, CLIENT, NOW, createLogger())).not.toBeNull();
+    expect(await erasePerson({ env, personId: CLIENT, now: NOW, log: createLogger() })).not.toBeNull();
 
     expect(await env.CLIENT_PHOTOS.head(copyOf("client"))).toBeNull();
     expect(await env.CLIENT_PHOTOS.head("tryons/client/look.png")).toBeNull();
@@ -403,7 +410,7 @@ describe("an erasure", () => {
   it("deletes a copy still held with its look", async () => {
     await tryOnWithCopy("held");
 
-    await erasePerson(env, CLIENT, NOW, createLogger());
+    await erasePerson({ env, personId: CLIENT, now: NOW, log: createLogger() });
 
     expect(await env.CLIENT_PHOTOS.head(copyOf("held"))).toBeNull();
   });

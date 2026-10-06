@@ -268,13 +268,19 @@ const SELECT_JOB = `
   WHERE a.technician_id = ?1 AND a.deleted_at IS NULL AND a.window_start IS NOT NULL`;
 
 /** The jobs on one India date, in time order. Statuses the technician can still act on, and what he closed today. */
-export async function jobsOn(
-  db: D1Database,
-  technicianId: string,
-  date: string,
-  now: Date,
-  unlockHour: number,
-): Promise<JobSummary[]> {
+export async function jobsOn({
+  db,
+  technicianId,
+  date,
+  now,
+  unlockHour,
+}: {
+  db: D1Database;
+  technicianId: string;
+  date: string;
+  now: Date;
+  unlockHour: number;
+}): Promise<JobSummary[]> {
   const from = indiaInstant(date, "00:00").toISOString();
   const to = indiaInstant(addDays(date, 1), "00:00").toISOString();
   const [jobs, schedule, landed] = await Promise.all([
@@ -287,7 +293,7 @@ export async function jobsOn(
   ]);
   return jobs.results
     .filter((row) => isOneOf(SHOWN, row.status))
-    .map((row) => listingOf(row, now, unlockHour, schedule, stateOf(landed.get(row.id) ?? [])));
+    .map((row) => listingOf({ row, now, unlockHour, schedule, progress: stateOf(landed.get(row.id) ?? []) }));
 }
 
 /** A job event as the job's state is read from it. */
@@ -359,7 +365,7 @@ export async function jobDetail(
     oneVisit ? decisionAtVisit(db, row.id) : null,
     unlocked(windowStart, options.now, options.unlockHour) ? unlockedPartsOf(db, row) : null,
   ]);
-  const summary = listingOf(row, options.now, options.unlockHour, schedule, progress);
+  const summary = listingOf({ row, now: options.now, unlockHour: options.unlockHour, schedule, progress });
   const locked = {
     ...summary,
     address: null,
@@ -571,7 +577,19 @@ export async function workableJob(db: D1Database, jobId: string): Promise<Workab
   };
 }
 
-function listingOf(row: JobRow, now: Date, unlockHour: number, schedule: SlotSchedule, progress: JobState): JobSummary {
+function listingOf({
+  row,
+  now,
+  unlockHour,
+  schedule,
+  progress,
+}: {
+  row: JobRow;
+  now: Date;
+  unlockHour: number;
+  schedule: SlotSchedule;
+  progress: JobState;
+}): JobSummary {
   const starts = new Date(row.window_start);
   const open = unlocked(starts, now, unlockHour);
   return {

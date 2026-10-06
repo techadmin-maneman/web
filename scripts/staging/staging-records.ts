@@ -92,25 +92,61 @@ interface Found {
   readonly unreadable: string[];
 }
 
-function add(found: Found, kind: RecordKind, id: string, name: string, parentId?: string): void {
+function add({
+  found,
+  kind,
+  id,
+  name,
+  parentId,
+}: {
+  found: Found;
+  kind: RecordKind;
+  id: string;
+  name: string;
+  parentId?: string;
+}): void {
   found.records.push({ kind, id, name, ...(parentId === undefined ? {} : { parentId }) });
 }
 
-function judge(found: Found, kind: RecordKind, id: string, name: string, marked: boolean): void {
-  if (marked) add(found, kind, id, name);
+function judge({
+  found,
+  kind,
+  id,
+  name,
+  marked,
+}: {
+  found: Found;
+  kind: RecordKind;
+  id: string;
+  name: string;
+  marked: boolean;
+}): void {
+  if (marked) add({ found, kind, id, name });
   else if (looksLikeATest(name)) found.lookAlikes.push(`${kind} ${id} "${name}"`);
 }
 
 async function readBooks(found: Found): Promise<void> {
   for (const row of await booksRows("/customerpayments", "customerpayments", BOOKS_PAYMENT)) {
-    judge(found, "books/customerpayments", row.payment_id, row.description, isStagingLabelled(row.description));
+    judge({
+      found,
+      kind: "books/customerpayments",
+      id: row.payment_id,
+      name: row.description,
+      marked: isStagingLabelled(row.description),
+    });
   }
   for (const row of await booksRows("/invoices", "invoices", BOOKS_INVOICE)) {
     const name = `${row.invoice_number} for ${row.customer_name}`;
-    judge(found, "books/invoices", row.invoice_id, name, isStagingMarked(row.customer_name));
+    judge({ found, kind: "books/invoices", id: row.invoice_id, name, marked: isStagingMarked(row.customer_name) });
   }
   for (const row of await booksRows("/contacts", "contacts", BOOKS_CONTACT)) {
-    judge(found, "books/contacts", row.contact_id, row.contact_name, isStagingMarked(row.contact_name));
+    judge({
+      found,
+      kind: "books/contacts",
+      id: row.contact_id,
+      name: row.contact_name,
+      marked: isStagingMarked(row.contact_name),
+    });
   }
 }
 
@@ -121,7 +157,8 @@ async function readCrm(found: Found): Promise<void> {
       found.unreadable.push(module);
       continue;
     }
-    for (const row of rows) judge(found, `crm/${module}`, row.id, row.Full_Name, isStagingMarked(row.Full_Name));
+    for (const row of rows)
+      judge({ found, kind: `crm/${module}`, id: row.id, name: row.Full_Name, marked: isStagingMarked(row.Full_Name) });
   }
 }
 
@@ -174,7 +211,7 @@ async function readKnown(found: Found): Promise<void> {
     if (known.kind === "crm/Leads" && found.unreadable.includes("Leads")) continue;
     const name = known.kind === "crm/Leads" ? await leadName(known.id) : await booksName(known.kind, known.id);
     if (name === null) found.gone.push(known);
-    else add(found, known.kind, known.id, `${name} (in staging's database)`);
+    else add({ found, kind: known.kind, id: known.id, name: `${name} (in staging's database)` });
   }
 }
 
@@ -184,7 +221,13 @@ async function readRefunds(found: Found): Promise<void> {
   for (const payment of payments) {
     const answer = await books.call("GET", `/customerpayments/${payment.id}/refunds`);
     for (const refund of booksPage(answer.json, "payment_refunds", BOOKS_REFUND).rows) {
-      add(found, "books/refunds", refund.payment_refund_id, `a refund of payment ${payment.id}`, payment.id);
+      add({
+        found,
+        kind: "books/refunds",
+        id: refund.payment_refund_id,
+        name: `a refund of payment ${payment.id}`,
+        parentId: payment.id,
+      });
     }
   }
 }

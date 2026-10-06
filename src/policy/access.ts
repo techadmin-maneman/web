@@ -65,13 +65,19 @@ export function takesIn(outer: Place, inner: Place, zoneOf: ZoneOfCity): boolean
  * Whether the caller may work in a department, at a level, over a place. "anywhere" asks only whether they hold the
  * department at that level over some place, for a route that then keeps to the caller's own places.
  */
-export function can(
-  caller: Caller,
-  department: Department,
-  level: Level,
-  where: Place | "anywhere",
-  zoneOf: ZoneOfCity,
-): boolean {
+export function can({
+  caller,
+  department,
+  level,
+  where,
+  zoneOf,
+}: {
+  caller: Caller;
+  department: Department;
+  level: Level;
+  where: Place | "anywhere";
+  zoneOf: ZoneOfCity;
+}): boolean {
   if (caller.kind === "service") return caller.allowed;
   if (!caller.active) return false;
   return caller.grants.some(
@@ -109,7 +115,7 @@ function citiesIn(place: Place, zoneOf: ZoneOfCity): string[] {
  */
 export function placesReached(access: CallerAccess, department: Department, level: Level): PlacesReached {
   const { caller, zoneOf } = access;
-  if (!access.enforced || can(caller, department, level, NATIONAL, zoneOf)) return EVERYWHERE;
+  if (!access.enforced || can({ caller, department, level, where: NATIONAL, zoneOf })) return EVERYWHERE;
   if (caller.kind === "service" || !caller.active) return NOWHERE;
 
   const cities = new Set<string>();
@@ -142,7 +148,7 @@ export function grantsChanged(before: readonly Grant[], after: readonly Grant[])
 }
 
 function mayGive(editor: Caller, grant: Grant, zoneOf: ZoneOfCity): boolean {
-  return can(editor, "admin", "manage", grant.place, zoneOf);
+  return can({ caller: editor, department: "admin", level: "manage", where: grant.place, zoneOf });
 }
 
 /**
@@ -151,7 +157,11 @@ function mayGive(editor: Caller, grant: Grant, zoneOf: ZoneOfCity): boolean {
  * they hold, so it needs Admin MANAGE over every one of their places.
  */
 export function mayEdit(editor: Caller, before: StaffEntry | null, after: StaffEntry, zoneOf: ZoneOfCity): boolean {
-  if (editor.kind !== "person" || !can(editor, "admin", "manage", "anywhere", zoneOf)) return false;
+  if (
+    editor.kind !== "person" ||
+    !can({ caller: editor, department: "admin", level: "manage", where: "anywhere", zoneOf })
+  )
+    return false;
   const held = before?.grants ?? [];
   const switched = before !== null && before.active !== after.active;
   const touched = switched ? [...held, ...after.grants] : grantsChanged(held, after.grants);
@@ -160,8 +170,11 @@ export function mayEdit(editor: Caller, before: StaffEntry | null, after: StaffE
 
 /** Whether a viewer sees a member of staff: one with a grant in the viewer's places, or with no grant yet. */
 export function maySee(viewer: Caller, entry: StaffEntry, zoneOf: ZoneOfCity): boolean {
-  if (entry.grants.length === 0) return can(viewer, "admin", "view", "anywhere", zoneOf);
-  return entry.grants.some((grant) => can(viewer, "admin", "view", grant.place, zoneOf));
+  if (entry.grants.length === 0)
+    return can({ caller: viewer, department: "admin", level: "view", where: "anywhere", zoneOf });
+  return entry.grants.some((grant) =>
+    can({ caller: viewer, department: "admin", level: "view", where: grant.place, zoneOf }),
+  );
 }
 
 /** Admin MANAGE nationally, while active: of whom there must always be one. */

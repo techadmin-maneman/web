@@ -103,15 +103,23 @@ export interface Moving {
  * `exceptVisitId` and the claims of the hold `exceptHoldId` are left out, and so are the claims of the client
  * `ownUnpaidOf`'s own unpaid holds, which the hold they are asking for lets go.
  */
-export async function occupancy(
-  db: D1Database,
-  from: string,
-  to: string,
-  now: Date,
-  exceptVisitId: string | null = null,
-  exceptHoldId: string | null = null,
-  ownUnpaidOf: string | null = null,
-): Promise<(technicianId: string, date: string) => Day> {
+export async function occupancy({
+  db,
+  from,
+  to,
+  now,
+  exceptVisitId = null,
+  exceptHoldId = null,
+  ownUnpaidOf = null,
+}: {
+  db: D1Database;
+  from: string;
+  to: string;
+  now: Date;
+  exceptVisitId?: string | null;
+  exceptHoldId?: string | null;
+  ownUnpaidOf?: string | null;
+}): Promise<(technicianId: string, date: string) => Day> {
   const days = new Map<string, Day>();
   const dayOf = (technicianId: string, date: string) => {
     const key = `${technicianId}/${date}`;

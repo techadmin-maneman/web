@@ -570,8 +570,20 @@ export function registerClientProfile(app: App): void {
       now,
       knownCodes: numberChangeCodes(config.settings.login, testRecord),
     });
-    await sendCodeAfterResponse(c, current, testRecord, "whatsapp", started.codes.old.code);
-    await sendCodeAfterResponse(c, newMobile, testRecord, "whatsapp", started.codes.new.code);
+    await sendCodeAfterResponse({
+      c,
+      mobileE164: current,
+      testRecord,
+      channel: "whatsapp",
+      code: started.codes.old.code,
+    });
+    await sendCodeAfterResponse({
+      c,
+      mobileE164: newMobile,
+      testRecord,
+      channel: "whatsapp",
+      code: started.codes.new.code,
+    });
     const expiresIn = Math.round((started.codes.new.challenge.expiresAt.getTime() - now.getTime()) / 1000);
     return c.json({ request_id: started.change.id, expires_in_s: expiresIn }, 202);
   });

@@ -211,7 +211,16 @@ export function createApp(
   });
 
   const dependencies = makeDependencies ?? productionDependencies(config);
-  app.use("*", requestContext(config, dependencies, createCachedIdentityCheck(), createCachedOpsInputs(), surface));
+  app.use(
+    "*",
+    requestContext({
+      config,
+      makeDependencies: dependencies,
+      checkIdentity: createCachedIdentityCheck(),
+      readOpsInputs: createCachedOpsInputs(),
+      surface,
+    }),
+  );
   app.use("/api/*", requireOwnDatabase);
   // The ops console is staff only: every call needs a valid Access token, and is audited (ADR 0031); then the Staff
   // list decides what the caller may do.
@@ -246,13 +255,19 @@ export function createApp(
  * Gives each request an ID, a logger, its dependencies and a metered database; sets common headers; logs the request
  * with what it cost D1 and how long it waited on it.
  */
-function requestContext(
-  config: StaticConfig,
-  makeDependencies: DependencyFactory,
-  checkIdentity: IdentityCheck,
-  readOpsInputs: ReadOpsInputs,
-  surface: Surface,
-): MiddlewareHandler<AppEnv> {
+function requestContext({
+  config,
+  makeDependencies,
+  checkIdentity,
+  readOpsInputs,
+  surface,
+}: {
+  config: StaticConfig;
+  makeDependencies: DependencyFactory;
+  checkIdentity: IdentityCheck;
+  readOpsInputs: ReadOpsInputs;
+  surface: Surface;
+}): MiddlewareHandler<AppEnv> {
   const baseLog = createLogger({ worker: "mm-api", environment: config.environment, surface });
 
   return createMiddleware<AppEnv>(async (c, next) => {

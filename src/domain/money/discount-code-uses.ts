@@ -80,14 +80,21 @@ type Checked = { readonly ok: true; readonly code: CodeRow } | { readonly ok: fa
  * (src/domain/money/requested-codes.ts), else now. Every entry point checks here, so a credit the client still holds is
  * spent before any code at each of them.
  */
-export async function checkDiscountCode(
-  db: D1Database,
-  text: string,
-  booking: CodeBooking,
-  personId: string,
-  now: Date,
-  typedAt: Date = now,
-): Promise<Checked> {
+export async function checkDiscountCode({
+  db,
+  text,
+  booking,
+  personId,
+  now,
+  typedAt = now,
+}: {
+  db: D1Database;
+  text: string;
+  booking: CodeBooking;
+  personId: string;
+  now: Date;
+  typedAt?: Date;
+}): Promise<Checked> {
   const code = await db
     .prepare(`SELECT ${CODE_COLUMNS} FROM discount_codes c WHERE c.code = ?1`)
     .bind(normalisedCode(text))
@@ -356,14 +363,14 @@ export async function enterOnVisit(
   if ((await codeOnVisit(db, visit.id)) !== null) return { kind: "already_discounted" };
 
   const typedAt = visit.one_visit === null ? null : await typedForVisit(db, visit.id, entry.text);
-  const checked = await checkDiscountCode(
+  const checked = await checkDiscountCode({
     db,
-    entry.text,
-    { type, onCredit: visit.on_credit === 1, moves: false },
+    text: entry.text,
+    booking: { type, onCredit: visit.on_credit === 1, moves: false },
     personId,
     now,
-    typedAt ?? now,
-  );
+    typedAt: typedAt ?? now,
+  });
   if (!checked.ok) return { kind: "not_applicable", reason: checked.reason };
 
   const price = await priceOfVisit(db, visit);

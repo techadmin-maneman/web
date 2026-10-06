@@ -108,7 +108,14 @@ async function eraseCustomer(db: D1Database, pass: BooksErasurePass, person: Due
     pass.log.info("books_customer_erased", { person_id: person.id, outcome });
     return true;
   } catch (error) {
-    await countFailure(db, pass, ERASING.customer, person.id, person.books_customer_id, failureReason(error));
+    await countFailure({
+      db,
+      pass,
+      erasing: ERASING.customer,
+      personId: person.id,
+      recordId: person.books_customer_id,
+      reason: failureReason(error),
+    });
     return false;
   }
 }
@@ -122,7 +129,14 @@ async function eraseContact(db: D1Database, pass: BooksErasurePass, person: DueC
       .run();
     pass.log.info("crm_contact_erased", { person_id: person.id, found });
   } catch (error) {
-    await countFailure(db, pass, ERASING.contact, person.id, person.crm_contact_id, failureReason(error));
+    await countFailure({
+      db,
+      pass,
+      erasing: ERASING.contact,
+      personId: person.id,
+      recordId: person.crm_contact_id,
+      reason: failureReason(error),
+    });
   }
 }
 
@@ -168,14 +182,21 @@ const ERASING = {
   },
 } as const satisfies Readonly<Record<string, Erasing>>;
 
-async function countFailure(
-  db: D1Database,
-  pass: BooksErasurePass,
-  erasing: Erasing,
-  personId: string,
-  recordId: string,
-  reason: string,
-) {
+async function countFailure({
+  db,
+  pass,
+  erasing,
+  personId,
+  recordId,
+  reason,
+}: {
+  db: D1Database;
+  pass: BooksErasurePass;
+  erasing: Erasing;
+  personId: string;
+  recordId: string;
+  reason: string;
+}) {
   const counted = await erasing.countTry(db, personId).first<{ attempts: number }>();
   const attempts = counted?.attempts ?? 1;
   pass.log.warn(erasing.event, { person_id: personId, attempts, reason });

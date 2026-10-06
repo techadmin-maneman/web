@@ -81,14 +81,21 @@ interface Pass {
   readonly label: string;
 }
 
-export async function syncBooks(
-  db: D1Database,
-  deps: BooksSyncDeps,
-  options: BooksSyncOptions,
-  now: Date,
-  log: Logger,
-  budget: CallBudget,
-): Promise<BooksSyncSummary> {
+export async function syncBooks({
+  db,
+  deps,
+  options,
+  now,
+  log,
+  budget,
+}: {
+  db: D1Database;
+  deps: BooksSyncDeps;
+  options: BooksSyncOptions;
+  now: Date;
+  log: Logger;
+  budget: CallBudget;
+}): Promise<BooksSyncSummary> {
   const pass: Pass = {
     db,
     deps,

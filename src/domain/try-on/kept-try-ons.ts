@@ -145,7 +145,7 @@ async function keepOnItsDay(env: KeepEnv, tryOn: ExpiringTryOn, now: Date): Prom
   }
   const type: ImageType = look.httpMetadata?.contentType === "image/png" ? "image/png" : "image/jpeg";
   const key = keptLookKey(tryOn.id, type);
-  await putCounted(db, env.CLIENT_PHOTOS, key, await look.arrayBuffer(), type);
+  await putCounted({ db, bucket: env.CLIENT_PHOTOS, key, bytes: await look.arrayBuffer(), contentType: type });
   await db.prepare("UPDATE tryon_jobs SET kept_look_key = ?2 WHERE id = ?1").bind(tryOn.id, key).run();
   return true;
 }

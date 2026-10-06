@@ -316,13 +316,19 @@ async function creditOf(
  * day a new visit would be priced on, for a charged move: the first day one can be booked, unless the client has
  * picked one.
  */
-export async function changeTerms(
-  db: D1Database,
-  visit: ChangeableVisit,
-  now: Date,
-  inForce: SoldTerms,
-  on: string = addDays(indiaDate(now), 1),
-): Promise<ChangeTerms> {
+export async function changeTerms({
+  db,
+  visit,
+  now,
+  inForce,
+  on = addDays(indiaDate(now), 1),
+}: {
+  db: D1Database;
+  visit: ChangeableVisit;
+  now: Date;
+  inForce: SoldTerms;
+  on?: string;
+}): Promise<ChangeTerms> {
   const { terms, lateFee } = await termsOfVisit(db, visit, inForce);
   const noticeFrom = noticeCountsFrom(visit.start, visit.startBeforeMove);
   const windowStarts = windowStartOf(noticeFrom, await loadSlotSchedule(db));
@@ -356,7 +362,7 @@ export async function changeTerms(
  * The terms ops cancel the visit on: free to the client, the whole payment back and a credit given back, unless ops
  * apply the client's own late terms (src/policy/moving-a-visit.ts).
  */
-export function opsCancelTerms(terms: ChangeTerms, onClientTerms: boolean): ChangeTerms {
+export function opsCancelTerms({ terms, onClientTerms }: { terms: ChangeTerms; onClientTerms: boolean }): ChangeTerms {
   const charged = opsCancelCharged(terms.notice, onClientTerms);
   const paid = terms.payment?.paid ?? 0;
   const refund = refundOf(cancelRefund(terms.visit.type, charged, terms.sold.lateCharge), paid, terms.lateFee);
@@ -411,18 +417,24 @@ function refundOwed(terms: ChangeTerms, change: CancelOf): OwedRefund | null {
  * is cancelled it stays cancelled, whatever fails after: a refund Razorpay refuses is left to ops, who are alerted,
  * and one the request could not settle is left to the cron's cancel_refunds job.
  */
-export async function cancelVisit(
-  db: D1Database,
-  deps: CancelDeps,
-  terms: ChangeTerms,
-  now: Date,
-  options: CancelOptions,
-): Promise<Cancelled> {
+export async function cancelVisit({
+  db,
+  deps,
+  terms,
+  now,
+  options,
+}: {
+  db: D1Database;
+  deps: CancelDeps;
+  terms: ChangeTerms;
+  now: Date;
+  options: CancelOptions;
+}): Promise<Cancelled> {
   const change: CancelOf = { changeId: crypto.randomUUID(), ops: options.ops ?? null };
   const messageId = await writeCancel(db, terms, change, now);
   if (messageId === null) return { kind: "not_changeable" };
   const owed = refundOwed(terms, change);
-  const settled = owed === null || (await refundAtOnce(db, deps, owed, now, options.log));
+  const settled = owed === null || (await refundAtOnce({ db, deps, owed, now, log: options.log }));
   await tellClient(deps, messageId, options.log);
   return { kind: "cancelled", refund: terms.cancel.refund, kept: terms.cancel.kept, refundPending: !settled };
 }

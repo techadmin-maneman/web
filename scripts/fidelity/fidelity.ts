@@ -131,7 +131,7 @@ async function shoot(page: Page, selector: string | null): Promise<Buffer> {
 
 /** The two screenshots side by side, in docs/fidelity/<width>. */
 function pair(width: number, name: string, design: Buffer, built: Buffer): Promise<void> {
-  return pairIn(`${OUT}/${String(width)}`, width, name, design, built);
+  return pairIn({ dir: `${OUT}/${String(width)}`, width, name, design, built });
 }
 
 // ---- The screens ------------------------------------------------------------

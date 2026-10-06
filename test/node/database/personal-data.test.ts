@@ -63,7 +63,7 @@ async function erasureTouches(): Promise<{ deleted: Set<string>; updated: Set<st
   });
   const noFiles = {} as R2Bucket;
   const env = { DB: asD1(db), UPLOADS: noFiles, RESULTS: noFiles, CLIENT_PHOTOS: noFiles, REFERRAL_CARDS: noFiles };
-  await erasePerson(env, PERSON, NOW, createLogger());
+  await erasePerson({ env, personId: PERSON, now: NOW, log: createLogger() });
   return { deleted, updated };
 }
 

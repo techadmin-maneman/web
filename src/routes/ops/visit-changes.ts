@@ -185,8 +185,8 @@ const cancelTermsOf = (terms: ChangeTerms) => ({
   notice_hours: terms.noticeHours,
   paid: terms.payment?.paid ?? 0,
   destination: terms.payment?.method ?? null,
-  free: cancelOutcomeOf(opsCancelTerms(terms, false)),
-  client_terms: cancelOutcomeOf(opsCancelTerms(terms, true)),
+  free: cancelOutcomeOf(opsCancelTerms({ terms, onClientTerms: false })),
+  client_terms: cancelOutcomeOf(opsCancelTerms({ terms, onClientTerms: true })),
 });
 
 /** The audit entry for a change ops make to one visit; the detail holds codes and amounts, never their reason. */
@@ -232,7 +232,7 @@ type CancelAsked = z.infer<typeof OpsCancelSchema>;
 
 /** The cancel ops chose: on which terms, by whom, why, and the audit entry that records it, amounts and no words. */
 function opsCancelOf(c: Context<AppEnv>, terms: ChangeTerms, onClientTerms: boolean, reason: string) {
-  const applied = opsCancelTerms(terms, onClientTerms);
+  const applied = opsCancelTerms({ terms, onClientTerms });
   const choice = onClientTerms ? "client" : "free";
   const detail = { terms: choice, refund: applied.cancel.refund, kept: applied.cancel.kept };
   const ops: OpsCancel = {
@@ -255,7 +255,7 @@ async function cancelForClient(c: Context<AppEnv>, visitId: string, asked: Cance
   if (!(await withinRouteReach(c, "visit", visitId))) return refuse(c, "not_changeable");
   const visit = await changeableVisitFor(db, visitId, now);
   if (visit === null) return refuse(c, "not_changeable");
-  const terms = await changeTerms(db, visit, now, termsInForce(await opsInputs(c), visit.type));
+  const terms = await changeTerms({ db, visit, now, inForce: termsInForce(await opsInputs(c), visit.type) });
   const shown = cancelTermsOf(terms);
   if (!asked.confirm) return c.json({ ...shown, cancelled: false }, 200);
   const reason = asked.reason ?? "";
@@ -266,7 +266,7 @@ async function cancelForClient(c: Context<AppEnv>, visitId: string, asked: Cance
   const notify = (messageId: string) => queueMessage(c, messageId);
   let outcome;
   try {
-    outcome = await cancelVisit(db, { ...deps, notify }, applied, now, { log, ops });
+    outcome = await cancelVisit({ db, deps: { ...deps, notify }, terms: applied, now, options: { log, ops } });
   } catch (error) {
     log.error("cancel_failed", { appointment_id: visit.id, error });
     return refuse(c, "unavailable");
