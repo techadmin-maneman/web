@@ -1,6 +1,6 @@
 // Books one test consultation on staging through the real API, as the site's form does: past Cloudflare Access
 // (service token) and Turnstile (Cloudflare's dummy token, which only staging accepts). It proves the booking path
-// reaches Zoho: the lead in the CRM, named "Staging test" because staging shares the owner's real org
+// reaches Zoho: the lead in the CRM, named "Staging test" because staging shares the business's real org
 // (docs/decisions/0025-phase-2-conflicts-register.md, item 26). The day is the last the form offers, the furthest from
 // any real visit. Run from the staging-lead workflow, which holds the Access secrets.
 //

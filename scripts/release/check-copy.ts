@@ -1,4 +1,4 @@
-// Refuses a production release of mm-api while its copy still waits for the owner's wording: the job sheet's labels
+// Refuses a production release of mm-api while its copy still waits for its wording: the job sheet's labels
 // and the WhatsApp texts (scripts/lib/content-gate.ts). The apps and the site are gated when they are built.
 //
 //   node scripts/release/check-copy.ts api

@@ -110,7 +110,7 @@ export interface CheckOptions {
 
 /**
  * The Workers Free plan's limit on one Worker's vars and secrets together. A deploy past it is refused
- * (code 10055) before anything moves: it stopped staging on 26 September 2026 at 65.
+ * (code 10055) before anything moves.
  */
 export const FREE_VARIABLE_LIMIT = 64;
 
@@ -536,7 +536,7 @@ function suffixOf(label: string): string {
 }
 
 /**
- * A Phase 2 app (docs/decisions/0043-client-app.md) answers every path on its
+ * An app (docs/decisions/0043-client-app.md) answers every path on its
  * surface's host that mm-api does not, and only once the surface is switched on.
  */
 export function checkSpaConfig(config: JsonObject, worker: { name: string; surface: Surface }): string[] {

@@ -1,4 +1,4 @@
-// Proves the Books provider (src/providers/books/index.ts) against the owner's org: a customer, an invoice and an item,
+// Proves the Books provider (src/providers/books/index.ts) against the real org: a customer, an invoice and an item,
 // each read back, then the customer erased both ways and the invoice deleted. Every record is named "Staging test".
 //
 //   node --env-file=.env.books-scripts scripts/staging/books-proof.ts

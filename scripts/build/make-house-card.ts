@@ -4,13 +4,13 @@
 // in the bottom right corner. The same rule and lockup, alone on a clear ground, are the overlay the API draws over
 // a client's two photographs to make their own card (src/providers/cards.ts).
 //
-// PLACEHOLDER: where A2 has photographs, the two halves are the ink blocks the boards draw a card with (F2, F4),
-// until the owner gives us licensed ones (docs/open-points.md, item 52).
+// PLACEHOLDER: where the design has photographs, the two halves are the ink blocks it draws a card with, until
+// licensed ones are supplied (open point 52).
 //
 //   node scripts/build/make-house-card.ts
 //
 // Writes site/public/images/invite-house.jpg, which the invite's Open Graph tags point at, the same file into the
-// app, whose preview (board F4) shows it, and the overlay into src/config/card-overlay.ts. Chats cache a preview by
+// app, whose invite preview shows it, and the overlay into src/config/card-overlay.ts. Chats cache a preview by
 // its address, so a house card that changes needs a new HOUSE_CARD_VERSION in site/src/lib/invite.ts;
 // test/node/site/site-content.test.ts says so.
 

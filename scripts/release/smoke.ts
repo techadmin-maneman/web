@@ -1,6 +1,6 @@
 // npm run smoke -- --base https://staging.maneman.in --environment staging
 // npm run smoke -- --api-base http://localhost:8787 --site-base http://localhost:8788 --environment local
-// npm run smoke -- --environment staging --surfaces    every switched-on Phase 2 host (docs/decisions/0026):
+// npm run smoke -- --environment staging --surfaces    every switched-on app host (docs/decisions/0026):
 //                                                      mm-api there, and the app the host serves at /
 // npm run smoke -- --base https://staging.maneman.in --environment staging --link-preview <code>
 //                                                      only the invite <code> as WhatsApp's crawler fetches it,
@@ -74,7 +74,7 @@ const runs: { base: string; results: SmokeResult[] }[] = [];
 
 if (surfacesOnly) {
   const surfaces = ENABLED_SURFACES[environment].filter((surface) => surface !== "public");
-  if (surfaces.length === 0) console.log(`no Phase 2 surface is switched on in ${environment}`);
+  if (surfaces.length === 0) console.log(`no app surface is switched on in ${environment}`);
   for (const surface of surfaces) {
     const base = `https://${SURFACE_HOSTS[environment][surface]}`;
     runs.push({ base, results: await runSmoke({ ...common, apiBase: base, siteBase: base, surface }) });
