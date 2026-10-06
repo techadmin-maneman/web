@@ -1,6 +1,6 @@
 // The one Zoho client the scripts use, for the CRM or Books: an access token minted once a run from the scripts' own
 // refresh token (zoho-script-token.ts), and every answer read through a zod schema, so a script that writes or deletes
-// in the owner's org never acts on a shape Zoho did not send.
+// in the real org never acts on a shape Zoho did not send.
 
 import { z } from "zod";
 import { refreshTokenForScript, type ZohoClient } from "./zoho-script-token.ts";

@@ -1,4 +1,4 @@
-// The profile (boards G1 and G2): where we come, what the client has agreed
+// The profile: where we come, what the client has agreed
 // to, and their account: a change of number, support, and deletion.
 
 import { LogOut } from "../login/index.ts";

@@ -1,4 +1,4 @@
-// Board B2, step 2: the visit's checklist. One 88 px row per item, a 36 px box
+// Step 2: the visit's checklist. One 88 px row per item, a 36 px box
 // each, and the action dim until the list is finished.
 //
 // The items are the API's, per visit type (src/config/job-sheet.ts); the app

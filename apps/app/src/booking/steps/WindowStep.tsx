@@ -1,4 +1,4 @@
-// Board C3: the window.
+// The window.
 
 import { classes } from "@maneman/ui/classes";
 import { Button } from "@maneman/ui/Button";
@@ -10,7 +10,7 @@ import styles from "../booking.module.css";
 import { TITLE_ID, stepOf, Heading } from "./shared.tsx";
 
 /**
- * Board C3: the day's windows the visit can start in, open or full. Who comes is never promised: a technician never
+ * The day's windows the visit can start in, open or full. Who comes is never promised: a technician never
  * takes two of a client's visits in a row (docs/decisions/0111-a-technician-never-takes-two-visits-in-a-row.md). A
  * window inside the notice is marked, and a day that costs nothing goes on to a confirmation, not a payment.
  */

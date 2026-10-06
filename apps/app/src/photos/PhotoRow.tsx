@@ -1,6 +1,6 @@
 // A visit's photographs, five angles in a row at the same crop and without
-// captions (boards C9 and D1). Each fades in as it arrives, over the loading
-// block, with no spinner (board D3); an angle not taken stays a blank block.
+// captions. Each fades in as it arrives, over the loading
+// block, with no spinner; an angle not taken stays a blank block.
 //
 // A row shows each photograph's small copy, which the technician's phone made
 // at capture, and the whole photograph once it is opened. A photograph with no
@@ -29,7 +29,7 @@ export interface OpenPhoto {
   readonly link: ImageLink;
   /** What it shows, for a screen reader: "Front, after the visit, 22 Aug 2027". */
   readonly alt: string;
-  /** Board D3's line above Download: "Front · 22 Aug 2027". */
+  /** Photos' line above Download: "Front · 22 Aug 2027". */
   readonly title: string;
   /** The name it is saved under. */
   readonly fileName: string;

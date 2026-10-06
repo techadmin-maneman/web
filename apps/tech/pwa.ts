@@ -1,5 +1,5 @@
-// The technician app on a home screen (docs/decisions/0053-the-technician-app-offline.md). The owner ruled open point
-// 124 on 24 September 2026: any phone, including iPhones. On an iPhone the home screen is not a convenience but the
+// The technician app on a home screen (docs/decisions/0053-the-technician-app-offline.md). Technicians use any phone,
+// iPhones among them. On an iPhone the home screen is not a convenience but the
 // only way the store is safe: WebKit "currently grants a request [for persistent storage] based on heuristics like
 // whether the website is opened as a Home Screen Web App", and a web app added to the home screen keeps "their own
 // counter of days of use" rather than Safari's seven-day cap on script-writable storage. `display: standalone`, which

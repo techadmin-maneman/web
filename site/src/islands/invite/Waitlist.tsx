@@ -14,7 +14,7 @@ import { codeInPath } from "./page.ts";
 import { byDoor, leadSent } from "./submit.ts";
 import { mobileToSend, useTurnstileForm } from "./useTurnstileForm.ts";
 
-/** Board C3: we do not come there yet, so the page takes a number instead. */
+/** We do not come there yet, so the page takes a number instead. */
 export function Waitlist(props: FormProps & { onListed: (listing: Listing) => void }) {
   const form = useTurnstileForm(props.turnstileSiteKey);
   const [alert, setAlert] = useState(false);

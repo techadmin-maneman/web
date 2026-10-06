@@ -90,8 +90,7 @@ function servingSplit(target: Target): Split | null {
  * The version serving all traffic, or "" for an app whose surface is not switched on there (see mustExist).
  * Such an app is left alone whether or not it was ever deployed: its host serves nothing yet, and its
  * production build refuses copy still owed (scripts/lib/content-gate.ts), so shipping it would fail a
- * release that did not need it. `mm-app-production` was bootstrapped on 22 September 2026, before its
- * surface was switched on (docs/open-points.md, item 152).
+ * release that did not need it. `mm-app-production` was bootstrapped before its surface was switched on.
  */
 export function currentVersion(target: Target): string {
   if (!mustExist(target.worker, target.environment)) return "";

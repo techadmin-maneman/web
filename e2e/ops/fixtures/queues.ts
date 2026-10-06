@@ -1,4 +1,4 @@
-// Boards D1 and D2, and the three DPDP queues no board draws: the no-shows ops
+// Payments and Tasks, and the three DPDP queues no design draws: the no-shows ops
 // rule on, the day's money, what ops still have to do, and the grievances,
 // deletion requests and number changes waiting on them.
 

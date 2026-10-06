@@ -7,7 +7,7 @@
 //   node scripts/ops/import-referrals.ts production --file private/referrals-before-january.csv
 //
 // The real file holds names and numbers: it lives in git-ignored private/, and nothing here prints them. Credits
-// imported expire 365 days after the import, as the owner ruled (ADR 0025, item 24), so none arrives expired.
+// imported expire 365 days after the import (ADR 0025, item 24), so none arrives expired.
 
 import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";

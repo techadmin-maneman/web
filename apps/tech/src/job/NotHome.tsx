@@ -1,4 +1,4 @@
-// Board B5: the evidence chain, beneath the job's card.
+// The evidence chain, beneath the job's card.
 //
 //   1 · Arrived       the phone's position, checked against the address, from the earliest check-in
 //   Check-in failed   how far away it was, and no way to close a no-show from there

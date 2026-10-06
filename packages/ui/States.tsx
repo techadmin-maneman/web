@@ -1,6 +1,6 @@
-// A page's data on its way, and a page whose data did not come. Board B3 draws
-// both for the client app; the others follow its shapes. Each app gives them
-// its words, its ground and its own class for the spacing its boards draw.
+// A page's data on its way, and a page whose data did not come. The client app's
+// design draws both; the others follow its shapes. Each app gives them
+// its words, its ground and its own class for the spacing its design draws.
 
 import type { ReactNode } from "react";
 import { Button, type ButtonVariant } from "./Button.tsx";

@@ -1,4 +1,4 @@
-// One job on the day's list (board A1): time and length down the left, then the
+// One job on the day's list: time and length down the left, then the
 // type, the badge, the client and the sector, and where the job stands once it
 // has begun. No amount, anywhere. The client is named from the day before the
 // visit, when the job unlocks.

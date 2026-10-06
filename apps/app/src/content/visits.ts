@@ -6,7 +6,7 @@ export const visits = {
   // Done, missed and cancelled visits alike, so a cancelled one still to come does not read as past.
   past: "History",
   none: "Nothing booked yet.",
-  /** Board C1: a visit paid for ahead, or covered by a credit. */
+  /** Visits: a visit paid for ahead, or covered by a credit. */
   prepaid: "Prepaid",
   /** A consultation asked for on the site, which ops have yet to confirm. */
   requested: "Requested",
@@ -19,7 +19,7 @@ export const visits = {
   partial: "Partly done",
   /*
    * The client's own record, derived from their visits and
-   * payments (src/domain/visits/client-history.ts). No board draws it. Board B1 writes
+   * payments (src/domain/visits/client-history.ts). No board draws it. Home writes
    * one sentence about a replacement, "Your replacement is due in
    * March.", and that sentence is kept word for word.
    *
@@ -45,7 +45,7 @@ export const visits = {
     duration: "Duration",
     type: "Type",
     done: "What was done",
-    /** The checklist the technician ticked, as one line, as board C9 writes it. */
+    /** The checklist the technician ticked, as one line, as the visit's record writes it. */
     doneLine: (items: readonly string[]) => `${items.join(", ")}.`,
     /** The things a finished visit can say about its invoice (ADR 0056). */
     invoice: {
@@ -55,7 +55,7 @@ export const visits = {
       // A day after the visit, "within the hour" is no longer true.
       late: "The invoice is taking longer than it should. Message us and we’ll send it.",
       message: "Message us",
-      // The owner's own words on 23 September 2026: a free visit says "No charge", and never promises a document.
+      // A free visit says "No charge", and never promises a document.
       free: "No charge for this visit, so there is no invoice.",
       // An invoice held back on purpose: a credit visit's, and a draft whose total is not what the visit
       // was sold for, which is checked before it is sent.

@@ -1,18 +1,18 @@
-// Booking and changing a visit (boards C4 to C8): the sheet's steps, a note to the technician, a dispute.
+// Booking and changing a visit: the sheet's steps, a note to the technician, a dispute.
 
 import { GUARANTEE } from "@maneman/web-kit/guarantee";
 import { visitLength } from "./common.ts";
 import { PAID_IN, TOLD_WHEN_BOOKED } from "./home.ts";
 
-/** Booking in the app (boards C2 to C6), while self-serve booking is on. */
+/** Booking in the app, while self-serve booking is on. */
 export const booking = {
   step: (n: number, of: number) => `Step ${String(n)} of ${String(of)}`,
   /** How long a visit takes, as the choice of visit and the pay step say it. */
   length: visitLength,
   /**
    * No board draws it. With more than one service open to them, the client chooses first: every one
-   * ops offer, a kind at a time, with how long it takes and what it costs (the owner's ruling of 27 September 2026,
-   * docs/decisions/0085-services-ops-can-edit.md). There is no message to send for any other.
+   * ops offer, a kind at a time, with how long it takes and what it costs
+   * (docs/decisions/0085-services-ops-can-edit.md). There is no message to send for any other.
    */
   service: {
     title: "Pick a visit",
@@ -66,7 +66,7 @@ export const booking = {
     // A visit that costs nothing to book, which no board draws.
     titleFree: "Confirm",
     held: (time: string) => `Held for ${time}`,
-    // Board C4 says "Free to move until"; cancelling is free until then too.
+    // The pay step says "Free to move until"; cancelling is free until then too.
     freeUntil: (when: string) => `Free to move or cancel until ${when}.`,
     afterThat: " After that, changes are charged.",
     /** No board draws it. A visit sold already inside its notice says what a change costs at once. */
@@ -87,7 +87,7 @@ export const booking = {
     // A free consultation has no payment; the design draws the credit board's button.
     free: "Free",
     confirm: "Confirm visit",
-    // Board C5: a free service visit covers it. Our words: the reward's name, in place of the board's.
+    // A free service visit covers it. Our words: the reward's name, in place of the board's.
     credit: {
       zero: "Rs. 0",
       used: "1 free service visit used",
@@ -140,7 +140,7 @@ export const booking = {
     },
   },
   /**
-   * Board C5's late-fee line, which C7 repeats word for word: the amount charged, and its GST split after it,
+   * The credit step's late-fee line, which the move sheet repeats word for word: the amount charged, and its GST split after it,
    * muted, once GST applies.
    */
   lateFee: {
@@ -224,9 +224,9 @@ export const dispute = {
 };
 
 /**
- * Moving or cancelling a visit (boards C7 and C8; docs/decisions/0046-moving-and-cancelling.md). The consequence
- * shows before the client confirms. The design writes refunds as "three to five working days"; the owner ruled
- * the app says 5 to 7 (ADR 0025, item 28).
+ * Moving or cancelling a visit (docs/decisions/0046-moving-and-cancelling.md). The consequence
+ * shows before the client confirms. The design writes refunds as "three to five working days"; the app says
+ * 5 to 7 (ADR 0025, item 28).
  */
 export const change = {
   visit: (weekday: string) => `${weekday}’s visit`,
@@ -238,8 +238,8 @@ export const change = {
     pick: "Pick a new date",
     accept: "Move and accept charge",
     keep: "Keep it",
-    // Our words from here to the end of move: nothing paid, and the way to C8, which the design draws but does
-    // not reach. A late fee's line is board C5's (booking.lateFee).
+    // Our words from here to the end of move: nothing paid, and the way to the cancel sheet, which the design draws but does
+    // not reach. A late fee's line is the credit step's (booking.lateFee).
     freeNothingPaid: "Free to move.",
     // What a move in place keeps, on its pay step.
     carriesOver: (amount: string) => `Your ${amount} carries over.`,
@@ -259,7 +259,7 @@ export const change = {
     nothingPaid: "Nothing was paid, so nothing is charged.",
     accept: "Cancel and accept charge",
     creditBack: "Your free service visit comes back.",
-    // Board C8, inside 24 hours, for a booking a free service visit covers. Our words: the reward's name in it.
+    // The cancel sheet, inside 24 hours, for a booking a free service visit covers. Our words: the reward's name in it.
     creditUsed: (left: string | null, expiry: string) =>
       left === null
         ? "Your free service visit is used."

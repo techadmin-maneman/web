@@ -1,4 +1,4 @@
-// Board C2's address before the date, for a client who has given none (ADR 0079), and the answer for an address
+// The date step's address before the date, for a client who has given none (ADR 0079), and the answer for an address
 // in a pincode we do not come to.
 
 import { AddressForm } from "../../profile/index.ts";

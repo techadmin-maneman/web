@@ -1,5 +1,5 @@
-// A payment or a refund, and a change to the free service visits, as the payments screens write them (boards E1
-// to E3).
+// A payment or a refund, and a change to the free service visits, as the payments screens write them (Payments
+// to the documents).
 
 import { fullDate, indiaClock, indiaDate, listDate, shortDate } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";
@@ -140,7 +140,7 @@ type PaymentsRow =
   | { readonly kind: "credit"; readonly date: string; readonly line: CreditLine };
 
 /**
- * The payments and the credits' changes as one list, newest first, as board E1 lists a visit a credit covered
+ * The payments and the credits' changes as one list, newest first, as Payments lists a visit a credit covered
  * among the payments. The sort keeps each list's own order, and on the same day a payment comes first.
  */
 export function paymentsAndCredits(entries: readonly Entry[], credits: readonly CreditLine[]): PaymentsRow[] {
@@ -171,7 +171,7 @@ export function creditMeta(line: CreditLine, thisYear: number): string {
 
 export const creditStatus = (line: CreditLine) => payments.credits.status[line.event];
 
-/** The figures a credit's row shows: Rs. 0 for a visit it covered, as board E1 does, and the credits it moved. */
+/** The figures a credit's row shows: Rs. 0 for a visit it covered, as Payments does, and the credits it moved. */
 export function creditAmount(line: CreditLine): { amount: string | null; count: string } {
   return {
     amount: line.visit === null ? null : rupees(0),

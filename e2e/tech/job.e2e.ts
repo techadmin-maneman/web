@@ -1,4 +1,4 @@
-// Board A3's card and board B5's evidence chain at the door: arrive, wait, and
+// The job card and the evidence chain at the door: arrive, wait, and
 // either start the job or close it as a no-show. A charge-bearing close is
 // never one unconfirmed tap, a started job offers nothing but its next step,
 // and the wait counts whether or not the phone has signal.
@@ -8,7 +8,7 @@ import { expect, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
 import { atTheDoor, fakeTech, JOB_ID, pageScrolls, ROHITS_PIECE, ROHITS_PROFILE, TOMORROW_JOB_ID } from "./fixtures.ts";
 
-/** The one gold action at the foot of the screen, which board B5's chain hands on stage by stage. */
+/** The one gold action at the foot of the screen, which the evidence chain hands on stage by stage. */
 const foot = (page: Page) => page.locator("main > div").last().getByRole("button");
 
 /** Opens the card and checks in at the door. */
@@ -148,7 +148,7 @@ test("refuses a check-in from away, and says how far, with no way to close a no-
     page.getByText(/^Get to the door and tap again\. Still refused at the door\? Ask ops to let you check in\./),
   ).toBeVisible();
   await expect(page.getByRole("button", { name: "Close as no-show" })).toHaveCount(0);
-  // Board B5 draws the failure with its own outlined Try again, and no second gold "I have arrived" beside it.
+  // The evidence chain draws the failure with its own outlined Try again, and no second gold "I have arrived" beside it.
   await expect(page.getByRole("button", { name: "Try again" })).toBeVisible();
   await expect(page.getByRole("button", { name: "I have arrived" })).toHaveCount(0);
 
@@ -198,7 +198,7 @@ test("asks before closing as a no-show, since ops may charge the client", async 
   await close.click();
   await page.getByRole("dialog").getByRole("button", { name: "Close as no-show" }).click();
 
-  // Board B5's close: the evidence ops rule on, and what happens next.
+  // The evidence chain's close: the evidence ops rule on, and what happens next.
   await expect(page.getByRole("heading", { name: "Rohit M. · no-show" })).toBeVisible();
   await expect(page.getByText("This goes to ops with the charge.")).toBeVisible();
   await expect(page.getByText("Checked in")).toBeVisible();

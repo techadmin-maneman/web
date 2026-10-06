@@ -1,4 +1,4 @@
-// Board A2's upload queue, and the plain account the prompt asks for of
+// The Waiting screen's upload queue, and the plain account the prompt asks for of
 // everything else that has not yet reached us.
 //
 // Each photograph set counts what the API has confirmed, never what is only

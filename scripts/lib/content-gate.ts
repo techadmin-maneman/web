@@ -1,9 +1,9 @@
-// The production gate on Phase 2's copy. Where the design draws no words, each
-// app's content file holds ours, marked PLACEHOLDER until the owner gives the
-// wording (docs/open-points.md). Staging ships them by the owner's ruling
+// The production gate on the apps' copy. Where the design draws no words, each
+// app's content file holds ours, marked PLACEHOLDER until the wording is given
+// (docs/open-points.md). Staging ships them
 // (docs/decisions/0025-phase-2-conflicts-register.md, item 27); a production
 // build stops while any remain, as the public site's does on its placeholder
-// blocks (site/src/lib/publish-gate.ts). The referral landing is Phase 2 copy
+// blocks (site/src/lib/publish-gate.ts). The referral landing is the apps' copy
 // on the public site, so its content file is gated here too, with the site's own,
 // whose marks wait on counsel. The API's copy, the job sheet's labels and the
 // WhatsApp texts, is gated before a production release of mm-api
@@ -69,7 +69,7 @@ export function assertPublishableContent(owner: ContentOwner): void {
   const problems = contentProblems(CONTENT_FILES[owner]);
   if (problems.length === 0) return;
   throw new Error(
-    "The production build is blocked: this copy still waits for the owner's wording (docs/open-points.md)\n" +
+    "The production build is blocked: this copy still waits for its wording (docs/open-points.md)\n" +
       problems.map((problem) => `  - ${problem}`).join("\n"),
   );
 }

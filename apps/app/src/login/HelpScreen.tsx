@@ -1,4 +1,4 @@
-// A3 (design/phase2/Client App, board A3), reached from A2 by the client's
+// The help screen (design/phase2/Client App), reached from the code screen by the client's
 // choice rather than by the API's answer, so it never says whether a number
 // has a booking (docs/decisions/0030-one-time-codes.md).
 

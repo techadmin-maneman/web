@@ -1,4 +1,4 @@
-// Board B4's close-out: the job's name and outcome, how long it took, how many
+// The close-out: the job's name and outcome, how long it took, how many
 // photographs are on their way, and the next job. A no-show closes with board
 // B5's evidence summary instead — when he checked in, how far from the door,
 // whether the day-before WhatsApp reached the client — and what happens next.
@@ -71,7 +71,7 @@ function receiptOf(job: Job): string {
   return delivered === null ? copy.noShow.notDelivered : copy.noShow.delivered(clock(delivered));
 }
 
-/** Board B5's close: the three facts ops rule on, as the phone knows them. */
+/** The evidence chain's close: the three facts ops rule on, as the phone knows them. */
 function Evidence({ job }: { job: Job }) {
   const readArrival = useCallback(() => keptArrival(job.id), [job.id]);
   const measured = valueOr(useAsync(readArrival)[0], null)?.distance_m ?? null;

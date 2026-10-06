@@ -1,6 +1,6 @@
 // Two budgets. R2's: the worst case the try-on can store and ask of it, from the ceilings in each environment's config,
-// plus the share set aside for Phase 2. R2 bills past its free allowance (docs/decisions/0009, 0093), so
-// test/node/tooling/free-tier-budget.test.ts holds them under 80% of it, and no ceiling can be raised into Phase 2's
+// plus the share set aside for clients' photographs and referral cards. R2 bills past its free allowance (docs/decisions/0009, 0093), so
+// test/node/tooling/free-tier-budget.test.ts holds them under 80% of it, and no ceiling can be raised into that
 // share without the build failing. And the reads: what one request to a route, one console board or one cron run may
 // read, which the soak and test/worker/jobs/cron-reads.test.ts hold them to, so work grows with what it handles and
 // not with the history behind it.
@@ -27,8 +27,8 @@ export const FREE_TIER = {
 export const HEADROOM = 0.8;
 
 /**
- * Phase 2's share of the same allowance (docs/decisions/0039-phase-2-budget.md).
- * Nothing in Phase 2 has a ceiling in config yet, so its share is set aside here.
+ * The photographs' and cards' share of the same allowance (docs/decisions/0039-phase-2-budget.md).
+ * They have no ceiling in config, so their share is set aside here.
  */
 export const PHASE_2_ALLOWANCE = {
   /** Clients' photographs, which are never deleted, and referral cards: the storage meter's share. */
@@ -88,7 +88,7 @@ export const REFERRAL_CARDS_BYTES = 1_000 * 300_000;
 export const KEPT_TRY_ON_BYTES = MAX_COPY_BYTES + MAX_RESULT_BYTES;
 
 /**
- * How many visits fit in Phase 2's R2 share, after the referral cards. A client keeps one try-on, and every client
+ * How many visits fit in the photographs' R2 share, after the referral cards. A client keeps one try-on, and every client
  * has booked a visit, so at worst each visit is a new client's and brings one kept try-on with its photographs.
  */
 export function photoRunwayVisits(keptTryOnBytes: number = KEPT_TRY_ON_BYTES): number {
@@ -128,7 +128,7 @@ export function worstCaseUsage(environments: readonly Ceilings[]): Usage {
   for (const ceilings of environments) {
     // Stored at any moment: each day's results for the retention period, each day's photos for about an hour, and
     // each photo's small copy for the hour and then as long as its look (ADR 0084). A client's kept try-on is held
-    // for good, so it is paid from Phase 2's share (photoRunwayVisits).
+    // for good, so it is paid from the photographs' share (photoRunwayVisits).
     const hour = PHOTO_RETENTION_MS + SWEEP_INTERVAL_MS;
     storage += ceilings.renderDaily * ceilings.resultRetentionDays * MAX_RESULT_BYTES;
     storage += (ceilings.uploadDaily * MAX_UPLOAD_BYTES * hour) / DAY_MS;
@@ -146,7 +146,7 @@ export function worstCaseUsage(environments: readonly Ceilings[]): Usage {
 }
 
 /**
- * Each use over 80% of its allowance once Phase 2's share is added, as a
+ * Each use over 80% of its allowance once the photographs' share is added, as a
  * readable line; empty when all fit.
  */
 export function overBudget(usage: Usage, reserved: Usage = PHASE_2_ALLOWANCE): string[] {

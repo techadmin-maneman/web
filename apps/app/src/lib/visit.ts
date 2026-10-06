@@ -51,7 +51,7 @@ export function invoiceState(visit: VisitDetail, now: number): InvoiceState {
   return now - Date.parse(visit.ends_at) > INVOICE_LATE_MS ? "late" : "generating";
 }
 
-/** 85 → "1 h 25 m", as board C9 writes a duration. */
+/** 85 → "1 h 25 m", as the visit's record writes a duration. */
 export function duration(minutes: number): string {
   const hours = Math.floor(minutes / 60);
   const rest = minutes % 60;

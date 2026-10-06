@@ -1,4 +1,4 @@
-// A1: the mobile number (design/phase2/Client App, board A1).
+// The mobile number (design/phase2/Client App).
 
 import { classes } from "@maneman/ui/classes";
 import { Button } from "@maneman/ui/Button";

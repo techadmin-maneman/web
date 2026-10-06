@@ -83,7 +83,7 @@
   list-style: none;
 }
 
-/* ---- Board B2: the checklist ---------------------------------------------- */
+/* ---- The checklist ---------------------------------------------- */
 
 .check {
   display: flex;
@@ -128,7 +128,7 @@
   color: var(--ink-muted);
 }
 
-/* ---- Board B3: the consumables' steppers ---------------------------------- */
+/* ---- The consumables' steppers ---------------------------------- */
 
 .count {
   display: flex;
@@ -199,7 +199,7 @@
   color: var(--error-on-ink);
 }
 
-/* ---- Board B3: the piece --------------------------------------------------- */
+/* ---- The piece --------------------------------------------------- */
 
 .field {
   display: flex;
@@ -348,7 +348,7 @@
   color: var(--paper);
 }
 
-/* ---- Board B4: the outcome ------------------------------------------------- */
+/* ---- The outcome ------------------------------------------------- */
 
 .choices {
   display: flex;
@@ -451,7 +451,7 @@
   flex-direction: column;
 }
 
-/* ---- Board B4: the close-out ----------------------------------------------- */
+/* ---- The close-out ----------------------------------------------- */
 
 .close {
   flex: 1;

@@ -1,4 +1,4 @@
-// Staging's records in the owner's real Zoho org: which of Books' and the CRM's records staging wrote, the order a
+// Staging's records in the business's real Zoho org: which of Books' and the CRM's records staging wrote, the order a
 // reviewed list of them is deleted in, and the links staging's database keeps to them. scripts/staging/staging-records.ts
 // reads the org and deletes; this decides, and reaches nothing.
 //
@@ -26,7 +26,7 @@ export type RecordKind = (typeof DELETE_ORDER)[number];
 export interface StagingRecord {
   readonly kind: RecordKind;
   readonly id: string;
-  /** What the owner reads to know it: its name or description. */
+  /** What a reviewer reads to know it: its name or description. */
   readonly name: string;
   /** A Books refund's payment, which its path names. */
   readonly parentId?: string;
@@ -52,7 +52,7 @@ export function isStagingMarked(text: string | null | undefined): boolean {
 }
 
 /**
- * A name that looks like a test but carries neither mark, as "Staging Test Client": shown to the owner, never
+ * A name that looks like a test but carries neither mark, as "Staging Test Client": shown for review, never
  * deleted, since nothing of ours wrote it.
  */
 export function looksLikeATest(text: string | null | undefined): boolean {
@@ -62,7 +62,7 @@ export function looksLikeATest(text: string | null | undefined): boolean {
 const keyOf = (record: { kind: string; id: string }) => `${record.kind} ${record.id}`;
 
 /**
- * The records to delete: those the owner kept in the reviewed list that the org, read again now, still holds as
+ * The records to delete: those kept in the reviewed list that the org, read again now, still holds as
  * staging's, in the order they are deleted in. A record the list names that the org no longer holds as staging's is
  * left alone.
  */
@@ -118,7 +118,7 @@ export function unlinkStatements(gone: readonly { kind: RecordKind; id: string }
   return statements;
 }
 
-/** How a delete went, in words for the owner. */
+/** How a delete went, in words for the reviewer. */
 export type Outcome = "deleted" | "already gone" | `refused: ${string}`;
 
 /** How the CRM answers for a record it does not hold: deleted, merged away or converted. */
@@ -214,7 +214,7 @@ export function crmPage(json: unknown): Page<z.infer<typeof CRM_RECORD>> {
   return { rows: z.array(CRM_RECORD).parse(page?.data ?? []), more: page?.info?.more_records === true };
 }
 
-/** The list the owner reviewed: what the listing run wrote, less any record they took out. */
+/** The reviewed list: what the listing run wrote, less any record the reviewer took out. */
 export const REVIEWED_LIST = z.object({
   records: z.array(
     z.object({ kind: z.enum(DELETE_ORDER), id: z.string().min(1), name: z.string(), parentId: z.string().optional() }),

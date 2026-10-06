@@ -7,6 +7,7 @@ import { expect, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
 import {
   atTheDoor,
+  deviceRecordOnPhone,
   fakeTech,
   heldOnPhone,
   JOB_ID,
@@ -729,6 +730,8 @@ test.describe("the client's hair profile", () => {
     await page.getByRole("button", { name: "Tape", exact: true }).click();
     await next(page).click();
     await page.getByRole("textbox", { name: "Skin conditions and allergies" }).fill("Dry at the crown");
+    // The draft is written as it is typed; a slow phone may still be writing the last of it.
+    await expect.poll(() => deviceRecordOnPhone(page, "profile_draft")).toContain("Dry at the crown");
 
     await page.reload();
     await expect(page.getByRole("heading", { level: 1, name: "History" })).toBeVisible();

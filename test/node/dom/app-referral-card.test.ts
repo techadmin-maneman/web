@@ -1,5 +1,5 @@
 // The referral card reaches people who have never heard of us, in WhatsApp,
-// long after it was sent, so it is held to board A1 (design/phase2/Referral and
+// long after it was sent, so it is held to its design (design/phase2/Referral and
 // Waitlist): a 2 px gilt rule, the gilt mark 44 × 48 and the wordmark's small
 // cut 140 px wide in the bottom right corner. It was a 6 px rule in the brass
 // meant for small text on paper, with no lockup.

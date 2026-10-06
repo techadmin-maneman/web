@@ -1,4 +1,4 @@
-// The photograph sets the phone holds (board A2): one per job and phase, each
+// The photograph sets the phone holds: one per job and phase, each
 // counted by what the API has confirmed. A frame is dropped from the phone the
 // moment its upload is confirmed (apps/tech/src/store/outbox.ts), so a set
 // whose write is queued has sent every frame it no longer holds; a set still
@@ -7,7 +7,7 @@
 import type { Angle, Phase } from "../api.ts";
 import type { Frame, Queued } from "../store/outbox.ts";
 
-/** The five angles of a visit's set, in the order the design guides them (board B1). */
+/** The five angles of a visit's set, in the order the design guides them. */
 export const ANGLES: readonly Angle[] = ["front", "top", "left", "right", "hair"];
 
 export const IN_A_SET = ANGLES.length;

@@ -12,5 +12,5 @@ export function asLabel(typed: string): string {
     .replace(/[\s-]+/g, "-");
 }
 
-/** The owner's format, ruled 24 September 2026: "MM", a base code, digits and a letter, e.g. MM-STD-4417-B. */
+/** The label's format: "MM", a base code, digits and a letter, e.g. MM-STD-4417-B. */
 export const isLabel = isPieceCode;

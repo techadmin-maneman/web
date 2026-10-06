@@ -218,7 +218,7 @@ const siteSecurityHeaders: Check = async ({ options, site }) => {
   return `the policy, HSTS and nosniff on ${WORKER_PAGES.join(", ")}`;
 };
 
-/** A Phase 2 surface's host serves none of the public site's routes. */
+/** An app surface's host serves none of the public site's routes. */
 const publicRoutesAbsent: Check = async ({ api }) => {
   const response = await api(PINCODE_PATH);
   assert(response.status === 404, `${PINCODE_PATH} answered ${String(response.status)}; it belongs to the public site`);
@@ -235,7 +235,7 @@ const apiIndexing: Check = async ({ options, api }) => {
   return "noindex on the API";
 };
 
-/** The Worker that serves a Phase 2 surface's app, from the registry (scripts/lib/workers.ts). */
+/** The Worker that serves an app surface, from the registry (scripts/lib/workers.ts). */
 function appWorkerFor(surface: Surface | undefined): string {
   const worker = STATIC_WORKERS.find((entry) => entry.surface === surface);
   if (worker === undefined) throw new Error(`no app serves the ${String(surface)} surface`);

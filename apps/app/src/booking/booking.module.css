@@ -1,5 +1,5 @@
 /*
- * Boards C2 to C8: the booking and change sheets, on paper over the ink-night
+ * The booking and change sheets, on paper over the ink-night
  * ground (packages/ui/Sheet.tsx). The frame fills the screen and is clear; the
  * sheet sits at its foot, as the boards draw it, and Close stands on the
  * ground above it, where anyone can see it and reach it (the boards draw
@@ -63,7 +63,7 @@
   color: var(--text-muted);
 }
 
-/* Board C2. Each column may shrink below its content, so all seven days fit a 320 px screen. */
+/* The date step. Each column may shrink below its content, so all seven days fit a 320 px screen. */
 .strip {
   display: grid;
   grid-template-columns: repeat(7, minmax(0, 1fr));
@@ -198,7 +198,7 @@
   background: var(--error-on-paper);
 }
 
-/* Board C3. */
+/* The window step. */
 .heading:has(+ .dayLine) {
   margin-bottom: var(--sp-8);
 }
@@ -290,7 +290,7 @@
   color: var(--ink-soft);
 }
 
-/* Board C4, and C5's first fit. */
+/* The pay step, and the credit step's first fit. */
 .summary {
   border-top: var(--hairline) solid var(--text);
 }
@@ -325,7 +325,7 @@
   font-variant-numeric: lining-nums tabular-nums;
 }
 
-/* Board C5: a credit covers it, so the price is struck through. */
+/* A credit covers it, so the price is struck through. */
 .was {
   font-family: var(--font-serif);
   font-size: var(--fs-22);
@@ -455,7 +455,7 @@
   margin-top: var(--sp-18);
 }
 
-/* Boards C7 and C8: the change, and what it costs. */
+/* The change, and what it costs. */
 /* Add a note, in the change sheet's frame: the design draws no sheet behind the button. */
 .noteForm {
   display: flex;
@@ -519,7 +519,7 @@
   border-left: var(--rule-strong) solid var(--error-on-paper);
 }
 
-/* Board C7's way to C8: quiet, and still a full target. */
+/* The move sheet's way to the cancel sheet: quiet, and still a full target. */
 .quiet {
   display: flex;
   align-items: center;
@@ -539,7 +539,7 @@
 
 /*
  * A discount code at the pay step (docs/decisions/0108-discount-codes.md), which no board draws: quiet until it is
- * asked for, as C7's way to C8 is, then a box and its button on one line.
+ * asked for, as the move sheet's way to the cancel sheet is, then a box and its button on one line.
  */
 .code {
   margin-top: var(--sp-12);
@@ -595,7 +595,7 @@
   text-align: center;
 }
 
-/* Board C5's credit line sits under the button on the left, where the money note is centred. */
+/* The credit line sits under the button on the left, where the money note is centred. */
 .sheet .creditNote {
   margin-top: var(--sp-12);
   font-size: var(--fs-14);
@@ -609,7 +609,7 @@
   color: var(--error-on-paper);
 }
 
-/* Board C6. Within the sheet, so its margin outweighs the sheet's own for a paragraph. */
+/* The outcome step. Within the sheet, so its margin outweighs the sheet's own for a paragraph. */
 .sheet .caption {
   margin-bottom: var(--sp-14);
   font-size: var(--fs-14);

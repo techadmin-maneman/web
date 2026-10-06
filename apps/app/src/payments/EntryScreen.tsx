@@ -1,8 +1,8 @@
-// One payment or refund (board E2): the amount, GST included, with its GST
+// One payment or refund: the amount, GST included, with its GST
 // split beneath once GST applies, the facts, and its tax documents. A payment's
 // are the visit's tax invoice, from Books, where one will come, and the
 // receipt. A refund's is its voucher and its destination. A document not yet
-// raised says so (board E3), in words that fit how long it has been, with
+// raised says so, in words that fit how long it has been, with
 // "Ask us for it", which asks ops on WhatsApp until the app can tell the
 // client itself. A refund past its working days says it is late.
 

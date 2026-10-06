@@ -120,7 +120,7 @@ const changedUnder = (jobId: string, queued: readonly Queued[]): boolean =>
  *   closed      an outcome, landed or on its way
  *   started     the next step, and nothing of the door's
  *   not_today   tomorrow's, unlocked: the card, and no check-in until the day
- *   door        board B5: arrive, wait, and start or close as a no-show
+ *   door        the evidence chain: arrive, wait, and start or close as a no-show
  */
 export type Stage = "locked" | "changed" | "closed" | "started" | "not_today" | "door";
 

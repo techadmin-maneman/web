@@ -1,4 +1,4 @@
-// The client's own referral card (design/phase2/Referral and Waitlist, A1) is made by the API from their first fit's
+// The client's own referral card (design/phase2/Referral and Waitlist) is made by the API from their first fit's
 // front photographs (docs/decisions/0048-referrals.md). The phone only finds those photographs, to know a card of
 // their own can be offered and to show them before it is made.
 

@@ -1,4 +1,4 @@
-// Migration 0009 rebuilds consents for Phase 2's purposes (docs/decisions/0042-client-profile.md).
+// Migration 0009 rebuilds consents for the app's purposes (docs/decisions/0042-client-profile.md).
 // Consents are the legal record: every row must survive, the table must stay
 // append-only, and the purposes must stay checked. D1 is SQLite, so this
 // applies the real migration files to an in-memory SQLite database.

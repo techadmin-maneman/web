@@ -1,4 +1,4 @@
-/* Board E1, the list; E2, one entry; E3, a document not yet raised. */
+/* Payments: the list, one entry, and a document not yet raised. */
 
 .list {
   margin: 0;
@@ -71,7 +71,7 @@
   color: var(--text-muted);
 }
 
-/* Board E2. */
+/* An entry's page. */
 .detail {
   padding: var(--sp-24) var(--sp-20);
 }
@@ -168,7 +168,7 @@
   color: var(--ink);
 }
 
-/* Board E3: the document is not ready, and Notify me. */
+/* The document is not ready, and Notify me. */
 .unavailable {
   display: flex;
   flex-direction: column;

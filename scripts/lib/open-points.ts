@@ -9,8 +9,8 @@
 // - a point the file cites ("item 44") exists, and so does one cited from
 //   anywhere else ("docs/open-points.md, item 44", "open point 44").
 //
-// Applied migrations cite the numbers from before 27 September 2026 and can
-// never be edited, so they are not read; the file maps the old numbers.
+// Applied migrations cite the numbers from before the points were renumbered and
+// can never be edited, so they are not read; the file maps the old numbers.
 
 import { execFileSync } from "node:child_process";
 
@@ -197,7 +197,7 @@ export function referenceProblems(
   );
 }
 
-/** What is not read: the file itself, the owner's prompts and designs, applied migrations, and this check. */
+/** What is not read: the file itself, the prompts and designs, applied migrations, and this check. */
 const NOT_READ = [
   /^docs\/open-points\.md$/,
   /^docs\/prompts\//,

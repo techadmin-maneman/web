@@ -58,7 +58,7 @@ const WRITTEN_RULES_FROM = 101;
 /** The most comment lines a migration opens with: what it does, in a few words. Its reasoning lives in its ADR. */
 const HEADER_LINES = 5;
 
-/** An open point's number, which goes wrong when the open points are renumbered, as on 27 September 2026. */
+/** An open point's number, which goes wrong when the open points are renumbered. */
 const OPEN_POINT = /\b(?:open[ -]points?\b[^\n]*?\b(?:item\s+)?\d+|item\s+\d+)\b/i;
 
 /** One environment's own records, which belong in a script run there, never in every environment's schema. */

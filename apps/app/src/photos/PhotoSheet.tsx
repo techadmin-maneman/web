@@ -1,4 +1,4 @@
-// One photograph, opened from a row: large, then board D3's download line.
+// One photograph, opened from a row: large, then Photos' download line.
 // The file goes to the phone's gallery: on an iPhone through the share sheet,
 // whose "Save Image" puts it in Photos; elsewhere as a download, which the
 // gallery lists. The sheet rises from the bottom (docs/prompts/phase2-frontend.md,

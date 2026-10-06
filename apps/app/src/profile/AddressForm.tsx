@@ -1,6 +1,6 @@
 // The address form, with the building search (docs/decisions/0054-address-capture.md): Profile's "Where we come"
-// (board G1) opens it, and the booking sheet asks for it before any slot when the client has given none
-// (docs/decisions/0079-an-address-before-a-slot.md). The design draws no form; its fields follow G2's number
+// opens it, and the booking sheet asks for it before any slot when the client has given none
+// (docs/decisions/0079-an-address-before-a-slot.md). The design draws no form; its fields follow the account section's number
 // field. The fields an address cannot do without say they are required, and one left out is marked, named by the
 // error, and given the focus. The API refuses a pincode we do not come to, which offers the waitlist, and a move to
 // another city while a visit is booked, which offers a message to ops.

@@ -1,4 +1,4 @@
-// Board A2's progress bar. It moves on the photographs the API has confirmed,
+// The Waiting screen's progress bar. It moves on the photographs the API has confirmed,
 // never on what is only held on the phone, and its width is set through the
 // CSSOM so no component writes an inline style.
 

@@ -2,10 +2,10 @@
 // Worker answers every path with the app, so a page can be opened directly.
 //
 //   /                  Home
-//   /visits            upcoming and past (C1); /visits/:id, one past visit (C9)
-//   /photos            the timeline (D1); /photos/compare (D2)
-//   /payments          payments and refunds (E1); /payments/:id, one entry (E2)
-//   /refer             the invite (F1); /refer/fitted, who has been fitted (F5 and F6)
+//   /visits            upcoming and past; /visits/:id, one past visit
+//   /photos            the timeline; /photos/compare
+//   /payments          payments and refunds; /payments/:id, one entry
+//   /refer             the invite; /refer/fitted, who has been fitted
 //   /profile
 //   /replacement       what a replacement involves, which Home's prompt opens (no board; ADR 0086)
 

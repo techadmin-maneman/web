@@ -95,7 +95,7 @@ const SMALL_TABLES = new Set([
   "cron_runs",
   // One row, how far the pass that closes expired credits has got.
   "credit_expiry_cursor",
-  // One row, what Phase 2's buckets hold (docs/decisions/0093-the-storage-meter.md).
+  // One row, what the apps' buckets hold (docs/decisions/0093-the-storage-meter.md).
   "storage_meter",
   // One row, the dispatch board's version.
   "board_version",

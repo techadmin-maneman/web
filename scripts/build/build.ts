@@ -1,4 +1,4 @@
-// Builds the site for local and staging and each Phase 2 app for every
+// Builds the site for local and staging and each app for every
 // environment, then bundles every Worker in the
 // registry (scripts/lib/workers.ts) for every environment without deploying
 // (wrangler deploy --dry-run), so a config or bundling error fails the pull

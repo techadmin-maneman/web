@@ -1,5 +1,5 @@
 // packages/brand holds the design's values, unaltered: the icons and drawings
-// as the design files draw them, Phase 1's icons frozen, and a Phase 2 colour
+// as the design files draw them, the site's first icons frozen, and the apps' colour
 // layer that adds to tokens.css without redefining any of it.
 
 import { createHash } from "node:crypto";
@@ -89,7 +89,7 @@ describe("every token", () => {
     expect(names.filter((name, index) => names.indexOf(name) !== index)).toEqual([]);
   });
 
-  // Eleven were left behind by the Phase 1 booking form.
+  // Eleven were left behind by the site's first booking form.
   it("is used by a stylesheet, a component or a script, or it is not a token", () => {
     const walk = (dir: string): string[] =>
       readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {

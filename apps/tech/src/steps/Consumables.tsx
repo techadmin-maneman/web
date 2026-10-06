@@ -1,4 +1,4 @@
-// Board B3, step 3: what was used, with quantities. Steppers rather than number
+// Step 3: what was used, with quantities. Steppers rather than number
 // fields, so a gloved hand never opens a keyboard.
 //
 // The consumables are ops', set in the console and read with the job, which the

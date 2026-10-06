@@ -1,10 +1,10 @@
 /*
- * Board B1: the viewfinder with its framing guide, the five angle tiles, and
+ * The viewfinder with its framing guide, the five angle tiles, and
  * Retake beside Capture at the foot. The head and the foot's place come from
  * the step frame every board B screen shares (apps/tech/src/steps/steps.module.css).
  */
 
-/* The framing guide's lines, in the drawing's own units (its viewBox is 320 by 420), as board B1 draws them. */
+/* The framing guide's lines, in the drawing's own units (its viewBox is 320 by 420), as the camera draws them. */
 :root {
   --local-guide-hairline: 2.5;
   --local-guide-corners: 3;

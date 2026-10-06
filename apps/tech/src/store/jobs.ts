@@ -4,8 +4,8 @@
 // client card to keep.
 //
 // Two answers of the API's are kept beside them, because no later call gives
-// them back: what a check-in measured (board B5's distance and its wait), and
-// the instant the technician closed the job out, which board B4's duration runs
+// them back: what a check-in measured (the evidence chain's distance and its wait), and
+// the instant the technician closed the job out, which the close-out's duration runs
 // to. So is the job's start as the card showed it at check-in, which every
 // later step is sent with. Each has a store of its own (./db.ts).
 

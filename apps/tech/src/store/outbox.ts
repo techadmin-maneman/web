@@ -139,7 +139,7 @@ export async function correct(seq: number, body: EventBody<EventKind>): Promise<
 /**
  * A photograph frame and its thumbnail, held on the phone until the API
  * confirms their upload and never written to the phone's gallery (the design's
- * line on board A2).
+ * line on the Waiting screen).
  *
  * One frame per angle: the API keeps one photograph for each, so a second
  * frame for the same angle — a double tap — replaces the first rather than

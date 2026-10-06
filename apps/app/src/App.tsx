@@ -3,11 +3,11 @@
 // the app keeps no token of its own. A 401 from any call means the session has
 // ended, wherever the client is: the kept Home is forgotten and the login
 // shown on the same page, saying why. Offline, Home is the last one the
-// service worker kept (board B3), until the connection is back.
+// service worker kept, until the connection is back.
 //
-// While the API is asked, the page shows board B3's loading. Offline with no
+// While the API is asked, the page shows the loading state. Offline with no
 // Home kept, a phone that signed out opens on the login; any other client
-// sees board B3's error, since their visit may still be booked.
+// sees the error state, since their visit may still be booked.
 
 import { useCallback, useEffect, useState } from "react";
 import { api, forgetHome, keptHome, onSessionEnded, type Me } from "./api.ts";
@@ -68,7 +68,7 @@ function pageFor(route: Route, onChanged: () => void) {
   }
 }
 
-/** Whether a Home the phone kept shows a visit, so board B3's error can say it is still booked. */
+/** Whether a Home the phone kept shows a visit, so the error state can say it is still booked. */
 async function stillBooked(): Promise<boolean> {
   const kept = await keptHome().catch(() => null);
   return kept !== null && (kept.next_visit !== null || kept.consultation !== null);
@@ -150,7 +150,7 @@ export function App({ linkedMobile }: { linkedMobile: string }) {
     };
   }, [refreshSoon]);
 
-  // The page's ground follows the screen: ink for the login, paper for everything board B3 draws and once in.
+  // The page's ground follows the screen: ink for the login, paper for everything the states screen draws and once in.
   useEffect(() => {
     document.body.dataset.ground = session.kind === "out" ? "ink" : "paper";
   }, [session.kind]);

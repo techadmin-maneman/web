@@ -49,7 +49,7 @@ const CUSTOM_FIELDS: readonly NewField[] = [
   { label: "D1 Person ID", apiName: "D1_Person_ID", dataType: "text", unique: true },
   { label: "UTM Source", apiName: "UTM_Source", dataType: "text" },
   { label: "UTM Campaign", apiName: "UTM_Campaign", dataType: "text" },
-  // An invited friend and the window a Phase 2 booking asked for (docs/decisions/0074-hand-offs-and-messages.md).
+  // An invited friend and the window a booking asked for (docs/decisions/0074-hand-offs-and-messages.md).
   // The sync writes them only once CRM_ORG_HAS_REFERRAL_FIELDS (src/config/crm.ts) is turned on after this has run.
   { label: "Referral Code", apiName: "Referral_Code", dataType: "text" },
   {

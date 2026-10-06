@@ -1,4 +1,4 @@
-/* Boards B1 and B2: the next visit's card on ink; what to expect, the credit tile and the prompt on paper. */
+/* The next visit's card on ink; what to expect, the credit tile and the prompt on paper. */
 
 .home {
   display: flex;
@@ -44,7 +44,7 @@
   color: var(--ink-soft);
 }
 
-/* Board B1: the technician's initials and name, and the visit's kind and length. */
+/* The technician's initials and name, and the visit's kind and length. */
 .technician {
   display: flex;
   align-items: center;
@@ -115,7 +115,7 @@
   flex: 1;
 }
 
-/* Offline (board B3): Reschedule waits for the connection, drawn in the card's own quiet words. */
+/* Offline: Reschedule waits for the connection, drawn in the card's own quiet words. */
 .action:disabled {
   border-color: var(--ink-line);
   background: none;
@@ -177,7 +177,7 @@
   width: 100%;
 }
 
-/* Board B1's credit tile, ruled above and below. */
+/* Home's credit tile, ruled above and below. */
 .credits {
   padding: var(--sp-18) 0;
   border-top: var(--hairline) solid var(--paper-line);
@@ -212,7 +212,7 @@
   color: var(--text-muted);
 }
 
-/* Board B1's one prompt: a line, and a quiet way on, underlined in brass. */
+/* Home's one prompt: a line, and a quiet way on, underlined in brass. */
 .promptLine {
   font-size: var(--fs-17);
   line-height: var(--lh-150);

@@ -1,4 +1,4 @@
-// Signing in (boards A1 to A3): the number, the code and the help.
+// Signing in: the number, the code and the help.
 
 export const login = {
   /** Under a limit on codes, on the number and the code screens. */
@@ -11,7 +11,7 @@ export const login = {
     hint: "A six-digit code, no password.",
     // The design draws no session that ended while the app was open.
     ended: "You’ve been signed out. Sign in again to carry on.",
-    // The design draws no error on A1.
+    // The design draws no error on the sign-in.
     errors: {
       invalid: "Enter the ten-digit mobile number you booked with.",
       rate_limited: "Too many codes for this number today. Try again tomorrow, or message us.",
@@ -25,7 +25,7 @@ export const login = {
     back: "Back",
     title: "Enter the code",
     /**
-     * The owner's neutral ruling on A3 (ADR 0030): the screen never says whether
+     * Neutral on purpose (ADR 0030): the screen never says whether
      * the number has a booking. Our wording; the design's is "Sent on
      * WhatsApp to {number}."
      */

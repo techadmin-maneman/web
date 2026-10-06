@@ -1,12 +1,12 @@
-// Home (boards B1 and B2): "One card, one prompt, nothing else." The next visit: a consultation as B2 draws it,
-// with what to expect, and any other visit as B1 draws it, with its technician (VisitCard.tsx). A consultation from
-// the site shows as B2 until its day has passed, saying so while it is only asked for. A visit not yet closed stays
+// Home: "One card, one prompt, nothing else." The next visit: a consultation as the design draws it,
+// with what to expect, and any other visit as Home draws it, with its technician (VisitCard.tsx). A consultation from
+// the site shows as the design's consultation card until its day has passed, saying so while it is only asked for. A visit not yet closed stays
 // here until it is, so Home never says nothing is booked, nor offers the booking again, while one is under way. Nor
 // while a visit paid for, or booked free, waits to be booked: Home says it is being booked, and that the payment is in
 // (ADR 0068). A consultation and fit in one visit says what it costs once fitted, and has its own steps to expect;
 // one booked on /book shows as booked before it is a visit, as the site's consultation does.
 //
-// Beneath the card, a one visit's payment while the client owes it, B1's credit tile while there is a balance, its one prompt, and an invoice just issued as a line
+// Beneath the card, a one visit's payment while the client owes it, the credit tile while there is a balance, its one prompt, and an invoice just issued as a line
 // beneath that (src/domain/clients/home-prompt.ts). Where the prompt offers the next visit, it is Home's one way to book it,
 // with the sheet opened on its day and window; a replacement is booked here like any other visit.
 
@@ -110,7 +110,7 @@ function ProposedConsultation({ consultation }: { consultation: NonNullable<Me["
   );
 }
 
-/** Board B2: the consultation card on ink, and what to expect on paper until it begins. */
+/** The design: the consultation card on ink, and what to expect on paper until it begins. */
 function Consultation(props: {
   date: string;
   /** The window, or where a consultation that has begun stands. */
@@ -237,7 +237,7 @@ function PaymentOwed({ owed }: { owed: NonNullable<Me["payment_owed"]> }) {
   );
 }
 
-/** Board B1's credit tile: how many free service visits, said once, and the day the soonest must be used by. */
+/** Home's credit tile: how many free service visits, said once, and the day the soonest must be used by. */
 function CreditTile({ credits }: { credits: NonNullable<Me["credits"]> }) {
   const expiry = credits.earliest_expiry;
   return (
@@ -260,7 +260,7 @@ function expiryLine(credits: NonNullable<Me["credits"]>, expiry: string): string
 
 type PromptOf<Kind extends NonNullable<Me["prompt"]>["kind"]> = Extract<NonNullable<Me["prompt"]>, { kind: Kind }>;
 
-/** Board B1's one prompt: a line, and the way to act on it. */
+/** Home's one prompt: a line, and the way to act on it. */
 function Prompt({ prompt }: { prompt: NonNullable<Me["prompt"]> }) {
   switch (prompt.kind) {
     case "address":

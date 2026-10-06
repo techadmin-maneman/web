@@ -1,17 +1,17 @@
 // The app's pages, by path. Links change the path without a reload; the Worker
 // answers every path with the app, so a page can be opened directly.
 //
-//   /                        today's jobs, tomorrow collapsed (board A1)
-//   /waiting                 what has not reached us: the photo sets and the queued writes (board A2)
-//   /jobs/:id                one job's card, and the evidence chain (boards A3 and B5)
-//   /jobs/:id/before-photos  step 1, the five before angles (board B1)
-//   /jobs/:id/checklist      step 2 (board B2)
-//   /jobs/:id/consumables    step 3 (board B3)
-//   /jobs/:id/piece          step 4, a replacement's and a first fit's only (board B3)
+//   /                        today's jobs, tomorrow collapsed
+//   /waiting                 what has not reached us: the photo sets and the queued writes
+//   /jobs/:id                one job's card, and the evidence chain
+//   /jobs/:id/before-photos  step 1, the five before angles
+//   /jobs/:id/checklist      step 2
+//   /jobs/:id/consumables    step 3
+//   /jobs/:id/piece          step 4, a replacement's and a first fit's only
 //   /jobs/:id/profile        the client's hair profile, a consultation's and a one visit's only (no board; ADR 0106)
-//   /jobs/:id/after-photos   step 5 (board B1 again)
-//   /jobs/:id/outcome        step 6 (board B4)
-//   /jobs/:id/done           the close-out (board B4)
+//   /jobs/:id/after-photos   step 5 (the camera again)
+//   /jobs/:id/outcome        step 6
+//   /jobs/:id/done           the close-out
 
 import type { Step } from "./api.ts";
 

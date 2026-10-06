@@ -12,8 +12,8 @@ interface Reward {
 const serviceVisits = (count: number): string => (count === 1 ? "1 service visit" : `${String(count)} service visits`);
 
 /**
- * Board F1's promise, from the referrer's side, in the reward's one name. Our words: the words for unequal sides,
- * for 0 and for a reward not known, which gives no count, pending the owner's (docs/open-points.md, item 172).
+ * Refer's promise, from the referrer's side, in the reward's one name. Our words: the words for unequal sides,
+ * for 0 and for a reward not known, which gives no count (docs/decisions/0107-referral-rewards-in-the-console.md).
  */
 function promiseOf(reward: Reward | null): string {
   const fitted = "When a friend you refer is fitted,";
@@ -46,11 +46,11 @@ export function notYetFittedLines(reward: Reward | null, invite: PendingInvite |
   ];
 }
 
-/** Refer (boards F1 to F6): the invite, the card behind it, and who has been fitted. */
+/** Refer: the invite, the card behind it, and who has been fitted. */
 export const refer = {
   title: "Refer",
   promise: promiseOf,
-  /** Board F1's credit tile, as Home's. */
+  /** Refer's credit tile, as Home's. */
   credit: freeVisitsTile,
   // The board draws no line for the credits of the invite a client came with while ops review them.
   inviteCredits: {
@@ -75,7 +75,7 @@ export const refer = {
     instead: "Use the example instead",
   },
   /**
-   * Board F4: the chat's preview, exactly as the friend receives it. Its heading and line are the landing's own
+   * The chat's preview, exactly as the friend receives it. Its heading and line are the landing's own
    * preview (site/src/content/referral.ts), which test/node/apps/app/app-invite-preview.test.ts holds them to, so the
    * client is named only when the invite will name them, the friend promised only the visits ops give them, and
    * the area is the site's.
@@ -97,7 +97,7 @@ export const refer = {
     other: "Other apps",
     copy: "Copy link",
     copied: "Link copied",
-    /** Board F6's share failure, and its way on. */
+    /** The empty tracker's share failure, and its way on. */
     failed: {
       label: "Share failed",
       line: "The link didn’t generate. Nothing was sent.",
@@ -106,7 +106,7 @@ export const refer = {
   },
   fitted: {
     title: "Who has been fitted",
-    /** Board F5's two figures, each above its word. */
+    /** The tracker's two figures, each above its word. */
     earned: "visits earned",
     remaining: "remaining",
     // A friend fitted before the grant kept first names, and erased since; never the erasure's word.
