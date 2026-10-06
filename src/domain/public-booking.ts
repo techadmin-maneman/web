@@ -10,7 +10,7 @@
 // Each booking leaves three records:
 //
 //   the slot,  held for the person and booked as their visit;
-//   the lead,  so the CRM funnel sees every booking, as it did in Phase 1;
+//   the lead,  so the CRM funnel sees every booking;
 //   the person, the consent they gave, under the notice they were shown, and
 //              the address the visit is at, which is theirs from then on,
 //              unless they already had one, which is kept
@@ -196,7 +196,7 @@ async function leadCity(db: D1Database, city: string): Promise<string | null> {
 
 /**
  * The lead behind a booking or a waitlist entry, which is what reaches the CRM.
- * A Phase 2 form asks for neither the loss extent nor a rough window, so both may
+ * Today's forms ask for neither the loss extent nor a rough window, so both may
  * be absent; the date it does have is the one the person booked.
  */
 async function recordLead(

@@ -1,5 +1,5 @@
-// A technician never takes two of a client's visits in a row (the owner's rule of 5 October 2026,
-// docs/decisions/0111-a-technician-never-takes-two-visits-in-a-row.md): whoever comes to a visit is not whoever comes to
+// A technician never takes two of a client's visits in a row
+// (docs/decisions/0111-a-technician-never-takes-two-visits-in-a-row.md): whoever comes to a visit is not whoever comes to
 // the client's visit just before it or just after it. Every place a technician is put on a visit leaves those out: the
 // windows a client is offered, the hold that books one, ops' own booking, and the dispatch board's moves.
 

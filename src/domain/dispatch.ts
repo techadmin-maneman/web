@@ -77,8 +77,8 @@ import { creditSpentOn } from "./visit-facts.ts";
 export const BOARD_DAYS = 7;
 
 /**
- * The client of a visit, as ops need him to reach him (board A3's WhatsApp and
- * Open client). None for a visit with no client on our records, or one erased.
+ * The client of a visit, as ops need them to reach them (the job card's WhatsApp
+ * and Open client). None for a visit with no client on our records, or one erased.
  */
 interface BoardClient {
   readonly id: string;
