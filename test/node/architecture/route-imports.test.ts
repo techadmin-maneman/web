@@ -8,9 +8,6 @@ import { dirname, join, normalize } from "node:path/posix";
 import { describe, expect, it } from "vitest";
 
 const BASELINE = [
-  "src/routes/client/changes.ts -> src/routes/client/booking.ts",
-  "src/routes/client/discount-codes.ts -> src/routes/client/booking.ts",
-  "src/routes/client/me.ts -> src/routes/client/booking.ts",
   "src/routes/client/me.ts -> src/routes/client/payments.ts",
   "src/routes/client/me.ts -> src/routes/client/refer.ts",
   "src/routes/client/me.ts -> src/routes/client/visits.ts",
@@ -23,10 +20,8 @@ const BASELINE = [
   "src/routes/ops/field.ts -> src/routes/tech/pieces.ts",
   "src/routes/ops/profile.ts -> src/routes/ops/erasure.ts",
   "src/routes/ops/services.ts -> src/routes/ops/settings.ts",
-  "src/routes/ops/visits.ts -> src/routes/client/booking.ts",
   "src/routes/ops/whoami.ts -> src/routes/ops/staff.ts",
   "src/routes/public/consultations.ts -> src/routes/client/profile.ts",
-  "src/routes/public/published-prices.ts -> src/routes/client/booking.ts",
   "src/routes/public/referral-landing.ts -> src/routes/client/profile.ts",
   "src/routes/public/referral-landing.ts -> src/routes/public/consultations.ts",
   "src/routes/public/tryon-claim.ts -> src/routes/public/number-codes.ts",

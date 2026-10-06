@@ -9,9 +9,7 @@
 // A move picks its new time as a booking does, through GET /api/availability
 // and POST /api/holds with `moving`.
 
-import { selfServeRoute } from "../../http/session-routes.ts";
 import { z } from "@hono/zod-openapi";
-import type { App } from "../../http/context.ts";
 import { VISIT_TYPES } from "../../config/visit-types.ts";
 import {
   cancelVisit,
@@ -20,12 +18,14 @@ import {
   termsInForce,
   type ChangeTerms,
 } from "../../domain/visits/visit-changes.ts";
-import { opsInputs } from "../../http/ops-inputs.ts";
-import { clientOf } from "../../http/client-session.ts";
-import { errorResponse, refuse } from "../../http/errors.ts";
-import { queueMessage } from "../../http/queue-message.ts";
-import { BookingSchema, PriceSchema } from "./booking.ts";
 import { moveTermsFor, startCheckout } from "../../http/client-booking.ts";
+import { clientOf } from "../../http/client-session.ts";
+import type { App } from "../../http/context.ts";
+import { errorResponse, refuse } from "../../http/errors.ts";
+import { opsInputs } from "../../http/ops-inputs.ts";
+import { queueMessage } from "../../http/queue-message.ts";
+import { selfServeRoute } from "../../http/session-routes.ts";
+import { BookingSchema, PriceSchema } from "../schemas/booking.ts";
 
 const NoticeSchema = z.enum(["free", "late"]).openapi({
   description:
