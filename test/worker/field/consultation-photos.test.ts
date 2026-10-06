@@ -1,4 +1,4 @@
-// A consultation photographs the client before and takes no after set, as the owner ruled. NOW is Monday
+// A consultation photographs the client before and takes no after set. NOW is Monday
 // 21 September 2026, 12 noon in India; the visit is today at 13:00. Every name and number is made up.
 
 import { env } from "cloudflare:workers";

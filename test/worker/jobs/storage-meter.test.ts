@@ -1,4 +1,4 @@
-// The storage meter (src/domain/storage-meter.ts; docs/decisions/0093-the-storage-meter.md): what Phase 2's two
+// The storage meter (src/domain/storage-meter.ts; docs/decisions/0093-the-storage-meter.md): what the apps' two
 // buckets hold, counted as each object is stored and deleted, and ops told once at each mark of the share.
 
 import { env } from "cloudflare:workers";

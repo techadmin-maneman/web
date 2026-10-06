@@ -109,7 +109,7 @@ export const DECIDED = {
 } satisfies OpsReply<"/api/no-shows/decided">;
 
 /**
- * Board D1's first card: the day's three figures, and the two charges beneath
+ * The Payments page's first card: the day's three figures, and the two charges beneath
  * them. The amounts are the board's own, in paise as the route answers them.
  * The late cancellation carries its evidence, "cancelled 9:14 am · visit was
  * 10 am"; the no-show carries what its charge kept, added to the figure.
@@ -145,7 +145,7 @@ export const DAY_MONEY = {
 } satisfies OpsReply<"/api/payments">;
 
 /**
- * Board D1's second card: Vikram disputes the charge on a visit he was not home
+ * The Payments page's second card: Vikram disputes the charge on a visit he was not home
  * for, 240 m out against a 200 m fence, the one fact that argues for him.
  */
 export const DISPUTES = {
@@ -293,7 +293,7 @@ export const TASKS = {
 export const TASKS_READ_ON = new Date("2027-09-22T05:00:00.000Z");
 
 /**
- * Read against 22 September 2027 in India, as board D2's tasks are, so the days
+ * Read against 22 September 2027 in India, as the design's tasks are, so the days
  * left read the same on every run: the first grievance is within the 30 days the
  * app promises and the second is past them; of the deletion requests the first
  * is within its 30 days, the second is past them and the third falls due today.

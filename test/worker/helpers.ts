@@ -100,7 +100,7 @@ export async function markDatabase(databaseName: string = EXPECTED_DATABASE_NAME
 }
 
 /**
- * A booking as Phase 1's form left one, which D1 still holds from before POST /api/lead was removed
+ * A booking as the site's first form left one, which D1 still holds from before POST /api/lead was removed
  * (docs/open-points.md, item 107): the person, their consent to be contacted, and a lead for a weekday morning, with
  * the Wednesday after NOW proposed. A city we do not serve left a waitlist lead with no day. Its ID.
  */

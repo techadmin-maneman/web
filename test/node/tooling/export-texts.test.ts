@@ -25,7 +25,7 @@ describe("the texts file", () => {
     expect(found.map((item) => item.id).sort()).toEqual(marks.map((mark) => mark.id).sort());
   });
 
-  it("gives each line of copy the code below its mark, so the owner reads the words themselves", () => {
+  it("gives each line of copy the code below its mark, so the reader sees the words themselves", () => {
     const source = [
       "export const login = {",
       "  // PLACEHOLDER: the design draws no session that ended while the app was open.",

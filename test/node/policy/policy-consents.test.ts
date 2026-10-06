@@ -1,4 +1,4 @@
-// Where a consent was given: the owner's ruling of 27 September 2026 (src/policy/consents.ts)
+// Where a consent was given (src/policy/consents.ts)
 // (docs/decisions/0094-where-a-consent-was-given.md).
 
 import { describe, expect, it } from "vitest";

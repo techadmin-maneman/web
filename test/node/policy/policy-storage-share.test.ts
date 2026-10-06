@@ -1,6 +1,5 @@
-// What Phase 2's photographs and cards may hold of R2 (src/policy/storage-share.ts;
-// docs/decisions/0093-the-storage-meter.md). The owner, 27 September 2026, on the
-// photograph runway: "keep the look at full size and pay for R2 beyond the free
+// What clients' photographs and cards may hold of R2 (src/policy/storage-share.ts;
+// docs/decisions/0093-the-storage-meter.md): "keep the look at full size and pay for R2 beyond the free
 // tier when it fills"; the meter "warns ops at 50% and 80% of the share, and R2's
 // paid storage is accepted as the share fills".
 

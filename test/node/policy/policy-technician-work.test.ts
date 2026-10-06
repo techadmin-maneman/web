@@ -1,10 +1,10 @@
-// Board D3's two figures (src/policy/technician-work.ts): how far back a technician's jobs are counted, and how far
-// over its planned length an average reads as running over, in the owner's words.
+// The Technicians page's two figures (src/policy/technician-work.ts): how far back a technician's jobs are counted, and how far
+// over its planned length an average reads as running over.
 
 import { describe, expect, it } from "vitest";
 import { OVER_BY_MIN, runsOver, WORK_PERIOD_DAYS } from "../../../src/policy/technician-work.ts";
 
-describe("board D3", () => {
+describe("the technicians' figures", () => {
   it("flags a technician whose average over 90 days runs 15 minutes over the plan", () => {
     expect(WORK_PERIOD_DAYS).toBe(90);
     expect(OVER_BY_MIN).toBe(15);

@@ -1,6 +1,5 @@
 // Where gold may stand in the technician app and the ops console. The prompts'
-// rule, which the owner chose over the boards on 27 September 2026 (ADR 0025,
-// item 59): "gold on the one primary action only" in the technician app, and
+// rule, chosen over the designs (ADR 0025, item 59): "gold on the one primary action only" in the technician app, and
 // in the console "Gold marks the selection and the one primary action, nothing
 // else". The mark is the brand's, drawn gilt on ink, and not an action.
 

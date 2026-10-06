@@ -249,7 +249,7 @@ describe("the no-show ruling", () => {
     expect((await send(await ruled("charged", "nothing"))).text).toBe(`${MISSED} Book a new time in the Mane Man app.`);
   });
 
-  // A waiver gives back what the visit took, as the owner ruled on 27 September 2026.
+  // A waiver gives back what the visit took.
   it("says a waiver charges nothing, and that the payment is on its way back", async () => {
     expect((await send(await ruled("waived", "payment"))).text).toBe(
       `${MISSED} There's no charge: we've refunded Rs. 2,000 to your UPI (5 to 7 working days).`,

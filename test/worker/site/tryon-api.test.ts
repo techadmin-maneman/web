@@ -402,7 +402,7 @@ describe("POST /api/tryon/claim, before the look is made", () => {
     expect((await jobRow(jobId))?.claimed_at).toBeNull();
   });
 
-  // Owner ruling, 30 September 2026 ("logins open, reminders fenced", ADR 0025 item 84; ADR 0097): the look answers
+  // Logins open, reminders fenced (ADR 0097): the look answers
   // the person who just claimed it, so it reaches any number, allowlisted or not.
   it("takes any number off the allowlist, since the look answers the person who just claimed it", async () => {
     const browser = visitor({ messaging: { allowlist: ["+919810000002"] } });
@@ -506,7 +506,7 @@ describe("POST /api/tryon/claim, before the look is made", () => {
     expect((await browser.claim(second)).status).toBe(429);
   });
 
-  // The owner's ruling of 1 October 2026: "One per number, every 30 days" (LOOK_PER_NUMBER_DAYS).
+  // "One per number, every 30 days" (LOOK_PER_NUMBER_DAYS).
   it("refuses a number that had a look in the last thirty days, but not for a look never made or failed", async () => {
     const browser = visitor({ tryon: { claimMobileDailyLimit: 10 } });
     const made = await browser.uploaded();
@@ -584,7 +584,7 @@ describe("POST /api/tryon/generate and GET /api/tryon/status", () => {
     expect(await jobRow(jobId)).toMatchObject({ state: "awaiting_upload", stage: "crown" });
   });
 
-  it("routes an unknown colour to Pro in black, as the owner chose, and records why", async () => {
+  it("routes an unknown colour to Pro in black, and records why", async () => {
     const browser = visitor();
     const jobId = await browser.claimed();
     await browser.generate(jobId, { hair_color: "unknown" });

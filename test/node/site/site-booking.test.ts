@@ -65,7 +65,7 @@ describe("the link into the client app", () => {
   });
 });
 
-// The owner's ruling of 27 September 2026: the full address before a slot is confirmed, on the site too (ADR 0081).
+// The full address before a slot is confirmed, on the site too (ADR 0081).
 describe("the address a consultation is at", () => {
   it("starts in the city of the pincode checked, and asks for the flat, the building or street and the area", () => {
     expect(missingParts(emptyAddress("Gurgaon"))).toEqual(["flat", "line1", "locality"]);

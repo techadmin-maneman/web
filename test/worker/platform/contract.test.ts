@@ -130,7 +130,7 @@ function errorAnswers(): { where: string; status: string; description: string }[
   );
 }
 
-// Open point 105, ruled by the owner on 27 September 2026: a front end reads an error by its code, and each code
+// A front end reads an error by its code, and each code
 // answers with one status everywhere, so that neither can say something the other does not.
 describe("the error codes", () => {
   it("are read from the first word of each clause of an answer's description", () => {

@@ -105,7 +105,7 @@ describe("crm-sync: syncing a lead", () => {
     expect(await leadRow(leadId)).toMatchObject({ sync_state: "synced", last_sync_error: null });
   });
 
-  // The CRM could not tell an invited friend from an organic booking, nor the window a Phase 2 form booked
+  // The CRM could not tell an invited friend from an organic booking, nor the window a booking held
   // (ADR 0060 says marketing sees "the person, the source, the day and the invite").
   it("sends the invite a friend came with, and the window their booking asked for", async () => {
     const leadId = await phaseOneLead();
@@ -152,7 +152,7 @@ describe("crm-sync: syncing a lead", () => {
     expect(crm.calls[0]?.lead).toMatchObject({ plan: "one_visit", discountCode: "TENPC" });
   });
 
-  it("sends no plan for a lead no Phase 2 booking made", async () => {
+  it("sends no plan for a lead no booking made", async () => {
     const leadId = await phaseOneLead();
     const crm = recordingCrm();
 

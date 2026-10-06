@@ -1,5 +1,4 @@
-// What a technician's card carries beyond the job itself (boards A1, A3, B3 and
-// B5): the slots a visit takes, the client's pieces, the last visit's after
+// What a technician's card carries beyond the job itself: the slots a visit takes, the client's pieces, the last visit's after
 // photograph, the no-show wait, and whether the day-before WhatsApp reached the
 // client. NOW is Monday 21 September 2026, 12 noon in India. Everyone here is
 // made up.
@@ -94,7 +93,7 @@ async function card(id: string): Promise<Record<string, unknown>> {
 }
 
 describe("the day's list", () => {
-  it("says how many slots each visit takes, as board A1 writes beneath the time", async () => {
+  it("says how many slots each visit takes, as the job row writes beneath the time", async () => {
     await insertJob(LAST_VISIT, { start: "2026-09-21T09:30:00.000Z", type: "first_fit" });
     await insertJob(OLDER_VISIT, { start: "2026-09-21T11:30:00.000Z", type: "replacement" });
 
@@ -288,7 +287,7 @@ describe("the card", () => {
     expect(photo.headers.get("Content-Type")).toBe("image/jpeg");
     // A client's photograph is never kept on a technician's phone, by the browser or the service worker.
     expect(photo.headers.get("Cache-Control")).toBe("private, no-store");
-    // The front, as board A3 draws it.
+    // The front, as the job card draws it.
     expect(new TextDecoder().decode(await photo.arrayBuffer())).toContain("last-front");
 
     // Not before the card unlocks, and not to another technician.
@@ -307,7 +306,7 @@ describe("the card", () => {
     expect((await get(`/api/tech/jobs/${TODAY_JOB}/last-visit-photo`)).status).toBe(404);
   });
 
-  it("says whether the day-before WhatsApp reached the client, as board B5's wait shows", async () => {
+  it("says whether the day-before WhatsApp reached the client, as the wait screen shows", async () => {
     expect((await card(TODAY_JOB)).reminder).toBeNull();
 
     await env.DB.prepare(

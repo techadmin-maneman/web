@@ -1,4 +1,4 @@
-// The client app's profile (boards G1 and G2), against the local mm-api, logged
+// The client app's profile, against the local mm-api, logged
 // in with the local fixed code (OTP_FIXED_CODE in playwright.config.ts).
 
 import type { Page } from "@playwright/test";
@@ -33,7 +33,7 @@ test("keeps the tabs at the foot of the screen, and scrolls only the page, howev
   expect(heights.page).toBeGreaterThan(844);
 });
 
-test("shows board B3's loading shape while the profile comes", async ({ page }) => {
+test("shows the loading shape while the profile comes", async ({ page }) => {
   await signIn(page);
   let release: () => void = () => undefined;
   const held = new Promise<void>((resolve) => {
@@ -173,7 +173,7 @@ test("refuses an address without a six-digit pincode", async ({ page }) => {
   await expect(page.getByLabel("City")).toHaveAttribute("required", "");
 });
 
-// The owner's ruling of 27 September 2026: FSM's work order must name the door (docs/open-points.md, item 45).
+// FSM's work order must name the door (docs/open-points.md, item 45).
 test("refuses an address without the flat or house number, and says so on the flat", async ({ page }) => {
   await loggedIn(page);
   await page.getByRole("button", { name: "Add your address and access notes" }).click();

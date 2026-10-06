@@ -19,7 +19,7 @@ describe("what the client app's service worker answers", () => {
     expect(answerFor(get("/manifest.webmanifest"), ORIGIN)).toBe("file");
   });
 
-  it("keeps a copy of Home, for board B3's offline state", () => {
+  it("keeps a copy of Home, for the offline state", () => {
     expect(answerFor(get("/api/me"), ORIGIN)).toBe("home");
   });
 

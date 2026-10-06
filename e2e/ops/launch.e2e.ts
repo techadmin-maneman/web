@@ -1,6 +1,6 @@
 // Marking a pincode live from Areas' Waiting tab, telling those who wait in one
-// already live, and adding one the service area does not hold first (board C3;
-// docs/decisions/0071-what-ops-see-before-a-setting-changes.md).
+// already live, and adding one the service area does not hold first
+// (docs/decisions/0071-what-ops-see-before-a-setting-changes.md).
 // e2e/ops/waitlist.e2e.ts holds the queue itself; this holds the panel.
 
 import type { Page, Route } from "@playwright/test";

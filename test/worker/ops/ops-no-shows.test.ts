@@ -1,4 +1,4 @@
-// The no-show queue ops rule on (Ops Console, board D1; src/routes/ops/field.ts).
+// The no-show queue ops rule on (src/routes/ops/field.ts).
 // NOW is Monday 21 September 2026, 12 noon in India. Nothing here is a real
 // person, number or address.
 //
@@ -296,7 +296,7 @@ describe("POST /api/no-shows/:id/decision", () => {
     expect(messages.sent).toEqual([{ message_id: queued.results[0]?.id, request_id: expect.any(String) as string }]);
   });
 
-  // The owner ruled on 27 September 2026 that a waiver gives back the payment and the credit.
+  // A waiver gives back the payment and the credit.
   it("gives back the payment and the credit when ops waive a no-show", async () => {
     const payments = createStubPayments();
     const app = appFor("local", fakeDependencies({ payments }), {}, "ops");
@@ -321,7 +321,7 @@ describe("POST /api/no-shows/:id/decision", () => {
   });
 
   // Once the ruling has committed, a retry answers not found; so nothing between the commit and Razorpay may fail
-  // without ops hearing of the refund owed. A waiver as the owner ruled gives back the credit too, which once meant
+  // without ops hearing of the refund owed. A waiver gives back the credit too, which once meant
   // a read of the ledger before the refund.
   it("tells ops of the refund owed when the database fails once the waiver has committed", async () => {
     await paidAndCredited();
@@ -371,7 +371,7 @@ describe("POST /api/no-shows/:id/decision", () => {
     });
   });
 
-  it("gives back the payment and the credit on a waiver, as the owner ruled", async () => {
+  it("gives back the payment and the credit on a waiver", async () => {
     const payments = createStubPayments();
     await paidAndCredited();
 
@@ -445,7 +445,7 @@ describe("POST /api/no-shows/:id/decision", () => {
     });
   });
 
-  // The owner ruled on 30 September 2026: a client may dispute a charge for 30 days, a console setting; each charge
+  // A client may dispute a charge for 30 days, a console setting; each charge
   // keeps the deadline it was given (src/policy/no-show.ts, DISPUTE_WINDOW_DAYS).
   it("gives a charge the days ops set for disputing it, and a waiver none", async () => {
     await rule({ decision: "charged", reason: "Nobody came to the door" });
@@ -483,8 +483,8 @@ describe("POST /api/no-shows/:id/decision", () => {
 });
 
 /**
- * The owner ruled on 27 September 2026 that a no-show costs, to begin with, what a late cancellation of the same
- * visit costs, set in the console apart from it (docs/archive/owner-answers-2026-09-27.md, item 60); a booking keeps the
+ * A no-show costs, to begin with, what a late cancellation of the same visit costs, set in the console apart from it;
+ * a booking keeps the
  * charge it was sold under (docs/decisions/0088-every-policy-in-the-console.md).
  */
 describe("what charging a no-show costs the client", () => {
@@ -635,8 +635,8 @@ describe("what charging a no-show costs the client", () => {
     expect(await recorded()).toEqual({ charge: "nothing", kept_amount: 0, refund_amount: 200000 });
   });
 
-  // A consultation and fit in one visit holds no payment, and is sold to cost nothing if missed, as the build took for
-  // the owner to confirm (ADR 0025, item 90; docs/decisions/0105-a-consultation-and-fit-in-one-visit.md).
+  // A consultation and fit in one visit holds no payment, and is sold to cost nothing if missed, still to be
+  // confirmed (open point 90; docs/decisions/0105-a-consultation-and-fit-in-one-visit.md).
   it("charges nothing for a consultation and fit in one visit, which was sold so", async () => {
     await as("first_fit");
     await env.DB.prepare("UPDATE appointments SET one_visit = 'booked' WHERE id = ?1").bind(VISIT).run();

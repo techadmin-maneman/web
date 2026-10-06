@@ -127,7 +127,7 @@ describe("content", () => {
     }
   });
 
-  // The owner kept the design's lengths on 24 September 2026 (docs/open-points.md, item 122):
+  // The design's lengths:
   // "consultation 60 minutes, service 90, replacement 135, first fit 180".
   it("says each visit is as long as the backend books it", () => {
     expect(VISIT_BLOCKS.consultation.minutes).toBe(60);
@@ -151,7 +151,7 @@ describe("content", () => {
     ]);
   });
 
-  // The owner's copy of 1 October 2026 (ADR 0103): "hair system, not hair patch", and "100% real human hair".
+  // The home page's copy (ADR 0103): "hair system, not hair patch", and "100% real human hair".
   it("says hair system, never hair patch, and calls the hair 100% real human hair", () => {
     const pages = JSON.stringify(site) + JSON.stringify(referral);
     expect(pages).not.toMatch(/hair patch/i);
@@ -160,7 +160,7 @@ describe("content", () => {
     expect(site.whatItIs.body).toMatch(/bonded to the skin\. It is not a wig\.$/);
   });
 
-  it("names the four hair systems as the owner named them, each with its line", () => {
+  it("names the four hair systems as the product guide names them, each with its line", () => {
     expect(site.range.products.map((product) => product.name)).toEqual([
       "Mane Man Essential",
       "Mane Man Active",
@@ -186,8 +186,8 @@ describe("content", () => {
     }
   });
 
-  // The site serves Delhi NCR, and the landing said Gurgaon. The owner's ruling on the wording is open
-  // (ADR 0025, item 14); until then every page says what the home page does.
+  // The site serves Delhi NCR, and the landing said Gurgaon. The wording is still open
+  // (open point 14); until then every page says what the home page does.
   it("names one service area on every page", () => {
     const pages = JSON.stringify(site) + JSON.stringify(referral);
     expect(pages).not.toContain("Gurgaon only");
@@ -214,7 +214,7 @@ describe("content", () => {
 });
 
 describe("the second copy round", () => {
-  // The placeholder quotes and founder's note are the design's, kept until the owner supplies real ones.
+  // The placeholder quotes and founder's note are the design's, kept until real ones are supplied.
   const pages = JSON.stringify({ ...site, testimonials: null, founderNote: null }) + JSON.stringify(referral);
 
   // The FAQ concedes a hand through the hair can tell, so nothing may claim it cannot.
@@ -272,8 +272,8 @@ describe("the second copy round", () => {
     expect(site.stepPhotos.images).toHaveLength(site.howItWorks.steps.length);
   });
 
-  // "for just" sneered. The owner kept "Two of these are not ours." on 2 October 2026.
-  it("keeps the owner's comparison line and gives a transplant's cost without a sneer", () => {
+  // "for just" sneered. "Two of these are not ours." stays.
+  it("keeps the comparison line and gives a transplant's cost without a sneer", () => {
     expect(site.comparison.intro).toBe("Two of these are not ours.");
     expect(JSON.stringify(site.comparison)).not.toMatch(/\bjust\b/);
   });
@@ -308,7 +308,7 @@ describe("the legal pages", () => {
 
   // The notice of 22 September 2026 erased "the same day", let any visit move free by message, took payment
   // on the day of the fit, and offered a call.
-  it("say what Phase 2 does: erasure decided within 30 days, visits paid at booking, changes in the app", () => {
+  it("say what the apps do: erasure decided within 30 days, visits paid at booking, changes in the app", () => {
     const privacy = textOf(site.legalPages.privacy);
     const terms = textOf(site.legalPages.terms);
     expect(privacy).not.toContain("the same day");
@@ -326,7 +326,7 @@ describe("the legal pages", () => {
 describe("the publish gate", () => {
   // ADR 0104: production can no longer show the approved v1 pair, which promised the look on screen, so its build
   // waits for counsel to approve the try-on's new notices (docs/open-points.md, item 146), and the legal pages'
-  // Phase 2 wording, and for nothing else.
+  // wording for the apps, and for nothing else.
   it("stops production on what awaits counsel alone: every published block is real", () => {
     expect(publishProblems()).toEqual([
       "the photo notice (photo-v4) is not approved",
@@ -337,7 +337,7 @@ describe("the publish gate", () => {
     expect(publishProblems(undefined, APPROVED, undefined, LEGAL_APPROVED)).toEqual([]);
   });
 
-  // The pages' Phase 2 wording is a draft until counsel signs it off.
+  // The pages' wording for the apps is a draft until counsel signs it off.
   it("stops a legal page whose wording is not approved", () => {
     const legal = { ...LEGAL_APPROVED, terms: { approved: false } };
     expect(publishProblems(undefined, APPROVED, undefined, legal)).toEqual([
@@ -435,7 +435,7 @@ describe("site helpers", () => {
   it("gives the house card a new version whenever its file changes", () => {
     const CARDS: Record<number, string> = {
       1: "3becedf10d96f13d6bb0c144ed904f4d81b5ffb835523e5c9e7f43609a2d6302",
-      // Board A1's gilt rule and lockup (scripts/build/make-house-card.ts, 25 September 2026).
+      // The referral card's gilt rule and lockup (scripts/build/make-house-card.ts).
       2: "d40596cbd613caf7083f6bee3ecf8f399b932fb3f4088ab4d8a91e485d89aa5a",
     };
     const file = createHash("sha256").update(readFileSync("site/public/images/invite-house.jpg")).digest("hex");

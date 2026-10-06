@@ -1,6 +1,5 @@
-// The technician app on a WebKit engine, which the owner's ruling of
-// 24 September 2026 made our business: technicians use any phone, including
-// iPhones (docs/open-points.md, item 124).
+// The technician app on a WebKit engine: technicians use any phone, iPhones
+// among them.
 //
 // **This is not Safari on iOS, and nothing here proves what an iPhone does.**
 // Playwright's WebKit is the same rendering and JavaScript engine behind a

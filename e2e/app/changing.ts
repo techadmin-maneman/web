@@ -1,4 +1,4 @@
-// Two clients whose next visit the change tests move and cancel (boards C7 and C8), written into the local
+// Two clients whose next visit the change tests move and cancel, written into the local
 // database as the FSM and payments mirrors would hold them: each has a paid service visit with a work order in
 // (stub) FSM, and an address saved, which a move needs as a booking does. One visit is five days out, free to
 // change; the other starts in three hours, inside 24 hours. Every name and number is made up.

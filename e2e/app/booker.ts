@@ -40,7 +40,7 @@ export async function seedBooker(): Promise<void> {
     `INSERT INTO addresses (id, person_id, created_at, line1, locality, city, pincode) VALUES
        ${sqlRow(crypto.randomUUID(), person, now, "House 4417, Tower C", "Sector 65", "Gurgaon", "122018")};`,
     // Both photograph consents already given in Profile, so the pay step asks for neither (ADR 0080) and is as
-    // boards C4 and C5 draw it. A test that needs them undecided says so in the profile it answers.
+    // the pay step draws it. A test that needs them undecided says so in the profile it answers.
     `INSERT INTO consents (id, person_id, purpose, notice_version, granted, created_at) VALUES
        ${sqlRow(crypto.randomUUID(), person, "photos_own_record", "photos-own-record-v1", 1, now)},
        ${sqlRow(crypto.randomUUID(), person, "photos_referral_cards", "photos-referral-cards-v2", 1, now)};`,

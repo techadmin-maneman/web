@@ -1,5 +1,5 @@
 // What the client app's Visits lists under Upcoming (apps/app/src/visits/upcoming.ts), and what a visit being booked
-// is called. D-04: while FSM held a booking, Home said "We are booking your visit." and Visits said "Nothing booked
+// is called. While FSM held a booking, Home said "We are booking your visit." and Visits said "Nothing booked
 // yet."; Home also called a consultation and fit in one visit a first fit.
 
 import { describe, expect, it } from "vitest";

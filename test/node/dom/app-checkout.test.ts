@@ -1,6 +1,6 @@
 // Razorpay Checkout in the client app (apps/app/src/booking/checkout.ts): its
 // script loaded once, a load that fails or stalls counted as a failed payment
-// (board C6) and tried afresh next time, and Checkout's three endings told
+// and tried afresh next time, and Checkout's three endings told
 // apart. It had no test at any level. The page is stood in for: a
 // script element that loads, fails or never answers, and a Razorpay that
 // records what it was opened with.

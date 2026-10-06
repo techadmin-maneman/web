@@ -115,7 +115,7 @@ test("titles each page by what it is", async ({ page }) => {
   await expect(page).toHaveTitle("Prices · Mane Man operations");
 });
 
-test("says who is signed in, as board A1 draws them at the header's right", async ({ page }) => {
+test("says who is signed in, as the design draws them at the header's right", async ({ page }) => {
   await page.goto("/");
   const header = page.getByRole("banner");
   await expect(header).toContainText("Signed in as ops@localhost");

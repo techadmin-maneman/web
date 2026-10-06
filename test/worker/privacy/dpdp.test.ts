@@ -1,4 +1,4 @@
-// A client's rights over their data (docs/decisions/0049-dpdp.md): erasure reaching Phase 2's data and Books, the
+// A client's rights over their data (docs/decisions/0049-dpdp.md): erasure reaching the apps' data and Books, the
 // data export, grievances, and the deletion window's alert. NOW is Monday 21 September 2026, 12 noon in India.
 // Every name and number here is made up.
 
@@ -71,7 +71,7 @@ async function phase2Data() {
     .run();
 }
 
-describe("erasure reaches Phase 2's data", () => {
+describe("erasure reaches the apps' data", () => {
   it("deletes the visit photographs, addresses and grievance words, and keeps the visits", async () => {
     await phase2Data();
     const summary = await eraseByMobile(MOBILE, NOW);
@@ -162,7 +162,7 @@ describe("GET /api/me/export", () => {
       addresses: [{ line1: "House 7", pincode: "122018" }],
       visits: [{ type: "service", status: "completed" }],
       grievances: [{ text: "Please stop calling me.", state: "open" }],
-      // Who in ops opened their photographs, and when: the owner's ruling of 27 September 2026.
+      // Who in ops opened their photographs, and when.
       photo_views: [{ by: "ops@maneman.in", at: new Date(NOW.getTime() - 60_000).toISOString() }],
       consultation_requests: [{ pincode: "122018", requested_date: "2026-10-02", requested_window: "morning" }],
       first_fit_requests: [{ preferred_window: "afternoon" }],
@@ -462,7 +462,7 @@ describe("grievances", () => {
         body: JSON.stringify({ text: "Please explain who sees my photographs." }),
       });
 
-    // Both taps are in flight together, as they are when a client taps Send twice on board G2.
+    // Both taps are in flight together, as they are when a client taps Send twice on the profile.
     const both = await Promise.all([raise(), raise()]);
     expect(both.map((answer) => answer.status)).toEqual([201, 201]);
     const ids = await Promise.all(both.map(async (answer) => (await answer.json<{ id: string }>()).id));

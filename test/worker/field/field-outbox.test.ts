@@ -89,7 +89,7 @@ describe("the phone's clock", () => {
     ]);
   });
 
-  // The owner kept the hour on 27 September 2026, as a console setting (docs/decisions/0088-every-policy-in-the-console.md).
+  // The hour is a console setting (docs/decisions/0088-every-policy-in-the-console.md).
   it("bounds a back-dated check-in to the margin ops set", async () => {
     await env.DB.prepare(
       `INSERT INTO ops_settings (name, value, set_by, set_at)
@@ -154,7 +154,7 @@ describe("the outbox", () => {
     expect(row).toEqual({ superseded: 1, fsm_write_state: "rejected" });
   });
 
-  // Open point 92, ruled by the owner on 27 September 2026: "the other technician's first name may reach the phone.
+  // "The other technician's first name may reach the phone.
   // Name the technician the job went to, and when."
   it("names the technician ops gave the job to, by first name alone, and when they moved it", async () => {
     const moved = await opsPost("/api/dispatch/move", {

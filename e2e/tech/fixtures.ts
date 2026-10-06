@@ -931,7 +931,7 @@ export async function queuedOnPhone(page: Page, writes: readonly LeftWrite[]): P
   );
 }
 
-/** The phone's position, so board B5's check-in can run without a real fix. */
+/** The phone's position, so the design's check-in can run without a real fix. */
 export async function atTheDoor(page: Page, lat = 28.39, lng = 77.07): Promise<void> {
   await page.context().grantPermissions(["geolocation"]);
   await page.context().setGeolocation({ latitude: lat, longitude: lng });

@@ -56,7 +56,7 @@ test("the home page describes the business and its FAQ as structured data", asyn
     .evaluateAll((scripts) => scripts.map((script) => JSON.parse(script.textContent) as Record<string, unknown>));
   const business = data.find((item) => item["@type"] === "LocalBusiness");
   expect(business).toMatchObject({ name: "Mane Man", url: "https://maneman.in/", telephone: "+919007973247" });
-  // The owner took the prices off the site on 1 October 2026 (ADR 0103).
+  // The site gives no prices (ADR 0103).
   expect(business).not.toHaveProperty("priceRange");
   const faq = data.find((item) => item["@type"] === "FAQPage") as { mainEntity: { name: string }[] } | undefined;
   const questions = await page.locator("[data-section=faq] summary > span").allTextContents();

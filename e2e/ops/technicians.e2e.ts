@@ -1,4 +1,4 @@
-// Technicians (board D3): the roster, one row a technician, the jobs each has
+// Technicians: the roster, one row a technician, the jobs each has
 // finished and how those ran; and each technician's own page, which the roster's
 // names open: his details, then his week, leave, phones and kit, a tab at a time.
 // The API is answered from e2e/ops/fixtures.ts, since a local database has no

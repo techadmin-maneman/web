@@ -1,4 +1,4 @@
-// Referrals (boards C1 and C2): the held queue and the referrers' figures,
+// Referrals: the held queue and the referrers' figures,
 // with the API answered from e2e/ops/fixtures.ts, since no route can put a
 // grant into the held state from outside. The clock is fixed to the day the
 // fixture's holds are read against, so "3 days held" reads the same on every run.
@@ -33,7 +33,7 @@ test("lists every held grant with the rule it met, and counts them", async ({ pa
   await expect(queue.getByText("Monthly cap exceeded")).toBeVisible();
 });
 
-// Board C1 writes how long a grant has waited; the queue once wrote the day of the first fit.
+// The design writes how long a grant has waited; the queue once wrote the day of the first fit.
 test("says how long each grant has been held, as the board writes it", async ({ page }) => {
   await open(page);
   const queue = page.getByRole("region", { name: "Held for review" });

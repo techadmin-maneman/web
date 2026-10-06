@@ -1,5 +1,5 @@
 // The next visit, offered in the app and booked by the client (docs/decisions/0086-the-next-visit-is-offered.md):
-// Home's prompt in the owner's order, the booking sheet opened with the day and window offered chosen, a fitted
+// Home's prompt in its order, the booking sheet opened with the day and window offered chosen, a fitted
 // client's choice of a service or a replacement, and the page on what a replacement involves, which replaces the
 // WhatsApp hand-off. Against the local mm-api, with the clients of e2e/app/next-visit.ts, who only read: nothing
 // is held for them here.

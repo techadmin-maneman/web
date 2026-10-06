@@ -104,7 +104,7 @@ describe("messaging: sending a result", () => {
     expect(await message()).toMatchObject({ state: "skipped", last_error: "messaging is off" });
   });
 
-  // Owner ruling, 30 September 2026 ("logins open, reminders fenced", ADR 0025 item 84; ADR 0097): the try-on
+  // Logins open, reminders fenced (ADR 0097): the try-on
   // result answers the person who just claimed it (MESSAGE_CLASSES.tryon_result is "answering"), so it reaches any
   // number even off staging's allowlist.
   it("sends the result to a number off the allowlist, since it answers the person who claimed it", async () => {

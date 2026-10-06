@@ -155,7 +155,7 @@ describe("the grant", () => {
     expect((await creditBalance(env.DB, FRIEND, NOW)).visits).toBe(3);
   });
 
-  // The owner's ruling of 1 October 2026, "Yes, once fitted": with nothing owed, the fit itself settles the referral.
+  // "Yes, once fitted": with nothing owed, the fit itself settles the referral.
   it("grants on the pass after a one visit a discount code left nothing to pay, with no payment", async () => {
     await firstFit(FIT, FRIEND);
     await env.DB.prepare("UPDATE appointments SET one_visit = 'fitted' WHERE id = ?1").bind(FIT).run();
@@ -236,7 +236,7 @@ const toldReferrer = async () => {
   return "skip" in composed ? composed : renderMessage(composed.template, composed.params);
 };
 
-// The owner's ruling of 1 October 2026: ops set each side's visits and how long they last
+// Ops set each side's visits and how long they last
 // (docs/decisions/0107-referral-rewards-in-the-console.md).
 describe("what a referral earns, as ops set it", () => {
   it("gives each side what is set when the friend is fitted, for as long as is set, and says so", async () => {
@@ -594,7 +594,7 @@ describe("ops' review", () => {
       "SELECT action, subject_id FROM audit_log WHERE action = 'referral.decide'",
     ).first();
     expect(audit).toEqual({ action: "referral.decide", subject_id: ATTRIBUTION });
-    // The console asks for a reason on either decision (board C1); an approval keeps it too.
+    // The console asks for a reason on either decision; an approval keeps it too.
     const reviewed = await env.DB.prepare("SELECT review_reason FROM referral_attributions WHERE id = ?1")
       .bind(ATTRIBUTION)
       .first<{ review_reason: string | null }>();
@@ -605,7 +605,7 @@ describe("ops' review", () => {
     expect((await decide({ decision: "approve", reason: "Again" })).status).toBe(404);
   });
 
-  // "Both require a reason" (board C1): until now only the browser asked, so credits could be granted with none.
+  // "Both require a reason": until now only the browser asked, so credits could be granted with none.
   it("approves only with a reason, and grants nothing without one", async () => {
     await held();
     for (const reason of [null, "", "   "]) {

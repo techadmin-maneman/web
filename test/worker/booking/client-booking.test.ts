@@ -489,7 +489,7 @@ describe("POST /api/holds", () => {
     expect(held).toEqual({ pincode: "122011" });
   });
 
-  // The owner's ruling of 27 September 2026 (src/policy/booking.ts; ADR 0079).
+  // An address before any slot (src/policy/booking.ts; ADR 0079).
   it("holds no slot for a client who has not given their address, and says why", async () => {
     const rohit = await client(false, { withoutAddress: true });
     const answer = await hold(rohit, TUESDAY_AFTERNOON);
@@ -766,7 +766,7 @@ describe("choosing a service", () => {
     expect(answer.status).toBe(422);
   });
 
-  // The owner's decision of 2 October 2026: only the hair systems ops offer, and no generic first fit in their place.
+  // Only the hair systems ops offer, and no generic first fit in their place.
   describe("a first fit, sold only as a hair system ops offer", () => {
     /** Ops retire the first fit the migrations began with, as they retire any service in the console. */
     const retireTheFirstFit = () =>

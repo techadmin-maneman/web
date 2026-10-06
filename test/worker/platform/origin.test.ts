@@ -1,4 +1,4 @@
-// The Phase 2 surfaces refuse a write from any origin but their own
+// The signed-in surfaces refuse a write from any origin but their own
 // (docs/decisions/0026-hosts-and-surfaces.md).
 
 import { beforeEach, describe, expect, it } from "vitest";
@@ -23,7 +23,7 @@ function appWithRoutes(surface: Surface): App {
   return app;
 }
 
-describe("a Phase 2 surface", () => {
+describe("a signed-in surface", () => {
   it("accepts a write from its own origin", async () => {
     const res = await request(appWithRoutes("client"), "/api/probe", {
       method: "POST",

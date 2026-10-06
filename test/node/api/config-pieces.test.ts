@@ -1,4 +1,4 @@
-// The two figures the owner ruled for pieces on 24 September 2026
+// The two figures for pieces
 // (src/config/pieces.ts): the replacement cycle, and the label a technician
 // types. Both are read by the job sheet and by the mirror of FSM's assets, so
 // they are pinned here rather than only in what they compute.

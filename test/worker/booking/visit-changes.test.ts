@@ -605,7 +605,7 @@ describe("moving a visit", () => {
     expect(again?.n).toBe(2);
   });
 
-  // The owner's ruling of 1 October 2026: a visit's discount code moves with it (docs/decisions/0108-discount-codes.md).
+  // A visit's discount code moves with it (docs/decisions/0108-discount-codes.md).
   it("carries the visit's discount code to the visit a late move books, the code counted once", async () => {
     await booked("service", TUESDAY_MORNING, 180000);
     const made = { actor: { kind: "staff", id: "ops@localhost" }, requestId: "r", now: NOW } as const;
@@ -776,9 +776,8 @@ describe("moving a visit", () => {
 });
 
 /**
- * The owner ruled on 27 September 2026 that the client keeps the free change after a move by ops: their notice counts
- * from the visit's time before ops moved it (docs/archive/owner-answers-2026-09-27.md, item 71;
- * docs/decisions/0096-a-no-shows-charge-and-its-dispute.md).
+ * The client keeps the free change after a move by ops: their notice counts from the visit's time before ops moved it
+ * (docs/decisions/0096-a-no-shows-charge-and-its-dispute.md).
  */
 describe("a visit ops moved", () => {
   /** Tuesday 22 September, noon in India: the afternoon window's first half-slot. */

@@ -1,4 +1,4 @@
-// India's calendar, a Phase 1 window's words, and a mobile number as typed.
+// India's calendar, the first form's window words, and a mobile number as typed.
 
 import { describe, expect, it } from "vitest";
 import { windowLabel } from "../../../src/config/booking.ts";

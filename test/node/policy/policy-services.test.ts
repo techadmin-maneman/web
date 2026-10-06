@@ -78,7 +78,7 @@ describe("the services", () => {
     }
   });
 
-  // The owner's decision of 2 October 2026: only the hair systems ops offer, and no generic first fit in their place.
+  // Only the hair systems ops offer, and no generic first fit in their place.
   it("lets ops retire a first fit's every hair system, so nothing stands in for them", () => {
     expect(hasStandardService("first_fit")).toBe(false);
     expect(retireRefusal("first_fit", [])).toBeNull();

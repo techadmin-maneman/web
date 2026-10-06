@@ -172,7 +172,7 @@ describe("setting one", () => {
   });
 
   /**
-   * Every queue on board D2, the consultation request #107 added among them.
+   * Every queue on the Tasks board, the consultation request among them.
    * A queue with no allowance of its own would fall due the moment it opened.
    */
   it("wants an allowance for every task group, and refuses a set that leaves one out", async () => {
@@ -437,7 +437,7 @@ describe("the next visit's days", () => {
   });
 });
 
-// The owner's ruling of 1 October 2026 (docs/decisions/0107-referral-rewards-in-the-console.md).
+// Each side's reward, set in the console (docs/decisions/0107-referral-rewards-in-the-console.md).
 describe("what a referral earns", () => {
   const reward = (referrer: number, friend: number, days: number) => ({
     referrer_visits: referrer,

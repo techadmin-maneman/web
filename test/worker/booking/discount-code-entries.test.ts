@@ -299,7 +299,7 @@ describe("the client, at the app's pay step", () => {
     expect(answer.status).toBe(422);
   });
 
-  // The owner's ruling of 1 October 2026: "Discount codes can be applied once credit paid visits are over".
+  // "Discount codes can be applied once credit paid visits are over".
   it("waits for the client's credits to be spent: a service visit a credit could pay takes no code", async () => {
     await make();
     const hold = await heldService(PERSON);
@@ -337,7 +337,7 @@ describe("the client, at the app's pay step", () => {
     expect(hold).toEqual({ use_credit: 0 });
   });
 
-  // The owner's ruling of 1 October 2026: "send whatsapp message even when the code makes the visit free".
+  // "send whatsapp message even when the code makes the visit free".
   it("books a visit a code makes free without Checkout, and tells the client on WhatsApp as a paid one is told", async () => {
     await make({ code: "ALLFREE", kind: "amount", value: 200_000 });
     await env.DB.prepare(
@@ -466,7 +466,7 @@ describe("the client, at the app's pay step", () => {
     expect(payments.made.refunds).toEqual([{ paymentId: "pay_late", amount: 180_000 }]);
   });
 
-  // The owner's ruling of 1 October 2026, "the use comes back", and the review of #177: a prepaid booking cancelled
+  // A code's use comes back: a prepaid booking cancelled
   // and refunded kept its code's use, which nothing could then take off.
   it("gives a code's use back when the visit it booked is cancelled, though it was paid for and refunded", async () => {
     await make({ code: "UNQ5", oncePerClient: false, maxUses: 1 });

@@ -1,4 +1,4 @@
-// The dispatch board (boards A1, A2 and A3). The board asks where a job would
+// The dispatch board. The board asks where a job would
 // land before it offers anywhere to drop it; every move asks for a reason
 // before anything is sent; the server refuses a clash, and a move made from a
 // board that has gone stale, before it writes anything at all
@@ -87,7 +87,7 @@ test("draws the week, every technician and the jobs on their days", async ({ pag
   );
 });
 
-// Open point 67, ruled by the owner on 27 September 2026: "block heights follow their slots, about 42, 63 and 84 px".
+// "Block heights follow their slots, about 42, 63 and 84 px".
 test("draws each job as tall as the slots it takes, so its size reads from its height", async ({ page }) => {
   await open(page);
   const heightOf = async (name: string) => (await page.getByRole("button", { name }).boundingBox())?.height ?? 0;
@@ -192,7 +192,7 @@ test("opens a tray job's drawer, with the client, Assign and Open client", async
   await expect(job).toBeFocused();
 });
 
-// Board A3's badge, WhatsApp {client} and Open client.
+// The drawer's badge, WhatsApp {client} and Open client.
 test("opens a block's drawer with the client, the badge, and both ways to reach him", async ({ page }) => {
   await open(page);
   await press(page, ROHIT_BLOCK);

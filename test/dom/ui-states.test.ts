@@ -21,7 +21,7 @@ describe("loading", () => {
     expect(markup).toContain(">Loading</span>");
   });
 
-  it("draws the shape of a label and a card while it waits (board B3)", () => {
+  it("draws the shape of a label and a card while it waits", () => {
     expect([...markup.matchAll(/<div/g)]).toHaveLength(3);
   });
 });

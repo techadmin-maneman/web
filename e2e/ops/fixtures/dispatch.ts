@@ -9,7 +9,7 @@ type TrayJob = Board["unassigned"][number];
 type VisitType = NonNullable<Block["type"]>;
 type Window = Block["window"];
 
-/** Fri 19 to Thu 25 September, the week board A1 heads, in a year whose days fall as it draws them. */
+/** Fri 19 to Thu 25 September, the week the design heads, in a year whose days fall as it draws them. */
 const DATES = [
   "2025-09-19",
   "2025-09-20",
@@ -36,7 +36,7 @@ const SLOTS: Readonly<Record<VisitType, number>> = { consultation: 1, service: 1
 /** Each window's first half-slot in India's time, as UTC (docs/decisions/0035-window-slot-map.md). */
 const STARTS: Readonly<Record<Window, string>> = { morning: "03:30", afternoon: "06:30", evening: "10:30" };
 
-/** Rohit Malhotra, board A3's client: agreed to WhatsApp about his visits, and invited by nobody. */
+/** Rohit Malhotra, the design's client: agreed to WhatsApp about his visits, and invited by nobody. */
 export const ROHIT = {
   id: "11000000-0000-4000-8000-000000000001",
   name: "Rohit Malhotra",

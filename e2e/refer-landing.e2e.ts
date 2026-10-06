@@ -180,7 +180,7 @@ test("the invited page does say who is told, and what lands when", async ({ page
   await expect(page.getByText("Rohit is told when you are fitted. That is when the 3 visits land.")).toBeVisible();
 });
 
-// The owner's ruling of 1 October 2026: ops set each side's visits apart
+// Ops set each side's visits apart
 // (docs/decisions/0107-referral-rewards-in-the-console.md), and the page says what they set.
 test("says what ops set each side gets, and promises the friend nothing ops do not give", async ({ page }) => {
   const reward = { referrer_visits: 3, friend_visits: 2, valid_days: 180 };
@@ -211,7 +211,7 @@ test("an unserved pincode takes the number instead, and the launch alert is the 
 
   await page.getByLabel("Pincode").fill(UNSERVED.pincode);
   await page.getByRole("button", { name: "Check" }).click();
-  // The navy block says what the pincode answered, in place of the pincode field (board C3).
+  // The navy block says what the pincode answered, in place of the pincode field.
   await expect(page.getByText("We are not in Bandra yet")).toBeVisible();
   await expect(page.getByLabel("Pincode", { exact: true })).toBeHidden();
   await expect(page.getByText("For 400050, Bandra")).toBeVisible();
@@ -311,7 +311,7 @@ test("an invite that cannot be fetched is neither refused nor promised", async (
   await expect(page.getByText(/is told when you are fitted/)).toHaveCount(0);
 });
 
-// The owner took the prices off the site on 1 October 2026 (ADR 0103): the invite gives none, and asks for none.
+// The site gives no prices (ADR 0103): the invite gives none, and asks for none.
 test("the invite gives no price, and never asks the price book", async ({ page }) => {
   await mockApi(page);
   let asked = 0;
@@ -591,7 +591,7 @@ test("a booking sends the details to WhatsApp, and opens the app with the number
   await expect(page).toHaveURL("http://app.localhost:4322/#mobile=9810000000");
 });
 
-// The owner's ruling D2 of 1 October 2026 (ADR 0025, item 89; docs/decisions/0105-a-consultation-and-fit-in-one-visit.md):
+// A consultation and fit in one visit (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md):
 // the form offers the consultation alone, or the consultation and fit in one visit, paid for once fitted. It replaces
 // the consultation with the first fit to follow, whose test went with it.
 test("offers the consultation alone or with the fit in one visit, and asks ops for it while booking is off", async ({
@@ -649,10 +649,10 @@ test("a consultation asked for, not booked, still offers the app, where the requ
   await expect(page.getByRole("link", { name: "Open the app" })).toBeVisible();
 });
 
-// At 1440 the card sits beside the headline (board C5), and no field runs the width of the page.
-test("the desktop page is board C5's two columns, and its fields keep to their column", async ({ page }) => {
+// At 1440 the card sits beside the headline, and no field runs the width of the page.
+test("the desktop page is the design's two columns, and its fields keep to their column", async ({ page }) => {
   const width = page.viewportSize()?.width ?? 0;
-  test.skip(width < 1024, "board C5 is the desktop page");
+  test.skip(width < 1024, "the two columns are the desktop page's");
   await mockApi(page);
   await visit(page, `/r/${CODE}`);
   const title = await page.getByRole("heading", { level: 1 }).boundingBox();
@@ -671,7 +671,7 @@ test("the desktop page is board C5's two columns, and its fields keep to their c
 // On a phone the pincode, the one field a friend must fill, is on the first screen, above how it works.
 test("on a phone the pincode comes before how it works, on the first screen", async ({ page }) => {
   const size = page.viewportSize() ?? { width: 0, height: 0 };
-  test.skip(size.width >= 1024, "board C5 puts how it works in the other column");
+  test.skip(size.width >= 1024, "the desktop design puts how it works in the other column");
   await mockApi(page);
   await visit(page, `/r/${CODE}`);
   const pincode = await page.getByLabel("Pincode").boundingBox();

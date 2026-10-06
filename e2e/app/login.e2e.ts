@@ -1,4 +1,4 @@
-// The client app's login (boards A1 to A3), against the local mm-api. Locally
+// The client app's login, against the local mm-api. Locally
 // every code is the fixed one (OTP_FIXED_CODE in playwright.config.ts), so the
 // tests can log in through the stub messaging provider, and Turnstile is the
 // stand-in that e2e/support.ts gives every app test. Numbers are random.
@@ -34,7 +34,7 @@ test("a booked number logs in with its code and lands on its consultation", asyn
   await expect(page.getByText("Morning, 9 am to 12 pm")).toBeVisible();
   await expect(page.getByText("Gurgaon", { exact: true })).toBeVisible();
   await expect(page.getByText("Free", { exact: true })).toBeVisible();
-  // Phase 1's form booked nothing: ops confirm the time.
+  // The site's first form booked nothing: ops confirm the time.
   await expect(page.getByText("Requested · we confirm the time on WhatsApp")).toBeVisible();
   await expect(page.getByRole("link", { name: "Your profile" })).toHaveText("RM");
   await expect(page.getByRole("link", { name: "Reschedule" })).toHaveAttribute(
@@ -118,7 +118,7 @@ test("the tabs reach Visits and the empty Photos, Payments and Refer", async ({ 
   await tabs.getByRole("link", { name: "Payments" }).click();
   await expect(page.getByText("Nothing to pay yet.")).toBeVisible();
   await tabs.getByRole("link", { name: "Refer" }).click();
-  // Refer is the invite itself now (board F1); who has been fitted is a page of its own.
+  // Refer is the invite itself now; who has been fitted is a page of its own.
   await expect(page.getByText("When a friend you refer is fitted, you both get 3 free service visits.")).toBeVisible();
   await page.goBack();
   await expect(page.getByText("Nothing to pay yet.")).toBeVisible();

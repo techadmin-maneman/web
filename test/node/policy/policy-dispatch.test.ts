@@ -37,7 +37,7 @@ describe("dispatch", () => {
     expect(sized("first_fit")).toBe(2);
   });
 
-  it("books each visit for the length the owner ruled on 24 September 2026", () => {
+  it("books each visit for its kind's length", () => {
     // What FSM holds the appointment for, and what a technician's day is
     // measured against (docs/open-points.md, "Visit lengths").
     expect(VISIT_BLOCKS.consultation.minutes).toBe(60);
@@ -76,8 +76,7 @@ describe("dispatch", () => {
     ]);
   });
 
-  // The owner ruled that a client keeps the free change after a move by ops (docs/archive/owner-answers-2026-09-27.md, item
-  // 71). A move the client asked for is at a time they chose, as a move in the app is.
+  // A client keeps the free change after a move by ops. A move the client asked for is at a time they chose, as a move in the app is.
   it("leaves the client counting from the time before a move ops make, unless the client asked for it", () => {
     expect(MOVE_REASONS.filter((reason) => !keepsTheClientsNotice(reason))).toEqual(["client_asked"]);
   });

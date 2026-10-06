@@ -169,7 +169,7 @@ describe("POST /api/clients/:id/referral", () => {
     ]);
   });
 
-  // The owner ruled on 30 September 2026 (docs/open-points.md, item 157): ops may attach an invite after the friend's
+  // Ops may attach an invite after the friend's
   // first fit, and the grant waits for their review, as one the fraud rules hold.
   describe("for a client already fitted", () => {
     async function fitted() {

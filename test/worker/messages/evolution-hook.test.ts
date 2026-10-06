@@ -288,7 +288,7 @@ describe("a STOP reply (messages.upsert)", () => {
 });
 
 describe("outbound_messages after its rebuild", () => {
-  it("still takes a message the way the Phase 1 code writes one, as about a try-on job", async () => {
+  it("still takes a message the way the first try-on code writes one, as about a try-on job", async () => {
     await env.DB.prepare(
       `INSERT INTO outbound_messages (id, created_at, person_id, kind, subject_id, state, queued_at)
        VALUES ('m2', '2026-09-22T04:00:00Z', 'p1', 'tryon_result', 'job-2', 'queued', '2026-09-22T04:00:00Z')`,
@@ -299,7 +299,7 @@ describe("outbound_messages after its rebuild", () => {
     expect(row).toEqual({ subject_kind: "tryon_job", delivered_at: null });
   });
 
-  it("takes a Phase 2 kind of message", async () => {
+  it("takes a kind of message the apps send", async () => {
     await env.DB.prepare(
       `INSERT INTO outbound_messages (id, created_at, person_id, kind, subject_kind, subject_id, state)
        VALUES ('m3', '2026-09-22T04:00:00Z', 'p1', 'visit_reminder', 'appointment', 'a-1', 'waiting')`,

@@ -73,7 +73,7 @@ describe("a reviewed list", () => {
     expect(DELETE_ORDER.indexOf("crm/Leads")).toBe(DELETE_ORDER.length - 1);
   });
 
-  it("deletes only what the org still holds as staging's, and nothing the owner took out", () => {
+  it("deletes only what the org still holds as staging's, and nothing the reviewer took out", () => {
     const foundNow = [
       record("books/invoices", "invoice"),
       record("crm/Leads", "lead"),
@@ -264,7 +264,7 @@ describe("the org's lists", () => {
     expect(crmPage(answer)).toEqual({ rows: [{ id: "lead-1", Full_Name: "" }], more: false });
   });
 
-  it("read the owner's reviewed list only as the listing run wrote it", () => {
+  it("read the reviewed list only as the listing run wrote it", () => {
     const record = { kind: "books/contacts", id: "c-1", name: "Staging test" };
     expect(REVIEWED_LIST.parse({ records: [record] }).records).toEqual([record]);
     expect(() => REVIEWED_LIST.parse({ records: [{ ...record, kind: "books/items" }] })).toThrow();

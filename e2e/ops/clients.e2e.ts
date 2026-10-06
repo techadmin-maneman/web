@@ -1,4 +1,4 @@
-// One client's page (boards B1 to B3): finding them by part of their name or
+// One client's page: finding them by part of their name or
 // number, the ways to reach them, what waits on Tasks for them, their visits,
 // pieces, payments and invite, their photographs, which are opened as one logged
 // view, and their consents, which ops read and never change. The API is answered from e2e/ops/fixtures.ts,
@@ -319,7 +319,7 @@ test("says when nothing waits on Tasks for the client", async ({ page }) => {
   await expect(openForClient(page)).toContainText("Nothing open.");
 });
 
-// Board B1 draws WhatsApp beside the name; the page once gave no way to reach the client.
+// The design draws WhatsApp beside the name; the page once gave no way to reach the client.
 test("opens a WhatsApp chat with the client from beside their name, as the board draws it", async ({ page }) => {
   await openClient(page, `/clients/${CLIENT.id}`);
   await expect(page.getByRole("link", { name: `WhatsApp ${CLIENT.name}` })).toHaveAttribute(
@@ -828,7 +828,7 @@ test("attaches an invite to a client who came with none, with why, and shows it 
   });
   const invite = page.getByRole("region", { name: "Invite" });
   await expect(invite).toContainText("They came with no invite.");
-  // The note forbade a fitted client, though the owner allows one, held for review.
+  // The note forbade a fitted client, though one is allowed, held for review.
   await expect(invite).toContainText("Attached after their first fit, it waits for your review in Referrals.");
   const attach = invite.getByRole("button", { name: "Attach the invite" });
   await expect(attach).toBeDisabled();
@@ -1070,7 +1070,7 @@ test("erases anyway when a visit is booked, once ops say they will settle it by 
   await expect(page.getByRole("heading", { name: "Erased" })).toBeVisible();
 });
 
-// The owner's ruling of 24 September 2026: what a client has bought and how
+// What a client has bought and how
 // often they have been served belongs on the ops console as well as in the app.
 test("counts the client's visits and replacements, and the day their piece falls due", async ({ page }) => {
   await openClient(page, `/clients/${CLIENT.id}/history`);

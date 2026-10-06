@@ -1,5 +1,4 @@
-// The client's own try-ons in the app's Photos tab: the owner's ruling of 27
-// September 2026 that a client who uploaded a photograph on the site sees it,
+// The client's own try-ons in the app's Photos tab: a client who uploaded a photograph on the site sees it,
 // and the look made from it, in the app (ADR 0082). Each is shown while the
 // try-on's retention rule still holds it, and served only to its owner.
 // Every name and number here is made up, and the "photographs" are synthetic.
@@ -276,7 +275,7 @@ describe("GET /api/photos/try-on/{image}/{token}", () => {
   });
 });
 
-// The owner's ruling of 27 September 2026: "Show the before photo always, keep the generated image till the photos
+// "Show the before photo always, keep the generated image till the photos
 // for first fit are taken" (docs/decisions/0084-a-clients-try-on-is-kept.md).
 describe("a client's try-on, kept", () => {
   const copyOf = (id: string) => `tryons/${id}/before.jpg`;

@@ -176,7 +176,7 @@ describe("a queue's deadline", () => {
     expect((await queuesDue()).get(CHANGE)).toBe("2026-09-22T05:10:00.000Z");
   });
 
-  // Board C1 writes how long a grant has been held ("3 days held"), not the day of the first fit.
+  // The Referrals queue writes how long a grant has been held ("3 days held"), not the day of the first fit.
   it("says when a held grant started waiting", async () => {
     const held = await (await request(ops, "/api/referrals/held")).json<{ held: Record<string, unknown>[] }>();
     expect(held.held[0]).toMatchObject({ held_since: "2026-09-17T08:00:00.000Z", due: "2026-09-19T08:00:00.000Z" });

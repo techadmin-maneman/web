@@ -1,4 +1,4 @@
-// Board D1, the console's Payments: a day's money over the charges it was kept
+// The console's Payments: a day's money over the charges it was kept
 // on, today unless ops pick another day, then each charge a client disputed,
 // with Refund and Uphold, then the queue of cases with the evidence ops rule
 // on, and the ruling, then the cases ruled on today. The API is answered from
@@ -148,7 +148,7 @@ test("says a no-show's amount was not recorded where its charge kept none on rec
   await expect(charge.getByText("Rs.")).toBeHidden();
 });
 
-/** Board D1's second card, found by its heading. */
+/** The Payments page's second card, found by its heading. */
 const disputeCard = (page: Page) => page.getByRole("region", { name: DISPUTED });
 
 // A disputed charge once floated between the panels, with no count and nothing that could link to it.
@@ -519,7 +519,7 @@ test("waives a case with its reason, and the case leaves the queue", async ({ pa
 test("shows no amount in the queue, and says what a charge costs and a waiver gives back", async ({ page }) => {
   await open(page);
   await expect(page.getByRole("region", { name: QUEUE }).getByText("Rs.")).toBeHidden();
-  // The owner ruled on 27 September 2026 that a waiver refunds the payment and returns the credit.
+  // A waiver refunds the payment and returns the credit.
   await expect(
     page.getByText(/a no-show costs and refunds the rest; waiving refunds the payment and returns its credit\./),
   ).toBeVisible();

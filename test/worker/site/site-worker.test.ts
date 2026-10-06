@@ -153,7 +153,7 @@ describe("the site Worker at /r/:code", () => {
     expect(JSON.parse(page.invite)).toEqual({ ...VALID, code: "RM4K7P" });
   });
 
-  // The owner's ruling of 1 October 2026: ops set what each side gets (docs/decisions/0107-referral-rewards-in-the-console.md).
+  // Ops set what each side gets (docs/decisions/0107-referral-rewards-in-the-console.md).
   it("promises the friend the visits ops set, and none where ops set the friend none", async () => {
     const unequal = await open(withReward(undefined, { referrer_visits: 3, friend_visits: 2, valid_days: 90 }));
     expect(unequal.meta("og:description")).toContain("2 service visits free");
@@ -320,7 +320,7 @@ describe("the site Worker on a page that shows a price", () => {
     expect(page.files.map((file) => new URL(file.url).pathname)).toEqual([path]);
   });
 
-  // The owner's decision of 2 October 2026: only the hair systems ops offer, and no generic first fit in their place.
+  // Only the hair systems ops offer, and no generic first fit in their place.
   it("gives no first-fit figure while ops offer no hair system, and tells the booking form so", async () => {
     const page = await visit("/book", withPrices(undefined, NO_HAIR_SYSTEM));
 
@@ -328,7 +328,7 @@ describe("the site Worker on a page that shows a price", () => {
     expect(page.written).toEqual(NO_HAIR_SYSTEM);
   });
 
-  // The owner took the prices off the site on 1 October 2026 (ADR 0103), the price range search engines read with them.
+  // The site gives no prices (ADR 0103), nor the price range search engines read with them.
   it("builds the structured data again, with no price while the site gives none", async () => {
     const page = await visit("/", withPrices());
 
