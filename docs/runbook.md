@@ -682,7 +682,7 @@ Once, in the Cloudflare dashboard:
 
 Cloudflare is not the only card now. The owner's own card is on Google Maps Platform for the address search, and Google bills past its free allowance rather than stopping. Its quotas and its kill switch are section 13, and its ceiling is `GEOCODE_DAILY_CEILING`.
 
-If an R2 alert fires: set `UPLOAD_DAILY_CEILING`, `RENDER_DAILY_CEILING` and `RESULT_READ_DAILY_CEILING` to `"0"` in `wrangler.jsonc` and deploy. New uploads, renders and result reads then answer `busy`. Find the cause before raising them again. `test/node/tooling/free-tier-budget.test.ts` refuses any ceiling that could take R2 or Queues past 80% of the free allowance, counting the share set aside for Phase 2 (`docs/decisions/0015-render-pipeline.md`, `docs/decisions/0039-phase-2-budget.md`).
+If an R2 alert fires: set `UPLOAD_DAILY_CEILING`, `RENDER_DAILY_CEILING` and `RESULT_READ_DAILY_CEILING` to `"0"` in `wrangler.jsonc` and deploy. New uploads, renders and result reads then answer `busy`. Find the cause before raising them again. `test/node/tooling/free-tier-budget.test.ts` refuses any ceiling that could take R2 past 80% of its free allowance, counting the share set aside for Phase 2 (`docs/decisions/0015-render-pipeline.md`, `docs/decisions/0039-phase-2-budget.md`).
 
 ### Workers daily limit reached (1027)
 
@@ -777,7 +777,7 @@ A daily alert (Google, Turnstile) and one ops settle by hand (a refund, a kept c
 SELECT job, failed_runs, last_failed_at, last_error FROM cron_jobs WHERE failed_runs > 0;
 ```
 
-The other jobs run regardless. The cron runs every minute, and each run only the jobs due in that minute: the table in `src/scheduled/cron.ts` gives each how often it runs (`every`: 5, 15 or 60 minutes) and in which minute (`at`). A minute's run shares 6 outside calls between its jobs, one record's worth, since each call costs it CPU time (a run of every job at once, as `npm run tick` asks for, has 40), and starts none after 30 seconds, so it ends before the next minute's; a job that finds them spent stops and leaves the rest to its next run, and the run logs `cron_calls_spent`. Seen now and then, that is a backlog clearing. Seen on every run, the passes cannot keep up within the free plan.
+The other jobs run regardless. The cron runs every minute, and each run only the jobs due in that minute: the table in `src/scheduled/cron.ts` gives each how often it runs (`every`: 5, 15 or 60 minutes) and in which minute (`at`). A run shares 40 outside calls between its jobs, under Zoho Books' 100 a minute for the organisation, and starts none after 30 seconds, so it ends before the next minute's; a job that finds them spent stops and leaves the rest to its next run, and the run logs `cron_calls_spent`. Seen now and then, that is a backlog clearing. Seen on every run, the passes cannot keep up within the vendors' limits: tell the developers.
 
 Some jobs run only where what they need is switched on: the invoices and Books need Books, the Razorpay catch-up needs payments, and the visit reminders need `MESSAGING_ENABLED` (`src/scheduled/cron.ts`).
 
@@ -785,7 +785,7 @@ Some jobs run only where what they need is switched on: the invoices and Books n
 
 ### A cron run cut short
 
-Cloudflare stops a run that uses too much CPU time: 10 ms an invocation on Workers Free, 30 seconds on Workers Paid (ADR 0112). One run of every job took 30 to 60 ms, and on 3 October 2026, on the free plan, Cloudflare stopped every staging run for ten hours. So the cron runs every minute, each run only the few jobs due in that minute (`src/scheduled/cron.ts`; ADR 0009, "Update, 4 October 2026: the cron's CPU time").
+Cloudflare stops a run that uses too much CPU time: 10 ms an invocation on Workers Free, 30 seconds on Workers Paid (ADR 0112). One run of every job took 30 to 60 ms of CPU on staging, far under the 30 seconds, so a run cut short is rare.
 
 Each run notes when it starts and when it finishes (`cron_runs`). A run that finds the one before it never finished alerts once (`cron_run_cut_short`), and pings the heartbeat's `/fail` saying so ("The outside watchers"). The alert closes once runs have finished for an hour. Only that minute's jobs missed a turn, and each runs again at its next minute, so one alert is a blip. The minute of the run's start says which jobs it was running: those whose `every` and `at` fall on it, in `src/scheduled/cron.ts`. Where it stands:
 

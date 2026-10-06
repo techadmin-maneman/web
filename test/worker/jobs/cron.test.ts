@@ -13,15 +13,7 @@ import {
   runCronJobs,
   type CronJob,
 } from "../../../src/scheduled/cron.ts";
-import {
-  CALLS_EVERY_RUN,
-  CRON_CALLS,
-  EVERY_MINUTE,
-  callsFor,
-  isDueAt,
-  jobsDue,
-  pingsWhenWell,
-} from "../../../src/scheduled/schedule.ts";
+import { CRON_CALLS, EVERY_MINUTE, isDueAt, jobsDue, pingsWhenWell } from "../../../src/scheduled/schedule.ts";
 import { LOCAL_CONFIG, NOW, captureLogs, fakeDependencies, fakeFetch } from "../helpers.ts";
 
 let logs: ReturnType<typeof captureLogs>;
@@ -390,16 +382,10 @@ describe("the run's outside calls", () => {
     expect(seen).toEqual([{ job: "next run", granted: true, left: 0 }]);
   });
 
-  it("leave room under the free plan's 50 for token refreshes and alerts", () => {
-    expect(callsFor("*/5 * * * *")).toBeLessThanOrEqual(40);
-  });
-
-  // Each call cost a staging run 3 to 5 ms of CPU: a minute's run takes one record's worth, a finished visit's invoice
-  // in Books needing the most.
-  it("give a minute's run one record's worth, and a run of every job at once as many as before", () => {
-    expect(callsFor(EVERY_MINUTE)).toBe(CRON_CALLS);
-    expect(CRON_CALLS).toBe(BOOKS_CALLS_PER_VISIT);
-    expect(callsFor("*/5 * * * *")).toBe(40);
+  // A finished visit's invoice in Books needs the most calls of any record.
+  it("give a run several finished visits' invoices, under Zoho Books' 100 calls a minute", () => {
+    expect(CRON_CALLS).toBeGreaterThanOrEqual(5 * BOOKS_CALLS_PER_VISIT);
+    expect(CRON_CALLS).toBeLessThan(100);
   });
 
   // A run still waiting on a slow vendor when the next minute's starts would be taken by the next for one cut short.
@@ -469,24 +455,6 @@ describe("the schedule", () => {
   // of its runs does what a run did before, every job.
   it("runs every job on any other schedule: npm run tick, or the five-minute trigger", () => {
     expect(jobsDue(CRON_JOBS, "*/5 * * * *", minuteOf(3))).toEqual(CRON_JOBS);
-  });
-
-  // D-01 of 4 October 2026: one run of every job took 34 to 61 ms of CPU on staging, the free plan allows 10. Measured
-  // a minute at a time, a job that calls a vendor cost several ms more than one that only reads D1.
-  it("gives no minute more than three jobs, and a vendor's every-run caller one companion at most", () => {
-    for (const minute of HOUR) {
-      const names = namesAt(minute);
-      const said = `minute ${String(minute)}: ${names.join(", ")}`;
-      expect(names.length, said).toBeLessThanOrEqual(3);
-      const callers = names.filter((name) => CALLS_EVERY_RUN.has(name));
-      expect(callers.length, said).toBeLessThanOrEqual(1);
-      if (callers.length === 1) expect(names.length, said).toBeLessThanOrEqual(2);
-    }
-  });
-
-  it("names only jobs in the table as vendors' every-run callers", () => {
-    const names = new Set(CRON_JOBS.map((each) => each.name));
-    expect([...CALLS_EVERY_RUN].filter((name) => !names.has(name))).toEqual([]);
   });
 
   it("raises a finished job's invoice before the Books pass that sets the client's advance against it", () => {

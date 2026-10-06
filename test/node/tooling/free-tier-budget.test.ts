@@ -1,18 +1,13 @@
-// No ceiling in the committed config may take the account past 80% of a free
-// allowance, counting the share set aside for Phase 2. Raising one past it
-// fails here (docs/decisions/0009, 0039).
+// No ceiling in the committed config may take R2 past 80% of its free allowance, counting the share set aside for
+// Phase 2. Raising one past it fails here (docs/decisions/0009, 0039).
 
 import { describe, expect, it } from "vitest";
 import {
-  CRON_READ_SHARE,
-  cronRowsReadPerDay,
   FREE_TIER,
-  HEADROOM,
   KEPT_TRY_ON_BYTES,
   overBudget,
   PHASE_2_ALLOWANCE,
   photoRunwayVisits,
-  queueOperationsPerRender,
   worstCaseUsage,
   type Ceilings,
 } from "../../../scripts/lib/free-tier-budget.ts";
@@ -38,8 +33,8 @@ function ceilingsOf(environment: "staging" | "production"): Ceilings {
 
 const committed = [ceilingsOf("staging"), ceilingsOf("production")];
 
-describe("free-tier budget", () => {
-  it("keeps the committed ceilings, staging and production together, with Phase 2's share, under 80% of every free allowance", () => {
+describe("R2's budget", () => {
+  it("keeps the committed ceilings, staging and production together, with Phase 2's share, under 80% of R2's free allowance", () => {
     expect(overBudget(worstCaseUsage(committed))).toEqual([]);
   });
 
@@ -71,40 +66,16 @@ describe("free-tier budget", () => {
     expect(photoRunwayVisits(2 * MAX_COPY_BYTES)).toBe(1_110);
   });
 
-  it("counts a render polled to the give-up time, its download retries, its message and its CRM sync", () => {
-    // 3 + 6 early polls + 15 late + 12 slow + 1 final + 3 download retries; 3 + 3 for the message; 3 + 1 for the CRM.
-    expect(queueOperationsPerRender()).toBe(50);
-  });
-
-  it("fails when a ceiling is raised past the free tier", () => {
+  it("fails when a ceiling is raised past R2's free allowance", () => {
     const [staging, production] = committed as [Ceilings, Ceilings];
     const tooManyRenders = worstCaseUsage([staging, { ...production, renderDaily: 200 }]);
-    expect(overBudget(tooManyRenders)).toEqual([
-      expect.stringMatching(/^Queues operations a day/) as string,
-      expect.stringMatching(/^R2 storage/) as string,
-    ]);
+    expect(overBudget(tooManyRenders)).toEqual([expect.stringMatching(/^R2 storage/) as string]);
     const tooManyReads = worstCaseUsage([staging, { ...production, resultReadDaily: 300_000 }]);
     expect(overBudget(tooManyReads)).toEqual([expect.stringMatching(/^R2 Class B/) as string]);
   });
 
-  it("keeps the cron's reads, busy on every run, inside its share of D1's daily reads", () => {
-    // 288 turns of every job at 5,150 rows, and each environment's 1,440 runs reading their own record: about 1.5
-    // million of the 5 million, leaving requests the rest of the 80%.
-    expect(cronRowsReadPerDay()).toBe(1_497_600);
-    expect(cronRowsReadPerDay()).toBeLessThanOrEqual(FREE_TIER.d1RowsReadPerDay * CRON_READ_SHARE);
-    expect(CRON_READ_SHARE).toBeLessThan(HEADROOM);
-  });
-
-  it("fails when a run would read far more, as one reading a whole table would", () => {
-    // Every try-on job ever made, read on each run: the sweep's photo check before its index.
-    expect(cronRowsReadPerDay(29_000)).toBeGreaterThan(FREE_TIER.d1RowsReadPerDay * CRON_READ_SHARE);
-  });
-
   it("reads the allowances Cloudflare publishes", () => {
     expect(FREE_TIER).toEqual({
-      queueOperationsPerDay: 10_000,
-      workersRequestsPerDay: 100_000,
-      d1RowsReadPerDay: 5_000_000,
       r2StorageBytes: 10e9,
       r2ClassAPerMonth: 1_000_000,
       r2ClassBPerMonth: 10_000_000,

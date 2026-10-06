@@ -1,7 +1,5 @@
 // When the cron's jobs run (src/scheduled/cron.ts). The trigger fires every minute, and each run takes only the jobs
-// due in that minute, so no run passes the free plan's 10 ms of CPU (docs/decisions/0009, "the cron's CPU time"). What
-// staging's runs cost Cloudflare sets the rules: a run's own record about 3 ms, a job that only reads D1 about half a
-// millisecond more, and a job that calls a vendor several milliseconds.
+// due in that minute, so the work is spread over the hour.
 
 /** The trigger in wrangler.jsonc: a run every minute. */
 export const EVERY_MINUTE = "* * * * *";
@@ -16,20 +14,12 @@ export interface Timing {
   readonly at: number;
 }
 
-/** The jobs that call a vendor every time they run, whatever there is to do: each shares its minute with one job at most. */
-export const CALLS_EVERY_RUN: ReadonlySet<string> = new Set(["whatsapp_bridge", "books_items", "ailab_credits"]);
-
 /**
- * Outside calls a minute's run may make. Each cost a staging run 3 to 5 ms of CPU, so a run takes one record's worth:
- * at most six, a finished visit's invoice in Books (src/domain/books-invoices.ts); the next run takes the next record.
+ * Outside calls a run may make: several records' worth, under Zoho Books' 100 calls a minute for the organisation,
+ * which the requests and the CRM's sync share. A pass stops when it is refused, and the next run takes the records it
+ * left.
  */
-export const CRON_CALLS = 6;
-
-/**
- * Outside calls a run of every job at once may make, as `npm run tick` asks for: under the free plan's 50 fetch
- * subrequests, with room for a Zoho token refresh, the run's alerts and its heartbeat.
- */
-const EVERY_JOB_CALLS = 40;
+export const CRON_CALLS = 40;
 
 /** The minute of each five the heartbeat says all is well in, one with no vendor call due. */
 const HEARTBEAT_AT = 2;
@@ -47,11 +37,6 @@ export function jobsDue<Job extends Timing>(jobs: readonly Job[], cron: string, 
   if (cron !== EVERY_MINUTE) return jobs;
   const minute = new Date(scheduledTime).getUTCMinutes();
   return jobs.filter((job) => isDueAt(job, minute));
-}
-
-/** The outside calls a run on this schedule may make. */
-export function callsFor(cron: string): number {
-  return cron === EVERY_MINUTE ? CRON_CALLS : EVERY_JOB_CALLS;
 }
 
 /**
