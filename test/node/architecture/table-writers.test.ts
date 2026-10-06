@@ -20,7 +20,7 @@ const WRITERS: Readonly<Record<string, readonly string[]>> = {
     "src/domain/money/credits.ts",
     "src/domain/referrals/referral-grants.ts",
     "src/domain/no-shows/ruling-claims.ts",
-    "src/domain/visits/visit-changes.ts",
+    "src/domain/visits/visit-cancel.ts",
   ],
 };
 
