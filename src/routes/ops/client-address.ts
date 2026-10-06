@@ -17,7 +17,8 @@ import { saveClientAddress, suggestBuildings } from "../../http/address-save.ts"
 import { currentAddress } from "../../domain/clients/profile.ts";
 import { errorBody, errorResponse, refuse } from "../../http/errors.ts";
 import { json } from "../../http/openapi.ts";
-import { AddressSaveSchema, addressOf, SuggestionsSchema } from "../client/profile.ts";
+import { addressOf } from "../schemas/address.ts";
+import { AddressSaveSchema, SuggestionsSchema } from "../schemas/address.ts";
 import { ClientAddressSchema, clientAddressOf } from "../schemas/clients.ts";
 import { clientInReach } from "../../http/staff-access.ts";
 
