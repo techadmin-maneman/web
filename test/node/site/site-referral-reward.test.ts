@@ -70,7 +70,7 @@ describe("what the landing says an invite earns", () => {
       "Rohit is told when you are fitted. That is when the 3 visits land.",
       "The 3 service visits land when you are fitted.",
       "More than 12 months old. The consultation is still free; the 3 visits do not apply.",
-      "Home-fitted hair systems across Delhi NCR. 3 service visits free when you're fitted.",
+      "Home-fitted hair systems across Delhi NCR. 3 service visits free when you’re fitted.",
     ]);
     expect(referral.consultation.told(null, reward(3, 3))).toBe(
       "Whoever invited you is told when you are fitted. That is when the 3 visits land.",
@@ -85,7 +85,7 @@ describe("what the landing says an invite earns", () => {
       "Rohit is told when you are fitted. That is when the 5 visits land.",
       "The 5 service visits land when you are fitted.",
       "More than 12 months old. The consultation is still free; the 5 visits do not apply.",
-      "Home-fitted hair systems across Delhi NCR. 5 service visits free when you're fitted.",
+      "Home-fitted hair systems across Delhi NCR. 5 service visits free when you’re fitted.",
     ]);
     expect(said.join(" ")).not.toMatch(/\b3\b/);
   });
@@ -97,7 +97,7 @@ describe("what the landing says an invite earns", () => {
       "Rohit is told when you are fitted. That is when the 1 visit lands.",
       "The 1 service visit lands when you are fitted.",
       "More than 12 months old. The consultation is still free; the 1 visit does not apply.",
-      "Home-fitted hair systems across Delhi NCR. 1 service visit free when you're fitted.",
+      "Home-fitted hair systems across Delhi NCR. 1 service visit free when you’re fitted.",
     ]);
   });
 

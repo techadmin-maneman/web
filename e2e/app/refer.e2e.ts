@@ -420,7 +420,7 @@ test("says what ops set each side gets, and beside each friend what the client e
   await sheet.getByRole("button", { name: "Continue to share" }).click();
   const preview = page.getByRole("dialog", { name: "Preview · what your friend sees" });
   await expect(
-    preview.getByText("Home-fitted hair systems across Delhi NCR. 4 service visits free when you're fitted."),
+    preview.getByText("Home-fitted hair systems across Delhi NCR. 4 service visits free when you’re fitted."),
   ).toBeVisible();
   await preview.getByRole("button", { name: "Close" }).click();
 
@@ -482,6 +482,6 @@ test("a client not yet fitted who came with an invite is told what it gives them
   await changed(page, "/api/me", (me) => ({ ...me, pending_invite: { referrer_first_name: "Rohit" } }));
   await signIn(page);
   await page.getByRole("navigation").getByRole("link", { name: "Refer" }).click();
-  await expect(page.getByText("Rohit's invite: your 3 free service visits arrive when you're fitted.")).toBeVisible();
+  await expect(page.getByText("Rohit’s invite: your 3 free service visits arrive when you’re fitted.")).toBeVisible();
   await expect(page.getByText("Your own invite opens after your first fit.")).toBeVisible();
 });

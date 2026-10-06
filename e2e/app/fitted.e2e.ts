@@ -27,7 +27,7 @@ test("Home shows a fitted client's next visit, with the technician, and Reschedu
   await expect(page.getByRole("link", { name: "Add your address" })).toHaveAttribute("href", "/profile");
   // Self-serve booking is on locally, so Reschedule opens the move sheet (C7; e2e/app/changes.e2e.ts moves one).
   await page.getByRole("button", { name: "Reschedule" }).click();
-  await expect(page.getByRole("dialog", { name: /^Move \w+day's visit$/ })).toBeVisible();
+  await expect(page.getByRole("dialog", { name: /^Move \w+day’s visit$/ })).toBeVisible();
 });
 
 test("Visits lists what is coming and what is done, and a past visit opens with its photographs", async ({ page }) => {
@@ -545,7 +545,7 @@ test("Home and Payments show a payment owed once fitted, with the link to pay by
   await page.route("**/api/me", (route) => route.fulfill({ json: { ...me, payment_owed: owed } }));
   await page.reload();
 
-  const home = page.getByRole("region", { name: "Payment owed" });
+  const home = page.getByRole("region", { name: "To pay" });
   await expect(home).toContainText("Mane Man Natural hair system · Rs. 45,000");
   await expect(home.getByRole("link", { name: /^Pay now ?, opens Razorpay in a new tab$/ })).toHaveAttribute(
     "href",

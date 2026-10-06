@@ -117,7 +117,7 @@ export const home = {
   },
   /** No board draws it. A one visit the client was fitted at and has not paid for yet. */
   owed: {
-    label: "Payment owed",
+    label: "To pay",
     line: (product: string, amount: string) => `${product} · ${amount}`,
     pay: "Pay now",
     newTab: "opens Razorpay in a new tab",

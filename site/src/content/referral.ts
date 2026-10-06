@@ -349,7 +349,7 @@ export const referral = {
     title: "{name} sent you a Mane Man invite",
     titleUnnamed: "You have a Mane Man invite",
     description: (friend: number) =>
-      `Home-fitted hair systems across ${serviceArea}. ${serviceVisits(friend)} free when you're fitted.`,
+      `Home-fitted hair systems across ${serviceArea}. ${serviceVisits(friend)} free when you’re fitted.`,
     descriptionWithout: `Home-fitted hair systems across ${serviceArea}.`,
   },
 };

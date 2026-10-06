@@ -25,7 +25,7 @@ async function scan(page: Page): Promise<void> {
 async function reschedule(page: Page, mobile: string) {
   await logIn(page, mobile);
   await page.getByRole("button", { name: "Reschedule" }).click();
-  return page.getByRole("dialog", { name: /^Move \w+day's visit$/ });
+  return page.getByRole("dialog", { name: /^Move \w+day’s visit$/ });
 }
 
 /** Through the date and window steps, to the pay step. */
@@ -45,7 +45,7 @@ test("C1: a paid visit is marked Prepaid, and opens with Reschedule", async ({ p
   await expect(card).toContainText("Prepaid");
   await card.click();
   await page.getByRole("button", { name: "Reschedule" }).click();
-  await expect(page.getByRole("dialog", { name: /^Move \w+day's visit$/ })).toBeVisible();
+  await expect(page.getByRole("dialog", { name: /^Move \w+day’s visit$/ })).toBeVisible();
 });
 
 test("C7: a visit more than 24 hours out moves for free, its payment carried over", async ({ page }) => {
@@ -70,13 +70,13 @@ test("C7: a visit more than 24 hours out moves for free, its payment carried ove
 test("C8: cancelling more than 24 hours out gives the payment back in full", async ({ page }) => {
   const sheet = await reschedule(page, changingClients().free.mobile);
   await sheet.getByRole("button", { name: "Cancel the visit instead" }).click();
-  const cancel = page.getByRole("dialog", { name: /^Cancel \w+day's visit$/ });
+  const cancel = page.getByRole("dialog", { name: /^Cancel \w+day’s visit$/ });
   await expect(cancel.getByText("Rs. 2,000 back to your UPI in 5 to 7 working days.")).toBeVisible();
   await scan(page);
   await cancel.getByRole("button", { name: "Cancel visit" }).click();
   const done = page.getByRole("dialog").getByRole("status");
   await expect(done.getByText("Cancelled", { exact: true })).toBeVisible();
-  await expect(done.getByText(/^\w+day's visit is cancelled\.$/)).toBeVisible();
+  await expect(done.getByText(/^\w+day’s visit is cancelled\.$/)).toBeVisible();
   await done.getByRole("button", { name: "Done" }).click();
   await expect(page.getByRole("dialog")).toBeHidden();
   await expect(page.getByRole("button", { name: "Reschedule" })).toBeHidden();
@@ -87,8 +87,8 @@ test("C8 inside 24 hours shows the charge before anything is cancelled, and Keep
 }) => {
   const sheet = await reschedule(page, changingClients().late.mobile);
   await sheet.getByRole("button", { name: "Cancel the visit instead" }).click();
-  const cancel = page.getByRole("dialog", { name: /^Cancel \w+day's visit$/ });
-  await expect(cancel.getByText("Charged. The Rs. 2,000 isn’t refunded.")).toBeVisible();
+  const cancel = page.getByRole("dialog", { name: /^Cancel \w+day’s visit$/ });
+  await expect(cancel.getByText("This is a late cancellation: your Rs. 2,000 isn’t refunded.")).toBeVisible();
   await expect(cancel.getByRole("button", { name: "Cancel and accept charge" })).toBeVisible();
   await cancel.getByRole("button", { name: "Keep it" }).click();
   await expect(page.getByRole("dialog")).toBeHidden();
@@ -102,7 +102,7 @@ test("C7 inside 24 hours: a service visit's move is charged, and the new visit i
   await confirmedByRazorpay(page);
   const sheet = await reschedule(page, changingClients().late.mobile);
   await expect(
-    sheet.getByText("Charged. The Rs. 2,000 isn’t refunded and the new visit is paid separately."),
+    sheet.getByText("This is a late change: your Rs. 2,000 isn’t refunded, and the new visit is paid separately."),
   ).toBeVisible();
   await scan(page);
   await sheet.getByRole("button", { name: "Move and accept charge" }).click();

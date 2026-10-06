@@ -3,7 +3,7 @@
 // sheet's date and window, then pays whatever the move costs. Cancelling is confirmed on the terms shown; if the
 // 24 hours ran out meanwhile, the new terms are shown instead.
 
-import { methodName } from "../payments/index.ts";
+import { refundDestination } from "../payments/index.ts";
 import { capsLook } from "@maneman/ui/Caps";
 import { fullDate, indiaDate, weekdayDate } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";
@@ -68,7 +68,7 @@ function cancelLine(terms: CancelTerms, credits: Me["credits"]): string {
     const expiry = soonest === null ? "" : fullDate(indiaDate(soonest));
     return change.cancel.creditUsed(left, expiry);
   }
-  const destination = methodName(terms.destination, "long") ?? change.destination;
+  const destination = refundDestination(terms.destination) ?? change.destination;
   if (terms.refund > 0 && terms.kept > 0) {
     return change.cancel.lessFee(rupees(terms.kept), rupees(terms.refund), destination);
   }

@@ -34,6 +34,12 @@ export function methodName(method: string | null, form: "short" | "long"): strin
   return names === undefined ? method : names[form === "short" ? 0 : 1];
 }
 
+/** Where a refund goes, as "back to your …" says it: "UPI", "card", "bank account". */
+export function refundDestination(method: string | null): string | null {
+  if (method === null) return null;
+  return payments.refundTo[method] ?? methodName(method, "short");
+}
+
 /**
  * The list's line under the name: "22 Aug · UPI"; for a refund what it gave back, "14 Sep · First fit"; and for a
  * visit the client was not home for, "19 Sep · not home, we waited 16 min".
@@ -53,8 +59,8 @@ export const entryAmount = (entry: Entry) =>
 /** The list's line beneath the figure: where a refund goes, "back to your UPI", or a payment's GST split. */
 export function entryBeneath(entry: Entry): string | null {
   if (entry.kind === "payment") return priceFigures(entry).split;
-  const method = methodName(entry.destination, "short");
-  return method === null ? null : payments.backTo(method);
+  const destination = refundDestination(entry.destination);
+  return destination === null ? null : payments.backTo(destination);
 }
 
 /** A charge's evidence: "cancelled 9:14 am, visit was 10 am", with the dates on different days. */

@@ -71,11 +71,11 @@ describe("Refer for a client not yet fitted", () => {
 
   it("names the invite they came with first, and the visits it gives them at their fit", () => {
     expect(empty.refer.lines(reward, { referrer_first_name: "Rohit" })).toEqual([
-      "Rohit's invite: your 4 free service visits arrive when you're fitted.",
+      "Rohit’s invite: your 4 free service visits arrive when you’re fitted.",
       "Your own invite opens after your first fit.",
     ]);
     expect(empty.refer.lines({ referrer_visits: 3, friend_visits: 1 }, { referrer_first_name: null })).toEqual([
-      "Your friend's invite: your 1 free service visit arrives when you're fitted.",
+      "Your friend’s invite: your 1 free service visit arrives when you’re fitted.",
       "Your own invite opens after your first fit.",
     ]);
   });

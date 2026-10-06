@@ -36,7 +36,7 @@ export const payments = {
     meta: (date: string) => `Fitted ${date}`,
     pay: "Pay now",
     newTab: "opens Razorpay in a new tab",
-    onItsWay: "Link on its way by text",
+    onItsWay: "Your payment link is on its way by text.",
   },
   /**
    * The free service visits among the payments. Board E1 draws a visit one covered: "Service visit ·
@@ -88,7 +88,7 @@ export const payments = {
     partially_refunded: "Partly refunded",
     created: "Refund processing",
     processed: "Refunded",
-    failed: "Refund being redone",
+    failed: "Refund being retried",
   },
   /**
    * How long a refund takes, beside "Refund processing". The design says "3 to 5 working days"; Razorpay's
@@ -109,6 +109,15 @@ export const payments = {
     emi: ["EMI", "EMI"],
     paylater: ["pay later", "Pay later"],
   } as Readonly<Record<string, readonly [string, string]>>,
+  /** Where a refund goes, as "back to your …" says it: never "back to your net banking". */
+  refundTo: {
+    upi: "UPI",
+    card: "card",
+    netbanking: "bank account",
+    wallet: "wallet",
+    emi: "card",
+    paylater: "pay-later account",
+  } as Readonly<Record<string, string>>,
   // The design draws a payment's rows; a refund's "Refunded to" and "For" are ours.
   rows: {
     date: "Date",
