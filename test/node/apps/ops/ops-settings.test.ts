@@ -29,7 +29,6 @@ import { NEXT_VISIT_DAY_BOUNDS, NEXT_VISIT_DAYS } from "../../../../src/policy/n
 import { NO_SHOW_WAIT_MIN } from "../../../../src/policy/no-show.ts";
 import { TASK_SLA_HOURS } from "../../../../src/policy/tasks.ts";
 import { DEFAULT_PIECE_CYCLE_DAYS } from "../../../../src/config/pieces.ts";
-import { FREE_TIER } from "../../../../scripts/lib/free-tier-budget.ts";
 import { settings } from "../../../../apps/ops/src/content.ts";
 
 const named = (name: string): OpsSetting => {
@@ -220,19 +219,6 @@ function widest(setting: OpsSetting): SettingValue {
 }
 
 describe("the cost of reading them", () => {
-  /**
-   * A request reads one row, the snapshot of every input ops set, whatever the
-   * register's length (docs/decisions/0088-every-policy-in-the-console.md;
-   * test/worker/ops/ops-settings.test.ts measures it), and an isolate holds it for
-   * SETTINGS_TTL_MS. The bound is not a guess at how many isolates run: the
-   * free plan stops the day at 100,000 requests, and a request reads the store
-   * at most once, so the ceiling is that many rows however the cache behaves.
-   */
-  it("reads a fiftieth of D1's day at most, even if no request ever hit the cache", () => {
-    const rowsARead = 1;
-    expect(FREE_TIER.workersRequestsPerDay * rowsARead).toBeLessThanOrEqual(FREE_TIER.d1RowsReadPerDay / 50);
-  });
-
   // What the register's length now costs is the snapshot's size, which every read parses.
   it("keeps the snapshot small enough to parse on a request, whatever ops set", () => {
     const largest = JSON.stringify(Object.fromEntries(OPS_SETTINGS.map((setting) => [setting.name, widest(setting)])));

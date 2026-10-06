@@ -1,15 +1,13 @@
-// The worst case the try-on can cost Cloudflare, from the ceilings in each
-// environment's config, plus the share set aside for Phase 2, and what the
-// cron and the console's two boards read from D1. test/node/tooling/free-tier-budget.test.ts holds them under 80%
-// of the free allowances, so no ceiling can be raised past the free tier, or
-// into Phase 2's share, without the build failing
-// (docs/decisions/0009-stay-inside-cloudflare-free-tier.md, 0039-phase-2-budget.md).
+// Two budgets. R2's: the worst case the try-on can store and ask of it, from the ceilings in each environment's config,
+// plus the share set aside for Phase 2. R2 bills past its free allowance (docs/decisions/0009, 0093), so
+// test/node/tooling/free-tier-budget.test.ts holds them under 80% of it, and no ceiling can be raised into Phase 2's
+// share without the build failing. And the reads: what one request to a route, one console board or one cron run may
+// read, which the soak and test/worker/jobs/cron-reads.test.ts hold them to, so work grows with what it handles and
+// not with the history behind it.
 //
 // Staging and production share one Cloudflare account, and so one allowance.
 
 import {
-  DOWNLOAD_QUEUE_RETRIES,
-  MAX_SEND_ATTEMPTS,
   POLL_DELAY_SECONDS,
   POLL_SLOWDOWN_AFTER_MS,
   POLL_SLOW_AFTER_MS,
@@ -18,13 +16,8 @@ import {
 import { MAX_COPY_BYTES, MAX_RESULT_BYTES, MAX_UPLOAD_BYTES, PHOTO_RETENTION_MS } from "../../src/config/tryon.ts";
 import { PHASE_2_SHARE_BYTES } from "../../src/policy/storage-share.ts";
 
-/** The Workers Free plan, per Cloudflare's pricing pages (read 21 September 2026). */
+/** R2's free allowance, per Cloudflare's pricing pages (read 21 September 2026). */
 export const FREE_TIER = {
-  queueOperationsPerDay: 10_000,
-  /** Past this the requests fail, so it is also the most work one day can ask of anything else. */
-  workersRequestsPerDay: 100_000,
-  /** Past this D1 refuses every query until midnight UTC (docs/decisions/0009). */
-  d1RowsReadPerDay: 5_000_000,
   /** 10 GB-month, counted in decimal gigabytes, which is the smaller reading. */
   r2StorageBytes: 10 * 1e9,
   r2ClassAPerMonth: 1_000_000,
@@ -34,12 +27,10 @@ export const FREE_TIER = {
 export const HEADROOM = 0.8;
 
 /**
- * Phase 2's share of the same allowances (docs/decisions/0039-phase-2-budget.md).
+ * Phase 2's share of the same allowance (docs/decisions/0039-phase-2-budget.md).
  * Nothing in Phase 2 has a ceiling in config yet, so its share is set aside here.
  */
 export const PHASE_2_ALLOWANCE = {
-  /** The Phase 2 messages, and the CRM's sync, read back from their queues. */
-  queueOperationsPerDay: 2_000,
   /** Clients' photographs, which are never deleted, and referral cards: the storage meter's share. */
   r2StorageBytes: PHASE_2_SHARE_BYTES,
   r2ClassAPerMonth: 100_000,
@@ -47,45 +38,13 @@ export const PHASE_2_ALLOWANCE = {
 } as const;
 
 /**
- * The cron's D1 reads. Every query on its path searches an index that holds
- * only the rows still waiting (test/node/database/query-plans.test.ts), so a job reads
- * about the rows it handles and none of the history behind them
- * (test/worker/jobs/cron-reads.test.ts measures every job against a history, and
- * against twice that history). No job runs more often than every five minutes,
- * so a day reads at most 288 times what one turn of every job reads.
- */
-export const CRON_RUNS_PER_DAY = 24 * 12;
-/**
  * Every job with nothing to do: measured at about 70 rows, and 100 in the evening, when the reminders look for
- * tomorrow's visits and the next services falling due, however long the tables grow. Taken as 150, so a statement
- * added to the cron is measured against the day's reads, not failed for the one row it reads.
+ * tomorrow's visits and the next services falling due, however long the tables grow. Every query on the cron's path
+ * searches an index that holds only the rows still waiting (test/node/database/query-plans.test.ts), and
+ * test/worker/jobs/cron-reads.test.ts measures every job against a history, and against twice that history. Taken as
+ * 150, so a statement added to the cron is not failed for the one row it reads.
  */
 export const CRON_ROWS_READ_PER_QUIET_RUN = 150;
-/**
- * Every job at its busiest, every lookup coming back full: the sweep's eight
- * lookups of 100 and what it expires and deletes (about 1,600); the
- * reconciliation's page of 50, and on the hour the photographs of three days'
- * visits (about 1,700); erased people's files, 5 at a time (about 150); and
- * the referral, reminder, next-service reminder, invoice, asked-window and
- * Books passes of 5 to 20 each, with their joins (about 700).
- */
-export const CRON_ROWS_READ_PER_BUSY_RUN = 5_000;
-/**
- * The cron runs every minute, each run a few jobs (src/scheduled/cron.ts), and each run reads its own record: the
- * maintenance switch, the run record and the failing jobs, a few rows.
- */
-export const CRON_TICKS_PER_DAY = 24 * 60;
-export const CRON_ROWS_READ_PER_TICK = 5;
-/** The cron's share of the daily reads. The rest of the 80% is for requests. */
-export const CRON_READ_SHARE = 0.4;
-
-/** Production's cron as busy as it can be on every run, and staging's at rest. */
-export function cronRowsReadPerDay(perBusyRun: number = CRON_ROWS_READ_PER_BUSY_RUN): number {
-  const jobs = CRON_RUNS_PER_DAY * (perBusyRun + CRON_ROWS_READ_PER_QUIET_RUN);
-  const records = 2 * CRON_TICKS_PER_DAY * CRON_ROWS_READ_PER_TICK;
-  return jobs + records;
-}
-
 /**
  * The most statements one minute's run may send D1, its own record's included. The free plan stops a run past 10 ms of
  * CPU, and on staging an invocation cost about 1 ms and 0.35 ms more for each statement (docs/decisions/0009, "the
@@ -94,88 +53,27 @@ export function cronRowsReadPerDay(perBusyRun: number = CRON_ROWS_READ_PER_BUSY_
  */
 export const CRON_STATEMENTS_PER_RUN = 16;
 
-/** The requests' share of the daily reads: what the 80% leaves after the cron's. */
-export const REQUEST_READ_SHARE = HEADROOM - CRON_READ_SHARE;
-
 /**
- * The console's two boards, open through the working day. The dispatch board asks for its version on a timer, reads
- * itself again when the version has moved, and in full every so often; the Tasks board is read at most once a minute
- * as pages open. Measured on staging on 2 October 2026 with 31 visits in the board's week: a board load read 484 rows,
- * about 66 and 13.5 for each visit, and a look at Tasks 364. test/worker/jobs/cron-reads.test.ts holds one load of each,
- * and one look at the version, to the figures below. A visit worked through, whose card has everything on it (two
- * answers on each kind of message, an invite, a credit, every step of the technician's), reads 17.5.
+ * What one load of each of the console's two boards reads. Measured on staging on 2 October 2026 with 31 visits in the
+ * board's week: a board load read 484 rows, about 66 and 13.5 for each visit, and a look at Tasks 364.
+ * test/worker/jobs/cron-reads.test.ts holds one load of each, and one look at the version, to the figures below. A visit
+ * worked through, whose card has everything on it (two answers on each kind of message, an invite, a credit, every step
+ * of the technician's), reads 17.5.
  */
-export const CONSOLE_STAFF = 2;
-export const CONSOLE_HOURS_PER_DAY = 10;
 export const BOARD_ROWS_READ_FIXED = 70;
 export const BOARD_ROWS_READ_PER_VISIT = 18;
 export const BOARD_VERSION_ROWS_READ = 10;
-/**
- * The times each visit moves the board's version, from its booking to its end: booked; checked in, started and
- * finished; and moved or cancelled on about every other visit. What one request writes, a move and its visit say, is
- * one change to a board that looks once a minute.
- */
-export const BOARD_CHANGES_PER_VISIT = 5;
 export const TASKS_ROWS_READ_PER_LOOK = 400;
-/** What the apps, the site and the console's other pages read in a day: about 330,000 at 2,000 clients. */
-export const OTHER_REQUESTS_ROWS_READ_PER_DAY = 500_000;
-
-/** How often each board is read: its own timers, from the console's code. */
-export interface ConsoleCadence {
-  /** How often the open dispatch board asks for its version. */
-  readonly boardPollMs: number;
-  /** How often it reads itself in full, whether the version has moved or not. */
-  readonly boardFullReadMs: number;
-  readonly tasksFreshMs: number;
-}
-
-/** How many times the staff's open pages read, every `everyMs`, in a working day. */
-export function readsPerWorkingDay(everyMs: number): number {
-  return (CONSOLE_STAFF * CONSOLE_HOURS_PER_DAY * 60 * 60 * 1000) / everyMs;
-}
-
-/**
- * How many times the staff's open dispatch boards read themselves in a working day: every board once for each change,
- * as if each came in a minute of its own, and in full on its own timer; never more than once a look.
- */
-export function boardReadsPerWorkingDay(visitsInWeek: number, cadence: ConsoleCadence): number {
-  const changes = (visitsInWeek / 7) * BOARD_CHANGES_PER_VISIT;
-  const fullReads = readsPerWorkingDay(cadence.boardFullReadMs);
-  const looks = readsPerWorkingDay(cadence.boardPollMs);
-  return Math.min(looks, CONSOLE_STAFF * changes + fullReads);
-}
-
-/** What the open dispatch boards read in a day, with `visitsInWeek` in the board's week. */
-export function boardRowsReadPerDay(visitsInWeek: number, cadence: ConsoleCadence): number {
-  const boardLoad = BOARD_ROWS_READ_FIXED + BOARD_ROWS_READ_PER_VISIT * visitsInWeek;
-  const looks = readsPerWorkingDay(cadence.boardPollMs) * BOARD_VERSION_ROWS_READ;
-  return looks + boardReadsPerWorkingDay(visitsInWeek, cadence) * boardLoad;
-}
-
-/** What the two boards read in a day, with `visitsInWeek` on the dispatch board. */
-export function consoleRowsReadPerDay(visitsInWeek: number, cadence: ConsoleCadence): number {
-  const tasks = readsPerWorkingDay(cadence.tasksFreshMs) * TASKS_ROWS_READ_PER_LOOK;
-  return boardRowsReadPerDay(visitsInWeek, cadence) + tasks;
-}
-
 /**
  * The most rows a request to a route may read, on average while a release soaks, before it is rolled back. The
- * dispatch board's is a load at the most visits the boards have room for (test/node/dom/ops-board-budget.test.ts holds it
- * there); a route not named has OTHER_ROUTE_ROWS_READ, several times what the busiest of them read on 2 October 2026.
+ * dispatch board's is a load with 158 visits in its week: raise it as the week grows. A route not named has
+ * OTHER_ROUTE_ROWS_READ, several times what the busiest of them read on 2 October 2026.
  */
 export const ROUTE_ROWS_READ: Readonly<Record<string, number>> = {
   "/api/dispatch": 2_914,
   "/api/tasks": TASKS_ROWS_READ_PER_LOOK,
 };
 export const OTHER_ROUTE_ROWS_READ = 300;
-
-/** The most visits the board's week can hold before the boards and the other requests pass the requests' share. */
-export function consoleRunwayVisits(cadence: ConsoleCadence): number {
-  const room = FREE_TIER.d1RowsReadPerDay * REQUEST_READ_SHARE - OTHER_REQUESTS_ROWS_READ_PER_DAY;
-  let visits = 0;
-  while (consoleRowsReadPerDay(visits + 1, cadence) <= room) visits += 1;
-  return visits;
-}
 
 /** A visit's photographs: five before and five after, each re-encoded on the phone to about 250 KB. */
 export const PHOTOS_PER_VISIT = 10;
@@ -203,15 +101,6 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 /** The sweeper runs every 5 minutes, so a photo can outlive its retention by one run. */
 const SWEEP_INTERVAL_MS = 5 * 60 * 1000;
 
-/**
- * Queue operations the lead path may use, which no ceiling bounds: each lead
- * is a write, a read and a delete, sometimes a retry. Turnstile and the
- * per-number and per-address limits hold it down; 2,000 is about 500 leads a day.
- */
-export const LEAD_OPERATIONS_RESERVE = 2_000;
-/** Messages the sweeper re-sends when something has failed. */
-export const SWEEPER_OPERATIONS_RESERVE = 500;
-
 export interface Ceilings {
   readonly renderDaily: number;
   readonly uploadDaily: number;
@@ -227,31 +116,17 @@ export function pollsPerRender(): number {
   return earlyPolls + latePolls + slowPolls;
 }
 
-/**
- * The most queue operations one render can use. A message costs a write, a
- * read and a delete; each retry, and so each poll, is one more read.
- */
-export function queueOperationsPerRender(): number {
-  const render = 3 + pollsPerRender() + 1 + DOWNLOAD_QUEUE_RETRIES; // + the final poll past the give-up
-  const message = 3 + (MAX_SEND_ATTEMPTS - 1);
-  const crmSync = 3 + 1; // one quick retry
-  return render + message + crmSync;
-}
-
 export interface Usage {
-  readonly queueOperationsPerDay: number;
   readonly r2StorageBytes: number;
   readonly r2ClassAPerMonth: number;
   readonly r2ClassBPerMonth: number;
 }
 
 export function worstCaseUsage(environments: readonly Ceilings[]): Usage {
-  let renders = 0;
   let storage = 0;
   let classA = 0;
   let classB = 0;
   for (const ceilings of environments) {
-    renders += ceilings.renderDaily;
     // Stored at any moment: each day's results for the retention period, each day's photos for about an hour, and
     // each photo's small copy for the hour and then as long as its look (ADR 0084). A client's kept try-on is held
     // for good, so it is paid from Phase 2's share (photoRunwayVisits).
@@ -265,7 +140,6 @@ export function worstCaseUsage(environments: readonly Ceilings[]): Usage {
     classB += DAYS_PER_MONTH * (2 * ceilings.renderDaily + ceilings.resultReadDaily);
   }
   return {
-    queueOperationsPerDay: renders * queueOperationsPerRender() + LEAD_OPERATIONS_RESERVE + SWEEPER_OPERATIONS_RESERVE,
     r2StorageBytes: storage,
     r2ClassAPerMonth: classA,
     r2ClassBPerMonth: classB,
@@ -285,12 +159,6 @@ export function overBudget(usage: Usage, reserved: Usage = PHASE_2_ALLOWANCE): s
       );
     }
   };
-  check(
-    "Queues operations a day",
-    usage.queueOperationsPerDay,
-    reserved.queueOperationsPerDay,
-    FREE_TIER.queueOperationsPerDay,
-  );
   check("R2 storage (bytes)", usage.r2StorageBytes, reserved.r2StorageBytes, FREE_TIER.r2StorageBytes);
   check("R2 Class A operations a month", usage.r2ClassAPerMonth, reserved.r2ClassAPerMonth, FREE_TIER.r2ClassAPerMonth);
   check("R2 Class B operations a month", usage.r2ClassBPerMonth, reserved.r2ClassBPerMonth, FREE_TIER.r2ClassBPerMonth);
