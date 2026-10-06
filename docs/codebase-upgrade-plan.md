@@ -193,14 +193,14 @@ alongside a long-lived branch.
 
 ## Progress
 
-| Phase                       | State                                                                                                             |
-| --------------------------- | ----------------------------------------------------------------------------------------------------------------- |
-| 1. Start here               | Done: `docs/start-here.md` and its map test (#485)                                                                |
-| 7. Workers Paid             | Done: the database limit, the CPU report, the daily allowances, the budget model and the cron's caps (#479, #484) |
-| 2. Comments without history | Done: every folder (#480 to #494), held by `no-history.test.ts`; the pronoun pass is still to do                  |
-| 3. Feature folders          | Done: `src/domain/` in 16 folders, one a feature (#497)                                                           |
-| 4. Names                    | Done: renames (#499) and one-object parameters with `max-params` at 4 (#504)                                      |
-| 5. Large files              | Done: the source files split (#503 to #528), the long functions shortened (#524, #526, #533), every test file     |
-|                             | under 500 lines (#527, #529 to #532); `personal-data.ts` stays whole                                              |
-| 8. Documents                | The ADRs indexed by topic, provisioning a page of its own (#500, #501); the other documents still to do           |
-| 6. FSM's leftovers          | Not started                                                                                                       |
+| Phase                       | State                                                                                                                    |
+| --------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| 1. Start here               | Done: `docs/start-here.md` and its map test (#485)                                                                       |
+| 7. Workers Paid             | Done: the database limit, the CPU report, the daily allowances, the budget model and the cron's caps (#479, #484)        |
+| 2. Comments without history | Done: every folder (#480 to #494), held by `no-history.test.ts`; they, not he, in every comment (#534)                   |
+| 3. Feature folders          | Done: `src/domain/` in 16 folders, one a feature (#497)                                                                  |
+| 4. Names                    | Done: renames (#499) and one-object parameters with `max-params` at 4 (#504)                                             |
+| 5. Large files              | Done: the source files split (#503 to #528), the long functions shortened (#524, #526, #533), every test file            |
+|                             | under 500 lines (#527, #529 to #532); `personal-data.ts` stays whole                                                     |
+| 8. Documents                | Done: the ADRs indexed by topic, provisioning and the runbook a page a task (#500, #501, #535), no rulings' dates (#536) |
+| 6. FSM's leftovers          | The expand step (#537, ADR 0113); reading the new columns, then the drop, wait for releases                              |

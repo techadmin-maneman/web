@@ -61,34 +61,7 @@ export async function personalDataStatements(
          WHERE person_id = ?1 AND card_state = 'personal'`,
       )
       .bind(personId, at),
-    // The app's own personal data (docs/decisions/0049-dpdp.md): where they live, the numbers they changed
-    // between, and the words of any grievance. Visits, payments and credits stay, as records. An address a
-    // technician's check-in was measured against is blanked to its city and pincode rather than deleted: the
-    // check-in points at it, and stays as the evidence ops rule a no-show on.
-    db
-      .prepare(
-        `UPDATE addresses SET line1 = 'Erased', line2 = NULL, locality = 'Erased', access_notes = NULL, lat = NULL,
-           lng = NULL, geocoded_at = NULL, building = NULL, flat = NULL, floor = NULL, tower = NULL, landmark = NULL,
-           place_id = NULL, geocode_source = NULL, given_to_staff = NULL
-         WHERE person_id = ?1 AND ${MEASURED_AGAINST}`,
-      )
-      .bind(personId),
-    db.prepare(`DELETE FROM addresses WHERE person_id = ?1 AND NOT ${MEASURED_AGAINST}`).bind(personId),
-    db
-      .prepare(
-        "DELETE FROM otp_challenges WHERE number_change_id IN (SELECT id FROM number_change_requests WHERE person_id = ?1)",
-      )
-      .bind(personId),
-    db.prepare("DELETE FROM number_change_requests WHERE person_id = ?1").bind(personId),
-    db.prepare("UPDATE grievances SET text = 'Erased', response = NULL WHERE person_id = ?1").bind(personId),
-    // How they reached us, and how much hair they had lost; the lead stays, as the record of a booking.
-    db
-      .prepare(
-        `UPDATE leads SET loss_extent = NULL, utm_source = NULL, utm_medium = NULL, utm_campaign = NULL,
-           utm_content = NULL, gclid = NULL, fbclid = NULL, referrer = NULL, landing_path = NULL
-         WHERE person_id = ?1`,
-      )
-      .bind(personId),
+    ...appPersonalData(db, personId),
     ...opsWordsAbout(db, personId),
     // Their first name on a referral, which the referrer's tracker shows until now; blank, it reads "A friend",
     // which says nothing of the erasure. Counsel may rule it can stay (docs/open-points.md, item 63).
@@ -124,6 +97,41 @@ export async function personalDataStatements(
       )
       .bind(personId, at),
     ...withdrawals,
+  ];
+}
+
+/**
+ * The app's own personal data (docs/decisions/0049-dpdp.md): where they live, the numbers they changed
+ * between, and the words of any grievance. Visits, payments and credits stay, as records. An address a
+ * technician's check-in was measured against is blanked to its city and pincode rather than deleted: the
+ * check-in points at it, and stays as the evidence ops rule a no-show on.
+ */
+function appPersonalData(db: D1Database, personId: string): D1PreparedStatement[] {
+  return [
+    db
+      .prepare(
+        `UPDATE addresses SET line1 = 'Erased', line2 = NULL, locality = 'Erased', access_notes = NULL, lat = NULL,
+         lng = NULL, geocoded_at = NULL, building = NULL, flat = NULL, floor = NULL, tower = NULL, landmark = NULL,
+         place_id = NULL, geocode_source = NULL, given_to_staff = NULL
+       WHERE person_id = ?1 AND ${MEASURED_AGAINST}`,
+      )
+      .bind(personId),
+    db.prepare(`DELETE FROM addresses WHERE person_id = ?1 AND NOT ${MEASURED_AGAINST}`).bind(personId),
+    db
+      .prepare(
+        "DELETE FROM otp_challenges WHERE number_change_id IN (SELECT id FROM number_change_requests WHERE person_id = ?1)",
+      )
+      .bind(personId),
+    db.prepare("DELETE FROM number_change_requests WHERE person_id = ?1").bind(personId),
+    db.prepare("UPDATE grievances SET text = 'Erased', response = NULL WHERE person_id = ?1").bind(personId),
+    // How they reached us, and how much hair they had lost; the lead stays, as the record of a booking.
+    db
+      .prepare(
+        `UPDATE leads SET loss_extent = NULL, utm_source = NULL, utm_medium = NULL, utm_campaign = NULL,
+         utm_content = NULL, gclid = NULL, fbclid = NULL, referrer = NULL, landing_path = NULL
+       WHERE person_id = ?1`,
+      )
+      .bind(personId),
   ];
 }
 
