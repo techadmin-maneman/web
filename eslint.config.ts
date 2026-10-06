@@ -31,7 +31,6 @@ const PINNED: Readonly<Record<string, { readonly lines?: number; readonly fn?: n
   "src/routes/client/booking.ts": { fn: 90 },
   "src/policy/personal-data.ts": { lines: 444 },
   "src/domain/money/payment-links.ts": { lines: 451 },
-  "src/domain/no-shows/no-shows.ts": { lines: 406 },
   "src/routes/public/referral-landing.ts": { fn: 116 },
   "src/providers/image/ailabtools.ts": { fn: 114 },
   "src/providers/zoho-http.ts": { fn: 108 },

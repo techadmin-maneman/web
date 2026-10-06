@@ -5,7 +5,7 @@
 import { exGst } from "../../config/gst.ts";
 import type { VISIT_TYPES } from "../../config/visit-types.ts";
 import { indiaDate } from "../../lib/india-time.ts";
-import { noShowNotes, type NoShowNote } from "../no-shows/no-shows.ts";
+import { noShowNotes, type NoShowNote } from "../no-shows/no-show-notes.ts";
 
 export const CREDIT_EVENTS = ["added", "used", "lost", "returned", "expired", "withdrawn", "corrected"] as const;
 type CreditEvent = (typeof CREDIT_EVENTS)[number];

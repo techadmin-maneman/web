@@ -12,7 +12,7 @@ import { namesMoreThanItsKind } from "../../policy/services.ts";
 import type { AppointmentStatus, VisitOutcome } from "./visit-status.ts";
 import { tickedItemsOf } from "../field/job-event-bodies.ts";
 import { jobSheet } from "../field/job-sheet-settings.ts";
-import { noShowNotes, type NoShowNote } from "../no-shows/no-shows.ts";
+import { noShowNotes, type NoShowNote } from "../no-shows/no-show-notes.ts";
 import { oneVisitPrice, type OneVisitPrice } from "../money/one-visit-money.ts";
 import { priceOf } from "../money/price-book.ts";
 import { currentAddress } from "../clients/profile.ts";
