@@ -1,5 +1,5 @@
 // The house referral card (design/phase2/Referral and Waitlist, A2): the 1200 x 630 image an invite shows when a
-// client has not made their own, or has taken theirs down. It has board A1's layout, from the figures in
+// client has not made their own, or has taken theirs down. It has the referral card's layout, from the figures in
 // apps/app/src/refer/card-layout.ts: a gilt rule 2 px wide down the middle, and the mark and the wordmark's small cut
 // in the bottom right corner. The same rule and lockup, alone on a clear ground, are the overlay the API draws over
 // a client's two photographs to make their own card (src/providers/cards.ts).
@@ -30,7 +30,7 @@ import { MARK, WORDMARK_SMALL, type Drawing } from "../../packages/brand/marks.t
 const OUTPUTS = ["site/public/images/invite-house.jpg", "apps/app/src/refer/invite-house.jpg"];
 const OVERLAY_MODULE = "src/config/card-overlay.ts";
 
-/** A brand drawing in its place, as board A1's SVGs draw it: whole, centred, in one colour. */
+/** A brand drawing in its place, as the design's SVGs draw it: whole, centred, in one colour. */
 const drawing = (shape: Drawing, place: Place, colour: string, rule: "evenodd" | "nonzero") =>
   `<svg x="${String(place.left)}" y="${String(place.top)}" width="${String(place.width)}" height="${String(place.height)}"
      viewBox="${shape.viewBox}"><path fill="${colour}" fill-rule="${rule}" d="${shape.d}"/></svg>`;
@@ -62,7 +62,7 @@ const overlay = await sharp(new TextEncoder().encode(svg(marks)))
   .toBuffer();
 writeFileSync(
   OVERLAY_MODULE,
-  `// Written by scripts/build/make-house-card.ts: board A1's gilt rule and lockup on a clear ground, ${String(CARD_WIDTH)} x ${String(CARD_HEIGHT)},
+  `// Written by scripts/build/make-house-card.ts: the referral card's gilt rule and lockup on a clear ground, ${String(CARD_WIDTH)} x ${String(CARD_HEIGHT)},
 // the overlay the API draws over a client's two photographs (src/providers/cards.ts). Never edited by hand.
 
 export const CARD_OVERLAY_PNG =
