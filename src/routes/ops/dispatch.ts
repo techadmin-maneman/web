@@ -24,15 +24,8 @@ import type { App, AppEnv } from "../../http/context.ts";
 import { BOOKING_WINDOWS } from "../../config/scheduling.ts";
 import { VISIT_TYPES } from "../../config/visit-types.ts";
 import type { AuditEntry } from "../../domain/ops/audit.ts";
-import {
-  BOARD_DAYS,
-  boardVersion,
-  dispatchBoard,
-  moveJob,
-  recordToldByPhone,
-  dispatchRoomFor,
-  type MoveInput,
-} from "../../domain/dispatch/dispatch.ts";
+import { moveJob, recordToldByPhone, dispatchRoomFor, type MoveInput } from "../../domain/dispatch/dispatch.ts";
+import { BOARD_DAYS, boardVersion, dispatchBoard } from "../../domain/dispatch/dispatch-board.ts";
 import { isWithin, techniciansWithin } from "../../domain/clients/places.ts";
 import { errorBody, errorResponse, refuse } from "../../http/errors.ts";
 import { opsInputs } from "../../http/ops-inputs.ts";
