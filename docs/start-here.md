@@ -99,7 +99,7 @@ this map, or when the map names something that no longer exists.
 - **Data** (`src/config/`): `gst`
 - **Vendor** (`src/providers/`): `payments/`
 - **Routes** (`src/routes/`): `client/payments`, `client/discount-codes`, `ops/payments`, `ops/payment-links`,
-  `ops/credits`, `ops/discount-codes`, `hooks/razorpay`
+  `ops/prices`, `ops/credits`, `ops/discount-codes`, `hooks/razorpay`
 - **Screens:** `apps/app/src/payments/`
 - **Tests:** `test/worker/money/`, `e2e/app/checkout-policy.e2e.ts`
 
@@ -115,7 +115,7 @@ this map, or when the map names something that no longer exists.
   `address-change`, `number-change`, `number-codes`, `home-prompt`, `places`, `area-names`, `service-area`
 - **Rules** (`src/policy/`): `hair-profile`, `address-change`, `number-proof`, `client-notes`, `home-prompt`
 - **Vendor** (`src/providers/`): `geocode/`
-- **Routes** (`src/routes/`): `client/me`, `client/profile`, `client/notes`, `ops/clients`, `ops/client-record`,
+- **Routes** (`src/routes/`): `client/me`, `client/profile`, `client/notes`, `ops/clients`, `ops/client-record`, `ops/service-area`,
   `ops/client-photos`, `ops/client-consents`, `ops/client-address`, `ops/hair-profile`, `ops/profile`, `public/number-codes`
 - **Screens:** `apps/app/src/home/`, `apps/app/src/profile/`, `apps/ops/src/clients/`,
   `apps/ops/src/number-changes/`, `apps/ops/src/areas/`
