@@ -145,6 +145,10 @@ async function seed(visits: Visit[]): Promise<Record<string, string>> {
 
 let client: App;
 let cookie: string;
+/** Signs the client app in with this session cookie, for the test. */
+const useCookie = (value: string) => {
+  cookie = value;
+};
 
 async function signIn(): Promise<void> {
   const person = await env.DB.prepare("SELECT id FROM people WHERE mobile_e164 = ?1")
@@ -664,7 +668,7 @@ describe("GET /api/visits/:id and the photographs", () => {
     )
       .bind(other, NOW.toISOString())
       .run();
-    cookie = `mm_app=${await openSession(env.DB, { kind: "client", subjectId: other, deviceLabel: null, now: NOW })}`;
+    useCookie(`mm_app=${await openSession(env.DB, { kind: "client", subjectId: other, deviceLabel: null, now: NOW })}`);
     expect((await get(`/api/visits/${ids["ap-done"] ?? ""}`)).status).toBe(404);
     expect((await get(url)).status).toBe(404);
     expect((await get(photo?.thumbnail_url ?? "")).status).toBe(404);
