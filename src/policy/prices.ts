@@ -1,6 +1,6 @@
 // How prices are shown, and where they come from (docs/prompts/phase2-backend.md, "Business rules, decided").
 // The rules as the prompt states them. The price book is src/domain/money/price-book.ts; each price the API answers
-// carries amount_ex_gst, the main figure, beside the amount with GST (PriceSchema, src/routes/client/booking.ts).
+// carries amount_ex_gst, the main figure, beside the amount with GST (PriceSchema, src/routes/schemas/booking.ts).
 
 import { addDays } from "../lib/india-time.ts";
 

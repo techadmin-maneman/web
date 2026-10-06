@@ -30,7 +30,7 @@ describe("the hair profile's table", () => {
     expect(users).toEqual(
       [
         "src/domain/privacy/data-export.ts",
-        "src/domain/privacy/erasure.ts",
+        "src/domain/privacy/erasure-statements.ts",
         "src/domain/field/job-card.ts",
         "src/routes/ops/hair-profile.ts",
         "src/routes/tech/jobs.steps.ts",
