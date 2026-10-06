@@ -19,7 +19,7 @@ import type { PaymentsProvider } from "../../providers/payments/index.ts";
 import type { RazorpayPayment, RazorpayPaymentLink } from "../../providers/payments/razorpay.ts";
 import { paymentsTab, type AlertOnce } from "../ops/alerts.ts";
 import { recordBookingConsents } from "../privacy/booking-consents.ts";
-import { linkPaid } from "./payment-links.ts";
+import { linkPaid } from "./payment-links-paid.ts";
 import { recordPayment } from "./payments.ts";
 import { ASKS } from "./refunds.ts";
 import { graceEnds } from "../booking/hold-stages.ts";

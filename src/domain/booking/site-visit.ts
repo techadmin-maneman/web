@@ -8,7 +8,7 @@ import type { HeldService } from "./hold-slot.ts";
 import { offeredProducts, bookableService } from "./services.ts";
 
 /** What the site holds a slot for: the service, what is paid for it now, and the terms it is sold under. */
-interface SiteVisit {
+export interface SiteVisit {
   readonly service: HeldService;
   readonly price: Price;
   /** Left out for a consultation, which is sold under the committed terms. */

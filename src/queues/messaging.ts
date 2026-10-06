@@ -46,7 +46,7 @@ import { composeBookingRefunded } from "../domain/money/auto-refunds.ts";
 import { composeCreditsExpiring } from "../domain/money/credit-reminders.ts";
 import { composeDeletionRejected } from "../domain/privacy/deletion.ts";
 import { composeNextServiceReminder } from "../domain/visits/next-visit.ts";
-import { composeLinkPaid } from "../domain/money/payment-links.ts";
+import { composeLinkPaid } from "../domain/money/payment-links-paid.ts";
 import { readOpsInputs } from "../domain/ops/ops-settings.ts";
 import {
   composeFriendCredited,
@@ -300,14 +300,7 @@ export async function sendMessage({
   const { messaging } = config.settings;
   const now = deps.now();
 
-  const row = await db
-    .prepare(
-      `SELECT m.state, m.attempts, m.created_at, m.kind, m.subject_id, m.person_id, p.mobile_e164, p.name, p.test_record, p.erased_at
-       FROM outbound_messages m JOIN people p ON p.id = m.person_id
-       WHERE m.id = ?1`,
-    )
-    .bind(messageId)
-    .first<MessageRow>();
+  const row = await messageRowOf(db, messageId);
   if (row === null) {
     log.error("messaging_unknown_message");
     return {};
@@ -332,15 +325,7 @@ export async function sendMessage({
   if ("skip" in content) return skip(content.skip);
   const stopLink = await stopLinkOf(config, row, now);
 
-  // Claim this send; another delivery of the same message now leaves it alone.
-  const claim = await db
-    .prepare(
-      `UPDATE outbound_messages SET attempts = attempts + 1, sending_at = ?2
-       WHERE id = ?1 AND state = 'queued' AND (sending_at IS NULL OR sending_at < ?3)
-       RETURNING attempts`,
-    )
-    .bind(messageId, now.toISOString(), new Date(now.getTime() - SENDING_LEASE_MS).toISOString())
-    .first<{ attempts: number }>();
+  const claim = await claimSend(db, messageId, now);
   if (claim === null) return {};
 
   const result = await sendContent(deps, row.mobile_e164, { ...content, stopLink });
@@ -377,6 +362,30 @@ export async function sendMessage({
   log.error("message_failed", { attempts: claim.attempts, detail });
   await alertFailed(deps, { messageId, kind: row.kind, personId: row.person_id, attempts: claim.attempts, detail });
   return {};
+}
+
+/** The message with its person, as the send reads it; null for an ID no message has. */
+function messageRowOf(db: D1Database, messageId: string): Promise<MessageRow | null> {
+  return db
+    .prepare(
+      `SELECT m.state, m.attempts, m.created_at, m.kind, m.subject_id, m.person_id, p.mobile_e164, p.name, p.test_record, p.erased_at
+       FROM outbound_messages m JOIN people p ON p.id = m.person_id
+       WHERE m.id = ?1`,
+    )
+    .bind(messageId)
+    .first<MessageRow>();
+}
+
+/** Claims this send, so another delivery of the same message leaves it alone; null when one already has it. */
+function claimSend(db: D1Database, messageId: string, now: Date): Promise<{ attempts: number } | null> {
+  return db
+    .prepare(
+      `UPDATE outbound_messages SET attempts = attempts + 1, sending_at = ?2
+       WHERE id = ?1 AND state = 'queued' AND (sending_at IS NULL OR sending_at < ?3)
+       RETURNING attempts`,
+    )
+    .bind(messageId, now.toISOString(), new Date(now.getTime() - SENDING_LEASE_MS).toISOString())
+    .first<{ attempts: number }>();
 }
 
 /** Lets the claim go, with why this try failed, for a later try to take. */
