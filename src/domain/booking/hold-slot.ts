@@ -71,7 +71,7 @@ export function releaseDeadHolds(db: D1Database, now: Date, clientToo: string | 
 }
 
 /** What a hold is asked for: who, which service, which day and window, at what price, and how it is held. */
-export interface HoldInput {
+interface HoldInput {
   personId: string;
   /** The service it is for, and the length its time is held for. */
   service: HeldService;
