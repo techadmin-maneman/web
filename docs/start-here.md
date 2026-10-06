@@ -203,7 +203,7 @@ this map, or when the map names something that no longer exists.
 
 - **Database work** (`src/domain/`): `cron-runs`, `maintenance`, `storage-meter`, `ceilings`, `test-records`,
   `enqueue`
-- **Rules** (`src/policy/`): `database-size`, `daily-allowances`, `storage-share`, `launch`, `staging-test-records`
+- **Rules** (`src/policy/`): `database-size`, `storage-share`, `launch`, `staging-test-records`
 - **Jobs:** `src/scheduled/`, `src/queues/consumer`
 - **Routes** (`src/routes/`): `health`
 - **Tests:** `test/worker/jobs/`, `test/worker/platform/`
