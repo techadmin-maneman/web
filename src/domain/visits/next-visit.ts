@@ -168,13 +168,19 @@ async function firstFitOpensFor(
  * The days a visit of this type may be booked on in the app, for this client: from tomorrow, or for a first fit from
  * the lead time ops set after the consultation, to the horizon ops set.
  */
-export async function bookableDays(
-  db: D1Database,
-  personId: string,
-  type: VisitType,
-  now: Date,
-  days: NextVisitDays,
-): Promise<{ readonly opens: string; readonly last: string }> {
+export async function bookableDays({
+  db,
+  personId,
+  type,
+  now,
+  days,
+}: {
+  db: D1Database;
+  personId: string;
+  type: VisitType;
+  now: Date;
+  days: NextVisitDays;
+}): Promise<{ readonly opens: string; readonly last: string }> {
   const tomorrow = addDays(indiaDate(now), 1);
   const opens = type === "first_fit" ? await firstFitOpensFor(db, personId, tomorrow, days) : tomorrow;
   return { opens, last: lastBookableDay(tomorrow, days) };

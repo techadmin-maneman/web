@@ -68,13 +68,19 @@ export function loadJob(db: D1Database, jobId: string): Promise<JobRow | null> {
  * Fails a job and skips any message waiting for its result. Only a job that
  * has not already finished changes; the return value says whether this one did.
  */
-export async function failJob(
-  db: D1Database,
-  jobId: string,
-  code: FailureCode,
-  detail: string | null,
-  now: Date,
-): Promise<boolean> {
+export async function failJob({
+  db,
+  jobId,
+  code,
+  detail,
+  now,
+}: {
+  db: D1Database;
+  jobId: string;
+  code: FailureCode;
+  detail: string | null;
+  now: Date;
+}): Promise<boolean> {
   const [changed] = await db.batch([
     db
       .prepare(
@@ -93,13 +99,19 @@ export async function failJob(
   return (changed?.results.length ?? 0) > 0;
 }
 
-export function recordEvent(
-  db: D1Database,
-  name: string,
-  subjectId: string,
-  payload: Record<string, unknown>,
-  now: Date,
-): D1PreparedStatement {
+export function recordEvent({
+  db,
+  name,
+  subjectId,
+  payload,
+  now,
+}: {
+  db: D1Database;
+  name: string;
+  subjectId: string;
+  payload: Record<string, unknown>;
+  now: Date;
+}): D1PreparedStatement {
   return db
     .prepare("INSERT INTO events (id, created_at, name, subject_id, payload_json) VALUES (?1, ?2, ?3, ?4, ?5)")
     .bind(crypto.randomUUID(), now.toISOString(), name, subjectId, JSON.stringify(payload));

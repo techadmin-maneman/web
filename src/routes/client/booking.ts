@@ -335,7 +335,7 @@ const releaseRoute = selfServeRoute({
 
 /** The days this client may book a visit of this type on, by the figures ops set (src/domain/visits/next-visit.ts). */
 const rangeFor = async (c: Context<AppEnv>, personId: string, type: VisitType) =>
-  bookableDays(c.env.DB, personId, type, c.var.deps.now(), (await opsInputs(c)).nextVisitDays);
+  bookableDays({ db: c.env.DB, personId, type, now: c.var.deps.now(), days: (await opsInputs(c)).nextVisitDays });
 
 /**
  * The service a client may book, offered that day with its price then: of a kind they may book now, the tier named,
@@ -414,7 +414,10 @@ export function registerClientBooking(app: App): void {
     const now = c.var.deps.now();
     const range = await rangeFor(c, session.subjectId, type);
     const start = stripStart(from, range, BOOKING_DAYS);
-    const move = movingId === undefined ? null : await moveTermsFor(c, session.subjectId, movingId, type, start);
+    const move =
+      movingId === undefined
+        ? null
+        : await moveTermsFor({ c, personId: session.subjectId, visitId: movingId, type, on: start });
     if (movingId !== undefined && move === null) return refuse(c, "not_changeable");
     const offered = move === null ? await bookable(c, session.subjectId, { type, tier }, start) : null;
     if (typeof offered === "string") return c.json(errorBody(offered, c.var.requestId), 422);
@@ -431,7 +434,7 @@ export function registerClientBooking(app: App): void {
     // A charged move books a new visit in place of the old, which stands beside it no longer.
     const placing = { personId: session.subjectId, moving, replacing: move?.moving.visitId ?? null, ownUnpaid: true };
     const [days, schedule] = await Promise.all([
-      availability(db, placing, { minutes: service.minutes, until }, start, BOOKING_DAYS, now),
+      availability({ db, placing, visit: { minutes: service.minutes, until }, from: start, days: BOOKING_DAYS, now }),
       loadSlotSchedule(db),
     ]);
     // A free or late-fee move costs the same whichever day it goes to; a new visit costs that day's price.
@@ -470,7 +473,7 @@ export function registerClientBooking(app: App): void {
     const now = c.var.deps.now();
     // Each read is a trip to D1 and back, so the reads that need nothing from each other go together.
     const [move, offered, range, address, inputs] = await Promise.all([
-      movingId === undefined ? null : moveTermsFor(c, personId, movingId, type, date),
+      movingId === undefined ? null : moveTermsFor({ c, personId, visitId: movingId, type, on: date }),
       movingId === undefined ? bookable(c, personId, { type, tier }, date) : null,
       rangeFor(c, personId, type),
       currentAddress(c.env.DB, personId),
@@ -499,9 +502,9 @@ export function registerClientBooking(app: App): void {
     // (docs/decisions/0108-discount-codes.md).
     const carried =
       moves?.kind === "replace" && !useCredit ? await codeToCarry(c.env.DB, moves.visit.visitId, price, now) : null;
-    const hold = await holdSlot(
-      c.env.DB,
-      {
+    const hold = await holdSlot({
+      db: c.env.DB,
+      input: {
         personId,
         service: { type, tier: service.tier, minutes: service.minutes },
         date,
@@ -516,9 +519,9 @@ export function registerClientBooking(app: App): void {
         afterHold: (holdId) => (carried === null ? [] : [carried.useOn(holdId)]),
       },
       now,
-      inputs.paymentHold.countdown * 60,
-      inputs.paymentHold.grace * 60,
-    );
+      holdSeconds: inputs.paymentHold.countdown * 60,
+      graceSeconds: inputs.paymentHold.grace * 60,
+    });
     if (hold === null) return refuse(c, "taken");
     c.var.log.info("slot_held", { hold_id: hold.id, type, tier: service.tier, date, window });
     const held = await clientHold(c.env.DB, hold.id, personId, now);

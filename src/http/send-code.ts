@@ -86,7 +86,7 @@ export async function mayAskForCode(
  * The code a new challenge is made with when it is not a random one: staging's known code for one of our own test
  * records, or locally the fixed code for everyone. Null means a fresh random code.
  */
-export function knownCode(login: LoginSettings, testRecord: boolean): string | null {
+export function knownCode({ login, testRecord }: { login: LoginSettings; testRecord: boolean }): string | null {
   if (login.testRecordCode !== null && testRecord) return login.testRecordCode;
   return login.fixedCode;
 }
@@ -96,7 +96,7 @@ export function numberChangeCodes(
   login: LoginSettings,
   testRecord: boolean,
 ): { old: string | null; new: string | null } {
-  return { old: knownCode(login, testRecord), new: knownCode(login, false) };
+  return { old: knownCode({ login, testRecord }), new: knownCode({ login, testRecord: false }) };
 }
 
 /**
@@ -111,13 +111,19 @@ function codeHeldBack(c: Context<AppEnv>, sendsTo: string, testRecord: boolean):
  * Counts this request's code against the surface's ceiling if it will be sent; false once the ceiling is reached.
  * A number nobody holds is sent nothing and costs nothing, nor does a test record's code the allowlist holds back.
  */
-export async function countCode(
-  c: Context<AppEnv>,
-  surface: CodeSurface,
-  sendsTo: string | null,
-  testRecord: boolean,
-  now: Date,
-): Promise<boolean> {
+export async function countCode({
+  c,
+  surface,
+  sendsTo,
+  testRecord,
+  now,
+}: {
+  c: Context<AppEnv>;
+  surface: CodeSurface;
+  sendsTo: string | null;
+  testRecord: boolean;
+  now: Date;
+}): Promise<boolean> {
   if (sendsTo === null) return true;
   if (codeHeldBack(c, sendsTo, testRecord)) return true;
   return withinCodeCeiling(c, now, CEILING_OF[surface]);
@@ -128,13 +134,19 @@ export async function countCode(
  * our own scripts made, off the allowlist. Each is logged as `login_code_not_sent` with its reason. Neither the
  * code nor the number is ever logged.
  */
-export async function sendCodeAfterResponse(
-  c: Context<AppEnv>,
-  mobileE164: string | null,
-  testRecord: boolean,
-  channel: CodeChannel,
-  code: string,
-): Promise<void> {
+export async function sendCodeAfterResponse({
+  c,
+  mobileE164,
+  testRecord,
+  channel,
+  code,
+}: {
+  c: Context<AppEnv>;
+  mobileE164: string | null;
+  testRecord: boolean;
+  channel: CodeChannel;
+  code: string;
+}): Promise<void> {
   const { log, deps } = c.var;
   const work = (async () => {
     if (mobileE164 === null) {

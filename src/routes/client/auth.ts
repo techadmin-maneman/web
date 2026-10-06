@@ -189,9 +189,9 @@ const login: RouteHandler<typeof loginRoute, AppEnv> = async (c) => {
   if (asked === "busy") return refuse(c, "busy");
   if (asked !== "open") return refuse(c, "rate_limited");
 
-  if (!(await countCode(c, "login", sendsTo, testRecord, now))) return refuse(c, "busy");
+  if (!(await countCode({ c, surface: "login", sendsTo, testRecord, now }))) return refuse(c, "busy");
 
-  const code = knownCode(limits, testRecord) ?? newLoginCode();
+  const code = knownCode({ login: limits, testRecord }) ?? newLoginCode();
   const challenge = await createChallenge(db, {
     holder: "person",
     holderId: person?.id ?? null,
@@ -200,7 +200,7 @@ const login: RouteHandler<typeof loginRoute, AppEnv> = async (c) => {
     pepper: limits.codePepper,
     now,
   });
-  await sendCodeAfterResponse(c, sendsTo, testRecord, "whatsapp", code);
+  await sendCodeAfterResponse({ c, mobileE164: sendsTo, testRecord, channel: "whatsapp", code });
   return c.json(challengeBody(c, challenge, now), 202);
 };
 
@@ -229,11 +229,11 @@ async function sendAgain(c: Ctx, challengeId: string, channel: CodeChannel) {
   if (asked === "busy") return refuse(c, "busy");
   if (asked !== "open") return refuse(c, "rate_limited");
 
-  if (!(await countCode(c, "login", sendsTo, testRecord, now))) return refuse(c, "busy");
+  if (!(await countCode({ c, surface: "login", sendsTo, testRecord, now }))) return refuse(c, "busy");
 
-  const code = knownCode(config.settings.login, testRecord) ?? newLoginCode();
+  const code = knownCode({ login: config.settings.login, testRecord }) ?? newLoginCode();
   await replaceCode(db, challenge, { channel, code, pepper: config.settings.login.codePepper, now });
-  await sendCodeAfterResponse(c, sendsTo, testRecord, channel, code);
+  await sendCodeAfterResponse({ c, mobileE164: sendsTo, testRecord, channel, code });
   const sent = { ...challenge, channel, lastSentAt: now, sends: challenge.sends + 1 };
   return c.json(challengeBody(c, sent, now), 202);
 }

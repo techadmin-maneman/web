@@ -32,15 +32,39 @@ const setMeter = (value: number) => env.DB.prepare("UPDATE storage_meter SET byt
 
 describe("counting what is stored", () => {
   it("adds each object as it is stored, in either bucket", async () => {
-    await putCounted(env.DB, env.CLIENT_PHOTOS, "visits/a1/after-front-1.jpg", bytes(1200), "image/jpeg");
-    await putCounted(env.DB, env.REFERRAL_CARDS, "cards/ROHIT7/v2.jpg", bytes(300), "image/jpeg");
+    await putCounted({
+      db: env.DB,
+      bucket: env.CLIENT_PHOTOS,
+      key: "visits/a1/after-front-1.jpg",
+      bytes: bytes(1200),
+      contentType: "image/jpeg",
+    });
+    await putCounted({
+      db: env.DB,
+      bucket: env.REFERRAL_CARDS,
+      key: "cards/ROHIT7/v2.jpg",
+      bytes: bytes(300),
+      contentType: "image/jpeg",
+    });
     expect(await held()).toBe(1500);
     expect((await env.CLIENT_PHOTOS.head("visits/a1/after-front-1.jpg"))?.httpMetadata?.contentType).toBe("image/jpeg");
   });
 
   it("takes off what a deleted object held, and nothing for a key that holds nothing", async () => {
-    await putCounted(env.DB, env.CLIENT_PHOTOS, "tryons/j1/before.jpg", bytes(900), "image/jpeg");
-    await putCounted(env.DB, env.CLIENT_PHOTOS, "tryons/j2/before.jpg", bytes(400), "image/jpeg");
+    await putCounted({
+      db: env.DB,
+      bucket: env.CLIENT_PHOTOS,
+      key: "tryons/j1/before.jpg",
+      bytes: bytes(900),
+      contentType: "image/jpeg",
+    });
+    await putCounted({
+      db: env.DB,
+      bucket: env.CLIENT_PHOTOS,
+      key: "tryons/j2/before.jpg",
+      bytes: bytes(400),
+      contentType: "image/jpeg",
+    });
 
     await deleteCounted(env.DB, env.CLIENT_PHOTOS, [
       "tryons/j1/before.jpg",
@@ -53,10 +77,34 @@ describe("counting what is stored", () => {
   });
 
   it("finds everything under a visit's prefix, a photograph taken again and every small copy with it", async () => {
-    await putCounted(env.DB, env.CLIENT_PHOTOS, "visits/a1/after-front-1.jpg", bytes(1000), "image/jpeg");
-    await putCounted(env.DB, env.CLIENT_PHOTOS, "visits/a1/after-front-1-small.jpg", bytes(40), "image/jpeg");
-    await putCounted(env.DB, env.CLIENT_PHOTOS, "visits/a1/after-front-2.jpg", bytes(1100), "image/jpeg");
-    await putCounted(env.DB, env.CLIENT_PHOTOS, "visits/a2/after-front-3.jpg", bytes(700), "image/jpeg");
+    await putCounted({
+      db: env.DB,
+      bucket: env.CLIENT_PHOTOS,
+      key: "visits/a1/after-front-1.jpg",
+      bytes: bytes(1000),
+      contentType: "image/jpeg",
+    });
+    await putCounted({
+      db: env.DB,
+      bucket: env.CLIENT_PHOTOS,
+      key: "visits/a1/after-front-1-small.jpg",
+      bytes: bytes(40),
+      contentType: "image/jpeg",
+    });
+    await putCounted({
+      db: env.DB,
+      bucket: env.CLIENT_PHOTOS,
+      key: "visits/a1/after-front-2.jpg",
+      bytes: bytes(1100),
+      contentType: "image/jpeg",
+    });
+    await putCounted({
+      db: env.DB,
+      bucket: env.CLIENT_PHOTOS,
+      key: "visits/a2/after-front-3.jpg",
+      bytes: bytes(700),
+      contentType: "image/jpeg",
+    });
 
     await deleteUnder(env.DB, env.CLIENT_PHOTOS, ["visits/a1/"]);
 
@@ -67,7 +115,13 @@ describe("counting what is stored", () => {
   });
 
   it("takes nothing off for an object it never counted", async () => {
-    await putCounted(env.DB, env.CLIENT_PHOTOS, "visits/a1/counted.jpg", bytes(300), "image/jpeg");
+    await putCounted({
+      db: env.DB,
+      bucket: env.CLIENT_PHOTOS,
+      key: "visits/a1/counted.jpg",
+      bytes: bytes(300),
+      contentType: "image/jpeg",
+    });
     await env.CLIENT_PHOTOS.put("visits/a1/uncounted.jpg", bytes(500));
     await deleteCounted(env.DB, env.CLIENT_PHOTOS, ["visits/a1/uncounted.jpg"]);
     expect(await held()).toBe(300);
@@ -76,16 +130,46 @@ describe("counting what is stored", () => {
 
   // R2 replaces an object stored again under its key: a sweep or a queue message retried after its store.
   it("counts an object stored again under the same key as what it holds now, not twice", async () => {
-    await putCounted(env.DB, env.CLIENT_PHOTOS, "tryons/j1/look.png", bytes(5000), "image/png");
-    await putCounted(env.DB, env.CLIENT_PHOTOS, "tryons/j1/look.png", bytes(5000), "image/png");
+    await putCounted({
+      db: env.DB,
+      bucket: env.CLIENT_PHOTOS,
+      key: "tryons/j1/look.png",
+      bytes: bytes(5000),
+      contentType: "image/png",
+    });
+    await putCounted({
+      db: env.DB,
+      bucket: env.CLIENT_PHOTOS,
+      key: "tryons/j1/look.png",
+      bytes: bytes(5000),
+      contentType: "image/png",
+    });
     expect(await held()).toBe(5000);
-    await putCounted(env.DB, env.CLIENT_PHOTOS, "tryons/j1/look.png", bytes(3000), "image/png");
+    await putCounted({
+      db: env.DB,
+      bucket: env.CLIENT_PHOTOS,
+      key: "tryons/j1/look.png",
+      bytes: bytes(3000),
+      contentType: "image/png",
+    });
     expect(await held()).toBe(3000);
   });
 
   it("takes an object off once when two deletes of it race, as an erasure and the sweeper can", async () => {
-    await putCounted(env.DB, env.CLIENT_PHOTOS, "tryons/j1/before.jpg", bytes(900), "image/jpeg");
-    await putCounted(env.DB, env.CLIENT_PHOTOS, "tryons/j2/before.jpg", bytes(400), "image/jpeg");
+    await putCounted({
+      db: env.DB,
+      bucket: env.CLIENT_PHOTOS,
+      key: "tryons/j1/before.jpg",
+      bytes: bytes(900),
+      contentType: "image/jpeg",
+    });
+    await putCounted({
+      db: env.DB,
+      bucket: env.CLIENT_PHOTOS,
+      key: "tryons/j2/before.jpg",
+      bytes: bytes(400),
+      contentType: "image/jpeg",
+    });
     await Promise.all([
       deleteCounted(env.DB, env.CLIENT_PHOTOS, ["tryons/j1/before.jpg"]),
       deleteCounted(env.DB, env.CLIENT_PHOTOS, ["tryons/j1/before.jpg"]),
@@ -94,14 +178,20 @@ describe("counting what is stored", () => {
   });
 
   it("reads no object to learn its size", async () => {
-    await putCounted(env.DB, env.CLIENT_PHOTOS, "tryons/j1/before.jpg", bytes(900), "image/jpeg");
+    await putCounted({
+      db: env.DB,
+      bucket: env.CLIENT_PHOTOS,
+      key: "tryons/j1/before.jpg",
+      bytes: bytes(900),
+      contentType: "image/jpeg",
+    });
     const photos = env.CLIENT_PHOTOS;
     const bucket = {
       put: (key: string, value: Uint8Array, options: R2PutOptions) => photos.put(key, value, options),
       delete: (keys: string[]) => photos.delete(keys),
       head: () => Promise.reject(new Error("a head read, which costs a Class B operation")),
     } as unknown as R2Bucket;
-    await putCounted(env.DB, bucket, "tryons/j1/before.jpg", bytes(800), "image/jpeg");
+    await putCounted({ db: env.DB, bucket, key: "tryons/j1/before.jpg", bytes: bytes(800), contentType: "image/jpeg" });
     await deleteCounted(env.DB, bucket, ["tryons/j1/before.jpg"]);
     expect(await held()).toBe(0);
   });

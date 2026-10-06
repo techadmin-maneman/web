@@ -60,10 +60,8 @@ const searchRoute = createRoute({
 
 /** The most clients one search lists; past that, more letters or digits narrow it. */
 export const CLIENTS_FOUND = 20;
-
 /** A name is searched from two letters, a number from four digits, so no search lists everybody. */
 const NAME_MIN = 2;
-
 const DIGITS_MIN = 4;
 
 const findRoute = createRoute({

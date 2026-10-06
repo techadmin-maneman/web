@@ -149,13 +149,19 @@ const INSERT_ADDRESS = `INSERT INTO addresses (id, person_id, created_at, line1,
 /** The values INSERT_ADDRESS takes, as ?1 to ?20. */
 const ADDRESS_VALUES = "?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20";
 
-function addressValues(
-  personId: string,
-  address: Address,
-  pin: AddressPin | null,
-  at: string,
-  givenTo: string | null,
-): unknown[] {
+function addressValues({
+  personId,
+  address,
+  pin,
+  at,
+  givenTo,
+}: {
+  personId: string;
+  address: Address;
+  pin: AddressPin | null;
+  at: string;
+  givenTo: string | null;
+}): unknown[] {
   return [
     crypto.randomUUID(),
     personId,
@@ -203,7 +209,7 @@ export async function saveAddress(
 ): Promise<void> {
   const { personId, address, pin, now, givenToOps } = saving;
   const at = now.toISOString();
-  const values = addressValues(personId, address, pin, at, givenToOps?.staff ?? null);
+  const values = addressValues({ personId, address, pin, at, givenTo: givenToOps?.staff ?? null });
   await db.batch([
     db.prepare("UPDATE addresses SET replaced_at = ?2 WHERE person_id = ?1 AND replaced_at IS NULL").bind(personId, at),
     db.prepare(`${INSERT_ADDRESS} VALUES (${ADDRESS_VALUES})`).bind(...values),
@@ -228,7 +234,7 @@ export function firstAddressStatement(
        SELECT ${ADDRESS_VALUES}
        WHERE NOT EXISTS (SELECT 1 FROM addresses WHERE person_id = ?2 AND replaced_at IS NULL)`,
     )
-    .bind(...addressValues(personId, address, null, now.toISOString(), null));
+    .bind(...addressValues({ personId, address, pin: null, at: now.toISOString(), givenTo: null }));
 }
 
 export interface ConsentState {

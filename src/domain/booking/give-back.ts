@@ -72,7 +72,7 @@ export async function giveBack(
   const given: GivenBack =
     payment === null
       ? await nothingToRefund(db, hold.razorpay_order_id)
-      : await refundOnce(db, payments, hold.id, payment, now, reason);
+      : await refundOnce({ db, payments, holdId: hold.id, payment, now, reason });
   await db.batch([
     db.prepare("DELETE FROM slot_claims WHERE hold_id = ?1").bind(hold.id),
     db
@@ -136,14 +136,21 @@ async function nothingToRefund(db: D1Database, orderId: string | null): Promise<
   return { kind: "refunded_before", paymentId: refunded.razorpay_payment_id };
 }
 
-async function refundOnce(
-  db: D1Database,
-  payments: PaymentsProvider,
-  holdId: string,
-  payment: CapturedPayment,
-  now: Date,
-  reason: string,
-): Promise<GivenBack> {
+async function refundOnce({
+  db,
+  payments,
+  holdId,
+  payment,
+  now,
+  reason,
+}: {
+  db: D1Database;
+  payments: PaymentsProvider;
+  holdId: string;
+  payment: CapturedPayment;
+  now: Date;
+  reason: string;
+}): Promise<GivenBack> {
   // The refund is claimed on the hold before it is asked for, so a repeated message cannot ask twice.
   const claimed = await db
     .prepare("UPDATE slot_holds SET refunded_at = ?1 WHERE id = ?2 AND refunded_at IS NULL RETURNING id")

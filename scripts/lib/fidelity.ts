@@ -40,7 +40,19 @@ export const STILL =
   "html { scroll-behavior: auto !important; } *, *::before, *::after { transition: none !important; animation: none !important; caret-color: transparent !important; }";
 
 /** The two screenshots side by side, the design on the left, written to <dir>/<name>.jpg. */
-export async function pair(dir: string, width: number, name: string, design: Buffer, built: Buffer): Promise<void> {
+export async function pair({
+  dir,
+  width,
+  name,
+  design,
+  built,
+}: {
+  dir: string;
+  width: number;
+  name: string;
+  design: Buffer;
+  built: Buffer;
+}): Promise<void> {
   const scale = width > 1000 ? 0.5 : 1;
   const [left, right] = await Promise.all(
     [design, built].map(async (image) => {

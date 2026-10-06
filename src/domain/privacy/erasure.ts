@@ -233,13 +233,19 @@ function letGoOfBookings(db: D1Database, personId: string, at: string): D1Prepar
  * Erases the person, with `alongside` in the same D1 batch, then deletes their
  * files. Null when they are already erased.
  */
-export async function erasePerson(
-  env: ErasureEnv,
-  personId: string,
-  now: Date,
-  log: Logger,
-  alongside: readonly D1PreparedStatement[] = [],
-): Promise<ErasureSummary | null> {
+export async function erasePerson({
+  env,
+  personId,
+  now,
+  log,
+  alongside = [],
+}: {
+  env: ErasureEnv;
+  personId: string;
+  now: Date;
+  log: Logger;
+  alongside?: readonly D1PreparedStatement[];
+}): Promise<ErasureSummary | null> {
   const db = env.DB;
   const counts = await db
     .prepare(
@@ -269,7 +275,13 @@ export async function erasePerson(
     ...(await personalDataStatements(db, personId, at)),
     // After the blanking, so a grievance the caller closes keeps the words it is closed with.
     ...alongside,
-    recordEvent(db, "person_erased", personId, { photos: counts.photos, results: counts.results }, now),
+    recordEvent({
+      db,
+      name: "person_erased",
+      subjectId: personId,
+      payload: { photos: counts.photos, results: counts.results },
+      now,
+    }),
   ]);
 
   try {
@@ -303,14 +315,20 @@ export async function eraseAndQueue(
   const { audit, now, log } = options;
   // Read before the batch, which lets go of the bookings they belong to.
   const linkIds = await openLinkIds(env.DB, personId, now);
-  const summary = await erasePerson(env, personId, now, log, [
-    ...(options.alongside ?? []),
-    resolveOpenRequestAlerts(env.DB, personId, now),
-    closeOpenRequests(env.DB, personId, audit.actor.id, now),
-    closeOpenGrievances(env.DB, personId, audit.actor.id, now),
-    resolveAlertsAbout(env.DB, personId, now),
-    auditStatement(env.DB, audit, now),
-  ]);
+  const summary = await erasePerson({
+    env,
+    personId,
+    now,
+    log,
+    alongside: [
+      ...(options.alongside ?? []),
+      resolveOpenRequestAlerts(env.DB, personId, now),
+      closeOpenRequests(env.DB, personId, audit.actor.id, now),
+      closeOpenGrievances(env.DB, personId, audit.actor.id, now),
+      resolveAlertsAbout(env.DB, personId, now),
+      auditStatement(env.DB, audit, now),
+    ],
+  });
   if (summary === null) return null;
   log.info("person_erased", {
     person_id: summary.personId,

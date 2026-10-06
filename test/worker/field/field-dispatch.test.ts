@@ -309,7 +309,7 @@ describe("leave", () => {
     ).json<{ leave: { technician_id: string }[] }>();
     expect(board.leave.map((period) => period.technician_id).sort()).toEqual([IMRAN, SAMEER].sort());
 
-    const held = await occupancy(env.DB, "2026-09-24", "2026-09-24", NOW);
+    const held = await occupancy({ db: env.DB, from: "2026-09-24", to: "2026-09-24", now: NOW });
     expect(held(IMRAN, "2026-09-24").onLeave).toBe(true);
     // A service visit's two half-slots (src/policy/visit-length.ts).
     expect(placement(held(IMRAN, "2026-09-24"), "morning", 2)).toBeNull();

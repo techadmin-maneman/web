@@ -203,11 +203,13 @@ export async function setServiceArea(
         pacedAfter: alerts.length,
       });
       alerts.push(...launch.alerts);
-      statements.push(setAudit(db, entry("pincode.set", change.pincode), was, change, launch.launchOn, now));
+      statements.push(
+        setAudit({ db, entry: entry("pincode.set", change.pincode), was, change, launchOn: launch.launchOn, now }),
+      );
       statements.push(...launch.statements);
     } else if (servingChanged(was, change)) {
       statements.push(
-        setAudit(db, entry("pincode.set", change.pincode), was, change, change.launch_on, now),
+        setAudit({ db, entry: entry("pincode.set", change.pincode), was, change, launchOn: change.launch_on, now }),
         db.prepare("UPDATE serviceable_pincodes SET served = ?2, launched_at = ?3 WHERE pincode = ?1").bind(
           change.pincode,
           change.served ? 1 : 0,
@@ -236,14 +238,21 @@ export async function setServiceArea(
 }
 
 /** The audit entry of a pincode's served and launch date set: what they were, and what they are now. */
-function setAudit(
-  db: D1Database,
-  entry: AuditEntry,
-  was: AreaPincode,
-  change: AreaChange,
-  launchOn: string | null,
-  now: Date,
-): D1PreparedStatement {
+function setAudit({
+  db,
+  entry,
+  was,
+  change,
+  launchOn,
+  now,
+}: {
+  db: D1Database;
+  entry: AuditEntry;
+  was: AreaPincode;
+  change: AreaChange;
+  launchOn: string | null;
+  now: Date;
+}): D1PreparedStatement {
   const detail = {
     served_from: was.served,
     served_to: change.served,

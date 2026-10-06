@@ -75,7 +75,7 @@ describe("render: the happy path", () => {
     const bindings = renderEnv();
     await queuedJob("pro-job");
 
-    expect(await advanceJob(bindings, deps, log, "pro-job", OPTIONS)).toEqual({
+    expect(await advanceJob({ env: bindings, deps, log, jobId: "pro-job", options: OPTIONS })).toEqual({
       retryAfterSeconds: POLL_DELAY_SECONDS.early,
     });
     expect(await job("pro-job")).toMatchObject({
@@ -84,12 +84,12 @@ describe("render: the happy path", () => {
     });
 
     time.advance(3_000);
-    expect(await advanceJob(bindings, deps, log, "pro-job", OPTIONS)).toEqual({
+    expect(await advanceJob({ env: bindings, deps, log, jobId: "pro-job", options: OPTIONS })).toEqual({
       retryAfterSeconds: POLL_DELAY_SECONDS.early,
     });
 
     time.advance(STUB_RENDER_MS.pro);
-    expect(await advanceJob(bindings, deps, log, "pro-job", OPTIONS)).toEqual({});
+    expect(await advanceJob({ env: bindings, deps, log, jobId: "pro-job", options: OPTIONS })).toEqual({});
 
     const done = await job("pro-job");
     expect(done).toMatchObject({
@@ -111,9 +111,9 @@ describe("render: the happy path", () => {
       const time = clock();
       const deps = fakeDependencies({ now: time.now, image: countingImage(time.now).image });
       await queuedJob(id);
-      await advanceJob(renderEnv(), deps, log, id, { resultRetentionDays: days });
+      await advanceJob({ env: renderEnv(), deps, log, jobId: id, options: { resultRetentionDays: days } });
       time.advance(STUB_RENDER_MS.pro);
-      await advanceJob(renderEnv(), deps, log, id, { resultRetentionDays: days });
+      await advanceJob({ env: renderEnv(), deps, log, jobId: id, options: { resultRetentionDays: days } });
 
       const ready = await job(id);
       expect(ready?.state).toBe("ready");
@@ -127,9 +127,9 @@ describe("render: the happy path", () => {
     const deps = fakeDependencies({ now: time.now, image });
     await queuedJob("premium-job", { endpoint: "premium", color: "original" });
 
-    await advanceJob(renderEnv(), deps, log, "premium-job", OPTIONS);
+    await advanceJob({ env: renderEnv(), deps, log, jobId: "premium-job", options: OPTIONS });
     time.advance(STUB_RENDER_MS.premium);
-    await advanceJob(renderEnv(), deps, log, "premium-job", OPTIONS);
+    await advanceJob({ env: renderEnv(), deps, log, jobId: "premium-job", options: OPTIONS });
 
     expect(await job("premium-job")).toMatchObject({ state: "ready", latency_ms: STUB_RENDER_MS.premium });
     expect(submit.mock.calls[0]?.slice(2)).toEqual(["original", "premium"]);
@@ -140,10 +140,10 @@ describe("render: the happy path", () => {
     const slow: ImageProvider = { ...countingImage(time.now).image, poll: () => Promise.resolve({ state: "running" }) };
     const deps = fakeDependencies({ now: time.now, image: slow });
     await queuedJob("slow");
-    await advanceJob(renderEnv(), deps, log, "slow", OPTIONS);
+    await advanceJob({ env: renderEnv(), deps, log, jobId: "slow", options: OPTIONS });
 
     time.advance(31_000);
-    expect(await advanceJob(renderEnv(), deps, log, "slow", OPTIONS)).toEqual({
+    expect(await advanceJob({ env: renderEnv(), deps, log, jobId: "slow", options: OPTIONS })).toEqual({
       retryAfterSeconds: POLL_DELAY_SECONDS.late,
     });
   });
@@ -161,9 +161,9 @@ describe("render: the happy path", () => {
       .bind(NOW.toISOString())
       .run();
 
-    await advanceJob(bindings, deps, log, "gated", OPTIONS);
+    await advanceJob({ env: bindings, deps, log, jobId: "gated", options: OPTIONS });
     time.advance(STUB_RENDER_MS.pro);
-    await advanceJob(bindings, deps, log, "gated", OPTIONS);
+    await advanceJob({ env: bindings, deps, log, jobId: "gated", options: OPTIONS });
 
     const message = await env.DB.prepare("SELECT state, queued_at FROM outbound_messages WHERE id = 'm1'").first();
     expect(message).toEqual({ state: "queued", queued_at: time.now().toISOString() });
@@ -182,7 +182,7 @@ describe("render: never billed twice", () => {
       .bind(NOW.toISOString())
       .run();
 
-    expect(await advanceJob(renderEnv(), deps, log, "twice", OPTIONS)).toEqual({});
+    expect(await advanceJob({ env: renderEnv(), deps, log, jobId: "twice", options: OPTIONS })).toEqual({});
     expect(submit).not.toHaveBeenCalled();
   });
 
@@ -192,15 +192,17 @@ describe("render: never billed twice", () => {
     const deps = fakeDependencies({ now: time.now, image });
     await queuedJob("stalled", { marker: "mm-stub:stall" });
 
-    await advanceJob(renderEnv(), deps, log, "stalled", OPTIONS);
+    await advanceJob({ env: renderEnv(), deps, log, jobId: "stalled", options: OPTIONS });
     time.advance(STUB_RENDER_MS.pro);
-    expect(await advanceJob(renderEnv(), deps, log, "stalled", OPTIONS)).toEqual({ retryAfterSeconds: 60 });
+    expect(await advanceJob({ env: renderEnv(), deps, log, jobId: "stalled", options: OPTIONS })).toEqual({
+      retryAfterSeconds: 60,
+    });
     const waiting = await job("stalled");
     expect(waiting).toMatchObject({ state: "downloading", download_attempts: 1 });
     expect(waiting?.provider_result_url).toMatch(/^https:/);
 
     time.advance(STUB_STALL_MS);
-    expect(await advanceJob(renderEnv(), deps, log, "stalled", OPTIONS)).toEqual({});
+    expect(await advanceJob({ env: renderEnv(), deps, log, jobId: "stalled", options: OPTIONS })).toEqual({});
     expect(await job("stalled")).toMatchObject({ state: "ready", download_attempts: 2 });
     expect(submit).toHaveBeenCalledOnce();
   });
@@ -209,14 +211,14 @@ describe("render: never billed twice", () => {
     const time = clock();
     const deps = fakeDependencies({ now: time.now, image: countingImage(time.now).image });
     await queuedJob("lost", { marker: "mm-stub:stall" });
-    await advanceJob(renderEnv(), deps, log, "lost", OPTIONS);
+    await advanceJob({ env: renderEnv(), deps, log, jobId: "lost", options: OPTIONS });
     time.advance(STUB_RENDER_MS.pro);
-    await advanceJob(renderEnv(), deps, log, "lost", OPTIONS); // attempt 1
-    await advanceJob(renderEnv(), deps, log, "lost", OPTIONS); // attempt 2
-    expect(await advanceJob(renderEnv(), deps, log, "lost", OPTIONS)).toEqual({}); // attempt 3: the sweeper takes over
+    await advanceJob({ env: renderEnv(), deps, log, jobId: "lost", options: OPTIONS }); // attempt 1
+    await advanceJob({ env: renderEnv(), deps, log, jobId: "lost", options: OPTIONS }); // attempt 2
+    expect(await advanceJob({ env: renderEnv(), deps, log, jobId: "lost", options: OPTIONS })).toEqual({}); // attempt 3: the sweeper takes over
 
     time.advance(RESULT_URL_LIFETIME_MS);
-    await advanceJob(renderEnv(), deps, log, "lost", OPTIONS);
+    await advanceJob({ env: renderEnv(), deps, log, jobId: "lost", options: OPTIONS });
     expect(await job("lost")).toMatchObject({ state: "failed", failure_code: "render_failed" });
     expect(deps.alerts).toEqual([expect.stringContaining("a billed image is lost") as string]);
   });
@@ -232,10 +234,10 @@ describe("render: a result that can never be used", () => {
     };
     const deps = fakeDependencies({ now: time.now, image: tooBig });
     await queuedJob("too-big");
-    await advanceJob(renderEnv(), deps, log, "too-big", OPTIONS);
+    await advanceJob({ env: renderEnv(), deps, log, jobId: "too-big", options: OPTIONS });
     time.advance(STUB_RENDER_MS.pro);
 
-    expect(await advanceJob(renderEnv(), deps, log, "too-big", OPTIONS)).toEqual({});
+    expect(await advanceJob({ env: renderEnv(), deps, log, jobId: "too-big", options: OPTIONS })).toEqual({});
     expect(await job("too-big")).toMatchObject({
       state: "failed",
       failure_code: "render_failed",
@@ -262,9 +264,9 @@ describe("render: a result that arrives after its job moved on", () => {
     const time = clock();
     const deps = fakeDependencies({ now: time.now, image: imageThat(during, time.now) });
     await queuedJob(id);
-    await advanceJob(renderEnv(), deps, log, id, OPTIONS);
+    await advanceJob({ env: renderEnv(), deps, log, jobId: id, options: OPTIONS });
     time.advance(STUB_RENDER_MS.pro);
-    expect(await advanceJob(renderEnv(), deps, log, id, OPTIONS)).toEqual({});
+    expect(await advanceJob({ env: renderEnv(), deps, log, jobId: id, options: OPTIONS })).toEqual({});
   }
 
   it("deletes the result when its person was erased during the download", async () => {
@@ -291,7 +293,7 @@ describe("render: failures", () => {
     const deps = fakeDependencies({ now: time.now, image: countingImage(time.now).image });
     await queuedJob("trap", { endpoint: "premium", color: "original", marker: "mm-stub:file-type" });
 
-    await advanceJob(renderEnv(), deps, log, "trap", OPTIONS);
+    await advanceJob({ env: renderEnv(), deps, log, jobId: "trap", options: OPTIONS });
 
     const failed = await job("trap");
     expect(failed).toMatchObject({ state: "failed", failure_code: "photo_invalid_file" });
@@ -311,7 +313,7 @@ describe("render: failures", () => {
       .bind(NOW.toISOString())
       .run();
 
-    await advanceJob(renderEnv(), deps, log, "no-face", OPTIONS);
+    await advanceJob({ env: renderEnv(), deps, log, jobId: "no-face", options: OPTIONS });
 
     expect(await job("no-face")).toMatchObject({ state: "failed", failure_code: "photo_unreadable" });
     const message = await env.DB.prepare("SELECT state FROM outbound_messages WHERE id = 'm1'").first();
@@ -332,9 +334,11 @@ describe("render: failures", () => {
     await queuedJob("flaky");
 
     for (let attempt = 1; attempt < SUBMIT_ATTEMPTS; attempt++) {
-      expect(await advanceJob(renderEnv(), deps, log, "flaky", OPTIONS)).toEqual({ retryAfterSeconds: 10 });
+      expect(await advanceJob({ env: renderEnv(), deps, log, jobId: "flaky", options: OPTIONS })).toEqual({
+        retryAfterSeconds: 10,
+      });
     }
-    expect(await advanceJob(renderEnv(), deps, log, "flaky", OPTIONS)).toEqual({});
+    expect(await advanceJob({ env: renderEnv(), deps, log, jobId: "flaky", options: OPTIONS })).toEqual({});
     expect(await job("flaky")).toMatchObject({ state: "failed", failure_code: "render_failed" });
   });
 
@@ -346,10 +350,10 @@ describe("render: failures", () => {
     };
     const deps = fakeDependencies({ now: time.now, image: slow });
     await queuedJob("slow-premium");
-    await advanceJob(renderEnv(), deps, log, "slow-premium", OPTIONS);
+    await advanceJob({ env: renderEnv(), deps, log, jobId: "slow-premium", options: OPTIONS });
 
     time.advance(6 * 60_000);
-    expect(await advanceJob(renderEnv(), deps, log, "slow-premium", OPTIONS)).toEqual({
+    expect(await advanceJob({ env: renderEnv(), deps, log, jobId: "slow-premium", options: OPTIONS })).toEqual({
       retryAfterSeconds: POLL_DELAY_SECONDS.slow,
     });
     expect(await job("slow-premium")).toMatchObject({ state: "rendering" });
@@ -363,10 +367,10 @@ describe("render: failures", () => {
     };
     const deps = fakeDependencies({ now: time.now, image: stuck });
     await queuedJob("stuck");
-    await advanceJob(renderEnv(), deps, log, "stuck", OPTIONS);
+    await advanceJob({ env: renderEnv(), deps, log, jobId: "stuck", options: OPTIONS });
 
     time.advance(RENDER_GIVE_UP_MS + 1);
-    expect(await advanceJob(renderEnv(), deps, log, "stuck", OPTIONS)).toEqual({});
+    expect(await advanceJob({ env: renderEnv(), deps, log, jobId: "stuck", options: OPTIONS })).toEqual({});
     expect(await job("stuck")).toMatchObject({ state: "failed", failure_code: "render_failed" });
     expect(deps.alerts).toEqual([expect.stringMatching(/no result 15 min after submitting; task stub\./) as string]);
   });
@@ -383,20 +387,20 @@ describe("render: failures", () => {
     };
     const deps = fakeDependencies({ now: time.now, image: refused });
     await queuedJob("bad-key");
-    await advanceJob(renderEnv(), deps, log, "bad-key", OPTIONS);
+    await advanceJob({ env: renderEnv(), deps, log, jobId: "bad-key", options: OPTIONS });
     expect(deps.alerts).toEqual([expect.stringContaining("bad-key") as string]);
 
     await queuedJob("no-photo");
     await env.UPLOADS.delete("uploads/no-photo");
-    await advanceJob(renderEnv(), deps, log, "no-photo", OPTIONS);
+    await advanceJob({ env: renderEnv(), deps, log, jobId: "no-photo", options: OPTIONS });
     expect(await job("no-photo")).toMatchObject({ state: "failed", failure_code: "render_failed" });
   });
 
   it("ignores a message for a job that is finished or unknown", async () => {
     await insertJob({ id: "done", state: "ready" });
     const deps = fakeDependencies();
-    expect(await advanceJob(renderEnv(), deps, log, "done", OPTIONS)).toEqual({});
-    expect(await advanceJob(renderEnv(), deps, log, "missing", OPTIONS)).toEqual({});
+    expect(await advanceJob({ env: renderEnv(), deps, log, jobId: "done", options: OPTIONS })).toEqual({});
+    expect(await advanceJob({ env: renderEnv(), deps, log, jobId: "missing", options: OPTIONS })).toEqual({});
   });
 });
 
@@ -414,7 +418,7 @@ describe("render: the queue batch", () => {
       { nonsense: true },
     ]);
 
-    await handleRenderBatch(batch, renderEnv(), fakeDependencies(), log, OPTIONS);
+    await handleRenderBatch({ batch, env: renderEnv(), deps: fakeDependencies(), log, options: OPTIONS });
 
     expect(batch.messages[0]?.retry).toHaveBeenCalledWith({ delaySeconds: POLL_DELAY_SECONDS.early });
     expect(batch.messages[0]?.ack).not.toHaveBeenCalled();
@@ -431,7 +435,13 @@ describe("render: the queue batch", () => {
     };
     const batch = batchOf([{ job_id: id, request_id: "r" }]);
 
-    await handleRenderBatch(batch, renderEnv(), fakeDependencies({ image: broken }), log, OPTIONS);
+    await handleRenderBatch({
+      batch,
+      env: renderEnv(),
+      deps: fakeDependencies({ image: broken }),
+      log,
+      options: OPTIONS,
+    });
 
     expect(batch.messages[0]?.retry).toHaveBeenCalledWith({ delaySeconds: 30 });
   });

@@ -72,7 +72,15 @@ export interface Invite {
  * is named only if their latest consent to cards was given on a notice that told them so: the profile's, or the
  * pay step's when booking gave it (ADR 0080).
  */
-export async function inviteOf(db: D1Database, code: string, nameOnInvite: boolean): Promise<Invite | null> {
+export async function inviteOf({
+  db,
+  code,
+  nameOnInvite,
+}: {
+  db: D1Database;
+  code: string;
+  nameOnInvite: boolean;
+}): Promise<Invite | null> {
   const naming = NAMING_NOTICES.map((_, index) => `?${String(index + 2)}`).join(", ");
   const row = await db
     .prepare(
@@ -126,7 +134,7 @@ export async function pendingInviteOf(
   if (row === null) return null;
   const lapsed = row.via === "waitlist" && row.launched_at !== null && inviteLapsed(new Date(row.launched_at), now);
   if (lapsed) return null;
-  const invite = await inviteOf(db, row.code, nameOnInvite);
+  const invite = await inviteOf({ db, code: row.code, nameOnInvite });
   if (invite === null) return null;
   return { referrerFirstName: invite.referrerFirstName };
 }

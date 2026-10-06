@@ -304,7 +304,7 @@ describe("a client erased with a deletion request open", () => {
   it("is left out of the queue and its alert when an earlier erasure left the request open", async () => {
     const personId = await book();
     await openRequest(personId);
-    await erasePerson(env, personId, NOW, createLogger());
+    await erasePerson({ env, personId, now: NOW, log: createLogger() });
 
     expect(await deletionsWaiting(env.DB, EVERYWHERE)).toEqual([]);
     expect(await alertsNow()).toBe(0);
@@ -398,7 +398,7 @@ describe("erasePerson", () => {
     await insertJob({ id: "late", person_id: personId, state: "downloading" });
     await env.RESULTS.put("results/late.jpg", syntheticJpeg(512, 512));
 
-    const summary = await erasePerson(env, personId, NOW, createLogger());
+    const summary = await erasePerson({ env, personId, now: NOW, log: createLogger() });
 
     expect(summary?.resultsDeleted).toBe(0); // it had no result_key when read
     expect(await env.RESULTS.head("results/late.jpg")).toBeNull();
@@ -539,19 +539,43 @@ describe("erasure, all or nothing", () => {
     const retaken = `visits/${VISIT}/after-front-0.jpg`;
     const small = `visits/${VISIT}/after-front-1-small.jpg`;
     await env.DB.prepare("UPDATE photos SET thumbnail_key = ?1").bind(small).run();
-    await putCounted(env.DB, env.CLIENT_PHOTOS, VISIT_PHOTO, syntheticJpeg(600, 800), "image/jpeg");
-    await putCounted(env.DB, env.CLIENT_PHOTOS, retaken, syntheticJpeg(600, 800, "first take"), "image/jpeg");
-    await putCounted(env.DB, env.CLIENT_PHOTOS, small, syntheticJpeg(300, 400), "image/jpeg");
-    await putCounted(
-      env.DB,
-      env.CLIENT_PHOTOS,
-      `visits/someone-else/after-front-9.jpg`,
-      new Uint8Array(70),
-      "image/jpeg",
-    );
-    await putCounted(env.DB, env.REFERRAL_CARDS, CARD, syntheticJpeg(1200, 630), "image/jpeg");
+    await putCounted({
+      db: env.DB,
+      bucket: env.CLIENT_PHOTOS,
+      key: VISIT_PHOTO,
+      bytes: syntheticJpeg(600, 800),
+      contentType: "image/jpeg",
+    });
+    await putCounted({
+      db: env.DB,
+      bucket: env.CLIENT_PHOTOS,
+      key: retaken,
+      bytes: syntheticJpeg(600, 800, "first take"),
+      contentType: "image/jpeg",
+    });
+    await putCounted({
+      db: env.DB,
+      bucket: env.CLIENT_PHOTOS,
+      key: small,
+      bytes: syntheticJpeg(300, 400),
+      contentType: "image/jpeg",
+    });
+    await putCounted({
+      db: env.DB,
+      bucket: env.CLIENT_PHOTOS,
+      key: `visits/someone-else/after-front-9.jpg`,
+      bytes: new Uint8Array(70),
+      contentType: "image/jpeg",
+    });
+    await putCounted({
+      db: env.DB,
+      bucket: env.REFERRAL_CARDS,
+      key: CARD,
+      bytes: syntheticJpeg(1200, 630),
+      contentType: "image/jpeg",
+    });
 
-    await erasePerson(env, personId, NOW, createLogger());
+    await erasePerson({ env, personId, now: NOW, log: createLogger() });
 
     expect(await env.CLIENT_PHOTOS.head(retaken)).toBeNull();
     expect(await env.CLIENT_PHOTOS.head(small)).toBeNull();
@@ -563,13 +587,31 @@ describe("erasure, all or nothing", () => {
     const personId = await clientWithEverything();
     const retaken = `visits/${VISIT}/after-front-0.jpg`;
     const small = `visits/${VISIT}/after-front-0-small.jpg`;
-    await putCounted(env.DB, env.CLIENT_PHOTOS, retaken, syntheticJpeg(600, 800, "first take"), "image/jpeg");
-    await putCounted(env.DB, env.CLIENT_PHOTOS, small, syntheticJpeg(300, 400), "image/jpeg");
+    await putCounted({
+      db: env.DB,
+      bucket: env.CLIENT_PHOTOS,
+      key: retaken,
+      bytes: syntheticJpeg(600, 800, "first take"),
+      contentType: "image/jpeg",
+    });
+    await putCounted({
+      db: env.DB,
+      bucket: env.CLIENT_PHOTOS,
+      key: small,
+      bytes: syntheticJpeg(300, 400),
+      contentType: "image/jpeg",
+    });
     // Another visit whose ID begins with this one's, which must keep its count.
-    await putCounted(env.DB, env.CLIENT_PHOTOS, `visits/${VISIT}0/after-front-9.jpg`, new Uint8Array(70), "image/jpeg");
+    await putCounted({
+      db: env.DB,
+      bucket: env.CLIENT_PHOTOS,
+      key: `visits/${VISIT}0/after-front-9.jpg`,
+      bytes: new Uint8Array(70),
+      contentType: "image/jpeg",
+    });
     await env.CLIENT_PHOTOS.delete([retaken, small]);
 
-    await erasePerson(env, personId, NOW, createLogger());
+    await erasePerson({ env, personId, now: NOW, log: createLogger() });
 
     expect((await readMeter(env.DB)).bytes).toBe(70);
     const left = await env.DB.prepare("SELECT key FROM stored_objects").all<{ key: string }>();
@@ -603,7 +645,12 @@ describe("erasure, all or nothing", () => {
     const unavailable = () => Promise.reject(new Error("R2 unavailable"));
     const failingPhotos = { head: unavailable, list: unavailable, delete: unavailable } as unknown as R2Bucket;
 
-    const summary = await erasePerson({ ...env, CLIENT_PHOTOS: failingPhotos }, personId, NOW, createLogger());
+    const summary = await erasePerson({
+      env: { ...env, CLIENT_PHOTOS: failingPhotos },
+      personId,
+      now: NOW,
+      log: createLogger(),
+    });
 
     expect(summary?.personId).toBe(personId);
     const erased = await env.DB.prepare("SELECT name, files_erased_at FROM people WHERE id = ?1")
@@ -720,7 +767,7 @@ describe("erasure blanks what ops wrote about the client", () => {
   it("blanks the reasons ops gave about the friend: the invite attached, the grant's review, the no-show ruling, a visit's task closed, a visit closed by hand, one cancelled and one moved onto a blacked-out day", async () => {
     await reasonsWritten();
 
-    expect(await erasePerson(env, FRIEND, NOW, createLogger())).not.toBeNull();
+    expect(await erasePerson({ env, personId: FRIEND, now: NOW, log: createLogger() })).not.toBeNull();
 
     expect(await reasons()).toEqual({
       review: null,
@@ -755,7 +802,7 @@ describe("erasure blanks what ops wrote about the client", () => {
       ).bind(FRIEND, NOW.toISOString()),
     ]);
 
-    await erasePerson(env, FRIEND, NOW, createLogger());
+    await erasePerson({ env, personId: FRIEND, now: NOW, log: createLogger() });
 
     expect(await env.DB.prepare("SELECT line1, given_to_staff FROM addresses").all()).toMatchObject({
       results: [{ line1: "Erased", given_to_staff: null }],
@@ -768,7 +815,7 @@ describe("erasure blanks what ops wrote about the client", () => {
   it("blanks the grant's review reason when the referrer is the one erased", async () => {
     await reasonsWritten();
 
-    await erasePerson(env, REFERRER, NOW, createLogger());
+    await erasePerson({ env, personId: REFERRER, now: NOW, log: createLogger() });
 
     expect(await reasons()).toEqual({
       review: null,
@@ -785,7 +832,7 @@ describe("erasure blanks what ops wrote about the client", () => {
     await reasonsWritten();
     await databaseRefusesErasure();
 
-    await expect(erasePerson(env, FRIEND, NOW, createLogger())).rejects.toThrow();
+    await expect(erasePerson({ env, personId: FRIEND, now: NOW, log: createLogger() })).rejects.toThrow();
 
     expect(await reasons()).toEqual({
       review: "Same flat as Vikram",

@@ -497,7 +497,7 @@ describe("Razorpay's word that a one visit's link is paid", () => {
       notes: [],
       created_at: 1790067000,
     };
-    await recordPayment(env.DB, another, "captured", "a-salt", NOW);
+    await recordPayment({ db: env.DB, payment: another, status: "captured", hashSalt: "a-salt", now: NOW });
     await deliver(linkPaid({ id: linkId, reference_id: LINK_REFERENCE }), "evt-1");
 
     const { results } = await env.DB.prepare(

@@ -149,11 +149,23 @@ async function codeFor(
   if (asked.code === undefined) return null;
   if (asked.oneVisit) {
     const typedAt = await typedOnWaitingRequest(db, asked.personId, asked.code);
-    const checked = await checkForOneVisit(db, asked.code, asked.personId, now, typedAt ?? now);
+    const checked = await checkForOneVisit({
+      db,
+      text: asked.code,
+      personId: asked.personId,
+      now,
+      typedAt: typedAt ?? now,
+    });
     return checked.ok ? { id: checked.codeId, amountOff: null, typedAt } : false;
   }
   const codeBooking = { type: asked.kind, onCredit: booking.onCredit, moves: false };
-  const checked = await checkDiscountCode(db, asked.code, codeBooking, asked.personId, now);
+  const checked = await checkDiscountCode({
+    db,
+    text: asked.code,
+    booking: codeBooking,
+    personId: asked.personId,
+    now,
+  });
   if (!checked.ok) return false;
   return { id: checked.code.id, amountOff: amountOff(termsOf(checked.code), booking.priceExGst), typedAt: null };
 }
@@ -252,7 +264,21 @@ function bookingAudit(db: D1Database, booked: Booked, now: Date): D1PreparedStat
 }
 
 /** The code's use on the new hold, written only while the code still has a use left for this client. */
-function codeUse(db: D1Database, asked: VisitAsked, code: AppliedCode, holdId: string, by: BookedBy, now: Date) {
+function codeUse({
+  db,
+  asked,
+  code,
+  holdId,
+  by,
+  now,
+}: {
+  db: D1Database;
+  asked: VisitAsked;
+  code: AppliedCode;
+  holdId: string;
+  by: BookedBy;
+  now: Date;
+}) {
   const use = {
     id: crypto.randomUUID(),
     codeId: code.id,
@@ -270,19 +296,25 @@ function codeUse(db: D1Database, asked: VisitAsked, code: AppliedCode, holdId: s
  * Holds the slot for the sale, with ops' entry and the code's use in the same batch: a link's until the link closes,
  * any other's for the usual ten minutes, since it is confirmed straight after. Null when nobody chosen is free.
  */
-export async function holdForSale(
-  db: D1Database,
-  asked: VisitAsked,
-  sale: Sale,
-  hold: { readonly closesAt: Date | null; readonly graceSeconds: number; readonly by: BookedBy },
-  now: Date,
-): Promise<Hold | null> {
+export async function holdForSale({
+  db,
+  asked,
+  sale,
+  hold,
+  now,
+}: {
+  db: D1Database;
+  asked: VisitAsked;
+  sale: Sale;
+  hold: { readonly closesAt: Date | null; readonly graceSeconds: number; readonly by: BookedBy };
+  now: Date;
+}): Promise<Hold | null> {
   const address = await currentAddress(db, asked.personId);
   const holdSeconds =
     hold.closesAt === null ? HOLD_SECONDS : Math.floor((hold.closesAt.getTime() - now.getTime()) / 1000);
-  return holdSlot(
+  return holdSlot({
     db,
-    {
+    input: {
       personId: asked.personId,
       service: { type: asked.kind, tier: sale.service.tier, minutes: sale.service.minutes },
       date: asked.date,
@@ -297,14 +329,14 @@ export async function holdForSale(
       payByLink: sale.pays === "link",
       ...(asked.technicianId === undefined ? {} : { technicianId: asked.technicianId }),
       afterHold: (holdId) => [
-        ...(sale.code === null ? [] : [codeUse(db, asked, sale.code, holdId, hold.by, now)]),
+        ...(sale.code === null ? [] : [codeUse({ db, asked, code: sale.code, holdId, by: hold.by, now })]),
         bookingAudit(db, { asked, sale, holdId, by: hold.by }, now),
       ],
     },
     now,
     holdSeconds,
-    hold.graceSeconds,
-  );
+    graceSeconds: hold.graceSeconds,
+  });
 }
 
 /** Whether the code ops typed stands on the hold: another booking may have taken its last use a moment before. */
@@ -429,5 +461,5 @@ export async function recordHoldLinkPaid(
     .bind(hold.id, orderId, now.toISOString())
     .run();
   const notes = { hold_id: hold.id, person_id: hold.personId };
-  await recordPayment(db, { ...payment, order_id: orderId, notes }, "captured", hashSalt, now);
+  await recordPayment({ db, payment: { ...payment, order_id: orderId, notes }, status: "captured", hashSalt, now });
 }

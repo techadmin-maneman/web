@@ -128,13 +128,19 @@ export async function recordsOf(c: Ctx, write: EventInput): Promise<D1PreparedSt
  * The write a request carries: whose, from which phone, its event ID, and the job's start as the phone holds it. Its
  * time is the phone's, within bounds: the check-in passes its own, and any other write's comes from its event ID.
  */
-export async function writeOf(
-  c: Ctx,
-  job: WorkableJob,
-  kind: JobEventKind,
-  body: Record<string, unknown>,
-  phone?: { at: Date; claimed: Date | null },
-): Promise<EventInput> {
+export async function writeOf({
+  c,
+  job,
+  kind,
+  body,
+  phone,
+}: {
+  c: Ctx;
+  job: WorkableJob;
+  kind: JobEventKind;
+  body: Record<string, unknown>;
+  phone?: { at: Date; claimed: Date | null };
+}): Promise<EventInput> {
   const { technicianId, deviceRowId } = technicianOf(c);
   const now = c.var.deps.now();
   const eventId = c.req.header(EVENT_ID_HEADER) ?? "";
@@ -163,7 +169,7 @@ async function recordStep(
   kind: JobEventKind,
   body: Record<string, unknown>,
 ): Promise<StepResult> {
-  const write = await writeOf(c, job, kind, body);
+  const write = await writeOf({ c, job, kind, body });
   const landing = await landJobEvent(c.env.DB, { ...write, records: await recordsOf(c, write) });
   return resultOf(c, write, landing);
 }

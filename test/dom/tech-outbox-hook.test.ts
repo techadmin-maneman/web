@@ -33,7 +33,7 @@ describe("the outbox's one reader", () => {
     expect(hook.current().events).toEqual([]);
 
     await queue("start", "a", null);
-    await keepFrame("a", "front", "before", new Blob(["frame"]));
+    await keepFrame({ jobId: "a", angle: "front", phase: "before", frame: new Blob(["frame"]) });
     await readsDone();
     expect(hook.current().events).toHaveLength(1);
     expect(hook.current().frames).toHaveLength(1);

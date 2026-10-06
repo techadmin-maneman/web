@@ -212,7 +212,7 @@ async function paymentLinksJob({ env, deps, config, log, budget }: CronContext):
 
 async function invoicesJob({ env, deps, config, log, budget }: CronContext): Promise<void> {
   const options = { labelAsTest: config.environment !== "production", gst: booksGst(config) };
-  const done = await raiseBooksInvoices(env.DB, deps, options, deps.now(), log, budget);
+  const done = await raiseBooksInvoices({ db: env.DB, deps, options, now: deps.now(), log, budget });
   if (done.raised + done.issued > 0) log.info("invoices_raised", done);
 }
 
@@ -241,7 +241,7 @@ function booksGst(config: StaticConfig): GstRegistration {
 }
 
 async function booksJob({ env, deps, config, log, budget }: CronContext): Promise<void> {
-  const done = await syncBooks(env.DB, deps, booksSyncOptions(config), deps.now(), log, budget);
+  const done = await syncBooks({ db: env.DB, deps, options: booksSyncOptions(config), now: deps.now(), log, budget });
   const written = done.customers + done.customersUpdated + done.recorded + done.applied + done.refunded;
   if (written > 0) log.info("books_synced", done);
 }

@@ -244,7 +244,7 @@ function registerCopyUpload(app: App): void {
     if (claimed === null) return refuse(c, "upload_already_received");
 
     try {
-      await putCounted(db, c.env.CLIENT_PHOTOS, key, bytes, copy.type);
+      await putCounted({ db, bucket: c.env.CLIENT_PHOTOS, key, bytes, contentType: copy.type });
     } catch (error) {
       await db.prepare("UPDATE tryon_jobs SET copy_key = NULL WHERE id = ?1").bind(jobId).run();
       throw error;

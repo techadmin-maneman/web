@@ -198,7 +198,7 @@ export async function sendPaymentLink(
   const link = made.row;
   if (link.sent_at !== null) return "already_sent";
   if (link.refused_at !== null) return "refused";
-  return askRazorpay(db, deps, link, visit, now);
+  return askRazorpay({ db, deps, link, visit, now });
 }
 
 /** Why a one visit's link was not made, for ops, naming the hair system the client was fitted with. */
@@ -236,7 +236,8 @@ export async function sendUnsentLinks(db: D1Database, deps: LinkDeps, now: Date,
   for (const row of results) {
     if (row.person_id === null) continue;
     if (!budget.spend(CALLS_PER_LINK)) break;
-    if ((await askRazorpay(db, deps, row, fittedVisitOf(row, row.person_id), now)) === "sent") sent += 1;
+    if ((await askRazorpay({ db, deps, link: row, visit: fittedVisitOf(row, row.person_id), now })) === "sent")
+      sent += 1;
   }
   return sent;
 }
@@ -278,7 +279,8 @@ export async function resendLink(db: D1Database, deps: LinkDeps, linkId: string,
   if (row === null) return "not_found";
   if (row.paid_at !== null) return "paid";
   if (row.refused_at !== null) return "refused";
-  if (row.razorpay_link_id === null) return askRazorpay(db, deps, row, fittedVisitOf(row, row.person_id), now);
+  if (row.razorpay_link_id === null)
+    return askRazorpay({ db, deps, link: row, visit: fittedVisitOf(row, row.person_id), now });
   const client = await db.prepare("SELECT mobile_e164 FROM people WHERE id = ?1").bind(row.person_id).first<{
     mobile_e164: string;
   }>();
@@ -297,13 +299,19 @@ export async function resendLink(db: D1Database, deps: LinkDeps, linkId: string,
 }
 
 /** Asks Razorpay to make the link and text it to the client; never throws. */
-async function askRazorpay(
-  db: D1Database,
-  deps: LinkDeps,
-  link: LinkRow,
-  visit: FittedVisit,
-  now: Date,
-): Promise<Extract<LinkSent, "sent" | "refused" | "unavailable">> {
+async function askRazorpay({
+  db,
+  deps,
+  link,
+  visit,
+  now,
+}: {
+  db: D1Database;
+  deps: LinkDeps;
+  link: LinkRow;
+  visit: FittedVisit;
+  now: Date;
+}): Promise<Extract<LinkSent, "sent" | "refused" | "unavailable">> {
   const client = await db
     .prepare("SELECT name, mobile_e164 FROM people WHERE id = ?1")
     .bind(visit.personId)
@@ -529,7 +537,7 @@ export async function linkPaid(
     ours.personId === null
       ? { appointment_id: ours.appointmentId }
       : { appointment_id: ours.appointmentId, person_id: ours.personId };
-  await recordPayment(db, { ...paid.payment, notes }, "captured", hashSalt, now);
+  await recordPayment({ db, payment: { ...paid.payment, notes }, status: "captured", hashSalt, now });
   if (ours.linkId === null) return ours;
   const paidAt = new Date(paid.payment.created_at * 1000).toISOString();
   await markLinkPaid(db, ours.linkId, { razorpayPaymentId: paid.payment.id, paidAt }, now);
