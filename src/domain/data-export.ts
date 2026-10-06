@@ -8,6 +8,11 @@
 import { exportedProfiles } from "./hair-profiles.ts";
 import { allViews } from "./photo-views.ts";
 
+/** The hair system a fit or replacement was for, by the name the client was sold it under; none for other visits. */
+const HAIR_SYSTEM = (row: string) =>
+  `SELECT s.name FROM services s WHERE s.kind = ${row}.type AND s.tier = ${row}.tier
+     AND ${row}.type IN ('first_fit', 'replacement')`;
+
 /** Each part of the export one query reads, by its key in the file. */
 export const EXPORT_QUERIES = {
   person: "SELECT name, mobile_e164 AS mobile, email, contactable, created_at FROM people WHERE id = ?1",
@@ -17,16 +22,16 @@ export const EXPORT_QUERIES = {
     FROM addresses WHERE person_id = ?1 ORDER BY created_at`,
   consents: `SELECT purpose, granted, notice_version, source, created_at FROM consents WHERE person_id = ?1
     ORDER BY created_at, rowid`,
-  visits: `SELECT a.type, a.tier, a.window_start, a.window_end, a.status, a.one_visit, a.asked_window,
+  visits: `SELECT a.type, a.tier, (${HAIR_SYSTEM("a")}) AS hair_system, a.window_start, a.window_end, a.status, a.one_visit, a.asked_window,
       t.name AS technician, a.service_city, a.service_pincode, a.client_note, a.client_note_at
     FROM appointments a LEFT JOIN technicians t ON t.id = a.technician_id
     WHERE a.person_id = ?1 AND a.deleted_at IS NULL ORDER BY a.window_start`,
   visit_changes: `SELECT kind, was_start, now_start, notice, ops_terms, refund_amount, kept_amount, created_at
     FROM visit_changes WHERE person_id = ?1 ORDER BY created_at`,
-  bookings_started: `SELECT reference, type, tier, minutes, date, window_label, pincode, move_kind, one_visit, amount,
+  bookings_started: `SELECT reference, h.type, tier, (${HAIR_SYSTEM("h")}) AS hair_system, minutes, date, window_label, pincode, move_kind, one_visit, amount,
       use_credit, pay_by_link, change_notice_hours, late_change_charge, no_show_charge, consents_shown, state,
       auto_refund_reason, created_at, confirmed_at
-    FROM slot_holds WHERE person_id = ?1 ORDER BY created_at`,
+    FROM slot_holds h WHERE person_id = ?1 ORDER BY created_at`,
   hair_systems: `SELECT piece_code, base, fitted_at, replacement_due_at, failed_at, failure_reason FROM pieces
     WHERE person_id = ?1 AND deleted_at IS NULL ORDER BY fitted_at`,
   payments: `SELECT reference, kind, amount, amount_ex_gst, gst_percent, method, card_network, status, refunded_amount,

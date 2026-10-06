@@ -1,6 +1,6 @@
 # Mane Man web
 
-Mane Man fits hair systems at the client's home and services them every month. This repository is its web platform: the public site, with a try-on and booking; the client's app; the ops console; and the technician's app. It runs on Cloudflare's free plan, with Zoho (CRM and Books), Razorpay, WhatsApp, Google Maps and AILabTools behind it.
+Mane Man fits hair systems at the client's home and services them every month. This repository is its web platform: the public site, with a try-on and booking; the client's app; the ops console; and the technician's app. It runs on Cloudflare (Workers Paid, ADR 0112), with Zoho (CRM and Books), Razorpay, WhatsApp, Google Maps and AILabTools behind it.
 
 **Where it stands.** Staging runs all of it, on logged placeholders where the owner's inputs are still owed (ADR 0025, item 27). Production runs the Phase 1 API and a placeholder page until the owner's go-ahead; what is owed before then is `docs/open-points.md`. The briefs are in `docs/prompts/`, word for word, and every decision since is an ADR in `docs/decisions/`. ADR 0025 is the register of the owner's rulings and of where the build departs from a brief.
 
