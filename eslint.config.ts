@@ -23,7 +23,6 @@ const sized = (level: "error" | "warn", max: number): Linter.RuleEntry => [
  * figure when a file is split, and delete its line once it is within SIZE (the 2 Oct audit, CQ-10).
  */
 const PINNED: Readonly<Record<string, { readonly lines?: number; readonly fn?: number }>> = {
-  "src/domain/booking/public-consultation.ts": { fn: 130 },
   "src/domain/privacy/erasure-statements.ts": { fn: 93 },
   "src/domain/messages/visit-messages.ts": { lines: 486 },
   "src/policy/personal-data.ts": { lines: 444 },
