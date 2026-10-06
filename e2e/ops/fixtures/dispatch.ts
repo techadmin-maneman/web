@@ -1,4 +1,4 @@
-// Boards A1, A2 and A3: the week the dispatch board draws, where a job in hand
+// The week the dispatch board draws, where a job in hand
 // could land, and what a move answers.
 
 import type { OpsReply } from "../answer.ts";

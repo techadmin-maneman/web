@@ -1,4 +1,4 @@
-// Refer in the app (boards F1 to F6) for the fitted client of e2e/app/fitted.ts, against the local mm-api. The
+// Refer in the app for the fitted client of e2e/app/fitted.ts, against the local mm-api. The
 // client has no credits and nobody fitted yet, so this covers the invite, the card choice, the preview and the
 // empty tracker; the grant itself is covered in the worker tests.
 //
@@ -83,7 +83,7 @@ async function toRefer(page: Page) {
 test("Refer: the invite, the house card, the preview, and the empty tracker", async ({ page }) => {
   await toRefer(page);
   await expect(page.getByText("When a friend you refer is fitted, you both get 3 free service visits.")).toBeVisible();
-  // "No other discount applies", which the owner's ruling of 1 October undid.
+  // "No other discount applies", which is no longer so.
   await expect(page.getByText(/discount/i)).toHaveCount(0);
 
   await page.getByRole("button", { name: "Share an invite" }).click();
@@ -95,7 +95,7 @@ test("Refer: the invite, the house card, the preview, and the empty tracker", as
   await sheet.getByRole("radio", { name: /A Mane Man example/ }).click();
   await sheet.getByRole("button", { name: "Continue to share" }).click();
 
-  // Board F4: the chat's bubble, exactly as the friend will see it, with the house card itself in it.
+  // The preview: the chat's bubble, exactly as the friend will see it, with the house card itself in it.
   const preview = page.getByRole("dialog", { name: "Preview · what your friend sees" });
   await expect(preview.getByText("You have a Mane Man invite")).toBeVisible();
   await expect(
@@ -115,12 +115,12 @@ test("Refer: the invite, the house card, the preview, and the empty tracker", as
   await expect(page.getByText("Nobody you have referred has been fitted yet.")).toBeVisible();
   await scan(page);
 
-  // Board F6: the empty tracker is not a dead end.
+  // The empty tracker is not a dead end.
   await page.getByRole("button", { name: "Share an invite" }).click();
   await expect(page.getByRole("dialog", { name: "Which card?" })).toBeVisible();
 });
 
-// Board F6's "Share failed": a way to share that fails, not one the client backs out of, says nothing was sent.
+// The empty tracker's "Share failed": a way to share that fails, not one the client backs out of, says nothing was sent.
 test("says when the link could not be shared, and tries again", async ({ page }) => {
   await toRefer(page);
   await page.getByRole("button", { name: "Share an invite" }).click();
@@ -151,7 +151,7 @@ async function toTheExample(page: Page) {
   return page.getByRole("dialog", { name: "Preview · what your friend sees" });
 }
 
-// The owner's invites reached WhatsApp with no image: the app sent only words and a link, and the chat's preview
+// Invites once reached WhatsApp with no image: the app sent only words and a link, and the chat's preview
 // of the link is all a friend could see. Where the phone can, the card itself goes, captioned with the invite.
 test("sends the house card itself, captioned with the invite, where the phone shares files", async ({ page }) => {
   await stubShareSheet(page, true);
@@ -237,7 +237,7 @@ test("shows a client's stored card in the preview, and sends that card", async (
   expect([...new Set(asked)]).toEqual(["GET ?v=7"]);
 });
 
-// Board F6's "Share failed" is for a share that failed, not one the client backed out of.
+// The empty tracker's "Share failed" is for a share that failed, not one the client backed out of.
 test("says when the phone refused the card's share, and nothing when the client backed out", async ({ page }) => {
   await stubShareSheet(page, true);
   const preview = await toTheExample(page);
@@ -395,7 +395,7 @@ async function changed(page: Page, path: string, change: (answer: Record<string,
   });
 }
 
-// The owner's ruling of 1 October 2026: ops set each side's visits apart
+// Ops set each side's visits apart
 // (docs/decisions/0107-referral-rewards-in-the-console.md).
 test("says what ops set each side gets, and beside each friend what the client earned", async ({ page }) => {
   await changed(page, "/api/me", (me) => ({
@@ -464,7 +464,7 @@ test("draws a lead's empty Refer, with no count, where the Home carries no rewar
   await expect(page.getByText("When a friend you refer is fitted, we tell you.")).toBeVisible();
 });
 
-// Board B2: before their first fit a client has nothing to vouch for, and the invite's own words would not be
+// Before their first fit a client has nothing to vouch for, and the invite's own words would not be
 // true, so Refer is reachable but empty. It once
 // told them that nobody they referred had been fitted.
 test("a client not yet fitted sees Refer's empty state, with no invite to send", async ({ page }) => {

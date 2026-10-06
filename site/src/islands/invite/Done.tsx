@@ -1,4 +1,4 @@
-// Board C4, the landing's confirmations: the consultation booked (or asked for, while self-serve booking is off),
+// The landing's confirmations: the consultation booked (or asked for, while self-serve booking is off),
 // the number on a waitlist, and the invite that has expired for this friend. The booked one says the same to every
 // number, since whoever typed it may not be its owner (src/policy/site-booking.ts): the details go to the number on
 // WhatsApp, and the client app shows them once its owner signs in with a code. It also says whether the discount code

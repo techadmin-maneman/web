@@ -6,8 +6,8 @@
 // staging deploy.
 //
 // This applies every migration in order, stopping partway to put the rows a
-// working system would have, then applies the rest: Phase 1's lead and try-on,
-// and Phase 2's fitted client, visit, payment, invite and technician, so every
+// working system would have, then applies the rest: the site's lead and try-on,
+// and the apps' fitted client, visit, payment, invite and technician, so every
 // later migration meets both. Every name is made up.
 
 import { DatabaseSync } from "node:sqlite";
@@ -16,7 +16,7 @@ import { apply, MIGRATIONS } from "./migrations.ts";
 
 const AT = "2026-09-21T06:30:00.000Z";
 
-/** Phase 1's rows, as soon as the try-on tables exist. */
+/** The site's rows, as soon as the try-on tables exist. */
 const PHASE_1 = [
   `INSERT INTO people (id, created_at, mobile_e164, name) VALUES ('p1', '${AT}', '+919810000001', 'A Client')`,
   `INSERT INTO leads (id, person_id, created_at, source, city, first_choice_window, loss_extent, request_id)
@@ -27,7 +27,7 @@ const PHASE_1 = [
 ];
 
 /**
- * Phase 2's rows, once the field-operations tables exist: a fitted client with
+ * The apps' rows, once the field-operations tables exist: a fitted client with
  * a session and an address, their first fit with its photograph, payment and
  * piece, the technician who came, with their phone and what it sent, and an
  * invite that earned the client credits.

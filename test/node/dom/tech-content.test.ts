@@ -43,13 +43,13 @@ describe("the technician app's content", () => {
     expect(sources.filter((path) => readFileSync(path, "utf8").includes("@maneman/web-kit/money"))).toEqual([]);
   });
 
-  // The label's field drew a barcode, though the owner ruled a label is typed, never scanned.
+  // The label's field drew a barcode, though a label is typed, never scanned.
   it("draws no barcode: a piece's label is typed", () => {
     expect(sources.filter((path) => readFileSync(path, "utf8").includes("pieceId"))).toEqual([]);
   });
 });
 
-// Open point 92, ruled by the owner on 27 September 2026: the other technician's first name may reach the phone,
+// The other technician's first name may reach the phone,
 // with when the job went to them. The prompt's example: "Ops moved this job to Sandeep at 10:40".
 describe("a job ops gave to another technician", () => {
   /** 11:30 am in India on 14 January 2027. */
