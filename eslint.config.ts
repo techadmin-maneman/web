@@ -29,7 +29,6 @@ const PINNED: Readonly<Record<string, { readonly lines?: number; readonly fn?: n
   "src/domain/try-on/tryon-claims.ts": { fn: 81 },
   "src/routes/client/booking.ts": { lines: 560, fn: 146 },
   "src/domain/booking/public-consultation.ts": { fn: 130 },
-  "src/routes/ops/field.ts": { lines: 532, fn: 209 },
   "src/routes/ops/settings.ts": { lines: 513, fn: 134 },
   "src/domain/privacy/erasure.ts": { lines: 525, fn: 89 },
   "src/domain/booking/hold-slot.ts": { fn: 113 },
