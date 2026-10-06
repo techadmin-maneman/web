@@ -3,8 +3,8 @@
 //
 // The API sometimes takes a request and never answers: it hangs about five
 // minutes and the connection closes, so wrangler exits 1 although the work was
-// done. Six staging deploys failed that way on 22 September 2026, from the
-// self-hosted runner and from a laptop alike (docs/decisions/0006-deployment-pipeline.md).
+// done. Staging deploys have failed that way, from a runner and from a laptop
+// alike (docs/decisions/0006-deployment-pipeline.md).
 //
 // A call that can safely be made twice is simply made again. A call that cannot
 // — uploading a Worker version — asks Cloudflare what landed instead

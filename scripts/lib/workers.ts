@@ -1,7 +1,7 @@
 // Every Worker this repository deploys. The build, the release script and the
 // config check read this list, and test/node/tooling/workers-registry.test.ts fails if
-// a Worker here is missing from either deploy workflow. Phase 2 adds its apps
-// here as they arrive (docs/decisions/0025-phase-2-conflicts-register.md).
+// a Worker here is missing from either deploy workflow. A new app's Worker is
+// added here.
 //
 //   api   mm-api: every binding and secret, the /api/* routes
 //   site  mm-site: the Astro site, static assets

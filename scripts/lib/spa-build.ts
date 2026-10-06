@@ -1,4 +1,4 @@
-// What building a Phase 2 app shares (scripts/build/build-app.ts, build-ops.ts,
+// What building an app shares (scripts/build/build-app.ts, build-ops.ts,
 // build-tech.ts): the production gate on its copy, the Vite build for one
 // environment into apps/<app>/dist/<environment>, its _headers, and the
 // prompt's budget: "first load under 150 KB of gzipped JavaScript"

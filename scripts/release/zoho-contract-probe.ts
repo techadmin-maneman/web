@@ -1,5 +1,5 @@
 // Checks, before every release, that Zoho still answers the way our adapters read it. Every read the Books and CRM
-// adapters make runs through the adapter itself against the owner's org, so each answer is read by the adapter's own
+// adapters make runs through the adapter itself against the real org, so each answer is read by the adapter's own
 // schema. Read-only: it changes nothing in Zoho.
 //
 //   node --env-file=.env.books-scripts --env-file=.env.crm-scripts scripts/release/zoho-contract-probe.ts [--record]

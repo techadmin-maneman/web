@@ -1,4 +1,4 @@
-// Lists every record staging wrote into the owner's real Zoho org, in Books and the CRM, for the owner to review; a second run deletes what the list keeps, and clears staging's database's links to what is
+// Lists every record staging wrote into the business's real Zoho org, in Books and the CRM, for review; a second run deletes what the list keeps, and clears staging's database's links to what is
 // gone (docs/runbook.md, "Staging's records in the org").
 //
 //   node --env-file=.env.books-scripts --env-file=.env.crm-scripts scripts/staging/staging-records.ts                  lists
@@ -125,7 +125,7 @@ async function readCrm(found: Found): Promise<void> {
   }
 }
 
-/** Where Books keeps each kind of record staging's database knows by ID, and how the owner knows it. */
+/** Where Books keeps each kind of record staging's database knows by ID, and how a reviewer knows it. */
 const BOOKS_READS = {
   "books/contacts": {
     path: "/contacts",

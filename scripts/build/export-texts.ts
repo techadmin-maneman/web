@@ -1,4 +1,4 @@
-// Writes the texts file the owner marks up with tracked changes (docs/open-points.md, items 39, 41 and 42): every
+// Writes the texts file that is marked up with tracked changes: every
 // WhatsApp message and every line of copy marked PLACEHOLDER, grouped by message and by file, each with the id that
 // finds it again. Their wording comes back by hand, one id at a time (docs/runbook.md, "The texts file").
 //

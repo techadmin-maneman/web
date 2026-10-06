@@ -43,7 +43,7 @@ if (values.env !== "staging" && values.env !== "production") {
 const environment = values.env;
 const books = await zohoScriptClient("books");
 
-/** One read of Books, in the owner's organisation. */
+/** One read of Books, in the business's organisation. */
 const read = (path: string): Promise<BooksAnswer> => books.call("GET", path);
 
 const refundAccountId = workerVar(environment, "BOOKS_REFUND_ACCOUNT_ID");

@@ -1,6 +1,6 @@
-// What goes into the texts file the owner marks up (docs/open-points.md, items 39, 41 and 42): every WhatsApp
+// What goes into the texts file that is marked up: every WhatsApp
 // message's text, and every line of copy the source marks PLACEHOLDER, each with an id that finds it again, so the
-// owner's wording can be committed back by hand. The consent notices are listed, not offered for editing: which
+// new wording can be committed back by hand. The consent notices are listed, not offered for editing: which
 // words a person agreed to is a legal record, and counsel's (docs/decisions/0061-ops-editable-inputs.md).
 
 import { readdirSync, readFileSync, statSync } from "node:fs";
@@ -86,7 +86,7 @@ const stripComment = (line: string): string =>
     .replace(/(\*\/\}?|-->)$/, "")
     .trim();
 
-/** The files whose copy the owner words: each surface's content, the site's pages and the config's lines. */
+/** The files whose copy is worded in the texts file: each surface's content, the site's pages and the config's lines. */
 export function copyFiles(root: string): { path: string; source: string }[] {
   const paths = [
     "apps/app/src/content.ts",
