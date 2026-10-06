@@ -5,15 +5,9 @@
 import type { Page } from "@playwright/test";
 import { expect, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
-import {
-  atTheDoor,
-  fakeTech,
-  heldOnPhone,
-  JOB_ID,
-  ONE_VISIT_CHECKLIST,
-  pageScrolls,
-  queuedOnPhone,
-} from "./fixtures.ts";
+import { JOB_ID, ONE_VISIT_CHECKLIST } from "./fixtures.ts";
+import { fakeTech } from "./fake-tech.ts";
+import { atTheDoor, heldOnPhone, pageScrolls, queuedOnPhone } from "./on-phone.ts";
 import { startedThrough, writesTo, checklistItems, gilded } from "./steps-fixtures.ts";
 
 /** A step's one action, in the foot below its body. */

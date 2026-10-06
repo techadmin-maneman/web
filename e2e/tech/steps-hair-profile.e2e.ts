@@ -5,7 +5,9 @@
 import type { Page } from "@playwright/test";
 import { expect, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
-import { deviceRecordOnPhone, fakeTech, JOB_ID, ROHITS_PROFILE, type HairProfile, type Fake } from "./fixtures.ts";
+import { JOB_ID, ROHITS_PROFILE, type HairProfile } from "./fixtures.ts";
+import { fakeTech, type Fake } from "./fake-tech.ts";
+import { deviceRecordOnPhone } from "./on-phone.ts";
 import { startedThrough, writesTo, gilded } from "./steps-fixtures.ts";
 
 // The client's hair profile, which no board draws: the fit spec, then the history, sent as one write, on no consent

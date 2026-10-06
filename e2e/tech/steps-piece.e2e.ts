@@ -5,7 +5,8 @@
 import type { Page } from "@playwright/test";
 import { expect, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
-import { fakeTech, JOB_ID, ONE_VISIT_CHECKLIST, ROHITS_PIECE, ROHITS_PROFILE, type Fake } from "./fixtures.ts";
+import { JOB_ID, ONE_VISIT_CHECKLIST, ROHITS_PIECE, ROHITS_PROFILE } from "./fixtures.ts";
+import { fakeTech, type Fake } from "./fake-tech.ts";
 import { startedThrough, writesTo, checklistItems } from "./steps-fixtures.ts";
 
 test.describe("the piece (board B3, step 4)", () => {

@@ -253,10 +253,11 @@ const waitlistRoute = createRoute({
   },
 });
 
-export function registerReferralLanding(app: App): void {
-  const invite = (c: Context<AppEnv>, code: string): Promise<Invite | null> =>
-    inviteOf({ db: c.env.DB, code, nameOnInvite: c.var.config.settings.referrerNameOnInvite });
+/** The invite behind a code, as the landing and its forms read it. */
+const invite = (c: Context<AppEnv>, code: string): Promise<Invite | null> =>
+  inviteOf({ db: c.env.DB, code, nameOnInvite: c.var.config.settings.referrerNameOnInvite });
 
+export function registerReferralLanding(app: App): void {
   app.openapi(inviteRoute, async (c) => {
     const db = c.env.DB;
     const at = { now: c.var.deps.now(), settings: c.var.config.settings };
@@ -304,6 +305,11 @@ export function registerReferralLanding(app: App): void {
     return c.json({ pincode: pin, served: row?.served === 1, area: row?.area ?? null, city: row?.city ?? null }, 200);
   });
 
+  registerReferralForms(app);
+}
+
+/** The invite landing's two forms: a consultation booked, and the waitlist joined. */
+function registerReferralForms(app: App): void {
   app.openapi(consultationRoute, (c) => {
     const { code } = c.req.valid("param");
     const body = c.req.valid("json");

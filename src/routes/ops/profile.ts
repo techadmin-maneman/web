@@ -219,6 +219,61 @@ export function registerOpsProfile(app: App): void {
     return c.json({ state: "confirmed" as const }, 200);
   });
 
+  registerDeletionRequests(app);
+}
+
+/**
+ * Tells the client their account is deleted, once the response has gone. The erasure has already blanked their
+ * number, so this goes straight to the provider with the number read before it, and is not tried again. Staging's
+ * allowlist holds it back as it does any message ops' action sends.
+ */
+async function tellDeletionDone(c: Context<AppEnv>, contact: ErasedContact): Promise<void> {
+  const { config, deps, log } = c.var;
+  const { messaging } = config.settings;
+  const work = (async () => {
+    if (!messaging.enabled) {
+      log.info("deletion_done_not_sent", { reason: "messaging is off" });
+      return;
+    }
+    if (
+      // Sent once ops have done it, so it answers nobody who just acted: an automatic message.
+      isMessageHeldBack(messaging, { automatic: true, testRecord: contact.testRecord, mobileE164: contact.mobileE164 })
+    ) {
+      log.info("deletion_done_not_sent", { reason: "number not on the allowlist" });
+      return;
+    }
+    const result = await deps.messaging.send(deletionDoneMessage(contact));
+    if (result.ok) log.info("deletion_done_sent");
+    else log.warn("deletion_done_failed", { detail: scrubString(result.detail).slice(0, 200) });
+  })().catch((error: unknown) => {
+    log.error("deletion_done_error", { error });
+  });
+  await afterResponse(c, work);
+}
+
+/** When each change waiting for ops started waiting, by its ID, as the Tasks board counts it. */
+async function waitingSince(db: D1Database): Promise<Map<string, string>> {
+  const rows = await db
+    .prepare(
+      `SELECT nc.id, ${NUMBER_CHANGE_WAITING_SINCE} AS since FROM number_change_requests nc
+       WHERE nc.state = 'awaiting_ops'`,
+    )
+    .all<{ id: string; since: string }>();
+  return new Map(rows.results.map((row) => [row.id, row.since]));
+}
+
+async function namesOf(db: D1Database, personIds: readonly string[]): Promise<Map<string, string>> {
+  if (personIds.length === 0) return new Map();
+  const placeholders = personIds.map((_, index) => `?${String(index + 1)}`).join(", ");
+  const rows = await db
+    .prepare(`SELECT id, name FROM people WHERE id IN (${placeholders})`)
+    .bind(...personIds)
+    .all<{ id: string; name: string }>();
+  return new Map(rows.results.map((row) => [row.id, row.name]));
+}
+
+/** The deletion requests ops decide: the open ones, and a decision on one. */
+function registerDeletionRequests(app: App): void {
   app.openapi(deletionRequestsRoute, async (c) => {
     const reached = await routeReach(c);
     const [requests, inputs] = await Promise.all([deletionsWaiting(c.env.DB, reached), opsInputs(c)]);
@@ -271,54 +326,4 @@ export function registerOpsProfile(app: App): void {
     if (outcome.told !== null) await tellDeletionDone(c, outcome.told);
     return c.json({ state: "done" as const }, 200);
   });
-}
-
-/**
- * Tells the client their account is deleted, once the response has gone. The erasure has already blanked their
- * number, so this goes straight to the provider with the number read before it, and is not tried again. Staging's
- * allowlist holds it back as it does any message ops' action sends.
- */
-async function tellDeletionDone(c: Context<AppEnv>, contact: ErasedContact): Promise<void> {
-  const { config, deps, log } = c.var;
-  const { messaging } = config.settings;
-  const work = (async () => {
-    if (!messaging.enabled) {
-      log.info("deletion_done_not_sent", { reason: "messaging is off" });
-      return;
-    }
-    if (
-      // Sent once ops have done it, so it answers nobody who just acted: an automatic message.
-      isMessageHeldBack(messaging, { automatic: true, testRecord: contact.testRecord, mobileE164: contact.mobileE164 })
-    ) {
-      log.info("deletion_done_not_sent", { reason: "number not on the allowlist" });
-      return;
-    }
-    const result = await deps.messaging.send(deletionDoneMessage(contact));
-    if (result.ok) log.info("deletion_done_sent");
-    else log.warn("deletion_done_failed", { detail: scrubString(result.detail).slice(0, 200) });
-  })().catch((error: unknown) => {
-    log.error("deletion_done_error", { error });
-  });
-  await afterResponse(c, work);
-}
-
-/** When each change waiting for ops started waiting, by its ID, as the Tasks board counts it. */
-async function waitingSince(db: D1Database): Promise<Map<string, string>> {
-  const rows = await db
-    .prepare(
-      `SELECT nc.id, ${NUMBER_CHANGE_WAITING_SINCE} AS since FROM number_change_requests nc
-       WHERE nc.state = 'awaiting_ops'`,
-    )
-    .all<{ id: string; since: string }>();
-  return new Map(rows.results.map((row) => [row.id, row.since]));
-}
-
-async function namesOf(db: D1Database, personIds: readonly string[]): Promise<Map<string, string>> {
-  if (personIds.length === 0) return new Map();
-  const placeholders = personIds.map((_, index) => `?${String(index + 1)}`).join(", ");
-  const rows = await db
-    .prepare(`SELECT id, name FROM people WHERE id IN (${placeholders})`)
-    .bind(...personIds)
-    .all<{ id: string; name: string }>();
-  return new Map(rows.results.map((row) => [row.id, row.name]));
 }

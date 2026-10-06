@@ -3,16 +3,9 @@
 
 import { expect, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
-import {
-  card,
-  fakeTech,
-  JOB_ID,
-  keptOnPhone,
-  leftOnPhone,
-  NOTHING_DONE,
-  ROHITS_PIECE,
-  todayInIndia,
-} from "./fixtures.ts";
+import { card, JOB_ID, NOTHING_DONE, ROHITS_PIECE, todayInIndia } from "./fixtures.ts";
+import { fakeTech } from "./fake-tech.ts";
+import { keptOnPhone, leftOnPhone } from "./on-phone.ts";
 
 test("lists the day's jobs in order, with no amount anywhere (board A1)", async ({ page }) => {
   await fakeTech(page);

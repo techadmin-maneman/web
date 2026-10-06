@@ -25,10 +25,6 @@ const sized = (level: "error" | "warn", max: number): Linter.RuleEntry => [
 const PINNED: Readonly<Record<string, { readonly lines?: number; readonly fn?: number }>> = {
   "src/domain/privacy/erasure-statements.ts": { fn: 93 },
   "src/policy/personal-data.ts": { lines: 444 },
-  "src/routes/public/referral-landing.ts": { fn: 116 },
-  "src/routes/ops/profile.ts": { fn: 100 },
-  "src/routes/tech/auth.ts": { fn: 92 },
-  "src/routes/public/tryon-upload.ts": { fn: 86 },
   "src/providers/payments/razorpay.ts": { fn: 81 },
 };
 

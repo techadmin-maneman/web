@@ -9,7 +9,9 @@
 import type { Page } from "@playwright/test";
 import { expect, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
-import { anglesOnPhone, fakeTech, heldOnPhone, JOB_ID } from "./fixtures.ts";
+import { JOB_ID } from "./fixtures.ts";
+import { fakeTech } from "./fake-tech.ts";
+import { anglesOnPhone, heldOnPhone } from "./on-phone.ts";
 
 const TARGET_BYTES = 250 * 1024;
 /** A thumbnail, at most, as the API takes it (MAX_THUMBNAIL_BYTES, src/domain/field/tech-photos.ts). */

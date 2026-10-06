@@ -2,7 +2,8 @@
 // writes it sent, the checklist's lines and what is drawn in gold.
 
 import type { Page } from "@playwright/test";
-import { type Fake, type Step } from "./fixtures.ts";
+import { type Step } from "./fixtures.ts";
+import { type Fake } from "./fake-tech.ts";
 
 export const ago = (minutes: number) => new Date(Date.now() - minutes * 60_000).toISOString();
 

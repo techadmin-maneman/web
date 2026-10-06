@@ -263,6 +263,11 @@ export function registerTechAuth(app: App): void {
     return c.json({ verified: true as const, first_name: firstNameOf(name ?? ""), device_id: deviceId }, 200);
   });
 
+  registerTechSession(app);
+}
+
+/** The technician signed in: signing out, and who he is. */
+function registerTechSession(app: App): void {
   app.openapi(logoutRoute, async (c) => {
     const session = technicianOf(c);
     await revokeSession(c.env.DB, session.sessionId, c.var.deps.now());
