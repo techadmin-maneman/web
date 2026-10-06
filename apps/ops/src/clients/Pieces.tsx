@@ -1,4 +1,4 @@
-// Board B1: every piece the client has been fitted with, in the board's own six
+// Every piece the client has been fitted with, in the design's own six
 // columns. A piece is recorded by the technician's phone, so nothing here is
 // edited (src/routes/ops/field.ts). Above them, the client's
 // hair profile, which the board does not draw (./HairProfile.tsx), loaded when the tab first opens.

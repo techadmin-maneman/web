@@ -2,7 +2,7 @@
 //   GET /api/whoami    the identity Access let through, where signing out goes, and what the Staff list lets them do
 //
 // The console holds no session of its own (docs/decisions/0031-access-and-audit.md),
-// so it cannot know who is working unless it asks. Board A1 draws them at the
+// so it cannot know who is working unless it asks. The design draws them at the
 // header's right; the way out is Access's own logout, which ends the only
 // session there is.
 

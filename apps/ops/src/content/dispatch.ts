@@ -102,7 +102,7 @@ export const dispatch = {
     // The board draws four waiting and no empty tray.
     empty: "Nothing is waiting for a technician.",
   },
-  /** Board A3: the drawer a block opens. */
+  /** The drawer a block opens. */
   /** Our words, all of them: letting a technician check in past the geofence, which no board draws. */
   letIn: {
     title: (technician: string) => `Let ${technician} check in`,
@@ -169,7 +169,7 @@ export const dispatch = {
     checkedIn: (technician: string) =>
       `${technician} has checked in. Moving it clears the check-in, so they check in again at the new time.`,
     moveAnyway: "Move anyway",
-    /** Board A3's two buttons: "WhatsApp Rohit" and "Open client". */
+    /** The drawer's two buttons: "WhatsApp Rohit" and "Open client". */
     whatsapp: (firstName: string) => `WhatsApp ${firstName}`,
     openClient: "Open client",
     /** A move the client has not heard of, and why, which ops tell him of by phone (ADR 0069). */
@@ -188,7 +188,7 @@ export const dispatch = {
     closeByHand: "Close by hand",
     close: "Close",
   },
-  /** Board A2: the reason a move must carry, asked for before anything is written. */
+  /** The reason a move must carry, asked for before anything is written. */
   move: {
     /** "Move Rohit M. to Sandeep Yadav". */
     title: (job: string, technician: string) => `Move ${job} to ${technician}`,

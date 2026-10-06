@@ -1,4 +1,4 @@
-// Board A1's unassigned tray: the jobs nobody holds yet, each with the client,
+// The board's unassigned tray: the jobs nobody holds yet, each with the client,
 // the kind of visit, the window the client asked for beside the one offered,
 // and who invited the client, where someone did (the brief's "referral
 // source"). A job still on a technician who was switched off waits here too,

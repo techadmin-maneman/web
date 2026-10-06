@@ -171,7 +171,7 @@ function HeldGrant({ grant, now, mayDecide, onDecided }: HeldGrantProps) {
   );
 }
 
-/** Board C1's queue. A decision can change the referrers' figures beneath, so each one tells the page. */
+/** The held queue. A decision can change the referrers' figures beneath, so each one tells the page. */
 function ReviewQueue({ onDecided }: { onDecided: () => void }) {
   const [loaded, retry] = useLoad(api.held);
   const mayDecide = useAccess().mayCall("POST /api/referrals/{id}/decision");

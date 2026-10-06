@@ -1,4 +1,4 @@
-// How long something waiting on ops has left. Board D2's column counts it, and
+// How long something waiting on ops has left. The Tasks board's column counts it, and
 // so does every queue that decides a task, each against the due day the API
 // gives it, which the Tasks board reads as well (src/policy/tasks.ts).
 

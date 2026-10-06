@@ -33,7 +33,7 @@ const DECIDE: Readonly<Partial<Record<Group, string>>> = {
 };
 
 /**
- * Board D2's queue. A task is not a record: it is a row in a queue the database
+ * The Tasks queue. A task is not a record: it is a row in a queue the database
  * already keeps, read when ops look (src/policy/tasks.ts). The board draws four
  * groups, of which two have something behind them; the others here are queues
  * it does not draw (docs/open-points.md, item 61).

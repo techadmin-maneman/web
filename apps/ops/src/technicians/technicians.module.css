@@ -1,5 +1,5 @@
 /*
- * Board D3's roster, across the page's width: one 34 px row a technician, in
+ * The roster, across the page's width: one 34 px row a technician, in
  * the board's own columns, with Leave where it draws Skill. A technician's own
  * page puts his details over his tabs, as a client's page does. A revoke stays
  * quiet until it is asked for, since it ends a session and makes the phone drop

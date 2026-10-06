@@ -93,7 +93,7 @@ function SwitchedOff({ list }: { list: readonly TechnicianSummary[] }) {
   );
 }
 
-/** Board D3's table: the active technicians, one row each. */
+/** The roster's table: the active technicians, one row each. */
 function RosterTable({
   active,
   figures,

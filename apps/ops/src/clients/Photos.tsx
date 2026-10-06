@@ -1,4 +1,4 @@
-// Board B2: the client's photographs, locked, then open. The locked state says
+// The client's photographs, locked, then open. The locked state says
 // plainly what opening them does. Opening them asks the API to log the view
 // first, one entry for the whole opening, and nothing is fetched unless that
 // is written (docs/decisions/0031-access-and-audit.md). The time shown is the

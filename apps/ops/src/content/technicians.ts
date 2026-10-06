@@ -3,7 +3,7 @@
 import { NOT_PERMITTED } from "./common.ts";
 
 /**
- * Board D3's roster. The board draws five columns; four are answered, and the
+ * The Technicians roster. The design draws five columns; four are answered, and the
  * fifth, Skill, is recorded nowhere (docs/open-points.md, item 59). The phones
  * the board does not draw sit beneath each name.
  */

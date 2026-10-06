@@ -48,7 +48,7 @@ export const clients = {
     invitedBy: "Invited by",
     inviteCode: (code: string) => `(${code})`,
   },
-  /** Board B1's button beside the name, which opens a chat with the client. */
+  /** The button beside the name, which opens a chat with the client. */
   whatsapp: "WhatsApp",
   whatsappLabel: (name: string) => `WhatsApp ${name}`,
   /** The number as a way to call, since a client who never agreed to WhatsApp is called. */
@@ -497,7 +497,7 @@ export const clients = {
       already_invited: "They came with this invite already, so nothing was attached.",
     },
   },
-  /** Board B1: every piece the client has been fitted with. */
+  /** Every piece the client has been fitted with. */
   pieces: {
     title: "Pieces",
     /** The board's six columns. */

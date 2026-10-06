@@ -182,7 +182,7 @@ function AreaRow({ area, thisYear, onChoose }: { area: Area; thisYear: number; o
   );
 }
 
-/** Board C3's table: who waits where, the longest waits first; a line when nobody waits at all. */
+/** The waitlist's table: who waits where, the longest waits first; a line when nobody waits at all. */
 function Pincodes({
   areas: listed,
   more,
