@@ -1,4 +1,4 @@
-// The storage meter (docs/decisions/0093-the-storage-meter.md): what Phase 2's
+// The storage meter (docs/decisions/0093-the-storage-meter.md): what the app's
 // two buckets hold, client-photos and referral-cards. That is each visit's
 // photographs and their small copies, a try-on's small copy and a client's
 // kept look, and the referral cards.
@@ -37,7 +37,7 @@ export async function readMeter(db: D1Database): Promise<Meter> {
   return { bytes: row.bytes, toldPercent: row.told_percent };
 }
 
-/** Stores an object in one of Phase 2's buckets, and counts what it holds now: an object it replaces no longer counts. */
+/** Stores an object in one of the two buckets, and counts what it holds now: an object it replaces no longer counts. */
 export async function putCounted(
   db: D1Database,
   bucket: R2Bucket,
@@ -63,7 +63,7 @@ export async function putCounted(
 }
 
 /**
- * Deletes these objects from one of Phase 2's buckets, and takes off what their rows say they held: one R2 call for
+ * Deletes these objects from one of the two buckets, and takes off what their rows say they held: one R2 call for
  * each thousand keys, and one D1 batch. A key with no row, never stored or stored before the meter, takes nothing off.
  */
 export async function deleteCounted(db: D1Database, bucket: R2Bucket, keys: readonly string[]): Promise<void> {
@@ -156,7 +156,7 @@ export async function tellOfStorage(db: D1Database, alertOnce: AlertOnce, enviro
     key: `r2_share:${String(mark)}`,
     message:
       `Photos and referral cards use ${gigabytes(meter.bytes)} GB, ${OF_THE_SHARE[mark]} their ` +
-      `${String(share / 1e9)} GB of free storage. Uploads go on past it, on paid storage, as the owner ruled.`,
+      `${String(share / 1e9)} GB of free storage. Uploads go on past it, on paid storage.`,
     link: STORAGE_LINK,
   });
 }

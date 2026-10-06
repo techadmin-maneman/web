@@ -8987,7 +8987,7 @@ export interface components {
         Storage: {
             /** @description What the client-photos and referral-cards buckets hold. */
             held_bytes: number;
-            /** @description Phase 2's share of R2's free 10 GB (ADR 0039); past it R2 bills, as the owner accepted. */
+            /** @description The photographs' and cards' share of R2's free 10 GB; past it R2 bills. */
             share_bytes: number;
             /** @description Past this the technician app's photographs are refused and wait on the phones. */
             ceiling_bytes: number;

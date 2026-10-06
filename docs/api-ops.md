@@ -14631,7 +14631,7 @@ Request body:
     },
     "share_bytes": {
       "type": "integer",
-      "description": "Phase 2's share of R2's free 10 GB (ADR 0039); past it R2 bills, as the owner accepted."
+      "description": "The photographs' and cards' share of R2's free 10 GB; past it R2 bills."
     },
     "ceiling_bytes": {
       "type": "integer",

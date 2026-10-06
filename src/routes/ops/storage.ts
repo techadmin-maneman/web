@@ -1,4 +1,4 @@
-// What Phase 2's photographs and referral cards hold in R2, behind Access
+// What clients' photographs and referral cards hold in R2, behind Access
 // (docs/decisions/0093-the-storage-meter.md), and what the database holds:
 //   GET /api/storage    the storage meter's figure, beside the share and the runaway ceiling, and the database's size
 //                       beside D1's limit
@@ -18,7 +18,7 @@ const StorageSchema = z
   .object({
     held_bytes: z.number().int().openapi({ description: "What the client-photos and referral-cards buckets hold." }),
     share_bytes: z.number().int().openapi({
-      description: "Phase 2's share of R2's free 10 GB (ADR 0039); past it R2 bills, as the owner accepted.",
+      description: "The photographs' and cards' share of R2's free 10 GB; past it R2 bills.",
     }),
     ceiling_bytes: z
       .number()
