@@ -32,6 +32,9 @@ import { registerClientErrors } from "./routes/client-errors.ts";
 import { registerClientRefer } from "./routes/client/refer.ts";
 import { registerOpsBlackouts } from "./routes/ops/blackouts.ts";
 import { registerOpsClientAddress } from "./routes/ops/client-address.ts";
+import { registerOpsClientConsents } from "./routes/ops/client-consents.ts";
+import { registerOpsClientPhotos } from "./routes/ops/client-photos.ts";
+import { registerOpsClientRecord } from "./routes/ops/client-record.ts";
 import { registerOpsClientReferral } from "./routes/ops/client-referral.ts";
 import { registerOpsClients } from "./routes/ops/clients.ts";
 import { registerOpsConsumables } from "./routes/ops/consumables.ts";
@@ -133,6 +136,9 @@ const SURFACE_ROUTES: Readonly<Record<Surface, readonly ((app: App) => void)[]>>
     registerHealth,
     registerClientErrors,
     registerOpsClients,
+    registerOpsClientRecord,
+    registerOpsClientPhotos,
+    registerOpsClientConsents,
     registerOpsCredits,
     // A visit ops book for a client: at once, or by a payment link.
     registerOpsVisits,

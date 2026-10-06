@@ -1,5 +1,5 @@
 // The client's consents: what they have agreed to, read only. Ops can never grant a
-// consent, and no route here would let them (src/routes/ops/clients.ts). The
+// consent, and no route here would let them (src/routes/ops/client-consents.ts). The
 // board's fourth column is where each was given
 // (docs/decisions/0094-where-a-consent-was-given.md). Under them, erasing the
 // client, for a request made outside the app.
