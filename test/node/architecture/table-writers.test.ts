@@ -45,6 +45,6 @@ function writersOf(table: string): string[] {
 
 describe("the tables written in one place", () => {
   it.each(Object.entries(WRITERS))("%s is written only by its listed modules", (table, files) => {
-    expect(writersOf(table)).toEqual(files);
+    expect(writersOf(table)).toEqual([...files].sort((a, b) => a.localeCompare(b)));
   });
 });
