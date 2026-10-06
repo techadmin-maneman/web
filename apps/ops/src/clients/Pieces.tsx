@@ -1,6 +1,6 @@
 // Every piece the client has been fitted with, in the design's own six
 // columns. A piece is recorded by the technician's phone, so nothing here is
-// edited (src/routes/ops/field.ts). Above them, the client's
+// edited (src/routes/ops/client-pieces.ts). Above them, the client's
 // hair profile, which the board does not draw (./HairProfile.tsx), loaded when the tab first opens.
 //
 // The board sets the live piece's replacement date in brass and leaves the rest

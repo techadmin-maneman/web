@@ -1,4 +1,4 @@
-// The no-show queue ops rule on (src/routes/ops/field.ts).
+// The no-show queue ops rule on (src/routes/ops/no-shows.ts).
 // NOW is Monday 21 September 2026, 12 noon in India. Nothing here is a real
 // person, number or address.
 //
