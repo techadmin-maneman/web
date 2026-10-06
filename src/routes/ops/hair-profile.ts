@@ -24,7 +24,7 @@ import {
   HairProfileVersionSchema,
   HistorySchema,
 } from "../schemas/hair-profile.ts";
-import { clientInReach } from "./clients.ts";
+import { clientInReach } from "../../http/staff-access.ts";
 
 const clientId = z.object({ id: z.uuid() });
 const unknownClient = errorResponse(
