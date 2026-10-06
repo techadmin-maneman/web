@@ -193,7 +193,7 @@ describe("GET /api/me", () => {
     expect(me).toMatchObject({ state: "fitted", next_visit: { type: "service", date: "2026-09-24" } });
   });
 
-  it("drops a Phase 1 booking's proposal once the person has had a visit, and offers the first fit", async () => {
+  it("drops the first form's proposal once the person has had a visit, and offers the first fit", async () => {
     await env.DB.prepare(
       "INSERT INTO people (id, created_at, mobile_e164, name) VALUES ('p1', ?1, ?2, 'Rohit Malhotra')",
     )
@@ -344,7 +344,7 @@ describe("a visit not yet closed", () => {
   });
 });
 
-// Board B1's one prompt, in the owner's order (src/policy/home-prompt.ts): an address to give while something is
+// Home's one prompt, in its order (src/policy/home-prompt.ts): an address to give while something is
 // booked, then the next service due and not booked, then an invoice just issued, which is also a line of its own
 // beneath whichever prompt leads, then a replacement falling due within reach.
 describe("GET /api/me's prompt and invoice line", () => {
@@ -501,7 +501,7 @@ describe("GET /api/me's prompt and invoice line", () => {
   });
 });
 
-describe("what was done on a visit (board C9)", () => {
+describe("what was done on a visit", () => {
   it("is the checklist the technician ticked, in the job sheet's order", async () => {
     const ids = await seed([done("ap-done", "2026-09-10")]);
     await signIn();
@@ -574,7 +574,7 @@ describe("what was done on a visit (board C9)", () => {
   });
 });
 
-describe("a visit paid for ahead (board C1's Prepaid)", () => {
+describe("a visit paid for ahead (its Prepaid)", () => {
   it("is prepaid once a payment for it is captured, or a credit covers it, and not otherwise", async () => {
     const ids = await seed([
       booked("ap-paid"),

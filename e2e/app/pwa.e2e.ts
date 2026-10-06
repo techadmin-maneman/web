@@ -1,6 +1,6 @@
 // The client app as a PWA (docs/decisions/0043-client-app.md): installable from
 // its manifest, and able to open offline on the last Home the service worker
-// kept (board B3). No other API answer is kept, and logging out forgets Home.
+// kept. No other API answer is kept, and logging out forgets Home.
 
 import type { Page } from "@playwright/test";
 import { expect, test } from "../support.ts";
@@ -57,7 +57,7 @@ test("is installable, from a manifest drawn from the brand kit", async ({ page }
   expect(installabilityErrors).toEqual([]);
 });
 
-test("opens offline on the last Home, with board B3's banner, and Reschedule waits", async ({ page }) => {
+test("opens offline on the last Home, with the offline banner, and Reschedule waits", async ({ page }) => {
   await signIn(page);
   await keepHome(page);
 
@@ -137,7 +137,7 @@ test("keeps no API answer but Home, and forgets Home at logout", async ({ page }
   expect((await keptPaths(page)).filter((path) => path.startsWith("/api/"))).toEqual([]);
 
   // The app itself still opens offline. With no Home kept on a phone that logged out, it opens on the login,
-  // not on board B3's error, which is for a client who is still in.
+  // not on the design's error, which is for a client who is still in.
   await page.context().setOffline(true);
   await page.reload();
   await expect(page.getByRole("heading", { level: 1, name: "Your mobile number" })).toBeVisible();

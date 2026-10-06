@@ -1,4 +1,4 @@
-// Booking with a service-visit credit (board C5), one credit for one visit however the bookings race, and what moving
+// Booking with a service-visit credit, one credit for one visit however the bookings race, and what moving
 // or cancelling such a visit does to the credit (docs/decisions/0033-credit-ledger.md, "Spending"). NOW is Monday
 // 21 September 2026, 12 noon in India. Every name and number here is made up.
 

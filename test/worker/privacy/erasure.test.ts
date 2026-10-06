@@ -32,7 +32,7 @@ const MOBILE_E164 = "+919810000001";
 const STAFF = STUB_IDENTITY.kind === "staff" ? STUB_IDENTITY.email : "";
 const EVERYWHERE: PlacesReached = { kind: "everywhere" };
 
-/** A person with a booking, as Phase 1's form left one, and an e-mail address. */
+/** A person with a booking, as the site's first form left one, and an e-mail address. */
 async function book(): Promise<string> {
   await phaseOneLead(MOBILE_E164);
   // The booking form takes no e-mail; set one to show that it is blanked too.
@@ -799,7 +799,6 @@ describe("erasure blanks what ops wrote about the client", () => {
   });
 });
 
-// Confirmed by the owner on 27 September 2026 with ruling 34 (docs/decisions/0094-where-a-consent-was-given.md).
 describe("erasure blanks a check-in's coordinates", () => {
   const checkins = () =>
     env.DB.prepare(

@@ -48,7 +48,7 @@ describe("the dispatch board's words", () => {
   /** "09:00" → "9", the hour as the board's drawer writes it. */
   const hour = (time: string) => String(Number(time.slice(0, 2)) % 12 === 0 ? 12 : Number(time.slice(0, 2)) % 12);
 
-  it.each(BOOKING_WINDOWS)("%s's hours are WINDOW_TIMES', which the owner has still to rule", (window) => {
+  it.each(BOOKING_WINDOWS)("%s's hours are WINDOW_TIMES'", (window) => {
     const hours = dispatch.windowHours[window] ?? "";
     const times = WINDOW_TIMES[window];
     expect(hours, "the start").toMatch(new RegExp(`\\b${hour(times.start)}\\b`));

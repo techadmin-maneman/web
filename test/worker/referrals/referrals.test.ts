@@ -135,8 +135,8 @@ describe("referral codes", () => {
     });
   });
 
-  // The app's preview (board F4) says what the friend will see, so it names the client exactly when the landing
-  // does; and its card sheet asks for the consent (F3) exactly when the current lines have not been agreed to.
+  // The app's preview says what the friend will see, so it names the client exactly when the landing
+  // does; and its card sheet asks for the consent exactly when the current lines have not been agreed to.
   it("say whether the invite names the client, and whether they agreed to the cards' current lines", async () => {
     await fittedAndPhotographed(REFERRER);
     const cookie = `mm_app=${await openSession(env.DB, { kind: "client", subjectId: REFERRER, deviceLabel: null, now: NOW })}`;
@@ -168,7 +168,7 @@ describe("GET /api/r/:code", () => {
   });
 
   // The pay step carries the naming line with the card's (ADR 0080), so a consent given by booking a visit names the
-  // referrer as one given on the profile's notice does; and the app's card sheet does not ask for it again (F3).
+  // referrer as one given on the profile's notice does; and the app's card sheet does not ask for it again.
   it.each(["photos-referral-cards-booking-v1", "photos-referral-cards-booking-alone-v1"])(
     "names a referrer whose consent to cards was given by booking, on %s",
     async (notice) => {
@@ -195,7 +195,7 @@ describe("GET /api/r/:code", () => {
   });
 });
 
-// The owner's ruling of 1 October 2026 (docs/decisions/0107-referral-rewards-in-the-console.md): the site's words
+// The site's words
 // and the app's read what ops set, never a figure of their own.
 describe("what a referral earns, for the pages that say it", () => {
   const unequal = { referrer_visits: 2, friend_visits: 0, valid_days: 90 };
@@ -431,7 +431,7 @@ describe("POST /api/r/:code/consultation", () => {
     expect(attributed).toEqual({ type: "consultation" });
   });
 
-  // The owner's ruling of 27 September 2026: the full address before a slot is confirmed, on the site too (ADR 0081).
+  // The full address before a slot is confirmed, on the site too (ADR 0081).
   it("asks for the address, in the pincode checked, and makes it the friend's", async () => {
     await pincode("122018", "Gurgaon South City II", true);
     const code = await codeOf();
@@ -550,7 +550,7 @@ describe("POST /api/r/:code/consultation", () => {
   });
 
   // An invited friend may book the consultation and fit in one visit, as the site's own form may (ADR 0105); the
-  // first fit to follow, which the form asked for until the owner's ruling of 1 October 2026, is gone with it.
+  // first fit to follow, which the form once asked for, is gone with it.
   it("books the consultation and fit in one visit, with the invite's credits, and nothing paid", async () => {
     await pincode("122018", "Gurgaon South City II", true);
     const code = await codeOf();

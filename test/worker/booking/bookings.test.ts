@@ -125,7 +125,7 @@ describe("POST /api/bookings", () => {
     const payments = createStubPayments();
     const app = appFor("local", fakeDependencies({ payments }), {}, "client");
     const holdId = await heldService(app);
-    // Both taps are in flight together, as they are when a client taps Retry twice on board C6.
+    // Both taps are in flight together, as they are when a client taps Retry twice on the confirmation.
     const both = await Promise.all([
       post(app, "/api/bookings", { hold_id: holdId }),
       post(app, "/api/bookings", { hold_id: holdId }),

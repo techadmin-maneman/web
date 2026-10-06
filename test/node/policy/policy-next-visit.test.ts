@@ -167,8 +167,8 @@ describe("the figures ops set", () => {
   });
 });
 
-// The site's form no longer asks for a first fit to follow the consultation: the owner's ruling of 1 October 2026
-// put the consultation and fit in one visit in its place (src/policy/one-visit.ts). What a first fit can start in stands.
+// The site's form no longer asks for a first fit to follow the consultation: the consultation and
+// fit in one visit took its place (src/policy/one-visit.ts). What a first fit can start in stands.
 describe("the first fit's windows", () => {
   it("start in the morning or the afternoon, since its two slots do not fit in the evening's", () => {
     expect([...FIRST_FIT_WINDOWS]).toEqual(windowsFor("first_fit"));

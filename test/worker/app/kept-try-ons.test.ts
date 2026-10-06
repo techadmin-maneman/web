@@ -1,4 +1,4 @@
-// A client's try-on, kept: the owner's ruling of 27 September 2026, "Show the before photo always, keep the
+// A client's try-on, kept: "Show the before photo always, keep the
 // generated image till the photos for first fit are taken" (docs/decisions/0084-a-clients-try-on-is-kept.md).
 // The small copy comes up with the photograph; the sweeper lets it go with the photograph or with the look, or keeps
 // it, with the look, for a client; the look goes once the first fit is photographed; an erasure takes both.

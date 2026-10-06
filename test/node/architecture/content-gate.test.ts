@@ -1,5 +1,5 @@
-// Phase 2's copy is marked PLACEHOLDER where the owner has not yet given the
-// wording. Staging ships it by the owner's ruling; a production build must not
+// The apps' copy is marked PLACEHOLDER where its wording is not yet given: the
+// wording. Staging ships it; a production build must not
 // (scripts/lib/content-gate.ts).
 
 import { spawnSync } from "node:child_process";
@@ -33,7 +33,7 @@ describe("a PLACEHOLDER mark", () => {
   });
 });
 
-describe("the production gate on Phase 2's copy", () => {
+describe("the production gate on the apps' copy", () => {
   // The site's own marks, the job sheet and the WhatsApp texts went ungated.
   it("covers each app's content, the site's, the referral landing's and the API's", () => {
     expect(CONTENT_FILES).toEqual({
@@ -89,7 +89,7 @@ describe("the production gate on Phase 2's copy", () => {
     "refuses a production build of %s while its copy holds a mark, before building anything",
     (app) => {
       const marked = CONTENT_FILES[app].some((file) => placeholderMarks(readFileSync(file, "utf8")).length > 0);
-      if (!marked) return; // Every line has the owner's wording: the build is allowed, and builds.
+      if (!marked) return; // Every line has its wording: the build is allowed, and builds.
       const build = spawnSync(process.execPath, [`scripts/build/build-${app}.ts`, "--env", "production"], {
         encoding: "utf8",
       });

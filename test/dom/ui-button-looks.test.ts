@@ -109,9 +109,9 @@ const LOOK_PROPERTIES = new Set(["background", "background-color", "color", "bor
 
 /** The classes that do, each for a look its board draws. */
 const DRAWN_BY_A_BOARD = new Set([
-  // Board B3: Reschedule offline, in the visit card's own quiet words.
+  // Reschedule offline, in the visit card's own quiet words.
   "apps/app/src/home/home.module.css .action",
-  // Board G2: the profile's outlined buttons, and the photograph's Close, edged in the paper's own line.
+  // The profile's outlined buttons, and the photograph's Close, edged in the paper's own line.
   "apps/app/src/profile/profile.module.css .secondary",
   "apps/app/src/profile/profile.module.css .logout",
   "apps/app/src/photos/photos.module.css .close",

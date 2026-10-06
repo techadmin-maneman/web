@@ -12,7 +12,7 @@ describe("a staging test record", () => {
     }
   });
 
-  // The owner's decision 23: the mark is stored when a record is made, on staging alone.
+  // The mark is stored when a record is made, on staging alone.
   it("is marked when made on staging with a test name, and never elsewhere", () => {
     expect(testRecordAtCreation("staging", "Staging test Asha")).toBe(true);
     expect(testRecordAtCreation("staging", "Asha Verma")).toBe(false);

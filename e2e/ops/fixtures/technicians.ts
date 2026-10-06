@@ -1,4 +1,4 @@
-// Board D3: the roster, the phones the board does not draw, leave, and what
+// Technicians: the roster, the phones the board does not draw, leave, and what
 // each technician has finished.
 
 import type { OpsReply } from "../answer.ts";

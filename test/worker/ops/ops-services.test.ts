@@ -319,7 +319,7 @@ describe("retiring a service", () => {
     expect((await auditFor("service.retire")).results).toHaveLength(1);
   });
 
-  // The owner's decision of 2 October 2026: only the hair systems ops offer, and no generic first fit in their place.
+  // Only the hair systems ops offer, and no generic first fit in their place.
   it("retires a first fit's last hair system, which leaves first fits with nothing to book", async () => {
     const answer = await post("/api/services/first_fit/standard/retire", { from: "2026-09-21" });
 

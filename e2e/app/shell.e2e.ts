@@ -38,7 +38,7 @@ async function home(page: Page): Promise<void> {
   await expect(page.getByRole("link", { name: "Your profile" })).toBeVisible();
 }
 
-test("opens on the mobile number, as board A1 draws it", async ({ page }) => {
+test("opens on the mobile number, as the design draws it", async ({ page }) => {
   await page.goto("/");
   await expect(page).toHaveTitle("Your mobile number · Mane Man");
   await expect(page.getByRole("heading", { level: 1, name: "Your mobile number" })).toBeVisible();
@@ -74,7 +74,7 @@ test("reaches mm-api as the client surface, on its own host", async ({ page }) =
   expect(statuses).toEqual({ health: 200, pincode: 404, me: 401 });
 });
 
-test("says board B3's error when the API cannot be reached, with a way to try again", async ({ page }) => {
+test("says the error when the API cannot be reached, with a way to try again", async ({ page }) => {
   await page.route("**/api/me", (route) => route.abort());
   await page.goto("/");
   await expect(page.getByRole("heading", { level: 1, name: "We couldn’t load your visit." })).toBeVisible();
@@ -87,7 +87,7 @@ test("says board B3's error when the API cannot be reached, with a way to try ag
   await expect(page.getByRole("heading", { level: 1, name: "Your mobile number" })).toBeVisible();
 });
 
-test("shows board B3's loading on paper while it asks whether there is a session, not a blank screen", async ({
+test("shows the loading shape on paper while it asks whether there is a session, not a blank screen", async ({
   page,
 }) => {
   let answer: () => void = () => undefined;
@@ -227,7 +227,7 @@ test("edges fields and switches at 3:1 or more against the ground (WCAG 1.4.11)"
     3,
   );
 
-  // A switch is drawn small, as board G1 draws it, and answers a tap 44 px tall.
+  // A switch is drawn small, as the design draws it, and answers a tap 44 px tall.
   const box = await off.boundingBox();
   const middle = { x: (box?.x ?? 0) + (box?.width ?? 0) / 2, y: (box?.y ?? 0) + (box?.height ?? 0) / 2 };
   const hit = await page.evaluate(

@@ -178,7 +178,7 @@ describe("POST /api/auth/otp", () => {
     expect(deps.sentCodes).toEqual([]);
   });
 
-  // Owner ruling, 30 September 2026 ("logins open, reminders fenced", ADR 0025 item 84; ADR 0097): a login code
+  // Logins open, reminders fenced (ADR 0097): a login code
   // answers the phone that just asked for it, so it is never held to staging's allowlist, unlike a reminder or
   // another automatic message.
   it("sends a code to a number off staging's allowlist, since a login code answers whoever asked for it", async () => {
@@ -525,7 +525,7 @@ describe("the session", () => {
       name: "Arjun Mehta",
       first_name: "Arjun",
       initials: "AM",
-      // Phase 1's form booked nothing: ops confirm the time on WhatsApp.
+      // The site's first form booked nothing: ops confirm the time on WhatsApp.
       consultation: {
         date: "2026-09-24",
         window: "evening",
@@ -539,7 +539,7 @@ describe("the session", () => {
       being_booked: null,
       payment_owed: null,
       credits: null,
-      // A consultation is booked and no address given: board B1's prompt asks for one.
+      // A consultation is booked and no address given: the design's prompt asks for one.
       prompt: { kind: "address" },
       invoice: null,
       // Every service of the kinds open to them, with its length and price (docs/decisions/0085-services-ops-can-edit.md);

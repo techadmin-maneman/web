@@ -4,12 +4,12 @@
 // the tests that book all reach for the same first free day, so a window the
 // sheet offered can be held by another of them before this one asks for it. The
 // API then answers `taken` and the sheet says so and offers what is left, which
-// is what board C3 asks of it. A client picks another; so does this.
+// is what the window picker asks of it. A client picks another; so does this.
 
 import type { Page } from "@playwright/test";
 import { expect } from "../support.ts";
 
-/** Board C3's words when the window went while the client was choosing. */
+/** The window picker's words when the window went while the client was choosing. */
 export const TAKEN = "That time has just gone. Pick another.";
 
 /** The pay step: "Pay and confirm", or "Confirm" for a visit that costs nothing. */

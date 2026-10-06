@@ -3,10 +3,9 @@
 // placeholder material.
 // The gate's refusals are proven in test/node/site/site-content.test.ts.
 //
-// Since the owner's ruling of 1 October 2026 the try-on's look goes to WhatsApp
-// only (docs/decisions/0104-the-try-ons-look-on-whatsapp-only.md), and the only
+// The try-on's look goes to WhatsApp only (docs/decisions/0104-the-try-ons-look-on-whatsapp-only.md), and the only
 // notices that say so await counsel (docs/open-points.md, item 146). Until
-// counsel approves them, and the legal pages' Phase 2 wording, the production
+// counsel approves them, and the legal pages' wording for the apps, the production
 // build refuses them, and nothing else; what a production build ships is
 // checked again the day it builds.
 

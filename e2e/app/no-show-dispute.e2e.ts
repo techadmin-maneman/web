@@ -65,7 +65,7 @@ test("sends the dispute with the client's words, and says it is with us", async 
   await expect(page.getByRole("dialog").getByRole("status")).toContainText("We have your dispute.");
 });
 
-// The owner ruled on 30 September 2026: a charge may be disputed for 30 days after it (src/policy/no-show.ts).
+// A charge may be disputed for 30 days after it (src/policy/no-show.ts).
 test("says the days to dispute have passed, when they pass while the sheet is open", async ({ page }) => {
   const visitId = await charged(page, null);
   const disputed = `/api/visits/${visitId}/dispute`;

@@ -163,7 +163,7 @@ describe("PATCH /api/profile/address", () => {
     ]);
   });
 
-  // The owner's ruling of 27 September 2026 (docs/open-points.md, item 45): the job sheet must name the door.
+  // The job sheet must name the door.
   it("refuses an address without the flat or house number", async () => {
     const { flat: _left, ...withoutFlat } = address;
     for (const body of [withoutFlat, { ...address, flat: null }, { ...address, flat: "  " }]) {
@@ -478,7 +478,7 @@ describe("PATCH /api/consents/:purpose", () => {
   });
 
   it("keeps one row when the same switch arrives twice at the same moment", async () => {
-    // Both taps are in flight together, as they are when a client taps Allow twice on board F3.
+    // Both taps are in flight together, as they are when a client taps Allow twice on the card sheet.
     const both = await Promise.all([
       send(client, "PATCH", "/api/consents/whatsapp_visits", { granted: true }),
       send(client, "PATCH", "/api/consents/whatsapp_visits", { granted: true }),
@@ -566,7 +566,7 @@ describe("PATCH /api/consents/:purpose", () => {
     expect(await auditActions()).toEqual([]);
   });
 
-  it("switches only the five purposes, never a Phase 1 agreement", async () => {
+  it("switches only the five purposes, never an agreement given on the site", async () => {
     expect((await send(client, "PATCH", "/api/consents/contact", { granted: false })).status).toBe(400);
   });
 
@@ -590,7 +590,7 @@ describe("a number change", () => {
     expect(deps.sentCodes.map((sent) => sent.to)).toEqual([OLD, NEW]);
   });
 
-  // Owner ruling, 30 September 2026 ("logins open, reminders fenced", ADR 0025 item 84; ADR 0097): each side of a
+  // Logins open, reminders fenced (ADR 0097): each side of a
   // number change is asked for by the phone holding it, so neither is held to staging's allowlist.
   it("sends both number-change codes off staging's allowlist", async () => {
     client = appFor(

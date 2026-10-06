@@ -1,4 +1,4 @@
-// The owner's rulings of 27 September 2026 (ADR 0082, ADR 0084): a client who
+// A client who
 // made a try-on on the site sees, in the app's Photos tab, the photograph they
 // uploaded beside the look made from it, and how long each is kept. The client
 // has a consultation booked and no visit done (e2e/app/try-on.ts), so the
@@ -41,7 +41,7 @@ test("Photos shows a booked client's before photo beside its look, each kept, ea
         "The look is kept until your first fit is photographed.",
     ),
   ).toBeVisible();
-  // No visit has photographs yet: board D3's lines, beneath the try-on.
+  // No visit has photographs yet: the design's lines, beneath the try-on.
   await expect(page.getByText("Your photos start at your first visit.")).toBeVisible();
   await expect(page.getByRole("link", { name: "Compare" })).toHaveCount(0);
 

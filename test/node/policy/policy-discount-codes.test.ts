@@ -1,4 +1,4 @@
-// Discount codes (src/policy/discount-codes.ts), as the owner ruled on 1 October 2026.
+// Discount codes (src/policy/discount-codes.ts).
 
 import { describe, expect, it } from "vitest";
 import {
@@ -90,7 +90,7 @@ describe("discount codes", () => {
     expect(normalisedCode("  wedding25 ")).toBe("WEDDING25");
     // A generated code's letters and digits are those no one misreads: no I, L, O, 0 or 1.
     expect(CODE_ALPHABET).not.toMatch(/[ILO01]/);
-    // One ops type may use any (the owner, 2 Oct 2026): DIWALI, GOLD and WEDDING25 are ordinary words.
+    // One ops type may use any: DIWALI, GOLD and WEDDING25 are ordinary words.
     expect(isCodeText("WEDDING25")).toBe(true);
     expect(isCodeText("diwali")).toBe(true);
     expect(isCodeText("GOLD-10")).toBe(false);

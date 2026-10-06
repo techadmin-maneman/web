@@ -261,7 +261,7 @@ describe("POST /api/consultation", () => {
   });
 });
 
-// The owner's ruling of 27 September 2026: the full address before a slot is confirmed, on the site too (ADR 0081).
+// The full address before a slot is confirmed, on the site too (ADR 0081).
 describe("the address the consultation is at", () => {
   const book = (body: object, bindings = {}) =>
     request(
@@ -544,7 +544,7 @@ describe("POST /api/waitlist", () => {
     ]);
   });
 
-  // ADR 0041 lists the waitlist confirmation among Phase 2's messages; nothing wrote one.
+  // ADR 0041 lists the waitlist confirmation among the app's messages; nothing wrote one.
   it("queues one WhatsApp confirming the place on the list, however often the number joins", async () => {
     await pincode("400050", "Bandra", "Mumbai", false);
     const messages = fakeQueue();
@@ -872,7 +872,7 @@ describe("a number the site already knows", () => {
   });
 });
 
-// The owner's ruling D2 of 1 October 2026 (ADR 0025, item 89; docs/decisions/0105-a-consultation-and-fit-in-one-visit.md):
+// A consultation and fit in one visit (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md):
 // the form books the consultation alone, or the consultation and the first fit in one visit, three hours, with
 // nothing paid until the client is fitted. It replaces the consultation with the first fit to follow (item 68), whose
 // request the form no longer writes, so the tests of that request went with it.
@@ -1053,7 +1053,7 @@ describe("a consultation and fit in one visit", () => {
     expect(await count("SELECT COUNT(*) AS n FROM people")).toBe(0);
   });
 
-  // The owner's decision of 2 October 2026: only the hair systems ops offer, and no generic first fit in their place.
+  // Only the hair systems ops offer, and no generic first fit in their place.
   describe("while ops offer no hair system", () => {
     beforeEach(async () => {
       await env.DB.prepare("UPDATE services SET retired_date = '2026-09-01' WHERE kind = 'first_fit'").run();

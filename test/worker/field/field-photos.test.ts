@@ -91,7 +91,7 @@ describe("the photographs", () => {
     expect((await readMeter(env.DB)).bytes).toBe(bytes.byteLength);
   });
 
-  it("stores a photograph when the share of R2 is full, as the owner ruled", async () => {
+  it("stores a photograph when the share of R2 is full", async () => {
     await startJob();
     await env.DB.prepare("UPDATE storage_meter SET bytes = ?1")
       .bind(PHASE_2_SHARE_BYTES * 1.5)

@@ -1,7 +1,7 @@
 // What a tap on WhatsApp or Other apps sends with an invite (apps/app/src/refer/share.ts): the card itself, as a
 // photograph captioned with the invite's words, wherever the phone's share sheet takes files; else the words alone,
-// with WhatsApp's link where there is no share sheet to take them (docs/decisions/0048-referrals.md, amended
-// 27 September 2026). The owner found invites reaching WhatsApp with no image: nothing ever sent the card.
+// with WhatsApp's link where there is no share sheet to take them (docs/decisions/0048-referrals.md).
+// Invites once reached WhatsApp with no image: nothing ever sent the card.
 
 import { describe, expect, it } from "vitest";
 import { forOtherApps, inviteFile, withCard, type Phone } from "../../../apps/app/src/refer/share.ts";

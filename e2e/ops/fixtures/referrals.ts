@@ -1,10 +1,10 @@
-// Board C1: the referral grants held for review, and the referrers' figures.
+// Referrals: the grants held for review, and the referrers' figures.
 
 import type { OpsReply } from "../answer.ts";
 
 /**
  * Read against 10:30 in India on 22 September 2027 (TASKS_READ_ON), each has
- * been held as long as board C1 writes: "3 days held", "1 day held", "5 hours
+ * been held as long as the design writes: "3 days held", "1 day held", "5 hours
  * held"; each falls due two days after it was held (src/policy/tasks.ts).
  */
 export const HELD = {

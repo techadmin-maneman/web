@@ -1,4 +1,4 @@
-// Board C3: the areas people wait for, a launch's preview and confirmation, and a pincode added to the service area.
+// Areas: the areas people wait for, a launch's preview and confirmation, and a pincode added to the service area.
 
 import type { OpsReply } from "../answer.ts";
 

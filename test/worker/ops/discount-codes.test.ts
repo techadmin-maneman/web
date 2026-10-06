@@ -241,7 +241,7 @@ describe("a code on a client's visit, in the console", () => {
     expect(await second.json()).toMatchObject({ error: { code: "already_discounted" } });
   });
 
-  // The owner's ruling of 1 October 2026: "Discount codes can be applied once credit paid visits are over".
+  // "Discount codes can be applied once credit paid visits are over".
   it("takes no code on a service visit while the client holds a credit that could pay it", async () => {
     await grantCredits(env.DB, { personId: PERSON, visits: 1, source: "ops", sourceId: "o1", now: NOW }).run();
     const refused = await post(`/api/visits/${VISIT}/discount-code`, { code: "TENPC" });
@@ -249,7 +249,7 @@ describe("a code on a client's visit, in the console", () => {
     expect(await refused.json()).toMatchObject({ error: { code: "code_not_applicable" } });
   });
 
-  // The owner's ruling of 1 October 2026, "the use comes back", and the review of #177: a prepaid visit cancelled
+  // A code's use comes back: a prepaid visit cancelled
   // and refunded kept its code's use, which nothing could then take off.
   it("gives a code's use back when its visit is cancelled, paid for and refunded or not", async () => {
     await make({ code: "UNQ5", maxUses: 1, oncePerClient: false });

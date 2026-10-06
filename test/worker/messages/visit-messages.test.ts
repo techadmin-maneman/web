@@ -424,7 +424,7 @@ describe("sending a visit message", () => {
     expect(row).toEqual({ state: "skipped", last_error: "no consent to WhatsApp about visits" });
   });
 
-  // Owner ruling, 30 September 2026 ("logins open, reminders fenced", ADR 0025 item 84; ADR 0097): a message that
+  // Logins open, reminders fenced (ADR 0097): a message that
   // answers the client's own booking, move or cancel reaches any number on staging; a reminder, which nobody just
   // asked for, still checks the allowlist.
   describe("staging's allowlist, since ADR 0097", () => {
@@ -580,7 +580,7 @@ describe("the day-before reminders", () => {
     expect(await queueReminders(env.DB, new Date("2026-09-21T12:30:00Z"))).toEqual([]);
   });
 
-  // The owner's 6 pm is a console setting (docs/open-points.md, item 40; docs/decisions/0088-every-policy-in-the-console.md).
+  // 6 pm is a console setting (docs/decisions/0088-every-policy-in-the-console.md).
   it("goes from the hour ops set, not before it", async () => {
     await visit("service", "2026-09-22T06:30:00.000Z");
     expect(await queueReminders(env.DB, new Date("2026-09-21T12:30:00Z"), 20)).toEqual([]); // 6 pm

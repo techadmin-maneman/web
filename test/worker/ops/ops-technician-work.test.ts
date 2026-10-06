@@ -227,7 +227,7 @@ describe("GET /api/technicians/work", () => {
     expect(of(body, IMRAN)).toMatchObject({ jobs: 1 });
   });
 
-  // Board D3's two figures are ops' (docs/open-points.md, item 59; docs/decisions/0088-every-policy-in-the-console.md).
+  // The Technicians page's two figures are ops' (docs/decisions/0088-every-policy-in-the-console.md).
   const opsSet = (figures: { period: number; over_by: number }) =>
     env.DB.prepare("INSERT INTO ops_settings (name, value, set_by, set_at) VALUES ('technician_work', ?1, 'ops', ?2)")
       .bind(JSON.stringify(figures), NOW.toISOString())

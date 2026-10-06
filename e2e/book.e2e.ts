@@ -196,7 +196,7 @@ test("greets a served pincode by its city until ops name its area", async ({ pag
   await expect(page.getByRole("heading", { name: "We come to Gurgaon" })).toBeVisible();
 });
 
-// The owner's ruling D2 of 1 October 2026 (ADR 0025, item 89; docs/decisions/0105-a-consultation-and-fit-in-one-visit.md):
+// A consultation and fit in one visit (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md):
 // the client chooses one visit or two. The second choice books the consultation and fit in one visit, three hours,
 // paid for once fitted; it replaces the consultation with the first fit to follow, whose tests went with it.
 test("offers the consultation and fit in one visit, and says what it holds", async ({ page }) => {
@@ -365,7 +365,7 @@ test("offers the one visit the morning and the afternoon, never the evening, and
   expect(requests[0]?.postDataJSON() as Record<string, unknown>).not.toHaveProperty("one_visit");
 });
 
-// The owner's ruling of 27 September 2026: the full address before a slot is confirmed, on the site too (ADR 0081).
+// The full address before a slot is confirmed, on the site too (ADR 0081).
 test("a booking without the address is stopped at the form, each part it needs marked", async ({ page }) => {
   const requests = await mockApi(page);
   await visit(page, "/book");

@@ -250,7 +250,7 @@ export const ERASURE_REQUESTED = {
   },
 } satisfies OpsReply<"/api/clients/{id}/consents">;
 
-/** Board B1's own three: one still in wear, one that split, and one rejected at the fit. */
+/** The design's own three: one still in wear, one that split, and one rejected at the fit. */
 export const PIECES = {
   pieces: [
     {

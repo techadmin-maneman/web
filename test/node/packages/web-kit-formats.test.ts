@@ -127,7 +127,7 @@ describe("web-kit money", () => {
     expect(formatting).toEqual([]);
   });
 
-  // The owner's ruling of 27 September 2026 (ADR 0025, item 51): the site and the landing write "Rs." as the apps do.
+  // The site and the landing write "Rs." as the apps do.
   it("leaves no front end, and no message, writing the rupee sign", () => {
     const TYPED_PRICE_CHECK = "site/src/lib/publish-gate.ts";
     const writingTheSign = ["apps", "site/src", "packages/ui", "src"]

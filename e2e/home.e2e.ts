@@ -246,7 +246,7 @@ test.describe("home sections", () => {
     await expect(groups.nth(0).locator("li")).toHaveCount(4);
   });
 
-  // The owner took the prices off the site on 1 October 2026 (ADR 0103).
+  // The site gives no prices (ADR 0103).
   test("gives no price of ours: no prices section, and nothing for the Worker to fill", async ({ page }) => {
     await page.goto("/");
     await expect(page.locator('[data-section="prices"]')).toHaveCount(0);
@@ -400,7 +400,7 @@ test.describe("other pages", () => {
     await expect(page.locator(".label", { hasText: "Placeholder" })).toHaveCount(0);
   });
 
-  // The owner ruled on 27 September 2026 that the footer gives the number as WhatsApp, not as a line to call.
+  // The footer gives the number as WhatsApp, not as a line to call.
   test("the footer gives the business number as WhatsApp, and no line to call", async ({ page }) => {
     await page.goto("/");
     await expect(page.getByRole("link", { name: "WhatsApp · +91 90079 73247" })).toHaveAttribute(

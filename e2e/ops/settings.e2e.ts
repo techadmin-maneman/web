@@ -370,7 +370,7 @@ test.describe("the rules", () => {
     await expect(page.getByRole("status").filter({ hasText: "Saved." })).toBeVisible();
   });
 
-  // The owner's ruling of 1 October 2026: each side's visits, and how long they last
+  // Each side's visits, and how long they last
   // (docs/decisions/0107-referral-rewards-in-the-console.md).
   test("sets what a referral earns each side, nothing for one, after showing the change", async ({ page }) => {
     await open(page, "/settings", {
@@ -1084,7 +1084,7 @@ test.describe("the discount codes", () => {
     await expect(code).toHaveAttribute("aria-invalid", "true");
     await expect(code).toHaveAccessibleDescription("A code is 4 to 16 letters and figures, with no spaces or signs.");
     await expect(form.getByRole("button", { name: "Check" })).toBeDisabled();
-    // Ordinary words are codes: the owner allowed I, L and O in a code ops type.
+    // Ordinary words are codes: I, L and O are allowed in a code ops type.
     await code.fill("WEDDING25");
     await expect(code).not.toHaveAttribute("aria-invalid", "true");
     await expect(form.getByRole("button", { name: "Check" })).toBeEnabled();

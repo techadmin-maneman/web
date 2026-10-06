@@ -1,4 +1,4 @@
-// Areas' Waiting tab and the launch (board C3). Nothing is sent until the second
+// Areas' Waiting tab and the launch. Nothing is sent until the second
 // press: choosing a pincode only asks the API what a launch would send, and
 // the panel shows both counts so the gap between them is visible.
 

@@ -81,7 +81,7 @@ describe("tasks", () => {
     expect(new Set(TASK_GROUPS).size).toBe(TASK_GROUPS.length);
   });
 
-  // The owner's answer to open point 61, 27 September 2026. The members of staff are those who have signed in to the
+  // The members of staff are those who have signed in to the
   // console, as Access named them (src/domain/task-owners.ts).
   it("lets a task be owned only by someone on the Staff list, whatever the case of their e-mail", () => {
     const staff = ["anil@maneman.in", "priya@maneman.in"];
@@ -91,7 +91,7 @@ describe("tasks", () => {
     expect(mayOwnTasks("priya@maneman.com", staff)).toBe(false);
   });
 
-  // The owner's answer to open point 62. Every other task leaves the board only when its thing is done.
+  // Every other task leaves the board only when its thing is done.
   it("lets ops close a partial visit's task without a follow-up, and no other", () => {
     expect(CLOSABLE_TASK_GROUPS).toEqual(["partial_visit"]);
     expect(TASK_GROUPS.filter(isClosable)).toEqual(["partial_visit"]);

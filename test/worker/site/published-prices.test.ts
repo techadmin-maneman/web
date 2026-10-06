@@ -82,7 +82,7 @@ describe("GET /api/published-prices", () => {
     expect((await request(appFor("local", today()), "/api/published-prices")).status).toBe(503);
   });
 
-  // The owner's decision of 2 October 2026: only the hair systems ops offer, and no generic first fit in their place.
+  // Only the hair systems ops offer, and no generic first fit in their place.
   it("prices a first fit only as the hair systems offered, and answers with none while ops offer none", async () => {
     await env.DB.prepare("UPDATE services SET retired_date = '2026-09-26' WHERE kind = 'first_fit'").run();
 

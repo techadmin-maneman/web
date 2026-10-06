@@ -97,7 +97,7 @@ describe("POST /api/tech/auth/otp", () => {
     expect(JSON.stringify(logs.lines())).not.toContain("9810000004");
   });
 
-  // Owner ruling, 30 September 2026 ("logins open, reminders fenced", ADR 0025 item 84; ADR 0097): a technician's
+  // Logins open, reminders fenced (ADR 0097): a technician's
   // code answers the phone that just asked for it, so it is never held to staging's allowlist.
   it("sends a code to a technician's number off staging's allowlist", async () => {
     tech = appFor("local", deps, { messaging: { ...LOCAL_SETTINGS.messaging, allowlist: ["+919810000099"] } }, "tech");
@@ -337,7 +337,7 @@ describe("a signed-in phone", () => {
 });
 
 describe("two technicians on one number", () => {
-  // The owner signs in on their own technician row from 27 September 2026 (docs/archive/owner-answers-2026-09-27.md). A test
+  // Ops may sign in on a technician row of their own. A test
   // row left behind on the same number must not take the sign-in, whichever was written first.
   it("prefers the technician's own row to one written by hand on the same number", async () => {
     await env.DB.batch([

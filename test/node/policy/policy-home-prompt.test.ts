@@ -1,4 +1,4 @@
-// Home's prompts in the owner's order (src/policy/home-prompt.ts).
+// Home's prompts in their order (src/policy/home-prompt.ts).
 
 import { describe, expect, it } from "vitest";
 import { HOME_PROMPTS, homePromptOf, type PromptFacts } from "../../../src/policy/home-prompt.ts";

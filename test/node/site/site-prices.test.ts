@@ -66,7 +66,7 @@ describe("the site's prices", () => {
     expect(referral.prices.rows.map((row) => fillPrices(row.amount, words))).toEqual(["Rs. 35,000", "Rs. 2,500"]);
   });
 
-  // The owner's decision of 2 October 2026: only the hair systems ops offer, and no generic first fit in their place.
+  // Only the hair systems ops offer, and no generic first fit in their place.
   it("gives no first-fit price while ops offer no hair system", () => {
     const words = priceWords(NO_HAIR_SYSTEM);
 
@@ -83,7 +83,7 @@ describe("the site's prices", () => {
     expect(fillPrices(site.prices.example, BUILT_WORDS)).toBe("");
   });
 
-  // The owner took the prices off the site on 1 October 2026 (ADR 0103). The prices section, the invite's list and the
+  // The site gives no prices (ADR 0103). The prices section, the invite's list and the
   // price range search engines read wait on PRICES_SHOWN; nothing else gives a price.
   it("gives a price only in what waits on PRICES_SHOWN, which is off", () => {
     expect(PRICES_SHOWN).toBe(false);
@@ -126,8 +126,8 @@ describe("the site's prices", () => {
     expect(fillPrices("{firstFit}", priceWords(NO_HAIR_SYSTEM))).toBe("");
   });
 
-  // "Rs." as the apps write it, from the one formatter the front ends share (packages/web-kit/money.ts): the owner's
-  // ruling of 27 September 2026 (ADR 0025, item 51).
+  // "Rs." as the apps write it, from the one formatter the front ends share (packages/web-kit/money.ts;
+  // ADR 0025, item 51).
   it("writes rupees as the apps do, as India groups them", () => {
     expect(rupees(3_000_000)).toBe("Rs. 30,000");
     expect(rupees(10_000_000)).toBe("Rs. 1,00,000");

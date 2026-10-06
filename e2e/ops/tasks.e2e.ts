@@ -1,4 +1,4 @@
-// Tasks (board D2): the queues ops still have to work through, with how long
+// Tasks: the queues ops still have to work through, with how long
 // each has left. The API is answered from e2e/ops/fixtures.ts, since a local
 // database holds no held grant, no no-show and no piece. The clock is fixed to
 // the day the fixture's dates are read against, so "2 days left" and "3 days
@@ -140,7 +140,7 @@ test("names the day and window a consultation was asked for", async ({ page }) =
   await expect(row(page, "Neha Kapoor")).toContainText("Asked for 24 Sep 2027, afternoon");
 });
 
-// The next visit (docs/decisions/0086-the-next-visit-is-offered.md): board D2's own At-risk client, a client consulted
+// The next visit (docs/decisions/0086-the-next-visit-is-offered.md): the design's own At-risk client, a client consulted
 // and not fitted, and a consultation asked for with the first fit to follow.
 test("names an At-risk client's weeks since the last visit, a first fit to book, and a fit asked for", async ({
   page,
@@ -498,7 +498,7 @@ test("says a task leaves when its own row is decided, and that only a visit left
   await expect(list(page).getByRole("button", { name: /^Close without a follow-up/ })).toHaveCount(0);
 });
 
-// Whose each task is (docs/decisions/0092-task-owners.md): board D2's own column, by first name.
+// Whose each task is (docs/decisions/0092-task-owners.md): the design's own column, by first name.
 test("writes each task's owner in the board's column, by first name, and none where nobody has it", async ({
   page,
 }) => {
@@ -551,7 +551,7 @@ test("gives a task to another member of staff who has signed in, and says so whe
   );
 });
 
-// A visit left partly done may be closed without a follow-up, with why, as the owner ruled (open point 62).
+// A visit left partly done may be closed without a follow-up, with why.
 test("closes a visit left partly done with a reason, and it leaves the list", async ({ page }) => {
   const partlyDone: OpsReply<"/api/tasks"> = {
     overdue: 1,

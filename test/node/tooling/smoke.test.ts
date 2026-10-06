@@ -9,7 +9,7 @@ interface Faults {
   /** A security header one page the site's Worker answers first has lost. */
   lostHeader?: { path: string; header: string };
   pincode?: unknown;
-  /** On a Phase 2 surface's host, the public site's routes must not answer. */
+  /** On an app surface's host, the public site's routes must not answer. */
   publicRoutes?: "present" | "absent";
 }
 
@@ -291,7 +291,7 @@ function previewOptions(faults?: PreviewFaults, extra: Partial<SmokeOptions> = {
   };
 }
 
-// On 27 September 2026 the owner's invites reached WhatsApp with no image: every staging host is behind Access, and
+// Invites once reached WhatsApp with no image: every staging host is behind Access, and
 // WhatsApp's crawler has no token, so it never saw the landing or the card. Nothing checked it as the crawler does.
 describe("smoke suite, --link-preview", () => {
   it("passes when the landing and its card reach WhatsApp's crawler, and checks nothing else", async () => {
@@ -351,7 +351,7 @@ describe("smoke suite, --link-preview", () => {
   });
 });
 
-/** The page a Phase 2 app's build writes at /, naming its Worker, environment and commit (apps/<app>/vite.config.ts). */
+/** The page an app's build writes at /, naming its Worker, environment and commit (apps/<app>/vite.config.ts). */
 function appPage(worker: string, environment: string, version: string): string {
   return (
     `<!doctype html><html><head><meta name="mm-worker" content="${worker}" />\n` +
@@ -360,7 +360,7 @@ function appPage(worker: string, environment: string, version: string): string {
   );
 }
 
-describe("smoke suite, on a Phase 2 surface's host", () => {
+describe("smoke suite, on an app surface's host", () => {
   /** The ops host, which mm-api and mm-ops serve; mm-ops built from commit "abc" unless `faults` says otherwise. */
   const onSurface = (environment: SmokeOptions["environment"], faults: Faults = {}, versionTag = "abc") =>
     smokeOptions(

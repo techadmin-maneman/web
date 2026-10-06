@@ -55,7 +55,7 @@ describe("a script's Zoho client", () => {
     for (const call of calls) expect(call.init?.headers).toMatchObject({ Authorization: "Zoho-oauthtoken minted" });
   });
 
-  it("calls Books below /books/v3, in the owner's organisation", async () => {
+  it("calls Books below /books/v3, in the business's organisation", async () => {
     const zoho = standIn();
     const books = await zohoScriptClient("books", { env: BOOKS_ENV, argv: [], fetch: zoho.fetch });
     await books.call("GET", "/contacts");

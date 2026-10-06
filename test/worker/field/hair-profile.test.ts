@@ -1,5 +1,5 @@
 // A client's hair profile (docs/decisions/0106-a-clients-hair-profile.md): the technician records the fit spec and the
-// history at a consultation and at a one visit, on no consent of its own, as the owner ruled; every change is a new
+// history at a consultation and at a one visit, on no consent of its own; every change is a new
 // version; ops read every version and correct the latest on the client's page; an erasure blanks them, and the export
 // carries them. None of it reaches FSM, a log line or the audit log. NOW is Monday 21 September 2026, 12 noon in
 // India; the visit is today at 13:00. Every name and number is made up.
@@ -122,7 +122,7 @@ describe("the technician's profile step", () => {
       progress: { steps_done: ["before_photos", "profile"] },
       profile: { recorded_at: NOW.toISOString(), fit: FIT_AS_READ, history: HISTORY },
     });
-    // The owner ruled it needs no consent of its own: none is asked for, and none written.
+    // It needs no consent of its own: none is asked for, and none written.
     expect(await consentRows()).toEqual(consentsBefore);
   });
 
