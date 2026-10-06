@@ -112,7 +112,7 @@ const gilded = (page: Page) =>
       .map((element) => element.textContent.trim()),
   );
 
-// Ruling 59 (ADR 0025), 27 September 2026: "gold marks only the one primary action". The boards also gild a ticked
+// ADR 0025, item 59: "gold marks only the one primary action". The boards also gild a ticked
 // box, a step's count and a chosen outcome or reason.
 test("draws nothing in gold but the one primary action", async ({ page }) => {
   const fake = await fakeTech(page);

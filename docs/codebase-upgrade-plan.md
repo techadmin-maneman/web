@@ -189,3 +189,13 @@ alongside a long-lived branch.
 | Test files past 500 lines                 | 51  | 0      |
 | Functions with five or more parameters    | 24  | 0      |
 | Files naming FSM                          | 36  | 0      |
+
+## Progress
+
+| Phase                       | State                                                                                                             |
+| --------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| 1. Start here               | Done: `docs/start-here.md` and its map test (#485)                                                                |
+| 7. Workers Paid             | Done: the database limit, the CPU report, the daily allowances, the budget model and the cron's caps (#479, #484) |
+| 2. Comments without history | Done: every folder (#480 to #494), held by `no-history.test.ts`                                                   |
+| 3. Feature folders          | In review                                                                                                         |
+| 4, 5, 6, 8                  | Not started                                                                                                       |
