@@ -26,7 +26,7 @@ export const settings = {
   storage: (held: number, share: number) =>
     `Photos and referral cards: ${(held / 1e9).toFixed(2)} GB of ${String(share / 1e9)} GB`,
   /** No board draws this line either. Megabytes as Cloudflare counts them, a million bytes. */
-  database: (held: number, limit: number) => `Database: ${(held / 1e6).toFixed(0)} MB of ${String(limit / 1e6)} MB`,
+  database: (held: number, limit: number) => `Database: ${(held / 1e6).toFixed(0)} MB of ${String(limit / 1e9)} GB`,
   // No board draws the tabs' names.
   tabs: {
     rules: "Policies",

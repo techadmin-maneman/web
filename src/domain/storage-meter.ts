@@ -167,8 +167,6 @@ export async function readDatabaseBytes(db: D1Database): Promise<number> {
   return meta.size_after;
 }
 
-const megabytes = (bytes: number) => (bytes / 1e6).toFixed(0);
-
 /**
  * Tells ops of the highest mark the database has passed since they were last told, once, as tellOfStorage does R2's.
  */
@@ -185,8 +183,8 @@ export async function tellOfDatabaseSize(db: D1Database, alertOnce: AlertOnce, h
   await alertOnce({
     key: `d1_size:${String(mark)}`,
     message:
-      `The database holds ${megabytes(heldBytes)} MB, ${String(mark)}% of the ` +
-      `${megabytes(DATABASE_LIMIT_BYTES)} MB Cloudflare's free plan allows it. Past that every write fails, and ` +
+      `The database holds ${gigabytes(heldBytes)} GB, ${String(mark)}% of the ` +
+      `${String(DATABASE_LIMIT_BYTES / 1e9)} GB Cloudflare allows it. Past that every write fails, and ` +
       'bookings, payments and the console stop with them (runbook, "D1 growing").',
     link: STORAGE_LINK,
   });

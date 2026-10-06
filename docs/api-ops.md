@@ -14643,7 +14643,7 @@ Request body:
     },
     "database_limit_bytes": {
       "type": "integer",
-      "description": "D1's limit on one database on the free plan; past it every write fails."
+      "description": "D1's limit on one database on Workers Paid; past it every write fails."
     }
   },
   "required": [

@@ -3,21 +3,21 @@
 import { describe, expect, it } from "vitest";
 import { DATABASE_LIMIT_BYTES, databaseMarkReached } from "../../../src/policy/database-size.ts";
 
-const MB = 1e6;
+const GB = 1e9;
 
 describe("the database's size", () => {
-  it("is held to Workers Free's 500 MB a database", () => {
-    expect(DATABASE_LIMIT_BYTES).toBe(500 * MB);
+  it("is held to Workers Paid's 10 GB a database", () => {
+    expect(DATABASE_LIMIT_BYTES).toBe(10 * GB);
   });
 
   it("is told at half the limit, at 80% of it, and at 95%", () => {
     expect(databaseMarkReached(0)).toBeNull();
-    expect(databaseMarkReached(249 * MB)).toBeNull();
-    expect(databaseMarkReached(250 * MB)).toBe(50);
-    expect(databaseMarkReached(399 * MB)).toBe(50);
-    expect(databaseMarkReached(400 * MB)).toBe(80);
-    expect(databaseMarkReached(474 * MB)).toBe(80);
-    expect(databaseMarkReached(475 * MB)).toBe(95);
-    expect(databaseMarkReached(600 * MB)).toBe(95);
+    expect(databaseMarkReached(4.99 * GB)).toBeNull();
+    expect(databaseMarkReached(5 * GB)).toBe(50);
+    expect(databaseMarkReached(7.99 * GB)).toBe(50);
+    expect(databaseMarkReached(8 * GB)).toBe(80);
+    expect(databaseMarkReached(9.49 * GB)).toBe(80);
+    expect(databaseMarkReached(9.5 * GB)).toBe(95);
+    expect(databaseMarkReached(12 * GB)).toBe(95);
   });
 });

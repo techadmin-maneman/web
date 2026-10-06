@@ -30,7 +30,6 @@ const DOCUMENTATION_CONFIG: StaticConfig = {
     alertWebhookUrl: null,
     leadWebhookUrl: null,
     heartbeatUrl: null,
-    analyticsToken: null,
     zohoCrm: null,
     zohoBooks: null,
     razorpay: null,

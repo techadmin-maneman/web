@@ -1,4 +1,4 @@
-// Nothing recorded the Worker's CPU time, so runs over the free plan's 10 ms went unseen until the audit.
+// Nothing recorded the Worker's CPU time, so a run nearing Cloudflare's limit would go unseen.
 
 import { describe, expect, it } from "vitest";
 import { judgeCpu, readCpu, type CpuReading } from "../../../scripts/lib/cpu-report.ts";
@@ -65,21 +65,21 @@ describe("reading mm-api's CPU time", () => {
 describe("judging mm-api's CPU time", () => {
   const within = { invocations: 100, p50Ms: 2.5, p99Ms: 9.9 };
 
-  it("is quiet while every p99 is within the free plan's 10 ms", () => {
+  it("is quiet while every p99 is within a tenth of the 30 seconds Cloudflare allows", () => {
     const reading: CpuReading = { cron: within, all: within, stopped: {} };
     expect(judgeCpu("mm-api-staging", reading).map((line) => line.level)).toEqual(["ok", "ok"]);
   });
 
-  it("warns where a p99 is over 10 ms, and errs where Cloudflare stopped an invocation", () => {
+  it("warns where a p99 is over 3 seconds, and errs where Cloudflare stopped an invocation", () => {
     const reading: CpuReading = {
-      cron: { invocations: 288, p50Ms: 42.1, p99Ms: 99.6 },
+      cron: { invocations: 288, p50Ms: 420.1, p99Ms: 3200.6 },
       all: within,
       stopped: { exceededCpu: 2 },
     };
     expect(judgeCpu("mm-api-staging", reading)).toEqual([
       {
         level: "warning",
-        text: "mm-api-staging cron runs: 288, CPU p50 42.1 ms, p99 99.6 ms, over the free plan's 10 ms",
+        text: "mm-api-staging cron runs: 288, CPU p50 420.1 ms, p99 3200.6 ms, over a tenth of the 30 s Cloudflare allows",
       },
       {
         level: "ok",

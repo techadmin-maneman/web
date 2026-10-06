@@ -1,9 +1,9 @@
-// How full the database may get before ops are told. Workers Free holds one D1 database to 500 MB (ADR 0009), and
+// How full the database may get before ops are told. Workers Paid holds one D1 database to 10 GB (ADR 0112), and
 // past it every write fails: the audit entry each ops call writes first, a booking, a payment. Ops are told well
-// before, while there is time to make room or move to a paid plan.
+// before, while there is time to make room.
 
-/** Workers Free's limit on one D1 database, in decimal bytes, the smaller reading of "500 MB". */
-export const DATABASE_LIMIT_BYTES = 500e6;
+/** Workers Paid's limit on one D1 database, in decimal bytes, the smaller reading of "10 GB". */
+export const DATABASE_LIMIT_BYTES = 10e9;
 
 /** Ops are told once as the database reaches each. */
 const DATABASE_TOLD_AT_PERCENT = [50, 80, 95] as const;
