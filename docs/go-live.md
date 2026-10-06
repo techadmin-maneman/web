@@ -1,6 +1,6 @@
 # Going live
 
-The checklist that takes Phase 1 and Phase 2 to production, in the order the owner ruled on 27 September 2026: **the site first, the apps later** (`docs/open-points.md`, item 82). The site's release puts the public site, the try-on and booking a consultation on `maneman.in`; the apps' release puts the client app, the technician app, the ops console and payments on theirs.
+The checklist that takes the site and the apps to production, in this order: **the site first, the apps later** (`docs/open-points.md`, item 82). The site's release puts the public site, the try-on and booking a consultation on `maneman.in`; the apps' release puts the client app, the technician app, the ops console and payments on theirs.
 
 Nothing reaches production while a point in `docs/open-points.md` is open, except its engineering follow-ups. Each step here names the point it closes, who does it, and the section of `docs/runbook.md` (RB) that has the commands. `W` is `node node_modules/wrangler/bin/wrangler.js`. Tick a box when the step is done, and record the date where the open point says so.
 

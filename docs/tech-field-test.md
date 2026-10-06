@@ -10,7 +10,7 @@ Print this, or copy it into a notes app, and fill it in as you go.
 
 **How long it takes:** one full working day, with three visits in different kinds of building. Part 6 needs the same phone again a week later, for ten minutes.
 
-**Which phone:** the owner ruled on 24 September 2026 that technicians use **any phone, including iPhones** (`docs/open-points.md`, item 124). Run this sheet on whichever phone the technician actually owns. The parts marked **iPhone only** are skipped on an Android phone; everything else is the same on both.
+**Which phone:** technicians use **any phone, including iPhones** (`docs/open-points.md`, item 124). Run this sheet on whichever phone the technician actually owns. The parts marked **iPhone only** are skipped on an Android phone; everything else is the same on both.
 
 **The one rule:** this is staging, with test jobs. Do not run it against a real client's visit unless ops have said which one, and never photograph a client without asking him first.
 
@@ -404,7 +404,7 @@ If a second iPhone is available, sign in on it **in Safari only**, leave the sam
 ## What this test decides
 
 - **Open point 56, the check-in radius.** The distances from Parts 1 and 3 are the whole evidence. Until they exist, 200 m is a guess.
-- **Open point 124 is settled, and this is what is left of it.** The owner ruled on 24 September 2026 that technicians use any phone, including iPhones. What the day and Part 6 now decide is whether that ruling holds in practice on an iPhone: whether an installed app keeps a week's unsent work, whether the second sign-in reads as sensible rather than broken, and whether the camera gives ten usable frames through iOS's own pipeline. If Part 6 shows the work goes, installing to the home screen stops being advice and becomes a rule ops enforce before a phone is used in the field.
+- **What is left of open point 124.** Technicians use any phone, including iPhones. What the day and Part 6 now decide is whether that holds in practice on an iPhone: whether an installed app keeps a week's unsent work, whether the second sign-in reads as sensible rather than broken, and whether the camera gives ten usable frames through iOS's own pipeline. If Part 6 shows the work goes, installing to the home screen stops being advice and becomes a rule ops enforce before a phone is used in the field.
 - **Open point 125, photograph sizes.** The app re-encodes each frame to about 250 KB; the sets from this day show whether that is enough to see a hairline in a basement.
 - **Whether the app shows the technician enough at the door.** Board B5 shows the distance only on a failure, and the wait's evidence line names the distance without giving it.
 - **Whether Navigate lands in the right place.** It sends a Google Maps route to the address's own coordinate where there is one and to the typed address where there is not (ADR 0054). Part 1 asks at three buildings; if it opens the wrong tower, the coordinate is what to look at, not the button.

@@ -567,7 +567,7 @@ Everything below is at <https://console.cloud.google.com>, signed in as the acco
 
 ## 14. Cloudflare's edge scripts: Web Analytics and JavaScript detections
 
-**Settled 4 October 2026: both stay.** On the zone's free plan the dashboard offers no switch for JavaScript detections, and a Web Analytics rule per host needs a paid plan, which the owner declined. Every surface's policy refuses both scripts, so neither runs where it is not wanted: the beacon runs on the site alone, and the detections script nowhere. `npm run smoke:csp` sets those two refusals aside and fails on any other (`withoutEdgeScripts`, `scripts/lib/smoke-csp.ts`). The steps below are for a paid plan, should the zone ever move to one.
+**Both stay.** On the zone's free plan the dashboard offers no switch for JavaScript detections, and a Web Analytics rule per host needs a paid plan, which the owner declined. Every surface's policy refuses both scripts, so neither runs where it is not wanted: the beacon runs on the site alone, and the detections script nowhere. `npm run smoke:csp` sets those two refusals aside and fails on any other (`withoutEdgeScripts`, `scripts/lib/smoke-csp.ts`). The steps below are for a paid plan, should the zone ever move to one.
 
 Cloudflare can add two scripts to a page at its edge, where no local run sees them. The staging deploy's last step opens every staging host's pages in Chromium and fails while any page refuses one (`npm run smoke:csp -- --environment staging`).
 

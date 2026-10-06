@@ -31,7 +31,7 @@ Five Cloudflare Workers make up each environment: `mm-api` answers every `/api/*
 
 **Staging and production.** Staging (`staging.maneman.in` and its three siblings, all behind Cloudflare Access) runs everything on test money and the owner's real Zoho org. Production runs the Phase 1 API and a placeholder page until the owner's go-ahead; `docs/go-live.md` is the order in which it is switched on, the site first and the apps later.
 
-**The console is the source of truth.** The owner ruled on 27 September 2026 that every price, service and policy is an ops update, not a tech update (ADR 0025, items 66 and 67). What the console already holds is listed under "What changes without a release"; what is still code is `docs/archive/implementation-plan-2026-09-27.md`, C1.
+**The console is the source of truth.** Every price, service and policy is an ops update, not a tech update (ADR 0025, items 66 and 67). What the console already holds is listed under "What changes without a release"; what is still code is `docs/archive/implementation-plan-2026-09-27.md`, C1.
 
 ## Who uses what
 
