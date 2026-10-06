@@ -7,9 +7,9 @@
 // Each time a code is entered is a use, and every use is kept: one taken off its booking is marked removed. What a
 // use takes off is fixed once the price is known: as it is entered, on a hold or on a visit whose service is priced;
 // at the payment link, for a one visit, whose product the client chooses at the visit. The hold, the link, the payment
-// and the invoice then carry the discounted price.
+// and the invoice then carry the discounted price. A code entered on a visit, and taken off it, is
+// ./discount-code-visits.ts.
 
-import { STANDARD_TIER, type VisitType } from "../../config/visit-types.ts";
 import { indiaDate } from "../../lib/india-time.ts";
 import {
   amountOff,
@@ -22,26 +22,24 @@ import {
   type DiscountKind,
   type DiscountTerms,
 } from "../../policy/discount-codes.ts";
-import type { OneVisitState } from "../../policy/one-visit.ts";
-import { auditStatementIfStamped, auditStatementIfWritten, type AuditActor, type AuditEntry } from "../ops/audit.ts";
+import { type AuditActor } from "../ops/audit.ts";
 import { spendableCredits } from "./credits.ts";
 import { CODE_COLUMNS, coversOf, standing, termsOf, type CodeRow } from "./discount-codes.ts";
-import { priceOf, type Price } from "./price-book.ts";
-import { requestedCode, typedForVisit } from "./requested-codes.ts";
+import { type Price } from "./price-book.ts";
+import { requestedCode } from "./requested-codes.ts";
 import { PAYMENT_TAKEN, statusIn } from "../../config/statuses.ts";
-import { creditSpentOn } from "../visits/visit-facts.ts";
 
 /** Who entered a code on a booking. */
 type GivenBy = "client" | "technician" | "ops";
 
 /** Ops, by the Access identity behind the call, which their audit entry names. */
-interface ByOps {
+export interface ByOps {
   readonly kind: "ops";
   readonly actor: AuditActor;
 }
 
 /** The client or the technician, by their ID; or ops. */
-type EnteredBy = { readonly kind: "client" | "technician"; readonly id: string } | ByOps;
+export type EnteredBy = { readonly kind: "client" | "technician"; readonly id: string } | ByOps;
 
 /** Who entered it, as the use keeps it: the client's or the technician's ID, or ops' Access identity. */
 const idOf = (by: EnteredBy): string => (by.kind === "ops" ? by.actor.id : by.id);
@@ -56,7 +54,7 @@ export const unpaidHold = (hold: string): string =>
  * link made for it. A refunded payment was a payment. A one visit closed with the client fitted has its price fixed by
  * the close, though a code that left nothing to pay made no link.
  */
-const openVisit = (visit: string): string =>
+export const openVisit = (visit: string): string =>
   `EXISTS (SELECT 1 FROM appointments open_visit WHERE open_visit.id = ${visit} AND open_visit.deleted_at IS NULL
      AND open_visit.fsm_invoice_id IS NULL AND open_visit.invoice_issued_at IS NULL
      AND open_visit.one_visit IS NOT 'fitted')
@@ -210,37 +208,6 @@ export async function enteredAs(db: D1Database, useId: string, code: string): Pr
 /** What taking a code off came to. */
 export type Removed = "removed" | "none" | "price_settled" | "expired" | "not_found";
 
-// ---------------------------------------------------------------------------
-// A visit: the technician's one visit, or any visit ops enter a code on
-// ---------------------------------------------------------------------------
-
-interface VisitRow {
-  id: string;
-  person_id: string | null;
-  type: VisitType | null;
-  tier: string | null;
-  window_start: string | null;
-  one_visit: OneVisitState | null;
-  status: string;
-  open: number;
-  on_credit: number;
-}
-
-async function visitOf(db: D1Database, visitId: string): Promise<VisitRow | null> {
-  return db
-    .prepare(
-      `SELECT a.id, a.person_id, a.type, a.tier, a.window_start, a.one_visit, a.status,
-         (${openVisit("a.id")}) AS open,
-         ${creditSpentOn("a.id")} AS on_credit
-       FROM appointments a WHERE a.id = ?1 AND a.deleted_at IS NULL`,
-    )
-    .bind(visitId)
-    .first<VisitRow>();
-}
-
-/** A visit cancelled or ended unfinished takes no code: nothing will be sold at it. */
-const TAKES_A_CODE = new Set(["scheduled", "dispatched", "in_progress", "completed"]);
-
 /** A visit's code, entered on it or on the hold that booked it. */
 export interface VisitCode {
   readonly useId: string;
@@ -336,121 +303,6 @@ export async function codeToCarry(
           now.toISOString(),
         ),
   };
-}
-
-/** The visit's own price in the book on its day: its service's, or a one visit's product once chosen. */
-async function priceOfVisit(db: D1Database, visit: VisitRow): Promise<Price | null> {
-  if (visit.type === null || visit.window_start === null || visit.one_visit === "booked") return null;
-  return priceOf(db, visit.type, indiaDate(new Date(visit.window_start)), visit.tier ?? STANDARD_TIER);
-}
-
-/**
- * The technician, on a one visit before its payment link is made, or ops, on any visit not yet paid for, linked or
- * invoiced, enter a code on the visit. What it takes off is fixed now where the visit's price is known, and at the
- * payment link for a one visit whose product is still to be chosen. The code the client typed on /book for a one
- * visit is honoured as it stood when typed. Ops' entry is audited in the same batch.
- */
-export async function enterOnVisit(
-  db: D1Database,
-  entry: { readonly visitId: string; readonly text: string; readonly by: EnteredBy; readonly requestId?: string },
-  now: Date,
-): Promise<Entered> {
-  const visit = await visitOf(db, entry.visitId);
-  if (visit === null) return { kind: "not_found" };
-  const { person_id: personId, type } = visit;
-  if (personId === null || type === null) return { kind: "not_found" };
-  if (visit.open !== 1 || !TAKES_A_CODE.has(visit.status)) return { kind: "price_settled" };
-  if ((await codeOnVisit(db, visit.id)) !== null) return { kind: "already_discounted" };
-
-  const typedAt = visit.one_visit === null ? null : await typedForVisit(db, visit.id, entry.text);
-  const checked = await checkDiscountCode({
-    db,
-    text: entry.text,
-    booking: { type, onCredit: visit.on_credit === 1, moves: false },
-    personId,
-    now,
-    typedAt: typedAt ?? now,
-  });
-  if (!checked.ok) return { kind: "not_applicable", reason: checked.reason };
-
-  const price = await priceOfVisit(db, visit);
-  const use = {
-    id: crypto.randomUUID(),
-    codeId: checked.code.id,
-    personId,
-    holdId: null,
-    visitId: visit.id,
-    amountOff: price === null ? null : amountOff(termsOf(checked.code), price.amount_ex_gst),
-    by: entry.by,
-    typedAt: typedAt ?? now,
-  };
-  const { by } = entry;
-  const audit = by.kind === "ops" ? [visitAudit("discount_code.apply", by, entry, checked.code.code)] : [];
-  await db.batch([
-    useStatement(db, use, "open_visit", now),
-    ...audit.map((each) => auditStatementIfWritten(db, each, now, { table: "discount_code_uses", id: use.id })),
-  ]);
-  return enteredAs(db, use.id, checked.code.code);
-}
-
-/** Ops' entry for a code entered on a visit or taken off it: the visit's ID and the code, and nothing else. */
-function visitAudit(
-  action: "discount_code.apply" | "discount_code.remove",
-  by: ByOps,
-  entry: { readonly visitId: string; readonly requestId?: string },
-  code: string,
-): AuditEntry {
-  return {
-    surface: "ops",
-    actor: by.actor,
-    action,
-    subject: { kind: "appointment", id: entry.visitId },
-    requestId: entry.requestId ?? null,
-    detail: { code },
-  };
-}
-
-/** Ops take the code off a visit not yet paid for, linked or invoiced: its use is marked removed, and audited. */
-export async function removeFromVisit(
-  db: D1Database,
-  entry: { readonly visitId: string; readonly by: ByOps; readonly requestId: string },
-  now: Date,
-): Promise<Exclude<Removed, "expired">> {
-  const visit = await visitOf(db, entry.visitId);
-  if (visit === null) return "not_found";
-  if (visit.open !== 1) return "price_settled";
-  const code = await codeOnVisit(db, visit.id);
-  if (code === null) return "none";
-  const removal = visitAudit("discount_code.remove", entry.by, entry, code.code);
-  await db.batch([
-    db
-      .prepare(
-        `UPDATE discount_code_uses SET removed_at = ?2, removed_by = 'ops', removed_by_id = ?3
-         WHERE id = ?1 AND removed_at IS NULL AND ${openVisit("?4")}`,
-      )
-      .bind(code.useId, now.toISOString(), entry.by.actor.id, visit.id),
-    auditStatementIfStamped(db, removal, now, { table: "discount_code_uses", column: "removed_at", id: code.useId }),
-  ]);
-  return "removed";
-}
-
-/**
- * The code on a one visit the client decided against, taken off by the system: nothing was sold, so the code is the
- * client's to use again, and counts against its limits no more.
- */
-export function releaseDeclined(db: D1Database, visitId: string, now: Date): D1PreparedStatement[] {
-  const removed = "removed_at = ?2, removed_by = 'system', removed_by_id = 'declined'";
-  return [
-    db
-      .prepare(`UPDATE discount_code_uses SET ${removed} WHERE appointment_id = ?1 AND removed_at IS NULL`)
-      .bind(visitId, now.toISOString()),
-    db
-      .prepare(
-        `UPDATE discount_code_uses SET ${removed}
-         WHERE hold_id IN (SELECT h.id FROM slot_holds h WHERE h.appointment_id = ?1) AND removed_at IS NULL`,
-      )
-      .bind(visitId, now.toISOString()),
-  ];
 }
 
 /** A visit's code as the client's page shows it, and whether ops may still enter or take off one. */

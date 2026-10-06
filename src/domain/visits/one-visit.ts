@@ -11,7 +11,7 @@
 import { STANDARD_TIER } from "../../config/visit-types.ts";
 import { indiaDate } from "../../lib/india-time.ts";
 import type { Decision } from "../../policy/one-visit.ts";
-import { releaseDeclined } from "../money/discount-code-uses.ts";
+import { releaseDeclined } from "../money/discount-code-visits.ts";
 import { pieceBodyOf } from "../field/job-event-bodies.ts";
 import { eventsOf } from "../field/job-events.ts";
 import { sendPaymentLink, type LinkDeps, type LinkSent } from "../money/payment-links.ts";
