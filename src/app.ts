@@ -18,7 +18,10 @@ import { meterDatabase, serverTiming, usageFields } from "./lib/d1-meter.ts";
 import { createLogger } from "./log.ts";
 import { registerClientAuth } from "./routes/client/auth.ts";
 import { registerClientMe } from "./routes/client/me.ts";
-import { registerClientProfile } from "./routes/client/profile.ts";
+import { registerClientDeletionRequest, registerClientProfile } from "./routes/client/profile.ts";
+import { registerClientAddress } from "./routes/client/address.ts";
+import { registerClientConsents } from "./routes/client/consents.ts";
+import { registerClientNumberChange } from "./routes/client/number-change.ts";
 import { registerClientSessions } from "./routes/client/sessions.ts";
 import { registerClientBooking } from "./routes/client/booking.ts";
 import { registerClientChanges } from "./routes/client/changes.ts";
@@ -43,6 +46,10 @@ import { registerOpsDispatch } from "./routes/ops/dispatch.ts";
 import { registerOpsDisputes } from "./routes/ops/disputes.ts";
 import { registerOpsErasure } from "./routes/ops/erasure.ts";
 import { registerOpsField } from "./routes/ops/field.ts";
+import { registerOpsNoShows } from "./routes/ops/no-shows.ts";
+import { registerOpsClientPieces } from "./routes/ops/client-pieces.ts";
+import { registerOpsTechnicianLeave } from "./routes/ops/technician-leave.ts";
+import { registerOpsTechnicianPhones } from "./routes/ops/technician-phones.ts";
 import { registerOpsGrievances } from "./routes/ops/grievances.ts";
 import { registerOpsHairProfile } from "./routes/ops/hair-profile.ts";
 import { registerOpsJobSheet } from "./routes/ops/job-sheet.ts";
@@ -120,6 +127,10 @@ const SURFACE_ROUTES: Readonly<Record<Surface, readonly ((app: App) => void)[]>>
     registerClientAuth,
     registerClientMe,
     registerClientProfile,
+    registerClientAddress,
+    registerClientConsents,
+    registerClientNumberChange,
+    registerClientDeletionRequest,
     registerClientSessions,
     registerClientVisits,
     // After the visits: they put the session on every /api/visits/* route.
@@ -158,7 +169,11 @@ const SURFACE_ROUTES: Readonly<Record<Surface, readonly ((app: App) => void)[]>>
     registerOpsGrievances,
     registerOpsWaitlist,
     registerOpsDispatch,
+    registerOpsNoShows,
+    registerOpsClientPieces,
     registerOpsField,
+    registerOpsTechnicianLeave,
+    registerOpsTechnicianPhones,
     registerOpsNoShowRulings,
     registerOpsDisputes,
     registerOpsTasks,

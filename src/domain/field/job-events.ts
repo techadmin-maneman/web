@@ -25,7 +25,7 @@ import { firstNameOf } from "../../lib/names.ts";
 import { isNoShow, landsAfterClose, stepBefore, type JobEventKind } from "../../policy/in-job-steps.ts";
 import { namesTheOtherTechnician } from "../../policy/job-visibility.ts";
 import { earliestCheckIn, isOnVisitDay, tooEarlyToArrive, type PhoneClock } from "../../policy/phone-clock.ts";
-import type { WorkableJob } from "./tech-jobs.ts";
+import type { WorkableJob } from "./workable-job.ts";
 
 /** As job_events.fsm_write_state holds it: "written" once landed, "rejected" when superseded. */
 export type WriteState = "pending" | "written" | "rejected";

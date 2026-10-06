@@ -3,7 +3,7 @@
 
 import { addDays, indiaDate } from "../../lib/india-time.ts";
 import { SLOTS_PER_DAY } from "../../config/scheduling.ts";
-import { dispatchBoard } from "./dispatch.ts";
+import { dispatchBoard } from "./dispatch-board.ts";
 
 /**
  * "Each column head shows its utilisation, in per cent. This is the operating

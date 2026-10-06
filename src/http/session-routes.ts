@@ -4,6 +4,7 @@
 
 import { createRoute, type RouteConfig } from "@hono/zod-openapi";
 import { requireClientSession } from "./client-session.ts";
+import { errorResponse } from "./errors.ts";
 import { requireSelfServe } from "./self-serve.ts";
 import { requireTechnicianSession } from "./technician-session.ts";
 
@@ -18,3 +19,4 @@ export const selfServeRoute = <R extends RouteConfig>(route: R) =>
 /** A route a signed-in technician calls. */
 export const techRoute = <R extends RouteConfig>(route: R) =>
   createRoute({ ...route, middleware: [requireTechnicianSession] });
+export const signedIn = { 401: errorResponse("session_required") };
