@@ -50,7 +50,7 @@ interface Props {
   /**
    * "invited" is /r/:code, where a friend arrives with someone's invite. "public"
    * is the site's own /book, which shows no card and no invite, and asks where the
-   * hair loss is as Phase 1's form did (docs/decisions/0051-booking-from-the-site.md).
+   * hair loss is as the site's first form did (docs/decisions/0051-booking-from-the-site.md).
    * It books with the invite this browser remembers, if any, and its confirmation
    * then says what the landing's does (docs/decisions/0089-an-invite-is-not-lost.md).
    */

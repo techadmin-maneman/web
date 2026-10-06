@@ -1,5 +1,5 @@
 // The referral landing at /r/:code, word for word from the design
-// (design/phase2/Referral and Waitlist, boards C1 to C5), except where we go
+// (design/phase2/Referral and Waitlist), except where we go
 // and how long each visit takes, which are the site's own (service.ts).
 //
 // The prices are the site's own, from the price book (src/lib/prices.ts),
@@ -11,8 +11,8 @@
 // (docs/decisions/0107-referral-rewards-in-the-console.md), so no sentence types
 // a count: each is built from the reward below. Where one side gets nothing, the
 // page promises it nothing; where the reward is not known, no count is given.
-// The words for unequal sides and for nothing are ours until the owner's (open
-// point 172); with both sides at 3 they are the design's.
+// The words for unequal sides and for nothing are ADR 0107's; with both sides at 3
+// they are the design's.
 
 import type { Invite, OpenWindows, ReferralConsultation, ReferralReward } from "../lib/api.ts";
 import { fill } from "../lib/text.ts";
@@ -43,7 +43,7 @@ function agreeing(count: number, one: string, many: string): string {
 /** The friend's visits, or none where the reward is not known. */
 const friendVisits = (reward: ReferralReward | null): number => reward?.friend_visits ?? 0;
 
-/** The navy block's offer (C1): what the invite earns each side. Null where it earns nobody anything. */
+/** The navy block's offer: what the invite earns each side. Null where it earns nobody anything. */
 function inviteOffer(reward: ReferralReward): string | null {
   const { referrer_visits: referrer, friend_visits: friend } = reward;
   if (friend === 0 && referrer === 0) return null;
@@ -74,7 +74,7 @@ function rememberedOnBooking(reward: ReferralReward | null): string {
   return `You have an invite. ${toldWhenFitted(null, reward)}`;
 }
 
-/** The booked confirmation's line of the friend's visits (C4); null where they get none, or it is not known. */
+/** The booked confirmation's line of the friend's visits; null where they get none, or it is not known. */
 function visitsLand(reward: ReferralReward | null): string | null {
   const friend = friendVisits(reward);
   if (friend === 0) return null;
@@ -89,7 +89,7 @@ function expiredBody(reward: ReferralReward | null): string {
 }
 
 export const referral = {
-  /** The navy block at the top, before the pincode is known (C1). */
+  /** The navy block at the top, before the pincode is known. */
   arrival: {
     invited: "{name} sent you this",
     unnamed: "You have an invite",
@@ -116,8 +116,7 @@ export const referral = {
       },
       {
         what: "Service visit",
-        // Monthly, as the main site sells twelve service visits a year: the owner ruled the cadence 30 days on
-        // 27 September 2026 (docs/archive/owner-answers-2026-09-27.md).
+        // Monthly, as the main site sells twelve service visits a year.
         note: "Every month, at home",
         amount: "{service}",
         incl: "Lifted, cleaned, re-bonded, trimmed",
@@ -155,11 +154,11 @@ export const referral = {
     empty: "Enter your pincode.",
     invalid: "That isn’t a six-digit Indian pincode.",
     failed: "We couldn’t check that right now. Try again.",
-    // Not drawn: a pincode typed wrong could only be put right by reloading the page. The owner approves the words (open point 45).
+    // Not drawn: a pincode typed wrong could only be put right by reloading the page.
     change: "Change",
     changeLabel: "Change the pincode",
   },
-  /** The consultation form, shown when the pincode is served (C2). */
+  /** The consultation form, shown when the pincode is served. */
   consultation: {
     served: "We come to {area}",
     /** The form's heading on the invite, which follows what it books. */
@@ -176,7 +175,7 @@ export const referral = {
       { id: "afternoon", label: "Afternoon", hours: "12 to 4 pm" },
       { id: "evening", label: "Evening", hours: "4 to 8 pm" },
     ] satisfies readonly { id: ReferralConsultation["window"]; label: string; hours: string }[],
-    // Not drawn: a window nobody is free in, and a fortnight with none open. The owner approves the words.
+    // Not drawn: a window nobody is free in, and a fortnight with none open.
     full: "Full",
     noneOpen: "Fully booked for the next two weeks.",
     noneOpenAction: "Message us on WhatsApp for the next opening",
@@ -193,9 +192,8 @@ export const referral = {
       notYet: "Consultation and fit in one visit isn’t open to book yet.",
     },
     /**
-     * Not drawn: a discount code for the consultation and fit in one visit, on /book only, as the owner ruled on
-     * 1 October 2026 (docs/decisions/0108-discount-codes.md). Placeholder words for the owner to approve, not marked,
-     * since the mark refuses the site's production build (ADR 0081). A code that does not apply is told only that.
+     * Not drawn: a discount code for the consultation and fit in one visit, on /book only
+     * (docs/decisions/0108-discount-codes.md). A code that does not apply is told only that.
      */
     code: {
       label: "Discount code (optional)",
@@ -204,15 +202,14 @@ export const referral = {
     consent: lineOf(notices.consultation),
     submit: "Book the consultation",
     submitOneVisit: "Book the consultation and fit",
-    // Not drawn: once the WhatsApp code is on its way, the button confirms it and books. The owner approves the words.
+    // Not drawn: once the WhatsApp code is on its way, the button confirms it and books.
     confirmOneVisit: "Confirm and book",
     sending: "Booking",
     told: toldWhenFitted,
   },
   /**
-   * Not drawn: no board puts an address on the consultation form. The owner ruled on 27 September 2026 that the
-   * site takes the full address before a consultation is booked (ADR 0025, item 62; ADR 0081), so the fields are
-   * the client app's own (apps/app/src/content.ts, `profile.form`). The owner approves the words (open point 45).
+   * Not drawn: the design puts no address on the consultation form. The site takes the full address before a
+   * consultation is booked (ADR 0081), so the fields are the client app's own (apps/app/src/content.ts, `profile.form`).
    */
   address: {
     legend: "Your address",
@@ -237,7 +234,7 @@ export const referral = {
     pincode: "Pincode",
     accessHint: "A gate code, or where to park. Your technician sees it the day before the visit.",
   },
-  /** The waitlist form, shown when the pincode is not served (C3). */
+  /** The waitlist form, shown when the pincode is not served. */
   waitlist: {
     title: "We are not in {area} yet",
     titleUnknown: "We are not there yet",
@@ -250,14 +247,14 @@ export const referral = {
     optional: "Optional",
     submit: "Add me to the list",
     sending: "Adding",
-    // Not drawn: who is told, as the consultation form says it. The owner approves the words.
+    // Not drawn: who is told, as the consultation form says it.
     holds: "{name}’s invite stays valid for 12 months after we launch there. {name} is told when you are fitted.",
     holdsUnnamed:
       "The invite stays valid for 12 months after we launch there. Whoever invited you is told when you are fitted.",
   },
   /**
    * Not drawn: /book's line for the invite this browser remembers, before the form sends it with the booking, so the
-   * friend knows who is told of the fit and may go on without it. The owner approves the words.
+   * friend knows who is told of the fit and may go on without it.
    */
   remembered: {
     consultation: rememberedOnBooking,
@@ -275,13 +272,13 @@ export const referral = {
     mobilePlaceholder: "Your number",
     mobileError: "Enter a valid 10-digit mobile number.",
     consentError: "We need this to contact you.",
-    // Not drawn: by the button once three or more fields are marked. The owner approves the words.
+    // Not drawn: by the button once three or more fields are marked.
     marked: "Check the {count} fields marked above.",
   },
   /**
-   * What a booking answers (C4), the same for every number, since whoever typed it may not be its owner: the details
+   * What a booking answers, the same for every number, since whoever typed it may not be its owner: the details
    * go to the number on WhatsApp, and the app shows them once its owner signs in with a code. Not drawn as worded
-   * here; the owner approves the words.
+   * here.
    */
   booked: {
     label: "Booking received",
@@ -289,8 +286,7 @@ export const referral = {
     body: "Your booking details are on their way to +91 {mobile}.",
     credits: visitsLand,
     // Not drawn: the discount code given with the one visit, as it stands on the booking, or not, when another
-    // booking took its last use a moment before (ADR 0108). What it takes off is before GST. The owner approves the
-    // words.
+    // booking took its last use a moment before (ADR 0108). What it takes off is before GST.
     code: {
       applied: (code: string, off: string) => `Code ${code}: ${off}, taken when you pay.`,
       notApplied: (code: string) => `We couldn’t apply code ${code}. Your booking stands without it.`,
@@ -338,7 +334,7 @@ export const referral = {
     taken: "That time isn’t available. Pick another.",
     notBookable: "That day’s no longer open. Pick another.",
     other: "Something went wrong on our side. Try again.",
-    // Not drawn: the discount code given does not apply, whatever the reason (ADR 0108). The owner approves the words.
+    // Not drawn: the discount code given does not apply, whatever the reason (ADR 0108).
     codeNotApplicable: "That discount code doesn’t apply. Check it, or leave it out to book without it.",
     // Not drawn: the one visit was asked for while no hair system is offered in the console.
     noProduct: "Consultation and fit in one visit isn’t open to book yet. Book the consultation instead.",
@@ -346,7 +342,7 @@ export const referral = {
     notProved: "Your WhatsApp code has expired. Book again for a new one.",
   },
   /**
-   * What a shared invite's preview says (boards B1 and B2), which the mm-site Worker writes into the page. Only a
+   * What a shared invite's preview says, which the mm-site Worker writes into the page. Only a
    * valid invite promises the friend's visits, and only where there are any: any other books without them.
    */
   preview: {

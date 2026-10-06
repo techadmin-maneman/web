@@ -1,4 +1,4 @@
-// Dates as the Phase 2 designs write them: "Sat 21 Sep", "22 Aug", "14 Nov 2026". A
+// Dates as the apps' designs write them: "Sat 21 Sep", "22 Aug", "14 Nov 2026". A
 // visit's date is a calendar date in India (YYYY-MM-DD); an instant, such as
 // when a consent was given, is shown as India's date.
 
@@ -65,7 +65,7 @@ export function indiaInstant(date: string, time: string): Date {
 /** The day of the week a calendar date falls on, 0 for Sunday. */
 const weekdayOf = (isoDate: string): number => new Date(`${isoDate}T00:00:00Z`).getUTCDay();
 
-/** "2026-08-22" → "22 Aug", as board A3 dates the last visit. */
+/** "2026-08-22" → "22 Aug", as the job card dates the last visit. */
 export function dayMonth(isoDate: string): string {
   const { month, day } = partsOf(isoDate);
   return `${String(day)} ${MONTHS[month - 1] ?? ""}`;
@@ -76,7 +76,7 @@ export function shortDate(isoDate: string): string {
   return `${DAYS[weekdayOf(isoDate)] ?? ""} ${dayMonth(isoDate)}`;
 }
 
-/** "2026-09-24" → "Thursday 24 Sep", as board C3 heads the day. */
+/** "2026-09-24" → "Thursday 24 Sep", as a day's heading reads. */
 export function weekdayDate(isoDate: string): string {
   return `${WEEKDAYS[weekdayOf(isoDate)] ?? ""} ${dayMonth(isoDate)}`;
 }
@@ -86,7 +86,7 @@ export function fullDate(isoDate: string): string {
   return `${dayMonth(isoDate)} ${String(partsOf(isoDate).year)}`;
 }
 
-/** "2027-08-22" → "22 Aug" in 2027, and "22 Aug 2027" in any other year: as board E1 dates its entries. */
+/** "2027-08-22" → "22 Aug" in 2027, and "22 Aug 2027" in any other year: as the payments list dates its entries. */
 export function listDate(isoDate: string, thisYear: number): string {
   return partsOf(isoDate).year === thisYear ? dayMonth(isoDate) : fullDate(isoDate);
 }

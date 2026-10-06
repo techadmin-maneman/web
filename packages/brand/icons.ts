@@ -5,7 +5,7 @@
 /** The stroke the icon set is drawn at. */
 export const ICON_STROKE = 1.6;
 
-/** The Phase 1 site's icons. Frozen: the site's island bundles carry exactly these. */
+/** The site's first icons. Frozen: the site's island bundles carry exactly these. */
 export const ICONS = {
   tick: "M4 12.5 L9.5 18 L20 6",
   cross: "M6 6 L18 18 M18 6 L6 18",
@@ -23,7 +23,7 @@ export const ICONS = {
   sending: "M12 3.5 A8.5 8.5 0 0 1 20.5 12",
 } as const;
 
-/** The nine glyphs Phase 2 adds (design/phase2/Client App.dc.html, the icons board). */
+/** The nine glyphs the apps add (design/phase2/Client App.dc.html, the icons board). */
 export const ICONS_P2 = {
   visitCredit: "M12 3.5 A8.5 8.5 0 0 1 12 20.5 A8.5 8.5 0 0 1 12 3.5 M8 12 L11 15 L16.5 9",
   holdTimer: "M9 3 H15 M12 3 V7 M12 7 A6.5 6.5 0 0 1 12 20 A6.5 6.5 0 0 1 12 7 M12 11 V14",
@@ -43,9 +43,9 @@ export const ICONS_P2 = {
  * the glyphs no other app draws.
  */
 export const GLYPHS = {
-  /** A row that opens its detail: a past visit (client board C1), a job (technician board A1). */
+  /** A row that opens its detail: a past visit in the client app, a job in the technician app. */
   chevron: "M9 5 L16 12 L9 19",
-  /** A chosen way to pay and a chosen card (client boards C4, F2); inside a ticked checklist box (technician B2). */
+  /** A chosen way to pay and a chosen card in the client app; inside a ticked checklist box in the technician app. */
   check: "M5 13 L10 18 L19 6",
 } as const;
 

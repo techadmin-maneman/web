@@ -9,8 +9,8 @@ import { fillPrices, type PriceWords } from "./prices.ts";
 import { SITE_ORIGIN } from "./site-origin.ts";
 
 /**
- * The number search engines show: the business's WhatsApp number, the only one the site gives. The owner ruled on
- * 27 September 2026 that the footer shows it as WhatsApp and not as a line to call (docs/open-points.md, item 47).
+ * The number search engines show: the business's WhatsApp number, the only one the site gives. The footer shows it
+ * as WhatsApp and not as a line to call.
  */
 function telephone(): string | undefined {
   if (whatsapp.publish) return `+${whatsapp.number}`;

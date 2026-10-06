@@ -1,4 +1,4 @@
-// Amounts as the Phase 2 boards write them, "Rs. 2,000", with India's grouping
+// Amounts as the apps' designs write them, "Rs. 2,000", with India's grouping
 // ("1,00,000"). The API gives paise; whole rupees drop the paise. The public
 // site's own design wrote "₹2,000"; the owner ruled on 27 September 2026 that
 // every surface writes "Rs." (ADR 0025, item 51). This is the one place any

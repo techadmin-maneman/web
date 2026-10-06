@@ -110,7 +110,7 @@ function cards(stages: readonly NorwoodStage[], offset: number) {
     gap: var(--norwood-gap);
     max-width: var(--norwood-early-max);
   }
-  /* v2 centres this row; the owner asked for it to start at the left edge, like the early group. */
+  /* v2 centres this row; here it starts at the left edge, like the early group, by request. */
   .flow {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(min(46%, var(--norwood-flow-basis)), 1fr));

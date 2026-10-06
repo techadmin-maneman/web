@@ -79,7 +79,7 @@
   --weight-medium: 500;
 
   /* Leading, as a ratio of the type's size, named for its value as the sizes are: --lh-155 is 1.55. The
-     designs set each block's own, so the scale is theirs; the Phase 2 layer adds the one the apps alone use. */
+     designs set each block's own, so the scale is theirs; the apps' layer adds the one the apps alone use. */
   --lh-90: 0.9;
   --lh-97: 0.97;
   --lh-100: 1;
@@ -192,7 +192,7 @@
 
   /* ---- The dispatch board's slot: no board draws it ----------------------- */
   /* A block is this tall for each slot it takes. Board A1 draws 22, 34 and 46 px, under two lines of type that make
-     one slot and a slot and a half read alike; the owner ruled the heights on 27 September 2026 (ADR 0025, item 49). */
+     one slot and a slot and a half read alike (ADR 0025, item 49). */
   --ops-slot: 42px;
 
   /* ---- Page frame -------------------------------------------------------- */

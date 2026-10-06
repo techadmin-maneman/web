@@ -2,7 +2,7 @@
  * The referral landing (design/phase2/Referral and Waitlist, C1 to C5), and /book, which is the same page without
  * the invite. On a phone it is one column: who sent it, the card, the headline and offer, the prices, the pincode
  * block, the form, then how it works, so the one field a friend must fill is above the fold. From 1024 px it is
- * board C5: the prices, the pincode block and the form on the left, the card and how it works on the right.
+ * the desktop design: the prices, the pincode block and the form on the left, the card and how it works on the right.
  *
  * Fields and checkboxes are edged in --paper-control and the pincode field in --ink-line-strong, 3:1 against their
  * ground (WCAG 1.4.11), where the boards draw 1.3:1 and 1.75:1 (ADR 0022, item 37).
@@ -388,7 +388,7 @@
   color: var(--text-soft);
 }
 
-/* The dates: two weeks from tomorrow, a week to a row (C2). */
+/* The dates: two weeks from tomorrow, a week to a row. */
 .dates {
   display: grid;
   grid-template-columns: repeat(7, minmax(0, 1fr));
@@ -607,7 +607,7 @@
   color: var(--ink);
 }
 
-/* The waitlist's optional launch alert sits closer beneath the agreement (C3). */
+/* The waitlist's optional launch alert sits closer beneath the agreement. */
 .form > .consent ~ .consent {
   margin-top: var(--sp-14);
 }
@@ -677,7 +677,7 @@
   font-size: var(--fs-15);
 }
 
-/* ---- The confirmations (C4) ------------------------------------------------ */
+/* ---- The confirmations ------------------------------------------------ */
 
 .done {
   max-width: calc(var(--measure-column) + 2 * var(--gutter));
@@ -761,7 +761,7 @@
   gap: var(--sp-12);
 }
 
-/* ---- Desktop (C5): prices, pincode and form left; card and how it works right ---- */
+/* ---- Desktop: prices, pincode and form left; card and how it works right ---- */
 
 @media (min-width: 1024px) {
   .arrival {

@@ -1,5 +1,5 @@
 /*
- * A one-time code's boxes (./CodeField.tsx), board A2's: lines on ink, the next box marked while the field has
+ * A one-time code's boxes (./CodeField.tsx): lines on ink, the next box marked while the field has
  * focus, the error colour when wrong. The lines are --ink-line-strong, 3:1 against the ink (WCAG 1.4.11), where the
  * design's --ink-line is 1.75:1 (ADR 0025, item 36). An app sets the boxes' height and gap, and the next box's line,
  * with --code-box-height, --code-box-gap and --code-box-next on its own class.

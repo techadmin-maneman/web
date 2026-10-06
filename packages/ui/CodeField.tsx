@@ -1,4 +1,4 @@
-// A one-time code's boxes (board A2), as one labelled field: assistive technology sees a single input, and the boxes
+// A one-time code's boxes, as one labelled field: assistive technology sees a single input, and the boxes
 // only draw what is typed into it. The client app's login and the technician app's draw it; each sets its boxes'
 // height and gap with --code-box-height and --code-box-gap on its own class.
 

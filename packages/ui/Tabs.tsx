@@ -1,4 +1,4 @@
-// The ops console's tabs (board B1, and Settings after it): a row of words,
+// The ops console's tabs (the client page's, and Settings after it): a row of words,
 // the chosen one in the text's ink over an ink rule. Each tab is a link the app
 // draws with its own link component, given the tab's look:
 //

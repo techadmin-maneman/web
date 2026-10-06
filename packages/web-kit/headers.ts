@@ -1,4 +1,4 @@
-// The security headers a Phase 2 app serves, as a Workers static-assets
+// The security headers an app serves, as a Workers static-assets
 // _headers file (docs/decisions/0043-client-app.md). Each app states what it
 // needs beyond its own origin; everything else is refused.
 

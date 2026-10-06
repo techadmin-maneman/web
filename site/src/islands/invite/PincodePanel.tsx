@@ -30,7 +30,7 @@ function PincodeAnswerBlock(props: { answer: PincodeAnswer; heading: { current: 
   );
 }
 
-/** The navy block: the pincode field, which the answer replaces in place, with no new page (board C5). */
+/** The navy block: the pincode field, which the answer replaces in place, with no new page. */
 export function PincodePanel(props: { check: PincodeCheck }) {
   const { answer, error } = props.check;
   return (

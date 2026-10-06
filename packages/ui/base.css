@@ -1,5 +1,5 @@
 /*
- * The page every Phase 2 app starts from, after the brand's tokens and fonts:
+ * The page every app starts from, after the brand's tokens and fonts:
  * the box model, the serif's one weight, keyboard focus, reduced motion, and
  * each app's sizes for a button. Each app's global.css imports it, then sets
  * its own ground and column.
