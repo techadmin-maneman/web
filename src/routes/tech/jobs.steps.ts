@@ -14,7 +14,7 @@ import {
   closedAt,
   kindsLanded,
   landInOrder,
-  whatChanged,
+  jobChangesSince,
   type EventInput,
 } from "../../domain/field/job-events.ts";
 import { pieceLabelTaken, pieceStepOf } from "../../domain/field/pieces.ts";
@@ -206,7 +206,7 @@ function registerPhotographs(app: App): void {
     const id = c.req.valid("param").id;
     const job = await namedJob(c, id);
     if (job === null) return refuse(c, "not_found");
-    const superseding = await whatChanged(c.env.DB, job, technicianId, null);
+    const superseding = await jobChangesSince(c.env.DB, job, technicianId, null);
     if (superseding.changed.length > 0) {
       c.var.log.info("upload_link_superseded", { appointment_id: job.id, changed: superseding.changed });
       return c.json(refusalOf(c, superseded(superseding)), 409);
@@ -337,7 +337,7 @@ function registerProfileAndOutcome(app: App): void {
     }
 
     const heldStart = headers["x-job-starts-at"];
-    const superseding = await whatChanged(
+    const superseding = await jobChangesSince(
       c.env.DB,
       job,
       technicianId,

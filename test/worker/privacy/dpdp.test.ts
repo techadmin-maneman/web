@@ -39,7 +39,7 @@ beforeEach(async () => {
 });
 
 /** A visit with a photograph in the client-photos bucket, an address, and a grievance. */
-async function phase2Data() {
+async function appData() {
   await env.DB.prepare(
     `INSERT INTO appointments (id, fsm_id, person_id, type, status, window_start, synced_at)
      VALUES (?1, ?1, ?2, 'service', 'completed', '2026-09-01T06:30:00.000Z', ?3)`,
@@ -73,7 +73,7 @@ async function phase2Data() {
 
 describe("erasure reaches the apps' data", () => {
   it("deletes the visit photographs, addresses and grievance words, and keeps the visits", async () => {
-    await phase2Data();
+    await appData();
     const summary = await eraseByMobile(MOBILE, NOW);
     expect(summary).toMatchObject({ visitPhotosDeleted: 1 });
     expect(await env.CLIENT_PHOTOS.get("visits/p/front.jpg")).toBeNull();
@@ -87,7 +87,7 @@ describe("erasure reaches the apps' data", () => {
   });
 
   it("blanks how the client reached us and how much hair they had lost, and keeps the lead", async () => {
-    await phase2Data();
+    await appData();
     await everythingElseHeld();
 
     await eraseByMobile(MOBILE, NOW);
@@ -116,7 +116,7 @@ describe("erasure reaches the apps' data", () => {
 
 describe("GET /api/me/export", () => {
   it("gives the client everything held about them as a file, and audits it", async () => {
-    await phase2Data();
+    await appData();
     await logPhotoView(env.DB, {
       personId: PERSON,
       actor: { kind: "staff", id: "ops@maneman.in" },
@@ -192,7 +192,7 @@ describe("GET /api/me/export", () => {
 
   // What the export left out.
   it("gives the door, the client's note, how they reached us, their hair system, invite, sign-ins and requests", async () => {
-    await phase2Data();
+    await appData();
     await everythingElseHeld();
     const answer = await request(appFor("local", fakeDependencies(), {}, "client"), "/api/me/export", {
       headers: { Cookie: cookie },
@@ -214,7 +214,7 @@ describe("GET /api/me/export", () => {
   });
 
   it("gives the same as a page to read, labelled and in India's time, and audits it", async () => {
-    await phase2Data();
+    await appData();
     const answer = await request(appFor("local", fakeDependencies(), {}, "client"), "/api/me/export.html", {
       headers: { Cookie: cookie },
     });
@@ -238,7 +238,7 @@ describe("GET /api/me/export", () => {
   });
 });
 
-/** A row in each table the export once missed, beside phase2Data's. */
+/** A row in each table the export once missed, beside appData's. */
 async function everythingElseHeld(): Promise<void> {
   const at = NOW.toISOString();
   await env.DB.batch([

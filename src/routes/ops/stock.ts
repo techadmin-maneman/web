@@ -22,10 +22,10 @@ import { CONSUMABLE_BOUNDS, MAX_NOTE } from "../../config/consumables.ts";
 import {
   count,
   MOVEMENT_REASONS,
-  receive,
+  receiveStock,
   stockView,
   tellOfLowStock,
-  transfer,
+  transferStock,
   writeOff,
   type Moved,
   type Place,
@@ -270,7 +270,7 @@ export function registerOpsStock(app: App): void {
 
   app.openapi(deliveryRoute, async (c) => {
     const body = c.req.valid("json");
-    const moved = await receive(
+    const moved = await receiveStock(
       c.env.DB,
       { code: body.consumable_code, quantity: body.quantity, note: body.note ?? null },
       written(c),
@@ -282,7 +282,7 @@ export function registerOpsStock(app: App): void {
     const body = c.req.valid("json");
     const refused = await placesOutOfReach(c, { from: body.from, to: body.to });
     if (refused.length > 0) return outOfReach(c, refused);
-    const moved = await transfer(
+    const moved = await transferStock(
       c.env.DB,
       { code: body.consumable_code, quantity: body.quantity, from: body.from, to: body.to },
       written(c),

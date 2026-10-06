@@ -13,7 +13,7 @@ import { z } from "@hono/zod-openapi";
 import type { Context } from "hono";
 import type { App, AppEnv } from "../../http/context.ts";
 import { auditStatementIfWritten, recordAudit } from "../../domain/ops/audit.ts";
-import { everythingHeldAbout } from "../../domain/privacy/data-export.ts";
+import { readPersonData } from "../../domain/privacy/data-export.ts";
 import { openGrievanceInWords } from "../../domain/ops/grievances.ts";
 import { myDataPage } from "../../domain/privacy/my-data-page.ts";
 import { takeOne } from "../../domain/sign-in/rate-limit.ts";
@@ -63,7 +63,7 @@ async function auditedExport(c: Context<AppEnv>): Promise<{ held: Record<string,
     },
     now,
   );
-  return { held: await everythingHeldAbout(c.env.DB, id), now };
+  return { held: await readPersonData(c.env.DB, id), now };
 }
 
 const grievanceRoute = clientRoute({

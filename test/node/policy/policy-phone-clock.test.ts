@@ -8,7 +8,7 @@ import {
   EARLIEST_BEFORE_START_MIN,
   earliestCheckIn,
   MAX_OFFLINE_HOURS,
-  onTheVisitsDay,
+  isOnVisitDay,
   PHONE_CLOCK,
   tooEarlyToArrive,
 } from "../../../src/policy/phone-clock.ts";
@@ -76,10 +76,10 @@ describe("the bounds on the phone's clock", () => {
 
   it("refuses a check-in or a start whose time is not on the visit's own date in India", () => {
     // 11:30 pm the same day in India is still the visit's day; 00:30 the next is not.
-    expect(onTheVisitsDay(new Date("2026-09-21T18:00:00Z"), VISIT_START)).toBe(true);
-    expect(onTheVisitsDay(new Date("2026-09-21T19:00:00Z"), VISIT_START)).toBe(false);
+    expect(isOnVisitDay(new Date("2026-09-21T18:00:00Z"), VISIT_START)).toBe(true);
+    expect(isOnVisitDay(new Date("2026-09-21T19:00:00Z"), VISIT_START)).toBe(false);
     // The evening before, when tomorrow's card is already unlocked.
-    expect(onTheVisitsDay(new Date("2026-09-20T13:30:00Z"), VISIT_START)).toBe(false);
+    expect(isOnVisitDay(new Date("2026-09-20T13:30:00Z"), VISIT_START)).toBe(false);
   });
 
   it("refuses a check-in or a start that reaches us more than an hour before the booked start", () => {

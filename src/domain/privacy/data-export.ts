@@ -82,7 +82,7 @@ type ExportQuery = keyof typeof EXPORT_QUERIES;
 /** The parts that are one row, or nothing; every other query's part is a list. */
 const ONE_ROW: readonly ExportQuery[] = ["person", "referral"];
 
-export async function everythingHeldAbout(db: D1Database, personId: string): Promise<Record<string, unknown>> {
+export async function readPersonData(db: D1Database, personId: string): Promise<Record<string, unknown>> {
   const queries = Object.keys(EXPORT_QUERIES) as ExportQuery[];
   const answers = await db.batch(queries.map((query) => db.prepare(EXPORT_QUERIES[query]).bind(personId)));
   const parts: Record<string, unknown> = {};

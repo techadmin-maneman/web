@@ -45,7 +45,7 @@ import {
   checkAilabCredits,
   deletePhotos,
   expireTryOns,
-  housekeep,
+  deleteExpiredRecords,
   letKeptLooksGo,
   requeueCrmErasures,
   requeueLeads,
@@ -287,7 +287,7 @@ export const CRON_JOBS: readonly CronJob[] = [
   { name: "deletion_alerts", needs: "nothing", every: 60, at: 24, run: deletionAlertsJob },
   // The grievances raised in the hour, in one message, so one client cannot flood the chat.
   { name: "grievance_alerts", needs: "nothing", every: 60, at: 24, run: grievanceAlertsJob },
-  { name: "housekeeping", needs: "nothing", every: 60, at: 28, run: housekeep },
+  { name: "housekeeping", needs: "nothing", every: 60, at: 28, run: deleteExpiredRecords },
   // An erased client's customer in Books, deleted, or blanked where an invoice names it.
   { name: "books_erasures", needs: "books", every: 60, at: 29, run: booksErasuresJob },
   // What the account has used today of the free plan's daily allowances, told at 70%.

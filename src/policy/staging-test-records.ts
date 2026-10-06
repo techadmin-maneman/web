@@ -29,7 +29,7 @@ export function skipsAddressLimits(environment: EnvironmentName | undefined, tes
  * someone other than who acted; MESSAGE_CLASSES, src/config/message-templates.ts), or anything to a test record, off
  * the allowlist (ADR 0097). A login code is never automatic. Production's allowlist is empty, so nothing is held back.
  */
-export function heldBack(
+export function isMessageHeldBack(
   messaging: MessagingSettings,
   sent: { readonly automatic: boolean; readonly testRecord: boolean; readonly mobileE164: string },
 ): boolean {

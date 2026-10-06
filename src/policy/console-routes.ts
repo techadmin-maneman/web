@@ -209,7 +209,7 @@ export const alertNeed = (kind: string, level: Level): RouteNeed => need(alertDe
 export const markDoneNeed = (kind: string): RouteNeed => alertNeed(kind, markDoneLevel(kind));
 
 /** Whether the caller's grants reach what a route asks: over any place if it keeps to their own, nationally if not. */
-export function meetsNeed(caller: Caller, need: RouteNeed, zoneOf: ZoneOfCity): boolean {
+export function callerMeetsNeed(caller: Caller, need: RouteNeed, zoneOf: ZoneOfCity): boolean {
   const where = need.ownPlaces === true ? "anywhere" : NATIONAL;
   const departments = need.department === OWN_DEPARTMENTS ? DEPARTMENTS : [need.department];
   return departments.some((department) => can(caller, department, need.level, where, zoneOf));
@@ -218,7 +218,7 @@ export function meetsNeed(caller: Caller, need: RouteNeed, zoneOf: ZoneOfCity): 
 /** The routes a caller's calls go ahead on, as "GET /api/tasks": every one while the list is not enforced. */
 export function routesOpenTo(caller: Caller, enforced: boolean, zoneOf: ZoneOfCity): string[] {
   const goesAhead = (need: RouteNeed | typeof SIGNED_IN): boolean =>
-    !enforced || need === SIGNED_IN || meetsNeed(caller, need, zoneOf);
+    !enforced || need === SIGNED_IN || callerMeetsNeed(caller, need, zoneOf);
   return Object.entries(ROUTE_NEEDS)
     .filter(([, need]) => goesAhead(need))
     .map(([route]) => route);

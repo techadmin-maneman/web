@@ -6,7 +6,7 @@
   "type": "module",
   "exports": {
     "./tokens.css": "./tokens.css",
-    "./tokens-phase2.css": "./tokens-phase2.css",
+    "./tokens-apps.css": "./tokens-apps.css",
     "./fonts.css": "./fonts.css",
     "./icons": "./icons.ts",
     "./marks": "./marks.ts",

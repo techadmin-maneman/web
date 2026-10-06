@@ -29,7 +29,7 @@ import { queueMessage } from "../../http/queue-message.ts";
 import { routeReach, withinRouteReach } from "../../http/staff-access.ts";
 import { needsReason, REASON_MAX_CHARS } from "../../policy/decision-reasons.ts";
 import { dueAt } from "../../policy/tasks.ts";
-import { heldBack } from "../../policy/staging-test-records.ts";
+import { isMessageHeldBack } from "../../policy/staging-test-records.ts";
 import { scrubString } from "../../log.ts";
 import { ErasureRefusedSchema, erasureRefused } from "./erasure.ts";
 
@@ -288,7 +288,7 @@ async function tellDeletionDone(c: Context<AppEnv>, contact: ErasedContact): Pro
     }
     if (
       // Sent once ops have done it, so it answers nobody who just acted: an automatic message.
-      heldBack(messaging, { automatic: true, testRecord: contact.testRecord, mobileE164: contact.mobileE164 })
+      isMessageHeldBack(messaging, { automatic: true, testRecord: contact.testRecord, mobileE164: contact.mobileE164 })
     ) {
       log.info("deletion_done_not_sent", { reason: "number not on the allowlist" });
       return;

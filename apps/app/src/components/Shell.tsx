@@ -4,7 +4,7 @@
 // with the page's title. Each page pads itself, as its board does.
 
 import { iconButtonLook } from "@maneman/ui/IconButton";
-import { ICONS, ICONS_P2 } from "@maneman/brand/icons";
+import { ICONS, APP_ICONS } from "@maneman/brand/icons";
 import { Icon } from "@maneman/ui/Icon";
 import { classes } from "@maneman/ui/classes";
 import { Mark } from "@maneman/ui/Mark";
@@ -76,7 +76,7 @@ export function Shell({ header, tab, footer, kept = false, children }: Props) {
       <div role="status">
         {offline && (
           <p className={styles.offline}>
-            <Icon className={styles.offlineIcon} d={ICONS_P2.offline} size={18} />
+            <Icon className={styles.offlineIcon} d={APP_ICONS.offline} size={18} />
             <span>{kept ? states.offline : states.offlineOnly}</span>
           </p>
         )}

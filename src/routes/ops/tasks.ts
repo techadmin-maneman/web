@@ -43,7 +43,7 @@ import {
 } from "../../policy/tasks.ts";
 import { callerAccess, permits } from "../../http/staff-access.ts";
 import { placesReached, type Level } from "../../policy/access.ts";
-import { meetsNeed, TASK_DEPARTMENTS, taskNeed } from "../../policy/console-routes.ts";
+import { callerMeetsNeed, TASK_DEPARTMENTS, taskNeed } from "../../policy/console-routes.ts";
 
 /** The tasks each group lists, the longest waits; its count is the whole queue's. */
 export const TASKS_SHOWN = 50;
@@ -279,7 +279,7 @@ async function taskOnTheBoard(c: Context<AppEnv>, key: TaskKey): Promise<Task | 
 async function groupsSeenBy(c: Context<AppEnv>): Promise<TaskGroup[]> {
   const access = await callerAccess(c);
   if (!access.enforced) return [...TASK_GROUPS];
-  return TASK_GROUPS.filter((group) => meetsNeed(access.caller, taskNeed(group, "view"), access.zoneOf));
+  return TASK_GROUPS.filter((group) => callerMeetsNeed(access.caller, taskNeed(group, "view"), access.zoneOf));
 }
 
 export function registerOpsTasks(app: App): void {

@@ -269,7 +269,10 @@ export async function hasAskedForAVisit(db: D1Database, personId: string): Promi
  * attached afterwards is not born lapsed. The pincode is the list's while they wait, else their address's, else the
  * list's they last joined.
  */
-export async function howTheyCame(db: D1Database, personId: string): Promise<{ via: Via; pincode: string | null }> {
+export async function referralSourceOf(
+  db: D1Database,
+  personId: string,
+): Promise<{ via: Via; pincode: string | null }> {
   const row = await db
     .prepare(
       `SELECT

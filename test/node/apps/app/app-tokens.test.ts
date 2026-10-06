@@ -1,7 +1,7 @@
 // Each app, and the components they share (packages/ui), takes every
 // colour, size and space from packages/brand, as the public site does
 // (test/node/site/site-tokens.test.ts): no stylesheet writes a raw value, and every
-// token one uses is defined in tokens.css or tokens-phase2.css, or is a
+// token one uses is defined in tokens.css or tokens-apps.css, or is a
 // property the stylesheet declares for itself, as the compare's divider
 // position is.
 
@@ -28,7 +28,7 @@ const tokenNames = (path: string) =>
   [...readFileSync(path, "utf8").matchAll(/(--[a-z0-9-]+)\s*:/g)].map((match) => match[1] ?? "");
 const defined = new Set([
   ...tokenNames("packages/brand/tokens.css"),
-  ...tokenNames("packages/brand/tokens-phase2.css"),
+  ...tokenNames("packages/brand/tokens-apps.css"),
   // The sizes each app gives its buttons, and the focus ring's colour (packages/ui/base.css).
   ...tokenNames("packages/ui/base.css"),
 ]);

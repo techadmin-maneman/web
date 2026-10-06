@@ -16,11 +16,16 @@
 //   cleanup     idempotency keys after a day, login codes a day past expiry, rate counters after 3 days,
 //               try-on sessions once expired, app sessions 30 days after they ended, and holds nobody is paying for
 
-import { lettingGo } from "../domain/booking/hold-slot.ts";
+import { releaseDeadHolds } from "../domain/booking/hold-slot.ts";
 import { DOWNLOAD_QUEUE_RETRIES, RENDER_GIVE_UP_MS } from "../config/pipeline.ts";
 import { PHOTO_RETENTION_MS } from "../config/tryon.ts";
 import type { Dependencies } from "../dependencies.ts";
-import { keepOrLetGo, letCopiesGoWith, letFittedLooksGo, type ExpiringTryOn } from "../domain/try-on/kept-try-ons.ts";
+import {
+  settleExpiringTryOns,
+  letCopiesGoWith,
+  letFittedLooksGo,
+  type ExpiringTryOn,
+} from "../domain/try-on/kept-try-ons.ts";
 import { failJob } from "../domain/try-on/tryon.ts";
 import type { CallBudget } from "../lib/call-budget.ts";
 import { addDays, indiaDate } from "../lib/india-time.ts";
@@ -120,7 +125,7 @@ export async function sweep(
   const { expired: jobsExpired, kept: tryOnsKept } = await expireTryOns(context);
   const photosDeleted = await deletePhotos(context);
   const keptLooksDeleted = await letKeptLooksGo(context);
-  await housekeep(context);
+  await deleteExpiredRecords(context);
   return {
     leadsRequeued: leads.length,
     erasuresRequeued: erasures.length,
@@ -253,7 +258,7 @@ export async function requeueTryons(
 }
 
 /** Deletes what has outlived its use: idempotency keys, counters, sessions and spent codes; lets dead holds go. */
-export async function housekeep(context: SweepContext): Promise<void> {
+export async function deleteExpiredRecords(context: SweepContext): Promise<void> {
   const { db, now, before } = sweepRun(context);
   const sessionsEnded = before(SESSION_RETENTION_MS);
   await db.batch([
@@ -275,7 +280,7 @@ export async function housekeep(context: SweepContext): Promise<void> {
     db.prepare("DELETE FROM sessions WHERE expires_at < ?1").bind(sessionsEnded),
     db.prepare("DELETE FROM sessions WHERE revoked_at < ?1").bind(sessionsEnded),
     // A hold nobody is paying for, past its grace, would otherwise stand until someone else held a window.
-    ...lettingGo(db, now),
+    ...releaseDeadHolds(db, now),
   ]);
 }
 
@@ -320,7 +325,7 @@ export async function expireTryOns(context: SweepContext): Promise<{ expired: nu
     )
     .bind(now.toISOString(), EXPIRY_BATCH)
     .all<ExpiringTryOn>();
-  const kept = await keepOrLetGo(env, pastExpiry, now);
+  const kept = await settleExpiringTryOns(env, pastExpiry, now);
   const results = pastExpiry.flatMap((row) => (row.result_key === null ? [] : [row.result_key]));
   if (results.length > 0) await env.RESULTS.delete(results);
 

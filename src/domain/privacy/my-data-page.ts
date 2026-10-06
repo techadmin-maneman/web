@@ -18,7 +18,7 @@ const STYLE = `
   dd { margin: 0; overflow-wrap: anywhere; }
 `;
 
-/** The whole page, from what everythingHeldAbout gave. */
+/** The whole page, from what readPersonData gave. */
 export function myDataPage(held: Readonly<Record<string, unknown>>, exportedAt: Date): string {
   const parts: Readonly<Record<string, Part>> = MY_DATA.parts;
   const sections = Object.entries(parts).map(([key, part]) => partSection(part, held[key]));

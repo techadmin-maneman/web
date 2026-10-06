@@ -7,7 +7,7 @@
 import type { EnvironmentName } from "../config/environments.ts";
 
 /** The photographs' and cards' share of R2's free 10 GB, in decimal bytes, as Cloudflare bills them. */
-export const PHASE_2_SHARE_BYTES = 4e9;
+export const PHOTO_SHARE_BYTES = 4e9;
 
 /**
  * Each environment's part of the share. R2's free storage is the account's, staging's and production's together, so

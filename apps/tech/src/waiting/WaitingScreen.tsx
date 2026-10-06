@@ -9,7 +9,7 @@
 // a second time, since what it deletes never reaches us.
 
 import { IconButton } from "@maneman/ui/IconButton";
-import { ICONS, ICONS_P2 } from "@maneman/brand/icons";
+import { ICONS, APP_ICONS } from "@maneman/brand/icons";
 import { Button } from "@maneman/ui/Button";
 import { ErrorRef } from "@maneman/ui/ErrorRef";
 import { Icon } from "@maneman/ui/Icon";
@@ -119,7 +119,7 @@ export function WaitingScreen() {
             </div>
           )}
           <div className={styles.sets}>
-            <Icon className={styles.setsIcon} d={ICONS_P2.uploadQueue} size={20} stroke={STROKE} />
+            <Icon className={styles.setsIcon} d={APP_ICONS.uploadQueue} size={20} stroke={STROKE} />
             <span className={styles.setsLine}>{copy.waiting(sets.length)}</span>
           </div>
           <ul className={styles.list}>

@@ -17,7 +17,7 @@ import { apply, MIGRATIONS } from "./migrations.ts";
 const AT = "2026-09-21T06:30:00.000Z";
 
 /** The site's rows, as soon as the try-on tables exist. */
-const PHASE_1 = [
+const SITE_ROWS = [
   `INSERT INTO people (id, created_at, mobile_e164, name) VALUES ('p1', '${AT}', '+919810000001', 'A Client')`,
   `INSERT INTO leads (id, person_id, created_at, source, city, first_choice_window, loss_extent, request_id)
      VALUES ('l1', 'p1', '${AT}', 'form', 'Gurgaon', 'weekday_pm', 'crown', 'r1')`,
@@ -32,7 +32,7 @@ const PHASE_1 = [
  * piece, the technician who came, with their phone and what it sent, and an
  * invite that earned the client credits.
  */
-const PHASE_2 = [
+const APP_ROWS = [
   `INSERT INTO people (id, created_at, mobile_e164, name) VALUES ('p2', '${AT}', '+919810000002', 'A Fitted Client')`,
   `INSERT INTO sessions (id, subject_kind, subject_id, created_at, last_seen_at, expires_at)
      VALUES ('s1', 'client', 'p2', '${AT}', '${AT}', '2026-10-21T06:30:00.000Z')`,
@@ -79,8 +79,8 @@ const ZOHO = [
 
 /** Each set of rows goes in straight after the migration that creates the last of its tables. */
 const SEEDS = [
-  { after: "0003", rows: PHASE_1 },
-  { after: "0027", rows: PHASE_2 },
+  { after: "0003", rows: SITE_ROWS },
+  { after: "0027", rows: APP_ROWS },
   { after: "0034", rows: LATEST },
   { after: "0041", rows: ZOHO },
 ] as const;

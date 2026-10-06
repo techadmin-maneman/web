@@ -287,7 +287,7 @@ const MeSchema = z
   .openapi("Me");
 
 /** The words the first booked page had for a window. It had none for the afternoon. */
-const PHASE1_WORDS: Partial<Record<BookingWindow, WindowLabel>> = { morning: "before noon", evening: "after four" };
+const FIRST_FORM_WORDS: Partial<Record<BookingWindow, WindowLabel>> = { morning: "before noon", evening: "after four" };
 
 type Consultation = NonNullable<z.infer<typeof MeSchema>["consultation"]>;
 
@@ -302,7 +302,7 @@ async function consultationOf(
   return {
     date,
     window: asked.window,
-    window_label: PHASE1_WORDS[asked.window] ?? null,
+    window_label: FIRST_FORM_WORDS[asked.window] ?? null,
     place,
     requested: asked.requested,
     one_visit: asked.oneVisit ? await requestedOneVisitPrice(db, date, asked.code) : null,

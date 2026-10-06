@@ -183,7 +183,7 @@ const MOVE_KINDS: readonly VisitMessageKind[] = ["reschedule_confirmation", "vis
  * while it still is. An arrival notice says the technician is at the door, a reminder that the visit is tomorrow, and
  * a move the visit's new window, which a later move's message tells as well.
  */
-export async function noLongerWorthSending(
+export async function isMessageStale(
   db: D1Database,
   kind: VisitMessageKind,
   appointmentId: string,

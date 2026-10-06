@@ -6,7 +6,7 @@ import { describe, expect, it } from "vitest";
 import opsDocument from "../../../docs/openapi-ops.json";
 import { NATIONAL, type Caller, type Department, type Level } from "../../../src/policy/access.ts";
 import {
-  meetsNeed,
+  callerMeetsNeed,
   needOf,
   ROUTE_NEEDS,
   routesOpenTo,
@@ -227,14 +227,14 @@ describe("Tasks, where each department sees the groups it decides", () => {
 
   it("opens the board to View in any department, in any place", () => {
     const board = routeNeed("GET /api/tasks");
-    expect(meetsNeed(holding(["growth", "view"]), board, NO_ZONES)).toBe(true);
-    expect(meetsNeed(holding(), board, NO_ZONES)).toBe(false);
+    expect(callerMeetsNeed(holding(["growth", "view"]), board, NO_ZONES)).toBe(true);
+    expect(callerMeetsNeed(holding(), board, NO_ZONES)).toBe(false);
     const delhi: Caller = {
       kind: "person",
       active: true,
       grants: [{ department: "growth", level: "manage", place: { geography: "city", name: "Delhi" } }],
     };
-    expect(meetsNeed(delhi, board, NO_ZONES)).toBe(true);
+    expect(callerMeetsNeed(delhi, board, NO_ZONES)).toBe(true);
   });
 
   it("gives each group to the department that decides it", () => {
@@ -247,10 +247,10 @@ describe("Tasks, where each department sees the groups it decides", () => {
 
   it("takes a task only with Act in the department that decides its group", () => {
     const care = holding(["customer_care", "act"], ["finance", "view"]);
-    expect(meetsNeed(care, routeNeed("PUT /api/tasks/{group}/{id}/owner"), NO_ZONES)).toBe(true);
-    expect(meetsNeed(care, taskNeed("grievance", "act"), NO_ZONES)).toBe(true);
-    expect(meetsNeed(care, taskNeed("no_show_decision", "act"), NO_ZONES)).toBe(false);
-    expect(meetsNeed(holding(["customer_care", "view"]), taskNeed("grievance", "act"), NO_ZONES)).toBe(false);
+    expect(callerMeetsNeed(care, routeNeed("PUT /api/tasks/{group}/{id}/owner"), NO_ZONES)).toBe(true);
+    expect(callerMeetsNeed(care, taskNeed("grievance", "act"), NO_ZONES)).toBe(true);
+    expect(callerMeetsNeed(care, taskNeed("no_show_decision", "act"), NO_ZONES)).toBe(false);
+    expect(callerMeetsNeed(holding(["customer_care", "view"]), taskNeed("grievance", "act"), NO_ZONES)).toBe(false);
   });
 
   it("names the board among a Finance viewer's routes, but not taking a task of it", () => {

@@ -15,7 +15,13 @@ import type { Context } from "hono";
 import { actorOf } from "../../http/audit.ts";
 import type { App, AppEnv } from "../../http/context.ts";
 import { CODE_PATTERN } from "../../config/invite-codes.ts";
-import { attribute, clientInviteOf, GRANT_STATES, howTheyCame, inviteOf } from "../../domain/referrals/referrals.ts";
+import {
+  attribute,
+  clientInviteOf,
+  GRANT_STATES,
+  referralSourceOf,
+  inviteOf,
+} from "../../domain/referrals/referrals.ts";
 import { errorBody, errorResponse, ErrorResponseSchema, refuse } from "../../http/errors.ts";
 import { json } from "../../http/openapi.ts";
 import { withinRouteReach } from "../../http/staff-access.ts";
@@ -138,7 +144,7 @@ export function registerOpsClientReferral(app: App): void {
     const outcome = await attribute(db, {
       invite,
       personId,
-      ...(await howTheyCame(db, personId)),
+      ...(await referralSourceOf(db, personId)),
       toldNotice: null,
       now: c.var.deps.now(),
       attachedBy: {

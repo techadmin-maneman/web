@@ -18,7 +18,7 @@ import { queuePacedMessages } from "../../http/queue-message.ts";
 import { reachOf, routeReach } from "../../http/staff-access.ts";
 import { indiaDate } from "../../lib/india-time.ts";
 import { reachesCity, type PlacesReached } from "../../policy/access.ts";
-import { launchesLater } from "../../policy/launch.ts";
+import { isLaunchInFuture } from "../../policy/launch.ts";
 
 /** The pincodes the waitlist lists at once, the longest waits: far more than a launch is chosen from. */
 export const WAITLIST_AREAS = 200;
@@ -187,7 +187,7 @@ export function registerOpsWaitlist(app: App): void {
       return c.json({ pincode: pin, waiting: preview.waiting, alerts: preview.alerts, launched: false }, 200);
     }
     const today = indiaDate(now);
-    if (launchOn !== undefined && launchesLater(launchOn, today)) {
+    if (launchOn !== undefined && isLaunchInFuture(launchOn, today)) {
       return refuse(c, "launch_in_future", ["launch_on"]);
     }
     const staff = actorOf(c);

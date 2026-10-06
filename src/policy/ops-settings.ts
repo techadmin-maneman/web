@@ -17,7 +17,7 @@ import {
   NEXT_VISIT_DAY_BOUNDS,
   NEXT_VISIT_DAY_KEYS,
   NEXT_VISIT_DAYS,
-  pastTheHorizon,
+  daysPastHorizon,
   type NextVisitDays,
 } from "./next-visit.ts";
 import { chargesFor, FREE_CHANGE_NOTICE_HOURS, LATE_CHANGE_CHARGES } from "./moving-a-visit.ts";
@@ -261,7 +261,7 @@ export const OPS_SETTINGS = [
     keys: NEXT_VISIT_DAY_KEYS,
     bounds: NEXT_VISIT_DAY_BOUNDS,
     fallback: NEXT_VISIT_DAYS,
-    conflicts: (value) => pastTheHorizon(value as NextVisitDays).map((key) => ["horizon", key] as const),
+    conflicts: (value) => daysPastHorizon(value as NextVisitDays).map((key) => ["horizon", key] as const),
   },
   {
     // Each side's visits, and how long they last.

@@ -4,7 +4,7 @@
 import { useLoad } from "@maneman/ui/useLoad";
 import { useMemo } from "react";
 import { NATIONAL, type Caller, type Grant, type Place } from "../../../../src/policy/access.ts";
-import { meetsNeed, type RouteNeed } from "../../../../src/policy/console-routes.ts";
+import { callerMeetsNeed, type RouteNeed } from "../../../../src/policy/console-routes.ts";
 import { api, type Answer, type StaffGrant, type Whoami } from "../api.ts";
 import type { paths } from "../api-schema.ts";
 import type { MayCall } from "../route.ts";
@@ -83,7 +83,7 @@ export function accessOf(staff: Whoami["staff"]): Access {
   const caller: Caller = { kind: "person", active: staff.listed, grants: staff.grants.map(grantOf) };
   return {
     mayCall: (call) => open.has(call),
-    reaches: (need) => meetsNeed(caller, need, NO_ZONES),
+    reaches: (need) => callerMeetsNeed(caller, need, NO_ZONES),
   };
 }
 

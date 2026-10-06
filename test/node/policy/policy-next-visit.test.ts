@@ -17,7 +17,7 @@ import {
   nextVisitType,
   offeredDay,
   offeredWindow,
-  pastTheHorizon,
+  daysPastHorizon,
   remindedIfDoneBetween,
   serviceDue,
 } from "../../../src/policy/next-visit.ts";
@@ -151,10 +151,10 @@ describe("the figures ops set", () => {
 
   // The app offers a visit on the day it falls due, so the horizon must reach as far as any of them.
   it("name the figures that reach past the horizon, and none for the committed ones", () => {
-    expect(pastTheHorizon(NEXT_VISIT_DAYS)).toEqual([]);
-    expect(pastTheHorizon({ ...NEXT_VISIT_DAYS, service_cadence: 60, horizon: 45 })).toEqual(["service_cadence"]);
-    expect(pastTheHorizon({ ...NEXT_VISIT_DAYS, service_cadence: 45, horizon: 45 })).toEqual([]);
-    expect(pastTheHorizon({ ...NEXT_VISIT_DAYS, first_fit_lead: 30, service_cadence: 14, horizon: 20 })).toEqual([
+    expect(daysPastHorizon(NEXT_VISIT_DAYS)).toEqual([]);
+    expect(daysPastHorizon({ ...NEXT_VISIT_DAYS, service_cadence: 60, horizon: 45 })).toEqual(["service_cadence"]);
+    expect(daysPastHorizon({ ...NEXT_VISIT_DAYS, service_cadence: 45, horizon: 45 })).toEqual([]);
+    expect(daysPastHorizon({ ...NEXT_VISIT_DAYS, first_fit_lead: 30, service_cadence: 14, horizon: 20 })).toEqual([
       "first_fit_lead",
     ]);
   });

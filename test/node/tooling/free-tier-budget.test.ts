@@ -6,13 +6,13 @@ import {
   FREE_TIER,
   KEPT_TRY_ON_BYTES,
   overBudget,
-  PHASE_2_ALLOWANCE,
+  PHOTO_ALLOWANCE,
   photoRunwayVisits,
   worstCaseUsage,
   type Ceilings,
 } from "../../../scripts/lib/free-tier-budget.ts";
 import { MAX_COPY_BYTES, MAX_RESULT_BYTES } from "../../../src/config/tryon.ts";
-import { PHASE_2_SHARE_BYTES } from "../../../src/policy/storage-share.ts";
+import { PHOTO_SHARE_BYTES } from "../../../src/policy/storage-share.ts";
 import { readJsonc } from "../../../scripts/lib/jsonc.ts";
 
 function ceilingsOf(environment: "staging" | "production"): Ceilings {
@@ -48,15 +48,15 @@ describe("R2's budget", () => {
   it("holds the try-on's worst case at 3.6 GB, 76% of R2 with Phase 2's share", () => {
     const { r2StorageBytes } = worstCaseUsage(committed);
     expect(Math.round(r2StorageBytes / 1e6)).toBe(3_598);
-    const withPhase2 = (r2StorageBytes + PHASE_2_ALLOWANCE.r2StorageBytes) / FREE_TIER.r2StorageBytes;
-    expect(Math.round(withPhase2 * 1000)).toBe(760);
+    const withPhotos = (r2StorageBytes + PHOTO_ALLOWANCE.r2StorageBytes) / FREE_TIER.r2StorageBytes;
+    expect(Math.round(withPhotos * 1000)).toBe(760);
   });
 
   // ADR 0084: a client keeps one try-on for good (the look of a client never fitted is never let go), and every
   // client has booked a visit, so each visit may bring one. ADR 0093: each photograph has its thumbnail beside it.
   it("gives Phase 2 room for about 440 visits' photographs, each with a kept try-on, beside the referral cards", () => {
-    expect(PHASE_2_ALLOWANCE.r2StorageBytes).toBe(PHASE_2_SHARE_BYTES);
-    expect(PHASE_2_SHARE_BYTES).toBe(4e9);
+    expect(PHOTO_ALLOWANCE.r2StorageBytes).toBe(PHOTO_SHARE_BYTES);
+    expect(PHOTO_SHARE_BYTES).toBe(4e9);
     expect(KEPT_TRY_ON_BYTES).toBe(MAX_COPY_BYTES + MAX_RESULT_BYTES);
     expect(photoRunwayVisits()).toBe(444);
   });

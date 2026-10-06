@@ -14,7 +14,7 @@ import {
   RENDER_GIVE_UP_MS,
 } from "../../src/config/pipeline.ts";
 import { MAX_COPY_BYTES, MAX_RESULT_BYTES, MAX_UPLOAD_BYTES, PHOTO_RETENTION_MS } from "../../src/config/tryon.ts";
-import { PHASE_2_SHARE_BYTES } from "../../src/policy/storage-share.ts";
+import { PHOTO_SHARE_BYTES } from "../../src/policy/storage-share.ts";
 
 /** R2's free allowance, per Cloudflare's pricing pages (read 21 September 2026). */
 export const FREE_TIER = {
@@ -30,9 +30,9 @@ export const HEADROOM = 0.8;
  * The photographs' and cards' share of the same allowance (docs/decisions/0039-phase-2-budget.md).
  * They have no ceiling in config, so their share is set aside here.
  */
-export const PHASE_2_ALLOWANCE = {
+export const PHOTO_ALLOWANCE = {
   /** Clients' photographs, which are never deleted, and referral cards: the storage meter's share. */
-  r2StorageBytes: PHASE_2_SHARE_BYTES,
+  r2StorageBytes: PHOTO_SHARE_BYTES,
   r2ClassAPerMonth: 100_000,
   r2ClassBPerMonth: 1_000_000,
 } as const;
@@ -93,7 +93,7 @@ export const KEPT_TRY_ON_BYTES = MAX_COPY_BYTES + MAX_RESULT_BYTES;
  */
 export function photoRunwayVisits(keptTryOnBytes: number = KEPT_TRY_ON_BYTES): number {
   const perVisit = PHOTOS_PER_VISIT * (PHOTO_BYTES + THUMBNAIL_BYTES) + keptTryOnBytes;
-  return Math.floor((PHASE_2_ALLOWANCE.r2StorageBytes - REFERRAL_CARDS_BYTES) / perVisit);
+  return Math.floor((PHOTO_ALLOWANCE.r2StorageBytes - REFERRAL_CARDS_BYTES) / perVisit);
 }
 const DAYS_PER_MONTH = 31;
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -149,7 +149,7 @@ export function worstCaseUsage(environments: readonly Ceilings[]): Usage {
  * Each use over 80% of its allowance once the photographs' share is added, as a
  * readable line; empty when all fit.
  */
-export function overBudget(usage: Usage, reserved: Usage = PHASE_2_ALLOWANCE): string[] {
+export function overBudget(usage: Usage, reserved: Usage = PHOTO_ALLOWANCE): string[] {
   const lines: string[] = [];
   const check = (name: string, used: number, set: number, allowance: number): void => {
     if (used + set > allowance * HEADROOM) {

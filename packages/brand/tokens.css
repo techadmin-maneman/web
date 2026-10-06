@@ -7,7 +7,7 @@
  * Fluid values are the design's own clamp() expressions, named for what they
  * size. The scales are named for their value: a space (--sp-14 is 14px), a
  * type size (--fs-15), a leading (--lh-155 is 1.55). Each value is written
- * once in its scale; a name for what a value is for, such as tokens-phase2.css's
+ * once in its scale; a name for what a value is for, such as tokens-apps.css's
  * --fs-app-title, points at the scale's token rather than repeating the value
  * (test/node/packages/brand-package.test.ts). Weights, focus rings and motion are named
  * for what they do.

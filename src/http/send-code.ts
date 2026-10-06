@@ -23,7 +23,7 @@ import type { LoginSettings } from "../config/settings.ts";
 import { alertCeilingReached, ceilingReached, withinCeiling, type Ceiling } from "../domain/platform/ceilings.ts";
 import { countOne, takeOne, type CountedAt } from "../domain/sign-in/rate-limit.ts";
 import { scrubString } from "../log.ts";
-import { heldBack, skipsAddressLimits } from "../policy/staging-test-records.ts";
+import { isMessageHeldBack, skipsAddressLimits } from "../policy/staging-test-records.ts";
 import type { CodeChannel } from "../providers/codes.ts";
 import { afterResponse } from "./after-response.ts";
 
@@ -104,7 +104,7 @@ export function numberChangeCodes(
  * scripts' test records (ADR 0097). A code is never automatic, so a real account's is never held back by it.
  */
 function codeHeldBack(c: Context<AppEnv>, sendsTo: string, testRecord: boolean): boolean {
-  return heldBack(c.var.config.settings.messaging, { automatic: false, testRecord, mobileE164: sendsTo });
+  return isMessageHeldBack(c.var.config.settings.messaging, { automatic: false, testRecord, mobileE164: sendsTo });
 }
 
 /**

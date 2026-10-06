@@ -7,7 +7,7 @@ import { describe, expect, it } from "vitest";
 import {
   hasRoom,
   markReached,
-  PHASE_2_SHARE_BYTES,
+  PHOTO_SHARE_BYTES,
   SHARE_BYTES,
   RUNAWAY_CEILING_BYTES,
 } from "../../../src/policy/storage-share.ts";
@@ -16,8 +16,8 @@ const GB = 1e9;
 
 describe("the photographs' share of R2", () => {
   it("is ADR 0039's 4 GB, which staging and production share between them", () => {
-    expect(PHASE_2_SHARE_BYTES).toBe(4 * GB);
-    expect(SHARE_BYTES.staging + SHARE_BYTES.production).toBe(PHASE_2_SHARE_BYTES);
+    expect(PHOTO_SHARE_BYTES).toBe(4 * GB);
+    expect(SHARE_BYTES.staging + SHARE_BYTES.production).toBe(PHOTO_SHARE_BYTES);
     expect(SHARE_BYTES).toEqual({ local: 0.4 * GB, staging: 0.4 * GB, production: 3.6 * GB });
   });
 

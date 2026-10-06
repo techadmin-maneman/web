@@ -24,7 +24,7 @@ export const ICONS = {
 } as const;
 
 /** The nine glyphs the apps add (design/phase2/Client App.dc.html, the icons board). */
-export const ICONS_P2 = {
+export const APP_ICONS = {
   visitCredit: "M12 3.5 A8.5 8.5 0 0 1 12 20.5 A8.5 8.5 0 0 1 12 3.5 M8 12 L11 15 L16.5 9",
   holdTimer: "M9 3 H15 M12 3 V7 M12 7 A6.5 6.5 0 0 1 12 20 A6.5 6.5 0 0 1 12 7 M12 11 V14",
   compare: "M12 4 V20 M4.5 8 H9 V16 H4.5 Z M15 8 H19.5 V16 H15 Z",

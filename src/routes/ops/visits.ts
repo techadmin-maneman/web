@@ -22,7 +22,7 @@ import { offeredServices, type PricedService } from "../../domain/booking/servic
 import { loadSlotSchedule } from "../../domain/booking/slot-times.ts";
 import {
   bookableRange,
-  codeStands,
+  codeStillApplies,
   holdForSale,
   linkClosesAt,
   PAYS,
@@ -364,7 +364,7 @@ export function registerOpsVisits(app: App): void {
     const graceSeconds = inputs.paymentHold.grace * 60;
     const hold = await holdForSale(db, asked, sale, { closesAt, graceSeconds, by }, now);
     if (hold === null) return refuse(c, "taken");
-    if (!(await codeStands(db, asked, hold.id))) {
+    if (!(await codeStillApplies(db, asked, hold.id))) {
       await letGo(c, hold.id, "code_taken");
       return refuse(c, "code_not_applicable");
     }

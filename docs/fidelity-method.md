@@ -15,7 +15,7 @@ Any difference in type, spacing, colour or order is a defect. The prices are not
 
 ## Phase 2 boards
 
-The Phase 2 files in `design/phase2` run on the same prototype runtime. `test/node/architecture/phase2-inputs.test.ts` checks that their `support.js` is byte-identical to `design/support.js`, so the same library routing renders them. Pairs for the client, technician and ops apps follow the Phase 1 method, with two differences:
+The Phase 2 files in `design/phase2` run on the same prototype runtime. `test/node/architecture/briefs-and-designs.test.ts` checks that their `support.js` is byte-identical to `design/support.js`, so the same library routing renders them. Pairs for the client, technician and ops apps follow the Phase 1 method, with two differences:
 
 - **Compare frames, not boards.** A spec board draws several states side by side, with captions and notes around them. Crop the design to the one frame a screen matches, such as `A2 · Code · after 30 seconds`, and shoot the build in that state (a `?state=` preview, as the Phase 1 site has).
 - **Match the frame's width:**

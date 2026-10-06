@@ -4,7 +4,7 @@
 import { readFileSync } from "node:fs";
 
 const TOKENS = new Map(
-  ["packages/brand/tokens.css", "packages/brand/tokens-phase2.css"].flatMap((file) =>
+  ["packages/brand/tokens.css", "packages/brand/tokens-apps.css"].flatMap((file) =>
     [...readFileSync(file, "utf8").matchAll(/(--[\w-]+):\s*(#[0-9a-f]{6})\b/gi)].map(
       ([, name = "", hex = ""]) => [name, hex] as const,
     ),
