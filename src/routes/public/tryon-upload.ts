@@ -161,48 +161,7 @@ export function registerTryonUpload(app: App): void {
     );
   });
 
-  app.openapi(uploadRoute, async (c) => {
-    const { job_id: jobId } = c.req.valid("param");
-    const { token } = c.req.valid("query");
-    const { settings } = c.var.config;
-    const { deps } = c.var;
-    const db = c.env.DB;
-    const now = deps.now();
-
-    const subject = await verifyToken(settings.tryon.linkSigningKey, "upload", token, now);
-    const job = subject === jobId ? await loadJob(db, jobId) : null;
-    if (job === null) return refuse(c, "not_found");
-    if (job.state !== "awaiting_upload" || job.uploaded_at !== null) {
-      return refuse(c, "upload_already_received");
-    }
-
-    const bytes = await cappedBody(c.req.raw, MAX_UPLOAD_BYTES);
-    if (bytes === null) return refuse(c, "photo_invalid_file");
-    const photo = checkPhoto(bytes);
-    if (!photo.ok) {
-      c.var.log.info("tryon_upload_refused", { job_id: jobId, problem: photo.problem });
-      return refuse(c, "photo_invalid_file");
-    }
-
-    // Claim the one write this job gets, before making it.
-    const claimed = await db
-      .prepare(
-        "UPDATE tryon_jobs SET uploaded_at = ?2 WHERE id = ?1 AND state = 'awaiting_upload' AND uploaded_at IS NULL RETURNING id",
-      )
-      .bind(jobId, now.toISOString())
-      .first();
-    if (claimed === null) return refuse(c, "upload_already_received");
-
-    try {
-      await c.env.UPLOADS.put(job.upload_key, bytes, { httpMetadata: { contentType: photo.type } });
-    } catch (error) {
-      await db.prepare("UPDATE tryon_jobs SET uploaded_at = NULL WHERE id = ?1").bind(jobId).run();
-      throw error;
-    }
-    c.var.log.info("tryon_uploaded", { job_id: jobId, bytes: bytes.byteLength, type: photo.type });
-    return c.body(null, 204);
-  });
-
+  registerPhotoUpload(app);
   registerCopyUpload(app);
 }
 
@@ -250,6 +209,51 @@ function registerCopyUpload(app: App): void {
       throw error;
     }
     c.var.log.info("tryon_copy_uploaded", { job_id: jobId, bytes: bytes.byteLength });
+    return c.body(null, 204);
+  });
+}
+
+/** The photograph itself, sent to the link the upload URL answered. */
+function registerPhotoUpload(app: App): void {
+  app.openapi(uploadRoute, async (c) => {
+    const { job_id: jobId } = c.req.valid("param");
+    const { token } = c.req.valid("query");
+    const { settings } = c.var.config;
+    const { deps } = c.var;
+    const db = c.env.DB;
+    const now = deps.now();
+
+    const subject = await verifyToken(settings.tryon.linkSigningKey, "upload", token, now);
+    const job = subject === jobId ? await loadJob(db, jobId) : null;
+    if (job === null) return refuse(c, "not_found");
+    if (job.state !== "awaiting_upload" || job.uploaded_at !== null) {
+      return refuse(c, "upload_already_received");
+    }
+
+    const bytes = await cappedBody(c.req.raw, MAX_UPLOAD_BYTES);
+    if (bytes === null) return refuse(c, "photo_invalid_file");
+    const photo = checkPhoto(bytes);
+    if (!photo.ok) {
+      c.var.log.info("tryon_upload_refused", { job_id: jobId, problem: photo.problem });
+      return refuse(c, "photo_invalid_file");
+    }
+
+    // Claim the one write this job gets, before making it.
+    const claimed = await db
+      .prepare(
+        "UPDATE tryon_jobs SET uploaded_at = ?2 WHERE id = ?1 AND state = 'awaiting_upload' AND uploaded_at IS NULL RETURNING id",
+      )
+      .bind(jobId, now.toISOString())
+      .first();
+    if (claimed === null) return refuse(c, "upload_already_received");
+
+    try {
+      await c.env.UPLOADS.put(job.upload_key, bytes, { httpMetadata: { contentType: photo.type } });
+    } catch (error) {
+      await db.prepare("UPDATE tryon_jobs SET uploaded_at = NULL WHERE id = ?1").bind(jobId).run();
+      throw error;
+    }
+    c.var.log.info("tryon_uploaded", { job_id: jobId, bytes: bytes.byteLength, type: photo.type });
     return c.body(null, 204);
   });
 }
