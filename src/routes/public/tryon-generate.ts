@@ -4,7 +4,7 @@
 // where it goes: to WhatsApp only, never to the site
 // (docs/decisions/0104-the-try-ons-look-on-whatsapp-only.md). It is made for
 // the stage the claim gave, the lead's extent of hair loss too. One look per
-// visitor (the owner's decision, docs/decisions/0018-one-look-pro-only-lead-notices.md):
+// visitor (docs/decisions/0018-one-look-pro-only-lead-notices.md):
 // the first generate for an upload renders it; the same look asked for again
 // returns that job; any other look is refused. The mm_look cookie then keeps
 // the browser from starting another photo.

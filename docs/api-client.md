@@ -2344,7 +2344,7 @@ Request body:
             "after four",
             null
           ],
-          "description": "Deprecated: read `window`. The window in the Phase 1 booked page's words; null for the afternoon, which Phase 1 had no words for."
+          "description": "Deprecated: read `window`. The window in the first booked page's words; null for the afternoon, which it had no words for."
         },
         "place": {
           "type": "string",
@@ -2352,7 +2352,7 @@ Request body:
         },
         "requested": {
           "type": "boolean",
-          "description": "Asked for with no slot held, as while self-serve booking is off or by a Phase 1 booking: ops confirm the time on WhatsApp."
+          "description": "Asked for with no slot held, as while self-serve booking is off or by the site's first form: ops confirm the time on WhatsApp."
         },
         "one_visit": {
           "anyOf": [
@@ -2375,7 +2375,7 @@ Request body:
         "one_visit"
       ],
       "additionalProperties": false,
-      "description": "A booking's consultation from the site's form, or a Phase 1 booking, before any visit of the client's is on record. Null once one is, and once its day has passed."
+      "description": "A booking's consultation from the site's form, or its first form's, before any visit of the client's is on record. Null once one is, and once its day has passed."
     },
     "next_visit": {
       "anyOf": [
@@ -2587,7 +2587,7 @@ Request body:
           "type": "null"
         }
       ],
-      "description": "Board B1's one prompt, the first that applies, in the owner's order: no address given while something is booked; the next service due and not booked; then, once no invoice is ready, the month the piece in wear falls due, never the day, and only once that month may be booked. Null when none applies."
+      "description": "Home's one prompt, the first that applies, in this order: no address given while something is booked; the next service due and not booked; then, once no invoice is ready, the month the piece in wear falls due, never the day, and only once that month may be booked. Null when none applies."
     },
     "invoice": {
       "anyOf": [
@@ -2916,7 +2916,7 @@ Request body:
     },
     "prepaid": {
       "type": "boolean",
-      "description": "Paid for ahead, or covered by a visit credit: board C1's Prepaid."
+      "description": "Paid for ahead, or covered by a visit credit: the visit's Prepaid."
     },
     "technician": {
       "anyOf": [
@@ -4106,7 +4106,7 @@ Request body:
     },
     "prepaid": {
       "type": "boolean",
-      "description": "Paid for ahead, or covered by a visit credit: board C1's Prepaid."
+      "description": "Paid for ahead, or covered by a visit credit: the visit's Prepaid."
     },
     "technician": {
       "anyOf": [
@@ -6152,7 +6152,7 @@ Request body:
           "type": "null"
         }
       ],
-      "description": "A service-visit credit covers it, so payment is skipped (board C5)."
+      "description": "A service-visit credit covers it, so payment is skipped."
     },
     "discount": {
       "anyOf": [

@@ -3,7 +3,7 @@
 //   GET  /api/number-changes                  changes waiting for ops, both numbers proven
 //   POST /api/number-changes/:id/decision     confirm or reject
 //   GET  /api/deletion-requests               requests waiting for ops
-//   POST /api/deletion-requests/:id/decision  delete (the Phase 1 erasure) or reject
+//   POST /api/deletion-requests/:id/decision  delete (the erasure) or reject
 // Each decision is audited under the member of staff who made it, in the same batch as the decision. Ops answer
 // all three in the console's own sections (apps/ops/src). Each route keeps to the caller's cities.
 

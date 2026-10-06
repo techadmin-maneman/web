@@ -1,5 +1,4 @@
-// A client moving or cancelling one of their visits (boards C7 and C8;
-// docs/decisions/0046-moving-and-cancelling.md). Each route answers with the
+// A client moving or cancelling one of their visits (docs/decisions/0046-moving-and-cancelling.md). Each route answers with the
 // consequence before the client confirms, from src/policy/moving-a-visit.ts.
 // Behind SELF_SERVE_BOOKING, as booking is.
 //

@@ -163,7 +163,7 @@ export const HoldSchema = z
           .strict(),
         z.null(),
       ])
-      .openapi({ description: "A service-visit credit covers it, so payment is skipped (board C5)." }),
+      .openapi({ description: "A service-visit credit covers it, so payment is skipped." }),
     discount: z
       .union([
         z

@@ -37,7 +37,7 @@ export const ERROR_CODES = [
   "visit_booked",
   "payment_held",
   "payment_owed",
-  // Phase 2 surfaces: a write from another page's origin (docs/decisions/0026-hosts-and-surfaces.md).
+  // The signed-in surfaces: a write from another page's origin (docs/decisions/0026-hosts-and-surfaces.md).
   "forbidden_origin",
   // The ops surface: no valid Cloudflare Access token (docs/decisions/0031-access-and-audit.md).
   "access_required",

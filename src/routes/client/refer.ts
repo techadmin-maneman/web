@@ -1,4 +1,4 @@
-// The client's referrals (board F1; docs/decisions/0048-referrals.md): their code and invite link, their credit
+// The client's referrals (docs/decisions/0048-referrals.md): their code and invite link, their credit
 // balance, and the tracker, which shows completed fits only: each friend's first name and the month they were
 // fitted, never opens, consultations or pending referrals.
 //
@@ -272,7 +272,7 @@ export function registerClientRefer(app: App): void {
 /**
  * The client's own card, as the invite shows it. The preview's route, GET /api/og/{code}.jpg, is the public host's
  * (ADR 0026), so the app cannot load it from its own: this is the same card for its owner, for the share sheet's
- * preview (board F4) and for the photograph the phone's share sheet sends with the invite's words.
+ * preview and for the photograph the phone's share sheet sends with the invite's words.
  */
 function registerLiveCard(app: App): void {
   app.openapi(liveCardRoute, async (c) => {

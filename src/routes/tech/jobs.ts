@@ -3,7 +3,7 @@
 //
 //   GET  /api/tech/jobs?date=                    the day's jobs; today and tomorrow in full
 //   GET  /api/tech/jobs/:id                      one job, under the day-before unlock
-//   GET  /api/tech/jobs/:id/last-visit-photo     the client's last visit, after (board A3)
+//   GET  /api/tech/jobs/:id/last-visit-photo     the client's last visit, after
 //   POST /api/tech/jobs/:id/checkin              I have arrived, with the geofence
 //   POST /api/tech/jobs/:id/start                start the job
 //   POST /api/tech/jobs/:id/photos/upload-url    a link to PUT one photograph to

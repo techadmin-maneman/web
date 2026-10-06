@@ -6877,7 +6877,7 @@ export interface components {
             not_home: boolean;
             /** @description For a visit not yet closed: still to come, under way (the technician has checked in), closed as done from the technician's phone, or otherwise over and waiting to be closed. Null once it is closed. */
             stage: ("booked" | "in_progress" | "done" | "closing") | null;
-            /** @description Paid for ahead, or covered by a visit credit: board C1's Prepaid. */
+            /** @description Paid for ahead, or covered by a visit credit: the visit's Prepaid. */
             prepaid: boolean;
             technician: components["schemas"]["Technician"] | null;
             /** @description The saved address's area, city and pincode, else the visit's city and pincode. */
@@ -6947,7 +6947,7 @@ export interface components {
             not_home: boolean;
             /** @description For a visit not yet closed: still to come, under way (the technician has checked in), closed as done from the technician's phone, or otherwise over and waiting to be closed. Null once it is closed. */
             stage: ("booked" | "in_progress" | "done" | "closing") | null;
-            /** @description Paid for ahead, or covered by a visit credit: board C1's Prepaid. */
+            /** @description Paid for ahead, or covered by a visit credit: the visit's Prepaid. */
             prepaid: boolean;
             technician: components["schemas"]["Technician"] | null;
             /** @description The saved address's area, city and pincode, else the visit's city and pincode. */

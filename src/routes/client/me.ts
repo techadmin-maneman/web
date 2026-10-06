@@ -3,7 +3,7 @@
 // done; a lead has a consultation, booked, or from their booking on the site
 // while it is not yet a visit; else nothing is booked. The next visit comes
 // from the visits, and
-// the credit tile, board B1's one prompt and the invoice line beneath it (src/domain/home-prompt.ts).
+// the credit tile, Home's one prompt and the invoice line beneath it (src/domain/home-prompt.ts).
 // What the client may book now is every service offered of each kind open to
 // them, for the booking sheet to offer (docs/decisions/0085-services-ops-can-edit.md).
 //
@@ -68,15 +68,15 @@ const MeSchema = z
           .nullable()
           .openapi({
             description:
-              "Deprecated: read `window`. The window in the Phase 1 booked page's words; null for the afternoon, " +
-              "which Phase 1 had no words for.",
+              "Deprecated: read `window`. The window in the first booked page's words; null for the afternoon, " +
+              "which it had no words for.",
           }),
         place: z.string().openapi({
           description: "Where it is: the saved address (locality, city and pincode), else the booking's city.",
         }),
         requested: z.boolean().openapi({
           description:
-            "Asked for with no slot held, as while self-serve booking is off or by a Phase 1 booking: ops confirm " +
+            "Asked for with no slot held, as while self-serve booking is off or by the site's first form: ops confirm " +
             "the time on WhatsApp.",
         }),
         one_visit: z.union([OneVisitPriceSchema, z.null()]).openapi({
@@ -89,7 +89,7 @@ const MeSchema = z
       .nullable()
       .openapi({
         description:
-          "A booking's consultation from the site's form, or a Phase 1 booking, before any visit of the client's is " +
+          "A booking's consultation from the site's form, or its first form's, before any visit of the client's is " +
           "on record. Null once one is, and once its day has passed.",
       }),
     next_visit: z
@@ -179,7 +179,7 @@ const MeSchema = z
       ])
       .openapi({
         description:
-          "Board B1's one prompt, the first that applies, in the owner's order: no address given while something " +
+          "Home's one prompt, the first that applies, in this order: no address given while something " +
           "is booked; the next service due and not booked; then, once no invoice is ready, the month the piece in " +
           "wear falls due, never the day, and only once that month may be booked. Null when none applies.",
       }),
@@ -286,7 +286,7 @@ const MeSchema = z
   .strict()
   .openapi("Me");
 
-/** The words the Phase 1 booked page had for a window. It had none for the afternoon. */
+/** The words the first booked page had for a window. It had none for the afternoon. */
 const PHASE1_WORDS: Partial<Record<BookingWindow, WindowLabel>> = { morning: "before noon", evening: "after four" };
 
 type Consultation = NonNullable<z.infer<typeof MeSchema>["consultation"]>;

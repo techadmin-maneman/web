@@ -1,5 +1,5 @@
 // A client's referral card, drawn by Cloudflare Images (the IMAGES binding) from their first fit's front
-// photographs, as board A1 lays it out (docs/decisions/0048-referrals.md): each photograph cut to its half from the
+// photographs, as the card's design lays it out (docs/decisions/0048-referrals.md): each photograph cut to its half from the
 // top, where a face is, then the gilt rule and the lockup drawn over both from the overlay the house card's script
 // makes. On the free plan Images refuses work past 5,000 transformations a month and never bills (docs/runbook.md).
 // Locally it only resizes, so a local card is the overlay alone.

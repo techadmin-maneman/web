@@ -18,7 +18,7 @@
 // cancel of the same visit would, and the ruling records what it kept
 // (src/policy/no-show.ts, docs/decisions/0096-a-no-shows-charge-and-its-dispute.md).
 // A waiver gives back what ops set it to (no_show_waiver): the payment refunded
-// and the credit returned, as the owner ruled on 27 September 2026, and the
+// and the credit returned, and the
 // ruling keeps what it gave. Either way the client is told on WhatsApp, with
 // their consent to messages about visits.
 

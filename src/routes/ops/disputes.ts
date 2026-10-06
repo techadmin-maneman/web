@@ -1,5 +1,4 @@
-// A client's dispute of a no-show's charge, behind Access (Ops Console, board D1's "Disputed charge";
-// src/domain/no-show-disputes.ts, docs/decisions/0096-a-no-shows-charge-and-its-dispute.md):
+// A client's dispute of a no-show's charge, behind Access (src/domain/no-show-disputes.ts, docs/decisions/0096-a-no-shows-charge-and-its-dispute.md):
 //   GET  /api/no-shows/disputes                  the disputes still to rule on, each with its case's evidence
 //   POST /api/no-shows/disputes/:id/ruling       Refund or Uphold, with a reason
 //
