@@ -39,7 +39,7 @@ export interface StripDay {
   readonly label: string;
 }
 
-/** The date strip: `days` days from `from` (board C2). */
+/** The date strip: `days` days from `from`. */
 export function dayStrip(from: string, days: number): StripDay[] {
   return Array.from({ length: days }, (_, index) => {
     const date = addDays(from, index);

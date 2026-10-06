@@ -1,4 +1,4 @@
-/* A page's states (./States.tsx): board B3's loading shape, and a failure's line above its retry. */
+/* A page's states (./States.tsx): the loading shape, and a failure's line above its retry. */
 
 @layer base, ui;
 

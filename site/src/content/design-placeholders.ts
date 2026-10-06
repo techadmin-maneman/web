@@ -5,7 +5,7 @@
 // The publish gate (src/lib/publish-gate.ts) stops a production build when a
 // published block in site.ts still contains any of these values. A value goes
 // only when the site stops showing that material at all, as the technicians'
-// notes did on 1 October 2026 (ADR 0103).
+// notes did (ADR 0103).
 
 export const DESIGN_PLACEHOLDERS = {
   whatsapp: ["919810040200", "WhatsApp · +91 98100 40200"],

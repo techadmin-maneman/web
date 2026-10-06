@@ -2,7 +2,7 @@
 // any number, and words to share with whoever the sender picks. The links are
 // wa.me's, which open the app on a phone and WhatsApp Web at a desk.
 
-/** The business's WhatsApp, the owner's number since 22 September 2026: digits with the country code, no "+". */
+/** The business's WhatsApp number: digits with the country code, no "+". */
 export const WHATSAPP_NUMBER = "919007973247";
 
 /** The business's number as it is written for people: "+91 90079 73247". */

@@ -1,4 +1,4 @@
-// The ops console's table (boards B1, C2, C3 and D3): rows of --ops-row, the
+// The ops console's table: rows of --ops-row, the
 // head's names small and muted over a rule in the text's own ink, and a figure
 // set right in figures of one width. A caller's class sets the columns.
 

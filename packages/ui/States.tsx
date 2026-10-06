@@ -8,7 +8,7 @@ import { classes } from "./classes.ts";
 import { VisuallyHidden } from "./VisuallyHidden.tsx";
 import styles from "./states.module.css";
 
-/** The shape of a label and a card while the data comes (board B3), and the word for it, said once. */
+/** The shape of a label and a card while the data comes, and the word for it, said once. */
 export function Loading({
   label,
   ground = "paper",

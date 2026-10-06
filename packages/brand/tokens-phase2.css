@@ -1,7 +1,7 @@
 /*
- * The colours and sizes the Phase 2 surfaces add to tokens.css, which they load first.
+ * The colours and sizes the apps add to tokens.css, which they load first.
  * This layer only adds names; it never redefines one of tokens.css's
- * (test/node/packages/brand-package.test.ts). Each value is drawn in a Phase 2 spec
+ * (test/node/packages/brand-package.test.ts). Each value is drawn in an app's design
  * board (design/phase2), not only in the Prototype, whose colours the boards
  * overrule.
  */
@@ -15,35 +15,35 @@
    * WhatsApp's own colours, never ours: only where a board draws a message as WhatsApp will show it, so the
    * client or ops see what the other side will. Nowhere else.
    */
-  --wa-bubble: #dff7c9; /* the client app's preview of an invite, in the chat's sent bubble (board F4) */
+  --wa-bubble: #dff7c9; /* the client app's preview of an invite, in the chat's sent bubble */
   --wa-preview: #f6ffeb; /* and the link's preview inside it */
-  --wa-bubble-width: 310px; /* the widest a bubble is drawn (board F4) */
-  --wa-dark: #1f2c33; /* the ops console's preview of a message we are about to send, in the dark theme (board C3) */
+  --wa-bubble-width: 310px; /* the widest a bubble is drawn */
+  --wa-dark: #1f2c33; /* the ops console's preview of a message we are about to send, in the dark theme */
   --wa-dark-text: #e9edef; /* and the words in it */
 
   /* The apps' sizes (docs/prompts/phase2-frontend.md, "Layout and targets"). */
   --app-column: 390px; /* the design's width */
   --fs-app-title: var(--fs-34); /* a screen's title */
-  --fs-app-title-long: 32px; /* a longer title, as board A3's */
-  --fs-19: 19px; /* a day's number in the date strip (board C2) */
-  --fs-20: 20px; /* a visit's date over its photographs (board D1) */
-  --fs-21: 21px; /* an entry's amount in the payments list (board E1) */
-  --fs-26: 26px; /* an upcoming visit's date (board C1) */
-  --fs-28: 28px; /* a confirmed booking's day and window (board C6) */
-  --fs-25: 25px; /* the empty tracker's line (board F6) */
-  --fs-30: 30px; /* what a referral earns (board F1); the client's name at the head of their ops page (board B1) */
-  --fs-34: 34px; /* the tracker's two figures (board F5) */
-  --fs-40: 40px; /* an entry's amount on its own page (board E2) */
-  --lh-118: 1.18; /* what a referral earns, and the consent before a card is made (boards F1, F2) */
+  --fs-app-title-long: 32px; /* a longer title */
+  --fs-19: 19px; /* a day's number in the date strip */
+  --fs-20: 20px; /* a visit's date over its photographs */
+  --fs-21: 21px; /* an entry's amount in the payments list */
+  --fs-26: 26px; /* an upcoming visit's date */
+  --fs-28: 28px; /* a confirmed booking's day and window */
+  --fs-25: 25px; /* the empty tracker's line */
+  --fs-30: 30px; /* what a referral earns; the client's name at the head of their ops page */
+  --fs-34: 34px; /* the tracker's two figures */
+  --fs-40: 40px; /* an entry's amount on its own page */
+  --lh-118: 1.18; /* what a referral earns, and the consent before a card is made */
   /* Primary buttons and fields are tokens.css's --btn-lg (56px); icon buttons and links its --tap (44px). */
   --tap-row: 64px; /* rows, tabs, the code's boxes */
   --sp-40: 40px; /* initials and square marks: the dispatch board's, the share sheet's */
   --sp-64: 64px;
-  --switch-width: 46px; /* a consent's switch (board G1) */
+  --switch-width: 46px; /* a consent's switch */
 
   /* The ops console's frame and density (design/phase2/Ops Console.dc.html, its opening note). */
   --ops-row: 34px; /* a table row: dense but not cramped */
-  --ops-box: 16px; /* a square to tick, as board A2 draws the reason picker's */
+  --ops-box: 16px; /* a square to tick, as the dispatch board's reason picker draws it */
   --ops-figure: 76px; /* a column of figures, right aligned */
   --ops-panel: 484px; /* a panel the boards draw on its own, such as the launch confirmation */
   --ops-list: 1200px; /* a list page on a desktop: the main width, short of rows too wide to scan */
@@ -55,13 +55,13 @@
   --tech-row: 88px; /* a job row, a checklist line */
   --tech-stepper: 56px; /* a stepper's square, and the buttons that are not the primary one */
   --tech-min: 48px; /* nothing under this: the initials chip, Retry */
-  --tech-time: 76px; /* the time column down the left of a job row (board A1), "12:30 pm" on one line */
+  --tech-time: 76px; /* the time column down the left of a job row, "12:30 pm" on one line */
   --tech-mark: 28px; /* the mark at the head of Today */
-  --tech-box: 36px; /* a checklist item's box (board B2) */
-  --fs-timer: 56px; /* the wait timer's count, board B5's one large number */
-  --tech-retake: 88px; /* the Retake key beside Capture, the one action that is not full width (board B1) */
+  --tech-box: 36px; /* a checklist item's box */
+  --fs-timer: 56px; /* the wait timer's count, the technician app's one large number */
+  --tech-retake: 88px; /* the Retake key beside Capture, the one action that is not full width */
 
-  --skeleton-label: 120px; /* the loading state's label (board B3) */
+  --skeleton-label: 120px; /* the loading state's label */
   --skeleton-card: 150px; /* and its card */
   --tracking-number: 0.04em; /* a mobile number, spaced for reading */
 }

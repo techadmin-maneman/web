@@ -1,4 +1,4 @@
-// The ops console's panel (design/phase2/Ops Console, board C1's review queue,
+// The ops console's panel (design/phase2/Ops Console, the Referrals review queue,
 // and every queue drawn after it): a bordered section headed by its title in
 // the serif, with how many it holds at the right, and what it holds beneath.
 

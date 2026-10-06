@@ -1,6 +1,6 @@
 // Every string and image on the site, taken word for word from the design
-// (design/Mane Man Site v2.dc.html), except where the owner rewrote the home
-// page on 1 October 2026 (docs/decisions/0103-the-home-pages-first-copy-round.md).
+// (design/Mane Man Site v2.dc.html), except where the home page was rewritten
+// (docs/decisions/0103-the-home-pages-first-copy-round.md).
 // Components hold no copy of their own.
 //
 // Some entries need care before production (docs/frontend.md):
@@ -45,8 +45,8 @@ export interface Notice {
 }
 
 /**
- * The versions approved word for word: the try-on's three by the owner on 22 September 2026, and the consents,
- * the landing's among them, by counsel the same day (ADR 0025, item 25).
+ * The versions approved word for word: the try-on's three, and the consents, the landing's among them, by counsel
+ * (ADR 0025, item 25).
  */
 const APPROVED_NOTICES: readonly string[] = [
   "photo-v1",
@@ -259,7 +259,7 @@ export interface LegalPage {
   readonly sections: readonly LegalSection[];
 }
 
-/** The two long-form pages, a heading per topic. Their Phase 2 wording is a draft for counsel. */
+/** The two long-form pages, a heading per topic. Their wording for the apps is a draft for counsel. */
 export const legalPages: { readonly privacy: LegalPage; readonly terms: LegalPage } = {
   privacy: {
     publish: true,
@@ -300,7 +300,7 @@ export const legalPages: { readonly privacy: LegalPage; readonly terms: LegalPag
       {
         heading: "How long we keep it",
         paragraphs: [
-          // PLACEHOLDER: the periods the owner ruled on 2 October 2026, for counsel to confirm (docs/open-points.md, item 149).
+          // PLACEHOLDER: the periods, for counsel to confirm (open point 149).
           "Once you are a client, we keep your details, your address and your visit photographs until you ask us to erase them. If you never book a visit or pay us, we erase your details a year after you last used the site or the app. A waitlist place goes a year after we launch in your area. Where a technician checked in at your door is kept only until a no-show charge can no longer be disputed. Invoices are kept for eight years, as the law requires.",
         ],
       },
@@ -352,7 +352,7 @@ export const legalPages: { readonly privacy: LegalPage; readonly terms: LegalPag
       {
         heading: "The try-on",
         paragraphs: [
-          // The try-on's sentence on WhatsApp is ADR 0104's, for the owner's second round (docs/open-points.md, item 163).
+          // The try-on's sentence on WhatsApp is ADR 0104's.
           "The try-on is an illustrative simulation made by software from one photograph, and sent to the WhatsApp number you give, never shown on this site. It is not a photograph of a result, and not a promise of how your hair system will look: a hair system is matched to your own hair colour, density and growth pattern. Upload only a photograph of yourself, and only if you are eighteen or over. Each visitor gets one simulation.",
         ],
       },
@@ -430,7 +430,7 @@ export const hero = {
   body: "Your technician comes when it suits you, matches a hair system to your own hair and fits it.",
   tryOn: "Try a new look",
   book: "Book a free consultation",
-  // Not in v2: the footage loops, so it can be stopped (WCAG 2.2.2). The owner approves the words (open point 45).
+  // Not in v2: the footage loops, so it can be stopped (WCAG 2.2.2).
   pause: "Pause the film",
   play: "Play the film",
 };
@@ -565,7 +565,7 @@ export const comparison = {
 export const tryOnTeaser = {
   eyebrow: "Try-on",
   title: "See yourself with hair before anyone comes to your home.",
-  // The look on WhatsApp only is ADR 0104's, for the owner's second round (docs/open-points.md, item 163).
+  // The look on WhatsApp only is ADR 0104's.
   body: "One photograph, one look from six, sent privately to your WhatsApp. A simulation, not a photograph of a result. Your photograph is deleted within the hour.",
   start: "Start the try-on",
   before: "Before",
@@ -604,7 +604,7 @@ export const howItWorks = {
   ],
 };
 
-/** The four hair systems, from the owner's product guide of 30 September 2026. */
+/** The four hair systems, from the product guide. */
 export const range = {
   title: "The range",
   intro: "Four hair systems. Every one 100% real human hair.",
@@ -937,7 +937,7 @@ export function gateCopy(gate: Notice) {
 /**
  * The try-on's screens. The look goes to WhatsApp only (docs/decisions/0104-the-try-ons-look-on-whatsapp-only.md), so
  * v2's processing and result screens are gone, the gate asks for the number before the look is made, and the sent
- * and unavailable screens, which v2 does not draw, are ADR 0104's words for the owner's second round
+ * and unavailable screens, which v2 does not draw, are ADR 0104's words
  * (docs/open-points.md, item 163).
  */
 export const tryOn = {
@@ -1003,7 +1003,7 @@ export const tryOn = {
       rateLimited: "This number is out of tries for today. Try again tomorrow.",
       taken: "This look is already on its way to another number.",
       other: "That didn't go through. Try again in a minute.",
-      // Not drawn: refusals of the WhatsApp code. The owner approves the words.
+      // Not drawn: refusals of the WhatsApp code.
       codes: "That’s too many codes for this number today. Try again tomorrow.",
       turnstile: "We couldn’t confirm you’re a person. Try again.",
       notProved: "Your WhatsApp code has expired. Press Send my look for a new one.",
@@ -1067,7 +1067,7 @@ export const tryOn = {
 
 /**
  * The code that proves the number before /book's consultation and fit in one visit, or /try's look, acts on it. Not
- * drawn: words for the owner to approve.
+ * drawn.
  */
 export const numberCode = {
   label: "WhatsApp code",

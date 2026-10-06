@@ -11,7 +11,7 @@
 //     {(control) => <TextArea {...control} value={reason} onChange={...} />}
 //   </Field>
 //
-// Its look is the ops console's (board C1's reason), with the edge ADR 0025,
+// Its look is the ops console's reason field, with the edge ADR 0025,
 // item 36 rules for every field; a caller's own class places it.
 
 import {
