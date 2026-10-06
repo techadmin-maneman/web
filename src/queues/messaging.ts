@@ -46,7 +46,7 @@ import { composeBookingRefunded } from "../domain/money/auto-refunds.ts";
 import { composeCreditsExpiring } from "../domain/money/credit-reminders.ts";
 import { composeDeletionRejected } from "../domain/privacy/deletion.ts";
 import { composeNextServiceReminder } from "../domain/visits/next-visit.ts";
-import { composeLinkPaid } from "../domain/money/payment-links.ts";
+import { composeLinkPaid } from "../domain/money/payment-links-paid.ts";
 import { readOpsInputs } from "../domain/ops/ops-settings.ts";
 import {
   composeFriendCredited,

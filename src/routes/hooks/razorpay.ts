@@ -31,7 +31,7 @@ import { bookHold } from "../../http/book-hold.ts";
 import { cappedBody } from "../../http/capped-body.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
 import { sha256Hex } from "../../lib/hash.ts";
-import { cancelLinkPaidElsewhere, linkPaid } from "../../domain/money/payment-links.ts";
+import { cancelLinkPaidElsewhere, linkPaid } from "../../domain/money/payment-links-paid.ts";
 import { holdOfLink, recordHoldLinkPaid, type LinkHold } from "../../domain/booking/visit-booking.ts";
 import {
   RazorpayPaymentLinkSchema,

@@ -6,15 +6,14 @@
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import {
-  composeLinkPaid,
   hairSystemName,
-  linkPaid,
   resendLink,
   sendPaymentLink,
   sendUnsentLinks,
   type FittedVisit,
   type LinkDeps,
 } from "../../../src/domain/money/payment-links.ts";
+import { composeLinkPaid, linkPaid } from "../../../src/domain/money/payment-links-paid.ts";
 import { createCallBudget } from "../../../src/lib/call-budget.ts";
 import { createLogger } from "../../../src/log.ts";
 import { captureLogs, fakeDependencies, LOCAL_SETTINGS, markDatabase, NOW, type TestDependencies } from "../helpers.ts";
