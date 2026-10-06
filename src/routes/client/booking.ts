@@ -205,6 +205,11 @@ export function registerClientBooking(app: App): void {
     return c.json(held, 200);
   });
 
+  registerHoldOutcomes(app);
+}
+
+/** What becomes of a hold: booked, once paid or at once when free, or let go. */
+function registerHoldOutcomes(app: App): void {
   app.openapi(bookingRoute, async (c) => {
     const session = clientOf(c);
     const { hold_id: holdId, consents = [] } = c.req.valid("json");
