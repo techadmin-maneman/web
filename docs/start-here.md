@@ -37,7 +37,8 @@ this map, or when the map names something that no longer exists.
 
 - **Database work** (`src/domain/booking/`): `availability`, `open-windows`, `asked-windows`, `occupancy`, `slot-times`,
   `technician-choice`, `technician-rotation`, `hold-slot`, `holds`, `hold-stages`, `booked-hold`, `unbooked-holds`,
-  `give-back`, `bookings`, `visit-booking`, `move-in-place`, `public-booking`, `form-person`, `proposed-visits`,
+  `give-back`, `bookings`, `visit-booking`, `move-in-place`, `public-booking`, `public-consultation`,
+  `public-waitlist`, `site-visit`, `form-person`, `proposed-visits`,
   `waitlist`, `services`
 - **Rules** (`src/policy/`): `booking`, `slot-times`, `site-booking`, `moving-a-visit`, `prepayment`, `services`,
   `visit-length`
