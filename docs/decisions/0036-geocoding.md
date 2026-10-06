@@ -2,6 +2,7 @@
 
 - Status: accepted; amended by [0054](0054-address-capture.md) on 23 September 2026
 - Date: 2026-09-23
+- Topic: Field work
 
 ## Context
 

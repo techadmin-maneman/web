@@ -2,6 +2,7 @@
 
 - Status: accepted; amended 30 September 2026 on the owner's ruling (docs/open-points.md, item 157): ops may attach an invite after the friend's first fit, and its grant is held for their review (`attached_after_fit`, src/policy/fraud-holds.ts)
 - Date: 2026-09-28
+- Topic: Referrals
 - Amends [0048](0048-referrals.md), whose attribution happened only on the invite's own page, and [0051](0051-booking-from-the-site.md), whose `/book` booked without an invite; records two departures in ADR 0025 (items 72 and 73)
 
 ## Context

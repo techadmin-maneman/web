@@ -2,6 +2,7 @@
 
 - Status: accepted. Amended by ADR 0060: while self-serve booking is off, the landing records a request for ops rather than refusing. The landing page and the app's Refer screens were built in P2-F3. Amended by ADR 0080: a consent to cards given by booking a visit, on the pay step's lines, names the referrer too. Amended 27 September 2026: where the phone can share files, the card goes with the invite as a photograph (below). Amended by [ADR 0089](0089-an-invite-is-not-lost.md): attribution also happens on `/book`, with an invite the friend's browser remembered for 30 days, and when ops attach an invite on the client's page, under the same rule. Amended by [ADR 0107](0107-referral-rewards-in-the-console.md) on 1 October 2026: ops set each side's service visits and how long they last in the console, 3, 3 and 365 days to begin with; the grant gives the reward in force when the friend's first fit settles it, kept with the referral for a grant held for review. Amended 5 October 2026: the API makes the card from the client's photographs, and takes none from the phone (below).
 - Date: 2026-09-22
+- Topic: Referrals
 
 ## Context
 

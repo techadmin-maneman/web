@@ -2,6 +2,7 @@
 
 - Status: accepted for the derivation, the ops console and the client app; the CRM half waits on the owner. Amended 25 September 2026: Home carries the prompt (section 4). Amended 4 October 2026 by [0110](0110-field-work-without-fsm.md): the history is read from our own database alone.
 - Date: 2026-09-24
+- Topic: Messages and the CRM
 - Amends [0050](0050-crm-in-the-real-org.md), which moved the CRM to the real org and left every person in Leads
 
 ## Context

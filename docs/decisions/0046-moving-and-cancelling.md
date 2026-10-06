@@ -2,6 +2,7 @@
 
 - Status: accepted; the late fee kept, and a credit given back only to a grant that can take it, in ADR 0068; after ops move a visit, the notice counts from its time before the move, in [0096](0096-a-no-shows-charge-and-its-dispute.md). Amended 4 October 2026 by [0110](0110-field-work-without-fsm.md): a move or a cancel is one batch in our own database; nothing is written to FSM.
 - Date: 2026-09-22
+- Topic: Booking and visits
 
 ## Context
 

@@ -2,6 +2,7 @@
 
 - Status: accepted
 - Date: 2026-09-22
+- Topic: Messages and the CRM
 - Contract step for `migrations/0006_outbound_messages_v2.sql`
 
 ## Context

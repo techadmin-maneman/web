@@ -2,6 +2,7 @@
 
 - Status: accepted. Amended 25 September 2026: "Checking what is live".
 - Date: 2026-09-21
+- Topic: Platform
 - Settles the open item in 0006
 
 ## Context

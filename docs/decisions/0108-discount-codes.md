@@ -2,6 +2,7 @@
 
 - Status: accepted, on the owner's rulings of 1 October 2026 (ADR 0025, item 100)
 - Date: 2026-10-01
+- Topic: Money and Books
 
 ## Built
 

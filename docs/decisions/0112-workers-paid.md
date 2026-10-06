@@ -2,6 +2,7 @@
 
 - Status: accepted, on the owner's purchase of 6 October 2026
 - Date: 2026-10-06
+- Topic: Platform
 - Amends [0009](0009-stay-inside-cloudflare-free-tier.md): its first decision, the account's plan
 
 ## Context

@@ -2,6 +2,7 @@
 
 - Status: accepted
 - Date: 2026-09-26
+- Topic: The ops console
 - Amends [0061](0061-ops-editable-inputs.md) for the price form, the service-area file and serving a pincode, and [0048](0048-referrals.md) for an area's name; follows [0031](0031-access-and-audit.md)
 
 ## Context

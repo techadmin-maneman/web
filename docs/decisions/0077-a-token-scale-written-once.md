@@ -2,6 +2,7 @@
 
 - Status: accepted
 - Date: 2026-09-27
+- Topic: Platform
 - Amends [0037](0037-shared-packages.md); follows [0076](0076-one-ui-layer-and-one-api-client.md)
 
 ## Context

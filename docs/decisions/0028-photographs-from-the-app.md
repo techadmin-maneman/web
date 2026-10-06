@@ -2,6 +2,7 @@
 
 - Status: accepted; amended 28 September 2026 by [0093](0093-the-storage-meter.md): a photograph is at most 2 MB, it comes with a thumbnail the phone makes, and an erasure deletes every object under the visit's prefix. Amended 4 October 2026 by [0110](0110-field-work-without-fsm.md): a photograph is kept in R2 alone; none is attached to FSM.
 - Date: 2026-09-23
+- Topic: Field work
 
 ## Context
 

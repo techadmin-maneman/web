@@ -2,6 +2,7 @@
 
 - Status: accepted
 - Date: 2026-10-01
+- Topic: Money and Books
 - Amends [0045](0045-self-serve-booking.md), [0095](0095-a-booking-fsm-refuses-is-held.md) and [0096](0096-a-no-shows-charge-and-its-dispute.md), whose refunds took any failure as Razorpay's refusal (`docs/open-points.md`, item 161)
 
 ## Context

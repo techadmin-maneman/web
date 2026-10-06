@@ -2,6 +2,7 @@
 
 - Status: accepted
 - Date: 2026-09-23
+- Topic: Field work
 
 ## Context
 

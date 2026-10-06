@@ -2,6 +2,7 @@
 
 - Status: accepted
 - Date: 2026-09-27
+- Topic: Booking and visits
 - Amends [0045](0045-self-serve-booking.md), whose holds took any client; follows [0054](0054-address-capture.md) for the form, and records the owner's ruling of 27 September 2026 (ADR 0025, item 60)
 
 ## Context

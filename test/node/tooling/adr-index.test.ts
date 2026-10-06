@@ -1,15 +1,15 @@
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
-import { adrIndex, readAdr, readDecisions } from "../../../scripts/lib/adr-index.ts";
+import { adrIndex, readAdr, readDecisions, TOPICS } from "../../../scripts/lib/adr-index.ts";
 
 const adr = (file: string, header: string) => ({ file, text: `${header}\n\n## Context\n\nThe reason.\n` });
 
 describe("reading an ADR's header", () => {
-  it("takes the number, the title, the date and the status's first clause", () => {
+  it("takes the number, the title, the date, the topic and the status's first clause", () => {
     const record = readAdr(
       adr(
         "0006-deployment-pipeline.md",
-        "# 0006. Deployment pipeline\n\n- Status: accepted (reviewers wait; see 0008). Amended 25 September 2026.\n- Date: 2026-09-21",
+        "# 0006. Deployment pipeline\n\n- Status: accepted (reviewers wait; see 0008). Amended 25 September 2026.\n- Date: 2026-09-21\n- Topic: Platform",
       ),
     );
     expect(record).toEqual({
@@ -17,6 +17,7 @@ describe("reading an ADR's header", () => {
       number: "0006",
       title: "Deployment pipeline",
       date: "2026-09-21",
+      topic: "Platform",
       status: "accepted",
       changes: [],
       changedBy: [],
@@ -81,5 +82,19 @@ describe("the committed index", () => {
   it("is the index the records' headers make, so a new record or a changed status needs npm run adr-index", () => {
     const { adrs, others } = readDecisions();
     expect(readFileSync("docs/decisions/README.md", "utf8")).toBe(adrIndex(adrs, others));
+  });
+});
+
+// A record with no topic, or one the index does not list, would be in the table and under no heading.
+describe("each record's topic", () => {
+  it("is one the index groups by", () => {
+    const { adrs } = readDecisions();
+    const topics: readonly string[] = TOPICS;
+    expect(
+      adrs
+        .map(readAdr)
+        .filter((adr) => !topics.includes(adr.topic))
+        .map((adr) => adr.file),
+    ).toEqual([]);
   });
 });

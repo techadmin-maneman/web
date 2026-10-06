@@ -2,6 +2,7 @@
 
 - Status: accepted. Amended 2 October 2026: Checkout lists the ways to pay, so the pay step chooses none first and C6 offers "Try again" alone.
 - Date: 2026-09-22
+- Topic: Platform
 
 ## Context
 

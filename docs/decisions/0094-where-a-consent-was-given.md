@@ -2,6 +2,7 @@
 
 - Status: accepted, on the owner's rulings of 27 September 2026 (`docs/open-points.md`, item 50; ADR 0025, ruling 34)
 - Date: 2026-09-28
+- Topic: Privacy and accounts
 - Amends [0049](0049-dpdp.md), whose consent record held no place and whose erasure left a check-in's coordinates, [0019](0019-erasure.md), [0066](0066-erasure-all-or-nothing.md), which left the coordinates open, and [0080](0080-consents-given-by-booking.md), whose consents the console told apart by their notice; records a departure in ADR 0025 (item 79)
 
 ## Context

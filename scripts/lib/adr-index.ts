@@ -19,12 +19,28 @@ export interface Adr {
   readonly number: string;
   readonly title: string;
   readonly date: string;
+  /** One of TOPICS, from its header's "- Topic:" line; empty when it has none. */
+  readonly topic: string;
   readonly status: string;
   /** The records this one amends, supersedes, resolves or adds to. */
   readonly changes: readonly string[];
   /** The records its own status says changed it. */
   readonly changedBy: readonly string[];
 }
+
+/** The topics the index groups the records under, in its order. */
+export const TOPICS = [
+  "Platform",
+  "Booking and visits",
+  "Field work",
+  "Money and Books",
+  "Privacy and accounts",
+  "Messages and the CRM",
+  "Referrals",
+  "The try-on",
+  "The site",
+  "The ops console",
+] as const;
 
 const DIRECTORY = "docs/decisions";
 const ADR_FILE = /^(\d{4})-[a-z0-9-]+\.md$/;
@@ -79,6 +95,7 @@ export function readAdr({ file, text }: DecisionFile): Adr {
     number: title?.[1] ?? "",
     title: title?.[2]?.trim() ?? "",
     date: field(lines, "Date"),
+    topic: field(lines, "Topic"),
     status: shortStatus(status),
     changes: changesIn(lines, status),
     changedBy: sorted([...status.matchAll(CHANGED_BY)].map((match) => match[1] ?? "")),
@@ -122,7 +139,19 @@ export function adrIndex(files: readonly DecisionFile[], others: readonly Decisi
     "",
     "Every decision this repository was built on, oldest first. A record says what was decided and why, and is not rewritten to say something else: a later record changes it, and says so in its own header (ADR 0001). **Changed by** gathers those later records, from either side, so an old record's reader knows to read on.",
     "",
-    `This file is written by \`npm run adr-index\` from the records' own headers, and \`test/node/tooling/adr-index.test.ts\` fails until it is run after a record is added or its status changes. The next free number is ${next}.`,
+    `This file is written by \`npm run adr-index\` from the records' own headers, and \`test/node/tooling/adr-index.test.ts\` fails until it is run after a record is added or its status changes. A record names its topic in its header, \`- Topic:\` and one of the headings below, and the test fails on one that does not. The next free number is ${next}.`,
+    "",
+    "## By topic",
+    "",
+    ...TOPICS.flatMap((topic) => [
+      `### ${topic}`,
+      "",
+      ...adrs
+        .filter((adr) => adr.topic === topic)
+        .map((adr) => `- ${link(adr)} ${adr.title}${adr.status.startsWith("superseded") ? " (superseded)" : ""}`),
+      "",
+    ]),
+    "## Every decision, oldest first",
     "",
     "| ADR | Decision | Date | Status | Changed by |",
     "| --- | --- | --- | --- | --- |",

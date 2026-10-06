@@ -2,6 +2,7 @@
 
 - Status: accepted; amended 2 October 2026 (audit finding PS-06; ADR 0025, item 41): the answer no longer says whether the number has an address with us, and its owner is told on WhatsApp instead; amended again 2 October 2026 (audit finding PS-10; the owner's decision 7): the consultation and fit in one visit is booked only for a number its WhatsApp code proved
 - Date: 2026-09-27
+- Topic: Booking and visits
 - Amends [0051](0051-booking-from-the-site.md), which asked for no address; the site's side of [0079](0079-an-address-before-a-slot.md); records the owner's ruling of 27 September 2026 (ADR 0025, item 62)
 
 ## Context

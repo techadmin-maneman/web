@@ -2,6 +2,7 @@
 
 - Status: accepted, on the owner's rulings of 1 October 2026 ("Fit spec + history", and no separate consent, both recorded in ADR 0025); the defaults below are the build's, for the owner to confirm
 - Date: 2026-10-01
+- Topic: Field work
 
 ## What was built
 

@@ -2,6 +2,7 @@
 
 - Status: accepted. Amended by [ADR 0104](0104-the-try-ons-look-on-whatsapp-only.md): the look is rendered only once the gate has the number it goes to, and a browser that has had its look is told it was sent, never shown it again.
 - Date: 2026-09-21
+- Topic: The try-on
 
 ## Context
 

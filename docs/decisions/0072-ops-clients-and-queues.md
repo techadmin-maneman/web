@@ -2,6 +2,7 @@
 
 - Status: accepted; amended 28 September 2026 by [0092](0092-task-owners.md), under which each task on the Tasks board has an owner in ops and a visit left partly done may be closed there with a reason; and on 30 September 2026 by migration 0060, under which Call about a move, Replacement order, Referral review and Visit left partly done read only what can still be a task: an index each for the moves not yet told and the grants held, and a flag each, kept by triggers, for a piece whose replacement is booked (`pieces.replacement_booked`) and a partial visit a later one followed (`visits.followed_up`)
 - Date: 2026-09-26
+- Topic: The ops console
 - Amends [0031](0031-access-and-audit.md) (one photograph view, one entry) and [0061](0061-ops-editable-inputs.md) (the task allowances' ceiling); follows [0049](0049-dpdp.md), [0067](0067-alerts-and-silent-failures.md) and [0069](0069-dispatch-under-concurrency.md)
 
 ## Context

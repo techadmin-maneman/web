@@ -2,6 +2,7 @@
 
 - Status: accepted; departed from 28 September 2026 by [0093](0093-the-storage-meter.md) for R2 storage alone: on the owner's ruling of 27 September 2026 (`docs/open-points.md`, item 151), R2's paid storage is accepted once Phase 2's share fills, and the storage meter tells ops at 50%, 80% and 100% of it; and from 6 October 2026 by [0112](0112-workers-paid.md) for Workers: the account is on Workers Paid
 - Date: 2026-09-21
+- Topic: Platform
 
 ## Context
 

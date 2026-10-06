@@ -2,6 +2,7 @@
 
 - Status: accepted
 - Date: 2026-10-01
+- Topic: The site
 - Amends [0022](0022-site-departures-from-v2.md), whose home page followed v2 word for word, and [0073](0073-prices-from-the-price-book.md), whose prices the site no longer shows. Records the owner's list of 1 October 2026 and the six rulings asked one at a time the same day, from the owner's product guide of 30 September 2026.
 
 ## Context

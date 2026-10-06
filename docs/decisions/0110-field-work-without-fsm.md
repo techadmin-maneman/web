@@ -2,6 +2,7 @@
 
 - Status: accepted, on the owner's ruling of 2 October 2026. Built: staging left FSM on 4 October 2026, and FSM's code was deleted the same day. Supersedes [0032](0032-fsm-mirror.md), [0064](0064-converting-a-request.md), [0095](0095-a-booking-fsm-refuses-is-held.md), [0098](0098-the-door-in-fsms-address.md), [0099](0099-the-clients-note-in-fsm.md) and [0101](0101-phase-1s-path-into-fsm-removed.md); [fsm-licensing.md](../archive/fsm-licensing.md) and [fsm-trial.md](../archive/fsm-trial.md) are history.
 - Date: 2026-10-02
+- Topic: Field work
 
 ## Context
 
