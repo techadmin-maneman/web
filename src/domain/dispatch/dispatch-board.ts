@@ -16,7 +16,7 @@ import { unitsFor } from "../../policy/visit-length.ts";
 import { bookedMinutes } from "../booking/occupancy.ts";
 import { loadSlotSchedule, type SlotSchedule } from "../booking/slot-times.ts";
 import { withinReach, reachBinding } from "../clients/places.ts";
-import { NO_VISITS_CONSENT } from "../messages/visit-messages.ts";
+import { NO_VISITS_CONSENT } from "../messages/visit-message-text.ts";
 import { latestConsentSql } from "../privacy/consents.ts";
 import { creditSpentOn } from "../visits/visit-facts.ts";
 import type { AppointmentStatus } from "../visits/visit-status.ts";
@@ -114,7 +114,7 @@ interface Board {
 
 /**
  * The latest word on WhatsApp about his visits from the client of appointment `a`: 1, 0, or NULL where he never
- * gave one. The messaging consumer reads it the same way before it sends (src/domain/messages/visit-messages.ts).
+ * gave one. The messaging consumer reads it the same way before it sends (src/domain/messages/visit-message-text.ts).
  */
 export const LATEST_VISITS_CONSENT = latestConsentSql("a.person_id", "whatsapp_visits");
 /**
