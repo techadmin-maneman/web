@@ -31,7 +31,7 @@ describe("the hair profile's table", () => {
       [
         "src/domain/privacy/data-export.ts",
         "src/domain/privacy/erasure.ts",
-        "src/domain/field/tech-jobs.ts",
+        "src/domain/field/job-card.ts",
         "src/routes/ops/hair-profile.ts",
         "src/routes/tech/jobs.steps.ts",
       ].sort(),

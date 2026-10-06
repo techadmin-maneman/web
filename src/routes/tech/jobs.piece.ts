@@ -4,7 +4,7 @@
 import { z } from "@hono/zod-openapi";
 import { PieceRequestSchema } from "../../domain/field/job-event-bodies.ts";
 import { offeredProducts } from "../../domain/booking/services.ts";
-import { type WorkableJob } from "../../domain/field/tech-jobs.ts";
+import { type WorkableJob } from "../../domain/field/workable-job.ts";
 import { indiaDate } from "../../lib/india-time.ts";
 import { takesStep } from "../../policy/in-job-steps.ts";
 import { pieceRecorded } from "../../policy/piece-step.ts";

@@ -24,7 +24,8 @@ import { tellOfLowStock } from "../../domain/field/stock.ts";
 import { hasStorageRoom } from "../../domain/platform/storage-meter.ts";
 import { noShowReadiness, openNoShowCase } from "../../domain/no-shows/no-shows.ts";
 import { closeOneVisit } from "../../domain/visits/one-visit.ts";
-import { progressOf, workableJob, type WorkableJob } from "../../domain/field/tech-jobs.ts";
+import { progressOf } from "../../domain/field/job-card.ts";
+import { workableJob, type WorkableJob } from "../../domain/field/workable-job.ts";
 import {
   anglesHeld,
   MAX_PHOTO_BYTES,
