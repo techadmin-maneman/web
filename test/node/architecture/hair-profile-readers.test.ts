@@ -19,21 +19,22 @@ describe("the hair profile's table", () => {
   it("is read and written in its own domain file alone", () => {
     // The audit log names it too, only to write a correction's entry once its row is there, and the map of personal
     // data, to say what the export and the erasure do with it. Neither reads a column of it.
-    expect(naming(/\bhair_profiles\b/).sort()).toEqual([
-      "src/domain/audit.ts",
-      "src/domain/hair-profiles.ts",
-      "src/policy/personal-data.ts",
-    ]);
+    expect(naming(/\bhair_profiles\b/).sort()).toEqual(
+      ["src/domain/audit.ts", "src/domain/hair-profiles.ts", "src/policy/personal-data.ts"].sort(),
+    );
   });
 
   it("is reached through it by the routes, the card, the erasure and the export, and by no queue or provider", () => {
-    const users = naming(/from "(?:\.\.?\/)+(?:domain\/)?hair-profiles\.ts"/).sort();
-    expect(users).toEqual([
-      "src/domain/data-export.ts",
-      "src/domain/erasure.ts",
-      "src/domain/tech-jobs.ts",
-      "src/routes/ops/hair-profile.ts",
-      "src/routes/tech/jobs.steps.ts",
-    ]);
+    // Imported from beside it or from any folder: "./hair-profiles.ts", "../clients/hair-profiles.ts".
+    const users = naming(/from "(?:\.\.?\/)+(?:domain\/)?(?:[a-z-]+\/)?hair-profiles\.ts"/).sort();
+    expect(users).toEqual(
+      [
+        "src/domain/data-export.ts",
+        "src/domain/erasure.ts",
+        "src/domain/tech-jobs.ts",
+        "src/routes/ops/hair-profile.ts",
+        "src/routes/tech/jobs.steps.ts",
+      ].sort(),
+    );
   });
 });
