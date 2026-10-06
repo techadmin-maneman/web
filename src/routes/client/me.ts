@@ -16,22 +16,13 @@
 // the next service once a visit is (docs/decisions/0086-the-next-visit-is-offered.md),
 // each as one of the services ops offer.
 
-import { clientRoute } from "../../http/session-routes.ts";
 import { z } from "@hono/zod-openapi";
 import type { Context } from "hono";
-import type { App, AppEnv } from "../../http/context.ts";
 import { WINDOW_LABELS, type WindowLabel } from "../../config/booking.ts";
 import { BOOKING_WINDOWS, type BookingWindow } from "../../config/scheduling.ts";
 import { VISIT_TYPES } from "../../config/visit-types.ts";
-import { CLIENT_STATES, clientStateOf, isFitted, nextVisit } from "../../domain/visits/client-visits.ts";
-import { bookingUnderWay, type BookingUnderWay } from "../../domain/booking/holds.ts";
-import { spendableCredits } from "../../domain/money/credits.ts";
-import { homePrompts, promptFacts } from "../../domain/clients/home-prompt.ts";
-import { nextVisitFacts } from "../../domain/visits/next-visit.ts";
-import { heldOneVisitPrice, owedPayments, requestedOneVisitPrice } from "../../domain/money/one-visit-money.ts";
 import { bookableTypes } from "../../domain/booking/availability.ts";
-import { offeredAmong, servicesOnDay } from "../../domain/booking/services.ts";
-import { currentAddress, liveContact } from "../../domain/clients/profile.ts";
+import { bookingUnderWay, type BookingUnderWay } from "../../domain/booking/holds.ts";
 import {
   askedFor,
   latestProposal,
@@ -39,17 +30,26 @@ import {
   type Asked,
   type ProposedBooking,
 } from "../../domain/booking/proposed-visits.ts";
+import { offeredAmong, servicesOnDay } from "../../domain/booking/services.ts";
+import { homePrompts, promptFacts } from "../../domain/clients/home-prompt.ts";
+import { currentAddress, liveContact } from "../../domain/clients/profile.ts";
+import { spendableCredits } from "../../domain/money/credits.ts";
+import { heldOneVisitPrice, owedPayments, requestedOneVisitPrice } from "../../domain/money/one-visit-money.ts";
 import { pendingInviteOf } from "../../domain/referrals/referrals.ts";
+import { CLIENT_STATES, clientStateOf, isFitted, nextVisit } from "../../domain/visits/client-visits.ts";
+import { nextVisitFacts } from "../../domain/visits/next-visit.ts";
 import { clientOf } from "../../http/client-session.ts";
+import type { App, AppEnv } from "../../http/context.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
 import { opsInputs } from "../../http/ops-inputs.ts";
+import { clientRoute } from "../../http/session-routes.ts";
 import { addDays, indiaDate } from "../../lib/india-time.ts";
 import { firstNameOf, initialsOf } from "../../lib/names.ts";
+import { ReferralRewardSchema } from "../public/referral-reward.ts";
+import { OneVisitPriceSchema, VisitSummarySchema } from "../schemas/visits.ts";
 import { PriceSchema } from "./booking.ts";
 import { OwedPaymentSchema } from "./payments.ts";
 import { creditsBody, CreditsSchema } from "./refer.ts";
-import { OneVisitPriceSchema, VisitSummarySchema } from "./visits.ts";
-import { ReferralRewardSchema } from "../public/referral-reward.ts";
 
 const MeSchema = z
   .object({

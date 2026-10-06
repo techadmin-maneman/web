@@ -11,13 +11,12 @@ import { clawBack, creditBalance, grantCredits, redeemCredit } from "../../../sr
 import { settleOwedRefunds } from "../../../src/domain/money/cancel-refunds.ts";
 import { moveJob } from "../../../src/domain/dispatch/dispatch.ts";
 import {
-  cancelVisit,
   changeableVisit,
   changeTerms,
   opsCancelTerms,
   termsInForce,
-  type OpsCancel,
 } from "../../../src/domain/visits/visit-changes.ts";
+import { cancelVisit, type OpsCancel } from "../../../src/domain/visits/visit-cancel.ts";
 import { readOpsInputs } from "../../../src/domain/ops/ops-settings.ts";
 import { createCallBudget } from "../../../src/lib/call-budget.ts";
 import { createLogger } from "../../../src/log.ts";
