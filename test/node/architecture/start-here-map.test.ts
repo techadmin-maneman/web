@@ -57,7 +57,9 @@ describe("the start-here map", () => {
 
   it("puts every file of src/domain/ under a feature", () => {
     const named = map.filter((entry) => entry.label === "Database work").map((entry) => pattern(entry.path));
-    const files = readdirSync("src/domain").filter((name) => name.endsWith(".ts"));
+    const files = readdirSync("src/domain", { recursive: true, encoding: "utf8" })
+      .map((name) => name.replaceAll("\\", "/"))
+      .filter((name) => name.endsWith(".ts"));
     expect(files.filter((name) => !named.some((path) => path.test(`src/domain/${name}`)))).toEqual([]);
   });
 });
