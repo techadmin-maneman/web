@@ -7,7 +7,7 @@ import type { PaymentsProvider } from "../../providers/payments/index.ts";
 import { paymentsTab, type AlertOnce } from "../ops/alerts.ts";
 import { askRefund, refundLeftToOps, refundReceipt, type RefundOutcome } from "../money/refunds.ts";
 import { visitPayment, type VisitPayment } from "../visits/visit-changes.ts";
-import { creditOfVisit } from "../messages/visit-messages.ts";
+import { creditOfVisit } from "../messages/visit-message-text.ts";
 import { rupees } from "@maneman/web-kit/money";
 
 /** Money going back to the client once a ruling is written. */

@@ -11,7 +11,8 @@ import { CREDIT_REMINDER_DAYS, creditReminderOwed } from "../../policy/credit-re
 import { DAY_BEFORE_REMINDER_HOUR } from "../../policy/job-visibility.ts";
 import { GRANT_REMAINING } from "./credits.ts";
 import { consentGiven } from "../privacy/consents.ts";
-import { NO_VISITS_CONSENT, remindersFrom, type Composed } from "../messages/visit-messages.ts";
+import { remindersFrom } from "../messages/visit-messages.ts";
+import { NO_VISITS_CONSENT, type Composed } from "../messages/visit-message-text.ts";
 import { queueMessage } from "../messages/queued-messages.ts";
 
 /** How many reminders a cron pass queues. */

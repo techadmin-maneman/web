@@ -40,7 +40,7 @@ import { reachBinding, withinReach } from "../clients/places.ts";
 import type { OpsInputs } from "../ops/ops-settings.ts";
 import { creditBack, rulingMessage, type RulingClaim } from "./ruling-claims.ts";
 import { refundOf, termsInForce, termsOfVisit, visitPayment } from "../visits/visit-changes.ts";
-import { NO_VISITS_CONSENT } from "../messages/visit-messages.ts";
+import { NO_VISITS_CONSENT } from "../messages/visit-message-text.ts";
 import { minutesBetween } from "../../lib/durations.ts";
 import { creditSpentOn } from "../visits/visit-facts.ts";
 

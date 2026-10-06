@@ -3,7 +3,7 @@
 // consents and is answered once. A withdrawal is written only while the purpose is given, with its audit entry in
 // the same batch.
 
-import type { Composed } from "./visit-messages.ts";
+import type { Composed } from "./visit-message-text.ts";
 import { DAY_MS } from "../../lib/durations.ts";
 import { firstNameOf } from "../../lib/names.ts";
 import { signToken, verifyToken } from "../../lib/signed-token.ts";

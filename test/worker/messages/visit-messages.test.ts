@@ -8,12 +8,8 @@ import { renderMessage, type TemplateName } from "../../../src/config/message-te
 import type { Settings } from "../../../src/config/settings.ts";
 import { confirmBooking } from "../../../src/domain/booking/bookings.ts";
 import { openSession } from "../../../src/domain/sign-in/sessions.ts";
-import {
-  composeVisitMessage,
-  queueReminders,
-  REMINDER_DAY_MOVED,
-  visitMessage,
-} from "../../../src/domain/messages/visit-messages.ts";
+import { queueReminders, REMINDER_DAY_MOVED, visitMessage } from "../../../src/domain/messages/visit-messages.ts";
+import { composeVisitMessage } from "../../../src/domain/messages/visit-message-text.ts";
 import type { StaticConfig } from "../../../src/guard.ts";
 import { createLogger } from "../../../src/log.ts";
 import type { MessagingProvider, OutboundMessage } from "../../../src/providers/messaging/index.ts";

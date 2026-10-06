@@ -7,7 +7,7 @@ import { serviceVisits, type TemplateName } from "../../config/message-templates
 import { indiaDate } from "../../lib/india-time.ts";
 import { firstNameOf } from "../../lib/names.ts";
 import { consentGiven } from "../privacy/consents.ts";
-import { NO_VISITS_CONSENT, type Composed } from "../messages/visit-messages.ts";
+import { NO_VISITS_CONSENT, type Composed } from "../messages/visit-message-text.ts";
 
 /** The referrer's text, by what each side was given: the same, different, nothing to the friend. */
 function friendFittedTemplate(referrerVisits: number, friendVisits: number): TemplateName {
