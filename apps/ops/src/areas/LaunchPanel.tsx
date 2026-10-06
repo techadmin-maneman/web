@@ -1,4 +1,4 @@
-// The one panel that marks a pincode live, from either tab of Areas (board C3): who it messages, what they get, and
+// The one panel that marks a pincode live, from either tab of Areas: who it messages, what they get, and
 // the press that sends it. Nothing is sent before that press
 // (docs/decisions/0071-what-ops-see-before-a-setting-changes.md).
 

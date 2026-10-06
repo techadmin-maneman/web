@@ -348,7 +348,7 @@ export const api = {
   sendAlertAgain: (id: string) => client.post("/api/alerts/{id}/send-again", { path: { id } }),
   /** The cases nobody has ruled on yet. The route also answers the decided ones; the board draws a queue. */
   noShows: () => client.get("/api/no-shows", { query: { decision: "undecided" } }),
-  /** A day's money, as board D1 heads it: India's date, or today with null. */
+  /** A day's money, as the Payments page heads it: India's date, or today with null. */
   dayMoney: (date: string | null) => client.get("/api/payments", { query: setOnly({ date }) }),
   /**
    * Charge the visit or waive it, with the reason either way. A charge costs

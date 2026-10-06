@@ -1,4 +1,4 @@
-// Payments (Ops Console, board D1): a day's money over the charges it was
+// Payments: a day's money over the charges it was
 // kept on, today unless ops pick another day, then each charge a client
 // disputed, refunded or upheld here (Disputes.tsx), then each no-show case
 // with the evidence ops rule on, charged or waived here
@@ -152,7 +152,7 @@ const copy = noShows.queue;
 
 /** Whole minutes from one instant to another. */
 
-/** "5 h 8 m after the booked start", or before it, as board D3 writes a length. */
+/** "5 h 8 m after the booked start", or before it, as the Technicians page writes a length. */
 function offsetOf(minutesLate: number): string {
   if (minutesLate === 0) return copy.onTime;
   const span = Math.abs(minutesLate);

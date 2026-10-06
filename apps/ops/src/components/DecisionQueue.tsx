@@ -1,4 +1,4 @@
-// A queue of things waiting on ops' decision, as board C1 draws its review
+// A queue of things waiting on ops' decision, as the Referrals design draws its review
 // queue and every queue after it is built (docs/fidelity-method.md): the
 // panel headed by its title and how many wait, a row for each with the
 // decision on that row, and a note beneath.

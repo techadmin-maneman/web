@@ -1,11 +1,11 @@
-// The dispatch board (Ops Console, boards A1, A2 and A3): active technicians
+// The dispatch board: active technicians
 // down, seven days across, four slots a day, and the jobs nobody holds yet in
 // a tray on the right (src/policy/dispatch.ts).
 //
 // A job is moved by dragging it onto a technician's window, or, without a
 // mouse, by opening it and choosing a destination from a list. Either way the
 // board first asks where the job would land, and offers only those windows;
-// then the reason picker (A2) comes before anything is written. The server
+// then the reason picker comes before anything is written. The server
 // checks again before anything is written (docs/decisions/0034-clash-check.md)
 // and refuses a move made from a board that has gone stale
 // (docs/decisions/0069-dispatch-under-concurrency.md). A refusal names the

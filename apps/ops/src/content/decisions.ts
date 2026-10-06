@@ -43,7 +43,7 @@ export const deletions = {
     reject: "Reject the request",
     /**
      * A queue holds many rows and each button says the same thing, so the
-     * destructive one names whose account it is, as board D3's revoke does.
+     * destructive one names whose account it is, as the Technicians page's revoke does.
      */
     deleteLabel: (name: string) => `Delete the account of ${name}`,
     rejectLabel: (name: string) => `Reject the request of ${name}`,

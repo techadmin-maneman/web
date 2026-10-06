@@ -1,7 +1,6 @@
 // Stock (docs/decisions/0087-consumables-and-stock.md): what each technician's
 // kit and the central store hold of each consumable, which is low, and the
-// latest movements. The owner ruled on 27 September 2026 that stock is kept in
-// our own ledger, so a free consultation or a credit visit deducts what it used
+// latest movements. Stock is kept in our own ledger, so a free consultation or a credit visit deducts what it used
 // as any other job does.
 //
 // What a place holds is the sum of its movements. A job's use comes out of the

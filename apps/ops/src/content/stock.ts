@@ -3,8 +3,7 @@
 import { NOT_PERMITTED } from "./common.ts";
 
 /**
- * Every word of Stock, which no board draws. The owner ruled on
- * 27 September 2026 that stock is kept in our own ledger, per technician's
+ * Every word of Stock. Stock is kept in our own ledger, per technician's
  * kit and a central store (docs/decisions/0087-consumables-and-stock.md).
  */
 export const stock = {

@@ -1,5 +1,5 @@
 /*
- * The ops console's base: the brand tokens, the Phase 2 layer and the fonts
+ * The ops console's base: the brand tokens, the apps' layer and the fonts
  * (packages/brand), and the page every app starts from (packages/ui).
  * Components style themselves in their own .module.css, with tokens only. The
  * console is a desk tool, drawn at 1440 and never narrower than the navigation

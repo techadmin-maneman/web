@@ -3,7 +3,7 @@
 // hourly alert ops receive says "answer it in Grievances"; this is that section.
 //
 // The design draws no board for it (docs/fidelity-method.md), so it is built as
-// board C1's review queue is: the queue, a row for each, a decision on each row.
+// the Referrals review queue is: the queue, a row for each, a decision on each row.
 // Recording the answer closes the grievance and writes `grievance.resolve` to
 // the audit log under whoever Access says is signed in (ADR 0031). It messages
 // nobody: ops answer the client themselves, on the number shown.

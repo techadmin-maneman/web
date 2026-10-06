@@ -1,6 +1,5 @@
 // What a panel shows while its data comes, and when it does not. The ops
-// boards draw neither, so these follow the client app's (board B3,
-// packages/ui/States.tsx): the shape of a label and a card, then one line and
+// designs draw neither, so these follow the client app's (packages/ui/States.tsx): the shape of a label and a card, then one line and
 // a way to try again, at a panel's padding.
 
 import { ErrorRef } from "@maneman/ui/ErrorRef";

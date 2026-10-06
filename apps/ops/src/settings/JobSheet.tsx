@@ -1,7 +1,6 @@
-// Settings, Job sheet (docs/decisions/0087-consumables-and-stock.md; docs/open-points.md, item 28):
+// Settings, Job sheet (docs/decisions/0087-consumables-and-stock.md):
 // what the technician ticks on each kind of visit, and the reasons he may pick
-// when a job is left partly done. The owner ruled on 27 September 2026 that
-// both are set here and the technician app reads them with each job; a phone
+// when a job is left partly done. Both are set here, and the technician app reads them with each job; a phone
 // keeps the list it was given with the job, and an item taken off is kept, so
 // what a phone recorded before the change is still understood.
 //

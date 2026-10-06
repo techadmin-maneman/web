@@ -2,7 +2,7 @@
  * The grievance queue, on the panel and at the width the boards' own queues use
  * (C1 and D1). The design draws no board for it, so nothing here is new: the
  * head with its count, a row for each, the client's words quoted between
- * hairlines, and the field the answer is written in, as board C1's reason is.
+ * hairlines, and the field the answer is written in, as a held grant's reason is.
  */
 
 .column {

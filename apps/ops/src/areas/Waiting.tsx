@@ -1,4 +1,4 @@
-// Areas' Waiting tab (board C3): who waits in each pincode, the longest wait first. Choosing a pincode asks the API
+// Areas' Waiting tab: who waits in each pincode, the longest wait first. Choosing a pincode asks the API
 // what marking it live would send, before anything is sent; only the panel's press launches it, which serves the
 // pincode and queues a WhatsApp to everyone on its list who asked to be told (docs/decisions/0048-referrals.md).
 //

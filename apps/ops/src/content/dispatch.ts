@@ -1,4 +1,4 @@
-// The dispatch board's words (boards A1, A2 and A3): the week, a move and its reason, a block's drawer.
+// The dispatch board's words: the week, a move and its reason, a block's drawer.
 
 import { NOT_PERMITTED } from "./common.ts";
 
@@ -46,7 +46,7 @@ export const dispatch = {
   /**
    * The week and the city the board shows, and a way to find a row among many.
    * The board letters the city in the header ("Gurgaon") and draws no control;
-   * the brief asks for "a city and week picker" (A1), so they sit in a row
+   * the brief asks for "a city and week picker", so they sit in a row
    * above the grid (docs/fidelity-method.md).
    */
   tools: {
@@ -236,7 +236,7 @@ export const dispatch = {
   },
   /** Choosing where a job lands, which the design does by dragging. */
   landing: {
-    /** The bar above the board while a job is in hand, with the slot-size hint the brief asks for (A2). */
+    /** The bar above the board while a job is in hand, with the slot-size hint the brief asks for. */
     moving: (job: string, size: string) => `Moving ${job}, ${size}. Choose a technician and a window.`,
     /** "a first fit, 2 slots". */
     size: (type: string, slots: number) => `${type}, ${String(slots)} ${slots === 1 ? "slot" : "slots"}`,
@@ -247,7 +247,7 @@ export const dispatch = {
     /** Each window of each technician's day with room, while a job is in hand. */
     choose: (job: string, technician: string, date: string, window: string) =>
       `Move ${job} to ${technician}, ${date}, ${window}`,
-    /** The brief's "keyboard alternative: choose a destination from a list" (A2). */
+    /** The brief's "keyboard alternative: choose a destination from a list". */
     list: "Or choose where from a list",
     listPrompt: "A technician, day and window",
     listOption: (technician: string, date: string, window: string) => `${technician} · ${date} · ${window}`,

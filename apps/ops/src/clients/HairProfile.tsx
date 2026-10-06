@@ -1,6 +1,6 @@
 // The client's hair profile, on their Pieces tab (docs/decisions/0106-a-clients-hair-profile.md): the profile as it
 // stands, the fit spec a replacement is ordered to and the client's history; then every version, who recorded it and
-// at which visit; and the form ops correct it with. No board draws it: board B1's Pieces tab draws the pieces alone.
+// at which visit; and the form ops correct it with. The design draws no hair profile: its Pieces tab draws the pieces alone.
 //
 // A correction is the whole profile as it now stands, sent as a new version, so the form starts from the latest.
 

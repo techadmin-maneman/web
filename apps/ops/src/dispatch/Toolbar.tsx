@@ -1,5 +1,5 @@
 // Above the grid: the week, the city, and a way to find one row among many.
-// The brief asks for "a city and week picker" (A1); the board letters the city
+// The brief asks for "a city and week picker"; the design letters the city
 // in its header and draws no control, so they stand in a row of their own
 // (docs/fidelity-method.md). Finding narrows the rows only: the figures at each
 // column's head stay the day's own.

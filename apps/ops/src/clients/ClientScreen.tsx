@@ -1,4 +1,4 @@
-// One client's page (Ops Console, board B1's frame, with B2 and B3): who they
+// One client's page: who they
 // are, the ways to reach them and who invited them, what waits on Tasks for
 // them, then their visits, pieces, payments, referrals, consents, photographs or
 // history. It opens on Visits.

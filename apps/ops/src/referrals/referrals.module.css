@@ -54,7 +54,7 @@
   white-space: nowrap;
 }
 
-/* Held past the Tasks board's allowance, in oxblood, as board D2 marks a task that has run over. */
+/* Held past the Tasks board's allowance, in oxblood, as the Tasks board marks a task that has run over. */
 .late {
   color: var(--error-on-paper);
 }
@@ -79,7 +79,7 @@
   margin-top: var(--sp-14);
 }
 
-/* The reason board C1 asks for on either decision, for which it draws no field. */
+/* The reason the design asks for on either decision, for which it draws no field. */
 .reason {
   margin-top: var(--sp-14);
 }

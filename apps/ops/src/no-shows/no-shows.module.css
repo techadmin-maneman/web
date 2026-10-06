@@ -3,7 +3,7 @@
  * over the charges it was kept on, then the queue. The evidence reads as the
  * board's disputed charge does: the fact on the left, its value right and
  * tabular, one hairline between each. Ink carries the one primary action, as
- * on board C1; gold stays with the navigation's selection.
+ * on the Referrals queue; gold stays with the navigation's selection.
  *
  * Every amount is lining and tabular, so a column of rupees reads as a column.
  */
@@ -193,7 +193,7 @@
   color: var(--text-muted);
 }
 
-/* ---- The note a ruling needs, as board D1 draws it beneath the evidence ---- */
+/* ---- The note a ruling needs, drawn beneath the evidence ----------------- */
 
 .reasonLabel {
   display: block;
@@ -202,7 +202,7 @@
   color: var(--text-muted);
 }
 
-/* The 80 px board D1 draws its note at. */
+/* The 80 px the design draws its note at. */
 .reasonField {
   display: block;
   width: 100%;
@@ -305,7 +305,7 @@
   color: var(--error-on-paper);
 }
 
-/* ---- A disputed charge, board D1's second card, one a row of its queue ------ */
+/* ---- A disputed charge, the Payments page's second card, one a row of its queue */
 
 .disputeLabel {
   margin: 0;

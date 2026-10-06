@@ -2,16 +2,16 @@
  * The client's page, and the three boards it carries: B1's pieces, B2, the
  * photographs, locked until the view is logged, and B3, the consents, which ops
  * read and never change. The page's head and tabs are
- * board B1's frame, narrowed to what the ops routes answer.
+ * the client page's design, narrowed to what the ops routes answer.
  */
 
 /* This screen's own sizes, which nothing else draws (ADR 0077, as amended). */
 :root {
-  --local-piece-code: 148px; /* the pieces table's five fixed columns, the failure taking the slack (board B1) */
+  --local-piece-code: 148px; /* the pieces table's five fixed columns, the failure taking the slack */
   --local-piece-base: 84px;
   --local-piece-column: 116px; /* the fitted date, and the supplier lot beside it */
   --local-piece-due: 120px;
-  --local-consent-state: 92px; /* a consent's state, date and source, beside the purpose (board B3) */
+  --local-consent-state: 92px; /* a consent's state, date and source, beside the purpose */
   --local-consent-date: 96px;
   --local-consent-source: 72px;
 }
@@ -109,7 +109,7 @@
   outline-offset: var(--focus-offset-wide);
 }
 
-/* The brand's WhatsApp glyph is a line, drawn as board A3's drawer draws it. */
+/* The brand's WhatsApp glyph is a line, drawn as the dispatch board's drawer draws it. */
 .icon {
   flex-shrink: 0;
 }
@@ -241,7 +241,7 @@
   white-space: nowrap;
 }
 
-/* ---- Visits and Payments: tables in board B1's style -------------------- */
+/* ---- Visits and Payments: tables in the client page's style -------------- */
 
 .visits {
   display: flex;
@@ -375,7 +375,7 @@
   padding: var(--sp-22);
 }
 
-/* The reason an invite is attached for, as tall as board C1's reason for a grant. */
+/* The reason an invite is attached for, as tall as the reason for a held grant. */
 .inviteReason {
   margin-top: var(--sp-14);
 }
@@ -414,7 +414,7 @@
   outline-offset: calc(-1 * var(--focus-width));
 }
 
-/* The reasons, set as board A2 sets a move's: a square that fills with ink when chosen. */
+/* The reasons, set as a move's are: a square that fills with ink when chosen. */
 .reasons {
   margin: 0;
   padding: 0;

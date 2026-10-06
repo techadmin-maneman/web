@@ -3,8 +3,7 @@
 // and the central store are low at; and beneath, what each service is expected
 // to use, which the technician's steppers start at.
 //
-// The owner ruled on 27 September 2026 that the list is ops', and that a job's
-// use is ours alone: no client's
+// The list is ops', and a job's use is ours alone: no client's
 // invoice carries a consumable, so what one costs is only ever read here. Each
 // change shows its old figure beside the new before it is sent (ADR 0071).
 

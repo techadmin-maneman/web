@@ -1,7 +1,7 @@
 /*
  * The Tasks board: a head with the count of what has run over in oxblood, then
  * a section for each department, its groups side by side where the page is wide
- * enough. Each group is board D2's panel: its name on a shaded band with its
+ * enough. Each group is the design's panel: its name on a shaded band with its
  * count, then the tasks under it, each in the board's three columns: what it is,
  * whose it is, and when it is due. The actions on a task, which the board does
  * not draw, sit under its lines as the way to where it is decided does
@@ -10,7 +10,7 @@
 
 /* This screen's own sizes, which nothing else draws (ADR 0077, as amended). */
 :root {
-  --local-task-owner: 72px; /* a task's owner, and how long it has left, beside what it is (board D2) */
+  --local-task-owner: 72px; /* a task's owner, and how long it has left, beside what it is */
   --local-task-due: 120px; /* "18 days overdue" on one line */
 }
 

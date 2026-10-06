@@ -1,6 +1,6 @@
 // Every word the ops console shows, from design/phase2/Ops Console.dc.html. A
 // component holds no copy of its own. Lines the design does not draw are
-// ours, approved by the owner on 4 October 2026 (docs/open-points.md, item 42).
+// ours.
 //
 // One file a feature, in ./content/; a screen imports its words from here.
 

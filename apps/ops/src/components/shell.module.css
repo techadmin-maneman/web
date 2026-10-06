@@ -129,7 +129,7 @@
   min-width: 0;
 }
 
-/* The header centres its two halves in its 56 px, and the title and its line keep one baseline, as board A1 sets them. */
+/* The header centres its two halves in its 56 px, and the title and its line keep one baseline, as the design sets them. */
 .header {
   display: flex;
   flex-shrink: 0;
