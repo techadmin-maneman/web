@@ -2,7 +2,8 @@
 // 1.4.10). Its board is drawn at 390; the narrowest phones in use are 320.
 
 import { expect, test } from "../support.ts";
-import { fakeTech, JOB_ID } from "./fixtures.ts";
+import { JOB_ID } from "./fixtures.ts";
+import { fakeTech } from "./fake-tech.ts";
 
 const SCREENS = ["/", `/jobs/${JOB_ID}`, `/jobs/${JOB_ID}/checklist`, "/waiting"] as const;
 

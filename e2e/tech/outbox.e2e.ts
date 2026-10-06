@@ -6,7 +6,9 @@ import type { Page } from "@playwright/test";
 import { LOCAL_LOGIN_CODE } from "../../scripts/lib/local-stack.ts";
 import { expect, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
-import { atTheDoor, fakeTech, heldOnPhone, JOB_ID, keptOnPhone, todayInIndia, type Fake } from "./fixtures.ts";
+import { JOB_ID, todayInIndia } from "./fixtures.ts";
+import { fakeTech, type Fake } from "./fake-tech.ts";
+import { atTheDoor, heldOnPhone, keptOnPhone } from "./on-phone.ts";
 
 /**
  * Opens the day, checks in at the door, then takes the signal away. The app

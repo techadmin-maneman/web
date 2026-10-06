@@ -9,7 +9,8 @@
 import type { Page } from "@playwright/test";
 import { expect, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
-import { fakeTech, JOB_ID, todayInIndia } from "./fixtures.ts";
+import { JOB_ID, todayInIndia } from "./fixtures.ts";
+import { fakeTech } from "./fake-tech.ts";
 
 test.use({ serviceWorkers: "allow" });
 

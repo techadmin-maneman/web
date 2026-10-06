@@ -6,7 +6,9 @@
 import type { Page } from "@playwright/test";
 import { expect, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
-import { atTheDoor, fakeTech, JOB_ID, pageScrolls, ROHITS_PIECE, ROHITS_PROFILE, TOMORROW_JOB_ID } from "./fixtures.ts";
+import { JOB_ID, ROHITS_PIECE, ROHITS_PROFILE, TOMORROW_JOB_ID } from "./fixtures.ts";
+import { fakeTech } from "./fake-tech.ts";
+import { atTheDoor, pageScrolls } from "./on-phone.ts";
 
 /** The one gold action at the foot of the screen, which the evidence chain hands on stage by stage. */
 const foot = (page: Page) => page.locator("main > div").last().getByRole("button");
