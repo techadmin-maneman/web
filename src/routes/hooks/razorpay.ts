@@ -4,7 +4,7 @@
 // order, and expects an answer within five seconds; X-Razorpay-Event-Id says
 // which deliveries are the same event.
 //
-// Subscribed events (provisioning, step 11c): order.paid, payment.authorized,
+// Subscribed events (runbook, step 11c): order.paid, payment.authorized,
 // payment.captured, payment.failed, refund.created, refund.processed,
 // refund.failed, refund.speed_changed, and payment_link.paid, which names the
 // payment link a one visit's client paid by and so the visit it is for
