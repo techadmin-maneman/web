@@ -25,7 +25,7 @@ import type { EvolutionSettings } from "./evolution.ts";
  * allowance however many days run at it. Expected use is about ten a day
  * (docs/decisions/0054-address-capture.md).
  */
-export const GEOCODE_CEILING_MAX = 1800;
+const GEOCODE_CEILING_MAX = 1800;
 
 /**
  * Cloudflare's published Turnstile test secrets. Any of them in production
@@ -38,8 +38,7 @@ export const TURNSTILE_TEST_SECRETS = new Set([
 ]);
 
 const ZOHO_HOST = /^[a-z0-9.-]+\.(zoho|zohoapis)\.[a-z.]+$/;
-
-export const ACCESS_TEAM_DOMAIN = /^[a-z0-9-]+\.cloudflareaccess\.com$/;
+const ACCESS_TEAM_DOMAIN = /^[a-z0-9-]+\.cloudflareaccess\.com$/;
 
 /** The provider vars as the guard read them, before it has refused any: one that failed its check is missing. */
 export type ProvidersRead = Partial<Record<ProviderVar, string>>;
