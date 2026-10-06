@@ -36,6 +36,12 @@ let deps: TestDependencies;
 let app: App;
 let logs: ReturnType<typeof captureLogs>;
 
+/** Runs the app on these dependencies, for the test. */
+const useDependencies = (dependencies: TestDependencies) => {
+  deps = dependencies;
+  app = appFor("local", deps, {}, "client");
+};
+
 function build(overrides: Partial<Settings> = {}, smsAvailable = true): void {
   deps = fakeDependencies({ now: () => clock });
   if (!smsAvailable) deps = { ...deps, codes: { ...deps.codes, smsAvailable: false } };
@@ -102,11 +108,12 @@ async function loggedIn(): Promise<string> {
 
 describe("a login code that does not go", () => {
   const failing = (detail: string) => {
-    deps = fakeDependencies({
-      now: () => clock,
-      codes: { smsAvailable: true, send: () => Promise.resolve({ ok: false, transient: true, detail }) },
-    });
-    app = appFor("local", deps, {}, "client");
+    useDependencies(
+      fakeDependencies({
+        now: () => clock,
+        codes: { smsAvailable: true, send: () => Promise.resolve({ ok: false, transient: true, detail }) },
+      }),
+    );
   };
 
   async function tries(times: number) {
@@ -280,11 +287,12 @@ describe("POST /api/auth/otp", () => {
   });
 
   it("refuses without Turnstile, and sends nothing", async () => {
-    deps = fakeDependencies({
-      now: () => clock,
-      fetch: fakeFetch({ [TURNSTILE_URL]: () => json({ success: false }) }).fetch,
-    });
-    app = appFor("local", deps, {}, "client");
+    useDependencies(
+      fakeDependencies({
+        now: () => clock,
+        fetch: fakeFetch({ [TURNSTILE_URL]: () => json({ success: false }) }).fetch,
+      }),
+    );
 
     const { res, body } = await start("98100 00001");
 
@@ -296,11 +304,12 @@ describe("POST /api/auth/otp", () => {
   });
 
   it("answers unavailable, and sends nothing, while Turnstile cannot be reached", async () => {
-    deps = fakeDependencies({
-      now: () => clock,
-      fetch: fakeFetch({ [TURNSTILE_URL]: () => json({}, 502) }).fetch,
-    });
-    app = appFor("local", deps, {}, "client");
+    useDependencies(
+      fakeDependencies({
+        now: () => clock,
+        fetch: fakeFetch({ [TURNSTILE_URL]: () => json({}, 502) }).fetch,
+      }),
+    );
 
     const { res, body } = await start("98100 00001");
 
