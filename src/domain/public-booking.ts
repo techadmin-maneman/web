@@ -545,7 +545,7 @@ async function answerAsForANewNumber(
   const oneVisit = request.plan === "one_visit";
   const code = request.discountCode === null ? null : await oneVisitCode(form, request.discountCode, null, oneVisit);
   if (code?.ok === false) return code;
-  const state = await newNumbersState(form, request, known.personId);
+  const state = await newNumbersState(form, request);
   if (state === "taken") return { ok: false, status: 409, code: "taken" };
 
   await tellPrivately(form, known.personId, known.notBooked);
@@ -564,20 +564,19 @@ async function answerAsForANewNumber(
 
 /**
  * What a new number's booking of this day and window would come to: a slot held, a request for ops, or taken when
- * nobody is free then. `personId` only puts their regular technician first, as holding a slot does.
+ * nobody is free then. It is read for nobody in particular, as for a new number: a number we know hears the same answer,
+ * so the form says nothing of whose it is.
  */
 async function newNumbersState(
   form: FormRequest,
   request: ConsultationRequest,
-  personId: string,
 ): Promise<"booked" | "requested" | "taken"> {
   const visit = form.selfServeBooking ? await siteVisit(form.db, request.plan, request.date) : null;
   if (visit === null) return "requested";
   const length = { minutes: visit.service.minutes };
-  const [day] = await availability(form.db, personId, length, request.date, 1, form.now);
-  const whoWouldCome = day?.windows.find((window) => window.window === request.window)?.with ?? null;
-  if (whoWouldCome === null) return "taken";
-  return "booked";
+  const [day] = await availability(form.db, { personId: null }, length, request.date, 1, form.now);
+  const open = day?.windows.find((window) => window.window === request.window)?.open ?? false;
+  return open ? "booked" : "taken";
 }
 
 /** A notice to a person we know, written and queued on its own. */

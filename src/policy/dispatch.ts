@@ -87,10 +87,13 @@ export function targetTime(
  * anything is written, so a refusal means nothing was written anywhere.
  *
  * A time already gone is answered first; then leave, so ops are told the technician is away rather than busy; then
- * the clash, so a held window is named as held. `does_not_fit`: nobody holds the window, but the visit has no room in
+ * `back_to_back`, a technician who took the client's visit just before or just after this one, who never takes two in
+ * a row (docs/decisions/0111-a-technician-never-takes-two-visits-in-a-row.md); then the clash, so a held window is
+ * named as held. `does_not_fit`: nobody holds the window, but the visit has no room in
  * it at a start still ahead. A blacked-out day comes last, since ops may still move a visit onto one with a reason.
  */
-export type MoveRefusal = Exclude<TargetTime, "ahead"> | "on_leave" | "clash" | "does_not_fit" | "blackout";
+export type MoveRefusal =
+  Exclude<TargetTime, "ahead"> | "on_leave" | "back_to_back" | "clash" | "does_not_fit" | "blackout";
 
 interface MoveCheck {
   readonly time: TargetTime;
@@ -98,11 +101,14 @@ interface MoveCheck {
   readonly fits: boolean;
   /** The day is one ops blacked out, and they gave no reason for moving the visit onto it. */
   readonly blackoutWithoutReason: boolean;
+  /** The technician took the client's visit just before or just after this one. */
+  readonly besideTheClient: boolean;
 }
 
 export function moveRefusal(day: TechnicianDay, window: BookingWindow, check: MoveCheck): MoveRefusal | null {
   if (check.time !== "ahead") return check.time;
   if (day.onLeave) return "on_leave";
+  if (check.besideTheClient) return "back_to_back";
   if (clashes(day, window)) return "clash";
   if (!check.fits) return "does_not_fit";
   return check.blackoutWithoutReason ? "blackout" : null;

@@ -1767,7 +1767,7 @@ Request body:
 }
 ```
 
-**409**: past_day: the day has gone; window_passed: every start in today's window has passed; clash: the technician already holds a job in that window on that date; on_leave: they are away that day; does_not_fit: the window is free but the visit has no room in it at a start still ahead; blackout: ops blacked the day out, and no blackout_reason came; superseded: the job is not as the board showed it, and fields names what changed (technician, time, or moving: another move of it is being written); in_progress: a technician has begun the visit
+**409**: past_day: the day has gone; window_passed: every start in today's window has passed; clash: the technician already holds a job in that window on that date; on_leave: they are away that day; back_to_back: they took the client's visit just before or just after this one, and a technician never takes two in a row; does_not_fit: the window is free but the visit has no room in it at a start still ahead; blackout: ops blacked the day out, and no blackout_reason came; superseded: the job is not as the board showed it, and fields names what changed (technician, time, or moving: another move of it is being written); in_progress: a technician has begun the visit
 
 ```json
 {
@@ -1819,7 +1819,7 @@ Request body:
 }
 ```
 
-**409**: past_day; window_passed; clash; on_leave; does_not_fit; blackout; superseded, with what changed in fields; in_progress: the technician has begun the visit. One he has only checked in at moves with clear_check_in; one he has started or closed stays where it is
+**409**: past_day; window_passed; clash; on_leave; back_to_back; does_not_fit; blackout; superseded, with what changed in fields; in_progress: the technician has begun the visit. One he has only checked in at moves with clear_check_in; one he has started or closed stays where it is
 
 ```json
 {
@@ -4652,6 +4652,7 @@ Request body:
             "clash",
             "on_leave",
             "does_not_fit",
+            "back_to_back",
             "past_day",
             "window_passed",
             "blackout",
@@ -7280,7 +7281,7 @@ Request body:
                   "items": {
                     "$ref": "#/components/schemas/FreeTechnician"
                   },
-                  "description": "Who in the caller's cities is free for the visit, the client's regular technician first."
+                  "description": "Who in the caller's cities is free for the visit: never the technician who took the client's visit just before or just after it."
                 }
               },
               "required": [
@@ -7556,7 +7557,7 @@ Request body:
       "type": "string",
       "minLength": 1,
       "maxLength": 100,
-      "description": "The technician ops chose; left out, whoever is free, the client's regular one first."
+      "description": "The technician ops chose; left out, whoever is free. Never the one who took the client's visit just before or just after it."
     },
     "date": {
       "type": "string",
@@ -7903,6 +7904,7 @@ Request body:
             "clash",
             "on_leave",
             "does_not_fit",
+            "back_to_back",
             "past_day",
             "window_passed",
             "blackout",

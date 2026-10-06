@@ -434,7 +434,6 @@ export function BookingSheet({
             before={before}
             day={day}
             noticeHours={availability.change_notice_hours}
-            regular={availability.regular}
             chosen={chosenWindow}
             busy={busy}
             problem={problem}

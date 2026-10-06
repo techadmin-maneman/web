@@ -1905,6 +1905,7 @@ Request body:
             "clash",
             "on_leave",
             "does_not_fit",
+            "back_to_back",
             "past_day",
             "window_passed",
             "blackout",
@@ -5836,30 +5837,6 @@ Request body:
         }
       ]
     },
-    "regular": {
-      "anyOf": [
-        {
-          "type": "object",
-          "properties": {
-            "name": {
-              "type": "string"
-            },
-            "initials": {
-              "type": "string"
-            }
-          },
-          "required": [
-            "name",
-            "initials"
-          ],
-          "additionalProperties": false
-        },
-        {
-          "type": "null"
-        }
-      ],
-      "description": "Whoever did the client's latest visit."
-    },
     "change_notice_hours": {
       "type": "integer",
       "description": "The notice a visit booked here is sold under: a move keeps its visit's own, else as ops set it."
@@ -5909,20 +5886,9 @@ Request body:
                   "type": "string",
                   "description": "When it ends that day: ops set the day's times from a date."
                 },
-                "with": {
-                  "anyOf": [
-                    {
-                      "type": "string",
-                      "enum": [
-                        "regular",
-                        "another"
-                      ]
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ],
-                  "description": "Who would come: the regular technician, another, or nobody (full)."
+                "open": {
+                  "type": "boolean",
+                  "description": "Whether a technician is free to take it: never the one who took the client's visit just before or just after it. False when full."
                 },
                 "change_charged": {
                   "type": "boolean",
@@ -5933,7 +5899,7 @@ Request body:
                 "window",
                 "start",
                 "end",
-                "with",
+                "open",
                 "change_charged"
               ],
               "additionalProperties": false
@@ -5953,7 +5919,6 @@ Request body:
     "type",
     "service",
     "price",
-    "regular",
     "change_notice_hours",
     "last",
     "days"

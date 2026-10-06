@@ -3,6 +3,7 @@
 
 import { failedUniqueOn } from "../lib/d1-errors.ts";
 import { inTakingOrder, tieRange } from "./technician-choice.ts";
+import { besideIt, visitsOfClient } from "./technician-rotation.ts";
 import { graceEnds, ownUnpaid } from "./hold-stages.ts";
 import { PAYMENT_GRACE_SECONDS, type BookingWindow } from "../config/scheduling.ts";
 import type { VisitType } from "../config/visit-types.ts";
@@ -16,7 +17,6 @@ import {
   loadBlackouts,
   occupancy,
   placement,
-  regularTechnician,
   techniciansFor,
   type Moving,
   type Technician,
@@ -71,7 +71,8 @@ export function lettingGo(db: D1Database, now: Date, clientToo: string | null = 
 }
 
 /**
- * Holds a window for the client: their regular technician if free, else whoever has the least (inTakingOrder).
+ * Holds a window for the client with whoever has the least (inTakingOrder), never the technician who took the client's
+ * visit just before or just after it (src/domain/technician-rotation.ts).
  * Holds nobody is paying for are let go first. Null when nobody is free, or the day is blacked out. The hold waits
  * `holdSeconds` for payment, and keeps its time for `graceSeconds` after, both as ops set them when it is made.
  */
@@ -122,21 +123,22 @@ export async function holdSlot(
   const units = unitsFor(service.minutes);
   const moving = moves?.kind === "move" ? moves.visit : null;
   const ties = tieRange(date);
-  const [blackouts, technicians, regular, held] = await Promise.all([
+  const [blackouts, technicians, held, visits] = await Promise.all([
     loadBlackouts(db, date, date),
     techniciansFor(db, moving),
-    moving === null ? regularTechnician(db, personId) : moving.technicianId,
     occupancy(db, ties.from, ties.to, now, moving?.visitId ?? null, null, from === "app" ? personId : null),
+    visitsOfClient(db, personId, moves?.visit.visitId ?? null),
   ]);
   if (blackouts.has(date)) return null;
-  const chosen =
-    input.technicianId === undefined
-      ? technicians
-      : technicians.filter((technician) => technician.id === input.technicianId);
+  const beside = besideIt(visits, date);
+  const chosen = technicians.filter(
+    (technician) =>
+      !beside.has(technician.id) && (input.technicianId === undefined || technician.id === input.technicianId),
+  );
   const candidates = chosen
     .map((technician) => ({ technician, start: placement(held(technician.id, date), window, units) }))
     .filter((candidate): candidate is { technician: Technician; start: number } => candidate.start !== null)
-    .sort(inTakingOrder(held, date, regular));
+    .sort(inTakingOrder(held, date));
 
   const at = now.toISOString();
   const expiresAt = new Date(now.getTime() + holdSeconds * 1000).toISOString();

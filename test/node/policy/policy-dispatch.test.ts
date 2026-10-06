@@ -18,7 +18,7 @@ const day = (...windows: BookingWindow[]) => ({ windows: new Set(windows), onLea
 /** The same technician, away that day (ADR 0062). */
 const away = (...windows: BookingWindow[]) => ({ ...day(...windows), onLeave: true });
 /** Whether the visit's block has room in the window, as src/domain/occupancy.ts answers it, on a day ahead. */
-const FITS = { time: "ahead", fits: true, blackoutWithoutReason: false } as const;
+const FITS = { time: "ahead", fits: true, blackoutWithoutReason: false, besideTheClient: false } as const;
 const NO_ROOM = { ...FITS, fits: false };
 
 describe("dispatch", () => {
@@ -126,6 +126,15 @@ describe("dispatch", () => {
   it("refuses a time already gone before anything else, whatever the technician's day holds", () => {
     expect(moveRefusal(away("morning"), "morning", { ...NO_ROOM, time: "past_day" })).toBe("past_day");
     expect(moveRefusal(day("morning"), "morning", { ...NO_ROOM, time: "window_passed" })).toBe("window_passed");
+  });
+
+  // A technician never takes two of a client's visits in a row (docs/decisions/0111).
+  it("refuses the technician beside the client's visit after leave, and before a clash or a day with no room", () => {
+    const beside = { ...FITS, besideTheClient: true };
+    expect(moveRefusal(day(), "morning", beside)).toBe("back_to_back");
+    expect(moveRefusal(day("morning"), "morning", beside)).toBe("back_to_back");
+    expect(moveRefusal(away(), "morning", beside)).toBe("on_leave");
+    expect(moveRefusal(day(), "morning", { ...beside, time: "past_day" })).toBe("past_day");
   });
 
   // Owner decision 16: a move onto a blacked-out day goes ahead with a warning and a typed reason.
