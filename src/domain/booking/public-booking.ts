@@ -452,9 +452,9 @@ export async function bookConsultation(form: FormRequest, request: ConsultationR
 
   let holdId: string | null = null;
   if (visit !== null) {
-    const hold = await holdSlot(
+    const hold = await holdSlot({
       db,
-      {
+      input: {
         personId: person.id,
         service: visit.service,
         date: request.date,
@@ -469,8 +469,8 @@ export async function bookConsultation(form: FormRequest, request: ConsultationR
           code === null ? [] : [useOnNewHold(db, { codeId: code.codeId, personId: person.id, holdId: newHold }, now)],
       },
       now,
-      HOLD_SECONDS,
-    );
+      holdSeconds: HOLD_SECONDS,
+    });
     if (hold === null) return { ok: false, status: 409, code: "taken" };
     holdId = hold.id;
   } else {
@@ -574,7 +574,14 @@ async function newNumbersState(
   const visit = form.selfServeBooking ? await siteVisit(form.db, request.plan, request.date) : null;
   if (visit === null) return "requested";
   const length = { minutes: visit.service.minutes };
-  const [day] = await availability(form.db, { personId: null }, length, request.date, 1, form.now);
+  const [day] = await availability({
+    db: form.db,
+    placing: { personId: null },
+    visit: length,
+    from: request.date,
+    days: 1,
+    now: form.now,
+  });
   const open = day?.windows.find((window) => window.window === request.window)?.open ?? false;
   return open ? "booked" : "taken";
 }
@@ -602,7 +609,7 @@ async function oneVisitCode(
     form.log.info("discount_code_refused", { reason: "not_covered" });
     return notApplicable;
   }
-  const checked = await checkForOneVisit(form.db, text, knownId, form.now);
+  const checked = await checkForOneVisit({ db: form.db, text, personId: knownId, now: form.now });
   if (checked.ok) return checked;
   form.log.info("discount_code_refused", { reason: checked.reason });
   return notApplicable;

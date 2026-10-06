@@ -335,7 +335,7 @@ function rememberedInvite(
 ): Promise<Invite | null> {
   const code = sent.invite_code;
   if (sent.invite_told !== true || code === undefined || !CODE_PATTERN.test(code)) return Promise.resolve(null);
-  return inviteOf(c.env.DB, code, c.var.config.settings.referrerNameOnInvite);
+  return inviteOf({ db: c.env.DB, code, nameOnInvite: c.var.config.settings.referrerNameOnInvite });
 }
 
 export function registerConsultations(app: App): void {

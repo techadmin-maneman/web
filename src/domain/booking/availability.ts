@@ -128,19 +128,33 @@ interface Placing {
  * is too long to start in, as a first fit's evening, is left out. A day ops black out, or from `until` on, is offered to
  * nobody.
  */
-async function windowsOf(
-  db: D1Database,
-  placing: Placing,
-  visit: VisitToPlace,
-  range: { readonly from: string; readonly days: number },
-  now: Date,
-): Promise<{ date: string; windows: WindowTechnicians[] }[]> {
+async function windowsOf({
+  db,
+  placing,
+  visit,
+  range,
+  now,
+}: {
+  db: D1Database;
+  placing: Placing;
+  visit: VisitToPlace;
+  range: { readonly from: string; readonly days: number };
+  now: Date;
+}): Promise<{ date: string; windows: WindowTechnicians[] }[]> {
   const { personId, moving = null, replacing = null, ownUnpaid = false } = placing;
   const units = unitsFor(visit.minutes);
   const to = addDays(range.from, range.days - 1);
   const [technicians, held, closed, visits] = await Promise.all([
     techniciansFor(db, moving),
-    occupancy(db, range.from, to, now, moving?.visitId ?? null, null, ownUnpaid ? personId : null),
+    occupancy({
+      db,
+      from: range.from,
+      to,
+      now,
+      exceptVisitId: moving?.visitId ?? null,
+      exceptHoldId: null,
+      ownUnpaidOf: ownUnpaid ? personId : null,
+    }),
     loadBlackouts(db, range.from, to),
     visitsOfClient(db, personId, moving?.visitId ?? replacing),
   ]);
@@ -165,15 +179,22 @@ async function windowsOf(
  * A window the visit is too long to start in, as a first fit's evening, is left out. A day from `until` on, the day a
  * service is retired from, is offered to nobody. With no person, as for the site's form, nobody stands beside it.
  */
-export async function availability(
-  db: D1Database,
-  placing: Placing,
-  visit: VisitToPlace,
-  from: string,
-  days: number,
-  now: Date,
-): Promise<{ date: string; windows: WindowOffer[] }[]> {
-  const offered = await windowsOf(db, placing, visit, { from, days }, now);
+export async function availability({
+  db,
+  placing,
+  visit,
+  from,
+  days,
+  now,
+}: {
+  db: D1Database;
+  placing: Placing;
+  visit: VisitToPlace;
+  from: string;
+  days: number;
+  now: Date;
+}): Promise<{ date: string; windows: WindowOffer[] }[]> {
+  const offered = await windowsOf({ db, placing, visit, range: { from, days }, now });
   return offered.map(({ date, windows }) => ({
     date,
     windows: windows.map(({ window, technicians }) => ({ window, open: technicians.length > 0 })),
@@ -184,13 +205,20 @@ export async function availability(
  * Each window of each day from `from` that a visit this long can start in: the technicians free to take it, none who
  * took the client's visit before or after it, for ops to choose from as they book.
  */
-export async function freeTechnicians(
-  db: D1Database,
-  personId: string,
-  visit: VisitToPlace,
-  from: string,
-  days: number,
-  now: Date,
-): Promise<{ date: string; windows: WindowTechnicians[] }[]> {
-  return windowsOf(db, { personId }, visit, { from, days }, now);
+export async function freeTechnicians({
+  db,
+  personId,
+  visit,
+  from,
+  days,
+  now,
+}: {
+  db: D1Database;
+  personId: string;
+  visit: VisitToPlace;
+  from: string;
+  days: number;
+  now: Date;
+}): Promise<{ date: string; windows: WindowTechnicians[] }[]> {
+  return windowsOf({ db, placing: { personId }, visit, range: { from, days }, now });
 }

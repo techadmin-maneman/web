@@ -47,19 +47,25 @@ describe("the steps of a job", () => {
     }
     // Its outcome follows the consumables.
     const toConsumables = done("check_in", "start", "before_photos", "checklist", "consumables");
-    expect(stepBefore("outcome", "consultation", toConsumables, { outcome: "done" })).toBeNull();
+    expect(
+      stepBefore({ kind: "outcome", type: "consultation", done: toConsumables, body: { outcome: "done" } }),
+    ).toBeNull();
   });
 
   it("takes no step before the one ahead of it, so a job sheet cannot close from an empty screen", () => {
-    expect(stepBefore("check_in", "service", done(), {})).toBeNull();
-    expect(stepBefore("start", "service", done(), {})).toBe("check_in");
-    expect(stepBefore("before_photos", "service", done("check_in"), {})).toBe("start");
-    expect(stepBefore("checklist", "service", done("check_in", "start"), {})).toBe("before_photos");
-    expect(stepBefore("checklist", "service", done("check_in", "start", "before_photos"), {})).toBeNull();
+    expect(stepBefore({ kind: "check_in", type: "service", done: done(), body: {} })).toBeNull();
+    expect(stepBefore({ kind: "start", type: "service", done: done(), body: {} })).toBe("check_in");
+    expect(stepBefore({ kind: "before_photos", type: "service", done: done("check_in"), body: {} })).toBe("start");
+    expect(stepBefore({ kind: "checklist", type: "service", done: done("check_in", "start"), body: {} })).toBe(
+      "before_photos",
+    );
+    expect(
+      stepBefore({ kind: "checklist", type: "service", done: done("check_in", "start", "before_photos"), body: {} }),
+    ).toBeNull();
     // A service visit has no piece, so its after photographs follow the consumables.
     const toConsumables = done("check_in", "start", "before_photos", "checklist", "consumables");
-    expect(stepBefore("after_photos", "service", toConsumables, {})).toBeNull();
-    expect(stepBefore("after_photos", "replacement", toConsumables, {})).toBe("piece");
+    expect(stepBefore({ kind: "after_photos", type: "service", done: toConsumables, body: {} })).toBeNull();
+    expect(stepBefore({ kind: "after_photos", type: "replacement", done: toConsumables, body: {} })).toBe("piece");
   });
 
   // A declined one visit's checklist asked for the fit's items, since the choice came after it.
@@ -73,18 +79,32 @@ describe("the steps of a job", () => {
       "outcome",
     ]);
     const photographed = done("check_in", "start", "before_photos");
-    expect(stepBefore("checklist", "first_fit", photographed, {}, true)).toBe("piece");
-    expect(stepBefore("piece", "first_fit", photographed, {}, true)).toBeNull();
-    // Declined, the visit is a consultation by its close, and its steps stay the one visit's.
-    expect(stepBefore("checklist", "consultation", done("check_in", "start", "before_photos", "piece"), {}, true)).toBe(
-      null,
+    expect(stepBefore({ kind: "checklist", type: "first_fit", done: photographed, body: {}, oneVisit: true })).toBe(
+      "piece",
     );
+    expect(stepBefore({ kind: "piece", type: "first_fit", done: photographed, body: {}, oneVisit: true })).toBeNull();
+    // Declined, the visit is a consultation by its close, and its steps stay the one visit's.
+    expect(
+      stepBefore({
+        kind: "checklist",
+        type: "consultation",
+        done: done("check_in", "start", "before_photos", "piece"),
+        body: {},
+        oneVisit: true,
+      }),
+    ).toBe(null);
   });
 
   it("closes a no-show from the check-in alone: the job was never started (src/policy/no-show.ts)", () => {
-    expect(stepBefore("outcome", "service", done("check_in"), { outcome: "no_show" })).toBeNull();
-    expect(stepBefore("outcome", "service", done(), { outcome: "no_show" })).toBe("check_in");
-    expect(stepBefore("outcome", "service", done("check_in"), { outcome: "done" })).toBe("start");
+    expect(
+      stepBefore({ kind: "outcome", type: "service", done: done("check_in"), body: { outcome: "no_show" } }),
+    ).toBeNull();
+    expect(stepBefore({ kind: "outcome", type: "service", done: done(), body: { outcome: "no_show" } })).toBe(
+      "check_in",
+    );
+    expect(stepBefore({ kind: "outcome", type: "service", done: done("check_in"), body: { outcome: "done" } })).toBe(
+      "start",
+    );
   });
 });
 

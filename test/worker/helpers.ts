@@ -92,7 +92,7 @@ export const LOCAL_CONFIG: StaticConfig = {
 /** Erases whoever has this number, as ops do from their page, without the route's checks or queues. */
 export async function eraseByMobile(mobileE164: string, now: Date = NOW): Promise<ErasureSummary | null> {
   const personId = await personWithMobile(env.DB, mobileE164);
-  return personId === null ? null : erasePerson(env, personId, now, createLogger());
+  return personId === null ? null : erasePerson({ env, personId, now, log: createLogger() });
 }
 
 export async function markDatabase(databaseName: string = EXPECTED_DATABASE_NAME.local): Promise<void> {

@@ -188,8 +188,8 @@ describe("sending what the phone holds", () => {
   });
 
   it("puts each photograph up before the set, and lets each go as it lands", async () => {
-    await keepFrame("a", "front", "before", new Blob(["front"]));
-    await keepFrame("a", "top", "before", new Blob(["top"]));
+    await keepFrame({ jobId: "a", angle: "front", phase: "before", frame: new Blob(["front"]) });
+    await keepFrame({ jobId: "a", angle: "top", phase: "before", frame: new Blob(["top"]) });
     await queue("before_photos", "a", { phase: "before" });
     const sent = api((method, url) => {
       if (url.endsWith("/upload-url"))
@@ -210,7 +210,13 @@ describe("sending what the phone holds", () => {
   });
 
   it("puts each photograph's thumbnail up after the photograph, and lets the pair go together", async () => {
-    await keepFrame("a", "front", "before", new Blob(["front"]), new Blob(["small"]));
+    await keepFrame({
+      jobId: "a",
+      angle: "front",
+      phase: "before",
+      frame: new Blob(["front"]),
+      small: new Blob(["small"]),
+    });
     await queue("before_photos", "a", { phase: "before" });
     const sent = api(answerPhotos(() => ({ status: 204 })));
 
@@ -225,7 +231,13 @@ describe("sending what the phone holds", () => {
   });
 
   it("sends only the thumbnail next time, when the signal went between the photograph and it", async () => {
-    await keepFrame("a", "front", "before", new Blob(["front"]), new Blob(["small"]));
+    await keepFrame({
+      jobId: "a",
+      angle: "front",
+      phase: "before",
+      frame: new Blob(["front"]),
+      small: new Blob(["small"]),
+    });
     await queue("before_photos", "a", { phase: "before" });
     api(answerPhotos(() => "offline"));
     expect(await replay()).toMatchObject({ sent: 0, stopped: "offline" });
@@ -241,7 +253,13 @@ describe("sending what the phone holds", () => {
   });
 
   it("lets a thumbnail the API refuses go, and the set lands: the client app shows the photograph itself", async () => {
-    await keepFrame("a", "front", "before", new Blob(["front"]), new Blob(["not small"]));
+    await keepFrame({
+      jobId: "a",
+      angle: "front",
+      phase: "before",
+      frame: new Blob(["front"]),
+      small: new Blob(["not small"]),
+    });
     await queue("before_photos", "a", { phase: "before" });
     api(answerPhotos(() => ({ status: 422, json: { error: { code: "photo_invalid_file", request_id: "t" } } })));
 
@@ -250,7 +268,7 @@ describe("sending what the phone holds", () => {
   });
 
   it("sends a frame kept before the phone made thumbnails without one", async () => {
-    await keepFrame("a", "front", "before", new Blob(["front"]));
+    await keepFrame({ jobId: "a", angle: "front", phase: "before", frame: new Blob(["front"]) });
     await queue("before_photos", "a", { phase: "before" });
     const sent = api(answerPhotos(() => ({ status: 204 })));
     await replay();
@@ -258,7 +276,13 @@ describe("sending what the phone holds", () => {
   });
 
   it("sends no thumbnail when the photograph's answer names no take, as an API from before thumbnails answers", async () => {
-    await keepFrame("a", "front", "before", new Blob(["front"]), new Blob(["small"]));
+    await keepFrame({
+      jobId: "a",
+      angle: "front",
+      phase: "before",
+      frame: new Blob(["front"]),
+      small: new Blob(["small"]),
+    });
     await queue("before_photos", "a", { phase: "before" });
     const sent = api((method, url) => {
       if (url.endsWith("/upload-url")) {
@@ -322,7 +346,7 @@ describe("a write the job has moved under", () => {
   });
 
   it("stops a job whose photographs' links are refused as no longer this technician's, as moved", async () => {
-    await keepFrame("a", "front", "before", new Blob(["front"]));
+    await keepFrame({ jobId: "a", angle: "front", phase: "before", frame: new Blob(["front"]) });
     await queue("before_photos", "a", { phase: "before" });
     api(() => ({ status: 404, json: { error: { code: "not_found", request_id: "t" } } }));
 
@@ -334,7 +358,7 @@ describe("a write the job has moved under", () => {
 
   // Open point 92: the link's refusal names whom the job went to, and when, as a refused write's does.
   it("stops a job whose photographs' links say it went to another technician, keeping whom and when", async () => {
-    await keepFrame("a", "front", "before", new Blob(["front"]));
+    await keepFrame({ jobId: "a", angle: "front", phase: "before", frame: new Blob(["front"]) });
     await queue("before_photos", "a", { phase: "before" });
     const moved = { technician: "Sameer", at: "2027-01-14T05:10:00.000Z" };
     api(() => ({
@@ -364,9 +388,9 @@ describe("one tap, one write", () => {
   });
 
   it("keeps one frame for each angle: a second of the same angle replaces the first", async () => {
-    await keepFrame("a", "front", "before", new Blob(["one"]));
-    await keepFrame("a", "front", "before", new Blob(["two"]));
-    await keepFrame("a", "front", "after", new Blob(["after"]));
+    await keepFrame({ jobId: "a", angle: "front", phase: "before", frame: new Blob(["one"]) });
+    await keepFrame({ jobId: "a", angle: "front", phase: "before", frame: new Blob(["two"]) });
+    await keepFrame({ jobId: "a", angle: "front", phase: "after", frame: new Blob(["after"]) });
     expect((await frames()).map((frame) => `${frame.phase}-${frame.angle}`).sort()).toEqual([
       "after-front",
       "before-front",
@@ -437,9 +461,9 @@ describe("a photograph the API refuses", () => {
   }
 
   it("is marked, the others still go up, and the set stops for it to be taken again", async () => {
-    await keepFrame("a", "front", "before", new Blob(["front"]));
-    await keepFrame("a", "top", "before", new Blob([]));
-    await keepFrame("a", "left", "before", new Blob(["left"]));
+    await keepFrame({ jobId: "a", angle: "front", phase: "before", frame: new Blob(["front"]) });
+    await keepFrame({ jobId: "a", angle: "top", phase: "before", frame: new Blob([]) });
+    await keepFrame({ jobId: "a", angle: "left", phase: "before", frame: new Blob(["left"]) });
     await queue("before_photos", "a", { phase: "before" });
     await queue("checklist", "a", { done: [] });
     const sent = refusingEmptyFiles();
@@ -455,14 +479,14 @@ describe("a photograph the API refuses", () => {
   });
 
   it("taken again, goes up alone, and the set and what waited behind it follow", async () => {
-    await keepFrame("a", "front", "before", new Blob(["front"]));
-    await keepFrame("a", "top", "before", new Blob([]));
+    await keepFrame({ jobId: "a", angle: "front", phase: "before", frame: new Blob(["front"]) });
+    await keepFrame({ jobId: "a", angle: "top", phase: "before", frame: new Blob([]) });
     await queue("before_photos", "a", { phase: "before" });
     await queue("checklist", "a", { done: [] });
     refusingEmptyFiles();
     await replay();
 
-    await keepFrame("a", "top", "before", new Blob(["top"]));
+    await keepFrame({ jobId: "a", angle: "top", phase: "before", frame: new Blob(["top"]) });
     expect(await frames()).toEqual([expect.not.objectContaining({ refused: true })]);
     const [set] = await events();
     await correct(set?.seq ?? 0, { phase: "before" });
@@ -480,7 +504,7 @@ describe("a photograph the API refuses", () => {
   });
 
   it("is not marked when the set's link is refused rather than the file", async () => {
-    await keepFrame("a", "front", "before", new Blob(["front"]));
+    await keepFrame({ jobId: "a", angle: "front", phase: "before", frame: new Blob(["front"]) });
     await queue("before_photos", "a", { phase: "before" });
     api(() => ({ status: 400, json: { error: { code: "invalid_request", request_id: "t", fields: ["phase"] } } }));
 
@@ -529,7 +553,7 @@ describe("queuing a step", () => {
 describe("the jobs with work still on the phone", () => {
   it("names each job with a queued write or a photograph not yet up", async () => {
     await queue("start", "a", null);
-    await keepFrame("b", "front", "before", new Blob(["front"]));
+    await keepFrame({ jobId: "b", angle: "front", phase: "before", frame: new Blob(["front"]) });
     expect(await unsentJobs()).toEqual(new Set(["a", "b"]));
   });
 });

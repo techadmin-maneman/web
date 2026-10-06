@@ -21,7 +21,10 @@ export function registerTechJobReads(app: App): void {
     // Nothing before yesterday: paging back through every date read every past client's card.
     if (!listableDate(date, now)) return refuse(c, "invalid_request", ["date"]);
     const { addressUnlockHour } = await opsInputs(c);
-    return c.json({ date, jobs: await jobsOn(c.env.DB, technicianId, date, now, addressUnlockHour) }, 200);
+    return c.json(
+      { date, jobs: await jobsOn({ db: c.env.DB, technicianId, date, now, unlockHour: addressUnlockHour }) },
+      200,
+    );
   });
 
   app.openapi(jobRoute, async (c) => {

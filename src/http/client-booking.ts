@@ -16,19 +16,25 @@ import { opsInputs } from "./ops-inputs.ts";
  * The terms for moving one of the client's visits of this type now, and the visit as a move sees it; null if it
  * can no longer be moved in the app. A visit with no technician yet is ops' to move.
  */
-export async function moveTermsFor(
-  c: Context<AppEnv>,
-  personId: string,
-  visitId: string,
-  type: VisitType | null,
-  on?: string,
-): Promise<{ terms: ChangeTerms; moving: Moving } | null> {
+export async function moveTermsFor({
+  c,
+  personId,
+  visitId,
+  type,
+  on,
+}: {
+  c: Context<AppEnv>;
+  personId: string;
+  visitId: string;
+  type: VisitType | null;
+  on?: string;
+}): Promise<{ terms: ChangeTerms; moving: Moving } | null> {
   const now = c.var.deps.now();
   const visit = await changeableVisit(c.env.DB, personId, visitId, now);
   if (visit === null || (type !== null && visit.type !== type) || visit.technicianId === null) return null;
   const inForce = termsInForce(await opsInputs(c), visit.type);
   return {
-    terms: await changeTerms(c.env.DB, visit, now, inForce, on),
+    terms: await changeTerms({ db: c.env.DB, visit, now, inForce, on }),
     moving: { visitId: visit.id, technicianId: visit.technicianId },
   };
 }

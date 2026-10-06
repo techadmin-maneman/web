@@ -84,14 +84,21 @@ const NOTHING: Done = { raised: false, issued: false };
 /** A draft is not a valid tax invoice, and a voided one is no longer one; anything else has been issued. */
 const isIssued = (status: string) => status !== "draft" && status !== "void";
 
-export async function raiseBooksInvoices(
-  db: D1Database,
-  deps: BooksInvoiceDeps,
-  options: BooksInvoiceOptions,
-  now: Date,
-  log: Logger,
-  budget: CallBudget,
-): Promise<InvoiceSummary> {
+export async function raiseBooksInvoices({
+  db,
+  deps,
+  options,
+  now,
+  log,
+  budget,
+}: {
+  db: D1Database;
+  deps: BooksInvoiceDeps;
+  options: BooksInvoiceOptions;
+  now: Date;
+  log: Logger;
+  budget: CallBudget;
+}): Promise<InvoiceSummary> {
   const recheck = new Date(now.getTime() - RECHECK_AFTER_MS).toISOString();
   const pass: Pass = { db, deps, options, now, recheck, log };
   const summary: InvoiceSummary = { raised: 0, issued: 0 };
@@ -231,7 +238,7 @@ async function sendIfSold(pass: Pass, visit: Visit, invoice: BooksInvoice): Prom
   const hold = invoiceHold(invoice.total, sold);
   if (hold !== null) {
     pass.log.warn("invoice_held", { appointment_id: visit.id, hold });
-    await tellHeld(pass, visit, invoice, hold, sold);
+    await tellHeld({ pass, visit, invoice, hold, sold });
     return false;
   }
   try {
@@ -323,13 +330,19 @@ const linkTo = (visit: Visit): string => paymentsTab(visit.person_id);
 const named = (invoice: BooksInvoice): string => `${invoice.number} (${invoice.id})`;
 
 /** The draft's alert, saying why it is held. It shares the draft's key, so a visit is told of once. */
-async function tellHeld(
-  pass: Pass,
-  visit: Visit,
-  invoice: BooksInvoice,
-  hold: InvoiceHold,
-  sold: SoldVisit,
-): Promise<void> {
+async function tellHeld({
+  pass,
+  visit,
+  invoice,
+  hold,
+  sold,
+}: {
+  pass: Pass;
+  visit: Visit;
+  invoice: BooksInvoice;
+  hold: InvoiceHold;
+  sold: SoldVisit;
+}): Promise<void> {
   const held = `Invoice ${named(invoice)} of visit ${visit.id} is held as a draft in Books:`;
   const why: Record<InvoiceHold, string> = {
     price_differs:

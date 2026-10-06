@@ -232,7 +232,7 @@ export function registerClientRefer(app: App): void {
         .first<{ card_state: "house" | "personal"; card_version: number }>(),
       // The invite as the landing reads it, with naming on: it names the client exactly when they have agreed to
       // the cards' current lines.
-      inviteOf(db, code, true),
+      inviteOf({ db, code, nameOnInvite: true }),
       spendableCredits(db, session.subjectId, now),
       db
         .prepare(

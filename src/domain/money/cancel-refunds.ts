@@ -34,15 +34,21 @@ export interface OwedRefund {
  * The refund asked for in the request that cancelled the visit: true once settled. On a failure it is left owed, for
  * the cron's cancel_refunds job.
  */
-export async function refundAtOnce(
-  db: D1Database,
-  deps: RefundDeps,
-  owed: OwedRefund,
-  now: Date,
-  log: Logger,
-): Promise<boolean> {
+export async function refundAtOnce({
+  db,
+  deps,
+  owed,
+  now,
+  log,
+}: {
+  db: D1Database;
+  deps: RefundDeps;
+  owed: OwedRefund;
+  now: Date;
+  log: Logger;
+}): Promise<boolean> {
   try {
-    await settleRefund(db, deps, owed, now, { log, askedBefore: false });
+    await settleRefund({ db, deps, owed, now, asking: { log, askedBefore: false } });
     return true;
   } catch (error) {
     log.error("cancel_refund_owed", { appointment_id: owed.appointmentId, error });
@@ -55,13 +61,19 @@ export async function refundAtOnce(
  * who are told first. A refund `askedBefore` may have been made by that ask, so a refusal now is told to ops as one
  * that may have been made.
  */
-async function settleRefund(
-  db: D1Database,
-  deps: RefundDeps,
-  owed: OwedRefund,
-  now: Date,
-  asking: { readonly log: Logger; readonly askedBefore: boolean },
-): Promise<void> {
+async function settleRefund({
+  db,
+  deps,
+  owed,
+  now,
+  asking,
+}: {
+  db: D1Database;
+  deps: RefundDeps;
+  owed: OwedRefund;
+  now: Date;
+  asking: { readonly log: Logger; readonly askedBefore: boolean };
+}): Promise<void> {
   const refund = {
     amount: owed.amount,
     notes: { appointment_id: owed.appointmentId, reason: `cancelled by ${owed.cancelledBy}` },
@@ -109,7 +121,7 @@ export async function settleOwedRefunds(
   let settled = 0;
   for (const owed of await owedRefunds(db, now)) {
     if (!deps.budget.spend(ASKS)) break;
-    await settleRefund(db, deps, owed, now, { log: deps.log, askedBefore: true });
+    await settleRefund({ db, deps, owed, now, asking: { log: deps.log, askedBefore: true } });
     settled += 1;
   }
   return settled;

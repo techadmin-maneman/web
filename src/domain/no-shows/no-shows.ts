@@ -175,7 +175,8 @@ export function noShowReadiness(
 ): Readiness {
   if (checkIn === null) return { kind: "no_check_in" };
   const waitEndsAt = noShowWaitEnds(checkIn, visit.windowStart, visit.type, wait);
-  if (!canCloseAsNoShow(checkIn, visit.windowStart, visit.type, now, wait)) return { kind: "too_early", waitEndsAt };
+  if (!canCloseAsNoShow({ checkIn, visitStart: visit.windowStart, type: visit.type, now, wait }))
+    return { kind: "too_early", waitEndsAt };
   return { kind: "ready", checkIn, waitStartsAt: waitStartsAt(checkIn.at, visit.windowStart), waitEndsAt };
 }
 

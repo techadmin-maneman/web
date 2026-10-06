@@ -995,7 +995,13 @@ describe("a deletion request", () => {
     expect(queues.MESSAGE_QUEUE.sent).toMatchObject([{ message_id: messageId }]);
 
     const whatsapp = recordingWhatsApp();
-    await sendMessage(env.DB, LOCAL_CONFIG, fakeDependencies({ messaging: whatsapp.provider }), log, messageId);
+    await sendMessage({
+      db: env.DB,
+      config: LOCAL_CONFIG,
+      deps: fakeDependencies({ messaging: whatsapp.provider }),
+      log,
+      messageId,
+    });
     expect(whatsapp.sent).toEqual([
       { to: OLD, template: "deletion_rejected_v1", params: ["Rohit", "You still have a consultation booked."] },
     ]);

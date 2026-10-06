@@ -87,7 +87,14 @@ describe("closeVisit", () => {
 
     await env.DB.batch([
       moveVisit(env.DB, id, "done", AT),
-      closeVisit(env.DB, id, "done", { startedAt: STARTED, endedAt: ENDED }, null, AT),
+      closeVisit({
+        db: env.DB,
+        appointmentId: id,
+        outcome: "done",
+        times: { startedAt: STARTED, endedAt: ENDED },
+        partialReason: null,
+        at: AT,
+      }),
     ]);
 
     expect((await visitRow(id))?.status).toBe("completed");
@@ -106,7 +113,14 @@ describe("closeVisit", () => {
 
     await env.DB.batch([
       moveVisit(env.DB, id, "partial", AT),
-      closeVisit(env.DB, id, "partial", { startedAt: STARTED, endedAt: ENDED }, "client_unwell", AT),
+      closeVisit({
+        db: env.DB,
+        appointmentId: id,
+        outcome: "partial",
+        times: { startedAt: STARTED, endedAt: ENDED },
+        partialReason: "client_unwell",
+        at: AT,
+      }),
     ]);
 
     expect((await visitRow(id))?.status).toBe("terminated");
@@ -118,7 +132,14 @@ describe("closeVisit", () => {
 
     await env.DB.batch([
       moveVisit(env.DB, id, "no_show", AT),
-      closeVisit(env.DB, id, "no_show", { startedAt: null, endedAt: ENDED }, null, AT),
+      closeVisit({
+        db: env.DB,
+        appointmentId: id,
+        outcome: "no_show",
+        times: { startedAt: null, endedAt: ENDED },
+        partialReason: null,
+        at: AT,
+      }),
     ]);
 
     expect((await visitRow(id))?.status).toBe("terminated");
@@ -137,7 +158,14 @@ describe("closeVisit", () => {
 
       await env.DB.batch([
         moveVisit(env.DB, id, "done", AT),
-        closeVisit(env.DB, id, "done", { startedAt: STARTED, endedAt: ENDED }, null, AT),
+        closeVisit({
+          db: env.DB,
+          appointmentId: id,
+          outcome: "done",
+          times: { startedAt: STARTED, endedAt: ENDED },
+          partialReason: null,
+          at: AT,
+        }),
       ]);
 
       expect((await visitRow(id))?.status).toBe(status);
@@ -148,7 +176,14 @@ describe("closeVisit", () => {
   it("writes nothing for a visit not yet closed", async () => {
     const id = await visitIn("in_progress");
 
-    await closeVisit(env.DB, id, "done", { startedAt: STARTED, endedAt: ENDED }, null, AT).run();
+    await closeVisit({
+      db: env.DB,
+      appointmentId: id,
+      outcome: "done",
+      times: { startedAt: STARTED, endedAt: ENDED },
+      partialReason: null,
+      at: AT,
+    }).run();
 
     expect(await closedRow(id)).toBeNull();
   });
@@ -157,13 +192,27 @@ describe("closeVisit", () => {
     const id = await visitIn("in_progress");
     await env.DB.batch([
       moveVisit(env.DB, id, "done", AT),
-      closeVisit(env.DB, id, "done", { startedAt: STARTED, endedAt: ENDED }, null, AT),
+      closeVisit({
+        db: env.DB,
+        appointmentId: id,
+        outcome: "done",
+        times: { startedAt: STARTED, endedAt: ENDED },
+        partialReason: null,
+        at: AT,
+      }),
     ]);
 
     const later = "2026-09-21T10:00:00.000Z";
     await env.DB.batch([
       moveVisit(env.DB, id, "done", later),
-      closeVisit(env.DB, id, "done", { startedAt: ENDED, endedAt: later }, null, later),
+      closeVisit({
+        db: env.DB,
+        appointmentId: id,
+        outcome: "done",
+        times: { startedAt: ENDED, endedAt: later },
+        partialReason: null,
+        at: later,
+      }),
     ]);
 
     expect((await visitRow(id))?.synced_at).toBe(AT);

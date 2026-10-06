@@ -398,7 +398,14 @@ export function registerClientMe(app: App): void {
       minutes: service.minutes,
       price: service.price,
     }));
-    const { prompt, invoice } = await homePrompts(db, personId, home.prompt, { booked, offer }, now, home.days);
+    const { prompt, invoice } = await homePrompts({
+      db,
+      personId,
+      row: home.prompt,
+      standing: { booked, offer },
+      now,
+      days: home.days,
+    });
     const pendingInvite = fitted ? null : invite;
 
     return c.json(

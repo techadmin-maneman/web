@@ -111,13 +111,19 @@ interface TechnicianChange {
 }
 
 /** Changes what was sent, unless the new number is another active technician's. */
-export async function changeTechnician(
-  db: D1Database,
-  current: RosterTechnician,
-  change: TechnicianChange,
-  audit: AuditEntry,
-  now: Date,
-): Promise<"changed" | "number_in_use"> {
+export async function changeTechnician({
+  db,
+  current,
+  change,
+  audit,
+  now,
+}: {
+  db: D1Database;
+  current: RosterTechnician;
+  change: TechnicianChange;
+  audit: AuditEntry;
+  now: Date;
+}): Promise<"changed" | "number_in_use"> {
   const name = change.name ?? current.name;
   const mobile = change.mobileE164 ?? current.mobile;
   const zone = change.zone === undefined ? current.zone : change.zone;

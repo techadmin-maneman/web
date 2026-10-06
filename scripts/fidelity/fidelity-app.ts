@@ -198,13 +198,19 @@ const TIMELINE = timeline(["ink", "ink", "ink"]);
 const COMPARED = timeline(["raised", "ink", "frame"]);
 
 const visitRef = (each: (typeof PAST)[number]) => ({ id: each.id, date: each.date, type: each.type });
-const paid = (
-  n: number,
-  of: (typeof PAST)[number],
-  exGst: number,
-  method: string,
-  reference: string,
-): Schemas["PaymentEntry"] => ({
+const paid = ({
+  n,
+  of,
+  exGst,
+  method,
+  reference,
+}: {
+  n: number;
+  of: (typeof PAST)[number];
+  exGst: number;
+  method: string;
+  reference: string;
+}): Schemas["PaymentEntry"] => ({
   kind: "payment",
   id: `e0000000-0000-4000-8000-00000000000${String(n)}`,
   date: of.date,
@@ -222,7 +228,7 @@ const paid = (
   no_show: null,
   discount_code: null,
 });
-const SERVICE_PAID = paid(2, AUGUST, 200000, "upi", "MM-2027-0841");
+const SERVICE_PAID = paid({ n: 2, of: AUGUST, exGst: 200000, method: "upi", reference: "MM-2027-0841" });
 /** Board E1's entries that exist before booking: the charge and the credit arrive with it. */
 const ENTRIES = {
   owed: [],
@@ -242,8 +248,8 @@ const ENTRIES = {
       speed: "normal",
     },
     SERVICE_PAID,
-    paid(3, PAST[2], 1500000, "upi", "MM-2027-0512"),
-    paid(4, NOVEMBER, 3000000, "card", "MM-2026-0102"),
+    paid({ n: 3, of: PAST[2], exGst: 1500000, method: "upi", reference: "MM-2027-0512" }),
+    paid({ n: 4, of: NOVEMBER, exGst: 3000000, method: "card", reference: "MM-2026-0102" }),
   ],
   credits: [],
 };
@@ -449,13 +455,19 @@ async function openDesign(browser: Browser): Promise<Page> {
 }
 
 /** The app with its API answered from `api` (anything else unauthorised), 44 px shorter than a frame. */
-async function openApp(
-  browser: Browser,
-  path: string,
-  api: Api,
-  now?: Date,
-  checkout?: (route: Route) => Promise<void>,
-): Promise<Page> {
+async function openApp({
+  browser,
+  path,
+  api,
+  now,
+  checkout,
+}: {
+  browser: Browser;
+  path: string;
+  api: Api;
+  now?: Date;
+  checkout?: (route: Route) => Promise<void>;
+}): Promise<Page> {
   // The app's policy would refuse the style that stills the page; screenshots set it aside.
   const page = await browser.newPage({
     viewport: { width: WIDTH, height: FRAME_HEIGHT - STATUS_BAR },
@@ -515,11 +527,17 @@ async function shot(page: Page): Promise<Buffer> {
 async function login(browser: Browser, design: Page): Promise<void> {
   const api: Api = { "/api/me": signedOut, "/api/auth/otp": json(CHALLENGE) };
 
-  const app = await openApp(browser, "/", api);
+  const app = await openApp({ browser, path: "/", api });
   await app.getByRole("textbox", { name: "Mobile number" }).fill("9800044417");
   // The design draws the number typed, the field no longer focused.
   await app.getByRole("textbox", { name: "Mobile number" }).blur();
-  await pair(OUT, WIDTH, "a1-mobile", await frame(design, "Login · mobile"), await shot(app));
+  await pair({
+    dir: OUT,
+    width: WIDTH,
+    name: "a1-mobile",
+    design: await frame(design, "Login · mobile"),
+    built: await shot(app),
+  });
 
   // A2 and A3 draw their back arrow in the band where A1 has the status bar: it is the screen's own, so
   // they are shot at the frame's full height.
@@ -527,57 +545,107 @@ async function login(browser: Browser, design: Page): Promise<void> {
   await app.getByRole("button", { name: "Send code on WhatsApp" }).click();
   await app.getByRole("textbox", { name: "The six-digit code" }).fill("418");
   await app.clock.runFor(30_000);
-  await pair(OUT, WIDTH, "a2-code-after-30-seconds", await frame(design, "Login · OTP", false), await shot(app));
+  await pair({
+    dir: OUT,
+    width: WIDTH,
+    name: "a2-code-after-30-seconds",
+    design: await frame(design, "Login · OTP", false),
+    built: await shot(app),
+  });
 
   await app.getByRole("button", { name: "No booking on this number?" }).click();
-  await pair(OUT, WIDTH, "a3-not-recognised", await frame(design, "Login · not recognised", false), await shot(app));
+  await pair({
+    dir: OUT,
+    width: WIDTH,
+    name: "a3-not-recognised",
+    design: await frame(design, "Login · not recognised", false),
+    built: await shot(app),
+  });
   await app.close();
 }
 
 async function home(browser: Browser, design: Page): Promise<void> {
-  const app = await openApp(browser, "/", { "/api/me": json(ME) });
+  const app = await openApp({ browser, path: "/", api: { "/api/me": json(ME) } });
   await app.getByRole("heading", { name: "Your consultation" }).waitFor();
-  await pair(OUT, WIDTH, "b2-lead", await frame(design, "Home · lead"), await shot(app));
+  await pair({
+    dir: OUT,
+    width: WIDTH,
+    name: "b2-lead",
+    design: await frame(design, "Home · lead"),
+    built: await shot(app),
+  });
   await app.close();
 }
 
 async function states(browser: Browser, design: Page): Promise<void> {
-  const loading = await openApp(browser, "/profile", {
-    "/api/me": json(ME),
-    "/api/profile": never,
-    "/api/sessions": json(SESSIONS),
+  const loading = await openApp({
+    browser,
+    path: "/profile",
+    api: {
+      "/api/me": json(ME),
+      "/api/profile": never,
+      "/api/sessions": json(SESSIONS),
+    },
   });
   // Signed in first: a cold start shows the same loading before there is a frame around it.
   await loading.getByRole("navigation").waitFor();
   await loading.getByRole("status").filter({ hasText: "Loading" }).waitFor({ state: "attached" });
-  await pair(OUT, WIDTH, "b3-loading", await stateFrame(design, "Loading"), await shot(loading));
+  await pair({
+    dir: OUT,
+    width: WIDTH,
+    name: "b3-loading",
+    design: await stateFrame(design, "Loading"),
+    built: await shot(loading),
+  });
   await loading.close();
 
-  const offline = await openApp(browser, "/", { "/api/me": json(ME, { "Mm-Served-From": "cache" }) });
+  const offline = await openApp({ browser, path: "/", api: { "/api/me": json(ME, { "Mm-Served-From": "cache" }) } });
   await offline.getByText("No connection. Showing your last update.").waitFor();
-  await pair(OUT, WIDTH, "b3-offline", await stateFrame(design, "Offline"), await shot(offline));
+  await pair({
+    dir: OUT,
+    width: WIDTH,
+    name: "b3-offline",
+    design: await stateFrame(design, "Offline"),
+    built: await shot(offline),
+  });
   await offline.close();
 
   // The phone kept a Home with the consultation on it, so the error can say the visit is still booked.
-  const failed = await openApp(browser, "/", { "/api/me": (route) => route.abort() });
+  const failed = await openApp({ browser, path: "/", api: { "/api/me": (route) => route.abort() } });
   await failed.evaluate(async (home) => {
     const kept = await caches.open("mm-app-home");
     await kept.put("/api/me", new Response(JSON.stringify(home)));
   }, ME);
   await failed.reload();
   await failed.getByText("Your visit is still booked.").waitFor();
-  await pair(OUT, WIDTH, "b3-error", await stateFrame(design, "Error"), await shot(failed));
+  await pair({
+    dir: OUT,
+    width: WIDTH,
+    name: "b3-error",
+    design: await stateFrame(design, "Error"),
+    built: await shot(failed),
+  });
   await failed.close();
 }
 
 async function profile(browser: Browser, design: Page): Promise<void> {
-  const app = await openApp(browser, "/profile", {
-    "/api/me": json(ME),
-    "/api/profile": json(PROFILE),
-    "/api/sessions": json(SESSIONS),
+  const app = await openApp({
+    browser,
+    path: "/profile",
+    api: {
+      "/api/me": json(ME),
+      "/api/profile": json(PROFILE),
+      "/api/sessions": json(SESSIONS),
+    },
   });
   await app.getByRole("heading", { name: "Where we come" }).waitFor();
-  await pair(OUT, WIDTH, "g1-profile", await frame(design, "Profile"), await shot(app));
+  await pair({
+    dir: OUT,
+    width: WIDTH,
+    name: "g1-profile",
+    design: await frame(design, "Profile"),
+    built: await shot(app),
+  });
 
   // G2 draws the account's three cards on their own: the app's are shot from the first to the last, with
   // the page let out of its scrolling frame so they are all in one picture.
@@ -590,7 +658,13 @@ async function profile(browser: Browser, design: Page): Promise<void> {
   const bottom = await edge("Delete your account", "bottom");
   await rest(app);
   const cards = await app.screenshot({ fullPage: true, clip: { x: 0, y: top, width: WIDTH, height: bottom - top } });
-  await pair(OUT, WIDTH, "g2-account", await frame(design, "Profile · account", false), cards);
+  await pair({
+    dir: OUT,
+    width: WIDTH,
+    name: "g2-account",
+    design: await frame(design, "Profile · account", false),
+    built: cards,
+  });
   await app.close();
 }
 
@@ -604,98 +678,179 @@ async function fitted(browser: Browser, design: Page): Promise<void> {
   }
   const me = { "/api/me": json(ME_FITTED), ...files };
 
-  const home = await openApp(browser, "/", me);
+  const home = await openApp({ browser, path: "/", api: me });
   await home.getByRole("heading", { name: "Your next visit" }).waitFor();
-  await pair(OUT, WIDTH, "b1-fitted", await frame(design, "Home · fitted"), await shot(home));
+  await pair({
+    dir: OUT,
+    width: WIDTH,
+    name: "b1-fitted",
+    design: await frame(design, "Home · fitted"),
+    built: await shot(home),
+  });
   await home.close();
 
-  const visits = await openApp(browser, "/visits", {
-    ...me,
-    "/api/visits": json({ upcoming: [NEXT], past: PAST, history: HISTORY }),
+  const visits = await openApp({
+    browser,
+    path: "/visits",
+    api: {
+      ...me,
+      "/api/visits": json({ upcoming: [NEXT], past: PAST, history: HISTORY }),
+    },
   });
   await visits.getByRole("heading", { name: "Past" }).waitFor();
-  await pair(OUT, WIDTH, "c1-visits", await frame(design, "Visits · list"), await shot(visits));
+  await pair({
+    dir: OUT,
+    width: WIDTH,
+    name: "c1-visits",
+    design: await frame(design, "Visits · list"),
+    built: await shot(visits),
+  });
   await visits.close();
 
   // C9's tax invoice is not on the board at all.
-  const detail = await openApp(browser, `/visits/${AUGUST.id}`, {
-    ...me,
-    [`/api/visits/${AUGUST.id}`]: json(VISIT_DETAIL),
+  const detail = await openApp({
+    browser,
+    path: `/visits/${AUGUST.id}`,
+    api: {
+      ...me,
+      [`/api/visits/${AUGUST.id}`]: json(VISIT_DETAIL),
+    },
   });
   await detail.getByRole("heading", { name: "Photos from this visit" }).waitFor();
   await photographsIn(detail);
-  await pair(OUT, WIDTH, "c9-visit", await frame(design, "Visit detail"), await shot(detail));
+  await pair({
+    dir: OUT,
+    width: WIDTH,
+    name: "c9-visit",
+    design: await frame(design, "Visit detail"),
+    built: await shot(detail),
+  });
   await detail.close();
 
-  const photos = await openApp(browser, "/photos", { ...me, "/api/photos": json(TIMELINE) });
+  const photos = await openApp({ browser, path: "/photos", api: { ...me, "/api/photos": json(TIMELINE) } });
   await photos.getByRole("heading", { name: "22 Aug 2027" }).waitFor();
   await photographsIn(photos);
-  await pair(OUT, WIDTH, "d1-timeline", await frame(design, "Photos · timeline"), await shot(photos));
+  await pair({
+    dir: OUT,
+    width: WIDTH,
+    name: "d1-timeline",
+    design: await frame(design, "Photos · timeline"),
+    built: await shot(photos),
+  });
   await photos.getByRole("button", { name: "Front, after the visit, 22 Aug 2027" }).click();
   await photos.getByRole("dialog").waitFor();
   await photographsIn(photos);
-  await pair(OUT, WIDTH, "d3-download", await stateFrame(design, "Download", "Photos · states"), await shot(photos));
+  await pair({
+    dir: OUT,
+    width: WIDTH,
+    name: "d3-download",
+    design: await stateFrame(design, "Download", "Photos · states"),
+    built: await shot(photos),
+  });
   await photos.close();
 
   // The divider is set where D2 draws it, 48% across.
-  const compare = await openApp(browser, "/photos/compare", { ...me, "/api/photos": json(COMPARED) });
+  const compare = await openApp({ browser, path: "/photos/compare", api: { ...me, "/api/photos": json(COMPARED) } });
   const stage = compare.getByRole("slider").locator("..");
   await stage.waitFor();
   const box = await stage.boundingBox();
   if (box !== null) await compare.mouse.click(box.x + box.width * 0.48, box.y + box.height / 2);
   await photographsIn(compare);
-  await pair(OUT, WIDTH, "d2-compare", await frame(design, "Photos · compare"), await shot(compare));
+  await pair({
+    dir: OUT,
+    width: WIDTH,
+    name: "d2-compare",
+    design: await frame(design, "Photos · compare"),
+    built: await shot(compare),
+  });
   await compare.close();
 
-  const none = await openApp(browser, "/photos", { ...me, "/api/photos": json({ visits: [], try_ons: [] }) });
+  const none = await openApp({
+    browser,
+    path: "/photos",
+    api: { ...me, "/api/photos": json({ visits: [], try_ons: [] }) },
+  });
   await none.getByText("Your photos start at your first visit.").waitFor();
-  await pair(
-    OUT,
-    WIDTH,
-    "d3-empty",
-    await stateFrame(design, "Empty · before the first fit", "Photos · states"),
-    await shot(none),
-  );
+  await pair({
+    dir: OUT,
+    width: WIDTH,
+    name: "d3-empty",
+    design: await stateFrame(design, "Empty · before the first fit", "Photos · states"),
+    built: await shot(none),
+  });
   await none.close();
 
-  const loading = await openApp(browser, "/photos", { ...me, "/api/photos": never });
+  const loading = await openApp({ browser, path: "/photos", api: { ...me, "/api/photos": never } });
   await loading.getByRole("status").filter({ hasText: "Loading" }).waitFor({ state: "attached" });
-  await pair(OUT, WIDTH, "d3-loading", await stateFrame(design, "Loading", "Photos · states"), await shot(loading));
+  await pair({
+    dir: OUT,
+    width: WIDTH,
+    name: "d3-loading",
+    design: await stateFrame(design, "Loading", "Photos · states"),
+    built: await shot(loading),
+  });
   await loading.close();
 
   // E1's entries are newest first, where the board lists them in no order; its charge and credit arrive
   // with booking.
-  const list = await openApp(browser, "/payments", { ...me, "/api/payments": json(ENTRIES) }, IN_2027);
+  const list = await openApp({
+    browser,
+    path: "/payments",
+    api: { ...me, "/api/payments": json(ENTRIES) },
+    now: IN_2027,
+  });
   await list.getByText("MM-2027-0841").or(list.getByText("Paid").first()).first().waitFor();
-  await pair(OUT, WIDTH, "e1-payments", await frame(design, "Payments · list"), await shot(list));
+  await pair({
+    dir: OUT,
+    width: WIDTH,
+    name: "e1-payments",
+    design: await frame(design, "Payments · list"),
+    built: await shot(list),
+  });
   await list.close();
 
   // E2's method row names the UPI app, which Razorpay's payment does not always carry.
-  const entry = await openApp(
+  const entry = await openApp({
     browser,
-    `/payments/${SERVICE_PAID.id}`,
-    { ...me, [`/api/payments/${SERVICE_PAID.id}`]: json(ENTRY) },
-    IN_2027,
-  );
+    path: `/payments/${SERVICE_PAID.id}`,
+    api: { ...me, [`/api/payments/${SERVICE_PAID.id}`]: json(ENTRY) },
+    now: IN_2027,
+  });
   await entry.getByRole("heading", { name: "Tax documents" }).waitFor();
-  await pair(OUT, WIDTH, "e2-entry", await frame(design, "Payments · detail"), await shot(entry));
+  await pair({
+    dir: OUT,
+    width: WIDTH,
+    name: "e2-entry",
+    design: await frame(design, "Payments · detail"),
+    built: await shot(entry),
+  });
   await entry.getByRole("button", { name: "Receipt" }).click();
   await entry.getByText("Ask us for it").waitFor();
-  await pair(
-    OUT,
-    WIDTH,
-    "e3-unavailable",
-    await stateFrame(design, "Document unavailable", "Payments · states"),
-    await shot(entry),
-  );
+  await pair({
+    dir: OUT,
+    width: WIDTH,
+    name: "e3-unavailable",
+    design: await stateFrame(design, "Document unavailable", "Payments · states"),
+    built: await shot(entry),
+  });
   await entry.close();
 
-  const lead = await openApp(browser, "/payments", {
-    "/api/me": json(ME),
-    "/api/payments": json({ owed: [], entries: [], credits: [] }),
+  const lead = await openApp({
+    browser,
+    path: "/payments",
+    api: {
+      "/api/me": json(ME),
+      "/api/payments": json({ owed: [], entries: [], credits: [] }),
+    },
   });
   await lead.getByText("Nothing to pay yet.").waitFor();
-  await pair(OUT, WIDTH, "e3-empty", await stateFrame(design, "Empty · lead", "Payments · states"), await shot(lead));
+  await pair({
+    dir: OUT,
+    width: WIDTH,
+    name: "e3-empty",
+    design: await stateFrame(design, "Empty · lead", "Payments · states"),
+    built: await shot(lead),
+  });
   await lead.close();
 }
 
@@ -715,10 +870,24 @@ async function bookingPairs(browser: Browser, design: Page): Promise<void> {
   async function throughTheSheet(app: Page, shots: boolean): Promise<void> {
     await app.getByRole("button", { name: "Book your next visit" }).click();
     await app.getByRole("radio", { name: "Thursday 19 Sep" }).click();
-    if (shots) await pair(OUT, WIDTH, "c2-date", await frame(design, "Booking · date"), await shot(app));
+    if (shots)
+      await pair({
+        dir: OUT,
+        width: WIDTH,
+        name: "c2-date",
+        design: await frame(design, "Booking · date"),
+        built: await shot(app),
+      });
     await app.getByRole("button", { name: "Continue" }).click();
     await app.getByRole("radio", { name: /Afternoon/ }).click();
-    if (shots) await pair(OUT, WIDTH, "c3-window", await frame(design, "Booking · window"), await shot(app));
+    if (shots)
+      await pair({
+        dir: OUT,
+        width: WIDTH,
+        name: "c3-window",
+        design: await frame(design, "Booking · window"),
+        built: await shot(app),
+      });
     await app.getByRole("button", { name: "Continue to payment" }).click();
     // A visit a credit covers is confirmed, not paid for.
     await app.getByRole("heading", { name: /^(Pay and confirm|Confirm)$/ }).waitFor();
@@ -740,61 +909,96 @@ async function bookingPairs(browser: Browser, design: Page): Promise<void> {
   };
 
   // C4's saved card ("Card ending 4417") is Checkout's to offer; the app offers card payment as "Card".
-  const service = await openApp(browser, "/visits", api(SERVICE_HOLD), IN_2030);
+  const service = await openApp({ browser, path: "/visits", api: api(SERVICE_HOLD), now: IN_2030 });
   await throughTheSheet(service, true);
   await holdAsDrawn(service);
-  await pair(OUT, WIDTH, "c4-pay", await frame(design, "Booking · pay"), await shot(service));
+  await pair({
+    dir: OUT,
+    width: WIDTH,
+    name: "c4-pay",
+    design: await frame(design, "Booking · pay"),
+    built: await shot(service),
+  });
   await service.close();
 
-  const firstFit = await openApp(browser, "/visits", api(FIRST_FIT_HOLD), IN_2030);
+  const firstFit = await openApp({ browser, path: "/visits", api: api(FIRST_FIT_HOLD), now: IN_2030 });
   await throughTheSheet(firstFit, false);
   await holdAsDrawn(firstFit);
   const firstFitFrame = design
     .locator('[data-screen-label="Booking · credit"] > div')
     .filter({ has: design.getByText("First fit · guarantee line added", { exact: true }) })
     .screenshot();
-  await pair(OUT, WIDTH, "c5-first-fit", await firstFitFrame, await sheetShot(firstFit));
+  await pair({
+    dir: OUT,
+    width: WIDTH,
+    name: "c5-first-fit",
+    design: await firstFitFrame,
+    built: await sheetShot(firstFit),
+  });
   await firstFit.close();
 
   // A service visit a credit covers: the design's two credits, one used.
-  const credited = await openApp(browser, "/visits", api({ ...SERVICE_HOLD, credit: { remaining: 1 } }), IN_2030);
+  const credited = await openApp({
+    browser,
+    path: "/visits",
+    api: api({ ...SERVICE_HOLD, credit: { remaining: 1 } }),
+    now: IN_2030,
+  });
   await throughTheSheet(credited, false);
   await holdAsDrawn(credited);
   const creditFrame = design
     .locator('[data-screen-label="Booking · credit"] > div')
     .filter({ has: design.getByText("Credit covers it · payment skipped", { exact: true }) })
     .screenshot();
-  await pair(OUT, WIDTH, "c5-credit", await creditFrame, await sheetShot(credited));
+  await pair({
+    dir: OUT,
+    width: WIDTH,
+    name: "c5-credit",
+    design: await creditFrame,
+    built: await sheetShot(credited),
+  });
   await credited.close();
 
-  const failed = await openApp(browser, "/visits", api(SERVICE_HOLD), IN_2030, fakeCheckout("failed"));
+  const failed = await openApp({
+    browser,
+    path: "/visits",
+    api: api(SERVICE_HOLD),
+    now: IN_2030,
+    checkout: fakeCheckout("failed"),
+  });
   await throughTheSheet(failed, false);
   await failed.getByRole("button", { name: /^Pay/ }).click();
   await failed.getByText("The payment didn’t go through.").waitFor();
-  await pair(
-    OUT,
-    WIDTH,
-    "c6-failed",
-    await stateFrame(design, "Payment failed", "Booking · pay states"),
-    await shot(failed),
-  );
+  await pair({
+    dir: OUT,
+    width: WIDTH,
+    name: "c6-failed",
+    design: await stateFrame(design, "Payment failed", "Booking · pay states"),
+    built: await shot(failed),
+  });
   await failed.close();
 
-  const expired = await openApp(browser, "/visits", api(SERVICE_HOLD), IN_2030);
+  const expired = await openApp({ browser, path: "/visits", api: api(SERVICE_HOLD), now: IN_2030 });
   await throughTheSheet(expired, false);
   await expired.clock.fastForward("10:00");
   await expired.getByText("That time has been released.").waitFor();
-  await pair(
-    OUT,
-    WIDTH,
-    "c6-expired",
-    await stateFrame(design, "Hold expired", "Booking · pay states"),
-    await shot(expired),
-  );
+  await pair({
+    dir: OUT,
+    width: WIDTH,
+    name: "c6-expired",
+    design: await stateFrame(design, "Hold expired", "Booking · pay states"),
+    built: await shot(expired),
+  });
   await expired.close();
 
   const booked = { ...SERVICE_HOLD, state: "booked", paid: true, visit_id: NEXT.id };
-  const confirmed = await openApp(browser, "/visits", api(SERVICE_HOLD, booked), IN_2030, fakeCheckout("paid"));
+  const confirmed = await openApp({
+    browser,
+    path: "/visits",
+    api: api(SERVICE_HOLD, booked),
+    now: IN_2030,
+    checkout: fakeCheckout("paid"),
+  });
   await throughTheSheet(confirmed, false);
   await confirmed.getByRole("button", { name: /^Pay/ }).click();
   await confirmed.clock.fastForward("00:03");
@@ -803,7 +1007,13 @@ async function bookingPairs(browser: Browser, design: Page): Promise<void> {
     .locator('[data-screen-label="Booking · pay states"] > div')
     .filter({ has: design.getByText("Confirmed", { exact: true }) })
     .screenshot();
-  await pair(OUT, WIDTH, "c6-confirmed", await confirmedFrame, await shot(confirmed));
+  await pair({
+    dir: OUT,
+    width: WIDTH,
+    name: "c6-confirmed",
+    design: await confirmedFrame,
+    built: await shot(confirmed),
+  });
   await confirmed.close();
 }
 
@@ -850,19 +1060,37 @@ async function changePairs(browser: Browser, design: Page): Promise<void> {
 
   // The app adds a way from C7 to C8, which the design draws but does not reach; C8 says 5 to 7 working days,
   // as the owner ruled (ADR 0025, item 28), where the design says three to five.
-  const free = await openApp(browser, "/", api("free"), IN_2030);
+  const free = await openApp({ browser, path: "/", api: api("free"), now: IN_2030 });
   await free.getByRole("button", { name: "Reschedule" }).click();
   await free.getByText("Free to move. Your Rs. 2,360 carries over.").waitFor();
-  await pair(OUT, WIDTH, "c7-free", await version("Reschedule", "More than 24 hours out"), await shot(free));
+  await pair({
+    dir: OUT,
+    width: WIDTH,
+    name: "c7-free",
+    design: await version("Reschedule", "More than 24 hours out"),
+    built: await shot(free),
+  });
   await free.getByRole("button", { name: "Cancel the visit instead" }).click();
   await free.getByText("Rs. 2,360 back to your UPI in 5 to 7 working days.").waitFor();
-  await pair(OUT, WIDTH, "c8-free", await version("Cancel", "More than 24 hours out"), await shot(free));
+  await pair({
+    dir: OUT,
+    width: WIDTH,
+    name: "c8-free",
+    design: await version("Cancel", "More than 24 hours out"),
+    built: await shot(free),
+  });
   await free.close();
 
-  const late = await openApp(browser, "/", api("late"), IN_2030);
+  const late = await openApp({ browser, path: "/", api: api("late"), now: IN_2030 });
   await late.getByRole("button", { name: "Reschedule" }).click();
   await late.getByText(/^Charged\./).waitFor();
-  await pair(OUT, WIDTH, "c7-late", await version("Reschedule", "Inside 24 hours"), await shot(late));
+  await pair({
+    dir: OUT,
+    width: WIDTH,
+    name: "c7-late",
+    design: await version("Reschedule", "Inside 24 hours"),
+    built: await shot(late),
+  });
   await late.close();
 }
 
@@ -892,23 +1120,41 @@ async function referPairs(browser: Browser, design: Page): Promise<void> {
     ...files,
   };
 
-  const landing = await openApp(browser, "/refer", api);
+  const landing = await openApp({ browser, path: "/refer", api });
   await landing.getByRole("button", { name: "Share an invite" }).waitFor();
-  await pair(OUT, WIDTH, "f1-refer", await frame(design, "Refer · landing"), await shot(landing));
+  await pair({
+    dir: OUT,
+    width: WIDTH,
+    name: "f1-refer",
+    design: await frame(design, "Refer · landing"),
+    built: await shot(landing),
+  });
 
   // F2 draws their own card chosen, which an agreement to the cards' lines allows.
   await landing.getByRole("button", { name: "Share an invite" }).click();
   await landing.getByRole("heading", { name: "Which card?" }).waitFor();
   await landing.getByRole("radio", { name: /My before and after/ }).click();
   await photographsIn(landing);
-  await pair(OUT, WIDTH, "f2-card-choice", await frame(design, "Refer · card choice"), await shot(landing));
+  await pair({
+    dir: OUT,
+    width: WIDTH,
+    name: "f2-card-choice",
+    design: await frame(design, "Refer · card choice"),
+    built: await shot(landing),
+  });
 
   // The example needs no consent: the sheet goes straight to the preview, the house card in the bubble.
   await landing.getByRole("radio", { name: /A Mane Man example/ }).click();
   await landing.getByRole("button", { name: "Continue to share" }).click();
   await landing.getByRole("heading", { name: /^Preview/ }).waitFor();
   await photographsIn(landing);
-  await pair(OUT, WIDTH, "f4-share", await frame(design, "Refer · share"), await shot(landing));
+  await pair({
+    dir: OUT,
+    width: WIDTH,
+    name: "f4-share",
+    design: await frame(design, "Refer · share"),
+    built: await shot(landing),
+  });
 
   // F6's share failure: copying the link refused, beside the board's small frame.
   await landing.evaluate(() => {
@@ -916,46 +1162,60 @@ async function referPairs(browser: Browser, design: Page): Promise<void> {
   });
   await landing.getByRole("button", { name: "Copy link" }).click();
   await landing.getByText("The link didn’t generate. Nothing was sent.").waitFor();
-  await pair(
-    OUT,
-    WIDTH,
-    "f6-share-failed",
-    await stateFrame(design, "Share failed", "Refer · empty and revoke"),
-    await shot(landing),
-  );
+  await pair({
+    dir: OUT,
+    width: WIDTH,
+    name: "f6-share-failed",
+    design: await stateFrame(design, "Share failed", "Refer · empty and revoke"),
+    built: await shot(landing),
+  });
   await landing.close();
 
   // F6's revoke, for a client whose own card is on their invite.
-  const revoke = await openApp(browser, "/refer/fitted", {
-    ...api,
-    "/api/refer": json({ ...REFER, card: { state: "personal", version: 2, consented: true } }),
+  const revoke = await openApp({
+    browser,
+    path: "/refer/fitted",
+    api: {
+      ...api,
+      "/api/refer": json({ ...REFER, card: { state: "personal", version: 2, consented: true } }),
+    },
   });
   await revoke.getByRole("button", { name: "Revoke the photo card" }).click();
   await revoke.getByRole("heading", { name: "Switch off your photos?" }).waitFor();
-  await pair(
-    OUT,
-    WIDTH,
-    "f6-revoke",
-    await stateFrame(design, "Revoke the photo card", "Refer · empty and revoke"),
-    await shot(revoke),
-  );
+  await pair({
+    dir: OUT,
+    width: WIDTH,
+    name: "f6-revoke",
+    design: await stateFrame(design, "Revoke the photo card", "Refer · empty and revoke"),
+    built: await shot(revoke),
+  });
   await revoke.close();
 
-  const tracker = await openApp(browser, "/refer/fitted", api);
+  const tracker = await openApp({ browser, path: "/refer/fitted", api });
   await tracker.getByText("Ashish").waitFor();
-  await pair(OUT, WIDTH, "f5-tracker", await frame(design, "Refer · tracker"), await shot(tracker));
+  await pair({
+    dir: OUT,
+    width: WIDTH,
+    name: "f5-tracker",
+    design: await frame(design, "Refer · tracker"),
+    built: await shot(tracker),
+  });
   await tracker.close();
 
-  const empty = await openApp(browser, "/refer/fitted", {
-    ...api,
-    "/api/refer": json({ ...REFER, fitted: [], credits: { visits: 0, earliest_expiry: null } }),
+  const empty = await openApp({
+    browser,
+    path: "/refer/fitted",
+    api: {
+      ...api,
+      "/api/refer": json({ ...REFER, fitted: [], credits: { visits: 0, earliest_expiry: null } }),
+    },
   });
   await empty.getByText("Nobody you have referred has been fitted yet.").waitFor();
   const emptyFrame = design
     .locator('[data-screen-label="Refer · empty and revoke"] > div')
     .filter({ has: design.getByText("Tracker · empty", { exact: true }) })
     .screenshot();
-  await pair(OUT, WIDTH, "f6-tracker-empty", await emptyFrame, await shot(empty));
+  await pair({ dir: OUT, width: WIDTH, name: "f6-tracker-empty", design: await emptyFrame, built: await shot(empty) });
   await empty.close();
 }
 

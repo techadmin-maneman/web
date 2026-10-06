@@ -133,7 +133,7 @@ export function createAilabtoolsProvider(options: { apiKey: string; fetch: typeo
         http,
         { vendor: "ailabtools", step: "submit", timeoutMs: SUBMIT_TIMEOUT_MS, codeOf: errorCodeOf },
         `${API_BASE_URL}${ENDPOINT_PATHS[endpoint]}`,
-        { method: "POST", headers: authorised, body: submitForm(image, info.type, preset, color, endpoint) },
+        { method: "POST", headers: authorised, body: submitForm({ image, type: info.type, preset, color, endpoint }) },
       );
       if (response instanceof VendorUnreachable) return { ok: false, failure: unreachable(response) };
 
@@ -204,13 +204,19 @@ export function createAilabtoolsProvider(options: { apiKey: string; fetch: typeo
  * duplicates (7.12). Pro has no "keep the colour" and defaults to blonde, so
  * a colour is always sent (7.5).
  */
-function submitForm(
-  image: Uint8Array,
-  type: "image/jpeg" | "image/png",
-  preset: Preset,
-  color: ProviderColor,
-  endpoint: Endpoint,
-): FormData {
+function submitForm({
+  image,
+  type,
+  preset,
+  color,
+  endpoint,
+}: {
+  image: Uint8Array;
+  type: "image/jpeg" | "image/png";
+  preset: Preset;
+  color: ProviderColor;
+  endpoint: Endpoint;
+}): FormData {
   const form = new FormData();
   if (endpoint === "pro") {
     form.append("task_type", "async");

@@ -137,7 +137,7 @@ export function registerOpsClientReferral(app: App): void {
     if (person === null || !(await withinRouteReach(c, "client", personId))) {
       return refuse(c, "not_found");
     }
-    const invite = await inviteOf(db, code, false);
+    const invite = await inviteOf({ db, code, nameOnInvite: false });
     if (invite === null) return refuse(c, "unknown_invite");
 
     const staff = actorOf(c);

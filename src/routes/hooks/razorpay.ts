@@ -84,7 +84,13 @@ async function holdLinkPaid(
   const orderId = payment.order_id ?? link.order_id ?? null;
   if (orderId === null) {
     const notes = { hold_id: hold.id, person_id: hold.personId };
-    await recordPayment(db, { ...payment, notes }, "captured", config.settings.ipHashSalt, now);
+    await recordPayment({
+      db,
+      payment: { ...payment, notes },
+      status: "captured",
+      hashSalt: config.settings.ipHashSalt,
+      now,
+    });
     log.warn("razorpay_hook_hold_link_without_order", { hold_id: hold.id });
     await deps.alertOnce({
       key: `hold_link_without_order:${hold.id}`,
@@ -229,7 +235,7 @@ export function registerRazorpayHook(app: App): void {
     } else if (payload?.payment !== undefined && !event.startsWith("refund.")) {
       const payment = RazorpayPaymentSchema.parse(payload.payment.entity);
       const status = paymentStatusOf(event, payment);
-      if (status !== null) await recordPayment(db, payment, status, config.settings.ipHashSalt, now);
+      if (status !== null) await recordPayment({ db, payment, status, hashSalt: config.settings.ipHashSalt, now });
       if (status === "captured") await tellIfPaidTwice(db, payment, deps.alertOnce);
       // Paid for a hold in the app: the booking is written now (src/http/book-hold.ts).
       // Only the capture books it: order.paid says the same of the same payment, and the cron books a paid

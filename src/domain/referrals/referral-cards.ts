@@ -77,7 +77,7 @@ async function storeVersion(
   if (row === null) throw new Error("the client has no code");
   const version = row.card_version + 1;
   const key = cardKey(input.code, version);
-  await putCounted(db, bucket, key, input.bytes, "image/jpeg");
+  await putCounted({ db, bucket, key, bytes: input.bytes, contentType: "image/jpeg" });
   await db
     .prepare(
       `UPDATE referral_codes SET card_state = 'personal', card_version = ?2, card_key = ?3, updated_at = ?4

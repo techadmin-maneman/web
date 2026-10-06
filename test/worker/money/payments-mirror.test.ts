@@ -46,7 +46,7 @@ describe("a payment's state", () => {
 
 describe("whom a payment is put against", () => {
   it("is nobody for a payment with no notes, no order, no method and no contact, and it is still kept", async () => {
-    await recordPayment(env.DB, payment(), "authorized", SALT, NOW);
+    await recordPayment({ db: env.DB, payment: payment(), status: "authorized", hashSalt: SALT, now: NOW });
     expect(await recorded()).toEqual({
       person_id: null,
       razorpay_order_id: null,
@@ -58,16 +58,22 @@ describe("whom a payment is put against", () => {
 
   it("is found by the mobile paid with when the noted person is not ours, and by nobody for a contact that is no mobile", async () => {
     await rohit();
-    await recordPayment(
-      env.DB,
-      payment({ notes: { person_id: "someone-else" }, contact: "+919810000001" }),
-      "authorized",
-      SALT,
-      NOW,
-    );
+    await recordPayment({
+      db: env.DB,
+      payment: payment({ notes: { person_id: "someone-else" }, contact: "+919810000001" }),
+      status: "authorized",
+      hashSalt: SALT,
+      now: NOW,
+    });
     expect((await recorded())?.person_id).toBe(ROHIT);
 
-    await recordPayment(env.DB, payment({ id: "pay_2", contact: "rohit@example.com" }), "authorized", SALT, NOW);
+    await recordPayment({
+      db: env.DB,
+      payment: payment({ id: "pay_2", contact: "rohit@example.com" }),
+      status: "authorized",
+      hashSalt: SALT,
+      now: NOW,
+    });
     const second = await env.DB.prepare("SELECT person_id FROM payments WHERE razorpay_payment_id = 'pay_2'").first();
     expect(second).toEqual({ person_id: null });
   });
@@ -80,7 +86,7 @@ describe("a refund", () => {
   });
 
   it("that failed is kept as failed, with the speed asked for where none was processed, and refunds nothing", async () => {
-    await recordPayment(env.DB, payment(), "captured", SALT, NOW);
+    await recordPayment({ db: env.DB, payment: payment(), status: "captured", hashSalt: SALT, now: NOW });
     const refund = {
       id: "rfnd_1",
       payment_id: "pay_1",

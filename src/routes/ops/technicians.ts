@@ -295,13 +295,13 @@ export function registerOpsTechnicians(app: App): void {
     const technician = await technicianToChange(c, id);
     if (technician === null) return refuse(c, "not_found");
     const fields = CHANGEABLE.filter((field) => change[field] !== undefined).join(",");
-    const changed = await changeTechnician(
-      c.env.DB,
-      technician,
-      { name: change.name, mobileE164, zone: change.zone, city: change.city },
-      auditOf(c, "technician.change", id, { fields }),
-      c.var.deps.now(),
-    );
+    const changed = await changeTechnician({
+      db: c.env.DB,
+      current: technician,
+      change: { name: change.name, mobileE164, zone: change.zone, city: change.city },
+      audit: auditOf(c, "technician.change", id, { fields }),
+      now: c.var.deps.now(),
+    });
     if (changed === "number_in_use") return refuse(c, "number_in_use");
     return c.json({ id }, 200);
   });

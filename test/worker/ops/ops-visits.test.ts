@@ -419,18 +419,18 @@ describe("POST /api/visits: a paid visit goes out as a payment link", () => {
     const answer = await book({ client: ROHIT, kind: "service", date: WEDNESDAY, window: "evening" });
     const { hold_id: holdId } = await answer.json<{ hold_id: string }>();
     const price = { amount: SERVICE_PRICE, amount_ex_gst: SERVICE_PRICE, gst_percent: 0 };
-    const own = await holdSlot(
-      env.DB,
-      {
+    const own = await holdSlot({
+      db: env.DB,
+      input: {
         personId: ROHIT,
         service: { type: "service", tier: "standard", minutes: 90 },
         date: "2026-09-24",
         window: "morning",
         price,
       },
-      NOW,
-      600,
-    );
+      now: NOW,
+      holdSeconds: 600,
+    });
     expect(own).not.toBeNull();
     expect((await holdOf(holdId))?.state).toBe("held");
   });

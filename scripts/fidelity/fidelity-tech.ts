@@ -59,15 +59,23 @@ const CLIENTS: Readonly<Record<string, string>> = {
 
 const jobId = (id: number) => `a0000000-0000-4000-8000-00000000000${String(id)}`;
 
-const job = (
-  id: number,
-  date: string,
-  time: string,
-  minutes: number,
-  type: Schemas["TechnicianJob"]["type"],
-  badge: Schemas["TechnicianJob"]["badge"],
-  sector: string,
-): Schemas["TechnicianJob"] => ({
+const job = ({
+  id,
+  date,
+  time,
+  minutes,
+  type,
+  badge,
+  sector,
+}: {
+  id: number;
+  date: string;
+  time: string;
+  minutes: number;
+  type: Schemas["TechnicianJob"]["type"];
+  badge: Schemas["TechnicianJob"]["badge"];
+  sector: string;
+}): Schemas["TechnicianJob"] => ({
   id: jobId(id),
   day: date === DAY ? "today" : "tomorrow",
   date,
@@ -90,17 +98,41 @@ const job = (
 });
 
 const JOBS = [
-  job(1, DAY, "04:00", 90, "service", "prepaid", "Sector 65"),
-  job(2, DAY, "06:00", 90, "service", "credit", "DLF Phase 4"),
-  job(3, DAY, "08:30", 180, "first_fit", "prepaid", "Sector 43"),
-  job(4, DAY, "12:00", 60, "consultation", "free", "Sector 57"),
+  job({ id: 1, date: DAY, time: "04:00", minutes: 90, type: "service", badge: "prepaid", sector: "Sector 65" }),
+  job({ id: 2, date: DAY, time: "06:00", minutes: 90, type: "service", badge: "credit", sector: "DLF Phase 4" }),
+  job({ id: 3, date: DAY, time: "08:30", minutes: 180, type: "first_fit", badge: "prepaid", sector: "Sector 43" }),
+  job({ id: 4, date: DAY, time: "12:00", minutes: 60, type: "consultation", badge: "free", sector: "Sector 57" }),
 ];
 
 /** The board's collapsed line reads "Tomorrow · 3 jobs". */
 const TOMORROW = [
-  job(5, TOMORROW_DATE, "04:30", 90, "service", "prepaid", "Sector 50"),
-  job(6, TOMORROW_DATE, "07:00", 90, "service", "credit", "Sector 56"),
-  job(7, TOMORROW_DATE, "10:30", 135, "replacement", "prepaid", "Sector 49"),
+  job({
+    id: 5,
+    date: TOMORROW_DATE,
+    time: "04:30",
+    minutes: 90,
+    type: "service",
+    badge: "prepaid",
+    sector: "Sector 50",
+  }),
+  job({
+    id: 6,
+    date: TOMORROW_DATE,
+    time: "07:00",
+    minutes: 90,
+    type: "service",
+    badge: "credit",
+    sector: "Sector 56",
+  }),
+  job({
+    id: 7,
+    date: TOMORROW_DATE,
+    time: "10:30",
+    minutes: 135,
+    type: "replacement",
+    badge: "prepaid",
+    sector: "Sector 49",
+  }),
 ];
 
 const CHECKLIST = [
@@ -289,7 +321,13 @@ const jobApi = (id: string, progress: Progress = NOTHING_DONE): Api => ({
 async function today(browser: Browser, design: Page): Promise<void> {
   const app = await openApp(browser, "/", dayApi(JOBS, TOMORROW));
   await app.getByRole("heading", { name: "4 jobs today" }).waitFor();
-  await pair(OUT, WIDTH, "a1-today", await frame(design, "Today"), await shot(app));
+  await pair({
+    dir: OUT,
+    width: WIDTH,
+    name: "a1-today",
+    design: await frame(design, "Today"),
+    built: await shot(app),
+  });
   await app.close();
 
   const empty = await openApp(browser, "/", dayApi([], TOMORROW));
@@ -298,7 +336,7 @@ async function today(browser: Browser, design: Page): Promise<void> {
     .locator('[data-screen-label="Today · states"] > div')
     .filter({ has: design.getByText("Nothing booked for today", { exact: true }) })
     .screenshot();
-  await pair(OUT, WIDTH, "a2-empty", await emptyFrame, await shot(empty));
+  await pair({ dir: OUT, width: WIDTH, name: "a2-empty", design: await emptyFrame, built: await shot(empty) });
   await empty.close();
 }
 
@@ -307,7 +345,13 @@ async function jobCard(browser: Browser, design: Page): Promise<void> {
   if (first === undefined) throw new Error("the day has no jobs");
   const app = await openApp(browser, `/jobs/${first.id}`, jobApi(first.id));
   await app.getByRole("button", { name: "I have arrived" }).waitFor();
-  await pair(OUT, WIDTH, "a3-job", await frame(design, "Job detail"), await shot(app));
+  await pair({
+    dir: OUT,
+    width: WIDTH,
+    name: "a3-job",
+    design: await frame(design, "Job detail"),
+    built: await shot(app),
+  });
   await app.close();
 }
 
@@ -323,7 +367,7 @@ async function notHome(browser: Browser, design: Page): Promise<void> {
 
   const arrived = await openApp(browser, `/jobs/${first.id}`, jobApi(first.id), FRAME_HEIGHT);
   await arrived.getByRole("button", { name: "I have arrived" }).waitFor();
-  await pair(OUT, WIDTH, "b5-arrived", board, await shot(arrived));
+  await pair({ dir: OUT, width: WIDTH, name: "b5-arrived", design: board, built: await shot(arrived) });
   await arrived.close();
 
   // The board's "You are 1.4 km from the address."
@@ -336,7 +380,7 @@ async function notHome(browser: Browser, design: Page): Promise<void> {
   await away.getByRole("button", { name: "I have arrived" }).click();
   await away.getByText("Check-in failed").waitFor();
   await settle(away);
-  await pair(OUT, WIDTH, "b5-failed", board, await shot(away));
+  await pair({ dir: OUT, width: WIDTH, name: "b5-failed", design: board, built: await shot(away) });
   await away.close();
 
   // The board's "11:42 left of 15 minutes": the clock is stopped at 9:12, so the count is fixed.
@@ -349,7 +393,7 @@ async function notHome(browser: Browser, design: Page): Promise<void> {
   await waiting.getByRole("button", { name: "I have arrived" }).click();
   await waiting.getByText("2 · Waiting").waitFor();
   await settle(waiting);
-  await pair(OUT, WIDTH, "b5-waiting", board, await shot(waiting));
+  await pair({ dir: OUT, width: WIDTH, name: "b5-waiting", design: board, built: await shot(waiting) });
   await waiting.close();
 }
 
@@ -391,7 +435,13 @@ async function steps(browser: Browser, design: Page): Promise<void> {
     await checklist.getByRole("button", { name: label }).click();
   }
   await settle(checklist);
-  await pair(OUT, WIDTH, "b2-checklist", await frame(design, "Job · checklist"), await shot(checklist));
+  await pair({
+    dir: OUT,
+    width: WIDTH,
+    name: "b2-checklist",
+    design: await frame(design, "Job · checklist"),
+    built: await shot(checklist),
+  });
   await checklist.close();
 
   const consumables = await openApp(
@@ -401,7 +451,13 @@ async function steps(browser: Browser, design: Page): Promise<void> {
     FRAME_HEIGHT,
   );
   await consumables.getByText("Consumables used").waitFor();
-  await pair(OUT, WIDTH, "b3-consumables", await frame(design, "Job · consumables", false), await shot(consumables));
+  await pair({
+    dir: OUT,
+    width: WIDTH,
+    name: "b3-consumables",
+    design: await frame(design, "Job · consumables", false),
+    built: await shot(consumables),
+  });
   await consumables.close();
 
   // The piece is a replacement's step, so it is paired on the day's replacement.
@@ -432,7 +488,13 @@ async function steps(browser: Browser, design: Page): Promise<void> {
   // The lookup fills the base in, as the board's "Base · Mono" reads it.
   await piece.waitForFunction(() => document.querySelector<HTMLInputElement>("#piece-base")?.value === "Mono");
   await settle(piece);
-  await pair(OUT, WIDTH, "b3-piece", await frame(design, "Job · consumables", false), await shot(piece));
+  await pair({
+    dir: OUT,
+    width: WIDTH,
+    name: "b3-piece",
+    design: await frame(design, "Job · consumables", false),
+    built: await shot(piece),
+  });
   await piece.close();
 
   const outcomeBoard = await frame(design, "Job · outcome", false);
@@ -445,7 +507,7 @@ async function steps(browser: Browser, design: Page): Promise<void> {
   await outcome.getByText("Outcome").first().waitFor();
   await outcome.getByRole("button", { name: "Partial · pick a reason" }).click();
   await settle(outcome);
-  await pair(OUT, WIDTH, "b4-outcome", outcomeBoard, await shot(outcome));
+  await pair({ dir: OUT, width: WIDTH, name: "b4-outcome", design: outcomeBoard, built: await shot(outcome) });
   await outcome.close();
 
   // The close-out, which the board draws beneath the outcome and the app shows after it.
@@ -474,7 +536,7 @@ async function steps(browser: Browser, design: Page): Promise<void> {
   await done.getByRole("button", { name: "Next" }).click();
   await done.getByText("Closed out").waitFor();
   await settle(done);
-  await pair(OUT, WIDTH, "b4-closed-out", outcomeBoard, await shot(done));
+  await pair({ dir: OUT, width: WIDTH, name: "b4-closed-out", design: outcomeBoard, built: await shot(done) });
   await done.close();
 }
 

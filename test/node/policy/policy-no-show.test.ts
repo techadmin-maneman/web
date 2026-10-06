@@ -33,15 +33,23 @@ describe("no-show", () => {
   });
 
   it("closes no job as a no-show before the wait ends", () => {
-    expect(canCloseAsNoShow(ONLINE, VISIT_START, "service", minutesLater(14))).toBe(false);
-    expect(canCloseAsNoShow(ONLINE, VISIT_START, "service", minutesLater(15))).toBe(true);
+    expect(canCloseAsNoShow({ checkIn: ONLINE, visitStart: VISIT_START, type: "service", now: minutesLater(14) })).toBe(
+      false,
+    );
+    expect(canCloseAsNoShow({ checkIn: ONLINE, visitStart: VISIT_START, type: "service", now: minutesLater(15) })).toBe(
+      true,
+    );
   });
 
   it("runs the wait on the server's clock too, whatever time the phone gave the check-in", () => {
     // The phone says 10:00 and the server heard at 10:20: a back-dated check-in, or a basement.
     const heardLate = { at: CHECKED_IN, receivedAt: minutesLater(20) };
-    expect(canCloseAsNoShow(heardLate, VISIT_START, "service", minutesLater(34))).toBe(false);
-    expect(canCloseAsNoShow(heardLate, VISIT_START, "service", minutesLater(35))).toBe(true);
+    expect(
+      canCloseAsNoShow({ checkIn: heardLate, visitStart: VISIT_START, type: "service", now: minutesLater(34) }),
+    ).toBe(false);
+    expect(
+      canCloseAsNoShow({ checkIn: heardLate, visitStart: VISIT_START, type: "service", now: minutesLater(35) }),
+    ).toBe(true);
     expect(noShowWaitEnds(heardLate, VISIT_START, "service")).toEqual(minutesLater(35));
   });
 
@@ -50,9 +58,15 @@ describe("no-show", () => {
     const early = { at: minutesLater(-50), receivedAt: minutesLater(-50) };
     expect(waitStartsAt(early.at, VISIT_START)).toEqual(VISIT_START);
     expect(noShowWaitEnds(early, VISIT_START, "service")).toEqual(minutesLater(15));
-    expect(canCloseAsNoShow(early, VISIT_START, "service", minutesLater(-35))).toBe(false);
-    expect(canCloseAsNoShow(early, VISIT_START, "service", minutesLater(14))).toBe(false);
-    expect(canCloseAsNoShow(early, VISIT_START, "service", minutesLater(15))).toBe(true);
+    expect(canCloseAsNoShow({ checkIn: early, visitStart: VISIT_START, type: "service", now: minutesLater(-35) })).toBe(
+      false,
+    );
+    expect(canCloseAsNoShow({ checkIn: early, visitStart: VISIT_START, type: "service", now: minutesLater(14) })).toBe(
+      false,
+    );
+    expect(canCloseAsNoShow({ checkIn: early, visitStart: VISIT_START, type: "service", now: minutesLater(15) })).toBe(
+      true,
+    );
 
     // Twenty minutes late: the wait runs from the check-in, as the prompt says.
     const late = { at: minutesLater(20), receivedAt: minutesLater(20) };
@@ -66,7 +80,15 @@ describe("no-show", () => {
     const elevenOhSix = new Date("2026-09-21T05:36:00Z");
     const checkIn = { at: elevenOhSix, receivedAt: elevenOhSix };
     const fiveMinutes = { ...NO_SHOW_WAIT_MIN, service: 5 };
-    expect(canCloseAsNoShow(checkIn, fourPm, "service", new Date("2026-09-21T05:41:00Z"), fiveMinutes)).toBe(false);
+    expect(
+      canCloseAsNoShow({
+        checkIn,
+        visitStart: fourPm,
+        type: "service",
+        now: new Date("2026-09-21T05:41:00Z"),
+        wait: fiveMinutes,
+      }),
+    ).toBe(false);
     expect(noShowWaitEnds(checkIn, fourPm, "service", fiveMinutes)).toEqual(new Date("2026-09-21T10:35:00Z"));
   });
 

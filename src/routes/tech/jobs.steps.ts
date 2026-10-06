@@ -101,7 +101,7 @@ function registerArrival(app: App): void {
     const claimed = body.at === undefined ? timeOfUuidV7(eventId) : new Date(body.at);
     const inputs = await opsInputs(c);
     const at = boundedPhoneTime(claimed, { visitStart: job.windowStart, receivedAt: now }, inputs.phoneClock);
-    const write = await writeOf(c, job, "check_in", { at: at.toISOString() }, { at, claimed });
+    const write = await writeOf({ c, job, kind: "check_in", body: { at: at.toISOString() }, phone: { at, claimed } });
     const answered = await answerBeforeLanding(c.env.DB, write);
     if (answered?.kind === "landed") return c.json(await checkInReplayed(c, job, answered.event), 200);
     if (answered !== null) return c.json(refusalOf(c, refusedOf(c, write, answered)), 409);
@@ -164,7 +164,7 @@ function registerNoShow(app: App): void {
     const now = deps.now();
     const job = await namedJob(c, c.req.valid("param").id);
     if (job === null) return refuse(c, "not_found");
-    const write = await writeOf(c, job, "outcome", { outcome: "no_show" });
+    const write = await writeOf({ c, job, kind: "outcome", body: { outcome: "no_show" } });
     const answered = await answerBeforeLanding(c.env.DB, write);
     if (answered !== null && answered.kind !== "landed") {
       return c.json(refusalOf(c, refusedOf(c, write, answered)), 409);
@@ -233,7 +233,14 @@ function registerPhotographs(app: App): void {
     if (!(await hasStorageRoom(c.env.DB, deps.alertOnce, bytes.byteLength))) {
       return refuse(c, "busy");
     }
-    const stored = await storeTechnicianPhoto(c.env.DB, c.env.CLIENT_PHOTOS, slot, bytes, now, now);
+    const stored = await storeTechnicianPhoto({
+      db: c.env.DB,
+      bucket: c.env.CLIENT_PHOTOS,
+      slot,
+      bytes,
+      takenAt: now,
+      now,
+    });
     if (stored.kind === "not_an_image") return refuse(c, "photo_invalid_file");
     c.var.log.info("technician_photo_stored", { appointment_id: slot.appointmentId, phase: slot.phase });
     return c.json({ take: stored.take }, 200);
@@ -250,7 +257,13 @@ function registerPhotographs(app: App): void {
     if (!(await hasStorageRoom(c.env.DB, deps.alertOnce, bytes.byteLength))) {
       return refuse(c, "busy");
     }
-    const stored = await storeThumbnail(c.env.DB, c.env.CLIENT_PHOTOS, slot, c.req.valid("query").take, bytes);
+    const stored = await storeThumbnail({
+      db: c.env.DB,
+      bucket: c.env.CLIENT_PHOTOS,
+      slot,
+      take: c.req.valid("query").take,
+      bytes,
+    });
     if (stored === "not_a_thumbnail") return refuse(c, "photo_invalid_file");
     if (stored === "no_photograph") return refuse(c, "upload_missing");
     return c.body(null, 204);

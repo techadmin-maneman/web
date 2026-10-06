@@ -255,7 +255,7 @@ const waitlistRoute = createRoute({
 
 export function registerReferralLanding(app: App): void {
   const invite = (c: Context<AppEnv>, code: string): Promise<Invite | null> =>
-    inviteOf(c.env.DB, code, c.var.config.settings.referrerNameOnInvite);
+    inviteOf({ db: c.env.DB, code, nameOnInvite: c.var.config.settings.referrerNameOnInvite });
 
   app.openapi(inviteRoute, async (c) => {
     const db = c.env.DB;

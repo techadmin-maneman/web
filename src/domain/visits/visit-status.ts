@@ -72,15 +72,23 @@ export interface ClosedByHand {
  * hand. It is written only once the visit has been moved to its outcome's status, so in a batch after a refused move it
  * writes nothing, and a second close keeps the first.
  */
-export function closeVisit(
-  db: D1Database,
-  appointmentId: string,
-  outcome: VisitOutcome,
-  times: VisitTimes,
-  partialReason: string | null,
-  at: string,
-  byHand: ClosedByHand | null = null,
-): D1PreparedStatement {
+export function closeVisit({
+  db,
+  appointmentId,
+  outcome,
+  times,
+  partialReason,
+  at,
+  byHand = null,
+}: {
+  db: D1Database;
+  appointmentId: string;
+  outcome: VisitOutcome;
+  times: VisitTimes;
+  partialReason: string | null;
+  at: string;
+  byHand?: ClosedByHand | null;
+}): D1PreparedStatement {
   return db
     .prepare(
       `INSERT INTO visits (id, appointment_id, started_at, ended_at, duration_minutes, outcome, partial_reason,

@@ -246,13 +246,13 @@ export function PriceForm(props: {
                   priceWords(change),
                   longDate(change.valid_from),
                 )
-              : check.correct(
-                  target.name,
-                  priceWords(correcting),
-                  longDate(correcting.valid_from),
-                  priceWords(change),
-                  longDate(change.valid_from),
-                )}
+              : check.correct({
+                  name: target.name,
+                  was: priceWords(correcting),
+                  wasFrom: longDate(correcting.valid_from),
+                  now: priceWords(change),
+                  from: longDate(change.valid_from),
+                })}
           </p>
           {was !== undefined && was.gst_percent !== change.gst_percent && (
             <p className={styles.checkWarning}>{check.gstChanges(was.gst_percent, change.gst_percent)}</p>

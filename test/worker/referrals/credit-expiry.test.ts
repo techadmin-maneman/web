@@ -138,7 +138,7 @@ describe("the reminder that free service visits are running out", () => {
     };
     const { message_id: messageId } = messages.sent[0] as { message_id: string };
     const deps = fakeDependencies({ messaging, now: () => evening("2026-09-21") });
-    await sendMessage(env.DB, LOCAL_CONFIG, deps, createLogger(), messageId);
+    await sendMessage({ db: env.DB, config: LOCAL_CONFIG, deps, log: createLogger(), messageId });
     expect(sent).toEqual([{ template: "credits_expiring_v1", params: ["Rohit", "3 service visits", "21 Oct 2026"] }]);
   });
 });

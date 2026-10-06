@@ -73,7 +73,7 @@ async function receipts(): Promise<string[]> {
     resolveAlert: createResolveAlert({ db: env.DB, now: () => NOW }),
   };
   const options = { refundAccountId: null, labelAsTest: false, gst: NO_GST };
-  await syncBooks(env.DB, deps, options, NOW, createLogger(), createCallBudget(Infinity));
+  await syncBooks({ db: env.DB, deps, options, now: NOW, log: createLogger(), budget: createCallBudget(Infinity) });
   return books.made.payments.map((each) => each.supply);
 }
 

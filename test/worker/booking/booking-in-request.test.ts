@@ -650,7 +650,12 @@ describe("a visit cancelled by the client", () => {
     await booked(THURSDAY_NOON);
     const visit = await changeableVisit(env.DB, PERSON, VISIT, NOW);
     if (visit === null) throw new Error("the visit should be changeable");
-    const terms = await changeTerms(env.DB, visit, NOW, termsInForce(await readOpsInputs(env.DB, NOW), "service"));
+    const terms = await changeTerms({
+      db: env.DB,
+      visit,
+      now: NOW,
+      inForce: termsInForce(await readOpsInputs(env.DB, NOW), "service"),
+    });
     await env.DB.prepare(
       `INSERT INTO job_events (id, appointment_id, event_id, technician_id, kind, body, occurred_at, received_at,
          updated_at)
@@ -661,7 +666,7 @@ describe("a visit cancelled by the client", () => {
     const payments = createStubPayments();
     const deps = fakeDependencies({ payments });
 
-    const outcome = await cancelVisit(env.DB, deps, terms, NOW, { log: createLogger() });
+    const outcome = await cancelVisit({ db: env.DB, deps, terms, now: NOW, options: { log: createLogger() } });
 
     expect(outcome).toEqual({ kind: "not_changeable" });
     expect((await visitOf(VISIT))?.status).toBe("scheduled");
@@ -690,10 +695,21 @@ describe("a visit the client and ops cancel at the same moment", () => {
   async function cancelledByBoth(deps: TestDependencies) {
     const visit = await changeableVisit(env.DB, PERSON, VISIT, NOW);
     if (visit === null) throw new Error("the visit should be changeable");
-    const terms = await changeTerms(env.DB, visit, NOW, termsInForce(await readOpsInputs(env.DB, NOW), "service"));
+    const terms = await changeTerms({
+      db: env.DB,
+      visit,
+      now: NOW,
+      inForce: termsInForce(await readOpsInputs(env.DB, NOW), "service"),
+    });
     const outcomes = await Promise.all([
-      cancelVisit(env.DB, deps, terms, NOW, options),
-      cancelVisit(env.DB, deps, opsCancelTerms(terms, false), NOW, { ...options, ops: byOps }),
+      cancelVisit({ db: env.DB, deps, terms, now: NOW, options }),
+      cancelVisit({
+        db: env.DB,
+        deps,
+        terms: opsCancelTerms({ terms, onClientTerms: false }),
+        now: NOW,
+        options: { ...options, ops: byOps },
+      }),
     ]);
     return outcomes.map((outcome) => outcome.kind).sort();
   }

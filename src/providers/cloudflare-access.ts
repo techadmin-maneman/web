@@ -61,17 +61,24 @@ export function createAccessVerifier(settings: AccessSettings | null, deps: Acce
   const keys = createKeyCache(`https://${settings.teamDomain}/cdn-cgi/access/certs`, deps);
   const issuer = `https://${settings.teamDomain}`;
   return {
-    verify: (request) => verifyToken(request.headers.get(ACCESS_TOKEN_HEADER), keys, issuer, opsAudience, deps),
+    verify: (request) =>
+      verifyToken({ token: request.headers.get(ACCESS_TOKEN_HEADER), keys, issuer, audience: opsAudience, deps }),
   };
 }
 
-async function verifyToken(
-  token: string | null,
-  keys: KeyCache,
-  issuer: string,
-  audience: string,
-  deps: { now: () => Date },
-): Promise<AccessResult> {
+async function verifyToken({
+  token,
+  keys,
+  issuer,
+  audience,
+  deps,
+}: {
+  token: string | null;
+  keys: KeyCache;
+  issuer: string;
+  audience: string;
+  deps: { now: () => Date };
+}): Promise<AccessResult> {
   if (token === null || token === "") return { ok: false, reason: "missing" };
   const parts = token.split(".");
   const [headerPart, payloadPart, signaturePart] = parts;

@@ -255,17 +255,24 @@ const bookingBody = ({ hold, sale, outcome, visitId, link }: Answer) => ({
  * Each day's windows from `start`, and who of `reached` is free in each, where null is every technician; nobody on a
  * day the client may not book.
  */
-async function windowsOffered(
-  db: D1Database,
-  clientId: string,
-  service: PricedService,
-  days: { readonly start: string; readonly range: { readonly opens: string; readonly last: string } },
-  reached: ReadonlySet<string> | null,
-  now: Date,
-) {
+async function windowsOffered({
+  db,
+  clientId,
+  service,
+  days,
+  reached,
+  now,
+}: {
+  db: D1Database;
+  clientId: string;
+  service: PricedService;
+  days: { readonly start: string; readonly range: { readonly opens: string; readonly last: string } };
+  reached: ReadonlySet<string> | null;
+  now: Date;
+}) {
   const visit = { minutes: service.minutes, until: service.retired_date };
   const [free, schedule] = await Promise.all([
-    freeTechnicians(db, clientId, visit, days.start, BOOKING_DAYS, now),
+    freeTechnicians({ db, personId: clientId, visit, from: days.start, days: BOOKING_DAYS, now }),
     loadSlotSchedule(db),
   ]);
   const shut = (date: string) => date < days.range.opens || date > days.range.last;
@@ -326,7 +333,7 @@ export function registerOpsVisits(app: App): void {
     }
     const reached = await techniciansWithin(db, await routeReach(c));
     const [strip, credits, onCredit] = await Promise.all([
-      windowsOffered(db, client, service, { start, range }, reached, now),
+      windowsOffered({ db, clientId: client, service, days: { start, range }, reached, now }),
       spendableCredits(db, client, now),
       paysByCredit(db, client, kind, now),
     ]);
@@ -362,7 +369,7 @@ export function registerOpsVisits(app: App): void {
 
     const by = { actor: actorOf(c), requestId: c.var.requestId };
     const graceSeconds = inputs.paymentHold.grace * 60;
-    const hold = await holdForSale(db, asked, sale, { closesAt, graceSeconds, by }, now);
+    const hold = await holdForSale({ db, asked, sale, hold: { closesAt, graceSeconds, by }, now });
     if (hold === null) return refuse(c, "taken");
     if (!(await codeStillApplies(db, asked, hold.id))) {
       await letGo(c, hold.id, "code_taken");
