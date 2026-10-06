@@ -277,7 +277,7 @@ function previewHost(faults: PreviewFaults = {}) {
   return { fetch: fakeFetch, seen };
 }
 
-/** The staging run the runbook gives, for the invite RM4K7P (docs/runbook.md, step 10b). */
+/** The staging run the runbook gives, for the invite RM4K7P (docs/provisioning.md, step 10b). */
 function previewOptions(faults?: PreviewFaults, extra: Partial<SmokeOptions> = {}): SmokeOptions {
   return {
     apiBase: "https://staging.maneman.in",

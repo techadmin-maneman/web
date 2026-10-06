@@ -1,7 +1,7 @@
 // The read-only check that every R2 bucket an environment binds exists and
 // keeps its objects as long as it should (scripts/release/check-buckets.ts), against a
 // fake account. The try-on buckets' 30-day rule is set by hand at provisioning
-// (docs/runbook.md, step 1), so nothing else would notice it gone.
+// (docs/provisioning.md, step 1), so nothing else would notice it gone.
 
 import { describe, expect, it } from "vitest";
 import { boundBuckets, checkBuckets, RETENTION } from "../../../scripts/lib/buckets.ts";
@@ -111,7 +111,7 @@ describe("the live buckets", () => {
     const findings = await check(account(RIGHT, { "mm-staging-referral-cards": noSuchBucket }));
     const cards = findings.find((finding) => finding.subject === "mm-staging-referral-cards");
     expect(cards?.outcome).toBe("differs");
-    expect(cards?.detail).toContain("docs/runbook.md");
+    expect(cards?.detail).toContain("docs/provisioning.md");
   });
 
   it("say once, plainly, that a token which may not read R2 checked nothing", async () => {

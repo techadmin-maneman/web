@@ -283,7 +283,7 @@ function sentTo(response: Response): string {
  * An invite as WhatsApp's crawler reaches it, which it must to draw the invite's preview in a chat: the landing, with
  * an absolute og:image, and the card that names, a JPEG under 300 KB. Each is fetched with WhatsApp's user agent, no
  * Access token and no redirect followed. On staging, whose hosts are behind Access, it passes only once Access lets
- * r/, images/ and api/og/ through (docs/runbook.md, step 10b), so it runs only when asked, never in a deploy's
+ * r/, images/ and api/og/ through (docs/provisioning.md, step 10b), so it runs only when asked, never in a deploy's
  * smoke.
  */
 const linkPreview: Check = async ({ options, crawl }) => {

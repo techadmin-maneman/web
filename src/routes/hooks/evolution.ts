@@ -5,7 +5,7 @@
 // MESSAGES_UPSERT carries every message on the number; a STOP reply among them
 // withdraws its sender's WhatsApp consents (src/domain/messages/stop-messages.ts).
 //
-// Evolution is set to send those two events only (runbook, step 12); any other
+// Evolution is set to send those two events only (provisioning, step 12); any other
 // event is ignored. The body names the chat and carries the instance's API key,
 // so our logger never writes it, nor the token: its request line records the route's
 // pattern, not its path, and Cloudflare's own line, which would, is off

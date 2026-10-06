@@ -21,8 +21,8 @@ Each keeps its number. Where something follows from a ruling and is still owed, 
 - **46. Home's prompt.** Settled 4 October 2026: the owner approved its words as built (`apps/app/src/content.ts`).
 - **163. The try-on's words, for its look on WhatsApp only.** Settled 4 October 2026: the owner approved ADR 0104's words as built.
 - **172. The words for a referral's reward, when ops set the sides apart or one to 0.** Settled 4 October 2026: the owner approved ADR 0107's words as built.
-- **111. Cloudflare's JavaScript detections.** Settled 4 October 2026: the free plan offers no switch, so it stays on; every policy refuses the script, and `npm run smoke:csp` sets it aside (runbook, section 14).
-- **144. Cloudflare Web Analytics.** Settled 4 October 2026: per-host rules need a paid plan, which the owner declined; the apps' policies refuse the beacon, so it runs on the site alone (runbook, section 14).
+- **111. Cloudflare's JavaScript detections.** Settled 4 October 2026: the free plan offers no switch, so it stays on; every policy refuses the script, and `npm run smoke:csp` sets it aside (provisioning, step 14).
+- **144. Cloudflare Web Analytics.** Settled 4 October 2026: per-host rules need a paid plan, which the owner declined; the apps' policies refuse the beacon, so it runs on the site alone (provisioning, step 14).
 - **24. FSM calls not yet tried on the org.** Settled 4 October 2026: FSM is gone (ADR 0110).
 - **26. FSM's link to Books.** Settled 4 October 2026: FSM is gone (ADR 0110).
 - **27. Technicians in FSM.** Settled 4 October 2026: FSM is gone (ADR 0110).

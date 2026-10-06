@@ -45,7 +45,7 @@ SQLite cannot change a CHECK constraint in place, so the table has to be rebuilt
 
 ## Consequences
 
-- **The owner sets up the receipts** (runbook, step 12):
+- **The owner sets up the receipts** (provisioning, step 12):
   - a secret `EVOLUTION_WEBHOOK_TOKEN` on each Worker;
   - Evolution's webhook pointed at the route, sending `MESSAGES_UPDATE` only;
   - on staging, an Access bypass for `/api/hooks/`.

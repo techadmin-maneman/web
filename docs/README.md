@@ -29,7 +29,8 @@ Where to read, by what you are here to do. The repository's own `README.md` says
 
 | Document                                                                                       | Read it for                                                                             |
 | ---------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
-| [runbook.md](runbook.md)                                                                       | Provisioning, deploys, incidents, every alert, restoring D1, rolling back               |
+| [runbook.md](runbook.md)                                                                       | Operating an environment: deploys, incidents, every alert, restoring D1, rolling back   |
+| [provisioning.md](provisioning.md)                                                             | Setting an environment up from nothing, a step at a time                                |
 | [go-live.md](go-live.md)                                                                       | What takes each release to production, in the owner's order                             |
 | [open-points.md](open-points.md), [open-points-settled.md](open-points-settled.md)             | What is still owed before production, what staging uses meanwhile, and what was settled |
 | [tech-field-test.md](tech-field-test.md), [technician-test-setup.md](technician-test-setup.md) | The technician app's field test, and signing in to it on your own phone                 |

@@ -22,20 +22,20 @@ Nothing here needs a release. The first two have dates.
 - [x] **Zoho CRM Professional,** bought 6 October 2026: the sync writes 11 custom fields on a Lead, past Standard's 10.
 - [ ] **Start Razorpay's KYC** for live mode (item 6); it takes days and gates every live payment.
 - [ ] **Start DLT registration** for SMS login codes (item 37): the entity, a sender ID and the login-code template.
-- [ ] **A dedicated WhatsApp number** on its own Evolution instance, its webhook to us (item 38; RB 12, and "The WhatsApp number is banned" for moving a number).
-- [ ] **Fix staging's Google key** (item 54; RB 13): in Google Cloud, on the key's project, enable the **Places API (New)** and the **Geocoding API**; link billing; restrict the key to those two APIs and give it **no application restriction by website**, since our server calls it; set the quotas RB 13 lists. Then save an address on app-staging with a building chosen from the list and check it carries a pin (RB 13, "If the address search misbehaves").
+- [ ] **A dedicated WhatsApp number** on its own Evolution instance, its webhook to us (item 38; provisioning, step 12, and "The WhatsApp number is banned" for moving a number).
+- [ ] **Fix staging's Google key** (item 54; provisioning, step 13): in Google Cloud, on the key's project, enable the **Places API (New)** and the **Geocoding API**; link billing; restrict the key to those two APIs and give it **no application restriction by website**, since our server calls it; set the quotas provisioning, step 13 lists. Then save an address on app-staging with a building chosen from the list and check it carries a pin (provisioning, step 13, "If the address search misbehaves").
 - [ ] **Buy GitHub Team** (items 88 and 89), then require every `ci.yml` job on `main`, limit the `production` environment to `main`, and delete merged branches. Check whether required reviewers on a private repository's environment need a higher plan.
-- [ ] **Zoho tokens** (RB 8 and 11b.1): a Self Client refresh token for scripts and proofs alone (item 32); the CRM token again with `ZohoCRM.modules.contacts.ALL` (item 21); and every token with only the scopes its sync uses (item 36).
-- [ ] **The CRM** (RB 8): `node --env-file=.env.crm-<env> scripts/ops/setup-crm.ts --check`, then without `--check`, then `node --env-file=.env.worker-<env> scripts/ops/check-zoho-setup.ts` (item 34); and, by hand, the one workflow rule: contact consent becoming true assigns an owner, nothing firing for "Try-on — delivery only" (item 35).
+- [ ] **Zoho tokens** (provisioning, step 8 and 11b.1): a Self Client refresh token for scripts and proofs alone (item 32); the CRM token again with `ZohoCRM.modules.contacts.ALL` (item 21); and every token with only the scopes its sync uses (item 36).
+- [ ] **The CRM** (provisioning, step 8): `node --env-file=.env.crm-<env> scripts/ops/setup-crm.ts --check`, then without `--check`, then `node --env-file=.env.worker-<env> scripts/ops/check-zoho-setup.ts` (item 34); and, by hand, the one workflow rule: contact consent becoming true assigns an owner, nothing firing for "Try-on — delivery only" (item 35).
 - [ ] **The technicians:** each one added in the console's Technicians with his mobile number, his city and his zone; your own as well, to sign in to the technician app yourself.
 - [ ] **Books:** delete the receipt `4242595000000065003`, which a proof seeded for a payment that never happened (item 19); add a bank account "Razorpay – staging test" and give its ID to ops for staging's `BOOKS_REFUND_ACCOUNT_ID` (item 10).
-- [ ] **Staging's invite previews:** in Cloudflare Zero Trust, an Access application for `staging.maneman.in` with a Bypass / Everyone policy on the paths `r/`, `images/` and `api/og/`, so WhatsApp can fetch an invite's page and card (RB 10b, with the check that WhatsApp's crawler gets through; RB 10 has the same for `api/result/`).
+- [ ] **Staging's invite previews:** in Cloudflare Zero Trust, an Access application for `staging.maneman.in` with a Bypass / Everyone policy on the paths `r/`, `images/` and `api/og/`, so WhatsApp can fetch an invite's page and card (provisioning, step 10b, with the check that WhatsApp's crawler gets through; provisioning, step 10 has the same for `api/result/`).
 - [ ] **Material and words:** the home page's cleared material (items 73 to 81); the house referral card, 1200 x 630 under 300 KB (item 52); the Grievance Officer's name and address for the privacy page (item 51); the GA4 and Meta Pixel IDs (item 84); your wording in the texts file (items 39, 41, 42 and 45).
 - [ ] **Counsel and the CA:** send each their brief (counsel: items 22, 23, 40, 41, 44, 55, 63, 69, 146, 148 and 149; the CA: items 2, 3, 9, 14, 16 and 17).
 
 **Ops, or a developer with the Cloudflare account**
 
-- [ ] **Production's resources** (item 86; RB 1):
+- [ ] **Production's resources** (item 86; provisioning, step 1):
 
   ```sh
   W r2 bucket create mm-prod-client-photos --location apac
@@ -46,13 +46,13 @@ Nothing here needs a release. The first two have dates.
 
 - [ ] **Production's AILabTools key** (item 153): `W secret put AILAB_API_KEY --env production`, with a key of production's own.
 - [ ] **Staging's refund account:** the owner's "Razorpay – staging test" ID as `BOOKS_REFUND_ACCOUNT_ID` in `env.staging.vars`, released through CI (item 10).
-- [ ] **Staging's cron heartbeat** (RB, "The outside watchers", point 1): a healthchecks.io check, its ping URL as staging's `HEARTBEAT_URL`; and Account Analytics: Read on `mm-ci-staging`, so each staging deploy reports mm-api's CPU time (RB 6).
+- [ ] **Staging's cron heartbeat** (RB, "The outside watchers", point 1): a healthchecks.io check, its ping URL as staging's `HEARTBEAT_URL`; and Account Analytics: Read on `mm-ci-staging`, so each staging deploy reports mm-api's CPU time (provisioning, step 6).
 
 ## 2. Proofs on staging
 
 Each is written up in `docs/verification.md` when it passes. The payment run is what item 8 waits on before self-serve booking goes on in production.
 
-- [ ] **The whole payment path, once, in Razorpay's test mode** (item 91). The owner's number on staging's `MESSAGING_ALLOWLIST` (RB 7); the address typed by hand if item 54 is not fixed yet. Then, in order:
+- [ ] **The whole payment path, once, in Razorpay's test mode** (item 91). The owner's number on staging's `MESSAGING_ALLOWLIST` (provisioning, step 7); the address typed by hand if item 54 is not fixed yet. Then, in order:
   1. Book a consultation on `/book` with a new number, giving the full address: the console's Tasks board lists the consultation asked for, and the CRM has a lead.
   2. Sign in at app-staging with the WhatsApp code.
   3. Book the consultation from the console, then close it as done in the technician app: the app offers the first fit.
@@ -94,8 +94,8 @@ Each is written up in `docs/verification.md` when it passes. The payment run is 
 - [ ] **Pre-flight** (RB, "Rolling back a Worker version"; RB, "Restoring D1"): `node scripts/release/release.ts current --worker <mm-api|mm-site> --env production` for each (none mid-rollout), and the D1 bookmark written down: `W d1 time-travel info maneman-prod --env production --timestamp <now>`.
 - [ ] **Zoho's answers** (RB, "Checking Zoho's answers before a release"): `node --env-file=.env.books-scripts --env-file=.env.crm-scripts scripts/release/zoho-contract-probe.ts` ends with no FAIL, and its date and lines are in `docs/verification.md`.
 - [ ] **Run `deploy-production.yml`** on the commit that passed staging, with the full 40-character SHA, a canary of 10% and a soak of 300 seconds (ADR 0006). It records every Worker's version, checks the database is production's, uploads mm-api with no traffic, migrates, sends the canary its share and smokes it, soaks, promotes, then ships mm-site. A failure after the canary starts rolls every Worker back; migrations are never rolled back.
-- [ ] **After it:** `npm run apply-triggers -- --env production`, then `node --env-file=.env.cf-read scripts/release/check-triggers.ts production --strict` and the bucket check again (RB 9).
-- [ ] **Proofs:** `GET https://maneman.in/api/health` answers production and the release's SHA; `npm run smoke -- --base https://maneman.in --environment production`; a consultation booked on `/book` reaches the CRM as a lead, assigned (RB 8); Web Analytics counts the first day (item 144; RB 14).
+- [ ] **After it:** `npm run apply-triggers -- --env production`, then `node --env-file=.env.cf-read scripts/release/check-triggers.ts production --strict` and the bucket check again (provisioning, step 9).
+- [ ] **Proofs:** `GET https://maneman.in/api/health` answers production and the release's SHA; `npm run smoke -- --base https://maneman.in --environment production`; a consultation booked on `/book` reaches the CRM as a lead, assigned (provisioning, step 8); Web Analytics counts the first day (item 144; provisioning, step 14).
 
 With self-serve booking off, a consultation booked on the site is a request: the person, their consent, their address and a CRM lead, which ops answer from the CRM until the console is live (settled item 120).
 
@@ -104,7 +104,7 @@ With self-serve booking off, a consultation booked on the site is a request: the
 **Before it:**
 
 - [ ] The payment run of section 2 passed (item 8).
-- [ ] Razorpay live: KYC, live keys, and the live webhook to `https://maneman.in/api/hooks/razorpay` with the nine events of "The dashboards" below (items 5, 6 and 154; RB 11c).
+- [ ] Razorpay live: KYC, live keys, and the live webhook to `https://maneman.in/api/hooks/razorpay` with the nine events of "The dashboards" below (items 5, 6 and 154; provisioning, step 11c).
 - [ ] The Razorpay and Zoho tables of "The dashboards" below walked on staging and production, each result recorded.
 - [ ] The CA's answers, and GST on in Books with the real GSTIN, Books synced again (items 2, 3, 9, 14, 16, 17 and 26).
 - [ ] Counsel's answers (items 22, 23, 40, 41, 55, 63, 69 and 148).
@@ -112,17 +112,17 @@ With self-serve booking off, a consultation booked on the site is a request: the
 - [ ] The owner's prices and services in production's console (items 1 and 13); the job sheet's lists, the consumables with their costs, reorder levels and each service's use, and each kit's and the central store's opening count on the Stock page (item 28, ADR 0087).
 - [ ] The texts approved (items 39, 41 and 42), and the engineering the rulings still owe (`docs/archive/implementation-plan-2026-09-27.md`).
 
-**Provisioning** (RB 7, 11, 11a, 11b, 11c, 12 and 13):
+**Provisioning** (provisioning, step 7, 11, 11a, 11b, 11c, 12 and 13):
 
-- [ ] DNS and Access for `app.maneman.in`, `ops.maneman.in` and `tech.maneman.in`, with `mm-ci-production` on each (RB 11, points 1 and 2); `ACCESS_OPS_AUD` for the ops console (RB 11, point 3).
+- [ ] DNS and Access for `app.maneman.in`, `ops.maneman.in` and `tech.maneman.in`, with `mm-ci-production` on each (provisioning, step 11, points 1 and 2); `ACCESS_OPS_AUD` for the ops console (provisioning, step 11, point 3).
 - [ ] Turnstile for the client app's login: add `app.maneman.in` to the hostnames of the `mm-production` widget (Cloudflare dashboard → Turnstile → mm-production → Hostname management). Until then no one can ask for a login code there (`docs/turnstile.md`).
-- [ ] Books: its client and secrets, `check-books-setup.ts --env production`, the provider `zoho`, the hosts and `ZOHO_BOOKS_ORG_ID`, and `BOOKS_REFUND_ACCOUNT_ID` of the account "Razorpay" (RB 11b, points 1 to 6).
-- [ ] The rest of production's secrets, each before the release that needs it (RB 7): `OTP_PEPPER` (`openssl rand -hex 32`; the site's WhatsApp codes need it too, so without it the one visit and `/try` cannot prove a number), `RAZORPAY_KEY_SECRET`, `RAZORPAY_WEBHOOK_SECRET`, `EVOLUTION_WEBHOOK_TOKEN`, and `GOOGLE_MAPS_API_KEY` once production has its own restricted key (RB 13). A required secret left empty stops every request, so check `GET /api/health` after each.
-- [ ] Bootstrap `mm-ops-production` and `mm-tech-production`, and add both to `mm-ci-production` (RB 11, point 6; RB 6).
+- [ ] Books: its client and secrets, `check-books-setup.ts --env production`, the provider `zoho`, the hosts and `ZOHO_BOOKS_ORG_ID`, and `BOOKS_REFUND_ACCOUNT_ID` of the account "Razorpay" (provisioning, step 11b, points 1 to 6).
+- [ ] The rest of production's secrets, each before the release that needs it (provisioning, step 7): `OTP_PEPPER` (`openssl rand -hex 32`; the site's WhatsApp codes need it too, so without it the one visit and `/try` cannot prove a number), `RAZORPAY_KEY_SECRET`, `RAZORPAY_WEBHOOK_SECRET`, `EVOLUTION_WEBHOOK_TOKEN`, and `GOOGLE_MAPS_API_KEY` once production has its own restricted key (provisioning, step 13). A required secret left empty stops every request, so check `GET /api/health` after each.
+- [ ] Bootstrap `mm-ops-production` and `mm-tech-production`, and add both to `mm-ci-production` (provisioning, step 11, point 6; provisioning, step 6).
 
-**The code**, in one pull request: `ENABLED_SURFACES.production` gains the three surfaces, `env.production.routes` their `/api/*` routes, and each app's `wrangler.jsonc` its production route (RB 11, point 4); `env.production.vars` set `BOOKS_PROVIDER` and `PAYMENTS_PROVIDER` on, `RAZORPAY_KEY_ID` to the live key, `GEOCODE_PROVIDER` `"google"` and `SELF_SERVE_BOOKING` `"true"`; `BOOKS_ITEM_PUSH` moved from staging to production (RB 11b, point 7).
+**The code**, in one pull request: `ENABLED_SURFACES.production` gains the three surfaces, `env.production.routes` their `/api/*` routes, and each app's `wrangler.jsonc` its production route (provisioning, step 11, point 4); `env.production.vars` set `BOOKS_PROVIDER` and `PAYMENTS_PROVIDER` on, `RAZORPAY_KEY_ID` to the live key, `GEOCODE_PROVIDER` `"google"` and `SELF_SERVE_BOOKING` `"true"`; `BOOKS_ITEM_PUSH` moved from staging to production (provisioning, step 11b, point 7).
 
-**The release:** as the site's, then `npm run apply-triggers -- --env production` to attach the apps' routes (never `W deploy`, RB 11, point 5), and `npm run smoke -- --environment production --surfaces`.
+**The release:** as the site's, then `npm run apply-triggers -- --env production` to attach the apps' routes (never `W deploy`, provisioning, step 11, point 5), and `npm run smoke -- --environment production --surfaces`.
 
 **The owner's live proof, behind Access:** sign in with a real code on the dedicated number; pay a real service visit; see it booked on the dispatch board and its receipt in the app; cancel it more than 24 hours out, and see the refund reach Razorpay, the app and Books. Stop before an invoice is issued, which only a credit note undoes. Then set a price in the console and see no `books_item` alert an hour later.
 
@@ -134,16 +134,16 @@ These settings live only in each vendor's dashboard, where no test can read them
 
 **The zone, `maneman.in`.** One zone serves staging and production, so it is walked once, in the Cloudflare dashboard.
 
-| Setting               | Where                                                         | Expected                                                                                                                                                       | Checked |
-| --------------------- | ------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
-| Always Use HTTPS      | SSL/TLS → Edge Certificates                                   | On. Off on 2 October 2026: `http://maneman.in/` answered 200                                                                                                   |         |
-| Minimum TLS version   | SSL/TLS → Edge Certificates                                   | TLS 1.2. Lower on 2 October 2026: a TLS 1.1 handshake was accepted                                                                                             |         |
-| Bot Fight Mode        | Security → Settings                                           | Off (ADR 0025, item 12)                                                                                                                                        |         |
-| JavaScript detections | Security → Settings                                           | Off (item 111; RB 14, point 1). Every page still carried its script on 2 October 2026                                                                          |         |
-| Web Analytics         | Web Analytics → `maneman.in` → Manage site → Advanced options | The beacon on `maneman.in` and `staging.maneman.in` only: a Disable rule for each app, ops and technician host of both environments (item 144; RB 14, point 2) |         |
-| `www.maneman.in`      | DNS, and Rules → Redirect Rules                               | A proxied `www` record and the 301 to `https://maneman.in/` (section 3)                                                                                        |         |
+| Setting               | Where                                                         | Expected                                                                                                                                                                       | Checked |
+| --------------------- | ------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------- |
+| Always Use HTTPS      | SSL/TLS → Edge Certificates                                   | On. Off on 2 October 2026: `http://maneman.in/` answered 200                                                                                                                   |         |
+| Minimum TLS version   | SSL/TLS → Edge Certificates                                   | TLS 1.2. Lower on 2 October 2026: a TLS 1.1 handshake was accepted                                                                                                             |         |
+| Bot Fight Mode        | Security → Settings                                           | Off (ADR 0025, item 12)                                                                                                                                                        |         |
+| JavaScript detections | Security → Settings                                           | Off (item 111; provisioning, step 14, point 1). Every page still carried its script on 2 October 2026                                                                          |         |
+| Web Analytics         | Web Analytics → `maneman.in` → Manage site → Advanced options | The beacon on `maneman.in` and `staging.maneman.in` only: a Disable rule for each app, ops and technician host of both environments (item 144; provisioning, step 14, point 2) |         |
+| `www.maneman.in`      | DNS, and Rules → Redirect Rules                               | A proxied `www` record and the 301 to `https://maneman.in/` (section 3)                                                                                                        |         |
 
-**Razorpay.** Staging uses test mode and production live mode, and each mode keeps its own settings. RB 11c has the webhook's steps.
+**Razorpay.** Staging uses test mode and production live mode, and each mode keeps its own settings. provisioning, step 11c has the webhook's steps.
 
 | Setting                  | Expected                                                                                                                                                                                                                                                                               | Staging (test) | Production (live) |
 | ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------- | ----------------- |
@@ -160,19 +160,19 @@ These settings live only in each vendor's dashboard, where no test can read them
 
 **Zoho Books and the CRM.** Staging and production share one org, so it is walked once; only the refund accounts differ.
 
-| Setting                 | Expected                                                                                                                                                                         | Checked        |
-| ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------- |
-| Books: "MM person ID"   | A custom field on customers: Text, unique, API name `cf_mm_person_id`                                                                                                            | 2 October 2026 |
-| Books: items            | One service item for each service on sale in the console, under the console's name and at the price book's price. Each is made and priced from the console; none is made by hand |                |
-| Books: discounts        | At line-item level, before tax (item 181; RB 11b, point 8)                                                                                                                       |                |
-| Books: refund accounts  | Bank accounts in INR: "Razorpay – staging test" for staging and "Razorpay" for production, each one's ID that environment's `BOOKS_REFUND_ACCOUNT_ID` (item 10; RB 11b, point 7) |                |
-| Books: payment mode     | "Razorpay", under which every payment and refund is recorded                                                                                                                     |                |
-| Books: GST              | Off until the CA answers; then on, with the real GSTIN and state, each item's SAC and rate, and the same in `BOOKS_GSTIN`, `BOOKS_GST_STATE`, `BOOKS_SAC` (items 2, 3)           |                |
-| Books: receipts         | The payment receipt template prints "Advance" where it printed "Over payment" (item 9)                                                                                           | 5 October 2026 |
-| Books: organisation     | Its address and state (07 Delhi or 06 Haryana, not Maharashtra's code), logo and e-mail are the business's own (item 3)                                                          |                |
-| Books and the CRM       | Books' Zoho CRM integration: two-way, Contacts only, transaction sync off, duplicates "Skip", and "MM person ID" mapped to a CRM Contacts field. Leads stay Leads (ADR 0110)     |                |
-| The CRM's fields        | `setup-crm.ts --check` finds nothing missing, and `check-zoho-setup.ts` passes (item 34; RB 8)                                                                                   |                |
-| The CRM's workflow rule | One rule: contact consent becoming true assigns an owner, and nothing fires for "Try-on — delivery only" (item 35; RB 8)                                                         |                |
+| Setting                 | Expected                                                                                                                                                                                         | Checked        |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------- |
+| Books: "MM person ID"   | A custom field on customers: Text, unique, API name `cf_mm_person_id`                                                                                                                            | 2 October 2026 |
+| Books: items            | One service item for each service on sale in the console, under the console's name and at the price book's price. Each is made and priced from the console; none is made by hand                 |                |
+| Books: discounts        | At line-item level, before tax (item 181; provisioning, step 11b, point 8)                                                                                                                       |                |
+| Books: refund accounts  | Bank accounts in INR: "Razorpay – staging test" for staging and "Razorpay" for production, each one's ID that environment's `BOOKS_REFUND_ACCOUNT_ID` (item 10; provisioning, step 11b, point 7) |                |
+| Books: payment mode     | "Razorpay", under which every payment and refund is recorded                                                                                                                                     |                |
+| Books: GST              | Off until the CA answers; then on, with the real GSTIN and state, each item's SAC and rate, and the same in `BOOKS_GSTIN`, `BOOKS_GST_STATE`, `BOOKS_SAC` (items 2, 3)                           |                |
+| Books: receipts         | The payment receipt template prints "Advance" where it printed "Over payment" (item 9)                                                                                                           | 5 October 2026 |
+| Books: organisation     | Its address and state (07 Delhi or 06 Haryana, not Maharashtra's code), logo and e-mail are the business's own (item 3)                                                                          |                |
+| Books and the CRM       | Books' Zoho CRM integration: two-way, Contacts only, transaction sync off, duplicates "Skip", and "MM person ID" mapped to a CRM Contacts field. Leads stay Leads (ADR 0110)                     |                |
+| The CRM's fields        | `setup-crm.ts --check` finds nothing missing, and `check-zoho-setup.ts` passes (item 34; provisioning, step 8)                                                                                   |                |
+| The CRM's workflow rule | One rule: contact consent becoming true assigns an owner, and nothing fires for "Try-on — delivery only" (item 35; provisioning, step 8)                                                         |                |
 
 ## Rolling back
 

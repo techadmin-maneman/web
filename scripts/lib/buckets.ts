@@ -1,6 +1,6 @@
 // Whether each R2 bucket an environment's Workers bind exists, and keeps its
 // objects as long as it should. The try-on buckets expire everything within 30
-// days by a rule set by hand at provisioning (docs/runbook.md, step 1); the
+// days by a rule set by hand at provisioning (docs/provisioning.md, step 1); the
 // photograph and referral-card buckets expire nothing. It only reads.
 //
 // CI's Cloudflare tokens may not touch R2, by design (docs/decisions/0008): a
@@ -77,7 +77,10 @@ function judge(bucket: string, retention: Retention, rules: readonly Rule[]): Fi
   const finding = (outcome: Outcome, detail: string): Finding => ({ subject: bucket, outcome, detail });
   if (retention === "expires within 30 days") {
     if (rules.some(expiresEverythingWithin30Days)) return finding("matches", "expires every object within 30 days");
-    return finding("differs", "has no enabled rule expiring every object within 30 days (docs/runbook.md, step 1)");
+    return finding(
+      "differs",
+      "has no enabled rule expiring every object within 30 days (docs/provisioning.md, step 1)",
+    );
   }
   if (rules.some(deletes))
     return finding("differs", "has a rule that deletes objects, but its objects must never expire");
@@ -126,7 +129,7 @@ export async function checkBuckets(check: BucketCheck): Promise<Finding[]> {
       findings.push({
         subject: bucket,
         outcome: "differs",
-        detail: "does not exist, and a deploy that binds it fails: create it (docs/runbook.md, step 1)",
+        detail: "does not exist, and a deploy that binds it fails: create it (docs/provisioning.md, step 1)",
       });
       continue;
     }
