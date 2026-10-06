@@ -8,7 +8,7 @@ import { VISIT_TYPE_NAMES, type VisitType } from "../../config/visit-types.ts";
 import { indiaDate } from "../../lib/india-time.ts";
 import { firstNameOf } from "../../lib/names.ts";
 import { heldVisitTimes } from "../visits/visit-times.ts";
-import { DESTINATIONS, underVisitsConsent, type Composed } from "../messages/visit-messages.ts";
+import { DESTINATIONS, underVisitsConsent, type Composed } from "../messages/visit-message-text.ts";
 import { PAYMENT_TAKEN, statusIn } from "../../config/statuses.ts";
 import { queueMessage } from "../messages/queued-messages.ts";
 

@@ -19,7 +19,7 @@ import {
 } from "./erasure.ts";
 import { reachBinding, withinReach } from "../clients/places.ts";
 import { liveContact } from "../clients/profile.ts";
-import type { Composed } from "../messages/visit-messages.ts";
+import type { Composed } from "../messages/visit-message-text.ts";
 import { DAY_MS } from "../../lib/durations.ts";
 import { indiaDate } from "../../lib/india-time.ts";
 import { firstNameOf } from "../../lib/names.ts";

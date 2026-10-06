@@ -56,12 +56,8 @@ import {
 import { composeSiteNotice, isSiteNoticeKind } from "../domain/ops/site-notices.ts";
 import { composeMessagesStopped, stopLink } from "../domain/messages/stop-messages.ts";
 import { composeLaunchAlert, composeWaitlistConfirmation } from "../domain/booking/waitlist.ts";
-import {
-  composeVisitMessage,
-  isMessageStale,
-  VISIT_MESSAGE_KINDS,
-  type VisitMessageKind,
-} from "../domain/messages/visit-messages.ts";
+import { isMessageStale, VISIT_MESSAGE_KINDS, type VisitMessageKind } from "../domain/messages/visit-messages.ts";
+import { composeVisitMessage } from "../domain/messages/visit-message-text.ts";
 import { messageFailedKey } from "../policy/alerts.ts";
 import type { SendResult } from "../providers/messaging/index.ts";
 import { scrubString, type Logger } from "../log.ts";
