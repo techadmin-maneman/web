@@ -64,8 +64,8 @@ this map, or when the map names something that no longer exists.
 - **Database work** (`src/domain/dispatch/`): `dispatch`, `dispatch-board`, `dispatch-landing`, `dispatch-utilisation`, `technicians`, `technician-roster`,
   `technician-work`, `leave`, `blackouts`, `cities`
 - **Rules** (`src/policy/`): `dispatch`, `technician-work`
-- **Routes** (`src/routes/`): `ops/dispatch`, `ops/blackouts`, `ops/technicians`, `ops/technician-leave`,
-  `ops/technician-phones`
+- **Routes** (`src/routes/`): `ops/dispatch`, `ops/dispatch-moves`, `ops/blackouts`, `ops/technicians`,
+  `ops/technician-leave`, `ops/technician-phones`
 - **Screens:** `apps/ops/src/dispatch/`, `apps/ops/src/technicians/`
 - **Tests:** `test/worker/ops/dispatch.test.ts`, `test/worker/field/field-dispatch.test.ts`,
   `e2e/ops/dispatch.e2e.ts`, `e2e/ops/technicians.e2e.ts`
