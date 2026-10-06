@@ -28,6 +28,10 @@ const BOOKED = "+919810000001";
 const UNBOOKED = "+919810000002";
 
 let clock: Date;
+/** Sets the clock the app reads, for the test. */
+const useClock = (at: Date) => {
+  clock = at;
+};
 let deps: TestDependencies;
 let app: App;
 let logs: ReturnType<typeof captureLogs>;
@@ -39,7 +43,7 @@ function build(overrides: Partial<Settings> = {}, smsAvailable = true): void {
 }
 
 beforeEach(async () => {
-  clock = NOW;
+  useClock(NOW);
   logs = captureLogs();
   build();
   await markDatabase();
@@ -623,10 +627,10 @@ describe("the session", () => {
       const cookie = await bookedOnTheSite();
       await requested();
 
-      clock = new Date("2026-09-25T18:00:00Z"); // 23:30 on the day asked for, in India
+      useClock(new Date("2026-09-25T18:00:00Z")); // 23:30 on the day asked for, in India
       expect(await home(cookie)).toMatchObject({ consultation: { date: "2026-09-25", requested: true } });
 
-      clock = new Date("2026-09-25T18:30:00Z"); // midnight in India: the day has passed
+      useClock(new Date("2026-09-25T18:30:00Z")); // midnight in India: the day has passed
       expect(await home(cookie)).toMatchObject({ consultation: null, booking: { types: ["consultation"] } });
     });
 
