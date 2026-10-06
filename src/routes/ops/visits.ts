@@ -11,13 +11,10 @@ import { createRoute, z } from "@hono/zod-openapi";
 import type { Context } from "hono";
 import { BOOKING_DAYS, BOOKING_WINDOWS } from "../../config/scheduling.ts";
 import { VISIT_TYPES } from "../../config/visit-types.ts";
-import { auditStatement } from "../../domain/ops/audit.ts";
+import { freeTechnicians } from "../../domain/booking/availability.ts";
 import { confirmUnpaid } from "../../domain/booking/bookings.ts";
 import { giveBack } from "../../domain/booking/give-back.ts";
-import { spendableCredits } from "../../domain/money/credits.ts";
 import type { Hold } from "../../domain/booking/hold-slot.ts";
-import { freeTechnicians } from "../../domain/booking/availability.ts";
-import { isWithin, techniciansWithin } from "../../domain/clients/places.ts";
 import { offeredServices, type PricedService } from "../../domain/booking/services.ts";
 import { loadSlotSchedule } from "../../domain/booking/slot-times.ts";
 import {
@@ -34,17 +31,20 @@ import {
   type Sale,
   type VisitAsked,
 } from "../../domain/booking/visit-booking.ts";
+import { isWithin, techniciansWithin } from "../../domain/clients/places.ts";
+import { spendableCredits } from "../../domain/money/credits.ts";
+import { auditStatement } from "../../domain/ops/audit.ts";
 import { actorOf } from "../../http/audit.ts";
 import { bookHold } from "../../http/book-hold.ts";
 import type { App, AppEnv } from "../../http/context.ts";
 import { errorBody, errorResponse, refuse } from "../../http/errors.ts";
-import { opsInputs } from "../../http/ops-inputs.ts";
 import { json } from "../../http/openapi.ts";
+import { opsInputs } from "../../http/ops-inputs.ts";
 import { routeReach, withinRouteReach } from "../../http/staff-access.ts";
 import { stripStart } from "../../policy/next-visit.ts";
-import { windowTimesOf } from "../../policy/slot-times.ts";
-import { ServiceSchema } from "../client/booking.ts";
 import { PRICE_TIER } from "../../policy/services.ts";
+import { windowTimesOf } from "../../policy/slot-times.ts";
+import { ServiceSchema } from "../schemas/booking.ts";
 
 /** A visit's price, as the client's app gives it; the console's own "Price" is a row of the price book. */
 const PriceSchema = z

@@ -83,8 +83,8 @@ this map, or when the map names something that no longer exists.
 
 ### No-shows and disputes
 
-- **Database work** (`src/domain/no-shows/`): `no-shows`, `no-show-disputes`, `no-show-rulings`, `ruling-claims`,
-  `after-a-ruling`
+- **Database work** (`src/domain/no-shows/`): `no-shows`, `no-show-notes`, `no-show-disputes`, `no-show-rulings`,
+  `ruling-claims`, `after-a-ruling`
 - **Rules** (`src/policy/`): `no-show`
 - **Routes** (`src/routes/`): `client/disputes`, `ops/disputes`, `ops/no-shows`, `ops/no-show-rulings`
 - **Screens:** `apps/ops/src/no-shows/`
@@ -160,8 +160,8 @@ this map, or when the map names something that no longer exists.
 
 ### Privacy
 
-- **Database work** (`src/domain/privacy/`): `consents`, `booking-consents`, `deletion`, `erasure`, `data-export`,
-  `my-data-page`, `retention`
+- **Database work** (`src/domain/privacy/`): `consents`, `booking-consents`, `deletion`, `erasure`, `erasure-statements`,
+  `erasure-files`, `data-export`, `my-data-page`, `retention`
 - **Rules** (`src/policy/`): `consents`, `account-deletion`, `retention`, `personal-data`
 - **Data** (`src/config/`): `notices`, `my-data`
 - **Routes** (`src/routes/`): `client/data`, `ops/erasure`

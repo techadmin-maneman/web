@@ -47,7 +47,7 @@ import { addDays, indiaDate } from "../../lib/india-time.ts";
 import { firstNameOf, initialsOf } from "../../lib/names.ts";
 import { ReferralRewardSchema } from "../public/referral-reward.ts";
 import { OneVisitPriceSchema, VisitSummarySchema } from "../schemas/visits.ts";
-import { PriceSchema } from "./booking.ts";
+import { PriceSchema } from "../schemas/booking.ts";
 import { OwedPaymentSchema } from "./payments.ts";
 import { creditsBody, CreditsSchema } from "./refer.ts";
 
