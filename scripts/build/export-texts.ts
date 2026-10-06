@@ -1,6 +1,6 @@
 // Writes the texts file that is marked up with tracked changes: every
 // WhatsApp message and every line of copy marked PLACEHOLDER, grouped by message and by file, each with the id that
-// finds it again. Their wording comes back by hand, one id at a time (docs/runbook.md, "The texts file").
+// finds it again. Their wording comes back by hand, one id at a time (docs/runbook/texts-file.md, "The texts file").
 //
 //   npm run texts:export              writes private/texts-<today>.docx
 //   npm run texts:export -- <path>    writes it there

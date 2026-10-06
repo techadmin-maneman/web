@@ -37,7 +37,7 @@ export default defineConfig({
   test: {
     restoreMocks: true,
     /*
-     * GitHub's runner for a public repository has four cores (docs/runbook.md, "The CI runner"), and vitest's
+     * GitHub's runner for a public repository has four cores (docs/runbook/ci-runner.md, "The CI runner"), and vitest's
      * default takes a worker a core; past four, hooks and wrangler's dev proxy time out for want of a CPU, not a
      * defect. Playwright is held to three beside the local mm-api and the four servers (playwright.config.ts).
      */

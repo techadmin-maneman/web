@@ -20,7 +20,7 @@
 #
 # Jobs run on GitHub's runners, named in each job: nothing can send them to the
 # owner's retired machine, where on a public repository a fork's pull request
-# would run its code (docs/runbook.md, "The CI runner").
+# would run its code (docs/runbook/ci-runner.md, "The CI runner").
 name: ci
 
 on:

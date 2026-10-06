@@ -55,7 +55,7 @@ GitHub gives a private repository 2,000 minutes of its runners a month. Ten jobs
 
 ## Parallel jobs (23 September 2026)
 
-One job ran every check in turn, about thirteen minutes, of which the browser tests were four. A second runner (docs/runbook.md, "The CI runner") means independent checks can run at the same time, so `ci.yml` is six jobs again, grouped so each is worth an install of its own, and a `checks` job that needs them all.
+One job ran every check in turn, about thirteen minutes, of which the browser tests were four. A second runner (docs/runbook/ci-runner.md, "The CI runner") means independent checks can run at the same time, so `ci.yml` is six jobs again, grouped so each is worth an install of its own, and a `checks` job that needs them all.
 
 - **What a job costs is what groups it.** The browser tests are the longest, so they are a job of their own and start at once; the static checks, the test suite, the build dry run and the local smoke fill the other runner. Lighthouse stays with the browser tests, after them: it measures a page load, and it should not be sharing the machine with a suite this run started.
 - **`checks` is the gate.** `deploy-staging.yml` waits for this workflow, and a workflow fails when a job in it fails; `checks` needs every job and fails unless each one passed or was skipped. So one name still stands for the whole of CI, for the deploy workflows and for main's protection once the plan allows required checks (0008).

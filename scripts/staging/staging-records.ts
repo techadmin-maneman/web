@@ -1,5 +1,5 @@
 // Lists every record staging wrote into the business's real Zoho org, in Books and the CRM, for review; a second run deletes what the list keeps, and clears staging's database's links to what is
-// gone (docs/runbook.md, "Staging's records in the org").
+// gone (docs/runbook/books.md, "Staging's records in the org").
 //
 //   node --env-file=.env.books-scripts --env-file=.env.crm-scripts scripts/staging/staging-records.ts                  lists
 //   node --env-file=.env.books-scripts --env-file=.env.crm-scripts scripts/staging/staging-records.ts --delete <file>   deletes

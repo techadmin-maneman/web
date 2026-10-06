@@ -1,5 +1,5 @@
-// Checks that a Zoho org is set up the way the sync expects (docs/runbook.md,
-// "Provisioning an environment", step 8), and lists the Leads assignment rules
+// Checks that a Zoho org is set up the way the sync expects (docs/provisioning.md,
+// step 8, "Zoho"), and lists the Leads assignment rules
 // so ZOHO_LAR_ID can be chosen. Read-only: it changes nothing in Zoho.
 //
 //   node --env-file=.env.crm-scripts scripts/ops/check-zoho-setup.ts
