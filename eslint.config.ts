@@ -36,7 +36,7 @@ const PINNED: Readonly<Record<string, { readonly lines?: number; readonly fn?: n
   "src/routes/client/visits.ts": { lines: 469, fn: 94 },
   "src/config/settings.ts": { lines: 444 },
   "src/policy/personal-data.ts": { lines: 444 },
-  "src/domain/money/payment-links.ts": { lines: 451 },
+  "src/domain/money/payment-links.ts": { lines: 452 },
   "src/domain/visits/visit-changes.ts": { lines: 423 },
   "src/domain/no-shows/no-shows.ts": { lines: 406 },
   "src/routes/ops/dispatch.ts": { lines: 406 },
