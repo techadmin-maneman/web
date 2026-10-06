@@ -21,7 +21,6 @@ const BASELINE = [
   "src/routes/ops/client-record.ts -> src/routes/ops/client-referral.ts",
   "src/routes/ops/client-pieces.ts -> src/routes/tech/pieces.ts",
   "src/routes/ops/profile.ts -> src/routes/ops/erasure.ts",
-  "src/routes/ops/services.ts -> src/routes/ops/settings.ts",
   "src/routes/ops/visits.ts -> src/routes/client/booking.ts",
   "src/routes/ops/whoami.ts -> src/routes/ops/staff.ts",
   "src/routes/public/published-prices.ts -> src/routes/client/booking.ts",
