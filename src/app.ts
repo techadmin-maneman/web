@@ -18,7 +18,10 @@ import { meterDatabase, serverTiming, usageFields } from "./lib/d1-meter.ts";
 import { createLogger } from "./log.ts";
 import { registerClientAuth } from "./routes/client/auth.ts";
 import { registerClientMe } from "./routes/client/me.ts";
-import { registerClientProfile } from "./routes/client/profile.ts";
+import { registerClientDeletionRequest, registerClientProfile } from "./routes/client/profile.ts";
+import { registerClientAddress } from "./routes/client/address.ts";
+import { registerClientConsents } from "./routes/client/consents.ts";
+import { registerClientNumberChange } from "./routes/client/number-change.ts";
 import { registerClientSessions } from "./routes/client/sessions.ts";
 import { registerClientBooking } from "./routes/client/booking.ts";
 import { registerClientChanges } from "./routes/client/changes.ts";
@@ -115,6 +118,10 @@ const SURFACE_ROUTES: Readonly<Record<Surface, readonly ((app: App) => void)[]>>
     registerClientAuth,
     registerClientMe,
     registerClientProfile,
+    registerClientAddress,
+    registerClientConsents,
+    registerClientNumberChange,
+    registerClientDeletionRequest,
     registerClientSessions,
     registerClientVisits,
     // After the visits: they put the session on every /api/visits/* route.

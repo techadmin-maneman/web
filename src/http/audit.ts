@@ -1,9 +1,9 @@
 // Who is behind a call to the ops console, and the record of each call (docs/decisions/0031-access-and-audit.md).
 // The log itself is src/domain/ops/audit.ts.
 
+import type { Context } from "hono";
 import { createMiddleware } from "hono/factory";
 import { matchedRoutes } from "hono/route";
-import type { Context } from "hono";
 import { z } from "zod";
 import { auditStatement, auditStatementUnlessRepeated, type AuditActor, type AuditEntry } from "../domain/ops/audit.ts";
 import { MINUTE_MS } from "../lib/durations.ts";
@@ -29,6 +29,18 @@ const ID = z.uuid();
 function auditActorOf(identity: AccessIdentity): AuditActor {
   return identity.kind === "staff" ? { kind: "staff", id: identity.email } : { kind: "service", id: identity.clientId };
 }
+
+/** An audit entry for a call the signed-in client made, with the client as its actor. */
+export const clientAudit = (
+  personId: string,
+  requestId: string,
+  entry: Pick<AuditEntry, "action" | "subject" | "detail">,
+) => ({
+  surface: "client" as const,
+  actor: { kind: "client" as const, id: personId },
+  requestId,
+  ...entry,
+});
 
 /** Who is behind the call, a member of staff or a service token; requireAccess has set it on every ops route. */
 export function actorOf(c: Context<AppEnv>): AuditActor {
