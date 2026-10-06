@@ -46,12 +46,11 @@ export const PHASE_2_ALLOWANCE = {
  */
 export const CRON_ROWS_READ_PER_QUIET_RUN = 150;
 /**
- * The most statements one minute's run may send D1, its own record's included. The free plan stops a run past 10 ms of
- * CPU, and on staging an invocation cost about 1 ms and 0.35 ms more for each statement (docs/decisions/0009, "the
- * cron's CPU time"). 16 come to about 6.6 ms, leaving a third of the 10 for code a run meets for the first time.
+ * The most statements one minute's run may send D1, its own record's included: a fifth of the 1,000 an invocation may
+ * send (docs/decisions/0112-workers-paid.md), so a job that loops over a table fails here before it fails in a run.
  * test/worker/jobs/cron-reads.test.ts holds every minute of the hour to it, over a history.
  */
-export const CRON_STATEMENTS_PER_RUN = 16;
+export const CRON_STATEMENTS_PER_RUN = 200;
 
 /**
  * What one load of each of the console's two boards reads. Measured on staging on 2 October 2026 with 31 visits in the

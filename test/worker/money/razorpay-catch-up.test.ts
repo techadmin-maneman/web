@@ -57,10 +57,10 @@ const dependencies = (seconds: number): TestDependencies =>
 
 const job = CRON_JOBS.filter((each) => each.name === "razorpay_catch_up");
 
-/** One run of the job, `seconds` after NOW. */
-function runAt(deps: TestDependencies) {
+/** One run of the job, `seconds` after NOW, with the run's outside calls, or a cron run's. */
+function runAt(deps: TestDependencies, calls?: number) {
   const bindings = { ...env, MESSAGE_QUEUE: messageQueue };
-  return runCronJobs(job, { env: bindings, deps, config: LOCAL_CONFIG, log: createLogger() });
+  return runCronJobs(job, { env: bindings, deps, config: LOCAL_CONFIG, log: createLogger(), calls });
 }
 
 /** A hold for a service visit, and the Razorpay order the app opened Checkout with. */
@@ -356,11 +356,13 @@ describe("holds and links in one run", () => {
     await unpaidLink();
     payments.linksNow.set("plink_unpaid", { id: "plink_unpaid", status: "created", order_id: null });
 
-    await runAt(dependencies(HOUR));
+    // Room for one hold and one link, where two holds would take it all.
+    const calls = 6;
+    await runAt(dependencies(HOUR), calls);
     expect(ordersRead).toEqual(["order_a"]);
     expect(linksRead).toEqual(["plink_unpaid"]);
 
-    await runAt(dependencies(HOUR + 15 * MINUTE));
+    await runAt(dependencies(HOUR + 15 * MINUTE), calls);
     expect(ordersRead).toEqual(["order_a", "order_b"]);
     expect(linksRead).toEqual(["plink_unpaid"]);
   });

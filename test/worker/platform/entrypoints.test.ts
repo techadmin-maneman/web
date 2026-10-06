@@ -183,7 +183,6 @@ describe("scheduled handler", () => {
     expect(await lastCompletedAt(env.DB)).not.toBeNull();
   });
 
-  // D-01 of 4 October 2026: one run of every job took 34 to 61 ms of CPU on staging, past the free plan's 10.
   it("on the every-minute trigger, runs only the jobs due in the minute it was scheduled for", async () => {
     await markDatabase();
     const logs = captureLogs();

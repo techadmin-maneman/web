@@ -262,8 +262,7 @@ describe("one cron run", () => {
   });
 });
 
-// D-01 of 4 October 2026: one run of every job took 34 to 61 ms of CPU on staging, past the free plan's 10, and
-// Cloudflare stopped every run for ten hours. Most of a run's CPU time goes on its calls to D1.
+// A job that loops over a table sends D1 a statement a row, which a history long enough shows.
 describe("each minute's run", () => {
   async function statementsAt(minute: number, config: StaticConfig): Promise<number> {
     const scheduled = Date.UTC(2026, 8, 21, 6, minute);

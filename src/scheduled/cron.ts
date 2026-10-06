@@ -1,7 +1,5 @@
-// The cron (wrangler.jsonc "triggers"): a run every minute, each running only the jobs due in that minute. The free
-// plan stops a run past 10 ms of CPU, and one run of every job took 30 to 60 ms, so the jobs take turns: CRON_JOBS
-// gives each how often it runs (`every`) and in which minute of that period (`at`), at most three to a minute
-// (docs/decisions/0009-stay-inside-cloudflare-free-tier.md, "the cron's CPU time").
+// The cron (wrangler.jsonc "triggers"): a run every minute, each running only the jobs due in that minute. CRON_JOBS
+// gives each how often it runs (`every`) and in which minute of that period (`at`).
 //
 // A job that throws is logged as `cron_job_failed` and the next one runs anyway, so one failing job never stops the
 // others. Each job's failed runs in a row are counted in `cron_jobs`, and a job that fails three in a row alerts
@@ -9,9 +7,9 @@
 // Cloudflare stopped part-way is told by the next (src/domain/cron-runs.ts), and an outside monitor is pinged every
 // five minutes, and at once when something is wrong (src/providers/heartbeat.ts).
 //
-// The jobs of a run share one budget of outside calls, so that together they stay under the free plan's 50 fetch
-// subrequests (src/lib/call-budget.ts). Their calls to D1, R2 and the queues are a separate allowance of 1,000 a run,
-// kept by each job's batch sizes (docs/decisions/0093-the-storage-meter.md).
+// The jobs of a run share one budget of outside calls (CRON_CALLS, src/lib/call-budget.ts), which keeps the cron under
+// the vendors' own limits. Their statements to D1 are kept by each job's batch sizes, well under the 1,000 an
+// invocation may send (docs/decisions/0112-workers-paid.md).
 
 import { BOOKS_ITEM_PUSH, OPS_ORIGIN } from "../config/environments.ts";
 import { NO_GST, type GstRegistration } from "../config/gst.ts";
@@ -77,7 +75,7 @@ type CronRun = Omit<CronContext, "budget" | "inputs"> & {
    * meters env.DB itself, and what its dependencies read (an alert raised or closed) goes uncounted.
    */
   readonly meter?: MeteredDatabase;
-  /** The outside calls the run may make (callsFor); CRON_CALLS when not given. */
+  /** The outside calls the run may make; CRON_CALLS when not given. */
   readonly calls?: number;
 };
 
@@ -253,9 +251,7 @@ async function ailabCreditsJob(context: CronContext): Promise<void> {
 }
 
 /**
- * Every job, and when it runs (src/scheduled/schedule.ts). No minute holds more than three jobs, and a job that calls a
- * vendor every time it runs (CALLS_EVERY_RUN) shares its minute with one job at most. Minutes by their place in the
- * five: 1 the WhatsApp bridge, 2 the try-ons and the heartbeat, 3 the holds and Books, 4 the hourly jobs. A run's jobs
+ * Every job, and when it runs (src/scheduled/schedule.ts). Minutes by their place in the five: 1 the WhatsApp bridge, 2 the try-ons and the heartbeat, 3 the holds and Books, 4 the hourly jobs. A run's jobs
  * run in this order.
  */
 export const CRON_JOBS: readonly CronJob[] = [

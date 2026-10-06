@@ -1,8 +1,6 @@
-// A number of outside calls to be shared, such as one cron run's. The free
-// plan allows 50 fetch subrequests an invocation, and a run past them fails
-// part-way (docs/decisions/0009-stay-inside-cloudflare-free-tier.md). Each pass
-// asks for what one record may cost before it starts on it, and stops when it
-// is refused: the records it leaves are the next run's first.
+// A number of outside calls to be shared, such as one cron run's, so a run keeps under a vendor's own limit: Zoho Books
+// allows the organisation 100 calls a minute. Each pass asks for what one record may cost before it starts on it, and
+// stops when it is refused: the records it leaves are the next run's first.
 //
 // Calls to Cloudflare's own services, D1, R2, KV and Queues, are a separate
 // allowance of 1,000 an invocation, which this does not count: each job keeps
