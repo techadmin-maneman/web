@@ -26,7 +26,7 @@ import { checkPhoto } from "../domain/try-on/photo.ts";
 import { failJob, loadJob, type JobRow } from "../domain/try-on/tryon.ts";
 import { fileExtension } from "../lib/image-bytes.ts";
 import type { Logger } from "../log.ts";
-import type { RenderFailure } from "../providers/image/index.ts";
+import type { DownloadResult, RenderFailure } from "../providers/image/index.ts";
 import { enqueue } from "../domain/platform/enqueue.ts";
 import { DAY_MS, MINUTE_MS } from "../lib/durations.ts";
 import { type MessagingMessage } from "../config/pipeline.ts";
@@ -320,6 +320,31 @@ async function download({
     return attempts < DOWNLOAD_QUEUE_RETRIES ? { retryAfterSeconds: DOWNLOAD_RETRY_DELAY_SECONDS } : DONE;
   }
 
+  return storeResult({ env, deps, log, job, options, result, attempts });
+}
+
+/**
+ * Stores a downloaded look and releases the message a gate left waiting for it; a job that moved on while this ran
+ * keeps no result.
+ */
+async function storeResult({
+  env,
+  deps,
+  log,
+  job,
+  options,
+  result,
+  attempts,
+}: {
+  env: RenderEnv;
+  deps: Dependencies;
+  log: Logger;
+  job: JobRow;
+  options: RenderOptions;
+  result: Extract<DownloadResult, { ok: true }>;
+  attempts: number;
+}): Promise<Next> {
+  const db = env.DB;
   const resultKey = `results/${job.id}.${fileExtension(result.contentType)}`;
   await env.RESULTS.put(resultKey, result.bytes, { httpMetadata: { contentType: result.contentType } });
 
