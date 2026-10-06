@@ -74,7 +74,7 @@ A bucket much larger than its rows is holding files nothing points at any more; 
 If the total nears 8 GB:
 
 1. Stop the try-on as above. Its results then leave over the retention days and give their share back.
-2. Never delete a client's photographs to make room: they are the client's record, promised kept. The owner decided on 27 September 2026 to pay for R2 past the free allowance (open point 151; ADR 0093), so the bill is the cost of keeping them.
+2. Never delete a client's photographs to make room: they are the client's record, promised kept. R2 is paid for past the free allowance (open point 151; ADR 0093), so the bill is the cost of keeping them.
 
 ## D1 growing
 
