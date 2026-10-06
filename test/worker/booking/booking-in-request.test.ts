@@ -57,6 +57,10 @@ const at = (seconds: number) => new Date(NOW.getTime() + seconds * SECOND);
 
 const cookies = new Map<string, string>();
 let messageQueue: ReturnType<typeof fakeQueue>;
+/** Puts this queue where the app sends its messages, for the test. */
+const useMessageQueue = (queue: ReturnType<typeof fakeQueue>) => {
+  messageQueue = queue;
+};
 
 const bindings = () => ({ MESSAGE_QUEUE: messageQueue, CRM_QUEUE: fakeQueue() });
 
@@ -174,7 +178,7 @@ beforeEach(async () => {
   await markDatabase();
   captureLogs();
   cookies.clear();
-  messageQueue = fakeQueue();
+  useMessageQueue(fakeQueue());
   await technician();
   await env.DB.prepare(
     "INSERT INTO serviceable_pincodes (pincode, area, city, served, launched_at) VALUES ('122018', 'South City II', 'Gurgaon', 1, '2026-09-01T18:30:00.000Z')",
@@ -810,7 +814,7 @@ describe("a visit cancelled, when something fails after it is cancelled", () => 
   });
 
   it("answers cancelled and refunded when the queue refuses the message, which waits for the sweeper", async () => {
-    messageQueue = queueThatRefuses();
+    useMessageQueue(queueThatRefuses());
     const payments = createStubPayments();
 
     const done = await cancelFree(fakeDependencies({ payments }));
@@ -826,7 +830,7 @@ describe("a visit cancelled, when something fails after it is cancelled", () => 
     await env.DB.prepare("DELETE FROM payments").run();
     await grantCredits(env.DB, { personId: PERSON, visits: 1, source: "referral", sourceId: "attr-1", now: NOW }).run();
     await redeemCredit(env.DB, PERSON, VISIT, NOW).run();
-    messageQueue = queueThatRefuses();
+    useMessageQueue(queueThatRefuses());
 
     const done = await cancelFree(fakeDependencies(), failingAfterTheFirstBatch(env.DB));
 
