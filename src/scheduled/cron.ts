@@ -24,7 +24,7 @@ import { settleOwedRefunds } from "../domain/money/cancel-refunds.ts";
 import { finishRun, startRun, type RunStart } from "../domain/platform/cron-runs.ts";
 import { alertAgedDeletions } from "../domain/privacy/deletion.ts";
 import { recordUtilisation } from "../domain/dispatch/dispatch-utilisation.ts";
-import { deleteLeftFiles } from "../domain/privacy/erasure.ts";
+import { deleteLeftFiles } from "../domain/privacy/erasure-files.ts";
 import { tellOfNewGrievances } from "../domain/ops/grievances.ts";
 import { queueCreditReminders } from "../domain/money/credit-reminders.ts";
 import { queueNextServiceReminders } from "../domain/visits/next-visit.ts";

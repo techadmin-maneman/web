@@ -160,8 +160,8 @@ this map, or when the map names something that no longer exists.
 
 ### Privacy
 
-- **Database work** (`src/domain/privacy/`): `consents`, `booking-consents`, `deletion`, `erasure`, `data-export`,
-  `my-data-page`, `retention`
+- **Database work** (`src/domain/privacy/`): `consents`, `booking-consents`, `deletion`, `erasure`, `erasure-statements`,
+  `erasure-files`, `data-export`, `my-data-page`, `retention`
 - **Rules** (`src/policy/`): `consents`, `account-deletion`, `retention`, `personal-data`
 - **Data** (`src/config/`): `notices`, `my-data`
 - **Routes** (`src/routes/`): `client/data`, `ops/erasure`
