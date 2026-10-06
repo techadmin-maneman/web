@@ -76,8 +76,14 @@ export function releaseDeadHolds(db: D1Database, now: Date, clientToo: string | 
  * Holds nobody is paying for are let go first. Null when nobody is free, or the day is blacked out. The hold waits
  * `holdSeconds` for payment, and keeps its time for `graceSeconds` after, both as ops set them when it is made.
  */
-export async function holdSlot(
-  db: D1Database,
+export async function holdSlot({
+  db,
+  input,
+  now,
+  holdSeconds,
+  graceSeconds = PAYMENT_GRACE_SECONDS,
+}: {
+  db: D1Database;
   input: {
     personId: string;
     /** The service it is for, and the length its time is held for. */
@@ -114,11 +120,11 @@ export async function holdSlot(
     alongside?: readonly D1PreparedStatement[];
     /** Written after the hold, in its batch, given its ID: the site's discount code (docs/decisions/0108-discount-codes.md). */
     afterHold?: (holdId: string) => readonly D1PreparedStatement[];
-  },
-  now: Date,
-  holdSeconds: number,
-  graceSeconds: number = PAYMENT_GRACE_SECONDS,
-): Promise<Hold | null> {
+  };
+  now: Date;
+  holdSeconds: number;
+  graceSeconds?: number;
+}): Promise<Hold | null> {
   const { personId, service, date, window, price, moves, useCredit = false, oneVisit = false, from = "app" } = input;
   const units = unitsFor(service.minutes);
   const moving = moves?.kind === "move" ? moves.visit : null;
@@ -126,7 +132,15 @@ export async function holdSlot(
   const [blackouts, technicians, held, visits] = await Promise.all([
     loadBlackouts(db, date, date),
     techniciansFor(db, moving),
-    occupancy(db, ties.from, ties.to, now, moving?.visitId ?? null, null, from === "app" ? personId : null),
+    occupancy({
+      db,
+      from: ties.from,
+      to: ties.to,
+      now,
+      exceptVisitId: moving?.visitId ?? null,
+      exceptHoldId: null,
+      ownUnpaidOf: from === "app" ? personId : null,
+    }),
     visitsOfClient(db, personId, moves?.visit.visitId ?? null),
   ]);
   if (blackouts.has(date)) return null;
@@ -219,7 +233,7 @@ export async function heldTimeFree(
   now: Date,
   exceptVisitId: string | null = null,
 ): Promise<boolean> {
-  const held = await occupancy(db, hold.date, hold.date, now, exceptVisitId, hold.id);
+  const held = await occupancy({ db, from: hold.date, to: hold.date, now, exceptVisitId, exceptHoldId: hold.id });
   const day = held(hold.technician_id, hold.date);
   const units = unitsFor(heldMinutes(hold));
   return !day.onLeave && !clashes(day, hold.window_label) && fitsAt(day, hold.start_unit, units);

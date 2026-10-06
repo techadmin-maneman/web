@@ -118,7 +118,7 @@ export function CaptureScreen({ id, phase }: { id: string; phase: Phase }) {
       if (video.current === null || angle === undefined) return;
       try {
         const frame = await captureFrame(video.current);
-        const frameId = await keepFrame(id, angle, phase, frame.photo.blob, frame.small.blob);
+        const frameId = await keepFrame({ jobId: id, angle, phase, frame: frame.photo.blob, small: frame.small.blob });
         setMissed(false);
         setTaken((already) => [...already.filter((one) => one.angle !== angle), { angle, frameId }]);
       } catch {

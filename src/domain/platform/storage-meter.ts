@@ -38,13 +38,19 @@ export async function readMeter(db: D1Database): Promise<Meter> {
 }
 
 /** Stores an object in one of the two buckets, and counts what it holds now: an object it replaces no longer counts. */
-export async function putCounted(
-  db: D1Database,
-  bucket: R2Bucket,
-  key: string,
-  bytes: Uint8Array | ArrayBuffer,
-  contentType: string,
-): Promise<void> {
+export async function putCounted({
+  db,
+  bucket,
+  key,
+  bytes,
+  contentType,
+}: {
+  db: D1Database;
+  bucket: R2Bucket;
+  key: string;
+  bytes: Uint8Array | ArrayBuffer;
+  contentType: string;
+}): Promise<void> {
   await bucket.put(key, bytes, { httpMetadata: { contentType } });
   await db.batch([
     db

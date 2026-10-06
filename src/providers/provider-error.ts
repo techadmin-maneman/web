@@ -19,7 +19,12 @@ export class ProviderError extends Error {
   /** What the vendor said, in its own words and without its status or code: what an alert to ops quotes. */
   readonly said: string;
 
-  constructor(status: number, code: string, message: string, refusal = refusesTheRecord(status), said = message) {
+  constructor(
+    status: number,
+    code: string,
+    message: string,
+    { refusal = refusesTheRecord(status), said = message }: { refusal?: boolean; said?: string } = {},
+  ) {
     super(message);
     this.status = status;
     this.code = code;

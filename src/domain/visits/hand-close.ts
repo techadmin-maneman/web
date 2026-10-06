@@ -71,7 +71,15 @@ export async function closeByHand(db: D1Database, deps: LinkDeps, close: HandClo
   const at = now.toISOString();
   const [moved] = await db.batch([
     moveVisit(db, close.appointmentId, close.outcome, at),
-    closeVisit(db, close.appointmentId, close.outcome, times, null, at, close.byHand),
+    closeVisit({
+      db,
+      appointmentId: close.appointmentId,
+      outcome: close.outcome,
+      times,
+      partialReason: null,
+      at,
+      byHand: close.byHand,
+    }),
     auditStatementIfClosed(db, close.audit, now, close.appointmentId),
   ]);
   // The count takes in what the appointments' triggers write as well, so any change at all means the visit moved.

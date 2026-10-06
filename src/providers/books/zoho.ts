@@ -75,13 +75,13 @@ interface BooksApi {
   /** A path in the org: `at("/contacts", "&page=2")`. */
   readonly at: (path: string, query?: string) => string;
   /** One call, and the part of its answer at `under`, read by `schema`; a misfit names the step. */
-  readonly read: <T extends z.ZodType>(
-    step: string,
-    path: string,
-    schema: T,
-    under: readonly PropertyKey[],
-    write?: ZohoWrite,
-  ) => Promise<z.infer<T>>;
+  readonly read: <T extends z.ZodType>(call: {
+    step: string;
+    path: string;
+    schema: T;
+    under: readonly PropertyKey[];
+    write?: ZohoWrite;
+  }) => Promise<z.infer<T>>;
 }
 
 function booksApi(request: ZohoRequest, orgId: string): BooksApi {
@@ -90,7 +90,7 @@ function booksApi(request: ZohoRequest, orgId: string): BooksApi {
     request,
     org,
     at: (path, query = "") => `/books/v3${path}?${org}${query}`,
-    async read(step, path, schema, under, write) {
+    async read({ step, path, schema, under, write }) {
       const response = await request(step, path, write);
       return readAnswer(await answerOf(step, response), schema, under);
     },
@@ -159,7 +159,10 @@ function documentCalls({ request, org, read }: BooksApi): Documents {
   const path = (id: string, extra = "") => `/books/v3/invoices/${encodeURIComponent(id)}?${org}${extra}`;
 
   return {
-    invoice: (id) => orNull(async () => booksInvoiceOf(await read("invoice", path(id), Invoice, ["invoice"]))),
+    invoice: (id) =>
+      orNull(async () =>
+        booksInvoiceOf(await read({ step: "invoice", path: path(id), schema: Invoice, under: ["invoice"] })),
+      ),
 
     async issueInvoice(id) {
       await request("issue_invoice", `/books/v3/invoices/${encodeURIComponent(id)}/status/sent?${org}`, {
@@ -189,21 +192,29 @@ function paymentCalls({ request, org, read }: BooksApi): Payments {
   return {
     async findPayment(customerId, reference) {
       const query = `&customer_id=${encodeURIComponent(customerId)}&reference_number=${encodeURIComponent(reference)}`;
-      const found = (await read("find_payment", `${payments()}${query}`, PaymentsFound, [])).customerpayments;
+      const found = (
+        await read({ step: "find_payment", path: `${payments()}${query}`, schema: PaymentsFound, under: [] })
+      ).customerpayments;
       return found.find((each) => each.reference_number === reference)?.payment_id ?? null;
     },
 
     recordPayment: (payment) =>
-      read("record_payment", payments(), z.string(), ["payment", "payment_id"], {
-        method: "POST",
-        body: {
-          customer_id: payment.customerId,
-          payment_mode: "Razorpay",
-          amount: rupees(payment.amount),
-          date: payment.date,
-          reference_number: payment.reference,
-          description: payment.description,
-          product_description: payment.supply,
+      read({
+        step: "record_payment",
+        path: payments(),
+        schema: z.string(),
+        under: ["payment", "payment_id"],
+        write: {
+          method: "POST",
+          body: {
+            customer_id: payment.customerId,
+            payment_mode: "Razorpay",
+            amount: rupees(payment.amount),
+            date: payment.date,
+            reference_number: payment.reference,
+            description: payment.description,
+            product_description: payment.supply,
+          },
         },
       }),
 
@@ -222,20 +233,28 @@ function paymentCalls({ request, org, read }: BooksApi): Payments {
     },
 
     async findRefund(paymentId, reference) {
-      const found = (await read("find_refund", payments(paymentId, "/refunds"), RefundsFound, [])).payment_refunds;
+      const found = (
+        await read({ step: "find_refund", path: payments(paymentId, "/refunds"), schema: RefundsFound, under: [] })
+      ).payment_refunds;
       return found.find((each) => each.reference_number === reference)?.payment_refund_id ?? null;
     },
 
     recordRefund: (paymentId, refund) =>
-      read("record_refund", payments(paymentId, "/refunds"), z.string(), ["payment_refund", "payment_refund_id"], {
-        method: "POST",
-        body: {
-          date: refund.date,
-          refund_mode: "Razorpay",
-          amount: rupees(refund.amount),
-          from_account_id: refund.fromAccountId,
-          reference_number: refund.reference,
-          description: refund.description,
+      read({
+        step: "record_refund",
+        path: payments(paymentId, "/refunds"),
+        schema: z.string(),
+        under: ["payment_refund", "payment_refund_id"],
+        write: {
+          method: "POST",
+          body: {
+            date: refund.date,
+            refund_mode: "Razorpay",
+            amount: rupees(refund.amount),
+            from_account_id: refund.fromAccountId,
+            reference_number: refund.reference,
+            description: refund.description,
+          },
         },
       }),
   };
@@ -308,13 +327,19 @@ function customerCalls({ request, at, read }: BooksApi): Customers {
 
   return {
     upsertCustomer: (customer) =>
-      read("upsert_customer", at("/contacts"), z.string(), ["contact", "contact_id"], {
-        method: "PUT",
-        body: customerBody(customer),
-        headers: {
-          "X-Unique-Identifier-Key": PERSON_ID_FIELD,
-          "X-Unique-Identifier-Value": customer.personId,
-          "X-Upsert": "true",
+      read({
+        step: "upsert_customer",
+        path: at("/contacts"),
+        schema: z.string(),
+        under: ["contact", "contact_id"],
+        write: {
+          method: "PUT",
+          body: customerBody(customer),
+          headers: {
+            "X-Unique-Identifier-Key": PERSON_ID_FIELD,
+            "X-Unique-Identifier-Value": customer.personId,
+            "X-Upsert": "true",
+          },
         },
       }),
 
@@ -323,7 +348,9 @@ function customerCalls({ request, at, read }: BooksApi): Customers {
     },
 
     async crmContactOf(customerId) {
-      const linked = await orNull(() => read("crm_contact_of", contact(customerId), LinkedToCrm, ["contact"]));
+      const linked = await orNull(() =>
+        read({ step: "crm_contact_of", path: contact(customerId), schema: LinkedToCrm, under: ["contact"] }),
+      );
       return filledOrNull(linked?.zcrm_contact_id);
     },
 
@@ -373,15 +400,26 @@ function invoiceCalls({ at, read }: BooksApi): InvoicesWeRaise {
   return {
     async findInvoice(reference) {
       const query = `&reference_number=${encodeURIComponent(reference)}`;
-      const found = await read("find_invoice", at("/invoices", query), InvoicesFound, []);
+      const found = await read({
+        step: "find_invoice",
+        path: at("/invoices", query),
+        schema: InvoicesFound,
+        under: [],
+      });
       const ours = found.invoices.find((invoice) => invoice.reference_number === reference);
       return ours === undefined ? null : booksInvoiceOf(ours);
     },
 
     async createInvoice(invoice) {
-      const made = await read("create_invoice", at("/invoices"), Invoice, ["invoice"], {
-        method: "POST",
-        body: invoiceBody(invoice),
+      const made = await read({
+        step: "create_invoice",
+        path: at("/invoices"),
+        schema: Invoice,
+        under: ["invoice"],
+        write: {
+          method: "POST",
+          body: invoiceBody(invoice),
+        },
       });
       return booksInvoiceOf(made);
     },
@@ -430,7 +468,7 @@ function itemCalls({ request, at, read }: BooksApi): Items {
       const found: BooksItem[] = [];
       for (let page = 1; page <= BOOKS_ITEM_PAGES; page += 1) {
         const query = `&page=${String(page)}&per_page=${String(BOOKS_ITEMS_A_PAGE)}`;
-        const answer = await read("items", at("/items", query), ItemsPage, []);
+        const answer = await read({ step: "items", path: at("/items", query), schema: ItemsPage, under: [] });
         found.push(...answer.items.map(booksItemOf));
         if (!answer.page_context.has_more_page) return found;
       }
@@ -439,9 +477,15 @@ function itemCalls({ request, at, read }: BooksApi): Items {
     },
 
     createItem: (item) =>
-      read("create_item", at("/items"), z.string(), ["item", "item_id"], {
-        method: "POST",
-        body: { ...itemBody(item), product_type: "service" },
+      read({
+        step: "create_item",
+        path: at("/items"),
+        schema: z.string(),
+        under: ["item", "item_id"],
+        write: {
+          method: "POST",
+          body: { ...itemBody(item), product_type: "service" },
+        },
       }),
 
     async updateItem(itemId, item) {

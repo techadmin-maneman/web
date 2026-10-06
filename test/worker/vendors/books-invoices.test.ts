@@ -53,7 +53,7 @@ function invoicePass(
   budget: CallBudget = createCallBudget(Infinity),
 ) {
   const all = { labelAsTest: true, gst: NO_GST, ...options };
-  return raiseBooksInvoices(env.DB, depsAt(books, now), all, now, createLogger(), budget);
+  return raiseBooksInvoices({ db: env.DB, deps: depsAt(books, now), options: all, now, log: createLogger(), budget });
 }
 
 interface VisitShape {
@@ -190,7 +190,7 @@ describe("the invoice a finished visit gets", () => {
 
     const options = { refundAccountId: null, labelAsTest: true, gst: NO_GST } as const;
     const deps = depsAt(books, AFTER);
-    await syncBooks(env.DB, deps, options, AFTER, createLogger(), createCallBudget(Infinity));
+    await syncBooks({ db: env.DB, deps, options, now: AFTER, log: createLogger(), budget: createCallBudget(Infinity) });
     expect(books.made.customers).toHaveLength(1);
     expect(books.made.applied).toEqual([
       {

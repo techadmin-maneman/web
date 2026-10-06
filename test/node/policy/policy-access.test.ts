@@ -65,32 +65,74 @@ describe("can", () => {
   const zoneLead = person(grant("operations", "act", NCR));
 
   it("lets a level do what the levels below it can, and nothing above", () => {
-    expect(can(zoneLead, "operations", "view", DELHI, ZONES)).toBe(true);
-    expect(can(zoneLead, "operations", "act", DELHI, ZONES)).toBe(true);
-    expect(can(zoneLead, "operations", "manage", DELHI, ZONES)).toBe(false);
+    expect(can({ caller: zoneLead, department: "operations", level: "view", where: DELHI, zoneOf: ZONES })).toBe(true);
+    expect(can({ caller: zoneLead, department: "operations", level: "act", where: DELHI, zoneOf: ZONES })).toBe(true);
+    expect(can({ caller: zoneLead, department: "operations", level: "manage", where: DELHI, zoneOf: ZONES })).toBe(
+      false,
+    );
   });
 
   it("keeps a grant to its own department and its own place", () => {
-    expect(can(zoneLead, "finance", "view", DELHI, ZONES)).toBe(false);
-    expect(can(zoneLead, "operations", "view", MUMBAI, ZONES)).toBe(false);
-    expect(can(zoneLead, "operations", "view", NATIONAL, ZONES)).toBe(false);
+    expect(can({ caller: zoneLead, department: "finance", level: "view", where: DELHI, zoneOf: ZONES })).toBe(false);
+    expect(can({ caller: zoneLead, department: "operations", level: "view", where: MUMBAI, zoneOf: ZONES })).toBe(
+      false,
+    );
+    expect(can({ caller: zoneLead, department: "operations", level: "view", where: NATIONAL, zoneOf: ZONES })).toBe(
+      false,
+    );
   });
 
   it("asks only for the department and level when the route keeps to the caller's places itself", () => {
-    expect(can(person(grant("operations", "view", NOIDA)), "operations", "view", "anywhere", ZONES)).toBe(true);
-    expect(can(person(grant("operations", "view", NOIDA)), "operations", "act", "anywhere", ZONES)).toBe(false);
+    expect(
+      can({
+        caller: person(grant("operations", "view", NOIDA)),
+        department: "operations",
+        level: "view",
+        where: "anywhere",
+        zoneOf: ZONES,
+      }),
+    ).toBe(true);
+    expect(
+      can({
+        caller: person(grant("operations", "view", NOIDA)),
+        department: "operations",
+        level: "act",
+        where: "anywhere",
+        zoneOf: ZONES,
+      }),
+    ).toBe(false);
   });
 
   it("lets nobody in who is not on the list, or is switched off", () => {
     const missing: Caller = { kind: "person", active: false, grants: [] };
     const switchedOff: Caller = { kind: "person", active: false, grants: [grant("admin", "manage", NATIONAL)] };
-    expect(can(missing, "operations", "view", "anywhere", ZONES)).toBe(false);
-    expect(can(switchedOff, "admin", "view", "anywhere", ZONES)).toBe(false);
+    expect(can({ caller: missing, department: "operations", level: "view", where: "anywhere", zoneOf: ZONES })).toBe(
+      false,
+    );
+    expect(can({ caller: switchedOff, department: "admin", level: "view", where: "anywhere", zoneOf: ZONES })).toBe(
+      false,
+    );
   });
 
   it("lets a listed service token in as every caller was before the list, and an unlisted one nowhere", () => {
-    expect(can({ kind: "service", allowed: true }, "finance", "manage", NATIONAL, ZONES)).toBe(true);
-    expect(can({ kind: "service", allowed: false }, "operations", "view", "anywhere", ZONES)).toBe(false);
+    expect(
+      can({
+        caller: { kind: "service", allowed: true },
+        department: "finance",
+        level: "manage",
+        where: NATIONAL,
+        zoneOf: ZONES,
+      }),
+    ).toBe(true);
+    expect(
+      can({
+        caller: { kind: "service", allowed: false },
+        department: "operations",
+        level: "view",
+        where: "anywhere",
+        zoneOf: ZONES,
+      }),
+    ).toBe(false);
   });
 });
 

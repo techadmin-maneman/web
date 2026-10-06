@@ -65,7 +65,13 @@ async function queued(kind: string): Promise<string> {
 async function send(kind: string): Promise<{ text: string | null; skipped: string | null }> {
   const messageId = await queued(kind);
   const { provider, sent } = recordingProvider();
-  await sendMessage(env.DB, LOCAL_CONFIG, fakeDependencies({ messaging: provider }), log, messageId);
+  await sendMessage({
+    db: env.DB,
+    config: LOCAL_CONFIG,
+    deps: fakeDependencies({ messaging: provider }),
+    log,
+    messageId,
+  });
   const row = await env.DB.prepare("SELECT state, last_error FROM outbound_messages WHERE id = ?1")
     .bind(messageId)
     .first<{ state: string; last_error: string | null }>();

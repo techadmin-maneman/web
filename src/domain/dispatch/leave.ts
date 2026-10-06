@@ -131,13 +131,19 @@ export async function standingLeave(db: D1Database, technicianId: string, today:
  * they are rather than refused: two overlapping periods keep the technician away on the same days, and ops should not
  * have to unpick their own entries to add a day.
  */
-export async function recordLeave(
-  db: D1Database,
-  leave: NewLeave,
-  today: string,
-  now: Date,
-  audit: AuditEntry,
-): Promise<LeaveOutcome> {
+export async function recordLeave({
+  db,
+  leave,
+  today,
+  now,
+  audit,
+}: {
+  db: D1Database;
+  leave: NewLeave;
+  today: string;
+  now: Date;
+  audit: AuditEntry;
+}): Promise<LeaveOutcome> {
   if (leave.to < leave.from || leave.to > addDays(today, LEAVE_MAX_DAYS)) return { kind: "bad_dates" };
 
   const technician = await db

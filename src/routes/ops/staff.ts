@@ -183,7 +183,7 @@ const removeTokenRoute = createRoute({
 /** The book as the caller may see it: all of it nationally, or while the list is not enforced, as before it. */
 function bookFor(staff: StaffBook, access: CallerAccess) {
   const { caller, zoneOf } = access;
-  const seesAll = !access.enforced || can(caller, "admin", "view", NATIONAL, zoneOf);
+  const seesAll = !access.enforced || can({ caller, department: "admin", level: "view", where: NATIONAL, zoneOf });
   const people = seesAll ? staff.people : staff.people.filter((person) => maySee(caller, person, zoneOf));
   return {
     enforced: { on: staff.mode.enforced, set_by: staff.mode.setBy, set_at: staff.mode.setAt },

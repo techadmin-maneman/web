@@ -174,7 +174,13 @@ async function queued(kind: string, subjectId: string): Promise<string> {
 }
 
 async function send(messageId: string, provider: MessagingProvider) {
-  await sendMessage(env.DB, LOCAL_CONFIG, fakeDependencies({ messaging: provider }), createLogger(), messageId);
+  await sendMessage({
+    db: env.DB,
+    config: LOCAL_CONFIG,
+    deps: fakeDependencies({ messaging: provider }),
+    log: createLogger(),
+    messageId,
+  });
   return env.DB.prepare("SELECT state, last_error FROM outbound_messages WHERE id = ?1").bind(messageId).first();
 }
 
@@ -217,7 +223,13 @@ describe("the answer to a STOP reply", () => {
     };
     const messageId = await queued("messages_stopped", "consent-1");
 
-    await sendMessage(env.DB, config, fakeDependencies({ messaging: provider }), createLogger(), messageId);
+    await sendMessage({
+      db: env.DB,
+      config,
+      deps: fakeDependencies({ messaging: provider }),
+      log: createLogger(),
+      messageId,
+    });
 
     expect(sent).toEqual([{ to: MOBILE, template: "messages_stopped_v1", params: ["Karan"] }]);
   });

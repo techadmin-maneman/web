@@ -46,7 +46,7 @@ export async function runConsumer<T>(batch: MessageBatch, consumer: Consumer<T>)
       settle = await consumer.handle(parsed.data, message.attempts, log);
     } catch (error) {
       log.error(`${consumer.name}_step_error`, { error });
-      settle = await settleAfterError(consumer, parsed.data, message.attempts, error, log);
+      settle = await settleAfterError({ consumer, data: parsed.data, attempts: message.attempts, error, log });
     }
     if (settle.retryAfterSeconds === undefined) message.ack();
     else message.retry({ delaySeconds: settle.retryAfterSeconds });
@@ -54,13 +54,19 @@ export async function runConsumer<T>(batch: MessageBatch, consumer: Consumer<T>)
 }
 
 /** The consumer's own answer to a throw; if that throws too, the message is tried again all the same. */
-async function settleAfterError<T>(
-  consumer: Consumer<T>,
-  data: T,
-  attempts: number,
-  error: unknown,
-  log: Logger,
-): Promise<Settle> {
+async function settleAfterError<T>({
+  consumer,
+  data,
+  attempts,
+  error,
+  log,
+}: {
+  consumer: Consumer<T>;
+  data: T;
+  attempts: number;
+  error: unknown;
+  log: Logger;
+}): Promise<Settle> {
   if (consumer.onError === undefined) return afterError(attempts);
   try {
     return await consumer.onError(data, attempts, error, log);

@@ -337,13 +337,19 @@ async function whatWasDone(db: D1Database, visitId: string, type: VisitType | nu
 }
 
 /** One of the client's visits with its photographs; null for a visit that is not theirs. */
-export async function visitDetail(
-  db: D1Database,
-  personId: string,
-  visitId: string,
-  signingKey: string,
-  now: Date,
-): Promise<VisitDetail | null> {
+export async function visitDetail({
+  db,
+  personId,
+  visitId,
+  signingKey,
+  now,
+}: {
+  db: D1Database;
+  personId: string;
+  visitId: string;
+  signingKey: string;
+  now: Date;
+}): Promise<VisitDetail | null> {
   const row = await db
     .prepare(
       `SELECT ${APPOINTMENT_COLUMNS}, a.invoice_issued_at, a.fsm_invoice_id, v.duration_minutes, v.outcome

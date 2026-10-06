@@ -116,13 +116,19 @@ function heldLook(row: TryOnRow, keeping: Keeping, now: Date): Held | null {
   return { bucket: "RESULTS", key: row.result_key, keptUntil: keeping.lookKept ? null : day };
 }
 
-async function linkTo(
-  image: TryOnImage,
-  jobId: string,
-  held: Held | null,
-  signingKey: string,
-  now: Date,
-): Promise<TryOnLink | null> {
+async function linkTo({
+  image,
+  jobId,
+  held,
+  signingKey,
+  now,
+}: {
+  image: TryOnImage;
+  jobId: string;
+  held: Held | null;
+  signingKey: string;
+  now: Date;
+}): Promise<TryOnLink | null> {
   if (held === null) return null;
   const expiresAt = new Date(now.getTime() + PHOTO_LINK_MS);
   const token = await signToken(signingKey, TRY_ON_TOKEN_PURPOSES[image], jobId, expiresAt);
@@ -164,8 +170,8 @@ export async function clientTryOns(
   const tryOns: ClientTryOn[] = [];
   for (const row of results) {
     const keeping = row.id === kept.id ? { kept: true, lookKept: kept.lookKept } : NOT_KEPT;
-    const photo = await linkTo("photo", row.id, heldPhoto(row, keeping, now), signingKey, now);
-    const look = await linkTo("look", row.id, heldLook(row, keeping, now), signingKey, now);
+    const photo = await linkTo({ image: "photo", jobId: row.id, held: heldPhoto(row, keeping, now), signingKey, now });
+    const look = await linkTo({ image: "look", jobId: row.id, held: heldLook(row, keeping, now), signingKey, now });
     if (photo === null && look === null) continue;
     tryOns.push({ id: row.id, made_on: indiaDate(new Date(row.created_at)), kept: keeping.kept, photo, look });
   }
@@ -177,13 +183,19 @@ export async function clientTryOns(
  * else's. Whether it is held does not wait on the client's booking: until its look's day every image is held, and
  * after it only what the sweeper kept.
  */
-export async function ownTryOnImage(
-  db: D1Database,
-  personId: string,
-  jobId: string,
-  image: TryOnImage,
-  now: Date,
-): Promise<{ bucket: TryOnBucket; key: string; madeOn: string } | null> {
+export async function ownTryOnImage({
+  db,
+  personId,
+  jobId,
+  image,
+  now,
+}: {
+  db: D1Database;
+  personId: string;
+  jobId: string;
+  image: TryOnImage;
+  now: Date;
+}): Promise<{ bucket: TryOnBucket; key: string; madeOn: string } | null> {
   const row = await db
     .prepare(
       `SELECT ${COLUMNS} FROM tryon_jobs j WHERE j.id = ?1 AND j.person_id = ?2 AND j.number_proved_at IS NOT NULL`,

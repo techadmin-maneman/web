@@ -393,8 +393,19 @@ export const settings = {
     check: {
       title: "Check the change",
       price: (name: string, was: string, now: string, from: string) => `${name}: ${was} → ${now}, from ${from}.`,
-      correct: (name: string, was: string, wasFrom: string, now: string, from: string) =>
-        `${name}: ${was} from ${wasFrom} → ${now} from ${from}.`,
+      correct: ({
+        name,
+        was,
+        wasFrom,
+        now,
+        from,
+      }: {
+        name: string;
+        was: string;
+        wasFrom: string;
+        now: string;
+        from: string;
+      }) => `${name}: ${was} from ${wasFrom} → ${now} from ${from}.`,
       nothing: "nothing",
       gstChanges: (was: number, now: number) => `GST changes from ${String(was)}% to ${String(now)}%.`,
       sameDay: "A price is already set from that day. This replaces it.",

@@ -404,13 +404,13 @@ export function registerClientVisits(app: App): void {
 
   app.openapi(visitRoute, async (c) => {
     const session = clientOf(c);
-    const visit = await visitDetail(
-      c.env.DB,
-      session.subjectId,
-      c.req.valid("param").id,
-      c.var.config.settings.tryon.linkSigningKey,
-      c.var.deps.now(),
-    );
+    const visit = await visitDetail({
+      db: c.env.DB,
+      personId: session.subjectId,
+      visitId: c.req.valid("param").id,
+      signingKey: c.var.config.settings.tryon.linkSigningKey,
+      now: c.var.deps.now(),
+    });
     if (visit === null) return refuse(c, "not_found");
     return c.json(visit, 200);
   });
@@ -500,7 +500,8 @@ function registerTryOnImages(app: App): void {
     const { tryon } = c.var.config.settings;
     const now = deps.now();
     const jobId = await verifyToken(tryon.linkSigningKey, TRY_ON_TOKEN_PURPOSES[image], token, now);
-    const held = jobId === null ? null : await ownTryOnImage(c.env.DB, session.subjectId, jobId, image, now);
+    const held =
+      jobId === null ? null : await ownTryOnImage({ db: c.env.DB, personId: session.subjectId, jobId, image, now });
     if (held === null) return refuse(c, "not_found");
 
     if (!(await takeOne(c.env.DB, "tryon_image:person", session.subjectId, { now, settings: c.var.config.settings }))) {

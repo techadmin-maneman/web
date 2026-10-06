@@ -41,14 +41,20 @@ export function paymentStatusOf(event: string, payment: RazorpayPayment): Paymen
 }
 
 /** Writes a payment event: the payment, if new, and its state, if the event moves it forward. */
-export async function recordPayment(
-  db: D1Database,
-  payment: RazorpayPayment,
-  status: PaymentStatus,
-  hashSalt: string,
-  now: Date,
-): Promise<void> {
-  await writePayment(db, payment, status, hashSalt, now);
+export async function recordPayment({
+  db,
+  payment,
+  status,
+  hashSalt,
+  now,
+}: {
+  db: D1Database;
+  payment: RazorpayPayment;
+  status: PaymentStatus;
+  hashSalt: string;
+  now: Date;
+}): Promise<void> {
+  await writePayment({ db, payment, status, hashSalt, now });
   if (status !== "captured") return;
   await giveReference(db, payment.id, holdIdOf(payment), now);
   // The hold it paid for keeps its time from here until it is booked or refunded (src/domain/booking/bookings.ts).
@@ -68,7 +74,7 @@ export async function recordRefundedPayment(
   now: Date,
 ): Promise<string | null> {
   const status = payment.captured === false ? "authorized" : "captured";
-  const personId = await writePayment(db, payment, status, hashSalt, now);
+  const personId = await writePayment({ db, payment, status, hashSalt, now });
   if (status === "captured") await giveReference(db, payment.id, holdIdOf(payment), now);
   return personId;
 }
@@ -85,13 +91,19 @@ function holdIdOf(payment: RazorpayPayment): string | null {
 }
 
 /** The payment, if new, and its state, if `status` moves it forward. Our person for it, if we know them. */
-async function writePayment(
-  db: D1Database,
-  payment: RazorpayPayment,
-  status: PaymentStatus,
-  hashSalt: string,
-  now: Date,
-): Promise<string | null> {
+async function writePayment({
+  db,
+  payment,
+  status,
+  hashSalt,
+  now,
+}: {
+  db: D1Database;
+  payment: RazorpayPayment;
+  status: PaymentStatus;
+  hashSalt: string;
+  now: Date;
+}): Promise<string | null> {
   const at = now.toISOString();
   const notes = notesOf(payment);
   const personId = await personOf(db, notes.person_id, payment.contact ?? null);

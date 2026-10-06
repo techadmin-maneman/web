@@ -207,9 +207,9 @@ export function registerTechAuth(app: App): void {
     if (asked !== "open") return refuse(c, "rate_limited");
 
     const sendsTo = technician?.mobileE164 ?? null;
-    if (!(await countCode(c, "tech", sendsTo, testRecord, now))) return refuse(c, "busy");
+    if (!(await countCode({ c, surface: "tech", sendsTo, testRecord, now }))) return refuse(c, "busy");
 
-    const code = knownCode(limits, testRecord) ?? newLoginCode();
+    const code = knownCode({ login: limits, testRecord }) ?? newLoginCode();
     const challenge = await createChallenge(db, {
       holder: "technician",
       holderId: technician?.id ?? null,
@@ -217,7 +217,7 @@ export function registerTechAuth(app: App): void {
       pepper: limits.codePepper,
       now,
     });
-    await sendCodeAfterResponse(c, sendsTo, testRecord, "whatsapp", code);
+    await sendCodeAfterResponse({ c, mobileE164: sendsTo, testRecord, channel: "whatsapp", code });
     return c.json(
       { challenge_id: challenge.id, expires_in_s: Math.ceil((challenge.expiresAt.getTime() - now.getTime()) / 1000) },
       202,

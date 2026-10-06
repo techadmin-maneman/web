@@ -48,29 +48,41 @@ interface RenderOptions {
 type Next = Settle;
 
 /** Each job's next step; one that D1 or R2 fails is tried again shortly. */
-export function handleRenderBatch(
-  batch: MessageBatch,
-  env: RenderEnv,
-  deps: Dependencies,
-  log: Logger,
-  options: RenderOptions,
-): Promise<void> {
+export function handleRenderBatch({
+  batch,
+  env,
+  deps,
+  log,
+  options,
+}: {
+  batch: MessageBatch;
+  env: RenderEnv;
+  deps: Dependencies;
+  log: Logger;
+  options: RenderOptions;
+}): Promise<void> {
   return runConsumer(batch, {
     name: "render",
     schema: RenderMessageSchema,
     log,
     logFor: (data) => log.child({ request_id: data.request_id, job_id: data.job_id }),
-    handle: (data, _attempts, jobLog) => advanceJob(env, deps, jobLog, data.job_id, options),
+    handle: (data, _attempts, jobLog) => advanceJob({ env, deps, log: jobLog, jobId: data.job_id, options }),
   });
 }
 
-export async function advanceJob(
-  env: RenderEnv,
-  deps: Dependencies,
-  log: Logger,
-  jobId: string,
-  options: RenderOptions,
-): Promise<Next> {
+export async function advanceJob({
+  env,
+  deps,
+  log,
+  jobId,
+  options,
+}: {
+  env: RenderEnv;
+  deps: Dependencies;
+  log: Logger;
+  jobId: string;
+  options: RenderOptions;
+}): Promise<Next> {
   const job = await loadJob(env.DB, jobId);
   if (job === null) {
     log.error("render_unknown_job");
@@ -80,9 +92,9 @@ export async function advanceJob(
     case "queued":
       return submit(env, deps, log, job);
     case "rendering":
-      return poll(env, deps, log, job, options);
+      return poll({ env, deps, log, job, options });
     case "downloading":
-      return download(env, deps, log, job, options);
+      return download({ env, deps, log, job, options });
     case "awaiting_upload":
     case "ready":
     case "failed":
@@ -108,32 +120,50 @@ async function submit(env: RenderEnv, deps: Dependencies, log: Logger, job: JobR
 
   const preset = findPreset(job.preset ?? "");
   if (preset === undefined || job.endpoint === null || job.provider_color === null) {
-    return fail(env, deps, log, job, {
-      code: "render_failed",
-      transient: false,
-      alert: true,
-      detail: "job has no render choice",
+    return fail({
+      env,
+      deps,
+      log,
+      job,
+      failure: {
+        code: "render_failed",
+        transient: false,
+        alert: true,
+        detail: "job has no render choice",
+      },
     });
   }
 
   const upload = await env.UPLOADS.get(job.upload_key);
   if (upload === null) {
-    return fail(env, deps, log, job, {
-      code: "render_failed",
-      transient: false,
-      alert: false,
-      detail: "photo no longer stored",
+    return fail({
+      env,
+      deps,
+      log,
+      job,
+      failure: {
+        code: "render_failed",
+        transient: false,
+        alert: false,
+        detail: "photo no longer stored",
+      },
     });
   }
   // The upload route checked the photo; this guards against anything that slipped past.
   const image = new Uint8Array(await upload.arrayBuffer());
   const photo = checkPhoto(image);
   if (!photo.ok) {
-    return fail(env, deps, log, job, {
-      code: "photo_invalid_file",
-      transient: false,
-      alert: false,
-      detail: photo.problem,
+    return fail({
+      env,
+      deps,
+      log,
+      job,
+      failure: {
+        code: "photo_invalid_file",
+        transient: false,
+        alert: false,
+        detail: photo.problem,
+      },
     });
   }
 
@@ -156,22 +186,34 @@ async function submit(env: RenderEnv, deps: Dependencies, log: Logger, job: JobR
     log.warn("render_submit_retry", { attempt: claim.submit_attempts, detail: result.failure.detail });
     return { retryAfterSeconds: SUBMIT_RETRY_DELAY_SECONDS };
   }
-  return fail(env, deps, log, job, result.failure);
+  return fail({ env, deps, log, job, failure: result.failure });
 }
 
-async function poll(
-  env: RenderEnv,
-  deps: Dependencies,
-  log: Logger,
-  job: JobRow,
-  options: RenderOptions,
-): Promise<Next> {
+async function poll({
+  env,
+  deps,
+  log,
+  job,
+  options,
+}: {
+  env: RenderEnv;
+  deps: Dependencies;
+  log: Logger;
+  job: JobRow;
+  options: RenderOptions;
+}): Promise<Next> {
   if (job.provider_task_id === null || job.endpoint === null) {
-    return fail(env, deps, log, job, {
-      code: "render_failed",
-      transient: false,
-      alert: true,
-      detail: "rendering without a task",
+    return fail({
+      env,
+      deps,
+      log,
+      job,
+      failure: {
+        code: "render_failed",
+        transient: false,
+        alert: true,
+        detail: "rendering without a task",
+      },
     });
   }
   const elapsed = deps.now().getTime() - Date.parse(job.submitted_at ?? job.created_at);
@@ -187,28 +229,28 @@ async function poll(
     )
       .bind(job.id, result.resultUrl, expiresAt)
       .run();
-    return download(
+    return download({
       env,
       deps,
       log,
-      {
+      job: {
         ...job,
         state: "downloading",
         provider_result_url: result.resultUrl,
         provider_result_expires_at: expiresAt,
       },
       options,
-    );
+    });
   }
 
   const withinDeadline = elapsed <= RENDER_GIVE_UP_MS;
   if (result.state === "failed" && !(result.failure.transient && withinDeadline)) {
-    return fail(env, deps, log, job, result.failure);
+    return fail({ env, deps, log, job, failure: result.failure });
   }
   if (!withinDeadline) {
     // Probably billed already: Premium bills while it renders. The task can still be polled by hand.
     const detail = `no result ${String(Math.round(elapsed / MINUTE_MS))} min after submitting; task ${job.provider_task_id}`;
-    return fail(env, deps, log, job, { code: "render_failed", transient: false, alert: true, detail });
+    return fail({ env, deps, log, job, failure: { code: "render_failed", transient: false, alert: true, detail } });
   }
   return { retryAfterSeconds: pollDelay(elapsed) };
 }
@@ -220,23 +262,35 @@ function pollDelay(elapsed: number): number {
   return POLL_DELAY_SECONDS.slow;
 }
 
-async function download(
-  env: RenderEnv,
-  deps: Dependencies,
-  log: Logger,
-  job: JobRow,
-  options: RenderOptions,
-): Promise<Next> {
+async function download({
+  env,
+  deps,
+  log,
+  job,
+  options,
+}: {
+  env: RenderEnv;
+  deps: Dependencies;
+  log: Logger;
+  job: JobRow;
+  options: RenderOptions;
+}): Promise<Next> {
   const db = env.DB;
   const now = deps.now();
   const url = job.provider_result_url;
   const expiresAt = Date.parse(job.provider_result_expires_at ?? "");
   if (url === null || !(expiresAt > now.getTime())) {
-    return fail(env, deps, log, job, {
-      code: "render_failed",
-      transient: false,
-      alert: true,
-      detail: "result URL expired before the image was downloaded: a billed image is lost",
+    return fail({
+      env,
+      deps,
+      log,
+      job,
+      failure: {
+        code: "render_failed",
+        transient: false,
+        alert: true,
+        detail: "result URL expired before the image was downloaded: a billed image is lost",
+      },
     });
   }
 
@@ -252,7 +306,13 @@ async function download(
   const result = await deps.image.download(url);
   if (!result.ok && !result.transient) {
     // Billed, and never usable: downloading it again would only fetch the same bytes.
-    return fail(env, deps, log, job, { code: "render_failed", transient: false, alert: true, detail: result.detail });
+    return fail({
+      env,
+      deps,
+      log,
+      job,
+      failure: { code: "render_failed", transient: false, alert: true, detail: result.detail },
+    });
   }
   if (!result.ok) {
     log.warn("render_download_failed", { attempts, detail: result.detail });
@@ -304,14 +364,26 @@ async function download(
   return DONE;
 }
 
-async function fail(
-  env: RenderEnv,
-  deps: Dependencies,
-  log: Logger,
-  job: JobRow,
-  failure: RenderFailure,
-): Promise<Next> {
-  const changed = await failJob(env.DB, job.id, failure.code, failure.detail, deps.now());
+async function fail({
+  env,
+  deps,
+  log,
+  job,
+  failure,
+}: {
+  env: RenderEnv;
+  deps: Dependencies;
+  log: Logger;
+  job: JobRow;
+  failure: RenderFailure;
+}): Promise<Next> {
+  const changed = await failJob({
+    db: env.DB,
+    jobId: job.id,
+    code: failure.code,
+    detail: failure.detail,
+    now: deps.now(),
+  });
   if (changed) {
     log.warn("render_failed", { code: failure.code, detail: failure.detail, endpoint: job.endpoint });
     if (failure.alert) await deps.alert(`Try-on job ${job.id} failed (${failure.code}): ${failure.detail}`);

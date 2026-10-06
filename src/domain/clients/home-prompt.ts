@@ -147,14 +147,21 @@ function nextVisitPrompt(next: NextService, replacementMonth: string | null): Ho
 }
 
 /** The prompt Home shows this client, and the invoice line beneath it. */
-export async function homePrompts(
-  db: D1Database,
-  personId: string,
-  row: PromptFacts | null,
-  standing: ClientStanding,
-  now: Date,
-  days: NextVisitDays,
-): Promise<HomePrompts> {
+export async function homePrompts({
+  db,
+  personId,
+  row,
+  standing,
+  now,
+  days,
+}: {
+  db: D1Database;
+  personId: string;
+  row: PromptFacts | null;
+  standing: ClientStanding;
+  now: Date;
+  days: NextVisitDays;
+}): Promise<HomePrompts> {
   if (row === null) return { prompt: null, invoice: null };
   const tomorrow = addDays(indiaDate(now), 1);
   const next = nextServiceOf(standing.offer);

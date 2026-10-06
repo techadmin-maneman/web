@@ -704,7 +704,7 @@ describe("the referrer's tracker, after the friend is erased", () => {
     await settleReferrals(env.DB, NOW, REFERRAL_REWARD);
     expect(await tracker()).toEqual([{ first_name: "Karan", month: "2026-09", visits: 3 }]);
 
-    await erasePerson(env, FRIEND, NOW, createLogger());
+    await erasePerson({ env, personId: FRIEND, now: NOW, log: createLogger() });
 
     // An erasure keeps no name of theirs, not even on another client's page (open point 63, for counsel).
     expect(await tracker()).toEqual([{ first_name: null, month: "2026-09", visits: 3 }]);
@@ -714,7 +714,7 @@ describe("the referrer's tracker, after the friend is erased", () => {
     await firstFit(FIT, FRIEND);
     await settleReferrals(env.DB, NOW, REFERRAL_REWARD);
     await env.DB.prepare("UPDATE referral_attributions SET friend_first_name = NULL").run();
-    await erasePerson(env, FRIEND, NOW, createLogger());
+    await erasePerson({ env, personId: FRIEND, now: NOW, log: createLogger() });
 
     expect(await tracker()).toEqual([{ first_name: null, month: "2026-09", visits: 3 }]);
   });

@@ -77,34 +77,47 @@ export const SENDING_LEASE_MS = 2 * MINUTE_MS;
 type Next = Settle;
 
 /** Each message sent; one whose every try threw is failed, and ops told, so the sweeper does not send it for ever. */
-export function handleMessagingBatch(
-  batch: MessageBatch,
-  db: D1Database,
-  config: StaticConfig,
-  deps: Dependencies,
-  log: Logger,
-): Promise<void> {
+export function handleMessagingBatch({
+  batch,
+  db,
+  config,
+  deps,
+  log,
+}: {
+  batch: MessageBatch;
+  db: D1Database;
+  config: StaticConfig;
+  deps: Dependencies;
+  log: Logger;
+}): Promise<void> {
   return runConsumer(batch, {
     name: "messaging",
     schema: MessagingMessageSchema,
     log,
     logFor: (data) => log.child({ request_id: data.request_id, outbound_message_id: data.message_id }),
-    handle: (data, _attempts, messageLog) => sendMessage(db, config, deps, messageLog, data.message_id),
+    handle: (data, _attempts, messageLog) =>
+      sendMessage({ db, config, deps, log: messageLog, messageId: data.message_id }),
     onError: async (data, attempts, error, messageLog) =>
       attempts < MAX_SEND_ATTEMPTS
         ? { retryAfterSeconds: RETRY_DELAY_SECONDS }
-        : failAfterErrors(db, deps, messageLog, data.message_id, error),
+        : failAfterErrors({ db, deps, log: messageLog, messageId: data.message_id, error }),
   });
 }
 
 /** A message whose every delivery threw: failed, and ops told, so the sweeper does not send it again for ever. */
-async function failAfterErrors(
-  db: D1Database,
-  deps: Dependencies,
-  log: Logger,
-  messageId: string,
-  error: unknown,
-): Promise<Next> {
+async function failAfterErrors({
+  db,
+  deps,
+  log,
+  messageId,
+  error,
+}: {
+  db: D1Database;
+  deps: Dependencies;
+  log: Logger;
+  messageId: string;
+  error: unknown;
+}): Promise<Next> {
   const reason = scrubString(error instanceof Error ? error.message : String(error)).slice(0, 200);
   const detail = `could not be sent: ${reason}`;
   const failed = await db
@@ -226,7 +239,13 @@ async function contentOf(db: D1Database, config: StaticConfig, row: MessageRow, 
   if (isVisitKind(row.kind)) {
     const composed = await composeVisitMessage(db, row.kind, row.subject_id, row.person_id);
     if ("skip" in composed) return composed;
-    const stale = await isMessageStale(db, row.kind, row.subject_id, new Date(row.created_at), now);
+    const stale = await isMessageStale({
+      db,
+      kind: row.kind,
+      appointmentId: row.subject_id,
+      writtenAt: new Date(row.created_at),
+      now,
+    });
     if (stale !== null) return { skip: stale };
     return composed;
   }
@@ -269,13 +288,19 @@ async function stopLinkOf(config: StaticConfig, row: MessageRow, now: Date): Pro
   return stopLink(origin, config.settings.tryon.linkSigningKey, { personId: row.person_id, purpose }, now);
 }
 
-export async function sendMessage(
-  db: D1Database,
-  config: StaticConfig,
-  deps: Dependencies,
-  log: Logger,
-  messageId: string,
-): Promise<Next> {
+export async function sendMessage({
+  db,
+  config,
+  deps,
+  log,
+  messageId,
+}: {
+  db: D1Database;
+  config: StaticConfig;
+  deps: Dependencies;
+  log: Logger;
+  messageId: string;
+}): Promise<Next> {
   const { messaging } = config.settings;
   const now = deps.now();
 

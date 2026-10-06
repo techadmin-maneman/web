@@ -145,7 +145,13 @@ async function replayOf(db: D1Database, held: JobEvent, input: EventInput): Prom
 export async function landInOrder(db: D1Database, input: LandingInput): Promise<Landing> {
   const done = await kindsLanded(db, input.job.id);
   if (isNoShow(input.kind, input.body) && done.has("start")) return { kind: "already_started" };
-  const needs = stepBefore(input.kind, input.job.type, done, input.body, input.job.oneVisit !== null);
+  const needs = stepBefore({
+    kind: input.kind,
+    type: input.job.type,
+    done,
+    body: input.body,
+    oneVisit: input.job.oneVisit !== null,
+  });
   if (needs !== null) return { kind: "out_of_order", needs };
 
   const written = await record(db, input);
@@ -299,7 +305,7 @@ function eventOf(row: EventRow): JobEvent {
 /** Writes the event in one batch with what is written with it and what the step records. Null when the same event ID landed first. */
 async function record(db: D1Database, input: LandingInput): Promise<JobEvent | null> {
   const [inserted] = await db.batch<EventRow>([
-    eventStatement(db, input, "written", false),
+    eventStatement({ db, input, state: "written", superseded: false }),
     ...(input.withEvent ?? []),
     ...input.records,
   ]);
@@ -309,15 +315,20 @@ async function record(db: D1Database, input: LandingInput): Promise<JobEvent | n
 
 /** A superseded write records nothing: it is kept only as the record that the phone tried. */
 async function recordSuperseded(db: D1Database, input: EventInput): Promise<void> {
-  await eventStatement(db, input, "rejected", true).run();
+  await eventStatement({ db, input, state: "rejected", superseded: true }).run();
 }
 
-function eventStatement(
-  db: D1Database,
-  input: EventInput,
-  state: WriteState,
-  superseded: boolean,
-): D1PreparedStatement {
+function eventStatement({
+  db,
+  input,
+  state,
+  superseded,
+}: {
+  db: D1Database;
+  input: EventInput;
+  state: WriteState;
+  superseded: boolean;
+}): D1PreparedStatement {
   return db
     .prepare(
       `INSERT INTO job_events
