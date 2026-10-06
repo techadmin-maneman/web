@@ -6,40 +6,40 @@ Setting up staging or production from nothing, a step at a time. Operating an en
 
 Staging's column is as its deploy of 27 September 2026 found it: all five Workers took commit 16fde86 and passed the smoke tests. Production's is as last recorded: its last release was 268eaa4 on 21 September 2026, which deployed mm-api and mm-site. Nothing here was read from production for this table; "Before the first production release of Phase 2", below the steps, is how to check.
 
-| Step                                           | staging                                                                 | production                                                                                |
-| ---------------------------------------------- | ----------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
-| 1. D1 database                                 | done                                                                    | done                                                                                      |
-| 1. Queues: render, crm-sync, messaging         | done                                                                    | done                                                                                      |
-| 1. R2 buckets, 30-day expiry                   | done                                                                    | done                                                                                      |
-| 1. R2 buckets: photographs, referral cards     | done                                                                    | not yet (open point 86)                                                                   |
-| 2. DNS record                                  | done                                                                    | exists (the apex record)                                                                  |
-| 3. Access application and service token        | done                                                                    | not applicable                                                                            |
-| 4. Migrations and identity mark                | done                                                                    | done, to the migrations of 268eaa4                                                        |
-| 5. Bootstrap deploy of mm-api and mm-site      | done                                                                    | done                                                                                      |
-| 6. CI tokens and GitHub secrets, checked       | done                                                                    | done                                                                                      |
-| 7. Worker secrets: Turnstile, IP salt          | done                                                                    | done                                                                                      |
-| 7. Worker secrets: alert webhook               | done (Google Chat)                                                      | done (the same Google Chat space)                                                         |
-| 7. Worker secrets: AILabTools, link signing    | done                                                                    | done (staging's AILabTools key, for now)                                                  |
-| 7. Worker secrets: Evolution, allowlist        | done (poker-settle's bridge, for now)                                   | Evolution done (the same bridge; messaging off)                                           |
-| 7. Worker secrets: erasure                     | retired: delete `ERASURE_SECRET` once this lands                        | retired: delete `ERASURE_SECRET` with the release that carries it                         |
-| 7. Worker secrets: login code pepper           | done (22 September 2026)                                                | not yet: with the client surface                                                          |
-| 7. Worker secrets: the cron's heartbeat        | done (4 October 2026)                                                   | done (4 October 2026); pinged once production runs it                                     |
-| 7. Worker secrets: the analytics token         | retired (ADR 0112): delete `CLOUDFLARE_ANALYTICS_TOKEN` once this lands | retired                                                                                   |
-| 8. Zoho org, fields, secrets                   | done: the real org (ADR 0050)                                           | done: the real org (ADR 0050)                                                             |
-| 9. Triggers: the cron                          | done, and checked by the deploy                                         | done                                                                                      |
-| 9. Triggers: the queue consumers               | done (all three); CI cannot read them, so check by hand                 | done (all three)                                                                          |
-| 10. Access bypass for result links             | done                                                                    | not applicable                                                                            |
-| 10b. Access bypass for invite previews         | not yet: the owner's (27 September 2026)                                | not applicable                                                                            |
-| 11. Phase 2 hosts: DNS, Access                 | done                                                                    | done (all three behind Access until go-live)                                              |
-| 11. Phase 2 surfaces switched on               | done (22 September 2026)                                                | not yet: waits for the production go-ahead                                                |
-| 11. The apps' Workers: mm-app, mm-ops, mm-tech | done: each deploys with every merge                                     | mm-app recorded as bootstrapped with no route (open point 83); mm-ops and mm-tech not yet |
-| 11b. Books                                     | done                                                                    | not yet: `BOOKS_PROVIDER` is `none`                                                       |
-| 11c. Razorpay                                  | done, test keys                                                         | not yet: `PAYMENTS_PROVIDER` is `none`                                                    |
-| 12. Evolution receipts: token, bypass          | done                                                                    | not yet                                                                                   |
-| 12. Evolution receipts: the webhook            | open: the shared instance's webhook                                     | not yet                                                                                   |
-| 13. The address search (Google)                | `google`, and Google refuses the key (open point 54)                    | not yet: `none`                                                                           |
-| 14. Cloudflare's edge scripts                  | settled: the free plan keeps both; every policy refuses them            | the same zone settings                                                                    |
-| 15. The rate-limiting rule                     | not set: the dashboard asks for a paid plan                             | the same: the zone's                                                                      |
+| Step                                           | staging                                                      | production                                                                                |
+| ---------------------------------------------- | ------------------------------------------------------------ | ----------------------------------------------------------------------------------------- |
+| 1. D1 database                                 | done                                                         | done                                                                                      |
+| 1. Queues: render, crm-sync, messaging         | done                                                         | done                                                                                      |
+| 1. R2 buckets, 30-day expiry                   | done                                                         | done                                                                                      |
+| 1. R2 buckets: photographs, referral cards     | done                                                         | not yet (open point 86)                                                                   |
+| 2. DNS record                                  | done                                                         | exists (the apex record)                                                                  |
+| 3. Access application and service token        | done                                                         | not applicable                                                                            |
+| 4. Migrations and identity mark                | done                                                         | done, to the migrations of 268eaa4                                                        |
+| 5. Bootstrap deploy of mm-api and mm-site      | done                                                         | done                                                                                      |
+| 6. CI tokens and GitHub secrets, checked       | done                                                         | done                                                                                      |
+| 7. Worker secrets: Turnstile, IP salt          | done                                                         | done                                                                                      |
+| 7. Worker secrets: alert webhook               | done (Google Chat)                                           | done (the same Google Chat space)                                                         |
+| 7. Worker secrets: AILabTools, link signing    | done                                                         | done (staging's AILabTools key, for now)                                                  |
+| 7. Worker secrets: Evolution, allowlist        | done (poker-settle's bridge, for now)                        | Evolution done (the same bridge; messaging off)                                           |
+| 7. Worker secrets: erasure                     | retired: delete `ERASURE_SECRET` once this lands             | retired: delete `ERASURE_SECRET` with the release that carries it                         |
+| 7. Worker secrets: login code pepper           | done (22 September 2026)                                     | not yet: with the client surface                                                          |
+| 7. Worker secrets: the cron's heartbeat        | done (4 October 2026)                                        | done (4 October 2026); pinged once production runs it                                     |
+| 7. Worker secrets: the analytics token         | retired (ADR 0112): the secret stays, unread                 | retired                                                                                   |
+| 8. Zoho org, fields, secrets                   | done: the real org (ADR 0050)                                | done: the real org (ADR 0050)                                                             |
+| 9. Triggers: the cron                          | done, and checked by the deploy                              | done                                                                                      |
+| 9. Triggers: the queue consumers               | done (all three); CI cannot read them, so check by hand      | done (all three)                                                                          |
+| 10. Access bypass for result links             | done                                                         | not applicable                                                                            |
+| 10b. Access bypass for invite previews         | not yet: the owner's (27 September 2026)                     | not applicable                                                                            |
+| 11. Phase 2 hosts: DNS, Access                 | done                                                         | done (all three behind Access until go-live)                                              |
+| 11. Phase 2 surfaces switched on               | done (22 September 2026)                                     | not yet: waits for the production go-ahead                                                |
+| 11. The apps' Workers: mm-app, mm-ops, mm-tech | done: each deploys with every merge                          | mm-app recorded as bootstrapped with no route (open point 83); mm-ops and mm-tech not yet |
+| 11b. Books                                     | done                                                         | not yet: `BOOKS_PROVIDER` is `none`                                                       |
+| 11c. Razorpay                                  | done, test keys                                              | not yet: `PAYMENTS_PROVIDER` is `none`                                                    |
+| 12. Evolution receipts: token, bypass          | done                                                         | not yet                                                                                   |
+| 12. Evolution receipts: the webhook            | open: the shared instance's webhook                          | not yet                                                                                   |
+| 13. The address search (Google)                | `google`, and Google refuses the key (open point 54)         | not yet: `none`                                                                           |
+| 14. Cloudflare's edge scripts                  | settled: the free plan keeps both; every policy refuses them | the same zone settings                                                                    |
+| 15. The rate-limiting rule                     | not set: the dashboard asks for a paid plan                  | the same: the zone's                                                                      |
 
 ## 1. Resources
 

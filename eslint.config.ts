@@ -24,6 +24,7 @@ const sized = (level: "error" | "warn", max: number): Linter.RuleEntry => [
  */
 const PINNED: Readonly<Record<string, { readonly lines?: number; readonly fn?: number }>> = {
   "src/domain/privacy/erasure-statements.ts": { fn: 93 },
+  // A table read top to bottom, every table holding a client's rows in turn: kept whole on purpose.
   "src/policy/personal-data.ts": { lines: 444 },
   "src/providers/payments/razorpay.ts": { fn: 81 },
 };

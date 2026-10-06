@@ -131,7 +131,8 @@ request, and a script updates the imports.
   (`CONTRIBUTING.md` already asks for this).
 - Lower or delete each pin as its file shrinks.
 
-**Done when** `PINNED` in `eslint.config.ts` is empty and no test file is past 500 lines.
+**Done when** `PINNED` in `eslint.config.ts` holds only `src/policy/personal-data.ts`, a table read top to bottom and
+kept whole on purpose, and no test file is past 500 lines.
 
 ### 6. FSM's leftovers (2 days, across a production release)
 
@@ -196,8 +197,10 @@ alongside a long-lived branch.
 | --------------------------- | ----------------------------------------------------------------------------------------------------------------- |
 | 1. Start here               | Done: `docs/start-here.md` and its map test (#485)                                                                |
 | 7. Workers Paid             | Done: the database limit, the CPU report, the daily allowances, the budget model and the cron's caps (#479, #484) |
-| 2. Comments without history | Done: every folder (#480 to #494), held by `no-history.test.ts`                                                   |
+| 2. Comments without history | Done: every folder (#480 to #494), held by `no-history.test.ts`; the pronoun pass is still to do                  |
 | 3. Feature folders          | Done: `src/domain/` in 16 folders, one a feature (#497)                                                           |
-| 4. Names                    | Renames in review (#499); one-object parameters next, for review                                                  |
-| 8. Documents                | The ADRs indexed by topic                                                                                         |
-| 5, 6                        | Not started                                                                                                       |
+| 4. Names                    | Done: renames (#499) and one-object parameters with `max-params` at 4 (#504)                                      |
+| 5. Large files              | Done: the source files split (#503 to #528), the long functions shortened (#524, #526, #533), every test file     |
+|                             | under 500 lines (#527, #529 to #532); `personal-data.ts` stays whole                                              |
+| 8. Documents                | The ADRs indexed by topic, provisioning a page of its own (#500, #501); the other documents still to do           |
+| 6. FSM's leftovers          | Not started                                                                                                       |
