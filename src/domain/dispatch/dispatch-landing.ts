@@ -101,7 +101,7 @@ export const isWhereItIs = (job: LiveJob, target: Target): boolean =>
   target.keepsTime && target.technicianId === job.technician_id;
 /** Where a move puts a job, and whether it keeps the time it has. */
 
-export interface Target {
+interface Target {
   readonly technicianId: string;
   readonly date: string;
   readonly window: BookingWindow;
