@@ -2,6 +2,7 @@
 
 - Status: accepted. Amends ADR 0011 on what a refused Turnstile secret answers, and ADR 0044 on a Books refusal. Amended 4 October 2026: "Alerts on Tasks", on the owner's ruling that alerts get a home in the console; and "Told again on a clock".
 - Date: 2026-09-25
+- Topic: Platform
 
 ## Context
 

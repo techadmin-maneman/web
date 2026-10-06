@@ -2,6 +2,7 @@
 
 - Status: accepted (required checks and reviewers wait for the GitHub plan; see 0008). Amended 25 September 2026: "Deploys that prove what they shipped"; 27 September 2026: the coverage gate ([0075](0075-tests-held-to-the-contract-and-the-local-stack.md)); 1 October 2026: "Two tiers", and the jobs back on the owner's machine; the same day, "Checks are not repeated"; 2 October 2026: "Merged when green" holds by the paths a pull request changes; the same day, the full suite on every push, on GitHub's runners, the repository public.
 - Date: 2026-09-21
+- Topic: Platform
 
 ## Decision
 

@@ -2,6 +2,7 @@
 
 - Status: superseded by [0110](0110-field-work-without-fsm.md) on 4 October 2026: FSM's mirror is gone with FSM; our own database is the record of field work. Was: accepted. Amended 28 September 2026: the lead route that sent Phase 1's bookings to FSM as Requests is removed; the site's bookings reach FSM as work orders from their held slots (ADR 0051), and what is left of the Request path goes with `docs/open-points.md`, item 159. Amended 1 October 2026 by ADR 0101: that path is removed.
 - Date: 2026-09-22
+- Topic: Field work
 
 ## Context
 
@@ -25,7 +26,7 @@ This ADR grows with P2-M2. Its first part is the connection.
 **One Zoho client for FSM and Books,** in the real org. It is separate from the CRM's client, because the CRM is still in the Developer Edition org (ADR 0020).
 
 - Its ID, secret and refresh token are the Worker secrets `ZOHO_FSM_CLIENT_ID`, `ZOHO_FSM_CLIENT_SECRET` and `ZOHO_FSM_REFRESH_TOKEN`.
-- Its hosts and the Books organisation are vars (runbook, step 11b).
+- Its hosts and the Books organisation are vars (provisioning, step 11b).
 
 **The access token is kept in D1,** in `zoho_tokens` (migration 0010), one row per client. Every invocation uses the same token until a minute before it expires. The code that refreshes it is shared with the CRM (`src/providers/zoho-http.ts`); the CRM keeps its own one-row `zoho_token`, unchanged. **Since 25 September 2026** one requester serves the CRM, FSM and Books, with both clients' tokens in `zoho_access_tokens` (migration 0041), a lease so one caller refreshes at a time, and a ten-minute cool-down after Zoho refuses a token ([ADR 0070](0070-vendor-correctness.md)).
 
@@ -61,7 +62,7 @@ This ADR grows with P2-M2. Its first part is the connection.
 - **Webhooks are hints.**
   - FSM's workflow rule posts the appointment's ID and modified time to `POST /api/hooks/fsm/<token>`, as JSON or a form.
   - FSM does not sign webhooks, so the secret is in the URL, as Evolution's is. Without `FSM_WEBHOOK_TOKEN` the route answers 404.
-  - Each hint is kept once in `webhook_inbox`. FSM sends no event ID, so a repeat is the same record at the same modified time, for the same event where the rule names one (`event`, amended 25 September 2026: a deletion keeps its last edit's modified time, and was dropped as that edit's repeat; runbook, step 11b).
+  - Each hint is kept once in `webhook_inbox`. FSM sends no event ID, so a repeat is the same record at the same modified time, for the same event where the rule names one (`event`, amended 25 September 2026: a deletion keeps its last edit's modified time, and was dropped as that edit's repeat; provisioning, step 11b).
   - The hint goes on the `fsm-sync` queue, whose consumer reads the appointment afresh.
   - A failed read is retried after 30 s, 1, 2 and 4 minutes; the fifth failure alerts, and the reconciliation picks it up.
 - **The queue fits the Phase 2 budget** (ADR 0039): 2,000 queue operations a day for FSM hints and messages.

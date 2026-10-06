@@ -2,6 +2,7 @@
 
 - Status: accepted. Amended by ADR 0068: a refusal from Books is told to ops, once, as well as logged. Amended by ADR 0068: a capture confirms its hold, and a payment keeps its GST. Amended 2 October 2026: payment links number from the same series, and a link's payment takes the reference its link was made under. Amended 4 October 2026 by [0110](0110-field-work-without-fsm.md): a payment is applied to the Books invoice we make, not to one of FSM's.
 - Date: 2026-09-22
+- Topic: Money and Books
 
 ## Context
 
@@ -48,7 +49,7 @@ Checkout, orders and refunds from our side arrive with self-serve booking (P2-M5
 ## Consequences
 
 - **Staging takes no real money.** Its keys are Razorpay's test keys.
-- **The webhook is created in Razorpay's dashboard** (runbook, step 11c), since Razorpay offers merchants no API for it.
+- **The webhook is created in Razorpay's dashboard** (provisioning, step 11c), since Razorpay offers merchants no API for it.
 - **Live mode** waits for P2-M5: KYC, live keys and a live webhook (`docs/open-points.md`, item 6).
 
 ## Receipts in Books (P2-M2, 22 September 2026)
@@ -65,7 +66,7 @@ A client who pays in advance is owed a receipt, then the tax invoice with the pa
 
 **Applied to the visit's invoice** once Books has sent it, up to what the invoice still owes. A draft waits. A paid or void invoice, or an application Books refuses, is logged for ops and not tried again.
 
-**A processed refund is recorded against its payment,** from `BOOKS_REFUND_ACCOUNT_ID`, the bank account Razorpay settles into. Books refuses a refund from Undeposited Funds, and our token cannot create accounts, so the owner creates it (runbook 11b, step 7). While the var is empty, refunds are not recorded (`docs/open-points.md`, item 10). The refund voucher stays null in the API: Books' refund has no PDF of its own that we have found.
+**A processed refund is recorded against its payment,** from `BOOKS_REFUND_ACCOUNT_ID`, the bank account Razorpay settles into. Books refuses a refund from Undeposited Funds, and our token cannot create accounts, so the owner creates it (provisioning, step 11b, step 7). While the var is empty, refunds are not recorded (`docs/open-points.md`, item 10). The refund voucher stays null in the API: Books' refund has no PDF of its own that we have found.
 
 **On the five-minute cron,** after the FSM reconciliation, never in the payment's path, so Books is never on the way to a booking.
 

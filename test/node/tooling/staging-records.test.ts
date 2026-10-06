@@ -223,7 +223,7 @@ describe("the CRM's answers", () => {
     expect(crmDeleteOutcome(200, deleted)).toBe("deleted");
     expect(crmDeleteOutcome(400, { data: [{ code: "INVALID_DATA", status: "error" }] })).toBe("already gone");
     expect(crmDeleteOutcome(401, { code: "OAUTH_SCOPE_MISMATCH" })).toBe(
-      "refused: the scripts' CRM token may not delete it (runbook, step 8.7); delete it in the CRM",
+      "refused: the scripts' CRM token may not delete it (provisioning, step 8.7); delete it in the CRM",
     );
     expect(crmDeleteOutcome(500, { code: "INTERNAL_ERROR" })).toBe('refused: 500 {"code":"INTERNAL_ERROR"}');
   });

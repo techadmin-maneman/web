@@ -2,6 +2,7 @@
 
 - Status: accepted
 - Date: 2026-09-22
+- Topic: Messages and the CRM
 
 ## Context
 

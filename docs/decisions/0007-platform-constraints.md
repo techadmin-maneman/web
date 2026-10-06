@@ -2,6 +2,7 @@
 
 - Status: resolved by 0008
 - Date: 2026-09-21
+- Topic: Platform
 
 The prompt says to stop and report when it is wrong about a platform fact, not to work around it. Three facts, each checked on 21 September 2026, stop parts of M1. None is worked around in this repository.
 

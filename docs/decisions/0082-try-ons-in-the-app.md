@@ -2,6 +2,7 @@
 
 - Status: accepted, on the owner's ruling of 27 September 2026 (ADR 0025, item 63). Amended the same day by [0084](0084-a-clients-try-on-is-kept.md): a client's try-on is kept, its photograph as a small copy and its look until their first fit is photographed (ADR 0025, item 65)
 - Date: 2026-09-27
+- Topic: The try-on
 - Follows [0014](0014-try-on-api.md), [0018](0018-one-look-pro-only-lead-notices.md), [0019](0019-erasure.md), [0039](0039-phase-2-budget.md) and [0043](0043-client-app.md)
 
 ## Context

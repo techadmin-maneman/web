@@ -2,6 +2,7 @@
 
 - Status: accepted, on the owner's ruling of 5 October 2026
 - Date: 2026-10-05
+- Topic: Booking and visits
 
 ## Decided
 

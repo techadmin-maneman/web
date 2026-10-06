@@ -2,6 +2,7 @@
 
 - Status: accepted
 - Date: 2026-09-24
+- Topic: Booking and visits
 - Follows [0057](0057-one-payment-per-tap.md), which fixed the one place where this could charge a client
 
 ## Context

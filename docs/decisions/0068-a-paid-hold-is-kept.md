@@ -2,6 +2,7 @@
 
 - Status: accepted; extended 28 September 2026 by [0088](0088-every-policy-in-the-console.md): a hold keeps its grace, the notice and what its kind costs inside it, and a no-show's charge, as it keeps its late fee; its give-up on FSM's fifth refusal superseded 29 September 2026 by [0095](0095-a-booking-fsm-refuses-is-held.md): the booking is held with its slot and its payment, tried every hour for a day, and booked or refunded by ops; amended 1 October 2026 by [0105](0105-a-consultation-and-fit-in-one-visit.md): a consultation and fit in one visit holds no payment, is booked at once as the site's free consultation is, and is sold to cost nothing if missed or moved; amended 2 October 2026 (ADR 0025, item 41): the site's forms answer every number alike, and tell a number we know why it booked nothing on WhatsApp. Amended 4 October 2026 by [0110](0110-field-work-without-fsm.md): a paid hold is booked in the request that confirms it, or by the cron within the half hour; none is held for FSM.
 - Date: 2026-09-25
+- Topic: Booking and visits
 - Amends [0044](0044-payments-mirror.md), [0045](0045-self-serve-booking.md) and [0046](0046-moving-and-cancelling.md); follows [0057](0057-one-payment-per-tap.md)
 
 ## Context

@@ -2,6 +2,7 @@
 
 - Status: accepted. Amended 4 October 2026 by [0110](0110-field-work-without-fsm.md): a technician's step is written to our own database in its request; none waits to reach FSM.
 - Date: 2026-09-23
+- Topic: Field work
 
 ## Context
 

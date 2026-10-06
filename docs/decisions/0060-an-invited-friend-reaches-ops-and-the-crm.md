@@ -2,6 +2,7 @@
 
 - Status: accepted
 - Date: 2026-09-24
+- Topic: Messages and the CRM
 - Follows [0059](0059-a-clients-history.md), which read the real org and found what the CRM actually holds
 
 ## Context

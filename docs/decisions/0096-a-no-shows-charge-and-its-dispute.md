@@ -2,6 +2,7 @@
 
 - Status: accepted, on the owner's rulings of 27 September 2026 (`docs/open-points.md`, items 60 and 71); amended 30 September 2026 on the owner's ruling (ADR 0025, item 85): a charge may be disputed for 30 days after it, a console setting kept on each charge as its deadline (migration 0065); amended 1 October 2026 by [0105](0105-a-consultation-and-fit-in-one-visit.md): a consultation and fit in one visit, which holds no payment, is sold to cost nothing as a no-show or moved late
 - Date: 2026-09-29
+- Topic: Money and Books
 - Amends [0074](0074-hand-offs-and-messages.md), under which a charge kept what the visit took and nothing recorded an amount; amends [0046](0046-moving-and-cancelling.md), whose notice counted from the visit's own time however it came to be there; amends [0088](0088-every-policy-in-the-console.md), whose no-show charge nothing applied yet and whose move panel named a fixed 24 hours; records three departures in ADR 0025 (items 85 to 87)
 
 ## Context

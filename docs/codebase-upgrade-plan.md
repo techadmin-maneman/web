@@ -197,5 +197,7 @@ alongside a long-lived branch.
 | 1. Start here               | Done: `docs/start-here.md` and its map test (#485)                                                                |
 | 7. Workers Paid             | Done: the database limit, the CPU report, the daily allowances, the budget model and the cron's caps (#479, #484) |
 | 2. Comments without history | Done: every folder (#480 to #494), held by `no-history.test.ts`                                                   |
-| 3. Feature folders          | In review                                                                                                         |
-| 4, 5, 6, 8                  | Not started                                                                                                       |
+| 3. Feature folders          | Done: `src/domain/` in 16 folders, one a feature (#497)                                                           |
+| 4. Names                    | Renames in review (#499); one-object parameters next, for review                                                  |
+| 8. Documents                | The ADRs indexed by topic                                                                                         |
+| 5, 6                        | Not started                                                                                                       |

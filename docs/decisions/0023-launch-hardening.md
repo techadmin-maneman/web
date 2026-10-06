@@ -2,6 +2,7 @@
 
 - Status: accepted. Item 2 was settled by the owner on 22 September 2026: Bot Fight Mode is off, option a (ADR 0025, item 12), and corrected 2 October 2026: JavaScript detections were still on. Section 3 updated 25 September 2026 for the booking pages of ADR 0051 and the referral landing.
 - Date: 2026-09-22
+- Topic: Platform
 
 ## Context
 

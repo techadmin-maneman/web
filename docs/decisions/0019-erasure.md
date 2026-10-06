@@ -2,6 +2,7 @@
 
 - Status: accepted. The order below, R2 before D1, is superseded by ADR 0066: D1 goes first, and R2 after. Amended by ADR 0094: each withdrawal row records the erasure as where it was made, and an erasure also blanks where a technician's phone was at the client's door. Amended 4 October 2026 (audit package P1-76): `POST /api/erasure`, its script and `ERASURE_SECRET` are retired; ops erase from a person's page in the ops console, behind Access and audited under their own identity, through the same function as a deletion request (the runbook's "Erasure within the day"). Amended 4 October 2026 by [0110](0110-field-work-without-fsm.md): FSM is no longer told of an erasure; Books' customer is blanked or deleted, and the CRM's lead blanked.
 - Date: 2026-09-21
+- Topic: Privacy and accounts
 
 ## Context
 

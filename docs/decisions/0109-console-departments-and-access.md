@@ -2,6 +2,7 @@
 
 - Status: accepted, on the owner's ruling of 2 October 2026 (audit decision 18, and its design answers); amended the same day for the navigation, for actions by level, and for where each record is; amended 4 October 2026 for Customer Care, Operations, Finance and Growth by place
 - Date: 2026-10-02
+- Topic: The ops console
 
 ## Context
 

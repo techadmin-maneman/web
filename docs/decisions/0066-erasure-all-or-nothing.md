@@ -2,6 +2,7 @@
 
 - Status: accepted. Amends the order in ADR 0019 and the record of a deletion decision in ADR 0049. Amended by ADR 0094: an erasure also blanks a check-in's coordinates. Amended 4 October 2026 by [0110](0110-field-work-without-fsm.md): FSM's queue is gone; the CRM's is the one told at once.
 - Date: 2026-09-25
+- Topic: Privacy and accounts
 
 ## Context
 

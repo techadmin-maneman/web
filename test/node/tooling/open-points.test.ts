@@ -103,7 +103,7 @@ describe("citing an open point from another file", () => {
     "ADR 0025, item 44",
     'docs/open-points.md, "Board D3\'s jobs"',
     "open points move but do not close",
-    "runbook, step 11b, 6",
+    "provisioning, step 11b, 6",
   ])("reads nothing in %s", (text) => {
     expect(citedPoints(text)).toEqual([]);
   });

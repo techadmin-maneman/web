@@ -2,6 +2,7 @@
 
 - Status: accepted
 - Date: 2026-09-27
+- Topic: The ops console
 - Records what the console was built with in P2-F4 and #97, and what [0072](0072-ops-clients-and-queues.md) decided of it; follows [0049](0049-dpdp.md), [0065](0065-a-technicians-writes-reach-fsm.md) and [0074](0074-hand-offs-and-messages.md)
 
 ## Context

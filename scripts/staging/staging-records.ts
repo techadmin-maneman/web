@@ -274,7 +274,7 @@ function printList(found: Found): void {
   for (const module of found.unreadable) {
     console.log(
       `\nThe CRM's ${module} could not be read: the scripts' CRM token lacks ` +
-        `ZohoCRM.modules.${module.toLowerCase()}.READ (runbook, step 8.7). Until it has it, delete those named ` +
+        `ZohoCRM.modules.${module.toLowerCase()}.READ (provisioning, step 8.7). Until it has it, delete those named ` +
         `"Staging test" or "Load test" in the CRM's ${module} screen.`,
     );
   }

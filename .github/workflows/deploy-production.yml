@@ -108,7 +108,7 @@ jobs:
           fi
           npm run check:config -- --require-provisioned
 
-      # "" only for an app not yet deployed in production (docs/runbook.md, step 11). Anything else Cloudflare
+      # "" only for an app not yet deployed in production (docs/provisioning.md, step 11). Anything else Cloudflare
       # cannot answer, and a Worker that must be there and is not, stops the release here.
       - name: Record the versions serving now
         id: before
@@ -194,7 +194,7 @@ jobs:
         run: node scripts/release/release.ts ship --worker mm-site --env production --tag "$SHA" --message "release $SHA"
 
       # mm-app, mm-ops and mm-tech have no route in production until their surface is switched on there
-      # (docs/decisions/0026), and their first deploy is a bootstrap (docs/runbook.md, step 11). Until then
+      # (docs/decisions/0026), and their first deploy is a bootstrap (docs/provisioning.md, step 11). Until then
       # there is nothing to build or deploy; the production build refuses their placeholder copy anyway.
       - name: Deploy mm-app
         if: steps.before.outputs.app != ''
@@ -219,7 +219,7 @@ jobs:
 
       # Nothing until a Phase 2 surface is switched on in production. Then mm-api on its host, and the app
       # the host serves at /, built from this commit. ops.maneman.in is behind Access, so it needs the
-      # mm-ci-production service token (runbook, step 3).
+      # mm-ci-production service token (provisioning, step 3).
       - name: Smoke the Phase 2 surfaces
         env:
           CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}

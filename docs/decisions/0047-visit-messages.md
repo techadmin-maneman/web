@@ -2,6 +2,7 @@
 
 - Status: accepted. Amended 30 September 2026 by [0097](0097-staging-logins-open-reminders-fenced.md): four of these five kinds answer the client's own booking, move or cancel, and reach any number on staging; only the reminder still checks the allowlist.
 - Date: 2026-09-22
+- Topic: Messages and the CRM
 
 ## Context
 

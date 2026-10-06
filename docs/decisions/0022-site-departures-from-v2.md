@@ -2,6 +2,7 @@
 
 - Status: accepted. The owner ruled on items 2, 4 and 5 on 22 September 2026. Amended by [ADR 0104](0104-the-try-ons-look-on-whatsapp-only.md) on 1 October 2026: the try-on's look goes to WhatsApp only (items 18, 19, 21 to 24, 30, 32, 33 and 38).
 - Date: 2026-09-22
+- Topic: The site
 
 ## Context
 

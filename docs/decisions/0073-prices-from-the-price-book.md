@@ -2,6 +2,7 @@
 
 - Status: accepted; amended 27 September 2026 by [0085](0085-services-ops-can-edit.md), for Premium, which is now the book's, and for FSM's catalogue, which now follows each service. Amended 4 October 2026 by [0110](0110-field-work-without-fsm.md): there is no FSM catalogue; the price book prices the Books invoice's line.
 - Date: 2026-09-26
+- Topic: Money and Books
 - Amends [0027](0027-referral-landing.md) and [0039](0039-phase-2-budget.md); adds item 39 to [0022](0022-site-departures-from-v2.md); completes what [0061](0061-ops-editable-inputs.md) and [0070](0070-vendor-correctness.md) left of open point 11
 
 ## Context
