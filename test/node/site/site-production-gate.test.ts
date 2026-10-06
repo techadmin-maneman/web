@@ -38,7 +38,9 @@ describe("the production site build", () => {
       "  - the terms page's wording is not approved",
     ]);
     // The sentences counsel has still to see are marked in the site's content, and refused with the rest.
-    expect(problems.slice(4)).toEqual([expect.stringMatching(/^ {2}- site\/src\/content\/site\.ts: \d+ lines marked/)]);
+    expect(problems.slice(4)).toEqual([
+      expect.stringMatching(/^ {2}- site\/src\/content\/site\/legal\.ts: \d+ lines marked/),
+    ]);
   });
 
   it.runIf(BUILDS)("passes the publish gate", { timeout: 180_000 }, () => {
