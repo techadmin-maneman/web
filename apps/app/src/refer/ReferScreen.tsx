@@ -1,10 +1,10 @@
-// Refer (board F1): what a referral earns, as ops set it (docs/decisions/0107-referral-rewards-in-the-console.md),
-// the client's credit, and the two ways on: sharing an invite (F2 to F4, ShareSheet) and seeing who has been
-// fitted (F5 and F6, /refer/fitted). The tracker shows completed fits only (docs/decisions/0048-referrals.md). A client who came through an invite whose credits ops are reviewing,
+// Refer: what a referral earns, as ops set it (docs/decisions/0107-referral-rewards-in-the-console.md),
+// the client's credit, and the two ways on: sharing an invite (ShareSheet) and seeing who has been
+// fitted (/refer/fitted). The tracker shows completed fits only (docs/decisions/0048-referrals.md). A client who came through an invite whose credits ops are reviewing,
 // or refused, is told so beneath the credit (docs/decisions/0074-hand-offs-and-messages.md; the board draws none).
 //
 // Until their first fit a client has nothing to vouch for, and the invite's own words ("Got my hair system
-// fitted") would not be true: board B2 draws Refer for a lead as reachable but empty. It says when their invite
+// fitted") would not be true: the design draws Refer for a lead as reachable but empty. It says when their invite
 // opens, and names the invite they came with while its visits wait on that fit.
 
 import { ICONS_P2 } from "@maneman/brand/icons";
@@ -35,7 +35,7 @@ function CreditTile({ credits }: { credits: Refer["credits"] }) {
   );
 }
 
-/** "Share an invite", and the sheet it opens: F1's foot, and F6's empty tracker. */
+/** "Share an invite", and the sheet it opens: Refer's foot, and the empty tracker's. */
 export function ShareButton({
   state,
   onChanged,

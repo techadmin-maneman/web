@@ -1,4 +1,4 @@
-// Board A1: the day's jobs in order, tomorrow collapsed below. Board A2's
+// The day's jobs in order, tomorrow collapsed below. The
 // offline banner sits above them when the phone has no signal, and its empty
 // state stands in when nothing is booked.
 //
@@ -91,7 +91,7 @@ export function TodayScreen() {
   const [cards, setCards] = useState(0);
   const names = useNames(cards);
 
-  // Fresh from the API: keep each card too, so a basement opens them (board A2).
+  // Fresh from the API: keep each card too, so a basement opens them.
   useEffect(() => {
     if (day.state === "loaded" && !day.fromPhone) {
       void keepCards(day.value).then(() => {

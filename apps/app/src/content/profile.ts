@@ -1,4 +1,4 @@
-// The profile (boards G1 and G2): the address, what the client has agreed to, and the account.
+// The profile: the address, what the client has agreed to, and the account.
 
 export const profile = {
   back: "Back",
@@ -65,8 +65,7 @@ export const profile = {
   // A switch the API did not answer stays as it was.
   switchFailed: "That didn’t go through, so nothing has changed. Try again.",
   /**
-   * The four lines the design shows before a card is turned on (F3), and the naming line the owner ruled beside
-   * them; the consent's notice carries them all.
+   * The four lines the design shows before a card is turned on, and the line beside them that names the referrer; the consent's notice carries them all.
    */
   referralCards: {
     lines: [
@@ -74,7 +73,7 @@ export const profile = {
       "They can forward it, and so can anyone who receives it.",
       "You can switch it off at any time, and new opens will show our house example instead.",
       "Cards already delivered stay in people’s chats. We cannot take those back.",
-      // The owner's ruling: a referrer is named on their invite only after reading this (ADR 0025, item 24).
+      // A referrer is named on their invite only after reading this (ADR 0025, item 24).
       "Your first name appears on your invite.",
     ],
     confirm: "Switch on",

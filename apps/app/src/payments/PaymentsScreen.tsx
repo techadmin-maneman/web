@@ -1,7 +1,7 @@
-// Payments (board E1): one list of payments and refunds, newest first, each
-// opening its own page (E2). The amount paid, GST included, leads, with its GST
+// Payments: one list of payments and refunds, newest first, each
+// opening its own page. The amount paid, GST included, leads, with its GST
 // split beneath once GST applies; a refund is money back, with where it goes.
-// Empty, board E3's lines.
+// Empty, the documents' lines.
 //
 // Among them, as the board lists a visit a credit covered, every change to the
 // service-visit credits: one about a visit opens that visit's page.
@@ -58,7 +58,7 @@ function EntryRow({ entry, thisYear }: { entry: Entry; thisYear: number }) {
   );
 }
 
-/** A change to the credits, drawn as board E1 draws a visit a credit covered. */
+/** A change to the credits, drawn as Payments draws a visit a credit covered. */
 function CreditRow({ line, thisYear }: { line: CreditLine; thisYear: number }) {
   const { amount, count } = creditAmount(line);
   const body = (
@@ -131,7 +131,7 @@ function Owed({ owed, thisYear }: { owed: readonly OwedPayment[]; thisYear: numb
   );
 }
 
-/** Board E3's lines for a lead, a one visit's while one is booked, or a fitted client's. */
+/** The documents' lines for a lead, a one visit's while one is booked, or a fitted client's. */
 /** A consultation and fit in one visit booked: as a visit, as asked for on /book, or on its way to FSM. */
 function oneVisitBooked(me: Me): boolean {
   const booked = [me.next_visit, me.consultation, me.being_booked];

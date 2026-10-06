@@ -33,7 +33,7 @@ export const whatsapp = {
   number: WHATSAPP_NUMBER,
 } as const;
 
-/** The public site's booking page, for a number with no booking yet (board A3). */
+/** The public site's booking page, for a number with no booking yet. */
 export const BOOKING_URL: Readonly<Record<EnvironmentName, string>> = {
   local: "http://127.0.0.1:4321/book",
   staging: "https://staging.maneman.in/book",
@@ -122,7 +122,7 @@ export const empty = {
   },
 } as const;
 
-/** Board B3: loading, offline and error. */
+/** The states screen: loading, offline and error. */
 export const states = {
   loading: "Loading",
   /** On Home, which the phone keeps. */

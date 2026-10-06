@@ -1,4 +1,4 @@
-// Boards A3 and B5: one job's card, and beneath it the stage the job is at.
+// One job's card, and beneath it the stage the job is at.
 //
 // A3 is the card — client, time and type, the badge, the address with its
 // access notes and Navigate, the piece and the last visit. B5 is the evidence

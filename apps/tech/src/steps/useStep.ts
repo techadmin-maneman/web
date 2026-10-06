@@ -62,7 +62,7 @@ export function useStep<K extends InJobStep>(id: string, step: K): Standing<K> {
       setFinishing(true);
       if (refused === null) await queue(step, id, body, job.starts_at);
       else await correct(refused.seq, body);
-      // The duration board B4 shows runs from Start job to the outcome, and nothing gives it back.
+      // The duration the close-out shows runs from Start job to the outcome, and nothing gives it back.
       if (step === "outcome") await keepClosed(id);
       void replay();
 

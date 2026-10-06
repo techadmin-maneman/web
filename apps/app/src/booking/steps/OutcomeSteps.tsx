@@ -1,4 +1,4 @@
-// Boards C5 and C6: what came of paying, the hold that ran out, the booking confirmed, and a wait.
+// What came of paying, the hold that ran out, the booking confirmed, and a wait.
 
 import { capsLook } from "@maneman/ui/Caps";
 import { ICONS } from "@maneman/brand/icons";
@@ -15,7 +15,7 @@ import styles from "../booking.module.css";
 import { firstNameOf } from "../../../../../src/lib/names.ts";
 import { TITLE_ID, minutesAndSeconds, useHoldLeft, LastMinute } from "./shared.tsx";
 
-/** Board C6: the payment failed, and the hold's time left. Checkout offers every way to pay again. */
+/** The outcome step: the payment failed, and the hold's time left. Checkout offers every way to pay again. */
 export function FailedStep(props: { hold: Hold; busy: boolean; onRetry: () => void }) {
   const { hold, busy, onRetry } = props;
   const copy = booking.failed;
@@ -41,7 +41,7 @@ export function FailedStep(props: { hold: Hold; busy: boolean; onRetry: () => vo
   );
 }
 
-/** Board C6: the hold lapsed before the payment. */
+/** The outcome step: the hold lapsed before the payment. */
 export function ExpiredStep({ onPickAgain }: { onPickAgain: () => void }) {
   return (
     <div role="alert">
@@ -77,7 +77,7 @@ function Settled({ hold }: { hold: Hold }) {
 }
 
 /**
- * Board C6: booked. The reminder the day before is promised only to a client who has switched on
+ * Booked. The reminder the day before is promised only to a client who has switched on
  * WhatsApp about their visits, since it is sent to no one else.
  */
 export function ConfirmedStep(props: { hold: Hold; moved: boolean; reminded: boolean; onDone: () => void }) {

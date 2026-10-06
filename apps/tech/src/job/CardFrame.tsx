@@ -1,4 +1,4 @@
-// A job's screen (board A3): its head — back, the client, when and what, the
+// A job's screen: its head — back, the client, when and what, the
 // badge — a body that scrolls, and the one action fixed at the foot, where a
 // gloved thumb finds it on every screen.
 
@@ -25,7 +25,7 @@ function dayOf(date: string): string | null {
   return shortDate(date);
 }
 
-/** "Tomorrow · 10 am · service · 90 min", the line beneath the name (board A3). */
+/** "Tomorrow · 10 am · service · 90 min", the line beneath the name. */
 function whenOf(job: Job): string {
   const kind = kindNameLower(job);
   const length = job.minutes === null ? null : copy.minutes(job.minutes);

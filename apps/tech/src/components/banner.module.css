@@ -1,5 +1,5 @@
 /*
- * Board A2's offline banner, and the line above every screen when a job's work stopped reaching us. The board draws
+ * The offline banner, and the line above every screen when a job's work stopped reaching us. The board draws
  * the banner gold; gold marks only the one primary action (ADR 0025, item 59), so it is a paper strip.
  */
 
@@ -28,7 +28,7 @@
   color: var(--ink-soft);
 }
 
-/* A failure, as board B5 draws one: the error's rule, words in paper. */
+/* A failure, as the evidence chain draws one: the error's rule, words in paper. */
 .stopped {
   flex-shrink: 0;
   padding: var(--sp-14) var(--sp-20) var(--sp-16);

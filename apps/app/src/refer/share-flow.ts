@@ -69,7 +69,7 @@ function useFirstFitPair() {
   return { pair, missing };
 }
 
-/** Sending the invite: a way that failed, not one the client backed out of, is board F6's "Share failed". */
+/** Sending the invite: a way that failed, not one the client backed out of, is the empty tracker's "Share failed". */
 function useSending(link: string, file: File | null, message: string) {
   const [shareFailed, setShareFailed] = useState<(() => Promise<void>) | null>(null);
   const [copied, setCopied] = useState(false);

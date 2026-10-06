@@ -1,7 +1,7 @@
 // Every word the technician app shows, from design/phase2/Technician App.dc.html
 // and, for the sign-in it does not draw, the Prototype's technician screen. A
 // component holds no copy of its own. Lines neither file writes are
-// ours, approved by the owner on 4 October 2026 (docs/open-points.md, item 42).
+// ours.
 
 import type { Moved } from "@maneman/web-kit/api";
 import { shortDate } from "@maneman/web-kit/dates";
@@ -264,7 +264,7 @@ function opensAt(unlocksAt: string, now: Date = new Date()): string {
 
 export const job = {
   back: "Back",
-  /** "9:30 am · service · 90 min", and "Tomorrow · …" for a job on another day (board A3). */
+  /** "9:30 am · service · 90 min", and "Tomorrow · …" for a job on another day. */
   when: (parts: readonly string[]) => parts.join(" · "),
   tomorrow: "Tomorrow",
   // The board writes "1 slot"; the visit's length says more.
@@ -287,7 +287,7 @@ export const job = {
     tomorrow: "This job is tomorrow. Arrive and start it on the day.",
     other: "This job isn’t today’s. Arrive and start it on its day.",
   },
-  // The board draws what changed on the queue alone (board A2).
+  // The board draws what changed on the queue alone.
   changed: {
     title: "This job changed",
     body: "This phone can send nothing more for it. Waiting to reach us shows what it still holds.",
@@ -322,7 +322,7 @@ export const job = {
   retry: "Try again",
 } as const;
 
-/** Board B5: the evidence chain when the client is not home. */
+/** The evidence chain when the client is not home. */
 export const notHome = {
   arrived: {
     step: "1 · Arrived",
@@ -456,7 +456,7 @@ export const steps = {
     nothingOffered: "No consumables are listed yet. Ops add them in the console.",
   },
   piece: {
-    // The owner ruled out a barcode and a QR code on 24 September 2026, so the code is typed, never scanned.
+    // A label carries no barcode or QR code, so the code is typed, never scanned.
     label: "The new piece’s label",
     placeholder: "MM-STD-4417-B",
     // The board draws no label typed wrong.
@@ -494,7 +494,7 @@ export const steps = {
   },
 } as const;
 
-/** Board B4's close-out, once the outcome is taken. */
+/** The close-out, once the outcome is taken. */
 export const closeOut = {
   label: "Closed out",
   who: (name: string, outcome: string) => `${name} · ${outcome}`,
@@ -511,7 +511,7 @@ export const closeOut = {
   nextJob: (time: string, who: string) => `Next job · ${time}, ${who}`,
   // The board draws the next job; the day ends without one.
   lastJob: "Back to today",
-  // Board B5's close: the evidence summary, and what happens to it.
+  // The evidence chain's close: the evidence summary, and what happens to it.
   noShow: {
     ops: "This goes to ops with the charge.",
     checkedIn: "Checked in",
@@ -674,7 +674,7 @@ export const types = {
   first_fit: "First fit",
 } as const;
 
-/** The job card writes the type in lower case, in its line: "9:30 am · service" (board A3). */
+/** The job card writes the type in lower case, in its line: "9:30 am · service". */
 export const typesLower = {
   consultation: "consultation",
   service: "service visit",

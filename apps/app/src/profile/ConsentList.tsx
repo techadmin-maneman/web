@@ -1,6 +1,6 @@
-// "What you have agreed to" (board G1): each purpose with its date and a
+// "What you have agreed to": each purpose with its date and a
 // switch. Turning referral cards on first shows the lines its notice carries
-// (board F3), so the consent recorded is one the client has read. A switch
+//, so the consent recorded is one the client has read. A switch
 // moves only once the API has recorded it; one that did not go through says so
 // and stays as it was, since a switch that looks off while the consent stands
 // would tell the client something untrue about their data. Where switching a

@@ -1,4 +1,4 @@
-// The card as boards F2 and F4 draw it inside the app, at 1200:630: the house example as the file itself, and the
+// The card as the design draws it inside the app, at 1200:630: the house example as the file itself, and the
 // client's own as it will be composed, their two front photographs either side of the gilt rule with the lockup
 // in the corner. Before the photographs arrive, or where there are none, the halves are the ink blocks the boards
 // draw.

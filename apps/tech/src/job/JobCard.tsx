@@ -1,4 +1,4 @@
-// Board A3's card: the address with its access notes and Navigate, a way to
+// The job card: the address with its access notes and Navigate, a way to
 // reach the client, their hair profile, the piece, and the last visit's after
 // photograph. A job further out has none of it: the API withholds the address
 // and the client until the day before, so the card says when they open.

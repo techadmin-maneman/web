@@ -1,4 +1,4 @@
-// The account's change of mobile number (board G2): both numbers proved by a code each, then ops decide. The design
+// The account's change of mobile number: both numbers proved by a code each, then ops decide. The design
 // draws the card's first state; the ones after it are written in the same card, with placeholder words.
 
 import { capsLook } from "@maneman/ui/Caps";

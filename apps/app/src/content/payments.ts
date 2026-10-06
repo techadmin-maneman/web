@@ -39,7 +39,7 @@ export const payments = {
     onItsWay: "Your payment link is on its way by text.",
   },
   /**
-   * The free service visits among the payments. Board E1 draws a visit one covered: "Service visit ·
+   * The free service visits among the payments. Payments draws a visit one covered: "Service visit ·
    * 25 Jul · visit credit · Covered by credit · Rs. 0 · 1 credit used". Our words: all of it, in the reward's
    * one name, which the row's name or meta says, so its status and count need not.
    */
@@ -92,7 +92,7 @@ export const payments = {
   },
   /**
    * How long a refund takes, beside "Refund processing". The design says "3 to 5 working days"; Razorpay's
-   * normal refunds take 5 to 7, and the owner ruled the app says so (ADR 0025, item 28).
+   * normal refunds take 5 to 7, and the app says so (ADR 0025, item 28).
    */
   speed: { normal: "5 to 7 working days" } as Readonly<Record<string, string>>,
   // A refund still processing after Razorpay's working days, which the client should hear about.
@@ -134,7 +134,7 @@ export const payments = {
   receipt: "Receipt",
   voucher: "Refund voucher",
   /**
-   * Board E3's line for a document not yet raised. An invoice is raised once the visit is done, so what it says
+   * The documents' line for a document not yet raised. An invoice is raised once the visit is done, so what it says
    * depends on when that was (ADR 0056). Our words: every line but the invoice's first.
    */
   unavailable: {

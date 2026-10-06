@@ -1,5 +1,5 @@
-// Photos (board D1): each visit's photographs, newest first, and Compare once
-// there are two visits to compare. Before the first fit, board D3's empty
+// Photos: each visit's photographs, newest first, and Compare once
+// there are two visits to compare. Before the first fit, Photos' empty
 // state. Above them, a try-on the client made on the site, while it is kept
 // (ADR 0082). A photograph opens in a sheet, to download.
 
@@ -19,7 +19,7 @@ import { PhotoSheet } from "./PhotoSheet.tsx";
 import { TryOnGroup } from "./TryOnGroup.tsx";
 import styles from "./photos.module.css";
 
-/** Board D3's loading: the row's five blocks, before anything has arrived. */
+/** Photos' loading: the row's five blocks, before anything has arrived. */
 function PhotosLoading() {
   return (
     <div className={styles.timeline} role="status">
@@ -34,8 +34,8 @@ function PhotosLoading() {
 }
 
 /**
- * Board D1: each visit's photographs, newest first, beneath the try-ons still kept (ADR 0082); before the first
- * fit, board D3's empty state, or its lines beneath a try-on.
+ * Each visit's photographs, newest first, beneath the try-ons still kept (ADR 0082); before the first
+ * fit, Photos' empty state, or its lines beneath a try-on.
  */
 function Timeline({ timeline, onOpen }: { timeline: PhotoTimeline; onOpen: (photo: OpenPhoto) => void }) {
   const { visits, try_ons: tryOns } = timeline;

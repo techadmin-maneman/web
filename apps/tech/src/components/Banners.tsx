@@ -1,5 +1,5 @@
 // The three things a technician must know whatever screen he is on: that the
-// phone has no signal (board A2's banner), that it has no room left for what he
+// phone has no signal (the offline banner), that it has no room left for what he
 // does, and that a job's work stopped reaching us — ops moved the job under the
 // phone, or the API refused a step — which until now only the waiting screen said.
 
@@ -31,7 +31,7 @@ export function StorageFull() {
   );
 }
 
-/** Board A2's banner: a paper strip with the line, and the explanation beneath it on ink. */
+/** The offline banner: a paper strip with the line, and the explanation beneath it on ink. */
 export function Offline() {
   return (
     <div className={styles.offline} role="status">

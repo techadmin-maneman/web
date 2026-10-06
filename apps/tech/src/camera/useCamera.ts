@@ -1,5 +1,5 @@
 // The camera, held open only while the capture screen is in front of the
-// technician (board B1).
+// technician.
 //
 // A phone that goes to the background keeps its camera busy for nothing, and
 // an iPhone hands back a black or frozen picture when it returns to a stream

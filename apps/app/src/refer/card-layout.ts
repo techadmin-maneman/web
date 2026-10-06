@@ -1,4 +1,4 @@
-// The referral card as board A1 draws it (design/phase2/Referral and Waitlist,
+// The referral card as the design draws it (design/phase2/Referral and Waitlist,
 // "A1 · Personal"): 1200 × 630, the before on the left and the after on the
 // right at the same crop, one gilt rule 2 px wide down the middle, and the mark
 // with the wordmark's small cut in the bottom right corner. No name and no

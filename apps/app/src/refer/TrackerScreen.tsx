@@ -1,8 +1,8 @@
-// Who has been fitted (boards F5 and F6): completed fits only, each a friend's first name and the month, with
+// Who has been fitted: completed fits only, each a friend's first name and the month, with
 // what the client has earned and what is left. Each friend earned what a referral earned when they were fitted,
 // as ops had set it (docs/decisions/0107-referral-rewards-in-the-console.md), so the API gives each one's visits.
-// Whether an invite was opened is the friend's business, so it is never shown here. Empty, it offers the invite
-// (F6); the revoke of the client's own card sits at the foot.
+// Whether an invite was opened is the friend's business, so it is never shown here. Empty, it offers the invite;
+// the revoke of the client's own card sits at the foot.
 
 import { capsLook } from "@maneman/ui/Caps";
 import { Button } from "@maneman/ui/Button";
@@ -27,7 +27,7 @@ function monthName(month: string): string {
   return `${MONTHS[Number(index) - 1] ?? month} ${year ?? ""}`.trim();
 }
 
-/** Board F6's revoke: the client's own card comes down only once the API says it has. */
+/** The empty tracker's revoke: the client's own card comes down only once the API says it has. */
 function RevokeCard({ onRevoked }: { onRevoked: () => void }) {
   const [asking, setAsking] = useState(false);
   const [failed, setFailed] = useState(false);
@@ -95,7 +95,7 @@ function RevokeCard({ onRevoked }: { onRevoked: () => void }) {
   );
 }
 
-/** Board F5: what the fits have earned, what is left, and each friend fitted. */
+/** The tracker: what the fits have earned, what is left, and each friend fitted. */
 function Friends({ state }: { state: Refer }) {
   const copy = refer.fitted;
   const earned = state.fitted.reduce((sum, friend) => sum + visitsFor(friend), 0);
@@ -130,7 +130,7 @@ function Friends({ state }: { state: Refer }) {
   );
 }
 
-/** Board F6: nobody fitted yet, and the invite that would change that. */
+/** The empty tracker: nobody fitted yet, and the invite that would change that. */
 function Nobody({ state, onChanged }: { state: Refer; onChanged: () => void }) {
   const { me } = useSession();
   return (

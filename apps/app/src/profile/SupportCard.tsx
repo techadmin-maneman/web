@@ -1,4 +1,4 @@
-// The account's support card (board G2): WhatsApp, where the team answers.
+// The account's support card: WhatsApp, where the team answers.
 
 import { capsLook } from "@maneman/ui/Caps";
 import { ICONS } from "@maneman/brand/icons";

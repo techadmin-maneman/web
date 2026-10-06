@@ -43,10 +43,10 @@ export const home = {
     /** Asked for on the site, not yet booked. */
     requested: "Requested · we confirm the time on WhatsApp",
   },
-  /** Board B1's credit tile: "3 free service visits", and "Use by 2 Oct", or "Use by tonight" on the last day. */
+  /** Home's credit tile: "3 free service visits", and "Use by 2 Oct", or "Use by tonight" on the last day. */
   credits: freeVisitsTile,
   /**
-   * Board B1's one prompt, and the invoice line beneath it (src/domain/home-prompt.ts). The replacement's line and
+   * Home's one prompt, and the invoice line beneath it (src/domain/home-prompt.ts). The replacement's line and
    * "See what that involves" are the board's own, and Visits' record words the line the same way. Our words:
    * everything else here.
    */
@@ -78,7 +78,7 @@ export const home = {
     length: (what: string, minutes: number) => `${what} · ${visitLength(minutes)}`,
     // The design draws no Home for a fitted client with nothing booked.
     none: "Nothing booked yet.",
-    /** Board C1's button, which Home's card and Visits both show. */
+    /** Visits' button, which Home's card and Visits both show. */
     book: "Book your next visit",
     // A lead whose consultation is done.
     bookFirstFit: "Book your first fit",

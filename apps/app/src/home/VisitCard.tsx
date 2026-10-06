@@ -1,11 +1,11 @@
-// A visit still to come, on ink, as board B1 draws Home's next one: its date and window, its technician and
+// A visit still to come, on ink, as Home draws Home's next one: its date and window, its technician and
 // length, where, and Reschedule and Add a note. Home shows the next; an upcoming visit's own page shows its own.
 // A consultation and fit in one visit says what it costs once fitted, and how it is paid.
 //
-// While self-serve booking is on, Reschedule opens the move sheet (C7), from which the visit can be cancelled
-// (C8), and Add a note keeps the note on the visit for the technician (NoteSheet.tsx). Until then, Reschedule and
+// While self-serve booking is on, Reschedule opens the move sheet, from which the visit can be cancelled
+// too, and Add a note keeps the note on the visit for the technician (NoteSheet.tsx). Until then, Reschedule and
 // Add a note open WhatsApp to ops with a message ready
-// (docs/prompts/phase2-backend.md, "Booking"). Offline, rescheduling waits for the connection (B3). Once the
+// (docs/prompts/phase2-backend.md, "Booking"). Offline, rescheduling waits for the connection. Once the
 // visit has begun, or its window has passed while it is still open, its card says where it stands, and offers
 // nothing more.
 
@@ -197,7 +197,7 @@ export function OneVisitTerms({ price }: { price: OneVisitPrice }) {
   );
 }
 
-/** Board B1's card: the visit, its technician, and what can still be done about it. */
+/** Home's card: the visit, its technician, and what can still be done about it. */
 export function VisitCard({ visit }: { visit: VisitSummary }) {
   const date = shortDate(visit.date);
   const what = summaryName(visit);

@@ -1,4 +1,4 @@
-// The login (boards A1 to A3): a number, then its code. Every number gets the
+// The login: a number, then its code. Every number gets the
 // same second screen, so the app never says whether a number has a booking
 // (docs/decisions/0030-one-time-codes.md). The site's booking confirmation
 // links here with the number typed there filled in (linked-mobile.ts).

@@ -1,4 +1,4 @@
-// Board C4: paying, with what the hold costs, what changing it later costs, and what the booking agrees to.
+// Paying, with what the hold costs, what changing it later costs, and what the booking agrees to.
 
 import { Button } from "@maneman/ui/Button";
 import { indiaClock, indiaDate, shortDate } from "@maneman/web-kit/dates";
@@ -119,7 +119,7 @@ function AgreedByBooking({ consents }: { consents: readonly BookingConsent[] }) 
   );
 }
 
-/** Board C4, and C5's first fit: the held visit, what it costs, and Pay. */
+/** The pay step, and the credit step's first fit: the held visit, what it costs, and Pay. */
 export function PayStep(props: {
   hold: Hold;
   moving?: MoveTerms | undefined;
@@ -162,7 +162,7 @@ export function PayStep(props: {
           <div>
             <p className={styles.itemName}>{itemName(hold, moving)}</p>
             <p className={styles.itemWhen}>{`${shortDate(hold.date)}, ${WINDOW_HOURS[hold.window]}`}</p>
-            {/* Board C5 draws "Two slots · 3 hours": the length is now the service's own (ADR 0085). */}
+            {/* The credit step draws "Two slots · 3 hours": the length is now the service's own (ADR 0085). */}
             {isFirstFit && <p className={styles.itemWhen}>{booking.length(hold.service.minutes)}</p>}
           </div>
           <div className={styles.money}>

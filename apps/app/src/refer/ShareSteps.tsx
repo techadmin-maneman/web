@@ -1,4 +1,4 @@
-// The share sheet's three steps (boards F2 to F4), drawn from its flow (./share-flow.ts): which card, the lines its own
+// The share sheet's three steps, drawn from its flow (./share-flow.ts): which card, the lines its own
 // photographs need agreeing to, and the invite's preview with the ways to send it.
 
 import { capsLook } from "@maneman/ui/Caps";
@@ -35,7 +35,7 @@ function Problem({ line, className }: { line: string | null; className: string |
   );
 }
 
-/** Board F2: one of the two cards, drawn, with its box ticked when chosen. */
+/** The card choice: one of the two cards, drawn, with its box ticked when chosen. */
 function Choice(props: { which: Which; chosen: boolean; shown: Shown; onChoose: () => void }) {
   const { which, chosen } = props;
   return (
@@ -55,7 +55,7 @@ function Choice(props: { which: Which; chosen: boolean; shown: Shown; onChoose: 
   );
 }
 
-/** Board F2: which card the friend sees. */
+/** The card choice: which card the friend sees. */
 export function ChoiceStep({ flow, onClose }: StepProps) {
   const { which, made, pair } = flow;
   return (
@@ -76,7 +76,7 @@ export function ChoiceStep({ flow, onClose }: StepProps) {
               chosen={which === "mine"}
               shown={made === null ? { kind: "mine", pair } : { kind: "made", url: made.url }}
               onChoose={() => {
-                // "Without consent, the first option opens F3 instead of selecting."
+                // "Without consent, the first option opens the consent instead of selecting."
                 if (flow.agreed) flow.choose("mine");
                 else flow.askConsent();
               }}
@@ -106,7 +106,7 @@ export function ChoiceStep({ flow, onClose }: StepProps) {
   );
 }
 
-/** Board F3: the lines their own photographs on a card need agreeing to, and the card being composed once they do. */
+/** The consent sheet: the lines their own photographs on a card need agreeing to, and the card being composed once they do. */
 export function ConsentStep({ flow, onClose }: StepProps) {
   return (
     <>
@@ -156,7 +156,7 @@ export function ConsentStep({ flow, onClose }: StepProps) {
   );
 }
 
-/** Board F4: the chat's bubble, as WhatsApp draws the invite's preview above the message. */
+/** The preview: the chat's bubble, as WhatsApp draws the invite's preview above the message. */
 function Bubble({ state, card }: { state: Refer; card: Shown }) {
   const { me } = useSession();
   return (
@@ -174,7 +174,7 @@ function Bubble({ state, card }: { state: Refer; card: Shown }) {
   );
 }
 
-/** Board F4: the invite as the friend will see it, and the ways to send it; board F6 where one failed. */
+/** The preview: the invite as the friend will see it, and the ways to send it; the empty tracker where one failed. */
 export function ShareStep({ flow, onClose }: StepProps) {
   const { shareFailed, file, message } = flow;
   return (

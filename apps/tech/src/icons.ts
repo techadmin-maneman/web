@@ -5,13 +5,13 @@
 /** The board draws its glyphs at 1.8, heavier than the icon set's 1.6. */
 export const STROKE = 1.8;
 
-/** A stepper's signs are drawn at 2 (board B3), and a ticked box's at 2.6 (board B2). */
+/** A stepper's signs are drawn at 2, and a ticked box's at 2.6. */
 export const STEPPER_STROKE = 2;
 export const BOX_TICK_STROKE = 2.6;
 
 /** A label tied to a piece, beside the field its label is typed in: typed, never scanned, so no barcode. */
 export const TAG = "M3.5 3.5 H12 L20.5 12 L12 20.5 L3.5 12 Z M8 6.8 A1.2 1.2 0 0 1 8 9.2 A1.2 1.2 0 0 1 8 6.8";
 
-/** Navigate, on the address (board A3). */
+/** Navigate, on the address. */
 export const PIN =
   "M12 21 C7 16 4.5 12.6 4.5 9.5 A7.5 7.5 0 0 1 19.5 9.5 C19.5 12.6 17 16 12 21 Z M12 7 A2.6 2.6 0 0 1 12 12.2 A2.6 2.6 0 0 1 12 7";

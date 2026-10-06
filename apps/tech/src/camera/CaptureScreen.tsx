@@ -1,4 +1,4 @@
-// Board B1: the guided capture of five angles, one tap each. It is step 1 of
+// The guided capture of five angles, one tap each. It is step 1 of
 // the job for the before set and step 5 for the after set; the screen is the
 // same one.
 //
@@ -46,7 +46,7 @@ function refusalNotice(refused: readonly Angle[], taken: readonly TakenAngle[]):
   return copy.refusedPhotos(stillToTake.map((angle) => copy.angles[angle].toLowerCase()));
 }
 
-/** Board B1's framing guide, drawn over the camera in the board's own 320 by 420 box. */
+/** The camera's framing guide, drawn over the camera in the board's own 320 by 420 box. */
 function FramingGuide() {
   return (
     <svg className={styles.frame} viewBox="0 0 320 420" preserveAspectRatio="xMidYMid meet" aria-hidden="true">

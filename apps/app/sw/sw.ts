@@ -1,7 +1,7 @@
 // The client app's service worker (docs/decisions/0043-client-app.md). It keeps
 // the app's own files, so the app opens without a connection, as both apps'
 // workers do (packages/web-kit/sw-shell.ts), and the last Home answer
-// (GET /api/me), so board B3's offline state can show the next visit. Nothing
+// (GET /api/me), so the offline state can show the next visit. Nothing
 // else is kept: no other API answer, and no photograph or document
 // (./requests.ts). The build writes in MM_PRECACHE and MM_VERSION
 // (packages/web-kit/pwa.ts).

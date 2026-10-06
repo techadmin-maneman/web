@@ -1,5 +1,5 @@
 /*
- * Boards A1 and A2: the day's jobs, the empty state, and the line to what has
+ * The day's jobs, the empty state, and the line to what has
  * not yet reached us; the offline banner is the one every screen shares
  * (../components/banner.module.css). Ink ground, off-white text, gold on the
  * banner alone — this screen has no primary action.
@@ -160,7 +160,7 @@
   list-style: none;
 }
 
-/* A job row: 88 px, the time down the left, everything else beside it (board A1). */
+/* A job row: 88 px, the time down the left, everything else beside it. */
 .row {
   display: flex;
   gap: var(--sp-16);
