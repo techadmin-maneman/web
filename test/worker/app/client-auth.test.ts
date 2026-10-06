@@ -3,15 +3,8 @@
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
-import type { App } from "../../../src/http/context.ts";
-import type { Settings } from "../../../src/config/settings.ts";
-import { openSession } from "../../../src/domain/sign-in/sessions.ts";
-import { sha256Hex } from "../../../src/lib/hash.ts";
-
 import {
-  appFor,
   captureLogs,
-  eraseByMobile,
   fakeDependencies,
   fakeFetch,
   json,
@@ -20,26 +13,28 @@ import {
   NOW,
   request,
   TURNSTILE_URL,
-  type TestDependencies,
 } from "../helpers.ts";
+import {
+  BOOKED,
+  UNBOOKED,
+  clock,
+  useClock,
+  deps,
+  app,
+  useDependencies,
+  build,
+  later,
+  post,
+  start,
+  verify,
+  lastCode,
+  wrongCode,
+} from "./client-auth-fixtures.ts";
 
-const ORIGIN = "https://maneman.test"; // the host helpers.request() uses
-const BOOKED = "+919810000001";
-const UNBOOKED = "+919810000002";
-
-let clock: Date;
-let deps: TestDependencies;
-let app: App;
 let logs: ReturnType<typeof captureLogs>;
 
-function build(overrides: Partial<Settings> = {}, smsAvailable = true): void {
-  deps = fakeDependencies({ now: () => clock });
-  if (!smsAvailable) deps = { ...deps, codes: { ...deps.codes, smsAvailable: false } };
-  app = appFor("local", deps, overrides, "client");
-}
-
 beforeEach(async () => {
-  clock = NOW;
+  useClock(NOW);
   logs = captureLogs();
   build();
   await markDatabase();
@@ -62,47 +57,14 @@ beforeEach(async () => {
   ]);
 });
 
-const later = (seconds: number) => {
-  clock = new Date(clock.getTime() + seconds * 1000);
-};
-
-function post(path: string, body: unknown, headers: Record<string, string> = {}) {
-  return request(app, path, {
-    method: "POST",
-    headers: { Origin: ORIGIN, "Content-Type": "application/json", ...headers },
-    body: JSON.stringify(body),
-  });
-}
-
-/** Asks for a code, with the Turnstile token the app's widget gives (fakeDependencies' Turnstile passes it). */
-async function start(mobile: string, headers: Record<string, string> = {}) {
-  const res = await post("/api/auth/otp", { mobile, turnstile_token: "token" }, headers);
-  return { res, body: await res.json<Record<string, unknown> & { challenge_id: string }>() };
-}
-
-const resend = (challengeId: string, headers: Record<string, string> = {}) =>
-  post("/api/auth/otp/resend", { challenge_id: challengeId }, headers);
-
-const verify = (challengeId: string, code: string) => post("/api/auth/verify", { challenge_id: challengeId, code });
-const lastCode = () => deps.sentCodes.at(-1)?.code ?? "";
-const wrongCode = (right: string) => (right === "000000" ? "111111" : "000000");
-
-/** Logs in, and returns the mm_app cookie as a Cookie header value. */
-async function loggedIn(): Promise<string> {
-  const { body } = await start("98100 00001");
-  const res = await verify(body.challenge_id, lastCode());
-  const cookie = /mm_app=([^;]+)/.exec(res.headers.get("Set-Cookie") ?? "")?.[1];
-  if (cookie === undefined) throw new Error("no session cookie");
-  return `mm_app=${cookie}`;
-}
-
 describe("a login code that does not go", () => {
   const failing = (detail: string) => {
-    deps = fakeDependencies({
-      now: () => clock,
-      codes: { smsAvailable: true, send: () => Promise.resolve({ ok: false, transient: true, detail }) },
-    });
-    app = appFor("local", deps, {}, "client");
+    useDependencies(
+      fakeDependencies({
+        now: () => clock,
+        codes: { smsAvailable: true, send: () => Promise.resolve({ ok: false, transient: true, detail }) },
+      }),
+    );
   };
 
   async function tries(times: number) {
@@ -276,11 +238,12 @@ describe("POST /api/auth/otp", () => {
   });
 
   it("refuses without Turnstile, and sends nothing", async () => {
-    deps = fakeDependencies({
-      now: () => clock,
-      fetch: fakeFetch({ [TURNSTILE_URL]: () => json({ success: false }) }).fetch,
-    });
-    app = appFor("local", deps, {}, "client");
+    useDependencies(
+      fakeDependencies({
+        now: () => clock,
+        fetch: fakeFetch({ [TURNSTILE_URL]: () => json({ success: false }) }).fetch,
+      }),
+    );
 
     const { res, body } = await start("98100 00001");
 
@@ -292,11 +255,12 @@ describe("POST /api/auth/otp", () => {
   });
 
   it("answers unavailable, and sends nothing, while Turnstile cannot be reached", async () => {
-    deps = fakeDependencies({
-      now: () => clock,
-      fetch: fakeFetch({ [TURNSTILE_URL]: () => json({}, 502) }).fetch,
-    });
-    app = appFor("local", deps, {}, "client");
+    useDependencies(
+      fakeDependencies({
+        now: () => clock,
+        fetch: fakeFetch({ [TURNSTILE_URL]: () => json({}, 502) }).fetch,
+      }),
+    );
 
     const { res, body } = await start("98100 00001");
 
@@ -324,403 +288,5 @@ describe("POST /api/auth/otp", () => {
     expect(logged).toContain("login_code_sent");
     expect(logged).not.toContain(`"${lastCode()}"`); // as a value; a request ID may hold the same digits by chance
     expect(logged).not.toContain("9810000001");
-  });
-});
-
-describe("POST /api/auth/verify", () => {
-  it("signs in with the six-digit code, and keeps the session for 90 days", async () => {
-    const { body } = await start("98100 00001");
-    const res = await verify(body.challenge_id, lastCode());
-
-    expect(res.status).toBe(200);
-    expect(await res.json()).toEqual({ verified: true, first_name: "Arjun" });
-    const cookie = res.headers.get("Set-Cookie") ?? "";
-    expect(cookie).toMatch(
-      /^__Host-mm_app=[A-Za-z0-9_-]{43}; Max-Age=7776000; Path=\/; HttpOnly; Secure; SameSite=Lax$/,
-    );
-    const token = /mm_app=([^;]+)/.exec(cookie)?.[1] ?? "";
-    const stored = await env.DB.prepare("SELECT subject_kind, subject_id FROM sessions WHERE id = ?1")
-      .bind(await sha256Hex(token))
-      .first();
-    expect(stored).toEqual({ subject_kind: "client", subject_id: "p-booked" });
-  });
-
-  it("takes each code once", async () => {
-    const { body } = await start("98100 00001");
-    const code = lastCode();
-    expect((await verify(body.challenge_id, code)).status).toBe(200);
-    expect((await verify(body.challenge_id, code)).status).toBe(410);
-  });
-
-  it("voids the code after five wrong attempts", async () => {
-    const { body } = await start("98100 00001");
-    const right = lastCode();
-    for (const left of [4, 3, 2, 1, 0]) {
-      expect(await (await verify(body.challenge_id, wrongCode(right))).json()).toEqual({
-        verified: false,
-        attempts_left: left,
-      });
-    }
-    expect((await verify(body.challenge_id, right)).status).toBe(410);
-  });
-
-  it("counts wrong codes the same on a challenge that sent nothing", async () => {
-    const { body } = await start("98100 00009");
-    for (const left of [4, 3, 2, 1, 0]) {
-      expect(await (await verify(body.challenge_id, "123456")).json()).toEqual({
-        verified: false,
-        attempts_left: left,
-      });
-    }
-    expect((await verify(body.challenge_id, "123456")).status).toBe(410);
-  });
-
-  it("refuses a code after its ten minutes", async () => {
-    const { body } = await start("98100 00001");
-    later(601);
-    expect((await verify(body.challenge_id, lastCode())).status).toBe(410);
-  });
-});
-
-describe("sending the code again", () => {
-  it("refuses a resend inside 30 seconds, and sends a new code after", async () => {
-    const { body } = await start("98100 00001");
-    const first = lastCode();
-    later(29);
-    const early = await post("/api/auth/otp/resend", { challenge_id: body.challenge_id });
-    expect(early.status).toBe(429);
-    expect(await early.json()).toMatchObject({ error: { code: "too_early" } });
-
-    later(1);
-    const res = await post("/api/auth/otp/resend", { challenge_id: body.challenge_id });
-    expect(res.status).toBe(202);
-    expect(await res.json()).toMatchObject({ channel: "whatsapp", resend_in_s: 30, sms_in_s: 0 });
-    expect(deps.sentCodes).toHaveLength(2);
-    if (lastCode() !== first)
-      expect(await (await verify(body.challenge_id, first)).json()).toMatchObject({ verified: false });
-    expect((await verify(body.challenge_id, lastCode())).status).toBe(200);
-  });
-
-  it("offers SMS after 30 seconds, and the code it sends signs in", async () => {
-    const { body } = await start("98100 00001");
-    later(20);
-    expect((await post("/api/auth/otp/sms", { challenge_id: body.challenge_id })).status).toBe(429);
-    later(10);
-    const res = await post("/api/auth/otp/sms", { challenge_id: body.challenge_id });
-    expect(res.status).toBe(202);
-    expect(await res.json()).toMatchObject({ channel: "sms" });
-    expect(deps.sentCodes.at(-1)).toMatchObject({ channel: "sms", to: BOOKED });
-    expect((await verify(body.challenge_id, lastCode())).status).toBe(200);
-  });
-
-  it("keeps the count of wrong codes, so asking again gains a guesser nothing", async () => {
-    const { body } = await start("98100 00001");
-    for (let i = 0; i < 4; i += 1) await verify(body.challenge_id, wrongCode(lastCode()));
-    later(30);
-    await post("/api/auth/otp/resend", { challenge_id: body.challenge_id });
-    expect(await (await verify(body.challenge_id, wrongCode(lastCode()))).json()).toEqual({
-      verified: false,
-      attempts_left: 0,
-    });
-  });
-
-  it("sends at most three codes on one challenge", async () => {
-    const { body } = await start("98100 00001");
-    for (let i = 0; i < 2; i += 1) {
-      later(30);
-      expect((await resend(body.challenge_id)).status).toBe(202);
-    }
-    later(30);
-    expect((await resend(body.challenge_id)).status).toBe(429);
-    expect(deps.sentCodes).toHaveLength(3);
-  });
-
-  /**
-   * The answers to two challenges for one number, each sent as often as it may be, then a third challenge; from an
-   * address of its own, so only the number's day is spent.
-   */
-  async function spendTheDay(mobile: string, ip: string): Promise<number[]> {
-    const address = { "CF-Connecting-IP": ip };
-    const statuses: number[] = [];
-    for (let challenge = 0; challenge < 2; challenge += 1) {
-      const { res, body } = await start(mobile, address);
-      statuses.push(res.status);
-      for (let again = 0; again < 2; again += 1) {
-        later(31);
-        statuses.push((await resend(body.challenge_id, address)).status);
-      }
-    }
-    statuses.push((await start(mobile, address)).res.status);
-    return statuses;
-  }
-
-  // Resends skipped the number's day, so five challenges of five sends put 25 codes on one number a day.
-  it("counts every code sent again against the number's day, so a number gets five codes a day at most", async () => {
-    expect(await spendTheDay("98100 00001", "203.0.113.60")).toEqual([202, 202, 202, 202, 202, 429, 429]);
-    expect(deps.sentCodes).toHaveLength(5);
-  });
-
-  it("answers a number nobody knows exactly as it answers a client's, code for code", async () => {
-    const client = await spendTheDay("98100 00001", "203.0.113.60");
-    const nobody = await spendTheDay("98100 00009", "203.0.113.61");
-    expect(nobody).toEqual(client);
-    expect(deps.sentCodes.map((sent) => sent.to)).toEqual(Array<string>(5).fill(BOOKED));
-  });
-
-  it("counts every code sent again against the address's hour", async () => {
-    build({ login: { ...LOCAL_SETTINGS.login, codeIpHourlyLimit: 2 } });
-    const { body } = await start("98100 00001");
-    later(30);
-    expect((await resend(body.challenge_id)).status).toBe(202);
-    later(30);
-    const refused = await resend(body.challenge_id);
-    expect(refused.status).toBe(429);
-    expect(await refused.json()).toMatchObject({ error: { code: "rate_limited" } });
-    expect(deps.sentCodes).toHaveLength(2);
-  });
-
-  it("starts again on a challenge made before its number was kept", async () => {
-    const { body } = await start("98100 00001");
-    await env.DB.prepare("UPDATE otp_challenges SET mobile_hash = NULL").run();
-    later(30);
-    expect((await resend(body.challenge_id)).status).toBe(410);
-    expect(deps.sentCodes).toHaveLength(1);
-  });
-
-  it("keeps the number only as the limits key it", async () => {
-    await start("98100 00001");
-    await start("98100 00009");
-    const kept = await env.DB.prepare("SELECT mobile_hash FROM otp_challenges").all<{ mobile_hash: string }>();
-    expect(kept.results.map((row) => row.mobile_hash)).toEqual([
-      expect.stringMatching(/^[0-9a-f]{64}$/) as string,
-      expect.stringMatching(/^[0-9a-f]{64}$/) as string,
-    ]);
-    expect(JSON.stringify(kept.results)).not.toMatch(/9810000001|9810000009/);
-  });
-
-  it("offers no SMS while there is no SMS provider", async () => {
-    build({}, false);
-    const { body } = await start("98100 00001");
-    expect(body.sms_in_s).toBeNull();
-    later(30);
-    expect((await post("/api/auth/otp/sms", { challenge_id: body.challenge_id })).status).toBe(404);
-  });
-
-  it("refuses to resend on a closed challenge", async () => {
-    const { body } = await start("98100 00001");
-    await verify(body.challenge_id, lastCode());
-    later(30);
-    expect((await post("/api/auth/otp/resend", { challenge_id: body.challenge_id })).status).toBe(410);
-  });
-});
-
-describe("the session", () => {
-  it("opens GET /api/me: a lead with their consultation", async () => {
-    const cookie = await loggedIn();
-    const res = await request(app, "/api/me", { headers: { Cookie: cookie } });
-
-    expect(res.status).toBe(200);
-    expect(await res.json()).toEqual({
-      state: "lead",
-      name: "Arjun Mehta",
-      first_name: "Arjun",
-      initials: "AM",
-      // The site's first form booked nothing: ops confirm the time on WhatsApp.
-      consultation: {
-        date: "2026-09-24",
-        window: "evening",
-        window_label: "after four",
-        place: "Gurgaon",
-        requested: true,
-        one_visit: null,
-      },
-      next_visit: null,
-      // Nothing paid for or booked in the app is waiting for FSM (docs/decisions/0095-a-booking-fsm-refuses-is-held.md).
-      being_booked: null,
-      payment_owed: null,
-      credits: null,
-      // A consultation is booked and no address given: the design's prompt asks for one.
-      prompt: { kind: "address" },
-      invoice: null,
-      // Every service of the kinds open to them, with its length and price (docs/decisions/0085-services-ops-can-edit.md);
-      // nothing is offered next while a visit is booked (ADR 0086).
-      booking: {
-        self_serve: true,
-        types: ["consultation"],
-        services: [
-          {
-            type: "consultation",
-            tier: "standard",
-            name: "Consultation",
-            description: null,
-            minutes: 60,
-            price: { amount_ex_gst: 0, amount: 0, gst_percent: 0 },
-          },
-        ],
-        next: null,
-      },
-      // What a referral earns, which ops set, for the Refer tab (docs/decisions/0107-referral-rewards-in-the-console.md).
-      referral_reward: { referrer_visits: 3, friend_visits: 3, valid_days: 365 },
-      pending_invite: null,
-    });
-  });
-
-  describe("a booking from the site's form, which asks for no rough window", () => {
-    /** A person who booked on the site for Friday, with a session in the app. */
-    async function bookedOnTheSite(): Promise<string> {
-      await env.DB.batch([
-        env.DB.prepare(
-          "INSERT INTO people (id, created_at, mobile_e164, name, contactable) VALUES ('p-site', ?1, '+919810000005', 'Kabir Anand', 1)",
-        ).bind(NOW.toISOString()),
-        env.DB.prepare(
-          `INSERT INTO leads (id, person_id, created_at, source, city, loss_extent, proposed_visit_date, request_id)
-           VALUES ('l-site', 'p-site', ?1, 'form', 'Gurgaon', 'crown', '2026-09-25', 'r')`,
-        ).bind(NOW.toISOString()),
-      ]);
-      return `mm_app=${await openSession(env.DB, { kind: "client", subjectId: "p-site", deviceLabel: null, now: NOW })}`;
-    }
-
-    /** The day and window asked for while self-serve booking is off, which ops confirm on WhatsApp. */
-    async function requested(oneVisit = false): Promise<void> {
-      await env.DB.prepare(
-        `INSERT INTO consultation_requests (id, person_id, pincode, requested_date, requested_window, created_at, one_visit)
-         VALUES ('request-1', 'p-site', '122018', '2026-09-25', 'afternoon', ?1, ?2)`,
-      )
-        .bind(NOW.toISOString(), oneVisit ? 1 : 0)
-        .run();
-    }
-
-    const home = async (cookie: string) =>
-      (await request(app, "/api/me", { headers: { Cookie: cookie } })).json<Record<string, unknown>>();
-
-    it("shows a request made while self-serve booking is off as requested, in the window asked for", async () => {
-      const cookie = await bookedOnTheSite();
-      await requested();
-
-      const res = await request(app, "/api/me", { headers: { Cookie: cookie } });
-
-      expect(res.status).toBe(200);
-      expect((await res.json<{ consultation: unknown }>()).consultation).toEqual({
-        date: "2026-09-25",
-        window: "afternoon",
-        window_label: null,
-        place: "Gurgaon",
-        requested: true,
-        one_visit: null,
-      });
-    });
-
-    it("says a request for the consultation and fit in one visit is one", async () => {
-      const cookie = await bookedOnTheSite();
-      await requested(true);
-
-      expect(await home(cookie)).toMatchObject({
-        consultation: { requested: true, one_visit: { amount: 3_000_000, from: false, code: null } },
-      });
-    });
-
-    it("drops a request once its day has passed, so Home offers booking again", async () => {
-      const cookie = await bookedOnTheSite();
-      await requested();
-
-      clock = new Date("2026-09-25T18:00:00Z"); // 23:30 on the day asked for, in India
-      expect(await home(cookie)).toMatchObject({ consultation: { date: "2026-09-25", requested: true } });
-
-      clock = new Date("2026-09-25T18:30:00Z"); // midnight in India: the day has passed
-      expect(await home(cookie)).toMatchObject({ consultation: null, booking: { types: ["consultation"] } });
-    });
-
-    it("shows the slot it held as booked, in its window", async () => {
-      const cookie = await bookedOnTheSite();
-      await env.DB.batch([
-        env.DB.prepare(
-          "INSERT INTO technicians (id, fsm_id, name, initials, active, updated_at) VALUES ('t1', 'resource-1', 'Imran Qureshi', 'IQ', 1, ?1)",
-        ).bind(NOW.toISOString()),
-        env.DB.prepare(
-          `INSERT INTO slot_holds (id, person_id, type, date, window_label, technician_id, start_unit, amount,
-             amount_ex_gst, gst_percent, state, expires_at, created_at, updated_at)
-           VALUES ('hold-1', 'p-site', 'consultation', '2026-09-25', 'evening', 't1', 6, 0, 0, 0, 'booked', ?1, ?1, ?1)`,
-        ).bind(NOW.toISOString()),
-      ]);
-
-      const res = await request(app, "/api/me", { headers: { Cookie: cookie } });
-
-      expect(res.status).toBe(200);
-      expect((await res.json<{ consultation: unknown }>()).consultation).toEqual({
-        date: "2026-09-25",
-        window: "evening",
-        window_label: "after four",
-        place: "Gurgaon",
-        requested: false,
-        one_visit: null,
-      });
-    });
-  });
-
-  it("is required for GET /api/me", async () => {
-    const res = await request(app, "/api/me");
-    expect(res.status).toBe(401);
-    expect(await res.json()).toMatchObject({ error: { code: "session_required" } });
-    expect((await request(app, "/api/me", { headers: { Cookie: "mm_app=made-up" } })).status).toBe(401);
-  });
-
-  it("slides: each use moves its 90 days on, at most hourly", async () => {
-    const cookie = await loggedIn();
-    later(30 * 60);
-    expect((await request(app, "/api/me", { headers: { Cookie: cookie } })).headers.get("Set-Cookie")).toBeNull();
-    later(31 * 60);
-    const res = await request(app, "/api/me", { headers: { Cookie: cookie } });
-    expect(res.headers.get("Set-Cookie")).toMatch(/^__Host-mm_app=.*Max-Age=7776000/);
-    const row = await env.DB.prepare("SELECT expires_at FROM sessions").first<string>("expires_at");
-    expect(row).toBe(new Date(clock.getTime() + 90 * 24 * 60 * 60 * 1000).toISOString());
-  });
-
-  // The cookie took the __Host- prefix in October 2026; a phone still holding the old name stays signed in, and its
-  // next touch hands it the new one.
-  it("is read under its __Host- name, and under its old one until those sessions lapse", async () => {
-    const token = (await loggedIn()).replace(/^mm_app=/, "");
-    expect((await request(app, "/api/me", { headers: { Cookie: `__Host-mm_app=${token}` } })).status).toBe(200);
-    later(61 * 60);
-    const old = await request(app, "/api/me", { headers: { Cookie: `mm_app=${token}` } });
-    expect(old.status).toBe(200);
-    expect(old.headers.get("Set-Cookie")).toMatch(/^__Host-mm_app=/);
-  });
-
-  it("ends 90 days after its last use", async () => {
-    const cookie = await loggedIn();
-    later(90 * 24 * 60 * 60 + 1);
-    expect((await request(app, "/api/me", { headers: { Cookie: cookie } })).status).toBe(401);
-  });
-
-  it("ends at logout, and the cookie goes with it", async () => {
-    const cookie = await loggedIn();
-    const res = await post("/api/auth/logout", {}, { Cookie: cookie });
-
-    expect(res.status).toBe(204);
-    expect(res.headers.get("Set-Cookie")).toMatch(/^__Host-mm_app=; Max-Age=0; Path=\/; Secure/);
-    expect((await request(app, "/api/me", { headers: { Cookie: cookie } })).status).toBe(401);
-    expect(await env.DB.prepare("SELECT revoked_at FROM sessions").first("revoked_at")).not.toBeNull();
-  });
-
-  it("ends, with every open code, when the person is erased", async () => {
-    const cookie = await loggedIn();
-    const { body } = await start("98100 00001");
-    await eraseByMobile(BOOKED, clock);
-
-    expect((await request(app, "/api/me", { headers: { Cookie: cookie } })).status).toBe(401);
-    expect((await verify(body.challenge_id, lastCode())).status).toBe(410);
-  });
-
-  it("names the device from its browser, without keeping the full User-Agent", async () => {
-    const { body } = await start("98100 00001");
-    await verify(body.challenge_id, lastCode());
-    const android = await start("98100 00001");
-    await post(
-      "/api/auth/verify",
-      { challenge_id: android.body.challenge_id, code: lastCode() },
-      { "User-Agent": "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 Chrome/129.0 Mobile Safari/537.36" },
-    );
-    const labels = await env.DB.prepare("SELECT device_label FROM sessions ORDER BY created_at").all();
-    expect(labels.results.map((row) => row.device_label)).toContain("Chrome on Android");
   });
 });
