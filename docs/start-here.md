@@ -64,7 +64,8 @@ this map, or when the map names something that no longer exists.
 - **Database work** (`src/domain/dispatch/`): `dispatch`, `dispatch-utilisation`, `technicians`, `technician-roster`,
   `technician-work`, `leave`, `blackouts`, `cities`
 - **Rules** (`src/policy/`): `dispatch`, `technician-work`
-- **Routes** (`src/routes/`): `ops/dispatch`, `ops/blackouts`, `ops/technicians`
+- **Routes** (`src/routes/`): `ops/dispatch`, `ops/blackouts`, `ops/technicians`, `ops/technician-leave`,
+  `ops/technician-phones`
 - **Screens:** `apps/ops/src/dispatch/`, `apps/ops/src/technicians/`
 - **Tests:** `test/worker/ops/dispatch.test.ts`, `test/worker/field/field-dispatch.test.ts`,
   `e2e/ops/dispatch.e2e.ts`, `e2e/ops/technicians.e2e.ts`
@@ -75,7 +76,7 @@ this map, or when the map names something that no longer exists.
   `job-sheet-settings`, `tech-photos`, `visit-photos`, `photo-views`, `pieces`, `stock`, `low-stock`, `consumables`
 - **Rules** (`src/policy/`): `in-job-steps`, `piece-step`, `job-visibility`, `phone-clock`, `stock`
 - **Data** (`src/config/`): `job-sheet`, `pieces`, `consumables`
-- **Routes** (`src/routes/`): `tech/`, `ops/field`, `ops/stock`, `ops/consumables`, `ops/job-sheet`
+- **Routes** (`src/routes/`): `tech/`, `ops/field`, `ops/client-pieces`, `ops/stock`, `ops/consumables`, `ops/job-sheet`
 - **Screens:** `apps/tech/src/`, `apps/ops/src/stock/`
 - **Tests:** `test/worker/field/`, `e2e/tech/`, `e2e/ops/stock.e2e.ts`, `e2e/ops/consumables.e2e.ts`,
   `e2e/ops/job-sheet.e2e.ts`
@@ -85,7 +86,7 @@ this map, or when the map names something that no longer exists.
 - **Database work** (`src/domain/no-shows/`): `no-shows`, `no-show-disputes`, `no-show-rulings`, `ruling-claims`,
   `after-a-ruling`
 - **Rules** (`src/policy/`): `no-show`
-- **Routes** (`src/routes/`): `client/disputes`, `ops/disputes`, `ops/no-show-rulings`
+- **Routes** (`src/routes/`): `client/disputes`, `ops/disputes`, `ops/no-shows`, `ops/no-show-rulings`
 - **Screens:** `apps/ops/src/no-shows/`
 - **Tests:** `test/worker/field/field-no-show.test.ts`, `test/worker/money/no-show-disputes.test.ts`,
   `e2e/app/no-show-dispute.e2e.ts`, `e2e/ops/no-shows.e2e.ts`

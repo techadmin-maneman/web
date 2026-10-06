@@ -1,4 +1,4 @@
-// Either side of ops' ruling on a no-show, behind Access (src/routes/ops/field.ts rules on it):
+// Either side of ops' ruling on a no-show, behind Access (src/routes/ops/no-shows.ts rules on it):
 //   GET /api/no-shows/:id/charge     what charging the case would keep of the visit's payment, and refund
 //   GET /api/no-shows/decided        the cases ruled on today, with their rulings
 //

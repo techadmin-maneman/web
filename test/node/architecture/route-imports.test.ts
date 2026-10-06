@@ -20,7 +20,7 @@ const BASELINE = [
   "src/routes/ops/clients.ts -> src/routes/client/payments.ts",
   "src/routes/ops/clients.ts -> src/routes/client/visits.ts",
   "src/routes/ops/clients.ts -> src/routes/ops/client-referral.ts",
-  "src/routes/ops/field.ts -> src/routes/tech/pieces.ts",
+  "src/routes/ops/client-pieces.ts -> src/routes/tech/pieces.ts",
   "src/routes/ops/profile.ts -> src/routes/ops/erasure.ts",
   "src/routes/ops/services.ts -> src/routes/ops/settings.ts",
   "src/routes/ops/visits.ts -> src/routes/client/booking.ts",
