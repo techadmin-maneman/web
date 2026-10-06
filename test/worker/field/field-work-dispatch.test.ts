@@ -139,13 +139,14 @@ describe("dispatch", () => {
       window_end: "2026-09-22T05:00:00.000Z",
     });
     const move = await env.DB.prepare(
-      "SELECT was_technician_id, now_technician_id, reason, fsm_write_state, message_id FROM dispatch_moves",
+      "SELECT was_technician_id, now_technician_id, reason, fsm_write_state, write_state, message_id FROM dispatch_moves",
     ).first<Record<string, string | null>>();
     expect(move).toMatchObject({
       was_technician_id: IMRAN,
       now_technician_id: SAMEER,
       reason: "technician_unavailable",
       fsm_write_state: "written",
+      write_state: "written",
     });
     expect(move?.message_id).not.toBeNull();
     const claims = await env.DB.prepare("SELECT COUNT(*) AS n FROM slot_claims").first<{ n: number }>();

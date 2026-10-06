@@ -187,7 +187,7 @@ Indexes:
 
 Each visit, mirrored from FSM or booked without it: when, with whom, of what type and in what state, and what we have learnt of each since, such as the window asked for and its invoice. `fsm_id` is FSM's ID for a visit FSM holds, otherwise the row's own (ADR 0032, ADR 0110).
 
-Made by `0011_fsm_mirror.sql`; changed by `0012_fsm_reconciliation.sql`, `0029_invoice_checks.sql`, `0030_invoice_issued.sql`, `0034_leave_and_asked_window.sql`, `0037_cron_indexes.sql`, `0041_vendor_correctness.sql`, `0044_hand_offs_and_messages.sql`, `0048_done_visits.sql`, `0050_services.sql`, `0053_balances_and_last_visits.sql`, `0056_task_owners.sql`, `0059_no_show_charges_and_disputes.sql`, `0060_flat_task_reads.sql`, `0061_one_visit.sql`, `0063_discount_codes.sql`, `0066_client_note_in_fsm.sql`, `0070_field_record_ours.sql`, `0076_books_without_fsm.sql`, `0090_board_version.sql`, `0098_checkin_waivers.sql`, `0099_retention.sql`.
+Made by `0011_fsm_mirror.sql`; changed by `0012_fsm_reconciliation.sql`, `0029_invoice_checks.sql`, `0030_invoice_issued.sql`, `0034_leave_and_asked_window.sql`, `0037_cron_indexes.sql`, `0041_vendor_correctness.sql`, `0044_hand_offs_and_messages.sql`, `0048_done_visits.sql`, `0050_services.sql`, `0053_balances_and_last_visits.sql`, `0056_task_owners.sql`, `0059_no_show_charges_and_disputes.sql`, `0060_flat_task_reads.sql`, `0061_one_visit.sql`, `0063_discount_codes.sql`, `0066_client_note_in_fsm.sql`, `0070_field_record_ours.sql`, `0076_books_without_fsm.sql`, `0090_board_version.sql`, `0098_checkin_waivers.sql`, `0099_retention.sql`, `0104_fsm_columns_expand.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -224,6 +224,7 @@ Made by `0011_fsm_mirror.sql`; changed by `0012_fsm_reconciliation.sql`, `0029_i
 | `checkin_waived_at` | TEXT | yes |  |  |
 | `checkin_waived_by` | TEXT | yes |  |  |
 | `checkin_waived_reason` | TEXT | yes |  |  |
+| `books_invoice_id` | TEXT | yes |  |  |
 
 Indexes:
 
@@ -641,7 +642,7 @@ Indexes:
 
 Every move ops make on the dispatch board: from where to where, by whom, why, what FSM said, and whether the client was told (ADR 0069).
 
-Made by `0026_field_operations.sql`; changed by `0040_dispatch_claims.sql`, `0060_flat_task_reads.sql`, `0090_board_version.sql`, `0094_dispatch_move_blackout_reason.sql`.
+Made by `0026_field_operations.sql`; changed by `0040_dispatch_claims.sql`, `0060_flat_task_reads.sql`, `0090_board_version.sql`, `0094_dispatch_move_blackout_reason.sql`, `0104_fsm_columns_expand.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -661,6 +662,7 @@ Made by `0026_field_operations.sql`; changed by `0040_dispatch_claims.sql`, `006
 | `told_at` | TEXT | yes |  |  |
 | `told_by` | TEXT | yes |  |  |
 | `blackout_reason` | TEXT | yes |  |  |
+| `write_state` | TEXT | yes |  |  |
 
 Indexes:
 
@@ -807,7 +809,7 @@ Indexes:
 
 The technician app's writes, each once by the ID the phone gave it, and whether it has reached FSM (ADR 0038, ADR 0065).
 
-Made by `0026_field_operations.sql`; changed by `0090_board_version.sql`, `0101_job_event_phone_time.sql`.
+Made by `0026_field_operations.sql`; changed by `0090_board_version.sql`, `0101_job_event_phone_time.sql`, `0104_fsm_columns_expand.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -825,6 +827,7 @@ Made by `0026_field_operations.sql`; changed by `0090_board_version.sql`, `0101_
 | `superseded` | INTEGER | no | `0` |  |
 | `updated_at` | TEXT | no |  |  |
 | `claimed_at` | TEXT | yes |  |  |
+| `write_state` | TEXT | yes |  |  |
 
 Indexes:
 

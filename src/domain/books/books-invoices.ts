@@ -265,7 +265,7 @@ async function itemOf(db: D1Database, visit: Visit): Promise<{ itemId: string; n
 
 async function keepInvoice(pass: Pass, appointmentId: string, invoiceId: string): Promise<void> {
   await pass.db
-    .prepare("UPDATE appointments SET fsm_invoice_id = ?1 WHERE id = ?2")
+    .prepare("UPDATE appointments SET fsm_invoice_id = ?1, books_invoice_id = ?1 WHERE id = ?2")
     .bind(invoiceId, appointmentId)
     .run();
 }

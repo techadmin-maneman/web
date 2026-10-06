@@ -19,9 +19,11 @@ D1 runs each file in `migrations/` once, in order, in one transaction, with fore
 
 What a later release drops, once no deployed Worker reads it. Each waits for the release named, in **production** as well as staging.
 
-| What                                         | Replaced by                                   | Dropped once production has run               | ADR  |
-| -------------------------------------------- | --------------------------------------------- | --------------------------------------------- | ---- |
-| `zoho_token` (0002) and `zoho_tokens` (0010) | `zoho_access_tokens` (0041, seeded from both) | #125 (6ef2ddb): the code before it reads them | 0070 |
+| What                                                                                      | Replaced by                                                    | Dropped once production has run               | ADR  |
+| ----------------------------------------------------------------------------------------- | -------------------------------------------------------------- | --------------------------------------------- | ---- |
+| `zoho_token` (0002) and `zoho_tokens` (0010)                                              | `zoho_access_tokens` (0041, seeded from both)                  | #125 (6ef2ddb): the code before it reads them | 0070 |
+| `appointments.fsm_invoice_id`, and `fsm_write_state` on `dispatch_moves` and `job_events` | `books_invoice_id` and `write_state` (0104, written alongside) | the release that reads the new columns        | 0113 |
+| The ten unread `fsm_*` columns, and `fsm_items`                                           | Nothing                                                        | the release after 0104                        | 0113 |
 
 ## Comments an applied migration cannot correct
 

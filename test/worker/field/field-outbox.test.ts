@@ -149,9 +149,9 @@ describe("the outbox", () => {
       error: { code: "superseded", fields: ["technician"], moved: { technician: "Sameer", at: null } },
     });
     const row = await env.DB.prepare(
-      "SELECT superseded, fsm_write_state FROM job_events WHERE event_id = 'event-late-01'",
-    ).first<{ superseded: number; fsm_write_state: string }>();
-    expect(row).toEqual({ superseded: 1, fsm_write_state: "rejected" });
+      "SELECT superseded, fsm_write_state, write_state FROM job_events WHERE event_id = 'event-late-01'",
+    ).first<{ superseded: number; fsm_write_state: string; write_state: string }>();
+    expect(row).toEqual({ superseded: 1, fsm_write_state: "rejected", write_state: "rejected" });
   });
 
   // "The other technician's first name may reach the phone.

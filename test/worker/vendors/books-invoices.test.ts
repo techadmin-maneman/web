@@ -117,9 +117,16 @@ async function itemKept(kind: string, tier: string, itemId: string) {
 }
 
 const row = (id = VISIT) =>
-  env.DB.prepare("SELECT fsm_invoice_id, invoice_checked_at, invoice_issued_at FROM appointments WHERE id = ?1")
+  env.DB.prepare(
+    "SELECT fsm_invoice_id, books_invoice_id, invoice_checked_at, invoice_issued_at FROM appointments WHERE id = ?1",
+  )
     .bind(id)
-    .first<{ fsm_invoice_id: string | null; invoice_checked_at: string | null; invoice_issued_at: string | null }>();
+    .first<{
+      fsm_invoice_id: string | null;
+      books_invoice_id: string | null;
+      invoice_checked_at: string | null;
+      invoice_issued_at: string | null;
+    }>();
 
 /** Books, whose totals read `extra` paise above what our figures make: a GST setting, or a draft ops edited. */
 function booksTotalling(stub: StubBooks) {
@@ -185,6 +192,8 @@ describe("the invoice a finished visit gets", () => {
     ]);
     const billed = await row();
     expect(billed?.fsm_invoice_id).toMatch(/^stub-invoice-/);
+    // Kept under its new name too, until the release that reads it (docs/decisions/0113-fsms-columns-go.md).
+    expect(billed?.books_invoice_id).toBe(billed?.fsm_invoice_id);
     expect(books.made.issued).toEqual([billed?.fsm_invoice_id]);
     expect(billed?.invoice_issued_at).toBe(AFTER.toISOString());
 
@@ -234,6 +243,7 @@ describe("the invoice a finished visit gets", () => {
     expect(logs.lines()).toContainEqual(expect.objectContaining({ event: "invoice_failed", appointment_id: VISIT }));
     expect(await row()).toEqual({
       fsm_invoice_id: null,
+      books_invoice_id: null,
       invoice_checked_at: AFTER.toISOString(),
       invoice_issued_at: null,
     });
