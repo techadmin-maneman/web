@@ -45,8 +45,8 @@ export interface Notice {
 }
 
 /**
- * The versions approved word for word: the try-on's three by the owner on 22 September 2026, and the consents,
- * the landing's among them, by counsel the same day (ADR 0025, item 25).
+ * The versions approved word for word: the try-on's three, and the consents, the landing's among them, by counsel
+ * (ADR 0025, item 25).
  */
 const APPROVED_NOTICES: readonly string[] = [
   "photo-v1",
@@ -1067,7 +1067,7 @@ export const tryOn = {
 
 /**
  * The code that proves the number before /book's consultation and fit in one visit, or /try's look, acts on it. Not
- * drawn: words for the owner to approve.
+ * drawn.
  */
 export const numberCode = {
   label: "WhatsApp code",

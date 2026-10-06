@@ -6,8 +6,7 @@ import { isShown } from "../lib/build.ts";
 import { whatsappChat } from "@maneman/web-kit/whatsapp";
 
 const { service, reach, legal } = footer.columns;
-// The number is given as WhatsApp alone: the owner ruled on 27 September 2026 that
-// the footer offers no line to call (docs/open-points.md, item 47).
+// The number is given as WhatsApp alone: the footer offers no line to call.
 const showWhatsapp = isShown(whatsapp);
 ---
 

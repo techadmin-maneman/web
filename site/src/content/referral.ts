@@ -97,7 +97,7 @@ export const referral = {
     offer: inviteOffer,
     /**
      * A code we do not know: a typo, a revoked code, or one more than 12 months
-     * old (board C4, "Code expired"). The API does not say which, so the page
+     * old (the design's "Code expired"). The API does not say which, so the page
      * says only what is true of all three, under /book's heading.
      */
     unknown: {

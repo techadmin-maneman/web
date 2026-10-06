@@ -13,8 +13,7 @@ export interface SitePrices {
 }
 
 /**
- * The service visit and the replacement as a page is built: the price book's own figures since 22 September 2026
- * (migration 0018). mm-site's Worker writes the book's figures over them on every page it serves, so a visitor sees
+ * The service visit and the replacement as a page is built: the price book's own figures (migration 0018). mm-site's Worker writes the book's figures over them on every page it serves, so a visitor sees
  * these only where the book could not be read: the local build, the browser tests, and a page served while mm-api was
  * not answering.
  */

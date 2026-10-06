@@ -1,7 +1,7 @@
 // Amounts as the apps' designs write them, "Rs. 2,000", with India's grouping
 // ("1,00,000"). The API gives paise; whole rupees drop the paise. The public
-// site's own design wrote "₹2,000"; the owner ruled on 27 September 2026 that
-// every surface writes "Rs." (ADR 0025, item 51). This is the one place any
+// site's own design wrote "₹2,000", but every surface writes "Rs." (ADR 0025,
+// item 51). This is the one place any
 // front end, the site included, writes an amount.
 
 const wholeRupees = new Intl.NumberFormat("en-IN", { maximumFractionDigits: 0 });
