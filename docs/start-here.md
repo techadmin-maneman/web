@@ -64,8 +64,8 @@ this map, or when the map names something that no longer exists.
 - **Database work** (`src/domain/dispatch/`): `dispatch`, `dispatch-board`, `dispatch-landing`, `dispatch-utilisation`, `technicians`, `technician-roster`,
   `technician-work`, `leave`, `blackouts`, `cities`
 - **Rules** (`src/policy/`): `dispatch`, `technician-work`
-- **Routes** (`src/routes/`): `ops/dispatch`, `ops/blackouts`, `ops/technicians`, `ops/technician-leave`,
-  `ops/technician-phones`
+- **Routes** (`src/routes/`): `ops/dispatch`, `ops/dispatch-moves`, `ops/blackouts`, `ops/technicians`,
+  `ops/technician-leave`, `ops/technician-phones`
 - **Screens:** `apps/ops/src/dispatch/`, `apps/ops/src/technicians/`
 - **Tests:** `test/worker/ops/dispatch.test.ts`, `test/worker/field/field-dispatch.test.ts`,
   `e2e/ops/dispatch.e2e.ts`, `e2e/ops/technicians.e2e.ts`
@@ -95,7 +95,8 @@ this map, or when the map names something that no longer exists.
 
 - **Database work** (`src/domain/money/`): `payments`, `payment-links`, `client-payments`, `client-billing`, `refunds`,
   `auto-refunds`, `cancel-refunds`, `credits`, `credit-reminders`, `discount-codes`, `discount-code-holds`,
-  `discount-code-uses`, `requested-codes`, `day-money`, `one-visit-money`, `price-book`, `razorpay-catch-up`
+  `discount-code-uses`, `discount-code-visits`, `requested-codes`, `day-money`, `one-visit-money`, `price-book`,
+  `razorpay-catch-up`
 - **Rules** (`src/policy/`): `prices`, `prepayment`, `pay-by-link`, `discount-codes`, `credit-reminders`,
   `fraud-holds`
 - **Data** (`src/config/`): `gst`

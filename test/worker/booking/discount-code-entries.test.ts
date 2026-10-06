@@ -10,7 +10,8 @@ import { confirmBooking, startBooking } from "../../../src/domain/booking/bookin
 import { paymentEntries, paymentEntry } from "../../../src/domain/money/client-payments.ts";
 import { grantCredits } from "../../../src/domain/money/credits.ts";
 import { codeOnHold, removeFromHold } from "../../../src/domain/money/discount-code-holds.ts";
-import { priceAfterCode, removeFromVisit } from "../../../src/domain/money/discount-code-uses.ts";
+import { priceAfterCode } from "../../../src/domain/money/discount-code-uses.ts";
+import { removeFromVisit } from "../../../src/domain/money/discount-code-visits.ts";
 import { composeVisitMessage } from "../../../src/domain/messages/visit-message-text.ts";
 import { listCodes, makeCodes, type NewCodes } from "../../../src/domain/money/discount-codes.ts";
 import { offeredProducts } from "../../../src/domain/booking/services.ts";

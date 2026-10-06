@@ -6,7 +6,7 @@
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import { grantCredits } from "../../../src/domain/money/credits.ts";
-import { enterOnVisit } from "../../../src/domain/money/discount-code-uses.ts";
+import { enterOnVisit } from "../../../src/domain/money/discount-code-visits.ts";
 import { makeCodes, type NewCodes } from "../../../src/domain/money/discount-codes.ts";
 import { CODE_ALPHABET } from "../../../src/policy/discount-codes.ts";
 import type { App } from "../../../src/http/context.ts";
