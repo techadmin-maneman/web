@@ -1,6 +1,6 @@
 // Every colour, size and space on the site comes from packages/brand/tokens.css:
 // no component writes a raw colour, px, vw or em value, and every token a
-// component uses is defined there. The site does not use the Phase 2 layer.
+// component uses is defined there. The site does not use the apps' layer.
 
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";

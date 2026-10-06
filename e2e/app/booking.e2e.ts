@@ -1,4 +1,4 @@
-// Booking in the app (boards C2 to C6) for the fitted client with an address of
+// Booking in the app for the fitted client with an address of
 // e2e/app/booker.ts, against the local mm-api, with Razorpay faked
 // (e2e/app/checkout-fakes.ts): the address asked for first when there is none
 // (ADR 0079), what booking also agrees to on the pay step (ADR 0080), and the
@@ -328,7 +328,7 @@ test("books and pays for a service visit through Razorpay Checkout", async ({ pa
   await expect(pay.getByText(/^\S+ never handles money\.$/)).toBeVisible();
   // Already switched on, so the sheet does not ask again.
   await expect(pay.getByRole("checkbox", { name: REMIND })).toHaveCount(0);
-  // Both photograph consents are decided, so booking asks for neither, as board C4 draws it.
+  // Both photograph consents are decided, so booking asks for neither, as the pay step draws it.
   await expect(pay.getByText("What booking agrees to")).toHaveCount(0);
   await expect(pay.getByText(/^By booking this visit/)).toHaveCount(0);
 
@@ -471,7 +471,7 @@ test("promises no reminder the client has not agreed to", async ({ page }) => {
   await expect(confirmed.getByText(REMINDED)).toHaveCount(0);
 });
 
-// The owner's ruling of 27 September 2026 (ADR 0079): an address before any slot.
+// An address before any slot (ADR 0079).
 test("asks a client with no address for it first, then books", async ({ page }) => {
   await fakeCheckout(page, "paid");
   await confirmedByRazorpay(page);
@@ -543,8 +543,7 @@ test("offers no day at an address we do not come to, but the address to change a
   await expect(where.getByRole("link", { name: "Join the waitlist" })).toHaveAttribute("href", /\/book$/);
 });
 
-// The owner's rulings of 27 September 2026 (booking agrees to the photograph purposes never decided on) and of
-// 2 October 2026 (what booking agrees to sits one tap away beneath Pay).
+// Booking agrees to the photograph purposes never decided on, and what it agrees to sits one tap away beneath Pay.
 test("puts Pay above what booking also agrees to, one tap away, while neither is decided, and sends both", async ({
   page,
 }) => {
@@ -604,7 +603,7 @@ test("shows only the line of a purpose still undecided, and sends only that one"
   await expect.poll(() => sent).toMatchObject([{ consents: ["photos_own_record"] }]);
 });
 
-// The owner's ruling of 27 September 2026 (ADR 0085): "Clients should see all the available options. There should
+// "Clients should see all the available options. There should
 // be no message us for anything."
 test("offers every service of the kind it books, the one offered chosen, with how long each takes and what it costs", async ({
   page,
@@ -1216,7 +1215,7 @@ async function scanOf(page: Page): Promise<void> {
   expect(await axeViolations(page)).toEqual([]);
 }
 
-// Axe read C2 to C4 only; board C6's states, where a client is told something went wrong, went unread.
+// Axe read the date, window and pay steps only; the outcome step's states, where a client is told something went wrong, went unread.
 test("the payment's outcomes meet WCAG 2.2 AA: failed, the slot gone back, and confirmed", async ({ page }) => {
   await fakeCheckout(page, "failed");
   await page.clock.install();

@@ -1,5 +1,5 @@
 // Migration 0006 rebuilds outbound_messages (docs/decisions/0041-outbound-messages-for-phase-2.md).
-// Staging and production hold Phase 1's messages, so the rebuild must carry
+// Staging and production hold the try-on's messages, so the rebuild must carry
 // every one of them across unchanged. D1 is SQLite: this applies the real
 // migration files to an in-memory SQLite database, before and after.
 

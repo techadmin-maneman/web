@@ -191,7 +191,7 @@
   --ops-scroll-max-h: 70dvh; /* the dispatch grid on a narrow screen, with the tray beneath it */
 
   /* ---- The dispatch board's slot: no board draws it ----------------------- */
-  /* A block is this tall for each slot it takes. Board A1 draws 22, 34 and 46 px, under two lines of type that make
+  /* A block is this tall for each slot it takes. The dispatch board draws 22, 34 and 46 px, under two lines of type that make
      one slot and a slot and a half read alike (ADR 0025, item 49). */
   --ops-slot: 42px;
 

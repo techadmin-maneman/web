@@ -1,5 +1,5 @@
 // No ceiling in the committed config may take R2 past 80% of its free allowance, counting the share set aside for
-// Phase 2. Raising one past it fails here (docs/decisions/0009, 0039).
+// clients' photographs and referral cards. Raising one past it fails here (docs/decisions/0009, 0039).
 
 import { describe, expect, it } from "vitest";
 import {

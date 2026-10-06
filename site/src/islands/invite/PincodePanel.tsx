@@ -9,7 +9,7 @@ import type { PincodeCheck } from "./usePincode.ts";
 /** Where we come to: the area once ops have named it, its city until then. */
 const placeOf = (answer: PincodeAnswer): string => answer.area ?? answer.city ?? answer.pincode;
 
-/** Boards C2 and C3: what the pincode answered, in the navy block's place. */
+/** What the pincode answered, in the navy block's place. */
 function PincodeAnswerBlock(props: { answer: PincodeAnswer; heading: { current: HTMLHeadingElement | null } }) {
   const { answer } = props;
   if (answer.served) {

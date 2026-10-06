@@ -1,6 +1,6 @@
-// The brief and the designs Phase 2 is built from, pinned: the prompts are the
-// owner's words and change only as a new revision, and the Phase 2 design
-// export repeats Phase 1 files it must not quietly diverge from.
+// The briefs and the designs the apps are built from, pinned: the prompts are the
+// brief's own words and change only as a new revision, and the apps' design
+// export repeats the site's design files, which it must not quietly diverge from.
 
 import { createHash } from "node:crypto";
 import { readdirSync, readFileSync } from "node:fs";
@@ -8,7 +8,7 @@ import { describe, expect, it } from "vitest";
 
 const sha256 = (path: string) => createHash("sha256").update(readFileSync(path)).digest("hex");
 
-/** Each prompt's first line and its hash. A new revision from the owner updates both. */
+/** Each prompt's first line and its hash. A new revision updates both. */
 const PROMPTS: Readonly<Record<string, { title: string; sha256: string }>> = {
   "phase1-backend.md": {
     title: "# Prompt for the coding agent — Mane Man Phase 1 backend, rev 4.1",

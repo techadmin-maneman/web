@@ -1,4 +1,4 @@
-// Board B1's capture, and the upload that follows it. Chromium runs with a fake
+// The camera's capture, and the upload that follows it. Chromium runs with a fake
 // camera, so no real one and no photograph of anyone is involved.
 //
 // What matters here is that the frame comes from the camera into a canvas, is

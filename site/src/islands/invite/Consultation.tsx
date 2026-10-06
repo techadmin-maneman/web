@@ -74,7 +74,7 @@ const MARKED_FIELDS: readonly string[] = [...PERSON_FIELDS, ...REQUIRED_API_FIEL
 const outOfDate = (code: ErrorCode | "network"): boolean => code === "taken" || code === "not_bookable";
 
 /**
- * Board C2: the pincode is served, so the page books a free consultation. The form also takes the address the
+ * The pincode is served, so the page books a free consultation. The form also takes the address the
  * consultation is at, which no board draws, so nothing is booked without one (ADR 0081). It may book the
  * consultation and fit in one visit instead, which no board draws either: three hours, in the morning or the
  * afternoon, paid for once the client is fitted (ADR 0105), and, on the site's own page, with a discount code that

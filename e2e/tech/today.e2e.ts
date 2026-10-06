@@ -1,4 +1,4 @@
-// Boards A1, A2 and A3: the day's jobs, the empty state, the offline banner,
+// Today: the day's jobs, the empty state, the offline banner,
 // and one job's card with its locked version.
 
 import { expect, test } from "../support.ts";

@@ -22,7 +22,7 @@ test("Home shows a fitted client's next visit, with the technician, and Reschedu
   await expect(page.getByText("Imran", { exact: true })).toBeVisible();
   await expect(page.getByText("Service visit · 1 hour 30 minutes")).toBeVisible();
   await expect(page.getByText("Gurgaon 122018")).toBeVisible();
-  // Board B1's one prompt: this client has given no address, which comes before the replacement falling due.
+  // Home's one prompt: this client has given no address, which comes before the replacement falling due.
   await expect(page.getByText("Add your address, so your technician can find the door.")).toBeVisible();
   await expect(page.getByRole("link", { name: "Add your address" })).toHaveAttribute("href", "/profile");
   // Self-serve booking is on locally, so Reschedule opens the move sheet (C7; e2e/app/changes.e2e.ts moves one).
@@ -51,7 +51,7 @@ test("Visits lists what is coming and what is done, and a past visit opens with 
   await expect(page.getByRole("heading", { level: 1, name: fullDate(client.service.date) })).toBeVisible();
   await expect(page.getByText("Imran Qureshi")).toBeVisible();
   await expect(page.getByText("1 h 25 m")).toBeVisible();
-  // Board C9's "What was done": the checklist the technician ticked, from his phone.
+  // The visit's "What was done": the checklist the technician ticked, from his phone.
   await expect(page.getByRole("term").filter({ hasText: "What was done" }).locator("+ dd")).toHaveText(
     "Hair system removed, Scalp cleaned, Hair system cleaned.",
   );
@@ -194,9 +194,8 @@ test("Home keeps a visit done but not yet closed, and shows the credit tile and 
   );
 });
 
-// The client's own record, above their visits: the owner's ruling of 24
-// September 2026 that a client's history belongs in the app as well as the
-// console. The replacement is a month and never a day, because the day is
+// The client's own record, above their visits: a client's history belongs in
+// the app as well as the console. The replacement is a month and never a day, because the day is
 // worked out afresh from FSM on every sync (ADR 0059).
 test("Visits heads the client's own record with the month their replacement falls due", async ({ page }) => {
   const client = fittedClient();
@@ -221,7 +220,7 @@ test("Visits heads the client's own record with the month their replacement fall
   await expect(fact("Total paid")).toContainText("Rs. 32,000");
 });
 
-// The owner's ruling of 23 September 2026: the invoice appears beside the visit, and a free visit says so
+// The invoice appears beside the visit, and a free visit says so
 // rather than promising a document that will never come (ADR 0056).
 test("a past visit carries its own invoice, or says why there is none", async ({ page }) => {
   const client = fittedClient();
@@ -456,7 +455,7 @@ test("Home says a paid visit FSM has not taken yet is being booked, with the pay
   expect(await axeViolations(page)).toEqual([]);
 });
 
-// D-04: while FSM held a booking, Home said it was being booked and Visits said "Nothing booked yet.". A
+// While FSM held a booking, Home said it was being booked and Visits said "Nothing booked yet.". A
 // consultation and fit booked on /book read "We are booking your visit" while the site had said it was booked. Both
 // answers are altered on their way, as above.
 test("Visits lists a visit FSM has not taken yet as Home says it, a consultation and fit as booked", async ({

@@ -1,4 +1,4 @@
-// Moving and cancelling a visit in the app (boards C7 and C8), for the two clients of e2e/app/changing.ts,
+// Moving and cancelling a visit in the app, for the two clients of e2e/app/changing.ts,
 // against the local mm-api, whose FSM and payments are stubs, with Razorpay faked (e2e/app/checkout-fakes.ts).
 // The consequence shows before the client confirms.
 
@@ -36,7 +36,7 @@ async function pickAnother(page: Page, which: "first" | "last"): Promise<void> {
   await continueToPayment(page);
 }
 
-// Board C1's Prepaid, on a visit paid for ahead; and the visit opens its own page, with the same ways to change it
+// Visits' Prepaid, on a visit paid for ahead; and the visit opens its own page, with the same ways to change it
 // as Home has. Read before the tests below move and cancel it.
 test("C1: a paid visit is marked Prepaid, and opens with Reschedule", async ({ page }) => {
   await logIn(page, changingClients().free.mobile);

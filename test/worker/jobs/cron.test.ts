@@ -294,7 +294,7 @@ describe("the heartbeat after a run", () => {
     ]);
   });
 
-  // D-01 of 4 October 2026: Cloudflare stopped every staging run for ten hours, and nobody outside the Worker was told.
+  // Cloudflare once stopped every staging run for ten hours, and nobody outside the Worker was told.
   it("pings /fail after a run that never finished, saying when it started", async () => {
     const { job } = recorder();
     const outside = fakeFetch({ [CHECK]: () => new Response("OK") });

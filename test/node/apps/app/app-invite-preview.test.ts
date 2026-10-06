@@ -1,4 +1,4 @@
-// The client app's preview of an invite (board F4) is "exactly as the friend receives it", and what the friend
+// The client app's preview of an invite is "exactly as the friend receives it", and what the friend
 // receives is the landing's own preview, which the mm-site Worker writes into the invite's Open Graph tags. The
 // two are in two content files, so this holds them to one another: a change of wording, of the area's name
 // (ADR 0025, item 14), or of what ops give the friend (docs/decisions/0107-referral-rewards-in-the-console.md),
@@ -54,7 +54,7 @@ describe("the app's promise of what a referral earns", () => {
 });
 
 // Refer told a client not yet fitted that nobody they referred had
-// been fitted, and a fitted client that no other discount applies, which the owner's ruling of 1 October undid.
+// been fitted, and a fitted client that no other discount applies, which is no longer so.
 describe("Refer for a client not yet fitted", () => {
   const reward = { referrer_visits: 2, friend_visits: 4 };
 
