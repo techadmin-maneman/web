@@ -6,7 +6,7 @@ import type { VisitWindow } from "../config/booking.ts";
 import type { BookingWindow } from "../config/scheduling.ts";
 import { askedWindowOf } from "./asked-windows.ts";
 
-/** A booking a form left: the date it booked, its Phase 1 rough window if it had one, and the city named. */
+/** A booking a form left: the date it booked, the first form's rough window if it had one, and the city named. */
 export interface ProposedBooking {
   readonly proposed_visit_date: string;
   readonly first_choice_window: VisitWindow | null;
@@ -60,7 +60,7 @@ async function hasVisit(db: D1Database, personId: string): Promise<boolean> {
 }
 
 /**
- * What a booking asked for. A Phase 1 lead carries its own rough choice, and booked nothing: ops fixed the hour on
+ * What a booking asked for. A lead from the site's first form carries its own rough choice, and booked nothing: ops fixed the hour on
  * WhatsApp. A booking from the site's form asked on the slot it held or, while self-serve booking is off, on the
  * request ops confirm. Null when neither is found.
  */

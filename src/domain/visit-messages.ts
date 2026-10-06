@@ -76,8 +76,8 @@ const STILL_TRUE_WHILE: Readonly<Record<VisitMessageKind, readonly AppointmentSt
  * What the ruling on a no-show says, by the ruling and by what the client paid ahead. A charge says what it kept and
  * what goes back, as the ruling recorded them (no_show_cases.kept_amount and refund_amount); one charged before a
  * charge recorded them kept what was paid, as a cancel inside 24 hours does. A waiver says what it gave back, as the
- * ruling kept it (no_show_cases.waiver_payment and waiver_credit): the owner ruled on 27 September 2026 that it
- * refunds the payment and returns the credit, and ops may set it otherwise (src/policy/no-show.ts). A waiver ruled
+ * ruling kept it (no_show_cases.waiver_payment and waiver_credit): it refunds the payment and returns the credit,
+ * and ops may set it otherwise (src/policy/no-show.ts). A waiver ruled
  * before the ruling kept it gave both back. A credit given back says so only where the ledger holds it back: a grant
  * expired or clawed back since the visit could not take it.
  */
@@ -449,7 +449,7 @@ async function refundDestination(db: D1Database, appointmentId: string): Promise
 /** Whether a service-visit credit paid for the visit. */
 /**
  * A booking's receipt with no payment behind it: a visit a credit paid for, or one a discount code made free, which
- * the owner ruled on 1 October 2026 is told it is booked as a paid one is (docs/decisions/0108-discount-codes.md). A
+ * is told it is booked as a paid one is (docs/decisions/0108-discount-codes.md). A
  * prepaid visit with a code is booked only once paid, so a code on a visit with no payment is one that left nothing
  * to pay.
  */

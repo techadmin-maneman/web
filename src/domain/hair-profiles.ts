@@ -5,7 +5,7 @@
 // latest and send it back whole, so the latest version is the profile, and a replacement is ordered to it. None is
 // ever changed; an erasure blanks every one (migration 0064 holds the table to that).
 //
-// The history is health information, recorded with the fit spec as the owner ruled. This file and the export are all
+// The history is health information, recorded with the fit spec. This file and the export are all
 // that read it; nothing here logs it, audits it or hands it to a queue, so it never reaches Zoho CRM or Books.
 
 import type { VisitType } from "../config/visit-types.ts";

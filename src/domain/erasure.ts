@@ -434,7 +434,7 @@ async function personalDataStatements(db: D1Database, personId: string, at: stri
          WHERE person_id = ?1 AND card_state = 'personal'`,
       )
       .bind(personId, at),
-    // Phase 2's own personal data (docs/decisions/0049-dpdp.md): where they live, the numbers they changed
+    // The app's own personal data (docs/decisions/0049-dpdp.md): where they live, the numbers they changed
     // between, and the words of any grievance. Visits, payments and credits stay, as records. An address a
     // technician's check-in was measured against is blanked to its city and pincode rather than deleted: the
     // check-in points at it, and stays as the evidence ops rule a no-show on.

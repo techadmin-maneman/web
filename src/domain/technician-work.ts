@@ -1,13 +1,12 @@
 // What each technician has done, counted from the jobs themselves at the moment
-// ops look, as board D2's tasks are. There is no tally kept anywhere, so nothing
+// ops look, as the Tasks board is. There is no tally kept anywhere, so nothing
 // can drift from the appointments it counts.
 //
 // A job done is a completed appointment. Its service time is the technician's
 // own two events, because "duration runs from Start job to the outcome. The
 // technician never types a time" (src/policy/in-job-steps.ts). How far back they
 // reach, and how far over an average runs before it is flagged, are ops'
-// (src/policy/technician-work.ts). The board's third figure, Skill, is nowhere at
-// all: the owner ruled it out (docs/open-points.md, item 59).
+// (src/policy/technician-work.ts). The design's third figure, Skill, is not kept.
 //
 // One statement answers the whole board: a row per technician per visit type
 // and length, which is a few rows a technician however many jobs they hold. A
@@ -75,7 +74,7 @@ interface Row {
   minutes: number;
 }
 
-/** The counts board D3 draws, for every active technician, over the days given. */
+/** The counts the Technicians page shows, for every active technician, over the days given. */
 export async function technicianWork(db: D1Database, period: { from: string; to: string }): Promise<TechnicianWork[]> {
   const { results } = await db
     .prepare(WORK)

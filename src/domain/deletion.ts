@@ -1,5 +1,5 @@
 // A client's request to delete their account (src/policy/account-deletion.ts).
-// Ops process it, and processing is the erasure Phase 1 already has
+// Ops process it, and processing is the erasure
 // (docs/decisions/0019-erasure.md): photographs, results and details, the same day.
 // Either way the client is told on WhatsApp, as their app promises.
 

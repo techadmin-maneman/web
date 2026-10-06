@@ -53,7 +53,7 @@ interface VisitSummary {
   readonly not_home: boolean;
   /** Null for a closed visit. */
   readonly stage: VisitStage | null;
-  /** Paid for ahead, or covered by a credit: board C1's "Prepaid". */
+  /** Paid for ahead, or covered by a credit: the visit's "Prepaid". */
   readonly prepaid: boolean;
   readonly technician: { readonly name: string; readonly initials: string } | null;
   readonly place: string;

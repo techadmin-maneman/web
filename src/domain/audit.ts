@@ -10,7 +10,7 @@
 import type { Surface } from "../config/environments.ts";
 import type { RulingClaim } from "./ruling-claims.ts";
 
-/** Every action the log records. Phase 2 milestones add theirs here. */
+/** Every action the log records. A new action is added here. */
 export const AUDIT_ACTIONS = [
   "ops.call",
   // The client's profile (docs/decisions/0042-client-profile.md).

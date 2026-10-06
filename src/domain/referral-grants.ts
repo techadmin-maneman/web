@@ -12,8 +12,8 @@
 // A consultation and fit in one visit is paid for after it, by a link (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md),
 // so its grant waits until a payment for it is in, by its link or one ops made by hand: until then nothing was sold,
 // and the fraud rules, which compare the two people's payments, have none of the friend's to compare (ADR 0025,
-// item 93). One a discount code left nothing to pay is settled by the fit itself, as the owner ruled on 1 October
-// 2026, "Yes, once fitted" (docs/decisions/0108-discount-codes.md).
+// item 93). One a discount code left nothing to pay is settled by the fit itself
+// (docs/decisions/0108-discount-codes.md).
 
 import { indiaDate, monthOf } from "../lib/india-time.ts";
 import { FRAUD_SIGNALS, REFERRAL_MONTHLY_CAP, type FraudSignal } from "../policy/fraud-holds.ts";

@@ -12,7 +12,7 @@
 // no (docs/decisions/0085-services-ops-can-edit.md).
 //
 // An unlocked card also carries what the technician needs at the door and no
-// route gave him before: the client's pieces (board A3's piece card, and the
+// route gave him before: the client's pieces (the job card's pieces, and the
 // piece step's "Pick from the list"), the last visit's after photograph, the
 // no-show wait, and whether the day-before WhatsApp reached the client (board
 // B5). The photograph itself is served on its own, and never cached.
@@ -123,7 +123,7 @@ interface JobProgress extends JobState {
   readonly steps_done: CardStep[];
 }
 
-/** One of the client's pieces, as board A3's piece card and the piece step's list show it. */
+/** One of the client's pieces, as the job card and the piece step's list show it. */
 interface CardPiece {
   readonly piece_code: string;
   readonly base: string | null;
@@ -136,7 +136,7 @@ interface CardPiece {
   readonly failure_reason: string | null;
 }
 
-/** The client's visit before this one that has after photographs: board A3's "Last visit, after. 22 Aug, Imran." */
+/** The client's visit before this one that has after photographs: the job card's "Last visit, after. 22 Aug, Imran." */
 interface LastVisit {
   /** YYYY-MM-DD, in India. */
   readonly date: string;
@@ -464,7 +464,7 @@ async function lastVisitOf(db: D1Database, row: JobRow): Promise<LastVisit | nul
   };
 }
 
-/** The front first, as board A3 draws it, then the other angles in the order they are taken. */
+/** The front first, as the job card shows it, then the other angles in the order they are taken. */
 const ANGLE_ORDER =
   "CASE p.angle WHEN 'front' THEN 0 WHEN 'top' THEN 1 WHEN 'left' THEN 2 WHEN 'right' THEN 3 ELSE 4 END";
 

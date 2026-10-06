@@ -1,7 +1,7 @@
 // Global daily ceilings. The render ceiling caps AILabTools spend; the upload,
 // render and result-read ceilings together cap R2 use inside the free tier
 // (docs/decisions/0009-stay-inside-cloudflare-free-tier.md); the geocode
-// ceiling caps what the address search can spend on the owner's Google card
+// ceiling caps what the address search can spend on the Google account's card
 // (docs/decisions/0054-address-capture.md). A breach answers 503 busy and
 // alerts, at most once a day per ceiling.
 
