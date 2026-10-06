@@ -4,7 +4,7 @@
 import { indiaDate } from "../../lib/india-time.ts";
 import type { PlacesReached } from "../../policy/access.ts";
 import type { NoShowDecision } from "../../policy/no-show.ts";
-import { CHARGE_TAKEN, chargeTaken, type ChargeColumns, type NoShowNote } from "./no-shows.ts";
+import { CHARGE_TAKEN, chargeTaken, type ChargeColumns, type NoShowNote } from "./no-show-notes.ts";
 import { reachBinding, withinReach } from "../clients/places.ts";
 
 /** A case ops have ruled on, with what the ruling did. */
