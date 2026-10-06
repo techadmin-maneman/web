@@ -1,5 +1,5 @@
 // When a referral grant waits for ops (docs/prompts/phase2-backend.md, "Business rules, decided").
-// The rules as the prompt states them, and the owner's ruling on the cap (ADR 0025, item 24). Each is checked
+// The rules as the prompt states them, and the cap. Each is checked
 // in fraudSignals (src/domain/referral-grants.ts).
 
 // Its rules, as the brief states them:
@@ -17,8 +17,8 @@ export const REFERRAL_MONTHLY_CAP = 5;
 export const FRAUD_SIGNALS = ["shared_address", "shared_upi", "monthly_cap", "same_mobile"] as const;
 export type FraudSignal = (typeof FRAUD_SIGNALS)[number];
 
-// The owner's ruling of 30 September 2026 (docs/open-points.md, item 157), which no fraud rule above covers: "Ops may
-// attach an invite after the friend's first fit; its credits wait for ops' review, as a held grant's do."
+// One more, which no fraud rule above covers: "Ops may attach an invite after the friend's first fit; its credits wait
+// for ops' review, as a held grant's do."
 
 /** Why a grant waits for ops: a fraud rule it met, or an invite ops attached after the friend's first fit. */
 export const HOLD_REASONS = [...FRAUD_SIGNALS, "attached_after_fit"] as const;

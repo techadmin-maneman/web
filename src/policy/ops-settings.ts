@@ -117,7 +117,7 @@ export const OPS_SETTINGS = [
     fallback: NO_SHOW_WAIT_MIN,
   },
   {
-    // The owner's terms of 27 September 2026 (docs/open-points.md, item 7), which a booking keeps as it was made under.
+    // The change terms, which a booking keeps as they were when it was made.
     name: "change_notice_hours",
     title: "Free to move or cancel until",
     note: "How long before the window a client may move or cancel free. Each booking keeps its terms.",
@@ -174,7 +174,7 @@ export const OPS_SETTINGS = [
     fallback: DAY_BEFORE_REMINDER_HOUR,
   },
   {
-    // The owner's three bounds on the phone's clock (docs/open-points.md, item 58). The third, that the no-show wait
+    // Three bounds on the phone's clock. The third, that the no-show wait
     // runs on our clock too, is the wait above, measured from when the check-in reached us.
     name: "phone_clock",
     title: "How far a phone is trusted about time",
@@ -212,7 +212,7 @@ export const OPS_SETTINGS = [
     fallback: { ...PIECE_CYCLE_DAYS, [DEFAULT_KEY]: DEFAULT_PIECE_CYCLE_DAYS },
   },
   {
-    // Board C4's ten minutes, and the two minutes' grace of ADR 0025, ruling 42 (docs/decisions/0068-a-paid-hold-is-kept.md).
+    // Ten minutes, and two minutes' grace for a payment made late (docs/decisions/0068-a-paid-hold-is-kept.md).
     name: "payment_hold",
     title: "Holding a slot while the client pays",
     note: "How long a slot is held while the client pays, and how late a payment still counts.",
@@ -227,7 +227,6 @@ export const OPS_SETTINGS = [
     fallback: PAYMENT_HOLD,
   },
   {
-    // The owner's ruling of 30 September 2026 (docs/open-points.md, item 60; ADR 0025, item 85).
     name: "dispute_window_days",
     title: "How long a no-show charge can be disputed",
     note: "How many days a client has to dispute a no-show charge. Each charge keeps its days.",
@@ -238,7 +237,6 @@ export const OPS_SETTINGS = [
     fallback: DISPUTE_WINDOW_DAYS,
   },
   {
-    // Board D3's two figures, the owner's of 27 September 2026 (docs/open-points.md, item 59).
     name: "technician_work",
     title: "The technicians' figures",
     note: "How far back the Technicians screen counts, and when an average counts as running over.",
@@ -266,7 +264,7 @@ export const OPS_SETTINGS = [
     conflicts: (value) => pastTheHorizon(value as NextVisitDays).map((key) => ["horizon", key] as const),
   },
   {
-    // The owner's ruling of 1 October 2026: each side's visits, and how long they last (ADR 0025, item 94).
+    // Each side's visits, and how long they last.
     name: "referral_reward",
     title: "What a referral earns",
     note: "The free service visits each side earns once the friend is fitted, and how long they last.",

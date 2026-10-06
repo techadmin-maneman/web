@@ -1,7 +1,7 @@
 // What a client consents to (docs/prompts/phase2-backend.md, "Business rules, decided").
 // The purposes, each with its own date. A client switches each in src/domain/profile.ts;
 // ops read them in the console (src/routes/ops/clients.ts) and never write one. Each consent also records where it
-// was given, as the owner ruled on 27 September 2026 (docs/decisions/0094-where-a-consent-was-given.md).
+// was given (docs/decisions/0094-where-a-consent-was-given.md).
 
 /** The five purposes, in the prompt's order. */
 export const CONSENT_PURPOSES = [
@@ -41,7 +41,7 @@ export function isTransactional(template: string): boolean {
 }
 
 /**
- * Every place a consent is given, kept on its row. The owner's four, split where one screen or page is several:
+ * Every place a consent is given, kept on its row, one for each screen or page:
  * the site's booking form, its waitlist and an invite's page; the site's try-on; the app's booking, profile and share
  * sheet; the technician, where nothing asks for one yet; and the withdrawals: an erasure's, the link a reminder or
  * alert ends with, and a STOP reply on WhatsApp.

@@ -6,7 +6,7 @@
 
 import type { ConsentPurpose, ConsentSource } from "../policy/consents.ts";
 
-/** Phase 1's agreements, given on the public site, and Phase 2's consents, switched in the client app. */
+/** The agreements given on the public site, and the consents switched in the client app. */
 export type NoticePurpose = "contact" | "tryon_photo" | "result_delivery" | ConsentPurpose;
 
 interface Notice {
@@ -92,7 +92,7 @@ export const NOTICES = [
       "No password, no account, no marketing. Your photograph is deleted after thirty days.",
     ],
   },
-  // A client's try-on is kept, by the owner's ruling of 27 September 2026 (ADR 0025, item 65; ADR 0084).
+  // A client's try-on is kept (docs/decisions/0084-a-clients-try-on-is-kept.md).
   // PLACEHOLDER: the words await counsel (docs/open-points.md, item 146). Staging records them; if counsel changes
   // them, the new words are photo-v3 and gate-v3.
   {
@@ -118,8 +118,8 @@ export const NOTICES = [
       "No password, no account, no marketing. Your photograph is deleted after thirty days, unless you book a visit: then a small copy stays in your Mane Man account as your before photo, and the simulation until your first fit is photographed.",
     ],
   },
-  // The look goes to WhatsApp only, by the owner's ruling of 1 October 2026 (ADR 0104): v2's words with the
-  // promise of a result on screen taken out.
+  // The look goes to WhatsApp only (docs/decisions/0104-the-try-ons-look-on-whatsapp-only.md): v2's words without
+  // the promise of a result on screen.
   {
     version: "photo-v3",
     purpose: "tryon_photo",
@@ -168,8 +168,8 @@ export const NOTICES = [
       "No password, no account, no marketing. Your photograph is deleted within the hour. If you book a visit, a small copy stays in your Mane Man account as your before photo, and the simulation until your first fit is photographed.",
     ],
   },
-  // Phase 2's five consents (docs/prompts/phase2-backend.md, "Consents"), as the client app's profile names
-  // them (design/phase2/Client App, G1). Counsel's sign-off is outstanding (plan input 6).
+  // The five consents (docs/prompts/phase2-backend.md, "Consents"), as the client app's profile names them.
+  // Counsel's sign-off is outstanding.
   {
     version: "photos-own-record-v1",
     purpose: "photos_own_record",
@@ -193,7 +193,7 @@ export const NOTICES = [
     ],
   },
   {
-    // The four lines, and the naming line the owner ruled beside them (ADR 0025, item 24).
+    // The four lines, and the line beside them that names the referrer on the invite.
     version: "photos-referral-cards-v2",
     purpose: "photos_referral_cards",
     text: [

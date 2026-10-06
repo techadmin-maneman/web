@@ -4,8 +4,7 @@
 //
 // A visit is paid for before it happens, so its tax invoice records a sale
 // already settled: it must total what the client was sold the visit for. A
-// consultation and fit in one visit is the exception the owner ruled on 1
-// October 2026: it is paid for at the visit, by a link once the client is
+// consultation and fit in one visit is the exception: it is paid for at the visit, by a link once the client is
 // fitted (src/policy/one-visit.ts), and its invoice is held to the same total.
 // An invoice raised in Books is issued only then. Otherwise it stays a draft, which
 // can still be corrected or deleted, and ops are told

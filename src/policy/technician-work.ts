@@ -1,6 +1,6 @@
-// Board D3's two figures (docs/open-points.md, item 59): how far back each technician's jobs and average service are
-// counted, and how far over the length its visits were planned for an average reads as running over. The owner's
-// answer of 27 September 2026, and ops set both in the console (docs/decisions/0088-every-policy-in-the-console.md).
+// The Technicians page's two figures: how far back each technician's jobs and average service are counted, and how
+// far over the length its visits were planned for an average reads as running over. Ops set both in the console
+// (docs/decisions/0088-every-policy-in-the-console.md).
 // The counting itself is src/domain/technician-work.ts's.
 
 /** How many days back the counts reach, from tomorrow, so a job finished today is in. */

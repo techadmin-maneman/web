@@ -1,6 +1,4 @@
-// How long a visit takes, and how much of a technician's day it holds: the owner's ruling of 27 September 2026, in
-// the owner's words as docs/archive/owner-answers-2026-09-27.md records it ("Services, as the console will hold them"). Each
-// service carries its own length (the services table, docs/decisions/0085-services-ops-can-edit.md). A visit is
+// How long a visit takes, and how much of a technician's day it holds. Each service carries its own length (the services table, docs/decisions/0085-services-ops-can-edit.md). A visit is
 // booked for that long, and the day, counted in half-slots (docs/decisions/0035-window-slot-map.md), keeps the
 // half-slots that length needs. src/domain/occupancy.ts places a visit by them, for booking and dispatch alike.
 

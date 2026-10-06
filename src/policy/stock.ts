@@ -1,7 +1,6 @@
 // Stock of consumables, in each technician's kit and the central store
-// (docs/decisions/0087-consumables-and-stock.md). The owner ruled on 27
-// September 2026 that stock is kept in our own ledger, which deducts what a job
-// used whether or not an invoice is sent: a free consultation or a credit visit
+// (docs/decisions/0087-consumables-and-stock.md). Stock is kept in our own
+// ledger, which deducts what a job used whether or not an invoice is sent: a free consultation or a credit visit
 // deducts too.
 //
 // What a place holds is the sum of its rows in stock_movements, never a figure

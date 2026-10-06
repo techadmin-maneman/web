@@ -3,8 +3,7 @@
 //
 // Zoho refuses a record carrying a pick-list value the org does not have, so a
 // lead written with the referral fields before they exist would not reach the
-// CRM at all. scripts/ops/setup-crm.ts created them on 2 October 2026, and this
-// was turned on. Staging and production write to the one org
+// CRM at all. scripts/ops/setup-crm.ts creates them, and this turns them on. Staging and production write to the one org
 // (docs/decisions/0020-production-on-the-zoho-test-org.md), so one switch serves
 // both.
 
@@ -21,7 +20,7 @@ export const CRM_ORG_HAS_REFERRAL_FIELDS = true as boolean;
 export const REFERRAL_LEAD_SOURCE = "Referral";
 
 /**
- * Booked_Window's values: the three windows a Phase 2 booking asks for, by name. Not their hours, which ops set in the
+ * Booked_Window's values: the three windows a booking asks for, by name. Not their hours, which ops set in the
  * console from a date (docs/decisions/0102-window-times.md): a pick-list's values are fixed in the org by
  * scripts/ops/setup-crm.ts, and Zoho refuses a value it does not hold.
  */

@@ -66,7 +66,7 @@ export async function verifyToken(
 
 /**
  * The last moment a token signed with the secret itself is taken: 30 days from the release that gave each purpose its
- * key (4 October 2026), the longest any but a stop link lives; staging's stop links from before then lapse with it.
+ * key, the longest any but a stop link lives; staging's stop links from before then lapse with it.
  */
 const LEGACY_KEY_UNTIL = Date.parse("2026-11-04T00:00:00Z");
 

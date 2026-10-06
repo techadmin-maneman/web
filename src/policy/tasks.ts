@@ -44,23 +44,21 @@
 // it falls due by the visit at the latest.
 //
 // So is a consultation and fit in one visit whose client was fitted and has not paid the link closing it sent
-// them, or that could not be sent (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md): the owner ruled
-// that it is paid for at the visit, so one unpaid after it is owed, and ops follow it up.
+// them, or that could not be sent (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md): it is paid for at
+// the visit, so one unpaid after it is owed, and ops follow it up.
 //
 // A visit left partly done is the prompt's own: "Partial reasons. …
 // ops need the full set because these drive the task queue." It waits with the
 // technician's reason until the client has another visit booked after it to
 // finish what was left. A no-show is its own outcome, and its own group.
 //
-// At-risk client is the board's own group, built as the owner ruled on 27
-// September 2026 (docs/decisions/0086-the-next-visit-is-offered.md): a fitted
+// At-risk client is the board's own group (docs/decisions/0086-the-next-visit-is-offered.md): a fitted
 // client with nothing booked, days past the day their next service fell due
 // (src/policy/next-visit.ts). First fit to book is ours: a client consulted and
 // not fitted since, with nothing booked days after the consultation. Both go as
 // soon as a later visit is booked, as a visit left partly done does.
 //
-// Two things about a task are kept, both as the owner ruled on 27 September
-// 2026 (docs/decisions/0092-task-owners.md): whose it is, a member of staff ops
+// Two things about a task are kept (docs/decisions/0092-task-owners.md): whose it is, a member of staff ops
 // name by their Access e-mail; and, for a visit left partly done alone, that ops
 // closed it without a follow-up, with why. Neither is a copy of the task.
 
@@ -93,8 +91,8 @@ export type TaskGroup = (typeof TASK_GROUPS)[number];
  * How long a task may wait before it is overdue, and the one deadline its own
  * queue counts down to as well. The board writes "2 days", "1 day", "Today"
  * and "Overdue 3" and names no group's own allowance, and the prompt states
- * none, so every group waits the same two days, with four exceptions:
- * placeholders until the owner rules each one (docs/open-points.md, item 61).
+ * none, so every group waits the same two days, with four exceptions, which ops
+ * may change in Settings.
  */
 export type Slas = Readonly<Record<TaskGroup, number>>;
 
@@ -141,7 +139,7 @@ export const isClosable = (group: TaskGroup): boolean => (CLOSABLE_TASK_GROUPS a
 
 /**
  * How lately a member of staff must have used the console to be given a task. There is no staff table, and one who
- * has left stays in the audit log for ever; this bounds the list to the people still at work. Ours, not the owner's
+ * has left stays in the audit log for ever; this bounds the list to the people still at work. Ours, not a business rule
  * (docs/decisions/0092-task-owners.md).
  */
 export const STAFF_SEEN_WITHIN_DAYS = 90;

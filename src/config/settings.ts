@@ -108,7 +108,7 @@ export interface GeocodeSettings {
   readonly apiKey: string | null;
   /**
    * Requests to Google allowed in an India day, counted across every client.
-   * It refuses rather than spends: the owner's card is behind this key, and
+   * It refuses rather than spends: a card is behind this key, and
    * Google's budget alerts are not a spending cap
    * (docs/decisions/0054-address-capture.md). Always read, so the ceiling holds
    * for the stub too and a test cannot pass a build that would not hold.
@@ -516,7 +516,7 @@ function readGeocode(read: Reader, providers: ProvidersRead): GeocodeSettings {
     dailyCeiling: read.count("GEOCODE_DAILY_CEILING"),
   };
   // A ceiling of nought is the runbook's kill switch and is deliberate; a
-  // ceiling this high is not, and it is the owner's card that pays for it.
+  // ceiling this high is not, and a card pays for it.
   if (geocode.dailyCeiling > GEOCODE_CEILING_MAX) {
     read.problems.push(
       `GEOCODE_DAILY_CEILING must be at most ${String(GEOCODE_CEILING_MAX)}: ` +

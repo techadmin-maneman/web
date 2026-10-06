@@ -1,14 +1,12 @@
-// What Phase 2's photographs and referral cards may hold of R2, and when ops
-// are told (docs/decisions/0093-the-storage-meter.md). ADR 0039 set them a
-// share of R2's free 10 GB and planned to refuse uploads once it was full. The
-// owner ruled otherwise on 27 September 2026 (docs/open-points.md, item 151):
-// R2's paid storage is accepted as the share fills, so a full share is told,
-// never refused. What is refused is a runaway, far past anything the business
+// What clients' photographs and referral cards may hold of R2, and when ops
+// are told (docs/decisions/0093-the-storage-meter.md). They have a share of
+// R2's free 10 GB, and R2's paid storage is accepted as the share fills, so a
+// full share is told, never refused. What is refused is a runaway, far past anything the business
 // makes. src/domain/storage-meter.ts keeps the figure these are read against.
 
 import type { EnvironmentName } from "../config/environments.ts";
 
-/** Phase 2's share of R2's free 10 GB, in decimal bytes, as Cloudflare bills them (ADR 0039). */
+/** The photographs' and cards' share of R2's free 10 GB, in decimal bytes, as Cloudflare bills them. */
 export const PHASE_2_SHARE_BYTES = 4e9;
 
 /**
