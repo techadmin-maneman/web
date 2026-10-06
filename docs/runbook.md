@@ -24,7 +24,7 @@ An alert in the alert space names what went wrong with IDs only; "What each aler
 | A technician lost a phone, or his work is stuck on it   | "A technician's lost phone", "Work stuck on a technician's phone"   |
 | Ops cannot get into the console                         | "Locked out of the ops console"                                     |
 | Someone says a screen failed, or quotes a Ref           | "Someone says a screen failed"                                      |
-| R2 storage is growing, or a usage e-mail came           | "Staying on the free tier"                                          |
+| R2 storage is growing, or a usage e-mail came           | "Cloudflare's plan"                                                 |
 | A daily allowance is 70% used                           | "The daily allowances"                                              |
 | Every host answers Cloudflare's error 1027              | "Workers daily limit reached (1027)"                                |
 | Data is wrong or gone in D1                             | "Restoring D1"                                                      |
@@ -672,15 +672,15 @@ Then each job's `runs-on` names its label, `[self-hosted, maneman]`, in place of
 
 A pull request's run retries a failed browser test once, and passes when the retry does. Every night at 3 am in India, `nightly-browser.yml` runs every browser-test project on `main` with `--fail-on-flaky-tests`, so a test that passed only on its retry fails that run, and GitHub e-mails whoever watches the repository. The run's `playwright-traces` artifact holds the failed attempt. Fix the test, or the race it found, before the next one; the run can be started by hand from the Actions tab.
 
-## Staying on the free tier
+## Cloudflare's plan
 
-The rules are in `docs/decisions/0009-stay-inside-cloudflare-free-tier.md`. The account is on Workers Free, where everything except R2 stops at its limit instead of billing.
+The account is on Workers Paid, and the zone on the Free website plan (`docs/decisions/0112-workers-paid.md`). Past an allowance Cloudflare bills rather than refuses. R2's own rules are still ADR 0009's.
 
 Once, in the Cloudflare dashboard:
 
-1. Billing → Budget alerts: create an alert at the lowest amount offered. Any usage-based charge then emails the billing address.
+1. Billing → Budget alerts: an alert at $10 a month, twice the subscription. Any usage-based charge then emails the billing address.
 2. Notifications → Add → Usage-based billing: one notification each for R2 storage (5 GB), R2 Class A operations (500,000) and R2 Class B operations (5,000,000). That is half of each monthly allowance.
-3. Billing → Subscriptions should list only free plans. Never upgrade Workers to Paid without a new ADR.
+3. Billing → Subscriptions should list Workers Paid and no other paid plan. Another needs a new ADR.
 
 Cloudflare is not the only card now. The owner's own card is on Google Maps Platform for the address search, and Google bills past its free allowance rather than stopping. Its quotas and its kill switch are section 13, and its ceiling is `GEOCODE_DAILY_CEILING`.
 
@@ -688,7 +688,7 @@ If an R2 alert fires: set `UPLOAD_DAILY_CEILING`, `RENDER_DAILY_CEILING` and `RE
 
 ### The daily allowances
 
-Queue operations (10,000 a day), D1 rows read (5 million a day) and D1 rows written (100,000 a day) are the account's, staging and production together, and each starts again at midnight UTC, 05:30 IST. Past one, Cloudflare refuses that work for the rest of the day: past the queue operations every queue send fails, so bookings, payment confirmations, CRM updates and messages stall; past D1's, every query, or every write, fails.
+Queue operations (10,000 a day), D1 rows read (5 million a day) and D1 rows written (100,000 a day) are Workers Free's, and no longer limits: on Workers Paid the account's allowances are monthly, and past them Cloudflare bills (ADR 0112). Until the cron's free-plan figures are removed, they tell ops of heavy use early.
 
 Once an hour, at a quarter past, the cron reads the day's figures from Cloudflare's analytics (`src/scheduled/daily-allowances.ts`). At 70% of one it tells ops once (`daily_allowance:queueOperations`, `daily_allowance:d1RowsRead` or `daily_allowance:d1RowsWritten`), and the alert closes on its own when the next day starts the figures again. It reads them with `CLOUDFLARE_ANALYTICS_TOKEN` (step 7), set in one environment only: `W secret put CLOUDFLARE_ANALYTICS_TOKEN --env staging` until go-live. If the figures cannot be read three hours running it says so (`daily_allowances_unreadable`): the token was deleted, expired or lost its permission. Make a new one as step 7 says and put it in the same way.
 
@@ -696,16 +696,16 @@ When one is told:
 
 1. See what is spending it: the dashboard's D1 and Queues pages, each database's and each queue's Metrics. Staging's names carry `staging`, production's `prod`. For D1's rows, Workers Logs says which work read them: every `request` line carries `d1_rows_read`, `d1_rows_written` and `d1_queries`, as does each cron run's `cron_run` line (with `d1_rows_read_by_job`) and each queue batch's `queue_batch` line. In the Query Builder, sum `d1_rows_read` grouped by `route`.
 2. A test run on staging (a load test, a soak, browser tests in a loop) is the usual cause: stop it. A job retrying the same thing again and again shows in Workers Logs as one event repeating; tell the developers.
-3. If it is production's own traffic, tell the developers the same day. More of these allowances means Workers Paid, which needs the owner's decision and a new ADR (step 3 above).
+3. If it is production's own traffic, tell the developers the same day. Past the month's allowances it is billed, not refused.
 
 ### Workers daily limit reached (1027)
 
-Workers requests, 100,000 a day, are the account's too, staging and production together, and every surface spends them: the API on every host, the site's home, `/book` and `/r/*` pages, and the three apps. Past them Cloudflare answers every request a Worker would have served with its own error page, **error 1027**, until midnight UTC, 05:30 IST. Clients cannot book or pay, technicians cannot send their steps, ops cannot use the console, and Razorpay's webhooks are refused (Razorpay retries them for a day, so payments catch up after the reset). Nothing is lost from D1, and nothing in the code can lift it before the reset: the owner ruled on 2 October 2026 to stay on Workers Free (ADR 0009, "Update, 4 October 2026: a flood").
+Workers requests, 100,000 a day, are the account's too, staging and production together, and every surface spends them: the API on every host, the site's home, `/book` and `/r/*` pages, and the three apps. On Workers Free, past them Cloudflare answered every request a Worker would have served with **error 1027** until midnight UTC. On Workers Paid (ADR 0112) there is no daily limit: a flood is billed, at each million requests past the month's 10 million, instead of stopping every surface. The steps below still find and block one.
 
 1. **Confirm it.** Cloudflare dashboard → **Workers & Pages** → **Overview** shows the day's requests near 100,000. A page that answers 1027 on one host answers it on all of them.
 2. **Find who is spending them.** `maneman.in` → **Security** → **Analytics** (or **Analytics & Logs** → **HTTP Traffic**): group by source IP, then by path and user agent. The rate-limiting rule's blocks (step 15) show there too. A test run on staging is the usual cause, as for the other allowances: stop it.
 3. **Block the attacker.** **Security** → **Security rules** → **Create rule** → **Custom rules** (the free plan has five): match the addresses, their AS number or their country, action **Block**. This stops them spending tomorrow's allowance as well. Keep the rule until the traffic has stopped for a day, then delete it.
-4. **Many addresses at once** cannot be held off by a rule per address. Lower the rate-limiting rule's **Requests** for the day, and tell the owner: the remaining answer is Workers Paid, which needs the owner's decision and a new ADR.
+4. **Many addresses at once** cannot be held off by a rule per address. Lower the rate-limiting rule's **Requests** for the day, and tell the owner what it is costing.
 5. **After the reset,** check the cron ran (the heartbeat, "The outside watchers") and that Razorpay's retried webhooks arrived ("Razorpay's webhook is not arriving").
 
 ### R2 storage growing
@@ -762,7 +762,7 @@ If the total nears 8 GB:
 
 ### D1 growing
 
-Each environment's database may hold 500 MB on Workers Free (ADR 0009). Past it every write fails, the audit entry each ops call writes first among them, so the console, bookings and payments stop together. The `storage_meter` cron job reads its size once an hour, on the half hour, and tells ops once at 50%, 80% and 95% (the alerts `d1_size:50`, `d1_size:80` and `d1_size:95`). Settings shows it beside the R2 meter.
+Each environment's database may hold 10 GB on Workers Paid (ADR 0112); the meter below still measures Workers Free's 500 MB, so it tells ops early. Past the limit every write fails, the audit entry each ops call writes first among them, so the console, bookings and payments stop together. The `storage_meter` cron job reads its size once an hour, on the half hour, and tells ops once at 50%, 80% and 95% (the alerts `d1_size:50`, `d1_size:80` and `d1_size:95`). Settings shows it beside the R2 meter.
 
 Where it stands: `npx wrangler d1 info maneman-staging --env staging` (or production's) gives the size. What fills it is usually the audit log:
 
@@ -799,7 +799,7 @@ Some jobs run only where what they need is switched on: the invoices and Books n
 
 ### A cron run cut short
 
-Cloudflare stops a run that uses too much CPU time, and the free plan allows 10 ms an invocation. One run of every job took 30 to 60 ms, and on 3 October 2026 Cloudflare stopped every staging run for ten hours. So the cron runs every minute, each run only the few jobs due in that minute (`src/scheduled/cron.ts`; ADR 0009, "Update, 4 October 2026: the cron's CPU time").
+Cloudflare stops a run that uses too much CPU time: 10 ms an invocation on Workers Free, 30 seconds on Workers Paid (ADR 0112). One run of every job took 30 to 60 ms, and on 3 October 2026, on the free plan, Cloudflare stopped every staging run for ten hours. So the cron runs every minute, each run only the few jobs due in that minute (`src/scheduled/cron.ts`; ADR 0009, "Update, 4 October 2026: the cron's CPU time").
 
 Each run notes when it starts and when it finishes (`cron_runs`). A run that finds the one before it never finished alerts once (`cron_run_cut_short`), and pings the heartbeat's `/fail` saying so ("The outside watchers"). The alert closes once runs have finished for an hour. Only that minute's jobs missed a turn, and each runs again at its next minute, so one alert is a blip. The minute of the run's start says which jobs it was running: those whose `every` and `at` fall on it, in `src/scheduled/cron.ts`. Where it stands:
 
