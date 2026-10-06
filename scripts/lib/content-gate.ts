@@ -20,7 +20,7 @@ const featureFiles = (dir: string): string[] =>
 
 /** The content files each production build is gated on. */
 export const CONTENT_FILES = {
-  site: ["site/src/content/referral.ts", "site/src/content/site.ts"],
+  site: ["site/src/content/referral.ts", "site/src/content/site.ts", ...featureFiles("site/src/content/site")],
   app: ["apps/app/src/content.ts", ...featureFiles("apps/app/src/content")],
   ops: ["apps/ops/src/content.ts", ...featureFiles("apps/ops/src/content")],
   tech: ["apps/tech/src/content.ts"],

@@ -37,7 +37,17 @@ describe("the production gate on the apps' copy", () => {
   // The site's own marks, the job sheet and the WhatsApp texts went ungated.
   it("covers each app's content, the site's, the referral landing's and the API's", () => {
     expect(CONTENT_FILES).toEqual({
-      site: ["site/src/content/referral.ts", "site/src/content/site.ts"],
+      site: [
+        "site/src/content/referral.ts",
+        "site/src/content/site.ts",
+        "site/src/content/site/contact.ts",
+        "site/src/content/site/home.ts",
+        "site/src/content/site/legal.ts",
+        "site/src/content/site/media.ts",
+        "site/src/content/site/notices.ts",
+        "site/src/content/site/pages.ts",
+        "site/src/content/site/tryon.ts",
+      ],
       app: [
         "apps/app/src/content.ts",
         "apps/app/src/content/booking.ts",
