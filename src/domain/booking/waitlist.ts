@@ -2,7 +2,7 @@
 // Launching marks the pincode served from a day, and tells those who asked to be told. The alerts are paced, so
 // a launch does not send a hundred WhatsApps in a second and cost us the number.
 
-import type { Composed } from "../messages/visit-messages.ts";
+import type { Composed } from "../messages/visit-message-text.ts";
 import { PUBLIC_ORIGIN } from "../../config/environments.ts";
 import type { EnvironmentName } from "../../config/environments.ts";
 import { indiaInstant } from "../../lib/india-time.ts";

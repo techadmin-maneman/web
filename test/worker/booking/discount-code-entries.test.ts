@@ -11,7 +11,7 @@ import { paymentEntries, paymentEntry } from "../../../src/domain/money/client-p
 import { grantCredits } from "../../../src/domain/money/credits.ts";
 import { codeOnHold, removeFromHold } from "../../../src/domain/money/discount-code-holds.ts";
 import { priceAfterCode, removeFromVisit } from "../../../src/domain/money/discount-code-uses.ts";
-import { composeVisitMessage } from "../../../src/domain/messages/visit-messages.ts";
+import { composeVisitMessage } from "../../../src/domain/messages/visit-message-text.ts";
 import { listCodes, makeCodes, type NewCodes } from "../../../src/domain/money/discount-codes.ts";
 import { offeredProducts } from "../../../src/domain/booking/services.ts";
 import { outstandingTasks } from "../../../src/domain/ops/tasks.ts";

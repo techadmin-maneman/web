@@ -7,7 +7,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { renderMessage } from "../../../src/config/message-templates.ts";
 import { confirmBooking } from "../../../src/domain/booking/bookings.ts";
 import { clawBack, creditBalance, expireCredits, grantCredits } from "../../../src/domain/money/credits.ts";
-import { composeVisitMessage } from "../../../src/domain/messages/visit-messages.ts";
+import { composeVisitMessage } from "../../../src/domain/messages/visit-message-text.ts";
 import { createStubPayments } from "../../../src/providers/payments/stub.ts";
 import { captureLogs, fakeDependencies, fakeQueue, leaseRefused, markDatabase, NOW } from "../helpers.ts";
 import { asClient, client, fittedInAugust, signedIn, technician } from "../clients.ts";
