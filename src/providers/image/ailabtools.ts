@@ -15,7 +15,7 @@ import { MAX_RESULT_BYTES } from "../../config/tryon.ts";
 import { fileExtension, inspectImage } from "../../lib/image-bytes.ts";
 import type { Logger } from "../../log.ts";
 import type { DownloadResult, ImageProvider, PollResult, ProviderColor, RenderFailure, SubmitResult } from "./index.ts";
-import { vendorFetch, VendorUnreachable } from "../vendor-fetch.ts";
+import { vendorFetch, VendorUnreachable, type VendorFetchDependencies } from "../vendor-fetch.ts";
 
 export const API_BASE_URL = "https://www.ailabapi.com";
 export const ENDPOINT_PATHS: Readonly<Record<Endpoint, string>> = {
@@ -66,58 +66,65 @@ function errorCodeOf(body: unknown): string | null {
   return code === undefined ? null : String(code);
 }
 
+/** One try at a result: its bytes, a result no retry will make usable, or why this try failed. */
+async function downloadOnce(http: VendorFetchDependencies, url: string): Promise<DownloadResult> {
+  // No API key: it must never reach whatever host serves the results (7.10).
+  const call = { vendor: "ailabtools", step: "download", timeoutMs: DOWNLOAD_TIMEOUT_MS } as const;
+  const response = await vendorFetch(http, call, url);
+  if (response instanceof VendorUnreachable) return stalled(response.reason);
+  if (!response.ok) return stalled(`HTTP ${String(response.status)}`);
+
+  // A result declared too large is refused before a byte of it is read.
+  const declared = Number(response.headers.get("Content-Length") ?? "0");
+  if (declared > MAX_RESULT_BYTES) {
+    await response.body?.cancel();
+    return unusable(`result is ${String(declared)} bytes`);
+  }
+  let bytes: Uint8Array;
+  try {
+    bytes = new Uint8Array(await response.arrayBuffer());
+  } catch (error) {
+    return stalled(error instanceof Error ? error.name : "error");
+  }
+  if (bytes.byteLength > MAX_RESULT_BYTES) return unusable(`result is ${String(bytes.byteLength)} bytes`);
+  const info = inspectImage(bytes);
+  if (info === null) return unusable("result is not a JPEG or PNG");
+  return { ok: true, bytes, contentType: info.type };
+}
+
+/** A call that never reached AILabTools: worth another try. */
+const unreachable = (error: VendorUnreachable): RenderFailure => ({
+  code: "render_failed",
+  transient: true,
+  alert: false,
+  detail: error.message,
+});
+
+/** A failed call, classified, with a detail that never carries the key. */
+function failureOf(
+  scrub: (text: string) => string,
+  { status, body, context }: { status: number; body: ApiBody | null; context: string },
+): RenderFailure {
+  const detail = scrub(
+    JSON.stringify({
+      context,
+      http_status: status,
+      error_code: body?.error_code ?? null,
+      error_msg: body?.error_msg ?? null,
+      error_detail: body?.error_detail ?? null,
+    }),
+  ).slice(0, 1000);
+  return { ...classify(status, body), detail };
+}
+
 export function createAilabtoolsProvider(options: { apiKey: string; fetch: typeof fetch; log: Logger }): ImageProvider {
   const { apiKey } = options;
   const http = { fetch: options.fetch, log: options.log };
   const scrub = (text: string): string => text.split(apiKey).join("***REDACTED***");
   const authorised = { "ailabapi-api-key": apiKey };
 
-  /** A failed call, classified, with a detail that never carries the key. */
-  const failure = (status: number, body: ApiBody | null, context: string): RenderFailure => {
-    const detail = scrub(
-      JSON.stringify({
-        context,
-        http_status: status,
-        error_code: body?.error_code ?? null,
-        error_msg: body?.error_msg ?? null,
-        error_detail: body?.error_detail ?? null,
-      }),
-    ).slice(0, 1000);
-    return { ...classify(status, body), detail };
-  };
-
-  const unreachable = (error: VendorUnreachable): RenderFailure => ({
-    code: "render_failed",
-    transient: true,
-    alert: false,
-    detail: error.message,
-  });
-
-  /** One try at a result: its bytes, a result no retry will make usable, or why this try failed. */
-  async function downloadOnce(url: string): Promise<DownloadResult> {
-    // No API key: it must never reach whatever host serves the results (7.10).
-    const call = { vendor: "ailabtools", step: "download", timeoutMs: DOWNLOAD_TIMEOUT_MS } as const;
-    const response = await vendorFetch(http, call, url);
-    if (response instanceof VendorUnreachable) return stalled(response.reason);
-    if (!response.ok) return stalled(`HTTP ${String(response.status)}`);
-
-    // A result declared too large is refused before a byte of it is read.
-    const declared = Number(response.headers.get("Content-Length") ?? "0");
-    if (declared > MAX_RESULT_BYTES) {
-      await response.body?.cancel();
-      return unusable(`result is ${String(declared)} bytes`);
-    }
-    let bytes: Uint8Array;
-    try {
-      bytes = new Uint8Array(await response.arrayBuffer());
-    } catch (error) {
-      return stalled(error instanceof Error ? error.name : "error");
-    }
-    if (bytes.byteLength > MAX_RESULT_BYTES) return unusable(`result is ${String(bytes.byteLength)} bytes`);
-    const info = inspectImage(bytes);
-    if (info === null) return unusable("result is not a JPEG or PNG");
-    return { ok: true, bytes, contentType: info.type };
-  }
+  const failure = (status: number, body: ApiBody | null, context: string): RenderFailure =>
+    failureOf(scrub, { status, body, context });
 
   return {
     async submit(image, preset, color, endpoint): Promise<SubmitResult> {
@@ -171,7 +178,7 @@ export function createAilabtoolsProvider(options: { apiKey: string; fetch: typeo
 
       let last = "";
       for (let attempt = 1; attempt <= DOWNLOAD_ATTEMPTS; attempt++) {
-        const tried = await downloadOnce(url);
+        const tried = await downloadOnce(http, url);
         if (tried.ok || !tried.transient) return tried;
         last = tried.detail;
       }

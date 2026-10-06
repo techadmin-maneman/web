@@ -161,6 +161,49 @@ const TokenAnswer = z.object({
   error: z.string().optional(),
 });
 
+/** The token row of a client. */
+const heldToken = (db: D1Database, name: ZohoClientName): Promise<Held | null> =>
+  db
+    .prepare(
+      `SELECT access_token, expires_at, refreshing_until, cool_down_until FROM zoho_access_tokens
+       WHERE client = ?1`,
+    )
+    .bind(name)
+    .first<Held>();
+
+/** The token held, while it has more than a minute to run at `at`; null when there is none such. */
+function usableToken(held: Held | null, at: Date): string | null {
+  if (held === null) return null;
+  const { access_token: token, expires_at: expiresAt } = held;
+  if (token === null || expiresAt === null) return null;
+  return Date.parse(expiresAt) - at.getTime() > TOKEN_MARGIN_MS ? token : null;
+}
+
+/** Refuses to ask for a token while Zoho's refusal of the last one is cooling down. */
+function refuseWhileCooling(held: Held | null, at: Date): void {
+  const until = held?.cool_down_until ?? null;
+  if (until === null || Date.parse(until) <= at.getTime()) return;
+  throw new ZohoError(
+    0,
+    "TOKEN_COOLING_DOWN",
+    `Zoho refused a new access token; no token asked for until ${until}`,
+    false,
+  );
+}
+
+/** Lets the lease to ask for a token go. */
+async function release(db: D1Database, name: ZohoClientName): Promise<void> {
+  await db.prepare("UPDATE zoho_access_tokens SET refreshing_until = NULL WHERE client = ?1").bind(name).run();
+}
+
+/** Lets the lease go, and asks for no token until the cool-down has run from `at`. */
+async function coolDown(db: D1Database, name: ZohoClientName, at: Date): Promise<void> {
+  await db
+    .prepare("UPDATE zoho_access_tokens SET refreshing_until = NULL, cool_down_until = ?2 WHERE client = ?1")
+    .bind(name, new Date(at.getTime() + TOKEN_COOL_DOWN_MS).toISOString())
+    .run();
+}
+
 function createTokenKeeper(
   name: ZohoClientName,
   client: ZohoClient,
@@ -169,34 +212,6 @@ function createTokenKeeper(
   const { db, now } = deps;
   /** A caller holds the lease for as long as its token call may take, and a little over. */
   const leaseMs = deps.timeoutMs + 5_000;
-
-  const read = async (): Promise<Held | null> =>
-    db
-      .prepare(
-        `SELECT access_token, expires_at, refreshing_until, cool_down_until FROM zoho_access_tokens
-         WHERE client = ?1`,
-      )
-      .bind(name)
-      .first<Held>();
-
-  /** The token held, while it has more than a minute to run; null when there is none such. */
-  function usableToken(held: Held | null): string | null {
-    if (held === null) return null;
-    const { access_token: token, expires_at: expiresAt } = held;
-    if (token === null || expiresAt === null) return null;
-    return Date.parse(expiresAt) - now().getTime() > TOKEN_MARGIN_MS ? token : null;
-  }
-
-  function refuseWhileCooling(held: Held | null): void {
-    const until = held?.cool_down_until ?? null;
-    if (until === null || Date.parse(until) <= now().getTime()) return;
-    throw new ZohoError(
-      0,
-      "TOKEN_COOLING_DOWN",
-      `Zoho refused a new access token; no token asked for until ${until}`,
-      false,
-    );
-  }
 
   /** True when this caller now holds the lease to ask for a token. */
   async function takeLease(): Promise<boolean> {
@@ -226,14 +241,14 @@ function createTokenKeeper(
       const call = { vendor: vendorOf(name), step: "token", timeoutMs: deps.timeoutMs };
       response = await zohoSend(deps, call, url, { method: "POST" });
     } catch (error) {
-      await release();
+      await release(db, name);
       throw error;
     }
     const answer = TokenAnswer.safeParse(await response.json().catch(() => null));
     const { access_token: token, expires_in: expiresIn = 3600, error } = answer.success ? answer.data : {};
     if (token === undefined) {
       const code = error ?? "TOKEN_REFRESH_FAILED";
-      await (code === "Access Denied" ? coolDown() : release());
+      await (code === "Access Denied" ? coolDown(db, name, now()) : release(db, name));
       throw new ZohoError(response.status, code, "could not refresh the access token", false);
     }
 
@@ -248,17 +263,6 @@ function createTokenKeeper(
     return token;
   }
 
-  async function release(): Promise<void> {
-    await db.prepare("UPDATE zoho_access_tokens SET refreshing_until = NULL WHERE client = ?1").bind(name).run();
-  }
-
-  async function coolDown(): Promise<void> {
-    await db
-      .prepare("UPDATE zoho_access_tokens SET refreshing_until = NULL, cool_down_until = ?2 WHERE client = ?1")
-      .bind(name, new Date(now().getTime() + TOKEN_COOL_DOWN_MS).toISOString())
-      .run();
-  }
-
   /**
    * A token other than `rejected`: one another caller has put in D1 since, or a
    * new one, asked for under the lease. A caller that finds the lease taken
@@ -266,9 +270,9 @@ function createTokenKeeper(
    */
   async function renew(rejected: string | null): Promise<string> {
     for (let waited = 0; ; waited += LEASE_POLL_MS) {
-      const held = await read();
-      refuseWhileCooling(held);
-      const token = usableToken(held);
+      const held = await heldToken(db, name);
+      refuseWhileCooling(held, now());
+      const token = usableToken(held, now());
       if (token !== null && token !== rejected) return token;
       if (await takeLease()) return mint();
       if (waited >= leaseMs) {
@@ -281,9 +285,9 @@ function createTokenKeeper(
   return {
     /** The token held, or a new one when it is out of date. */
     async current(): Promise<string> {
-      const held = await read();
-      refuseWhileCooling(held);
-      return usableToken(held) ?? renew(null);
+      const held = await heldToken(db, name);
+      refuseWhileCooling(held, now());
+      return usableToken(held, now()) ?? renew(null);
     },
     renew,
   };
