@@ -1,12 +1,12 @@
 // A record one of our own scripts or fixtures wrote for staging, never a real client or technician's
-// (docs/decisions/0025-phase-2-conflicts-register.md, item 84; ADR 0097's refinement of 30 September 2026).
+// (docs/decisions/0097-staging-logins-open-reminders-fenced.md).
 //
 // Separate from the messaging classification (src/config/message-templates.ts), which decides by the message's
 // kind: this decides by who it is about. Our own scripts invent a client or technician with a random
 // 9xxxxxxxxx number, very likely a real person's, since India publishes no reserved test range for mobiles.
 // Every one of them names its invented record "Staging test" or "Load test", and a record so named when it is made
 // on staging is marked a test record, on the person (people.test_record). The mark is read from there, never from the
-// name again, so a rename can make nothing a test record that was not one (the owner's decision 23 of 2 Oct 2026).
+// name again, so a rename can make nothing a test record that was not one.
 
 import type { EnvironmentName } from "../config/environments.ts";
 import { onAllowlist, type MessagingSettings } from "../config/settings.ts";

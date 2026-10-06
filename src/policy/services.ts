@@ -1,6 +1,4 @@
-// The services clients book: the owner's rulings of 27 September 2026, in the owner's words as
-// docs/archive/owner-answers-2026-09-27.md records them ("Services, as the console will hold them"). A service is a kind of
-// visit and a tier of it; the kind is code, and the services within it are ops' (the services table,
+// The services clients book. A service is a kind of visit and a tier of it; the kind is code, and the services within it are ops' (the services table,
 // docs/decisions/0085-services-ops-can-edit.md). src/domain/services.ts keeps them, and the price book prices each
 // by its kind and tier (src/domain/price-book.ts).
 

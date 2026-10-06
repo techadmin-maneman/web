@@ -1,6 +1,5 @@
 // The WhatsApp texts we send, by template name: the bridge has no approved templates, so the texts live here.
-// {{1}}, {{2}}, … are the params, in order. The owner approved the texts on 4 October 2026 (docs/open-points.md,
-// item 39).
+// {{1}}, {{2}}, … are the params, in order.
 
 import { MESSAGE_KINDS, type MessageKind } from "./message-kinds.ts";
 import type { MessagePurpose } from "../policy/consents.ts";

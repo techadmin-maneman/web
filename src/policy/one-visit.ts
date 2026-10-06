@@ -1,6 +1,5 @@
-// A consultation and the first fit in one visit (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md). The
-// owner's ruling D2 of 1 October 2026, with the piece, the payment and the length ruled the same day (ADR 0025, item
-// 89), and what the build took for a booking that holds no payment, for the owner to confirm (item 90).
+// A consultation and the first fit in one visit (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md). How
+// such a booking holds no payment is still to be confirmed (open point 90).
 //
 // The site books it as a first fit marked as one visit, with nothing paid (src/domain/public-booking.ts). The client
 // chooses the product with the technician, who fits it from his kit; closing the visit as done sends the client a
@@ -26,8 +25,8 @@ export type Plan = (typeof PLANS)[number];
 
 /**
  * The windows a one visit can start in: the first fit's, whose three hours do not fit in the evening's half-slots
- * (docs/decisions/0035-window-slot-map.md). The owner asked on 1 October 2026 for an evening visit that ends by 8 pm,
- * which waits for a visit's minutes to be counted against the day's times (window times, part B).
+ * (docs/decisions/0035-window-slot-map.md). An evening visit that ends by 8 pm waits for a visit's minutes to be
+ * counted against the day's times.
  */
 export const ONE_VISIT_WINDOWS = FIRST_FIT_WINDOWS;
 

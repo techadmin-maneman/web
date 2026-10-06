@@ -1,7 +1,7 @@
 // The house referral card: the card an invite shows until its referrer makes
 // their own, and once they take it down. It is a static file of the site's
-// (site/public/images/invite-house.jpg), replaced at the same path when the owner
-// supplies the real card (docs/open-points.md, "The house referral card").
+// (site/public/images/invite-house.jpg), replaced at the same path when the real
+// card is supplied.
 //
 // Chats cache a link's preview by its address, so every address of the card
 // carries its version, the API's redirect to it as well as the site's pages: a

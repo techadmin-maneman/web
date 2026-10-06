@@ -18,7 +18,7 @@ export type HairColor = (typeof HAIR_COLORS)[number];
 export const UNKNOWN_COLOR_ROUTES = ["premium_original", "pro_black"] as const;
 export type UnknownColorRoute = (typeof UNKNOWN_COLOR_ROUTES)[number];
 
-/** The owner chose Pro only, in every environment (docs/decisions/0018-one-look-pro-only-lead-notices.md). */
+/** Pro only, in every environment (docs/decisions/0018-one-look-pro-only-lead-notices.md). */
 export const UNKNOWN_COLOR_ROUTE: UnknownColorRoute = "pro_black";
 
 export const JOB_STATES = [

@@ -46,7 +46,7 @@ export const RESOURCE_TOKEN: Readonly<Record<EnvironmentName, string>> = {
 
 /**
  * The sites mm-api answers on (docs/decisions/0026-hosts-and-surfaces.md):
- * the public site, and Phase 2's client app, ops console and technician app.
+ * the public site, the client app, the ops console and the technician app.
  * Each is its own app with its own routes, chosen by the request's host.
  */
 export const SURFACES = ["public", "client", "ops", "tech"] as const;
@@ -89,7 +89,7 @@ export const TURNSTILE_HOSTS: Readonly<Record<RemoteEnvironmentName, readonly st
  */
 export const ENABLED_SURFACES: Readonly<Record<EnvironmentName, readonly Surface[]>> = {
   local: SURFACES,
-  // Switched on 22 September 2026, once each host had its DNS record and Access application.
+  // Each host needs its DNS record and Access application first.
   staging: SURFACES,
   production: ["public"],
 };
@@ -132,14 +132,13 @@ export const PROVIDER_VARS = {
   // Login codes by SMS need a DLT-registered provider. Until one is chosen, "none": the app offers WhatsApp only
   // (docs/decisions/0030-one-time-codes.md). "none" is not a stub, so production may hold it.
   SMS_PROVIDER: ["none", "stub"],
-  // Zoho Books, for customers, invoices and receipts. "none" until the client surface is switched on where it runs, as
-  // production is until Phase 2's release.
+  // Zoho Books, for customers, invoices and receipts. "none" until the client surface is switched on where it runs.
   BOOKS_PROVIDER: ["zoho", "stub", "none"],
   // Razorpay, for payments (docs/decisions/0044-payments-mirror.md): test keys on staging, none in production until
-  // Phase 2's release.
+  // the client surface is switched on there.
   PAYMENTS_PROVIDER: ["razorpay", "stub", "none"],
   // Google Maps Platform, for the address search and the coordinate the geofence measures against
-  // (docs/decisions/0054-address-capture.md). "none" wherever the owner's key is not yet in place: the address form
+  // (docs/decisions/0054-address-capture.md). "none" wherever a Google key is not yet in place: the address form
   // then takes a typed address, as it did before, and saves no coordinate.
   GEOCODE_PROVIDER: ["google", "stub", "none"],
 } as const;

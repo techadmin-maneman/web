@@ -1,5 +1,5 @@
 // How long an invite lasts (docs/prompts/phase2-backend.md, "Business rules, decided").
-// The rules as the prompt states them, and the owner's ruling (ADR 0025, item 24). A lapsed invite is marked
+// The rules as the prompt states them (ADR 0025, item 24). A lapsed invite is marked
 // when its friend books (src/domain/referrals.ts), and again when their first fit is settled
 // (src/domain/referral-grants.ts).
 

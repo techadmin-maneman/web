@@ -2,8 +2,7 @@
 // "Pieces tab"). These are the figures computed from a piece as it is recorded.
 //
 // A piece falls due for replacement 180 days after it is fitted, whatever its
-// base, as the owner ruled (docs/open-points.md, "The per-base replacement
-// cycle"). Ops may give a base a cycle of its own in the console (Settings · Rules).
+// base. Ops may give a base a cycle of its own in the console (Settings · Rules).
 
 /** How long a piece on each base lasts before it is due for replacement, in days. */
 export type Cycles = Readonly<Record<string, number>>;
@@ -24,9 +23,8 @@ export const cycleDaysFor = (base: string | null, cycles: Cycles = PIECE_CYCLE_D
 
 /**
  * The label a technician types, e.g. "MM-STD-4417-B": "MM", a base code, digits
- * and a letter, in capitals. The owner ruled the format on 24 September 2026
- * and ruled out a barcode and a QR code with it (docs/open-points.md, "Piece
- * labels"), so the code is always typed by hand and matched here.
+ * and a letter, in capitals. There is no barcode or QR code, so the code is
+ * always typed by hand and matched here.
  */
 const PIECE_CODE_PATTERN = /^MM-[A-Z0-9]{2,6}-\d{2,8}-[A-Z]$/;
 

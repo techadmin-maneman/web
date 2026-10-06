@@ -5,9 +5,9 @@
 
 /** Each kind of WhatsApp message we send a person. */
 export const MESSAGE_KINDS = [
-  // Phase 1: the try-on result, with its image.
+  // The try-on result, with its image.
   "tryon_result",
-  // Phase 2 (docs/prompts/phase2-backend.md, "Providers and integrations"):
+  // The client's (docs/prompts/phase2-backend.md, "Providers and integrations"):
   "consultation_confirmation",
   "visit_reminder", // the day before
   "waitlist_confirmation",

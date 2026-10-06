@@ -39,8 +39,7 @@ export const WINDOW_SLOT_MAP: Readonly<Record<BookingWindow, readonly number[]>>
 /**
  * Each visit type's block, in half-slots (consultation and service one slot,
  * replacement one and a half, first fit two), and how long it is booked for.
- * The owner kept the design's four lengths on 24 September 2026, the service's
- * 90 minutes among them (docs/open-points.md, "Visit lengths").
+ * They are the design's four lengths, the service's 90 minutes among them.
  */
 export const VISIT_BLOCKS: Readonly<Record<VisitType, { readonly units: number; readonly minutes: number }>> = {
   consultation: { units: 2, minutes: 60 },
@@ -50,7 +49,7 @@ export const VISIT_BLOCKS: Readonly<Record<VisitType, { readonly units: number; 
 };
 
 /**
- * How many days the date strip offers at once (board C2), from its first day, and so how far ahead the site's
+ * How many days the booking sheet's date strip offers at once, from its first day, and so how far ahead the site's
  * consultation form reaches from tomorrow. How far ahead a visit may be booked in the app is ops' to set, 45 days
  * to begin with (`horizon`, src/policy/next-visit.ts).
  */
@@ -69,7 +68,7 @@ export const windowsFor = (type: VisitType): BookingWindow[] => windowsFitting(V
 /** The windows a first fit can start in (windowsFor), which a request for one may name. */
 export const FIRST_FIT_WINDOWS = ["morning", "afternoon"] as const;
 
-/** How long a held slot waits for payment (board C4's countdown from 10:00). */
+/** How long a held slot waits for payment: the pay sheet counts down from 10:00. */
 export const HOLD_SECONDS = 600;
 
 /**

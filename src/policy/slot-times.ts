@@ -1,5 +1,4 @@
-// The times of a working day's half-slots, which ops set in the console (docs/decisions/0102-window-times.md; the
-// owner's rulings of 30 September and 1 October 2026, docs/open-points.md, item 158).
+// The times of a working day's half-slots, which ops set in the console (docs/decisions/0102-window-times.md).
 //
 // A day has eight half-slots, and each window is the half-slots WINDOW_SLOT_MAP gives it, which stay in code: the
 // morning runs from its first half-slot's start to the afternoon's, the afternoon to the evening's, and the evening

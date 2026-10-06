@@ -19,7 +19,7 @@ export const NEXT_VISIT_DAY_KEYS = [
   "service_cadence",
   // Before the due day, the WhatsApp reminder, while nothing is booked.
   "reminder_before_due",
-  // After the due day, the At-risk client task, while nothing is booked (board D2's own group).
+  // After the due day, the At-risk client task, while nothing is booked.
   "at_risk_after_due",
   // After the consultation, the First fit to book task, for a client not fitted since and with nothing booked.
   "first_fit_to_book",
@@ -42,7 +42,7 @@ export const NEXT_VISIT_DAYS: NextVisitDays = {
   first_fit_to_book: 7,
   horizon: 45,
   invoice_prompt: 14,
-  // The owner's supplier takes about a month to make one.
+  // The supplier takes about a month to make one.
   replacement_order_lead: 30,
 };
 
@@ -55,7 +55,7 @@ export const NEXT_VISIT_DAY_BOUNDS: Readonly<Record<NextVisitDayKey, { readonly 
     reminder_before_due: { min: 1, max: 14 },
     at_risk_after_due: { min: 1, max: 60 },
     first_fit_to_book: { min: 1, max: 60 },
-    // Never shorter than the date strip's fortnight (board C2), which the app always shows whole.
+    // Never shorter than the booking sheet's fortnight of dates, which the app always shows whole.
     horizon: { min: 14, max: 90 },
     invoice_prompt: { min: 1, max: 60 },
     replacement_order_lead: { min: 1, max: 90 },
@@ -73,7 +73,7 @@ export const serviceDue = (lastVisitDay: string, days: NextVisitDays): string =>
 
 /**
  * What the next visit is: a service, or the replacement where the piece in wear falls due on or before the day the
- * service would be. The owner's words for it: "If the client's piece falls due before, offer the replacement instead."
+ * service would be: "If the client's piece falls due before, offer the replacement instead."
  */
 export const nextVisitType = (serviceDay: string, pieceDueDay: string | null): "service" | "replacement" =>
   pieceDueDay !== null && pieceDueDay <= serviceDay ? "replacement" : "service";

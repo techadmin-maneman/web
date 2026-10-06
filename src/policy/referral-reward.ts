@@ -1,17 +1,16 @@
-// What a referral earns (docs/prompts/phase2-backend.md, "Business rules, decided"), and the owner's ruling of
-// 1 October 2026 that ops set it in the console, each side apart (docs/decisions/0107-referral-rewards-in-the-console.md).
+// What a referral earns, which ops set in the console, each side apart
+// (docs/decisions/0107-referral-rewards-in-the-console.md).
 // The grant is src/domain/referral-grants.ts and the ledger src/domain/credits.ts (docs/decisions/0048-referrals.md).
 
 import type { VisitType } from "../config/visit-types.ts";
 import { addDays, indiaDate, indiaInstant } from "../lib/india-time.ts";
 import { DAY_MS } from "../lib/durations.ts";
 
-// The prompt's "There is no other discount for the referred person" was retired by the owner on 1 October 2026:
-// discount codes are for anyone, an invited friend too, and credits still pay first (docs/decisions/0108-discount-codes.md).
+// Discount codes are for anyone, an invited friend too, and credits still pay first.
 /** Service-visit credits each side gets to begin with, when the referred person's first fit closes as done. */
 export const CREDITS_PER_REFERRAL = 3;
 
-/** How long a credit lasts from its grant to begin with: the default, which the owner kept (ADR 0025, item 24). */
+/** How long a credit lasts from its grant to begin with. */
 export const CREDIT_TTL_DAYS = 365;
 
 export const REFERRAL_REWARD_KEYS = ["referrer_visits", "friend_visits", "valid_days"] as const;

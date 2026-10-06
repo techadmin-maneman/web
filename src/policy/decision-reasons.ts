@@ -1,5 +1,5 @@
 // Why ops decided what they did about a client (docs/prompts/phase2-backend.md,
-// "Pieces tab"; docs/prompts/phase2-frontend.md, the no-show queue and board C1).
+// "Pieces tab"; docs/prompts/phase2-frontend.md, the no-show queue).
 //
 // The console asked for a reason wherever the prompts do, but only the browser
 // insisted, so a grant of credits could be approved, and a client charged, with
@@ -36,6 +36,6 @@ export const needsReason = (queue: ReasonedQueue, decision: string): boolean =>
 
 /**
  * How long the client's profile shows ops' decision on a change of number, or their rejection of a request to delete
- * the account, with its reason. PLACEHOLDER, until the owner says otherwise.
+ * the account, with its reason. PLACEHOLDER.
  */
 export const DECISION_SHOWN_DAYS = 30;

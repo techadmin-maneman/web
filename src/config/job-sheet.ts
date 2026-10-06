@@ -1,13 +1,9 @@
 // The job sheet a technician fills in, step by step (src/policy/in-job-steps.ts):
 // the committed lists, which stand until ops set their own.
 //
-// The prompt puts the checklist and the partial reasons in config, "taken from
-// the FSM job-sheet template". There was no template, and the owner ruled on
-// 27 September 2026 that the job sheet is set in the ops console instead (docs/open-points.md,
-// item 28; docs/decisions/0087-consumables-and-stock.md). So the lists here are
-// what a kind of visit takes until ops save its checklist, and what the reasons
-// are until ops save theirs (src/domain/job-sheet-settings.ts). Every label the
-// design does not draw is a placeholder.
+// Ops set the job sheet in the console (docs/decisions/0087-consumables-and-stock.md), so the lists here are what a
+// kind of visit takes until ops save its checklist, and what the reasons are until ops save theirs
+// (src/domain/job-sheet-settings.ts). Every label the design does not draw is a placeholder (open point 28).
 //
 // Consumables are not here: ops keep their catalogue, and what each service is
 // expected to use, in the console (src/domain/consumables.ts).
@@ -27,13 +23,13 @@ export interface JobSheetItem {
  * are what a visit records, and never change.
  */
 export const CHECKLIST: Readonly<Record<VisitType, readonly JobSheetItem[]>> = {
-  // PLACEHOLDER: the consultation's checklist, until the owner or ops give theirs (open point 28).
+  // PLACEHOLDER: the consultation's checklist, until ops give theirs (open point 28).
   consultation: [
     { id: "scalp_checked", label: "Scalp and hairline checked" },
     { id: "measurements_taken", label: "Measurements taken" },
     { id: "options_shown", label: "Options and prices shown" },
   ],
-  // PLACEHOLDER: the first fit's checklist, until the owner or ops give theirs (open point 28).
+  // PLACEHOLDER: the first fit's checklist, until ops give theirs (open point 28).
   first_fit: [
     { id: "template_checked", label: "Template checked against the head" },
     { id: "base_trimmed", label: "Base trimmed and shaped" },
@@ -42,7 +38,7 @@ export const CHECKLIST: Readonly<Record<VisitType, readonly JobSheetItem[]>> = {
     { id: "cut_and_styled", label: "Cut and styled" },
     { id: "aftercare_explained", label: "Aftercare explained" },
   ],
-  // PLACEHOLDER: the service visit's checklist, until the owner or ops give theirs (open point 28).
+  // PLACEHOLDER: the service visit's checklist, until ops give theirs (open point 28).
   service: [
     { id: "piece_removed", label: "Hair system removed" },
     { id: "scalp_cleaned", label: "Scalp cleaned" },
@@ -51,7 +47,7 @@ export const CHECKLIST: Readonly<Record<VisitType, readonly JobSheetItem[]>> = {
     { id: "piece_refitted", label: "Hair system refitted" },
     { id: "cut_and_styled", label: "Cut and styled" },
   ],
-  // PLACEHOLDER: the replacement's checklist, until the owner or ops give theirs (open point 28).
+  // PLACEHOLDER: the replacement's checklist, until ops give theirs (open point 28).
   replacement: [
     { id: "old_piece_removed", label: "Old hair system removed" },
     { id: "scalp_cleaned", label: "Scalp cleaned" },
@@ -70,7 +66,7 @@ export const CHECKLIST: Readonly<Record<VisitType, readonly JobSheetItem[]>> = {
  */
 export const PARTIAL_REASONS: readonly JobSheetItem[] = [
   { id: "client_stopped_it", label: "Client stopped it partway" },
-  // PLACEHOLDER: three reasons the design does not name, until the owner or ops give theirs (open point 28).
+  // PLACEHOLDER: three reasons the design does not name, until ops give theirs (open point 28).
   { id: "piece_not_ready", label: "Hair system not ready" },
   { id: "client_unwell", label: "Client unwell" },
   { id: "more_time_needed", label: "More time needed" },

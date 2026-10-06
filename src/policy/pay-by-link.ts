@@ -8,7 +8,7 @@ import { HOUR_MS, MINUTE_MS } from "../lib/durations.ts";
 // - What Book a visit in the console covers: every kind, consultation, first fit, one visit, service, replacement. A
 //   paid visit goes out as a payment link; a free or credit visit books at once.
 
-/** The longest a link keeps the slot. PLACEHOLDER until the owner rules. */
+/** The longest a link keeps the slot. PLACEHOLDER. */
 const LINK_OPEN_HOURS = 24;
 
 /** A link closes this long before the visit at the latest, so the technician knows of the visit in time. PLACEHOLDER. */

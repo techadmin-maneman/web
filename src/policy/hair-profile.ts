@@ -1,13 +1,12 @@
 // A client's hair profile (docs/decisions/0106-a-clients-hair-profile.md): the fit spec a piece is made to, and the
-// history of what they have tried. The owner chose "Fit spec + history" on 1 October 2026; who records it, who sees
-// it and where it lives were taken by the build, for the owner to confirm (ADR 0106).
+// history of what they have tried.
 //
 // The technician records it at a consultation and at a consultation and fit in one visit, ops correct it in the
 // console, and every change is a new version (src/domain/hair-profiles.ts). The history is recorded with the fit
-// spec, on no consent of its own: the owner ruled it is what the client has told us.
+// spec, on no consent of its own: it is what the client has told us.
 //
-// The lists below are codes; their words are each app's, placeholders for the owner (docs/open-points.md, item 42).
-// There is no CHECK on them in the database, so the owner's corrections need no migration.
+// The lists below are codes; their words are each app's. There is no CHECK on them in the database, so a new code
+// needs no migration.
 
 import type { VisitType } from "../config/visit-types.ts";
 import { indiaDate } from "../lib/india-time.ts";

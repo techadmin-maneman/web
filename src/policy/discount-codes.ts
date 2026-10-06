@@ -1,6 +1,5 @@
-// Discount codes (docs/decisions/0108-discount-codes.md). The owner asked on 1 October 2026 "to allow for discount
-// codes to be generated and used before invoicing", and answered each question in turn; this module holds those
-// answers. Ops generate the codes in the console, and the client, the technician or ops enter one on a booking
+// Discount codes (docs/decisions/0108-discount-codes.md), generated and used before invoicing. Ops generate the codes
+// in the console, and the client, the technician or ops enter one on a booking
 // (src/domain/discount-codes.ts). The invoice then shows the price, the discount and the total
 // (src/domain/books-invoices.ts).
 
@@ -49,8 +48,8 @@ export const GENERATED_LENGTH = 8;
 /** How long a code ops type may be. */
 export const CODE_LENGTH = { min: 4, max: 16 } as const;
 
-// A code ops type may use every letter and digit (the owner, 2 Oct 2026: "typed codes may contain I, L, O"); only a
-// generated one keeps to the alphabet above, since nobody chose its letters.
+// A code ops type may use every letter and digit, I, L and O among them; only a generated one keeps to the alphabet
+// above, since nobody chose its letters.
 const CODE_TEXT = new RegExp(`^[A-Z0-9]{${String(CODE_LENGTH.min)},${String(CODE_LENGTH.max)}}$`);
 
 /** A code as it is kept and compared: in capitals, with no spaces around it. */
@@ -107,8 +106,8 @@ export interface CodeBooking {
 
 /**
  * Why a code does not apply to a booking; null when it does. Whoever entered it is told only that it does not apply
- * (docs/decisions/0108-discount-codes.md); the reason is logged. A visit's code moves with it, as the owner ruled
- * on 1 October 2026, but a move takes no code of its own: neither its late fee nor the visit a late move books.
+ * (docs/decisions/0108-discount-codes.md); the reason is logged. A visit's code moves with it, but a move takes no
+ * code of its own: neither its late fee nor the visit a late move books.
  */
 export type CodeRefusal = "switched_off" | "expired" | "not_covered" | "used_up" | "used_by_client" | "credit" | "move";
 

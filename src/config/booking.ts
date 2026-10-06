@@ -1,5 +1,5 @@
 // The loss extent the site's booking form asks for, and the four rough windows
-// Phase 1's form offered, which the leads it left still carry; with the words
+// its first version offered, which the leads it left still carry; with the words
 // the design uses for each. Zoho shows ops the same words the customer picked.
 
 export const VISIT_WINDOWS = ["weekday_am", "weekday_pm", "weekend_am", "weekend_pm"] as const;
@@ -21,7 +21,7 @@ export const LOSS_EXTENT_NAMES: Readonly<Record<LossExtent, string>> = {
   advanced: "Advanced",
 };
 
-/** Morning is 9 am to noon; evening is 4 to 8 pm, Phase 2's evening window (docs/decisions/0040-phase-1-alignment.md). */
+/** Morning is 9 am to noon; evening is 4 to 8 pm, the app's evening window (docs/decisions/0040-phase-1-alignment.md). */
 export const WINDOW_LABELS = ["before noon", "after four"] as const;
 export type WindowLabel = (typeof WINDOW_LABELS)[number];
 

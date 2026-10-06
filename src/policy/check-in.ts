@@ -6,10 +6,9 @@
 // decides what to do then.
 
 /**
- * How close to the address a check-in must be. A placeholder until the owner
- * rules it (docs/open-points.md, item 56): the design's own open question,
- * given GPS error in Gurgaon high-rises. Every check-in records the distance it
- * measured and the radius in force, which is what the owner tunes it from.
+ * How close to the address a check-in must be, given GPS error in Gurgaon
+ * high-rises. Every check-in records the distance it measured and the radius in
+ * force, which is what the radius is tuned from.
  */
 export const CHECKIN_RADIUS_M = 200;
 
