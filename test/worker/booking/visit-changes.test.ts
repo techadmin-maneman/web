@@ -493,16 +493,14 @@ describe("moving a visit", () => {
     // Imran's own visit that Thursday afternoon does not count against its move.
     const answer = await get(client(), `/api/availability?type=service&from=2026-09-24&moving=${VISIT}`);
     const body = await answer.json<{
-      regular: { name: string };
       price: { amount: number };
-      days: { date: string; windows: { window: string; with: string | null }[] }[];
+      days: { date: string; windows: { window: string; open: boolean }[] }[];
     }>();
-    expect(body.regular.name).toBe("Imran Qureshi");
     expect(body.price.amount).toBe(0);
-    expect(body.days[0]?.windows.map(({ window, with: who }) => ({ window, with: who }))).toEqual([
-      { window: "morning", with: "regular" },
-      { window: "afternoon", with: "regular" },
-      { window: "evening", with: "regular" },
+    expect(body.days[0]?.windows.map(({ window, open }) => ({ window, open }))).toEqual([
+      { window: "morning", open: true },
+      { window: "afternoon", open: true },
+      { window: "evening", open: true },
     ]);
   });
 

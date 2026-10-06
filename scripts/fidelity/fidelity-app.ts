@@ -266,26 +266,25 @@ const WINDOW_TIMES = {
   afternoon: ["12:00", "16:00"],
   evening: ["16:00", "20:00"],
 } as const;
-const slot = (name: Window["window"], comes: Window["with"]): Window => ({
+const slot = (name: Window["window"], open: boolean): Window => ({
   window: name,
   start: WINDOW_TIMES[name][0],
   end: WINDOW_TIMES[name][1],
-  with: comes,
+  open,
   change_charged: false,
 });
 const AVAILABILITY = {
   type: "service",
   service: { tier: "standard", name: "Service visit", minutes: 90 },
   price: SERVICE_PRICE,
-  regular: IMRAN,
   change_notice_hours: 24,
   last: "2030-09-29",
   days: Array.from({ length: 14 }, (_, index) => ({
     date: `2030-09-${String(16 + index)}`,
     price: SERVICE_PRICE,
     windows: FULL_DAYS.has(index)
-      ? [slot("morning", null), slot("afternoon", null), slot("evening", null)]
-      : [slot("morning", null), slot("afternoon", "regular"), slot("evening", "another")],
+      ? [slot("morning", false), slot("afternoon", false), slot("evening", false)]
+      : [slot("morning", false), slot("afternoon", true), slot("evening", true)],
   })),
 } satisfies Schemas["Availability"];
 /** The clock for booking: Monday 16 September 2030, the strip's first day. */

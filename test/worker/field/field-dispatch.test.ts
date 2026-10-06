@@ -2,7 +2,7 @@
 // NOW is Monday 21 September 2026, 12 noon in India. Every name, number and photograph here is made up.
 
 import { env } from "cloudflare:workers";
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 import { uuidv7 } from "../../../apps/tech/src/store/uuidv7.ts";
 import { occupancy, placement } from "../../../src/domain/occupancy.ts";
 import { NOW, request } from "../helpers.ts";
@@ -11,6 +11,7 @@ import {
   AT_THE_DOOR,
   bindings,
   IMRAN,
+  LATER_JOB,
   insertJob,
   minutesAfterStart,
   ops,
@@ -30,8 +31,8 @@ useFieldDay();
 
 describe("dispatch", () => {
   it("refuses a move that would give one technician two jobs in one window", async () => {
-    // Sameer already has a job in Monday's afternoon window.
-    await insertJob(OTHER_JOB, { start: "2026-09-21T07:30:00.000Z", technician: SAMEER });
+    // Sameer already has another client's job in Monday's afternoon window.
+    await insertJob(OTHER_JOB, { start: "2026-09-21T07:30:00.000Z", technician: SAMEER, person: null });
 
     const answer = await opsPost("/api/dispatch/move", {
       appointment_id: TODAY_JOB,
@@ -72,6 +73,12 @@ describe("dispatch", () => {
 // A visit the technician has begun stays where he is working it: moved, his phone would carry on with a visit now
 // booked for another day or another technician.
 describe("dispatch, once the technician has begun", () => {
+  // Rohit's Friday visit, Imran's too, set aside: it would stand beside a move of today's to another day with him, and
+  // a technician never takes two of a client's visits in a row (docs/decisions/0111).
+  beforeEach(async () => {
+    await env.DB.prepare("UPDATE appointments SET status = 'cancelled' WHERE id = ?1").bind(LATER_JOB).run();
+  });
+
   const moveToSameerTomorrow = () =>
     opsPost("/api/dispatch/move", {
       appointment_id: TODAY_JOB,

@@ -47,7 +47,6 @@ Nothing here needs a release. The first two have dates.
 - [ ] **Production's AILabTools key** (item 153): `W secret put AILAB_API_KEY --env production`, with a key of production's own.
 - [ ] **Staging's refund account:** the owner's "Razorpay – staging test" ID as `BOOKS_REFUND_ACCOUNT_ID` in `env.staging.vars`, released through CI (item 10).
 - [ ] **Staging's cron heartbeat** (RB, "The outside watchers", point 1): a healthchecks.io check, its ping URL as staging's `HEARTBEAT_URL`; and Account Analytics: Read on `mm-ci-staging`, so each staging deploy reports mm-api's CPU time (RB 6).
-- [ ] **The watch on the daily allowances** (RB, "The daily allowances"): an Account API Token with Account Analytics: Read and nothing else, as staging's `CLOUDFLARE_ANALYTICS_TOKEN`. Within the hour staging's logs show `daily_allowances_read`.
 
 ## 2. Proofs on staging
 
@@ -82,7 +81,6 @@ Each is written up in `docs/verification.md` when it passes. The payment run is 
 - [ ] The dedicated WhatsApp number (item 38) and `MESSAGING_ENABLED` `"true"` in production's vars (item 164): the try-on's look goes to WhatsApp only, so while it is off the try-on does not run (ADR 0104).
 - [ ] Production's AILabTools key and resources (section 1).
 - [ ] The outside watchers (RB, "The outside watchers"): production's healthchecks.io check as its `HEARTBEAT_URL`, and an uptime monitor on `https://maneman.in/api/health`. After the release and `apply-triggers`, the check shows a ping every five minutes and `GET /api/health` a `cron_completed_at` a minute old.
-- [ ] The daily allowances watched from production (RB, "The daily allowances"): the analytics token put on production as `CLOUDFLARE_ANALYTICS_TOKEN` and deleted from staging (`W secret delete CLOUDFLARE_ANALYTICS_TOKEN --env staging`), so the alerts come once.
 - [ ] The zone's table in "The dashboards" (section 4) walked and recorded: this release is the first to need it.
 - [ ] **`www.maneman.in` sent to `maneman.in`.** On 2 October 2026 `www` still reached GoDaddy's parked page through an old proxied record: 200 over http, 525 over https. In the Cloudflare dashboard, on `maneman.in`:
   1. **DNS → Records:** replace the `www` record with an `AAAA` record, name `www`, content `100::`, **Proxied**. The address is never reached: Cloudflare answers every request for `www` with the redirect.

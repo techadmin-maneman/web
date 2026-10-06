@@ -3,7 +3,7 @@
 //
 //   node --env-file=.env.cf-read scripts/ops/cpu-report.ts production
 //
-// It warns where a p99 is over the free plan's 10 ms, and exits 1 where Cloudflare stopped an invocation for a limit,
+// It warns where a p99 is over a tenth of the 30 seconds Cloudflare allows, and exits 1 where Cloudflare stopped an invocation for a limit,
 // which the deploy shows without failing. What it cannot read is a notice.
 
 import { accountIdFor } from "../lib/cloudflare-api.ts";

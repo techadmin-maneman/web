@@ -60,6 +60,7 @@ import {
   placement,
   type Day,
 } from "./occupancy.ts";
+import { movesBeside, visitsOfClient } from "./technician-rotation.ts";
 import { lettingGo } from "./hold-slot.ts";
 import { visitTimes } from "./visit-times.ts";
 import { latestConsentSql } from "./consents.ts";
@@ -556,9 +557,10 @@ function startOn(day: Day, job: Placing, target: Target): number | null {
 }
 
 /** Where the job lands on the target's day, or why it cannot. */
-function landingOf(day: Day, job: Placing, target: Target, blackoutWithoutReason = false): Landing {
+function landingOf(day: Day, job: Placing, target: Target, blackoutWithoutReason: boolean, beside: boolean): Landing {
   const start = startOn(day, job, target);
-  const refusal = moveRefusal(day, target.window, { time: target.time, fits: start !== null, blackoutWithoutReason });
+  const check = { time: target.time, fits: start !== null, blackoutWithoutReason, besideTheClient: beside };
+  const refusal = moveRefusal(day, target.window, check);
   if (refusal !== null) return { kind: "refused", reason: refusal };
   return start === null ? { kind: "refused", reason: "does_not_fit" } : { kind: "lands", start };
 }
@@ -706,13 +708,15 @@ export async function moveJob(db: D1Database, deps: MoveDeps, input: MoveInput, 
 
   // The check runs before anything is written. The job's own time does not
   // count against its own move.
-  const [held, ontoBlackout] = await Promise.all([
+  const [held, ontoBlackout, clientVisits] = await Promise.all([
     occupancy(db, date, date, now, job.id),
     movesOntoBlackout(db, job, date),
+    visitsOfClient(db, job.person_id, job.id),
   ]);
   const blackoutReason = ontoBlackout ? (input.blackoutReason ?? null) : null;
   const placing = { minutes: bookedMinutes(job), start: wasStart };
-  const landing = landingOf(held(technicianId, date), placing, target, ontoBlackout && blackoutReason === null);
+  const beside = movesBeside(clientVisits, { technicianId: job.technician_id, date: indiaDate(wasStart) }, target);
+  const landing = landingOf(held(technicianId, date), placing, target, ontoBlackout && blackoutReason === null, beside);
   if (landing.kind === "refused") return landing;
 
   const times = timesAt(target, landing.start, placing, schedule);
@@ -927,18 +931,21 @@ export async function dispatchRoomFor(
   if (job === null || !mayMove(job, true)) return null;
   const dates = weekFrom(input.from);
   const to = dates[dates.length - 1] ?? input.from;
-  const [technicians, held, schedule, blackouts] = await Promise.all([
+  const [technicians, held, schedule, blackouts, clientVisits] = await Promise.all([
     activeTechnicians(db),
     occupancy(db, input.from, to, now, job.id),
     loadSlotSchedule(db),
     loadBlackouts(db, input.from, to),
+    visitsOfClient(db, job.person_id, job.id),
   ]);
   const visit = { minutes: bookedMinutes(job), start: new Date(job.window_start) };
+  const from = { technicianId: job.technician_id, date: indiaDate(visit.start) };
   const startsFor = (technicianId: string, date: string): RoomStart[] =>
     BOOKING_WINDOWS.flatMap((window) => {
       const target = targetOf(job, technicianId, { date, window }, schedule, now);
       if (isWhereItIs(job, target)) return [];
-      const landing = landingOf(held(technicianId, date), visit, target);
+      const beside = movesBeside(clientVisits, from, target);
+      const landing = landingOf(held(technicianId, date), visit, target, false, beside);
       if (landing.kind === "refused") return [];
       return [{ window, starts_at: timesAt(target, landing.start, visit, schedule).start.toISOString() }];
     });
@@ -981,37 +988,4 @@ export async function recordToldByPhone(
     auditStatement(db, input.audit, input.now),
   ]);
   return true;
-}
-
-/**
- * "Each column head shows its utilisation, in per cent. This is the operating
- * figure for the model's weekend-share assumption, so it is also written to
- * events daily." One row per India date, written once, the day after it closed,
- * so the figure is the day as it was worked and not as it was booked.
- */
-export async function recordUtilisation(db: D1Database, now: Date): Promise<string | null> {
-  const date = addDays(indiaDate(now), -1);
-  const held = await db
-    .prepare("SELECT 1 FROM events WHERE name = 'dispatch_utilisation' AND subject_id = ?1")
-    .bind(date)
-    .first();
-  if (held !== null) return null;
-
-  const board = await dispatchBoard(db, { from: date, city: null });
-  const day = board.utilisation.find((entry) => entry.date === date);
-  await db
-    .prepare("INSERT INTO events (id, created_at, name, subject_id, payload_json) VALUES (?1, ?2, ?3, ?4, ?5)")
-    .bind(
-      crypto.randomUUID(),
-      now.toISOString(),
-      "dispatch_utilisation",
-      date,
-      JSON.stringify({
-        percent: day?.percent ?? 0,
-        technicians: board.technicians.length,
-        slots_per_day: SLOTS_PER_DAY,
-      }),
-    )
-    .run();
-  return date;
 }

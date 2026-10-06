@@ -100,7 +100,7 @@ const me = async (): Promise<Me> => (await request(client, "/api/me", { headers:
 
 const availability = async (query: string) =>
   (await request(client, `/api/availability?${query}`, { headers: { Cookie: cookie } })).json<{
-    days: { date: string; windows: { window: string; with: string | null }[] }[];
+    days: { date: string; windows: { window: string; open: boolean }[] }[];
   }>();
 
 const hold = (body: object) =>
@@ -134,6 +134,12 @@ beforeEach(async () => {
   captureLogs();
   await env.DB.prepare(
     "INSERT INTO technicians (id, fsm_id, name, initials, active, updated_at) VALUES ('t1', 'resource-1', 'Imran Qureshi', 'IQ', 1, ?1)",
+  )
+    .bind(NOW.toISOString())
+    .run();
+  // A second, who may take the visit after one of Imran's: no technician takes two in a row.
+  await env.DB.prepare(
+    "INSERT INTO technicians (id, fsm_id, name, initials, active, updated_at) VALUES ('t2', 'resource-2', 'Sandeep Rawat', 'SR', 1, ?1)",
   )
     .bind(NOW.toISOString())
     .run();
@@ -313,7 +319,7 @@ describe("the days a visit may be booked on", () => {
     expect(strip.days).toHaveLength(14);
     expect(strip.days[0]?.date).toBe("2026-10-23");
     expect(strip.days.at(-1)?.date).toBe("2026-11-05");
-    expect(strip.days.at(-1)?.windows.some((each) => each.with !== null)).toBe(true);
+    expect(strip.days.at(-1)?.windows.some((each) => each.open)).toBe(true);
     expect((await hold({ type: "service", date: "2026-11-06", window: "morning" })).status).toBe(422);
     expect((await hold({ type: "service", date: "2026-11-05", window: "morning" })).status).toBe(201);
   });

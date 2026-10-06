@@ -535,28 +535,11 @@ describe("CRON_JOBS", () => {
   it("tells ops once when the database reaches half of D1's limit, in the same hourly look", async () => {
     const deps = fakeDependencies();
     const meter = CRON_JOBS.filter((cronJob) => cronJob.name === "storage_meter");
-    const halfFull = { ...env, DB: holding(env.DB, 260e6) };
+    const halfFull = { ...env, DB: holding(env.DB, 5.2e9) };
     for (let run = 0; run < 2; run += 1) {
       await runCronJobs(meter, { env: halfFull, deps, config: LOCAL_CONFIG, log: createLogger() });
     }
-    expect(deps.alerts).toEqual([expect.stringContaining("The database holds 260 MB, 50% of the 500 MB")]);
-  });
-
-  it("reads the account's usage only where the analytics token is set", async () => {
-    const allowances = CRON_JOBS.filter((cronJob) => cronJob.name === "daily_allowances");
-    const graphql = "https://api.cloudflare.com/client/v4/graphql";
-    const withToken: StaticConfig = {
-      ...LOCAL_CONFIG,
-      settings: { ...LOCAL_CONFIG.settings, analyticsToken: "token" },
-    };
-    const callsMade = async (config: StaticConfig) => {
-      const { fetch, calls } = fakeFetch({ [graphql]: () => new Response("Bad Gateway", { status: 502 }) });
-      await runCronJobs(allowances, { env, deps: fakeDependencies({ fetch }), config, log: createLogger() });
-      return calls.length;
-    };
-
-    expect(await callsMade(LOCAL_CONFIG)).toBe(0);
-    expect(await callsMade(withToken)).toBe(1);
+    expect(deps.alerts).toEqual([expect.stringContaining("The database holds 5.20 GB, 50% of the 10 GB")]);
   });
 });
 

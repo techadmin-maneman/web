@@ -6,12 +6,14 @@
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { App } from "../../../src/http/context.ts";
-import { recordUtilisation } from "../../../src/domain/dispatch.ts";
+import { recordUtilisation } from "../../../src/domain/dispatch-utilisation.ts";
 import { NO_VISITS_CONSENT } from "../../../src/domain/visit-messages.ts";
 import { appFor, fakeDependencies, fakeQueue, markDatabase, NOW, request } from "../helpers.ts";
 import { visit } from "../visits.ts";
 
 const ROHIT = "11111111-1111-4111-8111-111111111111";
+/** Another client, whose visits fill the technicians' days: a technician never takes two of one client's in a row. */
+const VIKRAM = "vikram";
 const IMRAN = "33333333-3333-4333-8333-333333333331";
 const SAMEER = "33333333-3333-4333-8333-333333333332";
 
@@ -72,6 +74,11 @@ beforeEach(async () => {
   )
     .bind(ROHIT, NOW.toISOString())
     .run();
+  await env.DB.prepare(
+    "INSERT INTO people (id, created_at, mobile_e164, name) VALUES (?1, ?2, '+919810009902', 'Vikram Sethi')",
+  )
+    .bind(VIKRAM, NOW.toISOString())
+    .run();
 });
 
 const bindings = () => ({ MESSAGE_QUEUE: messageQueue }) as unknown as Partial<Env>;
@@ -109,7 +116,7 @@ describe("a change of technician alone", () => {
   // His afternoon window is free, but the first fit's own half-slots are not.
   it("keeps the visit's own time, and refuses it where that time is taken, as not fitting", async () => {
     await insertJob(FIT, { type: "first_fit", start: TUESDAY["12:00"], technician: IMRAN });
-    await insertJob(REPLACEMENT, { type: "replacement", start: TUESDAY["10:30"], technician: SAMEER });
+    await insertJob(REPLACEMENT, { type: "replacement", start: TUESDAY["10:30"], technician: SAMEER, person: VIKRAM });
 
     const sameWindow = await move({
       appointment_id: FIT,
@@ -173,7 +180,12 @@ describe("a visit with no room", () => {
   it("places a visit moved to another day wherever that window has room", async () => {
     await insertJob(FIT, { type: "first_fit", start: TUESDAY["12:00"], technician: IMRAN });
     // Sameer's Wednesday replacement runs from 10:30 to 12:45, into the afternoon's first two half-slots.
-    await insertJob(REPLACEMENT, { type: "replacement", start: "2026-09-23T05:00:00.000Z", technician: SAMEER });
+    await insertJob(REPLACEMENT, {
+      type: "replacement",
+      start: "2026-09-23T05:00:00.000Z",
+      technician: SAMEER,
+      person: VIKRAM,
+    });
 
     const answer = await move({
       appointment_id: FIT,
@@ -206,7 +218,15 @@ async function holdOnWednesday(options: { paid: boolean; expiresAt: string }): P
       `INSERT INTO slot_holds (id, person_id, type, date, window_label, technician_id, start_unit, amount, amount_ex_gst,
          gst_percent, state, expires_at, created_at, updated_at, confirmed_at)
        VALUES (?1, ?2, 'service', ?3, 'morning', ?4, 0, 210000, 200000, 5, 'held', ?5, ?6, ?6, ?7)`,
-    ).bind(id, ROHIT, WEDNESDAY, SAMEER, options.expiresAt, NOW.toISOString(), options.paid ? NOW.toISOString() : null),
+    ).bind(
+      id,
+      VIKRAM,
+      WEDNESDAY,
+      SAMEER,
+      options.expiresAt,
+      NOW.toISOString(),
+      options.paid ? NOW.toISOString() : null,
+    ),
     ...["unit:0", "unit:1", "window:morning"].map((claim) =>
       env.DB.prepare("INSERT INTO slot_claims (technician_id, date, claim, hold_id) VALUES (?1, ?2, ?3, ?4)").bind(
         SAMEER,
@@ -657,10 +677,37 @@ const roomFor = (id: string, from: string) =>
 // The brief: "Drop it on a cell with room", and "a cell that would
 // clash is refused before the sheet opens". The board offered every window of
 // every day and learnt of a clash only after a reason had been picked.
+// A technician never takes two of a client's visits in a row (docs/decisions/0111).
+describe("a client's visits in a row", () => {
+  it("refuses to give a visit to the technician of the client's visit before it, and offers him no room", async () => {
+    await insertJob(A, { type: "service", start: "2026-09-01T06:30:00.000Z", technician: SAMEER, status: "completed" });
+    await insertJob(FIT, { type: "first_fit", start: TUESDAY["12:00"], technician: IMRAN });
+
+    const answer = await move({ appointment_id: FIT, technician_id: SAMEER, reason: "zone_rebalance" });
+    expect(answer.status).toBe(409);
+    expect(await answer.json()).toMatchObject({ error: { code: "back_to_back" } });
+    expect(await shown(FIT)).toEqual({ technician_id: IMRAN, window_start: TUESDAY["12:00"] });
+
+    const { rooms } = await (await roomFor(FIT, "2026-09-22")).json<RoomBody>();
+    expect(rooms.filter((room) => room.technician_id === SAMEER)).toEqual([]);
+  });
+
+  it("refuses the technician of the client's visit after it, and lets the visit keep its own", async () => {
+    await insertJob(B, { type: "service", start: "2026-09-25T06:30:00.000Z", technician: SAMEER });
+    await insertJob(FIT, { type: "first_fit", start: TUESDAY["12:00"], technician: IMRAN });
+
+    const toSameer = await move({ appointment_id: FIT, technician_id: SAMEER, reason: "zone_rebalance" });
+    expect(await toSameer.json()).toMatchObject({ error: { code: "back_to_back" } });
+    // A move that keeps its technician and day puts nobody new beside the client.
+    const morning = await move({ appointment_id: FIT, date: "2026-09-22", window: "morning", reason: "running_over" });
+    expect(morning.status).toBe(200);
+  });
+});
+
 describe("where a job in hand can go", () => {
   it("offers each window the job would land in, and none it would be refused", async () => {
     await insertJob(FIT, { type: "first_fit", start: TUESDAY["12:00"], technician: IMRAN });
-    await insertJob(REPLACEMENT, { type: "replacement", start: TUESDAY["10:30"], technician: SAMEER });
+    await insertJob(REPLACEMENT, { type: "replacement", start: TUESDAY["10:30"], technician: SAMEER, person: VIKRAM });
     expect((await opsPost(`/api/technicians/${SAMEER}/leave`, { from: "2026-09-24", to: "2026-09-24" })).status).toBe(
       200,
     );

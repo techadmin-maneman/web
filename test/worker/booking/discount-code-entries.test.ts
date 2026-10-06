@@ -111,6 +111,8 @@ beforeEach(async () => {
 describe("the client, at the app's pay step", () => {
   beforeEach(async () => {
     await technician();
+    // A second, so a client's visits booked back to back can alternate: no technician takes two in a row.
+    await technician("t2", "Sandeep Rawat", "SR");
     await fittedClient(PERSON, "+919810000001");
   });
 

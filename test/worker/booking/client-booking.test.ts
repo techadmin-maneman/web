@@ -27,6 +27,8 @@ import {
 const HOLD_TRIPS = 9;
 const IMRAN = "t1";
 const SANDEEP = "t2";
+/** Who did the clients' last visits here: a technician since switched off, who stands beside no one's next. */
+const SANA = "t0";
 
 async function technician(id: string, name: string, initials: string) {
   await env.DB.prepare(
@@ -55,17 +57,20 @@ async function essential(): Promise<void> {
 
 let people = 0;
 /**
- * A client with a session and a saved address; fitted, with Imran as their regular technician, unless `lead`.
+ * A client with a session and a saved address; fitted, unless `lead`, by `lastWith`, whose visit was their last.
  * `withoutAddress`: one who has not given their address yet.
  */
-async function client(lead = false, { withoutAddress = false } = {}): Promise<{ id: string; cookie: string }> {
+async function client(
+  lead = false,
+  { withoutAddress = false, lastWith = SANA } = {},
+): Promise<{ id: string; cookie: string }> {
   people += 1;
   const id = crypto.randomUUID();
   await env.DB.prepare("INSERT INTO people (id, created_at, mobile_e164, name) VALUES (?1, ?2, ?3, 'Rohit Malhotra')")
     .bind(id, NOW.toISOString(), `+9198100000${String(people).padStart(2, "0")}`)
     .run();
   if (!withoutAddress) await savedAddress(id, "122018");
-  await visit(id, lead ? "consultation" : "service", "completed", "2026-09-01T06:30:00.000Z", IMRAN);
+  await visit(id, lead ? "consultation" : "service", "completed", "2026-09-01T06:30:00.000Z", lastWith);
   const session = await openSession(env.DB, { kind: "client", subjectId: id, deviceLabel: null, now: NOW });
   return { id, cookie: `mm_app=${session}` };
 }
@@ -104,6 +109,8 @@ beforeEach(async () => {
   app = appFor("local", fakeDependencies(), {}, "client");
   await technician(IMRAN, "Imran Qureshi", "IQ");
   await technician(SANDEEP, "Sandeep Rawat", "SR");
+  await technician(SANA, "Sana Mirza", "SM");
+  await env.DB.prepare("UPDATE technicians SET active = 0 WHERE id = ?1").bind(SANA).run();
 });
 
 /** The half-slots a kind's own length holds (src/policy/visit-length.ts). */
@@ -138,17 +145,17 @@ describe("the working day", () => {
 });
 
 describe("GET /api/availability", () => {
-  it("offers 14 days from tomorrow, each window with the regular technician where he is free", async () => {
+  it("offers 14 days from tomorrow, each window open where a technician is free", async () => {
     const rohit = await client();
     const answer = await request(app, "/api/availability?type=service", { headers: { Cookie: rohit.cookie } });
     expect(answer.status).toBe(200);
     const body = await answer.json<{
       price: object;
-      regular: object;
-      days: { date: string; windows: { window: string; with: string | null }[] }[];
+      days: { date: string; windows: { window: string; open: boolean }[] }[];
     }>();
     expect(body.price).toEqual({ amount_ex_gst: 200000, amount: 200000, gst_percent: 0 });
-    expect(body.regular).toEqual({ name: "Imran Qureshi", initials: "IQ" });
+    // Who would come is never promised.
+    expect(body).not.toHaveProperty("regular");
     expect(body.days).toHaveLength(14);
     expect(body.days[0]).toEqual({
       date: "2026-09-22",
@@ -156,9 +163,9 @@ describe("GET /api/availability", () => {
       // Each window with its hours that day (docs/decisions/0102-window-times.md). At noon on Monday, Tuesday's
       // morning and noon windows are already inside the 24 hours, so a service visit booked in them is charged to change.
       windows: [
-        { window: "morning", start: "09:00", end: "12:00", with: "regular", change_charged: true },
-        { window: "afternoon", start: "12:00", end: "16:00", with: "regular", change_charged: true },
-        { window: "evening", start: "16:00", end: "20:00", with: "regular", change_charged: false },
+        { window: "morning", start: "09:00", end: "12:00", open: true, change_charged: true },
+        { window: "afternoon", start: "12:00", end: "16:00", open: true, change_charged: true },
+        { window: "evening", start: "16:00", end: "20:00", open: true, change_charged: false },
       ],
     });
   });
@@ -216,19 +223,27 @@ describe("GET /api/availability", () => {
     expect(later.days.at(-1)?.date).toBe("2026-11-05");
   });
 
-  it("offers another technician where the regular one is busy, and marks a window full where both are", async () => {
-    const rohit = await client();
-    await visit(null, "service", "scheduled", "2026-09-23T06:30:00.000Z", IMRAN); // Wednesday, 12 noon
-    const once = await (
-      await request(app, "/api/availability?type=service&from=2026-09-23", { headers: { Cookie: rohit.cookie } })
-    ).json<{ days: { windows: { window: string; with: string | null }[] }[] }>();
-    expect(once.days[0]?.windows[1]).toMatchObject({ window: "afternoon", with: "another" });
+  // A technician never takes two of a client's visits in a row (docs/decisions/0111).
+  it("marks a window full where only the technician of the client's last visit is free", async () => {
+    const rohit = await client(false, { lastWith: IMRAN });
+    const strip = async () =>
+      (
+        await request(app, "/api/availability?type=service&from=2026-09-23", { headers: { Cookie: rohit.cookie } })
+      ).json<{ days: { windows: { window: string; open: boolean }[] }[] }>();
+    expect((await strip()).days[0]?.windows[1]).toMatchObject({ window: "afternoon", open: true });
 
     await visit(null, "first_fit", "dispatched", "2026-09-23T07:30:00.000Z", SANDEEP); // Wednesday, 1 pm
-    const twice = await (
+    expect((await strip()).days[0]?.windows[1]).toMatchObject({ window: "afternoon", open: false });
+  });
+
+  it("marks a window full where only the technician of the client's next visit is free", async () => {
+    const rohit = await client();
+    await visit(rohit.id, "service", "scheduled", "2026-09-28T06:30:00.000Z", IMRAN); // next Monday, with Imran
+    await visit(null, "first_fit", "dispatched", "2026-09-23T07:30:00.000Z", SANDEEP); // Wednesday, 1 pm
+    const strip = await (
       await request(app, "/api/availability?type=service&from=2026-09-23", { headers: { Cookie: rohit.cookie } })
-    ).json<{ days: { windows: { window: string; with: string | null }[] }[] }>();
-    expect(twice.days[0]?.windows[1]).toMatchObject({ window: "afternoon", with: null });
+    ).json<{ days: { windows: { window: string; open: boolean }[] }[] }>();
+    expect(strip.days[0]?.windows[1]).toMatchObject({ window: "afternoon", open: false });
   });
 
   it("will not offer a kind of visit the client may not book, and is off where self-serve booking is", async () => {
@@ -250,7 +265,7 @@ describe("GET /api/availability", () => {
 describe("POST /api/holds", () => {
   const TUESDAY_AFTERNOON = { type: "service", date: "2026-09-22", window: "afternoon" };
 
-  it("holds the window for ten minutes with the regular technician, at the price book's price", async () => {
+  it("holds the window for ten minutes, at the price book's price", async () => {
     const rohit = await client();
     const answer = await hold(rohit, TUESDAY_AFTERNOON);
     expect(answer.status).toBe(201);
@@ -283,6 +298,19 @@ describe("POST /api/holds", () => {
     expect(d1TripsOf(answer)).toBeLessThanOrEqual(HOLD_TRIPS);
   });
 
+  it("never holds a client's visit with the technician of the visit before it, nor the one after", async () => {
+    const rohit = await client(false, { lastWith: IMRAN });
+    expect(await (await hold(rohit, TUESDAY_AFTERNOON)).json()).toMatchObject({
+      technician: { name: "Sandeep Rawat" },
+    });
+
+    const vikram = await client(false, { lastWith: IMRAN });
+    await visit(vikram.id, "service", "scheduled", "2026-09-28T06:30:00.000Z", SANDEEP);
+    const between = await hold(vikram, { ...TUESDAY_AFTERNOON, date: "2026-09-24" });
+    expect(between.status).toBe(409);
+    expect((await between.json<{ error: { code: string } }>()).error.code).toBe("taken");
+  });
+
   it("gives the next client another technician, and the one after that nobody", async () => {
     const [first, second, third] = [await client(), await client(), await client()];
     expect((await hold(first, TUESDAY_AFTERNOON)).status).toBe(201);
@@ -308,7 +336,7 @@ describe("POST /api/holds", () => {
 
   // A client whose app closed before they paid, and who comes back inside the hold's life: the hold they are asking
   // for lets their unpaid one go, so it stands in nobody's way, theirs least of all.
-  it("offers a client their own unpaid window, and holds it again with their regular technician", async () => {
+  it("offers a client their own unpaid window, and holds it again with the same technician", async () => {
     const rohit = await client();
     expect(await (await hold(rohit, TUESDAY_AFTERNOON)).json()).toMatchObject({
       technician: { name: "Imran Qureshi" },
@@ -320,8 +348,8 @@ describe("POST /api/holds", () => {
 
     const offered = await (
       await request(app, "/api/availability?type=service&from=2026-09-22", { headers: { Cookie: rohit.cookie } })
-    ).json<{ days: { windows: { window: string; with: string | null }[] }[] }>();
-    expect(offered.days[0]?.windows[1]).toMatchObject({ window: "afternoon", with: "regular" });
+    ).json<{ days: { windows: { window: string; open: boolean }[] }[] }>();
+    expect(offered.days[0]?.windows[1]).toMatchObject({ window: "afternoon", open: true });
     const again = await hold(rohit, TUESDAY_AFTERNOON);
     expect(again.status).toBe(201);
     expect(await again.json()).toMatchObject({ technician: { name: "Imran Qureshi" } });
@@ -558,7 +586,7 @@ describe("POST /api/holds", () => {
 describe("what a client may book, and when (docs/decisions/0068-a-paid-hold-is-kept.md)", () => {
   const availability = async (who: { cookie: string }, type = "service") =>
     (await request(app, `/api/availability?type=${type}`, { headers: { Cookie: who.cookie } })).json<{
-      days: { date: string; price: { amount: number }; windows: { with: string | null }[] }[];
+      days: { date: string; price: { amount: number }; windows: { open: boolean }[] }[];
     }>();
 
   it("offers no second first fit while one is still to happen, nor starts paying for one", async () => {
@@ -584,10 +612,10 @@ describe("what a client may book, and when (docs/decisions/0068-a-paid-hold-is-k
     await env.DB.prepare("INSERT INTO visit_blackouts (date, reason) VALUES ('2026-09-23', 'Dussehra')").run();
     const rohit = await client();
     const { days } = await availability(rohit);
-    expect(days.find((day) => day.date === "2026-09-23")?.windows.map((window) => window.with)).toEqual([
-      null,
-      null,
-      null,
+    expect(days.find((day) => day.date === "2026-09-23")?.windows.map((window) => window.open)).toEqual([
+      false,
+      false,
+      false,
     ]);
     expect((await hold(rohit, { type: "service", date: "2026-09-23", window: "afternoon" })).status).toBe(409);
   });
@@ -623,7 +651,7 @@ describe("choosing a service", () => {
   interface Days {
     service: { tier: string; name: string; minutes: number };
     price: { amount_ex_gst: number };
-    days: { date: string; windows: { window: string; with: string | null }[] }[];
+    days: { date: string; windows: { window: string; open: boolean }[] }[];
   }
   const availabilityOf = async (who: { cookie: string }, query: string) =>
     (await request(app, `/api/availability?${query}`, { headers: { Cookie: who.cookie } })).json<Days>();
@@ -659,8 +687,8 @@ describe("choosing a service", () => {
     expect(offered.service).toEqual({ tier: "premium", name: "Premium first fit", minutes: 300 });
     expect(offered.price.amount_ex_gst).toBe(4_000_000);
     // A window it cannot start in is left out, rather than offered as full.
-    expect(offered.days[0]?.windows.map(({ window, with: who }) => ({ window, with: who }))).toEqual([
-      { window: "morning", with: "regular" },
+    expect(offered.days[0]?.windows.map(({ window, open }) => ({ window, open }))).toEqual([
+      { window: "morning", open: true },
     ]);
 
     const held = await hold(lead, { type: "first_fit", tier: "premium", date: "2026-09-22", window: "morning" });
@@ -689,19 +717,20 @@ describe("choosing a service", () => {
   });
 
   it("keeps a visit of a longer service from being overlapped, as long as its service is", async () => {
-    const rohit = await client();
+    // Sandeep took the client's last visit, so only Imran's time is offered.
+    const rohit = await client(false, { lastWith: SANDEEP });
     await service("first_fit", "premium", "Premium first fit", 300, 4_000_000);
     // Imran fits a premium first fit from 9 am on Wednesday: seven half-slots, into the evening's first.
     const booked = await visit(null, "first_fit", "scheduled", "2026-09-23T03:30:00.000Z", IMRAN);
     await env.DB.prepare("UPDATE appointments SET tier = 'premium' WHERE id = ?1").bind(booked).run();
 
     const offered = await availabilityOf(rohit, "type=service&from=2026-09-23");
-    expect(offered.days[0]?.windows.map((window) => window.with)).toEqual(["another", "another", "another"]);
+    expect(offered.days[0]?.windows.map((window) => window.open)).toEqual([false, false, false]);
 
     // The same visit as the standard first fit, four half-slots, leaves Imran the afternoon and the evening.
     await env.DB.prepare("UPDATE appointments SET tier = NULL WHERE id = ?1").bind(booked).run();
     const standard = await availabilityOf(rohit, "type=service&from=2026-09-23");
-    expect(standard.days[0]?.windows.map((window) => window.with)).toEqual(["another", "regular", "regular"]);
+    expect(standard.days[0]?.windows.map((window) => window.open)).toEqual([false, true, true]);
   });
 
   it("books the kind's standard service where the booking names none, as an app from before services does", async () => {
@@ -718,7 +747,7 @@ describe("choosing a service", () => {
     await service("service", "premium", "Premium service", 90, 250_000, "2026-09-24");
 
     const offered = await availabilityOf(rohit, "type=service&tier=premium");
-    expect(offered.days.map((day) => day.windows.some((window) => window.with !== null))).toEqual([
+    expect(offered.days.map((day) => day.windows.some((window) => window.open))).toEqual([
       true,
       true,
       ...Array.from({ length: 12 }, () => false),

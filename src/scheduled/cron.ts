@@ -25,7 +25,7 @@ import { closeStaleLowStock } from "../domain/low-stock.ts";
 import { settleOwedRefunds } from "../domain/cancel-refunds.ts";
 import { finishRun, startRun, type RunStart } from "../domain/cron-runs.ts";
 import { alertAgedDeletions } from "../domain/deletion.ts";
-import { recordUtilisation } from "../domain/dispatch.ts";
+import { recordUtilisation } from "../domain/dispatch-utilisation.ts";
 import { deleteLeftFiles } from "../domain/erasure.ts";
 import { tellOfNewGrievances } from "../domain/grievances.ts";
 import { queueCreditReminders } from "../domain/credit-reminders.ts";
@@ -40,7 +40,6 @@ import { meterDatabase, usageFields, usageSince, type MeteredDatabase } from "..
 import { scrubString, type Logger } from "../log.ts";
 import { pingHeartbeat } from "../providers/heartbeat.ts";
 import { enqueue, enqueueBatch } from "../domain/enqueue.ts";
-import { checkDailyAllowances } from "./daily-allowances.ts";
 import { razorpayCatchUpJob } from "./razorpay-catch-up.ts";
 import { referralPass } from "./referrals.ts";
 import { retentionJob } from "./retention.ts";
@@ -171,13 +170,6 @@ async function lowStockJob({ env, deps }: CronContext): Promise<void> {
   await closeStaleLowStock(env.DB, deps);
 }
 
-/** Only where a token to read the account's analytics is set. */
-async function dailyAllowancesJob({ env, deps, config, log, budget }: CronContext): Promise<void> {
-  const token = config.settings.analyticsToken;
-  if (token === null) return;
-  await checkDailyAllowances({ db: env.DB, deps, token, log, budget });
-}
-
 async function whatsAppBridgeJob({ deps, log, budget }: CronContext): Promise<void> {
   await checkWhatsAppBridge(deps, log, budget);
 }
@@ -303,7 +295,6 @@ export const CRON_JOBS: readonly CronJob[] = [
   // An erased client's customer in Books, deleted, or blanked where an invoice names it.
   { name: "books_erasures", needs: "books", every: 60, at: 29, run: booksErasuresJob },
   // What the account has used today of the free plan's daily allowances, told at 70%.
-  { name: "daily_allowances", needs: "nothing", every: 60, at: 34, run: dailyAllowancesJob },
   // What the photographs and cards hold of R2, told at half, 80% and all of their share (docs/decisions/0093), and
   // the database against D1's limit, told at half, 80% and 95%.
   { name: "storage_meter", needs: "nothing", every: 60, at: 39, run: storageMeterJob },
