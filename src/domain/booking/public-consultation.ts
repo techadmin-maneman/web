@@ -152,7 +152,6 @@ export interface Booked {
 }
 
 /** A code that stands on a site booking: the code, and what it takes off the hair system's price when they pay. */
-
 export type StandingCode = Pick<OneVisitCode, "code" | "terms">;
 
 /**
@@ -364,7 +363,6 @@ async function newNumbersState(
 }
 
 /** A notice to a person we know, written and queued on its own. */
-
 async function tellPrivately(form: FormRequest, personId: string, kind: SiteNoticeKind): Promise<void> {
   const notice = siteNotice(form.db, { personId, kind, now: form.now });
   await notice.statement.run();
