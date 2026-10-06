@@ -147,11 +147,12 @@ request, and a script updates the imports.
 
 **Done when** `grep -ri fsm src apps packages site scripts` finds nothing.
 
-### 7. Simplify once Workers Paid is bought (2 days)
+### 7. Simplify for Workers Paid (2 days)
 
-The Free plan allows 10 ms of CPU and 50 D1 queries per invocation. Because of that, much of the cron's machinery
-exists: call budgets, jobs sliced minute by minute, and the D1 meter. Workers Paid raises those limits to 30 seconds
-of CPU and 1,000 D1 queries.
+Workers Free allowed 10 ms of CPU and 50 D1 queries per invocation, and refused work past its daily allowances.
+Because of that, much of the cron's machinery exists: call budgets, jobs sliced minute by minute, the alerts on the
+daily allowances, and a budget model of a day's reads. Workers Paid, bought on 6 October 2026 (ADR 0112), raises those
+limits to 30 seconds of CPU and 1,000 D1 queries, and bills rather than refuses past a month's allowances.
 
 - Make each job one pass where it fits.
 - Keep a budget only where a vendor's own limit needs it, such as Zoho's 100 calls a minute.
@@ -170,11 +171,11 @@ of CPU and 1,000 D1 queries.
 
 ## Order and effort
 
-Do the phases in the order above, about **23 working days** in all:
+Do the phases in the order above, but phase 7 second, about **23 working days** in all:
 
 - Phase 1 first, because it helps from day one.
+- Phase 7 second, now that Workers Paid is bought: it deletes code the later phases would otherwise tidy.
 - Phase 3 before phase 4, so each name changes once, in its final place.
-- Phase 7 only after Workers Paid is bought.
 
 The moves and renames conflict with branches in flight, so land each one between feature pull requests, never
 alongside a long-lived branch.
