@@ -66,7 +66,7 @@ function CodeRow({ code, maySwitchOff, onSwitched }: CodeRowProps) {
     <li className={styles.rule}>
       <p className={styles.period}>{code.code}</p>
       <p className={styles.set}>{factsOf(code)}</p>
-      <p className={styles.set}>{copy.madeBy(code.created_by, longDate(code.created_at))}</p>
+      <p className={styles.set}>{copy.madeBy(whoWords(code.created_by), longDate(code.created_at))}</p>
       {code.switched_off !== null && (
         <p className={styles.set}>
           {copy.switchedOffBy(whoWords(code.switched_off.by), longDate(code.switched_off.at))}

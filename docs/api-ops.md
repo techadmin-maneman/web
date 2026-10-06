@@ -925,6 +925,30 @@ Number changes waiting for ops in the caller's cities: both numbers proven by co
           "new_mobile": {
             "type": "string"
           },
+          "new_number_held_by": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "client": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "name",
+                  "client"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Another record holding the new number: confirming takes it from one that never became a client, and is refused while a client holds it. Null when nobody else does."
+          },
           "requested_at": {
             "type": "string",
             "format": "date-time"
@@ -941,6 +965,7 @@ Number changes waiting for ops in the caller's cities: both numbers proven by co
           "name",
           "old_mobile",
           "new_mobile",
+          "new_number_held_by",
           "requested_at",
           "due"
         ],
@@ -5335,6 +5360,10 @@ Request body:
         "other"
       ]
     },
+    "not_home": {
+      "type": "boolean",
+      "description": "Closed because nobody was home: a no-show."
+    },
     "stage": {
       "anyOf": [
         {
@@ -5513,6 +5542,7 @@ Request body:
     "type",
     "service",
     "status",
+    "not_home",
     "stage",
     "prepaid",
     "technician",
@@ -5666,6 +5696,10 @@ Request body:
         "other"
       ]
     },
+    "not_home": {
+      "type": "boolean",
+      "description": "Closed because nobody was home: a no-show."
+    },
     "stage": {
       "anyOf": [
         {
@@ -5734,6 +5768,7 @@ Request body:
     "type",
     "service",
     "status",
+    "not_home",
     "stage",
     "prepaid",
     "technician",

@@ -657,7 +657,13 @@ describe("a number change", () => {
 
     const waiting = await (await send(ops, "GET", "/api/number-changes")).json<{ changes: unknown[] }>();
     expect(waiting.changes).toEqual([
-      expect.objectContaining({ person_id: "p1", name: "Rohit Malhotra", old_mobile: OLD, new_mobile: NEW }),
+      expect.objectContaining({
+        person_id: "p1",
+        name: "Rohit Malhotra",
+        old_mobile: OLD,
+        new_mobile: NEW,
+        new_number_held_by: null,
+      }),
     ]);
     const decided = await send(ops, "POST", `/api/number-changes/${body.request_id}/decision`, {
       decision: "confirm",
@@ -769,6 +775,10 @@ describe("a number change", () => {
          VALUES ('v2', 'v2', 'p2', 'consultation', 'completed', ?1, ?1)`,
       ).bind(NOW.toISOString()),
     ]);
+    const waiting = await (await send(ops, "GET", "/api/number-changes")).json<{ changes: unknown[] }>();
+    expect(waiting.changes).toEqual([
+      expect.objectContaining({ new_number_held_by: { name: "Someone", client: true } }),
+    ]);
     const res = await send(ops, "POST", `/api/number-changes/${body.request_id}/decision`, {
       decision: "confirm",
       reason: null,
@@ -790,6 +800,10 @@ describe("a number change", () => {
       ).bind(NOW.toISOString()),
     ]);
     const theirPhone = `mm_app=${await openSession(env.DB, { kind: "client", subjectId: "p2", deviceLabel: null, now: NOW })}`;
+    const waiting = await (await send(ops, "GET", "/api/number-changes")).json<{ changes: unknown[] }>();
+    expect(waiting.changes).toEqual([
+      expect.objectContaining({ new_number_held_by: { name: "Someone", client: false } }),
+    ]);
 
     const res = await send(ops, "POST", `/api/number-changes/${body.request_id}/decision`, {
       decision: "confirm",

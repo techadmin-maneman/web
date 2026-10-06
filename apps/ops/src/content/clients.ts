@@ -387,6 +387,9 @@ export const clients = {
       Record<string, string>
     >,
     reference: (reference: string) => `Ref ${reference}`,
+    /** What a late change or a no-show's charge kept of the payment: "Rs. 2,000 kept, cancelled late". */
+    kept: (amount: string, why: string) => `${amount} kept, ${why}`,
+    keptFor: { cancelled: "cancelled late", moved: "moved late", no_show: "not home" },
     // A discount code on a payment, which no board draws (docs/decisions/0108-discount-codes.md).
     /** "Code AUDTEST, Rs. 1,000 off", beneath what the payment was for. */
     code: (applied: string) => `Code ${applied}`,

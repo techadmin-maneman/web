@@ -229,22 +229,50 @@ export async function verifyNumberChange(
   return { verification, change: (await findNumberChange(db, change.id)) ?? change };
 }
 
-/** The changes waiting for ops in the places reached, oldest first, as Tasks counts them: none of an erased client's. */
+/** Another record holding the new number, as the decision finds it: one that never became a client gives it up. */
+export interface NumberHolder {
+  readonly name: string;
+  readonly neverAClient: boolean;
+}
+
+/** Whether the record ?1 never became a client: no visit, and nothing booked or being booked. */
+const NEVER_A_CLIENT = (person: string) =>
+  `(${person}.client_since IS NULL AND NOT EXISTS (
+     SELECT 1 FROM slot_holds h WHERE h.person_id = ${person}.id AND h.state = 'held'))`;
+
+/**
+ * The changes waiting for ops in the places reached, oldest first, as Tasks counts them: none of an erased client's.
+ * Each names any other record holding the new number, which confirming takes it from or is refused by.
+ */
 export async function changesAwaitingOps(
   db: D1Database,
   reached: PlacesReached,
-): Promise<(NumberChange & { oldMobileE164: string })[]> {
+): Promise<(NumberChange & { oldMobileE164: string; newNumberHeldBy: NumberHolder | null })[]> {
   const rows = await db
     .prepare(
       `SELECT r.id, r.person_id, r.new_mobile_e164, r.state, r.old_verified_at, r.new_verified_at, r.created_at, r.session_id,
-         p.mobile_e164 AS old_mobile_e164
+         p.mobile_e164 AS old_mobile_e164, o.id AS holder_id, o.name AS holder_name,
+         ${NEVER_A_CLIENT("o")} AS holder_never_a_client
        FROM number_change_requests r JOIN people p ON p.id = r.person_id
+       LEFT JOIN people o ON o.mobile_e164 = r.new_mobile_e164 AND o.id != r.person_id
        WHERE r.state = 'awaiting_ops' AND p.erased_at IS NULL AND ${withinReach("number_change", "r", "?1")}
        ORDER BY r.created_at`,
     )
     .bind(reachBinding(reached))
-    .all<Row & { old_mobile_e164: string }>();
-  return rows.results.map((row) => ({ ...changeOf(row), oldMobileE164: row.old_mobile_e164 }));
+    .all<
+      Row & {
+        old_mobile_e164: string;
+        holder_id: string | null;
+        holder_name: string | null;
+        holder_never_a_client: number;
+      }
+    >();
+  return rows.results.map((row) => ({
+    ...changeOf(row),
+    oldMobileE164: row.old_mobile_e164,
+    newNumberHeldBy:
+      row.holder_id === null ? null : { name: row.holder_name ?? "", neverAClient: row.holder_never_a_client === 1 },
+  }));
 }
 
 type Decision = "confirm" | "reject";
@@ -285,11 +313,7 @@ export async function decideNumberChange(
   }
 
   const holder = await db
-    .prepare(
-      `SELECT id, (client_since IS NULL AND NOT EXISTS (
-         SELECT 1 FROM slot_holds h WHERE h.person_id = people.id AND h.state = 'held')) AS never_a_client
-       FROM people WHERE mobile_e164 = ?1 AND id != ?2`,
-    )
+    .prepare(`SELECT id, ${NEVER_A_CLIENT("people")} AS never_a_client FROM people WHERE mobile_e164 = ?1 AND id != ?2`)
     .bind(change.newMobileE164, change.personId)
     .first<{ id: string; never_a_client: number }>();
   if (holder !== null && holder.never_a_client !== 1) return "number_in_use";

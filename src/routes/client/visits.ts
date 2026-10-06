@@ -61,6 +61,7 @@ export const VisitSummarySchema = z
         "say. Null for a kind's standard service, and on a consultation and fit in one visit until the client chooses.",
     }),
     status: z.enum(["scheduled", "dispatched", "in_progress", "completed", "cancelled", "terminated", "other"]),
+    not_home: z.boolean().openapi({ description: "Closed because nobody was home: a no-show." }),
     stage: z.union([z.enum(["booked", "in_progress", "done", "closing"]), z.null()]).openapi({
       description:
         "For a visit not yet closed: still to come, under way (the technician has checked in), closed as done " +

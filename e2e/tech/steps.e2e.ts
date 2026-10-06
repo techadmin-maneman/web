@@ -377,6 +377,9 @@ test.describe("the piece (board B3, step 4)", () => {
 
     await expect(page.getByRole("alert").filter({ hasText: "That piece isn’t this client’s." })).toBeVisible();
     await expect(page.getByRole("button", { name: "That piece isn’t this client’s" })).toBeDisabled();
+    // The other piece's base and lot stay off this job.
+    await expect(page.locator("#piece-base")).toHaveValue("");
+    await expect(page.locator("#piece-lot")).toHaveValue("");
   });
 
   test("picks the piece from the client's list, and sends its base, its lot and the piece that came off", async ({
@@ -712,6 +715,31 @@ test.describe("the client's hair profile", () => {
       // No version stood before this one.
       based_on: null,
     });
+  });
+
+  test("keeps what was typed when the app closes part-way, and lets it go once sent", async ({ page }) => {
+    const fake = await atTheProfile(page);
+    await page.getByRole("button", { name: "IV", exact: true }).click();
+    await page.getByRole("textbox", { name: "Circumference" }).fill("57.5");
+    await page.getByRole("textbox", { name: "Width" }).fill("8");
+    await page.getByRole("textbox", { name: "Length" }).fill("10");
+    await page.getByRole("button", { name: "Mane Man Natural" }).click();
+    await page.getByRole("button", { name: "Tape", exact: true }).click();
+    await next(page).click();
+    await page.getByRole("textbox", { name: "Skin conditions and allergies" }).fill("Dry at the crown");
+
+    await page.reload();
+    await expect(page.getByRole("heading", { level: 1, name: "History" })).toBeVisible();
+    await expect(page.getByRole("textbox", { name: "Skin conditions and allergies" })).toHaveValue("Dry at the crown");
+    await page.getByRole("button", { name: "Back" }).click();
+    await expect(page.getByRole("textbox", { name: "Circumference" })).toHaveValue("57.5");
+    await expect(page.getByRole("button", { name: "IV", exact: true })).toHaveAttribute("aria-pressed", "true");
+
+    await next(page).click();
+    await next(page).click();
+    await expect.poll(() => writesTo(fake, "profile").length).toBe(1);
+    await page.goto(`/jobs/${JOB_ID}/profile`);
+    await expect(page.getByRole("textbox", { name: "Circumference" })).toHaveValue("");
   });
 
   test("keeps Next dim on a figure out of its range, and says the range", async ({ page }) => {
