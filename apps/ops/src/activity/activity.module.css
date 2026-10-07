@@ -3,6 +3,13 @@
  * here is new: Areas' table, the console's fields, and a line of muted text beneath a name, as Tasks sets who owns one.
  */
 
+/* This screen's own sizes, which nothing else draws (ADR 0077, as amended). */
+:root {
+  --local-activity-filter: 192px; /* a filter's narrowest: a date box with its picker */
+  --local-activity-when: 176px; /* "14 Nov 2026, 10:45 am" on one line */
+  --local-activity-record: 128px; /* "Client", "Visit", or a kind and the start of an ID */
+}
+
 .column {
   display: flex;
   flex-direction: column;
@@ -21,7 +28,7 @@
 
 .filters {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(12rem, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(var(--local-activity-filter), 1fr));
   gap: var(--sp-12) var(--sp-16);
   align-items: end;
 }
@@ -38,13 +45,13 @@
 }
 
 .when {
-  width: 11rem;
+  width: var(--local-activity-when);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
 
 .record {
-  width: 8rem;
+  width: var(--local-activity-record);
 }
 
 /* A name, then what they are and where they did it, a line beneath. */
