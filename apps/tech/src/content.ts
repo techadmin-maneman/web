@@ -84,7 +84,7 @@ export const leaving = {
   body: "Signing out deletes them from this phone, and they never reach us.",
   send: "Send first",
   anyway: "Sign out anyway",
-  stayed: "No signal. You’re still signed in and nothing was deleted. Try again with signal.",
+  stayed: "No signal. You’re still signed in. Try again with signal.",
 } as const;
 
 /** When the phone has no room left for what the app must keep: a photograph, a step. */
@@ -289,7 +289,7 @@ export const job = {
   // The board draws what changed on the queue alone.
   changed: {
     title: "This job changed",
-    body: "This phone can send nothing more for it. Waiting to reach us shows what it still holds.",
+    body: "Nothing more can be sent for it.",
   },
   locked: {
     title: "Not yet",
@@ -341,7 +341,7 @@ export const notHome = {
     away: (km: string) => `You are ${km} from the address.`,
     // The board draws a distance; an address with no coordinates has none (ADR 0036).
     unmeasured: "We couldn’t measure how far you are from the address.",
-    body: "Go to the door and tap again. Still refused? Ask ops to let you check in. A no-show needs a check-in.",
+    body: "Go to the door and tap again. Still refused? Ask ops to let you check in.",
     action: "Try again",
   },
   waiting: {
