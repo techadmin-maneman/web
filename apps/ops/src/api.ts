@@ -401,6 +401,8 @@ export const api = {
   /** Signed out at once; their visits still to come are given back unassigned, and listed in the answer. */
   switchOff: (id: string) => client.post("/api/technicians/{id}/deactivate", { path: { id } }),
   switchOn: (id: string) => client.post("/api/technicians/{id}/reactivate", { path: { id } }),
+  /** Refused, as in_use, once anything records work of theirs. */
+  deleteTechnician: (id: string) => client.post("/api/technicians/{id}/delete", { path: { id } }),
   /** What each of them has finished, over the period the route rules; the roster above carries no figure. */
   technicianWork: () => client.get("/api/technicians/work"),
   /** The phone's ID is the app's own, never a hardware serial, so it can stand in a path. */
@@ -491,6 +493,8 @@ export const api = {
   retireConsumable: (code: string, from: string) =>
     client.post("/api/consumables/{code}/retire", { path: { code }, body: { from } }),
   restoreConsumable: (code: string) => client.post("/api/consumables/{code}/restore", { path: { code } }),
+  /** Refused, as in_use, once stock of it has moved or a job used it. */
+  deleteConsumable: (code: string) => client.post("/api/consumables/{code}/delete", { path: { code } }),
   /** A service's whole list: a consumable left out is expected no more. */
   setServiceUsage: (usage: ServiceUsage) => client.post("/api/service-usage", { body: usage }),
   jobSheet: () => client.get("/api/job-sheet"),
@@ -505,6 +509,7 @@ export const api = {
   activity: (asked: ActivityAsked) => client.get("/api/activity", { query: asked }),
   /** A person added, or their grants and whether they are let in replaced whole. */
   saveStaff: (person: StaffSave) => client.post("/api/staff", { body: person }),
+  deleteStaff: (email: string) => client.post("/api/staff/delete", { body: { email } }),
   setEnforcement: (on: boolean) => client.post("/api/staff/enforcement", { body: { on } }),
   addServiceToken: (token: StaffTokenAdd) => client.post("/api/staff/service-tokens", { body: token }),
   removeServiceToken: (clientId: string) =>

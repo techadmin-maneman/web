@@ -10,7 +10,7 @@
 // the ledger stay, and restoring it offers it again.
 
 import { STANDARD_TIER, type VisitType } from "../../config/visit-types.ts";
-import { auditStatement, type AuditActor } from "../ops/audit.ts";
+import { auditStatement, auditStatementIfDeleted, type AuditActor } from "../ops/audit.ts";
 import { allServices, serviceOf } from "../booking/services.ts";
 import { freshCode } from "../../lib/slug.ts";
 import { insertRow } from "../../lib/sql.ts";
@@ -236,6 +236,43 @@ export async function retireConsumable(
       .bind(code, from, written.now.toISOString()),
   ]);
   return { ok: true, consumable: { ...was, retiredDate: from } };
+}
+
+/** Whether stock of it has moved or a job has used it: the ledger's rows, which stay. */
+const MOVED = `(EXISTS (SELECT 1 FROM stock_movements WHERE consumable_code = ?1)
+  OR EXISTS (SELECT 1 FROM stock_balances WHERE consumable_code = ?1)
+  OR EXISTS (SELECT 1 FROM consumables_used WHERE consumable_code = ?1))`;
+
+/**
+ * Deletes one added by mistake, with what each service was set to use of it, while no stock of it has moved and no
+ * job has used it. One that has is retired instead, and stays on record.
+ */
+export async function deleteConsumable(
+  db: D1Database,
+  code: string,
+  written: Written,
+): Promise<"deleted" | "in_use" | null> {
+  if ((await consumableCoded(db, code)) === null) return null;
+  const unmoved = (statement: string) => db.prepare(`${statement} AND NOT ${MOVED}`).bind(code);
+  const audit = {
+    surface: "ops" as const,
+    actor: written.actor,
+    action: "consumable.delete" as const,
+    subject: { kind: "consumable", id: code },
+    requestId: written.requestId,
+  };
+  try {
+    await db.batch([
+      unmoved("DELETE FROM consumable_usage WHERE consumable_code = ?1"),
+      unmoved("DELETE FROM consumables WHERE code = ?1"),
+      auditStatementIfDeleted(db, audit, written.now, { table: "consumables", key: "code", value: code }),
+    ]);
+  } catch (error) {
+    // A row the question missed still names it; the foreign key refuses the whole batch, and nothing changes.
+    if (String(error).includes("FOREIGN KEY")) return "in_use";
+    throw error;
+  }
+  return (await consumableCoded(db, code)) === null ? "deleted" : "in_use";
 }
 
 /** A service, as the console keeps it: a kind of visit at a tier (docs/decisions/0085-services-ops-can-edit.md). */

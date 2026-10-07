@@ -35,6 +35,7 @@ const ACTIONS: Readonly<Record<ActivityAction, string>> = {
   "technician.add": "Technician added",
   "technician.change": "Technician changed",
   "technician.deactivate": "Technician switched off",
+  "technician.delete": "Technician deleted",
   "technician.reactivate": "Technician switched on",
   "setting.change": "Setting changed",
   "price.set": "Price set",
@@ -58,6 +59,7 @@ const ACTIONS: Readonly<Record<ActivityAction, string>> = {
   "consumable.add": "Consumable added",
   "consumable.change": "Consumable changed",
   "consumable.retire": "Consumable retired",
+  "consumable.delete": "Consumable deleted",
   "consumable.restore": "Consumable restored",
   "consumable.usage": "Usage set",
   "job_sheet.set": "Job sheet set",
@@ -79,12 +81,14 @@ const ACTIONS: Readonly<Record<ActivityAction, string>> = {
   "hair_profile.correct": "Hair profile corrected",
   "discount_code.make": "Discount codes made",
   "discount_code.switch_off": "Discount code switched off",
+  "discount_code.delete": "Discount code deleted",
   "discount_code.apply": "Discount code applied",
   "discount_code.remove": "Discount code taken off",
   "staff.set": "Staff access changed",
   "staff.enforce": "Staff list enforced",
   "staff.token_add": "Service token let in",
   "staff.token_remove": "Service token taken off",
+  "staff.delete": "Staff member removed",
 };
 
 export const activity = {

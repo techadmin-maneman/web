@@ -107,6 +107,7 @@
                   "slot_times_too_soon",
                   "not_permitted",
                   "last_admin",
+                  "in_use",
                   "figures_conflict"
                 ]
               },
@@ -3159,6 +3160,7 @@
                   "slot_times_too_soon",
                   "not_permitted",
                   "last_admin",
+                  "in_use",
                   "figures_conflict"
                 ]
               },
@@ -4524,6 +4526,7 @@
               "technician.change",
               "technician.deactivate",
               "technician.reactivate",
+              "technician.delete",
               "setting.change",
               "price.set",
               "price.withdraw",
@@ -4547,6 +4550,7 @@
               "consumable.change",
               "consumable.retire",
               "consumable.restore",
+              "consumable.delete",
               "consumable.usage",
               "job_sheet.set",
               "stock.receive",
@@ -4567,12 +4571,14 @@
               "hair_profile.correct",
               "discount_code.make",
               "discount_code.switch_off",
+              "discount_code.delete",
               "discount_code.apply",
               "discount_code.remove",
               "staff.set",
               "staff.enforce",
               "staff.token_add",
-              "staff.token_remove"
+              "staff.token_remove",
+              "staff.delete"
             ]
           },
           "subject": {
@@ -10170,6 +10176,21 @@
         ],
         "additionalProperties": false
       },
+      "StaffDeletion": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "maxLength": 254,
+            "format": "email",
+            "description": "Their Cloudflare Access e-mail."
+          }
+        },
+        "required": [
+          "email"
+        ],
+        "additionalProperties": false
+      },
       "StaffServiceToken": {
         "type": "object",
         "properties": {
@@ -12249,6 +12270,7 @@
                 "technician.change",
                 "technician.deactivate",
                 "technician.reactivate",
+                "technician.delete",
                 "setting.change",
                 "price.set",
                 "price.withdraw",
@@ -12272,6 +12294,7 @@
                 "consumable.change",
                 "consumable.retire",
                 "consumable.restore",
+                "consumable.delete",
                 "consumable.usage",
                 "job_sheet.set",
                 "stock.receive",
@@ -12292,12 +12315,14 @@
                 "hair_profile.correct",
                 "discount_code.make",
                 "discount_code.switch_off",
+                "discount_code.delete",
                 "discount_code.apply",
                 "discount_code.remove",
                 "staff.set",
                 "staff.enforce",
                 "staff.token_add",
-                "staff.token_remove"
+                "staff.token_remove",
+                "staff.delete"
               ]
             },
             "required": false,
@@ -14419,6 +14444,76 @@
         }
       }
     },
+    "/api/technicians/{id}/delete": {
+      "post": {
+        "summary": "Delete a technician added by mistake, with their leave and phones, while nothing records any work of theirs",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Deleted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "deleted": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    }
+                  },
+                  "required": [
+                    "deleted"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "access_required, or not_permitted: changing a technician asks Operations MANAGE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found: no such technician in the caller's cities",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "in_use: a visit, a job, stock or a hair profile names them; switch them off instead",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/technicians/work": {
       "get": {
         "summary": "Per technician: jobs finished over a period, and how they ran against the planned length",
@@ -16123,6 +16218,65 @@
         }
       }
     },
+    "/api/consumables/{code}/delete": {
+      "post": {
+        "summary": "Delete a consumable added by mistake, while no stock of it has moved and no job has used it",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "required": true,
+            "name": "code",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Every consumable and each service's expected use",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Consumables"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "access_required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found: no such consumable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "in_use: stock of it has moved, or a job used it; retire it instead",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/service-usage": {
       "post": {
         "summary": "What one service is expected to use. The whole list: a consumable left out is expected no more",
@@ -16907,6 +17061,63 @@
           },
           "403": {
             "description": "access_required, or not_permitted: the change reaches beyond the caller's Admin MANAGE, or comes from a service token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "last_admin: nobody would be left with Admin MANAGE nationally",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/staff/delete": {
+      "post": {
+        "summary": "Take a member of staff off the list, with their grants. What they did stays in the audit log",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StaffDeletion"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The Staff page as it now stands",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StaffBook"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "access_required, or not_permitted: their grants reach beyond the caller's Admin MANAGE, it is the caller, or a service token asks",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found: nobody on the list has that e-mail",
             "content": {
               "application/json": {
                 "schema": {

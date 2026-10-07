@@ -64,6 +64,7 @@ export const ROUTE_NEEDS: Readonly<Record<string, RouteNeed | typeof SIGNED_IN>>
   "POST /api/technicians": inOwnPlaces("operations", "manage"),
   "PATCH /api/technicians/{id}": inOwnPlaces("operations", "manage"),
   "POST /api/technicians/{id}/deactivate": inOwnPlaces("operations", "manage"),
+  "POST /api/technicians/{id}/delete": inOwnPlaces("operations", "manage"),
   "POST /api/technicians/{id}/reactivate": inOwnPlaces("operations", "manage"),
   "GET /api/technicians/{id}/leave": inOwnPlaces("operations", "view"),
   "POST /api/technicians/{id}/leave": inOwnPlaces("operations", "act"),
@@ -155,6 +156,7 @@ export const ROUTE_NEEDS: Readonly<Record<string, RouteNeed | typeof SIGNED_IN>>
   "POST /api/consumables": need("admin", "manage"),
   "POST /api/consumables/{code}": need("admin", "manage"),
   "POST /api/consumables/{code}/retire": need("admin", "manage"),
+  "POST /api/consumables/{code}/delete": need("admin", "manage"),
   "POST /api/consumables/{code}/restore": need("admin", "manage"),
   "POST /api/service-usage": need("admin", "manage"),
   "GET /api/job-sheet": need("admin", "view"),
@@ -165,6 +167,7 @@ export const ROUTE_NEEDS: Readonly<Record<string, RouteNeed | typeof SIGNED_IN>>
   // The audit log: what everyone did, everywhere, so a national grant (src/routes/ops/activity.ts).
   "GET /api/activity": need("admin", "view"),
   "POST /api/staff": inOwnPlaces("admin", "manage"),
+  "POST /api/staff/delete": inOwnPlaces("admin", "manage"),
   "POST /api/staff/enforcement": need("admin", "manage"),
   "POST /api/staff/service-tokens": need("admin", "manage"),
   "POST /api/staff/service-tokens/remove": need("admin", "manage"),

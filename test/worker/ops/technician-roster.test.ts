@@ -387,6 +387,61 @@ describe("switching a technician back on", () => {
   });
 });
 
+describe("deleting a technician", () => {
+  it("deletes one with no work on record, with their leave, phone and sessions, and audits it", async () => {
+    const ops = appIn("ops");
+    await signedIn(SAMEER);
+    await env.DB.prepare(
+      `INSERT INTO technician_leave (id, technician_id, from_date, to_date, actor, created_at)
+       VALUES ('leave-1', ?1, '2026-09-25', '2026-09-26', 'ops@maneman.in', ?2)`,
+    )
+      .bind(SAMEER, AT)
+      .run();
+
+    const answer = await send(ops, "POST", `/api/technicians/${SAMEER}/delete`);
+
+    expect(answer.status).toBe(200);
+    expect(await one("SELECT 1 FROM technicians WHERE id = ?1", SAMEER)).toBeNull();
+    expect(await one("SELECT 1 FROM technician_leave WHERE technician_id = ?1", SAMEER)).toBeNull();
+    expect(await one("SELECT 1 FROM technician_devices WHERE technician_id = ?1", SAMEER)).toBeNull();
+    expect(await one("SELECT 1 FROM sessions WHERE subject_id = ?1", SAMEER)).toBeNull();
+    expect((await auditOf("technician.delete")).results).toEqual([
+      { subject_kind: "technician", subject_id: SAMEER, detail: null },
+    ]);
+  });
+
+  it("refuses one a visit names, and keeps everything of theirs", async () => {
+    const ops = appIn("ops");
+    await visit(LAST_WEEK, { start: "2026-09-14T04:30:00.000Z" });
+    await signedIn(IMRAN);
+
+    const answer = await send(ops, "POST", `/api/technicians/${IMRAN}/delete`);
+
+    expect(answer.status).toBe(409);
+    expect(await answer.json()).toMatchObject({ error: { code: "in_use" } });
+    expect(await one("SELECT active FROM technicians WHERE id = ?1", IMRAN)).toEqual({ active: 1 });
+    expect(await one("SELECT 1 AS kept FROM technician_devices WHERE technician_id = ?1", IMRAN)).toEqual({ kept: 1 });
+    expect((await auditOf("technician.delete")).results).toEqual([]);
+  });
+
+  it("refuses one whose step is on a visit since given to another", async () => {
+    const ops = appIn("ops");
+    await visit(SAMEERS, { start: "2026-09-21T04:30:00.000Z", technician: SAMEER });
+    await checkedIn(SAMEERS);
+
+    const answer = await send(ops, "POST", `/api/technicians/${IMRAN}/delete`);
+
+    expect(answer.status).toBe(409);
+    expect(await one("SELECT 1 AS kept FROM technicians WHERE id = ?1", IMRAN)).toEqual({ kept: 1 });
+  });
+
+  it("answers not found for a technician there is no record of", async () => {
+    const ops = appIn("ops");
+    const answer = await send(ops, "POST", "/api/technicians/33333333-3333-4333-8333-333333333399/delete");
+    expect(answer.status).toBe(404);
+  });
+});
+
 describe("the roster", () => {
   interface Technician {
     id: string;

@@ -54,6 +54,8 @@ export const AUDIT_ACTIONS = [
   "technician.change",
   "technician.deactivate",
   "technician.reactivate",
+  // One added by mistake, deleted before any work of theirs was recorded.
+  "technician.delete",
   // The business inputs ops set for themselves (docs/decisions/0061-ops-editable-inputs.md):
   // one of the rules, a price from a date, and whether we go to a pincode. A price still to
   // come taken back, and an area's name (docs/decisions/0071-what-ops-see-before-a-setting-changes.md).
@@ -90,6 +92,8 @@ export const AUDIT_ACTIONS = [
   "consumable.change",
   "consumable.retire",
   "consumable.restore",
+  // One added by mistake, deleted before any stock of it moved or a job used it.
+  "consumable.delete",
   "consumable.usage",
   "job_sheet.set",
   "stock.receive",
@@ -120,6 +124,8 @@ export const AUDIT_ACTIONS = [
   // a client's visit or taking it off.
   "discount_code.make",
   "discount_code.switch_off",
+  // One made by mistake, deleted before any booking took it.
+  "discount_code.delete",
   "discount_code.apply",
   "discount_code.remove",
   // The Staff list: a member of staff added or changed, the list enforced or not, and a service token let in or
@@ -128,6 +134,8 @@ export const AUDIT_ACTIONS = [
   "staff.enforce",
   "staff.token_add",
   "staff.token_remove",
+  // A member of staff taken off the list, with their grants.
+  "staff.delete",
 ] as const;
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
 
@@ -200,6 +208,28 @@ export function auditStatementIfWritten(
        SELECT ?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9 WHERE EXISTS (SELECT 1 FROM ${written.table} WHERE id = ?10)`,
     )
     .bind(...valuesOf(entry, now), written.id);
+}
+
+/**
+ * The entry for a delete earlier in the same batch that may delete nothing, as one refused because something came to
+ * depend on the row: it is written only if the row, `key` = `value` in `table`, is gone.
+ */
+export function auditStatementIfDeleted(
+  db: D1Database,
+  entry: AuditEntry,
+  now: Date,
+  deleted:
+    | { readonly table: "technicians" | "discount_codes"; readonly key: "id"; readonly value: string }
+    | { readonly table: "staff"; readonly key: "email"; readonly value: string }
+    | { readonly table: "consumables"; readonly key: "code"; readonly value: string },
+): D1PreparedStatement {
+  return db
+    .prepare(
+      `INSERT INTO audit_log (${COLUMNS})
+       SELECT ?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9
+       WHERE NOT EXISTS (SELECT 1 FROM ${deleted.table} WHERE ${deleted.key} = ?10)`,
+    )
+    .bind(...valuesOf(entry, now), deleted.value);
 }
 
 /**

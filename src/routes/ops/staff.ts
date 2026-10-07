@@ -2,6 +2,7 @@
 //   GET  /api/staff                          the people on the list and their grants, the service tokens let in, and
 //                                            whether the list is enforced; narrowed to the caller's own places
 //   POST /api/staff                          a member of staff added, or their grants and whether they are let in
+//   POST /api/staff/delete                   a member of staff taken off the list, with their grants
 //   POST /api/staff/enforcement              the list enforced, or not
 //   POST /api/staff/service-tokens           a service token let in, as every caller was before the list
 //   POST /api/staff/service-tokens/remove    a service token taken off
@@ -20,6 +21,7 @@ import {
   addServiceToken,
   readStaffBook,
   removeServiceToken,
+  deleteStaffMember,
   saveStaffMember,
   setEnforced,
   type StaffBook,
@@ -142,6 +144,21 @@ const saveRoute = createRoute({
     403: errorResponse(
       "access_required, or not_permitted: the change reaches beyond the caller's Admin MANAGE, or comes from a service token",
     ),
+    409: errorResponse("last_admin: nobody would be left with Admin MANAGE nationally"),
+  },
+});
+
+const deleteRoute = createRoute({
+  method: "post",
+  path: "/api/staff/delete",
+  summary: "Take a member of staff off the list, with their grants. What they did stays in the audit log",
+  request: { body: { required: true, ...json(SaveSchema.pick({ email: true }).openapi("StaffDeletion")) } },
+  responses: {
+    ...book,
+    403: errorResponse(
+      "access_required, or not_permitted: their grants reach beyond the caller's Admin MANAGE, it is the caller, or a service token asks",
+    ),
+    404: errorResponse("not_found: nobody on the list has that e-mail"),
     409: errorResponse("last_admin: nobody would be left with Admin MANAGE nationally"),
   },
 });
@@ -275,6 +292,31 @@ export function registerOpsStaff(app: App): void {
     await saveStaffMember(c.env.DB, {
       email,
       entry,
+      before,
+      actor: actorOf(c),
+      requestId: c.var.requestId,
+      now: c.var.deps.now(),
+    });
+    return c.json(await currentBook(c, access), 200);
+  });
+
+  app.openapi(deleteRoute, async (c) => {
+    const email = c.req.valid("json").email.toLowerCase();
+    const staff = await readStaffBook(c.env.DB);
+    const before = staff.people.find((person) => person.email === email);
+    if (before === undefined) return refuse(c, "not_found");
+
+    const access = await callerAccess(c);
+    // Nobody takes themselves off: they would be locked out by their own hand.
+    if (access.caller.kind === "service" || actorOf(c).id.toLowerCase() === email) return refuse(c, "not_permitted");
+    const gone = { active: false, grants: [] };
+    if (!goesAhead(c, access, mayEdit(access.caller, before, gone, staff.zoneOf), "admin:manage:places")) {
+      return refuse(c, "not_permitted");
+    }
+    if (leavesNoNationalAdmin(staff.people, email, gone)) return refuse(c, "last_admin");
+
+    await deleteStaffMember(c.env.DB, {
+      email,
       before,
       actor: actorOf(c),
       requestId: c.var.requestId,

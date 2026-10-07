@@ -166,6 +166,48 @@ describe("the catalogue", () => {
   });
 });
 
+describe("deleting a consumable", () => {
+  it("deletes one added by mistake, with what services were set to use of it, and audits it", async () => {
+    await add(TAPE);
+    await post("/api/service-usage", {
+      visit_type: "service",
+      tier: "standard",
+      items: [{ code: "tape_strips", quantity: 4 }],
+    });
+
+    const answer = await post("/api/consumables/tape_strips/delete");
+
+    expect(answer.status).toBe(200);
+    const { consumables, services } = await answer.json<Consumables>();
+    expect(consumables).toEqual([]);
+    expect(services.find((each) => each.visit_type === "service")?.expected).toEqual([]);
+    expect((await auditFor("consumable.delete")).results).toEqual([
+      expect.objectContaining({ subject_id: "tape_strips", detail: null }),
+    ]);
+  });
+
+  it("refuses one whose stock has moved, keeps it, and audits nothing", async () => {
+    await add(SOLVENT);
+    await env.DB.prepare(
+      `INSERT INTO stock_movements (id, consumable_code, location, quantity, reason, actor_kind, actor, created_at)
+       VALUES (?1, 'solvent', 'central', 10, 'received', 'staff', 'someone@localhost', ?2)`,
+    )
+      .bind(crypto.randomUUID(), new Date().toISOString())
+      .run();
+
+    const answer = await post("/api/consumables/solvent/delete");
+
+    expect(answer.status).toBe(409);
+    expect(await answer.json()).toMatchObject({ error: { code: "in_use" } });
+    expect((await listed()).consumables.map((each) => each.code)).toEqual(["solvent"]);
+    expect((await auditFor("consumable.delete")).results).toEqual([]);
+  });
+
+  it("answers 404 for a code nobody added", async () => {
+    expect((await post("/api/consumables/nothing/delete")).status).toBe(404);
+  });
+});
+
 describe("what each service is expected to use", () => {
   it("lists every service the price book prices, the standard four to begin with", async () => {
     const { services } = await listed();

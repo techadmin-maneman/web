@@ -10,7 +10,14 @@ import { useState } from "react";
 import { api, type ReturnedVisit, type Roster, type Technician, type TechnicianSummary } from "../api.ts";
 import { OpsLink, Shell } from "../components/Shell.tsx";
 import { technicians } from "../content.ts";
-import { dispatchPath, TECHNICIAN_TAB_NAMES, TECHNICIAN_TABS, technicianPath, type TechnicianTab } from "../route.ts";
+import {
+  dispatchPath,
+  go,
+  TECHNICIAN_TAB_NAMES,
+  TECHNICIAN_TABS,
+  technicianPath,
+  type TechnicianTab,
+} from "../route.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import { Details, Returned } from "./TechnicianForms.tsx";
 import { Kit } from "./TechnicianKit.tsx";
@@ -105,6 +112,9 @@ function TechnicianPage({
         onSwitchedOn={async () => {
           setSwitched({ to: "on" });
           await onChange();
+        }}
+        onDeleted={() => {
+          go("/technicians");
         }}
       />
       {switched?.to === "off" && <Returned visits={switched.visits} />}

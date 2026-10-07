@@ -14,7 +14,8 @@ import { longDate } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";
 import { useState } from "react";
 import { api, type Consumable, type Consumables as Book } from "../api.ts";
-import { settings } from "../content.ts";
+import { deleting, FAILED, settings } from "../content.ts";
+import { DeleteAction } from "../components/DeleteAction.tsx";
 import { useAccess } from "../lib/access.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import { ConsumableForm } from "./ConsumableForm.tsx";
@@ -26,7 +27,8 @@ import styles from "../components/forms.module.css";
 const copy = settings.consumables;
 
 /** What the panel's form is doing: adding one, or changing, retiring or restoring the one named. */
-type Doing = { readonly kind: "add" } | { readonly kind: "change" | "retire" | "restore"; readonly code: string };
+type Doing =
+  { readonly kind: "add" } | { readonly kind: "change" | "retire" | "restore" | "delete"; readonly code: string };
 
 /** Which of those the person's access lets them do. */
 type MayDo = Readonly<Record<Doing["kind"], boolean>>;
@@ -38,6 +40,7 @@ function useMayDo(): MayDo {
     change: access.mayCall("POST /api/consumables/{code}"),
     retire: access.mayCall("POST /api/consumables/{code}/retire"),
     restore: access.mayCall("POST /api/consumables/{code}/restore"),
+    delete: access.mayCall("POST /api/consumables/{code}/delete"),
   };
 }
 
@@ -95,6 +98,18 @@ function Row({ consumable, may, onDo }: { consumable: Consumable; may: MayDo; on
             {copy.restore}
           </button>
         )}
+        {may.delete && (
+          <button
+            className={styles.inline}
+            type="button"
+            aria-label={deleting.label(name)}
+            onClick={() => {
+              onDo({ kind: "delete", code });
+            }}
+          >
+            {deleting.open}
+          </button>
+        )}
       </td>
     </tr>
   );
@@ -130,6 +145,22 @@ function Form({
         onSaved={onSaved}
         onCancel={onCancel}
       />
+    );
+  }
+  if (doing.kind === "delete") {
+    return (
+      <div className={styles.group}>
+        <DeleteAction
+          key={`delete-${named.code}`}
+          name={named.name}
+          send={() => api.deleteConsumable(named.code)}
+          refusal={(code) => (code === "in_use" ? copy.inUse : (copy.errors[code] ?? FAILED))}
+          onDeleted={(body) => {
+            onSaved(body, copy.deleted);
+          }}
+          onCancel={onCancel}
+        />
+      </div>
     );
   }
   if (doing.kind === "restore") {

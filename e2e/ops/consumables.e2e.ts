@@ -120,6 +120,34 @@ test.describe("a consumable added or changed", () => {
   });
 });
 
+test.describe("deleting one", () => {
+  test("deletes one added by mistake, once asked", async ({ page }) => {
+    const left = {
+      ...CONSUMABLES,
+      consumables: CONSUMABLES.consumables.filter((each) => each.code !== "bonding_glue"),
+    };
+    await open(page, { "POST /api/consumables/{code}/delete": json(left) });
+    await page.getByRole("button", { name: "Delete Bonding glue" }).click();
+    await expect(page.getByText("Delete Bonding glue? This can't be undone.")).toBeVisible();
+
+    const sent = posted(page, "/api/consumables/bonding_glue/delete");
+    await page.getByRole("button", { name: "Delete permanently" }).click();
+    await sent;
+    await expect(page.getByRole("status").filter({ hasText: "Deleted." })).toBeVisible();
+    await expect(page.getByRole("rowheader", { name: /^Bonding glue/ })).toHaveCount(0);
+  });
+
+  test("says to retire instead one whose stock has moved", async ({ page }) => {
+    await open(page, { "POST /api/consumables/{code}/delete": fails(409, "in_use") });
+    await page.getByRole("button", { name: "Delete Bonding glue" }).click();
+    await page.getByRole("button", { name: "Delete permanently" }).click();
+
+    await expect(page.getByRole("alert")).toHaveText("Its stock has moved. Retire it instead.");
+    await page.getByRole("button", { name: "Cancel" }).click();
+    await expect(page.getByRole("alert")).toHaveCount(0);
+  });
+});
+
 test.describe("what each service uses", () => {
   test("shows the chosen service's figures, and the change old beside new before it is sent", async ({ page }) => {
     await open(page, { "POST /api/service-usage": json(CONSUMABLES) });

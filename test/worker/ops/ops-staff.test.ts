@@ -187,6 +187,45 @@ describe("POST /api/staff", () => {
   });
 });
 
+describe("POST /api/staff/delete", () => {
+  it("takes a member of staff off the list with their grants, audited with what they held", async () => {
+    const res = await post(owner(), "/api/staff/delete", { email: "Mumbai@ManeMan.in" });
+
+    expect(res.status).toBe(200);
+    const book = await res.json<Book>();
+    expect(book.people.map((each) => each.email)).toEqual([NCR_ADMIN, OWNER]);
+    expect(await env.DB.prepare("SELECT 1 FROM staff_grants WHERE email = 'mumbai@maneman.in'").first()).toBeNull();
+    expect(await audited("staff.delete")).toEqual([
+      {
+        actor: OWNER,
+        subject_id: "mumbai@maneman.in",
+        detail: JSON.stringify({ was_active: true, was_grants: "growth:act:city:Mumbai" }),
+      },
+    ]);
+  });
+
+  it("refuses the caller themselves, and a service token", async () => {
+    const self = await post(owner(), "/api/staff/delete", { email: OWNER });
+    expect(self.status).toBe(403);
+    const byToken = await post(opsAs(token("ci-token.access")), "/api/staff/delete", { email: "mumbai@maneman.in" });
+    expect(byToken.status).toBe(403);
+    expect(await audited("staff.delete")).toEqual([]);
+  });
+
+  it("refuses a zone's admin, once enforced, someone beyond the zone", async () => {
+    await enforce();
+    const res = await post(ncrAdmin(), "/api/staff/delete", { email: "mumbai@maneman.in" });
+    expect(res.status).toBe(403);
+    expect(await env.DB.prepare("SELECT 1 AS kept FROM staff WHERE email = 'mumbai@maneman.in'").first()).toEqual({
+      kept: 1,
+    });
+  });
+
+  it("answers 404 for an e-mail not on the list", async () => {
+    expect((await post(owner(), "/api/staff/delete", { email: "nobody@maneman.in" })).status).toBe(404);
+  });
+});
+
 describe("POST /api/staff/enforcement", () => {
   it("is switched by a person with Admin MANAGE nationally, and audited", async () => {
     const res = await post(owner(), "/api/staff/enforcement", { on: true });

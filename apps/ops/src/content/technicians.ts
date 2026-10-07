@@ -156,6 +156,8 @@ export const technicians = {
     saving: "Saving",
     cancel: "Cancel",
   },
+  /** A technician added by mistake; one with work on record is switched off instead. */
+  inUse: "They have work on record. Switch them off instead.",
   switchOff: {
     open: "Switch off",
     openLabel: (name: string) => `Switch off ${name}`,

@@ -35,6 +35,8 @@ const SWITCH_OFF: Call = `POST /api/technicians/${IMRAN}/deactivate`;
 
 const SWITCH_ON: Call = `POST /api/technicians/${RAVI.id}/reactivate`;
 
+const DELETE_IT: Call = `POST /api/technicians/${IMRAN}/delete`;
+
 type Roster = OpsReply<"/api/technicians">;
 
 /** The roster as the API holds it: a spec swaps `current` as a change would change the API's own rows. */
@@ -207,6 +209,30 @@ test("says so when the number he signs in with is another's now", async ({ page 
   await expect(main.getByRole("alert")).toHaveText(
     "Another active technician now uses this number. Change one of them first.",
   );
+});
+
+test("deletes a technician added by mistake, once asked, and goes back to the roster", async ({ page }) => {
+  const { roster, reply } = rosterOf(TECHNICIANS);
+  await openWith(page, { [DELETE_IT]: json({ deleted: true }) }, reply);
+  const main = await pageOf(page, "Imran Qureshi");
+
+  await main.getByRole("button", { name: "Delete Imran Qureshi" }).click();
+  await expect(main.getByText("Delete Imran Qureshi? This can't be undone.")).toBeVisible();
+  roster.current = { ...TECHNICIANS, technicians: TECHNICIANS.technicians.filter((each) => each.id !== IMRAN) };
+  await main.getByRole("button", { name: "Delete permanently" }).click();
+
+  await expect(page).toHaveURL(/\/technicians$/);
+  await expect(page.getByRole("row").filter({ hasText: "Imran Qureshi" })).toHaveCount(0);
+});
+
+test("says to switch off instead a technician with work on record", async ({ page }) => {
+  await openWith(page, { [DELETE_IT]: fails(409, "in_use") });
+  const main = await pageOf(page, "Imran Qureshi");
+  await main.getByRole("button", { name: "Delete Imran Qureshi" }).click();
+  await main.getByRole("button", { name: "Delete permanently" }).click();
+
+  await expect(main.getByRole("alert")).toHaveText("They have work on record. Switch them off instead.");
+  await expect(main.getByRole("button", { name: "Switch off Imran Qureshi" })).toBeVisible();
 });
 
 test("says plainly when the person's access does not reach a switch", async ({ page }) => {

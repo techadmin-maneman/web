@@ -415,6 +415,9 @@ export const settings = {
     // The buttons in each row, named for the screen reader by the consumable.
     change: "Change",
     changeLabel: (name: string) => `Change ${name}`,
+    /** One added by mistake; one whose stock has moved is retired instead. */
+    inUse: "Its stock has moved. Retire it instead.",
+    deleted: "Deleted.",
     retire: "Retire",
     retireLabel: (name: string) => `Retire ${name}`,
     restore: "Restore",
@@ -580,6 +583,16 @@ export const settings = {
       back: "Edit",
     },
     saved: "Saved.",
+    removed: "Removed.",
+    /** Taking a person off the list; they may be added again. */
+    removing: {
+      open: "Remove",
+      label: (email: string) => `Remove ${email}`,
+      warning: (email: string) => `Remove ${email} from staff?`,
+      confirm: "Remove",
+      sending: "Removing",
+      cancel: "Cancel",
+    },
     errors: {
       email: "Enter their sign-in email.",
       already_listed: "Already listed. Use Change.",

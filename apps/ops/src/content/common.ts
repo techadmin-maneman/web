@@ -39,3 +39,13 @@ export const tables = {
   none: "Nothing matches.",
   more: "Show more",
 } as const;
+
+/** Deleting something added by mistake: asked once, then gone for good (../components/DeleteAction.tsx). */
+export const deleting = {
+  open: "Delete",
+  label: (name: string) => `Delete ${name}`,
+  warning: (name: string) => `Delete ${name}? This can't be undone.`,
+  confirm: "Delete permanently",
+  sending: "Deleting",
+  cancel: "Cancel",
+} as const;

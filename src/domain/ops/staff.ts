@@ -269,6 +269,33 @@ export async function saveStaffMember(
   ]);
 }
 
+/**
+ * A member of staff taken off the list with their grants, with its audit entry, which keeps what they held. What they
+ * did stays in the audit log under their e-mail.
+ */
+export async function deleteStaffMember(
+  db: D1Database,
+  input: Change & { readonly email: string; readonly before: StaffEntry },
+): Promise<void> {
+  const { email, before, actor, requestId, now } = input;
+  await db.batch([
+    db.prepare("DELETE FROM staff_grants WHERE email = ?1").bind(email),
+    db.prepare("DELETE FROM staff WHERE email = ?1").bind(email),
+    auditStatement(
+      db,
+      {
+        surface: "ops",
+        actor,
+        action: "staff.delete",
+        subject: { kind: "staff", id: email },
+        requestId,
+        detail: { was_active: before.active, was_grants: codesOf(before.grants) },
+      },
+      now,
+    ),
+  ]);
+}
+
 export async function setEnforced(db: D1Database, input: Change & { readonly enforced: boolean }): Promise<void> {
   const { enforced, actor, requestId, now } = input;
   await db.batch([
