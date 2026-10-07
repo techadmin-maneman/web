@@ -120,7 +120,7 @@ const holdState = async (id: string) =>
 
 describe("a change of technician alone", () => {
   // A first fit at 12:00 given to a technician whose replacement runs from 10:30 to 12:45.
-  // His afternoon window is free, but the first fit's own half-slots are not.
+  // Their afternoon window is free, but the first fit's own half-slots are not.
   it("keeps the visit's own time, and refuses it where that time is taken, as not fitting", async () => {
     await insertJob(FIT, { type: "first_fit", start: TUESDAY["12:00"], technician: IMRAN });
     await insertJob(REPLACEMENT, { type: "replacement", start: TUESDAY["10:30"], technician: SAMEER, person: VIKRAM });
@@ -236,7 +236,7 @@ describe("a move and the time it goes to", () => {
   });
 });
 
-// Two ops users on the same board, the second working from what he loaded a while ago.
+// Two ops users on the same board, the second working from what they loaded a while ago.
 describe("a move made from a board that has gone stale", () => {
   beforeEach(async () => {
     await insertJob(A, { type: "service", start: TUESDAY["09:00"], technician: IMRAN });

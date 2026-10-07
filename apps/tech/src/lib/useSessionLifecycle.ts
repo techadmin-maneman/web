@@ -69,7 +69,7 @@ export function useSessionLifecycle(): Lifecycle {
   const check = useCallback(async () => {
     const answer = await api.me();
     if (answer.ok) {
-      // Work kept while he was switched off goes on only if it is his.
+      // Work kept while they were switched off goes on only if it is theirs.
       await settleSetAside(answer.body.id).catch(() => undefined);
       // Kept so the next basement opens signed in; a phone with no room to keep it opens all the same.
       await keepMe(answer.body).catch(() => undefined);

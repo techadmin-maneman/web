@@ -81,7 +81,7 @@ export interface BoardBody {
   cities: string[];
 }
 
-/** Rohit's word on WhatsApp about his visits, as the app's switch records it. */
+/** Rohit's word on WhatsApp about their visits, as the app's switch records it. */
 export const agreeToVisitMessages = (granted: boolean) =>
   env.DB.prepare(
     `INSERT INTO consents (id, person_id, purpose, notice_version, granted, created_at)

@@ -1,4 +1,4 @@
-// A screen tells the technician, and his screen reader, where he is: its name
+// A screen tells the technician, and their screen reader, where they are: its name
 // goes in the browser's title, and the focus goes to its heading when it opens,
 // rather than being dropped on the page when the last screen went.
 

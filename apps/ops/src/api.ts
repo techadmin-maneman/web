@@ -137,7 +137,7 @@ export type DayMoney = Body<paths["/api/payments"]["get"]>;
 export type Charge = DayMoney["charges"][number];
 export type Roster = Body<paths["/api/technicians"]["get"]>;
 export type Technician = Roster["technicians"][number];
-/** A technician as both lists carry him: active, or switched off. */
+/** A technician as both lists carry them: active, or switched off. */
 export type TechnicianSummary = Roster["switched_off"][number];
 type NewTechnician = Sent<paths["/api/technicians"]["post"]>;
 export type TechnicianChange = Sent<paths["/api/technicians/{id}"]["patch"]>;
@@ -255,7 +255,7 @@ export const api = {
    */
   assign: (appointmentId: string, to: Landing, shown: Shown) =>
     client.post("/api/dispatch/assign", { body: moveBody(appointmentId, to, shown) }),
-  /** A job already on the board, moved. The client is never charged for it; the answer says how he hears of it. */
+  /** A job already on the board, moved. The client is never charged for it; the answer says how they hear of it. */
   move: (appointmentId: string, to: Landing, shown: Shown, clearingCheckIn = false) =>
     client.post("/api/dispatch/move", {
       body: clearingCheckIn
@@ -390,22 +390,22 @@ export const api = {
   decideNumberChange: (id: string, decision: "confirm" | "reject", reason: string | null) =>
     client.post("/api/number-changes/{id}/decision", { path: { id }, body: { decision, reason } }),
   technicians: () => client.get("/api/technicians"),
-  /** His number signs in to the technician app at once. */
+  /** Their number signs in to the technician app at once. */
   addTechnician: (technician: NewTechnician) => client.post("/api/technicians", { body: technician }),
   /** Only the fields sent change. */
   changeTechnician: (id: string, change: TechnicianChange) =>
     client.patch("/api/technicians/{id}", { path: { id }, body: change }),
-  /** Signed out at once; his visits still to come are given back unassigned, and listed in the answer. */
+  /** Signed out at once; their visits still to come are given back unassigned, and listed in the answer. */
   switchOff: (id: string) => client.post("/api/technicians/{id}/deactivate", { path: { id } }),
   switchOn: (id: string) => client.post("/api/technicians/{id}/reactivate", { path: { id } }),
   /** What each of them has finished, over the period the route rules; the roster above carries no figure. */
   technicianWork: () => client.get("/api/technicians/work"),
   /** The phone's ID is the app's own, never a hardware serial, so it can stand in a path. */
-  /** Let the technician check in to the visit wherever his phone puts him, with why. */
+  /** Let the technician check in to the visit wherever their phone puts them, with why. */
   letIn: (id: string, reason: string) => client.post("/api/visits/{id}/let-in", { path: { id }, body: { reason } }),
   revokeDevice: (id: string, deviceId: string) =>
     client.post("/api/technicians/{id}/devices/{device}/revoke", { path: { id, device: deviceId } }),
-  /** After a revoke stopped him signing in. */
+  /** After a revoke stopped them signing in. */
   allowSignIn: (id: string) => client.post("/api/technicians/{id}/allow-sign-in", { path: { id } }),
   /** Both dates inclusive. Those days are then refused to booking and to the dispatch board alike (ADR 0062). */
   standingLeave: (id: string) => client.get("/api/technicians/{id}/leave", { path: { id } }),

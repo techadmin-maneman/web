@@ -19,7 +19,7 @@ import {
 
 const INK = "rgb(22, 35, 58)";
 
-// ---- His kit ---------------------------------------------------------------------------------------------------
+// ---- Their kit -------------------------------------------------------------------------------------------------
 
 test("lists what his kit holds, marking what is low, with the way to Stock", async ({ page }) => {
   const kit = {
@@ -100,7 +100,7 @@ test("records leave, saying first that nobody can be booked on those days, and s
   await main.getByLabel("Last day").fill("2027-10-14");
   await main.getByLabel("Note (optional)").fill("Away");
 
-  // His leave is read again, with the new period and the job it falls on.
+  // Their leave is read again, with the new period and the job it falls on.
   const recorded = {
     leave: [
       {

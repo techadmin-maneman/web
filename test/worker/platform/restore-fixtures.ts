@@ -8,7 +8,7 @@ const LATER = "2026-12-31T06:30:00.000Z";
 
 /** Every table's rows at <T>, beside what the migrations themselves put in. */
 export const ROWS_AT_T: readonly string[] = [
-  // A fitted client, whose name has an apostrophe, and a friend he invited, who has a consultation booked.
+  // A fitted client, whose name has an apostrophe, and a friend they invited, who has a consultation booked.
   `INSERT INTO people (id, created_at, mobile_e164, name, contactable)
      VALUES ('p1', '${AT}', '+919810000001', 'Arjun D''Souza', 1)`,
   `INSERT INTO people (id, created_at, mobile_e164, name) VALUES ('p2', '${AT}', '+919810000002', 'Rohit Malhotra')`,
@@ -46,7 +46,7 @@ export const ROWS_AT_T: readonly string[] = [
   `INSERT INTO technicians (id, fsm_id, name, initials, active, updated_at)
      VALUES ('t1', 't1', 'A Technician', 'AT', 1, '${AT}')`,
   `INSERT INTO fsm_items (fsm_id, name, type, updated_at) VALUES ('i1', 'Bond strip', 'Part', '${AT}')`,
-  // His first fit, done: last_visits follows it.
+  // Their first fit, done: last_visits follows it.
   `INSERT INTO appointments (id, fsm_id, person_id, type, window_start, window_end, technician_id, status, synced_at)
      VALUES ('ap1', 'ap1', 'p1', 'first_fit', '2026-09-22T03:30:00.000Z', '2026-09-22T06:30:00.000Z', 't1',
              'completed', '${AT}')`,
@@ -54,7 +54,7 @@ export const ROWS_AT_T: readonly string[] = [
   `INSERT INTO appointments (id, fsm_id, person_id, type, window_start, window_end, technician_id, status, synced_at)
      VALUES ('ap2', 'ap2', 'p2', 'consultation', '2026-10-05T03:30:00.000Z', '2026-10-05T04:30:00.000Z', 't1',
              'scheduled', '${AT}')`,
-  // His replacement, booked after his piece falls due: the piece reads as booked, and his partial fit as followed up.
+  // Their replacement, booked after their piece falls due: the piece reads as booked, and their partial fit as followed up.
   `INSERT INTO appointments (id, fsm_id, person_id, type, window_start, window_end, technician_id, status, synced_at)
      VALUES ('ap3', 'ap3', 'p1', 'replacement', '2026-12-01T03:30:00.000Z', '2026-12-01T06:30:00.000Z', 't1',
              'scheduled', '${AT}')`,
@@ -175,7 +175,7 @@ export const WRITTEN_SINCE_T: readonly string[] = [
   // The friend's consultation done, with its outcome: last_visits follows.
   `UPDATE appointments SET status = 'completed' WHERE id = 'ap2'`,
   `INSERT INTO visits (id, appointment_id, outcome, updated_at) VALUES ('v2', 'ap2', 'done', '${SINCE}')`,
-  // His erasure's blanking of his hair profile, and his discount priced and then taken off.
+  // Their erasure's blanking of their hair profile, and their discount priced and then taken off.
   `UPDATE hair_profiles SET norwood_stage = NULL, head_circumference_cm = NULL, colour = NULL, skin_and_allergies = NULL
      WHERE id = 'hp1'`,
   `UPDATE discount_code_uses SET amount_off = 211864, removed_at = '${SINCE}', removed_by = 'ops',
@@ -195,7 +195,7 @@ export const WRITTEN_SINCE_T: readonly string[] = [
   // Settings changed and added: ops_settings_snapshot follows.
   `UPDATE ops_settings SET value = '20', set_at = '${SINCE}' WHERE name = 'grace_minutes'`,
   `INSERT INTO ops_settings (name, value, set_by, set_at) VALUES ('change_notice_hours', '24', 'ops@example.com', '${SINCE}')`,
-  // A photograph added to his set.
+  // A photograph added to their set.
   `INSERT INTO photos (id, photo_set_id, angle, r2_key, content_type, bytes, taken_at, created_at)
      VALUES ('ph2', 'ps1', 'top', 'visits/ap1/after-top.jpg', 'image/jpeg', 2000, '${SINCE}', '${SINCE}')`,
   // Rows changed and deleted where that is allowed.

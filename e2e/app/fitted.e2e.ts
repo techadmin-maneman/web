@@ -43,7 +43,7 @@ test("Visits lists what is coming and what is done, and a past visit opens with 
   await expect(page.getByRole("heading", { level: 1, name: fullDate(client.service.date) })).toBeVisible();
   await expect(page.getByText("Imran Qureshi")).toBeVisible();
   await expect(page.getByText("1 h 25 m")).toBeVisible();
-  // The visit's "What was done": the checklist the technician ticked, from his phone.
+  // The visit's "What was done": the checklist the technician ticked, from their phone.
   await expect(page.getByRole("term").filter({ hasText: "What was done" }).locator("+ dd")).toHaveText(
     "Hair system removed, Scalp cleaned, Hair system cleaned.",
   );

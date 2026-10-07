@@ -28,7 +28,7 @@ const copy = noShows.dispute;
 
 /** Whole minutes from one instant to another. */
 
-/** "Vikram Sethi disputes the charge", his name opening his visits. */
+/** "Vikram Sethi disputes the charge", their name opening their visits. */
 function Title({ person }: { person: NoShowDispute["person"] }) {
   if (person === null) return copy.erased;
   return (

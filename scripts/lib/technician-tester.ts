@@ -1,4 +1,4 @@
-// What `node scripts/staging/seed-technician-tester.ts --clear` deletes from staging: the test technician, the jobs he
+// What `node scripts/staging/seed-technician-tester.ts --clear` deletes from staging: the test technician, the jobs they
 // walked and everything they left, and the invented client, save the rows a hair profile points at, which stay. A row
 // goes before the rows it refers to, since D1 keeps foreign keys (test/worker/platform/technician-tester.test.ts).
 
@@ -32,7 +32,7 @@ export function clearTester(technicianIds: readonly string[], personIds: readonl
     `DELETE FROM visit_changes WHERE appointment_id IN (SELECT id FROM appointments WHERE technician_id IN (${ids}));`,
     `DELETE FROM visits WHERE appointment_id IN (SELECT id FROM appointments WHERE technician_id IN (${ids}));`,
     // A hair profile is never deleted (migration 0064), so a job one was taken at, the invented client it is of and
-    // the technician who took it stay, the technician made inactive so nothing books or dispatches him; the rest of
+    // the technician who took it stay, the technician made inactive so nothing books or dispatches them; the rest of
     // what they left goes.
     `DELETE FROM appointments WHERE technician_id IN (${ids})
        AND id NOT IN (SELECT appointment_id FROM hair_profiles WHERE appointment_id IS NOT NULL);`,
@@ -44,7 +44,7 @@ export function clearTester(technicianIds: readonly string[], personIds: readonl
     `DELETE FROM technician_devices WHERE technician_id IN (${ids});`,
     `DELETE FROM sessions WHERE subject_kind = 'technician' AND subject_id IN (${ids});`,
     // An active technician is one the booking availability offers, so something
-    // else on staging can take a slot on him while the fixture stands.
+    // else on staging can take a slot on them while the fixture stands.
     `DELETE FROM slot_claims WHERE technician_id IN (${ids});`,
     `DELETE FROM slot_holds WHERE technician_id IN (${ids});`,
     `UPDATE technicians SET active = 0 WHERE id IN (${ids});`,

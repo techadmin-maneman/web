@@ -13,7 +13,7 @@
 // no (docs/decisions/0085-services-ops-can-edit.md).
 //
 // An unlocked card also carries what the technician needs at the door and no
-// route gave him before: the client's pieces (the job card's pieces, and the
+// route gave them before: the client's pieces (the job card's pieces, and the
 // piece step's "Pick from the list"), the last visit's after photograph, the
 // no-show wait, and whether the day-before WhatsApp reached the client (board
 // B5). The photograph itself is served on its own, and never cached.
@@ -49,7 +49,7 @@ import { isOneOf } from "../../lib/one-of.ts";
 import { storedOutcomeOf } from "./job-event-bodies.ts";
 import { creditSpentOn } from "../visits/visit-facts.ts";
 
-/** The statuses of a job in the list: still live, or closed today so the technician can see what he did. */
+/** The statuses of a job in the list: still live, or closed today so the technician can see what they did. */
 const SHOWN = ["scheduled", "dispatched", "in_progress", "completed", "terminated"] as const;
 
 export interface JobSummary {
@@ -150,7 +150,7 @@ export const SELECT_JOB = `
   LEFT JOIN services s ON s.kind = a.type AND s.tier = COALESCE(a.tier, 'standard')
   WHERE a.technician_id = ?1 AND a.deleted_at IS NULL AND a.window_start IS NOT NULL`;
 
-/** The jobs on one India date, in time order. Statuses the technician can still act on, and what he closed today. */
+/** The jobs on one India date, in time order. Statuses the technician can still act on, and what they closed today. */
 export async function jobsOn({
   db,
   technicianId,

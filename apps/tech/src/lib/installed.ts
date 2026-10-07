@@ -3,7 +3,7 @@
 // It matters on an iPhone, where an installed web app is a separate thing from
 // Safari: its own cookie jar, its own IndexedDB and its own service worker. A
 // technician who installs the app is therefore signed out and has to sign in
-// once more, and the sign-in says so rather than letting him think his account
+// once more, and the sign-in says so rather than letting them think their account
 // has gone (apps/tech/src/login/SignIn.tsx).
 //
 // `display-mode: standalone` is the standard test and is what iOS 16.4 and

@@ -12,7 +12,7 @@
 //
 // Every name and number is made up. Run it with mm-api idle or stopped: wrangler
 // writing to the local database while mm-api does meets it on SQLite's lock.
-// Run it again for a fresh set; the technician and his client are the same
+// Run it again for a fresh set; the technician and their client are the same
 // ones every time, and their earlier jobs are cancelled.
 
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
@@ -26,7 +26,7 @@ import { LOCAL_HAIR_SYSTEMS } from "../../src/config/local-hair-systems.ts";
 import { LOCAL_LOGIN_CODE, PORTS } from "../lib/local-stack.ts";
 import { sqlRow } from "../lib/sql-literal.ts";
 
-/** The technician a developer signs in as, and his client: fixed, so a second run finds the same ones. */
+/** The technician a developer signs in as, and their client: fixed, so a second run finds the same ones. */
 const TECHNICIAN = { id: "local-technician", fsmId: "local-resource-1", mobile: "9810099001", name: "Sandeep Yadav" };
 const CLIENT = { id: "local-client", addressId: "local-client-address", mobile: "9810099002", name: "Neha Kapoor" };
 
@@ -43,7 +43,7 @@ const WINDOWS = {
 
 /**
  * The consumables the technician's step offers, what a service visit is expected to use, so its steppers start
- * filled, and stock in the central store and his kit (docs/decisions/0087-consumables-and-stock.md). Once only:
+ * filled, and stock in the central store and their kit (docs/decisions/0087-consumables-and-stock.md). Once only:
  * a second run finds them and leaves the ledger as it is.
  */
 function consumables(now: string): string[] {

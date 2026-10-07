@@ -6,7 +6,7 @@
 // record deliveries into the central store, transfers between the store and a
 // kit, counts, which write the difference from what the rows said, and
 // losses. A job's use comes out of the kit of the technician who recorded it,
-// as his consumables step lands, once however often the step is replayed
+// as their consumables step lands, once however often the step is replayed
 // (src/domain/field/job-use.ts).
 //
 // That sum is kept in stock_balances, a row for each consumable at each place,
@@ -24,7 +24,7 @@ import { auditStatement, auditStatementIfWritten, type AuditActor } from "../ops
 import { allConsumables, isOffered, type Consumable } from "./consumables.ts";
 import { isWithin } from "../clients/places.ts";
 
-/** Where stock is kept: a technician's kit, by his ID, or the central store, null. */
+/** Where stock is kept: a technician's kit, by their ID, or the central store, null. */
 export type Place = string | null;
 
 /** The central store's place, as the ledger and the balances write it. */
@@ -335,7 +335,7 @@ interface TechnicianRow {
 
 /**
  * The places the screen shows: the central store where the caller reaches everywhere, then each kit within reach. A
- * technician who left keeps his column while his kit holds anything, so it can be counted or moved.
+ * technician who left keeps their column while their kit holds anything, so it can be counted or moved.
  */
 function placesShown(
   technicians: readonly TechnicianRow[],

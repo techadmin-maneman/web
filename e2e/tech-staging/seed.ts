@@ -2,7 +2,7 @@
 // into the **staging** database, the way e2e/app/fitted.ts writes the local one:
 //
 //   a technician   invented, with a random test mobile number, and marked as
-//                  written by hand, since FSM's list never names him: the
+//                  written by hand, since FSM's list never names them: the
 //                  code request for a number FSM does not list reads that list
 //                  again, and the sync leaves such a row alone (migration 0046)
 //   a client       invented, with a Gurgaon address that has coordinates
@@ -242,7 +242,7 @@ export function stagingFixture(): StagingFixture {
  *
  * The holds go too. An active technician in the mirror is a technician the
  * booking availability offers, so anything else using staging can take a slot
- * on him while the proof runs; one did on 23 September. Such a hold exists only
+ * on them while the proof runs; one did on 23 September. Such a hold exists only
  * because of this fixture, and it is what stops the technician being deleted.
  */
 export async function clearStaging(fixture: StagingFixture): Promise<void> {

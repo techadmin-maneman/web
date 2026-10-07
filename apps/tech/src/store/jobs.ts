@@ -67,7 +67,7 @@ export async function keptClosed(jobId: string): Promise<number | null> {
 
 /**
  * The job's start as the card showed it when the technician checked in. Every later step is sent with it, so a move
- * made after he arrived is refused, not taken in by a card read again since.
+ * made after they arrived is refused, not taken in by a card read again since.
  */
 export async function keepStartAtCheckIn(jobId: string, startsAt: string): Promise<void> {
   await put("starts", { job_id: jobId, starts_at: startsAt });

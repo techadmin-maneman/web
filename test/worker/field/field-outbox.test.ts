@@ -28,7 +28,7 @@ useFieldDay();
 // clock is the technician's to set (docs/decisions/0065-a-technicians-writes-reach-fsm.md).
 describe("the phone's clock", () => {
   it("keeps a back-dated check-in's claim, bounds it, and runs the no-show wait on our clock too", async () => {
-    // Ten minutes after the booked start, the phone says he arrived three hours ago.
+    // Ten minutes after the booked start, the phone says they arrived three hours ago.
     const received = minutesAfterStart(10);
     const claimed = minutesAfterStart(-180);
     const answer = await postAt(
@@ -149,9 +149,9 @@ describe("the outbox", () => {
       error: { code: "superseded", fields: ["technician"], moved: { technician: "Sameer", at: null } },
     });
     const row = await env.DB.prepare(
-      "SELECT superseded, fsm_write_state FROM job_events WHERE event_id = 'event-late-01'",
-    ).first<{ superseded: number; fsm_write_state: string }>();
-    expect(row).toEqual({ superseded: 1, fsm_write_state: "rejected" });
+      "SELECT superseded, fsm_write_state, write_state FROM job_events WHERE event_id = 'event-late-01'",
+    ).first<{ superseded: number; fsm_write_state: string; write_state: string }>();
+    expect(row).toEqual({ superseded: 1, fsm_write_state: "rejected", write_state: "rejected" });
   });
 
   // "The other technician's first name may reach the phone.
@@ -169,7 +169,7 @@ describe("the outbox", () => {
 
     expect(answer.status).toBe(409);
     const { error } = await answer.json<{ error: Record<string, unknown> }>();
-    // Nothing else of Sameer's: not his whole name, his number or his zone.
+    // Nothing else of Sameer's: not their whole name, their number or their zone.
     expect(error).toEqual({
       code: "superseded",
       request_id: expect.any(String) as string,

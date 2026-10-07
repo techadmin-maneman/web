@@ -1,7 +1,7 @@
-// One technician's page: his details, then his week, leave, phones and kit, a tab at a time, so covering a sick
+// One technician's page: their details, then their week, leave, phones and kit, a tab at a time, so covering a sick
 // technician or a lost phone happens in one place. The roster is read once for the page; the Leave and Kit tabs read
-// what they show as they open. A technician switched off has no phone signed in and no leave to record, so his page
-// is his details alone.
+// what they show as they open. A technician switched off has no phone signed in and no leave to record, so their page
+// is their details alone.
 
 import { buttonLook } from "@maneman/ui/Button";
 import { Tabs, TAB } from "@maneman/ui/Tabs";
@@ -18,7 +18,7 @@ import { Leave } from "./TechnicianLeave.tsx";
 import { Phones } from "./TechnicianPhones.tsx";
 import styles from "./technicians.module.css";
 
-/** A technician as the roster carries him, with his phones while he is active. */
+/** A technician as the roster carries them, with their phones while they are active. */
 interface Entry {
   readonly summary: TechnicianSummary;
   readonly active: Technician | null;

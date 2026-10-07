@@ -21,7 +21,7 @@ test("lists every active technician with the zone the board draws", async ({ pag
   await expect(page.getByRole("row").filter({ hasText: "Faizan Ali" })).toContainText("—");
 });
 
-// Each technician took some 270 px with his phones and leave beneath him: 34,000 px for 168.
+// Each technician took some 270 px with their phones and leave beneath them: 34,000 px for 168.
 test("gives each technician one row of the board's height, however many phones and days off", async ({ page }) => {
   await open(page);
   for (const name of ["Imran Qureshi", "Sandeep Yadav", "Faizan Ali"]) {
@@ -114,7 +114,7 @@ test("says in the roster when a technician's next leave begins, or until when he
   await expect(away).toHaveCSS("font-variant-caps", "all-small-caps");
 });
 
-// A technician off sick or a lost phone meant finding him in three sections, and the panel had no address.
+// A technician off sick or a lost phone meant finding them in three sections, and the panel had no address.
 test("opens a technician's own page from his name, a tab at a time, each at an address of its own", async ({
   page,
 }) => {
@@ -173,7 +173,7 @@ test("names each phone, says when it was last used, and whether it is signed in,
   await expect(faizan.getByText("No phone logged in.")).toBeVisible();
 });
 
-// A revoke stops him signing in on any phone, since his code reaches the lost phone too; ops let him back.
+// A revoke stops them signing in on any phone, since their code reaches the lost phone too; ops let them back.
 test("says when a revoke stopped him signing in, and lets him in again", async ({ page }) => {
   const [imran, ...others] = TECHNICIANS.technicians;
   const stopped = {

@@ -40,7 +40,7 @@ describe("the no-show", () => {
       .bind(NOW.toISOString(), PERSON, TODAY_JOB)
       .run();
 
-    // He checked in an hour early, so sixteen minutes on the client's wait has not even begun.
+    // They checked in an hour early, so sixteen minutes on the client's wait has not even begun.
     const beforeTheStart = await postAt(
       new Date(NOW.getTime() + 16 * 60_000),
       `/api/tech/jobs/${TODAY_JOB}/no-show`,
@@ -76,7 +76,7 @@ describe("the no-show", () => {
       cases: { id: string; distance_m: number; message_delivered_at: string | null; decision: string }[];
     }>();
     expect(cases.cases).toHaveLength(1);
-    // The three facts, and nothing else: when he arrived, how far away, and the receipt.
+    // The three facts, and nothing else: when they arrived, how far away, and the receipt.
     expect(cases.cases[0]).toMatchObject({
       decision: "undecided",
       checked_in_at: NOW.toISOString(),

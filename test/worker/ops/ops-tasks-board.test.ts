@@ -186,7 +186,7 @@ describe("GET /api/tasks", () => {
           person: { id: PERSON, name: "Rohit Malhotra" },
           detail: "2026-09-22T04:30:00.000Z",
           since: "2026-09-21T03:00:00.000Z",
-          // Two days on would be after the visit: the technician needs the address before he sets out.
+          // Two days on would be after the visit: the technician needs the address before they set out.
           due: "2026-09-22T04:30:00.000Z",
           owner: null,
         },
@@ -269,7 +269,7 @@ describe("GET /api/tasks", () => {
 
   // A client's page showed nothing open for them while a task about them waited.
   it("lists one client's tasks alone when asked for them, counted as theirs", async () => {
-    // Rohit's grant was held on the 18th, so it is overdue; his number change is not. Vikram's grievance is his own.
+    // Rohit's grant was held on the 18th, so it is overdue; their number change is not. Vikram's grievance is their own.
     await heldGrant('["shared_address"]');
     await numberChange("awaiting_ops");
     await env.DB.prepare(

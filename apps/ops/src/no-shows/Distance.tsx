@@ -4,7 +4,7 @@
 import { noShows } from "../content.ts";
 import styles from "./no-shows.module.css";
 
-/** `letIn`: ops let him check in past the fence for this visit, with their reason; null when they did not. */
+/** `letIn`: ops let them check in past the fence for this visit, with their reason; null when they did not. */
 export function Distance({
   metres,
   radius,

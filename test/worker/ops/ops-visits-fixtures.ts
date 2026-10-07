@@ -45,7 +45,7 @@ export async function visit(
   return id;
 }
 
-/** Rohit, with his address saved: new to us, consulted, or fitted. */
+/** Rohit, with their address saved: new to us, consulted, or fitted. */
 export async function rohit(stage: "new" | "consulted" | "fitted" = "new") {
   await env.DB.prepare(
     "INSERT INTO people (id, created_at, mobile_e164, name) VALUES (?1, ?2, '+919810000001', 'Rohit Malhotra')",

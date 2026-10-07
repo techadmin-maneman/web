@@ -89,7 +89,7 @@ export function registerTechJobSteps(app: App): void {
 
 /** The technician's arrival, and the start. */
 function registerArrival(app: App): void {
-  // Nothing is measured or recorded until the check-in may land: the job is his, today's, and as his phone holds it.
+  // Nothing is measured or recorded until the check-in may land: the job is theirs, today's, and as their phone holds it.
   // One sent again is answered from the check-in it landed as, and tells the client nothing.
   app.openapi(checkinRoute, async (c) => {
     const { deps } = c.var;
@@ -159,7 +159,7 @@ function registerArrival(app: App): void {
 /** A no-show: the job closed with nobody home, once the wait has run out. */
 function registerNoShow(app: App): void {
   // A job that changed under the phone is refused before its wait is read. The wait runs from the job's technician's
-  // own check-in, so one given the job after another arrived must arrive himself.
+  // own check-in, so one given the job after another arrived must arrive themselves.
   app.openapi(noShowRoute, async (c) => {
     const { deps } = c.var;
     const now = deps.now();
@@ -453,7 +453,7 @@ async function profileRecorded(
 }
 
 /**
- * The client's WhatsApp that his technician has arrived, the no-show's evidence (ADR 0047), once per visit. One
+ * The client's WhatsApp that their technician has arrived, the no-show's evidence (ADR 0047), once per visit. One
  * the queue drops, the sweeper sends; the check-in has landed either way.
  */
 async function tellOfArrival(c: Ctx, input: { personId: string; appointmentId: string; arrivedAt: Date }) {

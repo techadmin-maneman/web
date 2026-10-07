@@ -81,7 +81,7 @@ test("shows each case's client, the booked window, both clocks and the evidence"
   await expect(fact(page, FIRST, "Booked")).toHaveText("Sun 19 Sep, 11:30 am to 1 pm");
   await expect(fact(page, FIRST, "Check-in")).toHaveText("11:31 am · 1 m after the booked start");
   await expect(fact(page, FIRST, "Reached us")).toHaveText("Sun 19 Sep, 11:31 am");
-  // Against the radius in force when he checked in, as the board letters it.
+  // Against the radius in force when they checked in, as the board letters it.
   await expect(fact(page, FIRST, "Distance")).toHaveText("240 m · over 200 m fence");
   await expect(fact(page, SECOND, "Distance")).toHaveText("12 m · inside 200 m fence");
   await expect(fact(page, FIRST, "WhatsApp")).toHaveText("Delivered Sun 19 Sep, 11:32 am");
@@ -140,7 +140,7 @@ test("says the distance was never measured, and shows no number, when the route 
   await expect(only).not.toContainText(/\b0\s*m\b/);
 });
 
-// A check-in that passed only because ops let him in says so beside its distance.
+// A check-in that passed only because ops let them in says so beside its distance.
 test("says when ops let the technician check in past the fence, and why", async ({ page }) => {
   const [first, ...rest] = NO_SHOWS.cases;
   const letIn = { ...first, let_in: { by: "ops@maneman.test", reason: "The pin is at the society gate" } };

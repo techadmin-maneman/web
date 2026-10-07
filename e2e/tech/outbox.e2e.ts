@@ -147,7 +147,7 @@ test("a photograph the API refused is taken again on a job closed on the phone, 
   expect(await heldOnPhone(page)).toMatchObject({ frames: 0 });
 });
 
-// A technician ops switch off keeps the work his phone has not sent, for him alone, and the clients' cards go.
+// A technician ops switch off keeps the work their phone has not sent, for them alone, and the clients' cards go.
 test("keeps a switched-off technician's unsent step, and sends it once he is back on and signs in", async ({
   page,
   context,
@@ -159,7 +159,7 @@ test("keeps a switched-off technician's unsent step, and sends it once he is bac
   await expect(page.getByText("Before photos")).toBeVisible();
   expect(await heldOnPhone(page)).toMatchObject({ outbox: 1 });
 
-  // Ops switch him off while he is underground, and the phone hears it as the signal returns.
+  // Ops switch them off while they are underground, and the phone hears it as the signal returns.
   fake.switchedOff = true;
   fake.online = true;
   await context.setOffline(false);

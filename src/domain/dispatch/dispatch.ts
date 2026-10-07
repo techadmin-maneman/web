@@ -12,10 +12,10 @@
 // refused the same way, and named as away rather than busy (ADR 0062); a free
 // window with no room for the visit is named as that. A move is one batch: its
 // claim on the new time, the visit and the client's message. "The client's
-// payment carries over and he is never charged for a move ops make", so no
+// payment carries over and they are never charged for a move ops make", so no
 // amount is read or written here at all: a visit carries a badge, never a
-// figure. A visit the technician has begun is not moved, unless he has only
-// checked in and ops, warned, choose to clear his check-in: he checks in again
+// figure. A visit the technician has begun is not moved, unless they have only
+// checked in and ops, warned, choose to clear their check-in: they check in again
 // at the new time. Nor is a visit whose client has paid for a move, or booked
 // one free, that waits to be booked: ops are told it is being moved.
 
@@ -65,7 +65,7 @@ export interface MoveInput {
   /** The job as the board the move was made from showed it: its technician, none in the tray, and its start. */
   readonly expected: { readonly technicianId: string | null; readonly startsAt: string };
   /**
-   * Set when ops, warned that the technician has checked in, move the visit anyway: his check-in is cleared, and this
+   * Set when ops, warned that the technician has checked in, move the visit anyway: their check-in is cleared, and this
    * entry records who chose it. Absent for an ordinary move.
    */
   readonly clearCheckIn?: AuditEntry | null;
@@ -113,7 +113,7 @@ interface PlannedMove {
   /** The India date of the technician's day the move claims, and its half-slots there. */
   readonly date: string;
   readonly claims: readonly string[];
-  /** The audit entry for clearing the technician's check-in; null when he had not checked in. */
+  /** The audit entry for clearing the technician's check-in; null when they had not checked in. */
   readonly clearCheckIn: AuditEntry | null;
   /** Why ops moved it onto a day they blacked out; null for any other day. */
   readonly blackoutReason: string | null;
@@ -218,12 +218,12 @@ function writtenMove(db: D1Database, move: PlannedMove, messageId: string | null
   return db
     .prepare(
       `INSERT INTO dispatch_moves (id, appointment_id, was_technician_id, now_technician_id, was_start, now_start,
-         reason, actor, fsm_write_state, message_id, created_at, updated_at, blackout_reason)
+         reason, actor, fsm_write_state, write_state, message_id, created_at, updated_at, blackout_reason)
        VALUES (?1,
          (SELECT a.id FROM appointments a
           WHERE a.id = ?2 AND a.technician_id IS ?3 AND a.window_start = ?5 AND a.deleted_at IS NULL
             AND ${statusIn("a.status", VISIT_NOT_BEGUN)} AND NOT ${begun} AND NOT ${CLIENT_MOVING}),
-         ?3, ?4, ?5, ?6, ?7, ?8, 'written', ?9, ?10, ?10, ?11)`,
+         ?3, ?4, ?5, ?6, ?7, ?8, 'written', 'written', ?9, ?10, ?10, ?11)`,
     )
     .bind(
       move.id,
@@ -251,8 +251,8 @@ async function changedUnder(db: D1Database, move: PlannedMove): Promise<MoveOutc
 }
 
 /**
- * Clears the technician's check-in once the move is written: every step his phone landed on the visit is set aside,
- * the check-in all there is, so he checks in again where the visit now is. The audit log names who chose it.
+ * Clears the technician's check-in once the move is written: every step their phone landed on the visit is set aside,
+ * the check-in all there is, so they check in again where the visit now is. The audit log names who chose it.
  */
 function checkInCleared(db: D1Database, move: PlannedMove, now: Date): D1PreparedStatement[] {
   if (move.clearCheckIn === null) return [];
@@ -284,7 +284,7 @@ function movedVisit(db: D1Database, move: PlannedMove, at: string): D1PreparedSt
     );
 }
 
-/** How the client hears of the move: the notice, and the message row where he is messaged. */
+/** How the client hears of the move: the notice, and the message row where they are messaged. */
 async function clientToldOf(
   db: D1Database,
   move: PlannedMove,
@@ -319,7 +319,7 @@ function changedSince(job: LiveJob, expected: MoveInput["expected"]): Change[] {
   return changed;
 }
 
-/** Whether the latest word on WhatsApp about his visits from the client of this job is yes. */
+/** Whether the latest word on WhatsApp about their visits from the client of this job is yes. */
 async function agreedToVisitMessages(db: D1Database, appointmentId: string): Promise<boolean> {
   const latest = await db
     .prepare(`SELECT ${LATEST_VISITS_CONSENT} AS granted FROM appointments a WHERE a.id = ?1`)
@@ -362,7 +362,7 @@ interface Rooms {
  * with a window the job would land in, by the same check a move runs, so the
  * board offers no window the move would be refused. Not where it already is.
  * Null for a job no longer live, or one the technician has begun by more than
- * his check-in, which no move takes.
+ * their check-in, which no move takes.
  */
 export async function dispatchRoomFor(
   db: D1Database,
@@ -411,7 +411,7 @@ export async function dispatchRoomFor(
 }
 
 /**
- * Ops called the client about a move he had not heard of, which closes its
+ * Ops called the client about a move they had not heard of, which closes its
  * task. Recorded once, and only for a move still untold: false for any other.
  * The audit entry goes in the same batch (src/domain/ops/audit.ts).
  */

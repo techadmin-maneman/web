@@ -84,7 +84,7 @@ export async function moveInPlace(context: BookingContext, hold: HoldRow): Promi
 
 /**
  * Whether the visit can still take the hold's time: it is still with the technician the time was held on, since ops
- * may have given it to another after the client chose it, and nothing else has taken that time on his day.
+ * may have given it to another after the client chose it, and nothing else has taken that time on their day.
  */
 async function takesHeldTime(db: D1Database, hold: HoldRow, visit: VisitToMove, now: Date): Promise<boolean> {
   if (visit.technician_id !== hold.technician_id) return false;

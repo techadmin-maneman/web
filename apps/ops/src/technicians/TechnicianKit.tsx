@@ -1,4 +1,4 @@
-// A technician's Kit tab: what his kit holds of each consumable, as the stock ledger counts it, with the same Low
+// A technician's Kit tab: what their kit holds of each consumable, as the stock ledger counts it, with the same Low
 // mark the Stock section gives it. Movements are recorded in Stock, which the tab links to.
 
 import { buttonLook } from "@maneman/ui/Button";

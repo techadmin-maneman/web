@@ -33,9 +33,9 @@ interface BoardClient {
   readonly id: string;
   readonly name: string;
   readonly mobile: string;
-  /** His latest word on WhatsApp about his visits is yes, so a move's new window reaches him there. */
+  /** Their latest word on WhatsApp about their visits is yes, so a move's new window reaches them there. */
   readonly whatsapp_visits: boolean;
-  /** Who invited him, by name; null when he came on his own. */
+  /** Who invited them, by name; null when they came on their own. */
   readonly referred_by: string | null;
 }
 
@@ -64,9 +64,9 @@ interface Block extends Visit {
   readonly status: AppointmentStatus;
   /** The notice the visit was sold under, in hours: inside it, a change of the client's own costs them. */
   readonly notice_hours: number;
-  /** The latest move of this visit that its client has not heard of, and why: ops call him (src/policy/dispatch.ts). */
+  /** The latest move of this visit that its client has not heard of, and why: ops call them (src/policy/dispatch.ts). */
   readonly untold: { readonly move_id: string; readonly starts_at: string; readonly reason: UntoldReason } | null;
-  /** How far the technician has got, from his phone's steps; null before he arrives. A visit begun is not moved. */
+  /** How far the technician has got, from their phone's steps; null before they arrive. A visit begun is not moved. */
   readonly begun: Begun | null;
 }
 
@@ -113,7 +113,7 @@ interface Board {
 }
 
 /**
- * The latest word on WhatsApp about his visits from the client of appointment `a`: 1, 0, or NULL where he never
+ * The latest word on WhatsApp about their visits from the client of appointment `a`: 1, 0, or NULL where they never
  * gave one. The messaging consumer reads it the same way before it sends (src/domain/messages/visit-message-text.ts).
  */
 export const LATEST_VISITS_CONSENT = latestConsentSql("a.person_id", "whatsapp_visits");
@@ -132,7 +132,7 @@ export const UNTOLD_MOVE = `m.fsm_write_state = 'written' AND m.was_start <> m.n
       AND later.was_start <> later.now_start AND later.created_at > m.created_at)`;
 /**
  * Why the client of an untold move `m` has not heard of it, as UNTOLD_REASONS names it: no message was queued, since
- * he had not agreed to WhatsApp about his visits, or the one queued was skipped as he had taken that back; any other
+ * they had not agreed to WhatsApp about their visits, or the one queued was skipped as they had taken that back; any other
  * message skipped or failed is not_sent. The Tasks board reads the same (src/domain/ops/tasks.ts).
  */
 export const UNTOLD_REASON = `CASE WHEN m.message_id IS NULL OR EXISTS (
@@ -182,7 +182,7 @@ const BOARD_JOBS = `
 /** The board's seven days from `from`. */
 export const weekFrom = (from: string): string[] =>
   Array.from({ length: BOARD_DAYS }, (_, index) => addDays(from, index));
-/** The technicians on the board, each with whether staff access by place reaches him (1) or not (0). */
+/** The technicians on the board, each with whether staff access by place reaches them (1) or not (0). */
 const BOARD_TECHNICIANS = `SELECT id, name, initials, zone, ${withinReach("technician", "t", "?1")} AS reached
   FROM technicians t WHERE active = 1 ORDER BY name`;
 const EVERYWHERE: PlacesReached = { kind: "everywhere" };
@@ -338,7 +338,7 @@ function visitOf(job: BoardJobRow): Visit {
   };
 }
 
-/** The client, unless there is none on our records or he has been erased: nothing is left to reach him by. */
+/** The client, unless there is none on our records or they have been erased: nothing is left to reach them by. */
 function clientOf(job: BoardJobRow): BoardClient | null {
   if (job.person_id === null || job.client_name === null || job.client_mobile === null) return null;
   if (job.client_erased_at !== null) return null;
@@ -366,7 +366,7 @@ function blockOf(job: BoardJobRow, untold: Block["untold"], noticeInForce: numbe
 
 /**
  * A job no technician on the board holds: none was given it, or the one it is on was switched off with visits still
- * on him. Either way it waits in the tray.
+ * on them. Either way it waits in the tray.
  */
 const isNobodys = (job: BoardJobRow): boolean => job.technician_id === null || job.technician_active !== 1;
 /** The switched-off technician a tray job is still on, so the tray can say whose it was. */
@@ -404,7 +404,7 @@ const isAway = (leave: Board["leave"], technicianId: string, date: string): bool
 /**
  * "Each column head shows its utilisation, in per cent." The slots the day's
  * jobs take, done or still to do, out of the slots of the technicians working
- * that day. A technician on leave has no slots that day, and a job still on him
+ * that day. A technician on leave has no slots that day, and a job still on them
  * counts for nothing until it is moved. The board's rows are already narrowed to
  * its city's jobs; the technicians only to the caller's cities, since any may be
  * sent anywhere (docs/decisions/0069-dispatch-under-concurrency.md).

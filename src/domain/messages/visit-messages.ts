@@ -38,7 +38,7 @@ export type VisitMessageKind = (typeof VISIT_MESSAGE_KINDS)[number];
 
 /**
  * How long after the technician arrived the client may still be told of it. A check-in that reaches us later, from
- * a phone that had no signal, is past the point: he has been at the door, or gone.
+ * a phone that had no signal, is past the point: they have been at the door, or gone.
  */
 const ARRIVAL_NOTICE_WITHIN_MINUTES = 10;
 

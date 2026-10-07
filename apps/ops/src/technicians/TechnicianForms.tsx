@@ -1,5 +1,5 @@
-// Adding a technician, changing his details, and switching him off or back on (src/routes/ops/technicians.ts).
-// Switching off asks first, since it signs him out at once and hands his visits still to come back to the dispatch
+// Adding a technician, changing their details, and switching them off or back on (src/routes/ops/technicians.ts).
+// Switching off asks first, since it signs them out at once and hands their visits still to come back to the dispatch
 // board.
 
 import { capsLook } from "@maneman/ui/Caps";
@@ -115,7 +115,7 @@ function Fields({
   );
 }
 
-/** A new technician, in a panel over the roster. His number signs in to the technician app once he is added. */
+/** A new technician, in a panel over the roster. Their number signs in to the technician app once they are added. */
 export function AddTechnician({
   cities,
   onAdded,
@@ -126,7 +126,7 @@ export function AddTechnician({
   onClose: () => void;
 }) {
   const copy = technicians.add;
-  // Staff kept to their cities give him one of theirs; national staff may leave him with none.
+  // Staff kept to their cities give them one of theirs; national staff may leave them with none.
   const firstCity = useAccess().reaches(GIVING_NO_CITY) ? "" : (cities[0] ?? "");
   const [typed, setTyped] = useState<Typed>({ name: "", mobile: "", zone: "", city: firstCity });
   const [sending, setSending] = useState(false);
@@ -269,7 +269,7 @@ function ChangeForm({
   );
 }
 
-/** The number he signs in with, his zone and his city; a gap where none is recorded. */
+/** The number they sign in with, their zone and their city; a gap where none is recorded. */
 function Facts({ technician }: { technician: TechnicianSummary }) {
   const copy = technicians.details;
   return (
@@ -372,7 +372,7 @@ function SwitchOn({ technician, onSwitchedOn }: { technician: TechnicianSummary;
     const answer = await api.switchOn(technician.id);
     if (!answer.ok) {
       setSending(false);
-      // His own number taken while he was off: the add form's words would read as if ops had typed it.
+      // Their own number taken while they were off: the add form's words would read as if ops had typed it.
       setFailed(answer.code === "number_in_use" ? technicians.errors.number_in_use_now : refusal(answer.code));
       return;
     }
@@ -403,7 +403,7 @@ function SwitchOn({ technician, onSwitchedOn }: { technician: TechnicianSummary;
 }
 
 /**
- * His details, with the ways to change them and to switch him off or back on where he is ours to change. Each
+ * Their details, with the ways to change them and to switch them off or back on where they are ours to change. Each
  * change reads the roster again, because the dispatch board and the sign-in read the same rows.
  */
 export function Details({

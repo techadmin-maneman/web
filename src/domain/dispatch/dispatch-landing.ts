@@ -29,7 +29,7 @@ export interface LiveJob {
   service_minutes: number | null;
   /** 1 once the technician has begun it (src/domain/visits/visit-begun.ts). */
   begun: number;
-  /** 1 once he has begun it by more than his check-in. */
+  /** 1 once they have begun it by more than their check-in. */
   begun_past_arrival: number;
   /** 1 while a move the client has paid for, or booked free, waits to be booked onto it. */
   client_moving: number;
@@ -56,7 +56,7 @@ export function liveJob(db: D1Database, appointmentId: string): Promise<LiveJob 
 }
 
 /**
- * A job the technician has begun, by his phone's steps or its status, stays where he is working it: moved, his phone
+ * A job the technician has begun, by their phone's steps or its status, stays where they are working it: moved, their phone
  * would carry on with a visit now on another day or another technician's.
  */
 export const isUnderWay = (job: LiveJob): boolean => job.status === "in_progress" || job.begun === 1;

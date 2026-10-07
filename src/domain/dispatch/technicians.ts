@@ -1,11 +1,11 @@
-// Who may log in to the technician app, and the phone he logs in on
+// Who may log in to the technician app, and the phone they log in on
 // (docs/prompts/phase2-backend.md, "Technician and dispatch rules, from the
 // designs"; docs/decisions/0029-sessions.md).
 //
 // The code is the client's: same table, same ten minutes, same five wrong
 // attempts (docs/decisions/0030-one-time-codes.md). What differs is the
-// subject. A technician is recognised only while ops have him switched on, so
-// the number is looked up among the technicians and nowhere else, and his
+// subject. A technician is recognised only while ops have them switched on, so
+// the number is looked up among the technicians and nowhere else, and their
 // session is bound to one phone.
 
 import { sha256Hex } from "../../lib/hash.ts";
@@ -101,7 +101,7 @@ export async function openTechnicianSession(
   return token;
 }
 
-/** A technician and the phone he is signed in on, for GET /api/tech/me. */
+/** A technician and the phone they are signed in on, for GET /api/tech/me. */
 interface SignedInTechnician {
   readonly name: string;
   readonly deviceId: string;
@@ -157,8 +157,8 @@ export async function touchDevice(db: D1Database, deviceRowId: string, now: Date
 
 /**
  * Ops revoke a phone: its session ends, and the row records that the device was
- * told to drop its cached jobs the next time it called. No phone of his signs in
- * again until ops let him (allowSignIn): the lost phone still gets his code on
+ * told to drop its cached jobs the next time it called. No phone of theirs signs in
+ * again until ops let them (allowSignIn): the lost phone still gets their code on
  * WhatsApp, so a code alone must not undo the revoke. The revoke's audit entry
  * goes in the same batch (src/domain/ops/audit.ts). Null when there is no such
  * device of that technician's.
@@ -200,7 +200,7 @@ export async function revokeDevice(
   };
 }
 
-/** Ops let a technician sign in again after a revoke, with their audit entry. False when he was not stopped. */
+/** Ops let a technician sign in again after a revoke, with their audit entry. False when they were not stopped. */
 export async function allowSignIn(
   db: D1Database,
   technicianId: string,
@@ -232,7 +232,7 @@ interface Device {
   readonly label: string | null;
   readonly last_seen_at: string;
   readonly revoked_at: string | null;
-  /** Whether the phone's last session is still live: false once he signed out, it ran out, or it was revoked. */
+  /** Whether the phone's last session is still live: false once they signed out, it ran out, or it was revoked. */
   readonly signed_in: boolean;
 }
 

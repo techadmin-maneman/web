@@ -1,6 +1,6 @@
 // Technicians: the roster, one row a technician, the jobs each has
 // finished and how those ran; and each technician's own page, which the roster's
-// names open: his details, then his week, leave, phones and kit, a tab at a time.
+// names open: their details, then their week, leave, phones and kit, a tab at a time.
 // The API is answered from e2e/ops/fixtures.ts, since a local database has no
 // technician until one is added and none has logged in. The clock is fixed to
 // the day the fixture's leave is read against.
@@ -164,11 +164,11 @@ test("switches a technician off only once asked, and lists the visits he no long
     "/dispatch",
   );
   await expect(main.getByRole("button", { name: "Switch Imran Qureshi back on" })).toBeVisible();
-  // Switched off, he has no phone signed in and no leave to record: his page is his details alone.
+  // Switched off, they have no phone signed in and no leave to record: their page is their details alone.
   await expect(main.getByRole("navigation", { name: /^Imran Qureshi:/ })).toBeHidden();
   expect(await axeViolations(page)).toEqual([]);
 
-  // He is off the roster's table, and listed apart.
+  // They are off the roster's table, and listed apart.
   await backToRoster(page);
   await expect(page.getByRole("row").filter({ hasText: "Imran Qureshi" })).toHaveCount(0);
   await expect(page.getByRole("region", { name: "Switched off" })).toContainText("Imran Qureshi");

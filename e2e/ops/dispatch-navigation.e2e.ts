@@ -30,7 +30,7 @@ test("moves between weeks and cities, asking the route for each", async ({ page 
   await expect.poll(() => asked.at(-1)).toBe("?city=Delhi");
 });
 
-// A technician's page shows his days by linking here with the week and his name.
+// A technician's page shows their days by linking here with the week and their name.
 test("opens on the week and the search a link asks for", async ({ page }) => {
   const asked: string[] = [];
   page.on("request", (request) => {
@@ -94,7 +94,7 @@ test("keeps its header row and technicians' column in place, and finds a row by 
   await expect(page.getByText("Nothing on this week's board matches “nobody”.")).toBeVisible();
 });
 
-// An area on a block found nothing, and a client found left a row of eight with no sign of his.
+// An area on a block found nothing, and a client found left a row of eight with no sign of theirs.
 test("finds a visit by its area or its client, and outlines the blocks it found", async ({ page }) => {
   await open(page);
   const find = page.getByLabel("Find a technician, client or area");

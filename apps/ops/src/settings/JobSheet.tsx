@@ -1,5 +1,5 @@
 // Settings, Job sheet (docs/decisions/0087-consumables-and-stock.md):
-// what the technician ticks on each kind of visit, and the reasons he may pick
+// what the technician ticks on each kind of visit, and the reasons they may pick
 // when a job is left partly done. Both are set here, and the technician app reads them with each job; a phone
 // keeps the list it was given with the job, and an item taken off is kept, so
 // what a phone recorded before the change is still understood.

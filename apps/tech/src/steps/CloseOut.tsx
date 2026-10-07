@@ -1,6 +1,6 @@
 // The close-out: the job's name and outcome, how long it took, how many
 // photographs are on their way, and the next job. A no-show closes with board
-// B5's evidence summary instead — when he checked in, how far from the door,
+// B5's evidence summary instead — when they checked in, how far from the door,
 // whether the day-before WhatsApp reached the client — and what happens next.
 //
 // It says what is true and nothing more: a job whose outcome neither landed nor

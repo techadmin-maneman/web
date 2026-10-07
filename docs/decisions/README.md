@@ -2,7 +2,7 @@
 
 Every decision this repository was built on, oldest first. A record says what was decided and why, and is not rewritten to say something else: a later record changes it, and says so in its own header (ADR 0001). **Changed by** gathers those later records, from either side, so an old record's reader knows to read on.
 
-This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. A record names its topic in its header, `- Topic:` and one of the headings below, and the test fails on one that does not. The next free number is 0113.
+This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. A record names its topic in its header, `- Topic:` and one of the headings below, and the test fails on one that does not. The next free number is 0114.
 
 ## By topic
 
@@ -72,6 +72,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 - [0101](0101-phase-1s-path-into-fsm-removed.md) Phase 1's path into FSM is removed, and no booking carries a Request (superseded)
 - [0106](0106-a-clients-hair-profile.md) A client's hair profile: the fit spec and their history
 - [0110](0110-field-work-without-fsm.md) Field work without Zoho FSM
+- [0113](0113-fsms-columns-go.md) FSM's columns go
 
 ### Money and Books
 
@@ -260,3 +261,4 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0110](0110-field-work-without-fsm.md) | Field work without Zoho FSM | 2026-10-02 | accepted, on the owner's ruling of 2 October 2026 |  |
 | [0111](0111-a-technician-never-takes-two-visits-in-a-row.md) | A technician never takes two visits in a row | 2026-10-05 | accepted, on the owner's ruling of 5 October 2026 |  |
 | [0112](0112-workers-paid.md) | Workers Paid | 2026-10-06 | accepted, on the owner's purchase of 6 October 2026 |  |
+| [0113](0113-fsms-columns-go.md) | FSM's columns go | 2026-10-06 | accepted |  |

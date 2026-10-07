@@ -1,11 +1,11 @@
-// Ops add a technician, change his name, number, zone or city, and switch him off or back on
+// Ops add a technician, change their name, number, zone or city, and switch them off or back on
 // (src/routes/ops/technicians.ts).
 //
-// A technician added here gets an ID of our own, written as his FSM ID too (docs/schema.md). Two active technicians
-// never share a number: the number is how he signs in (src/domain/dispatch/technicians.ts).
+// A technician added here gets an ID of our own, written as their FSM ID too (docs/schema.md). Two active technicians
+// never share a number: the number is how they sign in (src/domain/dispatch/technicians.ts).
 //
-// Switching a technician off ends his sessions at once and takes his visits still to come off him, so they wait in
-// the dispatch board's tray. His phone is not revoked: it keeps the work it has not sent, should he be switched back
+// Switching a technician off ends their sessions at once and takes their visits still to come off them, so they wait in
+// the dispatch board's tray. Their phone is not revoked: it keeps the work it has not sent, should they be switched back
 // on (src/http/technician-session.ts).
 
 import type { VisitType } from "../../config/visit-types.ts";
@@ -14,7 +14,7 @@ import { auditStatement, auditStatementIfWritten, type AuditEntry } from "../ops
 import { visitBegun } from "../visits/visit-begun.ts";
 import { statusIn, VISIT_NOT_BEGUN } from "../../config/statuses.ts";
 
-/** A technician as the console lists him. */
+/** A technician as the console lists them. */
 export interface RosterTechnician {
   readonly id: string;
   readonly name: string;
@@ -24,7 +24,7 @@ export interface RosterTechnician {
   readonly city: string | null;
   readonly mobile: string | null;
   readonly active: boolean;
-  /** When a revoked phone stopped him signing in; null while he may (src/domain/dispatch/technicians.ts). */
+  /** When a revoked phone stopped them signing in; null while they may (src/domain/dispatch/technicians.ts). */
   readonly signInStoppedAt: string | null;
 }
 
@@ -74,7 +74,7 @@ interface NewTechnician {
   readonly city: string | null;
 }
 
-/** Adds an active technician, unless another active technician has his number. */
+/** Adds an active technician, unless another active technician has their number. */
 export async function addTechnician(
   db: D1Database,
   technician: NewTechnician,
@@ -158,12 +158,12 @@ interface ReturnedVisit {
   readonly client: string | null;
 }
 
-/** His visits still to come: live, not begun, and starting from now. A visit already under way stays his. */
+/** Their visits still to come: live, not begun, and starting from now. A visit already under way stays theirs. */
 const STILL_TO_COME = `a.technician_id = ?1 AND a.deleted_at IS NULL AND ${statusIn("a.status", VISIT_NOT_BEGUN)}
   AND a.window_start >= ?2 AND NOT ${visitBegun("a")}`;
 
 /**
- * Switches an active technician off: his sessions end, and his visits still to come are given back unassigned,
+ * Switches an active technician off: their sessions end, and their visits still to come are given back unassigned,
  * all in one batch with the audit entry. Answers the visits given back, soonest first.
  */
 export async function deactivateTechnician(
@@ -202,7 +202,7 @@ export async function deactivateTechnician(
   return visits;
 }
 
-/** Switches a technician back on, unless another active technician has his number meanwhile. */
+/** Switches a technician back on, unless another active technician has their number meanwhile. */
 export async function reactivateTechnician(
   db: D1Database,
   technician: RosterTechnician,

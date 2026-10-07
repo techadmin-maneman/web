@@ -2,7 +2,7 @@
 // database the local mm-api reads, as e2e/app/fitted.ts writes its client. Every name and number is made up.
 //
 //   a technician   new each run, with a random number: the sign-in is walked through the app with the local
-//                  fixed code. His fsm_id starts "e2e-", so the next run's seeds retire him and cancel what he
+//                  fixed code. Their fsm_id starts "e2e-", so the next run's seeds retire them and cancel what they
 //                  left booked (e2e/technicians.ts).
 //   two clients    at one address the geofence measures against, one job each: one technician never takes two
 //                  of a client's visits in a row (ADR 0111), so the second job's move needs a client of its own

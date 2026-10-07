@@ -26,7 +26,7 @@ interface JobClient {
   readonly note: string | null;
 }
 
-/** The address as the client saved it, the parts ADR 0054 added included: what gets him to the right door. */
+/** The address as the client saved it, the parts ADR 0054 added included: what gets them to the right door. */
 interface JobAddress {
   readonly line1: string;
   readonly line2: string | null;
@@ -90,7 +90,7 @@ interface JobDetail extends JobSummary {
   /** The client's pieces, newest fit first; null while the job is locked. */
   readonly pieces: CardPiece[] | null;
   readonly last_visit: LastVisit | null;
-  /** The day-before WhatsApp, or the arrival one, that went to the client, and when it reached his phone. */
+  /** The day-before WhatsApp, or the arrival one, that went to the client, and when it reached their phone. */
   readonly reminder: { readonly delivered_at: string | null } | null;
   /**
    * On a one visit and a consultation, the products by name: the first fit's services offered that day, which the
@@ -291,7 +291,7 @@ export async function lastVisitPhoto(
 
 /**
  * The WhatsApp ops read the receipt of on a no-show (src/domain/no-shows/no-shows.ts), where it went to the client; null where
- * none did, since one queued, skipped or failed never reached his phone.
+ * none did, since one queued, skipped or failed never reached their phone.
  */
 async function reminderOf(db: D1Database, appointmentId: string): Promise<{ delivered_at: string | null } | null> {
   const message = await evidenceMessage(db, appointmentId);
@@ -321,7 +321,7 @@ function addressOf(row: JobRow): JobAddress | null {
 
 /**
  * What the phone has already sent for this job, from the events it landed. The check-in is the job's technician's
- * own, so one given the job after another checked in at it still has to arrive himself.
+ * own, so one given the job after another checked in at it still has to arrive themselves.
  */
 
 export async function progressOf(

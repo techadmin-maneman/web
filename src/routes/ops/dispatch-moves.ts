@@ -1,10 +1,10 @@
 // A job assigned or moved on the dispatch board, and a client called who had not heard of a move (./dispatch.ts).
 //
 // Both writes run the clash check, then move the visit and message the client
-// with his new window, in one batch. A visit the technician has begun is not
-// moved, unless he has only checked in
-// and ops choose to clear his check-in. "The client's payment carries over and
-// he is never charged for a move ops make", so no amount appears anywhere
+// with their new window, in one batch. A visit the technician has begun is not
+// moved, unless they have only checked in
+// and ops choose to clear their check-in. "The client's payment carries over and
+// they are never charged for a move ops make", so no amount appears anywhere
 // below.
 
 import { createRoute, z } from "@hono/zod-openapi";

@@ -18,7 +18,7 @@
 //
 // It also says why it is showing. A phone whose session ended simply signs in
 // again; a revoked one is told to ask ops, as is a technician ops switched off,
-// with how long his unsent work stays; and a store that has never held a
+// with how long their unsent work stays; and a store that has never held a
 // session, in an app opened from the home screen, is the iPhone case — the
 // installed app has its own cookie jar, so this is a second sign-in on a phone
 // already signed in, and saying nothing would read as a lost account.

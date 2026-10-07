@@ -103,6 +103,7 @@ export const PERSONAL_COLUMNS: Readonly<Record<string, PersonalTable>> = {
       "person_id",
       "technician_id",
       "fsm_invoice_id",
+      "books_invoice_id",
       "synced_at",
       "deleted_at",
       "reconciled_at",

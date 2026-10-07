@@ -143,9 +143,9 @@ describe("where a job in hand can go", () => {
     const windowsOf = (technician: string, date: string) =>
       rooms.find((room) => room.technician_id === technician && room.date === date)?.windows ?? [];
 
-    // Imran's afternoon is where it already is; his morning has room, and no evening has room for a first fit.
+    // Imran's afternoon is where it already is; their morning has room, and no evening has room for a first fit.
     expect(windowsOf(IMRAN, "2026-09-22")).toEqual(["morning"]);
-    // Sameer's replacement holds his morning and runs into the first fit's own 12:00.
+    // Sameer's replacement holds their morning and runs into the first fit's own 12:00.
     expect(windowsOf(SAMEER, "2026-09-22")).toEqual([]);
     expect(windowsOf(SAMEER, "2026-09-23")).toEqual(["morning", "afternoon"]);
     // Away on Thursday.
@@ -303,8 +303,8 @@ describe("a move onto a blacked-out day", () => {
   });
 });
 
-// Leave recorded over jobs already booked flagged nothing. Chetan's Wednesday job sat unmarked on his Away
-// cell, stayed on his phone, and waited for nobody.
+// Leave recorded over jobs already booked flagged nothing. Chetan's Wednesday job sat unmarked on their Away
+// cell, stayed on their phone, and waited for nobody.
 describe("leave recorded over jobs already booked", () => {
   /** Wednesday at 10:30 in India. */
   const WEDNESDAY_MORNING = "2026-09-23T05:00:00.000Z";
