@@ -14,6 +14,7 @@ export const technicians = {
    * records a skill, and a day off is what ops need to see down the roster.
    */
   columns: ["Technician", "Zone", "Jobs", "Avg service", "Leave"],
+  narrow: "Filter technicians",
   /** The Leave column: away today until when, the first day of leave to come, or nothing. */
   away: (until: string) => `Away to ${until}`,
   from: (date: string) => `From ${date}`,
@@ -155,6 +156,8 @@ export const technicians = {
     saving: "Saving",
     cancel: "Cancel",
   },
+  /** A technician added by mistake; one with work on record is switched off instead. */
+  inUse: "They have work on record. Switch them off instead.",
   switchOff: {
     open: "Switch off",
     openLabel: (name: string) => `Switch off ${name}`,

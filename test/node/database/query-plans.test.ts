@@ -131,6 +131,7 @@ const ALLOWED = [
 const UNPLANNED = [
   // An entry written only if the row it is about was: that row, by its key.
   { file: "src/domain/ops/audit.ts", source: "SELECT 1 FROM ${written.table} WHERE id = ?10" },
+  { file: "src/domain/ops/audit.ts", source: "SELECT 1 FROM ${deleted.table} WHERE ${deleted.column} = ?10" },
   { file: "src/domain/ops/audit.ts", source: "SELECT 1 FROM ${ruled.table} WHERE id = ?10 AND ruling_id = ?11" },
   {
     file: "src/domain/ops/audit.ts",

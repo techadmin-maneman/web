@@ -10,6 +10,7 @@ import { indiaClock, indiaDate, shortDate } from "@maneman/web-kit/dates";
 import { mobileDigits } from "@maneman/web-kit/mobile";
 import { useState } from "react";
 import { api, type ReturnedVisit, type TechnicianChange, type TechnicianSummary } from "../api.ts";
+import { DeleteAction } from "../components/DeleteAction.tsx";
 import { OpsLink } from "../components/Shell.tsx";
 import { technicians } from "../content.ts";
 import { GIVING_NO_CITY, useAccess } from "../lib/access.ts";
@@ -412,6 +413,7 @@ export function Details({
   onChange,
   onSwitchedOff,
   onSwitchedOn,
+  onDeleted,
 }: {
   technician: TechnicianSummary;
   cities: readonly string[];
@@ -419,6 +421,7 @@ export function Details({
   onChange: () => Promise<void>;
   onSwitchedOff: (visits: readonly ReturnedVisit[]) => Promise<void>;
   onSwitchedOn: () => Promise<void>;
+  onDeleted: () => void;
 }) {
   const copy = technicians.details;
   const [changing, setChanging] = useState(false);
@@ -426,6 +429,7 @@ export function Details({
   const mayChange = access.mayCall("PATCH /api/technicians/{id}");
   const maySwitchOff = active && access.mayCall("POST /api/technicians/{id}/deactivate");
   const maySwitchOn = !active && access.mayCall("POST /api/technicians/{id}/reactivate");
+  const mayDelete = access.mayCall("POST /api/technicians/{id}/delete");
   const stopChanging = () => {
     setChanging(false);
   };
@@ -468,6 +472,14 @@ export function Details({
           )}
           {maySwitchOff && <SwitchOff technician={technician} onSwitchedOff={onSwitchedOff} />}
           {maySwitchOn && <SwitchOn technician={technician} onSwitchedOn={onSwitchedOn} />}
+          {mayDelete && (
+            <DeleteAction
+              name={technician.name}
+              send={() => api.deleteTechnician(technician.id)}
+              refusal={(code) => (code === "in_use" ? technicians.inUse : refusal(code))}
+              onDeleted={onDeleted}
+            />
+          )}
         </>
       )}
     </section>

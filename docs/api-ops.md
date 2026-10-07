@@ -2642,6 +2642,54 @@ Text the client their payment link again
 }
 ```
 
+### POST /api/technicians/{id}/delete
+
+Delete a technician added by mistake, with their leave and phones, while nothing records any work of theirs
+
+**200**: Deleted
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "deleted": {
+      "type": "boolean",
+      "enum": [
+        true
+      ]
+    }
+  },
+  "required": [
+    "deleted"
+  ],
+  "additionalProperties": false
+}
+```
+
+**403**: access_required, or not_permitted: changing a technician asks Operations MANAGE
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no such technician in the caller's cities
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**409**: in_use: a visit, a job, stock or a hair profile names them; switch them off instead
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ### PATCH /api/technicians/{id}
 
 Change a technician's name, number, zone or city
@@ -3939,6 +3987,42 @@ Offer a retired consumable again
 }
 ```
 
+### POST /api/consumables/{code}/delete
+
+Delete a consumable added by mistake, while no stock of it has moved and no job has used it
+
+**200**: Every consumable and each service's expected use
+
+```json
+{
+  "$ref": "#/components/schemas/Consumables"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no such consumable
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**409**: in_use: stock of it has moved, or a job used it; retire it instead
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ### POST /api/service-usage
 
 What one service is expected to use. The whole list: a consumable left out is expected no more
@@ -4442,6 +4526,50 @@ Take the code off a client's visit, before it is paid for, its link is made, or 
 }
 ```
 
+### POST /api/staff/delete
+
+Take a member of staff off the list, with their grants. What they did stays in the audit log
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/StaffDeletion"
+}
+```
+
+**200**: The Staff page as it now stands
+
+```json
+{
+  "$ref": "#/components/schemas/StaffBook"
+}
+```
+
+**403**: access_required, or not_permitted: their grants reach beyond the caller's Admin MANAGE, it is the caller, or a service token asks
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: nobody on the list has that e-mail
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**409**: last_admin: nobody would be left with Admin MANAGE nationally
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ### GET /api/staff
 
 The Staff list, narrowed to the caller's own places
@@ -4713,6 +4841,7 @@ Request body:
             "slot_times_too_soon",
             "not_permitted",
             "last_admin",
+            "in_use",
             "figures_conflict"
           ]
         },
@@ -7965,6 +8094,7 @@ Request body:
             "slot_times_too_soon",
             "not_permitted",
             "last_admin",
+            "in_use",
             "figures_conflict"
           ]
         },
@@ -9425,6 +9555,7 @@ Request body:
         "technician.change",
         "technician.deactivate",
         "technician.reactivate",
+        "technician.delete",
         "setting.change",
         "price.set",
         "price.withdraw",
@@ -9448,6 +9579,7 @@ Request body:
         "consumable.change",
         "consumable.retire",
         "consumable.restore",
+        "consumable.delete",
         "consumable.usage",
         "job_sheet.set",
         "stock.receive",
@@ -9468,12 +9600,14 @@ Request body:
         "hair_profile.correct",
         "discount_code.make",
         "discount_code.switch_off",
+        "discount_code.delete",
         "discount_code.apply",
         "discount_code.remove",
         "staff.set",
         "staff.enforce",
         "staff.token_add",
-        "staff.token_remove"
+        "staff.token_remove",
+        "staff.delete"
       ]
     },
     "subject": {
@@ -15499,6 +15633,26 @@ Request body:
     "service_tokens",
     "zones",
     "cities"
+  ],
+  "additionalProperties": false
+}
+```
+
+### StaffDeletion
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "email": {
+      "type": "string",
+      "maxLength": 254,
+      "format": "email",
+      "description": "Their Cloudflare Access e-mail."
+    }
+  },
+  "required": [
+    "email"
   ],
   "additionalProperties": false
 }

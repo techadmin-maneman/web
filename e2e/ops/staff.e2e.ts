@@ -133,6 +133,39 @@ test("offers the switch and the service tokens to nobody without Admin · Manage
   await expect(page.getByText("Only national Admin · Manage can change service tokens.")).toBeVisible();
 });
 
+/** Signed in as `email`, who may read the list, change it and take people off it. */
+const signedInAs = (email: string) =>
+  json({
+    signed_in_as: email,
+    sign_out: null,
+    staff: {
+      enforced: false,
+      listed: true,
+      grants: [],
+      may_call: ["GET /api/staff", "POST /api/staff", "POST /api/staff/delete"],
+    },
+  });
+
+test("removes a person from staff, once asked", async ({ page }) => {
+  const left = { ...BOOK, people: BOOK.people.filter((each) => each.email !== "noida.lead@maneman.in") };
+  await open(page, { "GET /api/whoami": signedInAs("owner@maneman.in"), "POST /api/staff/delete": json(left) });
+  await page.getByRole("button", { name: "Change noida.lead@maneman.in" }).click();
+  await page.getByRole("button", { name: "Remove noida.lead@maneman.in" }).click();
+  await expect(page.getByText("Remove noida.lead@maneman.in from staff?")).toBeVisible();
+
+  const sent = posted(page, "/api/staff/delete");
+  await page.getByRole("button", { name: "Remove", exact: true }).click();
+  expect((await sent).postDataJSON()).toEqual({ email: "noida.lead@maneman.in" });
+  await expect(page.getByRole("status").filter({ hasText: "Removed." })).toBeVisible();
+  await expect(page.getByRole("rowheader", { name: "noida.lead@maneman.in" })).toHaveCount(0);
+});
+
+test("offers nobody a way to remove themselves", async ({ page }) => {
+  await open(page, { "GET /api/whoami": signedInAs("owner@maneman.in") });
+  await page.getByRole("button", { name: "Change owner@maneman.in" }).click();
+  await expect(page.getByRole("button", { name: "Remove owner@maneman.in" })).toHaveCount(0);
+});
+
 test("meets WCAG 2.2 AA", async ({ page }) => {
   await open(page);
   await page.getByRole("button", { name: "Add a person" }).click();

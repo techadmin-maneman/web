@@ -4,6 +4,7 @@
 //   PATCH /api/technicians/:id              change their name, number, zone or city
 //   POST  /api/technicians/:id/deactivate   switch them off: signed out, their visits still to come unassigned
 //   POST  /api/technicians/:id/reactivate   switch them back on
+//   POST  /api/technicians/:id/delete       delete one added by mistake, while nothing records any work of theirs
 //
 // Each keeps to the caller's cities: a technician elsewhere, or with no city
 // when the caller's grants name cities, is not found, and is given only a city
@@ -28,6 +29,7 @@ import {
   addTechnician,
   changeTechnician,
   deactivateTechnician,
+  deleteTechnician,
   reactivateTechnician,
   rosterTechnician,
   type RosterTechnician,
@@ -221,6 +223,20 @@ const reactivateRoute = createRoute({
   },
 });
 
+const deleteRoute = createRoute({
+  method: "post",
+  path: "/api/technicians/{id}/delete",
+  summary:
+    "Delete a technician added by mistake, with their leave and phones, while nothing records any work of theirs",
+  request: technicianPath,
+  responses: {
+    200: { description: "Deleted", ...json(z.object({ deleted: z.literal(true) }).strict()) },
+    403: errorResponse(MANAGE_ONLY),
+    404: errorResponse("not_found: no such technician in the caller's cities"),
+    409: errorResponse("in_use: a visit, a job, stock or a hair profile names them; switch them off instead"),
+  },
+});
+
 /** The audit entry for a change to one technician, by the member of staff behind the call. */
 function auditOf(c: Context<AppEnv>, action: AuditAction, id: string, detail?: AuditEntry["detail"]): AuditEntry {
   return {
@@ -264,6 +280,7 @@ async function workInReach(c: Context<AppEnv>, period: { from: string; to: strin
 }
 
 export function registerOpsTechnicians(app: App): void {
+  registerTechnicianDelete(app);
   app.openapi(addRoute, async (c) => {
     const { name, mobile, zone, city } = c.req.valid("json");
     const mobileE164 = toE164(mobile);
@@ -349,5 +366,18 @@ export function registerOpsTechnicians(app: App): void {
       runsOver({ average: each.average_minutes, planned: each.average_planned_minutes }, figures.over_by);
     const technicians = work.map((each) => ({ ...each, runs_over: runningOver(each), skill: null }));
     return c.json({ from, to, technicians }, 200);
+  });
+}
+
+/** Deleting a technician added by mistake, apart from the changes above. */
+function registerTechnicianDelete(app: App): void {
+  app.openapi(deleteRoute, async (c) => {
+    const { id } = c.req.valid("param");
+    const technician = await technicianToChange(c, id);
+    if (technician === null) return refuse(c, "not_found");
+
+    const deleted = await deleteTechnician(c.env.DB, id, auditOf(c, "technician.delete", id), c.var.deps.now());
+    if (deleted === "has_work") return refuse(c, "in_use");
+    return c.json({ deleted: true as const }, 200);
   });
 }

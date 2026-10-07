@@ -12,7 +12,8 @@ import { longDate } from "@maneman/web-kit/dates";
 import { useState } from "react";
 import { api, type StaffBook, type StaffToken } from "../api.ts";
 import { settings } from "../content.ts";
-import { useAccess } from "../lib/access.ts";
+import { useAccess, whoami } from "../lib/access.ts";
+import { DeleteAction } from "../components/DeleteAction.tsx";
 import { whoWords } from "../lib/who.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import { CheckPanel } from "../components/CheckPanel.tsx";
@@ -98,12 +99,20 @@ function Enforcement({ book, onChanged }: PanelProps) {
 function People({ book, onChanged }: PanelProps) {
   /** The e-mail of the person being changed, "new" while one is added, or null. */
   const [editing, setEditing] = useState<string | null>(null);
-  const [saved, setSaved] = useState(false);
-  const mayGrant = useAccess().mayCall("POST /api/staff");
+  const [said, setSaid] = useState<string | null>(null);
+  const access = useAccess();
+  const mayGrant = access.mayCall("POST /api/staff");
+  const [me] = useLoad(whoami);
   const person = book.people.find((each) => each.email === editing) ?? null;
+  // Nobody removes themselves: they would be locked out by their own hand.
+  const mayRemove =
+    person !== null &&
+    access.mayCall("POST /api/staff/delete") &&
+    me.state === "loaded" &&
+    me.value.signed_in_as.toLowerCase() !== person.email;
 
   const open = (email: string) => {
-    setSaved(false);
+    setSaid(null);
     setEditing(email);
   };
 
@@ -175,16 +184,32 @@ function People({ book, onChanged }: PanelProps) {
           onSaved={(next) => {
             onChanged(next);
             setEditing(null);
-            setSaved(true);
+            setSaid(copy.saved);
           }}
           onCancel={() => {
             setEditing(null);
           }}
         />
       )}
-      {saved && (
+      {mayRemove && (
+        <div className={styles.group}>
+          <DeleteAction
+            key={person.email}
+            name={person.email}
+            words={copy.removing}
+            send={() => api.deleteStaff(person.email)}
+            refusal={(code) => errorText(copy.errors, { code, fields: [] })}
+            onDeleted={(next) => {
+              onChanged(next);
+              setEditing(null);
+              setSaid(copy.removed);
+            }}
+          />
+        </div>
+      )}
+      {said !== null && (
         <p className={styles.saved} role="status">
-          {copy.saved}
+          {said}
         </p>
       )}
     </Panel>

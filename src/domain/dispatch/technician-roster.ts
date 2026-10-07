@@ -4,13 +4,16 @@
 // A technician added here gets an ID of our own, written as their FSM ID too (docs/schema.md). Two active technicians
 // never share a number: the number is how they sign in (src/domain/dispatch/technicians.ts).
 //
+// A technician added by mistake is deleted, with their leave, phones, sign-in codes and sessions, but only while nothing
+// records any work of theirs; one who has worked is switched off instead, and stays on record.
+//
 // Switching a technician off ends their sessions at once and takes their visits still to come off them, so they wait in
 // the dispatch board's tray. Their phone is not revoked: it keeps the work it has not sent, should they be switched back
 // on (src/http/technician-session.ts).
 
 import type { VisitType } from "../../config/visit-types.ts";
 import { initialsOf } from "../../lib/names.ts";
-import { auditStatement, auditStatementIfWritten, type AuditEntry } from "../ops/audit.ts";
+import { auditStatement, auditStatementIfDeleted, auditStatementIfWritten, type AuditEntry } from "../ops/audit.ts";
 import { visitBegun } from "../visits/visit-begun.ts";
 import { statusIn, VISIT_NOT_BEGUN } from "../../config/statuses.ts";
 
@@ -217,4 +220,45 @@ export async function reactivateTechnician(
     auditStatement(db, audit, now),
   ]);
   return "reactivated";
+}
+
+/**
+ * Whether anything records work of theirs: a visit, a hold, a step, a check-in, a move, a claim or stock. A hair profile
+ * names its technician too; it is never read here, and its foreign key refuses the delete instead.
+ */
+const HAS_WORK = `(EXISTS (SELECT 1 FROM appointments WHERE technician_id = ?1)
+  OR EXISTS (SELECT 1 FROM slot_holds WHERE technician_id = ?1)
+  OR EXISTS (SELECT 1 FROM job_events WHERE technician_id = ?1)
+  OR EXISTS (SELECT 1 FROM checkins WHERE technician_id = ?1)
+  OR EXISTS (SELECT 1 FROM dispatch_moves WHERE was_technician_id = ?1 OR now_technician_id = ?1)
+  OR EXISTS (SELECT 1 FROM slot_claims WHERE technician_id = ?1)
+  OR EXISTS (SELECT 1 FROM stock_movements WHERE technician_id = ?1))`;
+
+/**
+ * Deletes a technician nothing records any work of, with what is theirs alone, all in one batch with the audit entry.
+ * Every statement asks the same question, so a technician who has worked keeps everything.
+ */
+export async function deleteTechnician(
+  db: D1Database,
+  technicianId: string,
+  audit: AuditEntry,
+  now: Date,
+): Promise<"deleted" | "has_work"> {
+  const theirs = (statement: string) => db.prepare(`${statement} AND NOT ${HAS_WORK}`).bind(technicianId);
+  try {
+    await db.batch([
+      theirs("DELETE FROM technician_leave WHERE technician_id = ?1"),
+      theirs("DELETE FROM technician_devices WHERE technician_id = ?1"),
+      theirs("DELETE FROM otp_challenges WHERE technician_id = ?1"),
+      theirs("DELETE FROM sessions WHERE subject_kind = 'technician' AND subject_id = ?1"),
+      theirs("DELETE FROM technicians WHERE id = ?1"),
+      auditStatementIfDeleted(db, audit, now, { table: "technicians", column: "id", value: technicianId }),
+    ]);
+  } catch (error) {
+    // A row the question missed still names them; the foreign key refuses the whole batch, and nothing changes.
+    if (String(error).includes("FOREIGN KEY")) return "has_work";
+    throw error;
+  }
+  const kept = await db.prepare("SELECT 1 FROM technicians WHERE id = ?1").bind(technicianId).first();
+  return kept === null ? "deleted" : "has_work";
 }

@@ -19,6 +19,8 @@ import { areas, waitlist } from "../content.ts";
 import { useAccess } from "../lib/access.ts";
 import { areasPath } from "../route.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
+import { Narrowing, SortHeads, TableEnd } from "../components/TableTools.tsx";
+import { useTableView, type Column } from "../components/useTableView.ts";
 import { AddPincode } from "./AddPincode.tsx";
 import styles from "./areas.module.css";
 import { LaunchPanel } from "./LaunchPanel.tsx";
@@ -51,9 +53,6 @@ function openingLaunchDay(area: Area, today: string): string {
   const held = indiaDate(area.launched_at);
   return held < today ? held : today;
 }
-
-/** Each column, head and cells alike, at the board's own width, in waitlist.columns' order. */
-const COLUMNS = [styles.pincode, styles.area, styles.count, styles.oldest, styles.referred, styles.alerts];
 
 interface LaunchingProps {
   readonly launching: Launching;
@@ -193,25 +192,33 @@ function Pincodes({
   /** What choosing a pincode does, or null where their access reaches nothing to do with it. */
   chooserFor: (area: Area) => (() => void) | null;
 }) {
+  const [pin, name, waiting, oldest, referred, alerts] = waitlist.columns;
+  const columns: readonly Column<Area>[] = [
+    { label: pin, sort: (row) => row.pincode, className: styles.pincode },
+    { label: name, sort: areaName, className: styles.area },
+    { label: waiting, sort: (row) => row.waiting, className: styles.count },
+    { label: oldest, sort: (row) => row.oldest ?? "", className: styles.oldest },
+    { label: referred, sort: (row) => row.referred, className: styles.referred },
+    { label: alerts, sort: (row) => row.alerts, className: styles.alerts },
+  ];
+  const view = useTableView(listed, columns, { search: (row) => `${row.pincode} ${areaName(row)}` });
   if (listed.length === 0) return <p className={styles.empty}>{waitlist.empty}</p>;
   return (
     <section className={styles.panel}>
+      <Narrowing view={view} label={waitlist.narrow} className={styles.narrow} />
       <Table className={styles.table}>
         <thead>
           <tr>
-            {waitlist.columns.map((column, index) => (
-              <th key={column} scope="col" className={COLUMNS[index]}>
-                {column}
-              </th>
-            ))}
+            <SortHeads view={view} />
           </tr>
         </thead>
         <tbody>
-          {listed.map((area) => (
+          {view.shown.map((area) => (
             <AreaRow key={area.pincode} area={area} thisYear={thisYear} onChoose={chooserFor(area)} />
           ))}
         </tbody>
       </Table>
+      <TableEnd view={view} />
       {more && <p className={styles.more}>{waitlist.more}</p>}
     </section>
   );

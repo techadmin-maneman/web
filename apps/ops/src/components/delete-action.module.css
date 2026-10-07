@@ -1,0 +1,29 @@
+/* A Delete button, the question it asks, and why a delete was refused (./DeleteAction.tsx). The caller places it. */
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-10);
+  margin-top: var(--sp-8);
+}
+
+.quiet {
+  padding: 0 var(--sp-14);
+  font-size: var(--fs-14);
+}
+
+.asking {
+  margin-top: var(--sp-8);
+}
+
+.warning {
+  margin: 0;
+  font-size: var(--fs-14);
+  color: var(--text);
+}
+
+.error {
+  margin: var(--sp-8) 0 0;
+  font-size: var(--fs-14);
+  color: var(--error-on-paper);
+}

@@ -192,3 +192,16 @@ test("meets WCAG 2.2 AA with a queue, and with a rejection open", async ({ page 
     .click();
   expect(await axeViolations(page)).toEqual([]);
 });
+
+test("sorts the referrers by a column, and finds one by name", async ({ page }) => {
+  await open(page);
+  const referrers = page.getByRole("region", { name: "All referrers" });
+  const rows = referrers.getByRole("row");
+  await expect(rows.nth(1)).toContainText("Karan Bose");
+  await referrers.getByRole("button", { name: "Fits", exact: true }).click();
+  await expect(referrers.getByRole("columnheader", { name: "Fits" })).toHaveAttribute("aria-sort", "ascending");
+  await expect(rows.nth(1)).toContainText("Vikram Sethi");
+  await referrers.getByLabel("Search").fill("rohit");
+  await expect(rows).toHaveCount(2);
+  await expect(rows.nth(1)).toContainText("Rohit Malhotra");
+});

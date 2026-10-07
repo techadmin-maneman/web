@@ -19,6 +19,8 @@ import { useAccess, type OpsCall } from "../lib/access.ts";
 import { settingsPath } from "../route.ts";
 import form from "../components/forms.module.css";
 import { Loading, PanelFailed } from "../states/States.tsx";
+import { Narrowing, SortHeads, TableEnd } from "../components/TableTools.tsx";
+import { useTableView, type Column } from "../components/useTableView.ts";
 import { KINDS, placeName, StockForm, type Kind } from "./StockForm.tsx";
 import styles from "./stock.module.css";
 
@@ -102,8 +104,29 @@ function OnHand({ book }: { book: Stock }) {
   );
 }
 
+type Movement = Stock["movements"][number];
+
+/** The latest movements, sorted and narrowed on the page: what moved, where, why and by whom. */
 function Movements({ book }: { book: Stock }) {
   const words = copy.movements;
+  const consumable = (row: Movement) =>
+    book.consumables.find((each) => each.code === row.consumable_code)?.name ?? row.consumable_code;
+  const place = (row: Movement) => placeName(book, row.technician_id);
+  const why = (row: Movement) => words.reasons[row.reason] ?? row.reason;
+  const who = (row: Movement) => (row.reason === "used" ? placeName(book, row.by) : row.by);
+  const [when, what, where, change, reason, by] = words.columns;
+  const columns: readonly Column<Movement>[] = [
+    { label: when, sort: (row) => row.at },
+    { label: what, sort: consumable, choice: consumable },
+    { label: where, sort: place, choice: place },
+    { label: change, sort: (row) => row.quantity },
+    { label: reason, sort: why, choice: why },
+    { label: by, sort: who },
+  ];
+  const view = useTableView(book.movements, columns, {
+    search: (row) => [consumable(row), place(row), why(row), who(row)].join(" "),
+    sorted: { column: 0, direction: "descending" },
+  });
   return (
     <section className={form.panel} aria-labelledby="stock-movements">
       <div className={form.panelHead}>
@@ -114,36 +137,33 @@ function Movements({ book }: { book: Stock }) {
       {book.movements.length === 0 ? (
         <p className={form.note}>{words.none}</p>
       ) : (
-        <div className={styles.scroll}>
-          <Table className={form.table}>
-            <thead>
-              <tr>
-                {words.columns.map((column) => (
-                  <th scope="col" key={column}>
-                    {column}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {book.movements.map((movement, index) => (
-                <tr key={`${movement.at}-${String(index)}`}>
-                  <td className={form.figure}>
-                    {shortDate(indiaDate(movement.at))}, {indiaClock(movement.at)}
-                  </td>
-                  <td>
-                    {book.consumables.find((each) => each.code === movement.consumable_code)?.name ??
-                      movement.consumable_code}
-                  </td>
-                  <td>{placeName(book, movement.technician_id)}</td>
-                  <td className={form.figure}>{words.change(movement.quantity)}</td>
-                  <td>{words.reasons[movement.reason] ?? movement.reason}</td>
-                  <td>{movement.reason === "used" ? placeName(book, movement.by) : movement.by}</td>
+        <>
+          <Narrowing view={view} label={words.narrow} />
+          <div className={styles.scroll}>
+            <Table className={form.table}>
+              <thead>
+                <tr>
+                  <SortHeads view={view} />
                 </tr>
-              ))}
-            </tbody>
-          </Table>
-        </div>
+              </thead>
+              <tbody>
+                {view.shown.map((movement, index) => (
+                  <tr key={`${movement.at}-${String(index)}`}>
+                    <td className={form.figure}>
+                      {shortDate(indiaDate(movement.at))}, {indiaClock(movement.at)}
+                    </td>
+                    <td>{consumable(movement)}</td>
+                    <td>{place(movement)}</td>
+                    <td className={form.figure}>{words.change(movement.quantity)}</td>
+                    <td>{why(movement)}</td>
+                    <td>{who(movement)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </Table>
+          </div>
+          <TableEnd view={view} />
+        </>
       )}
     </section>
   );

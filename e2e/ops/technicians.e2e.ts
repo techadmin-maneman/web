@@ -21,6 +21,24 @@ test("lists every active technician with the zone the board draws", async ({ pag
   await expect(page.getByRole("row").filter({ hasText: "Faizan Ali" })).toContainText("—");
 });
 
+test("sorts the roster by a column, and narrows it by zone or a search", async ({ page }) => {
+  await open(page);
+  const rows = page.getByRole("table").getByRole("row");
+  const byName = page.getByRole("button", { name: "Technician", exact: true });
+  await byName.click();
+  await expect(page.getByRole("columnheader", { name: "Technician" })).toHaveAttribute("aria-sort", "ascending");
+  await expect(rows.nth(1)).toContainText("Faizan Ali");
+  await byName.click();
+  await expect(rows.nth(1)).toContainText("Sandeep Yadav");
+
+  await page.getByLabel("Zone").selectOption("Sec 40–65");
+  await expect(rows).toHaveCount(2);
+  await expect(rows.nth(1)).toContainText("Imran Qureshi");
+  await page.getByRole("button", { name: "Clear", exact: true }).click();
+  await page.getByLabel("Search").fill("sandeep");
+  await expect(rows).toHaveCount(2);
+});
+
 // Each technician took some 270 px with their phones and leave beneath them: 34,000 px for 168.
 test("gives each technician one row of the board's height, however many phones and days off", async ({ page }) => {
   await open(page);

@@ -53,6 +53,7 @@ export const stock = {
   recorded: "Recorded.",
   movements: {
     title: "Latest movements",
+    narrow: "Filter movements",
     columns: ["When", "Consumable", "Where", "Change", "Why", "Who"],
     reasons: {
       received: "Delivered",

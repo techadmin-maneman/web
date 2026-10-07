@@ -1934,6 +1934,7 @@ Request body:
             "slot_times_too_soon",
             "not_permitted",
             "last_admin",
+            "in_use",
             "figures_conflict"
           ]
         },

@@ -5,6 +5,7 @@
 //   POST /api/consumables/:code             rename it, or change its unit, its cost or its reorder levels
 //   POST /api/consumables/:code/retire      no longer offered, from a day
 //   POST /api/consumables/:code/restore     offered again
+//   POST /api/consumables/:code/delete      one added by mistake, while no stock of it has moved
 //   POST /api/service-usage                 what one service is expected to use, the whole list at once
 //
 // A change here needs no release. Each records the Access identity behind it,
@@ -22,6 +23,7 @@ import {
   changeConsumable,
   expectedUse,
   isOffered,
+  deleteConsumable,
   retireConsumable,
   servicesForUse,
   setExpectedUse,
@@ -192,6 +194,19 @@ const restoreRoute = createRoute({
   },
 });
 
+const deleteRoute = createRoute({
+  method: "post",
+  path: "/api/consumables/{code}/delete",
+  summary: "Delete a consumable added by mistake, while no stock of it has moved and no job has used it",
+  request: { params: code },
+  responses: {
+    200: CONSUMABLES,
+    403: errorResponse("access_required"),
+    404: errorResponse("not_found: no such consumable"),
+    409: errorResponse("in_use: stock of it has moved, or a job used it; retire it instead"),
+  },
+});
+
 const usageRoute = createRoute({
   method: "post",
   path: "/api/service-usage",
@@ -325,6 +340,13 @@ export function registerOpsConsumables(app: App): void {
     const today = indiaDate(c.var.deps.now());
     const saved = await retireConsumable(c.env.DB, c.req.valid("param").code, null, { ...written(c), today });
     if (saved === null) return refuse(c, "not_found");
+    return c.json(await answer(c), 200);
+  });
+
+  app.openapi(deleteRoute, async (c) => {
+    const deleted = await deleteConsumable(c.env.DB, c.req.valid("param").code, written(c));
+    if (deleted === null) return refuse(c, "not_found");
+    if (deleted === "in_use") return refuse(c, "in_use");
     return c.json(await answer(c), 200);
   });
 

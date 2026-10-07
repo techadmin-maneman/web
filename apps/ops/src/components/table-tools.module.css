@@ -1,0 +1,61 @@
+/* A long table's bar of search and lists, its heads that sort, and the line beneath it (./TableTools.tsx). */
+
+/* This bar's own size, which nothing else draws (ADR 0077, as amended). */
+:root {
+  --local-table-filter: 176px; /* a list's narrowest: "Used on a job" and its arrow */
+}
+
+.bar {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(var(--local-table-filter), 1fr));
+  gap: var(--sp-12) var(--sp-16);
+  align-items: end;
+  margin: var(--sp-12) var(--sp-20) var(--sp-8);
+}
+
+.count {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-12);
+  min-height: var(--tap);
+  margin: 0;
+  font-size: var(--fs-14);
+  color: var(--text-muted);
+}
+
+.clear {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  text-decoration: underline;
+  text-underline-offset: var(--sp-4);
+  cursor: pointer;
+}
+
+.sort {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-4);
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.sort:hover {
+  color: var(--text);
+}
+
+.figure {
+  text-align: right;
+}
+
+.end {
+  margin: var(--sp-12) var(--sp-20) 0;
+  font-size: var(--fs-14);
+  color: var(--text-muted);
+}

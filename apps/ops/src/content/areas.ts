@@ -87,6 +87,9 @@ export const areas = {
      */
     city: (city: string, served: number, all: number) => `${city} · ${String(served)} of ${String(all)}`,
     columns: ["Pincode", "Area name", "Served", "Launch date", "Waiting"],
+    narrow: "Filter pincodes",
+    yes: "Yes",
+    no: "No",
     areaLabel: (pincode: string) => `Area name for ${pincode}`,
     served: (pincode: string) => `Served ${pincode}`,
     launchOn: (pincode: string) => `Launch date for ${pincode}`,
@@ -142,6 +145,7 @@ export const areas = {
 /** Areas' Waiting tab: who waits in each pincode, the longest wait first. */
 export const waitlist = {
   columns: ["Pincode", "Area", "Waiting", "Oldest", "Referred", "Opted in"],
+  narrow: "Filter the waitlist",
   /** An area or a date the pincode table has nothing for, written as the design's tables write a gap. */
   unknown: "—",
   /** A pincode the service area does not hold, which is added before it is marked live. */

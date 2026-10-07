@@ -114,3 +114,17 @@ test("meets WCAG 2.2 AA with the list, and with the launch panel open", async ({
   await expect(page.getByText("Messages 84 people")).toBeVisible();
   expect(await axeViolations(page)).toEqual([]);
 });
+
+test("sorts the waitlist by a column, and narrows it by a search", async ({ page }) => {
+  await open(page);
+  const rows = page.getByRole("table").getByRole("row");
+  await page.getByRole("button", { name: "Pincode", exact: true }).click();
+  await expect(page.getByRole("columnheader", { name: "Pincode", exact: true })).toHaveAttribute(
+    "aria-sort",
+    "ascending",
+  );
+  await expect(rows.nth(1)).toContainText("122018");
+  await page.getByLabel("Search").fill("bandra");
+  await expect(rows).toHaveCount(2);
+  await expect(rows.nth(1)).toContainText("400050");
+});

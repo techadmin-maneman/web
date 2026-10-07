@@ -28,6 +28,8 @@ import { technicians } from "../content.ts";
 import { useAccess } from "../lib/access.ts";
 import { technicianPath } from "../route.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
+import { Narrowing, SortHeads, TableEnd } from "../components/TableTools.tsx";
+import { useTableView, type Column } from "../components/useTableView.ts";
 import { AddTechnician } from "./TechnicianForms.tsx";
 import styles from "./technicians.module.css";
 
@@ -102,37 +104,47 @@ function RosterTable({
   figures: ReadonlyMap<string, TechnicianWork>;
 }) {
   const today = indiaDate(new Date().toISOString());
+  const zone = (row: Technician) => row.zone ?? "";
+  const [name, zoneLabel, jobs, service, leave] = technicians.columns;
+  const columns: readonly Column<Technician>[] = [
+    { label: name, sort: (row) => row.name },
+    { label: zoneLabel, sort: zone, choice: zone },
+    { label: jobs, sort: (row) => figures.get(row.id)?.jobs ?? -1 },
+    { label: service, sort: (row) => figures.get(row.id)?.average_minutes ?? -1 },
+    { label: leave, sort: (row) => row.leave[0]?.from ?? "" },
+  ];
+  const view = useTableView(active, columns, { search: (row) => `${row.name} ${zone(row)}` });
   return (
-    <table className={styles.table}>
-      <thead>
-        <tr>
-          {technicians.columns.map((column) => (
-            <th key={column} scope="col" className={styles.head}>
-              {column}
-            </th>
-          ))}
-        </tr>
-      </thead>
-      <tbody>
-        {active.map((technician) => (
-          <tr key={technician.id}>
-            <th scope="row" className={styles.name}>
-              <OpsLink className={styles.choose} to={technicianPath(technician.id)}>
-                {technician.name}
-              </OpsLink>
-            </th>
-            <td className={styles.zone}>{technician.zone ?? technicians.unknown}</td>
-            <td className={styles.jobs}>{figures.get(technician.id)?.jobs ?? technicians.unknown}</td>
-            <td className={styles.service}>
-              <Service figures={figures.get(technician.id)} />
-            </td>
-            <td className={styles.leaveCell}>
-              <LeaveCell leave={technician.leave} today={today} />
-            </td>
+    <>
+      <Narrowing view={view} label={technicians.narrow} className={styles.narrow} />
+      <table className={styles.table}>
+        <thead>
+          <tr>
+            <SortHeads view={view} className={styles.head} />
           </tr>
-        ))}
-      </tbody>
-    </table>
+        </thead>
+        <tbody>
+          {view.shown.map((technician) => (
+            <tr key={technician.id}>
+              <th scope="row" className={styles.name}>
+                <OpsLink className={styles.choose} to={technicianPath(technician.id)}>
+                  {technician.name}
+                </OpsLink>
+              </th>
+              <td className={styles.zone}>{technician.zone ?? technicians.unknown}</td>
+              <td className={styles.jobs}>{figures.get(technician.id)?.jobs ?? technicians.unknown}</td>
+              <td className={styles.service}>
+                <Service figures={figures.get(technician.id)} />
+              </td>
+              <td className={styles.leaveCell}>
+                <LeaveCell leave={technician.leave} today={today} />
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <TableEnd view={view} />
+    </>
   );
 }
 

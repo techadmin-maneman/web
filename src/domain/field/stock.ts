@@ -349,8 +349,8 @@ function placesShown(
   return [...store, ...shown.map((row) => ({ technicianId: row.id, name: row.name, active: row.active === 1 }))];
 }
 
-/** How many of the latest movements the screen shows beneath the table. */
-const MOVEMENTS_SHOWN = 30;
+/** How many of the latest movements the screen holds beneath the table, to sort and narrow there. */
+const MOVEMENTS_SHOWN = 500;
 
 type BalanceRow = {
   consumable_code: string;
