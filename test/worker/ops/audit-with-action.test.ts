@@ -41,10 +41,10 @@ beforeEach(async () => {
   cookie = `mm_app=${await openSession(env.DB, { kind: "client", subjectId: PERSON, deviceLabel: null, now: NOW })}`;
 });
 
-/** Every audit entry but the ops surface's own record of each call, which is written first and apart. */
+/** Every audit entry but each surface's own record of a call (ops.call, client.call, tech.call), written first and apart. */
 async function refuseAuditEntries(): Promise<void> {
   await env.DB.prepare(
-    `CREATE TRIGGER refuse_audit BEFORE INSERT ON audit_log WHEN NEW.action != 'ops.call'
+    `CREATE TRIGGER refuse_audit BEFORE INSERT ON audit_log WHEN NEW.action NOT IN ('ops.call', 'client.call', 'tech.call')
      BEGIN SELECT RAISE(ABORT, 'refused for the test'); END`,
   ).run();
 }
