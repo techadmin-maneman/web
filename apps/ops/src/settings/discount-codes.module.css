@@ -1,0 +1,92 @@
+/* Discount codes: every code's figures in a row of five, then the codes as a table, the switched-off ones folded. */
+
+/* This page's own size, which nothing else draws (ADR 0077, as amended). */
+:root {
+  --local-codes-table: 960px; /* the narrowest the table goes before it scrolls */
+}
+
+.figures {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-12) var(--sp-32);
+  margin: var(--sp-16) var(--sp-20) var(--sp-8);
+}
+
+.total dt {
+  font-size: var(--fs-13);
+  color: var(--text-muted);
+}
+
+.total dd {
+  margin: var(--sp-4) 0 0;
+  font-size: var(--fs-18);
+  font-variant-numeric: tabular-nums;
+}
+
+.scroll {
+  overflow-x: auto;
+}
+
+.table {
+  min-width: var(--local-codes-table);
+}
+
+.code {
+  font-weight: var(--weight-medium);
+}
+
+.figure {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  text-align: right;
+}
+
+.actions {
+  white-space: nowrap;
+  text-align: right;
+}
+
+.actions button:first-child {
+  margin-left: 0;
+}
+
+.table .acting > td {
+  padding: 0 0 var(--sp-14);
+  background: var(--paper-light);
+}
+
+.off {
+  margin: var(--sp-16) 0 0;
+}
+
+.offSummary {
+  margin: 0 var(--sp-20);
+  font-size: var(--fs-14);
+  color: var(--text);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+/* Finding a code, and the table's list, on one line above the table. */
+.tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: var(--sp-12) var(--sp-24);
+  margin: var(--sp-16) var(--sp-20) var(--sp-8);
+}
+
+.find {
+  display: flex;
+  align-items: end;
+  gap: var(--sp-10);
+}
+
+.narrow {
+  flex: 1;
+  margin: 0;
+}
+
+.ask {
+  padding: var(--sp-12) var(--sp-20) 0;
+}
