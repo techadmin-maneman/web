@@ -1,11 +1,15 @@
-// A fitted client with an address saved, who books in the booking tests (e2e/app/booking.e2e.ts). No slot is held
+// The fitted clients with an address saved, who book in the booking tests (e2e/app/booking.e2e.ts). No slot is held
 // for a client without one (ADR 0079), and the fitted client of e2e/app/fitted.ts has none, so that Home asks for
 // it. Written into the local database as the FSM mirror would hold them: a first fit done 60 days ago, with the
 // fitted client's technician, so a service visit is what they book, and both photograph consents given. Every name
 // and number is made up.
 //
-// e2e/global-setup.ts seeds the client once, after the fitted client, whose technician this one's fit names.
+// One client to each worker that runs at once: a client's new hold lets their earlier one go, so two booking files
+// running side by side with one client let each other's holds go, and a test failed wherever the timing fell.
+//
+// e2e/global-setup.ts seeds the clients once, after the fitted client, whose technician their fit names.
 
+import { test } from "@playwright/test";
 import { indiaDate } from "../../src/lib/india-time.ts";
 import { randomMobile } from "../support.ts";
 import { E2E_TECHNICIANS } from "../technicians.ts";
@@ -17,22 +21,26 @@ export interface Booker {
   readonly mobile: string;
 }
 
-const HANDOVER = "MM_E2E_BOOKER";
+const HANDOVER = "MM_E2E_BOOKERS";
 const DAY = 24 * 60 * 60 * 1000;
 
-/** The client the global setup seeded. */
+/** More than the workers any machine runs at once: CI runs three, a laptop half its cores. */
+const BOOKERS = 16;
+
+/** The client this worker books as: no other worker running beside it has the same one. */
 export function bookerClient(): Booker {
   const handed = process.env[HANDOVER];
-  if (handed === undefined) throw new Error("no booking client: e2e/global-setup.ts seeds one");
-  return JSON.parse(handed) as Booker;
+  if (handed === undefined) throw new Error("no booking client: e2e/global-setup.ts seeds them");
+  const bookers = JSON.parse(handed) as Booker[];
+  const booker = bookers[test.info().parallelIndex % bookers.length];
+  if (booker === undefined) throw new Error("no booking client for this worker");
+  return booker;
 }
 
-export async function seedBooker(): Promise<void> {
-  const now = new Date().toISOString();
+/** One client's rows, fitted on `fitted`. */
+function bookerRows(mobile: string, fitted: string, now: string): string[] {
   const [person, fit] = [crypto.randomUUID(), crypto.randomUUID()];
-  const mobile = randomMobile();
-  const fitted = indiaDate(new Date(Date.now() - 60 * DAY));
-  const sql = [
+  return [
     `INSERT INTO people (id, created_at, mobile_e164, name) VALUES ${sqlRow(person, now, `+91${mobile}`, "Rohit Malhotra")};`,
     `INSERT INTO appointments (id, fsm_id, person_id, type, window_start, window_end, technician_id, status,
        fsm_status, service_city, service_pincode, fsm_modified_at, synced_at) VALUES
@@ -45,6 +53,13 @@ export async function seedBooker(): Promise<void> {
        ${sqlRow(crypto.randomUUID(), person, "photos_own_record", "photos-own-record-v1", 1, now)},
        ${sqlRow(crypto.randomUUID(), person, "photos_referral_cards", "photos-referral-cards-v2", 1, now)};`,
   ];
+}
+
+export async function seedBooker(): Promise<void> {
+  const now = new Date().toISOString();
+  const fitted = indiaDate(new Date(Date.now() - 60 * DAY));
+  const bookers = Array.from({ length: BOOKERS }, () => ({ mobile: randomMobile() }) satisfies Booker);
+  const sql = bookers.flatMap((booker) => bookerRows(booker.mobile, fitted, now));
   await wrangler("d1", "execute", "DB", "--local", "--command", sql.join("\n"));
-  process.env[HANDOVER] = JSON.stringify({ mobile } satisfies Booker);
+  process.env[HANDOVER] = JSON.stringify(bookers);
 }
