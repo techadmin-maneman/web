@@ -115,7 +115,6 @@ export function Tray({ unassigned, onOpen, onTake }: Props) {
           ))}
         </ul>
       )}
-      {!empty && <p className={styles.note}>{dispatch.tray.same}</p>}
     </aside>
   );
 }

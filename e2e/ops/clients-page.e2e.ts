@@ -64,7 +64,6 @@ test("moves between the tabs without reading the record again, and keeps the pho
   await page.getByRole("button", { name: "View photos" }).click();
   await expect(page.getByRole("img")).toHaveCount(10);
   await page.getByRole("link", { name: "Consents" }).click();
-  await expect(page.getByText("Only the client can give consent, in their app.")).toBeVisible();
   await page.getByRole("link", { name: "Hair" }).click();
   await expect(page.getByText("MM-STD-4417-C")).toBeVisible();
   // Visits, Payments and History are drawn from the record already loaded, so they ask the API for nothing.
@@ -129,7 +128,6 @@ test("meets WCAG 2.2 AA finding a client, and on every tab, locked and open", as
   await clean("photos, open");
 
   await page.getByRole("link", { name: "Consents" }).click();
-  await expect(page.getByText("Only the client can give consent, in their app.")).toBeVisible();
   await clean("consents");
 
   await page.getByRole("link", { name: "Overview" }).click();

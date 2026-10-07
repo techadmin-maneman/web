@@ -60,9 +60,7 @@ test("moves a job from a list, sends the board it was taken from, and says only 
   await press(page, "Move and notify");
 
   // Queued is not sent: the notice says the message is on its way, and what happens if it fails.
-  await expect(page.getByRole("status")).toHaveText(
-    "Moved. Rohit M. gets the new window on WhatsApp. If it fails, a call task appears.",
-  );
+  await expect(page.getByRole("status")).toHaveText("Moved. Rohit M. is told on WhatsApp.");
   expect(sent).toEqual([
     {
       appointment_id: ROHIT_JOB?.appointment_id,
@@ -228,7 +226,7 @@ test("asks why before a move onto a blacked-out day, and sends the reason with i
   await picker.getByLabel("Reason").fill("His only free day before he travels");
   await press(page, "Move and notify");
 
-  await expect(page.getByRole("status")).toContainText("Moved. Rohit M. gets the new window on WhatsApp.");
+  await expect(page.getByRole("status")).toContainText("Moved. Rohit M. is told on WhatsApp.");
   expect(sent).toEqual([expect.objectContaining({ blackout_reason: "His only free day before he travels" })]);
 });
 
@@ -247,7 +245,7 @@ test("assigns a tray job through the assign route, with no technician expected",
   await page.getByRole("radio", { name: "Client asked" }).check();
   await page.getByRole("button", { name: "Move", exact: true }).click();
 
-  await expect(page.getByRole("status")).toContainText("Moved. Vikram S. gets the new window on WhatsApp.");
+  await expect(page.getByRole("status")).toContainText("Moved. Vikram S. is told on WhatsApp.");
   expect(moved).toEqual([]);
   expect(assigned).toEqual([
     {
@@ -299,12 +297,10 @@ test("tells ops a change of technician alone messages nobody", async ({ page }) 
   await press(page, "Move Rohit M. to Sandeep Yadav, Fri 19 Sep, morning");
 
   const picker = page.getByRole("dialog", { name: "Move Rohit M. to Sandeep Yadav" });
-  await expect(picker).toContainText("Only the technician changes. Rohit M. keeps the same window and isn't messaged.");
+  await expect(picker).toContainText("Rohit M. keeps the same window. No message sent.");
   await reason(page, "Zone rebalance");
   await press(page, "Move");
-  await expect(page.getByRole("status")).toHaveText(
-    "Rohit M. is now with Sandeep Yadav. Same window, so no message sent.",
-  );
+  await expect(page.getByRole("status")).toHaveText("Rohit M. is now with Sandeep Yadav. Same window.");
 });
 
 // Escape during "Moving" let the same job be moved twice.
@@ -334,7 +330,7 @@ test("lets go of nothing while a move is being sent, so it cannot be sent twice"
   await expect(page.getByRole("button", { name: "Cancel" })).toBeDisabled();
 
   release();
-  await expect(page.getByRole("status")).toContainText("Moved. Rohit M. gets the new window on WhatsApp.");
+  await expect(page.getByRole("status")).toContainText("Moved. Rohit M. is told on WhatsApp.");
   expect(sent).toHaveLength(1);
 });
 

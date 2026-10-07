@@ -422,7 +422,6 @@ function Queue() {
           </DepartmentSection>
         ))
       )}
-      <p className={styles.note}>{tasks.note}</p>
     </section>
   );
 }

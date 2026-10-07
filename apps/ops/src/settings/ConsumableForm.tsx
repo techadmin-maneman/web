@@ -122,7 +122,7 @@ export function ConsumableForm({
         {consumable === null ? form.addTitle : form.changeTitle(consumable.name)}
       </legend>
       <div className={styles.fields}>
-        <Field label={form.name} hint={form.nameHint} className={styles.field}>
+        <Field label={form.name} className={styles.field}>
           {(control) => (
             <TextInput
               {...control}
@@ -135,7 +135,7 @@ export function ConsumableForm({
             />
           )}
         </Field>
-        <Field label={form.unit} hint={form.unitHint} className={styles.field}>
+        <Field label={form.unit} className={styles.field}>
           {(control) => (
             <TextInput
               {...control}
@@ -148,7 +148,7 @@ export function ConsumableForm({
             />
           )}
         </Field>
-        <Field label={form.cost} hint={form.costHint(rupees(maxUnitCost))} className={styles.field}>
+        <Field label={form.cost} className={styles.field}>
           {(control) => (
             <TextInput
               {...control}
@@ -164,7 +164,7 @@ export function ConsumableForm({
         </Field>
       </div>
       <div className={styles.fields}>
-        <Field label={form.kit} hint={form.levelHint} className={styles.field}>
+        <Field label={form.kit} className={styles.field}>
           {(control) => (
             <TextInput
               {...control}

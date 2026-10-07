@@ -98,7 +98,7 @@ function AttachForm({
       }}
     >
       <p className={styles.findHint}>{copy.none}</p>
-      <Field label={copy.form.code} hint={copy.form.codeHint}>
+      <Field label={copy.form.code}>
         {(control) => (
           <TextInput
             {...control}
@@ -115,7 +115,7 @@ function AttachForm({
           />
         )}
       </Field>
-      <Field className={styles.inviteReason} label={copy.form.reason} hint={copy.form.reasonHint}>
+      <Field className={styles.inviteReason} label={copy.form.reason}>
         {(control) => (
           <TextArea
             {...control}
@@ -129,7 +129,6 @@ function AttachForm({
           />
         )}
       </Field>
-      <p className={styles.note}>{copy.form.note}</p>
       <Button variant="primary" size="small" className={styles.primary} type="submit" disabled={sending || !ready}>
         {sending ? copy.form.saving : copy.form.save}
       </Button>

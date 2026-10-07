@@ -98,7 +98,7 @@ function HeldGrant({ grant, now, mayDecide, onDecided }: HeldGrantProps) {
       </ul>
       {asking !== null && (
         <div className={styles.reason}>
-          <Field label={copy.reason.label[asking.choice]} hint={copy.reason.hint}>
+          <Field label={copy.reason.label[asking.choice]}>
             {(control) => (
               <TextArea
                 {...control}
@@ -311,7 +311,6 @@ function ReferrersTable({ version }: { version: number }) {
             </Button>
           </div>
         )}
-        <p className={styles.note}>{copy.note}</p>
       </div>
     </section>
   );

@@ -33,9 +33,6 @@ describe("the ops console's content", () => {
 describe("what the DPDP queues promise", () => {
   it("counts a grievance down to the answer time the client's app names", () => {
     expect(profile.data.sent).toContain(`within ${String(grievances.queue.answerDays)} days`);
-    expect(grievances.queue.note(grievances.queue.answerDays)).toContain(
-      `within ${String(grievances.queue.answerDays)} days`,
-    );
   });
 
   it("counts a deletion request down to a window the ops alert falls inside", () => {

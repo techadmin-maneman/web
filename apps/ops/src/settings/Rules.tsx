@@ -17,7 +17,6 @@ import { Field, NumberInput, Select } from "@maneman/ui/Field";
 import { CheckPanel } from "../components/CheckPanel.tsx";
 import { Button } from "@maneman/ui/Button";
 import { useLoad } from "@maneman/ui/useLoad";
-import { longDate } from "@maneman/web-kit/dates";
 import { useState, type ReactNode } from "react";
 import { HOUR_OF_DAY } from "../../../../src/config/setting-units.ts";
 import { api, type ChoiceRule, type NumberRule, type OpsSetting, type SettingValue } from "../api.ts";
@@ -25,11 +24,12 @@ import { OpsLink } from "../components/Shell.tsx";
 import { settings } from "../content.ts";
 import { useAccess } from "../lib/access.ts";
 import { useTargetRow } from "../lib/target.ts";
-import { whoWords } from "../lib/who.ts";
 import type { SectionPath } from "../route.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import { CHARGES_A_LATE_FEE, CONSOLE_GROUP, sectionsOf, type RuleGroupId, type RuleSection } from "./rule-groups.ts";
 import styles from "../components/forms.module.css";
+import rules from "./rules.module.css";
+import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 
 const copy = settings.rules;
 
@@ -203,7 +203,7 @@ function FigureField({
     : copy.allowed(bounds.min, bounds.max, bounds.unit);
   const why = clock ? range : copy.outOfBounds(String(bounds.min), `${String(bounds.max)} ${bounds.unit}`);
   return (
-    <Field label={label} hint={outside ? undefined : range} error={outside ? why : null} className={styles.field}>
+    <Field label={label} error={outside ? why : null} className={styles.field}>
       {(control) => (
         <div className={styles.fieldRow}>
           <NumberInput
@@ -317,12 +317,6 @@ function AddKey({ rule, onAdd }: { rule: NumberRule; onAdd: (key: string, text: 
   );
 }
 
-/** Who set a rule and when, or that nobody has. */
-function setLine(rule: OpsSetting): string {
-  if (rule.set_by === null || rule.set_at === null) return copy.committed;
-  return copy.setBy(whoWords(rule.set_by), longDate(rule.set_at));
-}
-
 /** The old figure beside the new, for every one the section's change moves, before anything is sent. */
 function Check({
   changes,
@@ -402,6 +396,21 @@ function Fields({
   );
 }
 
+/** A rule with more boxes than a row holds: shut until opened, so the page lists rules, not a wall of boxes. */
+const MANY = 4;
+
+function Boxes({ rule, draft, children }: { rule: OpsSetting; draft: Draft; children: ReactNode }) {
+  const count = rule.kind === "choice" ? rule.keys.length : Object.keys(draft).length;
+  const open = rule.kind === "number" && rule.keys === "open";
+  if (count <= MANY && !open) return <>{children}</>;
+  return (
+    <details className={rules.many}>
+      <summary className={rules.summary}>{copy.showAll(count)}</summary>
+      <div className={rules.manyBody}>{children}</div>
+    </details>
+  );
+}
+
 /** What the person's access lets them do here: change the rules, and open Prices, where the late fees are set. */
 interface Allowed {
   readonly mayChange: boolean;
@@ -425,8 +434,12 @@ function Rule({ rule, draft, allowed, held, refusal, onEdit, onStandard }: RuleP
   return (
     <li className={styles.rule} id={rule.name} tabIndex={-1}>
       <fieldset className={styles.group} disabled={held || !allowed.mayChange}>
-        <legend className={styles.ruleTitle}>{rule.title}</legend>
-        <p className={styles.note}>{rule.note}</p>
+        {/* A rule of one figure has its name on its box, so the legend is said, not shown twice. */}
+        {rule.kind === "number" && typeof rule.value === "number" ? (
+          <VisuallyHidden as="legend">{rule.title}</VisuallyHidden>
+        ) : (
+          <legend className={styles.ruleTitle}>{rule.title}</legend>
+        )}
         {pricedInPrices && (
           <p className={styles.note}>
             <OpsLink className={styles.link} to={PRICES_PATH}>
@@ -434,11 +447,12 @@ function Rule({ rule, draft, allowed, held, refusal, onEdit, onStandard }: RuleP
             </OpsLink>
           </p>
         )}
-        <Fields rule={rule} draft={draft} onChange={onEdit} />
-        {allowed.mayChange && rule.kind === "number" && rule.keys === "open" && <AddKey rule={rule} onAdd={onEdit} />}
+        <Boxes rule={rule} draft={draft}>
+          <Fields rule={rule} draft={draft} onChange={onEdit} />
+          {allowed.mayChange && rule.kind === "number" && rule.keys === "open" && <AddKey rule={rule} onAdd={onEdit} />}
+        </Boxes>
       </fieldset>
 
-      <p className={styles.set}>{setLine(rule)}</p>
       {mayGoBack && (
         <div className={styles.actions}>
           <Button variant="outline" size="small" className={styles.quiet} onClick={onStandard}>

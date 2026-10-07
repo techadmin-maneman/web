@@ -150,7 +150,7 @@ function Request({ request, now, mayDecide, onDecided }: RequestProps) {
       )}
       {asking?.choice === "reject" && (
         <div className={styles.reason}>
-          <Field label={copy.reason.label} hint={copy.reason.hint}>
+          <Field label={copy.reason.label}>
             {(control) => (
               <TextArea
                 {...control}
@@ -261,7 +261,6 @@ function Queue() {
       items={loaded.value.requests}
       rowKind="request"
       empty={copy.empty}
-      note={copy.note(copy.processDays)}
       done={done}
     >
       {(request, decided) => (

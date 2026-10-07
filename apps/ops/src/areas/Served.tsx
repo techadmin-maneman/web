@@ -131,8 +131,6 @@ function Area({ pincodes: loadedPincodes, cities }: { pincodes: readonly ServedP
         </Button>
       }
     >
-      <p className={styles.note}>{copy.note}</p>
-
       <CityTabs
         pincodes={pincodes}
         draft={draft}
@@ -168,7 +166,6 @@ function Area({ pincodes: loadedPincodes, cities }: { pincodes: readonly ServedP
           ))}
         </tbody>
       </Table>
-      <p className={styles.hint}>{copy.hint}</p>
 
       {checking && (
         <div className={areaStyles.inPanel}>

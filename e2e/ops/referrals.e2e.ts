@@ -60,7 +60,6 @@ test("asks why before it approves one, and sends the reason with the approval", 
   const confirm = grant.getByRole("button", { name: "Approve grant" });
   await expect(confirm).toBeDisabled();
   await grant.getByLabel("Reason for approving").fill("Father and son, two households");
-  await expect(grant.getByText("Saved with the decision.")).toBeVisible();
   const sent = page.waitForRequest((request) => request.url().includes("/decision") && request.method() === "POST");
   await confirm.click();
   expect((await sent).postDataJSON()).toEqual({ decision: "approve", reason: "Father and son, two households" });
@@ -128,7 +127,6 @@ test("shows every referrer's figures, the busiest first, as the route orders the
     "href",
     `/clients/${REFERRERS.referrers[0]?.person_id ?? ""}/referrals`,
   );
-  await expect(page.getByText("Clients see fits only.")).toBeVisible();
   await expect(page.getByRole("button", { name: "Show more" })).toBeHidden();
 });
 

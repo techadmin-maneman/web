@@ -32,8 +32,7 @@ export const technicians = {
     /** When the phone timed fewer jobs than were finished, the average says what it is of. */
     base: (timed: number, jobs: number) => `${String(timed)} of ${String(jobs)}`,
     /** Beneath the table, where the board writes its own note: what the two columns count. */
-    period: (from: string, to: string) =>
-      `Jobs finished ${from} to ${to}. Average service is measured against each visit's planned length.`,
+    period: (from: string, to: string) => `Jobs finished ${from} to ${to}.`,
     /** The board's fifth column, which no route can answer (docs/open-points.md, item 59). */
   },
   /** Our words, all of them: the board draws the roster and no page for one technician. */
@@ -44,11 +43,9 @@ export const technicians = {
   },
   tabs: { week: "This week", leave: "Leave", phones: "Phones", kit: "Kit" },
   week: {
-    lead: "This week's jobs are on the dispatch board.",
     open: "Open on the board",
   },
   kit: {
-    lead: "What their kit holds.",
     columns: ["Consumable", "Held", "Last counted"],
     none: "Kit is empty.",
     stock: "Record a movement in Stock",
@@ -74,8 +71,7 @@ export const technicians = {
     revoking: "Revoking",
     revoked: (date: string) => `Revoked ${date}`,
     /** The board draws no revoke, so nothing writes what one does. */
-    warning:
-      "Signs the phone out and clears its jobs when it next connects. They can't sign in again until you allow it.",
+    warning: "Signs the phone out. They can't sign in again until you allow it.",
     // The board draws no revoke, so nothing writes what follows one.
     stopped: (date: string) => `Sign-in blocked since ${date}, when a phone was revoked.`,
     allow: "Allow sign-in",
@@ -115,7 +111,6 @@ export const technicians = {
       back: "Keep leave",
     },
     recorded: "Leave recorded.",
-    effect: "No bookings or assignments on these days.",
     // Leave recorded over jobs already booked moves none of them.
     stranded: {
       title: (count: number) =>
@@ -139,13 +134,11 @@ export const technicians = {
     mobile: "Mobile",
     zone: "Zone (optional)",
     city: "City",
-    cityHint: "Staff with this city see them. Without one, only national staff do.",
     noCity: "No city",
   },
   add: {
     open: "Add a technician",
     title: "Add a technician",
-    effect: "Sign-in codes go to this number on WhatsApp. They can sign in straight away.",
     save: "Add technician",
     saving: "Adding",
     cancel: "Cancel",
@@ -165,8 +158,7 @@ export const technicians = {
   switchOff: {
     open: "Switch off",
     openLabel: (name: string) => `Switch off ${name}`,
-    warning:
-      "Signs them out and blocks sign-in. Upcoming visits return to the dispatch board. A visit in progress stays theirs.",
+    warning: "Signs them out. Upcoming visits go back to the dispatch board.",
     confirm: "Switch off",
     sending: "Switching off",
     cancel: "Cancel",

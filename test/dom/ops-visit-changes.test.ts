@@ -222,7 +222,7 @@ describe("cancelling a client's visit from the console", () => {
     await settle();
 
     expect(sent.map((each) => each.body.confirm)).toEqual([false, true, false]);
-    expect(text()).toContain("The free window closed meanwhile.");
+    expect(text()).toContain("The free window has closed.");
     expect(text()).toContain("Apply late terms");
   });
 });

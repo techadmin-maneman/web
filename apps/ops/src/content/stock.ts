@@ -8,7 +8,6 @@ import { FAILED, NOT_PERMITTED, OFFLINE } from "./common.ts";
  */
 export const stock = {
   title: "Stock",
-  sub: "What each kit and the central store hold. Use on a job comes out of the technician's kit.",
   onHand: "On hand",
   central: "Central store",
   /** A technician who has left, whose kit still holds stock. */
@@ -17,8 +16,6 @@ export const stock = {
   /** "12 strip", and a mark for a place at or below its level. */
   held: (quantity: number, unit: string) => `${String(quantity)} ${unit}`,
   low: "Low",
-  /** Each followed by a link to Settings, Consumables. */
-  lowNote: "Low means at or below the level set in",
   none: "No consumables yet. Add them in",
   settings: "Settings, Consumables",
   retired: "retired",
@@ -34,13 +31,13 @@ export const stock = {
     } as Readonly<Record<string, string>>,
     consumable: "Consumable",
     quantity: "How many",
-    quantityHint: (unit: string, max: number) => `In ${unit}, up to ${String(max)}.`,
+    /** "How many (ml)": the unit beside the label, where the field takes a figure in it. */
+    inUnit: (label: string, unit: string) => (unit === "" ? label : `${label} (${unit})`),
     from: "From",
     to: "To",
     place: "Where",
     counted: "Counted",
     note: "Note",
-    noteHint: "Supplier note, or what happened. No client names.",
     lossNote: "What was lost, and how",
     check: "Review",
   },
@@ -48,7 +45,7 @@ export const stock = {
     // What the movement does to each place, the old beside the new.
     title: "Review the movement",
     line: (place: string, was: string, now: string) => `${place}: ${was} → ${now}`,
-    below: (place: string) => `${place} would go below zero. Record the missing delivery or count first.`,
+    below: (place: string) => `${place} would go below zero.`,
     same: "Matches what's held. Records the count only.",
     send: "Record",
     back: "Edit",

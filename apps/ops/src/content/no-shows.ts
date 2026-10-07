@@ -142,8 +142,7 @@ export const noShows = {
       `${String(minutes)} min by phone, ${String(withUs)} after it reached us · closed ${closed}`,
     notClosed: "Not closed",
     // The board draws no case closed before the booked start's wait had run.
-    closedEarly:
-      "Closed too early: the wait began before the booked start. Waive it, or explain in your note why you're charging.",
+    closedEarly: "Closed before the wait ended. Waive it, or explain in your note.",
     /**
      * The field beneath the evidence, "Your note · required", which the
      * board draws on the dispute. A ruling needs its reason either way, and the
@@ -152,7 +151,6 @@ export const noShows = {
     reason: {
       label: "Your note · required",
       placeholder: "Why you're charging or waiving",
-      hint: "Saved with the ruling.",
     },
     /**
      * The board's buttons are Refund and Uphold, which rule on a
@@ -170,27 +168,17 @@ export const noShows = {
         `Keep ${kept} of the ${paid} paid, and refund ${refund}?`,
       keepsNone: (paid: string) => `Keep nothing, and refund the ${paid} paid?`,
       keepsCredit: "Keep the free service visit it was booked with?",
-      nothingPaid: "Nothing was paid, so nothing is kept. Record the charge?",
-      creditToo: "The free service visit it was booked with is kept too.",
+      nothingPaid: "Nothing was paid. Record the charge?",
+      creditToo: "The free service visit is kept too.",
       who: (name: string, day: string) => `Charging ${name} for the visit of ${day} can't be undone.`,
       working: "Calculating.",
-      failed: "Couldn't calculate the charge. Go back and try again.",
+      failed: "Couldn't calculate the charge. Try again.",
     },
     // A visit that carries no date, as a charge asked about names it.
     noDay: "an unrecorded day",
     confirmCharge: "Confirm charge",
     back: "Back",
     deciding: "Saving",
-    /**
-     * The board draws no note beneath the queue, and no amount anywhere. A charge costs what the booking
-     * was sold to cost a no-show, set in Settings apart from a late cancel (ADR 0096); a waiver gives back what ops set
-     * it to, the payment and the credit unless ops set otherwise (ADR 0088).
-     */
-    note: (waiver: { readonly payment: "refunded" | "kept"; readonly credit: "returned" | "spent" }) =>
-      "Charging keeps the booking's no-show charge and refunds the rest. Waiving " +
-      `${waiver.payment === "refunded" ? "refunds the payment" : "keeps the payment"} ` +
-      `and ${waiver.credit === "returned" ? "returns the credit" : "keeps the credit spent"}. ` +
-      "The client is told on WhatsApp. Your note stays private.",
     /** The board draws no empty queue. */
     empty: "No no-shows to decide.",
     errors: {
@@ -239,7 +227,6 @@ export const noShows = {
     reason: {
       label: "Your note · required",
       placeholder: "Why you're refunding or upholding",
-      hint: "The client sees the ruling, not your note.",
     },
     refund: "Refund",
     uphold: "Uphold",

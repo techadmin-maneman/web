@@ -38,7 +38,6 @@ type Switched = { readonly to: "off"; readonly visits: readonly ReturnedVisit[] 
 function Week({ technician }: { technician: TechnicianSummary }) {
   return (
     <>
-      <p className={styles.lead}>{technicians.week.lead}</p>
       <div className={styles.actions}>
         <OpsLink
           className={buttonLook({ variant: "outline", size: "small", className: styles.quiet })}

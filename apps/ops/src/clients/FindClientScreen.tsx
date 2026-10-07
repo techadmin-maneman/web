@@ -130,15 +130,11 @@ export function FindClientScreen() {
           className={styles.findField}
           type="search"
           autoComplete="off"
-          aria-describedby="find-hint"
           value={text}
           onChange={(event) => {
             setText(event.target.value);
           }}
         />
-        <p className={styles.findHint} id="find-hint">
-          {copy.hint}
-        </p>
         <Button
           variant="primary"
           size="small"

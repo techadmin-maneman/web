@@ -275,16 +275,12 @@ function CreditForm({
             type="text"
             inputMode="numeric"
             autoComplete="off"
-            aria-describedby="credit-visits-hint"
             value={typed}
             disabled={sending}
             onChange={(event) => {
               setTyped(event.target.value);
             }}
           />
-          <p className={styles.findHint} id="credit-visits-hint">
-            {creditCopy.changeHint}
-          </p>
           <fieldset className={styles.reasons} disabled={sending}>
             <legend className={styles.fieldLabel}>{creditCopy.reason}</legend>
             {creditCopy.reasons.map((each) => (
@@ -303,7 +299,6 @@ function CreditForm({
               </label>
             ))}
           </fieldset>
-          <p className={styles.note}>{creditCopy.note}</p>
           <Button
             variant="primary"
             size="small"

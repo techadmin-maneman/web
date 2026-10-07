@@ -81,7 +81,7 @@ function LaunchOne({ launching, today, launchOn, mayRename, onLaunchOn, onCancel
       sending={step === "sending"}
       done={step === "done" ? copy.done(preview.alerts) : null}
       error={launching.code === undefined ? null : errorText(copy.errors, { code: launching.code })}
-      note={area.served ? copy.toldNote : copy.note(preview.waiting - preview.alerts)}
+      note={area.served ? null : copy.note(preview.waiting - preview.alerts)}
       onSend={onSend}
       onCancel={onCancel}
     >
@@ -99,9 +99,11 @@ function LaunchOne({ launching, today, launchOn, mayRename, onLaunchOn, onCancel
           <dd>{area.referred}</dd>
         </div>
       </dl>
-      <p className={styles.named}>
-        {waitlist.named} {mayRename && <OpsLink to={areasPath("served")}>{waitlist.rename}</OpsLink>}
-      </p>
+      {mayRename && (
+        <p className={styles.named}>
+          <OpsLink to={areasPath("served")}>{waitlist.rename}</OpsLink>
+        </p>
+      )}
       {!area.served && step !== "done" && (
         <div className={styles.field}>
           <label className={styles.fieldLabel} htmlFor="launch-on">
@@ -113,14 +115,10 @@ function LaunchOne({ launching, today, launchOn, mayRename, onLaunchOn, onCancel
             type="date"
             max={today}
             value={launchOn}
-            aria-describedby="launch-on-hint"
             onChange={(event) => {
               onLaunchOn(event.target.value);
             }}
           />
-          <p className={styles.fieldHint} id="launch-on-hint">
-            {waitlist.dateHint}
-          </p>
         </div>
       )}
     </LaunchPanel>

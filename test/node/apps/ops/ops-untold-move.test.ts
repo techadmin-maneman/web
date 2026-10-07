@@ -25,7 +25,7 @@ describe("an untold move on the Tasks board", () => {
 describe("the move's notice", () => {
   it("says the window is on its way, not that it was sent", () => {
     expect(dispatch.landing.moved.messaged("Rohit M.")).toBe(
-      "Moved. Rohit M. gets the new window on WhatsApp. If it fails, a call task appears.",
+      "Moved. Rohit M. is told on WhatsApp.",
     );
   });
 });

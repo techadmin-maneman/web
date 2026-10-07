@@ -53,7 +53,7 @@ function AlertRow({ alert, maySend, mayMarkDone, onClosed }: RowProps) {
       <div className={styles.what}>
         <span className={styles.subject}>{title}</span>
         <span className={styles.sub}>{alert.message}</span>
-        {alert.kind === "message_failed" && <span className={styles.sub}>{copy.messageHint}</span>}
+
         <span className={styles.acts}>
           {alert.link !== null && (
             <OpsLink className={styles.decide} to={alert.link}>

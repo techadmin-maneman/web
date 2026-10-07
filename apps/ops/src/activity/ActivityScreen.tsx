@@ -146,6 +146,35 @@ function Log({ filters }: { filters: Filters }) {
   );
 }
 
+/** The client or visit a link narrowed the log to, each with a way to take it off. */
+function Linked({ filters, onApply }: { filters: Filters; onApply: (filters: Filters) => void }) {
+  const set = [
+    ["person", copy.filters.person, filters.person],
+    ["visit", copy.filters.visit, filters.visit],
+  ] as const;
+  const shown = set.filter(([, , value]) => value !== undefined);
+  if (shown.length === 0) return null;
+  return (
+    <ul className={styles.linked}>
+      {shown.map(([name, label, value]) => (
+        <li key={name} className={styles.chip}>
+          {label} · {value?.slice(0, 8)}
+          <button
+            type="button"
+            className={styles.chipOff}
+            aria-label={copy.filters.remove(label)}
+            onClick={() => {
+              onApply({ ...filters, [name]: undefined });
+            }}
+          >
+            ×
+          </button>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 export function ActivityScreen() {
   const [filters, setFilters] = useState(() => filtersOf(window.location.search));
   const apply = (next: Filters) => {
@@ -155,7 +184,7 @@ export function ActivityScreen() {
   return (
     <Shell section="/activity" title={copy.title}>
       <div className={styles.column}>
-        <p className={styles.intro}>{copy.intro}</p>
+        <Linked filters={filters} onApply={apply} />
         <Narrow filters={filters} onApply={apply} />
         <Log key={activityPath(filters)} filters={filters} />
       </div>

@@ -54,7 +54,6 @@ test("adds a technician, whose number signs in at once", async ({ page }) => {
   await openWith(page, { [ADD]: json(TECHNICIAN_ADDED, 201) });
   await page.getByRole("button", { name: "Add a technician" }).click();
   const form = page.getByRole("dialog", { name: "Add a technician" });
-  await expect(form.getByText("Sign-in codes go to this number on WhatsApp")).toBeVisible();
 
   await form.getByRole("textbox", { name: "Name" }).fill("Naveen Rao");
   await form.getByRole("textbox", { name: "Mobile" }).fill("+91 98100 00007");
@@ -144,7 +143,7 @@ test("switches a technician off only once asked, and lists the visits he no long
   const main = await pageOf(page, "Imran Qureshi");
 
   await main.getByRole("button", { name: "Switch off Imran Qureshi" }).click();
-  await expect(main.getByText("Signs them out and blocks sign-in.")).toBeVisible();
+  await expect(main.getByText("Signs them out. Upcoming visits go back to the dispatch board.")).toBeVisible();
   await main.getByRole("button", { name: "Cancel" }).click();
   await main.getByRole("button", { name: "Switch off Imran Qureshi" }).click();
 

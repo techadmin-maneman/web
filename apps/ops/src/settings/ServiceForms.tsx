@@ -170,7 +170,7 @@ export function PriceForm(props: {
         <p className={styles.formNow}>{copy.now(priceWords(inForce), longDate(inForce.valid_from))}</p>
       )}
       <div className={styles.fields}>
-        <Field label={form.amount} hint={form.amountHint(rupees(props.maxAmount))} className={styles.field}>
+        <Field label={form.amount} className={styles.field}>
           {(control) => (
             <NumberInput
               {...control}
@@ -187,7 +187,7 @@ export function PriceForm(props: {
             />
           )}
         </Field>
-        <Field label={form.gst} hint={form.gstHint(props.maxGst)} className={styles.field}>
+        <Field label={form.gst} className={styles.field}>
           {(control) => (
             <div className={styles.fieldRow}>
               <NumberInput
@@ -209,7 +209,7 @@ export function PriceForm(props: {
         </Field>
         <Field
           label={form.from}
-          hint={tooSoon ? undefined : form.fromHint}
+
           error={tooSoon ? form.fromTooSoon : null}
           className={styles.field}
         >
@@ -317,7 +317,7 @@ export function RenameForm(props: {
     <fieldset className={styles.group}>
       <legend className={styles.ruleTitle}>{form.renameTitle(service.name)}</legend>
       <div className={styles.fields}>
-        <Field label={form.name} hint={form.nameHint} className={styles.field}>
+        <Field label={form.name} className={styles.field}>
           {(control) => (
             <TextInput
               {...control}
@@ -375,7 +375,7 @@ export function DescribeForm(props: {
     <fieldset className={styles.group}>
       <legend className={styles.ruleTitle}>{form.describeTitle(service.name)}</legend>
       <div className={styles.fields}>
-        <Field label={form.description} hint={form.descriptionHint(props.maxLength)} className={styles.field}>
+        <Field label={form.description} className={styles.field}>
           {(control) => (
             <TextInput
               {...control}
@@ -428,7 +428,7 @@ export function LengthForm(props: {
     <fieldset className={styles.group}>
       <legend className={styles.ruleTitle}>{form.lengthTitle(service.name)}</legend>
       <div className={styles.fields}>
-        <Field label={form.minutes} hint={form.minutesHint(bounds.min, bounds.max)} className={styles.field}>
+        <Field label={form.minutes} className={styles.field}>
           {(control) => (
             <NumberInput
               {...control}
@@ -488,7 +488,7 @@ export function RetireForm(props: {
     <fieldset className={styles.group}>
       <legend className={styles.ruleTitle}>{form.retireTitle(service.name)}</legend>
       <div className={styles.fields}>
-        <Field label={form.retireFrom} hint={form.retireHint} className={styles.field}>
+        <Field label={form.retireFrom} className={styles.field}>
           {(control) => (
             <DateInput
               {...control}
@@ -611,7 +611,7 @@ export function AddForm(props: {
     <fieldset className={styles.group}>
       <legend className={styles.ruleTitle}>{form.addTitle(kindName)}</legend>
       <div className={styles.fields}>
-        <Field label={form.name} hint={form.nameHint} className={styles.field}>
+        <Field label={form.name} className={styles.field}>
           {(control) => (
             <TextInput
               {...control}
@@ -625,7 +625,7 @@ export function AddForm(props: {
             />
           )}
         </Field>
-        <Field label={form.code} hint={form.codeHint} className={styles.field}>
+        <Field label={form.code} className={styles.field}>
           {(control) => (
             <TextInput
               {...control}
@@ -640,7 +640,7 @@ export function AddForm(props: {
             />
           )}
         </Field>
-        <Field label={form.minutes} hint={form.minutesHint(bounds.min, bounds.max)} className={styles.field}>
+        <Field label={form.minutes} className={styles.field}>
           {(control) => (
             <NumberInput
               {...control}

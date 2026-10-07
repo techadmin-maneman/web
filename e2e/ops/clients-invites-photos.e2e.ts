@@ -34,7 +34,6 @@ test("attaches an invite to a client who came with none, with why, and shows it 
   const invite = page.getByRole("region", { name: "Invite" });
   await expect(invite).toContainText("No invite.");
   // The note forbade a fitted client, though one is allowed, held for review.
-  await expect(invite).toContainText("After a first fit, it's held for review.");
   const attach = invite.getByRole("button", { name: "Attach invite" });
   await expect(attach).toBeDisabled();
 
@@ -105,9 +104,7 @@ test("keeps the photographs locked, and says what opening them records", async (
   });
   await expect(page.getByText("Locked")).toBeVisible();
   await expect(page.getByRole("heading", { name: `Photos of ${CLIENT.name}` })).toBeVisible();
-  // Why they are kept, whatever the Consents tab says.
-  await expect(page.getByText("Taken at every visit for the record.")).toBeVisible();
-  await expect(page.getByText("Opening these is logged with your name and the time.")).toBeVisible();
+  await expect(page.getByText("Viewing is logged.")).toBeVisible();
   // Nothing is fetched while it is locked, so nothing is logged.
   expect(asked).toBe(0);
   await expect(page.getByRole("img")).toHaveCount(0);

@@ -92,7 +92,7 @@ function Fields({
           />
         )}
       </Field>
-      <Field label={copy.city} hint={copy.cityHint} className={styles.formField}>
+      <Field label={copy.city} className={styles.formField}>
         {(control) => (
           <select
             {...control}
@@ -164,7 +164,6 @@ export function AddTechnician({
           void send();
         }}
       >
-        <p className={styles.warning}>{copy.effect}</p>
         <Fields typed={typed} cities={cities} onType={setTyped} focusFirst={false} />
         <div className={styles.actions}>
           <Button variant="primary" size="small" className={styles.save} type="submit" disabled={sending}>

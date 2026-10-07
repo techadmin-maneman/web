@@ -109,7 +109,6 @@ function People({ book, onChanged }: PanelProps) {
 
   return (
     <Panel titleId="staff-people" title={copy.title} className={styles.panel}>
-      <p className={styles.note}>{copy.note}</p>
       <Table className={styles.table}>
         <thead>
           <tr>
@@ -304,7 +303,6 @@ function TokenForm({ onChanged }: { onChanged: (book: StaffBook) => void }) {
               setFailure(null);
             }}
           />
-          <p className={styles.hint}>{words.clientIdHint}</p>
         </div>
         <div className={styles.field}>
           <label className={styles.fieldLabel} htmlFor="token-label">
@@ -341,7 +339,6 @@ function ServiceTokens({ book, onChanged }: PanelProps) {
   const words = copy.tokens;
   return (
     <Panel titleId="staff-tokens" title={words.title} className={styles.panel}>
-      <p className={styles.note}>{words.note}</p>
       {book.service_tokens.length === 0 ? (
         <p className={styles.note}>{words.none}</p>
       ) : (

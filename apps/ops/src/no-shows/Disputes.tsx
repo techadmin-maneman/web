@@ -148,16 +148,12 @@ function Dispute({ each, now, may, onRuled }: DisputeProps) {
             className={styles.reasonField}
             maxLength={REASON_MAX_CHARS}
             placeholder={copy.reason.placeholder}
-            aria-describedby={`ruling-hint-${each.id}`}
             value={reason}
             disabled={sending}
             onChange={(event) => {
               setReason(event.target.value);
             }}
           />
-          <p className={styles.reasonHint} id={`ruling-hint-${each.id}`}>
-            {copy.reason.hint}
-          </p>
           <div className={styles.actions} role="group" aria-label={copy.ruling}>
             {may.refund && (
               <Button

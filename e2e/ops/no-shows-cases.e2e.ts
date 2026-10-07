@@ -278,10 +278,6 @@ test("waives a case with its reason, and the case leaves the queue", async ({ pa
 test("shows no amount in the queue, and says what a charge costs and a waiver gives back", async ({ page }) => {
   await open(page);
   await expect(page.getByRole("region", { name: QUEUE }).getByText("Rs.")).toBeHidden();
-  // A waiver refunds the payment and returns the credit.
-  await expect(
-    page.getByText(/no-show charge and refunds the rest\. Waiving refunds the payment and returns the credit\./),
-  ).toBeVisible();
 });
 
 test("says so when someone else has ruled on the case already", async ({ page }) => {
@@ -297,16 +293,6 @@ test("says so when someone else has ruled on the case already", async ({ page })
 test("brings the case a task named into view, and gives it the keyboard", async ({ page }) => {
   await open(page, undefined, `/no-shows#case-${CASE}`);
   await expect(caseOf(page, FIRST)).toBeFocused();
-});
-
-// What a waiver gives back is ops' to set (docs/decisions/0088-every-policy-in-the-console.md).
-test("says beneath the queue what waiving gives back, as ops set it", async ({ page }) => {
-  await open(page);
-  await expect(page.getByText("refunds the payment and returns the credit")).toBeVisible();
-  const kept = { ...NO_SHOWS, waiver: { payment: "kept", credit: "spent" } };
-  await answer(page, { "GET /api/payments": json(DAY_MONEY), "GET /api/no-shows": json(kept) });
-  await page.goto("/no-shows");
-  await expect(page.getByText("keeps the payment and keeps the credit spent")).toBeVisible();
 });
 
 test("says nothing is waiting when the queue is empty", async ({ page }) => {

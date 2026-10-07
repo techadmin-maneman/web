@@ -102,7 +102,6 @@ test("tells those still waiting in a pincode already live", async ({ page }) => 
   const panel = page.getByRole("region", { name: "Tell those waiting in 122018" });
   await expect(panel).toContainText("Messages 2 people");
   await expect(panel.getByLabel("Launch date")).toHaveCount(0);
-  await expect(panel).toContainText("No one is messaged twice.");
   await panel.getByRole("button", { name: "Send to 2" }).click();
   await expect(panel.getByRole("status")).toHaveText("Live. 2 messages sent.");
 });
@@ -140,7 +139,6 @@ test("leads to the area's name only those whose access reaches Service area", as
   await open(page, { "GET /api/whoami": growthInMumbai, [LAUNCH_BANDRA]: launchRoute(PREVIEW, LAUNCHED) });
   await page.getByRole("button", { name: "Mark 400050 live, Bandra W" }).click();
   const panel = page.getByRole("region", { name: "Mark 400050 live" });
-  await expect(panel).toContainText("Messages use the area name from Served");
   await expect(panel.getByRole("link", { name: "Rename" })).toHaveCount(0);
 });
 

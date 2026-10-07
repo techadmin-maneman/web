@@ -45,8 +45,6 @@ export const areas = {
       if (quiet === 0) return "Everyone waiting opted in.";
       return `${String(quiet)} didn't opt in and won't be messaged.`;
     },
-    /** For a pincode already live, those not messaged include whoever was told before. */
-    toldNote: "No one is messaged twice.",
     done: (alerts: number) => (alerts === 0 ? "Live. No one messaged." : `Live. ${String(alerts)} messages sent.`),
     errors: {
       not_permitted: NOT_PERMITTED,
@@ -62,7 +60,6 @@ export const areas = {
     label: (pincode: string) => `Add ${pincode}`,
     /** Served's own way in. */
     title: "Add a pincode",
-    note: "Added as not served. Mark it live next.",
     pincode: "Pincode",
     area: "Area name",
     city: "City",
@@ -70,8 +67,7 @@ export const areas = {
     noCity: "Your access covers no city.",
     add: "Add",
     adding: "Adding",
-    added: (pincode: string, city: string) =>
-      `${pincode} added to ${city}, not served. Tick Served and save to go live.`,
+    added: (pincode: string, city: string) => `${pincode} added to ${city}.`,
     badPincode: "Six digits, starting 1–8.",
     badName: "2–40 characters, starting with a letter or digit.",
     errors: {
@@ -89,14 +85,11 @@ export const areas = {
      * the screen takes it back rather than asking for 198 rows to be retyped.
      * The rows are for the one-at-a-time change, which is what a launch is.
      */
-    note: "Edit here, or download, edit in a spreadsheet and upload.",
     city: (city: string, served: number, all: number) => `${city} · ${String(served)} of ${String(all)}`,
     columns: ["Pincode", "Area name", "Served", "Launch date", "Waiting"],
     areaLabel: (pincode: string) => `Area name for ${pincode}`,
     served: (pincode: string) => `Served ${pincode}`,
     launchOn: (pincode: string) => `Launch date for ${pincode}`,
-    /** Beneath the table: what the two boxes of a row mean. */
-    hint: "Area names appear in launch messages, the waitlist and on dispatch. Held invites lapse a year after launch.",
     /** The name a row's box holds: a letter or a digit first, as the API takes it. */
     badName: (pincode: string) => `${pincode}: 2–40 characters, starting with a letter or digit.`,
     save: "Save",
@@ -116,7 +109,7 @@ export const areas = {
     upload: {
       title: "Upload",
       label: "Edited CSV",
-      hint: "Columns: pincode, served (yes or no), launch_on (2026-10-01). Others are ignored.",
+      hint: "Columns: pincode, served, launch_on.",
       /** What the file would change, pincode by pincode, before any of it is taken. */
       read: (changed: number) => (changed === 1 ? "1 pincode changes:" : `${String(changed)} pincodes change:`),
       columns: ["Pincode", "Area", "Now", "In the file"],
@@ -130,7 +123,7 @@ export const areas = {
       cancel: "Cancel",
       badDate: (pincode: string) => `${pincode}: write the date as 2026-10-01.`,
       badServed: (pincode: string) => `${pincode}: served must be yes or no.`,
-      badHeader: "Needs pincode, served and launch_on columns. Save as CSV with a header row.",
+      badHeader: "Needs pincode, served and launch_on columns.",
     },
     download: "Download CSV",
     downloadName: "service-area.csv",
@@ -170,8 +163,5 @@ export const waitlist = {
   more: "Showing the longest waits only.",
   /** The board's launch sends today; the API takes the day a technician started coming. */
   date: "Launch date",
-  dateHint: "Today, or when service began if earlier.",
-  /** Where the area's name in the message comes from, and where it is changed. */
-  named: "Messages use the area name from Served, or the city until one is set.",
   rename: "Rename",
 } as const;

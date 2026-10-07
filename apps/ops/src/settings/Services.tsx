@@ -362,7 +362,6 @@ function LateFeeBlock({ fee, opened }: { fee: LateFee; opened: Opened }) {
         {target.name}
       </h4>
       <p className={styles.facts}>
-        {copy.lateFeeNote}
         {mayOpenRules && (
           <>
             {" "}
@@ -408,7 +407,6 @@ function KindSection({ kind, opened }: { kind: Kind; opened: Opened }) {
       <h3 className={styles.kindTitle} id={titleId}>
         {name}
       </h3>
-      {kind === "first_fit" && <p className={styles.note}>{copy.hairSystems}</p>}
       <ul className={styles.services}>
         {services.map((service) => (
           <ServiceBlock key={service.tier} service={service} siblings={services} opened={opened} />
@@ -468,7 +466,6 @@ export function Services() {
 
   return (
     <Panel titleId="services" title={copy.title} className={styles.panel}>
-      <p className={styles.note}>{copy.note}</p>
       {current.kinds.map(({ kind }) => (
         <KindSection key={kind} kind={kind} opened={opened} />
       ))}

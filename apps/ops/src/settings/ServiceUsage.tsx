@@ -77,7 +77,6 @@ export function ServiceUsage({ book, onSaved }: { book: Consumables; onSaved: (b
   const checking = step.step === "checking" || step.step === "saving";
   return (
     <Panel titleId="service-usage" title={words.title} className={styles.panel}>
-      <p className={styles.note}>{words.note}</p>
       <fieldset className={styles.group}>
         <legend className={styles.ruleTitle}>{service === undefined ? words.title : serviceName(service)}</legend>
         <div className={styles.field}>
@@ -124,7 +123,6 @@ export function ServiceUsage({ book, onSaved }: { book: Consumables; onSaved: (b
                   maxLength={3}
                   readOnly={!mayChange}
                   value={draft[each.code] ?? ""}
-                  aria-describedby="usage-hint"
                   onChange={(event) => {
                     setDraft({ ...draft, [each.code]: event.target.value });
                     setStep({ step: "editing" });
@@ -134,9 +132,6 @@ export function ServiceUsage({ book, onSaved }: { book: Consumables; onSaved: (b
             ))}
           </ul>
         )}
-        <p className={styles.hint} id="usage-hint">
-          {words.quantityHint(book.max_expected)}
-        </p>
         {checking && (
           <CheckPanel
             title={words.confirm.title}

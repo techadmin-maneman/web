@@ -92,7 +92,6 @@ function Item({
         type="text"
         maxLength={props.longest}
         aria-label={props.itemLabel(index + 1)}
-        aria-describedby={`${id}-hint`}
         value={line.label}
         onChange={(event) => {
           onLabel(event.target.value);
@@ -212,9 +211,6 @@ export function ListEditor(props: Props) {
           />
         ))}
       </ol>
-      <p className={styles.hint} id={`${id}-hint`}>
-        {copy.hint(most, longest)}
-      </p>
       <div className={styles.actions}>
         <Button
           variant="outline"
@@ -232,7 +228,6 @@ export function ListEditor(props: Props) {
       {off.length > 0 && (
         <div className={own.retired}>
           <p className={own.retiredTitle}>{copy.retired}</p>
-          <p className={styles.hint}>{copy.retiredNote}</p>
           <ul className={own.retiredList}>
             {off.map((item) => (
               <li className={own.retiredItem} key={item.code}>

@@ -37,7 +37,6 @@ export function JobSheet() {
 
   return (
     <Panel titleId="job-sheet" title={copy.title} className={styles.panel}>
-      <p className={styles.note}>{copy.note}</p>
       <div className={styles.group}>
         <div className={styles.field}>
           <label className={styles.fieldLabel} htmlFor="job-sheet-kind">
@@ -78,7 +77,6 @@ export function JobSheet() {
           onSaved={setSheet}
         />
       )}
-      <p className={styles.note}>{copy.reasonsNote}</p>
       {!mayChangeReasons && <ListRead title={copy.reasons} list={current.partial_reasons} />}
       {mayChangeReasons && (
         <ListEditor

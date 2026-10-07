@@ -87,15 +87,11 @@ export function Retiring({ consumable, today, onSaved, onCancel }: Props & { rea
             type="date"
             min={today}
             value={from}
-            aria-describedby={`${id}-hint`}
             onChange={(event) => {
               setFrom(event.target.value);
               setStep({ step: "editing" });
             }}
           />
-          <p className={styles.hint} id={`${id}-hint`}>
-            {words.fromHint}
-          </p>
         </div>
       </div>
       {step.step === "editing" ? (

@@ -176,14 +176,13 @@ test.describe("the services and their prices", () => {
     page,
   }) => {
     await open(page, "/prices", { "POST /api/services": json(SERVICES, 201) });
-    await expect(page.getByText("First fits are booked as one of these hair systems")).toBeVisible();
     await page.getByRole("button", { name: "Add a hair system" }).click();
     await page.getByLabel("Name", { exact: true }).fill("Thin skin");
     await expect(page.getByLabel("Code")).toHaveValue("thin_skin");
     await expect(page.getByLabel("Length, in minutes")).toHaveValue("180");
     await page.getByRole("button", { name: "Review" }).click();
     await expect(page.getByRole("group", { name: "Review the change" })).toContainText(
-      "Add Thin skin to First fit: 180 minutes, code thin_skin. Hidden until priced.",
+      "Add Thin skin to First fit: 180 minutes. Hidden until priced.",
     );
 
     const request = posted(page, "/api/services");
@@ -245,7 +244,7 @@ test.describe("the services and their prices", () => {
     await page.getByLabel("Hidden from").fill("2027-10-01");
     await page.getByRole("button", { name: "Review" }).click();
     await expect(page.getByRole("group", { name: "Review the change" })).toContainText(
-      "Replacement is hidden from 1 Oct 2027. Visits already sold aren't affected.",
+      "Replacement is hidden from 1 Oct 2027.",
     );
     const request = posted(page, "/api/services/replacement/standard/retire");
     await page.getByRole("button", { name: "Confirm" }).click();

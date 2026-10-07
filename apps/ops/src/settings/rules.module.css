@@ -1,0 +1,17 @@
+/* A policy with many boxes, shut until opened: its summary is a quiet link-like toggle beneath the rule's name. */
+
+.many {
+  margin-top: var(--sp-8);
+}
+
+.summary {
+  cursor: pointer;
+  width: fit-content;
+  font-size: var(--fs-14);
+  color: var(--text);
+  text-decoration: underline;
+}
+
+.manyBody {
+  margin-top: var(--sp-12);
+}

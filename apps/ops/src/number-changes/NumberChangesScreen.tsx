@@ -90,15 +90,11 @@ function Change({ change, now, mayDecide, onDecided }: ChangeProps) {
             maxLength={REASON_MAX_CHARS}
             // The field stands where the button that asked for it stood, so the keyboard goes to it.
             autoFocus
-            aria-describedby={`reason-hint-${change.id}`}
             value={reason}
             onChange={(event) => {
               setReason(event.target.value);
             }}
           />
-          <p className={styles.reasonHint} id={`reason-hint-${change.id}`}>
-            {copy.reason.hint}
-          </p>
           <div className={styles.actions}>
             <Button
               variant="outline"
@@ -127,7 +123,6 @@ function Change({ change, now, mayDecide, onDecided }: ChangeProps) {
       )}
       {!asking && mayDecide && (
         <div className={styles.decide}>
-          <p className={styles.effect}>{copy.effect}</p>
           <div className={styles.actions}>
             <Button
               variant="primary"

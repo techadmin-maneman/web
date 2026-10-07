@@ -143,7 +143,6 @@ export function AddPincode({ pincode, cities, onAdded, onCancel }: Props) {
           {errorText(copy.errors, { code })}
         </p>
       )}
-      <p className={styles.note}>{copy.note}</p>
     </div>
   );
 }

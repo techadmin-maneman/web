@@ -185,7 +185,6 @@ export function DiscountCodes() {
 
   return (
     <Panel titleId="discount-codes" title={copy.title} className={styles.panel}>
-      <p className={styles.note}>{copy.note}</p>
       {mayMake && <DiscountCodeForm today={today} most={most} onMade={() => void refresh()} />}
       <FindForm finding={finding} onFind={find} />
       {codes.length === 0 ? (

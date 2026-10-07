@@ -28,8 +28,6 @@ export const referrals = {
      */
     reason: {
       label: { approve: "Reason for approving", reject: "Reason for rejecting" },
-      /** The reason stays with the decision; the audit log names the decision and who made it (ADR 0031). */
-      hint: "Saved with the decision.",
       confirm: { approve: "Approve grant", reject: "Reject grant" },
       cancel: "Cancel",
     },
@@ -56,7 +54,6 @@ export const referrals = {
       granted: "Granted",
       redeemed: "Redeemed",
     },
-    note: "Clients see fits only.",
     // The board draws no empty table.
     empty: "No referrers yet.",
     /** The table is read fifty referrers at a time, the busiest first. */

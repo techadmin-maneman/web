@@ -181,9 +181,11 @@ function BuildingSearch({
       )}
       {/* Google requires their name against suggestions shown without a Google map. */}
       {shown && <p className={styles.hint}>{searchCopy.attribution}</p>}
-      <p className={styles.hint} id={`${listId}-hint`}>
-        {state === "unavailable" ? searchCopy.unavailable : searchCopy.hint}
-      </p>
+      {state === "unavailable" && (
+        <p className={styles.hint} id={`${listId}-hint`}>
+          {searchCopy.unavailable}
+        </p>
+      )}
       <VisuallyHidden as="p" role="status">
         {state === "searching" || !shown ? "" : searchCopy.found(suggestions.length)}
       </VisuallyHidden>
@@ -276,7 +278,6 @@ export function GivenAddressForm({
       <h3 className={capsLook(styles.title)} id={`${formId}-title`}>
         {copy.title}
       </h3>
-      <p className={styles.hint}>{copy.note}</p>
       <BuildingSearch
         clientId={clientId}
         value={draft.building ?? ""}
@@ -299,7 +300,6 @@ export function GivenAddressForm({
       {field("city", copy.city, { required: true })}
       {field("pincode", copy.pincode, { inputMode: "numeric", required: true })}
       {field("access_notes", copy.accessNotes)}
-      <p className={styles.hint}>{copy.accessHint}</p>
       {problem !== null && (
         <p className={styles.error} role="alert">
           {problem}

@@ -4,7 +4,6 @@
 
 import type { ReactNode } from "react";
 import { Shell } from "../components/Shell.tsx";
-import { settings } from "../content.ts";
 import { sectionOf, SECTION_NAMES, type Page } from "../route.ts";
 import { DiscountCodes } from "./DiscountCodes.tsx";
 import { Services } from "./Services.tsx";
@@ -13,7 +12,7 @@ import styles from "../components/forms.module.css";
 
 function PanelScreen({ page, children }: { page: Page; children: ReactNode }) {
   return (
-    <Shell section={sectionOf(page).path} title={SECTION_NAMES[page]} sub={settings.sub}>
+    <Shell section={sectionOf(page).path} title={SECTION_NAMES[page]}>
       <div className={styles.screen}>{children}</div>
     </Shell>
   );

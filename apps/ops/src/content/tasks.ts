@@ -99,7 +99,7 @@ export const tasks = {
     failed: FAILED,
   },
   /** More were waiting than one look reads. */
-  truncated: "Not everything is shown, so counts may be low.",
+  truncated: "Counts may be incomplete.",
   /** The second line, one per group: the one fact the group turns on. */
   subs: {
     /**
@@ -217,7 +217,6 @@ export const tasks = {
   close: {
     open: "Close without follow-up",
     label: "Why no follow-up is needed",
-    hint: "Required. Shown on the client's page.",
     confirm: "Close task",
     closing: "Closing…",
     cancel: "Cancel",
@@ -251,8 +250,6 @@ export const tasks = {
       unknown: FAILED,
     } as Readonly<Record<string, string>>,
   },
-  /** The board draws no note, and the list has to say where the work is done. */
-  note: "Tasks clear when they're dealt with in their own section.",
   /** The board draws twelve tasks and no empty list. */
   empty: "All clear.",
 } as const;
@@ -301,8 +298,6 @@ export const needsAHand = {
   sending: "Sending…",
   done: "Mark done",
   closing: "Closing…",
-  /** Under a failed message: the bridge may not have answered in time, and the client may have it already. */
-  messageHint: "If delivery is unconfirmed, check with the client first. It may have arrived.",
   shown: (shown: number, count: number) => `Oldest ${String(shown)} of ${String(count)}.`,
   errors: {
     not_permitted: NOT_PERMITTED,
