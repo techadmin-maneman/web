@@ -218,12 +218,12 @@ function writtenMove(db: D1Database, move: PlannedMove, messageId: string | null
   return db
     .prepare(
       `INSERT INTO dispatch_moves (id, appointment_id, was_technician_id, now_technician_id, was_start, now_start,
-         reason, actor, fsm_write_state, message_id, created_at, updated_at, blackout_reason)
+         reason, actor, fsm_write_state, write_state, message_id, created_at, updated_at, blackout_reason)
        VALUES (?1,
          (SELECT a.id FROM appointments a
           WHERE a.id = ?2 AND a.technician_id IS ?3 AND a.window_start = ?5 AND a.deleted_at IS NULL
             AND ${statusIn("a.status", VISIT_NOT_BEGUN)} AND NOT ${begun} AND NOT ${CLIENT_MOVING}),
-         ?3, ?4, ?5, ?6, ?7, ?8, 'written', ?9, ?10, ?10, ?11)`,
+         ?3, ?4, ?5, ?6, ?7, ?8, 'written', 'written', ?9, ?10, ?10, ?11)`,
     )
     .bind(
       move.id,

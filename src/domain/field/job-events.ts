@@ -333,8 +333,8 @@ function eventStatement({
     .prepare(
       `INSERT INTO job_events
          (id, appointment_id, event_id, technician_id, device_id, kind, body, occurred_at, received_at,
-          fsm_write_state, superseded, updated_at, claimed_at)
-       VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?9, ?12)
+          fsm_write_state, write_state, superseded, updated_at, claimed_at)
+       VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?10, ?11, ?9, ?12)
        ON CONFLICT (appointment_id, event_id) DO NOTHING
        RETURNING ${EVENT_COLUMNS}`,
     )
