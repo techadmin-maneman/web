@@ -1,3 +1,4 @@
+import { takeSignInMark } from "@maneman/web-kit/access";
 import { reportUncaughtErrors } from "@maneman/web-kit/client-errors";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
@@ -7,6 +8,7 @@ import { ErrorBoundary } from "./states/ErrorBoundary.tsx";
 import "./styles/global.css";
 
 reportUncaughtErrors();
+takeSignInMark();
 
 /** The number the app was opened with, taken off the address at once so it is not left in the browser's history. */
 function takeLinkedMobile(): string {

@@ -11,6 +11,7 @@
 // client-generated `X-Client-Event-Id`, which makes it idempotent however often
 // the outbox replays it (docs/decisions/0038-offline-writes.md).
 
+import { signInAgain } from "@maneman/web-kit/access";
 import { createClient, type Answer as Answered } from "@maneman/web-kit/api";
 import type { components, paths } from "./api-schema.ts";
 import { EVENT_ID_HEADER, JOB_STARTS_AT_HEADER, SUPERSEDED } from "./routes.ts";
@@ -129,6 +130,9 @@ function reached(answered: boolean): void {
 }
 
 const client = createClient<paths, ErrorCode>({
+  // Staging's Access sign-in ran out: the page goes back through it, past the service worker's copy. The outbox keeps
+  // every write it had, as it does with no connection.
+  onAccessLapsed: signInAgain,
   onSessionEnded: (code) => {
     for (const listener of sessionListeners) listener(code);
   },
