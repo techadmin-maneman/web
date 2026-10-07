@@ -2,7 +2,8 @@
 // would refuse is left out, and the API is asked with only what is set.
 
 import { describe, expect, it } from "vitest";
-import { activityPath, askedOf, filtersOf } from "../../../apps/ops/src/activity/filters.ts";
+import { askedOf, filtersOf } from "../../../apps/ops/src/activity/filters.ts";
+import { activityPath } from "../../../apps/ops/src/route.ts";
 
 const CLIENT = "22000000-0000-4000-8000-000000000001";
 

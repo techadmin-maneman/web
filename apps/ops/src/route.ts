@@ -187,6 +187,19 @@ export function dispatchPath(asked: Partial<DispatchAsked>): string {
   return search === "" ? "/dispatch" : `/dispatch?${search}`;
 }
 
+/**
+ * Activity narrowed as asked, by the API's own names for each filter: "/activity" for the whole log,
+ * "/activity?person=…" for one client's whole record.
+ */
+export function activityPath(asked: Readonly<Record<string, string | undefined>>): string {
+  const query = new URLSearchParams();
+  for (const [name, value] of Object.entries(asked)) {
+    if (value !== undefined && value !== "") query.set(name, value);
+  }
+  const search = query.toString();
+  return search === "" ? "/activity" : `/activity?${search}`;
+}
+
 /** The query's value, where it is there and has the form asked for. */
 function valueOf(query: URLSearchParams, name: string, form: RegExp): string | null {
   const value = query.get(name);

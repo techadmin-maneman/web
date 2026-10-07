@@ -63,6 +63,7 @@ describe("the production gate on the apps' copy", () => {
       // The client app's copy and the console's are one file a feature (apps/*/src/content/).
       ops: [
         "apps/ops/src/content.ts",
+        "apps/ops/src/content/activity.ts",
         "apps/ops/src/content/areas.ts",
         "apps/ops/src/content/clients.ts",
         "apps/ops/src/content/common.ts",

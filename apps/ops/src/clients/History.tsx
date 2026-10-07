@@ -9,11 +9,11 @@
 
 import { fullDate, shortMonth } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";
-import { activityPath } from "../activity/filters.ts";
 import type { ClientRecord } from "../api.ts";
 import { OpsLink } from "../components/Shell.tsx";
 import { clients } from "../content.ts";
 import { useAccess } from "../lib/access.ts";
+import { activityPath } from "../route.ts";
 import styles from "./clients.module.css";
 
 const copy = clients.history;

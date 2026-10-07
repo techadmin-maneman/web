@@ -1,7 +1,10 @@
 // Activity: the audit log, read in the console (src/routes/ops/activity.ts). The design draws no board for it; these
 // words are ours.
 
-import type { ActivityAction } from "../api.ts";
+// The schema's own type, not ../api.ts's: content is read by tests in Node, where the API client's DOM types are not.
+import type { components } from "../api-schema.ts";
+
+type ActivityAction = components["schemas"]["ActivityEntry"]["action"];
 
 /** What each action in the log was, as a line in the list says it. */
 const ACTIONS: Readonly<Record<ActivityAction, string>> = {

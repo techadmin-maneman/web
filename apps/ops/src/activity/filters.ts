@@ -1,9 +1,9 @@
 // What Activity is narrowed to, kept in the page's address so a narrowed log can be linked to and opened again:
-// "/activity?person=…&from=2026-10-01". A value the API would refuse is left out, so a link typed wrong opens the whole
-// log rather than an error.
+// "/activity?person=…&from=2026-10-01" (activityPath, ../route.ts). A value the API would refuse is left out, so a link
+// typed wrong opens the whole log rather than an error.
 
 import type { ActivityAction, ActivityAsked } from "../api.ts";
-import { activity } from "../content.ts";
+import { activity } from "../content/activity.ts";
 
 export type Filters = Omit<ActivityAsked, "before">;
 type ActorKind = NonNullable<Filters["actor_kind"]>;
@@ -34,16 +34,6 @@ export function filtersOf(search: string): Filters {
     from: date("from"),
     to: date("to"),
   };
-}
-
-/** Activity narrowed as `filters` say: "/activity" for the whole log. */
-export function activityPath(filters: Filters): string {
-  const query = new URLSearchParams();
-  for (const [name, value] of Object.entries(filters)) {
-    if (typeof value === "string" && value !== "") query.set(name, value);
-  }
-  const search = query.toString();
-  return search === "" ? "/activity" : `/activity?${search}`;
 }
 
 /** The query the API is asked with: only what is set. */

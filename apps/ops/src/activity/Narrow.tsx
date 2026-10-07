@@ -3,7 +3,7 @@
 import { Button } from "@maneman/ui/Button";
 import { DateInput, Field, Select, TextInput } from "@maneman/ui/Field";
 import { useState } from "react";
-import { activity } from "../content.ts";
+import { activity } from "../content/activity.ts";
 import styles from "./activity.module.css";
 import { ACTIONS, ACTOR_KINDS, type Filters } from "./filters.ts";
 

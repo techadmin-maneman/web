@@ -10,11 +10,11 @@ import { indiaClock, longDate } from "@maneman/web-kit/dates";
 import { useState } from "react";
 import { api, type ActivityEntry } from "../api.ts";
 import { OpsLink, Shell } from "../components/Shell.tsx";
-import { activity } from "../content.ts";
-import { clientPath, dispatchPath, technicianPath } from "../route.ts";
+import { activity } from "../content/activity.ts";
+import { activityPath, clientPath, dispatchPath, technicianPath } from "../route.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import styles from "./activity.module.css";
-import { activityPath, askedOf, filtersOf, type Filters } from "./filters.ts";
+import { askedOf, filtersOf, type Filters } from "./filters.ts";
 import { Narrow } from "./Narrow.tsx";
 
 const copy = activity;

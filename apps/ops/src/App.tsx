@@ -12,7 +12,6 @@ import { FindClientScreen } from "./clients/FindClientScreen.tsx";
 import { ClosedScreen } from "./components/ClosedScreen.tsx";
 import { DeletionsScreen } from "./deletions/DeletionsScreen.tsx";
 import { DispatchScreen } from "./dispatch/DispatchScreen.tsx";
-import { ActivityScreen } from "./activity/ActivityScreen.tsx";
 import { GrievancesScreen } from "./grievances/GrievancesScreen.tsx";
 import { useMayCall } from "./lib/access.ts";
 import { NoShowsScreen } from "./no-shows/NoShowsScreen.tsx";
@@ -42,6 +41,9 @@ const SettingsScreen = lazy(() =>
 const PricesScreen = lazy(() => settingsPanels().then((module) => ({ default: module.PricesScreen })));
 const DiscountCodesScreen = lazy(() => settingsPanels().then((module) => ({ default: module.DiscountCodesScreen })));
 const StaffScreen = lazy(() => settingsPanels().then((module) => ({ default: module.StaffScreen })));
+const ActivityScreen = lazy(() =>
+  loadOrReload(() => import("./activity/ActivityScreen.tsx")).then((module) => ({ default: module.ActivityScreen })),
+);
 const AreasScreen = lazy(() =>
   loadOrReload(() => import("./areas/AreasScreen.tsx")).then((module) => ({ default: module.AreasScreen })),
 );
