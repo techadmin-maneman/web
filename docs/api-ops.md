@@ -4347,6 +4347,36 @@ Who Access let through, and where signing out goes
 }
 ```
 
+### POST /api/discount-codes/{id}/delete
+
+Delete a code made by mistake, while no booking has ever taken it
+
+**204**: Deleted
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**409**: in_use: a booking has taken it; switch it off instead
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ### GET /api/discount-codes
 
 The latest discount codes made, each with its uses and what it has taken off
@@ -15151,13 +15181,17 @@ Request body:
       "items": {
         "$ref": "#/components/schemas/DiscountCode"
       }
+    },
+    "totals": {
+      "$ref": "#/components/schemas/DiscountCodeTotals"
     }
   },
   "required": [
     "today",
     "batch_most",
     "listed_most",
-    "codes"
+    "codes",
+    "totals"
   ],
   "additionalProperties": false
 }
@@ -15287,6 +15321,30 @@ Request body:
     "given": {
       "type": "integer",
       "description": "What it has taken off those bookings, in paise before GST, as far as their prices are known."
+    },
+    "clients": {
+      "type": "integer",
+      "description": "The clients those bookings are for."
+    },
+    "paid": {
+      "type": "integer",
+      "description": "What was paid for those bookings, in paise, less refunds."
+    },
+    "last_used": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date-time"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "When it was last entered on a booking that stands; null if never."
+    },
+    "deletable": {
+      "type": "boolean",
+      "description": "No booking has ever taken it, so it may be deleted rather than switched off."
     }
   },
   "required": [
@@ -15304,9 +15362,54 @@ Request body:
     "created_at",
     "switched_off",
     "uses",
-    "given"
+    "given",
+    "clients",
+    "paid",
+    "last_used",
+    "deletable"
   ],
   "additionalProperties": false
+}
+```
+
+### DiscountCodeTotals
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "codes": {
+      "type": "integer"
+    },
+    "live": {
+      "type": "integer",
+      "description": "Not switched off, and not past their last day."
+    },
+    "uses": {
+      "type": "integer"
+    },
+    "clients": {
+      "type": "integer"
+    },
+    "given": {
+      "type": "integer",
+      "description": "Paise before GST."
+    },
+    "paid": {
+      "type": "integer",
+      "description": "Paise, less refunds."
+    }
+  },
+  "required": [
+    "codes",
+    "live",
+    "uses",
+    "clients",
+    "given",
+    "paid"
+  ],
+  "additionalProperties": false,
+  "description": "Every code's figures together, however many the list shows."
 }
 ```
 

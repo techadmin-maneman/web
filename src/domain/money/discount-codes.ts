@@ -18,7 +18,13 @@ import {
   type DiscountKind,
   type DiscountTerms,
 } from "../../policy/discount-codes.ts";
-import { auditStatement, auditStatementIfStamped, type AuditActor, type AuditEntry } from "../ops/audit.ts";
+import {
+  auditStatement,
+  auditStatementIfDeleted,
+  auditStatementIfStamped,
+  type AuditActor,
+  type AuditEntry,
+} from "../ops/audit.ts";
 import { keepingItsTime } from "../booking/hold-stages.ts";
 
 /** A code's row. */
@@ -193,7 +199,21 @@ interface ListedCode {
   readonly uses: number;
   /** What it has taken off those bookings, in paise before GST, as far as their prices are known. */
   readonly given: number;
+  /** The clients those bookings are for. */
+  readonly clients: number;
+  /** What was paid for those bookings, in paise, less what was refunded. */
+  readonly paid: number;
+  /** When it was last entered on a booking that stands; null if never. */
+  readonly last_used: string | null;
+  /** Whether no booking has ever taken it, so it may be deleted rather than switched off. */
+  readonly deletable: boolean;
 }
+
+/** A visit's payments that a use stands on: the visit's own, or the hold's that booked it. Refunds come off. */
+export const PAID_ON_USE = `SELECT COALESCE(SUM(p.amount - p.refunded_amount), 0)
+  FROM discount_code_uses u LEFT JOIN slot_holds h ON h.id = u.hold_id
+  JOIN payments p ON p.kind = 'visit' AND p.status IN ('captured', 'partially_refunded', 'refunded')
+    AND (p.appointment_id IN (u.appointment_id, h.appointment_id) OR p.razorpay_order_id = h.razorpay_order_id)`;
 
 /** How many codes the list shows: the latest made. Codes are found by how they begin, however old. */
 export const LISTED_MOST = 200;
@@ -210,12 +230,27 @@ export async function listCodes(db: D1Database, now: Date, find: string | null):
       `SELECT ${CODE_COLUMNS},
          (SELECT COUNT(*) FROM discount_code_uses u WHERE u.code_id = c.id AND ${standing("u", "?1")}) AS uses,
          (SELECT COALESCE(SUM(u.amount_off), 0) FROM discount_code_uses u
-           WHERE u.code_id = c.id AND ${standing("u", "?1")}) AS given
+           WHERE u.code_id = c.id AND ${standing("u", "?1")}) AS given,
+         (SELECT COUNT(DISTINCT u.person_id) FROM discount_code_uses u
+           WHERE u.code_id = c.id AND ${standing("u", "?1")}) AS clients,
+         (${PAID_ON_USE} WHERE u.code_id = c.id AND ${standing("u", "?1")}) AS paid,
+         (SELECT MAX(u.created_at) FROM discount_code_uses u
+           WHERE u.code_id = c.id AND ${standing("u", "?1")}) AS last_used,
+         NOT EXISTS (SELECT 1 FROM discount_code_uses u WHERE u.code_id = c.id) AS deletable
        FROM discount_codes c WHERE ?2 IS NULL OR (c.code >= ?2 AND c.code < ?4)
        ORDER BY c.created_at DESC, c.code LIMIT ?3`,
     )
     .bind(now.toISOString(), prefix, LISTED_MOST, prefix === null ? null : pastPrefix(prefix))
-    .all<CodeRow & { uses: number; given: number }>();
+    .all<
+      CodeRow & {
+        uses: number;
+        given: number;
+        clients: number;
+        paid: number;
+        last_used: string | null;
+        deletable: number;
+      }
+    >();
   return results.map((row) => ({
     id: row.id,
     code: row.code,
@@ -235,7 +270,42 @@ export async function listCodes(db: D1Database, now: Date, find: string | null):
         : { by: row.switched_off_by, at: row.switched_off_at },
     uses: row.uses,
     given: row.given,
+    clients: row.clients,
+    paid: row.paid,
+    last_used: row.last_used,
+    deletable: row.deletable === 1,
   }));
+}
+
+/**
+ * Deletes a code made by mistake, with its audit entry, while no booking has ever taken it. One that has is switched
+ * off instead, and its uses stay.
+ */
+export async function deleteCode(
+  db: D1Database,
+  id: string,
+  change: Change,
+): Promise<"deleted" | "in_use" | "not_found"> {
+  const row = await db.prepare("SELECT code FROM discount_codes WHERE id = ?1").bind(id).first<{ code: string }>();
+  if (row === null) return "not_found";
+  const entry: AuditEntry = {
+    surface: "ops",
+    actor: change.actor,
+    action: "discount_code.delete",
+    subject: { kind: "discount_code", id },
+    requestId: change.requestId,
+    detail: { code: row.code },
+  };
+  await db.batch([
+    db
+      .prepare(
+        "DELETE FROM discount_codes WHERE id = ?1 AND NOT EXISTS (SELECT 1 FROM discount_code_uses WHERE code_id = ?1)",
+      )
+      .bind(id),
+    auditStatementIfDeleted(db, entry, change.now, { table: "discount_codes", column: "id", value: id }),
+  ]);
+  const kept = await db.prepare("SELECT 1 FROM discount_codes WHERE id = ?1").bind(id).first();
+  return kept === null ? "deleted" : "in_use";
 }
 
 /** Switches a code off, with its audit entry: no booking takes it from then on, and its uses stay as they are. */

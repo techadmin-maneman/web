@@ -4,6 +4,7 @@
 //   GET  /api/discount-codes                        the latest codes made, with their uses and what they gave
 //   POST /api/discount-codes                        one code, typed or generated, or a batch of single-use codes
 //   POST /api/discount-codes/{id}/off               switched off: no booking takes it from then on
+//   POST /api/discount-codes/{id}/delete            one made by mistake, while no booking has ever taken it
 //   POST /api/visits/{id}/discount-code             a code entered on a client's visit, before it is paid or invoiced
 //   POST /api/visits/{id}/discount-code/remove      the code taken off the visit again
 //
@@ -14,9 +15,11 @@
 import { createRoute, z } from "@hono/zod-openapi";
 import { PRICE_BOUNDS } from "../../policy/ops-settings.ts";
 import { codeOnVisit } from "../../domain/money/discount-code-uses.ts";
+import { codeTotals } from "../../domain/money/discount-code-figures.ts";
 import { enterOnVisit, removeFromVisit } from "../../domain/money/discount-code-visits.ts";
 import {
   BATCH_MOST,
+  deleteCode,
   listCodes,
   LISTED_MOST,
   makeCodes,
@@ -62,9 +65,29 @@ const CodeSchema = z
     given: z.number().int().openapi({
       description: "What it has taken off those bookings, in paise before GST, as far as their prices are known.",
     }),
+    clients: z.number().int().openapi({ description: "The clients those bookings are for." }),
+    paid: z.number().int().openapi({ description: "What was paid for those bookings, in paise, less refunds." }),
+    last_used: z
+      .union([z.iso.datetime(), z.null()])
+      .openapi({ description: "When it was last entered on a booking that stands; null if never." }),
+    deletable: z
+      .boolean()
+      .openapi({ description: "No booking has ever taken it, so it may be deleted rather than switched off." }),
   })
   .strict()
   .openapi("DiscountCode");
+
+const TotalsSchema = z
+  .object({
+    codes: z.number().int(),
+    live: z.number().int().openapi({ description: "Not switched off, and not past their last day." }),
+    uses: z.number().int(),
+    clients: z.number().int(),
+    given: z.number().int().openapi({ description: "Paise before GST." }),
+    paid: z.number().int().openapi({ description: "Paise, less refunds." }),
+  })
+  .strict()
+  .openapi("DiscountCodeTotals");
 
 const CodesSchema = z
   .object({
@@ -72,6 +95,7 @@ const CodesSchema = z
     batch_most: z.number().int().openapi({ description: "The most codes one press generates." }),
     listed_most: z.number().int().openapi({ description: "The most codes the list shows, the latest made first." }),
     codes: z.array(CodeSchema),
+    totals: TotalsSchema.openapi({ description: "Every code's figures together, however many the list shows." }),
   })
   .strict()
   .openapi("DiscountCodes");
@@ -182,6 +206,19 @@ const offRoute = createRoute({
   },
 });
 
+const deleteRoute = createRoute({
+  method: "post",
+  path: "/api/discount-codes/{id}/delete",
+  summary: "Delete a code made by mistake, while no booking has ever taken it",
+  request: { params: z.object({ id: z.uuid() }) },
+  responses: {
+    204: { description: "Deleted" },
+    403: errorResponse("access_required"),
+    404: errorResponse("not_found"),
+    409: errorResponse("in_use: a booking has taken it; switch it off instead"),
+  },
+});
+
 const visitId = z.object({ id: z.uuid().openapi({ description: "The client's visit." }) });
 
 const enterRoute = createRoute({
@@ -244,10 +281,15 @@ const newCodesOf = (body: NewCodesBody): NewCodes => ({
 });
 
 export function registerOpsDiscountCodes(app: App): void {
+  registerCodeDelete(app);
   app.openapi(listRoute, async (c) => {
     const now = c.var.deps.now();
-    const codes = await listCodes(c.env.DB, now, c.req.valid("query").code ?? null);
-    return c.json({ today: indiaDate(now), batch_most: BATCH_MOST, listed_most: LISTED_MOST, codes: [...codes] }, 200);
+    const today = indiaDate(now);
+    const [codes, totals] = await Promise.all([
+      listCodes(c.env.DB, now, c.req.valid("query").code ?? null),
+      codeTotals(c.env.DB, now, today),
+    ]);
+    return c.json({ today, batch_most: BATCH_MOST, listed_most: LISTED_MOST, codes: [...codes], totals }, 200);
   });
 
   app.openapi(makeRoute, async (c) => {
@@ -300,6 +342,21 @@ export function registerOpsDiscountCodes(app: App): void {
     const removed = await removeFromVisit(c.env.DB, { visitId: id, by, requestId }, deps.now());
     if (removed === "price_settled") return refuse(c, "price_settled");
     if (removed !== "removed") return refuse(c, "not_found");
+    return c.body(null, 204);
+  });
+}
+
+/** Deleting a code made by mistake, apart from the changes above. */
+function registerCodeDelete(app: App): void {
+  app.openapi(deleteRoute, async (c) => {
+    const { requestId, deps } = c.var;
+    const deleted = await deleteCode(c.env.DB, c.req.valid("param").id, {
+      actor: actorOf(c),
+      requestId,
+      now: deps.now(),
+    });
+    if (deleted === "not_found") return refuse(c, "not_found");
+    if (deleted === "in_use") return refuse(c, "in_use");
     return c.body(null, 204);
   });
 }

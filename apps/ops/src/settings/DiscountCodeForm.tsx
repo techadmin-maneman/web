@@ -227,7 +227,17 @@ function Limits({ draft, today, edit }: { draft: Draft; today: string; edit: Edi
   );
 }
 
-export function DiscountCodeForm({ today, most, onMade }: { today: string; most: number; onMade: () => void }) {
+export function DiscountCodeForm({
+  today,
+  most,
+  onMade,
+  onClose,
+}: {
+  today: string;
+  most: number;
+  onMade: () => void;
+  onClose: () => void;
+}) {
   const [draft, setDraft] = useState<Draft>(EMPTY);
   const [step, setStep] = useState<Step>({ step: "editing" });
 
@@ -284,6 +294,9 @@ export function DiscountCodeForm({ today, most, onMade }: { today: string; most:
       <div className={styles.actions}>
         <Button type="submit" variant="primary" size="small" className={styles.save} disabled={!isReady(draft)}>
           {copy.check}
+        </Button>
+        <Button variant="outline" size="small" className={styles.quiet} onClick={onClose}>
+          {copy.close}
         </Button>
       </div>
       {step.step === "made" && (

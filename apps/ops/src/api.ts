@@ -90,6 +90,7 @@ export type Blackout = Body<paths["/api/blackouts"]["get"]>["blackouts"][number]
 type BlackoutAdd = Sent<paths["/api/blackouts"]["post"]>;
 type BlackoutRemove = Sent<paths["/api/blackouts/remove"]["post"]>;
 /** Discount codes, and a code on a client's visit (docs/decisions/0108-discount-codes.md). */
+export type DiscountCodes = Body<paths["/api/discount-codes"]["get"]>;
 export type DiscountCode = Body<paths["/api/discount-codes"]["get"]>["codes"][number];
 export type DiscountCodesNew = Sent<paths["/api/discount-codes"]["post"]>;
 export type VisitDiscountCode = NonNullable<ClientVisit["discount_code"]>;
@@ -468,6 +469,8 @@ export const api = {
   makeDiscountCodes: (codes: DiscountCodesNew) => client.post("/api/discount-codes", { body: codes }),
   /** No booking takes it from now on; the bookings that carry it keep it. */
   switchOffDiscountCode: (id: string) => client.post("/api/discount-codes/{id}/off", { path: { id } }),
+  /** Refused, as in_use, once a booking has taken it. */
+  deleteDiscountCode: (id: string) => client.post("/api/discount-codes/{id}/delete", { path: { id } }),
   /** Only on a visit not yet paid for, linked or invoiced; one code a visit. */
   enterVisitCode: (visitId: string, code: string) =>
     client.post("/api/visits/{id}/discount-code", { path: { id: visitId }, body: { code } }),

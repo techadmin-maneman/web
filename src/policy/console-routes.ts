@@ -115,6 +115,7 @@ export const ROUTE_NEEDS: Readonly<Record<string, RouteNeed | typeof SIGNED_IN>>
   "GET /api/discount-codes": readFromAnyPlace("finance"),
   "POST /api/discount-codes": need("finance", "manage"),
   "POST /api/discount-codes/{id}/off": need("finance", "manage"),
+  "POST /api/discount-codes/{id}/delete": need("finance", "manage"),
   "POST /api/visits/{id}/discount-code": inOwnPlaces("finance", "act"),
   "POST /api/visits/{id}/discount-code/remove": inOwnPlaces("finance", "act"),
   // National Finance only until the route keeps to the caller's cities.

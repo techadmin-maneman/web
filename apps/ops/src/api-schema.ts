@@ -6339,6 +6339,69 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/discount-codes/{id}/delete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Delete a code made by mistake, while no booking has ever taken it */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Deleted */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description access_required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description not_found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description in_use: a booking has taken it; switch it off instead */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/discount-codes": {
         parameters: {
             query?: never;
@@ -9321,6 +9384,7 @@ export interface components {
             /** @description The most codes the list shows, the latest made first. */
             listed_most: number;
             codes: components["schemas"]["DiscountCode"][];
+            totals: components["schemas"]["DiscountCodeTotals"];
         };
         DiscountCode: {
             /** Format: uuid */
@@ -9354,6 +9418,26 @@ export interface components {
             uses: number;
             /** @description What it has taken off those bookings, in paise before GST, as far as their prices are known. */
             given: number;
+            /** @description The clients those bookings are for. */
+            clients: number;
+            /** @description What was paid for those bookings, in paise, less refunds. */
+            paid: number;
+            /** @description When it was last entered on a booking that stands; null if never. */
+            last_used: string | null;
+            /** @description No booking has ever taken it, so it may be deleted rather than switched off. */
+            deletable: boolean;
+        };
+        /** @description Every code's figures together, however many the list shows. */
+        DiscountCodeTotals: {
+            codes: number;
+            /** @description Not switched off, and not past their last day. */
+            live: number;
+            uses: number;
+            clients: number;
+            /** @description Paise before GST. */
+            given: number;
+            /** @description Paise, less refunds. */
+            paid: number;
         };
         DiscountCodesMade: {
             /** @description The codes made, in capitals. */

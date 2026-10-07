@@ -163,6 +163,62 @@ describe("Settings · Discount codes", () => {
     expect(await again.json()).toMatchObject({ error: { code: "code_off" } });
   });
 
+  it("says what each code has come to, and every code together: clients, what was paid, and when last used", async () => {
+    await clientWithVisit();
+    await make();
+    await make({ code: "UNUSED" });
+    await enterOnVisit(env.DB, { visitId: VISIT, text: "TENPC", by: OPS }, NOW);
+    await env.DB.prepare(
+      `INSERT INTO payments (id, person_id, appointment_id, razorpay_payment_id, amount, currency, status,
+         refunded_amount, captured_at, created_at, updated_at)
+       VALUES ('pay-1', ?1, ?2, 'pay_1', 212400, 'INR', 'partially_refunded', 12400, ?3, ?3, ?3)`,
+    )
+      .bind(PERSON, VISIT, NOW.toISOString())
+      .run();
+
+    const answer = await (
+      await request(ops, "/api/discount-codes")
+    ).json<{
+      codes: (Listed & { clients: number; paid: number; last_used: string | null; deletable: boolean })[];
+      totals: Record<string, number>;
+    }>();
+    expect(answer.codes.find((code) => code.code === "TENPC")).toMatchObject({
+      uses: 1,
+      clients: 1,
+      given: 20_000,
+      paid: 200_000,
+      last_used: NOW.toISOString(),
+      deletable: false,
+    });
+    expect(answer.codes.find((code) => code.code === "UNUSED")).toMatchObject({
+      uses: 0,
+      paid: 0,
+      last_used: null,
+      deletable: true,
+    });
+    expect(answer.totals).toEqual({ codes: 2, live: 2, uses: 1, clients: 1, given: 20_000, paid: 200_000 });
+  });
+
+  it("deletes a code no booking has taken, and refuses one a booking has, even once taken off it", async () => {
+    await clientWithVisit();
+    await make();
+    await make({ code: "UNUSED" });
+    await enterOnVisit(env.DB, { visitId: VISIT, text: "TENPC", by: OPS }, NOW);
+    await post(`/api/visits/${VISIT}/discount-code/remove`);
+    const codes = await listed();
+    const id = (text: string) => codes.find((code) => code.code === text)?.id ?? "";
+
+    expect((await post(`/api/discount-codes/${id("UNUSED")}/delete`)).status).toBe(204);
+    const used = await post(`/api/discount-codes/${id("TENPC")}/delete`);
+    expect(used.status).toBe(409);
+    expect(await used.json()).toMatchObject({ error: { code: "in_use" } });
+    expect((await listed()).map((code) => code.code)).toEqual(["TENPC"]);
+    expect((await audited("discount_code.delete")).results).toEqual([
+      expect.objectContaining({ subject_id: id("UNUSED"), detail: JSON.stringify({ code: "UNUSED" }) }),
+    ]);
+    expect((await post("/api/discount-codes/33333333-3333-4333-8333-333333333333/delete")).status).toBe(404);
+  });
+
   // "SPR" found nothing while SPRTEST was there.
   it("finds the codes that begin with what is typed, however old", async () => {
     await make();
