@@ -99,7 +99,7 @@ export const OPS_SETTINGS = [
   {
     name: "checkin_radius_m",
     title: "Check-in radius",
-    note: "How close to the address a technician must be for “I have arrived” to pass.",
+    note: "How close to the address a technician must be to check in.",
     unit: "metres",
     min: 50,
     max: 1000,
@@ -109,7 +109,7 @@ export const OPS_SETTINGS = [
   {
     name: "no_show_wait_min",
     title: "No-show wait",
-    note: "How long a technician waits for the client before a job may close as a no-show.",
+    note: "How long a technician waits before closing a job as a no-show.",
     unit: "minutes",
     min: 5,
     max: 120,
@@ -120,7 +120,7 @@ export const OPS_SETTINGS = [
     // The change terms, which a booking keeps as they were when it was made.
     name: "change_notice_hours",
     title: "Free to move or cancel until",
-    note: "How long before the window a client may move or cancel free. Each booking keeps its terms.",
+    note: "Moves and cancels are free until then. Existing bookings keep their terms.",
     unit: "hours before the window",
     min: 1,
     max: 168,
@@ -129,8 +129,8 @@ export const OPS_SETTINGS = [
   },
   {
     name: "late_change_charge",
-    title: "What a late move or cancel costs",
-    note: "What each kind of visit costs when the client moves or cancels inside that notice.",
+    title: "Late move or cancel charge",
+    note: "Charged by kind of visit, inside the free window.",
     keys: VISIT_TYPES,
     choices: Object.fromEntries(VISIT_TYPES.map((type) => [type, chargesFor(type)])),
     fallback: LATE_CHANGE_CHARGES,
@@ -138,24 +138,24 @@ export const OPS_SETTINGS = [
   {
     // Item 60 of docs/open-points.md: set apart from the late-cancel terms, so either can change alone.
     name: "no_show_charge",
-    title: "What a no-show costs",
-    note: "What each kind of visit costs when you charge a no-show. Each booking keeps its terms.",
+    title: "No-show charge",
+    note: "Charged by kind of visit when you charge a no-show.",
     keys: VISIT_TYPES,
     choices: Object.fromEntries(VISIT_TYPES.map((type) => [type, chargesFor(type)])),
     fallback: NO_SHOW_CHARGES,
   },
   {
     name: "no_show_waiver",
-    title: "What waiving a no-show gives back",
-    note: "Whether waiving a no-show refunds the visit's payment and returns the free service visit it used.",
+    title: "No-show waiver",
+    note: "What a waived no-show gives back.",
     keys: WAIVER_KEYS,
     choices: { payment: ["refunded", "kept"], credit: ["returned", "spent"] },
     fallback: WAIVER_GIVES_BACK,
   },
   {
     name: "address_unlock_hour",
-    title: "When a job's address unlocks",
-    note: "When, the day before a visit, the technician's phone shows the address and the client card.",
+    title: "Address unlock",
+    note: "When the technician sees the address and client card, the day before.",
     unit: HOUR_OF_DAY,
     min: 0,
     max: 23,
@@ -164,8 +164,8 @@ export const OPS_SETTINGS = [
   },
   {
     name: "reminder_hour",
-    title: "When reminders go",
-    note: "When the WhatsApp reminders of tomorrow's visit and of a next service falling due go.",
+    title: "Reminder time",
+    note: "When WhatsApp reminders for tomorrow's visits and services falling due go out.",
     unit: HOUR_OF_DAY,
     // Not in the night: a message about a visit wakes nobody.
     min: 8,
@@ -177,8 +177,8 @@ export const OPS_SETTINGS = [
     // Three bounds on the phone's clock. The third, that the no-show wait
     // runs on our clock too, is the wait above, measured from when the check-in reached us.
     name: "phone_clock",
-    title: "How far a phone is trusted about time",
-    note: "How early a technician may check in, and how long a phone offline is believed about time.",
+    title: "Phone clock limits",
+    note: "How early a technician can check in, and how long an offline phone's clock is trusted.",
     unit: "minutes",
     min: 0,
     max: 240,
@@ -192,8 +192,8 @@ export const OPS_SETTINGS = [
   },
   {
     name: "task_sla_hours",
-    title: "How long a task may wait",
-    note: "How long each queue on the Tasks board has before a task in it is overdue.",
+    title: "Task deadlines",
+    note: "How long a task in each queue has before it's overdue.",
     unit: "hours",
     min: 1,
     // A month, so the 30 days the app promises a grievance its answer within can stand (src/policy/tasks.ts).
@@ -204,7 +204,7 @@ export const OPS_SETTINGS = [
   {
     name: "piece_cycle_days",
     title: "Replacement cycle",
-    note: "How long a hair system on each base lasts before it is due for replacement.",
+    note: "How long a hair system lasts on each base.",
     unit: "days",
     min: 30,
     max: 1095,
@@ -214,8 +214,8 @@ export const OPS_SETTINGS = [
   {
     // Ten minutes, and two minutes' grace for a payment made late (docs/decisions/0068-a-paid-hold-is-kept.md).
     name: "payment_hold",
-    title: "Holding a slot while the client pays",
-    note: "How long a slot is held while the client pays, and how late a payment still counts.",
+    title: "Payment hold",
+    note: "How long a slot is held while the client pays, and the grace after.",
     unit: "minutes",
     min: 1,
     max: 30,
@@ -228,8 +228,8 @@ export const OPS_SETTINGS = [
   },
   {
     name: "dispute_window_days",
-    title: "How long a no-show charge can be disputed",
-    note: "How many days a client has to dispute a no-show charge. Each charge keeps its days.",
+    title: "Dispute window",
+    note: "Days a client has to dispute a no-show charge.",
     unit: "days",
     min: 1,
     max: 365,
@@ -238,8 +238,8 @@ export const OPS_SETTINGS = [
   },
   {
     name: "technician_work",
-    title: "The technicians' figures",
-    note: "How far back the Technicians screen counts, and when an average counts as running over.",
+    title: "Technician figures",
+    note: "The period the Technicians page counts, and when an average is running over.",
     unit: "days",
     min: 1,
     max: 365,
@@ -253,8 +253,8 @@ export const OPS_SETTINGS = [
   {
     // One input for the seven figures the next visit turns on (docs/decisions/0086-the-next-visit-is-offered.md).
     name: "booking_days",
-    title: "Booking and the next visit",
-    note: "When each next visit is offered and reminded, and how far ahead a client may book.",
+    title: "Booking and next visits",
+    note: "When next visits are offered and reminded, and how far ahead clients can book.",
     unit: "days",
     min: 0,
     max: 90,
@@ -266,8 +266,8 @@ export const OPS_SETTINGS = [
   {
     // Each side's visits, and how long they last.
     name: "referral_reward",
-    title: "What a referral earns",
-    note: "The free service visits each side earns once the friend is fitted, and how long they last.",
+    title: "Referral reward",
+    note: "Free service visits each side earns once the friend is fitted, and how long they last.",
     unit: "service visits",
     min: 0,
     max: 1095,
@@ -321,10 +321,10 @@ export function boundsOf(setting: NumberSetting, key?: string): Required<KeyBoun
   };
 }
 
-/** What is allowed, in the words a refusal shows: "50 to 1000 metres, a whole number". */
+/** What is allowed, in the words a refusal shows: "50–1000 metres". */
 export function allowed(setting: NumberSetting, key?: string): string {
   const { min, max, unit } = boundsOf(setting, key);
-  return `${String(min)} to ${String(max)} ${unit}, a whole number`;
+  return `${String(min)}–${String(max)} ${unit}`;
 }
 
 /** Why a value was refused: the field it was in, and what that field will take. */

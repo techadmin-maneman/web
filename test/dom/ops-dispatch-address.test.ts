@@ -136,7 +136,7 @@ describe("the dispatch board's place in the address", () => {
 
     expect(drawer()).toBeNull();
     expect(page.querySelector("[role=alert]")?.textContent).toBe(
-      "That visit is no longer on this board. It may have moved to another week, or been cancelled.",
+      "That visit isn't on this board. It may have moved week or been cancelled.",
     );
   });
 });

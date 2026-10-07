@@ -214,7 +214,7 @@ describe("GET /api/tasks", () => {
     });
   });
 
-  // "Move it in Dispatch" opened this week's board with no drawer, wherever the job was.
+  // "Move in Dispatch" opened this week's board with no drawer, wherever the job was.
   it("gives a job on its technician's day off its visit, so the task opens it on the board", async () => {
     await env.DB.batch([
       env.DB.prepare(

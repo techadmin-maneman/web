@@ -100,11 +100,11 @@ export const messages = {
 export const empty = {
   photos: {
     title: "Photos",
-    lines: ["Your photos start at your first visit.", "Five angles at every visit, taken for your visit record."],
+    lines: ["Your photos begin at your first visit.", "Five angles at every visit, for your record."],
   },
   payments: {
     title: "Payments",
-    lines: ["Nothing to pay yet.", "Your consultation is free. Later payments appear here with their invoices."],
+    lines: ["Nothing to pay yet.", "Your consultation is free. Payments and invoices will appear here."],
   },
   // A consultation and fit in one visit, booked with nothing paid.
   paymentsOneVisit: {
@@ -114,7 +114,7 @@ export const empty = {
   // The design draws the empty list for a lead only.
   paymentsFitted: {
     title: "Payments",
-    lines: ["No payments yet.", "Payments made in the app appear here with their invoices."],
+    lines: ["No payments yet.", "Payments and invoices will appear here."],
   },
   refer: {
     title: "Refer",
@@ -129,7 +129,7 @@ export const states = {
   offline: "No connection. Showing your last update.",
   // On a page the phone does not keep.
   offlineOnly: "No connection.",
-  waiting: "This page will load when you are back online.",
+  waiting: "This page loads when you're back online.",
   error: {
     title: "We couldn’t load your visit.",
     /** Said only when the phone has kept a Home with a visit on it. */

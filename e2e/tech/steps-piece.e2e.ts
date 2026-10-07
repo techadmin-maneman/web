@@ -32,9 +32,7 @@ test.describe("the piece (board B3, step 4)", () => {
 
     await label.fill("MM-STD-71");
     await expect(page.getByRole("button", { name: "Check the label to continue" })).toBeDisabled();
-    await expect(
-      page.getByText("Type it as the tag reads: MM, the base code, a number and a letter, as in MM-STD-4417-B."),
-    ).toBeVisible();
+    await expect(page.getByText("Type it as on the tag, like MM-STD-4417-B.")).toBeVisible();
   });
 
   test("says what a first fit was paid for, and warns when the hair profile names another product", async ({
@@ -67,9 +65,7 @@ test.describe("the piece (board B3, step 4)", () => {
     fake.online = false;
     await page.getByRole("button", { name: "Check the label" }).click();
 
-    await expect(
-      page.getByText("No signal, so the label isn’t checked. It goes on the job as you typed it."),
-    ).toBeVisible();
+    await expect(page.getByText("No signal, so it isn’t checked. It’s saved as you typed it.")).toBeVisible();
     await expect(page.getByText(/We do not know that label/)).toHaveCount(0);
     await expect(page.getByRole("button", { name: "Next" })).toBeEnabled();
   });
@@ -151,9 +147,7 @@ test.describe("the piece of a consultation and fit in one visit", () => {
 
   test("asks the client's choice first, by name, and sends the product with the piece fitted", async ({ page }) => {
     const fake = await onTheChoice(page);
-    await expect(
-      page.getByRole("button", { name: "Choose the hair system, or that the client decided against it" }),
-    ).toBeDisabled();
+    await expect(page.getByRole("button", { name: "Choose the hair system, or mark it declined" })).toBeDisabled();
     expect(await axeViolations(page)).toEqual([]);
 
     await page.getByRole("button", { name: "Mane Man Natural" }).click();

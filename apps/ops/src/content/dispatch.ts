@@ -1,6 +1,6 @@
 // The dispatch board's words: the week, a move and its reason, a block's drawer.
 
-import { NOT_PERMITTED } from "./common.ts";
+import { FAILED, NOT_PERMITTED, OFFLINE } from "./common.ts";
 
 export const dispatch = {
   title: "Dispatch",
@@ -55,11 +55,11 @@ export const dispatch = {
     next: "Next week",
     thisWeek: "This week",
     city: "City",
-    everyCity: "Every city",
+    everyCity: "All cities",
     /** A technician's name or zone, or a visit's client, area or pincode. */
     find: "Find a technician, client or area",
     // The board draws no search, and so no search that finds nothing.
-    nothingFound: (text: string) => `Nothing on this week's board matches “${text}”.`,
+    nothingFound: (text: string) => `Nothing this week matches “${text}”.`,
   },
   board: {
     /** A block, for whoever is reading with a screen reader or moving by keyboard. */
@@ -71,7 +71,7 @@ export const dispatch = {
     begunBlock: (job: string, date: string, window: string, begun: string) =>
       `${job}, ${date}, ${window}, ${begun.toLowerCase()}`,
     /** The board draws no board without technicians. */
-    empty: "No technician is on this board.",
+    empty: "No technicians on this board.",
     /** A day ops recorded leave on: no job can be dropped there, and none is offered (ADR 0062). */
     away: "Away",
     awayLabel: (technician: string, date: string) => `${technician} is away on ${date}`,
@@ -80,7 +80,7 @@ export const dispatch = {
     strandedLabel: (technician: string, date: string, jobs: number) =>
       `${technician} is away on ${date}, with ${String(jobs)} ${jobs === 1 ? "job" : "jobs"} still to move`,
     /** Beneath the board, saying where leave comes from. */
-    leave: "Leave is recorded on the Technicians screen. A day marked Away takes no job.",
+    leave: "Leave is recorded on Technicians. Away days take no jobs.",
   },
   tray: {
     title: "Unassigned",
@@ -98,34 +98,33 @@ export const dispatch = {
     // A job still on a technician who was switched off, which no board draws.
     was: (name: string) => `Was ${name}'s · switched off`,
     /** Beneath the tray: where the asked window comes from, and why some rows have none. */
-    same: "“Asked” is the window the client picked when booking; “not recorded” means they picked none.",
+    same: "“Asked” is the window the client picked.",
     // The board draws four waiting and no empty tray.
-    empty: "Nothing is waiting for a technician.",
+    empty: "Nothing unassigned.",
   },
   /** The drawer a block opens. */
   /** Our words, all of them: letting a technician check in past the geofence, which no board draws. */
   letIn: {
-    title: (technician: string) => `Let ${technician} check in`,
-    note: "He can check in wherever his phone puts him, for this visit only. The distance is still recorded, with your reason.",
-    reason: "Why",
-    reasonHint:
-      "Kept with the visit, and shown with a no-show's evidence: say what you know, such as the pin being at the society gate.",
-    confirm: "Let him check in",
-    sending: "Letting him in",
+    title: (technician: string) => `Allow ${technician} to check in`,
+    note: "Lets them check in from anywhere, for this visit only. The distance is still recorded.",
+    reason: "Reason",
+    reasonHint: "Shown with any no-show evidence, e.g. the pin is at the society gate.",
+    confirm: "Allow check-in",
+    sending: "Allowing",
     close: "Close",
-    done: (technician: string) => `${technician} can check in now: ask him to tap I have arrived again.`,
+    done: (technician: string) => `${technician} can check in now. Ask them to tap I have arrived again.`,
     errors: {
-      invalid_request: "Say why.",
-      not_changeable: "He has checked in already, or the visit is closed or cancelled. Reload the board.",
-      not_found: "That visit is not on the board any more. Reload it.",
+      invalid_request: "Give a reason.",
+      not_changeable: "Already checked in, or the visit is closed or cancelled. Reload.",
+      not_found: "No longer on the board. Reload.",
       not_permitted: NOT_PERMITTED,
-      offline: "You are offline. Connect, then try again.",
-      unknown: "That did not go through. Please try again.",
+      offline: OFFLINE,
+      unknown: FAILED,
     } as Readonly<Record<string, string>>,
   },
   drawer: {
     /** The way past the geofence, for a visit today they have not checked in to. */
-    letIn: "Let him check in",
+    letIn: "Allow check-in",
     /** Beneath the name: "Fri 19 Sep · 12 to 4 pm · Imran Qureshi". */
     when: (date: string, hours: string, technician: string) => `${date} · ${hours} · ${technician}`,
     /** The badge at the drawer's head: never an amount (ADR 0025, item 33). */
@@ -150,7 +149,7 @@ export const dispatch = {
     // The board draws a scheduled visit only, and names no state.
     states: {
       scheduled: "Scheduled",
-      dispatched: "Sent to the technician",
+      dispatched: "Sent to technician",
       in_progress: "In progress",
       completed: "Done",
       cancelled: "Cancelled",
@@ -161,13 +160,13 @@ export const dispatch = {
     begun: {
       arrived: "Technician arrived",
       started: "Technician started",
-      closed: "Closed by the technician",
+      closed: "Closed by technician",
     } as Readonly<Record<string, string>>,
     /** A visit the technician has started or closed has no move. */
-    stays: "In progress, so it stays where it is.",
+    stays: "In progress. Can't be moved.",
     /** The warning before ops move a visit the technician has checked in at. */
     checkedIn: (technician: string) =>
-      `${technician} has checked in. Moving it clears the check-in, so they check in again at the new time.`,
+      `${technician} has checked in. Moving clears it, and they check in again at the new time.`,
     moveAnyway: "Move anyway",
     /** The drawer's two buttons: "WhatsApp Rohit" and "Open client". */
     whatsapp: (firstName: string) => `WhatsApp ${firstName}`,
@@ -175,16 +174,16 @@ export const dispatch = {
     /** A move the client has not heard of, and why, which ops tell them of by phone (ADR 0069). */
     untold: {
       no_consent: (when: string, mobile: string) =>
-        `Not told of the move to ${when}: they have not agreed to WhatsApp. Call ${mobile}, then record it here.`,
+        `Not told of the move to ${when}: not opted in to WhatsApp. Call ${mobile}, then record it.`,
       not_sent: (when: string, mobile: string) =>
-        `Not told of the move to ${when}: the WhatsApp did not go. Call ${mobile}, then record it here.`,
+        `Not told of the move to ${when}: WhatsApp failed. Call ${mobile}, then record it.`,
     },
     /** The keyboard way to do what the drag does; the board draws the drag alone. */
-    move: "Move this visit",
+    move: "Move visit",
     /** The same for a job in the tray, whose drawer the board does not draw. */
     assign: "Assign to a technician",
     /** A visit ops cancel for the client, or close by hand once its technician's phone was lost. */
-    cancel: "Cancel this visit",
+    cancel: "Cancel visit",
     closeByHand: "Close by hand",
     close: "Close",
   },
@@ -196,38 +195,37 @@ export const dispatch = {
     fromTo: (from: string, to: string) => `${from} → ${to}`,
     /** The tray's jobs have no technician yet, so there is nothing to move them from. */
     to: (to: string) => `To ${to}`,
-    legend: "Why it is moving",
+    legend: "Reason",
     /**
      * The design's five, in its order (src/policy/dispatch.ts), less "Skill needed · first fit certified": no
      * technician's skills are recorded, so nothing would stand behind it.
      */
     reasons: [
       { reason: "technician_unavailable", label: "Technician unavailable" },
-      { reason: "client_asked", label: "Client asked to move it" },
+      { reason: "client_asked", label: "Client asked" },
       { reason: "zone_rebalance", label: "Zone rebalance" },
-      { reason: "running_over", label: "Running over on an earlier job" },
+      { reason: "running_over", label: "Earlier job running over" },
     ],
     /** The board's line, for a client who agreed to WhatsApp about their visits. */
-    note: (job: string) => `${job} is messaged on WhatsApp with the new window.`,
+    note: (job: string) => `${job} gets the new window on WhatsApp.`,
     /** One who has not; the move goes to the Tasks board until ops say they called (ADR 0069). */
-    call: (name: string, mobile: string) => `${name} has not agreed to WhatsApp — call ${mobile} with the new window.`,
+    call: (name: string, mobile: string) => `${name} isn't on WhatsApp updates. Call ${mobile} with the new window.`,
     /** After the line, where the visit was paid for: prepaid, or with the client's credit. */
     carries: "Their payment carries over.",
     /** A change of technician alone leaves the client's window as it was. */
-    sameTime: (job: string) => `Only the technician changes. ${job} keeps the same window, so nobody is messaged.`,
+    sameTime: (job: string) => `Only the technician changes. ${job} keeps the same window and isn't messaged.`,
     /** A visit with no client on our records. */
-    noClient: "This visit has no client on our records to tell.",
+    noClient: "No client to notify.",
     /**
      * The board's extra line inside the notice the visit was sold under, which the board writes as 24 hours. The
      * client keeps the free change they had: their own change counts from the time before we moved it (ADR 0096).
      */
-    soon: (hours: number) =>
-      `This visit is inside ${String(hours)} hours. The client is not charged, because we moved it.`,
+    soon: (hours: number) => `Within ${String(hours)} hours. The client isn't charged, as we moved it.`,
     /** A move of a visit the technician had checked in at, chosen after the drawer's warning. */
-    checkInCleared: "The technician's check-in is cleared. They check in again at the new time.",
+    checkInCleared: "The check-in is cleared. They check in again at the new time.",
     /** A move onto a day ops blacked out goes only with a reason, kept with the move. */
-    blackout: (date: string) => `${date} is blacked out, so nothing is booked that day. Say why this visit goes ahead.`,
-    blackoutReason: "Why it goes ahead that day",
+    blackout: (date: string) => `${date} is a closed day. Say why this visit goes ahead.`,
+    blackoutReason: "Reason",
     send: "Move and notify",
     /** The same button where nothing goes to the client, so it does not promise a message. */
     sendQuietly: "Move",
@@ -237,40 +235,39 @@ export const dispatch = {
   /** Choosing where a job lands, which the design does by dragging. */
   landing: {
     /** The bar above the board while a job is in hand, with the slot-size hint the brief asks for. */
-    moving: (job: string, size: string) => `Moving ${job}, ${size}. Choose a technician and a window.`,
+    moving: (job: string, size: string) => `Moving ${job}, ${size}. Choose a technician and window.`,
     /** "a first fit, 2 slots". */
     size: (type: string, slots: number) => `${type}, ${String(slots)} ${slots === 1 ? "slot" : "slots"}`,
     /** While the board asks where the job would fit. */
-    checking: "Finding where it fits.",
+    checking: "Finding space.",
     /** A day with no window the job would land in; the board offers nothing to drop on. */
     noRoom: "No room",
     /** Each window of each technician's day with room, while a job is in hand. */
     choose: (job: string, technician: string, date: string, window: string) =>
       `Move ${job} to ${technician}, ${date}, ${window}`,
     /** The brief's "keyboard alternative: choose a destination from a list". */
-    list: "Or choose where from a list",
+    list: "Or choose from a list",
     listPrompt: "A technician, day and window",
     listOption: (technician: string, date: string, window: string) => `${technician} · ${date} · ${window}`,
     listGo: "Choose",
     // A week with nowhere the job fits.
-    nowhere: "Nowhere on this week's board has room for it.",
-    stop: "Stop moving it",
+    nowhere: "No room this week.",
+    stop: "Stop moving",
     /** What happened, from the move's own answer: a message is claimed only where one was queued. */
     moved: {
-      messaged: (job: string) =>
-        `Moved. We're sending ${job} the new window on WhatsApp; if it fails, a call task appears.`,
+      messaged: (job: string) => `Moved. ${job} gets the new window on WhatsApp. If it fails, a call task appears.`,
       call: (job: string, name: string, mobile: string) =>
-        `${job} moved. ${name} has not agreed to WhatsApp: call ${mobile} with the new window.`,
+        `${job} moved. ${name} isn't on WhatsApp updates: call ${mobile} with the new window.`,
       unchanged: (job: string, technician: string) =>
-        `${job} is now with ${technician}. The window is the same, so nobody was messaged.`,
-      noClient: (job: string) => `${job} moved. The visit has no client on our records to tell.`,
+        `${job} is now with ${technician}. Same window, so no message sent.`,
+      noClient: (job: string) => `${job} moved. No client to notify.`,
     },
     /** The button that closes the call's task, beside the line that asks for the call. */
     told: "Told by phone",
-    toldDone: (name: string) => `Recorded that ${name} was told by phone.`,
+    toldDone: (name: string) => `Recorded: ${name} told by phone.`,
     /** A visit ops cancelled, or closed by hand, from its drawer. */
-    cancelled: (job: string) => `${job}'s visit is cancelled.`,
-    closedByHand: (job: string) => `${job}'s visit is closed.`,
+    cancelled: (job: string) => `${job}'s visit cancelled.`,
+    closedByHand: (job: string) => `${job}'s visit closed.`,
     // The board draws no way past the geofence.
     letIn: (technician: string, job: string) => `${technician} can check in to ${job}'s visit now.`,
     /**
@@ -279,41 +276,39 @@ export const dispatch = {
      * code alone.
      */
     clash: (technician: string, date: string, window: string) =>
-      `${technician} already holds a job on ${date}, ${window}. Nothing was moved.`,
+      `${technician} already has a job on ${date}, ${window}.`,
     /** Leave is named as leave, so ops know the day is off rather than merely full (ADR 0062). */
-    onLeave: (technician: string, date: string) => `${technician} is away on ${date}. Nothing was moved.`,
+    onLeave: (technician: string, date: string) => `${technician} is away on ${date}.`,
     /** A technician never takes two of a client's visits in a row (ADR 0111). */
     backToBack: (technician: string) =>
-      `${technician} has this client's visit just before or after. Choose someone else. Nothing was moved.`,
+      `${technician} has this client's visit just before or after. Choose someone else.`,
     /** A move lands only at a start still ahead. */
-    pastDay: (date: string) => `${date} has passed. Choose a day ahead. Nothing was moved.`,
-    windowPassed: (date: string, window: string) =>
-      `Too late for ${date}, ${window}. Choose a later window. Nothing was moved.`,
+    pastDay: (date: string) => `${date} has passed. Choose a later day.`,
+    windowPassed: (date: string, window: string) => `Too late for ${date}, ${window}. Choose a later window.`,
     /** The day was blacked out after the board offered it; picking it again asks for the reason. */
-    blackout: (date: string) => `${date} is blacked out. Choose it again to give a reason. Nothing was moved.`,
+    blackout: (date: string) => `${date} is a closed day. Choose it again to give a reason.`,
     /** The window is free, but the visit's block has no room in it (ADR 0069). */
     doesNotFit: (type: string, technician: string, date: string, window: string) =>
-      `${type} has no room in ${technician}'s ${window} on ${date}: its time is taken, or it would run past the day's end. Nothing was moved.`,
+      `${type}: no room in ${technician}'s ${window} on ${date}.`,
     /** Another ops user moved the job while this one was choosing (ADR 0069). */
-    superseded: (job: string, where: string) =>
-      `Someone else moved ${job} while you were choosing. It is now ${where}. Nothing was moved.`,
+    superseded: (job: string, where: string) => `${job} was just moved by someone else. It's now ${where}.`,
     supersededWhere: (technician: string, date: string, window: string) => `with ${technician}, ${date}, ${window}`,
     /** The job has left this week, or the city asked for, since. */
     supersededGone: "off this board",
     /** Another ops user's move of the same job is still being written. */
-    beingMoved: (job: string) => `Someone else is moving ${job} right now. Nothing was moved.`,
+    beingMoved: (job: string) => `Someone else is moving ${job} right now.`,
     errors: {
       not_permitted: NOT_PERMITTED,
-      invalid_request: "That move is not one we can make. Nothing was moved.",
-      not_found: "This visit is no longer live. The board now shows it as it stands.",
+      invalid_request: "That move isn't possible.",
+      not_found: "This visit no longer exists. The board is refreshed.",
       /** The technician began the visit after the board was read. */
-      in_progress: "The technician has begun this visit, so it stays where it is. Nothing was moved.",
-      offline: "You are offline. Connect, then try again.",
-      unknown: "That did not go through. Nothing was moved.",
+      in_progress: "The technician has started this visit. It can't be moved.",
+      offline: OFFLINE,
+      unknown: FAILED,
     },
     /** The call's record did not go through. */
-    toldFailed: "That was not recorded. Try again.",
+    toldFailed: FAILED,
     /** A link asked for a visit this board does not hold. */
-    notOnBoard: "That visit is no longer on this board. It may have moved to another week, or been cancelled.",
+    notOnBoard: "That visit isn't on this board. It may have moved week or been cancelled.",
   },
 } as const;

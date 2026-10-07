@@ -38,8 +38,7 @@ export const signIn = {
   // Neither file draws the app opened from the home screen. An
   // installed iPhone app has its own cookie jar, so the first sign-in inside it
   // is a second one and looks like the account has gone (ADR 0053's update).
-  installed:
-    "The home-screen app signs in on its own. Sign in here once, then use this app. Anything still sending from the browser goes up from there.",
+  installed: "Sign in here once, then use the home-screen app. Anything waiting in the browser still sends.",
 } as const;
 
 export const today = {
@@ -85,14 +84,14 @@ export const leaving = {
   body: "Signing out deletes them from this phone, and they never reach us.",
   send: "Send first",
   anyway: "Sign out anyway",
-  stayed: "No signal, so you are still signed in and nothing was deleted. Sign out again once there is signal.",
+  stayed: "No signal. You’re still signed in and nothing was deleted. Try again with signal.",
 } as const;
 
 /** When the phone has no room left for what the app must keep: a photograph, a step. */
 export const storage = {
   // Neither file draws a phone that is full.
   title: "This phone’s storage is full",
-  body: "Nothing more can be kept on it until there is room. Delete photos or apps you don’t need, then try again.",
+  body: "Free up space by deleting photos or apps you don’t need, then try again.",
 } as const;
 
 /** A screen that failed to draw, which React would otherwise leave blank. */
@@ -168,7 +167,7 @@ const stopped: Readonly<Record<string, string>> = {
   technician: "This job is someone else’s now.",
   time: "Ops moved this job to another time.",
   status: "This job was cancelled while the phone was offline.",
-  out_of_order: "A step reached us before the one ahead of it.",
+  out_of_order: "A step arrived out of order.",
   not_today: "This job is on another day. Arrive and start it on the day.",
   too_early_to_arrive: "Too early for this job. Tap again from the time on its card.",
   already_started: "This job was started, so it can’t close as a no-show.",
@@ -342,7 +341,7 @@ export const notHome = {
     away: (km: string) => `You are ${km} from the address.`,
     // The board draws a distance; an address with no coordinates has none (ADR 0036).
     unmeasured: "We couldn’t measure how far you are from the address.",
-    body: "Get to the door and tap again. Still refused at the door? Ask ops to let you check in. A no-show can’t be recorded from here.",
+    body: "Go to the door and tap again. Still refused? Ask ops to let you check in. A no-show needs a check-in.",
     action: "Try again",
   },
   waiting: {
@@ -368,7 +367,7 @@ export const notHome = {
   // The board draws no confirmation. Closing as a no-show can bring the client a charge.
   confirm: {
     title: "Close as a no-show?",
-    body: "Ops may charge the client. Close only if nobody has come to the door.",
+    body: "The client may be charged. Close only if no one has answered.",
     yes: "Close as no-show",
     no: "Not yet",
   },
@@ -453,19 +452,19 @@ export const steps = {
     addOne: (name: string) => `Add ${name}`,
     none: "None used",
     // The console holds no consumables yet (docs/decisions/0087-consumables-and-stock.md).
-    nothingOffered: "No consumables are listed yet. Ops add them in the console.",
+    nothingOffered: "No consumables listed yet. Ops add them in the console.",
   },
   piece: {
     // A label carries no barcode or QR code, so the code is typed, never scanned.
     label: "The new piece’s label",
     placeholder: "MM-STD-4417-B",
     // The board draws no label typed wrong.
-    malformed: "Type it as the tag reads: MM, the base code, a number and a letter, as in MM-STD-4417-B.",
+    malformed: "Type it as on the tag, like MM-STD-4417-B.",
     checkFirst: "Check the label to continue",
     look: "Check the label",
-    unknown: "We don’t know that label. It goes on the job as you typed it.",
+    unknown: "Unknown label. It’s saved as you typed it.",
     // The board draws no lookup with no signal.
-    offline: "No signal, so the label isn’t checked. It goes on the job as you typed it.",
+    offline: "No signal, so it isn’t checked. It’s saved as you typed it.",
     notThisClient: "That piece isn’t this client’s.",
     notThisClientAction: "That piece isn’t this client’s",
     rows: { piece: "Piece", base: "Base", lot: "Supplier lot" },
@@ -551,7 +550,7 @@ export const oneVisit = {
   declined: "Decided against it",
   // Ops offer no hair system for the visit's day, so there is nothing to choose from.
   noProducts: "No hair system is offered for this visit. Speak to ops before you fit anything.",
-  chooseFirst: "Choose the hair system, or that the client decided against it",
+  chooseFirst: "Choose the hair system, or mark it declined",
   declinedNote: "Nothing is fitted. The visit ends as a free consultation.",
   /** Closing as done, once the client decided against the fit. */
   endsAsConsultation: "Ends as a free consultation. Nothing to pay.",
@@ -582,7 +581,7 @@ export const oneVisit = {
       already_discounted: "This visit already has a code.",
       price_settled: "The payment link has gone, so the code can no longer change.",
       rate_limited: "Too many codes tried. Try again tomorrow.",
-      offline: "You’re offline. A code needs a signal: try again once you have one.",
+      offline: "You’re offline. Codes need signal.",
       unknown: "That didn’t go through. Try again.",
     } as Readonly<Record<string, string>>,
   },
@@ -645,8 +644,8 @@ export const profile = {
     other_systems: "Other hair systems",
     other: "Other",
   } satisfies Record<History["remedies"][number], string>,
-  range: (min: number, max: number) => `${String(min)} to ${String(max)}, to one decimal.`,
-  greyRange: (min: number, max: number) => `${String(min)} to ${String(max)}, a whole number.`,
+  range: (min: number, max: number) => `${String(min)}–${String(max)}, to one decimal.`,
+  greyRange: (min: number, max: number) => `${String(min)}–${String(max)}.`,
   yearRange: (first: number, last: number) => `A year from ${String(first)} to ${String(last)}.`,
   checkFigures: "Check the figures to continue",
   history: {
@@ -688,6 +687,6 @@ export const session = {
   // No board draws a technician ops switched off.
   switchedOff: "Your account is switched off. Ask ops to switch it back on, then sign in.",
   workKept:
-    "Your account is switched off. Work not yet sent stays on this phone for 7 days, and sends once ops switch you back on and you sign in.",
+    "Your account is switched off. Unsent work stays on this phone for 7 days and sends once you’re switched back on and sign in.",
   checking: "Loading",
 } as const;

@@ -20,7 +20,7 @@ test("Your data: a download of everything held, and a concern sent to ops", asyn
   await page.getByRole("button", { name: "Send" }).click();
   await expect(
     page.getByText(
-      "Received. We reply here and on WhatsApp, usually within a working day and within 30 days at the latest.",
+      "Received. We’ll reply here and on WhatsApp, usually within a working day and always within 30 days.",
     ),
   ).toBeVisible();
   const concerns = page.getByRole("list", { name: "Your concerns" });

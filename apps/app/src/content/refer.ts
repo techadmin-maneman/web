@@ -54,8 +54,8 @@ export const refer = {
   credit: freeVisitsTile,
   // The board draws no line for the credits of the invite a client came with while ops review them.
   inviteCredits: {
-    checking: "The free service visits from the invite you came with are being checked. We’ll message you.",
-    refused: "We couldn’t add the free service visits from your invite. Message us to find out why.",
+    checking: "Your invite’s free service visits are being checked. We’ll message you.",
+    refused: "We couldn’t add your invite’s free service visits. Message us to find out why.",
   },
   share: "Share an invite",
   tracker: "See who has been fitted",
@@ -124,7 +124,7 @@ export const refer = {
     yes: "Switch off",
     no: "Keep it on",
     // A revoke the API did not answer leaves the card as it was.
-    failed: "That didn’t go through, and your photos are still on the card. Try again.",
+    failed: "That didn’t go through. Your photos are still on the card. Try again.",
   },
   // The card is composed on the phone; the design does not draw its waiting or its failures.
   composing: "Making your card.",

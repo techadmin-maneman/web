@@ -42,7 +42,7 @@ test("Photos shows a booked client's before photo beside its look, each kept, ea
     ),
   ).toBeVisible();
   // No visit has photographs yet: the design's lines, beneath the try-on.
-  await expect(page.getByText("Your photos start at your first visit.")).toBeVisible();
+  await expect(page.getByText("Your photos begin at your first visit.")).toBeVisible();
   await expect(page.getByRole("link", { name: "Compare" })).toHaveCount(0);
 
   await look.click();

@@ -60,13 +60,13 @@ export const visits = {
       // An invoice held back on purpose: a credit visit's, and a draft whose total is not what the visit
       // was sold for, which is checked before it is sent.
       credit: "Paid with a free service visit. Your invoice will follow.",
-      checking: "We are checking this invoice before we send it. Message us if you need it sooner.",
+      checking: "We’re checking this invoice before sending it. Message us if you need it sooner.",
     },
     // The design draws no visit the client missed, nor the dispute of its charge (ADR 0096).
     // The reason ops gave stays with them.
     noShow: {
       label: "Not home",
-      line: (minutes: number) => `We came, and waited ${String(minutes)} minutes, but nobody was home.`,
+      line: (minutes: number) => `We came and waited ${String(minutes)} minutes, but no one was home.`,
       decision: {
         undecided: "We are looking at it. Nothing is charged until we have.",
         charged: "Charged.",

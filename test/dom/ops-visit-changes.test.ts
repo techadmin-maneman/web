@@ -139,23 +139,23 @@ describe("cancelling a client's visit from the console", () => {
 
     expect(sent).toEqual([{ path: `/api/visits/${VISIT}/cancel`, body: { confirm: false } }]);
     expect(text()).toContain("Paid Rs. 2,000 by UPI.");
-    expect(text()).toContain("Free to the client: Rs. 2,000 goes back to their UPI.");
+    expect(text()).toContain("Free cancellation: Rs. 2,000 refunded to their UPI.");
   });
 
   it("asks for a reason, then cancels free to the client and says what went back", async () => {
     answers.push(() => Response.json(LATE_TERMS));
     await show(cancelPanel());
-    expect(button("Cancel the visit").disabled).toBe(true);
+    expect(button("Confirm cancellation").disabled).toBe(true);
 
-    fill("Why", "Client phoned: his father is unwell");
+    fill("Reason", "Client phoned: his father is unwell");
     answers.push(() => Response.json({ ...LATE_TERMS, cancelled: true }));
-    await press("Cancel the visit");
+    await press("Confirm cancellation");
 
     expect(sent[1]).toEqual({
       path: `/api/visits/${VISIT}/cancel`,
       body: { confirm: true, notice: "late", reason: "Client phoned: his father is unwell" },
     });
-    expect(text()).toContain("Cancelled. Rs. 2,000 goes back to their UPI.");
+    expect(text()).toContain("Cancelled. Rs. 2,000 refunded to their UPI.");
     await press("Close");
     expect(closedWith).toEqual([true]);
   });
@@ -164,11 +164,11 @@ describe("cancelling a client's visit from the console", () => {
     answers.push(() => Response.json(LATE_TERMS));
     await show(cancelPanel());
 
-    tick("Apply the client's late terms");
-    expect(text()).toContain("On their late terms: Rs. 2,000 is kept.");
-    fill("Why", "Cancelled an hour before; no reason given");
+    tick("Apply late terms");
+    expect(text()).toContain("Late terms: Rs. 2,000 kept.");
+    fill("Reason", "Cancelled an hour before; no reason given");
     answers.push(() => Response.json({ ...LATE_TERMS, cancelled: true }));
-    await press("Cancel the visit");
+    await press("Confirm cancellation");
 
     expect(sent[1]?.body).toEqual({
       confirm: true,
@@ -199,31 +199,31 @@ describe("cancelling a client's visit from the console", () => {
     await show(cancelPanel());
 
     expect(text()).toContain("Paid with a free service visit.");
-    expect(text()).toContain("Free to the client: their free service visit comes back.");
-    tick("Apply the client's late terms");
-    expect(text()).toContain("On their late terms: their free service visit is spent.");
+    expect(text()).toContain("Free cancellation: free service visit returned.");
+    tick("Apply late terms");
+    expect(text()).toContain("Late terms: free service visit used.");
   });
 
   it("says why a visit cannot be cancelled, and changes nothing", async () => {
     answers.push(() => refusal(409, "not_changeable"));
     await show(cancelPanel());
 
-    expect(text()).toContain("This visit can no longer be cancelled");
-    expect(() => button("Cancel the visit")).toThrow();
+    expect(text()).toContain("Started, passed or already cancelled.");
+    expect(() => button("Confirm cancellation")).toThrow();
   });
 
   it("reads the terms again when the notice changed while the panel was open", async () => {
     answers.push(() => Response.json({ ...LATE_TERMS, notice: "free", client_terms: LATE_TERMS.free }));
     await show(cancelPanel());
-    fill("Why", "Client phoned");
+    fill("Reason", "Client phoned");
     answers.push(() => refusal(409, "terms_changed"));
     answers.push(() => Response.json(LATE_TERMS));
-    await press("Cancel the visit");
+    await press("Confirm cancellation");
     await settle();
 
     expect(sent.map((each) => each.body.confirm)).toEqual([false, true, false]);
-    expect(text()).toContain("The client's notice ran out while this was open.");
-    expect(text()).toContain("Apply the client's late terms");
+    expect(text()).toContain("The free window closed meanwhile.");
+    expect(text()).toContain("Apply late terms");
   });
 });
 
@@ -238,13 +238,13 @@ const closePanel = () =>
 describe("closing a visit by hand from the console", () => {
   it("sends the times on the visit's own day in India, the outcome and the reason", async () => {
     await show(closePanel());
-    expect(button("Close the visit").disabled).toBe(true);
+    expect(button("Close visit").disabled).toBe(true);
 
-    fill("Work began at", "09:20");
-    fill("Work ended at", "10:50");
-    fill("What happened, and how you know", "Imran's phone was stolen; the client confirmed the visit");
+    fill("Started", "09:20");
+    fill("Finished", "10:50");
+    fill("What happened", "Imran's phone was stolen; the client confirmed the visit");
     answers.push(() => Response.json({ visit_id: VISIT, status: "completed", duration_minutes: 90 }));
-    await press("Close the visit");
+    await press("Close visit");
 
     expect(sent).toEqual([
       {
@@ -265,13 +265,13 @@ describe("closing a visit by hand from the console", () => {
   it("closes a visit as partly done, whose follow-up waits on Tasks", async () => {
     await show(closePanel());
     tick("Partly done");
-    fill("Work began at", "09:20");
-    fill("Work ended at", "10:00");
-    fill("What happened, and how you know", "Phone lost mid-visit; the client had to leave");
+    fill("Started", "09:20");
+    fill("Finished", "10:00");
+    fill("What happened", "Phone lost mid-visit; the client had to leave");
     answers.push(() => Response.json({ visit_id: VISIT, status: "terminated", duration_minutes: 40 }));
-    await press("Close the visit");
+    await press("Close visit");
 
     expect(sent[0]?.body.outcome).toBe("partial");
-    expect(text()).toContain("Closed as partly done. Its follow-up waits on Tasks.");
+    expect(text()).toContain("Closed as partly done. A follow-up is on Tasks.");
   });
 });

@@ -60,7 +60,7 @@ export const SETTINGS = {
     {
       name: "booking_days",
       kind: "number",
-      title: "Booking and the next visit",
+      title: "Booking and next visits",
       note: "When the app offers each next visit and how far ahead a client may book it.",
       unit: "days",
       min: 0,
@@ -111,7 +111,7 @@ export const SETTINGS = {
     {
       name: "phone_clock",
       kind: "number",
-      title: "How far a phone is trusted about time",
+      title: "Phone clock limits",
       note: "How long before the booked start a check-in may say the technician arrived.",
       unit: "minutes",
       min: 0,
@@ -129,7 +129,7 @@ export const SETTINGS = {
     {
       name: "late_change_charge",
       kind: "choice",
-      title: "What a late move or cancel costs",
+      title: "Late move or cancel charge",
       note: "What each kind of visit costs when the client moves or cancels it inside that notice.",
       keys: ["consultation", "first_fit", "service", "replacement"],
       choices: {
@@ -146,7 +146,7 @@ export const SETTINGS = {
     {
       name: "referral_reward",
       kind: "number",
-      title: "What a referral earns",
+      title: "Referral reward",
       note: "The free service visits the client who sent an invite gets, and those their friend gets.",
       unit: "service visits",
       min: 0,
@@ -165,8 +165,8 @@ export const SETTINGS = {
     {
       name: "technician_work",
       kind: "number",
-      title: "The technicians' figures",
-      note: "How far back the Technicians screen counts, and when an average counts as running over.",
+      title: "Technician figures",
+      note: "The period the Technicians page counts, and when an average is running over.",
       unit: "days",
       min: 1,
       max: 365,

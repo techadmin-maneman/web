@@ -31,11 +31,11 @@ test.describe("the service area, Areas' Served tab", () => {
     await open(page, "/areas/served", {
       "POST /api/service-area": json({ changed: 1, served: 1, alerted: 0 }),
     });
-    await expect(page.getByRole("button", { name: "Save these pincodes" })).toBeDisabled();
+    await expect(page.getByRole("button", { name: "Save" })).toBeDisabled();
     await page.getByLabel("Launch date for 110017").fill("2026-09-02");
 
     const sent = posted(page, "/api/service-area");
-    await page.getByRole("button", { name: "Save these pincodes" }).click();
+    await page.getByRole("button", { name: "Save" }).click();
     expect((await sent).postDataJSON()).toEqual({
       changes: [{ pincode: "110017", served: true, launch_on: "2026-09-02" }],
     });
@@ -49,12 +49,12 @@ test.describe("the service area, Areas' Served tab", () => {
     });
     await page.getByRole("button", { name: "Gurgaon · 0 of 1" }).click();
     await area(page, "122018").fill("=Sector 65");
-    await expect(page.getByRole("alert")).toContainText("122018: an area's name starts with a letter or a digit");
-    await expect(page.getByRole("button", { name: "Save these pincodes" })).toBeDisabled();
+    await expect(page.getByRole("alert")).toContainText("122018: 2–40 characters");
+    await expect(page.getByRole("button", { name: "Save" })).toBeDisabled();
 
     await area(page, "122018").fill("Sector 65 ");
     const sent = posted(page, "/api/service-area");
-    await page.getByRole("button", { name: "Save these pincodes" }).click();
+    await page.getByRole("button", { name: "Save" }).click();
     expect((await sent).postDataJSON()).toEqual({
       changes: [{ pincode: "122018", served: false, launch_on: null, area: "Sector 65" }],
     });
@@ -74,20 +74,20 @@ test.describe("the service area, Areas' Served tab", () => {
       "POST /api/service-area": json({ changed: 1, served: 2, alerted: 3 }),
     });
     await page.getByRole("checkbox", { name: "Served 110024" }).check();
-    await page.getByRole("button", { name: "Save these pincodes" }).click();
+    await page.getByRole("button", { name: "Save" }).click();
 
     const check = page.getByRole("region", { name: "Mark 110024 live" });
     await expect(check).toBeFocused();
-    await expect(check).toContainText("This messages 3 people");
-    await expect(check).toContainText("110024, Lajpat Nagar: 3 waiting ask to be told.");
-    await expect(check).toContainText("The 2 who did not opt in are not messaged.");
+    await expect(check).toContainText("Messages 3 people");
+    await expect(check).toContainText("110024, Lajpat Nagar: 3 opted in.");
+    await expect(check).toContainText("2 didn't opt in and won't be messaged.");
 
     const sent = posted(page, "/api/service-area");
     await check.getByRole("button", { name: "Save and send to 3" }).click();
     expect((await sent).postDataJSON()).toEqual({
       changes: [{ pincode: "110024", served: true, launch_on: null }],
     });
-    await expect(page.getByRole("status").filter({ hasText: "3 people are being told on WhatsApp." })).toBeVisible();
+    await expect(page.getByRole("status").filter({ hasText: "3 WhatsApp messages sending." })).toBeVisible();
   });
 
   test("says so when a change would leave nowhere served", async ({ page }) => {
@@ -95,12 +95,12 @@ test.describe("the service area, Areas' Served tab", () => {
       "POST /api/service-area": fails(400, "no_service_area"),
     });
     await page.getByRole("checkbox", { name: "Served 110017" }).uncheck();
-    await page.getByRole("button", { name: "Save these pincodes" }).click();
-    await expect(page.getByRole("alert")).toContainText("leave no pincode served");
+    await page.getByRole("button", { name: "Save" }).click();
+    await expect(page.getByRole("alert")).toContainText("At least one pincode must stay served.");
   });
 
   const upload = (page: Page, csv: string) =>
-    page.getByLabel("The CSV you have edited").setInputFiles({
+    page.getByLabel("Edited CSV").setInputFiles({
       name: "service-area.csv",
       mimeType: "text/csv",
       buffer: Buffer.from(csv),
@@ -115,16 +115,16 @@ test.describe("the service area, Areas' Served tab", () => {
     const preview = page.getByRole("row").filter({ hasText: "110024" }).last();
     await expect(preview).toContainText("Not served");
     await expect(preview).toContainText("Not served, launch 2026-11-01");
-    await page.getByRole("button", { name: "Put these in the table" }).click();
+    await page.getByRole("button", { name: "Apply to table" }).click();
     await expect(page.getByLabel("Launch date for 110024")).toHaveValue("2026-11-01");
 
     const sent = posted(page, "/api/service-area");
-    await page.getByRole("button", { name: "Save these pincodes" }).click();
+    await page.getByRole("button", { name: "Save" }).click();
     expect((await sent).postDataJSON()).toEqual({
       changes: [{ pincode: "110024", served: false, launch_on: "2026-11-01" }],
     });
     await expect(page.getByLabel("Launch date for 110024")).toHaveValue("2026-11-01");
-    await expect(page.getByRole("button", { name: "Save these pincodes" })).toBeDisabled();
+    await expect(page.getByRole("button", { name: "Save" })).toBeDisabled();
   });
 
   // A pincode served from a later day was served at once.
@@ -133,8 +133,8 @@ test.describe("the service area, Areas' Served tab", () => {
     await open(page, "/areas/served");
     await page.getByRole("checkbox", { name: "Served 110024" }).check();
     await page.getByLabel("Launch date for 110024").fill("2026-10-20");
-    await expect(page.getByRole("alert")).toContainText("110024: a pincode goes live today or from a day already past");
-    await expect(page.getByRole("button", { name: "Save these pincodes" })).toBeDisabled();
+    await expect(page.getByRole("alert")).toContainText("110024: the launch date must be today or earlier");
+    await expect(page.getByRole("button", { name: "Save" })).toBeDisabled();
   });
 
   // No screen could add a pincode the reference file does not hold.
@@ -151,14 +151,14 @@ test.describe("the service area, Areas' Served tab", () => {
     await open(page, "/areas/served", { "POST /api/pincodes": json(added, 201) });
     const form = page.getByRole("group", { name: "Add a pincode" });
     await form.getByLabel("Pincode").fill("400050");
-    await form.getByLabel("Area, as messages name it").fill("Bandra West");
+    await form.getByLabel("Area name").fill("Bandra West");
     await form.getByLabel("City").selectOption("Mumbai");
     const sent = posted(page, "/api/pincodes");
-    await form.getByRole("button", { name: "Add it" }).click();
+    await form.getByRole("button", { name: "Add" }).click();
     expect((await sent).postDataJSON()).toEqual({ pincode: "400050", area: "Bandra West", city: "Mumbai" });
 
     await expect(form.getByRole("status")).toHaveText(
-      "400050 is in Mumbai now, not served yet. Tick Served and save to mark it live.",
+      "400050 added to Mumbai, not served. Tick Served and save to go live.",
     );
     await expect(page.getByRole("button", { name: "Mumbai · 0 of 1" })).toHaveAttribute("aria-current", "true");
     await expect(area(page, "400050")).toHaveValue("Bandra West");
@@ -168,16 +168,16 @@ test.describe("the service area, Areas' Served tab", () => {
     await open(page, "/areas/served");
     const form = page.getByRole("group", { name: "Add a pincode" });
     await form.getByLabel("Pincode").fill("012345");
-    await expect(form.getByRole("alert")).toHaveText("A pincode is six digits and starts with 1 to 8.");
-    await expect(form.getByRole("button", { name: "Add it" })).toBeDisabled();
+    await expect(form.getByRole("alert")).toHaveText("Six digits, starting 1–8.");
+    await expect(form.getByRole("button", { name: "Add" })).toBeDisabled();
   });
 
   // A file without its served column switched every pincode in it off.
   test("refuses a file that leaves out one of its three columns", async ({ page }) => {
     await open(page, "/areas/served");
     await upload(page, "pincode,launch_on\n110017,2026-09-01\n");
-    await expect(page.getByRole("alert")).toContainText("needs a pincode, a served and a launch_on column");
-    await expect(page.getByRole("button", { name: "Put these in the table" })).toHaveCount(0);
+    await expect(page.getByRole("alert")).toContainText("Needs pincode, served and launch_on columns");
+    await expect(page.getByRole("button", { name: "Apply to table" })).toHaveCount(0);
   });
 });
 
@@ -186,15 +186,15 @@ test.describe("the blackout days", () => {
   test("lists the days run together, why, who added them, and what is still booked on them", async ({ page }) => {
     await open(page, "/settings/blackouts");
     const diwali = page.getByRole("listitem").filter({ hasText: "Fri 29 Oct to Sat 30 Oct · Diwali" });
-    await expect(diwali).toContainText("Added by ops@maneman.in on 20 Sep 2027");
-    await expect(diwali).toContainText("3 visits are still booked on these days. Move them on the dispatch board.");
+    await expect(diwali).toContainText("Closed by ops@maneman.in on 20 Sep 2027");
+    await expect(diwali).toContainText("3 visits are still booked. Move them on the dispatch board.");
     // The way to those visits opens the board on the run's first day.
     await expect(diwali.getByRole("link", { name: "Show on board: Fri 29 Oct to Sat 30 Oct" })).toHaveAttribute(
       "href",
       "/dispatch?from=2027-10-29",
     );
     const training = page.getByRole("listitem").filter({ hasText: "Mon 15 Nov · Staff training" });
-    await expect(training).toContainText("Added before this screen, so who added it is not recorded.");
+    await expect(training).toContainText("Closed before this page existed.");
     await expect(training).not.toContainText("still booked");
     await expect(training.getByRole("link", { name: /Show on board/ })).toHaveCount(0);
   });
@@ -211,28 +211,26 @@ test.describe("the blackout days", () => {
     };
     const added = { ...BLACKOUTS, blackouts: [...BLACKOUTS.blackouts, christmas] };
     await open(page, "/settings/blackouts", { "POST /api/blackouts": json(added) });
-    const add = page.getByRole("button", { name: "Black out these days" });
+    const add = page.getByRole("button", { name: "Close these days" });
     await expect(add).toBeDisabled();
-    await page.getByLabel("First day").fill("2027-12-24");
-    await page.getByLabel("Last day").fill("2027-12-24");
-    await page.getByLabel("Why").fill("  Christmas ");
+    await page.getByLabel("From", { exact: true }).fill("2027-12-24");
+    await page.getByLabel("To", { exact: true }).fill("2027-12-24");
+    await page.getByLabel("Reason").fill("  Christmas ");
     const request = posted(page, "/api/blackouts");
     await add.click();
     expect((await request).postDataJSON()).toEqual({ from: "2027-12-24", to: "2027-12-24", reason: "Christmas" });
-    await expect(page.getByRole("status").filter({ hasText: "Added." })).toBeVisible();
+    await expect(page.getByRole("status").filter({ hasText: "Closed." })).toBeVisible();
     await expect(page.getByRole("listitem").filter({ hasText: "Fri 24 Dec · Christmas" })).toBeVisible();
-    await expect(page.getByLabel("Why")).toHaveValue("");
+    await expect(page.getByLabel("Reason")).toHaveValue("");
   });
 
   test("says why the API refused the days, of the box it refused", async ({ page }) => {
     await open(page, "/settings/blackouts", { "POST /api/blackouts": fails(400, "invalid_request", ["to"]) });
-    await page.getByLabel("First day").fill("2027-10-01");
-    await page.getByLabel("Last day").fill("2027-12-01");
-    await page.getByLabel("Why").fill("Too long");
-    await page.getByRole("button", { name: "Black out these days" }).click();
-    await expect(page.getByRole("alert")).toHaveText(
-      "The last day cannot come before the first, and one go covers a month at most.",
-    );
+    await page.getByLabel("From", { exact: true }).fill("2027-10-01");
+    await page.getByLabel("To", { exact: true }).fill("2027-12-01");
+    await page.getByLabel("Reason").fill("Too long");
+    await page.getByRole("button", { name: "Close these days" }).click();
+    await expect(page.getByRole("alert")).toHaveText("The last day must follow the first, within a month.");
   });
 
   // Review of #145, item 7: a run named only its first day's setter.
@@ -250,10 +248,10 @@ test.describe("the blackout days", () => {
     };
     await open(page, "/settings/blackouts", { "GET /api/blackouts": json(split) });
     await expect(page.getByRole("listitem").filter({ hasText: "Fri 29 Oct to Sat 30 Oct · Diwali" })).toContainText(
-      "Added by ops@maneman.in on 20 Sep 2027",
+      "Closed by ops@maneman.in on 20 Sep 2027",
     );
     await expect(page.getByRole("listitem").filter({ hasText: "Sun 31 Oct · Diwali" })).toContainText(
-      "Added by owner@maneman.in on 21 Sep 2027",
+      "Closed by owner@maneman.in on 21 Sep 2027",
     );
   });
 
@@ -261,7 +259,7 @@ test.describe("the blackout days", () => {
     const left = { ...BLACKOUTS, blackouts: BLACKOUTS.blackouts.slice(2) };
     await open(page, "/settings/blackouts", { "POST /api/blackouts/remove": json(left) });
     const request = posted(page, "/api/blackouts/remove");
-    await page.getByRole("button", { name: "Offer Fri 29 Oct to Sat 30 Oct again" }).click();
+    await page.getByRole("button", { name: "Reopen Fri 29 Oct to Sat 30 Oct" }).click();
     expect((await request).postDataJSON()).toEqual({ from: "2027-10-29", to: "2027-10-30" });
     await expect(page.getByRole("listitem").filter({ hasText: "Diwali" })).toHaveCount(0);
     await expect(page.getByRole("listitem").filter({ hasText: "Staff training" })).toBeVisible();

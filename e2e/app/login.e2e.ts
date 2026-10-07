@@ -71,7 +71,7 @@ test("a session that ends mid-use goes back to the login, says why, and returns 
   await page.context().clearCookies();
   await page.getByRole("navigation").getByRole("link", { name: "Payments" }).click();
   await expect(page.getByRole("heading", { level: 1, name: "Your mobile number" })).toBeVisible();
-  await expect(page.getByText("You’ve been signed out. Sign in again to carry on.")).toBeVisible();
+  await expect(page.getByText("You’ve been signed out. Sign in to continue.")).toBeVisible();
   expect(await page.evaluate(() => caches.has("mm-app-home"))).toBe(false);
   await expect(page).toHaveURL(/\/payments$/);
 
@@ -114,7 +114,7 @@ test("the tabs reach Visits and the empty Photos, Payments and Refer", async ({ 
   await expect(page.getByText("Consultation · 9 am to 12 pm")).toBeVisible();
   await expect(tabs.getByRole("link", { name: "Visits" })).toHaveAttribute("aria-current", "page");
   await tabs.getByRole("link", { name: "Photos" }).click();
-  await expect(page.getByText("Your photos start at your first visit.")).toBeVisible();
+  await expect(page.getByText("Your photos begin at your first visit.")).toBeVisible();
   await tabs.getByRole("link", { name: "Payments" }).click();
   await expect(page.getByText("Nothing to pay yet.")).toBeVisible();
   await tabs.getByRole("link", { name: "Refer" }).click();

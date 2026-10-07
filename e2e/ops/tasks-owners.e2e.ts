@@ -16,17 +16,17 @@ test("counts a group whole when it lists only its longest waits, and says when i
   });
   // The group's whole count, and so its department's.
   await expect(list(page).getByText("73", { exact: true })).toHaveCount(2);
-  await expect(page.getByText("The 2 longest waits of 73.")).toBeVisible();
-  await expect(page.getByText("More are waiting than this page shows, so its counts may be low.")).toBeVisible();
+  await expect(page.getByText("Longest 2 of 73.")).toBeVisible();
+  await expect(page.getByText("Not everything is shown, so counts may be low.")).toBeVisible();
 });
 
 test("says a task leaves when its own row is decided, and that only a visit left partly done closes here", async ({
   page,
 }) => {
   await open(page);
-  await expect(page.getByText("A task leaves this list when the thing itself is decided")).toBeVisible();
+  await expect(page.getByText("Tasks clear when they're dealt with in their own section.")).toBeVisible();
   // Nothing in the board's own groups closes here.
-  await expect(list(page).getByRole("button", { name: /^Close without a follow-up/ })).toHaveCount(0);
+  await expect(list(page).getByRole("button", { name: /^Close without follow-up/ })).toHaveCount(0);
 });
 
 // Whose each task is (docs/decisions/0092-task-owners.md): the design's own column, by first name.
@@ -37,7 +37,7 @@ test("writes each task's owner in the board's column, by first name, and none wh
   await expect(row(page, "Kunal Mehta")).toContainText("Priya");
   await expect(row(page, "Karan Bose")).toContainText("Anil");
   await expect(row(page, "Deepak Rao")).not.toContainText("Priya");
-  await expect(row(page, "Deepak Rao").getByText("Owner: nobody yet")).toBeAttached();
+  await expect(row(page, "Deepak Rao").getByText("Owner: unassigned")).toBeAttached();
 });
 
 test("takes a task, and hands it back, from the row", async ({ page }) => {
@@ -52,10 +52,10 @@ test("takes a task, and hands it back, from the row", async ({ page }) => {
     },
   });
   const deepak = row(page, "Deepak Rao");
-  await deepak.getByRole("button", { name: "Take it · Deepak Rao" }).click();
+  await deepak.getByRole("button", { name: "Take · Deepak Rao" }).click();
   await expect(deepak).toContainText("Ops");
-  await deepak.getByRole("button", { name: "Hand it back · Deepak Rao" }).click();
-  await expect(deepak.getByRole("button", { name: "Take it · Deepak Rao" })).toBeVisible();
+  await deepak.getByRole("button", { name: "Hand back · Deepak Rao" }).click();
+  await expect(deepak.getByRole("button", { name: "Take · Deepak Rao" })).toBeVisible();
   expect(sent).toEqual([{ owner: "ops@localhost" }, { owner: null }]);
 });
 
@@ -76,10 +76,8 @@ test("gives a task to another member of staff who has signed in, and says so whe
   await expect(deepak.getByRole("button", { name: "Assign… · Deepak Rao" })).toBeFocused();
 
   await answer(page, { "PUT /api/tasks/{group}/{id}/owner": fails(404, "not_found") });
-  await row(page, "Sanjay Bhatia").getByRole("button", { name: "Take it · Sanjay Bhatia" }).click();
-  await expect(row(page, "Sanjay Bhatia").getByRole("alert")).toContainText(
-    "Someone has dealt with this task already.",
-  );
+  await row(page, "Sanjay Bhatia").getByRole("button", { name: "Take · Sanjay Bhatia" }).click();
+  await expect(row(page, "Sanjay Bhatia").getByRole("alert")).toContainText("Already handled. Reload.");
 });
 
 // A visit left partly done may be closed without a follow-up, with why.
@@ -124,10 +122,10 @@ test("closes a visit left partly done with a reason, and it leaves the list", as
     },
   });
   const manish = row(page, "Manish Tandon");
-  await manish.getByRole("button", { name: "Close without a follow-up · Manish Tandon" }).click();
-  const why = manish.getByLabel("Why no visit is booked to finish it · Manish Tandon");
+  await manish.getByRole("button", { name: "Close without follow-up · Manish Tandon" }).click();
+  const why = manish.getByLabel("Why no follow-up is needed · Manish Tandon");
   await expect(why).toBeFocused();
-  const closeIt = manish.getByRole("button", { name: "Close it" });
+  const closeIt = manish.getByRole("button", { name: "Close task" });
   await expect(closeIt).toBeDisabled();
   expect(await axeViolations(page)).toEqual([]);
 
@@ -196,18 +194,19 @@ test("records a call about a move from its row, and opens each of the board's ta
 
   const vikram = row(page, "Vikram Sethi");
   // The row says why they were not told, so the call starts from the right place.
-  await expect(vikram).toContainText("; has not agreed to WhatsApp");
+  await expect(vikram).toContainText(" · not opted in to WhatsApp");
   await expect(vikram.getByRole("link", { name: "Call +91 98100 04418 · Vikram Sethi" })).toHaveAttribute(
     "href",
     "tel:+919810004418",
   );
-  await expect(vikram.getByRole("link", { name: "Open it in Dispatch · Vikram Sethi" })).toHaveAttribute(
+  await expect(vikram.getByRole("link", { name: "Open in Dispatch · Vikram Sethi" })).toHaveAttribute(
     "href",
     `/dispatch?from=2027-09-24&visit=${MOVED_VISIT}`,
   );
-  await expect(
-    row(page, "Kunal Mehta").getByRole("link", { name: "Move it in Dispatch · Kunal Mehta" }),
-  ).toHaveAttribute("href", `/dispatch?from=2027-09-30&visit=${ON_LEAVE}`);
+  await expect(row(page, "Kunal Mehta").getByRole("link", { name: "Move in Dispatch · Kunal Mehta" })).toHaveAttribute(
+    "href",
+    `/dispatch?from=2027-09-30&visit=${ON_LEAVE}`,
+  );
   expect(await axeViolations(page)).toEqual([]);
 
   await vikram.getByRole("button", { name: "Told by phone · Vikram Sethi" }).click();
@@ -218,7 +217,7 @@ test("records a call about a move from its row, and opens each of the board's ta
 
 test("says so when no queue holds anything", async ({ page }) => {
   await open(page, { overdue: 0, truncated: false, low_stock_places: 0, staff: [], groups: [] });
-  await expect(page.getByText("Nothing is waiting.")).toBeVisible();
+  await expect(page.getByText("All clear.")).toBeVisible();
   await expect(page.getByText("0 overdue")).toBeVisible();
 });
 
@@ -226,7 +225,7 @@ test("says so when the list cannot be loaded, and loads it on Try again", async 
   await page.clock.setFixedTime(TASKS_READ_ON);
   await answer(page, { "GET /api/tasks": fails(503, "unavailable"), "GET /api/alerts": json(NO_ALERTS) });
   await page.goto("/tasks");
-  await expect(page.getByRole("alert")).toContainText("We could not load this.");
+  await expect(page.getByRole("alert")).toContainText("Couldn't load this.");
 
   await answer(page, { "GET /api/tasks": json(TASKS) });
   await page.getByRole("button", { name: "Try again" }).click();
@@ -271,12 +270,12 @@ test("heads the board with the alerts that need a hand, and sends a failed messa
 
   const needsAHand = page.getByRole("region", { name: "Needs a hand" });
   await expect(needsAHand.getByRole("listitem")).toHaveCount(2);
-  await expect(needsAHand.getByRole("listitem").first()).toContainText("A WhatsApp message did not go");
+  await expect(needsAHand.getByRole("listitem").first()).toContainText("WhatsApp message failed");
   await expect(needsAHand.getByRole("listitem").nth(1)).toContainText("3 times since Tue 21 Sep");
-  await expect(needsAHand.getByRole("link", { name: "Open · Stock is low" })).toHaveAttribute("href", "/stock");
+  await expect(needsAHand.getByRole("link", { name: "Open · Stock low" })).toHaveAttribute("href", "/stock");
   expect(await axeViolations(page)).toEqual([]);
 
-  await needsAHand.getByRole("button", { name: "Send again · A WhatsApp message did not go" }).click();
+  await needsAHand.getByRole("button", { name: "Send again · WhatsApp message failed" }).click();
   await expect(needsAHand.getByRole("listitem")).toHaveCount(1);
   await expect(page.getByRole("heading", { level: 2, name: "Needs a hand" })).toBeFocused();
   expect(sentAgain).toEqual(["/api/alerts/97000000-0000-4000-8000-000000000001/send-again"]);

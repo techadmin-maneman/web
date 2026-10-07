@@ -99,7 +99,7 @@ describe("the register", () => {
   // (docs/decisions/0096-a-no-shows-charge-and-its-dispute.md), so it says what a charge costs, and no longer that it waits.
   it("says what charging a no-show costs, now that a charge takes it", () => {
     const note = named("no_show_charge").note;
-    expect(note).toContain("costs when you charge a no-show");
+    expect(note).toContain("when you charge a no-show");
     expect(note).not.toContain("does not take effect");
   });
 
@@ -143,10 +143,10 @@ describe("what a rule will take", () => {
   });
 
   it("names metres, minutes, hours and days, so a figure is never read as the wrong unit", () => {
-    expect(allowed(numbered("checkin_radius_m"))).toBe("50 to 1000 metres, a whole number");
-    expect(allowed(numbered("no_show_wait_min"))).toBe("5 to 120 minutes, a whole number");
-    expect(allowed(numbered("task_sla_hours"))).toBe("1 to 720 hours, a whole number");
-    expect(allowed(numbered("piece_cycle_days"))).toBe("30 to 1095 days, a whole number");
+    expect(allowed(numbered("checkin_radius_m"))).toBe("50–1000 metres");
+    expect(allowed(numbered("no_show_wait_min"))).toBe("5–120 minutes");
+    expect(allowed(numbered("task_sla_hours"))).toBe("1–720 hours");
+    expect(allowed(numbered("piece_cycle_days"))).toBe("30–1095 days");
   });
 
   it("wants one figure for each of a closed set's keys, and refuses a set that is short or long", () => {
@@ -187,12 +187,12 @@ describe("what a rule will take", () => {
       expect(checked.ok, String(horizon)).toBe(false);
       if (checked.ok) continue;
       expect(checked.refusals).toEqual([
-        { field: "booking_days.horizon", says: expect.stringContaining("14 to 90 days, a whole number") as string },
+        { field: "booking_days.horizon", says: expect.stringContaining("14–90 days") as string },
       ]);
     }
-    expect(allowed(days, "first_fit_lead")).toBe("0 to 30 days, a whole number");
-    expect(allowed(days, "service_cadence")).toBe("14 to 90 days, a whole number");
-    expect(allowed(days)).toBe("0 to 90 days, a whole number");
+    expect(allowed(days, "first_fit_lead")).toBe("0–30 days");
+    expect(allowed(days, "service_cadence")).toBe("14–90 days");
+    expect(allowed(days)).toBe("0–90 days");
   });
 });
 

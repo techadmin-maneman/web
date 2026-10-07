@@ -45,7 +45,7 @@ test("opens on the week and the search a link asks for", async ({ page }) => {
   await expect.poll(() => asked[0]).toBe("?from=2025-09-19");
 });
 
-// "Move it in Dispatch" landed on this week's bare board, and Back from a client reset it.
+// "Move in Dispatch" landed on this week's bare board, and Back from a client reset it.
 test("opens the visit a link names, in its drawer, on the week the link asks for", async ({ page }) => {
   await answer(page, { [READ_BOARD]: json(BOARD), [READ_ROOM]: json(ROOM) });
   await page.goto(`/dispatch?from=2025-09-19&visit=${ROHIT_JOB?.appointment_id ?? ""}`);
@@ -91,7 +91,7 @@ test("keeps its header row and technicians' column in place, and finds a row by 
   await find.fill("kabir");
   await expect(page.getByRole("rowheader")).toHaveText(["Arjun NegiDLF 1–5"]);
   await find.fill("nobody");
-  await expect(page.getByText("Nothing on this week's board matches “nobody”.")).toBeVisible();
+  await expect(page.getByText("Nothing this week matches “nobody”.")).toBeVisible();
 });
 
 // An area on a block found nothing, and a client found left a row of eight with no sign of theirs.
@@ -121,7 +121,7 @@ test("folds an empty tray to a rail, so the week has the width", async ({ page }
   await open(page, { [READ_BOARD]: json({ ...BOARD, unassigned: [] }) });
   const tray = page.getByRole("complementary", { name: "Unassigned" });
   expect((await tray.boundingBox())?.width ?? 0).toBeLessThanOrEqual(41);
-  await expect(tray).toContainText("Nothing is waiting for a technician.");
+  await expect(tray).toContainText("Nothing unassigned.");
 });
 
 // At 1280 wide and 200% zoom the days shrank to 15 px and the navigation ran off the page.
@@ -144,14 +144,14 @@ test("meets WCAG 2.2 AA on the board, the drawer, a job in hand, the picker and 
   await expect(page.getByRole("dialog", { name: "Rohit Malhotra" })).toBeVisible();
   expect(await axeViolations(page)).toEqual([]);
 
-  await press(page, "Move this visit");
-  await expect(page.getByLabel("Or choose where from a list")).toBeVisible();
+  await press(page, "Move visit");
+  await expect(page.getByLabel("Or choose from a list")).toBeVisible();
   expect(await axeViolations(page)).toEqual([]);
 
   await press(page, TO_SANDEEP);
   expect(await axeViolations(page)).toEqual([]);
 
-  await page.getByRole("radio", { name: "Running over on an earlier job" }).check();
+  await page.getByRole("radio", { name: "Earlier job running over" }).check();
   await page.getByRole("button", { name: "Move and notify" }).click();
   await expect(page.getByRole("alert")).toBeVisible();
   expect(await axeViolations(page)).toEqual([]);
@@ -160,7 +160,7 @@ test("meets WCAG 2.2 AA on the board, the drawer, a job in hand, the picker and 
 test("Escape lets go of the picker, then of the move itself", async ({ page }) => {
   await open(page);
   await press(page, ROHIT_BLOCK);
-  await press(page, "Move this visit");
+  await press(page, "Move visit");
   await press(page, TO_SANDEEP);
   await expect(page.getByRole("dialog")).toBeVisible();
 

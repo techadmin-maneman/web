@@ -65,9 +65,7 @@ test("shows a person only the sections their access opens, and opens on the firs
 
   await page.goto("/areas");
   await expect(page.getByRole("heading", { level: 1, name: "Areas" })).toBeVisible();
-  await expect(
-    page.getByText("Your access does not reach this page. An Admin can add it on the Staff page."),
-  ).toBeVisible();
+  await expect(page.getByText("You don't have access to this page. An admin can grant it on Staff.")).toBeVisible();
 });
 
 // Launching an area had two homes, the waitlist and Settings › Service area.
@@ -135,7 +133,7 @@ test("signs out through Access, where Access stands in front", async ({ page }) 
 test("tells a person the enforced Staff list does not name that the console is closed to them", async ({ page }) => {
   await answer(page, { "GET /api/whoami": signedIn("new.joiner@maneman.in", false, ONLY_SIGNED_IN) });
   await page.goto("/areas");
-  await expect(page.getByRole("status").filter({ hasText: "You are not on the Staff list" })).toBeVisible();
+  await expect(page.getByRole("status").filter({ hasText: "You're not on the Staff list" })).toBeVisible();
   await expect(navigation(page).getByRole("link")).toHaveCount(0);
   await expect(page.getByText("Your access does not reach this page.")).toHaveCount(0);
 });
@@ -158,7 +156,7 @@ test("says the sign-in has run out when Access turns a call away, and offers the
     route.fulfill({ status: 302, headers: { Location: "https://maneman.cloudflareaccess.com/cdn-cgi/access/login" } }),
   );
   await page.goto("/areas");
-  const lapsed = page.getByRole("alert").filter({ hasText: "Your sign-in to the console has run out" });
+  const lapsed = page.getByRole("alert").filter({ hasText: "Your session has expired" });
   await expect(lapsed).toBeVisible();
   await expect(lapsed.getByRole("button", { name: "Reload" })).toBeVisible();
   await expect(page.getByText("You are offline")).toHaveCount(0);

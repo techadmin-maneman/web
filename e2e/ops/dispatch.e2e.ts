@@ -51,7 +51,7 @@ test("marks the days a technician is away, and still shows the jobs already on t
   await expect(page.getByText("Faizan Ali is away on Mon 22 Sep")).toBeAttached();
   await expect(page.getByRole("button", { name: "Nitin R., Sun 21 Sep, afternoon" })).toBeVisible();
   await expect(page.getByText("Faizan Ali is away on Tue 23 Sep")).toHaveCount(0);
-  await expect(page.getByText("Leave is recorded on the Technicians screen")).toBeVisible();
+  await expect(page.getByText("Leave is recorded on Technicians")).toBeVisible();
   // The mark was named by an aria-label on a plain span, which ARIA forbids.
   await expect(page.locator("main span[aria-label]")).toHaveCount(0);
 });
@@ -60,7 +60,7 @@ test("marks the days a technician is away, and still shows the jobs already on t
 test("says how much of a day the job takes, and offers only the windows it would land in", async ({ page }) => {
   await open(page);
   await press(page, ROHIT_BLOCK);
-  await press(page, "Move this visit");
+  await press(page, "Move visit");
 
   await expect(page.getByText("Moving Rohit M., service visit, 1 slot.")).toBeVisible();
   await expect(page.getByRole("button", { name: "Move Rohit M. to Arjun Negi, Sun 21 Sep, morning" })).toBeVisible();
@@ -78,12 +78,12 @@ test("says how much of a day the job takes, and offers only the windows it would
 test("names leave when the server refuses a move onto a day off", async ({ page }) => {
   await open(page, { [MOVE_IT]: fails(409, "on_leave") });
   await press(page, ROHIT_BLOCK);
-  await press(page, "Move this visit");
+  await press(page, "Move visit");
   await press(page, TO_SANDEEP);
   await reason(page, "Zone rebalance");
   await press(page, "Move and notify");
 
-  await expect(page.getByRole("alert")).toHaveText("Sandeep Yadav is away on Sat 20 Sep. Nothing was moved.");
+  await expect(page.getByRole("alert")).toHaveText("Sandeep Yadav is away on Sat 20 Sep.");
 });
 
 // The tray paired the offered day with the asked window, and named no client.
@@ -104,7 +104,7 @@ test("lists the tray's jobs with their client, the window asked beside the one o
   const last = tray.getByRole("listitem").last();
   await expect(last).toContainText("Asked · not recorded");
   await expect(last).toContainText("Offered · Sun, afternoon");
-  await expect(tray.getByText("“Asked” is the window the client picked when booking")).toBeVisible();
+  await expect(tray.getByText("“Asked” is the window the client picked")).toBeVisible();
 });
 
 // A tray click picked the job up at once, so it could not be read before it was assigned.
@@ -167,12 +167,12 @@ test("lets the technician check in to a visit today past the geofence, with a re
   const sent = sentTo(page, `/api/visits/${ROHIT_JOB?.appointment_id ?? ""}/let-in`);
   await open(page, { [`POST /api/visits/${ROHIT_JOB?.appointment_id ?? ""}/let-in`]: json({ let_in: true }) });
   await press(page, ROHIT_BLOCK);
-  await page.getByRole("dialog", { name: "Rohit Malhotra" }).getByRole("button", { name: "Let him check in" }).click();
+  await page.getByRole("dialog", { name: "Rohit Malhotra" }).getByRole("button", { name: "Allow check-in" }).click();
 
-  const panel = page.getByRole("dialog", { name: "Let Imran Qureshi check in" });
-  const confirm = panel.getByRole("button", { name: "Let him check in" });
+  const panel = page.getByRole("dialog", { name: "Allow Imran Qureshi to check in" });
+  const confirm = panel.getByRole("button", { name: "Allow check-in" });
   await expect(confirm).toBeDisabled();
-  await panel.getByRole("textbox", { name: "Why" }).fill("The pin is at the society gate");
+  await panel.getByRole("textbox", { name: "Reason" }).fill("The pin is at the society gate");
   await confirm.click();
   await expect(panel.getByRole("status")).toContainText("Imran Qureshi can check in now");
   expect(sent).toEqual([{ reason: "The pin is at the society gate" }]);
@@ -182,7 +182,7 @@ test("offers no way past the geofence for a visit on another day", async ({ page
   await open(page);
   await press(page, ROHIT_BLOCK);
   await expect(
-    page.getByRole("dialog", { name: "Rohit Malhotra" }).getByRole("button", { name: "Let him check in" }),
+    page.getByRole("dialog", { name: "Rohit Malhotra" }).getByRole("button", { name: "Allow check-in" }),
   ).toHaveCount(0);
 });
 

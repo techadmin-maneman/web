@@ -53,13 +53,13 @@ test("records a delivery into the store, showing what it holds before and after"
   await form.getByLabel("Consumable").selectOption({ label: "Tape strips" });
   await form.getByLabel("How many").fill("100");
   await form.getByLabel("Note").fill("Supplier's note 4418");
-  await form.getByRole("button", { name: "Check it" }).click();
+  await form.getByRole("button", { name: "Review" }).click();
 
-  const check = form.getByRole("group", { name: "Check the movement" });
+  const check = form.getByRole("group", { name: "Review the movement" });
   await expect(check).toBeFocused();
   await expect(check).toContainText("Central store: 120 strip → 220 strip");
   const sent = posted(page, "/api/stock/deliveries");
-  await check.getByRole("button", { name: "Record it" }).click();
+  await check.getByRole("button", { name: "Record" }).click();
   expect((await sent).postDataJSON()).toEqual({
     consumable_code: "tape_strips",
     quantity: 100,
@@ -71,52 +71,52 @@ test("records a delivery into the store, showing what it holds before and after"
 test("a transfer shows both places, and says when the store would hold less than nothing", async ({ page }) => {
   await open(page, { "POST /api/stock/transfers": json(STOCK) });
   const form = recording(page);
-  await form.getByLabel("A transfer").check();
+  await form.getByLabel("Transfer").check();
   await form.getByLabel("Consumable").selectOption({ label: "Solvent" });
   await form.getByLabel("From", { exact: true }).selectOption({ label: "Central store" });
   await form.getByLabel("To", { exact: true }).selectOption({ label: "Imran Qureshi" });
   await form.getByLabel("How many").fill("10");
-  await form.getByRole("button", { name: "Check it" }).click();
+  await form.getByRole("button", { name: "Review" }).click();
 
-  const check = form.getByRole("group", { name: "Check the movement" });
+  const check = form.getByRole("group", { name: "Review the movement" });
   await expect(check).toContainText("Central store: -20 ml → -30 ml");
   await expect(check).toContainText("Imran Qureshi: 150 ml → 160 ml");
-  await expect(check).toContainText("Central store would hold less than nothing");
+  await expect(check).toContainText("Central store would go below zero");
   const sent = posted(page, "/api/stock/transfers");
-  await check.getByRole("button", { name: "Record it" }).click();
+  await check.getByRole("button", { name: "Record" }).click();
   expect((await sent).postDataJSON()).toEqual({ consumable_code: "solvent", quantity: 10, from: null, to: IMRAN });
 });
 
 test("will not move stock to the place it is in", async ({ page }) => {
   await open(page);
   const form = recording(page);
-  await form.getByLabel("A transfer").check();
+  await form.getByLabel("Transfer").check();
   await form.getByLabel("From", { exact: true }).selectOption({ label: "Imran Qureshi" });
   await form.getByLabel("To", { exact: true }).selectOption({ label: "Imran Qureshi" });
   await form.getByLabel("How many").fill("2");
-  await expect(form.getByRole("button", { name: "Check it" })).toBeDisabled();
+  await expect(form.getByRole("button", { name: "Review" })).toBeDisabled();
 });
 
 test("a count shows the figure it finds, and one that agrees says it records only the count", async ({ page }) => {
   await open(page, { "POST /api/stock/counts": json(STOCK) });
   const form = recording(page);
-  await form.getByLabel("A count").check();
+  await form.getByLabel("Count").check();
   await form.getByLabel("Consumable").selectOption({ label: "Tape strips" });
   await form.getByLabel("Where").selectOption({ label: "Imran Qureshi" });
-  await form.getByLabel("How many were counted").fill("3");
-  await form.getByRole("button", { name: "Check it" }).click();
-  await expect(form.getByRole("group", { name: "Check the movement" })).toContainText(
-    "A count that agrees records only that it was counted.",
+  await form.getByLabel("Counted").fill("3");
+  await form.getByRole("button", { name: "Review" }).click();
+  await expect(form.getByRole("group", { name: "Review the movement" })).toContainText(
+    "Matches what's held. Records the count only.",
   );
 
-  await form.getByRole("button", { name: "Change it" }).click();
-  await form.getByLabel("How many were counted").fill("2");
-  await form.getByRole("button", { name: "Check it" }).click();
-  await expect(form.getByRole("group", { name: "Check the movement" })).toContainText(
+  await form.getByRole("button", { name: "Edit" }).click();
+  await form.getByLabel("Counted").fill("2");
+  await form.getByRole("button", { name: "Review" }).click();
+  await expect(form.getByRole("group", { name: "Review the movement" })).toContainText(
     "Imran Qureshi: 3 strip → 2 strip",
   );
   const sent = posted(page, "/api/stock/counts");
-  await form.getByRole("button", { name: "Record it" }).click();
+  await form.getByRole("button", { name: "Record" }).click();
   expect((await sent).postDataJSON()).toEqual({
     consumable_code: "tape_strips",
     technician_id: IMRAN,
@@ -128,14 +128,14 @@ test("a count shows the figure it finds, and one that agrees says it records onl
 test("a loss needs its words, and a refusal names what was wrong", async ({ page }) => {
   await open(page, { "POST /api/stock/write-offs": fails(400, "invalid_request", ["technician_id"]) });
   const form = recording(page);
-  await form.getByLabel("A loss").check();
+  await form.getByLabel("Loss").check();
   await form.getByLabel("How many").fill("2");
-  await expect(form.getByRole("button", { name: "Check it" })).toBeDisabled();
+  await expect(form.getByRole("button", { name: "Review" })).toBeDisabled();
 
   await form.getByLabel("What was lost, and how").fill("Two burst in the heat");
-  await form.getByRole("button", { name: "Check it" }).click();
-  await form.getByRole("button", { name: "Record it" }).click();
-  await expect(form.getByRole("alert")).toHaveText("That kit is not one we know. Reload the page.");
+  await form.getByRole("button", { name: "Review" }).click();
+  await form.getByRole("button", { name: "Record" }).click();
+  await expect(form.getByRole("alert")).toHaveText("Unknown kit. Reload.");
 });
 
 test("lists the latest movements, a job's use under the technician who recorded it", async ({ page }) => {
@@ -153,7 +153,7 @@ test("meets WCAG 2.2 AA, with a movement being checked as well", async ({ page }
   expect(await axeViolations(page)).toEqual([]);
 
   await recording(page).getByLabel("How many").fill("5");
-  await recording(page).getByRole("button", { name: "Check it" }).click();
-  await expect(recording(page).getByRole("group", { name: "Check the movement" })).toBeVisible();
+  await recording(page).getByRole("button", { name: "Review" }).click();
+  await expect(recording(page).getByRole("group", { name: "Review the movement" })).toBeVisible();
   expect(await axeViolations(page)).toEqual([]);
 });

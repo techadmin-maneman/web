@@ -88,10 +88,10 @@ test("says what the press does when nobody asked to be told, in words that agree
   await open(page, { [LAUNCH_BANDRA]: launchRoute(quiet, { ...quiet, launched: true }) });
   await page.getByRole("button", { name: "Mark 400050 live, Bandra W" }).click();
   const panel = page.getByRole("region", { name: "Mark 400050 live" });
-  await expect(panel).toContainText("This messages nobody");
-  await expect(panel).toContainText("The 1 who did not opt in is not messaged.");
-  await panel.getByRole("button", { name: "Mark it live" }).click();
-  await expect(panel.getByRole("status")).toHaveText("Marked live. Nobody was messaged.");
+  await expect(panel).toContainText("No one will be messaged");
+  await expect(panel).toContainText("1 didn't opt in and won't be messaged.");
+  await panel.getByRole("button", { name: "Mark live" }).click();
+  await expect(panel.getByRole("status")).toHaveText("Live. No one messaged.");
 });
 
 // A pincode served from Settings showed "Live" with its waitlist untold and no way to tell them.
@@ -100,11 +100,11 @@ test("tells those still waiting in a pincode already live", async ({ page }) => 
   await open(page, { [LAUNCH_SECTOR_65]: launchRoute(left, { ...left, launched: true }) });
   await page.getByRole("button", { name: "Tell those waiting in 122018, Sector 65" }).click();
   const panel = page.getByRole("region", { name: "Tell those waiting in 122018" });
-  await expect(panel).toContainText("This messages 2 people");
+  await expect(panel).toContainText("Messages 2 people");
   await expect(panel.getByLabel("Launch date")).toHaveCount(0);
-  await expect(panel).toContainText("Nobody who has been told is told again.");
+  await expect(panel).toContainText("No one is messaged twice.");
   await panel.getByRole("button", { name: "Send to 2" }).click();
-  await expect(panel.getByRole("status")).toHaveText("Launched. 2 on their way.");
+  await expect(panel.getByRole("status")).toHaveText("Live. 2 messages sent.");
 });
 
 test("offers nothing to send where everyone in a live pincode has been told", async ({ page }) => {
@@ -112,7 +112,7 @@ test("offers nothing to send where everyone in a live pincode has been told", as
   await open(page, { [LAUNCH_SECTOR_65]: launchRoute(told, told) });
   await page.getByRole("button", { name: "Tell those waiting in 122018, Sector 65" }).click();
   const panel = page.getByRole("region", { name: "Tell those waiting in 122018" });
-  await expect(panel).toContainText("This messages nobody");
+  await expect(panel).toContainText("No one will be messaged");
   await expect(panel.getByRole("button", { name: /^Send|^Mark/ })).toHaveCount(0);
 });
 
@@ -120,7 +120,7 @@ test("offers nothing to send where everyone in a live pincode has been told", as
 test("says where the message's name for the area comes from, and leads there", async ({ page }) => {
   await open(page, { [LAUNCH_BANDRA]: launchRoute(PREVIEW, LAUNCHED) });
   await page.getByRole("button", { name: "Mark 400050 live, Bandra W" }).click();
-  await page.getByRole("link", { name: "Change the name" }).click();
+  await page.getByRole("link", { name: "Rename" }).click();
   await expect(page).toHaveURL(/\/areas\/served$/);
 });
 
@@ -140,8 +140,8 @@ test("leads to the area's name only those whose access reaches Service area", as
   await open(page, { "GET /api/whoami": growthInMumbai, [LAUNCH_BANDRA]: launchRoute(PREVIEW, LAUNCHED) });
   await page.getByRole("button", { name: "Mark 400050 live, Bandra W" }).click();
   const panel = page.getByRole("region", { name: "Mark 400050 live" });
-  await expect(panel).toContainText("The message names the area as Served names it");
-  await expect(panel.getByRole("link", { name: "Change the name" })).toHaveCount(0);
+  await expect(panel).toContainText("Messages use the area name from Served");
+  await expect(panel.getByRole("link", { name: "Rename" })).toHaveCount(0);
 });
 
 // Every pincode on staging's waitlist was outside the service area, so
@@ -157,32 +157,32 @@ test("adds a pincode the service area does not hold, then marks it live in the s
     { ...AREAS, areas: [...AREAS.areas, UNHELD] },
   );
   const row = page.getByRole("row").filter({ hasText: "560001" });
-  await expect(row).toContainText("Not in the service area");
-  await row.getByRole("button", { name: "Add 560001, then mark it live" }).click();
+  await expect(row).toContainText("Not in service area");
+  await row.getByRole("button", { name: "Add 560001, then mark live" }).click();
 
   const adding = page.getByRole("region", { name: "Add 560001" });
   await expect(adding).toBeFocused();
-  await adding.getByLabel("Area, as messages name it").fill("MG Road");
+  await adding.getByLabel("Area name").fill("MG Road");
   await adding.getByLabel("City").selectOption("Bengaluru");
   const sent = page.waitForRequest((request) => request.url().endsWith("/api/pincodes") && request.method() === "POST");
-  await adding.getByRole("button", { name: "Add it" }).click();
+  await adding.getByRole("button", { name: "Add" }).click();
   expect((await sent).postDataJSON()).toEqual({ pincode: "560001", area: "MG Road", city: "Bengaluru" });
 
   const panel = page.getByRole("region", { name: "Mark 560001 live" });
-  await expect(panel).toContainText("This messages 2 people");
+  await expect(panel).toContainText("Messages 2 people");
   await expect(panel).toContainText("Mane Man now comes to MG Road");
   await panel.getByRole("button", { name: "Send to 2" }).click();
-  await expect(panel.getByRole("status")).toHaveText("Launched. 2 on their way.");
+  await expect(panel.getByRole("status")).toHaveText("Live. 2 messages sent.");
 });
 
 test("says so when the pincode is held already, and adds nothing", async ({ page }) => {
   await open(page, { "POST /api/pincodes": fails(409, "pincode_held") }, { ...AREAS, areas: [...AREAS.areas, UNHELD] });
-  await page.getByRole("button", { name: "Add 560001, then mark it live" }).click();
+  await page.getByRole("button", { name: "Add 560001, then mark live" }).click();
   const adding = page.getByRole("region", { name: "Add 560001" });
-  await adding.getByLabel("Area, as messages name it").fill("MG Road");
+  await adding.getByLabel("Area name").fill("MG Road");
   await adding.getByLabel("City").selectOption("Bengaluru");
-  await adding.getByRole("button", { name: "Add it" }).click();
-  await expect(adding.getByRole("alert")).toHaveText("We hold that pincode already.");
+  await adding.getByRole("button", { name: "Add" }).click();
+  await expect(adding.getByRole("alert")).toHaveText("Already added.");
   await expect(page.getByRole("region", { name: "Mark 560001 live" })).toHaveCount(0);
 });
 
@@ -201,6 +201,6 @@ test("offers no way to add a pincode to one whose access does not reach it, and 
   });
   await open(page, { "GET /api/whoami": viewer }, { ...AREAS, areas: [...AREAS.areas, UNHELD] });
   const row = page.getByRole("row").filter({ hasText: "560001" });
-  await expect(row).toContainText("Not in the service area");
+  await expect(row).toContainText("Not in service area");
   await expect(row.getByRole("button")).toHaveCount(0);
 });

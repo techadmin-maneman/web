@@ -174,7 +174,7 @@ test("raises one grievance when Send is tapped twice", async ({ page }) => {
 
   await expect(
     page.getByText(
-      "Received. We reply here and on WhatsApp, usually within a working day and within 30 days at the latest.",
+      "Received. We’ll reply here and on WhatsApp, usually within a working day and always within 30 days.",
     ),
   ).toBeVisible();
   expect({ asked: held.asked(), liveWhileBusy }).toEqual({ asked: 1, liveWhileBusy: false });

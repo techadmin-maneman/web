@@ -119,7 +119,7 @@ describe("a move the client has not heard of, on its task", () => {
     await show(UNTOLD);
     await pressTold();
     expect(closed).toBe(0);
-    expect(page.querySelector("[role=alert]")?.textContent).toBe("That was not recorded. Try again.");
+    expect(page.querySelector("[role=alert]")?.textContent).toBe("That didn't work. Try again.");
   });
 
   it("shows nothing on a task with no number to call, or of another group", async () => {

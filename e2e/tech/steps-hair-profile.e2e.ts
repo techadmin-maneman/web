@@ -116,7 +116,7 @@ test.describe("the client's hair profile", () => {
     await atTheProfile(page);
     const circumference = page.getByRole("textbox", { name: "Circumference" });
     await circumference.fill("90");
-    await expect(circumference).toHaveAccessibleDescription("40 to 70, to one decimal.");
+    await expect(circumference).toHaveAccessibleDescription("40–70, to one decimal.");
     await expect(page.getByRole("button", { name: "Check the figures to continue" })).toBeDisabled();
     await circumference.fill("57.5");
     await expect(next(page)).toBeEnabled();

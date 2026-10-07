@@ -10,7 +10,7 @@ export const login = {
     send: "Send code on WhatsApp",
     hint: "A six-digit code, no password.",
     // The design draws no session that ended while the app was open.
-    ended: "You’ve been signed out. Sign in again to carry on.",
+    ended: "You’ve been signed out. Sign in to continue.",
     // The design draws no error on the sign-in.
     errors: {
       invalid: "Enter the ten-digit mobile number you booked with.",
@@ -18,7 +18,7 @@ export const login = {
       busy: "We can’t send codes right now. Try again in a few minutes.",
       turnstile_failed: "We couldn’t confirm you’re a person. Try again.",
       offline: "You’re offline. Reconnect and try again.",
-      unknown: "Something went wrong on our side. Try again.",
+      unknown: "Something went wrong. Try again.",
     },
   },
   code: {
@@ -57,7 +57,7 @@ export const login = {
     back: "Back",
     // The design's title is "We have no booking on this number"; neutral, it becomes a question (ADR 0030).
     title: "No booking on this number?",
-    body: "The app opens once a consultation is booked. The consultation is free.",
+    body: "Book a free consultation to get started.",
     hint: "Try the number you gave us, or message us and we’ll link it.",
     book: "Book a free consultation",
     message: "Message us",

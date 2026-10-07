@@ -149,13 +149,13 @@ test("refuses an address without a six-digit pincode", async ({ page }) => {
   await page.getByLabel("Pincode").fill("1220");
   await page.getByRole("button", { name: "Save" }).click();
   await expect(page.getByRole("alert")).toHaveText(
-    "Fill in the flat or house number, the building or street, the area, the city and a six-digit pincode.",
+    "Add your flat or house number, building or street, area, city and 6-digit pincode.",
   );
   // The field that is wrong is marked, named by the error, and given the focus.
   const pincode = page.getByLabel("Pincode");
   await expect(pincode).toHaveAttribute("aria-invalid", "true");
   await expect(pincode).toHaveAccessibleDescription(
-    "Fill in the flat or house number, the building or street, the area, the city and a six-digit pincode.",
+    "Add your flat or house number, building or street, area, city and 6-digit pincode.",
   );
   await expect(pincode).toBeFocused();
   await expect(page.getByLabel("City")).not.toHaveAttribute("aria-invalid", "true");
@@ -172,7 +172,7 @@ test("refuses an address without the flat or house number, and says so on the fl
   await page.getByLabel("Pincode").fill("122018");
   await page.getByRole("button", { name: "Save" }).click();
   await expect(page.getByRole("alert")).toHaveText(
-    "Fill in the flat or house number, the building or street, the area, the city and a six-digit pincode.",
+    "Add your flat or house number, building or street, area, city and 6-digit pincode.",
   );
   const flat = page.getByLabel("Flat or house number");
   await expect(flat).toHaveAttribute("aria-invalid", "true");
@@ -216,7 +216,7 @@ test("says an address was given to us on the phone, so the client can check it",
   });
   await page.getByRole("link", { name: "Your profile" }).click();
   await expect(page.getByText("Flat 1203, Sunrise Greens, Sector 65, Gurgaon 122018")).toBeVisible();
-  await expect(page.getByText("You gave us this address on the phone on 21 Sep 2026.")).toBeVisible();
+  await expect(page.getByText("You gave us this address by phone on 21 Sep 2026.")).toBeVisible();
   await expect(page.getByRole("button", { name: "Edit address and access notes" })).toBeVisible();
   expect(await axeViolations(page)).toEqual([]);
 });

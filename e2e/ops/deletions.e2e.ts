@@ -33,7 +33,7 @@ const VISIT_BOOKED = {
   payments: [],
   links: [],
 } satisfies OpsReply<"/api/deletion-requests/{id}/decision", "post", 409>;
-const CHECKED = "I have confirmed this request with the client, on their own number.";
+const CHECKED = "I've confirmed this with the client, on their own number.";
 
 async function open(page: Page, decision = json({ state: "done" })): Promise<void> {
   await page.clock.setFixedTime(TASKS_READ_ON);
@@ -74,11 +74,11 @@ test("says what a deletion destroys and what it keeps, before it can be sent", a
   await open(page);
   await ask(page);
   const confirm = page.getByRole("group", { name: "Deleting the account of Rohit Malhotra" });
-  await expect(confirm).toContainText("It cannot be undone");
+  await expect(confirm).toContainText("It can't be undone");
   await expect(confirm.getByRole("heading", { name: "Deleted" })).toBeVisible();
-  await expect(confirm).toContainText("Every photograph of them");
+  await expect(confirm).toContainText("Every photo: visits and try-ons");
   await expect(confirm.getByRole("heading", { name: "Kept" })).toBeVisible();
-  await expect(confirm).toContainText("Their invoices in Books, eight years, by law");
+  await expect(confirm).toContainText("Invoices in Books, for eight years, by law");
 });
 
 test("takes focus when it opens, so it is read before anything is sent", async ({ page }) => {
@@ -90,7 +90,7 @@ test("takes focus when it opens, so it is read before anything is sent", async (
 test("keeps the delete unusable until ops say they have checked the request", async ({ page }) => {
   await open(page);
   await ask(page);
-  const send = page.getByRole("button", { name: "Delete this account" });
+  const send = page.getByRole("button", { name: "Delete permanently" });
   await expect(send).toBeDisabled();
   await page.getByRole("checkbox", { name: CHECKED }).check();
   await expect(send).toBeEnabled();
@@ -102,7 +102,7 @@ test("deletes the account once it is confirmed, and the request leaves the queue
   await page.getByRole("checkbox", { name: CHECKED }).check();
 
   const sent = page.waitForRequest((request) => request.url().endsWith(DECISION) && request.method() === "POST");
-  await page.getByRole("button", { name: "Delete this account" }).click();
+  await page.getByRole("button", { name: "Delete permanently" }).click();
   // The route wants the field either way, and a deletion carries no reason.
   expect((await sent).postDataJSON()).toEqual({ decision: "delete", reason: null });
   await expect(page.getByText("Rohit Malhotra")).toBeHidden();
@@ -111,7 +111,7 @@ test("deletes the account once it is confirmed, and the request leaves the queue
 test("keeps the account when the confirmation is called off", async ({ page }) => {
   await open(page);
   await ask(page);
-  await page.getByRole("button", { name: "Keep the account" }).click();
+  await page.getByRole("button", { name: "Keep account" }).click();
   await expect(row(page, "Rohit Malhotra").getByRole("button", { name: DELETE })).toBeVisible();
   // The keyboard goes back to the button that asked, not to the top of the page.
   await expect(row(page, "Rohit Malhotra").getByRole("button", { name: DELETE })).toBeFocused();
@@ -121,7 +121,7 @@ test("moves the keyboard to the queue's heading once a request is decided", asyn
   await open(page);
   await ask(page);
   await page.getByRole("checkbox", { name: CHECKED }).check();
-  await page.getByRole("button", { name: "Delete this account" }).click();
+  await page.getByRole("button", { name: "Delete permanently" }).click();
   await expect(page.getByRole("heading", { name: "Waiting for a decision" })).toBeFocused();
 });
 
@@ -136,12 +136,10 @@ test("brings the request a task named into view, and gives it the keyboard", asy
 test("rejects a request with a reason, which it will not send without", async ({ page }) => {
   await open(page, json({ state: "rejected" }));
   await row(page, "Rohit Malhotra").getByRole("button", { name: "Reject the request of Rohit Malhotra" }).click();
-  const send = page.getByRole("button", { name: "Reject this request" });
+  const send = page.getByRole("button", { name: "Reject request" });
   await expect(send).toBeDisabled();
 
-  await page
-    .getByRole("textbox", { name: "Why you are rejecting it" })
-    .fill("The number's owner says they did not ask.");
+  await page.getByRole("textbox", { name: "Reason" }).fill("The number's owner says they did not ask.");
   const sent = page.waitForRequest((request) => request.url().endsWith(DECISION) && request.method() === "POST");
   await send.click();
   expect((await sent).postDataJSON()).toEqual({
@@ -155,8 +153,8 @@ test("says so when someone has decided it already, and the client is not erased"
   await open(page, fails(404, "not_found"));
   await ask(page);
   await page.getByRole("checkbox", { name: CHECKED }).check();
-  await page.getByRole("button", { name: "Delete this account" }).click();
-  await expect(page.getByRole("alert")).toContainText("Someone has decided this one already.");
+  await page.getByRole("button", { name: "Delete permanently" }).click();
+  await expect(page.getByRole("alert")).toContainText("Already decided. Reload.");
   await expect(row(page, "Rohit Malhotra")).toBeVisible();
 });
 
@@ -164,9 +162,9 @@ test("says what to settle first when the client still has a visit booked, and er
   await open(page, json(VISIT_BOOKED, 409));
   await ask(page);
   await page.getByRole("checkbox", { name: CHECKED }).check();
-  await page.getByRole("button", { name: "Delete this account" }).click();
-  await expect(page.getByRole("alert")).toContainText("They still have a visit booked, so nothing was erased.");
-  await expect(page.getByRole("alert").getByRole("link", { name: "Open their visits" })).toHaveAttribute(
+  await page.getByRole("button", { name: "Delete permanently" }).click();
+  await expect(page.getByRole("alert")).toContainText("They have a visit booked.");
+  await expect(page.getByRole("alert").getByRole("link", { name: "Open Visits" })).toHaveAttribute(
     "href",
     `/clients/${FIRST?.person_id ?? ""}/visits`,
   );
@@ -176,13 +174,13 @@ test("says what to settle first when the client still has a visit booked, and er
 test("says so when nothing is waiting", async ({ page }) => {
   await answer(page, { "GET /api/deletion-requests": json({ requests: [] }) });
   await page.goto("/deletion-requests");
-  await expect(page.getByText("No deletion request is waiting.")).toBeVisible();
+  await expect(page.getByText("No deletion requests.")).toBeVisible();
 });
 
 test("says so when the queue cannot be loaded, and loads it on Try again", async ({ page }) => {
   await answer(page, { "GET /api/deletion-requests": fails(503, "unavailable") });
   await page.goto("/deletion-requests");
-  await expect(page.getByRole("alert")).toContainText("We could not load this.");
+  await expect(page.getByRole("alert")).toContainText("Couldn't load this.");
 
   await answer(page, { "GET /api/deletion-requests": json(DELETION_REQUESTS) });
   await page.getByRole("button", { name: "Try again" }).click();

@@ -76,7 +76,7 @@ const OPEN_FOR_ROHIT = {
   ],
 } satisfies OpsReply<"/api/tasks">;
 
-const openForClient = (page: Page) => page.getByRole("region", { name: "Open for this client" });
+const openForClient = (page: Page) => page.getByRole("region", { name: "Open tasks" });
 
 // A client could be found only by their whole number, typed exactly.
 test("finds clients by part of a name, and sends it in the body, never in the URL", async ({ page }) => {
@@ -154,7 +154,7 @@ test("offers the clients opened this session, and forgets them on sign-out", asy
   await page.goto(`/clients/${CLIENT.id}/visits`);
   await expect(page.getByRole("heading", NAME)).toBeVisible();
   await page.goto("/clients");
-  const recent = page.getByRole("region", { name: "Opened this session" });
+  const recent = page.getByRole("region", { name: "Recent" });
   await expect(recent.getByRole("link", NAME)).toHaveAttribute("href", `/clients/${CLIENT.id}/visits`);
 
   await page.route("**/cdn-cgi/access/logout", (route) => route.fulfill({ contentType: "text/html", body: "" }));
@@ -168,11 +168,11 @@ test("says so when nobody matches, and when more match than are listed", async (
   await page.goto("/clients");
   await page.getByLabel("Name or number").fill("98100 0441");
   await page.getByRole("button", { name: "Find" }).click();
-  await expect(page.getByRole("status")).toContainText("Nobody matches “98100 0441”.");
+  await expect(page.getByRole("status")).toContainText("No match for “98100 0441”.");
 
   await answer(page, { [FIND]: json({ clients: [FOUND], more: true }) });
   await page.getByRole("button", { name: "Find" }).click();
-  await expect(page.getByText("More clients match than are listed.")).toBeVisible();
+  await expect(page.getByText("Too many matches.")).toBeVisible();
 });
 
 test("asks for two letters or four digits when given fewer", async ({ page }) => {
@@ -180,7 +180,7 @@ test("asks for two letters or four digits when given fewer", async ({ page }) =>
   await page.goto("/clients");
   await page.getByLabel("Name or number").fill("r");
   await page.getByRole("button", { name: "Find" }).click();
-  await expect(page.getByRole("alert")).toContainText("Type two letters of a name, or four digits of a number.");
+  await expect(page.getByRole("alert")).toContainText("Type 2+ letters of a name, or 4+ digits.");
 });
 
 test("heads the page with the client's standing and the number to reach them on", async ({ page }) => {
@@ -226,7 +226,7 @@ test("lists what waits on Tasks for the client under the head, each with a way t
     `/clients/${CLIENT.id}/pieces`,
   );
   await expect(
-    openForClient(page).getByRole("link", { name: "Decide it in Number changes · Number change" }),
+    openForClient(page).getByRole("link", { name: "Decide in Number changes · Number change" }),
   ).toHaveAttribute("href", "/number-changes#change-94000000-0000-4000-8000-000000000009");
   expect(await axeViolations(page)).toEqual([]);
 });
@@ -249,7 +249,7 @@ test("opens a WhatsApp chat with the client from beside their name, as the board
 
 test("says in words that a client wearing no piece falls due on no date", async ({ page }) => {
   await openClient(page, `/clients/${CLIENT.id}`, { [READ_RECORD]: json(NEW_RECORD) });
-  await expect(meta(page)).toHaveText(["Booked", "2 · use by 3 Jan 2028", "No piece fitted", MOBILE]);
+  await expect(meta(page)).toHaveText(["Booked", "2 · use by 3 Jan 2028", "No hair system fitted", MOBILE]);
 });
 
 // The page opened on an empty Pieces tab, a click away from the visit.
@@ -288,5 +288,5 @@ test("writes a gap where a piece has no supplier lot, replacement date or failur
 
 test("says so when the client has no piece yet", async ({ page }) => {
   await openClient(page, `/clients/${CLIENT.id}/pieces`, { [READ_PIECES]: json({ pieces: [] }) });
-  await expect(page.getByText("No piece has been fitted for this client.")).toBeVisible();
+  await expect(page.getByText("No hair system fitted yet.")).toBeVisible();
 });

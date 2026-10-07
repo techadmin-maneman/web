@@ -41,9 +41,9 @@ test("writes a client with no record in words, and their true noughts as noughts
       .getByRole("term")
       .filter({ hasText: new RegExp(`^${label}$`) })
       .locator("+ dd");
-  await expect(fact("First fit")).toHaveText("No first fit on record");
-  await expect(fact("Last visit")).toHaveText("No visit done yet");
-  await expect(fact("Replacement due")).toHaveText("No piece fitted, so no date");
+  await expect(fact("First fit")).toHaveText("No first fit");
+  await expect(fact("Last visit")).toHaveText("No visits yet");
+  await expect(fact("Replacement due")).toHaveText("No hair system fitted");
   await expect(fact("Service visits")).toHaveText("0");
   await expect(fact("Paid")).toHaveText("Rs. 0");
 });
@@ -64,7 +64,7 @@ test("moves between the tabs without reading the record again, and keeps the pho
   await page.getByRole("button", { name: "View photos" }).click();
   await expect(page.getByRole("img")).toHaveCount(10);
   await page.getByRole("link", { name: "Consents" }).click();
-  await expect(page.getByText("Ops cannot grant a consent.")).toBeVisible();
+  await expect(page.getByText("Only the client can give consent, in their app.")).toBeVisible();
   await page.getByRole("link", { name: "Hair" }).click();
   await expect(page.getByText("MM-STD-4417-C")).toBeVisible();
   // Visits, Payments and History are drawn from the record already loaded, so they ask the API for nothing.
@@ -85,7 +85,7 @@ test("moves between the tabs without reading the record again, and keeps the pho
 
 test("says so when the client cannot be loaded, and loads them on Try again", async ({ page }) => {
   await openClient(page, `/clients/${CLIENT.id}`, { [READ_RECORD]: fails(503, "unavailable") });
-  await expect(page.getByRole("alert")).toContainText("We could not load this.");
+  await expect(page.getByRole("alert")).toContainText("Couldn't load this.");
 
   await clientRoutes(page);
   await page.getByRole("button", { name: "Try again" }).click();
@@ -129,7 +129,7 @@ test("meets WCAG 2.2 AA finding a client, and on every tab, locked and open", as
   await clean("photos, open");
 
   await page.getByRole("link", { name: "Consents" }).click();
-  await expect(page.getByText("Ops cannot grant a consent.")).toBeVisible();
+  await expect(page.getByText("Only the client can give consent, in their app.")).toBeVisible();
   await clean("consents");
 
   await page.getByRole("link", { name: "Overview" }).click();

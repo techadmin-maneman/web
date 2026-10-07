@@ -1,6 +1,6 @@
 // A client's page, and finding one (board B): their visits, pieces, consents, payments, photos and profile.
 
-import { NOT_PERMITTED } from "./common.ts";
+import { FAILED, NOT_PERMITTED, OFFLINE } from "./common.ts";
 
 export const clients = {
   title: "Clients",
@@ -13,23 +13,23 @@ export const clients = {
    */
   find: {
     label: "Name or number",
-    hint: "Any part of the name, or four digits or more of the number.",
+    hint: "Part of a name, or 4+ digits of a number.",
     submit: "Find",
     finding: "Looking",
     /** The matches, by name, each a way to the client's page. */
     found: "Clients",
-    none: (text: string) => `Nobody matches “${text}”. An erased client has no page.`,
-    more: "More clients match than are listed. Add to the name or the number.",
+    none: (text: string) => `No match for “${text}”.`,
+    more: "Too many matches. Narrow the search.",
     /** Beside each match, so two of one name can be told apart. */
     nextVisit: (when: string) => `Next visit ${when}`,
     noVisit: "No visit booked",
     /** The clients opened this session, offered before anything is searched for. */
-    recent: "Opened this session",
+    recent: "Recent",
     errors: {
       not_permitted: NOT_PERMITTED,
-      invalid_request: "Type two letters of a name, or four digits of a number.",
-      offline: "You are offline. Connect, then try again.",
-      unknown: "That did not go through. Please try again.",
+      invalid_request: "Type 2+ letters of a name, or 4+ digits.",
+      offline: OFFLINE,
+      unknown: FAILED,
     } as Readonly<Record<string, string>>,
   },
   /**
@@ -63,7 +63,7 @@ export const clients = {
    * none falls due on no date at all, so the head says so rather than drawing
    * the gap a missing figure would draw.
    */
-  noPiece: "No piece fitted",
+  noPiece: "No hair system fitted",
   /** The tabs of the design's eight that the ops routes answer, in its order, and History, which it draws none of. */
   tabs: [
     { tab: "visits", label: "Visits" },
@@ -79,13 +79,13 @@ export const clients = {
    * and where it is done. No board draws it.
    */
   openTasks: {
-    title: "Open for this client",
+    title: "Open tasks",
     none: "Nothing open.",
-    failed: "We could not load what is open for this client.",
+    failed: "Couldn't load open tasks.",
     /** A task done on a tab of the client's page: "Go to Payments". */
     toTab: (tab: string) => `Go to ${tab}`,
   },
-  failed: "We could not load this client.",
+  failed: "Couldn't load this client.",
   /*
    * Our words, all of them: the board draws a Visits tab and nothing in it. It
    * is the record's own address and visits, which the page already holds, and
@@ -96,7 +96,7 @@ export const clients = {
     /** The client's note to the technician, under the visit it is on. */
     clientNote: (text: string) => `Their note: “${text}”`,
     address: "Visits go to",
-    noAddress: "No address saved yet. The client adds it in their app, or gives it to you on the phone.",
+    noAddress: "No address yet.",
     access: "Access",
     // The address a client gave ops on the phone, which no board draws (docs/decisions/0092-task-owners.md).
     landmark: "Landmark",
@@ -104,19 +104,17 @@ export const clients = {
     /** "To priya@maneman.in, 28 Sep 2026". */
     givenTo: (who: string, when: string) => `To ${who}, ${when}`,
     /** "Closed without a follow-up by priya@maneman.in, 28 Sep 2026", and ops' reason after it. */
-    closedWithout: (who: string, when: string) => `Closed without a follow-up by ${who}, ${when}`,
+    closedWithout: (who: string, when: string) => `Closed without follow-up by ${who}, ${when}`,
     /** The form a member of staff saves an address a client gives them with, which the app's own save follows. */
     given: {
-      open: "Record an address they give you",
-      change: "Use an address they give you",
-      title: "An address the client gave you",
-      note:
-        "Saved as the client's address, as their own save in the app is, and marked as given to you. They see it in " +
-        "their app, and may change it there.",
+      open: "Add an address",
+      change: "Replace address",
+      title: "Address given by phone",
+      note: "Saved as their address. They can change it in the app.",
       building: {
-        label: "Search for their building",
-        hint: "Type the building or society, and choose it, to give the technician a pin.",
-        unavailable: "Search is unavailable just now. Type the address below instead.",
+        label: "Building",
+        hint: "Search and choose it, so the technician gets a pin.",
+        unavailable: "Search is unavailable. Type the address below.",
         found: (count: number) => (count === 1 ? "1 building found" : `${String(count)} buildings found`),
         // Google asks for their name against suggestions shown without a map.
         attribution: "Google Maps",
@@ -131,13 +129,13 @@ export const clients = {
       city: "City",
       pincode: "Pincode",
       accessNotes: "Access notes (optional)",
-      accessHint: "A gate code, or where to park. The technician sees it the day before the visit.",
-      invalid: "Fill in the flat or house number, the building or street, the area, the city and a six-digit pincode.",
-      save: "Save their address",
+      accessHint: "Gate code or parking. Shown to the technician the day before.",
+      invalid: "Add the flat, building or street, area, city and a 6-digit pincode.",
+      save: "Save address",
       saving: "Saving…",
       cancel: "Cancel",
-      saved: "Saved as their address, marked as given to you.",
-      failed: "That did not save. Try again.",
+      saved: "Address saved.",
+      failed: FAILED,
     },
     upcoming: "To come",
     past: "Done",
@@ -157,7 +155,7 @@ export const clients = {
         Record<string, string>
       >,
       /** A one visit's code the client typed when booking on the site, which "Enter a code" starts from. */
-      requested: (code: string) => `Client gave ${code} when booking`,
+      requested: (code: string) => `Client entered ${code} when booking`,
       enter: "Enter a code",
       /** The button's whole name, since every row's says the same. */
       enterLabel: (visit: string) => `Enter a discount code on the visit of ${visit}`,
@@ -165,22 +163,22 @@ export const clients = {
       apply: "Apply",
       applying: "Applying",
       cancel: "Cancel",
-      remove: "Take it off",
+      remove: "Remove",
       removeLabel: (visit: string) => `Take the discount code off the visit of ${visit}`,
-      removing: "Taking it off",
+      removing: "Removing",
       errors: {
         not_permitted: NOT_PERMITTED,
-        code_not_applicable: "That code does not apply to this visit.",
+        code_not_applicable: "That code doesn't apply to this visit.",
         code_off: "That code is switched off.",
-        already_discounted: "This visit has a code already.",
-        price_settled: "This visit is paid for or invoiced, so its code stays as it is.",
-        not_found: "The code is already off this visit.",
-        offline: "You are offline. Connect, then try again.",
-        unknown: "That did not go through. Nothing was changed.",
+        already_discounted: "This visit already has a code.",
+        price_settled: "Paid or invoiced. The code can't change.",
+        not_found: "Already removed.",
+        offline: OFFLINE,
+        unknown: FAILED,
       } as Readonly<Record<string, string>>,
     },
     noUpcoming: "Nothing booked.",
-    noPast: "No visit done yet.",
+    noPast: "No past visits.",
     /** A booking that refunded its payment by itself, which no board draws. The client is told. */
     autoRefunds: {
       title: "Refunded bookings",
@@ -188,10 +186,10 @@ export const clients = {
       what: (visit: string, date: string, amount: string | null) =>
         amount === null ? `${visit}, ${date}` : `${visit}, ${date} · ${amount}`,
       /** "Refunded automatically on 22 Sep 2027: paid after the hold lapsed." */
-      why: (when: string, reason: string) => `Refunded automatically on ${when}: ${reason}.`,
+      why: (when: string, reason: string) => `Auto-refunded on ${when}: ${reason}.`,
       reasons: {
-        lapsed: "paid after the hold lapsed",
-        not_movable: "the visit had begun, or its technician or time had changed, so it could not be moved",
+        lapsed: "paid after the hold expired",
+        not_movable: "the visit could no longer be moved",
       },
     },
     /**
@@ -205,7 +203,7 @@ export const clients = {
       kind: "Visit",
       kinds: {
         consultation: "Consultation",
-        one_visit: "Consultation and fit in one visit",
+        one_visit: "Consultation and fit together",
         first_fit: "First fit",
         service: "Service visit",
         replacement: "Replacement",
@@ -215,46 +213,45 @@ export const clients = {
       day: "Day",
       window: "Window",
       technician: "Technician",
-      anyone: "Whoever is free",
+      anyone: "Anyone available",
       earlier: "Earlier days",
       later: "Later days",
-      noDays: "Nobody is free on these days.",
+      noDays: "No one is free on these days.",
       code: "Discount code (optional)",
-      codeHint: "One the client gave you. It comes off before GST.",
+      codeHint: "Applied before GST.",
       pays: {
         nothing: "Nothing to pay.",
-        oneVisit: "Nothing to pay now. A payment link goes to them once they are fitted.",
-        credit: (left: number) => `Paid with a free service visit. ${String(left)} left.`,
-        link: (amount: string) =>
-          `${amount} before any code. A payment link goes to them by SMS; the visit is booked once they pay.`,
+        oneVisit: "Nothing to pay now. A payment link goes out once they're fitted.",
+        credit: (left: number) => `Uses a free service visit. ${String(left)} left.`,
+        link: (amount: string) => `${amount} before any code. They get a payment link by SMS. Booked once paid.`,
       },
-      book: "Book it",
+      book: "Book",
       booking: "Booking…",
       /** "Service visit, Wed 23 Sep, morning, with Sandeep Rawat." */
       summary: (visit: string, day: string, window: string, technician: string) =>
         `${visit}, ${day}, ${window}, with ${technician}.`,
       outcomes: {
         booked: "Booked.",
-        being_booked: "Booked. It reaches the dispatch board within a minute.",
+        being_booked: "Booked. On the dispatch board within a minute.",
         awaiting_payment: (amount: string, until: string) =>
-          `Payment link sent for ${amount}. The slot is held until ${until}; the visit is booked once they pay.`,
+          `Payment link sent for ${amount}. Slot held until ${until}. Booked once paid.`,
       },
       link: "Payment link",
       loading: "Finding free windows…",
-      unreadable: "The free windows could not be read.",
+      unreadable: "Couldn't load free windows.",
       retry: "Try again",
       errors: {
-        taken: "That window was taken a moment ago. Choose another.",
-        already_booked: "They already have one of these to come, or a payment link open for one.",
-        not_bookable: "That day or service cannot be booked.",
-        no_product: "No hair system is on sale that day.",
-        code_not_applicable: "That code does not apply to this visit.",
+        taken: "That window was just taken. Choose another.",
+        already_booked: "Already booked, or a payment link is open for one.",
+        not_bookable: "That day or service can't be booked.",
+        no_product: "No hair system on sale that day.",
+        code_not_applicable: "That code doesn't apply to this visit.",
         code_off: "That code is switched off.",
-        terms_changed: "Their last credit went on another booking a moment ago. Check, then book again.",
-        unavailable: "Razorpay could not make the payment link, so nothing was held. Try again in a minute.",
-        not_found: "This client cannot be booked.",
-        offline: "You are offline. Connect, then try again.",
-        unknown: "That did not go through. Nothing was booked.",
+        terms_changed: "Their last credit was just used elsewhere. Check, then book again.",
+        unavailable: "Razorpay couldn't create the link. Try again in a minute.",
+        not_found: "This client can't be booked.",
+        offline: OFFLINE,
+        unknown: FAILED,
       } as Readonly<Record<string, string>>,
     },
     /**
@@ -265,11 +262,11 @@ export const clients = {
       open: "Cancel",
       /** The button's whole name, since every row's says the same. */
       openLabel: (visit: string) => `Cancel the visit of ${visit}`,
-      drawer: "Cancel this visit",
+      drawer: "Cancel visit",
       title: (name: string) => `Cancel ${name}'s visit`,
       close: "Close",
-      loading: "Checking what it gives back…",
-      unreadable: "What the cancel gives back could not be read.",
+      loading: "Checking refund…",
+      unreadable: "Couldn't check the refund.",
       retry: "Try again",
       paid: {
         money: (amount: string, method: string) => `Paid ${amount} by ${method}.`,
@@ -279,33 +276,33 @@ export const clients = {
       /** Where a refund goes, by the payment's method. */
       destinations: { upi: "UPI", card: "card", netbanking: "bank account" } as Readonly<Record<string, string>>,
       otherDestination: "payment method",
-      free: "Free to the client",
-      clientTerms: "On their late terms",
+      free: "Free cancellation",
+      clientTerms: "Late terms",
       /** "Free to the client: Rs. 2,000 goes back to their UPI." */
       terms: (which: string, gives: string) => `${which}: ${gives}`,
       gives: {
-        refund: (amount: string, to: string) => `${amount} goes back to their ${to}.`,
-        kept: (amount: string) => `${amount} is kept.`,
-        restored: "their free service visit comes back.",
-        lost: "their free service visit is spent.",
-        nothing: "nothing to give back.",
+        refund: (amount: string, to: string) => `${amount} refunded to their ${to}.`,
+        kept: (amount: string) => `${amount} kept.`,
+        restored: "free service visit returned.",
+        lost: "free service visit used.",
+        nothing: "nothing to refund.",
       },
-      lateTerms: "Apply the client's late terms",
-      lateHint: (hours: number) => `Only when they cancel inside the ${String(hours)} hours' notice themselves.`,
-      reason: "Why",
-      reasonHint: "Kept with the cancel, under your name. The client never sees it.",
-      confirm: "Cancel the visit",
+      lateTerms: "Apply late terms",
+      lateHint: (hours: number) => `Only if they're cancelling within ${String(hours)} hours themselves.`,
+      reason: "Reason",
+      reasonHint: "Private. The client won't see it.",
+      confirm: "Confirm cancellation",
       cancelling: "Cancelling…",
       /** "Cancelled. Rs. 2,000 goes back to their UPI." */
       done: (gives: string) => `Cancelled. ${gives.charAt(0).toUpperCase()}${gives.slice(1)}`,
-      termsChanged: "The client's notice ran out while this was open. Check what it gives back, then cancel again.",
+      termsChanged: "The free window closed meanwhile. Check the refund, then cancel again.",
       errors: {
         not_permitted: NOT_PERMITTED,
-        not_changeable: "This visit can no longer be cancelled: it has begun, passed or been cancelled already.",
-        invalid_request: "Say why it is cancelled.",
-        unavailable: "That did not go through, so nothing changed. Try again in a minute.",
-        offline: "You are offline. Connect, then try again.",
-        unknown: "That did not go through. Nothing was cancelled.",
+        not_changeable: "Started, passed or already cancelled.",
+        invalid_request: "Give a reason.",
+        unavailable: "That didn't work. Try again in a minute.",
+        offline: OFFLINE,
+        unknown: FAILED,
       } as Readonly<Record<string, string>>,
     },
     /**
@@ -317,27 +314,27 @@ export const clients = {
       openLabel: (visit: string) => `Close the visit of ${visit} by hand`,
       title: (name: string) => `Close ${name}'s visit by hand`,
       close: "Close",
-      note: "For work done whose record was lost with the technician's phone. What the phone sent before stays.",
-      outcome: "How it went",
+      note: "For finished work lost with the technician's phone.",
+      outcome: "Outcome",
       outcomes: { done: "Done", partial: "Partly done" },
-      started: "Work began at",
-      ended: "Work ended at",
+      started: "Started",
+      ended: "Finished",
       /** "On Mon 21 Sep, India time." */
       timesHint: (day: string) => `On ${day}, India time.`,
-      reason: "What happened, and how you know",
-      reasonHint: "Kept with the visit, under your name.",
-      confirm: "Close the visit",
+      reason: "What happened",
+      reasonHint: "Saved with the visit.",
+      confirm: "Close visit",
       closing: "Closing…",
-      done: { done: "Closed as done.", partial: "Closed as partly done. Its follow-up waits on Tasks." },
+      done: { done: "Closed as done.", partial: "Closed as partly done. A follow-up is on Tasks." },
       errors: {
         not_permitted: NOT_PERMITTED,
-        already_closed: "This visit is closed already, by the technician's phone or from here, or it was cancelled.",
-        too_early_to_close: "This visit's time has not come yet.",
-        times: "The times must fall on the visit's day, begin before they end, and end by now.",
+        already_closed: "Already closed or cancelled.",
+        too_early_to_close: "The visit hasn't started yet.",
+        times: "Times must be on the visit day, in order, and not in the future.",
         reason: "Say what happened.",
-        not_found: "This visit is no longer on our records.",
-        offline: "You are offline. Connect, then try again.",
-        unknown: "That did not go through. Nothing was closed.",
+        not_found: "This visit no longer exists.",
+        offline: OFFLINE,
+        unknown: FAILED,
       } as Readonly<Record<string, string>>,
     },
     /** "9 am to 12 pm", as the dispatch drawer writes a window. */
@@ -371,7 +368,7 @@ export const clients = {
   payments: {
     title: "Payments and refunds",
     columns: { date: "Date", what: "What", amount: "Amount", state: "State" },
-    none: "Nothing paid yet.",
+    none: "No payments yet.",
     /** "Service visit of 22 Aug 2027", and a late fee named as one. */
     visit: (type: string, date: string) => `${type} of ${date}`,
     unlinked: "Payment",
@@ -403,10 +400,10 @@ export const clients = {
     /** "Natural hair system, visit of 25 Sep 2027". */
     what: (product: string, day: string | null) => (day === null ? product : `${product}, visit of ${day}`),
     states: {
-      making: "Being made: Razorpay is asked again",
-      open: "Waiting to be paid",
+      making: "Creating",
+      open: "Unpaid",
       paid: "Paid",
-      refused: "Razorpay refused it: send one by hand",
+      refused: "Refused by Razorpay",
       lapsed: "Closed unpaid",
     },
     paidOn: (date: string) => `Paid ${date}`,
@@ -418,8 +415,8 @@ export const clients = {
   invoices: {
     title: "Invoices",
     columns: ["Visit", "Invoice"],
-    none: "No finished visit to invoice yet.",
-    states: { to_raise: "Not raised yet", draft: "Draft in Books, not sent", issued: "Sent" },
+    none: "No invoices yet.",
+    states: { to_raise: "Not raised", draft: "Draft in Books", issued: "Sent" },
     sentOn: (date: string) => `Sent ${date}`,
   },
   /** Putting a client's free service visits right by hand (POST /api/clients/{id}/credits). */
@@ -430,24 +427,23 @@ export const clients = {
     visits: (count: number) => `${String(count)} ${Math.abs(count) === 1 ? "visit" : "visits"}`,
     /** After the count, as the head writes it: "2 visits · use by 3 Jan 2028". */
     useBy: (date: string) => `use by ${date}`,
-    change: "Visits to add, or to take away with a minus",
-    changeHint: "A whole number from -12 to 12, never 0.",
-    reason: "Why",
+    change: "Add, or remove with a minus",
+    changeHint: "-12 to 12, not 0.",
+    reason: "Reason",
     reasons: [
-      { reason: "correction", label: "Correction: given or taken in error" },
-      { reason: "goodwill", label: "Goodwill: to make up for something" },
+      { reason: "correction", label: "Correction" },
+      { reason: "goodwill", label: "Goodwill" },
     ],
-    note: "Kept in the credit ledger and the audit log, under your name. The client sees their new balance in their app.",
-    save: "Put the credits right",
+    note: "The client sees the new balance in their app.",
+    save: "Update credits",
     saving: "Saving",
-    saved: (count: number) => `Done. They now hold ${String(count)} ${count === 1 ? "visit" : "visits"}.`,
+    saved: (count: number) => `Done. They now have ${String(count)} ${count === 1 ? "visit" : "visits"}.`,
     errors: {
       not_permitted: NOT_PERMITTED,
-      invalid_request:
-        "That would take away more visits than they hold, or is not a number from -12 to 12. Nothing was changed.",
-      not_found: "This client is no longer on our records. Nothing was changed.",
-      offline: "You are offline. Connect, then try again.",
-      unknown: "That did not go through. Nothing was changed.",
+      invalid_request: "-12 to 12, and no more than they hold.",
+      not_found: "This client no longer exists.",
+      offline: OFFLINE,
+      unknown: FAILED,
     } as Readonly<Record<string, string>>,
   },
   /*
@@ -456,53 +452,53 @@ export const clients = {
    */
   invite: {
     title: "Invite",
-    erased: "A client since erased",
-    grant: "What it earns",
+    erased: "Erased client",
+    grant: "Reward",
     grants: {
-      pending: "Given when this client is fitted",
+      pending: "Given once this client is fitted",
       held: "Held for review",
       approved: "Given",
       granted: "Given",
       rejected: "Rejected",
-      expired: "None: the invite lapsed while they waited",
-      clawed_back: "Taken back: the first fit was refunded",
+      expired: "None: the invite lapsed",
+      clawed_back: "Reversed: first fit refunded",
     },
     since: "Since",
     attachedBy: "Attached by",
-    why: "Why",
-    none: "They came with no invite. If a friend sent them and they booked another way, attach the friend's invite here.",
+    why: "Reason",
+    none: "No invite. If a friend referred them, attach the invite here.",
     /** The same, to a person whose access does not let them attach one. */
-    noInvite: "They came with no invite.",
+    noInvite: "No invite.",
     form: {
       code: "Invite code",
-      codeHint: "The letters and digits after maneman.in/r/ in the friend's link.",
-      reason: "Why",
-      reasonHint: "What the client or their friend told you.",
+      codeHint: "What follows maneman.in/r/ in the friend's link.",
+      reason: "Reason",
+      reasonHint: "What the client or friend told you.",
       /** The rules the API holds an attach to (src/routes/ops/client-referral.ts), the late one src/policy/fraud-holds.ts's. */
-      note: "Logged under your name. Not allowed: the code's own referrer, or a client who already came with an invite. Attached after their first fit, it waits for your review in Referrals.",
-      save: "Attach the invite",
+      note: "Not for the referrer themselves, or a client who already has an invite. After a first fit, it's held for review.",
+      save: "Attach invite",
       saving: "Attaching",
       errors: {
         not_permitted: NOT_PERMITTED,
-        unknown_invite: "No invite has that code. Check it with the client. Nothing was attached.",
-        own_invite: "That is this client's own invite. Nothing was attached.",
-        invalid_request: "Type the code as letters and digits, and say why. Nothing was attached.",
-        not_found: "This client is no longer on our records. Nothing was attached.",
-        offline: "You are offline. Connect, then try again.",
-        unknown: "That did not go through. Nothing was attached.",
+        unknown_invite: "No invite with that code.",
+        own_invite: "That's their own invite.",
+        invalid_request: "Enter the code and a reason.",
+        not_found: "This client no longer exists.",
+        offline: OFFLINE,
+        unknown: FAILED,
       } as Readonly<Record<string, string>>,
     },
     news: {
-      attached: "Attached, and sent to the CRM.",
-      already_invited: "They came with this invite already, so nothing was attached.",
+      attached: "Invite attached.",
+      already_invited: "Already attached.",
     },
   },
   /** Every piece the client has been fitted with. */
   pieces: {
-    title: "Pieces",
+    title: "Hair systems",
     /** The board's six columns. */
     columns: {
-      code: "Piece",
+      code: "Hair system",
       base: "Base",
       fitted: "Fitted",
       lot: "Supplier lot",
@@ -512,7 +508,7 @@ export const clients = {
     /** A piece that has failed, as the board writes it: "24 Jun · base split at crown". */
     failed: (date: string, reason: string | null) => (reason === null ? date : `${date} · ${reason}`),
     // The board draws no client without a piece, and every client has none until they are fitted.
-    empty: "No piece has been fitted for this client.",
+    empty: "No hair system fitted yet.",
   },
   /*
    * Our words, all of them: no board draws the client's hair profile (docs/decisions/0106-a-clients-hair-profile.md).
@@ -520,11 +516,11 @@ export const clients = {
    */
   profile: {
     title: "Hair profile",
-    none: "No profile has been recorded for this client.",
+    none: "No hair profile yet.",
     /** "21 Sep 2026 · Imran, at the consultation", as each version is headed. */
     version: (date: string, by: string) => `${date} · ${by}`,
     atVisit: (name: string, visit: string) => `${name}, at the ${visit.toLowerCase()}`,
-    byOps: (staff: string) => `${staff}, a correction`,
+    byOps: (staff: string) => `${staff}, correction`,
     unnamed: "A technician",
     aVisit: "visit",
     fit: "Fit spec",
@@ -563,29 +559,28 @@ export const clients = {
       other_systems: "Other hair systems",
       other: "Other",
     },
-    correct: "Correct the profile",
-    record: "Record a profile",
-    formTitle: "Correct the hair profile",
-    formNote: "Saved as a new version under your name. Every version before it is kept.",
+    correct: "Correct profile",
+    record: "Add profile",
+    formTitle: "Correct hair profile",
+    formNote: "Saved as a new version. Earlier versions are kept.",
     notRecorded: "Not recorded",
     product: "Hair system",
     invalid: "Check this field.",
-    refused: "Some fields were not accepted. Check the fields marked.",
-    failed: "That did not go through. Nothing was saved.",
-    moved:
-      "Nothing was saved: the profile changed while you were correcting it. It is shown as it now stands; correct that.",
-    save: "Save as a new version",
+    refused: "Check the marked fields.",
+    failed: FAILED,
+    moved: "The profile changed while you were editing. Not saved. Review the latest version.",
+    save: "Save new version",
     saving: "Saving",
     cancel: "Cancel",
   },
   photos: {
     locked: "Locked",
-    title: (name: string) => `Photographs of ${name}`,
+    title: (name: string) => `Photos of ${name}`,
     /** Why a client's visits are photographed, which no consent switches off. */
-    basis: "Taken for the visit record, at every visit.",
+    basis: "Taken at every visit for the record.",
     /** The board's words, with the client's first name where it writes "Rohit". */
     warning: (firstName: string) =>
-      `Opening these records your name, the client and the time. The log is visible to the city head and to ${firstName} on request.`,
+      `Opening these is logged with your name and the time. The city head and ${firstName} can see the log.`,
     open: "View photos",
     /** The state the board draws once they are open, with the time the API logged the opening, by its own clock. */
     opened: (time: string) => `Open · logged ${time}`,
@@ -595,7 +590,7 @@ export const clients = {
      */
     before: "Opened before",
     beforeRow: (by: string, date: string, time: string) => `${by} · ${date}, ${time}`,
-    neverBefore: "Nobody has opened them before.",
+    neverBefore: "Never opened before.",
     /** The earlier visits' photographs, fetched only when asked for. */
     earlier: (visits: number) => `Show ${String(visits)} earlier ${visits === 1 ? "visit" : "visits"}`,
     angles: { front: "Front", top: "Top", left: "Left", right: "Right", hair: "Hair" },
@@ -613,12 +608,12 @@ export const clients = {
     // A photograph's description for a screen reader; the board draws no captions.
     alt: (angle: string, phase: string, date: string) => `${angle}, ${phase.toLowerCase()} the visit of ${date}`,
     // The board draws no client without photographs, and no photograph that would not load.
-    empty: "No photographs of this client yet, so nothing was logged.",
+    empty: "No photos yet.",
     errors: {
       not_permitted: NOT_PERMITTED,
-      unavailable: "The view could not be recorded, so nothing is shown.",
-      offline: "You are offline. Connect, then try again.",
-      unknown: "That photograph did not load.",
+      unavailable: "Couldn't log the view, so photos stay locked.",
+      offline: OFFLINE,
+      unknown: "Photo didn't load.",
     } as Readonly<Record<string, string>>,
   },
   consents: {
@@ -626,9 +621,9 @@ export const clients = {
     /** The board's four columns. */
     columns: { purpose: "Purpose", state: "State", date: "Date", source: "Source" },
     purposes: {
-      photos_own_record: "Photographs taken for the visit record",
-      photos_referral_cards: "Photographs on referral cards",
-      photos_marketing: "Photographs in marketing",
+      photos_own_record: "Photos for the visit record",
+      photos_referral_cards: "Photos on referral cards",
+      photos_marketing: "Photos in marketing",
       whatsapp_visits: "WhatsApp about visits",
       whatsapp_launches: "WhatsApp about launches",
     },
@@ -656,14 +651,14 @@ export const clients = {
      */
     notRecorded: "Not recorded",
     /** The board's note. It writes "from his own app"; this says "their" (docs/fidelity-method.md). */
-    note: "Ops cannot grant a consent. Only the client can, from their own app.",
+    note: "Only the client can give consent, in their app.",
     /**
      * The board draws no deletion request, and the route answers
      * with the client's latest one, which belongs beside their consents.
      */
     deletion: {
-      requested: (date: string) => `Deletion requested ${date}. It is not decided here.`,
-      rejected: (date: string) => `Deletion requested ${date} and refused.`,
+      requested: (date: string) => `Deletion requested ${date}. Decide it in Deletion requests.`,
+      rejected: (date: string) => `Deletion requested ${date}, rejected.`,
     },
   },
   /**
@@ -671,53 +666,47 @@ export const clients = {
    * app, on WhatsApp or the phone; one made in the app is decided in Deletion requests, which tells the client.
    */
   erasure: {
-    title: "Erase this client",
-    note: "When they ask us, outside the app, to delete their data. It cannot be undone.",
+    title: "Erase client",
+    note: "For deletion requests made outside the app. Can't be undone.",
     open: "Erase",
     openLabel: (name: string) => `Erase ${name}`,
     confirmLabel: (name: string) => `Erasing ${name}`,
-    warning: "This erases them now. It cannot be undone, and there is no copy to put back.",
+    warning: "This erases them now. It can't be undone.",
     /** The runbook's first step, "Check the request comes from the number's owner". */
-    checked: "I have confirmed this request with them, on their own number.",
+    checked: "I've confirmed this with them, on their own number.",
     confirm: "Erase now",
-    cancel: "Keep them",
+    cancel: "Cancel",
     erasing: "Erasing",
     /** Why nothing was erased, and what ops may do about it. */
     owed: {
-      visit_booked:
-        "They still have a visit booked, so nothing was erased. Cancel it on their Visits tab, which refunds what they paid, then erase.",
-      payment_held:
-        "We still owe them money back, so nothing was erased. Erase once their Payments tab shows it refunded.",
-      payment_owed: "A payment link of theirs is still unpaid, so nothing was erased.",
+      visit_booked: "They have a visit booked. Cancel it on Visits, which refunds them, then erase.",
+      payment_held: "A refund is still owed. Erase once Payments shows it refunded.",
+      payment_owed: "A payment link is still unpaid.",
     },
     /** To erase today all the same, when what is owed cannot be settled first. */
     settle: {
-      visit_booked: "I will cancel and refund it by hand today.",
-      payment_held: "I will make sure it is refunded today.",
-      payment_owed: "Their link is cancelled, and what they owe goes unpaid.",
+      visit_booked: "I'll cancel and refund it by hand today.",
+      payment_held: "I'll make sure it's refunded today.",
+      payment_owed: "Cancel the link and write off what's owed.",
     },
     anyway: "Erase anyway",
     done: {
       title: "Erased",
-      body:
-        "Their photographs and details are gone. Their records in the CRM and Books are blanked within a few " +
-        "minutes. Tell them it is done, in the chat they asked in.",
-      back: "Find another client",
+      body: "Photos and details are gone. CRM and Books records are blanked within minutes. Let them know in the chat they asked in.",
+      back: "Find a client",
     },
     /** The page of a client erased since, which keeps only their visits and money. */
     record: {
       title: "Erased client",
       /** Whose visit the panels that cancel or close one name. */
       whose: "the erased client",
-      on: (date: string) =>
-        `Erased on ${date}. Their name, number, address and photographs are gone; their visits and payments stay on ` +
-        "record.",
+      on: (date: string) => `Erased on ${date}. Visits and payments remain on record.`,
     },
     errors: {
       not_permitted: NOT_PERMITTED,
-      not_found: "They were erased already. Reload to see.",
-      offline: "You are offline. Connect, then try again.",
-      unknown: "That did not go through. They have not been erased.",
+      not_found: "Already erased. Reload.",
+      offline: OFFLINE,
+      unknown: "That didn't work. Nothing was erased.",
     } as Readonly<Record<string, string>>,
   },
   /*
@@ -741,12 +730,12 @@ export const clients = {
       spend: "Paid",
     },
     /** A client we have never fitted, and one whose earlier visits were never recorded here, read the same. */
-    noFirstFit: "No first fit on record",
-    noVisit: "No visit done yet",
+    noFirstFit: "No first fit",
+    noVisit: "No visits yet",
     /** The day ops order a piece against, with the piece it is for, as the Tasks board names one. */
     due: (date: string, piece: string) => `${date} · ${piece}`,
-    noPiece: "No piece fitted, so no date",
+    noPiece: "No hair system fitted",
     /** To Activity, narrowed to this client: what they did, and everything done to their record. */
-    activity: "Everything done on this record",
+    activity: "View activity",
   },
 } as const;

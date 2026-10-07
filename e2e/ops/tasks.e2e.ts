@@ -79,6 +79,6 @@ test("names the one fact each group turns on", async ({ page }) => {
   await expect(row(page, "Kunal Mehta")).toContainText("MM-STD-4417-K · order by 19 Sep 2027, replace by 17 Oct 2027");
   // The fraud rule, lettered as the referral queue letters it.
   await expect(row(page, "Karan Bose")).toContainText("Monthly cap exceeded");
-  await expect(row(page, "Vikram Sethi")).toContainText("Both numbers proven by code");
-  await expect(row(page, "Ashish Gill")).toContainText("Asked for in the client's own app");
+  await expect(row(page, "Vikram Sethi")).toContainText("Both numbers verified");
+  await expect(row(page, "Ashish Gill")).toContainText("Requested in the app");
 });

@@ -27,7 +27,7 @@ test.describe("the client's hair profile", () => {
     await expect(profile.locator("dl").first()).toContainText("Colour#2");
     await expect(profile.locator("dl").first()).toContainText("Skin conditions and allergiesDry at the crown");
     await expect(profile.getByRole("listitem")).toHaveText([
-      /^22 Sep 2027 · ops@maneman\.in, a correction/,
+      /^22 Sep 2027 · ops@maneman\.in, correction/,
       /^21 Sep 2027 · Imran, at the consultation/,
     ]);
     await expect(page.getByRole("row").filter({ hasText: "MM-STD-4417-B" })).toBeVisible();
@@ -43,7 +43,7 @@ test.describe("the client's hair profile", () => {
       [READ_HAIR_PROFILE]: json(HAIR_PROFILE),
       [CORRECT_HAIR_PROFILE]: json(corrected),
     });
-    await section(page).getByRole("button", { name: "Correct the profile" }).click();
+    await section(page).getByRole("button", { name: "Correct profile" }).click();
     const colour = page.getByRole("combobox", { name: "Colour" });
     await expect(colour).toHaveValue("2");
     expect(await axeViolations(page)).toEqual([]);
@@ -52,7 +52,7 @@ test.describe("the client's hair profile", () => {
     const sent = page.waitForRequest(
       (request) => request.method() === "POST" && request.url().endsWith("/hair-profile"),
     );
-    await page.getByRole("button", { name: "Save as a new version" }).click();
+    await page.getByRole("button", { name: "Save new version" }).click();
     const body = (await sent).postDataJSON() as { fit: Record<string, unknown>; history: unknown; based_on: unknown };
     expect(body.fit).toEqual({ ...HAIR_PROFILE.latest.fit, colour: "3", product_name: undefined });
     expect(body.history).toEqual(HAIR_PROFILE.latest.history);
@@ -80,10 +80,10 @@ test.describe("the client's hair profile", () => {
       },
       [CORRECT_HAIR_PROFILE]: fails(409, "superseded"),
     });
-    await section(page).getByRole("button", { name: "Correct the profile" }).click();
-    await page.getByRole("button", { name: "Save as a new version" }).click();
+    await section(page).getByRole("button", { name: "Correct profile" }).click();
+    await page.getByRole("button", { name: "Save new version" }).click();
 
-    await expect(section(page).getByRole("alert")).toContainText("Nothing was saved: the profile changed");
+    await expect(section(page).getByRole("alert")).toContainText("The profile changed while you were editing.");
     await expect(section(page).locator("dl").first()).toContainText("Colour#4");
   });
 
@@ -93,11 +93,11 @@ test.describe("the client's hair profile", () => {
       if (request.method() === "POST" && request.url().endsWith("/hair-profile")) sent += 1;
     });
     await openClient(page, `/clients/${CLIENT.id}/pieces`, { [READ_HAIR_PROFILE]: json(HAIR_PROFILE) });
-    await section(page).getByRole("button", { name: "Correct the profile" }).click();
+    await section(page).getByRole("button", { name: "Correct profile" }).click();
     await page.getByRole("textbox", { name: "Grey, %" }).fill("twenty");
-    await page.getByRole("button", { name: "Save as a new version" }).click();
+    await page.getByRole("button", { name: "Save new version" }).click();
     await expect(page.getByRole("textbox", { name: "Grey, %" })).toHaveAttribute("aria-invalid", "true");
-    await expect(page.getByRole("alert")).toHaveText("Some fields were not accepted. Check the fields marked.");
+    await expect(page.getByRole("alert")).toHaveText("Check the marked fields.");
     expect(sent).toBe(0);
   });
 
@@ -106,10 +106,10 @@ test.describe("the client's hair profile", () => {
       [READ_HAIR_PROFILE]: json(HAIR_PROFILE),
       [CORRECT_HAIR_PROFILE]: fails(400, "invalid_request", ["fit.base_width_in"]),
     });
-    await section(page).getByRole("button", { name: "Correct the profile" }).click();
+    await section(page).getByRole("button", { name: "Correct profile" }).click();
     await page.getByRole("textbox", { name: "Base width, in" }).fill("80");
-    await page.getByRole("button", { name: "Save as a new version" }).click();
-    await expect(page.getByRole("alert")).toHaveText("Some fields were not accepted. Check the fields marked.");
+    await page.getByRole("button", { name: "Save new version" }).click();
+    await expect(page.getByRole("alert")).toHaveText("Check the marked fields.");
     await expect(page.getByRole("textbox", { name: "Base width, in" })).toHaveAttribute("aria-invalid", "true");
   });
 });
@@ -137,9 +137,9 @@ test("lists where visits go, and every visit to come and done", async ({ page })
 
 test("says so when there is no address and no visit either way", async ({ page }) => {
   await openClient(page, `/clients/${CLIENT.id}/visits`, { [READ_RECORD]: json(NEW_RECORD) });
-  await expect(page.getByText("No address saved yet.")).toBeVisible();
+  await expect(page.getByText("No address yet.")).toBeVisible();
   await expect(page.getByText("Nothing booked.")).toBeVisible();
-  await expect(page.getByText("No visit done yet.")).toBeVisible();
+  await expect(page.getByText("No past visits.")).toBeVisible();
 });
 
 // An address a client gives ops on the phone, saved as theirs and marked as given to ops (ADR 0092; open point 62).
@@ -172,9 +172,9 @@ test("records an address the client gives on the phone, with the building found,
       await json(GIVEN)(route);
     },
   });
-  await page.getByRole("button", { name: "Record an address they give you" }).click();
-  const form = page.getByRole("form", { name: "An address the client gave you" });
-  await form.getByRole("combobox", { name: "Search for their building" }).fill("Sunrise");
+  await page.getByRole("button", { name: "Add an address" }).click();
+  const form = page.getByRole("form", { name: "Address given by phone" });
+  await form.getByRole("combobox", { name: "Building" }).fill("Sunrise");
   await form.getByRole("option", { name: /Sunrise Greens/ }).click();
   await form.getByLabel("Flat or house number").fill("Flat 1203");
   await form.getByLabel("Tower or block (optional)").fill("Tower C");
@@ -182,11 +182,11 @@ test("records an address the client gives on the phone, with the building found,
   await form.getByLabel("City").fill("Gurgaon");
   await form.getByLabel("Pincode").fill("122018");
   expect(await axeViolations(page)).toEqual([]);
-  await form.getByRole("button", { name: "Save their address" }).click();
+  await form.getByRole("button", { name: "Save address" }).click();
 
   await expect(page.getByText("Flat 1203, Tower C, Sunrise Greens, Sector 65, Gurgaon 122018")).toBeVisible();
   await expect(page.getByText("To ops@localhost, 22 Sep 2027")).toBeVisible();
-  await expect(page.getByRole("status")).toContainText("Saved as their address, marked as given to you.");
+  await expect(page.getByRole("status")).toContainText("Address saved.");
   expect(saved).toEqual([
     expect.objectContaining({
       line1: "Sunrise Greens",
@@ -208,13 +208,13 @@ test("asks for what an address cannot do without before it sends one", async ({ 
       await fails(400, "invalid_request")(route);
     },
   });
-  await page.getByRole("button", { name: "Record an address they give you" }).click();
-  const form = page.getByRole("form", { name: "An address the client gave you" });
-  await form.getByRole("button", { name: "Save their address" }).click();
-  await expect(form.getByRole("alert")).toContainText("Fill in the flat or house number, the building or street");
+  await page.getByRole("button", { name: "Add an address" }).click();
+  const form = page.getByRole("form", { name: "Address given by phone" });
+  await form.getByRole("button", { name: "Save address" }).click();
+  await expect(form.getByRole("alert")).toContainText("Add the flat, building or street");
   await expect(form.getByLabel("Flat or house number")).toBeFocused();
   await expect(form.getByLabel("Flat or house number")).toHaveAttribute("required", "");
   expect(sent).toBe(0);
   await form.getByRole("button", { name: "Cancel" }).click();
-  await expect(page.getByRole("button", { name: "Record an address they give you" })).toBeFocused();
+  await expect(page.getByRole("button", { name: "Add an address" })).toBeFocused();
 });

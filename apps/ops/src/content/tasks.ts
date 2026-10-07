@@ -2,7 +2,7 @@
 
 import type { components } from "../api-schema.ts";
 import type { LinkState } from "../tasks/payment-link.ts";
-import { NOT_PERMITTED } from "./common.ts";
+import { FAILED, NOT_PERMITTED } from "./common.ts";
 import { DEPARTMENT_NAMES } from "./shell.ts";
 
 /** A task group as the API names it, from the generated schema, which the Worker-typed tests can read too. */
@@ -11,8 +11,8 @@ type Group = components["schemas"]["Tasks"]["groups"][number]["group"];
 /** Where a payment link still owed stands, as the Tasks board says it. */
 const PAYMENT_LINK_STATES: Readonly<Record<LinkState, string>> = {
   sent: "link sent",
-  unsent: "link not sent yet",
-  refused: "Razorpay refused the link: send one from its dashboard",
+  unsent: "link not sent",
+  refused: "link refused by Razorpay",
   closed: "link closed unpaid",
 };
 
@@ -22,14 +22,14 @@ const PAYMENT_LINK_STATES: Readonly<Record<LinkState, string>> = {
  * decides nothing.
  */
 const DECIDE: Readonly<Partial<Record<Group, string>>> = {
-  untold_move: "Open it in Dispatch",
-  leave_conflict: "Move it in Dispatch",
-  referral_review: "Decide it in Referrals",
-  no_show_decision: "Rule on it in Payments",
-  no_show_dispute: "Rule on it in Payments",
-  number_change: "Decide it in Number changes",
-  erasure_request: "Decide it in Deletion requests",
-  grievance: "Answer it in Concerns",
+  untold_move: "Open in Dispatch",
+  leave_conflict: "Move in Dispatch",
+  referral_review: "Decide in Referrals",
+  no_show_decision: "Decide in Payments",
+  no_show_dispute: "Decide in Payments",
+  number_change: "Decide in Number changes",
+  erasure_request: "Decide in Deletion requests",
+  grievance: "Answer in Concerns",
 };
 
 /**
@@ -59,7 +59,7 @@ export const tasks = {
     replacement_order: "Replacement order",
     at_risk_client: "At-risk client",
     // A group the board does not draw (docs/decisions/0074-hand-offs-and-messages.md).
-    partial_visit: "Visit left partly done",
+    partial_visit: "Partly done visit",
     referral_review: "Referral review",
     no_show_decision: "No-show decision",
     // A group the Tasks design does not draw; the Payments design letters the card "Disputed charge".
@@ -78,14 +78,14 @@ export const tasks = {
   /** The first line of a no-show whose client has since been erased: the visit, which is all that is left. */
   visit: (date: string) => `Visit of ${date}`,
   /** A disputed charge whose client has since been erased. */
-  disputeErased: "A client since erased",
+  disputeErased: "Erased client",
   /** A queue whose row has lost the client it was about. */
   unknown: "Client unknown",
   /** The client's page, which the board draws no way to. */
   open: (name: string) => `Open ${name}`,
   decide: DECIDE,
   /** A group longer than the board lists: its count is all of them. */
-  shown: (shown: number, count: number) => `The ${String(shown)} longest waits of ${String(count)}.`,
+  shown: (shown: number, count: number) => `Longest ${String(shown)} of ${String(count)}.`,
   /** A group shows its five longest waits until ops ask for the rest. */
   more: (count: number) => `Show ${String(count)} more`,
   fewer: "Show fewer",
@@ -96,10 +96,10 @@ export const tasks = {
     call: (mobile: string) => `Call ${mobile}`,
     told: "Told by phone",
     recording: "Recording…",
-    failed: "That was not recorded. Try again.",
+    failed: FAILED,
   },
   /** More were waiting than one look reads. */
-  truncated: "More are waiting than this page shows, so its counts may be low.",
+  truncated: "Not everything is shown, so counts may be low.",
   /** The second line, one per group: the one fact the group turns on. */
   subs: {
     /**
@@ -107,24 +107,24 @@ export const tasks = {
      * reason the API does not name says only that the client was not told.
      */
     untold_move: {
-      no_consent: (when: string) => `Moved to ${when}; has not agreed to WhatsApp`,
-      not_sent: (when: string) => `Moved to ${when}; the WhatsApp did not go`,
-      unknown: (when: string) => `Moved to ${when}; not told yet`,
+      no_consent: (when: string) => `Moved to ${when} · not opted in to WhatsApp`,
+      not_sent: (when: string) => `Moved to ${when} · WhatsApp failed`,
+      unknown: (when: string) => `Moved to ${when} · not told`,
     },
     /** "Wed 23 Sep, 10:30 am, and Sameer is away": move it on the dispatch board, or take the leave back. */
-    leave_conflict: (when: string, technician: string) => `${when}, and ${technician} is away`,
+    leave_conflict: (when: string, technician: string) => `${when} · ${technician} is away`,
     /**
      * "Visit Tue 22 Sep, 10 am; no address yet". The client saves one in the app, whose Home asks for it,
      * or gives it to ops on the phone, who record it on their page; the task goes when either does (ADR 0092).
      */
-    address_to_confirm: (when: string) => `Visit ${when}; no address yet`,
+    address_to_confirm: (when: string) => `Visit ${when} · no address`,
     /** "Asked for 23 Sep 2026, morning": the day nobody could book for them, self-serve booking being off. */
     consultation_request: (day: string, when: string) => `Asked for ${day}, ${when}`,
     /**
      * "+ consultation and fit in one visit", after the day and window asked for: book it from the row,
      * paid for once the client is fitted (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md).
      */
-    withOneVisit: "+ consultation and fit in one visit",
+    withOneVisit: "+ consultation and fit together",
     /**
      * ", code WEDDNG25", after the one visit: the discount code the client gave on the form, which the
      * booking from the row starts with (docs/decisions/0108-discount-codes.md).
@@ -148,7 +148,7 @@ export const tasks = {
      * service fell due, from the cadence ops set. The task goes when the client books.
      */
     at_risk_client: (weeks: number, due: string) =>
-      `${String(weeks)} ${weeks === 1 ? "week" : "weeks"} since the last visit · due ${due}`,
+      `${String(weeks)} ${weeks === 1 ? "week" : "weeks"} since last visit · due ${due}`,
     /**
      * "MM-ESS-4417-C · order by 1 Feb 2028, replace by 1 Mar 2028": the task falls due, and counts overdue, from the
      * day the order must go in, the supplier's lead time before the piece is due.
@@ -161,27 +161,27 @@ export const tasks = {
      */
     partial_visit: (reason: string, date: string) => `${reason} · ${date}`,
     /** A visit closed partial with no reason from the technician. */
-    noReason: "No reason recorded",
+    noReason: "No reason given",
     no_show_decision: (technician: string) => `${technician} attended`,
     /** "Disputes the charge that kept Rs. 2,000", or the free service visit it spent. */
-    no_show_dispute: (took: string) => `Disputes the charge that kept ${took}`,
+    no_show_dispute: (took: string) => `Disputes a charge: ${took}`,
     disputedCredit: "a free service visit",
-    number_change: "Both numbers proven by code",
-    erasure_request: "Asked for in the client's own app",
+    number_change: "Both numbers verified",
+    erasure_request: "Requested in the app",
     // A concern about their data, which the app promises an answer to within 30 days.
-    grievance: "Raised in the client's own app",
+    grievance: "Raised in the app",
     // The client cannot open the invoice until somebody sends it in Books.
-    draft_invoice: (visit: string) => `Visit of ${visit}, still a draft in Books`,
+    draft_invoice: (visit: string) => `Visit of ${visit} · draft in Books`,
     /**
      * "Mane Man Natural, Rs. 45,000; link sent": a one visit's client was fitted and has not paid. A
      * link not sent yet is asked of Razorpay again by the cron; one Razorpay refused, or closed unpaid, is sent again
      * from the row or from Razorpay's dashboard (ADR 0105).
      */
     payment_owed: (product: string, amount: string, link: LinkState) =>
-      `${product}, ${amount}; ${PAYMENT_LINK_STATES[link]}`,
+      `${product}, ${amount} · ${PAYMENT_LINK_STATES[link]}`,
     /** "Rs. 2,000 owed back on pay_Q1x; Razorpay refused the refund": refunded from Razorpay's dashboard. */
     payment_to_refund: (amount: string, payment: string, why: string) =>
-      `${amount} owed back on ${payment}; ${why === "refund_failed" ? "Razorpay failed the refund" : "Razorpay would not refund it"}`,
+      `${amount} to refund on ${payment} · ${why === "refund_failed" ? "refund failed" : "refund refused"}`,
     // A held grant whose fraud signals were not recorded.
     unknown: "Held for review",
   },
@@ -192,22 +192,22 @@ export const tasks = {
   owner: {
     /** For a screen reader, before the column's name: "Owner: Priya". */
     label: "Owner: ",
-    nobody: "nobody yet",
-    take: "Take it",
-    handBack: "Hand it back",
+    nobody: "unassigned",
+    take: "Take",
+    handBack: "Hand back",
     give: "Assign…",
     giveTo: "Assign to",
     /** The choice in the list that hands someone else's task back. */
-    giveNobody: "Nobody",
+    giveNobody: "No one",
     you: (email: string) => `${email} (you)`,
     save: "Assign",
     saving: "Saving…",
     cancel: "Cancel",
     errors: {
       not_permitted: NOT_PERMITTED,
-      not_found: "Someone has dealt with this task already. Reload to see the list as it stands.",
-      invalid_request: "Nobody has used the console lately with that e-mail, so the task cannot be theirs.",
-      unknown: "That did not save. Try again.",
+      not_found: "Already handled. Reload.",
+      invalid_request: "That person hasn't used the console recently.",
+      unknown: FAILED,
     } as Readonly<Record<string, string>>,
   },
   /**
@@ -215,17 +215,17 @@ export const tasks = {
    * (docs/decisions/0092-task-owners.md).
    */
   close: {
-    open: "Close without a follow-up",
-    label: "Why no visit is booked to finish it",
-    hint: "Required. Kept with the visit, under your name, and shown on the client's page.",
-    confirm: "Close it",
+    open: "Close without follow-up",
+    label: "Why no follow-up is needed",
+    hint: "Required. Shown on the client's page.",
+    confirm: "Close task",
     closing: "Closing…",
     cancel: "Cancel",
     errors: {
       not_permitted: NOT_PERMITTED,
-      not_found: "This task has left the list meanwhile: a visit was booked, or it was closed. Reload the page.",
-      invalid_request: "Say why no visit is booked, in a sentence or two.",
-      unknown: "That did not close. Try again.",
+      not_found: "Already booked or closed. Reload.",
+      invalid_request: "Give a reason.",
+      unknown: FAILED,
     } as Readonly<Record<string, string>>,
   },
   /**
@@ -238,25 +238,23 @@ export const tasks = {
     resend: "Send again",
     sending: "Sending…",
     outcomes: {
-      resent: "Texted to them again.",
-      sent: "Razorpay made the link and texted it to them.",
-      not_texted: "Not texted: this number is a test record that messages never reach.",
-      paid: "Already paid. The task leaves when the list is read again.",
-      refused: "Razorpay refused this link. Send one from Razorpay's dashboard.",
+      resent: "Sent again.",
+      sent: "Link created and sent.",
+      not_texted: "Not sent: this is a test number.",
+      paid: "Already paid.",
+      refused: "Razorpay refused this link. Send one from the Razorpay dashboard.",
     } as Readonly<Record<string, string>>,
     errors: {
       not_permitted: NOT_PERMITTED,
-      not_found: "This link has gone meanwhile. Reload the page to see the list now.",
-      unavailable: "Razorpay did not answer. Try again in a minute.",
-      unknown: "That did not send. Try again.",
+      not_found: "That link no longer exists. Reload.",
+      unavailable: "Razorpay isn't responding. Try again in a minute.",
+      unknown: FAILED,
     } as Readonly<Record<string, string>>,
   },
   /** The board draws no note, and the list has to say where the work is done. */
-  note:
-    "A task leaves this list when the thing itself is decided, where it is decided. A visit left partly done may " +
-    "also be closed here, with why.",
+  note: "Tasks clear when they're dealt with in their own section.",
   /** The board draws twelve tasks and no empty list. */
-  empty: "Nothing is waiting.",
+  empty: "All clear.",
 } as const;
 
 /**
@@ -266,36 +264,36 @@ export const tasks = {
 export const needsAHand = {
   title: "Needs a hand",
   kinds: {
-    message_failed: "A WhatsApp message did not go",
-    messages_unsent: "WhatsApp messages not sent within a day",
-    crm_lead: "A lead did not reach the CRM",
-    crm_erasure: "An erasure did not finish in the CRM",
-    crm_contact_update: "A CRM lead was not updated",
-    contact_sync: "A contact change did not go through",
-    deletion_waiting: "A deletion request is nearly due",
-    books_erasure: "An erasure did not finish in Books",
-    crm_contact_erasure: "An erasure did not finish on a CRM Contact",
-    cancel_refund_failed: "A refund failed",
-    no_show_refund_failed: "A refund failed",
-    no_show_credit_not_back: "A visit credit did not come back",
-    payment_link: "A payment link was refused",
-    payment_link_failed: "A payment link did not go",
-    invoice_draft: "An invoice is still a draft",
-    invoice_unpriced: "A visit has no price to invoice",
+    message_failed: "WhatsApp message failed",
+    messages_unsent: "WhatsApp messages stuck for a day",
+    crm_lead: "Lead didn't reach the CRM",
+    crm_erasure: "CRM erasure incomplete",
+    crm_contact_update: "CRM lead not updated",
+    contact_sync: "Contact change failed",
+    deletion_waiting: "Deletion request nearly due",
+    books_erasure: "Books erasure incomplete",
+    crm_contact_erasure: "CRM contact erasure incomplete",
+    cancel_refund_failed: "Refund failed",
+    no_show_refund_failed: "Refund failed",
+    no_show_credit_not_back: "Visit credit not returned",
+    payment_link: "Payment link refused",
+    payment_link_failed: "Payment link failed",
+    invoice_draft: "Invoice still a draft",
+    invoice_unpriced: "Visit has no price to invoice",
     invoice_refused: "Books refused an invoice",
-    invoice_failed: "An invoice did not reach Books",
-    books_unapplied: "A payment has nothing to set against",
-    razorpay_refund_unheard: "A refund came before its payment",
-    low_stock: "Stock is low",
-    technician_code_refused: "A technician was refused a login code",
-    whatsapp_bridge: "WhatsApp is disconnected",
-    login_codes_failing: "Login codes are failing",
-    cron_job: "A scheduled job keeps failing",
+    invoice_failed: "Invoice didn't reach Books",
+    books_unapplied: "Payment has nothing to apply to",
+    razorpay_refund_unheard: "Refund arrived before its payment",
+    low_stock: "Stock low",
+    technician_code_refused: "Technician login code refused",
+    whatsapp_bridge: "WhatsApp disconnected",
+    login_codes_failing: "Login codes failing",
+    cron_job: "Scheduled job failing",
   } as Readonly<Record<string, string>>,
   /** Books refusing or failing on a customer, a payment, its application or a refund. */
-  books: "Books needs a look",
+  books: "Books needs attention",
   /** Any other kind. */
-  other: "Something needs a look",
+  other: "Needs attention",
   /** "3 times since 21 Sep", or "Since 21 Sep" for one. */
   seen: (times: number, since: string) => (times === 1 ? `Since ${since}` : `${String(times)} times since ${since}`),
   open: "Open",
@@ -304,11 +302,11 @@ export const needsAHand = {
   done: "Mark done",
   closing: "Closing…",
   /** Under a failed message: the bridge may not have answered in time, and the client may have it already. */
-  messageHint: "If it says delivery unconfirmed, check with the client first: it may have arrived.",
-  shown: (shown: number, count: number) => `The ${String(shown)} longest open of ${String(count)}.`,
+  messageHint: "If delivery is unconfirmed, check with the client first. It may have arrived.",
+  shown: (shown: number, count: number) => `Oldest ${String(shown)} of ${String(count)}.`,
   errors: {
     not_permitted: NOT_PERMITTED,
-    not_found: "This was closed meanwhile. Reload the page to see the list now.",
-    unknown: "That did not go through. Try again.",
+    not_found: "Already closed. Reload.",
+    unknown: FAILED,
   } as Readonly<Record<string, string>>,
 } as const;

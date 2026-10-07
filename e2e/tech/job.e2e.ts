@@ -147,7 +147,7 @@ test("refuses a check-in from away, and says how far, with no way to close a no-
   await expect(page.getByText("Check-in failed")).toBeVisible();
   await expect(page.getByText("You are 1.4 km from the address.")).toBeVisible();
   await expect(
-    page.getByText(/^Get to the door and tap again\. Still refused at the door\? Ask ops to let you check in\./),
+    page.getByText(/^Go to the door and tap again\. Still refused\? Ask ops to let you check in\./),
   ).toBeVisible();
   await expect(page.getByRole("button", { name: "Close as no-show" })).toHaveCount(0);
   // The evidence chain draws the failure with its own outlined Try again, and no second gold "I have arrived" beside it.
@@ -187,7 +187,7 @@ test("asks before closing as a no-show, since ops may charge the client", async 
 
   const sheet = page.getByRole("dialog", { name: "Close as a no-show?" });
   await expect(sheet).toBeVisible();
-  await expect(sheet).toContainText("Ops may charge the client");
+  await expect(sheet).toContainText("The client may be charged");
   // It opens on the safe answer, so one stray Enter charges nobody.
   await expect(sheet.getByRole("button", { name: "Not yet" })).toBeFocused();
   expect(await axeViolations(page)).toEqual([]);
