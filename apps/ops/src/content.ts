@@ -2,7 +2,8 @@
 // component holds no copy of its own. Lines the design does not draw are
 // ours.
 //
-// One file a feature, in ./content/; a screen imports its words from here.
+// One file a feature, in ./content/; a screen imports its words from here. Activity, loaded only when opened, imports
+// its own from ./content/activity.ts, so its eighty lines are not in every page's first load.
 
 export * from "./content/common.ts";
 export * from "./content/shell.ts";

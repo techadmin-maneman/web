@@ -709,6 +709,11 @@
   text-align: right;
 }
 
+.historyActivity {
+  margin: var(--sp-14) 0 0;
+  font-size: var(--fs-14);
+}
+
 /* ---- Shared ------------------------------------------------------------- */
 
 .empty {

@@ -1,0 +1,90 @@
+/*
+ * Activity: the audit log as a table, under the fields that narrow it. The design draws no board for it, so nothing
+ * here is new: Areas' table, the console's fields, and a line of muted text beneath a name, as Tasks sets who owns one.
+ */
+
+/* This screen's own sizes, which nothing else draws (ADR 0077, as amended). */
+:root {
+  --local-activity-filter: 192px; /* a filter's narrowest: a date box with its picker */
+  --local-activity-when: 176px; /* "14 Nov 2026, 10:45 am" on one line */
+  --local-activity-record: 128px; /* "Client", "Visit", or a kind and the start of an ID */
+}
+
+.column {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-20);
+  max-width: var(--ops-list);
+}
+
+.intro {
+  max-width: var(--measure-column);
+  margin: 0;
+  font-size: var(--fs-15);
+  color: var(--text-muted);
+}
+
+/* ---- What it is narrowed to ------------------------------------------------ */
+
+.filters {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(var(--local-activity-filter), 1fr));
+  gap: var(--sp-12) var(--sp-16);
+  align-items: end;
+}
+
+.apply {
+  display: flex;
+  gap: var(--sp-8);
+}
+
+/* ---- The log --------------------------------------------------------------- */
+
+.table {
+  table-layout: fixed;
+}
+
+.when {
+  width: var(--local-activity-when);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.record {
+  width: var(--local-activity-record);
+}
+
+/* A name, then what they are and where they did it, a line beneath. */
+.stack {
+  vertical-align: top;
+}
+
+.stack > * {
+  display: block;
+}
+
+.who {
+  overflow-wrap: anywhere;
+}
+
+.sub {
+  font-size: var(--fs-13);
+  color: var(--text-muted);
+}
+
+/* A call's method and path, IDs only, which can run long. */
+.call {
+  font-size: var(--fs-13);
+  color: var(--text-muted);
+  overflow-wrap: anywhere;
+}
+
+.empty {
+  margin: 0;
+  font-size: var(--fs-15);
+  color: var(--text-muted);
+}
+
+.older {
+  align-self: flex-start;
+}

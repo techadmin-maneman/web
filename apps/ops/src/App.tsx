@@ -41,6 +41,9 @@ const SettingsScreen = lazy(() =>
 const PricesScreen = lazy(() => settingsPanels().then((module) => ({ default: module.PricesScreen })));
 const DiscountCodesScreen = lazy(() => settingsPanels().then((module) => ({ default: module.DiscountCodesScreen })));
 const StaffScreen = lazy(() => settingsPanels().then((module) => ({ default: module.StaffScreen })));
+const ActivityScreen = lazy(() =>
+  loadOrReload(() => import("./activity/ActivityScreen.tsx")).then((module) => ({ default: module.ActivityScreen })),
+);
 const AreasScreen = lazy(() =>
   loadOrReload(() => import("./areas/AreasScreen.tsx")).then((module) => ({ default: module.AreasScreen })),
 );
@@ -63,6 +66,7 @@ const SCREENS: Readonly<Record<PlainPage, ComponentType>> = {
   "discount-codes": DiscountCodesScreen,
   referrals: ReferralsScreen,
   staff: StaffScreen,
+  activity: ActivityScreen,
 };
 
 function Page({ route, mayCall }: { route: Route; mayCall: MayCall }) {

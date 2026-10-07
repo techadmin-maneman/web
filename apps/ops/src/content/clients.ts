@@ -746,5 +746,7 @@ export const clients = {
     /** The day ops order a piece against, with the piece it is for, as the Tasks board names one. */
     due: (date: string, piece: string) => `${date} · ${piece}`,
     noPiece: "No piece fitted, so no date",
+    /** To Activity, narrowed to this client: what they did, and everything done to their record. */
+    activity: "Everything done on this record",
   },
 } as const;

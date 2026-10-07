@@ -48,6 +48,7 @@ export const SECTIONS = [
   { page: "areas", path: "/areas", department: "growth", reads: "GET /api/waitlist" },
   { page: "settings", path: "/settings", department: "admin", reads: "GET /api/settings" },
   { page: "staff", path: "/staff", department: "admin", reads: "GET /api/staff" },
+  { page: "activity", path: "/activity", department: "admin", reads: "GET /api/activity" },
 ] as const satisfies readonly SectionShape[];
 
 export type Section = (typeof SECTIONS)[number];
@@ -184,6 +185,19 @@ export function dispatchPath(asked: Partial<DispatchAsked>): string {
   }
   const search = query.toString();
   return search === "" ? "/dispatch" : `/dispatch?${search}`;
+}
+
+/**
+ * Activity narrowed as asked, by the API's own names for each filter: "/activity" for the whole log,
+ * "/activity?person=…" for one client's whole record.
+ */
+export function activityPath(asked: Readonly<Record<string, string | undefined>>): string {
+  const query = new URLSearchParams();
+  for (const [name, value] of Object.entries(asked)) {
+    if (value !== undefined && value !== "") query.set(name, value);
+  }
+  const search = query.toString();
+  return search === "" ? "/activity" : `/activity?${search}`;
 }
 
 /** The query's value, where it is there and has the form asked for. */

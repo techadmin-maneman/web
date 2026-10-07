@@ -45,7 +45,7 @@ test("opens on Tasks, with the sections under their departments and what waits i
   ]);
   await expectNames(department("Finance"), ["Payments, 2 waiting, some overdue", "Prices", "Discount codes"]);
   await expectNames(department("Growth"), ["Referrals, 2 waiting, some overdue", "Areas"]);
-  await expectNames(department("Admin"), ["Settings", "Staff"]);
+  await expectNames(department("Admin"), ["Settings", "Staff", "Activity"]);
   await expect(department("Operations").first()).toHaveAttribute("aria-current", "page");
 });
 

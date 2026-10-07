@@ -184,12 +184,12 @@ this map, or when the map names something that no longer exists.
 ### Ops' own work
 
 - **Database work** (`src/domain/ops/`): `alerts`, `needs-a-hand`, `tasks`, `task-closures`, `task-owners`,
-  `grievances`, `ops-settings`, `site-notices`, `audit`, `staff`
+  `grievances`, `ops-settings`, `site-notices`, `audit`, `activity`, `staff`
 - **Rules** (`src/policy/`): `tasks`, `alerts`, `grievances`, `ops-settings`, `console-routes`, `access`,
   `decision-reasons`
 - **Routes** (`src/routes/`): `ops/alerts`, `ops/tasks`, `ops/grievances`, `ops/settings`, `ops/staff`,
-  `ops/whoami`, `ops/storage`
-- **Screens:** `apps/ops/src/tasks/`, `apps/ops/src/grievances/`, `apps/ops/src/settings/`
+  `ops/whoami`, `ops/storage`, `ops/activity`
+- **Screens:** `apps/ops/src/tasks/`, `apps/ops/src/grievances/`, `apps/ops/src/settings/`, `apps/ops/src/activity/`
 - **Tests:** `test/worker/ops/`, `e2e/ops/tasks.e2e.ts`, `e2e/ops/grievances.e2e.ts`, `e2e/ops/settings.e2e.ts`,
   `e2e/ops/staff.e2e.ts`
 
