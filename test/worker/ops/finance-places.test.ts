@@ -15,7 +15,7 @@ interface Client {
   readonly mobile: string;
   /** Where they live and are visited; null for a client nothing places in a city. */
   readonly pincode: string | null;
-  /** A visit he found nobody in, still to rule on. */
+  /** A visit they found nobody in, still to rule on. */
   readonly missed: string;
   readonly undecided: string;
   /** A visit charged as a no-show today, which the client disputes. */

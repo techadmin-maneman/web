@@ -1,5 +1,5 @@
-// What a technician's phone keeps when ops switch him off (apps/tech/src/store/set-aside.ts): the work it has not
-// sent, for seven days and for him alone, and nothing of a client's beyond that work.
+// What a technician's phone keeps when ops switch them off (apps/tech/src/store/set-aside.ts): the work it has not
+// sent, for seven days and for them alone, and nothing of a client's beyond that work.
 
 import "fake-indexeddb/auto";
 import { afterEach, describe, expect, it } from "vitest";

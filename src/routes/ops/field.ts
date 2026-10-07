@@ -5,9 +5,9 @@
 //   POST /api/no-shows/:id/decision                      charge or waive, from the evidence
 //   GET  /api/clients/:id/pieces                         the pieces tab
 //   GET  /api/technicians                                who works, their phones and leave, and who is switched off
-//   POST /api/technicians/:id/devices/:device/revoke     revoke a phone; it drops its cached jobs, and he is stopped signing in
-//   POST /api/technicians/:id/allow-sign-in              let him sign in again after a revoke
-//   GET  /api/technicians/:id/leave                      his leave still to end, each with the jobs booked on it
+//   POST /api/technicians/:id/devices/:device/revoke     revoke a phone; it drops its cached jobs, and they are stopped signing in
+//   POST /api/technicians/:id/allow-sign-in              let them sign in again after a revoke
+//   GET  /api/technicians/:id/leave                      their leave still to end, each with the jobs booked on it
 //   POST /api/technicians/:id/leave                      record leave; the board and booking both refuse those days
 //   POST /api/technicians/:id/leave/:leave/cancel        take it back
 

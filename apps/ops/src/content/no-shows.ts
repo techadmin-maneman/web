@@ -103,7 +103,7 @@ export const noShows = {
     },
     /**
      * The board writes "240 m · over 200 m fence", against the radius in force
-     * when he checked in; a distance inside it is ours.
+     * when they checked in; a distance inside it is ours.
      */
     distance: (metres: number, radius: number) =>
       metres > radius
@@ -115,7 +115,7 @@ export const noShows = {
      * charge a client on these facts and nothing was measured here at all.
      */
     unmeasured: "Not measured · the address has no location",
-    /** Ops let him check in past the fence for this visit, from the dispatch board, with their reason. */
+    /** Ops let them check in past the fence for this visit, from the dispatch board, with their reason. */
     letIn: (reason: string | null) => (reason === null ? "ops let him check in" : `ops let him check in: ${reason}`),
     /**
      * What became of the reminder, dated, since it goes the evening before. A

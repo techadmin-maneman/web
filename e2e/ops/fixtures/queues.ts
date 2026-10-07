@@ -7,7 +7,7 @@ import { CLIENT } from "./clients.ts";
 
 /**
  * The board's own case: Vikram's visit was booked for 11:30, the technician
- * checked in at 11:31, 240 m out against a 200 m fence, the WhatsApp was delivered at 11:32, and he
+ * checked in at 11:31, 240 m out against a 200 m fence, the WhatsApp was delivered at 11:32, and they
  * closed the job at 11:47. The second is a client who never agreed to WhatsApp
  * about visits, so no reminder went; its check-in reached us twenty minutes
  * after the phone's own time. Each is due two days after it opened.
@@ -79,7 +79,7 @@ export const NO_SHOW_UNMEASURED = {
   cases: [{ ...VIKRAMS_CASE, distance_m: null }],
 } satisfies OpsReply<"/api/no-shows">;
 
-/** What charging Vikram's visit would do: his service visit was paid Rs. 2,360, and a no-show keeps all of it. */
+/** What charging Vikram's visit would do: their service visit was paid Rs. 2,360, and a no-show keeps all of it. */
 export const CHARGE_PREVIEW = {
   paid: 236_000,
   kept: 236_000,
@@ -145,8 +145,8 @@ export const DAY_MONEY = {
 } satisfies OpsReply<"/api/payments">;
 
 /**
- * The Payments page's second card: Vikram disputes the charge on a visit he was not home
- * for, 240 m out against a 200 m fence, the one fact that argues for him.
+ * The Payments page's second card: Vikram disputes the charge on a visit they were not home
+ * for, 240 m out against a 200 m fence, the one fact that argues for them.
  */
 export const DISPUTES = {
   disputes: [

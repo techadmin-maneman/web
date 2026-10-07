@@ -195,7 +195,7 @@ test("records a call about a move from its row, and opens each of the board's ta
   });
 
   const vikram = row(page, "Vikram Sethi");
-  // The row says why he was not told, so the call starts from the right place.
+  // The row says why they were not told, so the call starts from the right place.
   await expect(vikram).toContainText("; has not agreed to WhatsApp");
   await expect(vikram.getByRole("link", { name: "Call +91 98100 04418 · Vikram Sethi" })).toHaveAttribute(
     "href",

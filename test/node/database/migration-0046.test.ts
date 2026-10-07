@@ -11,7 +11,7 @@ const THIS = migrationNamed("0046_");
 
 const AT = "2026-09-21T06:30:00.000Z";
 
-/** Every migration before this one, with four technicians, a job on the tester's, and his phone. */
+/** Every migration before this one, with four technicians, a job on the tester's, and their phone. */
 function before(): DatabaseSync {
   const db = databaseBefore(THIS);
   db.exec(`

@@ -78,7 +78,7 @@ const stepIn = (jobId: string, kind: EventKind, state: EventState): IDBValidKey 
  * A step already waiting is not queued a second time: a second tap on a gloved
  * screen, or the screen opened twice, sends it once. `startsAt` is the job's
  * start as the card said when the technician acted, which the API checks
- * against the one it holds; once he has checked in, the start the card said
+ * against the one it holds; once they have checked in, the start the card said
  * then.
  */
 export async function queue<K extends EventKind>(
@@ -230,7 +230,7 @@ async function readAgainIfMoved(jobId: string, fields: readonly string[]): Promi
 
 /**
  * A write the API refused: its job stops there for the technician to put right, and the refusal is reported, since
- * nothing else would tell anyone but him.
+ * nothing else would tell anyone but them.
  */
 async function giveUp(event: Queued, refusal: Refusal): Promise<void> {
   const { answer } = refusal;

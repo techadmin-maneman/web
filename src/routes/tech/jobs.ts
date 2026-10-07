@@ -1,4 +1,4 @@
-// The technician's day and the job he is on (src/policy/job-visibility.ts,
+// The technician's day and the job they are on (src/policy/job-visibility.ts,
 // in-job-steps.ts, check-in.ts, no-show.ts):
 //
 //   GET  /api/tech/jobs?date=                    the day's jobs; today and tomorrow in full

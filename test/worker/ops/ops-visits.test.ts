@@ -274,7 +274,7 @@ describe("GET /api/visits/availability", () => {
   const look = (query: string) => request(opsApp(), `/api/visits/availability?${query}`);
 
   it("offers each window's free technicians, never the one who took the client's last visit, with how it is paid", async () => {
-    // Imran fitted Rohit, so he does not take Rohit's next visit (docs/decisions/0111).
+    // Imran fitted Rohit, so they do not take Rohit's next visit (docs/decisions/0111).
     await rohit("fitted");
     await visit(null, "service", "scheduled", "2026-09-22T03:30:00.000Z", SANDEEP); // Tuesday, 9 am
     const answer = await look(`client=${ROHIT}&kind=service`);

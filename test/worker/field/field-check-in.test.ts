@@ -232,7 +232,7 @@ describe("the arrival WhatsApp", () => {
   });
 });
 
-// A check-in is measured and recorded only once it may land: the job is his, today's, and as his phone holds it. The
+// A check-in is measured and recorded only once it may land: the job is theirs, today's, and as their phone holds it. The
 // no-show's wait runs from the job's own technician's check-in, and a check-in sent again is answered as it landed.
 describe("a check-in, guarded before it is measured", () => {
   const CHECK_IN = `/api/tech/jobs/${TODAY_JOB}/checkin`;

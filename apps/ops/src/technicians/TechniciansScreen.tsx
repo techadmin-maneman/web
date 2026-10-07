@@ -4,7 +4,7 @@
 // what a technician is trained for, so Leave stands there instead and a line
 // beneath the table says why (docs/open-points.md, item 59).
 //
-// A technician's name opens his own page (./TechnicianScreen.tsx): his details,
+// A technician's name opens their own page (./TechnicianScreen.tsx): their details,
 // week, leave, phones and kit, which the board's rows have no room for. Ops add
 // technicians here (./TechnicianForms.tsx); those switched off are listed
 // beneath the table.

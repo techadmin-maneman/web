@@ -34,7 +34,7 @@ const ROWS = [
   `INSERT INTO technicians (id, fsm_id, name, initials, active, updated_at, city) VALUES
      ('t-gurgaon', 't-gurgaon', 'Imran Qureshi', 'IQ', 1, '${AT}', 'Gurgaon'),
      ('t-none', 't-none', 'Sameer Bhatt', 'SB', 1, '${AT}', NULL)`,
-  // Arjun's visit at his old Delhi address; Rohit's latest in Noida, after one in Delhi; Zoya's with no pincode.
+  // Arjun's visit at their old Delhi address; Rohit's latest in Noida, after one in Delhi; Zoya's with no pincode.
   `INSERT INTO appointments (id, fsm_id, person_id, type, window_start, window_end, technician_id, status, synced_at,
      service_pincode) VALUES
      ('v-delhi', 'v-delhi', 'arjun', 'service', '2026-09-10T03:30:00.000Z', '2026-09-10T05:00:00.000Z', 't-gurgaon',
@@ -45,14 +45,14 @@ const ROWS = [
       'completed', '${AT}', '${NOIDA}'),
      ('v-none', 'v-none', 'zoya', 'consultation', '2026-09-16T03:30:00.000Z', '2026-09-16T04:30:00.000Z', 't-gurgaon',
       'completed', '${AT}', NULL)`,
-  // Rohit's Delhi waitlist entry is older than his visits, which say where he is.
+  // Rohit's Delhi waitlist entry is older than their visits, which say where they are.
   `INSERT INTO waitlist_entries (id, pincode, person_id, contact_consent_at, created_at) VALUES
      ('w-meera', '${DELHI}', 'meera', '${AT}', '${AT}'),
      ('w-rohit', '${DELHI}', 'rohit', '${EARLIER}', '${EARLIER}'),
      ('w-neha', '${GURGAON}', 'neha', '${AT}', '${AT}')`,
   `INSERT INTO consultation_requests (id, person_id, pincode, requested_date, requested_window, created_at) VALUES
      ('ask-kabir', 'kabir', '${NOIDA}', '2026-10-05', 'morning', '${AT}')`,
-  // Arjun moving his Delhi visit: the hold names no pincode of its own.
+  // Arjun moving their Delhi visit: the hold names no pincode of its own.
   `INSERT INTO slot_holds (id, person_id, type, date, window_label, technician_id, start_unit, amount, amount_ex_gst,
      gst_percent, state, expires_at, created_at, updated_at, razorpay_order_id, pincode, moves_appointment_id) VALUES
      ('h-kabir', 'kabir', 'consultation', '2026-10-05', 'morning', 't-gurgaon', 0, 50000, 42373, 18, 'held', '${AT}',

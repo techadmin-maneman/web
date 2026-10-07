@@ -78,10 +78,10 @@ async function takenFor(db: D1Database, jobId: string, technicianId: string): Pr
  * a row of consumables_used for each consumable, with what the job's service
  * expected and what one cost that day, once for each event whatever the
  * consumable is called when the event is read again, and the movements out of
- * his kit.
+ * their kit.
  *
  * It reads the job's latest step, not the one just sent, so a replay of an
- * older step changes nothing; and it writes only what differs from what his
+ * older step changes nothing; and it writes only what differs from what their
  * kit's rows for the job already took, so the same step, however often it
  * lands, moves stock once, and a later step corrects by the difference.
  *
@@ -89,7 +89,7 @@ async function takenFor(db: D1Database, jobId: string, technicianId: string): Pr
  * latest. A newer step landing between the read and the write is recorded by
  * its own request, from rows that do not yet hold this one's, so writing this
  * one's too would take the job's use twice.
- * Returns whether his kit went down.
+ * Returns whether their kit went down.
  */
 export async function recordJobUse(
   db: D1Database,

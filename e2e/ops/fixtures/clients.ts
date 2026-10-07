@@ -33,7 +33,7 @@ export const RECORD = {
   },
   credits: { visits: 2, earliest_expiry: "2028-01-03T06:00:00.000Z" },
   visits: {
-    // The Saturday visit he has booked, which the page once showed nowhere.
+    // The Saturday visit they have booked, which the page once showed nowhere.
     upcoming: [
       {
         id: "33000000-0000-4000-8000-000000000002",
@@ -105,7 +105,7 @@ export const RECORD = {
       discount_code: null,
     },
   ],
-  /** The link that payment came by, and one ops sent for his next visit, still to be paid. */
+  /** The link that payment came by, and one ops sent for their next visit, still to be paid. */
   payment_links: [
     {
       id: "35000000-0000-4000-8000-000000000002",
@@ -147,7 +147,7 @@ export const RECORD = {
     spend: 4_956_000,
     replacement_due: { on: "2028-03-01", month: "2028-03", piece_code: "MM-STD-4417-C" },
   },
-  /** He came through a friend's invite, whose 3 visits were given at his first fit. */
+  /** They came through a friend's invite, whose 3 visits were given at their first fit. */
   invite: {
     code: "VSAB23",
     referrer: { id: "22000000-0000-4000-8000-000000000009", name: "Vikram Sethi" },
@@ -298,7 +298,7 @@ export const NO_HAIR_PROFILE = {
   products: PRODUCTS,
 } satisfies HairProfilePage;
 
-/** Rohit's fit spec as Imran took it at his consultation, and his history. */
+/** Rohit's fit spec as Imran took it at their consultation, and their history. */
 const AT_CONSULTATION = {
   id: "44000000-0000-4000-8000-000000000001",
   recorded_at: "2027-09-21T05:30:00.000Z",

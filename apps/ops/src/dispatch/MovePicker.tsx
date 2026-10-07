@@ -3,7 +3,7 @@
 // (docs/decisions/0034-clash-check.md), so this panel sends nothing until a
 // reason is chosen, and the server may still refuse what it sends.
 //
-// "The client's payment carries over and he is never charged for a move ops
+// "The client's payment carries over and they are never charged for a move ops
 // make, including inside 24 hours" (src/policy/dispatch.ts), so no amount is
 // shown here, and inside the notice the visit was sold under the panel says so
 // in the board's own words, with that notice where the board writes 24 hours.
@@ -12,9 +12,9 @@
 // has nothing to carry.
 //
 // The board's line promises a WhatsApp message. One goes only to a client who
-// agreed to WhatsApp about his visits, so for any other the panel says to call
-// him, with his number; and a change of technician alone, which leaves his
-// window as it was, tells him nothing (docs/decisions/0069-dispatch-under-concurrency.md).
+// agreed to WhatsApp about their visits, so for any other the panel says to call
+// them, with their number; and a change of technician alone, which leaves their
+// window as it was, tells them nothing (docs/decisions/0069-dispatch-under-concurrency.md).
 
 import { REASON_MAX_CHARS } from "../../../../src/policy/decision-reasons.ts";
 import { classes } from "@maneman/ui/classes";

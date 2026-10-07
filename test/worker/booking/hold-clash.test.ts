@@ -1,4 +1,4 @@
-// A hold moves on to the next technician only when another hold took his time (src/domain/booking/hold-slot.ts, holdSlot).
+// A hold moves on to the next technician only when another hold took their time (src/domain/booking/hold-slot.ts, holdSlot).
 // NOW is Monday 21 September 2026, 12 noon in India. Every name and number here is made up.
 
 import { env } from "cloudflare:workers";

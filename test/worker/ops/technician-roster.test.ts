@@ -284,7 +284,7 @@ describe("switching a technician off", () => {
     expect(answer.status).toBe(200);
     expect(await one("SELECT active FROM technicians WHERE id = ?1", IMRAN)).toEqual({ active: 0 });
     expect(await one("SELECT revoked_at FROM sessions WHERE subject_id = ?1", IMRAN)).toEqual({ revoked_at: AT });
-    // The phone is not revoked: what it has not sent is kept for him, should he be switched back on.
+    // The phone is not revoked: what it has not sent is kept for them, should they be switched back on.
     expect(await one("SELECT revoked_at FROM technician_devices WHERE technician_id = ?1", IMRAN)).toEqual({
       revoked_at: null,
     });
@@ -428,7 +428,7 @@ describe("the roster", () => {
 });
 
 describe("the dispatch board", () => {
-  // A visit can still be on a technician who was switched off: one booked onto him a moment before. It is nobody's job, so it waits in the tray, saying whose it was.
+  // A visit can still be on a technician who was switched off: one booked onto them a moment before. It is nobody's job, so it waits in the tray, saying whose it was.
   it("puts a visit still on a switched-off technician in the tray, and lets ops give it to another", async () => {
     await visit(NEXT_WEEK, { start: "2026-09-22T04:30:00.000Z" });
     await env.DB.prepare("UPDATE technicians SET active = 0 WHERE id = ?1").bind(IMRAN).run();

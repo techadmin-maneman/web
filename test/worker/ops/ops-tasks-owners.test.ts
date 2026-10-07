@@ -176,7 +176,7 @@ describe("PUT /api/tasks/{group}/{id}/owner", () => {
     expect((await tasks()).staff).toEqual([ME, PRIYA]);
     expect((await ownerOf("grievance", GRIEVANCE, "anil@maneman.in")).status).toBe(400);
 
-    // Given to Anil while he was about, the task still says so, and may be handed on or back.
+    // Given to Anil while they were about, the task still says so, and may be handed on or back.
     await env.DB.prepare(
       `INSERT INTO task_owners (task_group, subject_id, episode, owner, assigned_by, assigned_at)
        VALUES ('grievance', ?1, '', 'anil@maneman.in', 'ops@localhost', '2026-06-20T06:00:00.000Z')`,

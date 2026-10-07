@@ -107,7 +107,7 @@ beforeEach(async () => {
       `INSERT INTO grievances (id, person_id, text, state, created_at)
        VALUES (?1, ?2, 'Why do you keep my photographs?', 'open', '2026-09-10T06:00:00.000Z')`,
     ).bind(GRIEVANCE, ROHIT),
-    // Vikram's first fit, charged as a no-show; he disputed the charge on the 20th.
+    // Vikram's first fit, charged as a no-show; they disputed the charge on the 20th.
     env.DB.prepare(
       `INSERT INTO checkins (id, appointment_id, technician_id, at, lat, lng, distance_m, radius_m, passed, created_at)
        VALUES ('checkin-2', ?1, 't1', '2026-09-16T03:40:00.000Z', 28.4, 77.0, 40, 200, 1, '2026-09-16T03:40:00.000Z')`,

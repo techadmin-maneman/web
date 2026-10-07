@@ -8,7 +8,7 @@
 //
 // Each movement is a row of the ledger, with the Access identity behind it,
 // written with its audit entry in one batch (ADR 0031); what a place holds is
-// the sum of its rows. A job's use comes out of the technician's kit as his
+// the sum of its rows. A job's use comes out of the technician's kit as their
 // step lands (src/routes/tech/jobs.ts). A place that falls to its reorder level
 // raises one alert, and the table marks it low. Every write answers the whole
 // of GET's answer, so the screen follows it without reading again.
@@ -38,7 +38,7 @@ import { json } from "../../http/openapi.ts";
 import { reachOf, routeReach } from "../../http/staff-access.ts";
 import { indiaDate } from "../../lib/india-time.ts";
 
-/** A place: a technician's kit by his ID, or the central store as null. */
+/** A place: a technician's kit by their ID, or the central store as null. */
 const PlaceId = z
   .union([z.uuid(), z.null()])
   .openapi({ description: "A technician's kit, by the technician's ID; null for the central store." });

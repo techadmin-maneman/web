@@ -365,7 +365,7 @@ test("walks the six steps of a service visit and closes it out (boards B1 to B4)
   }
   await page.getByRole("button", { name: "Done" }).click();
 
-  // Step 6: the outcome, with nothing chosen for him.
+  // Step 6: the outcome, with nothing chosen for them.
   await expect(page.getByRole("heading", { level: 1, name: "Outcome" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Choose Done or Partial" })).toBeDisabled();
   await page.getByRole("button", { name: "Partial · pick a reason" }).click();

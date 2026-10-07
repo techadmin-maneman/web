@@ -46,7 +46,7 @@ export function registerTechPieces(app: App): void {
     const found = await pieceWithOwner(c.env.DB, code.trim().toUpperCase());
     if (found === null) return refuse(c, "not_found");
 
-    // Only a job of his own says whose the piece is: any other reads as none.
+    // Only a job of their own says whose the piece is: any other reads as none.
     const client =
       job === undefined
         ? null

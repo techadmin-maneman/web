@@ -6,7 +6,7 @@
 // page is titled from it. Four sections have pages beneath them:
 //
 //   /clients/:id/:tab       a client's page, a tab at a time
-//   /technicians/:id/:tab   a technician's page: his week, leave, phones and kit
+//   /technicians/:id/:tab   a technician's page: their week, leave, phones and kit
 //   /areas/:tab             who waits where, and the pincodes we serve
 //   /settings/:tab          the rules, blackout days, consumables and the job sheet
 //
@@ -66,7 +66,7 @@ export const CLIENT_TABS = ["visits", "pieces", "payments", "referrals", "consen
 export type ClientTab = (typeof CLIENT_TABS)[number];
 const OPENING_TAB: ClientTab = "visits";
 
-/** A technician's page, a tab at a time, in its order. It opens on his week. */
+/** A technician's page, a tab at a time, in its order. It opens on their week. */
 export const TECHNICIAN_TABS = ["week", "leave", "phones", "kit"] as const;
 export type TechnicianTab = (typeof TECHNICIAN_TABS)[number];
 

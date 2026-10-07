@@ -6,7 +6,7 @@
 // What these hold: what a place holds is the sum of its rows; a delivery, a
 // transfer, a count and a write-off each write what they say, with the Access
 // identity behind them; a job's use comes out of the technician's kit once,
-// however often his step is replayed, and a later step corrects it by the
+// however often their step is replayed, and a later step corrects it by the
 // difference; the old step by names is still taken; a count and a job's use,
 // or two of a job's steps, landing together, each count once; and a kit that
 // falls to its level raises one alert, which closes once it is stocked again.

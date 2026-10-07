@@ -77,7 +77,7 @@ export async function open(page: Page, changed: Answers = {}): Promise<void> {
   await expect(page.getByRole("heading", { level: 1, name: "Technicians" })).toBeVisible();
 }
 
-/** Opens a technician's page from the roster by his name, on the tab named, or on his week. */
+/** Opens a technician's page from the roster by their name, on the tab named, or on their week. */
 export async function pageOf(page: Page, name: string, tab?: string) {
   await page.getByRole("link", { name, exact: true }).click();
   await expect(page.getByRole("heading", { level: 2, name })).toBeVisible();

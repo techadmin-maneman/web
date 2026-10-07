@@ -358,7 +358,7 @@ export const notHome = {
     // The board draws no no-show refused.
     early: "Our clock says the wait hasn’t run out yet. Try again in a minute.",
     close: "Close as no-show",
-    // The board's "Rohit messaged on WhatsApp" reads as if the client wrote, so the receipt names him
+    // The board's "Rohit messaged on WhatsApp" reads as if the client wrote, so the receipt names them
     // as who it went to. The board draws only the delivered one.
     delivered: (who: string, time: string) => `WhatsApp to ${who}: delivered ${time}.`,
     notDelivered: (who: string) => `WhatsApp to ${who}: sent, not delivered.`,

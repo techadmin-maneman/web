@@ -18,7 +18,7 @@ import styles from "./stock.module.css";
 export const KINDS = ["delivery", "transfer", "count", "write_off"] as const;
 export type Kind = (typeof KINDS)[number];
 
-/** A place in a select: the central store, or a technician's kit by his ID. */
+/** A place in a select: the central store, or a technician's kit by their ID. */
 const CENTRAL = "central";
 const placeOf = (value: string): string | null => (value === CENTRAL ? null : value);
 

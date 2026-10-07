@@ -34,7 +34,7 @@ export const AUDIT_ACTIONS = [
   "grievance.raise",
   "grievance.resolve",
   // Field operations (docs/decisions/0052-technician-sessions.md): ops ruling on a
-  // no-show from its evidence, ops revoking the phone a technician works from, and letting him sign in again after.
+  // no-show from its evidence, ops revoking the phone a technician works from, and letting them sign in again after.
   "no_show.decide",
   "technician_device.revoke",
   "technician.allow_sign_in",
@@ -45,7 +45,7 @@ export const AUDIT_ACTIONS = [
   // and to the dispatch board alike (ADR 0062).
   "technician.leave",
   "technician.leave_cancelled",
-  // Ops adding a technician, changing his name, number or zone, and switching him off or back on.
+  // Ops adding a technician, changing their name, number or zone, and switching them off or back on.
   "technician.add",
   "technician.change",
   "technician.deactivate",
@@ -76,9 +76,9 @@ export const AUDIT_ACTIONS = [
   "service.restore",
   // Ops putting a client's service-visit credits right by hand (docs/decisions/0068-a-paid-hold-is-kept.md).
   "credit.adjust",
-  // Ops calling a client about a move he had not heard of (docs/decisions/0069-dispatch-under-concurrency.md).
+  // Ops calling a client about a move they had not heard of (docs/decisions/0069-dispatch-under-concurrency.md).
   "dispatch.client_told",
-  // Ops moving a visit the technician had checked in at, which clears his check-in.
+  // Ops moving a visit the technician had checked in at, which clears their check-in.
   "dispatch.check_in_cleared",
   // The consumables ops keep and what each service is expected to use, the job sheet the technician
   // app reads, and the stock in each kit and the central store (docs/decisions/0087-consumables-and-stock.md).

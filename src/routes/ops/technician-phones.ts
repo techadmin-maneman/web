@@ -1,4 +1,4 @@
-// A technician's phones (./field.ts): one revoked, which drops its cached jobs and stops him signing in, and his
+// A technician's phones (./field.ts): one revoked, which drops its cached jobs and stops them signing in, and their
 // sign-in allowed again after a revoke.
 
 import { createRoute, z } from "@hono/zod-openapi";

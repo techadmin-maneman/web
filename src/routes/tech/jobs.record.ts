@@ -33,7 +33,7 @@ export type Ctx = Context<AppEnv>;
 
 /**
  * The job a write names, while it is or was this technician's: one moved to someone else is answered `superseded`,
- * with what changed, so the phone can tell him. Any other job is not found, and nothing of it is answered.
+ * with what changed, so the phone can tell them. Any other job is not found, and nothing of it is answered.
  */
 export async function namedJob(c: Ctx, id: string): Promise<WorkableJob | null> {
   const job = await workableJob(c.env.DB, id);

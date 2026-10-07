@@ -84,7 +84,7 @@ const untoldTasks = async () => {
 };
 
 // "The client has been messaged" was shown after every move, while the
-// message went only to a client who had agreed to WhatsApp about his visits.
+// message went only to a client who had agreed to WhatsApp about their visits.
 describe("telling the client of a move", () => {
   beforeEach(async () => {
     await insertJob(A, { type: "service", start: TUESDAY["09:00"], technician: IMRAN });

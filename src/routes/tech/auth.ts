@@ -5,8 +5,8 @@
 //   GET  /api/tech/me           who is signed in, and on which phone
 //
 // "Mobile number plus a one-time code, the same flow as clients but a separate
-// role." A technician is recognised only while ops have him switched on. A
-// number that is not his gets the same answer as one that is, and no code
+// role." A technician is recognised only while ops have them switched on. A
+// number that is not their gets the same answer as one that is, and no code
 // opens it.
 //
 // The phone sends its own ID, which it keeps in its storage: the session is
@@ -40,7 +40,7 @@ import { INDIAN_MOBILE_PATTERN, toE164 } from "../../lib/mobile.ts";
 import { CODE_TEXT, newLoginCode } from "../../policy/one-time-code.ts";
 import { isStagingTestName } from "../../lib/test-names.ts";
 
-/** Why an active technician was refused a code, and what he can do, in ops' words. */
+/** Why an active technician was refused a code, and what they can do, in ops' words. */
 function refusalReason(refusal: Exclude<CodeGate, "open">, login: LoginSettings): string {
   if (refusal === "number_spent") {
     return (
@@ -61,7 +61,7 @@ function refusalReason(refusal: Exclude<CodeGate, "open">, login: LoginSettings)
 }
 
 /**
- * Ops' alert that an active technician was refused a code: raised when he is, and closed once he is given one.
+ * Ops' alert that an active technician was refused a code: raised when they are, and closed once they are given one.
  * Kept after the response, so a technician's number is answered no slower than anyone else's.
  */
 async function keepRefusalAlert(c: Context<AppEnv>, technicianId: string, asked: CodeGate): Promise<void> {
@@ -246,7 +246,7 @@ export function registerTechAuth(app: App): void {
       .prepare("SELECT name, sign_in_stopped_at FROM technicians WHERE id = ?1")
       .bind(verification.technicianId)
       .first<{ name: string; sign_in_stopped_at: string | null }>();
-    // A revoke sticks: the code reaches whoever has his WhatsApp, a lost phone included.
+    // A revoke sticks: the code reaches whoever has their WhatsApp, a lost phone included.
     if (technician !== null && technician.sign_in_stopped_at !== null) {
       log.warn("technician_sign_in_stopped", { technician_id: verification.technicianId });
       return refuse(c, "sign_in_stopped");
@@ -266,7 +266,7 @@ export function registerTechAuth(app: App): void {
   registerTechSession(app);
 }
 
-/** The technician signed in: signing out, and who he is. */
+/** The technician signed in: signing out, and who they are. */
 function registerTechSession(app: App): void {
   app.openapi(logoutRoute, async (c) => {
     const session = technicianOf(c);

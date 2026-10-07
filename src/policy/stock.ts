@@ -16,7 +16,7 @@ export const countDifference = (counted: number, held: number): number => counte
 
 /**
  * The movements a job's use still needs, by consumable: what the technician's
- * latest step says he used, less what his kit's rows for the job already took.
+ * latest step says they used, less what their kit's rows for the job already took.
  * The first step takes the whole amount; a later step corrects by the
  * difference; the same step again, however often it is replayed, takes
  * nothing more. Negative is taken out of the kit, positive given back.

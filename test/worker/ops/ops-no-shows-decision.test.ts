@@ -70,7 +70,7 @@ beforeEach(async () => {
     env.DB.prepare(
       "INSERT INTO technicians (id, fsm_id, name, initials, active, updated_at) VALUES (?1, 'fsm-t1', 'Imran Qureshi', 'IQ', 1, ?2)",
     ).bind(TECHNICIAN, NOW.toISOString()),
-    // Booked for 9 am on Saturday the 19th; he checked in at 2:08 pm by his phone, which reached us at 2:29.
+    // Booked for 9 am on Saturday the 19th; they checked in at 2:08 pm by their phone, which reached us at 2:29.
     env.DB.prepare(
       `INSERT INTO appointments (id, fsm_id, person_id, type, status, fsm_status, window_start, window_end,
          technician_id, fsm_modified_at, synced_at)

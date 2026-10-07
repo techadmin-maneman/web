@@ -189,7 +189,7 @@ const RECORD = {
   invite: null,
   /*
    * The board's own client, counted from the visits and ledger the client app's
-   * boards draw of him: a first fit, two service visits and a replacement, and
+   * boards draw of them: a first fit, two service visits and a replacement, and
    * the piece B1's table still has in wear, falling due in the month the page
    * head writes.
    */

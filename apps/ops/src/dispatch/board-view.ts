@@ -22,7 +22,7 @@ const includes = (word: string | null, wanted: string) => word?.toLowerCase().in
 const blockAnswersTo = (block: Block, wanted: string): boolean =>
   [block.client, block.person?.name ?? null, block.sector, block.pincode].some((word) => includes(word, wanted));
 
-/** Whether a row answers to what ops searched for: the technician's name or zone, or a visit on one of his days. */
+/** Whether a row answers to what ops searched for: the technician's name or zone, or a visit on one of their days. */
 export function answersTo(row: BoardRow, find: string): boolean {
   const wanted = find.trim().toLowerCase();
   if (wanted === "") return true;

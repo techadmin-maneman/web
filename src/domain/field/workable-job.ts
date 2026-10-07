@@ -4,7 +4,7 @@ import type { VisitType } from "../../config/visit-types.ts";
 import type { AppointmentStatus } from "../visits/visit-status.ts";
 import type { OneVisitState } from "../../policy/one-visit.ts";
 
-/** The job the technician may write to now: his own, live, and of a type we know. */
+/** The job the technician may write to now: their own, live, and of a type we know. */
 export interface WorkableJob {
   readonly id: string;
   readonly personId: string | null;

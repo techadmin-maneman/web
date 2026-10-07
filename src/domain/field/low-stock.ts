@@ -40,7 +40,7 @@ const lowStockKey = (place: Place) => (place === null ? "low_stock:central" : `l
  * After a movement: one alert for a place that went down and is low, naming
  * all it is low on; the place's alert closed once it is low on nothing. A
  * place that only gained stock is told nothing new. The message carries the
- * technician's ID, never his name (src/domain/ops/alerts.ts).
+ * technician's ID, never their name (src/domain/ops/alerts.ts).
  */
 export async function tellOfLowStock(
   db: D1Database,

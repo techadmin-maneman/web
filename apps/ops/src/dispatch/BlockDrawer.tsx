@@ -5,12 +5,12 @@
 // What the board draws and a block does not carry (the client's tier, access
 // note, payment and visit count) is on the client's page, one tap away
 // (docs/fidelity-method.md). A move the client has not heard of is named here,
-// with his number, and closed here once ops have called him.
+// with their number, and closed here once ops have called them.
 //
 // The drawer is also the keyboard way into a move: the design moves a block by
 // dragging it, and everything the drag does can be done from here. A visit the
-// technician has started has no move, and the drawer says why; one he has only
-// checked in at moves from here alone, after a warning that it clears his
+// technician has started has no move, and the drawer says why; one they have only
+// checked in at moves from here alone, after a warning that it clears their
 // check-in. A visit still ahead can be cancelled for the client here, and one
 // whose time has come closed by hand, each in its own panel.
 
@@ -33,18 +33,18 @@ import { firstNameOf } from "../../../../src/lib/names.ts";
 interface Props {
   readonly job: BlockJob;
   readonly onMove: (() => void) | null;
-  /** Takes up a visit the technician has checked in at, to move once his check-in is cleared. */
+  /** Takes up a visit the technician has checked in at, to move once their check-in is cleared. */
   readonly onMoveAnyway: (() => void) | null;
   readonly onTold: ((moveId: string) => void) | null;
   /** The change the visit takes now, if their access reaches it: cancelled ahead, or closed by hand after. */
   readonly change: VisitChange | null;
   readonly onChange: (change: VisitChange) => void;
-  /** Lets the technician check in past the geofence, when the visit is today's and he has not. */
+  /** Lets the technician check in past the geofence, when the visit is today's and they have not. */
   readonly onLetIn: (() => void) | null;
   readonly onClose: () => void;
 }
 
-/** The State row: how far the technician has got, from his phone, until the visit is done. */
+/** The State row: how far the technician has got, from their phone, until the visit is done. */
 function stateOf(block: BlockJob["block"]): string {
   const copy = dispatch.drawer;
   if (block.begun !== null && block.status !== "completed") return copy.begun[block.begun] ?? block.begun;

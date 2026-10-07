@@ -56,12 +56,12 @@ describe("erasure blanks what ops wrote about the client", () => {
          VALUES ('case-9', 'checkin-9', 'visit-9', ?1, ?1, ?1, 'charged', 'ops@localhost', ?1,
            'His wife said he forgets', ?1)`,
       ).bind(at),
-      // Why ops closed a visit of his left partly done without a follow-up (docs/decisions/0092-task-owners.md).
+      // Why ops closed a visit of their left partly done without a follow-up (docs/decisions/0092-task-owners.md).
       env.DB.prepare(
         `INSERT INTO task_closures (id, task_group, subject_id, reason, closed_by, closed_at)
          VALUES ('closing-9', 'partial_visit', 'visit-9', 'Moving to Pune, wants no more visits', 'ops@localhost', ?1)`,
       ).bind(at),
-      // The visit ops closed by hand when Imran's phone was lost, and another they cancelled for him.
+      // The visit ops closed by hand when Imran's phone was lost, and another they cancelled for them.
       env.DB.prepare(
         `INSERT INTO visits (id, appointment_id, outcome, updated_at, closed_by, close_reason)
          VALUES ('visit-row-9', 'visit-9', 'partial', ?1, 'ops@localhost', 'He had to leave for the hospital')`,
@@ -76,7 +76,7 @@ describe("erasure blanks what ops wrote about the client", () => {
          VALUES ('change-10', 'visit-10', ?1, 'cancelled', 'late', '2026-09-24T03:30:00.000Z', ?2, 'ops@localhost',
            'His mother is unwell', 'free')`,
       ).bind(FRIEND, at),
-      // A visit of his ops moved onto a day they had blacked out.
+      // A visit of their ops moved onto a day they had blacked out.
       env.DB.prepare(
         `INSERT INTO dispatch_moves (id, appointment_id, was_technician_id, now_technician_id, was_start, now_start,
            reason, actor, fsm_write_state, created_at, updated_at, blackout_reason)

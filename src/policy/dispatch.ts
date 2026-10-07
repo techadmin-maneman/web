@@ -18,8 +18,8 @@ import { WINDOW_SLOT_MAP, type BookingWindow } from "../config/scheduling.ts";
 export const slotsFor = (units: number): number => units / 2;
 
 /**
- * What one technician already holds on one date: the windows his live jobs and
- * unexpired holds start in, and whether he is away. A visit being moved is left
+ * What one technician already holds on one date: the windows their live jobs and
+ * unexpired holds start in, and whether they are away. A visit being moved is left
  * out of its own day, as `occupancy` does with `exceptVisitId`.
  */
 interface TechnicianDay {
@@ -48,7 +48,7 @@ export type MoveReason = (typeof MOVE_REASONS)[number];
 export const keepsTheClientsNotice = (reason: MoveReason): boolean => reason !== "client_asked";
 
 /**
- * How far the technician has got on a visit, by the steps his phone has sent: he has arrived, started, or closed it (a no-show closes it too).
+ * How far the technician has got on a visit, by the steps their phone has sent: they have arrived, started, or closed it (a no-show closes it too).
  */
 export const BEGUN = ["arrived", "started", "closed"] as const;
 export type Begun = (typeof BEGUN)[number];
@@ -122,7 +122,7 @@ export function moveRefusal(day: TechnicianDay, window: BookingWindow, check: Mo
  * made (docs/decisions/0069-dispatch-under-concurrency.md).
  *
  *   messaged    the new window was queued to go on WhatsApp
- *   call        the client has not agreed to WhatsApp about his visits: ops call him
+ *   call        the client has not agreed to WhatsApp about their visits: ops call them
  *   unchanged   only the technician changed: the client's day and window are as they were
  *   no_client   the visit has no client on our records to tell
  */
@@ -132,8 +132,8 @@ export type ClientNotice = (typeof CLIENT_NOTICES)[number];
 /**
  * Why a client has not heard of a move, so the call ops make starts from the right place:
  *
- *   no_consent   he has not agreed to WhatsApp about his visits, or took it back before the message went
- *   not_sent     he had agreed, but the WhatsApp was skipped or failed
+ *   no_consent   they have not agreed to WhatsApp about their visits, or took it back before the message went
+ *   not_sent     they had agreed, but the WhatsApp was skipped or failed
  */
 export const UNTOLD_REASONS = ["no_consent", "not_sent"] as const;
 export type UntoldReason = (typeof UNTOLD_REASONS)[number];

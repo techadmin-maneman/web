@@ -69,13 +69,13 @@ interface NoShowCase {
   /** The visit's booked window. */
   readonly window_start: string | null;
   readonly window_end: string | null;
-  /** How long after the booked start he checked in, in minutes; negative when he was early. */
+  /** How long after the booked start they checked in, in minutes; negative when they were early. */
   readonly minutes_late: number | null;
   /** Null when there was nothing to measure against. */
   readonly distance_m: number | null;
-  /** Ops let him check in past the geofence: who, and why; null when his check-in passed on its own. */
+  /** Ops let them check in past the geofence: who, and why; null when their check-in passed on its own. */
   readonly let_in: { readonly by: string; readonly reason: string | null } | null;
-  /** The check-in radius in force when he checked in, which the check-in keeps. */
+  /** The check-in radius in force when they checked in, which the check-in keeps. */
   readonly radius_m: number;
   readonly message_state: MessageState;
   readonly message_delivered_at: string | null;

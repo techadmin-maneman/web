@@ -55,7 +55,7 @@ describe("tasks", () => {
 
   it("gives every group an allowance, the placeholder two days but where something else is promised", () => {
     const promised: Partial<Record<string, number>> = {
-      // A client who does not know his visit moved will not be home for it (ADR 0069).
+      // A client who does not know their visit moved will not be home for it (ADR 0069).
       untold_move: 4,
       // "The 30 days run from the client's request to ops' decision" (ADR 0049).
       erasure_request: 30 * 24,

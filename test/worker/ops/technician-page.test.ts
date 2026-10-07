@@ -1,5 +1,5 @@
-// What a technician's own page in the console reads: his leave still to end, each with the jobs still booked on it,
-// and whether each of his phones is still signed in. NOW is Monday 21 September 2026, 12 noon in India. Every name
+// What a technician's own page in the console reads: their leave still to end, each with the jobs still booked on it,
+// and whether each of their phones is still signed in. NOW is Monday 21 September 2026, 12 noon in India. Every name
 // and number here is made up.
 
 import { env } from "cloudflare:workers";

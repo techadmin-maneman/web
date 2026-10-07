@@ -195,7 +195,7 @@ describe("the photographs", () => {
   });
 
   // Open point 92: a job given away while its photographs wait names whom it went to, as a refused write does.
-  // A job he has begun stays his, so this one was given away before he reached it, from a phone still holding it.
+  // A job they have begun stays theirs, so this one was given away before they reached it, from a phone still holding it.
   it("answers an upload link for a job ops gave away as superseded, naming whom, by first name, and when", async () => {
     await opsPost("/api/dispatch/move", {
       appointment_id: TODAY_JOB,

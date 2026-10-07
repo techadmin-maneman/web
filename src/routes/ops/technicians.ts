@@ -1,9 +1,9 @@
 // The technicians themselves, behind Access:
 //   GET   /api/technicians/work?from=&to=   jobs finished, and how long they took
 //   POST  /api/technicians                  add a technician
-//   PATCH /api/technicians/:id              change his name, number, zone or city
-//   POST  /api/technicians/:id/deactivate   switch him off: signed out, his visits still to come unassigned
-//   POST  /api/technicians/:id/reactivate   switch him back on
+//   PATCH /api/technicians/:id              change their name, number, zone or city
+//   POST  /api/technicians/:id/deactivate   switch them off: signed out, their visits still to come unassigned
+//   POST  /api/technicians/:id/reactivate   switch them back on
 //
 // Each keeps to the caller's cities: a technician elsewhere, or with no city
 // when the caller's grants name cities, is not found, and is given only a city
@@ -245,7 +245,7 @@ const CHANGEABLE = ["name", "mobile", "zone", "city"] as const;
 
 /**
  * Whether the caller may give a technician this city: one of ours that their grants reach, or none (GIVING_NO_CITY).
- * Undefined, a change that leaves his city alone, may always be sent.
+ * Undefined, a change that leaves their city alone, may always be sent.
  */
 async function mayGiveCity(c: Context<AppEnv>, city: string | null | undefined): Promise<boolean> {
   if (city === undefined) return true;

@@ -206,7 +206,7 @@ describe("dispatch", () => {
 
   it("writes nothing when the technician starts the visit under a move that clears his check-in", async () => {
     await work(minutesAfterStart(2), TODAY_JOB, [["checkin", AT_THE_DOOR, 2]]);
-    // His start lands between the move's checks and its write.
+    // Their start lands between the move's checks and its write.
     const db = env.DB;
     const startedMeanwhile: Pick<D1Database, "prepare" | "batch"> = {
       prepare: (sql) => db.prepare(sql),

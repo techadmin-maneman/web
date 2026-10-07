@@ -73,7 +73,7 @@ const paidFor = (holdId: string, paymentId: string) =>
     .bind(NOW.toISOString(), holdId, crypto.randomUUID(), paymentId)
     .run();
 
-/** Imran's check-in, landed from his phone, the visit's status as it was. */
+/** Imran's check-in, landed from their phone, the visit's status as it was. */
 const checkedIn = () =>
   env.DB.prepare(
     `INSERT INTO job_events (id, appointment_id, event_id, technician_id, kind, body, occurred_at, received_at,

@@ -86,8 +86,8 @@ const MINUTES: Readonly<Record<VisitType, number>> = {
 const NOT_BEGUN: Job["progress"] = { started_at: null, outcome: null };
 
 /**
- * Rohit's visit this morning, the first of the day, of the type a test asks for; or, as one visit, his consultation
- * and first fit together, paid for once he is fitted (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md).
+ * Rohit's visit this morning, the first of the day, of the type a test asks for; or, as one visit, their consultation
+ * and first fit together, paid for once they are fitted (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md).
  */
 const firstJob = (date: string, type: VisitType, oneVisit = false, progress = NOT_BEGUN): Job => ({
   id: JOB_ID,
@@ -245,7 +245,7 @@ export const NOTHING_DONE: Progress = {
   outcome: null,
 };
 
-/** Rohit's piece on his head today, fitted in July. */
+/** Rohit's piece on their head today, fitted in July. */
 export const ROHITS_PIECE: Piece = {
   piece_code: "MM-STD-4417-B",
   base: "PLACEHOLDER_STANDARD",
@@ -256,7 +256,7 @@ export const ROHITS_PIECE: Piece = {
   failure_reason: null,
 };
 
-/** Rohit's hair profile as his consultation took it, his history with it. */
+/** Rohit's hair profile as their consultation took it, their history with it. */
 export const ROHITS_PROFILE: HairProfile = {
   id: "d0000000-0000-4000-8000-000000000001",
   recorded_at: "2030-07-01T05:00:00.000Z",

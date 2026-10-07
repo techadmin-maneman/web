@@ -49,7 +49,7 @@ beforeEach(async () => {
     env.DB.prepare(
       "INSERT INTO technicians (id, fsm_id, name, initials, active, updated_at) VALUES (?1, 'fsm-t1', 'Imran Qureshi', 'IQ', 1, ?2)",
     ).bind(TECHNICIAN, NOW.toISOString()),
-    // Booked for 9 am on Saturday the 19th; he checked in at 2:08 pm by his phone, which reached us at 2:29.
+    // Booked for 9 am on Saturday the 19th; they checked in at 2:08 pm by their phone, which reached us at 2:29.
     env.DB.prepare(
       `INSERT INTO appointments (id, fsm_id, person_id, type, status, fsm_status, window_start, window_end,
          technician_id, fsm_modified_at, synced_at)
@@ -89,7 +89,7 @@ describe("GET /api/no-shows", () => {
     expect(await waiver()).toEqual({ payment: "kept", credit: "returned" });
   });
 
-  // The board writes "240 m · over 200 m fence": the distance against the radius that was in force when he checked in,
+  // The board writes "240 m · over 200 m fence": the distance against the radius that was in force when they checked in,
   // which the check-in keeps, not the radius ops have set since (docs/open-points.md, item 56).
   it("carries the distance the check-in measured and the radius in force then", async () => {
     await env.DB.prepare(

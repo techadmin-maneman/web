@@ -11,7 +11,7 @@
 // names no address and holds no distance.
 //
 // Where the address's pin is wrong, a building's pin far from its door, ops may let the technician check in to that
-// one visit wherever he is (waiveCheckIn). The distance is still measured and kept, and a check-in that passed only
+// one visit wherever they are (waiveCheckIn). The distance is still measured and kept, and a check-in that passed only
 // by the waiver names who gave it, as the no-show's evidence shows.
 //
 // A check-in keeps three times (docs/decisions/0065-a-technicians-writes-reach-fsm.md):
@@ -31,7 +31,7 @@ export interface Measured {
   readonly distanceM: number | null;
   readonly radiusM: number;
   readonly passed: boolean;
-  /** Who let him in, where the check-in passed only because ops waived the geofence for the visit; else null. */
+  /** Who let them in, where the check-in passed only because ops waived the geofence for the visit; else null. */
   readonly waivedBy: string | null;
 }
 
@@ -105,8 +105,8 @@ async function waiverOf(db: D1Database, appointmentId: string): Promise<string |
 }
 
 /**
- * Ops let the technician check in to the visit wherever he is, with their reason, while it is still to be checked in
- * to. Audited in the same batch. False when the visit is not one he can still check in to.
+ * Ops let the technician check in to the visit wherever they are, with their reason, while it is still to be checked in
+ * to. Audited in the same batch. False when the visit is not one they can still check in to.
  */
 export async function waiveCheckIn(
   db: D1Database,
@@ -206,7 +206,7 @@ export async function arrivalOfEvent(db: D1Database, jobEventId: string): Promis
 /**
  * The check-in a no-show's wait runs from: the latest that passed, by the job's technician, of an event still
  * standing. A move that clears a check-in supersedes its event, and a check-in by the technician the job was taken
- * from is not his successor's.
+ * from is not their successor's.
  */
 export async function latestArrival(
   db: D1Database,

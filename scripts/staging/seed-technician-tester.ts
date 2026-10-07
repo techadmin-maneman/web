@@ -1,4 +1,4 @@
-// A technician in staging's database whom a real person signs in as, on his own
+// A technician in staging's database whom a real person signs in as, on their own
 // phone, with jobs to walk (docs/technician-test-setup.md).
 //
 //   TECH_TESTER_MOBILE=98110xxxxx node scripts/staging/seed-technician-tester.ts
@@ -14,13 +14,13 @@
 // random `9xxxxxxxxx` number, the house's convention since M2.
 //
 // No device and no session are written. The whole point is that the tester
-// signs in himself, and the first sign-in enrols the phone it is made from
+// signs in themselves, and the first sign-in enrols the phone it is made from
 // (`openTechnicianSession`, src/domain/dispatch/technicians.ts).
 //
 // The login reads `technicians` in D1 and nowhere else
-// (docs/decisions/0052-technician-sessions.md). His row is marked
+// (docs/decisions/0052-technician-sessions.md). Their row is marked
 // `hand_written`, as every technician a script writes is (migration 0046), and
-// his jobs are visits like any other: each step he sends lands as it would on a
+// their jobs are visits like any other: each step they send lands as it would on a
 // real job.
 
 import { parseArgs } from "node:util";
@@ -38,7 +38,7 @@ const DAY_MS = 24 * 60 * 60 * 1000;
  */
 const FSM_ID_PREFIX = "tech-tester-";
 
-/** Gurgaon, where the serviceable pincodes are: the zone the dispatch board groups him by. */
+/** Gurgaon, where the serviceable pincodes are: the zone the dispatch board groups them by. */
 const ZONE = "Gurgaon";
 /** A served Gurgaon pincode (`serviceable_pincodes`), so the job sits inside the area we cover. */
 const PINCODE = "122003";

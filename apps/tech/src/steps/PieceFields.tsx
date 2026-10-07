@@ -61,7 +61,7 @@ export function ChoiceList({
   );
 }
 
-/** What the client paid for, which is what he fits, and a warning when the hair profile names another product. */
+/** What the client paid for, which is what they fit, and a warning when the hair profile names another product. */
 export function PaidFor({ job }: { job: Job }) {
   const paid = paidFor(job);
   if (paid === null) return null;

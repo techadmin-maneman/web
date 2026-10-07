@@ -1,6 +1,6 @@
-// A technician ops switch off keeps the work his phone has not sent: the steps and photographs waiting stay for
-// seven days, for him alone, and go once he is switched back on and signs in. Everything else goes at once, as at
-// any sign-out: the day, the clients' cards and who he is. Any other end of a session wipes the phone whole.
+// A technician ops switch off keeps the work their phone has not sent: the steps and photographs waiting stay for
+// seven days, for them alone, and go once they are switched back on and sign in. Everything else goes at once, as at
+// any sign-out: the day, the clients' cards and who they are. Any other end of a session wipes the phone whole.
 
 import { reportClientError } from "@maneman/web-kit/client-errors";
 import { DEVICE_REVOKED, TECHNICIAN_INACTIVE } from "../api.ts";
@@ -35,7 +35,7 @@ export async function leaveSignedOut(code: string | null, now: number = Date.now
   return false;
 }
 
-/** Whether there is work to keep: set aside already and within its seven days, or his, unsent, as he is switched off. */
+/** Whether there is work to keep: set aside already and within its seven days, or theirs, unsent, as they are switched off. */
 async function keepsWork(code: string | null, now: number): Promise<boolean> {
   const aside = await setAside();
   if (aside !== null) return stillKept(aside, now);
@@ -55,7 +55,7 @@ async function dropAllButWork(): Promise<void> {
   await remove("device", "me");
 }
 
-/** On a sign-in: work set aside goes on if it is his and within its seven days, and is dropped otherwise. */
+/** On a sign-in: work set aside goes on if it is theirs and within its seven days, and is dropped otherwise. */
 export async function settleSetAside(technicianId: string, now: number = Date.now()): Promise<void> {
   const aside = await setAside();
   if (aside === null) return;
