@@ -144,6 +144,11 @@ export interface ClientOptions {
   readonly onAnswer?: (response: Response) => void;
   /** A call that reached nothing, or nothing that was the API. */
   readonly onUnreached?: () => void;
+  /**
+   * Where Cloudflare Access may stand in front of the app, as on staging: a call it sent to its login page, its sign-in
+   * run out. The redirect is not followed, and the call answers as no connection, so nothing counts it as refused.
+   */
+  readonly onAccessLapsed?: () => void;
   /** The code of a refusal that carried none, by its status: the technician app counts a bare 409 as superseded. */
   readonly missingCode?: (status: number) => string;
 }
@@ -242,6 +247,7 @@ export interface Client<Paths, Code extends string> {
 
 export function createClient<Paths, Code extends string = string>(options: ClientOptions = {}): Client<Paths, Code> {
   const sessionEnded = options.sessionEnded ?? isSessionEnded;
+  const redirect = options.redirect ?? (options.onAccessLapsed === undefined ? undefined : "manual");
   const missingCode = options.missingCode ?? (() => "unknown");
   const patience = options.patience ?? DEFAULT_PATIENCE;
 
@@ -289,11 +295,16 @@ export function createClient<Paths, Code extends string = string>(options: Clien
         method,
         headers,
         ...(body === undefined ? {} : { body }),
-        ...(options.redirect === undefined ? {} : { redirect: options.redirect }),
+        ...(redirect === undefined ? {} : { redirect }),
       },
       init.patience ?? patienceFor(method),
     );
     if (response === null) {
+      options.onUnreached?.();
+      return OFFLINE;
+    }
+    if (response.type === "opaqueredirect" && options.onAccessLapsed !== undefined) {
+      options.onAccessLapsed();
       options.onUnreached?.();
       return OFFLINE;
     }

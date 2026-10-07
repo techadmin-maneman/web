@@ -14,6 +14,10 @@ describe("what the service worker answers", () => {
     expect(answerFor(get("/jobs/a0000000-0000-4000-8000-000000000001", "navigate"), ORIGIN)).toBe("shell");
   });
 
+  it("sends a page marked for Access's sign-in to the network, where Access can sign the founder in again", () => {
+    expect(answerFor(get("/jobs/a0000000-0000-4000-8000-000000000001?signin=", "navigate"), ORIGIN)).toBeNull();
+  });
+
   it("answers the app's own files from what it keeps", () => {
     expect(answerFor(get("/assets/index-abc.js"), ORIGIN)).toBe("file");
     expect(answerFor(get("/manifest.webmanifest"), ORIGIN)).toBe("file");
