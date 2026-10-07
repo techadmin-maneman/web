@@ -132,7 +132,8 @@ export const PERSONAL_COLUMNS: Readonly<Record<string, PersonalTable>> = {
   audit_log: {
     leftOut: ["id", "surface", "actor_kind", "action", "subject_kind", "subject_id", "request_id", "detail"],
     whyLeftOut:
-      "The log of everything else ops did on the record, kept for security. Who opened the photographs, and when, is given.",
+      "The log of everything else done on the record, by ops, the client and the technician, kept for security. " +
+      "Who opened the photographs, and when, is given.",
     erasure: { why: "Kept two years and never changed, as the record of who did what." },
   },
   consents: {

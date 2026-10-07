@@ -1,11 +1,17 @@
-// Who is behind a call to the ops console, and the record of each call (docs/decisions/0031-access-and-audit.md).
-// The log itself is src/domain/ops/audit.ts.
+// Who is behind a call to the ops console, and the record of each call (docs/decisions/0031-access-and-audit.md),
+// and the record of what a signed-in client or technician does. The log itself is src/domain/ops/audit.ts.
 
-import type { Context } from "hono";
+import type { Context, Next } from "hono";
 import { createMiddleware } from "hono/factory";
 import { matchedRoutes } from "hono/route";
 import { z } from "zod";
-import { auditStatement, auditStatementUnlessRepeated, type AuditActor, type AuditEntry } from "../domain/ops/audit.ts";
+import {
+  auditStatement,
+  auditStatementUnlessRepeated,
+  type AuditAction,
+  type AuditActor,
+  type AuditEntry,
+} from "../domain/ops/audit.ts";
 import { MINUTE_MS } from "../lib/durations.ts";
 import type { AccessIdentity } from "../providers/cloudflare-access.ts";
 import type { AppEnv } from "./context.ts";
@@ -17,11 +23,25 @@ const REPEAT_LOOK_MINUTES = 10;
 /** Say nothing of anyone: whether the Worker and its database are up, and the dispatch board's version number. */
 const UNAUDITED_ROUTES = new Set(["/api/health", "/api/dispatch/version"]);
 
-/** The routes that open one client's record or one visit, and what the `:id` in them names. */
+/** The routes that open one client's record, one visit or one hold, and what the `:id` in them names. */
 const SUBJECT_ROUTES: readonly { readonly prefix: string; readonly kind: string }[] = [
   { prefix: "/api/clients/:id", kind: "person" },
   { prefix: "/api/visits/:id", kind: "appointment" },
+  // The client app's and the technician app's names for a visit, and a hold on a slot.
+  { prefix: "/api/appointments/:id", kind: "appointment" },
+  { prefix: "/api/tech/jobs/:id", kind: "appointment" },
+  { prefix: "/api/holds/:id", kind: "hold" },
 ];
+
+/**
+ * A signed-in client's or technician's calls that write nothing to the log: a photograph's bytes going up, whose step
+ * is written when the phone records it, and an address being typed, which changes nothing.
+ */
+const UNAUDITED_SESSION_CALLS = new Set([
+  "PUT /api/tech/photos/:token",
+  "PUT /api/tech/photos/:token/small",
+  "POST /api/address/suggestions",
+]);
 
 const ID = z.uuid();
 
@@ -84,17 +104,37 @@ function subjectOf(route: string, ids: Map<string, string>): AuditEntry["subject
   return { kind: opened.kind, id };
 }
 
-function opsCallEntry(c: Context<AppEnv>, identity: AccessIdentity, route: string): AuditEntry {
-  const ids = idsInPath(route, c.req.path);
-  const path = route.replace(/:(\w+)/g, (placeholder, name: string) => ids.get(name) ?? placeholder);
+/** The entry for a call: who made it, whose record or which visit it opens, and the path called, IDs only. */
+function callEntry(
+  c: Context<AppEnv>,
+  call: { readonly actor: AuditActor; readonly action: AuditAction; readonly route: string },
+  more: Readonly<Record<string, string>> = {},
+): AuditEntry {
+  const ids = idsInPath(call.route, c.req.path);
+  const path = call.route.replace(/:(\w+)/g, (placeholder, name: string) => ids.get(name) ?? placeholder);
   return {
     surface: c.var.surface,
-    actor: auditActorOf(identity),
-    action: "ops.call",
-    subject: subjectOf(route, ids),
+    actor: call.actor,
+    action: call.action,
+    subject: subjectOf(call.route, ids),
     requestId: c.var.requestId,
-    detail: { method: c.req.method, route, path },
+    detail: { method: c.req.method, route: call.route, path, ...more },
   };
+}
+
+/** Writes the call's entry before the handler runs, or refuses the call when it cannot. */
+async function writtenFirst(c: Context<AppEnv>, entry: AuditEntry, next: Next) {
+  // Never write to a database not proven to be this environment's.
+  const database = await c.var.checkIdentity(c.env.DB, c.var.config.environment);
+  if (database.state !== "ok") return next();
+
+  try {
+    await recordCall(c.env.DB, entry, c.req.method, c.var.deps.now());
+  } catch (error) {
+    c.var.log.error("audit_write_failed", { action: entry.action, error });
+    return refuse(c, "unavailable");
+  }
+  return next();
 }
 
 /**
@@ -106,17 +146,34 @@ export const auditCall = createMiddleware<AppEnv>(async (c, next) => {
   if (identity === undefined) throw new Error("auditCall runs after requireAccess");
   const route = answeringRoute(c);
   if (route === null || UNAUDITED_ROUTES.has(route)) return next();
-  // Never write to a database not proven to be this environment's.
-  const database = await c.var.checkIdentity(c.env.DB, c.var.config.environment);
-  if (database.state !== "ok") return next();
+  return writtenFirst(c, callEntry(c, { actor: auditActorOf(identity), action: "ops.call", route }), next);
+});
 
-  try {
-    await recordCall(c.env.DB, opsCallEntry(c, identity, route), c.req.method, c.var.deps.now());
-  } catch (error) {
-    c.var.log.error("audit_write_failed", { action: "ops.call", error });
-    return refuse(c, "unavailable");
+/** The signed-in client or technician behind the call, and the technician's phone. */
+function sessionCallerOf(c: Context<AppEnv>): { readonly actor: AuditActor; readonly device?: string } {
+  const technician = c.var.technicianSession;
+  if (technician !== undefined) {
+    return { actor: { kind: "technician", id: technician.technicianId }, device: technician.deviceRowId };
   }
-  return next();
+  const client = c.var.clientSession;
+  if (client !== undefined) return { actor: { kind: "client", id: client.subjectId } };
+  throw new Error("auditSessionCall runs after requireClientSession or requireTechnicianSession");
+}
+
+/**
+ * Records a signed-in client's or technician's call as auditCall does an ops call, before the handler runs: every
+ * change either makes, and each job a technician opens, which shows them a client's address and number. No other look
+ * is written: the apps ask for Home and the day's list all day. Follows the session's guard (./session-routes.ts).
+ */
+export const auditSessionCall = createMiddleware<AppEnv>(async (c, next) => {
+  const route = answeringRoute(c);
+  if (route === null || UNAUDITED_SESSION_CALLS.has(`${c.req.method} ${route}`)) return next();
+  const { actor, device } = sessionCallerOf(c);
+  const action = actor.kind === "client" ? "client.call" : "tech.call";
+  const entry = callEntry(c, { actor, action, route }, device === undefined ? {} : { device });
+  const looks = c.req.method === "GET";
+  if (looks && (actor.kind === "client" || entry.subject === undefined)) return next();
+  return writtenFirst(c, entry, next);
 });
 
 /** A GET only looks, so one repeated within ten minutes is not written again; any other call is written each time. */

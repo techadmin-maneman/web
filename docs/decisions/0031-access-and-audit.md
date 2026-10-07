@@ -1,6 +1,6 @@
 # 0031. Access on the ops surface, and the audit log
 
-- Status: accepted. Amended 25 September 2026: an audited action writes its entry in the same batch as its change. Amended 26 September 2026: one opening of a client's photographs is one entry, naming the client, and serves that opening's images for thirty minutes (ADR 0072). Amended 2 October 2026: an ops call's entry names the client or visit it opened and the path called, IDs only; the health check and a path no route answers write none; a GET repeated within ten minutes writes one; and the database's size is watched.
+- Status: accepted. Amended 25 September 2026: an audited action writes its entry in the same batch as its change. Amended 26 September 2026: one opening of a client's photographs is one entry, naming the client, and serves that opening's images for thirty minutes (ADR 0072). Amended 2 October 2026: an ops call's entry names the client or visit it opened and the path called, IDs only; the health check and a path no route answers write none; a GET repeated within ten minutes writes one; and the database's size is watched. Amended 7 October 2026: a signed-in client's and technician's calls are written too, so the log holds every action and who made it (below).
 - Date: 2026-09-22
 - Topic: The ops console
 
@@ -76,3 +76,13 @@ Actions are listed in code (`AUDIT_ACTIONS`), not in a CHECK constraint, so that
   - the log refuses `UPDATE`, `DELETE` and malformed rows.
 
   `test/worker/platform/guard.test.ts` covers the new settings.
+
+## Amended 7 October 2026: the client's and the technician's calls
+
+The owner asked whether the app keeps a log of every action and who made it. It did for ops; for the client and the technician, only some actions (consents, number changes, deletions) reached the log, and the rest were in their own tables. So each surface's calls are now written as ops calls are, by `auditSessionCall` (`src/http/audit.ts`), which every session route runs after its session's guard (`src/http/session-routes.ts`):
+
+- **`client.call`**: every change a signed-in client makes, under the client's ID: a booking, a hold let go, a move, a cancellation, a consent, an address, a referral card. Their looks at their own record are not written: Home is asked for all day, and the client is the only one it shows.
+- **`tech.call`**: every step a technician sends, and each job they open, which shows them the client's address and number, under the technician's ID, with the phone (`technician_devices.id`) in the detail. A job opened again within ten minutes writes one entry, as an ops look does. The day's list and who is signed in are not written.
+- **Not written:** a photograph's bytes going up (the step that records it is), and an address being typed for suggestions.
+- **Written first, as an ops call is:** before the handler runs, so an attempt that is then refused is written too, and a call whose entry cannot be written is refused with 503. The entry names the visit or hold the path names, and the path, IDs only.
+- **Size:** about one row per client change and about twenty per job, within the database's watched size (`storage_meter`).
