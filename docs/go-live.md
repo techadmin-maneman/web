@@ -109,6 +109,7 @@ With self-serve booking off, a consultation booked on the site is a request: the
 - [ ] The CA's answers, and GST on in Books with the real GSTIN, Books synced again (items 2, 3, 9, 14, 16, 17 and 26).
 - [ ] Counsel's answers (items 22, 23, 40, 41, 55, 63, 69 and 148).
 - [ ] The org clean of staging's records before production goes live (item 19).
+- [ ] Staging off the real org from the release on: its CRM and Books switched to the stubs in the release's pull request (item 19; "The code" below).
 - [ ] The owner's prices and services in production's console (items 1 and 13); the job sheet's lists, the consumables with their costs, reorder levels and each service's use, and each kit's and the central store's opening count on the Stock page (item 28, ADR 0087).
 - [ ] The texts approved (items 39, 41 and 42), and the engineering the rulings still owe (`docs/archive/implementation-plan-2026-09-27.md`).
 
@@ -120,7 +121,7 @@ With self-serve booking off, a consultation booked on the site is a request: the
 - [ ] The rest of production's secrets, each before the release that needs it (provisioning, step 7): `OTP_PEPPER` (`openssl rand -hex 32`; the site's WhatsApp codes need it too, so without it the one visit and `/try` cannot prove a number), `RAZORPAY_KEY_SECRET`, `RAZORPAY_WEBHOOK_SECRET`, `EVOLUTION_WEBHOOK_TOKEN`, and `GOOGLE_MAPS_API_KEY` once production has its own restricted key (provisioning, step 13). A required secret left empty stops every request, so check `GET /api/health` after each.
 - [ ] Bootstrap `mm-ops-production` and `mm-tech-production`, and add both to `mm-ci-production` (provisioning, step 11, point 6; provisioning, step 6).
 
-**The code**, in one pull request: `ENABLED_SURFACES.production` gains the three surfaces, `env.production.routes` their `/api/*` routes, and each app's `wrangler.jsonc` its production route (provisioning, step 11, point 4); `env.production.vars` set `BOOKS_PROVIDER` and `PAYMENTS_PROVIDER` on, `RAZORPAY_KEY_ID` to the live key, `GEOCODE_PROVIDER` `"google"` and `SELF_SERVE_BOOKING` `"true"`; `BOOKS_ITEM_PUSH` moved from staging to production (provisioning, step 11b, point 7).
+**The code**, in one pull request: `ENABLED_SURFACES.production` gains the three surfaces, `env.production.routes` their `/api/*` routes, and each app's `wrangler.jsonc` its production route (provisioning, step 11, point 4); `env.production.vars` set `BOOKS_PROVIDER` and `PAYMENTS_PROVIDER` on, `RAZORPAY_KEY_ID` to the live key, `GEOCODE_PROVIDER` `"google"` and `SELF_SERVE_BOOKING` `"true"`; `BOOKS_ITEM_PUSH` moved from staging to production (provisioning, step 11b, point 7); and `env.staging.vars` set `CRM_PROVIDER` and `BOOKS_PROVIDER` to `"stub"`, so staging writes nothing more into the real org (item 19). To test a Zoho change on staging later, a pull request switches the one it needs back to `"zoho"`, and another back to `"stub"` once it is tested; `scripts/staging/staging-records.ts` then deletes what the test wrote.
 
 **The release:** as the site's, then `npm run apply-triggers -- --env production` to attach the apps' routes (never `W deploy`, provisioning, step 11, point 5), and `npm run smoke -- --environment production --surfaces`.
 

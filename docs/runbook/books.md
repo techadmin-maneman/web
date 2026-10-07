@@ -43,7 +43,7 @@ SELECT id, razorpay_refund_id, created_at FROM refunds WHERE status = 'processed
 
 ## Staging's records in the org
 
-Staging writes to the owner's real Books and CRM, which production shares (open point 19), so staging's records go before production goes live. The script lists them, the owner reviews the list, and a second run deletes what the owner kept in it. It uses the scripts' own tokens (provisioning, step 8.7): the CRM's must read and delete leads and contacts. It reads staging's database with wrangler, so run it signed in to Cloudflare.
+Staging writes to the owner's real Books and CRM, which production shares (open point 19), so staging's records go before production goes live. From that release on, staging's CRM and Books are the stubs, and nothing more of staging's reaches the org unless a Zoho change is being tested. The script lists them, the owner reviews the list, and a second run deletes what the owner kept in it. It uses the scripts' own tokens (provisioning, step 8.7): the CRM's must read and delete leads and contacts. It reads staging's database with wrangler, so run it signed in to Cloudflare.
 
 1. List them:
 
