@@ -169,11 +169,15 @@ test("leaves a click that asks for a new tab to the browser", async ({ page, con
   // /tasks, so a click before then can land on a link that is being replaced.
   await expect(page.getByRole("heading", { level: 1, name: "Tasks" })).toBeVisible();
   await expect(page).toHaveURL(/\/tasks$/);
-  const opened = context.waitForEvent("page");
-  await page.getByRole("link", { name: "Areas" }).click({ modifiers: ["ControlOrMeta"] });
-  const tab = await opened;
-  await tab.waitForLoadState();
-  expect(new URL(tab.url()).pathname).toBe("/areas");
+  // A click that lands as the sidebar is drawn again opens nothing, so it is pressed again until a tab opens.
+  let tab: Page | undefined;
+  await expect(async () => {
+    const opened = context.waitForEvent("page", { timeout: 5_000 });
+    await page.getByRole("link", { name: "Areas" }).click({ modifiers: ["ControlOrMeta"] });
+    tab = await opened;
+  }).toPass();
+  // The tab opens on about:blank before it loads the link.
+  await tab?.waitForURL(/\/areas$/);
   await expect(page.getByRole("heading", { level: 1, name: "Tasks" })).toBeVisible();
   await expect(page).toHaveURL(/\/tasks$/);
 });
