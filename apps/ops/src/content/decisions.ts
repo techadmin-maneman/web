@@ -1,6 +1,6 @@
 // The decision queues that are not referrals: concerns raised, deletions asked for, and changes of number.
 
-import { NOT_PERMITTED } from "./common.ts";
+import { FAILED, NOT_PERMITTED, OFFLINE } from "./common.ts";
 
 export const grievances = {
   title: "Concerns",
@@ -15,19 +15,17 @@ export const grievances = {
     /** Beneath the name: the number to answer on, and the day it was raised. */
     raised: (mobile: string, date: string) => `${mobile} · raised ${date}`,
     label: "Your answer",
-    hint: "The client sees this in their app. The audit log records that you answered it.",
-    send: "Record the answer and close it",
+    hint: "The client sees this in their app.",
+    send: "Record and close",
     sending: "Closing",
-    empty: "No concern is open.",
+    empty: "No open concerns.",
     /** Recording an answer sends nothing: the client hears from whoever answers them, and reads it in the app. */
-    note: (days: number) =>
-      `The client is told in the app that we answer within ${String(days)} days. ` +
-      "Nothing here messages them: answer on WhatsApp, then record the answer here. Their app shows it.",
+    note: (days: number) => `Answer within ${String(days)} days. Reply on WhatsApp, then record your answer here.`,
     errors: {
       not_permitted: NOT_PERMITTED,
-      not_found: "Someone has answered this one already. Reload to see the queue as it stands.",
-      offline: "You are offline. Connect, then try again.",
-      unknown: "That did not go through. Please try again.",
+      not_found: "Already answered. Reload.",
+      offline: OFFLINE,
+      unknown: FAILED,
     } as Readonly<Record<string, string>>,
   },
 } as const;
@@ -39,8 +37,8 @@ export const deletions = {
     /** The 30 days a request is processed within, which run from the day it was made (ADR 0049). */
     processDays: 30,
     requested: (mobile: string, date: string) => `${mobile} · requested ${date}`,
-    delete: "Delete the account",
-    reject: "Reject the request",
+    delete: "Delete account",
+    reject: "Reject",
     /**
      * A queue holds many rows and each button says the same thing, so the
      * destructive one names whose account it is, as the Technicians page's revoke does.
@@ -48,65 +46,59 @@ export const deletions = {
     deleteLabel: (name: string) => `Delete the account of ${name}`,
     rejectLabel: (name: string) => `Reject the request of ${name}`,
     confirmLabel: (name: string) => `Deleting the account of ${name}`,
-    warning:
-      "This erases the client now, and tells them on WhatsApp. It cannot be undone, and there is no copy to put back.",
+    warning: "This erases the client now and tells them on WhatsApp. It can't be undone.",
     /** What the erasure destroys, in the order src/domain/privacy/erasure.ts destroys it. */
     deleted: {
       title: "Deleted",
       items: [
-        "Every photograph of them, their visits' and their try-ons', the files as well as the records",
-        "Their referral card, so an invite they sent shows the house card from now on",
-        "Their saved addresses, and any number change under way",
-        "Their name, number and e-mail on the record, and the words of any grievance; one still open is closed",
-        "Their sessions, so their phone is signed out at once",
+        "Every photo: visits and try-ons, files and records",
+        "Their referral card. Invites they sent show the house card",
+        "Saved addresses, and any number change in progress",
+        "Name, number, email, and the text of any concern. Open ones close",
+        "Their sessions. They're signed out at once",
       ],
     },
     /** What stays, and why. The eight years are the app's own words to the client. */
     kept: {
       title: "Kept",
       items: [
-        "Their visits, payments, refunds and credits, as records",
-        "Their invoices in Books, eight years, by law",
-        "Their records in the CRM and Books, blanked within the hour",
+        "Visits, payments, refunds and credits, as records",
+        "Invoices in Books, for eight years, by law",
+        "CRM and Books records, blanked within the hour",
       ],
     },
     /** The runbook's first step, "Check the request comes from the number's owner". */
-    checked: "I have confirmed this request with the client, on their own number.",
-    confirm: "Delete this account",
-    cancel: "Keep the account",
+    checked: "I've confirmed this with the client, on their own number.",
+    confirm: "Delete permanently",
+    cancel: "Keep account",
     deleting: "Deleting",
     reason: {
-      label: "Why you are rejecting it",
+      label: "Reason",
       // The client is sent this reason on WhatsApp, and their app shows it for thirty days.
-      hint: "Kept with the decision, under your name. The client reads it on WhatsApp and in the app.",
-      confirm: "Reject this request",
-      cancel: "Leave it waiting",
+      hint: "Sent to the client on WhatsApp and shown in their app.",
+      confirm: "Reject request",
+      cancel: "Cancel",
     },
     rejecting: "Rejecting",
     /** Above the queue once a decision is made. */
     done: {
-      delete: "Account deleted. The client is told on WhatsApp, and the CRM and Books are blanked within the hour.",
+      delete: "Account deleted. The client is told on WhatsApp.",
       reject: "Request rejected. The client is told why on WhatsApp.",
     },
-    empty: "No deletion request is waiting.",
-    note: (days: number) =>
-      `Each request is processed within ${String(days)} days of being made. ` +
-      "Ops are alerted once when five are left.",
+    empty: "No deletion requests.",
+    note: (days: number) => `Decide within ${String(days)} days of the request.`,
     errors: {
       not_permitted: NOT_PERMITTED,
-      not_found: "Someone has decided this one already. Reload to see the queue as it stands.",
+      not_found: "Already decided. Reload.",
       /** The API refuses while something is still owed (docs/decisions/0066-erasure-all-or-nothing.md). */
-      visit_booked:
-        "They still have a visit booked, so nothing was erased. Cancel it on their Visits tab, which refunds what they " +
-        "paid, then delete.",
-      payment_held:
-        "We still owe them money back, so nothing was erased. Delete once their Payments tab shows it refunded.",
-      payment_owed: "A payment link of theirs is still unpaid, so nothing was erased. Delete once it is paid.",
-      offline: "You are offline. Connect, then try again.",
-      unknown: "That did not go through. The client has not been erased.",
+      visit_booked: "They have a visit booked. Cancel it on their Visits tab, which refunds them, then delete.",
+      payment_held: "A refund is still owed. Delete once Payments shows it refunded.",
+      payment_owed: "A payment link is still unpaid. Delete once it's paid.",
+      offline: OFFLINE,
+      unknown: "That didn't work. Nothing was erased.",
     } as Readonly<Record<string, string>>,
     /** Beneath a refusal, the client's tab that settles it. */
-    settleOn: { visits: "Open their visits", payments: "Open their payments" },
+    settleOn: { visits: "Open Visits", payments: "Open Payments" },
   },
 } as const;
 
@@ -118,32 +110,32 @@ export const numberChanges = {
     move: (from: string, to: string) => `${from} → ${to}`,
     requested: (date: string) => `Requested ${date}`,
     /** The rule the change follows, quoted in migrations/0008_profile.sql. */
-    proven: "A code went to both numbers, and both were entered.",
+    proven: "Both numbers verified by code.",
     /** Another record holding the new number: one that never became a client gives it up; a client's refuses. */
     heldBy: (name: string, client: boolean) => {
       const whose = name === "" ? "another record" : `${name}'s record`;
       return client
-        ? `This number is on ${whose}, a client's. Confirming is refused while they hold it.`
-        : `This number is on ${whose}, which never became a client. Confirming takes the number from it.`;
+        ? `This number is on ${whose}, a client. It can't be confirmed while they hold it.`
+        : `This number is on ${whose}, never a client. Confirming moves it here.`;
     },
-    effect: "Confirming moves the client to the new number. They sign in with it from then on.",
-    confirm: "Confirm the change",
+    effect: "The client signs in with the new number from then on.",
+    confirm: "Confirm",
     reject: "Reject",
     reason: {
-      label: "Why you are rejecting it",
+      label: "Reason",
       // The client's profile shows this reason for thirty days.
-      hint: "Kept with the decision, under your name. The client reads it in the app.",
-      confirm: "Reject the change",
-      cancel: "Leave it waiting",
+      hint: "Shown to the client in their app.",
+      confirm: "Reject change",
+      cancel: "Cancel",
     },
-    deciding: "Deciding",
-    empty: "No number change is waiting.",
+    deciding: "Saving",
+    empty: "No number changes.",
     errors: {
       not_permitted: NOT_PERMITTED,
-      number_in_use: "Another client holds that number already. Nothing was changed.",
-      not_found: "Someone has decided this one already. Reload to see the queue as it stands.",
-      offline: "You are offline. Connect, then try again.",
-      unknown: "That did not go through. Nothing was changed.",
+      number_in_use: "Another client already has that number.",
+      not_found: "Already decided. Reload.",
+      offline: OFFLINE,
+      unknown: FAILED,
     } as Readonly<Record<string, string>>,
   },
 } as const;

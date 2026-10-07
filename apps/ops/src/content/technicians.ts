@@ -1,6 +1,6 @@
 // Technicians: the roster, a technician's page, their leave and phones, and the waiting list's line.
 
-import { NOT_PERMITTED } from "./common.ts";
+import { FAILED, NOT_PERMITTED, OFFLINE } from "./common.ts";
 
 /**
  * The Technicians roster. The design draws five columns; four are answered, and the
@@ -20,7 +20,7 @@ export const technicians = {
   /** A zone a technician has none of, written as the design's tables write a gap. */
   unknown: "—",
   // The board draws no console without technicians.
-  empty: "No technician is active.",
+  empty: "No active technicians.",
   /** The two columns counted from the jobs themselves (src/domain/dispatch/technician-work.ts). */
   work: {
     /** The average itself, as the board writes it: "1 h 24 m", and "48 m" under the hour. */
@@ -33,24 +33,24 @@ export const technicians = {
     base: (timed: number, jobs: number) => `${String(timed)} of ${String(jobs)}`,
     /** Beneath the table, where the board writes its own note: what the two columns count. */
     period: (from: string, to: string) =>
-      `Jobs finished from ${from} to ${to}. Average service is against the length each visit was planned for, over the jobs the phone timed from Start to the outcome.`,
+      `Jobs finished ${from} to ${to}. Average service is measured against each visit's planned length.`,
     /** The board's fifth column, which no route can answer (docs/open-points.md, item 59). */
   },
   /** Our words, all of them: the board draws the roster and no page for one technician. */
   page: {
     back: "All technicians",
-    tabsLabel: (name: string) => `${name}: his week, leave, phones and kit`,
-    notFound: "That technician is not on the roster any more.",
+    tabsLabel: (name: string) => `${name}: week, leave, phones and kit`,
+    notFound: "No longer on the roster.",
   },
   tabs: { week: "This week", leave: "Leave", phones: "Phones", kit: "Kit" },
   week: {
-    lead: "His jobs this week are on the dispatch board, with his row alone in view.",
-    open: "Open his week on the board",
+    lead: "This week's jobs are on the dispatch board.",
+    open: "Open on the board",
   },
   kit: {
-    lead: "What his kit holds, as the stock ledger counts it.",
+    lead: "What their kit holds.",
     columns: ["Consumable", "Held", "Last counted"],
-    none: "Nothing in his kit on record.",
+    none: "Kit is empty.",
     stock: "Record a movement in Stock",
   },
   phones: {
@@ -65,27 +65,27 @@ export const technicians = {
     seen: (when: string) => `Last used ${when}`,
     signedIn: "Signed in",
     signedOut: "Signed out",
-    none: "No phone logged in.",
+    none: "No phones signed in.",
     revoke: "Revoke",
     /** The button's whole name, since a roster holds many phones and each button says "Revoke". */
     revokeLabel: (phone: string, technician: string) => `Revoke ${phone} of ${technician}`,
     confirm: "Revoke this phone",
-    cancel: "Keep it",
+    cancel: "Cancel",
     revoking: "Revoking",
     revoked: (date: string) => `Revoked ${date}`,
     /** The board draws no revoke, so nothing writes what one does. */
     warning:
-      "The session ends, the phone drops its cached jobs when it is next online, and he cannot sign in again until you let him.",
+      "Signs the phone out and clears its jobs when it next connects. They can't sign in again until you allow it.",
     // The board draws no revoke, so nothing writes what follows one.
-    stopped: (date: string) => `Sign-in stopped since ${date}, when a phone was revoked.`,
-    allow: "Let him sign in again",
-    allowing: "Letting him in",
-    allowed: "He can sign in again.",
+    stopped: (date: string) => `Sign-in blocked since ${date}, when a phone was revoked.`,
+    allow: "Allow sign-in",
+    allowing: "Allowing",
+    allowed: "They can sign in again.",
     errors: {
       not_permitted: NOT_PERMITTED,
-      not_found: "That phone is not this technician's any more. Reload to see the roster as it stands.",
-      offline: "You are offline. Connect, then try again.",
-      unknown: "That did not go through. Please try again.",
+      not_found: "That phone is no longer theirs. Reload.",
+      offline: OFFLINE,
+      unknown: FAILED,
     } as Readonly<Record<string, string>>,
   },
   /**
@@ -101,37 +101,36 @@ export const technicians = {
     from: "First day",
     to: "Last day",
     note: "Note (optional)",
-    save: "Record it",
+    save: "Record",
     saving: "Recording",
     cancel: "Cancel",
     /** Taking leave back, which lets those days be worked again, asked once more before it is sent. */
-    take: "Take it back",
-    takeLabel: (period: string, technician: string) => `Take back ${technician}'s leave, ${period}`,
+    take: "Cancel leave",
+    takeLabel: (period: string, technician: string) => `Cancel ${technician}'s leave, ${period}`,
     check: {
-      title: (period: string) => `Take back leave, ${period}?`,
-      line: "He can be booked again on those days.",
-      send: "Take it back",
-      sending: "Taking it back",
-      back: "Keep the leave",
+      title: (period: string) => `Cancel leave, ${period}?`,
+      line: "They can be booked on those days again.",
+      send: "Cancel leave",
+      sending: "Cancelling",
+      back: "Keep leave",
     },
     recorded: "Leave recorded.",
-    effect: "Nobody can be booked or assigned on these days until the leave is taken back.",
+    effect: "No bookings or assignments on these days.",
     // Leave recorded over jobs already booked moves none of them.
     stranded: {
       title: (count: number) =>
-        `${String(count)} ${count === 1 ? "job is" : "jobs are"} still booked on these days. Leave moves none.`,
+        `${String(count)} ${count === 1 ? "job is" : "jobs are"} still booked on these days. Move ${count === 1 ? "it" : "them"} on the board.`,
       job: (when: string, client: string) => `${when} · ${client}`,
-      noClient: "No client on our records",
+      noClient: "No client",
       show: "Show on board",
       showLabel: (when: string, client: string) => `Show on board: ${when} · ${client}`,
     },
     errors: {
       not_permitted: NOT_PERMITTED,
-      invalid_request:
-        "Those dates do not work: the last day cannot come before the first, and leave runs a year at most.",
-      not_found: "That technician or that leave is no longer here. Reload to see it as it stands.",
-      offline: "You are offline. Connect, then try again.",
-      unknown: "That did not go through. Please try again.",
+      invalid_request: "The last day must follow the first, within a year.",
+      not_found: "No longer exists. Reload.",
+      offline: OFFLINE,
+      unknown: FAILED,
     },
   },
   // The board draws no way to add, change or switch off a technician, so every line below is ours.
@@ -140,26 +139,26 @@ export const technicians = {
     mobile: "Mobile",
     zone: "Zone (optional)",
     city: "City",
-    cityHint: "Staff with access to this city see him. With no city, only national staff do.",
+    cityHint: "Staff with this city see them. Without one, only national staff do.",
     noCity: "No city",
   },
   add: {
     open: "Add a technician",
     title: "Add a technician",
-    effect: "His sign-in codes go to this number on WhatsApp. He can sign in as soon as he is added.",
+    effect: "Sign-in codes go to this number on WhatsApp. They can sign in straight away.",
     save: "Add technician",
     saving: "Adding",
     cancel: "Cancel",
-    added: (name: string) => `${name} is added. He can sign in now.`,
+    added: (name: string) => `${name} added. They can sign in now.`,
   },
   details: {
     title: "Details",
     mobile: "Mobile",
     zone: "Zone",
     city: "City",
-    change: "Change details",
-    changeLabel: (name: string) => `Change ${name}'s details`,
-    save: "Save changes",
+    change: "Edit details",
+    changeLabel: (name: string) => `Edit ${name}'s details`,
+    save: "Save",
     saving: "Saving",
     cancel: "Cancel",
   },
@@ -167,20 +166,20 @@ export const technicians = {
     open: "Switch off",
     openLabel: (name: string) => `Switch off ${name}`,
     warning:
-      "He is signed out at once and cannot sign in. His visits from now on go back on the dispatch board for someone else; a visit under way stays his.",
-    confirm: "Switch him off",
+      "Signs them out and blocks sign-in. Upcoming visits return to the dispatch board. A visit in progress stays theirs.",
+    confirm: "Switch off",
     sending: "Switching off",
-    cancel: "Keep him on",
+    cancel: "Cancel",
     returned: (count: number) =>
       count === 0
-        ? "He had no visits to come."
-        : `${String(count)} ${count === 1 ? "visit is" : "visits are"} back on the dispatch board, for someone else.`,
+        ? "No upcoming visits."
+        : `${String(count)} ${count === 1 ? "visit is" : "visits are"} back on the dispatch board.`,
     visit: (when: string, client: string) => `${when} · ${client}`,
-    noClient: "No client on our records",
-    move: "Give them out on the dispatch board",
+    noClient: "No client",
+    move: "Reassign on the dispatch board",
   },
   switchOn: {
-    note: "Switched off. He cannot sign in, and nothing is booked on him.",
+    note: "Switched off. Can't sign in or be booked.",
     open: "Switch back on",
     openLabel: (name: string) => `Switch ${name} back on`,
     sending: "Switching on",
@@ -190,13 +189,13 @@ export const technicians = {
   /** Why an add, a change or a switch was refused; nothing changed either way. */
   errors: {
     number_in_use: "Another active technician signs in with that number.",
-    number_in_use_now: "Another active technician signs in with his number now. Change one of the two numbers first.",
+    number_in_use_now: "Another active technician now uses this number. Change one of them first.",
     unreadable_mobile: "Enter a 10-digit Indian mobile.",
     invalid_request: "Enter his name and a 10-digit Indian mobile.",
-    not_found: "That technician is no longer here. Reload to see the roster as it stands.",
+    not_found: "No longer on the roster. Reload.",
     not_permitted: NOT_PERMITTED,
-    offline: "You are offline. Connect, then try again.",
-    unknown: "That did not go through. Please try again.",
+    offline: OFFLINE,
+    unknown: FAILED,
   },
 } as const;
 

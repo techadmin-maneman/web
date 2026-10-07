@@ -43,17 +43,15 @@ test("moves a job from a list, sends the board it was taken from, and says only 
   const sent = sentTo(page, MOVE);
 
   await press(page, ROHIT_BLOCK);
-  await press(page, "Move this visit");
+  await press(page, "Move visit");
   // The keyboard's way: the list of destinations, then the same sheet.
-  await page.getByLabel("Or choose where from a list").selectOption({ label: "Sandeep Yadav · Sat 20 Sep · morning" });
+  await page.getByLabel("Or choose from a list").selectOption({ label: "Sandeep Yadav · Sat 20 Sep · morning" });
   await press(page, "Choose");
 
   const picker = page.getByRole("dialog", { name: "Move Rohit M. to Sandeep Yadav" });
   // The exact start the move takes, not the window alone.
   await expect(picker).toContainText("Fri 19 Sep, 9 am → Sat 20 Sep, 9 am");
-  await expect(picker).toContainText(
-    "Rohit M. is messaged on WhatsApp with the new window. Their payment carries over.",
-  );
+  await expect(picker).toContainText("Rohit M. gets the new window on WhatsApp. Their payment carries over.");
   // Nothing has gone out, and nothing can until a reason is chosen.
   expect(sent).toEqual([]);
   await expect(picker.getByRole("button", { name: "Move and notify" })).toBeDisabled();
@@ -63,7 +61,7 @@ test("moves a job from a list, sends the board it was taken from, and says only 
 
   // Queued is not sent: the notice says the message is on its way, and what happens if it fails.
   await expect(page.getByRole("status")).toHaveText(
-    "Moved. We're sending Rohit M. the new window on WhatsApp; if it fails, a call task appears.",
+    "Moved. Rohit M. gets the new window on WhatsApp. If it fails, a call task appears.",
   );
   expect(sent).toEqual([
     {
@@ -88,12 +86,12 @@ test("says a payment carries over only where one was made", async ({ page }) => 
   await open(page, { [READ_BOARD]: json(free) });
 
   await press(page, ROHIT_BLOCK);
-  await press(page, "Move this visit");
-  await page.getByLabel("Or choose where from a list").selectOption({ label: "Sandeep Yadav · Sat 20 Sep · morning" });
+  await press(page, "Move visit");
+  await page.getByLabel("Or choose from a list").selectOption({ label: "Sandeep Yadav · Sat 20 Sep · morning" });
   await press(page, "Choose");
 
   const picker = page.getByRole("dialog", { name: "Move Rohit M. to Sandeep Yadav" });
-  await expect(picker).toContainText("Rohit M. is messaged on WhatsApp with the new window.");
+  await expect(picker).toContainText("Rohit M. gets the new window on WhatsApp.");
   await expect(picker).not.toContainText("carries over");
   // No technician's skills are recorded, so a move cannot claim one.
   await expect(picker.getByRole("radio")).toHaveCount(4);
@@ -135,17 +133,17 @@ test("carries a job in hand to the next week, asks where it fits there, and move
   const sent = sentTo(page, MOVE);
 
   await press(page, ROHIT_BLOCK);
-  await press(page, "Move this visit");
+  await press(page, "Move visit");
   await page.getByRole("button", { name: "Next week" }).click();
 
-  const list = page.getByLabel("Or choose where from a list");
+  const list = page.getByLabel("Or choose from a list");
   await expect(list.getByRole("option")).toHaveText([
     "A technician, day and window",
     "Sandeep Yadav · Fri 26 Sep · morning",
   ]);
   await list.selectOption({ label: "Sandeep Yadav · Fri 26 Sep · morning" });
   await press(page, "Choose");
-  await reason(page, "Client asked to move it");
+  await reason(page, "Client asked");
   await press(page, "Move and notify");
 
   await expect(page.getByRole("status")).toContainText("Moved.");
@@ -179,14 +177,12 @@ test("says which technician and which window clashed, and keeps the job in hand"
   await open(page, { [MOVE_IT]: fails(409, "clash") });
 
   await press(page, ROHIT_BLOCK);
-  await press(page, "Move this visit");
+  await press(page, "Move visit");
   await press(page, TO_SANDEEP);
   await page.getByRole("radio", { name: "Technician unavailable" }).check();
   await page.getByRole("button", { name: "Move and notify" }).click();
 
-  await expect(page.getByRole("alert")).toHaveText(
-    "Sandeep Yadav already holds a job on Sat 20 Sep, morning. Nothing was moved.",
-  );
+  await expect(page.getByRole("alert")).toHaveText("Sandeep Yadav already has a job on Sat 20 Sep, morning.");
   // The job is still in hand, so another window can be chosen without starting again.
   await expect(page.getByText("Moving Rohit M.")).toBeVisible();
   await expect(page.getByRole("dialog")).toHaveCount(0);
@@ -196,28 +192,24 @@ test("says which technician and which window clashed, and keeps the job in hand"
 test("says a window has no room for the visit, rather than naming a clash", async ({ page }) => {
   await open(page, { [MOVE_IT]: fails(409, "does_not_fit") });
   await press(page, ROHIT_BLOCK);
-  await press(page, "Move this visit");
+  await press(page, "Move visit");
   await press(page, TO_SANDEEP);
-  await reason(page, "Client asked to move it");
+  await reason(page, "Client asked");
   await press(page, "Move and notify");
 
-  await expect(page.getByRole("alert")).toHaveText(
-    "Service visit has no room in Sandeep Yadav's morning on Sat 20 Sep: its time is taken, or it would run past the day's end. Nothing was moved.",
-  );
+  await expect(page.getByRole("alert")).toHaveText("Service visit: no room in Sandeep Yadav's morning on Sat 20 Sep.");
 });
 
 // A move lands only at a start still ahead, and the server names a window already over.
 test("says a window's starts have all passed, and keeps the job in hand", async ({ page }) => {
   await open(page, { [MOVE_IT]: fails(409, "window_passed") });
   await press(page, ROHIT_BLOCK);
-  await press(page, "Move this visit");
+  await press(page, "Move visit");
   await press(page, TO_SANDEEP);
-  await reason(page, "Client asked to move it");
+  await reason(page, "Client asked");
   await press(page, "Move and notify");
 
-  await expect(page.getByRole("alert")).toHaveText(
-    "Too late for Sat 20 Sep, morning. Choose a later window. Nothing was moved.",
-  );
+  await expect(page.getByRole("alert")).toHaveText("Too late for Sat 20 Sep, morning. Choose a later window.");
   await expect(page.getByText("Moving Rohit M.")).toBeVisible();
 });
 
@@ -226,17 +218,17 @@ test("asks why before a move onto a blacked-out day, and sends the reason with i
   await open(page, { [READ_ROOM]: json({ ...ROOM, blackouts: ["2025-09-20"] }), [MOVE_IT]: json(MOVED) });
   const sent = sentTo(page, MOVE);
   await press(page, ROHIT_BLOCK);
-  await press(page, "Move this visit");
+  await press(page, "Move visit");
   await press(page, TO_SANDEEP);
 
   const picker = page.getByRole("dialog", { name: "Move Rohit M. to Sandeep Yadav" });
-  await expect(picker).toContainText("Sat 20 Sep is blacked out, so nothing is booked that day.");
-  await reason(page, "Client asked to move it");
+  await expect(picker).toContainText("Sat 20 Sep is a closed day.");
+  await reason(page, "Client asked");
   await expect(picker.getByRole("button", { name: "Move and notify" })).toBeDisabled();
-  await picker.getByLabel("Why it goes ahead that day").fill("His only free day before he travels");
+  await picker.getByLabel("Reason").fill("His only free day before he travels");
   await press(page, "Move and notify");
 
-  await expect(page.getByRole("status")).toContainText("Moved. We're sending Rohit M. the new window on WhatsApp;");
+  await expect(page.getByRole("status")).toContainText("Moved. Rohit M. gets the new window on WhatsApp.");
   expect(sent).toEqual([expect.objectContaining({ blackout_reason: "His only free day before he travels" })]);
 });
 
@@ -252,10 +244,10 @@ test("assigns a tray job through the assign route, with no technician expected",
     .getByRole("button", { name: "Assign to a technician" })
     .click();
   await page.getByRole("button", { name: "Move Vikram S. to Imran Qureshi, Sat 20 Sep, afternoon" }).click();
-  await page.getByRole("radio", { name: "Client asked to move it" }).check();
+  await page.getByRole("radio", { name: "Client asked" }).check();
   await page.getByRole("button", { name: "Move", exact: true }).click();
 
-  await expect(page.getByRole("status")).toContainText("Moved. We're sending Vikram S. the new window on WhatsApp;");
+  await expect(page.getByRole("status")).toContainText("Moved. Vikram S. gets the new window on WhatsApp.");
   expect(moved).toEqual([]);
   expect(assigned).toEqual([
     {
@@ -279,23 +271,23 @@ test("asks ops to call a client who has not agreed to WhatsApp, and records the 
   });
 
   await press(page, "Vikram S., Fri 19 Sep, afternoon");
-  await press(page, "Move this visit");
+  await press(page, "Move visit");
   await press(page, "Move Vikram S. to Sandeep Yadav, Sat 20 Sep, morning");
   const picker = page.getByRole("dialog", { name: "Move Vikram S. to Sandeep Yadav" });
   await expect(picker).toContainText(
-    "Vikram Sethi has not agreed to WhatsApp — call +91 98100 00002 with the new window.",
+    "Vikram Sethi isn't on WhatsApp updates. Call +91 98100 00002 with the new window.",
   );
   // No message goes, so the button promises none.
   await expect(picker.getByRole("button", { name: "Move and notify" })).toHaveCount(0);
-  await reason(page, "Client asked to move it");
+  await reason(page, "Client asked");
   await press(page, "Move");
 
   const status = page.getByRole("status");
   await expect(status).toContainText(
-    "Vikram S. moved. Vikram Sethi has not agreed to WhatsApp: call +91 98100 00002 with the new window.",
+    "Vikram S. moved. Vikram Sethi isn't on WhatsApp updates: call +91 98100 00002 with the new window.",
   );
   await status.getByRole("button", { name: "Told by phone" }).click();
-  await expect(page.getByRole("status")).toHaveText(`Recorded that ${VIKRAM.name} was told by phone.`);
+  await expect(page.getByRole("status")).toHaveText(`Recorded: ${VIKRAM.name} told by phone.`);
   expect(told).toHaveLength(1);
   expect(VIKRAM_JOB?.person?.whatsapp_visits).toBe(false);
 });
@@ -303,17 +295,15 @@ test("asks ops to call a client who has not agreed to WhatsApp, and records the 
 test("tells ops a change of technician alone messages nobody", async ({ page }) => {
   await open(page, { [MOVE_IT]: json({ ...MOVED, client_notice: "unchanged" }) });
   await press(page, ROHIT_BLOCK);
-  await press(page, "Move this visit");
+  await press(page, "Move visit");
   await press(page, "Move Rohit M. to Sandeep Yadav, Fri 19 Sep, morning");
 
   const picker = page.getByRole("dialog", { name: "Move Rohit M. to Sandeep Yadav" });
-  await expect(picker).toContainText(
-    "Only the technician changes. Rohit M. keeps the same window, so nobody is messaged.",
-  );
+  await expect(picker).toContainText("Only the technician changes. Rohit M. keeps the same window and isn't messaged.");
   await reason(page, "Zone rebalance");
   await press(page, "Move");
   await expect(page.getByRole("status")).toHaveText(
-    "Rohit M. is now with Sandeep Yadav. The window is the same, so nobody was messaged.",
+    "Rohit M. is now with Sandeep Yadav. Same window, so no message sent.",
   );
 });
 
@@ -332,7 +322,7 @@ test("lets go of nothing while a move is being sent, so it cannot be sent twice"
   });
 
   await press(page, ROHIT_BLOCK);
-  await press(page, "Move this visit");
+  await press(page, "Move visit");
   await press(page, TO_SANDEEP);
   await reason(page, "Zone rebalance");
   await press(page, "Move and notify");
@@ -344,7 +334,7 @@ test("lets go of nothing while a move is being sent, so it cannot be sent twice"
   await expect(page.getByRole("button", { name: "Cancel" })).toBeDisabled();
 
   release();
-  await expect(page.getByRole("status")).toContainText("Moved. We're sending Rohit M. the new window on WhatsApp;");
+  await expect(page.getByRole("status")).toContainText("Moved. Rohit M. gets the new window on WhatsApp.");
   expect(sent).toHaveLength(1);
 });
 
@@ -364,13 +354,13 @@ test("refuses a move made from a stale board, and says where the job is now", as
   });
 
   await press(page, ROHIT_BLOCK);
-  await press(page, "Move this visit");
+  await press(page, "Move visit");
   await press(page, TO_SANDEEP);
   await reason(page, "Zone rebalance");
   await press(page, "Move and notify");
 
   await expect(page.getByRole("alert")).toHaveText(
-    "Someone else moved Rohit M. while you were choosing. It is now with Arjun Negi, Sat 20 Sep, evening. Nothing was moved.",
+    "Rohit M. was just moved by someone else. It's now with Arjun Negi, Sat 20 Sep, evening.",
   );
   await expect(page.getByText("Moving Rohit M.")).toBeHidden();
 });

@@ -43,7 +43,7 @@ async function charged(page: Page, dispute: Dispute, closedAt: string | null = n
 
 test("says what the charge kept, and offers its dispute", async ({ page }) => {
   await charged(page, null);
-  await expect(page.getByText("We came, and waited 16 minutes, but nobody was home.")).toBeVisible();
+  await expect(page.getByText("We came and waited 16 minutes, but no one was home.")).toBeVisible();
   await expect(page.getByText("Charged: we kept Rs. 4,000 of what you paid.")).toBeVisible();
   await expect(page.getByRole("button", { name: "Dispute this charge" })).toBeVisible();
 });
@@ -62,7 +62,7 @@ test("sends the dispute with the client's words, and says it is with us", async 
   await sheet.getByRole("button", { name: "Send" }).click();
   expect((await sent).postDataJSON()).toEqual({ reason: "I was home all morning. Nobody rang the bell." });
   // The sheet is named by its heading, which now says the dispute is with us.
-  await expect(page.getByRole("dialog").getByRole("status")).toContainText("We have your dispute.");
+  await expect(page.getByRole("dialog").getByRole("status")).toContainText("Dispute received.");
 });
 
 // A charge may be disputed for 30 days after it (src/policy/no-show.ts).
@@ -77,7 +77,7 @@ test("says the days to dispute have passed, when they pass while the sheet is op
   await sheet.getByLabel("Why is the charge wrong?").fill("I was home all morning.");
   await sheet.getByRole("button", { name: "Send" }).click();
   await expect(page.getByRole("dialog").getByRole("status")).toContainText(
-    "The days to dispute this charge have passed.",
+    "The time to dispute this charge has passed.",
   );
 });
 

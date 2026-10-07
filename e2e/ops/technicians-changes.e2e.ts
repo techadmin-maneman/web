@@ -54,7 +54,7 @@ test("adds a technician, whose number signs in at once", async ({ page }) => {
   await openWith(page, { [ADD]: json(TECHNICIAN_ADDED, 201) });
   await page.getByRole("button", { name: "Add a technician" }).click();
   const form = page.getByRole("dialog", { name: "Add a technician" });
-  await expect(form.getByText("His sign-in codes go to this number on WhatsApp")).toBeVisible();
+  await expect(form.getByText("Sign-in codes go to this number on WhatsApp")).toBeVisible();
 
   await form.getByRole("textbox", { name: "Name" }).fill("Naveen Rao");
   await form.getByRole("textbox", { name: "Mobile" }).fill("+91 98100 00007");
@@ -70,7 +70,7 @@ test("adds a technician, whose number signs in at once", async ({ page }) => {
     city: "Noida",
   });
   await expect(form).toBeHidden();
-  await expect(page.getByRole("status")).toContainText("Naveen Rao is added. He can sign in now.");
+  await expect(page.getByRole("status")).toContainText("Naveen Rao added. They can sign in now.");
   expect(await axeViolations(page)).toEqual([]);
 });
 
@@ -108,17 +108,17 @@ test("changes a technician's details, sending only what changed", async ({ page 
   const main = await pageOf(page, "Imran Qureshi");
   await expect(main.getByText("+91 98100 00001")).toBeVisible();
 
-  await main.getByRole("button", { name: "Change Imran Qureshi's details" }).click();
+  await main.getByRole("button", { name: "Edit Imran Qureshi's details" }).click();
   await main.getByRole("textbox", { name: "Zone (optional)" }).fill("Sec 1–39");
   const sent = page.waitForRequest((request) => request.method() === "PATCH");
   roster.current = {
     ...TECHNICIANS,
     technicians: TECHNICIANS.technicians.map((each) => (each.id === IMRAN ? { ...each, zone: "Sec 1–39" } : each)),
   };
-  await main.getByRole("button", { name: "Save changes" }).click();
+  await main.getByRole("button", { name: "Save" }).click();
 
   expect((await sent).postDataJSON()).toEqual({ zone: "Sec 1–39" });
-  await expect(main.getByRole("button", { name: "Save changes" })).toBeHidden();
+  await expect(main.getByRole("button", { name: "Save" })).toBeHidden();
   await backToRoster(page);
   await expect(page.getByRole("row").filter({ hasText: "Imran Qureshi" })).toContainText("Sec 1–39");
 });
@@ -128,12 +128,12 @@ test("moves a technician to another city, or to none", async ({ page }) => {
   const main = await pageOf(page, "Imran Qureshi");
   await expect(main.getByRole("definition").filter({ hasText: "Gurgaon" })).toBeVisible();
 
-  await main.getByRole("button", { name: "Change Imran Qureshi's details" }).click();
+  await main.getByRole("button", { name: "Edit Imran Qureshi's details" }).click();
   const city = main.getByRole("combobox", { name: "City" });
   await expect(city).toHaveValue("Gurgaon");
   await city.selectOption("No city");
   const sent = page.waitForRequest((request) => request.method() === "PATCH");
-  await main.getByRole("button", { name: "Save changes" }).click();
+  await main.getByRole("button", { name: "Save" }).click();
 
   expect((await sent).postDataJSON()).toEqual({ city: null });
 });
@@ -144,8 +144,8 @@ test("switches a technician off only once asked, and lists the visits he no long
   const main = await pageOf(page, "Imran Qureshi");
 
   await main.getByRole("button", { name: "Switch off Imran Qureshi" }).click();
-  await expect(main.getByText("He is signed out at once and cannot sign in.")).toBeVisible();
-  await main.getByRole("button", { name: "Keep him on" }).click();
+  await expect(main.getByText("Signs them out and blocks sign-in.")).toBeVisible();
+  await main.getByRole("button", { name: "Cancel" }).click();
   await main.getByRole("button", { name: "Switch off Imran Qureshi" }).click();
 
   roster.current = {
@@ -153,13 +153,13 @@ test("switches a technician off only once asked, and lists the visits he no long
     technicians: TECHNICIANS.technicians.filter((each) => each.id !== IMRAN),
     switched_off: [{ id: IMRAN, name: "Imran Qureshi", zone: "Sec 40–65", city: "Gurgaon", mobile: "+919810000001" }],
   };
-  await main.getByRole("button", { name: "Switch him off" }).click();
+  await main.getByRole("button", { name: "Switch off" }).click();
 
   const returned = main.getByRole("status");
-  await expect(returned).toContainText("2 visits are back on the dispatch board, for someone else.");
+  await expect(returned).toContainText("2 visits are back on the dispatch board.");
   await expect(returned).toContainText("Fri 24 Sep, 10 am · Rohit Malhotra");
-  await expect(returned).toContainText("No client on our records");
-  await expect(returned.getByRole("link", { name: "Give them out on the dispatch board" })).toHaveAttribute(
+  await expect(returned).toContainText("No client");
+  await expect(returned.getByRole("link", { name: "Reassign on the dispatch board" })).toHaveAttribute(
     "href",
     "/dispatch",
   );
@@ -171,13 +171,13 @@ test("switches a technician off only once asked, and lists the visits he no long
   // They are off the roster's table, and listed apart.
   await backToRoster(page);
   await expect(page.getByRole("row").filter({ hasText: "Imran Qureshi" })).toHaveCount(0);
-  await expect(page.getByRole("region", { name: "Switched off" })).toContainText("Imran Qureshi");
+  await expect(page.getByRole("region", { name: "Off" })).toContainText("Imran Qureshi");
 });
 
 test("lists the technicians switched off apart, and switches one back on", async ({ page }) => {
   const { roster, reply } = rosterOf({ ...TECHNICIANS, switched_off: [RAVI] });
   await openWith(page, { [SWITCH_ON]: json({ active: true }) }, reply);
-  const off = page.getByRole("region", { name: "Switched off" });
+  const off = page.getByRole("region", { name: "Off" });
   await expect(off).toContainText("Ravi Kumar");
   await expect(page.getByRole("row").filter({ hasText: "Ravi Kumar" })).toHaveCount(0);
 
@@ -206,7 +206,7 @@ test("says so when the number he signs in with is another's now", async ({ page 
   await main.getByRole("button", { name: "Switch Ravi Kumar back on" }).click();
 
   await expect(main.getByRole("alert")).toHaveText(
-    "Another active technician signs in with his number now. Change one of the two numbers first.",
+    "Another active technician now uses this number. Change one of them first.",
   );
 });
 
@@ -214,7 +214,7 @@ test("says plainly when the person's access does not reach a switch", async ({ p
   await openWith(page, { [SWITCH_OFF]: fails(403, "not_permitted") });
   const main = await pageOf(page, "Imran Qureshi");
   await main.getByRole("button", { name: "Switch off Imran Qureshi" }).click();
-  await main.getByRole("button", { name: "Switch him off" }).click();
+  await main.getByRole("button", { name: "Switch off" }).click();
 
   await expect(main.getByRole("alert")).toHaveText("Your access doesn't include this. Ask an admin.");
 });

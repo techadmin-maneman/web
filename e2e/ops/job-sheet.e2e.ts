@@ -29,12 +29,12 @@ test("shows a kind's checklist in its order, who set it, and what was taken off"
   await expect(list.getByLabel("Item 3")).toHaveValue("Piece refitted");
   await expect(list).toContainText("Set by ops@maneman.in on 20 Sep 2027");
   await expect(list).toContainText("Adhesive renewed");
-  await expect(list.getByRole("button", { name: "Put back: Adhesive renewed" })).toBeVisible();
+  await expect(list.getByRole("button", { name: "Restore: Adhesive renewed" })).toBeVisible();
 
   await page.getByLabel("Kind of visit").selectOption({ label: "Replacement" });
   const replacement = page.getByRole("group", { name: "Replacement checklist" });
   await expect(replacement.getByLabel("Item 1")).toHaveValue("Old piece removed");
-  await expect(replacement).toContainText("Nobody has set this, so the standard list stands.");
+  await expect(replacement).toContainText("Default");
 });
 
 test("renames, moves, takes off and adds, shows each before it is sent, and keeps every code", async ({ page }) => {
@@ -42,20 +42,20 @@ test("renames, moves, takes off and adds, shows each before it is sent, and keep
   const list = checklist(page);
   await list.getByLabel("Item 2").fill("Scalp cleaned and dried");
   await list.getByRole("button", { name: "Move up: Piece refitted" }).click();
-  await list.getByRole("button", { name: "Take off: Piece removed" }).click();
-  await list.getByRole("button", { name: "Add an item" }).click();
+  await list.getByRole("button", { name: "Remove: Piece removed" }).click();
+  await list.getByRole("button", { name: "Add item" }).click();
   await list.getByLabel("Item 3").fill("Photo angles checked");
-  await list.getByRole("button", { name: "Save this list" }).click();
+  await list.getByRole("button", { name: "Save" }).click();
 
-  const check = list.getByRole("group", { name: "Check the change" });
+  const check = list.getByRole("group", { name: "Review the change" });
   await expect(check).toBeFocused();
   await expect(check).toContainText("Renamed: Scalp cleaned → Scalp cleaned and dried");
   await expect(check).toContainText("Added: Photo angles checked");
-  await expect(check).toContainText("Taken off: Piece removed");
-  await expect(check).toContainText("The order changes.");
+  await expect(check).toContainText("Removed: Piece removed");
+  await expect(check).toContainText("Order changed.");
 
   const sent = posted(page, "/api/job-sheet/checklists/service");
-  await check.getByRole("button", { name: "Save it" }).click();
+  await check.getByRole("button", { name: "Confirm" }).click();
   expect((await sent).postDataJSON()).toEqual({
     items: [
       { code: "piece_refitted", label: "Piece refitted" },
@@ -63,18 +63,18 @@ test("renames, moves, takes off and adds, shows each before it is sent, and keep
       { label: "Photo angles checked" },
     ],
   });
-  await expect(list.getByRole("status")).toHaveText("Saved. Each phone reads it with the next job it opens.");
+  await expect(list.getByRole("status")).toHaveText("Saved.");
 });
 
 test("puts an item taken off back on the list, under its own code", async ({ page }) => {
   await open(page, { "POST /api/job-sheet/checklists/{visit_type}": json(JOB_SHEET) });
   const list = checklist(page);
-  await list.getByRole("button", { name: "Put back: Adhesive renewed" }).click();
+  await list.getByRole("button", { name: "Restore: Adhesive renewed" }).click();
   await expect(list.getByLabel("Item 4")).toHaveValue("Adhesive renewed");
 
-  await list.getByRole("button", { name: "Save this list" }).click();
+  await list.getByRole("button", { name: "Save" }).click();
   const sent = posted(page, "/api/job-sheet/checklists/service");
-  await list.getByRole("button", { name: "Save it" }).click();
+  await list.getByRole("button", { name: "Confirm" }).click();
   expect((await sent).postDataJSON()).toMatchObject({
     items: [{}, {}, {}, { code: "adhesive_renewed", label: "Adhesive renewed" }],
   });
@@ -83,25 +83,25 @@ test("puts an item taken off back on the list, under its own code", async ({ pag
 test("will not save an item with no words, nor two alike", async ({ page }) => {
   await open(page);
   const list = checklist(page);
-  await list.getByRole("button", { name: "Add an item" }).click();
-  await expect(list.getByRole("button", { name: "Save this list" })).toBeDisabled();
+  await list.getByRole("button", { name: "Add item" }).click();
+  await expect(list.getByRole("button", { name: "Save" })).toBeDisabled();
 
   await list.getByLabel("Item 4").fill("piece removed");
-  await expect(list.getByRole("button", { name: "Save this list" })).toBeDisabled();
+  await expect(list.getByRole("button", { name: "Save" })).toBeDisabled();
   await list.getByLabel("Item 4").fill("Piece checked");
-  await expect(list.getByRole("button", { name: "Save this list" })).toBeEnabled();
+  await expect(list.getByRole("button", { name: "Save" })).toBeEnabled();
 });
 
 test("sets the partial reasons the Tasks board reads", async ({ page }) => {
   await open(page, { "POST /api/job-sheet/partial-reasons": json(JOB_SHEET) });
   const reasons = page.getByRole("group", { name: "Partial reasons" });
-  await reasons.getByRole("button", { name: "Add a reason" }).click();
+  await reasons.getByRole("button", { name: "Add reason" }).click();
   await reasons.getByLabel("Reason 3").fill("Power cut");
-  await reasons.getByRole("button", { name: "Save this list" }).click();
-  await expect(reasons.getByRole("group", { name: "Check the change" })).toContainText("Added: Power cut");
+  await reasons.getByRole("button", { name: "Save" }).click();
+  await expect(reasons.getByRole("group", { name: "Review the change" })).toContainText("Added: Power cut");
 
   const sent = posted(page, "/api/job-sheet/partial-reasons");
-  await reasons.getByRole("button", { name: "Save it" }).click();
+  await reasons.getByRole("button", { name: "Confirm" }).click();
   expect((await sent).postDataJSON()).toEqual({
     items: [
       { code: "client_stopped_it", label: "Client stopped it partway" },
@@ -116,7 +116,7 @@ test("meets WCAG 2.2 AA, with a change being checked as well", async ({ page }) 
   expect(await axeViolations(page)).toEqual([]);
 
   await checklist(page).getByLabel("Item 1").fill("Piece taken off");
-  await checklist(page).getByRole("button", { name: "Save this list" }).click();
-  await expect(checklist(page).getByRole("group", { name: "Check the change" })).toBeVisible();
+  await checklist(page).getByRole("button", { name: "Save" }).click();
+  await expect(checklist(page).getByRole("group", { name: "Review the change" })).toBeVisible();
   expect(await axeViolations(page)).toEqual([]);
 });

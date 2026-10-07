@@ -59,9 +59,9 @@ test("lists each person with their access and whether they are let in", async ({
   const owner = row(page, "owner@maneman.in");
   await expect(owner).toContainText("Admin · Manage · National");
   await expect(owner).toContainText("Finance · Manage · National");
-  await expect(owner).toContainText("Let in");
+  await expect(owner).toContainText("Active");
   await expect(row(page, "noida.lead@maneman.in")).toContainText("Operations · Act · Noida");
-  await expect(row(page, "noida.lead@maneman.in")).toContainText("Switched off");
+  await expect(row(page, "noida.lead@maneman.in")).toContainText("Off");
   await expect(page.getByText("a1b2c3d4.access")).toBeVisible();
 });
 
@@ -69,18 +69,18 @@ test("adds a person only after the check names what they are given", async ({ pa
   await open(page, { "POST /api/staff": json(BOOK) });
   await page.getByRole("button", { name: "Add a person" }).click();
   const form = page.getByRole("form", { name: "Add a person" });
-  await form.getByLabel("Sign-in e-mail").fill("delhi.lead@maneman.in");
+  await form.getByLabel("Sign-in email").fill("delhi.lead@maneman.in");
   await form.getByLabel("Department").selectOption("finance");
   await form.getByLabel("Level").selectOption("act");
   await form.getByLabel("Where").selectOption("city:Delhi");
   await form.getByRole("button", { name: "Review" }).click();
 
-  const check = page.getByRole("group", { name: "Check the change" });
+  const check = page.getByRole("group", { name: "Review the change" });
   await expect(check).toContainText("Adds delhi.lead@maneman.in.");
-  await expect(check).toContainText("Gives Finance · Act · Delhi");
+  await expect(check).toContainText("Grants Finance · Act · Delhi");
 
   const request = posted(page, "/api/staff");
-  await check.getByRole("button", { name: "Save it" }).click();
+  await check.getByRole("button", { name: "Confirm" }).click();
   expect((await request).postDataJSON()).toEqual({
     email: "delhi.lead@maneman.in",
     active: true,
@@ -93,46 +93,44 @@ test("sends someone already listed to Change, rather than replacing their access
   await open(page);
   await page.getByRole("button", { name: "Add a person" }).click();
   const form = page.getByRole("form", { name: "Add a person" });
-  await form.getByLabel("Sign-in e-mail").fill("Owner@ManeMan.in");
+  await form.getByLabel("Sign-in email").fill("Owner@ManeMan.in");
   await form.getByRole("button", { name: "Review" }).click();
 
-  await expect(page.getByRole("alert")).toHaveText(
-    "This person is already on the list. Use Change beside their e-mail.",
-  );
-  await expect(page.getByRole("group", { name: "Check the change" })).toHaveCount(0);
+  await expect(page.getByRole("alert")).toHaveText("Already listed. Use Change.");
+  await expect(page.getByRole("group", { name: "Review the change" })).toHaveCount(0);
 });
 
 test("says why a change was refused", async ({ page }) => {
   await open(page, { "POST /api/staff": fails(409, "last_admin") });
   await page.getByRole("button", { name: "Change owner@maneman.in" }).click();
-  await page.getByLabel("Let them in").uncheck();
+  await page.getByLabel("Active").uncheck();
   await page.getByRole("button", { name: "Review" }).click();
-  const check = page.getByRole("group", { name: "Check the change" });
-  await expect(check).toContainText("Switches them off: the console closes to them.");
-  await check.getByRole("button", { name: "Save it" }).click();
+  const check = page.getByRole("group", { name: "Review the change" });
+  await expect(check).toContainText("Removes all their access.");
+  await check.getByRole("button", { name: "Confirm" }).click();
   await expect(page.getByRole("alert")).toHaveText(
-    "Someone must keep Admin · Manage nationally. Give it to another person first.",
+    "Someone must keep national Admin · Manage. Grant it to someone else first.",
   );
 });
 
 test("starts enforcing only after the check, for someone who may switch it", async ({ page }) => {
   const enforced = { ...BOOK, enforced: { on: true, set_by: "owner@maneman.in", set_at: AT } };
   await open(page, { "POST /api/staff/enforcement": json(enforced) });
-  await page.getByRole("button", { name: "Start enforcing" }).click();
-  const check = page.getByRole("group", { name: "Start enforcing access?" });
+  await page.getByRole("button", { name: "Turn on" }).click();
+  const check = page.getByRole("group", { name: "Turn on access control?" });
   const request = posted(page, "/api/staff/enforcement");
-  await check.getByRole("button", { name: "Start enforcing" }).click();
+  await check.getByRole("button", { name: "Turn on" }).click();
   expect((await request).postDataJSON()).toEqual({ on: true });
-  await expect(page.getByRole("button", { name: "Stop enforcing" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Turn off" })).toBeVisible();
 });
 
 test("offers the switch and the service tokens to nobody without Admin · Manage nationally", async ({ page }) => {
   await open(page, { "GET /api/staff": json({ ...BOOK, may_run_access: false }) });
-  await expect(page.getByRole("button", { name: "Start enforcing" })).toHaveCount(0);
-  await expect(page.getByText("Only someone with Admin · Manage nationally can switch this.")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Turn on" })).toHaveCount(0);
+  await expect(page.getByText("Only national Admin · Manage can change this.")).toBeVisible();
   await expect(page.getByRole("button", { name: /^Remove / })).toHaveCount(0);
-  await expect(page.getByRole("form", { name: "Add the token" })).toHaveCount(0);
-  await expect(page.getByText("Only someone with Admin · Manage nationally can change service tokens.")).toBeVisible();
+  await expect(page.getByRole("form", { name: "Add token" })).toHaveCount(0);
+  await expect(page.getByText("Only national Admin · Manage can change service tokens.")).toBeVisible();
 });
 
 test("meets WCAG 2.2 AA", async ({ page }) => {

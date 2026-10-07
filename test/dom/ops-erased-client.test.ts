@@ -154,23 +154,21 @@ describe("a deletion decided in the queue", () => {
     await show(createElement(DeletionsScreen));
 
     act(() => {
-      buttonNamed("Delete the account")?.click();
+      buttonNamed("Delete account")?.click();
     });
     const check = [...page.querySelectorAll("label")].find((label) =>
-      label.textContent.includes("I have confirmed this request"),
+      label.textContent.includes("confirmed this with the client"),
     );
     act(() => {
       check?.click();
     });
     await act(async () => {
-      buttonNamed("Delete this account")?.click();
+      buttonNamed("Delete permanently")?.click();
       await new Promise((resolve) => setTimeout(resolve, 0));
     });
 
-    expect(page.querySelector('[role="status"]')?.textContent).toBe(
-      "Account deleted. The client is told on WhatsApp, and the CRM and Books are blanked within the hour.",
-    );
-    expect(page.textContent).toContain("No deletion request is waiting.");
+    expect(page.querySelector('[role="status"]')?.textContent).toBe("Account deleted. The client is told on WhatsApp.");
+    expect(page.textContent).toContain("No deletion requests.");
     expect(page.textContent).not.toContain("Rohit Malhotra");
   });
 });

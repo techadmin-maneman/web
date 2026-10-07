@@ -60,13 +60,13 @@ test("says why an app opened from the home screen is signed out, and nothing of 
   );
   await page.goto("/");
   await expect(page.getByRole("heading", { level: 1, name: "Technician sign in" })).toBeVisible();
-  await expect(page.getByText(/The home-screen app signs in on its own/)).toHaveCount(0);
+  await expect(page.getByText(/Sign in here once, then use the home-screen app/)).toHaveCount(0);
 
   await page.addInitScript(() => {
     Object.defineProperty(navigator, "standalone", { value: true, configurable: true });
   });
   await page.reload();
-  await expect(page.getByText(/The home-screen app signs in on its own/)).toBeVisible();
+  await expect(page.getByText(/Sign in here once, then use the home-screen app/)).toBeVisible();
 
   expect(await axeViolations(page)).toEqual([]);
 });

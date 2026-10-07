@@ -31,8 +31,8 @@ test("shows another day's money when asked, and names the day it is for", async 
   await expect(money.getByRole("heading", { level: 2 })).toHaveText("Mon 20 Sep");
   await expect(money.getByText("Collected", { exact: true })).toBeVisible();
   await expect(money.getByText("Rs. 12,000")).toBeVisible();
-  await expect(money.getByText("Rs. 2,360 went back that day")).toBeVisible();
-  await expect(money.getByText("Nothing was charged that day.")).toBeVisible();
+  await expect(money.getByText("Rs. 2,360 refunded that day")).toBeVisible();
+  await expect(money.getByText("No charges that day.")).toBeVisible();
   expect([...new Set(asked)]).toEqual(["2027-09-20"]);
 });
 
@@ -43,7 +43,7 @@ test("heads the day with the board's three figures, as money", async ({ page }) 
   await expect(money.getByText("Rs. 84,000")).toBeVisible();
   await expect(money.getByText("Refunds processing")).toBeVisible();
   await expect(money.getByText("Rs. 7,080")).toBeVisible();
-  await expect(money.getByText("Rs. 2,360 went back today")).toBeVisible();
+  await expect(money.getByText("Rs. 2,360 refunded today")).toBeVisible();
 });
 
 // The board prices a no-show like a late cancellation, and the charge records what it kept
@@ -100,7 +100,7 @@ test("draws a disputed charge: the client's words, what the charge took, and the
   const card = disputeCard(page);
   await expect(card.getByText("Disputed charge")).toBeVisible();
   await expect(card.getByText("I was home all morning. Nobody rang the bell.")).toBeVisible();
-  await expect(card.getByText("The charge kept Rs. 2,360, for the visit of Sat 18 Sep.")).toBeVisible();
+  await expect(card.getByText("Kept Rs. 2,360 for the visit of Sat 18 Sep.")).toBeVisible();
   const row = (name: string) =>
     card
       .getByRole("term")
@@ -184,7 +184,7 @@ test("offers Refund and Uphold only once the note is written, and sends the ruli
   await card.getByRole("button", { name: "Refund" }).click();
   expect((await sent).postDataJSON()).toEqual({ ruling: "refunded", reason: "The bell was broken that week" });
   await expect(page.getByText(DISPUTED)).toBeHidden();
-  await expect(page.getByRole("region", { name: DISPUTES_QUEUE }).getByText("No charge is disputed.")).toBeVisible();
+  await expect(page.getByRole("region", { name: DISPUTES_QUEUE }).getByText("No disputed charges.")).toBeVisible();
   // The dispute is gone, so the keyboard goes to the queue's heading.
   await expect(page.getByRole("heading", { name: DISPUTES_QUEUE })).toBeFocused();
 });
@@ -203,7 +203,7 @@ test("says so when someone else has ruled on the dispute already", async ({ page
   const card = disputeCard(page);
   await card.getByLabel("Your note · required").fill("The bell was broken");
   await card.getByRole("button", { name: "Uphold" }).click();
-  await expect(card.getByRole("alert")).toContainText("Someone has ruled on this dispute already.");
+  await expect(card.getByRole("alert")).toContainText("Already ruled on. Reload.");
 });
 
 test("says so when nothing was charged on the day", async ({ page }) => {
@@ -220,7 +220,7 @@ test("says so when nothing was charged on the day", async ({ page }) => {
   });
   await page.clock.setFixedTime(TASKS_READ_ON);
   await page.goto("/no-shows");
-  await expect(page.getByText("Nothing was charged today.")).toBeVisible();
+  await expect(page.getByText("No charges today.")).toBeVisible();
   // A day on which nothing came in is a nought, which is true and not a guess.
   await expect(page.getByRole("region", { name: MONEY, exact: true }).getByText("Rs. 0").first()).toBeVisible();
   await expect(page.getByText("not charged yet")).toBeHidden();
@@ -229,7 +229,7 @@ test("says so when nothing was charged on the day", async ({ page }) => {
 test("says so when the day's money cannot be loaded, and leaves the queue standing", async ({ page }) => {
   await answer(page, { "GET /api/payments": fails(503, "unavailable"), "GET /api/no-shows": json(NO_SHOWS) });
   await page.goto("/no-shows");
-  await expect(page.getByRole("alert")).toContainText("We could not load this.");
+  await expect(page.getByRole("alert")).toContainText("Couldn't load this.");
   await expect(page.getByText(FIRST)).toBeVisible();
 });
 

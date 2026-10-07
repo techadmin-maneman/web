@@ -1,6 +1,6 @@
 // No-shows: the case, the charge, its ruling and a client's dispute.
 
-import { NOT_PERMITTED } from "./common.ts";
+import { FAILED, NOT_PERMITTED, OFFLINE } from "./common.ts";
 
 /**
  * The design's Payments: the day's money over "No-shows and late
@@ -27,7 +27,7 @@ export const noShows = {
       charged: "Charges and no-shows",
     },
     /** Under "Refunds processing", which counts what has not gone back yet. */
-    refunded: (amount: string, today: boolean) => `${amount} went back ${today ? "today" : "that day"}`,
+    refunded: (amount: string, today: boolean) => `${amount} refunded ${today ? "today" : "that day"}`,
     charges: {
       /** The board's own heading over the list. */
       title: "No-shows and late cancellations",
@@ -44,7 +44,7 @@ export const noShows = {
        */
       attended: (technician: string, was: string) => `${technician} attended · visit was ${was}`,
       /** A no-show whose case has lost the technician who attended. */
-      unattended: (was: string) => `Nobody was home · visit was ${was}`,
+      unattended: (was: string) => `No one home · visit was ${was}`,
       /** A charge on a visit that carries no start time. */
       undated: "time unknown",
       /** A charge on a visit with no client of ours. */
@@ -56,7 +56,7 @@ export const noShows = {
        */
       noAmount: "Amount not recorded",
       /** The board draws two charges and no empty day. */
-      empty: (today: boolean) => (today ? "Nothing was charged today." : "Nothing was charged that day."),
+      empty: (today: boolean) => (today ? "No charges today." : "No charges that day."),
     },
   },
   queue: {
@@ -65,7 +65,7 @@ export const noShows = {
      * Nothing lists a late cancellation, and what is here is a queue, as board
      * C1's "Held for review" is.
      */
-    title: "No-shows waiting for a decision",
+    title: "No-shows to decide",
     /** The visit the case belongs to: "Visit of Sat 19 Sep". */
     visit: (date: string) => `Visit of ${date}`,
     /** A case whose appointment carries no date. */
@@ -83,7 +83,7 @@ export const noShows = {
       booked: "Booked",
       checkIn: "Check-in",
       // Shown only when the phone gave a time the bounds would not take.
-      claimed: "The phone said",
+      claimed: "Phone time",
       received: "Reached us",
       distance: "Distance",
       whatsapp: "WhatsApp",
@@ -114,9 +114,10 @@ export const noShows = {
      * carries no distance (ADR 0036). Words rather than a number, because ops
      * charge a client on these facts and nothing was measured here at all.
      */
-    unmeasured: "Not measured · the address has no location",
+    unmeasured: "Not measured · address has no location",
     /** Ops let them check in past the fence for this visit, from the dispatch board, with their reason. */
-    letIn: (reason: string | null) => (reason === null ? "ops let him check in" : `ops let him check in: ${reason}`),
+    letIn: (reason: string | null) =>
+      reason === null ? "check-in allowed by ops" : `check-in allowed by ops: ${reason}`,
     /**
      * What became of the reminder, dated, since it goes the evening before. A
      * reminder never sent is not one sent and never delivered.
@@ -124,10 +125,10 @@ export const noShows = {
     message: {
       delivered: (when: string) => `Delivered ${when}`,
       // The board's receipt always arrived; the other four are ours.
-      sent: "Sent, and never delivered",
-      no_consent: "No reminder sent · the client has not agreed to WhatsApp about visits",
+      sent: "Sent, not delivered",
+      no_consent: "Not sent · client hasn't opted in to WhatsApp",
       not_sent: "Not sent",
-      none: "No reminder was sent",
+      none: "No reminder sent",
     },
     /** "Fri 18 Sep, 6:03 pm". */
     dated: (date: string, time: string) => `${date}, ${time}`,
@@ -138,11 +139,11 @@ export const noShows = {
      */
     waited: (minutes: number, closed: string) => `${String(minutes)} min · closed ${closed}`,
     waitedBoth: (minutes: number, withUs: number, closed: string) =>
-      `${String(minutes)} min by the phone, ${String(withUs)} since it reached us · closed ${closed}`,
+      `${String(minutes)} min by phone, ${String(withUs)} after it reached us · closed ${closed}`,
     notClosed: "Not closed",
     // The board draws no case closed before the booked start's wait had run.
     closedEarly:
-      "Closed too early: the wait ran from a check-in before the booked start. Waive it, or say in your note why you charge.",
+      "Closed too early: the wait began before the booked start. Waive it, or explain in your note why you're charging.",
     /**
      * The field beneath the evidence, "Your note · required", which the
      * board draws on the dispute. A ruling needs its reason either way, and the
@@ -150,8 +151,8 @@ export const noShows = {
      */
     reason: {
       label: "Your note · required",
-      placeholder: "Why you are charging or waiving",
-      hint: "Kept with the ruling, under your name.",
+      placeholder: "Why you're charging or waiving",
+      hint: "Saved with the ruling.",
     },
     /**
      * The board's buttons are Refund and Uphold, which rule on a
@@ -169,34 +170,34 @@ export const noShows = {
         `Keep ${kept} of the ${paid} paid, and refund ${refund}?`,
       keepsNone: (paid: string) => `Keep nothing, and refund the ${paid} paid?`,
       keepsCredit: "Keep the free service visit it was booked with?",
-      nothingPaid: "Nothing was paid for this visit, so the charge keeps nothing. Record it?",
+      nothingPaid: "Nothing was paid, so nothing is kept. Record the charge?",
       creditToo: "The free service visit it was booked with is kept too.",
-      who: (name: string, day: string) => `Charging ${name} for the visit of ${day} cannot be undone here.`,
-      working: "Working out what the charge keeps.",
-      failed: "We could not work out what the charge keeps. Go back, then try again.",
+      who: (name: string, day: string) => `Charging ${name} for the visit of ${day} can't be undone.`,
+      working: "Calculating.",
+      failed: "Couldn't calculate the charge. Go back and try again.",
     },
     // A visit that carries no date, as a charge asked about names it.
-    noDay: "a day not recorded",
-    confirmCharge: "Charge the visit",
+    noDay: "an unrecorded day",
+    confirmCharge: "Confirm charge",
     back: "Back",
-    deciding: "Deciding",
+    deciding: "Saving",
     /**
      * The board draws no note beneath the queue, and no amount anywhere. A charge costs what the booking
      * was sold to cost a no-show, set in Settings apart from a late cancel (ADR 0096); a waiver gives back what ops set
      * it to, the payment and the credit unless ops set otherwise (ADR 0088).
      */
     note: (waiver: { readonly payment: "refunded" | "kept"; readonly credit: "returned" | "spent" }) =>
-      "Charging keeps what the booking says a no-show costs and refunds the rest; waiving " +
+      "Charging keeps the booking's no-show charge and refunds the rest. Waiving " +
       `${waiver.payment === "refunded" ? "refunds the payment" : "keeps the payment"} ` +
-      `and ${waiver.credit === "returned" ? "returns its credit" : "leaves its credit spent"}. ` +
-      "Either way the client is told on WhatsApp, never your note.",
+      `and ${waiver.credit === "returned" ? "returns the credit" : "keeps the credit spent"}. ` +
+      "The client is told on WhatsApp. Your note stays private.",
     /** The board draws no empty queue. */
-    empty: "No no-show is waiting for a decision.",
+    empty: "No no-shows to decide.",
     errors: {
       not_permitted: NOT_PERMITTED,
-      not_found: "Someone has ruled on this one already. Reload to see the queue as it stands.",
-      offline: "You are offline. Connect, then try again.",
-      unknown: "That did not go through. Please try again.",
+      not_found: "Already decided. Reload.",
+      offline: OFFLINE,
+      unknown: FAILED,
     } as Readonly<Record<string, string>>,
   },
   /** The board draws no list of the day's rulings. Each case ruled on today, the latest first. */
@@ -209,7 +210,7 @@ export const noShows = {
     chargedUnrecorded: "Charged",
     waived: "Waived",
     at: (ruling: string, time: string) => `${ruling} · ${time}`,
-    empty: "Nothing has been decided today.",
+    empty: "Nothing decided today.",
   },
   /**
    * The second card, a disputed charge, one card a dispute. The design
@@ -224,11 +225,11 @@ export const noShows = {
      * summary of the client's words. Their words stand beneath, as they wrote them.
      */
     title: "disputes the charge",
-    erased: "A client since erased disputes the charge",
+    erased: "An erased client disputes the charge",
     /** The client's words, erased with them. */
-    wordsErased: "Their words were erased with them.",
+    wordsErased: "Erased with the client.",
     /** What the charge took, and when the visit was. */
-    took: (what: string, day: string) => `The charge kept ${what}, for the visit of ${day}.`,
+    took: (what: string, day: string) => `Kept ${what} for the visit of ${day}.`,
     credit: "a free service visit",
     /** The board's four rows. */
     facts: { checkIn: "Check-in", distance: "Distance", whatsapp: "WhatsApp", waited: "Waited" },
@@ -237,8 +238,8 @@ export const noShows = {
     /** The board's note, "Your note · required", and its placeholder. */
     reason: {
       label: "Your note · required",
-      placeholder: "Why you are refunding or upholding",
-      hint: "Kept with the ruling, under your name. The client is told the ruling, never your note.",
+      placeholder: "Why you're refunding or upholding",
+      hint: "The client sees the ruling, not your note.",
     },
     refund: "Refund",
     uphold: "Uphold",
@@ -246,12 +247,12 @@ export const noShows = {
     /** The board draws one card, with no panel around it. A panel needs a name to be read by. */
     queueTitle: "Disputed charges",
     /** The board always draws one. */
-    none: "No charge is disputed.",
+    none: "No disputed charges.",
     errors: {
       not_permitted: NOT_PERMITTED,
-      not_found: "Someone has ruled on this dispute already. Reload to see where it stands.",
-      offline: "You are offline. Connect, then try again.",
-      unknown: "That did not go through. Please try again.",
+      not_found: "Already ruled on. Reload.",
+      offline: OFFLINE,
+      unknown: FAILED,
     } as Readonly<Record<string, string>>,
   },
 } as const;

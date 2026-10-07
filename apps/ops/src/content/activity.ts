@@ -89,7 +89,7 @@ const ACTIONS: Readonly<Record<ActivityAction, string>> = {
 
 export const activity = {
   title: "Activity",
-  intro: "Everything done in the console and both apps, newest first, and who did it.",
+  intro: "Who did what, newest first.",
   actions: ACTIONS,
   filters: {
     label: "Narrow the log",
@@ -106,7 +106,7 @@ export const activity = {
     action: "What",
     anyAction: "Any action",
     person: "Client ID",
-    personHint: "What they did, and everything done to their record.",
+    personHint: "Their actions, and everything done to their record.",
     visit: "Visit ID",
     from: "From",
     to: "To",

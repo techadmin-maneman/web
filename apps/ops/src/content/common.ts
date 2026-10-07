@@ -13,12 +13,18 @@ export const BOOKING_URL: Readonly<Record<EnvironmentName, string>> = {
 /** The API refused a call the person's access does not reach. */
 export const NOT_PERMITTED = "Your access doesn't include this. Ask an admin.";
 
+/** No connection: the call never reached the API. */
+export const OFFLINE = "You're offline. Reconnect and try again.";
+
+/** A refusal with no words of its own. */
+export const FAILED = "That didn't work. Try again.";
+
 /** Shown wherever a number would be, for a client erased since, whose number is gone. */
 export const ERASED_MOBILE = "Erased client";
 
 export const states = {
   loading: "Loading",
-  failed: "We could not load this.",
+  failed: "Couldn't load this.",
   retry: "Try again",
   /** The failed call's reference, to quote to the developers. */
   ref: { label: "Ref", copy: "Copy", copied: "Copied" },

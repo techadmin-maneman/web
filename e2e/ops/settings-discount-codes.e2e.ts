@@ -11,7 +11,7 @@ test.describe("the discount codes", () => {
   }) => {
     await open(page, "/discount-codes");
     const wedding = page.getByRole("listitem").filter({ hasText: "WEDDNG25" });
-    await expect(wedding).toContainText("Takes off 25%, at most Rs. 5,000 before GST");
+    await expect(wedding).toContainText("25% (max Rs. 5,000) off before GST");
     await expect(wedding).toContainText("Ends Fri 31 Dec");
     await expect(wedding).toContainText("3 of 50 uses");
     await expect(wedding).toContainText("Rs. 12,000 given");
@@ -24,21 +24,21 @@ test.describe("the discount codes", () => {
   test("makes a code ops typed only once they have read what it takes off", async ({ page }) => {
     await open(page, "/discount-codes", { "POST /api/discount-codes": made(["DIWALI"]) });
     const form = page.getByRole("form", { name: "Make codes" });
-    const check = form.getByRole("button", { name: "Check" });
+    const check = form.getByRole("button", { name: "Review" });
     await expect(check).toBeDisabled();
     await form.getByLabel("Code", { exact: true }).fill("diwali");
     await form.getByLabel("Per cent").fill("10");
-    await form.getByLabel("At most, in rupees").fill("1500");
+    await form.getByLabel("Cap, in rupees").fill("1500");
     await form.getByLabel("Service visits").check();
     await check.click();
 
     const panel = page.getByRole("group", { name: "Make these codes?" });
-    await expect(panel).toContainText("The code DIWALI");
-    await expect(panel).toContainText("Takes off 10%, at most Rs. 1,500 before GST");
+    await expect(panel).toContainText("Code DIWALI");
+    await expect(panel).toContainText("10% (max Rs. 1,500) off before GST");
     await expect(panel).toContainText("On Service visits");
-    await expect(panel).toContainText("Any number of uses, once per client");
+    await expect(panel).toContainText("Unlimited uses, once per client");
     const request = posted(page, "/api/discount-codes");
-    await panel.getByRole("button", { name: "Make them" }).click();
+    await panel.getByRole("button", { name: "Confirm" }).click();
     expect((await request).postDataJSON()).toEqual({
       code: "diwali",
       kind: "percent",
@@ -53,19 +53,19 @@ test.describe("the discount codes", () => {
   test("generates a batch of single-use codes, an amount off each", async ({ page }) => {
     await open(page, "/discount-codes", { "POST /api/discount-codes": made(["A2B3C4D5", "E6F7G8H9"]) });
     const form = page.getByRole("form", { name: "Make codes" });
-    await form.getByLabel("The code").selectOption({ label: "Generate them" });
+    await form.getByLabel("Method").selectOption({ label: "Generate" });
     await form.getByLabel("How many").fill("2");
-    await form.getByLabel("Takes off").selectOption({ label: "An amount" });
+    await form.getByLabel("Discount").selectOption({ label: "Amount" });
     await form.getByLabel("Rupees").fill("1000");
-    await form.getByLabel("First fit, and the consultation and fit in one visit").check();
+    await form.getByLabel("First fits, and consultation-and-fit visits").check();
     // A batch's codes are single-use: there is no total to set.
     await expect(form.getByLabel("Total uses")).toHaveCount(0);
-    await form.getByRole("button", { name: "Check" }).click();
+    await form.getByRole("button", { name: "Review" }).click();
     const panel = page.getByRole("group", { name: "Make these codes?" });
-    await expect(panel).toContainText("2 codes, generated, each used once");
-    await expect(panel).toContainText("Takes off Rs. 1,000 before GST");
+    await expect(panel).toContainText("2 single-use codes");
+    await expect(panel).toContainText("Rs. 1,000 off before GST");
     const request = posted(page, "/api/discount-codes");
-    await panel.getByRole("button", { name: "Make them" }).click();
+    await panel.getByRole("button", { name: "Confirm" }).click();
     expect((await request).postDataJSON()).toEqual({
       count: 2,
       kind: "amount",
@@ -85,9 +85,9 @@ test.describe("the discount codes", () => {
     await form.getByLabel("Code", { exact: true }).fill("WELCOME");
     await form.getByLabel("Per cent").fill("10");
     await form.getByLabel("Service visits").check();
-    await form.getByRole("button", { name: "Check" }).click();
-    await page.getByRole("button", { name: "Make them" }).click();
-    await expect(page.getByRole("alert")).toHaveText("A code is 4 to 16 letters and figures, with no spaces or signs.");
+    await form.getByRole("button", { name: "Review" }).click();
+    await page.getByRole("button", { name: "Confirm" }).click();
+    await expect(page.getByRole("alert")).toHaveText("4–16 letters or digits, no spaces.");
   });
 
   // AUDITTEST reached "Make these codes?" before the API refused it.
@@ -99,12 +99,12 @@ test.describe("the discount codes", () => {
     await form.getByLabel("Per cent").fill("10");
     await form.getByLabel("Service visits").check();
     await expect(code).toHaveAttribute("aria-invalid", "true");
-    await expect(code).toHaveAccessibleDescription("A code is 4 to 16 letters and figures, with no spaces or signs.");
-    await expect(form.getByRole("button", { name: "Check" })).toBeDisabled();
+    await expect(code).toHaveAccessibleDescription("4–16 letters or digits, no spaces.");
+    await expect(form.getByRole("button", { name: "Review" })).toBeDisabled();
     // Ordinary words are codes: I, L and O are allowed in a code ops type.
     await code.fill("WEDDING25");
     await expect(code).not.toHaveAttribute("aria-invalid", "true");
-    await expect(form.getByRole("button", { name: "Check" })).toBeEnabled();
+    await expect(form.getByRole("button", { name: "Review" })).toBeEnabled();
   });
 
   test("switches a code off only once ops have read what it leaves on record", async ({ page }) => {
@@ -114,7 +114,7 @@ test.describe("the discount codes", () => {
     await open(page, "/discount-codes", { [off]: empty() });
     await page.getByRole("button", { name: "Switch off WEDDNG25" }).click();
     const panel = page.getByRole("group", { name: "Switch off WEDDNG25?" });
-    await expect(panel).toContainText("No booking takes it from now on. 3 bookings keep it, as sold.");
+    await expect(panel).toContainText("It can't be used again. 3 bookings keep it.");
     const request = posted(page, `/api/discount-codes/${wedding.id}/off`);
     await panel.getByRole("button", { name: "Switch off" }).click();
     await request;

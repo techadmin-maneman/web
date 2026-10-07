@@ -96,7 +96,7 @@ test("names an At-risk client's weeks since the last visit, a first fit to book,
   await expect(groupNames(page)).toHaveText(["Consultation request", "First fit to book", "At-risk client"]);
   await expect(row(page, "Neha Kapoor")).toContainText("Asked for 24 Sep 2027, afternoon + first fit, morning");
   await expect(row(page, "Sanjay Arora")).toContainText("Consultation Fri 10 Sep, afternoon · not fitted");
-  await expect(row(page, "Deepak Rao")).toContainText("9 weeks since the last visit · due Fri 20 Aug");
+  await expect(row(page, "Deepak Rao")).toContainText("9 weeks since last visit · due Fri 20 Aug");
   await expect(row(page, "Deepak Rao")).toContainText("24 days overdue");
   // The client books; ops reach them from their page, on their visits.
   await expect(row(page, "Deepak Rao").getByRole("link", { name: "Deepak Rao", exact: true })).toHaveAttribute(
@@ -132,7 +132,7 @@ test("names a draft invoice's visit", async ({ page }) => {
     ],
   });
   await expect(groupNames(page)).toHaveText(["Draft invoice"]);
-  await expect(row(page, "Sanjay Arora")).toContainText("Visit of Mon 20 Sep, still a draft in Books");
+  await expect(row(page, "Sanjay Arora")).toContainText("Visit of Mon 20 Sep · draft in Books");
 });
 
 // A consultation and fit in one visit (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md): the request ops
@@ -178,16 +178,16 @@ test("names a one visit asked for, and a fitted client's payment still owed, wit
     ],
   });
   await expect(groupNames(page)).toHaveText(["Consultation request", "Payment owed"]);
-  await expect(row(page, "Arjun Kapoor")).toContainText("+ consultation and fit in one visit");
-  await expect(row(page, "Nikhil Suri")).toContainText("Mane Man Natural, Rs. 35,000; link sent");
-  await expect(row(page, "Manoj Iyer")).toContainText("Mane Man Essential, Rs. 25,000; link not sent yet");
-  await expect(row(page, "Ravi Menon")).toContainText("Razorpay refused the link: send one from its dashboard");
+  await expect(row(page, "Arjun Kapoor")).toContainText("+ consultation and fit together");
+  await expect(row(page, "Nikhil Suri")).toContainText("Mane Man Natural, Rs. 35,000 · link sent");
+  await expect(row(page, "Manoj Iyer")).toContainText("Mane Man Essential, Rs. 25,000 · link not sent");
+  await expect(row(page, "Ravi Menon")).toContainText("link refused by Razorpay");
   // A link Razorpay made can be copied; one not made yet can only be asked for again; a refused one, neither.
   await expect(row(page, "Nikhil Suri").getByRole("button", { name: "Copy link · Nikhil Suri" })).toBeVisible();
   await expect(row(page, "Manoj Iyer").getByRole("button", { name: /^Copy link/ })).toHaveCount(0);
   await expect(row(page, "Manoj Iyer").getByRole("button", { name: "Send again · Manoj Iyer" })).toBeVisible();
   await expect(row(page, "Ravi Menon").getByRole("button", { name: /^(Copy link|Send again)/ })).toHaveCount(0);
-  await expect(row(page, "Kabir Sethi")).toContainText("Mane Man Natural, Rs. 35,000; link closed unpaid");
+  await expect(row(page, "Kabir Sethi")).toContainText("Mane Man Natural, Rs. 35,000 · link closed unpaid");
   await expect(row(page, "Kabir Sethi").getByRole("button", { name: /^(Copy link|Send again)/ })).toHaveCount(0);
   await expect(row(page, "Nikhil Suri").getByRole("link", { name: "Nikhil Suri", exact: true })).toHaveAttribute(
     "href",
@@ -198,7 +198,7 @@ test("names a one visit asked for, and a fitted client's payment still owed, wit
   // A client who lost the SMS is texted the link again from the row.
   await answer(page, { "POST /api/payment-links/{id}/resend": json({ outcome: "resent" }) });
   await row(page, "Nikhil Suri").getByRole("button", { name: "Send again · Nikhil Suri" }).click();
-  await expect(row(page, "Nikhil Suri").getByRole("status")).toHaveText("Texted to them again.");
+  await expect(row(page, "Nikhil Suri").getByRole("status")).toHaveText("Sent again.");
 });
 
 // Money owed back that no refund reached waited nowhere.
@@ -231,10 +231,8 @@ test("lists each payment to refund, why, and what is owed back, and leads to the
     ],
   });
   await expect(groupNames(page)).toHaveText(["Payment to refund"]);
-  await expect(row(page, "Nikhil Suri")).toContainText(
-    "Rs. 2,000 owed back on pay_Q1late; Razorpay would not refund it",
-  );
-  await expect(row(page, "Manoj Iyer")).toContainText("Rs. 35,400 owed back on pay_Q2fail; Razorpay failed the refund");
+  await expect(row(page, "Nikhil Suri")).toContainText("Rs. 2,000 to refund on pay_Q1late · refund refused");
+  await expect(row(page, "Manoj Iyer")).toContainText("Rs. 35,400 to refund on pay_Q2fail · refund failed");
   await expect(row(page, "Manoj Iyer").getByRole("link", { name: "Manoj Iyer", exact: true })).toHaveAttribute(
     "href",
     "/clients/22000000-0000-4000-8000-000000000030/payments",
@@ -249,7 +247,7 @@ test("names the client of a no-show, and leads to their visits and to the case",
     "href",
     "/clients/22000000-0000-4000-8000-000000000010/visits",
   );
-  await noShow.getByRole("link", { name: /^Rule on it in Payments/ }).click();
+  await noShow.getByRole("link", { name: /^Decide in Payments/ }).click();
   expect(new URL(page.url()).pathname).toBe("/no-shows");
   expect(new URL(page.url()).hash).toBe("#case-66000000-0000-4000-8000-000000000001");
 });
@@ -287,16 +285,17 @@ test("names a disputed charge and what it kept, and leads to the dispute in Paym
   });
   await expect(groupNames(page)).toHaveText(["Disputed charge"]);
   const vikram = row(page, "Vikram Sethi");
-  await expect(vikram).toContainText("Disputes the charge that kept Rs. 2,360");
+  await expect(vikram).toContainText("Disputes a charge: Rs. 2,360");
   await expect(vikram.getByRole("link", { name: "Vikram Sethi", exact: true })).toHaveAttribute(
     "href",
     "/clients/22000000-0000-4000-8000-000000000030/visits",
   );
-  await expect(
-    vikram.getByRole("link", { name: "Rule on it in Payments · Vikram Sethi", exact: true }),
-  ).toHaveAttribute("href", "/no-shows#dispute-dd000000-0000-4000-8000-000000000001");
+  await expect(vikram.getByRole("link", { name: "Decide in Payments · Vikram Sethi", exact: true })).toHaveAttribute(
+    "href",
+    "/no-shows#dispute-dd000000-0000-4000-8000-000000000001",
+  );
   // A client since erased still has their charge ruled on.
-  await expect(row(page, "A client since erased")).toContainText("Disputes the charge that kept a free service visit");
+  await expect(row(page, "Erased client")).toContainText("Disputes a charge: a free service visit");
   await expect(
     page.getByRole("navigation", { name: "Console" }).getByRole("link", { name: /^Payments, 2 waiting/ }),
   ).toBeVisible();
@@ -312,15 +311,15 @@ test("reaches the client's page from the task that is about them, on the tab it 
 test("leads each task to the row it is decided on, in the section that decides it", async ({ page }) => {
   await open(page);
   const links = [
-    ["Karan Bose", "Decide it in Referrals · Karan Bose", "/referrals#held-92000000-0000-4000-8000-000000000002"],
+    ["Karan Bose", "Decide in Referrals · Karan Bose", "/referrals#held-92000000-0000-4000-8000-000000000002"],
     [
       "Vikram Sethi",
-      "Decide it in Number changes · Vikram Sethi",
+      "Decide in Number changes · Vikram Sethi",
       "/number-changes#change-94000000-0000-4000-8000-000000000001",
     ],
     [
       "Ashish Gill",
-      "Decide it in Deletion requests · Ashish Gill",
+      "Decide in Deletion requests · Ashish Gill",
       "/deletion-requests#request-95000000-0000-4000-8000-000000000001",
     ],
   ] as const;
@@ -358,9 +357,9 @@ test("counts an open grievance down, and leads to it in Grievances", async ({ pa
   });
   await expect(groupNames(page)).toHaveText(["Concern"]);
   const grievance = row(page, "Neha Kapoor");
-  await expect(grievance).toContainText("Raised in the client's own app");
+  await expect(grievance).toContainText("Raised in the app");
   await expect(grievance).toContainText("22 days left");
-  await expect(grievance.getByRole("link", { name: /^Answer it in Concerns/ })).toHaveAttribute(
+  await expect(grievance.getByRole("link", { name: /^Answer in Concerns/ })).toHaveAttribute(
     "href",
     "/grievances#grievance-97000000-0000-4000-8000-000000000001",
   );

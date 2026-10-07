@@ -45,7 +45,7 @@ export const shell = {
   /** The first thing the keyboard reaches, which jumps past the navigation. */
   skip: "Skip to content",
   /** A page opened by its address that the person's access does not reach. */
-  closed: "Your access does not reach this page. An Admin can add it on the Staff page.",
+  closed: "You don't have access to this page. An admin can grant it on Staff.",
   /** The browser tab's title: "Blackout days · Settings · Mane Man operations". */
   documentTitle: (parts: readonly string[]) => [...parts, "Mane Man operations"].join(" · "),
   /**
@@ -68,8 +68,8 @@ export const shell = {
    * and from then on every call is sent to its login page instead of reaching
    * us. Reloading the page is what takes ops there.
    */
-  lapsed: "Your sign-in to the console has run out, so nothing more can be read or saved. Reload to sign in again.",
+  lapsed: "Your session has expired. Reload to sign in.",
   reload: "Reload",
   /** A person Access lets in whom the enforced Staff list does not name. */
-  notListed: "You are not on the Staff list, so the console is closed to you. Ask the owner to add you.",
+  notListed: "You're not on the Staff list. Ask an admin to add you.",
 } as const;

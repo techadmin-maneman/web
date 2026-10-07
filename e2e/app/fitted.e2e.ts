@@ -63,7 +63,7 @@ test("Visits lists what is coming and what is done, and a past visit opens with 
   await page.getByRole("button", { name: "Add a note" }).click();
   const sheet = page.getByRole("dialog");
   await sheet.getByRole("textbox", { name: "What should they know at the door?" }).fill("The lift is out");
-  await sheet.getByRole("button", { name: "Save the note" }).click();
+  await sheet.getByRole("button", { name: "Save note" }).click();
   await expect(sheet.getByRole("heading", { name: /^Saved\./ })).toBeVisible();
 
   // And shown back: on the card, and in the sheet when it opens again.
@@ -89,10 +89,10 @@ test("an open note sheet keeps its words through a dropped signal, and Back clos
   await page.getByRole("button", { name: "Add a note" }).click();
   const sheet = page.getByRole("dialog");
   const note = sheet.getByRole("textbox", { name: "What should they know at the door?" });
-  const save = sheet.getByRole("button", { name: "Save the note" });
+  const save = sheet.getByRole("button", { name: "Save note" });
   await note.fill("The lift is out");
   await page.context().setOffline(true);
-  await expect(sheet.getByText("No connection. Your note stays here until you are back online.")).toBeVisible();
+  await expect(sheet.getByText("No connection. Your note is kept here until you’re back online.")).toBeVisible();
   await expect(note).toHaveValue("The lift is out");
   await expect(save).toBeDisabled();
   await page.context().setOffline(false);

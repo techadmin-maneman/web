@@ -10,8 +10,7 @@ export const profile = {
   // The design draws no landmark; the client types it as they like, so it shows as typed.
   landmark: "Landmark",
   // An address the client gave ops on the phone, which ops saved for them (ADR 0092).
-  givenToOps: (date: string) =>
-    `You gave us this address on the phone on ${date}. If anything is wrong, change it here.`,
+  givenToOps: (date: string) => `You gave us this address by phone on ${date}. Change it if anything’s wrong.`,
   form: {
     // The design draws no address form at all, so none of the
     // building search's words are drawn either (ADR 0054). The search is an
@@ -19,7 +18,7 @@ export const profile = {
     // typed, and an address with no building chosen saves without a pin.
     building: {
       label: "Search for your building",
-      hint: "Start typing your building or society. Choose it to help your technician find you.",
+      hint: "Search for your building or society, so your technician can find you.",
       unavailable: "Search isn’t available right now. Type your address below instead.",
       found: (count: number) => (count === 1 ? "1 building found" : `${String(count)} buildings found`),
       // Google asks for their name against suggestions shown without a map.
@@ -36,10 +35,10 @@ export const profile = {
     city: "City",
     pincode: "Pincode",
     accessNotes: "Access notes (optional)",
-    accessHint: "A gate code, or where to park. Your technician sees it the day before the visit.",
+    accessHint: "Gate code or parking. Your technician sees it the day before.",
     save: "Save",
     cancel: "Cancel",
-    invalid: "Fill in the flat or house number, the building or street, the area, the city and a six-digit pincode.",
+    invalid: "Add your flat or house number, building or street, area, city and 6-digit pincode.",
     // A pincode we do not come to, and a move to another city while a visit is booked.
     notServed: (pincode: string) => `We don’t come to ${pincode} yet.`,
     waitlist: "Join the waitlist",
@@ -81,7 +80,7 @@ export const profile = {
   },
   change: {
     label: "Change mobile number",
-    body: "A code goes to both numbers, then we confirm with you before it takes effect.",
+    body: "We’ll send a code to both numbers, then confirm with you.",
     prefix: "+91",
     placeholder: "New number",
     start: "Start the change",
@@ -121,14 +120,14 @@ export const profile = {
   // The design has no card for the client's rights over their data (docs/decisions/0049-dpdp.md).
   data: {
     label: "Your data",
-    body: "Download a copy of everything we hold about you, or raise a concern about how we use it.",
+    body: "Download your data, or raise a concern about how we use it.",
     download: "Download my data",
     raise: "Raise a concern",
     field: "Your concern",
     send: "Send",
     cancel: "Not now",
     // Beside support's "Replies within a working day": the 30 days is the most a concern can take, not the usual.
-    sent: "Received. We reply here and on WhatsApp, usually within a working day and within 30 days at the latest.",
+    sent: "Received. We’ll reply here and on WhatsApp, usually within a working day and always within 30 days.",
     failed: "That didn’t go through. Try again.",
     limited: "You’ve reached today’s limit. Send it tomorrow, or message us on WhatsApp.",
     // The client's latest concerns, each with our answer once given.

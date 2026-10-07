@@ -11,10 +11,10 @@ const readPhoto = (id: string): Call => `GET ${RECORD_PATH}/photos/${id}`;
 test("says where the visits of the invite a client came with stand", async ({ page }) => {
   await openClient(page, `/clients/${CLIENT.id}/referrals`);
   const invite = page.getByRole("region", { name: "Invite" });
-  await expect(invite).toContainText("What it earnsGiven");
+  await expect(invite).toContainText("RewardGiven");
   await expect(invite).toContainText("Since20 Oct 2026");
   await expect(invite.getByText("Attached by")).toHaveCount(0);
-  await expect(invite.getByRole("button", { name: "Attach the invite" })).toHaveCount(0);
+  await expect(invite.getByRole("button", { name: "Attach invite" })).toHaveCount(0);
 });
 
 test("attaches an invite to a client who came with none, with why, and shows it as the API answers", async ({
@@ -32,32 +32,32 @@ test("attaches an invite to a client who came with none, with why, and shows it 
     [ATTACH_INVITE]: json(attached, 201),
   });
   const invite = page.getByRole("region", { name: "Invite" });
-  await expect(invite).toContainText("They came with no invite.");
+  await expect(invite).toContainText("No invite.");
   // The note forbade a fitted client, though one is allowed, held for review.
-  await expect(invite).toContainText("Attached after their first fit, it waits for your review in Referrals.");
-  const attach = invite.getByRole("button", { name: "Attach the invite" });
+  await expect(invite).toContainText("After a first fit, it's held for review.");
+  const attach = invite.getByRole("button", { name: "Attach invite" });
   await expect(attach).toBeDisabled();
 
   await invite.getByLabel("Invite code").fill("rm4k7p");
   await expect(attach).toBeDisabled();
-  await invite.getByLabel("Why").fill("Told us Rohit sent him");
+  await invite.getByLabel("Reason").fill("Told us Rohit sent him");
   expect(await axeViolations(page)).toEqual([]);
   const sent = page.waitForRequest((request) => request.url().endsWith("/referral") && request.method() === "POST");
   await attach.click();
   expect((await sent).postDataJSON()).toEqual({ code: "rm4k7p", reason: "Told us Rohit sent him" });
 
-  await expect(invite.getByRole("status")).toHaveText("Attached, and sent to the CRM.");
+  await expect(invite.getByRole("status")).toHaveText("Invite attached.");
   // The head names who sent it as the API answered, without the record being read again.
   await expect(invitedBy(page)).toHaveText("Rohit Malhotra (RM4K7P)");
-  await expect(invite).toContainText("What it earnsGiven when this client is fitted");
+  await expect(invite).toContainText("RewardGiven once this client is fitted");
   await expect(invite).toContainText("Attached byops@maneman.in");
-  await expect(invite).toContainText("WhyTold us Rohit sent him");
+  await expect(invite).toContainText("ReasonTold us Rohit sent him");
 });
 
 test.describe("says why an invite was not attached", () => {
   for (const [code, words] of [
-    ["unknown_invite", "No invite has that code."],
-    ["own_invite", "That is this client's own invite."],
+    ["unknown_invite", "No invite with that code."],
+    ["own_invite", "That's their own invite."],
   ] as const) {
     test(code, async ({ page }) => {
       await openClient(page, `/clients/${CLIENT.id}/referrals`, {
@@ -66,8 +66,8 @@ test.describe("says why an invite was not attached", () => {
       });
       const invite = page.getByRole("region", { name: "Invite" });
       await invite.getByLabel("Invite code").fill("RM4K7P");
-      await invite.getByLabel("Why").fill("Told us Rohit sent him");
-      await invite.getByRole("button", { name: "Attach the invite" }).click();
+      await invite.getByLabel("Reason").fill("Told us Rohit sent him");
+      await invite.getByRole("button", { name: "Attach invite" }).click();
       await expect(invite.getByRole("alert")).toContainText(words);
       await expect(invite.getByLabel("Invite code")).toHaveValue("RM4K7P");
     });
@@ -88,9 +88,9 @@ test.describe("says why an invite was not attached", () => {
     });
     const invite = page.getByRole("region", { name: "Invite" });
     await invite.getByLabel("Invite code").fill("RM4K7P");
-    await invite.getByLabel("Why").fill("Told us Rohit sent him");
-    await invite.getByRole("button", { name: "Attach the invite" }).click();
-    await expect(invite.getByRole("status")).toHaveText("They came with this invite already, so nothing was attached.");
+    await invite.getByLabel("Reason").fill("Told us Rohit sent him");
+    await invite.getByRole("button", { name: "Attach invite" }).click();
+    await expect(invite.getByRole("status")).toHaveText("Already attached.");
     await expect(invitedBy(page)).toHaveText("Vikram Sethi (VSAB23)");
   });
 });
@@ -104,10 +104,10 @@ test("keeps the photographs locked, and says what opening them records", async (
     },
   });
   await expect(page.getByText("Locked")).toBeVisible();
-  await expect(page.getByRole("heading", { name: `Photographs of ${CLIENT.name}` })).toBeVisible();
+  await expect(page.getByRole("heading", { name: `Photos of ${CLIENT.name}` })).toBeVisible();
   // Why they are kept, whatever the Consents tab says.
-  await expect(page.getByText("Taken for the visit record, at every visit.")).toBeVisible();
-  await expect(page.getByText("Opening these records your name, the client and the time.")).toBeVisible();
+  await expect(page.getByText("Taken at every visit for the record.")).toBeVisible();
+  await expect(page.getByText("Opening these is logged with your name and the time.")).toBeVisible();
   // Nothing is fetched while it is locked, so nothing is logged.
   expect(asked).toBe(0);
   await expect(page.getByRole("img")).toHaveCount(0);
@@ -151,7 +151,7 @@ test("shows nothing, and asks for no photograph, when the opening could not be l
     [VIEW_PHOTOS]: fails(503, "unavailable"),
   });
   await page.getByRole("button", { name: "View photos" }).click();
-  await expect(page.getByRole("alert")).toContainText("The view could not be recorded, so nothing is shown.");
+  await expect(page.getByRole("alert")).toContainText("Couldn't log the view, so photos stay locked.");
   await expect(page.getByRole("img")).toHaveCount(0);
   expect(photos).toBe(0);
 });
@@ -162,7 +162,7 @@ test("shows no photograph the API would not serve", async ({ page }) => {
     [readPhoto(first)]: fails(503, "unavailable"),
   });
   await page.getByRole("button", { name: "View photos" }).click();
-  await expect(page.getByRole("alert")).toContainText("The view could not be recorded");
+  await expect(page.getByRole("alert")).toContainText("Couldn't log the view");
   await expect(page.getByRole("img")).toHaveCount(9);
 });
 

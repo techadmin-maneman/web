@@ -123,7 +123,7 @@ test("shows the price, and opens no Checkout, when the credit went on another bo
   const pay = page.getByRole("dialog", { name: "Pay and confirm" });
   await expect(
     pay.getByText(
-      "Your free service visit is already on another booking, so this visit is charged at the price below.",
+      "Your free service visit is already used on another booking. This visit is charged at the price below.",
     ),
   ).toBeVisible();
   await expect(pay.getByText("1 free service visit used")).toHaveCount(0);

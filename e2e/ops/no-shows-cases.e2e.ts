@@ -93,9 +93,7 @@ test("says how long the case had been with us when the check-in reached us late"
   await open(page);
   await expect(fact(page, SECOND, "Check-in")).toHaveText("10 am · 1 h after the booked start");
   await expect(fact(page, SECOND, "Reached us")).toHaveText("Mon 20 Sep, 10:20 am");
-  await expect(fact(page, SECOND, "Waited")).toHaveText(
-    "36 min by the phone, 16 since it reached us · closed 10:36 am",
-  );
+  await expect(fact(page, SECOND, "Waited")).toHaveText("36 min by phone, 16 after it reached us · closed 10:36 am");
 });
 
 test("shows what the phone said when the bounds would not take its time", async ({ page }) => {
@@ -105,15 +103,13 @@ test("shows what the phone said when the bounds would not take its time", async 
     "GET /api/no-shows": json({ ...NO_SHOWS, cases: [claimed] }),
   });
   await page.goto("/no-shows");
-  await expect(fact(page, FIRST, "The phone said")).toHaveText("Sun 19 Sep, 9:30 am");
+  await expect(fact(page, FIRST, "Phone time")).toHaveText("Sun 19 Sep, 9:30 am");
 });
 
 // A reminder never sent once read "Never delivered", as if the client's phone had been off.
 test("says no reminder went to a client who never agreed to WhatsApp about visits", async ({ page }) => {
   await open(page);
-  await expect(fact(page, SECOND, "WhatsApp")).toHaveText(
-    "No reminder sent · the client has not agreed to WhatsApp about visits",
-  );
+  await expect(fact(page, SECOND, "WhatsApp")).toHaveText("Not sent · client hasn't opted in to WhatsApp");
 });
 
 test("tells a reminder sent and never delivered from one that was never sent", async ({ page }) => {
@@ -123,8 +119,8 @@ test("tells a reminder sent and never delivered from one that was never sent", a
   ];
   await answer(page, { "GET /api/payments": json(DAY_MONEY), "GET /api/no-shows": json({ ...NO_SHOWS, cases }) });
   await page.goto("/no-shows");
-  await expect(fact(page, FIRST, "WhatsApp")).toHaveText("Sent, and never delivered");
-  await expect(fact(page, SECOND, "WhatsApp")).toHaveText("No reminder was sent");
+  await expect(fact(page, FIRST, "WhatsApp")).toHaveText("Sent, not delivered");
+  await expect(fact(page, SECOND, "WhatsApp")).toHaveText("No reminder sent");
 });
 
 // ADR 0036: a distance that was never measured is not a distance of zero, and
@@ -150,7 +146,7 @@ test("says when ops let the technician check in past the fence, and why", async 
   });
   await page.goto("/no-shows");
   await expect(fact(page, FIRST, "Distance")).toHaveText(
-    "240 m · over 200 m fence · ops let him check in: The pin is at the society gate",
+    "240 m · over 200 m fence · check-in allowed by ops: The pin is at the society gate",
   );
 });
 
@@ -180,10 +176,10 @@ test("asks once more before it charges, with what it keeps, and sends the reason
   const confirm = first.getByRole("group", { name: "Keep Rs. 2,360 of the Rs. 2,360 paid?" });
   await expect(confirm).toBeFocused();
   await expect(confirm).toHaveAccessibleDescription(
-    "Charging Vikram Sethi for the visit of Sun 19 Sep cannot be undone here.",
+    "Charging Vikram Sethi for the visit of Sun 19 Sep can't be undone.",
   );
   const sent = page.waitForRequest((request) => request.url().includes("/decision") && request.method() === "POST");
-  await confirm.getByRole("button", { name: "Charge the visit" }).click();
+  await confirm.getByRole("button", { name: "Confirm charge" }).click();
   expect((await sent).postDataJSON()).toEqual({
     decision: "charged",
     reason: "Delivered the evening before; nobody came down",
@@ -216,8 +212,8 @@ test("sends no charge until it knows what the charge keeps", async ({ page }) =>
   const first = caseOf(page, FIRST);
   await first.getByLabel("Your note · required").fill("Nobody came down");
   await first.getByRole("button", { name: "Charge", exact: true }).click();
-  await expect(first.getByText("We could not work out what the charge keeps.")).toBeVisible();
-  await expect(first.getByRole("button", { name: "Charge the visit" })).toBeDisabled();
+  await expect(first.getByText("Couldn't calculate the charge.")).toBeVisible();
+  await expect(first.getByRole("button", { name: "Confirm charge" })).toBeDisabled();
 });
 
 // After a charge the page once still said "Nothing was charged today", and the case was gone.
@@ -249,7 +245,7 @@ test("says so when nothing has been decided today", async ({ page }) => {
     "GET /api/no-shows/decided": json({ cases: [] }),
   });
   await page.goto("/no-shows");
-  await expect(page.getByRole("region", { name: DECIDED_TODAY })).toContainText("Nothing has been decided today.");
+  await expect(page.getByRole("region", { name: DECIDED_TODAY })).toContainText("Nothing decided today.");
 });
 
 test("sends nothing when the charge is taken back, and hands the keyboard to Charge", async ({ page }) => {
@@ -284,7 +280,7 @@ test("shows no amount in the queue, and says what a charge costs and a waiver gi
   await expect(page.getByRole("region", { name: QUEUE }).getByText("Rs.")).toBeHidden();
   // A waiver refunds the payment and returns the credit.
   await expect(
-    page.getByText(/a no-show costs and refunds the rest; waiving refunds the payment and returns its credit\./),
+    page.getByText(/no-show charge and refunds the rest\. Waiving refunds the payment and returns the credit\./),
   ).toBeVisible();
 });
 
@@ -293,7 +289,7 @@ test("says so when someone else has ruled on the case already", async ({ page })
   const first = caseOf(page, FIRST);
   await first.getByLabel("Your note · required").fill("Nobody came down");
   await first.getByRole("button", { name: "Waive" }).click();
-  await expect(page.getByRole("alert")).toContainText("Someone has ruled on this one already.");
+  await expect(page.getByRole("alert")).toContainText("Already decided. Reload.");
   await expect(page.getByText(FIRST)).toBeVisible();
 });
 
@@ -306,23 +302,23 @@ test("brings the case a task named into view, and gives it the keyboard", async 
 // What a waiver gives back is ops' to set (docs/decisions/0088-every-policy-in-the-console.md).
 test("says beneath the queue what waiving gives back, as ops set it", async ({ page }) => {
   await open(page);
-  await expect(page.getByText("refunds the payment and returns its credit")).toBeVisible();
+  await expect(page.getByText("refunds the payment and returns the credit")).toBeVisible();
   const kept = { ...NO_SHOWS, waiver: { payment: "kept", credit: "spent" } };
   await answer(page, { "GET /api/payments": json(DAY_MONEY), "GET /api/no-shows": json(kept) });
   await page.goto("/no-shows");
-  await expect(page.getByText("keeps the payment and leaves its credit spent")).toBeVisible();
+  await expect(page.getByText("keeps the payment and keeps the credit spent")).toBeVisible();
 });
 
 test("says nothing is waiting when the queue is empty", async ({ page }) => {
   await answer(page, { "GET /api/payments": json(DAY_MONEY), "GET /api/no-shows": json({ ...NO_SHOWS, cases: [] }) });
   await page.goto("/no-shows");
-  await expect(page.getByText("No no-show is waiting for a decision.")).toBeVisible();
+  await expect(page.getByText("No no-shows to decide.")).toBeVisible();
 });
 
 test("says so when the queue cannot be loaded, and loads it on Try again", async ({ page }) => {
   await answer(page, { "GET /api/payments": json(DAY_MONEY), "GET /api/no-shows": fails(503, "unavailable") });
   await page.goto("/no-shows");
-  await expect(page.getByRole("alert")).toContainText("We could not load this.");
+  await expect(page.getByRole("alert")).toContainText("Couldn't load this.");
 
   await answer(page, { "GET /api/payments": json(DAY_MONEY), "GET /api/no-shows": json(NO_SHOWS) });
   await page.getByRole("button", { name: "Try again" }).click();

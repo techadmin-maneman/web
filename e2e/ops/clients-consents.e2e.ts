@@ -40,12 +40,12 @@ test("lists every consent with its state, date and where it was given, and says 
   await openClient(page, `/clients/${CLIENT.id}/consents`);
   const row = (purpose: string) => page.getByRole("row").filter({ hasText: purpose });
   await expect(page.getByRole("columnheader", { name: "Source" })).toBeVisible();
-  await expect(row("Photographs taken for the visit record")).toHaveText(/Given\s*14 Nov 2026\s*Profile$/);
-  await expect(row("Photographs on referral cards")).toContainText("Refer");
-  await expect(row("Photographs in marketing")).toHaveText(/Not given\s*—\s*—$/);
+  await expect(row("Photos for the visit record")).toHaveText(/Given\s*14 Nov 2026\s*Profile$/);
+  await expect(row("Photos on referral cards")).toContainText("Refer");
+  await expect(row("Photos in marketing")).toHaveText(/Not given\s*—\s*—$/);
   await expect(row("WhatsApp about visits")).toContainText("Site");
   await expect(row("WhatsApp about launches")).toContainText("Withdrawn");
-  await expect(page.getByText("Ops cannot grant a consent.")).toBeVisible();
+  await expect(page.getByText("Only the client can give consent, in their app.")).toBeVisible();
   // Read only: the tab offers no way to change one.
   await expect(page.getByRole("switch")).toHaveCount(0);
   await expect(page.getByRole("checkbox")).toHaveCount(0);
@@ -64,8 +64,8 @@ test("names a consent given by booking, and says where a place was not recorded"
   );
   await openClient(page, `/clients/${CLIENT.id}/consents`, { [READ_CONSENTS]: json({ ...CONSENTS, consents }) });
   const row = (purpose: string) => page.getByRole("row").filter({ hasText: purpose });
-  await expect(row("Photographs taken for the visit record")).toContainText("Booking");
-  await expect(row("Photographs on referral cards")).toContainText("Not recorded");
+  await expect(row("Photos for the visit record")).toContainText("Booking");
+  await expect(row("Photos on referral cards")).toContainText("Not recorded");
   await expect(row("WhatsApp about visits")).toContainText("Invite");
   expect(await axeViolations(page)).toEqual([]);
 });
@@ -74,48 +74,44 @@ test("says when the client has asked to be erased, and leaves it to Deletion req
   await openClient(page, `/clients/${CLIENT.id}/consents`, {
     [READ_CONSENTS]: json(ERASURE_REQUESTED),
   });
-  await expect(page.getByText("Deletion requested 18 Sep 2027. It is not decided here.")).toBeVisible();
+  await expect(page.getByText("Deletion requested 18 Sep 2027. Decide it in Deletion requests.")).toBeVisible();
   await expect(page.getByRole("button", { name: `Erase ${CLIENT.name}` })).toHaveCount(0);
 });
 
 // The operators' erasure was a script with a shared secret, on the public host, that left no audit entry.
 test("erases a client from their page, once ops confirm the request came from their own number", async ({ page }) => {
   await openClient(page, `/clients/${CLIENT.id}/consents`, { [ERASE]: json(ERASED) });
-  const erasing = page.getByRole("region", { name: "Erase this client" });
+  const erasing = page.getByRole("region", { name: "Erase client" });
   await erasing.getByRole("button", { name: `Erase ${CLIENT.name}` }).click();
 
   const confirm = page.getByRole("group", { name: `Erasing ${CLIENT.name}` });
   await expect(confirm).toBeFocused();
-  await expect(confirm).toContainText("Their invoices in Books, eight years, by law");
+  await expect(confirm).toContainText("Invoices in Books, for eight years, by law");
   const now = confirm.getByRole("button", { name: "Erase now" });
   await expect(now).toBeDisabled();
-  await confirm
-    .getByRole("checkbox", { name: "I have confirmed this request with them, on their own number." })
-    .check();
+  await confirm.getByRole("checkbox", { name: "I've confirmed this with them, on their own number." }).check();
 
   const sent = page.waitForRequest((request) => request.url().endsWith("/erasure") && request.method() === "POST");
   await now.click();
   expect((await sent).postDataJSON()).toEqual({});
   await expect(page.getByRole("heading", { name: "Erased" })).toBeVisible();
   await expect(page.getByRole("heading", NAME)).toHaveCount(0);
-  await expect(page.getByRole("link", { name: "Find another client" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Find a client" })).toBeVisible();
 });
 
 test("erases anyway when a visit is booked, once ops say they will settle it by hand today", async ({ page }) => {
   await openClient(page, `/clients/${CLIENT.id}/consents`, { [ERASE]: json(VISIT_BOOKED, 409) });
-  const erasing = page.getByRole("region", { name: "Erase this client" });
+  const erasing = page.getByRole("region", { name: "Erase client" });
   await erasing.getByRole("button", { name: `Erase ${CLIENT.name}` }).click();
-  await erasing
-    .getByRole("checkbox", { name: "I have confirmed this request with them, on their own number." })
-    .check();
+  await erasing.getByRole("checkbox", { name: "I've confirmed this with them, on their own number." }).check();
   await erasing.getByRole("button", { name: "Erase now" }).click();
 
-  await expect(erasing).toContainText("They still have a visit booked, so nothing was erased.");
-  await expect(erasing).toContainText("Cancel it on their Visits tab, which refunds what they paid, then erase.");
+  await expect(erasing).toContainText("They have a visit booked. Cancel it on Visits");
+  await expect(erasing).toContainText("Cancel it on Visits, which refunds them, then erase.");
   await answer(page, { [ERASE]: json(ERASED) });
   const anyway = erasing.getByRole("button", { name: "Erase anyway" });
   await expect(anyway).toBeDisabled();
-  await erasing.getByRole("checkbox", { name: "I will cancel and refund it by hand today." }).check();
+  await erasing.getByRole("checkbox", { name: "I'll cancel and refund it by hand today." }).check();
 
   const sent = page.waitForRequest((request) => request.url().endsWith("/erasure") && request.method() === "POST");
   await anyway.click();

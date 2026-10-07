@@ -165,7 +165,7 @@ test("keeps a switched-off technician's unsent step, and sends it once he is bac
   await context.setOffline(false);
 
   await expect(page.getByRole("heading", { level: 1, name: "Technician sign in" })).toBeVisible();
-  await expect(page.getByText(/Work not yet sent stays on this phone for 7 days/)).toBeVisible();
+  await expect(page.getByText(/Unsent work stays on this phone for 7 days/)).toBeVisible();
   expect(await heldOnPhone(page)).toMatchObject({ outbox: 1 });
   // What the check-in measured, and the start it saw, stay with the work; the clients' cards go.
   const withTheWork = (key: string) => key.startsWith("arrivals:") || key.startsWith("starts:");
@@ -414,7 +414,7 @@ test("asks before a sign-out would lose unsent work, sends it first if asked, an
 
   // With no signal the API cannot end the session, so the phone wipes nothing and says so.
   await page.getByRole("button", { name: "Sign out anyway" }).click();
-  await expect(page.getByText(/^No signal, so you are still signed in and nothing was deleted/)).toBeVisible();
+  await expect(page.getByText(/^No signal\. You’re still signed in and nothing was deleted/)).toBeVisible();
   expect(await heldOnPhone(page)).toMatchObject({ outbox: 1 });
 
   // Signal again: send first, and only then sign out, with nothing left to lose.

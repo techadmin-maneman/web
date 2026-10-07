@@ -63,13 +63,13 @@ test("C7: a visit more than 24 hours out moves for free, its payment carried ove
   await expect(pay.getByText("Your Rs. 2,000 carries over.")).toBeVisible();
   // This client has decided neither photograph consent, and a move agrees to nothing (ADR 0080).
   await expect(pay.getByText(/^By booking this visit/)).toHaveCount(0);
-  await pay.getByRole("button", { name: "Confirm the move" }).click();
+  await pay.getByRole("button", { name: "Confirm move" }).click();
   await expect(page.getByRole("dialog").getByRole("status").getByText("Moved")).toBeVisible();
 });
 
 test("C8: cancelling more than 24 hours out gives the payment back in full", async ({ page }) => {
   const sheet = await reschedule(page, changingClients().free.mobile);
-  await sheet.getByRole("button", { name: "Cancel the visit instead" }).click();
+  await sheet.getByRole("button", { name: "Cancel instead" }).click();
   const cancel = page.getByRole("dialog", { name: /^Cancel \w+day’s visit$/ });
   await expect(cancel.getByText("Rs. 2,000 back to your UPI in 5 to 7 working days.")).toBeVisible();
   await scan(page);
@@ -86,7 +86,7 @@ test("C8 inside 24 hours shows the charge before anything is cancelled, and Keep
   page,
 }) => {
   const sheet = await reschedule(page, changingClients().late.mobile);
-  await sheet.getByRole("button", { name: "Cancel the visit instead" }).click();
+  await sheet.getByRole("button", { name: "Cancel instead" }).click();
   const cancel = page.getByRole("dialog", { name: /^Cancel \w+day’s visit$/ });
   await expect(cancel.getByText("This is a late cancellation: your Rs. 2,000 isn’t refunded.")).toBeVisible();
   await expect(cancel.getByRole("button", { name: "Cancel and accept charge" })).toBeVisible();

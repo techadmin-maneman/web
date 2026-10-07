@@ -111,7 +111,7 @@ describe("the concerns a client raised", () => {
     draw([]);
     await sendConcern("Please stop the launch messages.");
     expect(page.querySelector('[role="status"]')?.textContent).toBe(
-      "Received. We reply here and on WhatsApp, usually within a working day and within 30 days at the latest.",
+      "Received. We’ll reply here and on WhatsApp, usually within a working day and always within 30 days.",
     );
     expect(raised).toBe(1);
   });

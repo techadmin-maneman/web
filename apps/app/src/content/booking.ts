@@ -28,14 +28,14 @@ export const booking = {
    * ADR 0025, item 60), under Profile's heading, "Where we come".
    */
   address: {
-    why: "Your address first, so we know where to come. Then pick a date.",
-    refused: "We need your address before we can hold a time. Add it, then pick a time again.",
+    why: "First, your address. Then pick a date.",
+    refused: "Add your address, then pick a time again.",
     save: "Save and continue",
   },
   /** No board draws it. The client's address is in a pincode we do not come to, so no day is offered. */
   notServed: {
     line: (pincode: string) => `We don’t come to ${pincode} yet.`,
-    body: "Change the address below, or join the waitlist and we’ll message you the day we do.",
+    body: "Change your address below, or join the waitlist and we’ll tell you when we arrive.",
     waitlist: "Join the waitlist",
   },
   date: {
@@ -178,7 +178,7 @@ export const booking = {
   slowQuiet: "This is taking longer than usual. It shows on Home once it’s booked.",
   refunded: "We couldn’t book that visit, so we’re refunding your payment in full.",
   failedToStart: "That didn’t go through. Try again.",
-  creditGone: "Your free service visit is already on another booking, so this visit is charged at the price below.",
+  creditGone: "Your free service visit is already used on another booking. This visit is charged at the price below.",
   close: "Close",
 } as const;
 
@@ -195,8 +195,8 @@ export const note = {
   /** The note shown back on its visit's card. */
   shown: (text: string) => `Your note: “${text}”`,
   label: "What should they know at the door?",
-  offline: "No connection. Your note stays here until you are back online.",
-  save: "Save the note",
+  offline: "No connection. Your note is kept here until you’re back online.",
+  save: "Save note",
   saving: "Saving",
   saved: (technician: string | null) =>
     technician === null
@@ -216,9 +216,9 @@ export const dispute = {
   label: "Why is the charge wrong?",
   send: "Send",
   sending: "Sending",
-  sent: "We have your dispute. We’ll look into it and let you know.",
-  already: "You’ve already disputed this charge. We’ll let you know what we decide.",
-  closed: "The days to dispute this charge have passed. If something is wrong, message us.",
+  sent: "Dispute received. We’ll be in touch.",
+  already: "You’ve already disputed this charge. We’ll let you know our decision.",
+  closed: "The time to dispute this charge has passed. Message us if something’s wrong.",
   failed: "That didn’t go through. Try again.",
   tryAgain: "Try again",
 };
@@ -244,7 +244,7 @@ export const change = {
     // What a move in place keeps, on its pay step.
     carriesOver: (amount: string) => `Your ${amount} carries over.`,
     creditCarriesOver: "Your free service visit carries over.",
-    cancelInstead: "Cancel the visit instead",
+    cancelInstead: "Cancel instead",
     creditCharged:
       "This is a late change: your free service visit isn’t returned, and the new visit is paid separately.",
   },
@@ -274,10 +274,10 @@ export const change = {
   termsChanged: "The free change has just run out. This is what it costs now.",
   notChangeable: "This visit can no longer be changed here.",
   message: "Message us",
-  failed: "That didn’t go through, and nothing has changed. Try again.",
+  failed: "That didn’t go through. Nothing changed. Try again.",
   moved: "Moved",
   moveItem: (what: string) => `${what} · moved`,
   lateFeeItem: (what: string) => `Late fee · ${what.toLowerCase()}`,
-  confirmMove: "Confirm the move",
+  confirmMove: "Confirm move",
   destination: "payment method",
 } as const;

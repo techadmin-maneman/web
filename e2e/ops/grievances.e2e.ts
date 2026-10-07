@@ -36,12 +36,12 @@ test("says how long is left of the answer time, and marks one that has run over"
   await open(page);
   await expect(row(page, "Rohit Malhotra")).toContainText("22 days left");
   await expect(row(page, "Vikram Sethi")).toContainText("22 days overdue");
-  await expect(page.getByText("we answer within 30 days")).toBeVisible();
+  await expect(page.getByText("Answer within 30 days")).toBeVisible();
 });
 
 test("says plainly that recording an answer messages nobody", async ({ page }) => {
   await open(page);
-  await expect(page.getByText("Nothing here messages them")).toBeVisible();
+  await expect(page.getByText("Reply on WhatsApp, then record your answer here.")).toBeVisible();
 });
 
 test("reaches the client's record from the name", async ({ page }) => {
@@ -75,7 +75,7 @@ test("records the answer, and the grievance leaves the queue", async ({ page }) 
   await first.getByRole("textbox", { name: "Your answer" }).fill("Taken off the launch list today.");
 
   const sent = page.waitForRequest((request) => request.url().endsWith(RESOLVE) && request.method() === "POST");
-  await first.getByRole("button", { name: "Record the answer and close it" }).click();
+  await first.getByRole("button", { name: "Record and close" }).click();
   expect((await sent).postDataJSON()).toEqual({ response: "Taken off the launch list today." });
   await expect(page.getByText("Rohit Malhotra")).toBeHidden();
   // The row is gone, so the keyboard goes to the queue's heading and not to the top of the page.
@@ -94,20 +94,20 @@ test("says so when someone has answered it already", async ({ page }) => {
   await open(page, fails(404, "not_found"));
   const first = row(page, "Rohit Malhotra");
   await first.getByRole("textbox", { name: "Your answer" }).fill("Answered on WhatsApp.");
-  await first.getByRole("button", { name: "Record the answer and close it" }).click();
-  await expect(page.getByRole("alert")).toContainText("Someone has answered this one already.");
+  await first.getByRole("button", { name: "Record and close" }).click();
+  await expect(page.getByRole("alert")).toContainText("Already answered. Reload.");
 });
 
 test("says so when no grievance is open", async ({ page }) => {
   await answer(page, { "GET /api/grievances": json({ grievances: [] }) });
   await page.goto("/grievances");
-  await expect(page.getByText("No concern is open.")).toBeVisible();
+  await expect(page.getByText("No open concerns.")).toBeVisible();
 });
 
 test("says so when the queue cannot be loaded, and loads it on Try again", async ({ page }) => {
   await answer(page, { "GET /api/grievances": fails(503, "unavailable") });
   await page.goto("/grievances");
-  await expect(page.getByRole("alert")).toContainText("We could not load this.");
+  await expect(page.getByRole("alert")).toContainText("Couldn't load this.");
 
   await answer(page, { "GET /api/grievances": json(GRIEVANCES) });
   await page.getByRole("button", { name: "Try again" }).click();

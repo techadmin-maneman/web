@@ -56,11 +56,11 @@ test("asks why before it approves one, and sends the reason with the approval", 
   await grant.getByRole("button", { name: "Approve", exact: true }).click();
 
   // The field takes the keyboard as it opens, where the button stood.
-  await expect(grant.getByLabel("Why you are approving it")).toBeFocused();
-  const confirm = grant.getByRole("button", { name: "Approve the grant" });
+  await expect(grant.getByLabel("Reason for approving")).toBeFocused();
+  const confirm = grant.getByRole("button", { name: "Approve grant" });
   await expect(confirm).toBeDisabled();
-  await grant.getByLabel("Why you are approving it").fill("Father and son, two households");
-  await expect(grant.getByText("Kept with the decision, under your name.")).toBeVisible();
+  await grant.getByLabel("Reason for approving").fill("Father and son, two households");
+  await expect(grant.getByText("Saved with the decision.")).toBeVisible();
   const sent = page.waitForRequest((request) => request.url().includes("/decision") && request.method() === "POST");
   await confirm.click();
   expect((await sent).postDataJSON()).toEqual({ decision: "approve", reason: "Father and son, two households" });
@@ -74,9 +74,9 @@ test("asks why before it rejects one, and will not send an empty reason", async 
   const grant = page.getByRole("listitem").filter({ hasText: FIRST });
   await grant.getByRole("button", { name: "Reject", exact: true }).click();
 
-  const confirm = grant.getByRole("button", { name: "Reject the grant" });
+  const confirm = grant.getByRole("button", { name: "Reject grant" });
   await expect(confirm).toBeDisabled();
-  await grant.getByLabel("Why you are rejecting it").fill("Same flat, one household");
+  await grant.getByLabel("Reason for rejecting").fill("Same flat, one household");
   const sent = page.waitForRequest((request) => request.url().includes("/decision") && request.method() === "POST");
   await confirm.click();
   expect((await sent).postDataJSON()).toEqual({ decision: "reject", reason: "Same flat, one household" });
@@ -87,7 +87,7 @@ test("hands the keyboard back to the button that asked when the reason is not gi
   await open(page);
   const grant = page.getByRole("listitem").filter({ hasText: FIRST });
   await grant.getByRole("button", { name: "Reject", exact: true }).click();
-  await grant.getByRole("button", { name: "Keep it held" }).click();
+  await grant.getByRole("button", { name: "Cancel" }).click();
   await expect(grant.getByRole("button", { name: "Reject", exact: true })).toBeFocused();
 });
 
@@ -95,9 +95,9 @@ test("says so when someone else has decided the grant already", async ({ page })
   await open(page, fails(404, "not_found"));
   const grant = page.getByRole("listitem").filter({ hasText: FIRST });
   await grant.getByRole("button", { name: "Approve", exact: true }).click();
-  await grant.getByLabel("Why you are approving it").fill("Two households at one address");
-  await grant.getByRole("button", { name: "Approve the grant" }).click();
-  await expect(page.getByRole("alert")).toContainText("Someone has decided this one already.");
+  await grant.getByLabel("Reason for approving").fill("Two households at one address");
+  await grant.getByRole("button", { name: "Approve grant" }).click();
+  await expect(page.getByRole("alert")).toContainText("Already decided. Reload.");
   await expect(page.getByText(FIRST)).toBeVisible();
 });
 
@@ -106,9 +106,9 @@ test("says an approval waits for the friend's payment, and keeps the grant held"
   await open(page, fails(409, "not_paid"));
   const grant = page.getByRole("listitem").filter({ hasText: FIRST });
   await grant.getByRole("button", { name: "Approve", exact: true }).click();
-  await grant.getByLabel("Why you are approving it").fill("Two households at one address");
-  await grant.getByRole("button", { name: "Approve the grant" }).click();
-  await expect(page.getByRole("alert")).toContainText("has not paid for their consultation and fit yet");
+  await grant.getByLabel("Reason for approving").fill("Two households at one address");
+  await grant.getByRole("button", { name: "Approve grant" }).click();
+  await expect(page.getByRole("alert")).toContainText("The friend hasn't paid yet");
   await expect(page.getByText(FIRST)).toBeVisible();
 });
 
@@ -128,8 +128,8 @@ test("shows every referrer's figures, the busiest first, as the route orders the
     "href",
     `/clients/${REFERRERS.referrers[0]?.person_id ?? ""}/referrals`,
   );
-  await expect(page.getByText("Opens and consultations stay here.")).toBeVisible();
-  await expect(page.getByRole("button", { name: "Show more referrers" })).toBeHidden();
+  await expect(page.getByText("Clients see fits only.")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Show more" })).toBeHidden();
 });
 
 test("reads the referrers a page at a time", async ({ page }) => {
@@ -159,24 +159,24 @@ test("reads the referrers a page at a time", async ({ page }) => {
   await page.goto("/referrals");
 
   const asked = page.waitForRequest((request) => request.url().includes("/api/referrers?offset=4"));
-  await page.getByRole("button", { name: "Show more referrers" }).click();
+  await page.getByRole("button", { name: "Show more" }).click();
   await asked;
   await expect(page.getByRole("row").filter({ hasText: "Nikhil Arora" })).toBeVisible();
   await expect(page.getByRole("row").filter({ hasText: "Karan Bose" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Show more referrers" })).toBeHidden();
+  await expect(page.getByRole("button", { name: "Show more" })).toBeHidden();
 });
 
 test("says nothing is held when the queue is empty", async ({ page }) => {
   await answer(page, { "GET /api/referrals/held": json({ held: [] }), "GET /api/referrers": json(REFERRERS) });
   await page.goto("/referrals");
-  await expect(page.getByText("Nothing is held for review.")).toBeVisible();
+  await expect(page.getByText("Nothing held for review.")).toBeVisible();
 });
 
 test("says so when the queue cannot be loaded, and loads it on Try again", async ({ page }) => {
   await page.clock.setFixedTime(TASKS_READ_ON);
   await answer(page, { "GET /api/referrals/held": fails(503, "unavailable"), "GET /api/referrers": json(REFERRERS) });
   await page.goto("/referrals");
-  await expect(page.getByRole("alert")).toContainText("We could not load this.");
+  await expect(page.getByRole("alert")).toContainText("Couldn't load this.");
 
   await answer(page, { "GET /api/referrals/held": json(HELD), "GET /api/referrers": json(REFERRERS) });
   await page.getByRole("button", { name: "Try again" }).click();

@@ -17,7 +17,7 @@ import {
 
 export const FIRST = "Visit of Sun 19 Sep";
 
-export const QUEUE = "No-shows waiting for a decision";
+export const QUEUE = "No-shows to decide";
 
 /** The fixture's day, which the clock is set to: Wednesday 22 September 2027. */
 export const MONEY = "Today, Wed 22 Sep";

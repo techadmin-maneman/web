@@ -41,7 +41,7 @@ test("asks a client with no address for it first, then books", async ({ page }) 
   await openSheet(page);
   const where = page.getByRole("dialog", { name: "Where we come" });
   await expect(where.getByText("Step 1 of 4")).toBeVisible();
-  await expect(where.getByText("Your address first, so we know where to come. Then pick a date.")).toBeVisible();
+  await expect(where.getByText("First, your address. Then pick a date.")).toBeVisible();
   await scanOf(page);
   await where.getByLabel("Flat or house number").fill("House 4417");
   await where.getByLabel("Building, society or street").fill("Tower C");
@@ -77,9 +77,7 @@ test("goes back to the address, saying why, when the API holds no slot for want 
   await windows.getByRole("radio").and(page.locator(":enabled")).first().click();
   await windows.getByRole("button", { name: "Continue to payment" }).click();
   const where = page.getByRole("dialog", { name: "Where we come" });
-  await expect(where.getByRole("alert")).toHaveText(
-    "We need your address before we can hold a time. Add it, then pick a time again.",
-  );
+  await expect(where.getByRole("alert")).toHaveText("Add your address, then pick a time again.");
   await expect(where.getByRole("button", { name: "Save and continue" })).toBeVisible();
 });
 
@@ -92,7 +90,7 @@ test("offers no day at an address we do not come to, but the address to change a
   await openSheet(page);
   const where = page.getByRole("dialog", { name: "Where we come" });
   await expect(where.getByRole("alert")).toHaveText(
-    "We don’t come to 122018 yet. Change the address below, or join the waitlist and we’ll message you the day we do.",
+    "We don’t come to 122018 yet. Change your address below, or join the waitlist and we’ll tell you when we arrive.",
     { timeout: 30_000 },
   );
   await expect(where.getByLabel("Pincode")).toHaveValue("122018");

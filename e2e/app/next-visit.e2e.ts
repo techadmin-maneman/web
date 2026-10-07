@@ -149,7 +149,7 @@ test("Home offers the replacement where the piece falls due first, and a page sa
   await expect(involves).toHaveAttribute("href", "/replacement");
   await involves.click();
   await expect(page.getByRole("heading", { level: 1, name: "What a replacement involves" })).toBeVisible();
-  await expect(page.getByText("A replacement takes off the hair system you wear now")).toBeVisible();
+  await expect(page.getByText("Your technician removes your current hair system")).toBeVisible();
   await expect(page).toHaveTitle(/^Replacement · Mane Man$/);
   await accessible(page);
 

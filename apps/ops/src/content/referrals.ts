@@ -1,6 +1,6 @@
 // The referrals queue and table: a grant held for review, and every referrer.
 
-import { NOT_PERMITTED } from "./common.ts";
+import { FAILED, NOT_PERMITTED, OFFLINE } from "./common.ts";
 
 export const referrals = {
   title: "Referrals",
@@ -27,23 +27,22 @@ export const referrals = {
      * (docs/prompts/phase2-frontend.md) and draws no field for either.
      */
     reason: {
-      label: { approve: "Why you are approving it", reject: "Why you are rejecting it" },
+      label: { approve: "Reason for approving", reject: "Reason for rejecting" },
       /** The reason stays with the decision; the audit log names the decision and who made it (ADR 0031). */
-      hint: "Kept with the decision, under your name.",
-      confirm: { approve: "Approve the grant", reject: "Reject the grant" },
-      cancel: "Keep it held",
+      hint: "Saved with the decision.",
+      confirm: { approve: "Approve grant", reject: "Reject grant" },
+      cancel: "Cancel",
     },
     /** The board draws no empty queue. */
-    empty: "Nothing is held for review.",
-    deciding: "Deciding",
+    empty: "Nothing held for review.",
+    deciding: "Saving",
     errors: {
       not_permitted: NOT_PERMITTED,
-      not_found: "Someone has decided this one already. Reload to see the queue as it stands.",
+      not_found: "Already decided. Reload.",
       // A consultation and fit is sold only once paid, so its grant waits for the payment; it can be rejected now.
-      not_paid:
-        "The friend has not paid for their consultation and fit yet. Approve it once they have, or reject it now.",
-      offline: "You are offline. Connect, then try again.",
-      unknown: "That did not go through. Please try again.",
+      not_paid: "The friend hasn't paid yet. Approve once they have, or reject now.",
+      offline: OFFLINE,
+      unknown: FAILED,
     } as Readonly<Record<string, string>>,
   },
   table: {
@@ -57,11 +56,11 @@ export const referrals = {
       granted: "Granted",
       redeemed: "Redeemed",
     },
-    note: "Opens and consultations stay here. The client's tracker shows fits only.",
+    note: "Clients see fits only.",
     // The board draws no empty table.
-    empty: "Nobody has a referral code yet.",
+    empty: "No referrers yet.",
     /** The table is read fifty referrers at a time, the busiest first. */
-    more: "Show more referrers",
+    more: "Show more",
     loading: "Loading",
   },
 } as const;

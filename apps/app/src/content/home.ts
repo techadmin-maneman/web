@@ -112,7 +112,7 @@ export const home = {
     expect: [
       "Your scalp measured and your colour matched.",
       "Choose your hair system, fitted there and then.",
-      "Go ahead and pay by the link we text you. Decide against it and pay nothing.",
+      "Love it? Pay by the link we text you. If not, you pay nothing.",
     ],
   },
   /** No board draws it. A one visit the client was fitted at and has not paid for yet. */
@@ -147,9 +147,9 @@ export const replacement = {
   title: "What a replacement involves",
   back: "Back to Home",
   lines: [
-    "A replacement takes off the hair system you wear now and fits a new one in its place, at home, by your technician.",
-    "The new hair system is cut in and styled to match, as it was at your first fit.",
-    "It is booked here like any other visit, and paid for when you book it.",
+    "Your technician removes your current hair system and fits a new one, at home.",
+    "It’s cut in and styled to match, just like your first fit.",
+    "Book and pay here, like any other visit.",
   ],
   book: "Book the replacement",
 } as const;

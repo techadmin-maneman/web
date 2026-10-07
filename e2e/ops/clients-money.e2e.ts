@@ -31,7 +31,7 @@ test("enters a discount code on a visit not yet paid for, says when one does not
   await row.getByRole("button", { name: "Enter a discount code on the visit of 25 Sep 2027" }).click();
   await row.getByLabel("Discount code").fill("wrong1");
   await row.getByRole("button", { name: "Apply" }).click();
-  await expect(row.getByRole("alert")).toHaveText("That code does not apply to this visit.");
+  await expect(row.getByRole("alert")).toHaveText("That code doesn't apply to this visit.");
   // One ops switched off said only that it did not apply.
   await row.getByLabel("Discount code").fill("RPLC2K");
   await row.getByRole("button", { name: "Apply" }).click();
@@ -61,7 +61,7 @@ test("shows the code the client gave when booking, and starts the box from it", 
   } satisfies OpsReply<"/api/clients/{id}">;
   await openClient(page, `/clients/${CLIENT.id}/visits`, { [READ_RECORD]: json(asked) });
   const row = page.getByRole("region", { name: "To come" }).getByRole("row").nth(1);
-  await expect(row).toContainText("Client gave TENPC when booking");
+  await expect(row).toContainText("Client entered TENPC when booking");
   await row.getByRole("button", { name: "Enter a discount code on the visit of 25 Sep 2027" }).click();
   await expect(row.getByLabel("Discount code")).toHaveValue("TENPC");
 });
@@ -96,7 +96,7 @@ test("says who closed a visit left partly done without a follow-up, when and why
   } satisfies OpsReply<"/api/clients/{id}">;
   await openClient(page, `/clients/${CLIENT.id}/visits`, { [READ_RECORD]: json(closed) });
   await expect(page.getByRole("region", { name: "Done" }).getByRole("row").nth(1)).toContainText(
-    "Closed without a follow-up by priya@maneman.in, 1 Sep 2027: Moving to Pune; wants no more visits.",
+    "Closed without follow-up by priya@maneman.in, 1 Sep 2027: Moving to Pune; wants no more visits.",
   );
 });
 
@@ -144,7 +144,7 @@ test("lists the payment links sent, and copies an open one's address to send aga
   await expect(open).toContainText("21 Sep 2027");
   await expect(open).toContainText("Service visit, visit of 2 Oct 2027");
   await expect(open).toContainText("Rs. 2,360");
-  await expect(open).toContainText("Waiting to be paid · Ref MM-2027-0902");
+  await expect(open).toContainText("Unpaid · Ref MM-2027-0902");
   await expect(open).toContainText("https://rzp.io/i/MMsv902");
 
   const copy = open.getByRole("button");
@@ -175,7 +175,7 @@ test("says where each finished visit's invoice stands in Books", async ({ page }
   await openClient(page, `/clients/${CLIENT.id}/payments`, { [READ_RECORD]: json(withDraft) });
   const invoices = page.getByRole("region", { name: "Invoices" }).getByRole("row");
   await expect(invoices.nth(1)).toContainText("Replacement of 1 Sep 2027");
-  await expect(invoices.nth(1)).toContainText("Draft in Books, not sent");
+  await expect(invoices.nth(1)).toContainText("Draft in Books");
   await expect(invoices.nth(2)).toContainText("Service visit of 22 Aug 2027");
   await expect(invoices.nth(2)).toContainText("Sent 22 Aug 2027");
 });
@@ -183,7 +183,7 @@ test("says where each finished visit's invoice stands in Books", async ({ page }
 test("says so when nothing was linked or invoiced yet", async ({ page }) => {
   await openClient(page, `/clients/${CLIENT.id}/payments`, { [READ_RECORD]: json(NEW_RECORD) });
   await expect(page.getByRole("region", { name: "Payment links" })).toContainText("No payment links yet.");
-  await expect(page.getByRole("region", { name: "Invoices" })).toContainText("No finished visit to invoice yet.");
+  await expect(page.getByRole("region", { name: "Invoices" })).toContainText("No invoices yet.");
 });
 
 // A credit given or taken in error once needed SQL to put right.
@@ -193,16 +193,16 @@ test("puts a client's credits right, with the reason, and shows the balance it a
   });
   const credits = page.getByRole("region", { name: "Free service visits" });
   await expect(credits).toContainText("2 visits · use by 3 Jan 2028");
-  const save = credits.getByRole("button", { name: "Put the credits right" });
+  const save = credits.getByRole("button", { name: "Update credits" });
   await expect(save).toBeDisabled();
 
-  await credits.getByLabel("Visits to add, or to take away with a minus").fill("-1");
-  await credits.getByRole("radio", { name: "Correction: given or taken in error" }).check();
+  await credits.getByLabel("Add, or remove with a minus").fill("-1");
+  await credits.getByRole("radio", { name: "Correction" }).check();
   const sent = page.waitForRequest((request) => request.url().endsWith("/credits") && request.method() === "POST");
   await save.click();
   expect((await sent).postDataJSON()).toEqual({ visits: -1, reason: "correction" });
 
-  await expect(credits.getByRole("status")).toHaveText("Done. They now hold 1 visit.");
+  await expect(credits.getByRole("status")).toHaveText("Done. They now have 1 visit.");
   // The head reads the balance the API answered, without the record being read again.
   await expect(meta(page).nth(1)).toHaveText("1 · use by 3 Jan 2028");
 });
@@ -210,9 +210,9 @@ test("puts a client's credits right, with the reason, and shows the balance it a
 test("offers no change of nought, or of more than twelve visits either way", async ({ page }) => {
   await openClient(page, `/clients/${CLIENT.id}/payments`);
   const credits = page.getByRole("region", { name: "Free service visits" });
-  await credits.getByRole("radio", { name: "Goodwill: to make up for something" }).check();
-  const field = credits.getByLabel("Visits to add, or to take away with a minus");
-  const save = credits.getByRole("button", { name: "Put the credits right" });
+  await credits.getByRole("radio", { name: "Goodwill" }).check();
+  const field = credits.getByLabel("Add, or remove with a minus");
+  const save = credits.getByRole("button", { name: "Update credits" });
   for (const typed of ["0", "13", "-13", "two"]) {
     await field.fill(typed);
     await expect(save, typed).toBeDisabled();
@@ -226,8 +226,8 @@ test("says so when the API would take away more than the client holds", async ({
     [ADD_CREDITS]: fails(400, "invalid_request"),
   });
   const credits = page.getByRole("region", { name: "Free service visits" });
-  await credits.getByLabel("Visits to add, or to take away with a minus").fill("-5");
-  await credits.getByRole("radio", { name: "Correction: given or taken in error" }).check();
-  await credits.getByRole("button", { name: "Put the credits right" }).click();
-  await expect(credits.getByRole("alert")).toContainText("That would take away more visits than they hold");
+  await credits.getByLabel("Add, or remove with a minus").fill("-5");
+  await credits.getByRole("radio", { name: "Correction" }).check();
+  await credits.getByRole("button", { name: "Update credits" }).click();
+  await expect(credits.getByRole("alert")).toContainText("-12 to 12, and no more than they hold.");
 });

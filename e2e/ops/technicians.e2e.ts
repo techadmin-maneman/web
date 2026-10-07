@@ -98,7 +98,7 @@ test("puts Leave where the board draws Skill, with no design note beneath the ta
   await expect(page.getByRole("columnheader", { name: "Skill" })).toBeHidden();
   await expect(page.getByRole("columnheader", { name: "Leave" })).toBeVisible();
   await expect(page.getByText("Nothing records what a technician is trained for")).toBeHidden();
-  await expect(page.getByText("Jobs finished from 24 Jun 2027 to 22 Sep 2027.")).toBeVisible();
+  await expect(page.getByText("Jobs finished 24 Jun 2027 to 22 Sep 2027.")).toBeVisible();
 });
 
 // "AWAY" never said until when.
@@ -123,10 +123,10 @@ test("opens a technician's own page from his name, a tab at a time, each at an a
   await expect(page).toHaveURL(new RegExp(`/technicians/${IMRAN}$`));
   await expect(page).toHaveTitle("This week · Technicians · Mane Man operations");
 
-  const tabs = main.getByRole("navigation", { name: "Imran Qureshi: his week, leave, phones and kit" });
+  const tabs = main.getByRole("navigation", { name: "Imran Qureshi: week, leave, phones and kit" });
   await expect(tabs.getByRole("link")).toHaveText(["This week", "Leave", "Phones", "Kit"]);
   await expect(tabs.getByRole("link", { name: "This week" })).toHaveAttribute("aria-current", "page");
-  await expect(main.getByRole("link", { name: "Open his week on the board" })).toHaveAttribute(
+  await expect(main.getByRole("link", { name: "Open on the board" })).toHaveAttribute(
     "href",
     "/dispatch?find=Imran+Qureshi",
   );
@@ -147,7 +147,7 @@ test("opens a technician's own page from his name, a tab at a time, each at an a
 test("says so when the technician is not on the roster any more", async ({ page }) => {
   await open(page);
   await page.goto("/technicians/88000000-0000-4000-8000-000000000009");
-  await expect(page.getByText("That technician is not on the roster any more.")).toBeVisible();
+  await expect(page.getByText("No longer on the roster.")).toBeVisible();
   await expect(page.getByRole("link", { name: "All technicians" })).toBeVisible();
 });
 
@@ -170,7 +170,7 @@ test("names each phone, says when it was last used, and whether it is signed in,
   await expect(sandeep.getByRole("listitem").filter({ hasText: "Phone · 902d" })).toContainText("Signed out");
   await backToRoster(page);
   const faizan = await pageOf(page, "Faizan Ali", "Phones");
-  await expect(faizan.getByText("No phone logged in.")).toBeVisible();
+  await expect(faizan.getByText("No phones signed in.")).toBeVisible();
 });
 
 // A revoke stops them signing in on any phone, since their code reaches the lost phone too; ops let them back.
@@ -185,12 +185,12 @@ test("says when a revoke stopped him signing in, and lets him in again", async (
     [`POST /api/technicians/${IMRAN}/allow-sign-in`]: json({ allowed: true }),
   });
   const main = await pageOf(page, "Imran Qureshi", "Phones");
-  await expect(main.getByText("Sign-in stopped since 5 Aug 2027, when a phone was revoked.")).toBeVisible();
+  await expect(main.getByText("Sign-in blocked since 5 Aug 2027, when a phone was revoked.")).toBeVisible();
 
   const sent = page.waitForRequest((request) => request.url().endsWith(`/api/technicians/${IMRAN}/allow-sign-in`));
-  await main.getByRole("button", { name: "Let him sign in again" }).click();
+  await main.getByRole("button", { name: "Allow sign-in" }).click();
   await sent;
-  await expect(main.getByRole("status")).toHaveText("He can sign in again.");
+  await expect(main.getByRole("status")).toHaveText("They can sign in again.");
 });
 
 test("offers no revoke on a phone that is revoked already", async ({ page }) => {
@@ -203,7 +203,7 @@ test("asks before it revokes a phone, and says what a revoke does", async ({ pag
   await open(page);
   const main = await pageOf(page, "Imran Qureshi", "Phones");
   await main.getByRole("button", { name: PHONE }).click();
-  await expect(main.getByText("The session ends, the phone drops its cached jobs")).toBeVisible();
+  await expect(main.getByText("Signs the phone out and clears its jobs")).toBeVisible();
 
   const sent = page.waitForRequest((request) => request.url().endsWith(REVOKE) && request.method() === "POST");
   await main.getByRole("button", { name: "Revoke this phone" }).click();
@@ -215,7 +215,7 @@ test("keeps the phone when the revoke is called off", async ({ page }) => {
   await open(page);
   const main = await pageOf(page, "Imran Qureshi", "Phones");
   await main.getByRole("button", { name: PHONE }).click();
-  await main.getByRole("button", { name: "Keep it" }).click();
+  await main.getByRole("button", { name: "Cancel" }).click();
   await expect(main.getByRole("button", { name: PHONE })).toBeVisible();
   await expect(main.getByText("Revoked 22 Sep 2027")).toBeHidden();
 });
@@ -225,13 +225,13 @@ test("says so when the phone is no longer that technician's", async ({ page }) =
   const main = await pageOf(page, "Imran Qureshi", "Phones");
   await main.getByRole("button", { name: PHONE }).click();
   await main.getByRole("button", { name: "Revoke this phone" }).click();
-  await expect(main.getByRole("alert")).toContainText("That phone is not this technician's any more.");
+  await expect(main.getByRole("alert")).toContainText("That phone is no longer theirs.");
 });
 
 test("says so when the roster cannot be loaded, and loads it on Try again", async ({ page }) => {
   await answer(page, { [READ_ROSTER]: fails(503, "unavailable"), [READ_WORK]: json(TECHNICIAN_WORK) });
   await page.goto("/technicians");
-  await expect(page.getByRole("alert")).toContainText("We could not load this.");
+  await expect(page.getByRole("alert")).toContainText("Couldn't load this.");
 
   await answer(page, { [READ_ROSTER]: json(TECHNICIANS), [READ_WORK]: json(TECHNICIAN_WORK) });
   await page.getByRole("button", { name: "Try again" }).click();
@@ -243,7 +243,7 @@ test("says so when the roster cannot be loaded, and loads it on Try again", asyn
 test("says so when the figures cannot be loaded, and loads them on Try again", async ({ page }) => {
   await answer(page, { [READ_ROSTER]: json(TECHNICIANS), [READ_WORK]: fails(503, "unavailable") });
   await page.goto("/technicians");
-  await expect(page.getByRole("alert")).toContainText("We could not load this.");
+  await expect(page.getByRole("alert")).toContainText("Couldn't load this.");
 
   await answer(page, { [READ_ROSTER]: json(TECHNICIANS), [READ_WORK]: json(TECHNICIAN_WORK) });
   await page.getByRole("button", { name: "Try again" }).click();
@@ -256,5 +256,5 @@ test("says so when no technician is active", async ({ page }) => {
     [READ_WORK]: json({ ...TECHNICIAN_WORK, technicians: [] }),
   });
   await page.goto("/technicians");
-  await expect(page.getByText("No technician is active.")).toBeVisible();
+  await expect(page.getByText("No active technicians.")).toBeVisible();
 });

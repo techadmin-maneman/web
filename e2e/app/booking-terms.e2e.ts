@@ -164,7 +164,7 @@ test("writes the late fee to move a visit as the pay step does, and C7's way to 
   await page.getByRole("button", { name: "Reschedule" }).click();
   const sheet = page.getByRole("dialog", { name: /^Move \w+day’s visit$/ });
   await expect(sheet.getByText(LATE_FEE_LINE)).toBeVisible();
-  const instead = await sheet.getByRole("button", { name: "Cancel the visit instead" }).boundingBox();
+  const instead = await sheet.getByRole("button", { name: "Cancel instead" }).boundingBox();
   expect(instead?.height).toBeGreaterThanOrEqual(44);
 });
 

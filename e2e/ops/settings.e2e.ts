@@ -54,14 +54,14 @@ test.describe("the rules", () => {
     const radius = page.getByRole("group", { name: "Check-in radius" });
     await expect(radius.getByLabel("Check-in radius")).toHaveValue("200");
     await expect(radius).toContainText("metres");
-    await expect(radius).toContainText("50 to 1000 metres, a whole number");
+    await expect(radius).toContainText("50–1000 metres");
   });
 
   // Ops were shown "src/policy/check-in.ts".
   test("says who set a rule, and says when nobody has, without a word of the code", async ({ page }) => {
     await open(page);
     await expect(page.getByText("Set by ops@maneman.in on 20 Sep 2027")).toBeVisible();
-    await expect(page.getByText("Nobody has set this, so the standard figure stands.").first()).toBeVisible();
+    await expect(page.getByText("Default").first()).toBeVisible();
     await expect(page.getByRole("main")).not.toContainText("src/");
   });
 
@@ -70,7 +70,7 @@ test.describe("the rules", () => {
     const reminders = {
       ...ruleNamed("checkin_radius_m"),
       name: "reminder_hour",
-      title: "When reminders go",
+      title: "Reminder time",
       note: "When the WhatsApp reminders of tomorrow's visit go.",
       unit: "hour of the day, in India",
       min: 8,
@@ -83,8 +83,8 @@ test.describe("the rules", () => {
     await open(page, "/settings", { "GET /api/settings": json({ settings: [reminders] }) });
     const rule = page.getByRole("main");
     await expect(rule.getByText("6 pm", { exact: true })).toBeVisible();
-    await expect(rule.getByText("An hour from 8 am to 9 pm, typed on a 24-hour clock")).toBeVisible();
-    await page.getByLabel("When reminders go").fill("9");
+    await expect(rule.getByText("8 am to 9 pm, on a 24-hour clock")).toBeVisible();
+    await page.getByLabel("Reminder time").fill("9");
     await expect(rule.getByText("9 am", { exact: true })).toBeVisible();
     await expect(rule.getByText("Set by a service token on 20 Sep 2027")).toBeVisible();
     await expect(rule).not.toContainText(".access");
@@ -115,13 +115,13 @@ test.describe("the rules", () => {
     await section(page, "Visits in the field").getByRole("button", { name: "Save" }).click();
 
     // ADR 0071's rule for a price, followed for a rule (docs/decisions/0086-the-next-visit-is-offered.md).
-    const check = page.getByRole("group", { name: "Check the change" });
+    const check = page.getByRole("group", { name: "Review the change" });
     await expect(check).toBeFocused();
     await expect(check).toContainText("Check-in radius: 200 metres → 150 metres.");
     expect(sent).toBe(0);
 
     const request = posted(page, "/api/settings/checkin_radius_m");
-    await check.getByRole("button", { name: "Save" }).click();
+    await check.getByRole("button", { name: "Confirm" }).click();
     expect((await request).postDataJSON()).toEqual({ value: 150 });
     await expect(page.getByRole("status").filter({ hasText: "Saved." })).toBeVisible();
   });
@@ -130,8 +130,8 @@ test.describe("the rules", () => {
     await open(page);
     await page.getByLabel("Check-in radius").fill("150");
     await section(page, "Visits in the field").getByRole("button", { name: "Save" }).click();
-    await page.getByRole("group", { name: "Check the change" }).getByRole("button", { name: "Change it" }).click();
-    await expect(page.getByRole("group", { name: "Check the change" })).toHaveCount(0);
+    await page.getByRole("group", { name: "Review the change" }).getByRole("button", { name: "Edit" }).click();
+    await expect(page.getByRole("group", { name: "Review the change" })).toHaveCount(0);
     await expect(page.getByLabel("Check-in radius")).toHaveValue("150");
   });
 
@@ -154,7 +154,7 @@ test.describe("the rules", () => {
     const radius = page.getByLabel("Check-in radius");
     await radius.fill("1440");
     await expect(radius).toHaveAttribute("aria-invalid", "true");
-    await expect(radius).toHaveAccessibleDescription("Enter a whole figure from 50 to 1000 metres.");
+    await expect(radius).toHaveAccessibleDescription("Enter 50–1000 metres.");
     await expect(section(page, "Visits in the field").getByRole("button", { name: "Save" })).toBeDisabled();
     await radius.fill("150");
     await expect(radius).not.toHaveAttribute("aria-invalid", "true");
@@ -168,9 +168,9 @@ test.describe("the rules", () => {
     const wait = page.getByRole("group", { name: "No-show wait" });
     await wait.getByLabel("First fit", { exact: true }).fill("90");
     await section(page, "Visits in the field").getByRole("button", { name: "Save" }).click();
-    await page.getByRole("group", { name: "Check the change" }).getByRole("button", { name: "Save" }).click();
+    await page.getByRole("group", { name: "Review the change" }).getByRole("button", { name: "Confirm" }).click();
     await expect(page.getByRole("listitem").filter({ has: wait }).getByRole("alert")).toHaveText(
-      "First fit is outside what this rule allows, so it was not saved.",
+      "First fit: out of range. Not saved.",
     );
   });
 
@@ -182,19 +182,19 @@ test.describe("the rules", () => {
         "booking_days.service_cadence",
       ]),
     });
-    const days = page.getByRole("group", { name: "Booking and the next visit" });
+    const days = page.getByRole("group", { name: "Booking and next visits" });
     await days.getByLabel("Between service visits").fill("60");
     await section(page, "Booking and payment").getByRole("button", { name: "Save" }).click();
-    await page.getByRole("group", { name: "Check the change" }).getByRole("button", { name: "Save" }).click();
+    await page.getByRole("group", { name: "Review the change" }).getByRole("button", { name: "Confirm" }).click();
     await expect(page.getByRole("listitem").filter({ has: days }).getByRole("alert")).toHaveText(
-      "“How far ahead a visit may be booked” must be at least “Between service visits”, or a client is offered a day they cannot book. It was not saved.",
+      "“Bookable ahead” must be at least “Between service visits”. Not saved.",
     );
   });
 
   // Seventeen rules on one page, each with its own Save, in no order.
   test("groups the rules by subject, each section a link away", async ({ page }) => {
     await open(page);
-    const jump = page.getByRole("navigation", { name: "Policies by subject" });
+    const jump = page.getByRole("navigation", { name: "Jump to" });
     await expect(jump.getByRole("link")).toHaveText([
       "Moves, cancels and no-shows",
       "Booking and payment",
@@ -204,11 +204,7 @@ test.describe("the rules", () => {
       "The console",
     ]);
     const field = section(page, "Visits in the field");
-    await expect(field.getByRole("group")).toHaveText([
-      /^Check-in radius/,
-      /^No-show wait/,
-      /^How far a phone is trusted about time/,
-    ]);
+    await expect(field.getByRole("group")).toHaveText([/^Check-in radius/, /^No-show wait/, /^Phone clock limits/]);
     await expect(page.getByRole("button", { name: "Save", exact: true })).toHaveCount(6);
 
     await jump.getByRole("link", { name: "Referrals" }).click();
@@ -232,13 +228,13 @@ test.describe("the rules", () => {
     await page.getByRole("group", { name: "No-show wait" }).getByLabel("Service visit", { exact: true }).fill("20");
     await section(page, "Visits in the field").getByRole("button", { name: "Save" }).click();
 
-    const check = page.getByRole("group", { name: "Check the change" });
+    const check = page.getByRole("group", { name: "Review the change" });
     await expect(check.getByRole("listitem")).toHaveText([
       "Check-in radius: 200 metres → 150 metres.",
       "No-show wait · Service visit: 15 minutes → 20 minutes.",
     ]);
     expect(sent).toEqual([]);
-    await check.getByRole("button", { name: "Save" }).click();
+    await check.getByRole("button", { name: "Confirm" }).click();
     await expect(page.getByRole("status").filter({ hasText: "Saved." })).toBeVisible();
     expect(sent).toEqual(["checkin_radius_m", "no_show_wait_min"]);
     await expect(section(page, "Visits in the field").getByRole("button", { name: "Save" })).toBeDisabled();
@@ -261,10 +257,10 @@ test.describe("the rules", () => {
     const wait = page.getByRole("group", { name: "No-show wait" });
     await wait.getByLabel("Service visit", { exact: true }).fill("20");
     await section(page, "Visits in the field").getByRole("button", { name: "Save" }).click();
-    await page.getByRole("group", { name: "Check the change" }).getByRole("button", { name: "Save" }).click();
+    await page.getByRole("group", { name: "Review the change" }).getByRole("button", { name: "Confirm" }).click();
 
     await expect(page.getByRole("listitem").filter({ has: wait }).getByRole("alert")).toHaveText(
-      "Service visit is outside what this rule allows, so it was not saved.",
+      "Service visit: out of range. Not saved.",
     );
     const radiusItem = page.getByRole("listitem").filter({ has: page.getByLabel("Check-in radius") });
     await expect(radiusItem).toContainText("Set by ops@maneman.in on 21 Sep 2027");
@@ -273,16 +269,18 @@ test.describe("the rules", () => {
 
   test("links each late-fee rule to Prices, and Prices back to the rule", async ({ page }) => {
     await open(page);
-    const charges = page.getByRole("listitem").filter({ has: page.getByRole("group", { name: "What a late move" }) });
+    const charges = page
+      .getByRole("listitem")
+      .filter({ has: page.getByRole("group", { name: "Late move or cancel" }) });
     await expect(charges.getByRole("link", { name: "Late fees are set in Prices" })).toHaveAttribute("href", "/prices");
 
     await open(page, "/prices");
     const fee = page
       .getByRole("listitem")
       .filter({ has: page.getByRole("heading", { name: "Late fee on a first fit", exact: true }) });
-    await fee.getByRole("link", { name: "Set when it applies" }).click();
+    await fee.getByRole("link", { name: "When it applies" }).click();
     await expect(page).toHaveURL(/\/settings#late_change_charge$/);
-    const rule = page.getByRole("listitem").filter({ has: page.getByRole("group", { name: "What a late move" }) });
+    const rule = page.getByRole("listitem").filter({ has: page.getByRole("group", { name: "Late move or cancel" }) });
     await expect(rule).toBeFocused();
     await expect(rule).toBeInViewport();
   });
@@ -296,30 +294,30 @@ test.describe("the rules", () => {
         return json({ ...days, value, set_by: "ops@maneman.in" })(route);
       },
     });
-    const days = page.getByRole("group", { name: "Booking and the next visit" });
+    const days = page.getByRole("group", { name: "Booking and next visits" });
     await expect(days.getByLabel("Between service visits")).toHaveValue("30");
-    await expect(days).toContainText("14 to 90 days, a whole number");
-    await expect(days.getByLabel("From a consultation to the first fit")).toHaveValue("0");
-    await expect(days).toContainText("0 to 30 days, a whole number");
-    await expect(days.getByLabel("How far ahead a visit may be booked")).toHaveValue("45");
+    await expect(days).toContainText("14–90 days");
+    await expect(days.getByLabel("Consultation to first fit")).toHaveValue("0");
+    await expect(days).toContainText("0–30 days");
+    await expect(days.getByLabel("Bookable ahead")).toHaveValue("45");
     await expect(days).not.toContainText("service_cadence");
 
     // A horizon shorter than the fortnight the strip shows is not offered.
     const booking = section(page, "Booking and payment");
-    await days.getByLabel("How far ahead a visit may be booked").fill("10");
+    await days.getByLabel("Bookable ahead").fill("10");
     await expect(booking.getByRole("button", { name: "Save" })).toBeDisabled();
-    await days.getByLabel("How far ahead a visit may be booked").fill("45");
+    await days.getByLabel("Bookable ahead").fill("45");
 
     await days.getByLabel("Between service visits").fill("28");
     await booking.getByRole("button", { name: "Save" }).click();
-    const check = page.getByRole("group", { name: "Check the change" });
+    const check = page.getByRole("group", { name: "Review the change" });
     await expect(check.getByRole("listitem")).toHaveText([
-      "Booking and the next visit · Between service visits: 30 days → 28 days.",
+      "Booking and next visits · Between service visits: 30 days → 28 days.",
     ]);
     expect(await axeViolations(page)).toEqual([]);
 
     const request = posted(page, "/api/settings/booking_days");
-    await check.getByRole("button", { name: "Save" }).click();
+    await check.getByRole("button", { name: "Confirm" }).click();
     expect((await request).postDataJSON()).toEqual({
       value: {
         first_fit_lead: 0,
@@ -345,24 +343,24 @@ test.describe("the rules", () => {
         return json({ ...reward, value, set_by: "ops@maneman.in" })(route);
       },
     });
-    const reward = page.getByRole("group", { name: "What a referral earns" });
-    await expect(reward.getByLabel("The client who sent the invite")).toHaveValue("3");
-    await expect(reward.getByLabel("The friend they invited")).toHaveValue("3");
-    await expect(reward.getByLabel("The free service visits last")).toHaveValue("365");
-    await expect(reward).toContainText("0 to 12 service visits, a whole number");
-    await expect(reward).toContainText("30 to 1095 days, a whole number");
+    const reward = page.getByRole("group", { name: "Referral reward" });
+    await expect(reward.getByLabel("Referrer")).toHaveValue("3");
+    await expect(reward.getByLabel("Friend")).toHaveValue("3");
+    await expect(reward.getByLabel("Free visits valid for")).toHaveValue("365");
+    await expect(reward).toContainText("0–12 service visits");
+    await expect(reward).toContainText("30–1095 days");
 
-    await reward.getByLabel("The client who sent the invite").fill("2");
-    await reward.getByLabel("The friend they invited").fill("0");
+    await reward.getByLabel("Referrer").fill("2");
+    await reward.getByLabel("Friend").fill("0");
     await section(page, "Referrals").getByRole("button", { name: "Save" }).click();
-    const check = page.getByRole("group", { name: "Check the change" });
+    const check = page.getByRole("group", { name: "Review the change" });
     await expect(check.getByRole("listitem")).toHaveText([
-      "What a referral earns · The client who sent the invite: 3 service visits → 2 service visits.",
-      "What a referral earns · The friend they invited: 3 service visits → 0 service visits.",
+      "Referral reward · Referrer: 3 service visits → 2 service visits.",
+      "Referral reward · Friend: 3 service visits → 0 service visits.",
     ]);
 
     const request = posted(page, "/api/settings/referral_reward");
-    await check.getByRole("button", { name: "Save" }).click();
+    await check.getByRole("button", { name: "Confirm" }).click();
     expect((await request).postDataJSON()).toEqual({
       value: { referrer_visits: 2, friend_visits: 0, valid_days: 365 },
     });
@@ -372,11 +370,11 @@ test.describe("the rules", () => {
   // Every figure a rule of the code held is ops' now (docs/decisions/0088-every-policy-in-the-console.md).
   test("says each box's own unit where a rule's figures count in two", async ({ page }) => {
     await open(page);
-    const clock = page.getByRole("group", { name: "How far a phone is trusted about time" });
-    await expect(clock.getByLabel("Earliest check-in, before the booked start")).toHaveValue("60");
-    await expect(clock).toContainText("0 to 240 minutes, a whole number");
+    const clock = page.getByRole("group", { name: "Phone clock limits" });
+    await expect(clock.getByLabel("Earliest check-in before the start")).toHaveValue("60");
+    await expect(clock).toContainText("0–240 minutes");
     await expect(clock.getByLabel("Longest a phone may stay offline")).toHaveValue("24");
-    await expect(clock).toContainText("1 to 72 hours, a whole number");
+    await expect(clock).toContainText("1–72 hours");
   });
 
   test("offers each kind of visit only what it may cost, in the console's words, and sends the one chosen", async ({
@@ -389,22 +387,22 @@ test.describe("the rules", () => {
         return json({ ...charges, value, set_by: "ops@maneman.in", set_at: "2027-09-21T06:00:00.000Z" })(route);
       },
     });
-    const charges = page.getByRole("group", { name: "What a late move or cancel costs" });
+    const charges = page.getByRole("group", { name: "Late move or cancel charge" });
     const service = charges.getByLabel("Service visit", { exact: true });
     await expect(service).toHaveValue("visit");
-    await expect(service.locator("option")).toHaveText(["Nothing", "The visit itself"]);
+    await expect(service.locator("option")).toHaveText(["Nothing", "The full visit"]);
     await expect(charges.getByLabel("First fit", { exact: true }).locator("option")).toHaveText([
       "Nothing",
-      "Its late fee",
-      "The visit itself",
+      "Late fee",
+      "The full visit",
     ]);
 
     await service.selectOption("nothing");
     await section(page, "Moves, cancels and no-shows").getByRole("button", { name: "Save" }).click();
-    const check = page.getByRole("group", { name: "Check the change" });
-    await expect(check).toContainText("What a late move or cancel costs · Service visit: The visit itself → Nothing.");
+    const check = page.getByRole("group", { name: "Review the change" });
+    await expect(check).toContainText("Late move or cancel charge · Service visit: The full visit → Nothing.");
     const request = posted(page, "/api/settings/late_change_charge");
-    await check.getByRole("button", { name: "Save" }).click();
+    await check.getByRole("button", { name: "Confirm" }).click();
     expect((await request).postDataJSON()).toEqual({
       value: { consultation: "nothing", first_fit: "late_fee", service: "nothing", replacement: "late_fee" },
     });
@@ -414,10 +412,10 @@ test.describe("the rules", () => {
   test("offers a base of its own on the open rule, and none where the keys are fixed", async ({ page }) => {
     await open(page);
     await expect(
-      page.getByRole("group", { name: "Replacement cycle" }).getByLabel("Base, exactly as the technician records it"),
+      page.getByRole("group", { name: "Replacement cycle" }).getByLabel("Base, as the technician records it"),
     ).toBeVisible();
     await expect(
-      page.getByRole("group", { name: "No-show wait" }).getByLabel("Base, exactly as the technician records it"),
+      page.getByRole("group", { name: "No-show wait" }).getByLabel("Base, as the technician records it"),
     ).toHaveCount(0);
   });
 });
