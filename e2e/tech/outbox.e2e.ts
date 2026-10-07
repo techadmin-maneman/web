@@ -414,7 +414,7 @@ test("asks before a sign-out would lose unsent work, sends it first if asked, an
 
   // With no signal the API cannot end the session, so the phone wipes nothing and says so.
   await page.getByRole("button", { name: "Sign out anyway" }).click();
-  await expect(page.getByText(/^No signal\. You’re still signed in and nothing was deleted/)).toBeVisible();
+  await expect(page.getByText(/^No signal\. You’re still signed in\./)).toBeVisible();
   expect(await heldOnPhone(page)).toMatchObject({ outbox: 1 });
 
   // Signal again: send first, and only then sign out, with nothing left to lose.
