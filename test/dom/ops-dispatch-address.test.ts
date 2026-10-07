@@ -135,8 +135,6 @@ describe("the dispatch board's place in the address", () => {
     await openAt(`/dispatch?from=2025-09-19&visit=${NOWHERE}`);
 
     expect(drawer()).toBeNull();
-    expect(page.querySelector("[role=alert]")?.textContent).toBe(
-      "That visit isn't on this board.",
-    );
+    expect(page.querySelector("[role=alert]")?.textContent).toBe("That visit isn't on this board.");
   });
 });
