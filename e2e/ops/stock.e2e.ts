@@ -148,6 +148,32 @@ test("lists the latest movements, a job's use under the technician who recorded 
   await expect(movements.getByRole("row").filter({ hasText: "Delivered" })).toContainText("+100");
 });
 
+test("sorts the movements by a column, and narrows them by a list or a search", async ({ page }) => {
+  await open(page);
+  const movements = page.getByRole("region", { name: "Latest movements" });
+  const rows = movements.getByRole("row");
+  await expect(movements.getByRole("columnheader", { name: "When" })).toHaveAttribute("aria-sort", "descending");
+  await expect(rows.nth(1)).toContainText("Used on a job");
+
+  await movements.getByRole("button", { name: "Change", exact: true }).click();
+  await expect(movements.getByRole("columnheader", { name: "Change" })).toHaveAttribute("aria-sort", "ascending");
+  await expect(rows.nth(1)).toContainText("-4");
+  await movements.getByRole("button", { name: "Change", exact: true }).click();
+  await expect(rows.nth(1)).toContainText("+100");
+
+  await movements.getByLabel("Why").selectOption("Delivered");
+  await expect(rows).toHaveCount(2);
+  await expect(movements).toContainText("1 of 2");
+  await movements.getByRole("button", { name: "Clear", exact: true }).click();
+  await expect(rows).toHaveCount(3);
+
+  await movements.getByLabel("Search").fill("imran");
+  await expect(rows).toHaveCount(2);
+  await expect(rows.nth(1)).toContainText("Used on a job");
+  await movements.getByLabel("Search").fill("nothing like it");
+  await expect(movements.getByText("Nothing matches.")).toBeVisible();
+});
+
 test("meets WCAG 2.2 AA, with a movement being checked as well", async ({ page }) => {
   await open(page);
   expect(await axeViolations(page)).toEqual([]);

@@ -29,3 +29,14 @@ export const states = {
   /** The failed call's reference, to quote to the developers. */
   ref: { label: "Ref", copy: "Copy", copied: "Copied" },
 } as const;
+
+/** A long table's search, its lists, its count and its next page (../components/TableTools.tsx). */
+export const tables = {
+  search: "Search",
+  all: "All",
+  clear: "Clear",
+  count: (matching: number, total: number) =>
+    matching === total ? `${String(total)} rows` : `${String(matching)} of ${String(total)}`,
+  none: "Nothing matches.",
+  more: "Show more",
+} as const;

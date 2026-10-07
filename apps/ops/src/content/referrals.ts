@@ -46,6 +46,7 @@ export const referrals = {
   table: {
     title: "All referrers",
     /** The board's columns, less "Sent", which nothing counts (docs/fidelity-method.md). */
+    narrow: "Filter referrers",
     columns: {
       referrer: "Referrer",
       opens: "Opens",

@@ -25,6 +25,8 @@ import { useAccess } from "../lib/access.ts";
 import { daysUntil } from "../lib/due.ts";
 import { clientPath } from "../route.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
+import { Narrowing, SortHeads, TableEnd } from "../components/TableTools.tsx";
+import { useTableView, type Column } from "../components/useTableView.ts";
 import styles from "./referrals.module.css";
 
 type Choice = "approve" | "reject";
@@ -256,6 +258,24 @@ function useReferrers(version: number) {
 function ReferrersTable({ version }: { version: number }) {
   const { pages, more, retry } = useReferrers(version);
   const copy = referrals.table;
+  const figure = (label: string, of: (row: Referrer) => number): Column<Referrer> => ({
+    label,
+    sort: of,
+    className: styles.figure,
+  });
+  const columns: readonly Column<Referrer>[] = [
+    { label: copy.columns.referrer, sort: (row) => row.name, className: styles.name },
+    figure(copy.columns.opens, (row) => row.opens),
+    figure(copy.columns.consults, (row) => row.consultations),
+    figure(copy.columns.fits, (row) => row.fits),
+    figure(copy.columns.granted, (row) => row.granted),
+    figure(copy.columns.redeemed, (row) => row.redeemed),
+  ];
+  // The API sends the busiest first, a page at a time; these sort and search the pages read so far.
+  const view = useTableView(pages.state === "loaded" ? pages.referrers : [], columns, {
+    search: (row) => row.name,
+    page: Number.POSITIVE_INFINITY,
+  });
 
   if (pages.state === "loading") return <Loading />;
   if (pages.state === "failed") return <PanelFailed onRetry={retry} requestId={pages.requestId} />;
@@ -270,33 +290,33 @@ function ReferrersTable({ version }: { version: number }) {
         {pages.referrers.length === 0 ? (
           <p className={styles.empty}>{copy.empty}</p>
         ) : (
-          <Table className={styles.table}>
-            <thead>
-              <tr>
-                {(["referrer", "opens", "consults", "fits", "granted", "redeemed"] as const).map((column) => (
-                  <th key={column} scope="col" className={column === "referrer" ? styles.name : styles.figure}>
-                    {copy.columns[column]}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {pages.referrers.map((referrer) => (
-                <tr key={referrer.code}>
-                  <th scope="row" className={styles.name}>
-                    <OpsLink className={styles.person} to={clientPath(referrer.person_id, "referrals")}>
-                      {referrer.name}
-                    </OpsLink>
-                  </th>
-                  <td className={styles.quietFigure}>{referrer.opens}</td>
-                  <td className={styles.quietFigure}>{referrer.consultations}</td>
-                  <td className={styles.figure}>{referrer.fits}</td>
-                  <td className={styles.figure}>{referrer.granted}</td>
-                  <td className={styles.quietFigure}>{referrer.redeemed}</td>
+          <>
+            <Narrowing view={view} label={copy.narrow} />
+            <Table className={styles.table}>
+              <thead>
+                <tr>
+                  <SortHeads view={view} />
                 </tr>
-              ))}
-            </tbody>
-          </Table>
+              </thead>
+              <tbody>
+                {view.shown.map((referrer) => (
+                  <tr key={referrer.code}>
+                    <th scope="row" className={styles.name}>
+                      <OpsLink className={styles.person} to={clientPath(referrer.person_id, "referrals")}>
+                        {referrer.name}
+                      </OpsLink>
+                    </th>
+                    <td className={styles.quietFigure}>{referrer.opens}</td>
+                    <td className={styles.quietFigure}>{referrer.consultations}</td>
+                    <td className={styles.figure}>{referrer.fits}</td>
+                    <td className={styles.figure}>{referrer.granted}</td>
+                    <td className={styles.quietFigure}>{referrer.redeemed}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </Table>
+            <TableEnd view={view} />
+          </>
         )}
         {pages.more && (
           <div className={styles.actions}>

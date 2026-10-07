@@ -24,6 +24,8 @@ import { areas } from "../content.ts";
 import { useAccess } from "../lib/access.ts";
 import styles from "../components/forms.module.css";
 import { Loading, PanelFailed } from "../states/States.tsx";
+import { Narrowing, SortHeads, TableEnd } from "../components/TableTools.tsx";
+import { useTableView, type Column } from "../components/useTableView.ts";
 import { AddPincode } from "./AddPincode.tsx";
 import areaStyles from "./areas.module.css";
 import { readServiceAreaCsv, serviceAreaCsv } from "./csv.ts";
@@ -59,6 +61,17 @@ function Area({ pincodes: loadedPincodes, cities }: { pincodes: readonly ServedP
   const today = indiaDate(new Date().toISOString());
 
   const inCity = pincodes.filter((each) => each.city === city);
+  // Sorted and narrowed by what is saved, so a row stays put while its boxes are typed in.
+  const servedWord = (row: ServedPincode) => (row.served ? copy.yes : copy.no);
+  const [pin, name, served, launch, waiting] = copy.columns;
+  const columns: readonly Column<ServedPincode>[] = [
+    { label: pin, sort: (row) => row.pincode },
+    { label: name, sort: (row) => row.area },
+    { label: served, sort: servedWord, choice: servedWord },
+    { label: launch, sort: (row) => row.launch_on ?? "" },
+    { label: waiting, sort: (row) => row.waiting },
+  ];
+  const view = useTableView(inCity, columns, { search: (row) => `${row.pincode} ${row.area}` });
   const changes = changesIn(pincodes, draft);
   const badName = changes.find((change) => change.area !== undefined && !AREA_NAME.test(change.area));
   const later = changes.find((change) => servesLater(pincodes, change, today));
@@ -142,18 +155,15 @@ function Area({ pincodes: loadedPincodes, cities }: { pincodes: readonly ServedP
         }}
       />
 
+      <Narrowing view={view} label={copy.narrow} />
       <Table className={styles.table}>
         <thead>
           <tr>
-            {copy.columns.map((column) => (
-              <th key={column} scope="col">
-                {column}
-              </th>
-            ))}
+            <SortHeads view={view} />
           </tr>
         </thead>
         <tbody>
-          {inCity.map((each) => (
+          {view.shown.map((each) => (
             <PincodeRow
               key={each.pincode}
               pincode={each}
@@ -166,6 +176,7 @@ function Area({ pincodes: loadedPincodes, cities }: { pincodes: readonly ServedP
           ))}
         </tbody>
       </Table>
+      <TableEnd view={view} />
 
       {checking && (
         <div className={areaStyles.inPanel}>
