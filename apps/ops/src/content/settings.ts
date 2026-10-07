@@ -256,38 +256,36 @@ export const settings = {
     title: "Services and prices",
     /** The four kinds, as the rest of the console names them. */
     kinds: dispatch.typeNames,
-    /** "180 min · premium": how long it is held and booked for, and what the price book prices it by. */
-    facts: (minutes: number, tier: string) => `${String(minutes)} min · ${tier}`,
-    /** The line clients read under the service's name in the app as they choose. */
-    described: (line: string) => `Clients see: “${line}”`,
-    notDescribed: "No description.",
-    offered: "Offered",
+    /** Each kind's table: its services, then its late fee where it has one. */
+    columns: ["Service", "Length", "Before GST", "GST", "Next price"],
+    actionsColumn: "Actions",
+    minutes: (minutes: number) => `${String(minutes)} min`,
     retiring: (from: string) => `Hidden from ${from}`,
     retired: (from: string) => `Retired from ${from}`,
-    /** Under a service, what it costs today, and what it will from a later day. */
+    /** A price form's line: what it costs today. */
     now: (price: string, since: string) => `${price} since ${since}`,
-    unpriced: "No price. Hidden from clients.",
+    unpriced: "Not priced",
     toCome: (price: string, from: string) => `${price} from ${from}`,
     /** "Rs. 2,000 + 18% GST": a price as the check compares two. */
     price: (rupees: string, gst: number) => `${rupees} + ${String(gst)}% GST`,
-    history: (count: number) => (count === 1 ? "1 earlier price" : `${String(count)} earlier prices`),
-    historyCaption: (name: string) => `Earlier prices of ${name}`,
-    historyColumns: ["Before GST", "GST", "From"],
+    earlier: (prices: readonly string[]) => `Earlier: ${prices.join(" · ")}`,
     percent: (value: number) => `${String(value)}%`,
     /** The two late fees, each one figure for its kind, beside its kind's services. */
+    lateFee: "Late fee",
     lateFees: {
       late_fee_first_fit: "Late fee on a first fit",
       late_fee_replacement: "Late fee on a replacement",
     } as Readonly<Record<string, string>>,
     /** The link to the rule that says when a late fee is charged. */
-    lateFeeRule: "When it applies",
+    lateFeeRule: "When it's charged",
     actions: {
-      price: "Change price",
+      edit: "Edit",
+      price: "New price",
       correct: "Correct",
       takeBack: "Withdraw",
       rename: "Rename",
-      describe: "Edit description",
-      length: "Change length",
+      describe: "Description",
+      length: "Length",
       retire: "Retire",
       restore: "Restore",
       up: "Move up",
@@ -297,6 +295,7 @@ export const settings = {
     },
     /** Each button named for a screen reader with what it acts on. */
     labels: {
+      edit: (name: string) => `Edit ${name}`,
       price: (name: string) => `Change the price of ${name}`,
       correct: (name: string, from: string) => `Correct the ${name} price from ${from}`,
       takeBack: (name: string, from: string) => `Withdraw the ${name} price from ${from}`,

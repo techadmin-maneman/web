@@ -13,38 +13,64 @@ import { expect, test } from "../support.ts";
 import { fails, json, PRICE_ROWS, SERVICES } from "./fixtures.ts";
 import { open, posted } from "./settings-fixtures.ts";
 
-// The services clients book, kind by kind, each with its prices (docs/decisions/0085-services-ops-can-edit.md). A
-// price is still a row from its day, shown in force, to come and spent; a service is added, renamed, timed, retired,
-// restored and moved, and every change shows what it was beside what it will be before it is sent.
+// The services clients book, a table a kind (docs/decisions/0085-services-ops-can-edit.md). A price is still a row
+// from its day: the one in force and the next show in the row, and a row's Edit opens the rest; a service is added,
+// renamed, timed, retired, restored and moved, and every change shows what it was beside what it will be before it is
+// sent.
 test.describe("the services and their prices", () => {
-  const block = (page: Page, name: string) =>
-    page.getByRole("listitem").filter({ has: page.getByRole("heading", { name, exact: true }) });
+  /** A service's row in its kind's table, or the kind's late fee. */
+  const row = (page: Page, name: string, kind?: string) =>
+    (kind === undefined ? page : page.getByRole("table", { name: kind }))
+      .getByRole("row")
+      .filter({ has: page.getByRole("rowheader").getByText(name, { exact: true }) });
+  const edit = (page: Page, name: string) => page.getByRole("button", { name: `Edit ${name}`, exact: true }).click();
 
-  test("lists each kind's services with their length, and whether they are offered", async ({ page }) => {
+  test("lists each kind's services as a table: length, price, GST and the next price", async ({ page }) => {
     await open(page, "/prices");
     for (const kind of ["Consultation", "First fit", "Service visit", "Replacement"]) {
       await expect(page.getByRole("heading", { level: 3, name: kind, exact: true })).toBeVisible();
+      await expect(page.getByRole("table", { name: kind })).toBeVisible();
     }
-    await expect(block(page, "Service visit")).toContainText("90 min · standard · Offered");
-    await expect(block(page, "Premium")).toContainText("240 min · premium");
-    await expect(block(page, "Lace replacement")).toContainText("Retired from 1 Sep 2027");
+    const visit = row(page, "Service visit");
+    await expect(visit.getByRole("cell")).toHaveText([
+      "90 min",
+      "Rs. 2,000",
+      "18%",
+      "Rs. 2,500 from 1 Oct 2027",
+      "Edit",
+    ]);
+    await expect(row(page, "Premium")).toContainText("240 min");
+    await expect(row(page, "Premium")).not.toContainText("premium");
+    await expect(row(page, "Lace replacement")).toContainText("Retired from 1 Sep 2027");
+    await expect(page.getByRole("main")).not.toContainText("No description");
   });
 
-  test("marks the price in force, and the one still to come, in words, and folds the spent ones away", async ({
-    page,
-  }) => {
+  test("keeps a row's prices still to come and its earlier ones under its Edit", async ({ page }) => {
     await open(page, "/prices");
-    const visit = block(page, "Service visit");
-    await expect(visit).toContainText("Rs. 2,000 + 18% GST since 22 Sep 2026");
-    await expect(visit).toContainText("Rs. 2,500 + 18% GST from 1 Oct 2027");
-    await expect(visit.getByRole("row").filter({ hasText: "Rs. 1,500" })).toBeHidden();
-    await visit.getByText("1 earlier price").click();
-    await expect(visit.getByRole("row").filter({ hasText: "Rs. 1,500" })).toContainText("1 Jan 2026");
+    await expect(page.getByText(/Rs\. 1,500/)).toBeHidden();
+    await edit(page, "Service visit");
+    await expect(page.getByRole("button", { name: "Edit Service visit", exact: true })).toHaveAttribute(
+      "aria-expanded",
+      "true",
+    );
+    await expect(page.getByText("Rs. 2,500 + 18% GST from 1 Oct 2027")).toBeVisible();
+    await expect(page.getByText("Earlier: Rs. 1,500 + 0% GST from 1 Jan 2026")).toBeVisible();
+  });
+
+  test("opens one row at a time", async ({ page }) => {
+    await open(page, "/prices");
+    await edit(page, "Service visit");
+    await edit(page, "Premium");
+    await expect(page.getByRole("button", { name: "Rename Premium" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Rename Service visit" })).toHaveCount(0);
+    await edit(page, "Premium");
+    await expect(page.getByRole("button", { name: "Rename Premium" })).toHaveCount(0);
   });
 
   // GST opened at nought and the amount blank, whatever the item, so an 18% item was saved GST-free.
   test("starts a new price from the price in force, its GST included", async ({ page }) => {
     await open(page, "/prices");
+    await edit(page, "Service visit");
     await page.getByRole("button", { name: "Change the price of Service visit" }).click();
     await expect(page.getByLabel("Price before GST, in rupees")).toHaveValue("2000");
     await expect(page.getByLabel("GST", { exact: true })).toHaveValue("18");
@@ -53,6 +79,7 @@ test.describe("the services and their prices", () => {
   // A new price once started from today, and changed what clients had been quoted that day.
   test("starts a new price from tomorrow, and offers no earlier day", async ({ page }) => {
     await open(page, "/prices");
+    await edit(page, "Service visit");
     await page.getByRole("button", { name: "Change the price of Service visit" }).click();
     const from = page.getByLabel("Starts");
     await expect(from).toHaveValue("2027-09-22");
@@ -67,6 +94,7 @@ test.describe("the services and their prices", () => {
         return json({ prices: PRICE_ROWS })(route);
       },
     });
+    await edit(page, "Service visit");
     await page.getByRole("button", { name: "Change the price of Service visit" }).click();
     await page.getByLabel("Price before GST, in rupees").fill("2500");
     await page.getByLabel("GST", { exact: true }).fill("0");
@@ -93,6 +121,7 @@ test.describe("the services and their prices", () => {
 
   test("goes back to the form without sending when the change is not the one meant", async ({ page }) => {
     await open(page, "/prices");
+    await edit(page, "Service visit");
     await page.getByRole("button", { name: "Change the price of Service visit" }).click();
     await page.getByRole("button", { name: "Review" }).click();
     await page.getByRole("button", { name: "Back" }).click();
@@ -103,6 +132,7 @@ test.describe("the services and their prices", () => {
   // A day typed before tomorrow reached the check, and was refused only when sent.
   test("refuses a day before tomorrow beside the box, before anything is checked", async ({ page }) => {
     await open(page, "/prices");
+    await edit(page, "Service visit");
     await page.getByRole("button", { name: "Change the price of Service visit" }).click();
     const from = page.getByLabel("Starts");
     await from.fill("2027-09-21");
@@ -115,6 +145,7 @@ test.describe("the services and their prices", () => {
     await open(page, "/prices", {
       "POST /api/prices": fails(400, "invalid_request", ["valid_from"]),
     });
+    await edit(page, "Service visit");
     await page.getByRole("button", { name: "Change the price of Service visit" }).click();
     await page.getByRole("button", { name: "Review" }).click();
     await page.getByRole("group", { name: "Review the change" }).getByRole("button", { name: "Set price" }).click();
@@ -123,6 +154,7 @@ test.describe("the services and their prices", () => {
 
   test("says why a price for a retired service is refused", async ({ page }) => {
     await open(page, "/prices", { "POST /api/prices": fails(400, "service_retired", ["valid_from"]) });
+    await edit(page, "Premium");
     await page.getByRole("button", { name: "Change the price of Premium" }).click();
     await page.getByRole("button", { name: "Review" }).click();
     await page.getByRole("button", { name: "Set price" }).click();
@@ -132,6 +164,7 @@ test.describe("the services and their prices", () => {
   test("takes back a price still to come, once asked", async ({ page }) => {
     const left = PRICE_ROWS.filter((price) => price.valid_from !== "2027-10-01");
     await open(page, "/prices", { "POST /api/prices/withdraw": json({ prices: left }) });
+    await edit(page, "Service visit");
     await page.getByRole("button", { name: "Withdraw the Service visit price from 1 Oct 2027" }).click();
     const asked = page.getByRole("group", { name: /Withdraw the price from 1 Oct 2027/ });
     await expect(asked).toBeFocused();
@@ -139,12 +172,13 @@ test.describe("the services and their prices", () => {
     const request = posted(page, "/api/prices/withdraw");
     await asked.getByRole("button", { name: "Confirm withdrawal" }).click();
     expect((await request).postDataJSON()).toEqual({ item: "service", tier: "standard", valid_from: "2027-10-01" });
-    await expect(block(page, "Service visit")).not.toContainText("Rs. 2,500");
+    await expect(row(page, "Service visit")).not.toContainText("Rs. 2,500");
     await expect(page.getByRole("status").filter({ hasText: "Price withdrawn." })).toBeVisible();
   });
 
   test("corrects a price still to come in one go, from the day it had or another", async ({ page }) => {
     await open(page, "/prices", { "POST /api/prices/correct": json({ prices: PRICE_ROWS }) });
+    await edit(page, "Service visit");
     await page.getByRole("button", { name: "Correct the Service visit price from 1 Oct 2027" }).click();
     await expect(page.getByLabel("Price before GST, in rupees")).toHaveValue("2500");
     await expect(page.getByLabel("Starts")).toHaveValue("2027-10-01");
@@ -168,6 +202,7 @@ test.describe("the services and their prices", () => {
 
   test("offers no way to take back or correct the price in force or a spent one", async ({ page }) => {
     await open(page, "/prices");
+    await edit(page, "Service visit");
     await expect(page.getByRole("button", { name: /^Withdraw/ })).toHaveCount(1);
     await expect(page.getByRole("button", { name: /^Correct/ })).toHaveCount(1);
   });
@@ -198,6 +233,7 @@ test.describe("the services and their prices", () => {
 
   test("renames a service and says its code, and so its prices, stay", async ({ page }) => {
     await open(page, "/prices", { "POST /api/services/first_fit/premium/name": json(SERVICES) });
+    await edit(page, "Premium");
     await page.getByRole("button", { name: "Rename Premium" }).click();
     await page.getByLabel("Name", { exact: true }).fill("Premium first fit");
     await page.getByRole("button", { name: "Review" }).click();
@@ -211,7 +247,8 @@ test.describe("the services and their prices", () => {
 
   test("gives a service the line clients read under its name, shown beside the one it replaces", async ({ page }) => {
     await open(page, "/prices", { "POST /api/services/first_fit/premium/description": json(SERVICES) });
-    await expect(page.getByText("Clients see: “A finer lace front, for a closer look.”")).toBeVisible();
+    await expect(row(page, "Premium")).toContainText("A finer lace front, for a closer look.");
+    await edit(page, "Premium");
     await page.getByRole("button", { name: "Edit the description of Premium" }).click();
     await expect(page.getByLabel("Description", { exact: true })).toHaveAttribute("maxlength", "160");
     await page.getByLabel("Description", { exact: true }).fill("Natural, even at the parting.");
@@ -226,6 +263,7 @@ test.describe("the services and their prices", () => {
 
   test("gives a service another length, inside what the day holds", async ({ page }) => {
     await open(page, "/prices", { "POST /api/services/first_fit/premium/length": json(SERVICES) });
+    await edit(page, "Premium");
     await page.getByRole("button", { name: "Change the length of Premium" }).click();
     await expect(page.getByLabel("Length, in minutes")).toHaveAttribute("max", "360");
     await page.getByLabel("Length, in minutes").fill("300");
@@ -240,6 +278,7 @@ test.describe("the services and their prices", () => {
     await open(page, "/prices", {
       "POST /api/services/replacement/standard/retire": fails(409, "last_of_kind"),
     });
+    await edit(page, "Replacement");
     await page.getByRole("button", { name: "Retire Replacement" }).click();
     await page.getByLabel("Hidden from").fill("2027-10-01");
     await page.getByRole("button", { name: "Review" }).click();
@@ -254,6 +293,7 @@ test.describe("the services and their prices", () => {
 
   test("offers a retired service again, once asked", async ({ page }) => {
     await open(page, "/prices", { "POST /api/services/replacement/lace/restore": json(SERVICES) });
+    await edit(page, "Lace replacement");
     await page.getByRole("button", { name: "Restore Lace replacement" }).click();
     const asked = page.getByRole("group", { name: /Offer Lace replacement again/ });
     await expect(asked).toBeFocused();
@@ -265,7 +305,9 @@ test.describe("the services and their prices", () => {
 
   test("moves a service up its kind, showing the new order before it is sent", async ({ page }) => {
     await open(page, "/prices", { "POST /api/services/first_fit/order": json(SERVICES) });
+    await edit(page, "First fit");
     await expect(page.getByRole("button", { name: "Move First fit up" })).toHaveCount(0);
+    await edit(page, "Premium");
     await page.getByRole("button", { name: "Move Premium up" }).click();
     const asked = page.getByRole("group", { name: "First fit: First fit, Premium → Premium, First fit." });
     await expect(asked).toBeFocused();
@@ -276,9 +318,9 @@ test.describe("the services and their prices", () => {
 
   test("prices a late fee beside its kind, one figure a kind", async ({ page }) => {
     await open(page, "/prices");
-    const fee = block(page, "Late fee on a first fit");
-    await expect(fee).toContainText("Rs. 4,000 + 0% GST since 22 Sep 2026");
-    await fee.getByRole("button", { name: "Change the price of Late fee on a first fit" }).click();
+    await expect(row(page, "Late fee", "First fit").getByRole("cell")).toHaveText(["", "Rs. 4,000", "0%", "", "Edit"]);
+    await edit(page, "Late fee on a first fit");
+    await page.getByRole("button", { name: "Change the price of Late fee on a first fit" }).click();
     await expect(page.getByLabel("Price before GST, in rupees")).toHaveValue("4000");
   });
 });
