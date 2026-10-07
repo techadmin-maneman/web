@@ -5,6 +5,7 @@
 //
 // Every call is same-origin, so the session cookie goes with it and the Origin matches.
 
+import { signInAgain } from "@maneman/web-kit/access";
 import { createClient, type Answer as Answered, type OperationAt, type Success } from "@maneman/web-kit/api";
 import type { components, paths } from "./api-schema.ts";
 import { heardFromApi } from "./lib/clock.ts";
@@ -116,6 +117,8 @@ const CARD_PATIENCE_MS = 60_000;
 
 const client = createClient<paths, ErrorCode>({
   patience: PATIENCE_MS,
+  // Staging's Access sign-in ran out: the page goes back through it, past the service worker's copy.
+  onAccessLapsed: signInAgain,
   onSessionEnded: () => {
     for (const listener of sessionListeners) listener();
   },

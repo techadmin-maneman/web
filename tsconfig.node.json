@@ -34,6 +34,7 @@
     // A service worker's own code, checked with its WebWorker types by apps/*/sw/tsconfig.json.
     "packages/web-kit/sw-shell.ts",
     "test/node/dom/**",
+    "packages/web-kit/access.ts",
     "packages/web-kit/api.ts",
     "packages/web-kit/client-errors.ts",
     "packages/web-kit/small-jpeg.ts",

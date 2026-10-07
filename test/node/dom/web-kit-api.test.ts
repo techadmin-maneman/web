@@ -222,6 +222,38 @@ describe("a session that has ended", () => {
   });
 });
 
+/** Access's redirect to its login page, as a call that does not follow it receives it. */
+function accessRedirect(): Response {
+  const response = new Response(null, {
+    status: 302,
+    headers: { Location: "https://team.cloudflareaccess.com/login" },
+  });
+  Object.defineProperty(response, "type", { value: "opaqueredirect" });
+  return response;
+}
+
+describe("a call Access sent to its login page, its sign-in run out", () => {
+  it("is not followed, is heard where the app asks, and is no connection, so nothing counts it as refused", async () => {
+    let lapsed = 0;
+    let unreached = 0;
+    const sent = answering(accessRedirect);
+    const client = createClient<Paths, Code>({
+      onAccessLapsed: () => (lapsed += 1),
+      onUnreached: () => (unreached += 1),
+    });
+    const answer = await client.post("/api/auth/otp", { body: { mobile: "9810000000" } });
+    expect(sent[0]?.init.redirect).toBe("manual");
+    expect(answer).toEqual({ ok: false, status: 0, code: "offline", fields: [], moved: null, requestId: null });
+    expect([lapsed, unreached]).toEqual([1, 1]);
+  });
+
+  it("is followed, as any redirect is, by a client that does not listen for it", async () => {
+    const sent = answering(() => json(200, { id: "a" }));
+    await createClient<Paths, Code>().get("/api/visits/{id}", { path: { id: "a" } });
+    expect(sent[0]?.init.redirect).toBeUndefined();
+  });
+});
+
 describe("no connection", () => {
   it("is a call that never reached the API", async () => {
     let unreached = 0;
