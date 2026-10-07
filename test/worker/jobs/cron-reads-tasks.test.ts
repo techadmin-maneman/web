@@ -296,11 +296,12 @@ describe("a look at the Tasks board or the Stock page", () => {
     )
       .bind(AGO)
       .run();
-    await movements(1, 20);
+    // Four movements a number: 600 at first, past the 500 the page holds, then ten times as many.
+    await movements(1, 150);
     await rowsReadBy(stock); // the console's settings, read once and kept
     const before = { page: await rowsReadBy(stock), count: await rowsReadBy(count) };
 
-    await movements(21, 200);
+    await movements(151, 1500);
     const after = { page: await rowsReadBy(stock), count: await rowsReadBy(count) };
 
     expect(after).toEqual(before);
