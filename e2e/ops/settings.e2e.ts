@@ -272,10 +272,8 @@ test.describe("the rules", () => {
     await expect(charges.getByRole("link", { name: "Late fees are set in Prices" })).toHaveAttribute("href", "/prices");
 
     await open(page, "/prices");
-    const fee = page
-      .getByRole("listitem")
-      .filter({ has: page.getByRole("heading", { name: "Late fee on a first fit", exact: true }) });
-    await fee.getByRole("link", { name: "When it applies" }).click();
+    await page.getByRole("button", { name: "Edit Late fee on a first fit", exact: true }).click();
+    await page.getByRole("link", { name: "When it's charged" }).click();
     await expect(page).toHaveURL(/\/settings#late_change_charge$/);
     const rule = page.getByRole("listitem").filter({ has: page.getByRole("group", { name: "Late move or cancel" }) });
     await expect(rule).toBeFocused();

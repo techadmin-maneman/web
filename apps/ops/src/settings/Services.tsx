@@ -3,15 +3,14 @@
 // described, timed, priced, ordered and retired from a day here. A price is a row from the day it applies, so an
 // invoice already issued keeps the figure it was issued under, and the row in force and the spent ones stay.
 //
-// Each service shows all three states at once -- in force, still to come, and, folded away, what it cost before --
-// because a price set for next month is a decision somebody has to see and be able to take back or correct before it
-// lands. One action is open at a time, in the block it acts on, and each shows what it changes before it is sent
-// (./ServiceForms.tsx).
+// Each kind is a table, a row a service: its price in force and the next to come. A row's Edit opens what may be done
+// to it, with its prices still to come and its earlier ones. One action is open at a time, and each shows what it
+// changes before it is sent (./ServiceForms.tsx).
 
 import { Panel } from "@maneman/ui/Panel";
-import { Button } from "@maneman/ui/Button";
 import { Table } from "@maneman/ui/Table";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
+import { classes } from "@maneman/ui/classes";
 import { useLoad } from "@maneman/ui/useLoad";
 import { longDate } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";
@@ -37,6 +36,7 @@ import {
   type Written,
 } from "./ServiceForms.tsx";
 import styles from "../components/forms.module.css";
+import prices from "./prices.module.css";
 
 const copy = settings.services;
 
@@ -97,100 +97,31 @@ const lateFeePriced = (fee: LateFee): Priced => ({
   name: copy.lateFees[fee.item] ?? fee.item,
   prices: fee.prices,
 });
-
-/** Whether a service is offered today, retires on a later day, or is retired. */
-function standing(service: OpsService, today: string): string {
-  if (service.retired_date === null) return copy.offered;
+/** When a service stops, or stopped, being offered; nothing while it is offered. */
+function standing(service: OpsService, today: string): string | null {
+  if (service.retired_date === null) return null;
   const from = longDate(service.retired_date);
   return service.retired_date > today ? copy.retiring(from) : copy.retired(from);
 }
 
-/** A price's lines: the one in force, each still to come with what may be done to it, and the spent ones folded. */
-function PriceLines(props: {
-  readonly target: Priced;
-  readonly today: string;
-  readonly busy: boolean;
-  readonly may: Opened["may"];
-  readonly onAct: (action: Action) => void;
-}) {
-  const { target, today } = props;
-  const inForce = target.prices.find((price) => price.in_force);
-  const toCome = target.prices.filter((price) => price.valid_from > today).reverse();
-  const spent = target.prices.filter((price) => !price.in_force && price.valid_from <= today);
-  return (
-    <>
-      <p className={styles.priceNow}>
-        {inForce === undefined ? copy.unpriced : copy.now(priceWords(inForce), longDate(inForce.valid_from))}
-      </p>
-      {toCome.map((row) => (
-        <p key={row.valid_from} className={styles.priceToCome}>
-          {copy.toCome(priceWords(row), longDate(row.valid_from))}
-          {props.may("correct") && (
-            <button
-              className={styles.inline}
-              type="button"
-              aria-label={copy.labels.correct(target.name, longDate(row.valid_from))}
-              disabled={props.busy}
-              onClick={() => {
-                props.onAct({ kind: "correct", target, row });
-              }}
-            >
-              {copy.actions.correct}
-            </button>
-          )}
-          {props.may("takeBack") && (
-            <button
-              className={styles.inline}
-              type="button"
-              aria-label={copy.labels.takeBack(target.name, longDate(row.valid_from))}
-              disabled={props.busy}
-              onClick={() => {
-                props.onAct({ kind: "takeBack", target, row });
-              }}
-            >
-              {copy.actions.takeBack}
-            </button>
-          )}
-        </p>
-      ))}
-      {spent.length > 0 && (
-        <details className={styles.history}>
-          <summary>{copy.history(spent.length)}</summary>
-          <Table className={styles.table}>
-            <caption>
-              <VisuallyHidden>{copy.historyCaption(target.name)}</VisuallyHidden>
-            </caption>
-            <thead>
-              <tr>
-                {copy.historyColumns.map((column) => (
-                  <th key={column} scope="col">
-                    {column}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {spent.map((row) => (
-                <tr key={row.valid_from} className={styles.spent}>
-                  <td className={styles.figure}>{rupees(row.amount_ex_gst)}</td>
-                  <td className={styles.figure}>{copy.percent(row.gst_percent)}</td>
-                  <td className={styles.figure}>{longDate(row.valid_from)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </Table>
-        </details>
-      )}
-    </>
-  );
+/** A row's own prices: the one in force, those still to come, soonest first, and the spent ones. */
+function pricesOf(target: Priced, today: string) {
+  return {
+    inForce: target.prices.find((price) => price.in_force),
+    toCome: target.prices.filter((price) => price.valid_from > today).reverse(),
+    spent: target.prices.filter((price) => !price.in_force && price.valid_from <= today),
+  };
 }
 
 interface Opened {
   readonly action: Action | null;
   readonly outcome: { readonly where: string; readonly said: string } | null;
   readonly book: ServiceBook;
+  /** The row whose Edit is open, if one is. */
+  readonly expanded: string | null;
   /** Whether the person's access lets them take this kind of action. */
   readonly may: (kind: Action["kind"]) => boolean;
+  readonly onExpand: (where: string | null) => void;
   readonly onAct: (action: Action) => void;
   readonly onDone: (written: Written & { ok: true }) => void;
   readonly onCancel: () => void;
@@ -262,30 +193,169 @@ function ActionButton(props: {
 }) {
   if (!props.opened.may(props.kind)) return null;
   return (
-    <Button
-      variant="outline"
-      size="small"
-      className={styles.quiet}
+    <button
+      className={classes(styles.inline, prices.action)}
+      type="button"
       aria-label={props.label}
       disabled={props.opened.action !== null}
       onClick={props.onClick}
     >
       {props.children}
-    </Button>
+    </button>
   );
 }
 
-/** One service: what it is, what it costs, and what may be done to it. */
-function ServiceBlock(props: {
+/** One of a row's actions: the button's words, the call it makes, and what it opens. */
+interface RowAction {
+  readonly kind: Action["kind"];
+  readonly word: ServiceWord;
+  readonly onClick: () => void;
+}
+
+/** What an open row offers: its actions, its prices still to come with their own, and its earlier prices. */
+function Strip(props: {
+  readonly id: string;
+  readonly where: string;
+  readonly target: Priced;
+  readonly actions: readonly RowAction[];
+  readonly link?: ReactNode;
+  readonly opened: Opened;
+}) {
+  const { target, opened } = props;
+  const { toCome, spent } = pricesOf(target, opened.book.today);
+  const busy = opened.action !== null;
+  return (
+    <tr className={prices.strip} id={props.id}>
+      <td colSpan={copy.columns.length + 1}>
+        <div className={styles.actions}>
+          {props.actions.map((action) => (
+            <ActionButton
+              key={action.word}
+              opened={opened}
+              kind={action.kind}
+              label={copy.labels[action.word](target.name)}
+              onClick={action.onClick}
+            >
+              {copy.actions[action.word]}
+            </ActionButton>
+          ))}
+          {props.link}
+        </div>
+        {toCome.map((row) => (
+          <p key={row.valid_from} className={prices.line}>
+            {copy.toCome(priceWords(row), longDate(row.valid_from))}
+            {opened.may("correct") && (
+              <button
+                className={styles.inline}
+                type="button"
+                aria-label={copy.labels.correct(target.name, longDate(row.valid_from))}
+                disabled={busy}
+                onClick={() => {
+                  opened.onAct({ kind: "correct", target, row });
+                }}
+              >
+                {copy.actions.correct}
+              </button>
+            )}
+            {opened.may("takeBack") && (
+              <button
+                className={styles.inline}
+                type="button"
+                aria-label={copy.labels.takeBack(target.name, longDate(row.valid_from))}
+                disabled={busy}
+                onClick={() => {
+                  opened.onAct({ kind: "takeBack", target, row });
+                }}
+              >
+                {copy.actions.takeBack}
+              </button>
+            )}
+          </p>
+        ))}
+        {spent.length > 0 && (
+          <p className={classes(prices.line, prices.muted)}>
+            {copy.earlier(spent.map((row) => copy.toCome(priceWords(row), longDate(row.valid_from))))}
+          </p>
+        )}
+        <OpenAction opened={opened} where={props.where} />
+        <Outcome opened={opened} where={props.where} />
+      </td>
+    </tr>
+  );
+}
+
+/** One row of a kind's table, a service or a late fee: its name, length and prices, and its Edit. */
+function PriceRow(props: {
+  readonly where: string;
+  /** What the row shows; the target's name says it in full to a screen reader. */
+  readonly name: string;
+  readonly lines: readonly string[];
+  readonly minutes: number | null;
+  readonly target: Priced;
+  readonly retired: boolean;
+  readonly actions: readonly RowAction[];
+  readonly link?: ReactNode;
+  readonly opened: Opened;
+}) {
+  const { where, target, opened } = props;
+  const { inForce, toCome } = pricesOf(target, opened.book.today);
+  const next = toCome[0];
+  const open = opened.expanded === where;
+  const stripId = `prices-${where.replace("/", "-")}`;
+  return (
+    <>
+      <tr className={props.retired ? prices.retired : undefined}>
+        <th scope="row" className={prices.name}>
+          <span>{props.name}</span>
+          {props.lines.map((line) => (
+            <span key={line} className={prices.sub}>
+              {line}
+            </span>
+          ))}
+        </th>
+        <td className={prices.figure}>{props.minutes === null ? "" : copy.minutes(props.minutes)}</td>
+        <td className={prices.figure}>{inForce === undefined ? copy.unpriced : rupees(inForce.amount_ex_gst)}</td>
+        <td className={prices.figure}>{inForce === undefined ? "" : copy.percent(inForce.gst_percent)}</td>
+        <td>
+          {next === undefined
+            ? ""
+            : copy.toCome(
+                next.gst_percent === inForce?.gst_percent ? rupees(next.amount_ex_gst) : priceWords(next),
+                longDate(next.valid_from),
+              )}
+        </td>
+        <td className={prices.edit}>
+          <button
+            className={styles.inline}
+            type="button"
+            aria-label={copy.labels.edit(target.name)}
+            aria-expanded={open}
+            aria-controls={open ? stripId : undefined}
+            disabled={opened.action !== null && !open}
+            onClick={() => {
+              opened.onExpand(open ? null : where);
+            }}
+          >
+            {copy.actions.edit}
+          </button>
+        </td>
+      </tr>
+      {open && (
+        <Strip id={stripId} where={where} target={target} actions={props.actions} link={props.link} opened={opened} />
+      )}
+    </>
+  );
+}
+
+/** A service's row, offering what may be done to it: no new price once it is retired, and no move past an end. */
+function ServiceRow(props: {
   readonly service: OpsService;
   readonly siblings: readonly OpsService[];
   readonly opened: Opened;
 }) {
   const { service, siblings, opened } = props;
   const today = opened.book.today;
-  const where = whereOf(service.kind, service.tier);
   const place = siblings.findIndex((each) => each.tier === service.tier);
-  const busy = opened.action !== null;
   const act = (kind: "rename" | "describe" | "length" | "retire" | "restore") => () => {
     opened.onAct({ kind, service });
   };
@@ -296,8 +366,7 @@ function ServiceBlock(props: {
     opened.onAct({ kind: "order", of: service.kind, tiers });
   };
   const retiredNow = service.retired_date !== null && service.retired_date <= today;
-  // What may be done to it, in the order the buttons stand: no new price once it is retired, and no move past an end.
-  const actions: readonly { kind: Action["kind"]; word: ServiceWord; onClick: () => void }[] = [
+  const actions: readonly RowAction[] = [
     ...(retiredNow
       ? []
       : [
@@ -318,105 +387,93 @@ function ServiceBlock(props: {
     ...(place > 0 ? [{ kind: "order" as const, word: "up" as const, onClick: move(-1) }] : []),
     ...(place < siblings.length - 1 ? [{ kind: "order" as const, word: "down" as const, onClick: move(1) }] : []),
   ];
-  const nameId = `service-${service.kind}-${service.tier}`;
+  const lines = [standing(service, today), service.description].filter((line) => line !== null);
   return (
-    <li className={styles.service}>
-      <h4 className={styles.serviceName} id={nameId}>
-        {service.name}
-      </h4>
-      <p className={styles.facts}>
-        {[copy.facts(service.minutes, service.tier), standing(service, today)].join(" · ")}
-      </p>
-      <p className={styles.facts}>
-        {service.description === null ? copy.notDescribed : copy.described(service.description)}
-      </p>
-      <PriceLines target={asPriced(service)} today={today} busy={busy} may={opened.may} onAct={opened.onAct} />
-      <div className={styles.actions}>
-        {actions.map((action) => (
-          <ActionButton
-            key={action.word}
-            opened={opened}
-            kind={action.kind}
-            label={copy.labels[action.word](service.name)}
-            onClick={action.onClick}
-          >
-            {copy.actions[action.word]}
-          </ActionButton>
-        ))}
-      </div>
-      <OpenAction opened={opened} where={where} />
-      <Outcome opened={opened} where={where} />
-    </li>
+    <PriceRow
+      where={whereOf(service.kind, service.tier)}
+      name={service.name}
+      lines={lines}
+      minutes={service.minutes}
+      target={asPriced(service)}
+      retired={retiredNow}
+      actions={actions}
+      opened={opened}
+    />
   );
 }
 
-/** A late fee, one figure for its kind, beside the kind's services. */
-function LateFeeBlock({ fee, opened }: { fee: LateFee; opened: Opened }) {
+/** A kind's late fee, one figure for the kind, with the way to the rule that says when it is charged. */
+function LateFeeRow({ fee, opened }: { fee: LateFee; opened: Opened }) {
   const mayOpenRules = useAccess().mayCall("GET /api/settings");
   const target = lateFeePriced(fee);
-  const where = whereOf(fee.item, "standard");
-  const nameId = `late-fee-${fee.item}`;
+  const price: RowAction = {
+    kind: "price",
+    word: "price",
+    onClick: () => {
+      opened.onAct({ kind: "price", target });
+    },
+  };
   return (
-    <li className={styles.service}>
-      <h4 className={styles.serviceName} id={nameId}>
-        {target.name}
-      </h4>
-      <p className={styles.facts}>
-        {mayOpenRules && (
-          <>
-            {" "}
-            <OpsLink className={styles.link} to={rulePath("late_change_charge")}>
-              {copy.lateFeeRule}
-            </OpsLink>
-          </>
-        )}
-      </p>
-      <PriceLines
-        target={target}
-        today={opened.book.today}
-        busy={opened.action !== null}
-        may={opened.may}
-        onAct={opened.onAct}
-      />
-      <div className={styles.actions}>
-        <ActionButton
-          opened={opened}
-          kind="price"
-          label={copy.labels.price(target.name)}
-          onClick={() => {
-            opened.onAct({ kind: "price", target });
-          }}
-        >
-          {copy.actions.price}
-        </ActionButton>
-      </div>
-      <OpenAction opened={opened} where={where} />
-      <Outcome opened={opened} where={where} />
-    </li>
+    <PriceRow
+      where={whereOf(fee.item, "standard")}
+      name={copy.lateFee}
+      lines={[]}
+      minutes={null}
+      target={target}
+      retired={false}
+      actions={[price]}
+      link={
+        mayOpenRules && (
+          <OpsLink className={classes(styles.link, prices.ruleLink)} to={rulePath("late_change_charge")}>
+            {copy.lateFeeRule}
+          </OpsLink>
+        )
+      }
+      opened={opened}
+    />
   );
 }
 
-/** One kind of visit: its services in their order, its late fee where it has one, and a way to add another. */
+/** One kind of visit: its services in their order and its late fee in one table, and a way to add another. */
 function KindSection({ kind, opened }: { kind: Kind; opened: Opened }) {
   const services = opened.book.services.filter((service) => service.kind === kind);
   const fee = opened.book.late_fees.find((each) => each.kind === kind);
   const name = copy.kinds[kind] ?? kind;
   const titleId = `kind-${kind}`;
   return (
-    <section className={styles.kind} aria-labelledby={titleId}>
+    <section className={classes(styles.kind, prices.kind)} aria-labelledby={titleId}>
       <h3 className={styles.kindTitle} id={titleId}>
         {name}
       </h3>
-      <ul className={styles.services}>
-        {services.map((service) => (
-          <ServiceBlock key={service.tier} service={service} siblings={services} opened={opened} />
-        ))}
-        {fee !== undefined && <LateFeeBlock fee={fee} opened={opened} />}
-      </ul>
+      <div className={prices.scroll}>
+        <Table className={classes(styles.table, prices.table)}>
+          <caption>
+            <VisuallyHidden>{name}</VisuallyHidden>
+          </caption>
+          <thead>
+            <tr>
+              {copy.columns.map((column, at) => (
+                <th key={column} scope="col" className={at > 0 && at < 4 ? prices.figure : undefined}>
+                  {column}
+                </th>
+              ))}
+              <th scope="col">
+                <VisuallyHidden>{copy.actionsColumn}</VisuallyHidden>
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {services.map((service) => (
+              <ServiceRow key={service.tier} service={service} siblings={services} opened={opened} />
+            ))}
+            {fee !== undefined && <LateFeeRow fee={fee} opened={opened} />}
+          </tbody>
+        </Table>
+      </div>
       <OpenAction opened={opened} where={kind} />
       <Outcome opened={opened} where={kind} />
       {opened.may("add") && (opened.action === null || actionWhere(opened.action) !== kind) && (
-        <div className={styles.actions}>
+        <div className={classes(styles.actions, prices.add)}>
           <ActionButton
             opened={opened}
             kind="add"
@@ -438,6 +495,7 @@ export function Services() {
   const [book, setBook] = useState<ServiceBook | null>(null);
   const [action, setAction] = useState<Action | null>(null);
   const [outcome, setOutcome] = useState<Opened["outcome"]>(null);
+  const [expanded, setExpanded] = useState<string | null>(null);
   const access = useAccess();
 
   if (loaded.state === "loading") return <Loading />;
@@ -448,7 +506,13 @@ export function Services() {
     action,
     outcome,
     book: current,
+    expanded,
     may: (kind) => access.mayCall(CALL_OF[kind]),
+    onExpand: (where) => {
+      setOutcome(null);
+      setAction(null);
+      setExpanded(where);
+    },
     onAct: (next) => {
       setOutcome(null);
       setAction(next);
