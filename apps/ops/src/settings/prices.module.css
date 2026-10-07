@@ -1,5 +1,15 @@
 /* A kind's prices, one table: a row a service, its Edit opening a strip beneath it. Narrow screens scroll the table. */
 
+/* This panel's own sizes, which nothing else draws (ADR 0077, as amended). */
+:root {
+  --local-prices-table: 760px; /* the narrowest the table goes before it scrolls */
+  --local-prices-length: 110px;
+  --local-prices-price: 130px;
+  --local-prices-gst: 80px;
+  --local-prices-next: 260px; /* "Rs. 25,000 + 18% GST from 10 Oct 2027" */
+  --local-prices-edit: 90px;
+}
+
 /* The first kind sits on the panel's own rule. */
 .kind:first-of-type {
   margin-top: 0;
@@ -12,28 +22,28 @@
 
 /* Fixed columns, so every kind's table lines up with the next. */
 .table {
-  min-width: 760px;
+  min-width: var(--local-prices-table);
   table-layout: fixed;
 }
 
 .table thead th:nth-child(2) {
-  width: 110px;
+  width: var(--local-prices-length);
 }
 
 .table thead th:nth-child(3) {
-  width: 130px;
+  width: var(--local-prices-price);
 }
 
 .table thead th:nth-child(4) {
-  width: 80px;
+  width: var(--local-prices-gst);
 }
 
 .table thead th:nth-child(5) {
-  width: 260px;
+  width: var(--local-prices-next);
 }
 
 .table thead th:nth-child(6) {
-  width: 90px;
+  width: var(--local-prices-edit);
 }
 
 .table th,
