@@ -45,7 +45,6 @@ test("lists every consent with its state, date and where it was given, and says 
   await expect(row("Photos in marketing")).toHaveText(/Not given\s*—\s*—$/);
   await expect(row("WhatsApp about visits")).toContainText("Site");
   await expect(row("WhatsApp about launches")).toContainText("Withdrawn");
-  await expect(page.getByText("Only the client can give consent, in their app.")).toBeVisible();
   // Read only: the tab offers no way to change one.
   await expect(page.getByRole("switch")).toHaveCount(0);
   await expect(page.getByRole("checkbox")).toHaveCount(0);
@@ -74,7 +73,7 @@ test("says when the client has asked to be erased, and leaves it to Deletion req
   await openClient(page, `/clients/${CLIENT.id}/consents`, {
     [READ_CONSENTS]: json(ERASURE_REQUESTED),
   });
-  await expect(page.getByText("Deletion requested 18 Sep 2027. Decide it in Deletion requests.")).toBeVisible();
+  await expect(page.getByText("Deletion requested 18 Sep 2027.")).toBeVisible();
   await expect(page.getByRole("button", { name: `Erase ${CLIENT.name}` })).toHaveCount(0);
 });
 

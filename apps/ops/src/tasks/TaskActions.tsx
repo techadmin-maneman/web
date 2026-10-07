@@ -108,7 +108,7 @@ function CloseForm({
   const copy = tasks.close;
   return (
     <div className={styles.form}>
-      <Field label={<Named label={copy.label} subject={subject} />} hint={copy.hint}>
+      <Field label={<Named label={copy.label} subject={subject} />}>
         {(control) => (
           <TextArea
             {...control}

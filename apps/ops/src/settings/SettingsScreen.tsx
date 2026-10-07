@@ -24,7 +24,7 @@ function Panel({ tab }: { tab: SettingsTab }) {
 
 export function SettingsScreen({ tab }: { tab: SettingsTab }) {
   return (
-    <Shell section="/settings" title={settings.title} sub={settings.sub}>
+    <Shell section="/settings" title={settings.title}>
       <div className={styles.screen}>
         <Tabs label={settings.title}>
           {SETTINGS_TABS.map((each) => (

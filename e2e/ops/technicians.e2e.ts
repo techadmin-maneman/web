@@ -203,7 +203,7 @@ test("asks before it revokes a phone, and says what a revoke does", async ({ pag
   await open(page);
   const main = await pageOf(page, "Imran Qureshi", "Phones");
   await main.getByRole("button", { name: PHONE }).click();
-  await expect(main.getByText("Signs the phone out and clears its jobs")).toBeVisible();
+  await expect(main.getByText("Signs the phone out.")).toBeVisible();
 
   const sent = page.waitForRequest((request) => request.url().endsWith(REVOKE) && request.method() === "POST");
   await main.getByRole("button", { name: "Revoke this phone" }).click();

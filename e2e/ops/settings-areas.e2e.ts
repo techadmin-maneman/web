@@ -157,9 +157,7 @@ test.describe("the service area, Areas' Served tab", () => {
     await form.getByRole("button", { name: "Add" }).click();
     expect((await sent).postDataJSON()).toEqual({ pincode: "400050", area: "Bandra West", city: "Mumbai" });
 
-    await expect(form.getByRole("status")).toHaveText(
-      "400050 added to Mumbai, not served. Tick Served and save to go live.",
-    );
+    await expect(form.getByRole("status")).toHaveText("400050 added to Mumbai.");
     await expect(page.getByRole("button", { name: "Mumbai · 0 of 1" })).toHaveAttribute("aria-current", "true");
     await expect(area(page, "400050")).toHaveValue("Bandra West");
   });

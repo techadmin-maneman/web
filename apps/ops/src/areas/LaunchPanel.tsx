@@ -29,7 +29,7 @@ interface Props {
   /** What the press did, once it is done. */
   readonly done: string | null;
   readonly error: string | null;
-  readonly note: string;
+  readonly note: string | null;
   readonly onSend: () => void;
   readonly onCancel: () => void;
   /** What stands between the title and the message: a pincode's figures, its launch date. */
@@ -77,7 +77,7 @@ export function LaunchPanel(props: Props) {
           {error}
         </p>
       )}
-      <p className={styles.note}>{note}</p>
+      {note !== null && <p className={styles.note}>{note}</p>}
     </section>
   );
 }

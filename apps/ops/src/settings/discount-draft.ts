@@ -74,9 +74,7 @@ export function requestOf(draft: Draft): DiscountCodesNew {
 
 /** A typed code that cannot be one, said beside its box before anything is checked; null while it can. */
 export const codeError = (draft: Draft): string | null =>
-  draft.how === "typed" && draft.code.trim() !== "" && !isCodeText(draft.code)
-    ? (copy.errors.code ?? copy.codeHint)
-    : null;
+  draft.how === "typed" && draft.code.trim() !== "" && !isCodeText(draft.code) ? (copy.errors.code ?? null) : null;
 
 /** Whether every box the code needs is filled in: the rest the API checks, and names the box it refuses. */
 export function isReady(draft: Draft): boolean {

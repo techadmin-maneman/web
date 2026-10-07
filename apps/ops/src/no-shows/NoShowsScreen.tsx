@@ -367,16 +367,12 @@ function Case({ each, now, may, onDecided }: CaseProps) {
         className={styles.reasonField}
         maxLength={REASON_MAX_CHARS}
         placeholder={copy.reason.placeholder}
-        aria-describedby={`reason-hint-${each.id}`}
         value={reason}
         disabled={sending || ruling.step === "confirming"}
         onChange={(event) => {
           setReason(event.target.value);
         }}
       />
-      <p className={styles.reasonHint} id={`reason-hint-${each.id}`}>
-        {copy.reason.hint}
-      </p>
       {ruling.step === "confirming" ? (
         <ConfirmCharge
           each={each}
@@ -433,14 +429,7 @@ function Queue({ onDecided }: { onDecided: () => void }) {
   const charge = access.mayCall("POST /api/no-shows/{id}/decision");
   const may: MayRule = { charge, waive: charge && access.reaches(WAIVING_A_NO_SHOW) };
   return (
-    <DecisionQueue
-      titleId="no-shows"
-      title={copy.title}
-      items={loaded.value.cases}
-      rowKind="case"
-      empty={copy.empty}
-      note={copy.note(loaded.value.waiver)}
-    >
+    <DecisionQueue titleId="no-shows" title={copy.title} items={loaded.value.cases} rowKind="case" empty={copy.empty}>
       {(each, ruled) => (
         <Case
           each={each}

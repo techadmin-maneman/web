@@ -35,8 +35,7 @@ function Form({ visitId, onLetIn }: { visitId: string; onLetIn: () => void }) {
         void letIn();
       }}
     >
-      <p className={styles.note}>{copy.note}</p>
-      <Field className={styles.field} label={copy.reason} hint={copy.reasonHint}>
+      <Field className={styles.field} label={copy.reason}>
         {(control) => (
           <TextArea
             {...control}

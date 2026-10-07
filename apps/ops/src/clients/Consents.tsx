@@ -76,7 +76,6 @@ export function Consents({ clientId, name, onErased }: { clientId: string; name:
       {deletion !== null && (
         <p className={styles.deletion}>{copy.deletion[deletion.state](longDate(deletion.requested_at))}</p>
       )}
-      <p className={styles.note}>{copy.note}</p>
       <Erase clientId={clientId} name={name} requested={deletion?.state === "requested"} onErased={onErased} />
     </section>
   );

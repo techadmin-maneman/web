@@ -305,7 +305,6 @@ export function DispatchScreen() {
                   />
                 )}
               </div>
-              <p className={styles.note}>{dispatch.board.leave}</p>
             </>
           )}
         </div>

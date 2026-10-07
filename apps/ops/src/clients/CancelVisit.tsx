@@ -97,10 +97,9 @@ function Form({
               setOnClientTerms(event.currentTarget.checked);
             }}
           />
-          <p className={styles.note}>{copy.lateHint(terms.notice_hours)}</p>
         </div>
       )}
-      <Field className={styles.field} label={copy.reason} hint={copy.reasonHint}>
+      <Field className={styles.field} label={copy.reason}>
         {(control) => (
           <TextArea
             {...control}

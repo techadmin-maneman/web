@@ -89,7 +89,6 @@ const ACTIONS: Readonly<Record<ActivityAction, string>> = {
 
 export const activity = {
   title: "Activity",
-  intro: "Who did what, newest first.",
   actions: ACTIONS,
   filters: {
     label: "Narrow the log",
@@ -102,12 +101,13 @@ export const activity = {
       technician: "Technician",
       system: "System",
     },
-    actor: "Their e-mail or ID",
+    actor: "Email or ID",
     action: "What",
     anyAction: "Any action",
-    person: "Client ID",
-    personHint: "Their actions, and everything done to their record.",
-    visit: "Visit ID",
+    /** A filter a link set, above the form: "Client · Rohit Malhotra", with its own way off. */
+    person: "Client",
+    visit: "Visit",
+    remove: (filter: string) => `Remove filter: ${filter}`,
     from: "From",
     to: "To",
     show: "Show",

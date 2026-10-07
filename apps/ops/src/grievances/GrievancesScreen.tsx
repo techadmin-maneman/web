@@ -66,7 +66,7 @@ function Open({ each, now, mayAnswer, onAnswered }: OpenProps) {
       <blockquote className={styles.words}>{each.text}</blockquote>
       {mayAnswer && (
         <div className={styles.answer}>
-          <Field label={copy.label} hint={copy.hint}>
+          <Field label={copy.label}>
             {(control) => (
               <TextArea
                 {...control}
@@ -115,7 +115,6 @@ function Queue() {
       items={loaded.value.grievances}
       rowKind="grievance"
       empty={copy.empty}
-      note={copy.note(copy.answerDays)}
     >
       {(each, answered) => <Open each={each} now={now} mayAnswer={mayAnswer} onAnswered={answered} />}
     </DecisionQueue>

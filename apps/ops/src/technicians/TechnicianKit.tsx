@@ -42,7 +42,6 @@ export function Kit({ technician }: { technician: TechnicianSummary }) {
   const held = book.holdings.filter((holding) => holding.technician_id === technician.id);
   return (
     <>
-      <p className={styles.lead}>{copy.lead}</p>
       {held.length === 0 ? (
         <p className={styles.none}>{copy.none}</p>
       ) : (

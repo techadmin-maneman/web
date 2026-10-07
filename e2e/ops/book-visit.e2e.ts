@@ -100,7 +100,7 @@ test("books a fitted client's service visit in a window someone is free in, send
     "evening, 16:00 to 20:00",
   ]);
   await booking.getByLabel("Technician", { exact: true }).selectOption({ label: "Sandeep Rawat" });
-  await expect(booking).toContainText("They get a payment link by SMS");
+  await expect(booking).toContainText("by payment link");
   expect(await axeViolations(page, (axe) => axe.include("dialog"))).toEqual([]);
 
   await booking.getByRole("button", { name: "Book" }).click();

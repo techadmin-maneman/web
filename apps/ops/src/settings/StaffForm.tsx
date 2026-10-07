@@ -233,7 +233,6 @@ export function StaffForm(props: {
               edit({ email: event.target.value });
             }}
           />
-          <p className={styles.hint}>{copy.form.emailHint}</p>
         </div>
       </div>
       <label className={classes(styles.fieldRow, styles.once)}>

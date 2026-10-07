@@ -51,7 +51,6 @@ test("marks the days a technician is away, and still shows the jobs already on t
   await expect(page.getByText("Faizan Ali is away on Mon 22 Sep")).toBeAttached();
   await expect(page.getByRole("button", { name: "Nitin R., Sun 21 Sep, afternoon" })).toBeVisible();
   await expect(page.getByText("Faizan Ali is away on Tue 23 Sep")).toHaveCount(0);
-  await expect(page.getByText("Leave is recorded on Technicians")).toBeVisible();
   // The mark was named by an aria-label on a plain span, which ARIA forbids.
   await expect(page.locator("main span[aria-label]")).toHaveCount(0);
 });
@@ -104,7 +103,6 @@ test("lists the tray's jobs with their client, the window asked beside the one o
   const last = tray.getByRole("listitem").last();
   await expect(last).toContainText("Asked · not recorded");
   await expect(last).toContainText("Offered · Sun, afternoon");
-  await expect(tray.getByText("“Asked” is the window the client picked")).toBeVisible();
 });
 
 // A tray click picked the job up at once, so it could not be read before it was assigned.

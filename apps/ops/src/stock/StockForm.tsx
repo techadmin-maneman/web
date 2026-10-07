@@ -256,15 +256,15 @@ export function StockForm({
         <div className={form.fields}>
           {draft.kind === "count" ? (
             <Quantity
-              label={copy.record.counted}
-              hint={copy.record.quantityHint(unit, book.max_quantity)}
+              label={copy.record.inUnit(copy.record.counted, unit)}
+
               value={draft.counted}
               onChange={edit("counted")}
             />
           ) : (
             <Quantity
-              label={copy.record.quantity}
-              hint={copy.record.quantityHint(unit, book.max_quantity)}
+              label={copy.record.inUnit(copy.record.quantity, unit)}
+
               value={draft.quantity}
               onChange={edit("quantity")}
             />
@@ -280,14 +280,10 @@ export function StockForm({
                 type="text"
                 maxLength={200}
                 value={draft.note}
-                aria-describedby="stock-note-hint"
                 onChange={(event) => {
                   edit("note")(event.target.value);
                 }}
               />
-              <p className={form.hint} id="stock-note-hint">
-                {copy.record.noteHint}
-              </p>
             </div>
           )}
         </div>

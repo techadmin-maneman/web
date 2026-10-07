@@ -270,7 +270,6 @@ function CorrectionForm({
       <h4 className={capsLook(styles.subtitle)} id={`${formId}-title`}>
         {copy.formTitle}
       </h4>
-      <p className={styles.hint}>{copy.formNote}</p>
       <div className={styles.fields}>
         {FIT_ROWS.map((field) => {
           if (!isCode(field)) return figure(field);

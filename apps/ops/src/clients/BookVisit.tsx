@@ -313,7 +313,7 @@ function Form({
         </Button>
       </div>
       {takesCode && (
-        <Field className={styles.field} label={copy.code} hint={copy.codeHint}>
+        <Field className={styles.field} label={copy.code}>
           {(control) => (
             <TextInput
               {...control}

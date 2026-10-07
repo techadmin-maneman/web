@@ -90,7 +90,6 @@ test("records leave, saying first that nobody can be booked on those days, and s
   await open(page);
   const main = await pageOf(page, "Imran Qureshi", "Leave");
   await main.getByRole("button", { name: "Record leave for Imran Qureshi" }).click();
-  await expect(main.getByText("No bookings or assignments on these days.")).toBeVisible();
   // The form takes the keyboard as it opens, where the button stood.
   await expect(main.getByLabel("First day")).toBeFocused();
   // A routine entry, drawn as every other save is, not as a danger.

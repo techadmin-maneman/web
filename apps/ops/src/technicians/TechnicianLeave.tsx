@@ -172,7 +172,6 @@ function LeaveForm({
         void send();
       }}
     >
-      <p className={styles.warning}>{copy.effect}</p>
       <div className={styles.fields}>
         <label className={styles.field}>
           <span className={styles.label}>{copy.from}</span>

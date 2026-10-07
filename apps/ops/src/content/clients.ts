@@ -13,7 +13,6 @@ export const clients = {
    */
   find: {
     label: "Name or number",
-    hint: "Part of a name, or 4+ digits of a number.",
     submit: "Find",
     finding: "Looking",
     /** The matches, by name, each a way to the client's page. */
@@ -110,10 +109,8 @@ export const clients = {
       open: "Add an address",
       change: "Replace address",
       title: "Address given by phone",
-      note: "Saved as their address. They can change it in the app.",
       building: {
         label: "Building",
-        hint: "Search and choose it, so the technician gets a pin.",
         unavailable: "Search is unavailable. Type the address below.",
         found: (count: number) => (count === 1 ? "1 building found" : `${String(count)} buildings found`),
         // Google asks for their name against suggestions shown without a map.
@@ -129,7 +126,6 @@ export const clients = {
       city: "City",
       pincode: "Pincode",
       accessNotes: "Access notes (optional)",
-      accessHint: "Gate code or parking. Shown to the technician the day before.",
       invalid: "Add the flat, building or street, area, city and a 6-digit pincode.",
       save: "Save address",
       saving: "Saving…",
@@ -218,12 +214,11 @@ export const clients = {
       later: "Later days",
       noDays: "No one is free on these days.",
       code: "Discount code (optional)",
-      codeHint: "Applied before GST.",
       pays: {
         nothing: "Nothing to pay.",
-        oneVisit: "Nothing to pay now. A payment link goes out once they're fitted.",
+        oneVisit: "Nothing to pay now.",
         credit: (left: number) => `Uses a free service visit. ${String(left)} left.`,
-        link: (amount: string) => `${amount} before any code. They get a payment link by SMS. Booked once paid.`,
+        link: (amount: string) => `${amount}, by payment link.`,
       },
       book: "Book",
       booking: "Booking…",
@@ -232,9 +227,8 @@ export const clients = {
         `${visit}, ${day}, ${window}, with ${technician}.`,
       outcomes: {
         booked: "Booked.",
-        being_booked: "Booked. On the dispatch board within a minute.",
-        awaiting_payment: (amount: string, until: string) =>
-          `Payment link sent for ${amount}. Slot held until ${until}. Booked once paid.`,
+        being_booked: "Booked.",
+        awaiting_payment: (amount: string, until: string) => `Payment link sent for ${amount}. Held until ${until}.`,
       },
       link: "Payment link",
       loading: "Finding free windows…",
@@ -247,7 +241,7 @@ export const clients = {
         no_product: "No hair system on sale that day.",
         code_not_applicable: "That code doesn't apply to this visit.",
         code_off: "That code is switched off.",
-        terms_changed: "Their last credit was just used elsewhere. Check, then book again.",
+        terms_changed: "Their credit was just used. Try again.",
         unavailable: "Razorpay couldn't create the link. Try again in a minute.",
         not_found: "This client can't be booked.",
         offline: OFFLINE,
@@ -288,14 +282,12 @@ export const clients = {
         nothing: "nothing to refund.",
       },
       lateTerms: "Apply late terms",
-      lateHint: (hours: number) => `Only if they're cancelling within ${String(hours)} hours themselves.`,
       reason: "Reason",
-      reasonHint: "Private. The client won't see it.",
       confirm: "Confirm cancellation",
       cancelling: "Cancelling…",
       /** "Cancelled. Rs. 2,000 goes back to their UPI." */
       done: (gives: string) => `Cancelled. ${gives.charAt(0).toUpperCase()}${gives.slice(1)}`,
-      termsChanged: "The free window closed meanwhile. Check the refund, then cancel again.",
+      termsChanged: "The free window has closed. Check the refund and try again.",
       errors: {
         not_permitted: NOT_PERMITTED,
         not_changeable: "Started, passed or already cancelled.",
@@ -314,15 +306,11 @@ export const clients = {
       openLabel: (visit: string) => `Close the visit of ${visit} by hand`,
       title: (name: string) => `Close ${name}'s visit by hand`,
       close: "Close",
-      note: "For finished work lost with the technician's phone.",
       outcome: "Outcome",
       outcomes: { done: "Done", partial: "Partly done" },
       started: "Started",
       ended: "Finished",
-      /** "On Mon 21 Sep, India time." */
-      timesHint: (day: string) => `On ${day}, India time.`,
       reason: "What happened",
-      reasonHint: "Saved with the visit.",
       confirm: "Close visit",
       closing: "Closing…",
       done: { done: "Closed as done.", partial: "Closed as partly done. A follow-up is on Tasks." },
@@ -428,13 +416,11 @@ export const clients = {
     /** After the count, as the head writes it: "2 visits · use by 3 Jan 2028". */
     useBy: (date: string) => `use by ${date}`,
     change: "Add, or remove with a minus",
-    changeHint: "-12 to 12, not 0.",
     reason: "Reason",
     reasons: [
       { reason: "correction", label: "Correction" },
       { reason: "goodwill", label: "Goodwill" },
     ],
-    note: "The client sees the new balance in their app.",
     save: "Update credits",
     saving: "Saving",
     saved: (count: number) => `Done. They now have ${String(count)} ${count === 1 ? "visit" : "visits"}.`,
@@ -466,16 +452,12 @@ export const clients = {
     since: "Since",
     attachedBy: "Attached by",
     why: "Reason",
-    none: "No invite. If a friend referred them, attach the invite here.",
+    none: "No invite.",
     /** The same, to a person whose access does not let them attach one. */
     noInvite: "No invite.",
     form: {
       code: "Invite code",
-      codeHint: "What follows maneman.in/r/ in the friend's link.",
       reason: "Reason",
-      reasonHint: "What the client or friend told you.",
-      /** The rules the API holds an attach to (src/routes/ops/client-referral.ts), the late one src/policy/fraud-holds.ts's. */
-      note: "Not for the referrer themselves, or a client who already has an invite. After a first fit, it's held for review.",
       save: "Attach invite",
       saving: "Attaching",
       errors: {
@@ -562,13 +544,12 @@ export const clients = {
     correct: "Correct profile",
     record: "Add profile",
     formTitle: "Correct hair profile",
-    formNote: "Saved as a new version. Earlier versions are kept.",
     notRecorded: "Not recorded",
     product: "Hair system",
     invalid: "Check this field.",
     refused: "Check the marked fields.",
     failed: FAILED,
-    moved: "The profile changed while you were editing. Not saved. Review the latest version.",
+    moved: "The profile changed while you were editing. Review it and try again.",
     save: "Save new version",
     saving: "Saving",
     cancel: "Cancel",
@@ -576,11 +557,8 @@ export const clients = {
   photos: {
     locked: "Locked",
     title: (name: string) => `Photos of ${name}`,
-    /** Why a client's visits are photographed, which no consent switches off. */
-    basis: "Taken at every visit for the record.",
     /** The board's words, with the client's first name where it writes "Rohit". */
-    warning: (firstName: string) =>
-      `Opening these is logged with your name and the time. The city head and ${firstName} can see the log.`,
+    warning: (_firstName: string) => "Viewing is logged.",
     open: "View photos",
     /** The state the board draws once they are open, with the time the API logged the opening, by its own clock. */
     opened: (time: string) => `Open · logged ${time}`,
@@ -650,14 +628,12 @@ export const clients = {
      * by the Worker it replaced before it was deployed, or switched from a copy of the app loaded before it.
      */
     notRecorded: "Not recorded",
-    /** The board's note. It writes "from his own app"; this says "their" (docs/fidelity-method.md). */
-    note: "Only the client can give consent, in their app.",
     /**
      * The board draws no deletion request, and the route answers
      * with the client's latest one, which belongs beside their consents.
      */
     deletion: {
-      requested: (date: string) => `Deletion requested ${date}. Decide it in Deletion requests.`,
+      requested: (date: string) => `Deletion requested ${date}.`,
       rejected: (date: string) => `Deletion requested ${date}, rejected.`,
     },
   },
@@ -667,7 +643,6 @@ export const clients = {
    */
   erasure: {
     title: "Erase client",
-    note: "For deletion requests made outside the app. Can't be undone.",
     open: "Erase",
     openLabel: (name: string) => `Erase ${name}`,
     confirmLabel: (name: string) => `Erasing ${name}`,
@@ -692,7 +667,7 @@ export const clients = {
     anyway: "Erase anyway",
     done: {
       title: "Erased",
-      body: "Photos and details are gone. CRM and Books records are blanked within minutes. Let them know in the chat they asked in.",
+      body: "Tell them in the chat they asked in.",
       back: "Find a client",
     },
     /** The page of a client erased since, which keeps only their visits and money. */
@@ -700,7 +675,7 @@ export const clients = {
       title: "Erased client",
       /** Whose visit the panels that cancel or close one name. */
       whose: "the erased client",
-      on: (date: string) => `Erased on ${date}. Visits and payments remain on record.`,
+      on: (date: string) => `Erased on ${date}.`,
     },
     errors: {
       not_permitted: NOT_PERMITTED,

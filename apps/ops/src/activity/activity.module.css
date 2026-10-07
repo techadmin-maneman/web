@@ -17,13 +17,6 @@
   max-width: var(--ops-list);
 }
 
-.intro {
-  max-width: var(--measure-column);
-  margin: 0;
-  font-size: var(--fs-15);
-  color: var(--text-muted);
-}
-
 /* ---- What it is narrowed to ------------------------------------------------ */
 
 .filters {
@@ -87,4 +80,31 @@
 
 .older {
   align-self: flex-start;
+}
+
+/* A client or a visit a link narrowed the log to, each a chip with its own way off. */
+.linked {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-8);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-6);
+  padding: var(--sp-4) var(--sp-8);
+  border: var(--hairline) solid var(--paper-line);
+  font-size: var(--fs-14);
+}
+
+.chipOff {
+  border: 0;
+  background: none;
+  color: var(--text-muted);
+  font-size: var(--fs-16);
+  cursor: pointer;
 }

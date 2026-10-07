@@ -157,7 +157,7 @@ export function StockScreen() {
   const [firstKind, ...otherKinds] = KINDS.filter((kind) => access.mayCall(RECORDING[kind]));
 
   return (
-    <Shell section="/stock" title={copy.title} sub={copy.sub}>
+    <Shell section="/stock" title={copy.title}>
       {loaded.state === "loading" && <Loading />}
       {loaded.state === "failed" && <PanelFailed onRetry={retry} requestId={loaded.requestId} />}
       {loaded.state === "loaded" && (
@@ -168,9 +168,6 @@ export function StockScreen() {
                 {copy.onHand}
               </h2>
             </div>
-            <p className={form.note}>
-              {copy.lowNote} <ToSettings />
-            </p>
             <OnHand book={book ?? loaded.value} />
           </section>
           {firstKind !== undefined && (book ?? loaded.value).consumables.length > 0 && (

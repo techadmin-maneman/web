@@ -124,7 +124,6 @@ export function Erase({ clientId, name, requested, onErased }: EraseProps) {
   return (
     <section className={styles.erase} aria-label={copy.title}>
       <h3 className={capsLook(styles.eraseTitle)}>{copy.title}</h3>
-      <p className={styles.note}>{copy.note}</p>
       {erasing.step === "confirming" && (
         <Confirm
           name={name}

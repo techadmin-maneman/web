@@ -62,7 +62,7 @@ function WhatIsMade({ draft, most, edit }: { draft: Draft; most: number; edit: E
       {draft.how === "typed" ? (
         <Field
           label={copy.code}
-          hint={codeError(draft) === null ? copy.codeHint : undefined}
+
           error={codeError(draft)}
           className={styles.field}
         >
@@ -80,7 +80,7 @@ function WhatIsMade({ draft, most, edit }: { draft: Draft; most: number; edit: E
           )}
         </Field>
       ) : (
-        <Field label={copy.count} hint={copy.countHint(most)} className={styles.field}>
+        <Field label={copy.count} className={styles.field}>
           {(control) => (
             <NumberInput
               {...control}
@@ -133,7 +133,7 @@ function WhatItTakesOff({ draft, edit }: { draft: Draft; edit: Edit }) {
         )}
       </Field>
       {draft.kind === "percent" && (
-        <Field label={copy.cap} hint={copy.capHint} className={styles.field}>
+        <Field label={copy.cap} className={styles.field}>
           {(control) => (
             <NumberInput
               {...control}
@@ -182,7 +182,7 @@ function Limits({ draft, today, edit }: { draft: Draft; today: string; edit: Edi
   return (
     <>
       <div className={styles.fields}>
-        <Field label={copy.expires} hint={copy.expiresHint} className={styles.field}>
+        <Field label={copy.expires} className={styles.field}>
           {(control) => (
             <DateInput
               {...control}
@@ -196,7 +196,7 @@ function Limits({ draft, today, edit }: { draft: Draft; today: string; edit: Edi
           )}
         </Field>
         {!isBatch(draft) && (
-          <Field label={copy.maxUses} hint={copy.maxUsesHint} className={styles.field}>
+          <Field label={copy.maxUses} className={styles.field}>
             {(control) => (
               <NumberInput
                 {...control}

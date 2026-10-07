@@ -17,14 +17,11 @@ test("counts a group whole when it lists only its longest waits, and says when i
   // The group's whole count, and so its department's.
   await expect(list(page).getByText("73", { exact: true })).toHaveCount(2);
   await expect(page.getByText("Longest 2 of 73.")).toBeVisible();
-  await expect(page.getByText("Not everything is shown, so counts may be low.")).toBeVisible();
+  await expect(page.getByText("Counts may be incomplete.")).toBeVisible();
 });
 
-test("says a task leaves when its own row is decided, and that only a visit left partly done closes here", async ({
-  page,
-}) => {
+test("offers no close on the board's own groups: only a visit left partly done closes here", async ({ page }) => {
   await open(page);
-  await expect(page.getByText("Tasks clear when they're dealt with in their own section.")).toBeVisible();
   // Nothing in the board's own groups closes here.
   await expect(list(page).getByRole("button", { name: /^Close without follow-up/ })).toHaveCount(0);
 });

@@ -79,8 +79,6 @@ export const dispatch = {
     stranded: (jobs: number) => `Away · ${String(jobs)} ${jobs === 1 ? "job" : "jobs"} to move`,
     strandedLabel: (technician: string, date: string, jobs: number) =>
       `${technician} is away on ${date}, with ${String(jobs)} ${jobs === 1 ? "job" : "jobs"} still to move`,
-    /** Beneath the board, saying where leave comes from. */
-    leave: "Leave is recorded on Technicians. Away days take no jobs.",
   },
   tray: {
     title: "Unassigned",
@@ -97,8 +95,6 @@ export const dispatch = {
     referred: (name: string) => `Referred by ${name}`,
     // A job still on a technician who was switched off, which no board draws.
     was: (name: string) => `Was ${name}'s · switched off`,
-    /** Beneath the tray: where the asked window comes from, and why some rows have none. */
-    same: "“Asked” is the window the client picked.",
     // The board draws four waiting and no empty tray.
     empty: "Nothing unassigned.",
   },
@@ -106,9 +102,7 @@ export const dispatch = {
   /** Our words, all of them: letting a technician check in past the geofence, which no board draws. */
   letIn: {
     title: (technician: string) => `Allow ${technician} to check in`,
-    note: "Lets them check in from anywhere, for this visit only. The distance is still recorded.",
     reason: "Reason",
-    reasonHint: "Shown with any no-show evidence, e.g. the pin is at the society gate.",
     confirm: "Allow check-in",
     sending: "Allowing",
     close: "Close",
@@ -213,18 +207,18 @@ export const dispatch = {
     /** After the line, where the visit was paid for: prepaid, or with the client's credit. */
     carries: "Their payment carries over.",
     /** A change of technician alone leaves the client's window as it was. */
-    sameTime: (job: string) => `Only the technician changes. ${job} keeps the same window and isn't messaged.`,
+    sameTime: (job: string) => `${job} keeps the same window. No message sent.`,
     /** A visit with no client on our records. */
     noClient: "No client to notify.",
     /**
      * The board's extra line inside the notice the visit was sold under, which the board writes as 24 hours. The
      * client keeps the free change they had: their own change counts from the time before we moved it (ADR 0096).
      */
-    soon: (hours: number) => `Within ${String(hours)} hours. The client isn't charged, as we moved it.`,
+    soon: (hours: number) => `Within ${String(hours)} hours. No charge, as we moved it.`,
     /** A move of a visit the technician had checked in at, chosen after the drawer's warning. */
     checkInCleared: "The check-in is cleared. They check in again at the new time.",
     /** A move onto a day ops blacked out goes only with a reason, kept with the move. */
-    blackout: (date: string) => `${date} is a closed day. Say why this visit goes ahead.`,
+    blackout: (date: string) => `${date} is a closed day. Give a reason.`,
     blackoutReason: "Reason",
     send: "Move and notify",
     /** The same button where nothing goes to the client, so it does not promise a message. */
@@ -235,7 +229,7 @@ export const dispatch = {
   /** Choosing where a job lands, which the design does by dragging. */
   landing: {
     /** The bar above the board while a job is in hand, with the slot-size hint the brief asks for. */
-    moving: (job: string, size: string) => `Moving ${job}, ${size}. Choose a technician and window.`,
+    moving: (job: string, size: string) => `Moving ${job}, ${size}.`,
     /** "a first fit, 2 slots". */
     size: (type: string, slots: number) => `${type}, ${String(slots)} ${slots === 1 ? "slot" : "slots"}`,
     /** While the board asks where the job would fit. */
@@ -255,11 +249,10 @@ export const dispatch = {
     stop: "Stop moving",
     /** What happened, from the move's own answer: a message is claimed only where one was queued. */
     moved: {
-      messaged: (job: string) => `Moved. ${job} gets the new window on WhatsApp. If it fails, a call task appears.`,
+      messaged: (job: string) => `Moved. ${job} is told on WhatsApp.`,
       call: (job: string, name: string, mobile: string) =>
         `${job} moved. ${name} isn't on WhatsApp updates: call ${mobile} with the new window.`,
-      unchanged: (job: string, technician: string) =>
-        `${job} is now with ${technician}. Same window, so no message sent.`,
+      unchanged: (job: string, technician: string) => `${job} is now with ${technician}. Same window.`,
       noClient: (job: string) => `${job} moved. No client to notify.`,
     },
     /** The button that closes the call's task, beside the line that asks for the call. */
@@ -300,7 +293,7 @@ export const dispatch = {
     errors: {
       not_permitted: NOT_PERMITTED,
       invalid_request: "That move isn't possible.",
-      not_found: "This visit no longer exists. The board is refreshed.",
+      not_found: "This visit no longer exists.",
       /** The technician began the visit after the board was read. */
       in_progress: "The technician has started this visit. It can't be moved.",
       offline: OFFLINE,
@@ -309,6 +302,6 @@ export const dispatch = {
     /** The call's record did not go through. */
     toldFailed: FAILED,
     /** A link asked for a visit this board does not hold. */
-    notOnBoard: "That visit isn't on this board. It may have moved week or been cancelled.",
+    notOnBoard: "That visit isn't on this board.",
   },
 } as const;

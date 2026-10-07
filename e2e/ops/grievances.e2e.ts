@@ -36,12 +36,6 @@ test("says how long is left of the answer time, and marks one that has run over"
   await open(page);
   await expect(row(page, "Rohit Malhotra")).toContainText("22 days left");
   await expect(row(page, "Vikram Sethi")).toContainText("22 days overdue");
-  await expect(page.getByText("Answer within 30 days")).toBeVisible();
-});
-
-test("says plainly that recording an answer messages nobody", async ({ page }) => {
-  await open(page);
-  await expect(page.getByText("Reply on WhatsApp, then record your answer here.")).toBeVisible();
 });
 
 test("reaches the client's record from the name", async ({ page }) => {

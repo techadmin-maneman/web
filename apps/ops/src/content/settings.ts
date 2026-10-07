@@ -17,7 +17,6 @@ const descriptionWords = (line: string) => (line === "" ? "no description" : `�
  */
 export const settings = {
   title: "Settings",
-  sub: "Changes apply within a minute.",
   /** Gigabytes as Cloudflare bills them, a thousand million bytes. */
   storage: (held: number, share: number) =>
     `Photos and referral cards: ${(held / 1e9).toFixed(2)} GB of ${String(share / 1e9)} GB`,
@@ -32,32 +31,26 @@ export const settings = {
   /** No board draws discount codes (docs/decisions/0108-discount-codes.md). */
   discountCodes: {
     title: "Discount codes",
-    note: "Off a first fit, service visit or replacement, before GST. Never on a free service visit. Fixed once a visit is paid or invoiced.",
     make: "Make codes",
     how: "Method",
     typed: "Type one",
     generated: "Generate",
     code: "Code",
-    codeHint: "4–16 letters or digits.",
     count: "How many",
-    countHint: (most: number) => `1–${String(most)}. More than one makes single-use codes.`,
     takesOff: "Discount",
     percent: "Percentage",
     amount: "Amount",
     value: "Per cent",
     rupeesOff: "Rupees",
-    cap: "Cap, in rupees",
-    capHint: "Optional.",
+    cap: "Cap, in rupees (optional)",
     covers: "Applies to",
     coverNames: {
       first_fit: "First fits, and consultation-and-fit visits",
       service: "Service visits",
       replacement: "Replacements",
     } as Readonly<Record<string, string>>,
-    expires: "Last valid day",
-    expiresHint: "Optional.",
-    maxUses: "Total uses",
-    maxUsesHint: "Optional.",
+    expires: "Last valid day (optional)",
+    maxUses: "Total uses (optional)",
     oncePerClient: "Once per client",
     check: "Review",
     checkTitle: "Make these codes?",
@@ -130,10 +123,10 @@ export const settings = {
       if (hour === 12) return "noon";
       return hour < 12 ? `${String(hour)} am` : `${String(hour - 12)} pm`;
     },
-    setBy: (who: string, when: string) => `Set by ${who} on ${when}`,
     /** A figure typed outside its bounds, said in the hint's place, since it leaves Save with nothing to send. */
     outOfBounds: (min: string, max: string) => `Enter ${min}–${max}.`,
-    committed: "Default",
+    /** A rule with many boxes, shut: "Show all 18". */
+    showAll: (count: number) => `Show all ${String(count)}`,
     save: "Save",
     saving: "Saving",
     saved: "Saved.",
@@ -223,9 +216,6 @@ export const settings = {
   /** No board draws the days no visit is offered (docs/decisions/0088-every-policy-in-the-console.md). */
   blackouts: {
     title: "Closed days",
-    /** Followed by a link to the dispatch board. */
-    note: "No new bookings on these days. Visits already booked stay: move them on",
-    board: "the dispatch board",
     from: "From",
     to: "To",
     reason: "Reason",
@@ -264,11 +254,8 @@ export const settings = {
    */
   services: {
     title: "Services and prices",
-    note: "What clients can book. A new price starts tomorrow at the earliest.",
     /** The four kinds, as the rest of the console names them. */
     kinds: dispatch.typeNames,
-    /** Under First fit: its services are the hair systems clients choose from, and nothing stands in for them. */
-    hairSystems: "First fits are booked as one of these hair systems. With none priced, first fits can't be booked.",
     /** "180 min · premium": how long it is held and booked for, and what the price book prices it by. */
     facts: (minutes: number, tier: string) => `${String(minutes)} min · ${tier}`,
     /** The line clients read under the service's name in the app as they choose. */
@@ -292,7 +279,6 @@ export const settings = {
       late_fee_first_fit: "Late fee on a first fit",
       late_fee_replacement: "Late fee on a replacement",
     } as Readonly<Record<string, string>>,
-    lateFeeNote: "Charged for a late move or cancel.",
     /** The link to the rule that says when a late fee is charged. */
     lateFeeRule: "When it applies",
     actions: {
@@ -326,29 +312,21 @@ export const settings = {
       priceTitle: (name: string) => `New price: ${name}`,
       correctTitle: (name: string, from: string) => `Correct the ${name} price from ${from}`,
       amount: "Price before GST, in rupees",
-      amountHint: (max: string) => `Whole rupees, up to ${max}.`,
       gst: "GST",
-      gstHint: (max: number) => `0–${String(max)}%.`,
       from: "Starts",
-      fromHint: "Tomorrow or later.",
       /** A day typed before tomorrow, said beside the box before anything is checked. */
       fromTooSoon: "Choose tomorrow or later.",
       setPrice: "Set price",
       renameTitle: (name: string) => `Rename ${name}`,
       name: "Name",
-      nameHint: "Starts with a letter or digit.",
       describeTitle: (name: string) => `Description: ${name}`,
       description: "Description",
-      descriptionHint: (max: number) => `One line under the name. Up to ${String(max)} characters.`,
       lengthTitle: (name: string) => `Length: ${name}`,
       minutes: "Length, in minutes",
-      minutesHint: (min: number, max: number) => `${String(min)}–${String(max)}.`,
       retireTitle: (name: string) => `Retire ${name}`,
       retireFrom: "Hidden from",
-      retireHint: "Today or later. Visits already sold aren't affected.",
       addTitle: (kind: string) => `New ${kind} service`,
       code: "Code",
-      codeHint: "Made from the name. Can't be changed.",
       next: "Review",
       cancel: "Cancel",
     },
@@ -375,14 +353,13 @@ export const settings = {
       rename: (was: string, now: string, tier: string) => `${was} → ${now}. The code stays ${tier}.`,
       describe: (name: string, was: string, now: string) =>
         `${name}: ${descriptionWords(was)} → ${descriptionWords(now)}`,
-      length: (name: string, was: number, now: number) =>
-        `${name}: ${String(was)} → ${String(now)} minutes. Existing bookings keep their length.`,
-      retire: (name: string, from: string) => `${name} is hidden from ${from}. Visits already sold aren't affected.`,
-      restore: (name: string) => `Offer ${name} again, at its existing prices.`,
+      length: (name: string, was: number, now: number) => `${name}: ${String(was)} → ${String(now)} minutes.`,
+      retire: (name: string, from: string) => `${name} is hidden from ${from}.`,
+      restore: (name: string) => `Offer ${name} again.`,
       order: (kind: string, was: string, now: string) => `${kind}: ${was} → ${now}.`,
-      add: (kind: string, name: string, minutes: number, tier: string) =>
-        `Add ${name} to ${kind}: ${String(minutes)} minutes, code ${tier}. Hidden until priced.`,
-      takeBack: (from: string) => `Withdraw the price from ${from}? The earlier price stays.`,
+      add: (kind: string, name: string, minutes: number, _tier: string) =>
+        `Add ${name} to ${kind}: ${String(minutes)} minutes. Hidden until priced.`,
+      takeBack: (from: string) => `Withdraw the price from ${from}?`,
       send: "Confirm",
       back: "Back",
       takeBackConfirm: "Confirm withdrawal",
@@ -423,7 +400,6 @@ export const settings = {
   /** The consumables and each service's expected use (docs/decisions/0087-consumables-and-stock.md). */
   consumables: {
     title: "Consumables",
-    note: "What technicians log on a job, and what each costs us. Costs never reach an invoice.",
     columns: ["Consumable", "Cost each", "Low at", "Status"],
     none: "No consumables yet.",
     /** "Kit 5 · store 50", the levels a place is low at. */
@@ -448,14 +424,10 @@ export const settings = {
       addTitle: "Add a consumable",
       changeTitle: (name: string) => `Change ${name}`,
       name: "Name",
-      nameHint: "Starts with a letter or digit.",
       unit: "Unit",
-      unitHint: "Strip, ml, sachet.",
       cost: "Cost each, in rupees",
-      costHint: (max: string) => `Up to ${max}.`,
-      kit: "Kit low at",
-      central: "Store low at",
-      levelHint: "Optional.",
+      kit: "Kit low at (optional)",
+      central: "Store low at (optional)",
       add: "Add",
       save: "Save consumable",
       saving: "Saving",
@@ -477,7 +449,6 @@ export const settings = {
     retiring: {
       title: (name: string) => `Retire ${name}`,
       from: "Retire from",
-      fromHint: "Today or later. Past records and stock stay.",
       question: (name: string, from: string) => `Technicians can't log ${name} from ${from}. Past jobs keep it.`,
       send: "Confirm",
       restore: (name: string) => `Offer ${name} again?`,
@@ -486,13 +457,11 @@ export const settings = {
     },
     usage: {
       title: "Expected use per service",
-      note: "Pre-filled on each job. Technicians can adjust it.",
       service: "Service",
       /** A service by its name, as the console names it; "Lace replacement, retired from 1 Oct 2027" once retired. */
       serviceName: (name: string, retiredFrom: string | null) =>
         retiredFrom === null ? name : `${name}, retired from ${retiredFrom}`,
       quantity: (name: string, unit: string) => `${name}, ${unit} per visit`,
-      quantityHint: (max: number) => `Up to ${String(max)}. Blank for none.`,
       noneOffered: "Add a consumable first.",
       save: "Save use",
       confirm: {
@@ -524,11 +493,9 @@ export const settings = {
   /** The job sheet the technician app reads: each kind of visit's checklist and the partial reasons. */
   jobSheet: {
     title: "Job sheet",
-    note: "The checklist for each kind of visit, and the reasons for a partly done job. Phones pick up changes on the next job.",
     kind: "Kind of visit",
     checklist: (type: string) => `${type} checklist`,
     reasons: "Partial reasons",
-    reasonsNote: "A partly done job waits on Tasks with its reason.",
     item: (position: number) => `Item ${String(position)}`,
     reason: (position: number) => `Reason ${String(position)}`,
     /** The buttons beside an item: each names the item after what it does, so a screen reader says which. */
@@ -542,13 +509,10 @@ export const settings = {
     add: "Add item",
     addReason: "Add reason",
     retired: "Removed",
-    retiredNote: "Kept so older jobs still read correctly.",
     putBack: (label: string) => `Restore: ${label}`,
     putBackButton: "Restore",
     committed: "Default",
     setBy: (who: string, when: string) => `Set by ${who} on ${when}`,
-    hint: (most: number, longest: number) =>
-      `1–${String(most)} items, up to ${String(longest)} characters each, no repeats.`,
     save: "Save",
     saving: "Saving",
     saved: "Saved.",
@@ -575,7 +539,6 @@ export const settings = {
   /** No board draws the Staff page. A change is shown before it is saved. */
   staff: {
     title: "Staff",
-    note: "Who can use the console. Each grant is one department, one level, one place. View reads, Act works, Manage also refunds, waives, sets prices and settings, deletes accounts and grants access.",
     departments: DEPARTMENT_NAMES,
     levels: { view: "View", act: "Act", manage: "Manage" },
     national: "National",
@@ -594,7 +557,6 @@ export const settings = {
       addTitle: "Add a person",
       changeTitle: (email: string) => `Change ${email}`,
       email: "Sign-in email",
-      emailHint: "The address they sign in with.",
       letIn: "Active",
       access: "Access",
       department: "Department",
@@ -631,13 +593,13 @@ export const settings = {
     } as Readonly<Record<string, string>>,
     enforcement: {
       title: "Access control",
-      off: "Off. Everyone signed in sees every section, and calls the list would refuse are logged. Check the list, then turn it on.",
+      off: "Off. Everyone signed in sees every section.",
       on: "On. People see only what they're granted.",
       setBy: (who: string, when: string) => `Changed by ${who} on ${when}`,
       start: "Turn on",
       stop: "Turn off",
       startTitle: "Turn on access control?",
-      startLine: "Only the people listed can use the console, as granted.",
+      startLine: "Only listed people can use the console.",
       stopTitle: "Turn off access control?",
       stopLine: "Everyone signed in will see every section.",
       sending: "Saving",
@@ -651,11 +613,9 @@ export const settings = {
     },
     tokens: {
       title: "Service tokens",
-      note: "Automated access, such as the test runner. A listed token can do everything except grant access.",
       none: "No service tokens.",
       addedBy: (who: string, when: string) => `Added by ${who} on ${when}`,
       clientId: "Client ID",
-      clientIdHint: "From Cloudflare Access, under Service credentials.",
       label: "Name",
       add: "Add token",
       adding: "Adding",

@@ -167,7 +167,6 @@ export function Consumables() {
   return (
     <>
       <Panel titleId="consumables" title={copy.title} className={styles.panel}>
-        <p className={styles.note}>{copy.note}</p>
         {current.consumables.length === 0 ? (
           <p className={styles.note}>{copy.none}</p>
         ) : (

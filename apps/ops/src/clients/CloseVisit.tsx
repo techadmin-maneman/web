@@ -8,7 +8,6 @@ import { Button } from "@maneman/ui/Button";
 import { Dialog } from "@maneman/ui/Dialog";
 import { Field, TextArea, TextInput } from "@maneman/ui/Field";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
-import { shortDate } from "@maneman/web-kit/dates";
 import { useId, useState } from "react";
 import { api, type HandClose } from "../api.ts";
 import { clients } from "../content.ts";
@@ -82,10 +81,9 @@ function Form({ visitId, date, onClosed }: { visitId: string; date: string; onCl
         void close();
       }}
     >
-      <p className={styles.note}>{copy.note}</p>
       <OutcomeChoice outcome={outcome} onChoose={setOutcome} />
       <div className={styles.times}>
-        <Field className={styles.field} label={copy.started} hint={copy.timesHint(shortDate(date))}>
+        <Field className={styles.field} label={copy.started}>
           {(control) => (
             <TextInput
               {...control}
@@ -114,7 +112,7 @@ function Form({ visitId, date, onClosed }: { visitId: string; date: string; onCl
           )}
         </Field>
       </div>
-      <Field className={styles.field} label={copy.reason} hint={copy.reasonHint}>
+      <Field className={styles.field} label={copy.reason}>
         {(control) => (
           <TextArea
             {...control}

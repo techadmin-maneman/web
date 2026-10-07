@@ -15,12 +15,10 @@ export const grievances = {
     /** Beneath the name: the number to answer on, and the day it was raised. */
     raised: (mobile: string, date: string) => `${mobile} · raised ${date}`,
     label: "Your answer",
-    hint: "The client sees this in their app.",
     send: "Record and close",
     sending: "Closing",
     empty: "No open concerns.",
     /** Recording an answer sends nothing: the client hears from whoever answers them, and reads it in the app. */
-    note: (days: number) => `Answer within ${String(days)} days. Reply on WhatsApp, then record your answer here.`,
     errors: {
       not_permitted: NOT_PERMITTED,
       not_found: "Already answered. Reload.",
@@ -75,7 +73,6 @@ export const deletions = {
     reason: {
       label: "Reason",
       // The client is sent this reason on WhatsApp, and their app shows it for thirty days.
-      hint: "Sent to the client on WhatsApp and shown in their app.",
       confirm: "Reject request",
       cancel: "Cancel",
     },
@@ -86,7 +83,6 @@ export const deletions = {
       reject: "Request rejected. The client is told why on WhatsApp.",
     },
     empty: "No deletion requests.",
-    note: (days: number) => `Decide within ${String(days)} days of the request.`,
     errors: {
       not_permitted: NOT_PERMITTED,
       not_found: "Already decided. Reload.",
@@ -118,13 +114,11 @@ export const numberChanges = {
         ? `This number is on ${whose}, a client. It can't be confirmed while they hold it.`
         : `This number is on ${whose}, never a client. Confirming moves it here.`;
     },
-    effect: "The client signs in with the new number from then on.",
     confirm: "Confirm",
     reject: "Reject",
     reason: {
       label: "Reason",
       // The client's profile shows this reason for thirty days.
-      hint: "Shown to the client in their app.",
       confirm: "Reject change",
       cancel: "Cancel",
     },

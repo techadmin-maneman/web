@@ -1,4 +1,5 @@
-// What Activity's log is narrowed to: who, what, a client, a visit, and the days, applied when Show is pressed.
+// What Activity's log is narrowed to: who, what and the days, applied when Show is pressed. A client or a visit is
+// narrowed to from a link to it (../route.ts, activityPath), and shown above the form as a filter to take off.
 
 import { Button } from "@maneman/ui/Button";
 import { DateInput, Field, Select, TextInput } from "@maneman/ui/Field";
@@ -95,8 +96,6 @@ export function Narrow({ filters, onApply }: { filters: Filters; onApply: (filte
       <Choice label={copy.kind} any={copy.kinds.any} options={KIND_OPTIONS} {...box("actor_kind")} />
       <TextBox label={copy.actor} {...box("actor")} />
       <Choice label={copy.action} any={copy.anyAction} options={ACTION_OPTIONS} {...box("action")} />
-      <TextBox label={copy.person} hint={copy.personHint} {...box("person")} />
-      <TextBox label={copy.visit} {...box("visit")} />
       <DateBox label={copy.from} {...box("from")} />
       <DateBox label={copy.to} {...box("to")} />
       <div className={styles.apply}>
@@ -108,7 +107,7 @@ export function Narrow({ filters, onApply }: { filters: Filters; onApply: (filte
           size="small"
           onClick={() => {
             setDraft({});
-            onApply({});
+            onApply({ person: filters.person, visit: filters.visit });
           }}
         >
           {copy.clear}

@@ -51,11 +51,6 @@ test("says how long the change has left, as the Tasks board counts it", async ({
   await expect(queue(page).getByRole("listitem")).toContainText("1 day left");
 });
 
-test("says what confirming does before it is confirmed", async ({ page }) => {
-  await open(page);
-  await expect(page.getByText("The client signs in with the new number from then on.")).toBeVisible();
-});
-
 test("reaches the client's record from the name", async ({ page }) => {
   await open(page);
   await queue(page).getByRole("link", { name: "Rohit Malhotra", exact: true }).click();
