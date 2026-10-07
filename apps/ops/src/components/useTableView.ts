@@ -3,7 +3,7 @@
 
 import { useState } from "react";
 
-export type Direction = "ascending" | "descending";
+type Direction = "ascending" | "descending";
 
 /** A column of a table: its head, and what of a row it sorts and narrows by. */
 export interface Column<Row> {
