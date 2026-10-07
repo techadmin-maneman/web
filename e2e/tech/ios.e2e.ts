@@ -69,7 +69,7 @@ test("tells a technician why the app on his home screen is signed out", async ({
   await page.goto("/");
 
   await expect(page.getByRole("heading", { level: 1, name: "Technician sign in" })).toBeVisible();
-  await expect(page.getByText(/The home-screen app signs in on its own/)).toBeVisible();
+  await expect(page.getByText(/Sign in here once, then use the home-screen app/)).toBeVisible();
 });
 
 test("draws its screens without one refusal from its own security policy", async ({ page }) => {
