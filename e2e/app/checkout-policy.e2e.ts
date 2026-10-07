@@ -19,8 +19,6 @@ test("loads and opens Razorpay's own Checkout with nothing refused", async ({ pa
   await page.goto("/");
   await expect(page.getByRole("heading", { level: 1, name: "Your mobile number" })).toBeVisible();
 
-  // Checkout readies its payment frame as soon as its script runs, before it is opened.
-  const paymentFrame = page.waitForEvent("framenavigated", (frame) => frame.url().startsWith(PAYMENT_FRAME));
   const riskDetection = page.waitForResponse(RISK_DETECTION);
   // Loaded as the pay step loads it (apps/app/src/booking/checkout.ts); the policy is the same on every page.
   await page.evaluate((src) => {
@@ -35,7 +33,13 @@ test("loads and opens Razorpay's own Checkout with nothing refused", async ({ pa
     const Checkout = (window as unknown as { Razorpay: Razorpay }).Razorpay;
     new Checkout({ key: "rzp_test_policycheck", amount: 200000, currency: "INR", name: "Mane Man" }).open();
   });
-  await (await paymentFrame).waitForLoadState();
+  // Checkout readies a payment frame as its script runs, and opening it may put another in its place: the one still
+  // attached is the one that loads.
+  await expect(async () => {
+    const frame = page.frames().find((each) => each.url().startsWith(PAYMENT_FRAME) && !each.isDetached());
+    if (frame === undefined) throw new Error("no payment frame yet");
+    await frame.waitForLoadState();
+  }).toPass();
   // Checkout sends its logs once a second.
   await page.waitForTimeout(2_000);
 
