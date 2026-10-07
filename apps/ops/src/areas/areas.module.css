@@ -314,3 +314,8 @@
   font: inherit;
   font-size: var(--fs-15);
 }
+
+/* The table's search, flush with the table beneath. */
+.narrow {
+  margin-inline: 0;
+}

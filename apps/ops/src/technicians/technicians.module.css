@@ -517,3 +517,8 @@
   color: var(--text-muted);
   white-space: nowrap;
 }
+
+/* The roster's search and zone list, flush with the table beneath. */
+.narrow {
+  margin-inline: 0;
+}

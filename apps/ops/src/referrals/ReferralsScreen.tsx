@@ -291,7 +291,7 @@ function ReferrersTable({ version }: { version: number }) {
           <p className={styles.empty}>{copy.empty}</p>
         ) : (
           <>
-            <Narrowing view={view} label={copy.narrow} />
+            <Narrowing view={view} label={copy.narrow} className={styles.narrow} />
             <Table className={styles.table}>
               <thead>
                 <tr>

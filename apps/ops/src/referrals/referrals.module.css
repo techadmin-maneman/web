@@ -125,3 +125,8 @@
   line-height: var(--lh-160);
   color: var(--text-muted);
 }
+
+/* The table's search, flush with the table beneath. */
+.narrow {
+  margin-inline: 0;
+}

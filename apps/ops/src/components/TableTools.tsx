@@ -31,19 +31,25 @@ export function SortHeads<Row>({ view, className }: { view: TableView<Row>; clas
           }}
         >
           {column.label}
-          <span className={styles.arrow} aria-hidden="true">
-            {direction === undefined ? "" : ARROW[direction]}
-          </span>
+          {direction !== undefined && <span aria-hidden="true">{ARROW[direction]}</span>}
         </button>
       </th>
     );
   });
 }
 
-/** The search and the lists that narrow the table, and how many rows match. */
-export function Narrowing<Row>({ view, label }: { view: TableView<Row>; label: string }) {
+/** The search and the lists that narrow the table, and, once narrowed, how many rows match. */
+export function Narrowing<Row>({
+  view,
+  label,
+  className,
+}: {
+  view: TableView<Row>;
+  label: string;
+  className?: string;
+}) {
   return (
-    <div className={styles.bar} role="search" aria-label={label}>
+    <div className={classes(styles.bar, className)} role="search" aria-label={label}>
       {view.searchable && (
         <Field label={copy.search}>
           {(control) => (
@@ -82,14 +88,14 @@ export function Narrowing<Row>({ view, label }: { view: TableView<Row>; label: s
             </Field>
           ),
       )}
-      <p className={styles.count}>
-        {copy.count(view.matching, view.total)}
-        {view.narrowed && (
+      {view.narrowed && (
+        <p className={styles.count}>
+          {copy.count(view.matching, view.total)}
           <button className={styles.clear} type="button" onClick={view.clear}>
             {copy.clear}
           </button>
-        )}
-      </p>
+        </p>
+      )}
     </div>
   );
 }

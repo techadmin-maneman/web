@@ -205,7 +205,7 @@ function Pincodes({
   if (listed.length === 0) return <p className={styles.empty}>{waitlist.empty}</p>;
   return (
     <section className={styles.panel}>
-      <Narrowing view={view} label={waitlist.narrow} />
+      <Narrowing view={view} label={waitlist.narrow} className={styles.narrow} />
       <Table className={styles.table}>
         <thead>
           <tr>

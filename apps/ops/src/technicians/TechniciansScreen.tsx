@@ -116,7 +116,7 @@ function RosterTable({
   const view = useTableView(active, columns, { search: (row) => `${row.name} ${zone(row)}` });
   return (
     <>
-      <Narrowing view={view} label={technicians.narrow} />
+      <Narrowing view={view} label={technicians.narrow} className={styles.narrow} />
       <table className={styles.table}>
         <thead>
           <tr>

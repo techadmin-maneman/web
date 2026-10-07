@@ -27,6 +27,19 @@ test.describe("the service area, Areas' Served tab", () => {
     await expect(area(page, "122018")).toHaveValue("Sec65");
   });
 
+  test("narrows a city's pincodes to those served or not, or by a search", async ({ page }) => {
+    await open(page, "/areas/served");
+    const rows = page.getByRole("table").getByRole("row");
+    const narrow = page.getByRole("search", { name: "Filter pincodes" });
+    await narrow.getByLabel("Served").selectOption("No");
+    await expect(rows).toHaveCount(2);
+    await expect(area(page, "110024")).toBeVisible();
+    await narrow.getByLabel("Served").selectOption("");
+    await narrow.getByLabel("Search").fill("saket");
+    await expect(rows).toHaveCount(2);
+    await expect(area(page, "110017")).toBeVisible();
+  });
+
   test("sends only the pincodes that changed", async ({ page }) => {
     await open(page, "/areas/served", {
       "POST /api/service-area": json({ changed: 1, served: 1, alerted: 0 }),

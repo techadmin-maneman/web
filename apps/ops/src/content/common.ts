@@ -35,8 +35,7 @@ export const tables = {
   search: "Search",
   all: "All",
   clear: "Clear",
-  count: (matching: number, total: number) =>
-    matching === total ? `${String(total)} rows` : `${String(matching)} of ${String(total)}`,
+  count: (matching: number, total: number) => `${String(matching)} of ${String(total)}`,
   none: "Nothing matches.",
   more: "Show more",
 } as const;

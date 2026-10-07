@@ -50,10 +50,6 @@
   color: var(--text);
 }
 
-.arrow {
-  min-width: 1ch;
-}
-
 .figure {
   text-align: right;
 }
