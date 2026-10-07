@@ -41,13 +41,13 @@ describe("the ops console's routes", () => {
     expect(namesIn("customer_care")).toEqual(["Clients", "Concerns", "Number changes", "Deletion requests"]);
     expect(namesIn("finance")).toEqual(["Payments", "Prices", "Discount codes"]);
     expect(namesIn("growth")).toEqual(["Referrals", "Areas"]);
-    expect(namesIn("admin")).toEqual(["Settings", "Staff"]);
+    expect(namesIn("admin")).toEqual(["Settings", "Staff", "Activity"]);
     expect(SECTIONS.map((section) => section.department)).toEqual([
       ...Array<string>(4).fill("operations"),
       ...Array<string>(4).fill("customer_care"),
       ...Array<string>(3).fill("finance"),
       ...Array<string>(2).fill("growth"),
-      ...Array<string>(2).fill("admin"),
+      ...Array<string>(3).fill("admin"),
     ]);
   });
 

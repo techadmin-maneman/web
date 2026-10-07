@@ -4,12 +4,16 @@
 // head imply (docs/fidelity-method.md).
 //
 // The record is already loaded for the page's head, so this tab fetches
-// nothing: moving on to it costs no request at all.
+// nothing: moving on to it costs no request at all. For whoever may read the
+// audit log, it links to everything done on the record, in Activity.
 
 import { fullDate, shortMonth } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";
+import { activityPath } from "../activity/filters.ts";
 import type { ClientRecord } from "../api.ts";
+import { OpsLink } from "../components/Shell.tsx";
 import { clients } from "../content.ts";
+import { useAccess } from "../lib/access.ts";
 import styles from "./clients.module.css";
 
 const copy = clients.history;
@@ -23,8 +27,9 @@ function Row({ label, value }: { label: string; value: string }) {
   );
 }
 
-export function History({ history }: { history: ClientRecord["history"] }) {
+export function History({ clientId, history }: { clientId: string; history: ClientRecord["history"] }) {
   const due = history.replacement_due;
+  const mayReadLog = useAccess().mayCall("GET /api/activity");
   return (
     <section className={styles.history} aria-label={copy.title}>
       <dl className={styles.historyList}>
@@ -45,6 +50,11 @@ export function History({ history }: { history: ClientRecord["history"] }) {
         />
         <Row label={copy.rows.spend} value={rupees(history.spend)} />
       </dl>
+      {mayReadLog && (
+        <p className={styles.historyActivity}>
+          <OpsLink to={activityPath({ person: clientId })}>{copy.activity}</OpsLink>
+        </p>
+      )}
     </section>
   );
 }

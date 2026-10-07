@@ -1889,6 +1889,59 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/activity": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The audit log, newest first: who did what, on which record, when */
+        get: {
+            parameters: {
+                query?: {
+                    actor_kind?: "staff" | "service" | "client" | "technician" | "system";
+                    actor?: string;
+                    action?: "ops.call" | "client.call" | "tech.call" | "consent.switch" | "number_change.request" | "number_change.withdraw" | "number_change.decide" | "deletion.request" | "deletion.decide" | "person.erase" | "referral.decide" | "referral.attach" | "photo.view" | "pincode.launch" | "data.export" | "grievance.raise" | "grievance.resolve" | "no_show.decide" | "technician_device.revoke" | "technician.allow_sign_in" | "no_show.dispute" | "no_show.dispute_rule" | "technician.leave" | "technician.leave_cancelled" | "technician.add" | "technician.change" | "technician.deactivate" | "technician.reactivate" | "setting.change" | "price.set" | "price.withdraw" | "slot_times.set" | "pincode.set" | "pincode.rename" | "pincode.add" | "blackout.add" | "blackout.remove" | "service.add" | "service.rename" | "service.describe" | "service.length" | "service.reorder" | "service.retire" | "service.restore" | "credit.adjust" | "dispatch.client_told" | "dispatch.check_in_cleared" | "consumable.add" | "consumable.change" | "consumable.retire" | "consumable.restore" | "consumable.usage" | "job_sheet.set" | "stock.receive" | "stock.transfer" | "stock.count" | "stock.write_off" | "task.assign" | "task.hand_back" | "task.close" | "address.given_to_ops" | "alert.resolve" | "alert.send_again" | "booking.give_back" | "visit.book" | "visit.cancel" | "visit.close" | "visit.checkin_waive" | "hair_profile.correct" | "discount_code.make" | "discount_code.switch_off" | "discount_code.apply" | "discount_code.remove" | "staff.set" | "staff.enforce" | "staff.token_add" | "staff.token_remove";
+                    /** @description A client's ID: what they did, and what was done to their record, visits, holds and requests. */
+                    person?: string;
+                    visit?: string;
+                    /** @description India's date, the first included. */
+                    from?: string;
+                    /** @description India's date, the last included. */
+                    to?: string;
+                    /** @description The page after the one whose `next_before` this is. */
+                    before?: number;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description A page of the log */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            entries: components["schemas"]["ActivityEntry"][];
+                            /** @description Asked as `before`, the next page; null when this one reaches the log's start. */
+                            next_before: number | null;
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/waitlist": {
         parameters: {
             query?: never;
@@ -7759,6 +7812,31 @@ export interface components {
         };
         GrievanceAnswer: {
             response: string;
+        };
+        ActivityEntry: {
+            id: number;
+            /** Format: date-time */
+            at: string;
+            /** @enum {string} */
+            surface: "public" | "client" | "ops" | "tech";
+            actor: {
+                /** @enum {string} */
+                kind: "staff" | "service" | "client" | "technician" | "system";
+                /** @description A member of staff's e-mail, a service token's client ID, a client's or a technician's ID, or a job's name. */
+                id: string;
+                /** @description A client's name, unless they were erased, a technician's, or a service token's label. */
+                name: string | null;
+            };
+            /** @enum {string} */
+            action: "ops.call" | "client.call" | "tech.call" | "consent.switch" | "number_change.request" | "number_change.withdraw" | "number_change.decide" | "deletion.request" | "deletion.decide" | "person.erase" | "referral.decide" | "referral.attach" | "photo.view" | "pincode.launch" | "data.export" | "grievance.raise" | "grievance.resolve" | "no_show.decide" | "technician_device.revoke" | "technician.allow_sign_in" | "no_show.dispute" | "no_show.dispute_rule" | "technician.leave" | "technician.leave_cancelled" | "technician.add" | "technician.change" | "technician.deactivate" | "technician.reactivate" | "setting.change" | "price.set" | "price.withdraw" | "slot_times.set" | "pincode.set" | "pincode.rename" | "pincode.add" | "blackout.add" | "blackout.remove" | "service.add" | "service.rename" | "service.describe" | "service.length" | "service.reorder" | "service.retire" | "service.restore" | "credit.adjust" | "dispatch.client_told" | "dispatch.check_in_cleared" | "consumable.add" | "consumable.change" | "consumable.retire" | "consumable.restore" | "consumable.usage" | "job_sheet.set" | "stock.receive" | "stock.transfer" | "stock.count" | "stock.write_off" | "task.assign" | "task.hand_back" | "task.close" | "address.given_to_ops" | "alert.resolve" | "alert.send_again" | "booking.give_back" | "visit.book" | "visit.cancel" | "visit.close" | "visit.checkin_waive" | "hair_profile.correct" | "discount_code.make" | "discount_code.switch_off" | "discount_code.apply" | "discount_code.remove" | "staff.set" | "staff.enforce" | "staff.token_add" | "staff.token_remove";
+            subject: {
+                kind: string;
+                id: string;
+            } | null;
+            /** @description IDs, counts and codes; for a call, its method, route and path, IDs only. */
+            detail: {
+                [key: string]: unknown;
+            } | null;
         };
         PincodeLaunch: {
             confirm: boolean;

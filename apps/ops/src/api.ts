@@ -71,6 +71,9 @@ export type Suggestion = Body<paths["/api/clients/{id}/address/suggestions"]["po
 
 /** The three queues a client's rights over their data put in front of ops (docs/decisions/0049-dpdp.md). */
 export type Grievance = Body<paths["/api/grievances"]["get"]>["grievances"][number];
+export type ActivityEntry = Body<paths["/api/activity"]["get"]>["entries"][number];
+export type ActivityAction = ActivityEntry["action"];
+export type ActivityAsked = NonNullable<paths["/api/activity"]["get"]["parameters"]["query"]>;
 export type DeletionRequest = Body<paths["/api/deletion-requests"]["get"]>["requests"][number];
 export type NumberChange = Body<paths["/api/number-changes"]["get"]>["changes"][number];
 
@@ -498,6 +501,8 @@ export const api = {
     client.post("/api/job-sheet/partial-reasons", { body: { items: [...items] } }),
   /** The Staff list, narrowed to the places the caller may see. */
   staff: () => client.get("/api/staff"),
+  /** A page of the audit log, newest first, as `asked` narrows it. */
+  activity: (asked: ActivityAsked) => client.get("/api/activity", { query: asked }),
   /** A person added, or their grants and whether they are let in replaced whole. */
   saveStaff: (person: StaffSave) => client.post("/api/staff", { body: person }),
   setEnforcement: (on: boolean) => client.post("/api/staff/enforcement", { body: { on } }),

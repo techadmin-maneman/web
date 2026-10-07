@@ -1411,6 +1411,38 @@ Request body:
 }
 ```
 
+### GET /api/activity
+
+The audit log, newest first: who did what, on which record, when
+
+**200**: A page of the log
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "entries": {
+      "type": "array",
+      "items": {
+        "$ref": "#/components/schemas/ActivityEntry"
+      }
+    },
+    "next_before": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Asked as `before`, the next page; null when this one reaches the log's start."
+    }
+  },
+  "required": [
+    "entries",
+    "next_before"
+  ],
+  "additionalProperties": false
+}
+```
+
 ### GET /api/waitlist
 
 Who is waiting in the caller's cities, by pincode, the longest wait first
@@ -9303,6 +9335,183 @@ Request body:
   },
   "required": [
     "response"
+  ],
+  "additionalProperties": false
+}
+```
+
+### ActivityEntry
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "integer"
+    },
+    "at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "surface": {
+      "type": "string",
+      "enum": [
+        "public",
+        "client",
+        "ops",
+        "tech"
+      ]
+    },
+    "actor": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": [
+            "staff",
+            "service",
+            "client",
+            "technician",
+            "system"
+          ]
+        },
+        "id": {
+          "type": "string",
+          "description": "A member of staff's e-mail, a service token's client ID, a client's or a technician's ID, or a job's name."
+        },
+        "name": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "A client's name, unless they were erased, a technician's, or a service token's label."
+        }
+      },
+      "required": [
+        "kind",
+        "id",
+        "name"
+      ],
+      "additionalProperties": false
+    },
+    "action": {
+      "type": "string",
+      "enum": [
+        "ops.call",
+        "client.call",
+        "tech.call",
+        "consent.switch",
+        "number_change.request",
+        "number_change.withdraw",
+        "number_change.decide",
+        "deletion.request",
+        "deletion.decide",
+        "person.erase",
+        "referral.decide",
+        "referral.attach",
+        "photo.view",
+        "pincode.launch",
+        "data.export",
+        "grievance.raise",
+        "grievance.resolve",
+        "no_show.decide",
+        "technician_device.revoke",
+        "technician.allow_sign_in",
+        "no_show.dispute",
+        "no_show.dispute_rule",
+        "technician.leave",
+        "technician.leave_cancelled",
+        "technician.add",
+        "technician.change",
+        "technician.deactivate",
+        "technician.reactivate",
+        "setting.change",
+        "price.set",
+        "price.withdraw",
+        "slot_times.set",
+        "pincode.set",
+        "pincode.rename",
+        "pincode.add",
+        "blackout.add",
+        "blackout.remove",
+        "service.add",
+        "service.rename",
+        "service.describe",
+        "service.length",
+        "service.reorder",
+        "service.retire",
+        "service.restore",
+        "credit.adjust",
+        "dispatch.client_told",
+        "dispatch.check_in_cleared",
+        "consumable.add",
+        "consumable.change",
+        "consumable.retire",
+        "consumable.restore",
+        "consumable.usage",
+        "job_sheet.set",
+        "stock.receive",
+        "stock.transfer",
+        "stock.count",
+        "stock.write_off",
+        "task.assign",
+        "task.hand_back",
+        "task.close",
+        "address.given_to_ops",
+        "alert.resolve",
+        "alert.send_again",
+        "booking.give_back",
+        "visit.book",
+        "visit.cancel",
+        "visit.close",
+        "visit.checkin_waive",
+        "hair_profile.correct",
+        "discount_code.make",
+        "discount_code.switch_off",
+        "discount_code.apply",
+        "discount_code.remove",
+        "staff.set",
+        "staff.enforce",
+        "staff.token_add",
+        "staff.token_remove"
+      ]
+    },
+    "subject": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "properties": {
+        "kind": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "id"
+      ],
+      "additionalProperties": false
+    },
+    "detail": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "additionalProperties": {},
+      "description": "IDs, counts and codes; for a call, its method, route and path, IDs only."
+    }
+  },
+  "required": [
+    "id",
+    "at",
+    "surface",
+    "actor",
+    "action",
+    "subject",
+    "detail"
   ],
   "additionalProperties": false
 }

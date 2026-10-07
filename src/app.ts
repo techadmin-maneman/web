@@ -52,6 +52,7 @@ import { registerOpsNoShows } from "./routes/ops/no-shows.ts";
 import { registerOpsClientPieces } from "./routes/ops/client-pieces.ts";
 import { registerOpsTechnicianLeave } from "./routes/ops/technician-leave.ts";
 import { registerOpsTechnicianPhones } from "./routes/ops/technician-phones.ts";
+import { registerOpsActivity } from "./routes/ops/activity.ts";
 import { registerOpsGrievances } from "./routes/ops/grievances.ts";
 import { registerOpsHairProfile } from "./routes/ops/hair-profile.ts";
 import { registerOpsJobSheet } from "./routes/ops/job-sheet.ts";
@@ -172,6 +173,7 @@ const SURFACE_ROUTES: Readonly<Record<Surface, readonly ((app: App) => void)[]>>
     registerOpsProfile,
     registerOpsReferrals,
     registerOpsGrievances,
+    registerOpsActivity,
     registerOpsWaitlist,
     registerOpsDispatch,
     registerOpsDispatchMoves,

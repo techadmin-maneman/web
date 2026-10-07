@@ -162,6 +162,8 @@ export const ROUTE_NEEDS: Readonly<Record<string, RouteNeed | typeof SIGNED_IN>>
   "POST /api/job-sheet/partial-reasons": need("admin", "manage"),
   "GET /api/storage": need("admin", "view"),
   "GET /api/staff": inOwnPlaces("admin", "view"),
+  // The audit log: what everyone did, everywhere, so a national grant (src/routes/ops/activity.ts).
+  "GET /api/activity": need("admin", "view"),
   "POST /api/staff": inOwnPlaces("admin", "manage"),
   "POST /api/staff/enforcement": need("admin", "manage"),
   "POST /api/staff/service-tokens": need("admin", "manage"),

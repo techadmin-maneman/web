@@ -12,6 +12,7 @@ import { FindClientScreen } from "./clients/FindClientScreen.tsx";
 import { ClosedScreen } from "./components/ClosedScreen.tsx";
 import { DeletionsScreen } from "./deletions/DeletionsScreen.tsx";
 import { DispatchScreen } from "./dispatch/DispatchScreen.tsx";
+import { ActivityScreen } from "./activity/ActivityScreen.tsx";
 import { GrievancesScreen } from "./grievances/GrievancesScreen.tsx";
 import { useMayCall } from "./lib/access.ts";
 import { NoShowsScreen } from "./no-shows/NoShowsScreen.tsx";
@@ -63,6 +64,7 @@ const SCREENS: Readonly<Record<PlainPage, ComponentType>> = {
   "discount-codes": DiscountCodesScreen,
   referrals: ReferralsScreen,
   staff: StaffScreen,
+  activity: ActivityScreen,
 };
 
 function Page({ route, mayCall }: { route: Route; mayCall: MayCall }) {

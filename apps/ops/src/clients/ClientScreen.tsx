@@ -178,7 +178,7 @@ function Tab({
     );
   }
   if (tab === "consents") return <Consents clientId={clientId} name={record.name} onErased={onErased} />;
-  if (tab === "history") return <History history={record.history} />;
+  if (tab === "history") return <History clientId={clientId} history={record.history} />;
   return <Photos photos={photos} name={record.name} />;
 }
 

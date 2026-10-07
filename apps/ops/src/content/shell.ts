@@ -35,6 +35,7 @@ export const shell = {
     areas: "Areas",
     settings: "Settings",
     staff: "Staff",
+    activity: "Activity",
   },
   /** A section's name in the navigation, read out with the count of tasks waiting in it. */
   waiting: (section: string, count: number, overdue: boolean) =>

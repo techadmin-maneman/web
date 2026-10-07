@@ -1,0 +1,83 @@
+/*
+ * Activity: the audit log as a table, under the fields that narrow it. The design draws no board for it, so nothing
+ * here is new: Areas' table, the console's fields, and a line of muted text beneath a name, as Tasks sets who owns one.
+ */
+
+.column {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-20);
+  max-width: var(--ops-list);
+}
+
+.intro {
+  max-width: var(--measure-column);
+  margin: 0;
+  font-size: var(--fs-15);
+  color: var(--text-muted);
+}
+
+/* ---- What it is narrowed to ------------------------------------------------ */
+
+.filters {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(12rem, 1fr));
+  gap: var(--sp-12) var(--sp-16);
+  align-items: end;
+}
+
+.apply {
+  display: flex;
+  gap: var(--sp-8);
+}
+
+/* ---- The log --------------------------------------------------------------- */
+
+.table {
+  table-layout: fixed;
+}
+
+.when {
+  width: 11rem;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.record {
+  width: 8rem;
+}
+
+/* A name, then what they are and where they did it, a line beneath. */
+.stack {
+  vertical-align: top;
+}
+
+.stack > * {
+  display: block;
+}
+
+.who {
+  overflow-wrap: anywhere;
+}
+
+.sub {
+  font-size: var(--fs-13);
+  color: var(--text-muted);
+}
+
+/* A call's method and path, IDs only, which can run long. */
+.call {
+  font-size: var(--fs-13);
+  color: var(--text-muted);
+  overflow-wrap: anywhere;
+}
+
+.empty {
+  margin: 0;
+  font-size: var(--fs-15);
+  color: var(--text-muted);
+}
+
+.older {
+  align-self: flex-start;
+}

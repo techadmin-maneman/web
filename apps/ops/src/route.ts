@@ -48,6 +48,7 @@ export const SECTIONS = [
   { page: "areas", path: "/areas", department: "growth", reads: "GET /api/waitlist" },
   { page: "settings", path: "/settings", department: "admin", reads: "GET /api/settings" },
   { page: "staff", path: "/staff", department: "admin", reads: "GET /api/staff" },
+  { page: "activity", path: "/activity", department: "admin", reads: "GET /api/activity" },
 ] as const satisfies readonly SectionShape[];
 
 export type Section = (typeof SECTIONS)[number];

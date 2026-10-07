@@ -16,3 +16,4 @@ export * from "./content/technicians.ts";
 export * from "./content/decisions.ts";
 export * from "./content/settings.ts";
 export * from "./content/stock.ts";
+export * from "./content/activity.ts";
