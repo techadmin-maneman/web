@@ -212,22 +212,22 @@ export function auditStatementIfWritten(
 
 /**
  * The entry for a delete earlier in the same batch that may delete nothing, as one refused because something came to
- * depend on the row: it is written only if the row, `key` = `value` in `table`, is gone.
+ * depend on the row: it is written only if the row, `column` = `value` in `table`, is gone.
  */
 export function auditStatementIfDeleted(
   db: D1Database,
   entry: AuditEntry,
   now: Date,
   deleted:
-    | { readonly table: "technicians" | "discount_codes"; readonly key: "id"; readonly value: string }
-    | { readonly table: "staff"; readonly key: "email"; readonly value: string }
-    | { readonly table: "consumables"; readonly key: "code"; readonly value: string },
+    | { readonly table: "technicians" | "discount_codes"; readonly column: "id"; readonly value: string }
+    | { readonly table: "staff"; readonly column: "email"; readonly value: string }
+    | { readonly table: "consumables"; readonly column: "code"; readonly value: string },
 ): D1PreparedStatement {
   return db
     .prepare(
       `INSERT INTO audit_log (${COLUMNS})
        SELECT ?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9
-       WHERE NOT EXISTS (SELECT 1 FROM ${deleted.table} WHERE ${deleted.key} = ?10)`,
+       WHERE NOT EXISTS (SELECT 1 FROM ${deleted.table} WHERE ${deleted.column} = ?10)`,
     )
     .bind(...valuesOf(entry, now), deleted.value);
 }

@@ -222,15 +222,17 @@ export async function reactivateTechnician(
   return "reactivated";
 }
 
-/** Whether anything records work of theirs: a visit, a hold, a step, a check-in, a move, a claim, stock or a profile. */
+/**
+ * Whether anything records work of theirs: a visit, a hold, a step, a check-in, a move, a claim or stock. A hair profile
+ * names its technician too; it is never read here, and its foreign key refuses the delete instead.
+ */
 const HAS_WORK = `(EXISTS (SELECT 1 FROM appointments WHERE technician_id = ?1)
   OR EXISTS (SELECT 1 FROM slot_holds WHERE technician_id = ?1)
   OR EXISTS (SELECT 1 FROM job_events WHERE technician_id = ?1)
   OR EXISTS (SELECT 1 FROM checkins WHERE technician_id = ?1)
   OR EXISTS (SELECT 1 FROM dispatch_moves WHERE was_technician_id = ?1 OR now_technician_id = ?1)
   OR EXISTS (SELECT 1 FROM slot_claims WHERE technician_id = ?1)
-  OR EXISTS (SELECT 1 FROM stock_movements WHERE technician_id = ?1)
-  OR EXISTS (SELECT 1 FROM hair_profiles WHERE technician_id = ?1))`;
+  OR EXISTS (SELECT 1 FROM stock_movements WHERE technician_id = ?1))`;
 
 /**
  * Deletes a technician nothing records any work of, with what is theirs alone, all in one batch with the audit entry.
@@ -250,7 +252,7 @@ export async function deleteTechnician(
       theirs("DELETE FROM otp_challenges WHERE technician_id = ?1"),
       theirs("DELETE FROM sessions WHERE subject_kind = 'technician' AND subject_id = ?1"),
       theirs("DELETE FROM technicians WHERE id = ?1"),
-      auditStatementIfDeleted(db, audit, now, { table: "technicians", key: "id", value: technicianId }),
+      auditStatementIfDeleted(db, audit, now, { table: "technicians", column: "id", value: technicianId }),
     ]);
   } catch (error) {
     // A row the question missed still names them; the foreign key refuses the whole batch, and nothing changes.

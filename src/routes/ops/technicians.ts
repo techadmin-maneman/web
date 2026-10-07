@@ -280,6 +280,7 @@ async function workInReach(c: Context<AppEnv>, period: { from: string; to: strin
 }
 
 export function registerOpsTechnicians(app: App): void {
+  registerTechnicianDelete(app);
   app.openapi(addRoute, async (c) => {
     const { name, mobile, zone, city } = c.req.valid("json");
     const mobileE164 = toE164(mobile);
@@ -349,16 +350,6 @@ export function registerOpsTechnicians(app: App): void {
     return c.json({ active: true as const }, 200);
   });
 
-  app.openapi(deleteRoute, async (c) => {
-    const { id } = c.req.valid("param");
-    const technician = await technicianToChange(c, id);
-    if (technician === null) return refuse(c, "not_found");
-
-    const deleted = await deleteTechnician(c.env.DB, id, auditOf(c, "technician.delete", id), c.var.deps.now());
-    if (deleted === "has_work") return refuse(c, "in_use");
-    return c.json({ deleted: true as const }, 200);
-  });
-
   app.openapi(workRoute, async (c) => {
     const asked = c.req.valid("query");
     const today = indiaDate(c.var.deps.now());
@@ -375,5 +366,18 @@ export function registerOpsTechnicians(app: App): void {
       runsOver({ average: each.average_minutes, planned: each.average_planned_minutes }, figures.over_by);
     const technicians = work.map((each) => ({ ...each, runs_over: runningOver(each), skill: null }));
     return c.json({ from, to, technicians }, 200);
+  });
+}
+
+/** Deleting a technician added by mistake, apart from the changes above. */
+function registerTechnicianDelete(app: App): void {
+  app.openapi(deleteRoute, async (c) => {
+    const { id } = c.req.valid("param");
+    const technician = await technicianToChange(c, id);
+    if (technician === null) return refuse(c, "not_found");
+
+    const deleted = await deleteTechnician(c.env.DB, id, auditOf(c, "technician.delete", id), c.var.deps.now());
+    if (deleted === "has_work") return refuse(c, "in_use");
+    return c.json({ deleted: true as const }, 200);
   });
 }

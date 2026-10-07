@@ -10147,6 +10147,21 @@
         ],
         "additionalProperties": false
       },
+      "StaffDeletion": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "maxLength": 254,
+            "format": "email",
+            "description": "Their Cloudflare Access e-mail."
+          }
+        },
+        "required": [
+          "email"
+        ],
+        "additionalProperties": false
+      },
       "StaffSave": {
         "type": "object",
         "properties": {
@@ -10173,21 +10188,6 @@
           "email",
           "active",
           "grants"
-        ],
-        "additionalProperties": false
-      },
-      "StaffDeletion": {
-        "type": "object",
-        "properties": {
-          "email": {
-            "type": "string",
-            "maxLength": 254,
-            "format": "email",
-            "description": "Their Cloudflare Access e-mail."
-          }
-        },
-        "required": [
-          "email"
         ],
         "additionalProperties": false
       },
@@ -14248,6 +14248,76 @@
         }
       }
     },
+    "/api/technicians/{id}/delete": {
+      "post": {
+        "summary": "Delete a technician added by mistake, with their leave and phones, while nothing records any work of theirs",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Deleted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "deleted": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    }
+                  },
+                  "required": [
+                    "deleted"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "access_required, or not_permitted: changing a technician asks Operations MANAGE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found: no such technician in the caller's cities",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "in_use: a visit, a job, stock or a hair profile names them; switch them off instead",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/technicians/{id}": {
       "patch": {
         "summary": "Change a technician's name, number, zone or city",
@@ -14433,76 +14503,6 @@
           },
           "409": {
             "description": "number_in_use: another active technician signs in with his number now",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/technicians/{id}/delete": {
-      "post": {
-        "summary": "Delete a technician added by mistake, with their leave and phones, while nothing records any work of theirs",
-        "parameters": [
-          {
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            },
-            "required": true,
-            "name": "id",
-            "in": "path"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Deleted",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "deleted": {
-                      "type": "boolean",
-                      "enum": [
-                        true
-                      ]
-                    }
-                  },
-                  "required": [
-                    "deleted"
-                  ],
-                  "additionalProperties": false
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "access_required, or not_permitted: changing a technician asks Operations MANAGE",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "not_found: no such technician in the caller's cities",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "in_use: a visit, a job, stock or a hair profile names them; switch them off instead",
             "content": {
               "application/json": {
                 "schema": {
@@ -17000,6 +17000,63 @@
         }
       }
     },
+    "/api/staff/delete": {
+      "post": {
+        "summary": "Take a member of staff off the list, with their grants. What they did stays in the audit log",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StaffDeletion"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The Staff page as it now stands",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StaffBook"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "access_required, or not_permitted: their grants reach beyond the caller's Admin MANAGE, it is the caller, or a service token asks",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found: nobody on the list has that e-mail",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "last_admin: nobody would be left with Admin MANAGE nationally",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/staff": {
       "get": {
         "summary": "The Staff list, narrowed to the caller's own places",
@@ -17061,63 +17118,6 @@
           },
           "403": {
             "description": "access_required, or not_permitted: the change reaches beyond the caller's Admin MANAGE, or comes from a service token",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "last_admin: nobody would be left with Admin MANAGE nationally",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/staff/delete": {
-      "post": {
-        "summary": "Take a member of staff off the list, with their grants. What they did stays in the audit log",
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/StaffDeletion"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "The Staff page as it now stands",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/StaffBook"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "access_required, or not_permitted: their grants reach beyond the caller's Admin MANAGE, it is the caller, or a service token asks",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "not_found: nobody on the list has that e-mail",
             "content": {
               "application/json": {
                 "schema": {

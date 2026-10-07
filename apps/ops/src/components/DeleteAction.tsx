@@ -7,7 +7,7 @@ import { deleting } from "../content.ts";
 import styles from "./delete-action.module.css";
 
 /** What the button, its question and its confirmation say. */
-export interface DeleteWords {
+interface DeleteWords {
   readonly open: string;
   readonly label: (name: string) => string;
   readonly warning: (name: string) => string;

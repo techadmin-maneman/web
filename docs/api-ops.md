@@ -2642,6 +2642,54 @@ Text the client their payment link again
 }
 ```
 
+### POST /api/technicians/{id}/delete
+
+Delete a technician added by mistake, with their leave and phones, while nothing records any work of theirs
+
+**200**: Deleted
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "deleted": {
+      "type": "boolean",
+      "enum": [
+        true
+      ]
+    }
+  },
+  "required": [
+    "deleted"
+  ],
+  "additionalProperties": false
+}
+```
+
+**403**: access_required, or not_permitted: changing a technician asks Operations MANAGE
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no such technician in the caller's cities
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**409**: in_use: a visit, a job, stock or a hair profile names them; switch them off instead
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ### PATCH /api/technicians/{id}
 
 Change a technician's name, number, zone or city
@@ -2763,54 +2811,6 @@ Switch a technician back on, so he can sign in again
 ```
 
 **409**: number_in_use: another active technician signs in with his number now
-
-```json
-{
-  "$ref": "#/components/schemas/ErrorResponse"
-}
-```
-
-### POST /api/technicians/{id}/delete
-
-Delete a technician added by mistake, with their leave and phones, while nothing records any work of theirs
-
-**200**: Deleted
-
-```json
-{
-  "type": "object",
-  "properties": {
-    "deleted": {
-      "type": "boolean",
-      "enum": [
-        true
-      ]
-    }
-  },
-  "required": [
-    "deleted"
-  ],
-  "additionalProperties": false
-}
-```
-
-**403**: access_required, or not_permitted: changing a technician asks Operations MANAGE
-
-```json
-{
-  "$ref": "#/components/schemas/ErrorResponse"
-}
-```
-
-**404**: not_found: no such technician in the caller's cities
-
-```json
-{
-  "$ref": "#/components/schemas/ErrorResponse"
-}
-```
-
-**409**: in_use: a visit, a job, stock or a hair profile names them; switch them off instead
 
 ```json
 {
@@ -4526,6 +4526,50 @@ Take the code off a client's visit, before it is paid for, its link is made, or 
 }
 ```
 
+### POST /api/staff/delete
+
+Take a member of staff off the list, with their grants. What they did stays in the audit log
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/StaffDeletion"
+}
+```
+
+**200**: The Staff page as it now stands
+
+```json
+{
+  "$ref": "#/components/schemas/StaffBook"
+}
+```
+
+**403**: access_required, or not_permitted: their grants reach beyond the caller's Admin MANAGE, it is the caller, or a service token asks
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: nobody on the list has that e-mail
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**409**: last_admin: nobody would be left with Admin MANAGE nationally
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ### GET /api/staff
 
 The Staff list, narrowed to the caller's own places
@@ -4575,50 +4619,6 @@ Request body:
 ```
 
 **403**: access_required, or not_permitted: the change reaches beyond the caller's Admin MANAGE, or comes from a service token
-
-```json
-{
-  "$ref": "#/components/schemas/ErrorResponse"
-}
-```
-
-**409**: last_admin: nobody would be left with Admin MANAGE nationally
-
-```json
-{
-  "$ref": "#/components/schemas/ErrorResponse"
-}
-```
-
-### POST /api/staff/delete
-
-Take a member of staff off the list, with their grants. What they did stays in the audit log
-
-Request body:
-
-```json
-{
-  "$ref": "#/components/schemas/StaffDeletion"
-}
-```
-
-**200**: The Staff page as it now stands
-
-```json
-{
-  "$ref": "#/components/schemas/StaffBook"
-}
-```
-
-**403**: access_required, or not_permitted: their grants reach beyond the caller's Admin MANAGE, it is the caller, or a service token asks
-
-```json
-{
-  "$ref": "#/components/schemas/ErrorResponse"
-}
-```
-
-**404**: not_found: nobody on the list has that e-mail
 
 ```json
 {
@@ -15638,6 +15638,26 @@ Request body:
 }
 ```
 
+### StaffDeletion
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "email": {
+      "type": "string",
+      "maxLength": 254,
+      "format": "email",
+      "description": "Their Cloudflare Access e-mail."
+    }
+  },
+  "required": [
+    "email"
+  ],
+  "additionalProperties": false
+}
+```
+
 ### StaffSave
 
 ```json
@@ -15667,26 +15687,6 @@ Request body:
     "email",
     "active",
     "grants"
-  ],
-  "additionalProperties": false
-}
-```
-
-### StaffDeletion
-
-```json
-{
-  "type": "object",
-  "properties": {
-    "email": {
-      "type": "string",
-      "maxLength": 254,
-      "format": "email",
-      "description": "Their Cloudflare Access e-mail."
-    }
-  },
-  "required": [
-    "email"
   ],
   "additionalProperties": false
 }

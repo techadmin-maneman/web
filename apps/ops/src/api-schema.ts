@@ -3746,6 +3746,74 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/technicians/{id}/delete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Delete a technician added by mistake, with their leave and phones, while nothing records any work of theirs */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Deleted */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @enum {boolean} */
+                            deleted: true;
+                        };
+                    };
+                };
+                /** @description access_required, or not_permitted: changing a technician asks Operations MANAGE */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description not_found: no such technician in the caller's cities */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description in_use: a visit, a job, stock or a hair profile names them; switch them off instead */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/technicians/{id}": {
         parameters: {
             query?: never;
@@ -3932,74 +4000,6 @@ export interface paths {
                     };
                 };
                 /** @description number_in_use: another active technician signs in with his number now */
-                409: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-            };
-        };
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/technicians/{id}/delete": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Delete a technician added by mistake, with their leave and phones, while nothing records any work of theirs */
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    id: string;
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Deleted */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            /** @enum {boolean} */
-                            deleted: true;
-                        };
-                    };
-                };
-                /** @description access_required, or not_permitted: changing a technician asks Operations MANAGE */
-                403: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-                /** @description not_found: no such technician in the caller's cities */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-                /** @description in_use: a visit, a job, stock or a hair profile names them; switch them off instead */
                 409: {
                     headers: {
                         [name: string]: unknown;
@@ -6637,6 +6637,73 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/staff/delete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Take a member of staff off the list, with their grants. What they did stays in the audit log */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["StaffDeletion"];
+                };
+            };
+            responses: {
+                /** @description The Staff page as it now stands */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["StaffBook"];
+                    };
+                };
+                /** @description access_required, or not_permitted: their grants reach beyond the caller's Admin MANAGE, it is the caller, or a service token asks */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description not_found: nobody on the list has that e-mail */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description last_admin: nobody would be left with Admin MANAGE nationally */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/staff": {
         parameters: {
             query?: never;
@@ -6709,73 +6776,6 @@ export interface paths {
                 };
                 /** @description access_required, or not_permitted: the change reaches beyond the caller's Admin MANAGE, or comes from a service token */
                 403: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-                /** @description last_admin: nobody would be left with Admin MANAGE nationally */
-                409: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-            };
-        };
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/staff/delete": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Take a member of staff off the list, with their grants. What they did stays in the audit log */
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody: {
-                content: {
-                    "application/json": components["schemas"]["StaffDeletion"];
-                };
-            };
-            responses: {
-                /** @description The Staff page as it now stands */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["StaffBook"];
-                    };
-                };
-                /** @description access_required, or not_permitted: their grants reach beyond the caller's Admin MANAGE, it is the caller, or a service token asks */
-                403: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-                /** @description not_found: nobody on the list has that e-mail */
-                404: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -9417,6 +9417,13 @@ export interface components {
             /** @description Every city a grant may name. */
             cities: string[];
         };
+        StaffDeletion: {
+            /**
+             * Format: email
+             * @description Their Cloudflare Access e-mail.
+             */
+            email: string;
+        };
         StaffSave: {
             /**
              * Format: email
@@ -9427,13 +9434,6 @@ export interface components {
             active: boolean;
             /** @description Every grant they are to hold; this replaces them all. */
             grants: components["schemas"]["StaffGrant"][];
-        };
-        StaffDeletion: {
-            /**
-             * Format: email
-             * @description Their Cloudflare Access e-mail.
-             */
-            email: string;
         };
         StaffServiceToken: {
             /** @description The service token's client ID, as Access names it. */

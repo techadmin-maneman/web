@@ -265,7 +265,7 @@ export async function deleteConsumable(
     await db.batch([
       unmoved("DELETE FROM consumable_usage WHERE consumable_code = ?1"),
       unmoved("DELETE FROM consumables WHERE code = ?1"),
-      auditStatementIfDeleted(db, audit, written.now, { table: "consumables", key: "code", value: code }),
+      auditStatementIfDeleted(db, audit, written.now, { table: "consumables", column: "code", value: code }),
     ]);
   } catch (error) {
     // A row the question missed still names it; the foreign key refuses the whole batch, and nothing changes.

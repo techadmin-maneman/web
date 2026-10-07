@@ -267,6 +267,7 @@ function runsAccess(c: Context<AppEnv>, access: CallerAccess): boolean {
 }
 
 export function registerOpsStaff(app: App): void {
+  registerStaffDelete(app);
   app.openapi(readRoute, async (c) => c.json(await currentBook(c, await callerAccess(c)), 200));
 
   app.openapi(saveRoute, async (c) => {
@@ -292,31 +293,6 @@ export function registerOpsStaff(app: App): void {
     await saveStaffMember(c.env.DB, {
       email,
       entry,
-      before,
-      actor: actorOf(c),
-      requestId: c.var.requestId,
-      now: c.var.deps.now(),
-    });
-    return c.json(await currentBook(c, access), 200);
-  });
-
-  app.openapi(deleteRoute, async (c) => {
-    const email = c.req.valid("json").email.toLowerCase();
-    const staff = await readStaffBook(c.env.DB);
-    const before = staff.people.find((person) => person.email === email);
-    if (before === undefined) return refuse(c, "not_found");
-
-    const access = await callerAccess(c);
-    // Nobody takes themselves off: they would be locked out by their own hand.
-    if (access.caller.kind === "service" || actorOf(c).id.toLowerCase() === email) return refuse(c, "not_permitted");
-    const gone = { active: false, grants: [] };
-    if (!goesAhead(c, access, mayEdit(access.caller, before, gone, staff.zoneOf), "admin:manage:places")) {
-      return refuse(c, "not_permitted");
-    }
-    if (leavesNoNationalAdmin(staff.people, email, gone)) return refuse(c, "last_admin");
-
-    await deleteStaffMember(c.env.DB, {
-      email,
       before,
       actor: actorOf(c),
       requestId: c.var.requestId,
@@ -361,6 +337,34 @@ export function registerOpsStaff(app: App): void {
       now: c.var.deps.now(),
     });
     if (!removed) return refuse(c, "not_found");
+    return c.json(await currentBook(c, access), 200);
+  });
+}
+
+/** Taking a member of staff off the list, apart from the changes above. */
+function registerStaffDelete(app: App): void {
+  app.openapi(deleteRoute, async (c) => {
+    const email = c.req.valid("json").email.toLowerCase();
+    const staff = await readStaffBook(c.env.DB);
+    const before = staff.people.find((person) => person.email === email);
+    if (before === undefined) return refuse(c, "not_found");
+
+    const access = await callerAccess(c);
+    // Nobody takes themselves off: they would be locked out by their own hand.
+    if (access.caller.kind === "service" || actorOf(c).id.toLowerCase() === email) return refuse(c, "not_permitted");
+    const gone = { active: false, grants: [] };
+    if (!goesAhead(c, access, mayEdit(access.caller, before, gone, staff.zoneOf), "admin:manage:places")) {
+      return refuse(c, "not_permitted");
+    }
+    if (leavesNoNationalAdmin(staff.people, email, gone)) return refuse(c, "last_admin");
+
+    await deleteStaffMember(c.env.DB, {
+      email,
+      before,
+      actor: actorOf(c),
+      requestId: c.var.requestId,
+      now: c.var.deps.now(),
+    });
     return c.json(await currentBook(c, access), 200);
   });
 }
