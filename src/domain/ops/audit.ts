@@ -5,7 +5,8 @@
 // entry first, and a failed write stops the read.
 //
 // Each call to the ops console is recorded as it arrives by auditCall, with the
-// member of staff behind it and whose record it opened, in src/http/audit.ts.
+// member of staff behind it and whose record it opened, in src/http/audit.ts; and
+// so is each change a signed-in client or technician makes, by auditSessionCall.
 
 import type { Surface } from "../../config/environments.ts";
 import type { RulingClaim } from "../no-shows/ruling-claims.ts";
@@ -13,6 +14,9 @@ import type { RulingClaim } from "../no-shows/ruling-claims.ts";
 /** Every action the log records. A new action is added here. */
 export const AUDIT_ACTIONS = [
   "ops.call",
+  // A signed-in client's change, and a technician's step or a job they opened (src/http/audit.ts, auditSessionCall).
+  "client.call",
+  "tech.call",
   // The client's profile (docs/decisions/0042-client-profile.md).
   "consent.switch",
   "number_change.request",

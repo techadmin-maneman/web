@@ -245,7 +245,9 @@ describe("dispatch", () => {
     const cleared = await env.DB.prepare("SELECT COUNT(*) AS n FROM job_events WHERE superseded = 1").first();
     expect(cleared).toEqual({ n: 0 });
     expect(await env.DB.prepare("SELECT COUNT(*) AS n FROM dispatch_moves").first()).toEqual({ n: 0 });
-    expect(await env.DB.prepare("SELECT COUNT(*) AS n FROM audit_log").first()).toEqual({ n: 0 });
+    // The technician's own step is written as every one is; no check-in is cleared.
+    const audited = await env.DB.prepare("SELECT COUNT(*) AS n FROM audit_log WHERE action != 'tech.call'").first();
+    expect(audited).toEqual({ n: 0 });
   });
 });
 

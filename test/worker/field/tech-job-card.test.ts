@@ -11,8 +11,11 @@ import { appFor, d1TripsOf, fakeDependencies, markDatabase, NOW, request } from 
 import { syntheticJpeg } from "../tryon-fixtures.ts";
 import { visit } from "../visits.ts";
 
-/** The most round trips to D1 a card may wait on in turn. It waited on 15 when each read waited for the one before. */
-const CARD_TRIPS = 7;
+/**
+ * The most round trips to D1 a card may wait on in turn. It waited on 15 when each read waited for the one before. One
+ * of them is the audit log's entry for the card opened, written before it is read (src/http/audit.ts).
+ */
+const CARD_TRIPS = 8;
 
 const PERSON = "11111111-1111-4111-8111-111111111111";
 const TODAY_JOB = "22222222-2222-4222-8222-222222222221";
