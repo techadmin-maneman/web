@@ -5,6 +5,7 @@
 // the settings in ./settings-sections.ts.
 
 import type { EvolutionSettings } from "./evolution.ts";
+import type { SentryDsn } from "../lib/sentry-dsn.ts";
 import { ENABLED_SURFACES, type EnvironmentName } from "./environments.ts";
 import { type GstRegistration } from "./gst.ts";
 import { Reader, type Env } from "./env-reader.ts";
@@ -178,6 +179,8 @@ export interface Settings {
   readonly leadWebhookUrl: string | null;
   /** HEARTBEAT_URL: the outside monitor the cron pings after each run (src/providers/heartbeat.ts). Optional. */
   readonly heartbeatUrl: string | null;
+  /** SENTRY_DSN: where each error line is reported (src/providers/error-tracking.ts). Optional: unset, none is. */
+  readonly sentryDsn: SentryDsn | null;
   /** Present when CRM_PROVIDER is "zoho". */
   readonly zohoCrm: ZohoSettings | null;
   /** Present when BOOKS_PROVIDER is "zoho". */
