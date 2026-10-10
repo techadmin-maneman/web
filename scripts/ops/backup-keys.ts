@@ -2,7 +2,7 @@
 //
 // Makes the key pair the weekly backup is encrypted to: prints the public key, for each environment's
 // BACKUP_PUBLIC_KEY, and writes the private key to <file>, which must not exist yet. Keep the private key offline, in
-// the owner's password manager, and delete the file: without it no backup can be read, and with it every one can.
+// a password manager, and delete the file: without it no backup can be read, and with it every one can.
 
 import { existsSync, writeFileSync } from "node:fs";
 import { parseArgs } from "node:util";

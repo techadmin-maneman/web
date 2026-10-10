@@ -1,4 +1,4 @@
-// Reading a weekly backup back (src/domain/platform/backups.ts): the owner's private key unwraps the backup's AES key,
+// Reading a weekly backup back (src/domain/platform/backups.ts): the private key unwraps the backup's AES key,
 // which decrypts each table, and the tables become SQL that loads into an empty database.
 
 import { gunzipSync } from "node:zlib";

@@ -1,6 +1,6 @@
 // node scripts/ops/restore-backup.ts --env <staging|production> --date <YYYY-MM-DD> --key <private.pem> --out <file.sql>
 //
-// Downloads one weekly backup from the environment's backups bucket, decrypts it with the owner's private key, and
+// Downloads one weekly backup from the environment's backups bucket, decrypts it with the private key, and
 // writes SQL that rebuilds it in an empty database. Work in private/restore/, which git ignores: the SQL holds every
 // client's personal data, and is deleted once the restore is done (docs/runbook/restoring-d1.md, "From a weekly backup").
 

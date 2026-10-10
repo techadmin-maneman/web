@@ -177,7 +177,7 @@ async function backupJob({ env, deps, config, log }: CronContext): Promise<void>
     if (config.environment !== "local") {
       await deps.alertOnce({
         key: "backup_not_configured",
-        message: "No weekly backup was written: BACKUP_PUBLIC_KEY is not set (docs/runbook/restoring-d1.md).",
+        message: "No weekly backup was written: no backup key is set. The runbook, Restoring D1, says how to make one.",
       });
     }
     return;
