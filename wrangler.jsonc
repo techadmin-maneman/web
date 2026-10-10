@@ -115,6 +115,8 @@
       "workers_dev": false,
       "preview_urls": false,
       "observability": { "enabled": true, "logs": { "invocation_logs": false } },
+      // Requests run beside D1, which is in Singapore (APAC): one trip from India to there, not one for each query.
+      "placement": { "mode": "targeted", "region": "aws:ap-southeast-1" },
       "version_metadata": { "binding": "CF_VERSION_METADATA" },
       "triggers": { "crons": ["* * * * *"] },
       // One per switched-on surface (docs/decisions/0026-hosts-and-surfaces.md).
@@ -223,6 +225,8 @@
       "workers_dev": false,
       "preview_urls": false,
       "observability": { "enabled": true, "logs": { "invocation_logs": false } },
+      // Requests run beside D1, which is in Singapore (APAC): one trip from India to there, not one for each query.
+      "placement": { "mode": "targeted", "region": "aws:ap-southeast-1" },
       "version_metadata": { "binding": "CF_VERSION_METADATA" },
       "triggers": { "crons": ["* * * * *"] },
       "routes": [{ "pattern": "maneman.in/api/*", "zone_name": "maneman.in" }],
