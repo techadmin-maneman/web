@@ -19,7 +19,7 @@ import { spendableCredits } from "../money/credits.ts";
 import { holdDiscount } from "../money/discount-code-holds.ts";
 import { consentGiven } from "../privacy/consents.ts";
 import { lateFeeOn, type Price } from "../money/price-book.ts";
-import { graceEndOf, graceEnds, type HoldState } from "./hold-stages.ts";
+import { graceEndOf, graceEnds, ownAtCheckout, type HoldState } from "./hold-stages.ts";
 import { heldMinutes, visitTimes } from "../visits/visit-times.ts";
 import { loadSlotSchedule } from "./slot-times.ts";
 import { paidNotBooked } from "./hold-stages.ts";
@@ -140,6 +140,26 @@ async function creditOn(db: D1Database, row: HoldRow, now: Date): Promise<{ rema
 export async function clientHold(db: D1Database, holdId: string, personId: string, now: Date) {
   const row = await db.prepare(HOLD_QUERY).bind(holdId, personId).first<HoldRow>();
   return row === null ? null : asTheAppShows(db, row, now);
+}
+
+/**
+ * The client's own hold already at Checkout for this service, day and window, with its countdown still running. Asked
+ * for again, they are given it back, and its order, rather than a second technician's time. Null when there is none.
+ */
+export async function holdAtCheckout(
+  db: D1Database,
+  asked: { personId: string; type: VisitType; tier: string; date: string; window: BookingWindow; now: Date },
+): Promise<string | null> {
+  const row = await db
+    .prepare(
+      `SELECT id FROM slot_holds
+       WHERE ${ownAtCheckout("slot_holds", { person: "?1", type: "?2", tier: "?3", now: "?6" })}
+         AND date = ?4 AND window_label = ?5
+       ORDER BY expires_at DESC LIMIT 1`,
+    )
+    .bind(asked.personId, asked.type, asked.tier, asked.date, asked.window, asked.now.toISOString())
+    .first<{ id: string }>();
+  return row?.id ?? null;
 }
 
 /**
