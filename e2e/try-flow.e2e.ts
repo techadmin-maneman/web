@@ -309,7 +309,7 @@ test("while WhatsApp cannot send a look, the visitor is told on arrival, and not
   await visit(page, "/try");
   await expect(page.getByRole("heading", { name: "The try-on is paused." })).toBeVisible();
   await expect(page.getByRole("button", { name: "Choose another" })).toHaveCount(0);
-  await expect(page.getByRole("link", { name: "Book a visit instead" })).toHaveAttribute("href", "/book");
+  await expect(page.getByRole("link", { name: "Book a consultation instead" })).toHaveAttribute("href", "/book");
   expect(named(seen, "uploadUrl")).toHaveLength(0);
 });
 

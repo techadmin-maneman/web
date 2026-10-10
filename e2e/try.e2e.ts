@@ -248,10 +248,10 @@ test.describe("sent", () => {
 });
 
 test.describe("error", () => {
-  test("Choose another returns to the upload; Book a visit instead goes to /book", async ({ page }) => {
+  test("Choose another returns to the upload; Book a consultation instead goes to /book", async ({ page }) => {
     await open(page, "error");
     await expect(page.getByRole("heading", { name: "We cannot use this photograph." })).toBeVisible();
-    await expect(page.getByRole("link", { name: "Book a visit instead" })).toHaveAttribute("href", "/book");
+    await expect(page.getByRole("link", { name: "Book a consultation instead" })).toHaveAttribute("href", "/book");
     await page.getByRole("button", { name: "Choose another" }).click();
     await expect(page.locator("[data-screen]")).toHaveAttribute("data-screen", "upload");
   });
@@ -286,7 +286,7 @@ test.describe("error", () => {
       await expect(page.getByText(step, { exact: true })).toBeVisible();
       await expect(page.getByText(frame, { exact: true })).toBeVisible();
       await expect(page.getByText("photograph", { exact: false }).filter({ hasText: /Cannot/ })).toHaveCount(0);
-      await expect(page.getByRole("link", { name: "Book a visit instead" })).toBeVisible();
+      await expect(page.getByRole("link", { name: "Book a consultation instead" })).toBeVisible();
       await expect(page.getByRole("button", { name: "Choose another" })).toHaveCount(another ? 1 : 0);
     });
   }

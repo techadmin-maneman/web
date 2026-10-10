@@ -15,11 +15,11 @@ function filmsFetched(page: Page): string[] {
 }
 
 test.describe("header", () => {
-  test("shows the mark and wordmark, and Book a visit, at every width", async ({ page }) => {
+  test("shows the mark and wordmark, and Book a consultation, at every width", async ({ page }) => {
     await page.goto("/");
     const header = page.locator("header");
     await expect(header.getByRole("link", { name: "Mane Man, home" })).toHaveAttribute("href", "/");
-    await expect(header.getByRole("link", { name: "Book a visit" })).toHaveAttribute("href", "/book");
+    await expect(header.getByRole("link", { name: "Book a consultation" })).toHaveAttribute("href", "/book");
   });
 
   test("hides the section links and the area tag below 760 px, with no menu button", async ({ page }) => {
@@ -85,7 +85,7 @@ test.describe("sticky bar and footer: the home page only", () => {
     await page.goto("/");
     const book = page
       .getByRole("navigation", { name: "Book or message us" })
-      .getByRole("link", { name: "Book a visit" });
+      .getByRole("link", { name: "Book a consultation" });
     await expect(book).toBeVisible();
     expect((await book.boundingBox())?.width ?? 0).toBeLessThanOrEqual(480);
   });
@@ -148,7 +148,7 @@ test.describe("home sections", () => {
     await page.goto("/");
     const line = page.locator('[data-section="hero"] .sequence');
     await expect(line).toHaveText("Natural up close. 100% real human hair. Fitted at home. Be the Main Man again.");
-    await expect(page.getByRole("heading", { level: 1 })).toHaveText("A full head of hair, fitted at home.");
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText("A full head of hair, matched to your own.");
   });
 
   // Every phone downloaded the 2.3 MB film.

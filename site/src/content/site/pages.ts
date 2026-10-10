@@ -13,6 +13,8 @@ export const booking = {
   titleOneVisit: "Book a consultation and fit",
   titleWaitlist: "Not in your area yet",
   intro: `Your technician measures your scalp and matches your colour: ${visitLength.consultation}, free. Or add the fit and wear your hair system the same day.`,
+  /** Where we do not come yet: what the list is for. */
+  introWaitlist: "Leave your number and we'll WhatsApp you the week we start coming to you.",
   extent: "Extent of hair loss (optional)",
 };
 

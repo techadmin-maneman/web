@@ -10,7 +10,11 @@ import { range } from "../../content/site.ts";
     {range.products.map((product) => (
       <li class="product">
         <h3 class="caps">{product.name}</h3>
-        <p class="tagline">{product.tagline}</p>
+        <p class="tagline">
+          {product.tagline.split(/(?<=\.)\s+/).map((sentence) => (
+            <span class="sentence">{sentence}</span>
+          ))}
+        </p>
         <p class="body">{product.body}</p>
       </li>
     ))}
@@ -53,6 +57,10 @@ import { range } from "../../content/site.ts";
     line-height: var(--lh-115);
     letter-spacing: var(--tracking-heading);
     text-wrap: balance;
+  }
+  /* Each sentence of a two-sentence line starts its own line, so a narrow column never strands a word. */
+  .sentence {
+    display: block;
   }
   .body {
     margin: var(--sp-14) 0 0;

@@ -14,14 +14,14 @@ export const header = {
     { label: "Questions", href: "/#faq" },
   ],
   area: serviceArea,
-  book: "Book a visit",
+  book: "Book a consultation",
 };
 
 export const stickyBar = {
   /** What a screen reader calls the bar's landmark. */
   label: "Book or message us",
   whatsappLabel: "Message us on WhatsApp",
-  book: "Book a visit",
+  book: "Book a consultation",
 };
 
 export const footer = {
@@ -56,7 +56,7 @@ export const placeholderTag = "Placeholder";
 export const hero = {
   /** Shown one at a time over the footage, once, settling on the last. */
   sequence: ["Natural up close.", "100% real human hair.", "Fitted at home.", "Be the Main Man again."],
-  title: "A full head of hair, fitted at home.",
+  title: "A full head of hair, matched to your own.",
   body: "Your technician comes when it suits you, matches a hair system to your own hair and fits it.",
   tryOn: "Try a new look",
   book: "Book a free consultation",

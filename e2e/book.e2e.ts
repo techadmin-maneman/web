@@ -671,7 +671,7 @@ test("an empty submit shows each error, announced, brings the first into view, a
   await page.getByRole("button", { name: "Check" }).click();
   await page.getByRole("button", { name: "Book the consultation" }).click();
 
-  await expect(page.getByText("Enter your name, in letters.")).toBeVisible();
+  await expect(page.getByText("Enter your name in letters.")).toBeVisible();
   await expect(page.getByText("Enter a valid 10-digit mobile number.")).toBeVisible();
   await expect(page.getByText("We need this to contact you.")).toBeVisible();
   await expect(page.getByText("Enter the building or society.")).toBeVisible();
@@ -714,7 +714,7 @@ test("a name that is not letters is marked at its field, focused, and not sent",
 
   const name = page.getByLabel("Name");
   await expect(name).toHaveAttribute("aria-invalid", "true");
-  await expect(name).toHaveAccessibleDescription("Enter your name, in letters.");
+  await expect(name).toHaveAccessibleDescription("Enter your name in letters.");
   await expect(name).toBeFocused();
   expect(requests).toHaveLength(0);
 });
