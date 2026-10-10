@@ -29,7 +29,9 @@
     // Clients' photographs: no lifecycle rule, deleted only on purpose (docs/decisions/0032-fsm-mirror.md).
     { "binding": "CLIENT_PHOTOS", "bucket_name": "mm-local-client-photos" },
     // Referral cards a client made; a revoke deletes them (docs/decisions/0048-referrals.md).
-    { "binding": "REFERRAL_CARDS", "bucket_name": "mm-local-referral-cards" }
+    { "binding": "REFERRAL_CARDS", "bucket_name": "mm-local-referral-cards" },
+    // The weekly encrypted backup of the database; the job deletes backups past thirteen weeks itself.
+    { "binding": "BACKUPS", "bucket_name": "mm-local-backups" }
   ],
   // Draws a client's referral card from their photographs (src/providers/cards.ts): free, refused past the plan.
   "images": { "binding": "IMAGES" },
@@ -140,7 +142,9 @@
         // Clients' photographs: no lifecycle rule, deleted only on purpose (docs/decisions/0032-fsm-mirror.md).
         { "binding": "CLIENT_PHOTOS", "bucket_name": "mm-staging-client-photos" },
         // Referral cards a client made; a revoke deletes them (docs/decisions/0048-referrals.md).
-        { "binding": "REFERRAL_CARDS", "bucket_name": "mm-staging-referral-cards" }
+        { "binding": "REFERRAL_CARDS", "bucket_name": "mm-staging-referral-cards" },
+        // The weekly encrypted backup of the database; the job deletes backups past thirteen weeks itself.
+        { "binding": "BACKUPS", "bucket_name": "mm-staging-backups" }
       ],
       // Draws a client's referral card from their photographs (src/providers/cards.ts): free, refused past the plan.
       "images": { "binding": "IMAGES" },
@@ -244,7 +248,9 @@
         // Clients' photographs: no lifecycle rule, deleted only on purpose (docs/decisions/0032-fsm-mirror.md).
         { "binding": "CLIENT_PHOTOS", "bucket_name": "mm-prod-client-photos" },
         // Referral cards a client made; a revoke deletes them (docs/decisions/0048-referrals.md).
-        { "binding": "REFERRAL_CARDS", "bucket_name": "mm-prod-referral-cards" }
+        { "binding": "REFERRAL_CARDS", "bucket_name": "mm-prod-referral-cards" },
+        // The weekly encrypted backup of the database; the job deletes backups past thirteen weeks itself.
+        { "binding": "BACKUPS", "bucket_name": "mm-prod-backups" }
       ],
       // Draws a client's referral card from their photographs (src/providers/cards.ts): free, refused past the plan.
       "images": { "binding": "IMAGES" },

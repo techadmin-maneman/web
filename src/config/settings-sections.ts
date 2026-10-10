@@ -44,13 +44,17 @@ const ACCESS_TEAM_DOMAIN = /^[a-z0-9-]+\.cloudflareaccess\.com$/;
 /** The provider vars as the guard read them, before it has refused any: one that failed its check is missing. */
 export type ProvidersRead = Partial<Record<ProviderVar, string>>;
 
-/** What watches mm-api from outside it: the cron's heartbeat. */
-export function readWatchers(read: Reader): Pick<Settings, "heartbeatUrl"> {
+/** What watches mm-api from outside it, the cron's heartbeat, and the key its weekly backup is encrypted to. */
+export function readWatchers(read: Reader): Pick<Settings, "heartbeatUrl" | "backupPublicKey"> {
   const heartbeatUrl = read.optionalText("HEARTBEAT_URL");
   if (heartbeatUrl !== null && !heartbeatUrl.startsWith("https://")) {
     read.problems.push("HEARTBEAT_URL must be an https:// URL");
   }
-  return { heartbeatUrl };
+  const backupPublicKey = read.optionalText("BACKUP_PUBLIC_KEY");
+  if (backupPublicKey !== null && !/^[A-Za-z0-9+/]{300,}={0,2}$/.test(backupPublicKey)) {
+    read.problems.push("BACKUP_PUBLIC_KEY must be the base64 public key scripts/ops/backup-keys.ts prints");
+  }
+  return { heartbeatUrl, backupPublicKey };
 }
 
 /** Each Zoho host named, which must be a hostname without https://. */

@@ -88,14 +88,16 @@ Each writes **test records**, named "Staging test", on staging or in the owner's
 
 ## ops/
 
-| Script                  | What it does                                                              | With                                    | Writes                     |
-| ----------------------- | ------------------------------------------------------------------------- | --------------------------------------- | -------------------------- |
-| `import-pincodes.ts`    | loads the pincode list into an environment's database                     | the environment's name                  | the database               |
-| `import-referrals.ts`   | back-fills the referrals ops logged before January                        | the environment's name, `--file <path>` | the database               |
-| `setup-crm.ts`          | the CRM fields and pick-list values the sync writes; `--check` only reads | `.env.crm-scripts`                      | the CRM, without `--check` |
-| `check-zoho-setup.ts`   | the CRM org is set up as the sync expects                                 | `.env.crm-scripts`                      | no                         |
-| `whatsapp-templates.ts` | each WhatsApp template as it is submitted to MSG91 for approval           | none                                    | no                         |
-| `cpu-report.ts`         | mm-api's CPU time over the last day                                       | `deploy-staging.yml`, `.env.cf-read`    | no                         |
+| Script                  | What it does                                                                                  | With                                                    | Writes                     |
+| ----------------------- | --------------------------------------------------------------------------------------------- | ------------------------------------------------------- | -------------------------- |
+| `import-pincodes.ts`    | loads the pincode list into an environment's database                                         | the environment's name                                  | the database               |
+| `import-referrals.ts`   | back-fills the referrals ops logged before January                                            | the environment's name, `--file <path>`                 | the database               |
+| `setup-crm.ts`          | the CRM fields and pick-list values the sync writes; `--check` only reads                     | `.env.crm-scripts`                                      | the CRM, without `--check` |
+| `check-zoho-setup.ts`   | the CRM org is set up as the sync expects                                                     | `.env.crm-scripts`                                      | no                         |
+| `backup-keys.ts`        | the key pair the weekly backup is encrypted to: prints the public key, writes the private one | `--private <file>`                                      | the file                   |
+| `restore-backup.ts`     | a weekly backup downloaded and decrypted into SQL                                             | `--env`, `--date`, `--key`, `--out`; wrangler signed in | the SQL file               |
+| `whatsapp-templates.ts` | each WhatsApp template as it is submitted to MSG91 for approval                               | none                                                    | no                         |
+| `cpu-report.ts`         | mm-api's CPU time over the last day                                                           | `deploy-staging.yml`, `.env.cf-read`                    | no                         |
 
 ## fidelity/
 

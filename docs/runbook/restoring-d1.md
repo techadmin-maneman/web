@@ -6,7 +6,7 @@ Part of the [runbook](../runbook.md), whose opening says how its commands are wr
 
 A read D1 fails for a reason that passes by itself (a lost connection, its storage reset, an export holding it) is tried twice more, a moment apart (`src/lib/d1-retry.ts`); a page that still fails answers 503 "unavailable" and is logged as `d1_unavailable`, not as an error of ours.
 
-D1 Time Travel can put the database back to any minute in the last seven days (the Workers Free plan's window); `time-travel info` hands out bookmarks older than that, but they are not promised. A restore overwrites the whole database in place, cancels the queries running at the time, and undoes everything written since that minute. D1 is the only record of much of it, and the rest is in systems that will not send it again. So take the smallest repair that will do:
+D1 Time Travel can put the database back to any minute in the last thirty days, the Workers Paid plan's window; `time-travel info` hands out bookmarks older than that, but they are not promised. Past that, or with the database itself gone, the weekly backup is the way back ("From a weekly backup", below). A restore overwrites the whole database in place, cancels the queries running at the time, and undoes everything written since that minute. D1 is the only record of much of it, and the rest is in systems that will not send it again. So take the smallest repair that will do:
 
 1. **Fix the rows by hand**, when you know what they should hold, from the logs, `audit_log` or the vendors' own records.
 2. **Repair from an earlier minute**, when you need what the damaged rows held before: go back, copy the damaged tables, and come straight forward again. Every other table stays as it is now.
@@ -121,3 +121,18 @@ If nothing is left worth carrying (the export failed, or nothing in it can be tr
 What each group of tables means if it is left as it was at `<T>`, and how it is put back, is in `docs/schema.md`, "What a restore undoes". `npm run schema` writes it from `RESTORE_GROUPS` in `scripts/lib/schema-doc.ts`, and its test fails on a table in no group, so a new table cannot leave the list behind.
 
 ---
+
+## From a weekly backup
+
+Every Sunday between 3 and 4 am in India, mm-api writes the whole database to the environment's backups bucket (`mm-staging-backups`, `mm-prod-backups`), under that day's date: each table gzipped and encrypted, the key to it wrapped by the owner's public key, `BACKUP_PUBLIC_KEY`, and `manifest.json` last. Backups past thirteen weeks are deleted. A backup that fails alerts `backup_failed`; with no key set, `backup_not_configured`. Only the owner's private key reads one.
+
+**The keys, once:** `node scripts/ops/backup-keys.ts --private private/backup-key.pem` prints the public key: `W secret put BACKUP_PUBLIC_KEY --env <env>` for each environment. Move the private key into the owner's password manager and delete the file. A key lost is every backup lost; a key leaked is every backup readable, so make a new pair and set the new public key.
+
+**Reading one back,** with the private key saved to a file in `private/restore/` for the length of the job:
+
+```sh
+W r2 object list mm-prod-backups --remote            # the dates there are
+node scripts/ops/restore-backup.ts --env production --date <YYYY-MM-DD> --key private/restore/backup-key.pem --out private/restore/backup.sql
+```
+
+The SQL builds every table as it was and fills it. Load it into an empty database, never over the live one: a new D1 (`W d1 create maneman-restore-<date>`, then `W d1 execute maneman-restore-<date> --remote --file private/restore/backup.sql`), or locally with `sqlite3 restore.db < private/restore/backup.sql`. Copy what you need from there into the live database as in "Repair from an earlier minute", above. Delete `private/restore/`, and the restore database, when you are done.
