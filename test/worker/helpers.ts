@@ -70,7 +70,7 @@ export const LOCAL_SETTINGS: Settings = {
     linkSigningKey: "test-link-signing-key-that-is-long-enough",
     ailabApiKey: null,
   },
-  messaging: { enabled: true, allowlist: [], evolution: null },
+  messaging: { enabled: true, allowlist: [], evolution: null, msg91: null },
   devRoutes: false,
 };
 

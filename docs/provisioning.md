@@ -503,6 +503,16 @@ Evolution reports each message as delivered and read to `POST /api/hooks/evoluti
 
 ---
 
+## 12a. WhatsApp through MSG91
+
+The WhatsApp Business Platform, which sends from the business's own number with templates WhatsApp approves (ADR 0114). Built, and off until the number is ready: each environment's `MESSAGING_PROVIDER` stays `evolution` until step 4.
+
+1. **The number.** In MSG91 (WhatsApp → Numbers), connect the office WhatsApp Business number to the business's Meta account. The number can no longer be used in the WhatsApp app on a phone.
+2. **The templates.** `node scripts/ops/whatsapp-templates.ts --origin https://maneman.in` (or `https://staging.maneman.in` for a staging number) prints each one: submit it in MSG91 (WhatsApp → Templates) under the same name, category and language, with its image header and buttons. A button's address is the origin followed by `{{1}}`. Wait until every one is approved; a text missing approval is refused, and its message fails.
+3. **The secrets,** for the environment: `W secret put MSG91_AUTH_KEY --env <env>` with MSG91's API key, and `W secret put MSG91_INTEGRATED_NUMBER --env <env>` with the number and its country code, as `919810000000`.
+4. **The switch.** A pull request sets `MESSAGING_PROVIDER` to `"msg91"` in that environment's vars. Once deployed, sign in with a code, and check one booking's confirmation arrives. A refused key alerts as the bridge being down; a refused template fails its message with MSG91's reason in `outbound_messages.last_error`.
+5. **Receipts and STOP replies.** Until MSG91's delivery-report webhook is built (open point 186), keep Evolution's webhook (step 12) on the old number for any replies still sent there.
+
 ## 13. The address search (Google Maps Platform)
 
 The client app's address form searches for a building and keeps a coordinate for the check-in's geofence (docs/decisions/0054-address-capture.md). Until this is done, `GEOCODE_PROVIDER` stays `none`: the form takes a typed address, saves no coordinate, and nothing calls Google.
