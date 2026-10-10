@@ -17,6 +17,7 @@ import {
   paidInCheckout,
   refundedAfterPaying,
 } from "./checkout-fakes.ts";
+import { PORTS } from "../../scripts/lib/local-stack.ts";
 import { continueToPayment, TAKEN } from "./picking.ts";
 import { toPayment, toWindows, holdAs } from "./booking-fixtures.ts";
 
@@ -187,6 +188,53 @@ test("picks another window when one has just gone, and pays for that one", async
   await continueToPayment(page);
   await page.getByRole("button", { name: "Pay Rs. 2,000" }).click();
   await expect(page.getByRole("dialog").getByRole("status").getByText("Confirmed")).toBeVisible();
+});
+
+test("keeps the window picked while the day's windows are still being asked for again", async ({ page }) => {
+  await fakeCheckout(page, "paid");
+  await confirmedByRazorpay(page);
+  let taken = false;
+  await page.route("**/api/holds", (route) => {
+    if (taken || route.request().method() !== "POST") return route.fallback();
+    taken = true;
+    return route.fulfill({ status: 409, json: { error: { code: "taken", request_id: "e2e" } } });
+  });
+  await toWindows(page);
+  // The windows asked for again after the refusal come back slowly, after the client has picked.
+  let release: () => void = () => undefined;
+  const answered = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  let gone = "";
+  await page.route("**/api/availability**", async (route) => {
+    if (!taken) return route.fallback();
+    await answered;
+    // The window that went is full in the fresh answer, as it would be.
+    const asked = new URL(route.request().url());
+    const answer = await route.fetch({
+      url: `http://127.0.0.1:${String(PORTS.app)}${asked.pathname}${asked.search}`,
+      headers: { ...route.request().headers(), host: `app.localhost:${String(PORTS.app)}` },
+    });
+    const body = (await answer.json()) as { days: { windows: { window: string; open: boolean }[] }[] };
+    for (const day of body.days) for (const each of day.windows) if (each.window === gone) each.open = false;
+    return route.fulfill({ response: answer, json: body });
+  });
+  const windows = page.getByRole("dialog", { name: "Pick a time" });
+  const open = windows.getByRole("radio").and(page.locator(":enabled"));
+  /** A window's name, "Morning", from its radio's accessible name. */
+  const nameOf = async (radio: Locator) => /radio "(\w+)/.exec(await radio.ariaSnapshot())?.[1] ?? "";
+  const goneName = await nameOf(open.first());
+  const pickedName = await nameOf(open.last());
+  gone = goneName.toLowerCase();
+  await open.first().click();
+  await windows.getByRole("button", { name: "Continue to payment" }).click();
+  await expect(windows.getByRole("alert")).toHaveText(TAKEN);
+  const picked = windows.getByRole("radio", { name: new RegExp(`^${pickedName}`) });
+  await picked.click();
+  release();
+  await expect(windows.getByRole("radio", { name: new RegExp(`^${goneName}`) })).toBeDisabled();
+  await expect(picked).toBeChecked();
+  await expect(windows.getByRole("button", { name: "Continue to payment" })).toBeEnabled();
 });
 
 test("fetches Home again when the sheet is closed after paying, before the booking is confirmed", async ({ page }) => {
