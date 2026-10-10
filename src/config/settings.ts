@@ -6,6 +6,7 @@
 
 import type { EvolutionSettings } from "./evolution.ts";
 import type { SentryDsn } from "../lib/sentry-dsn.ts";
+import type { Msg91Settings } from "./msg91.ts";
 import { ENABLED_SURFACES, type EnvironmentName } from "./environments.ts";
 import { type GstRegistration } from "./gst.ts";
 import { Reader, type Env } from "./env-reader.ts";
@@ -57,6 +58,8 @@ export interface MessagingSettings {
   readonly allowlist: readonly string[];
   /** Present when MESSAGING_PROVIDER is "evolution". */
   readonly evolution: EvolutionSettings | null;
+  /** Present when MESSAGING_PROVIDER is "msg91". */
+  readonly msg91: Msg91Settings | null;
 }
 
 /** A number an automatic message may go to: every number, unless there is an allowlist and it does not name this one. */

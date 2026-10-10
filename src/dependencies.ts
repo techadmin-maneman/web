@@ -79,7 +79,7 @@ export function productionDependencies(config: StaticConfig): DependencyFactory 
       log,
       timeoutMs: caller === "request" ? WAITED_TIMEOUT_MS : BACKGROUND_TIMEOUT_MS,
     };
-    const messaging = lazily(() => createMessagingProvider(settings.messaging.evolution, { fetch: httpFetch, log }));
+    const messaging = lazily(() => createMessagingProvider(settings.messaging, { fetch: httpFetch, log }));
     const alert = lazily(() =>
       createAlert({ webhookUrl: settings.alertWebhookUrl, environment, fetch: httpFetch, log }),
     );
