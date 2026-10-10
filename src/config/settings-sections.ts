@@ -17,6 +17,7 @@ import type {
 } from "./settings.ts";
 import { type GstRegistration, GSTIN_FORMAT, STATE_CODE_FORMAT, SAC_FORMAT } from "./gst.ts";
 import type { EvolutionSettings } from "./evolution.ts";
+import type { Msg91Settings } from "./msg91.ts";
 
 /**
  * The most GEOCODE_DAILY_CEILING may be set to. Google's India price list gives
@@ -272,17 +273,30 @@ function readEvolution(read: Reader, providers: ProvidersRead): EvolutionSetting
   return evolution;
 }
 
-/** WhatsApp: whether it is on, the allowlist, and the bridge. */
+/** MSG91's WhatsApp Business Platform, when MESSAGING_PROVIDER is msg91. */
+function readMsg91(read: Reader, providers: ProvidersRead): Msg91Settings | null {
+  if (providers.MESSAGING_PROVIDER !== "msg91") return null;
+  const msg91: Msg91Settings = {
+    authKey: read.text("MSG91_AUTH_KEY"),
+    integratedNumber: read.text("MSG91_INTEGRATED_NUMBER").replace(/\D/g, ""),
+  };
+  if (msg91.integratedNumber !== "" && !/^\d{11,15}$/.test(msg91.integratedNumber)) {
+    read.problems.push("MSG91_INTEGRATED_NUMBER must be the sending number with its country code, as 919810000000");
+  }
+  return msg91;
+}
+
+/** WhatsApp: whether it is on, the allowlist, and who sends it. */
 export function readMessaging(
   read: Reader,
   providers: ProvidersRead,
   environment: EnvironmentName | undefined,
 ): MessagingSettings {
-  const evolution = readEvolution(read, providers);
   const messaging: MessagingSettings = {
     enabled: read.flag("MESSAGING_ENABLED"),
     allowlist: read.mobiles("MESSAGING_ALLOWLIST"),
-    evolution,
+    evolution: readEvolution(read, providers),
+    msg91: readMsg91(read, providers),
   };
   if (environment === "staging" && messaging.enabled && messaging.allowlist.length === 0) {
     read.problems.push("MESSAGING_ALLOWLIST must name the test handsets while messaging is on in staging");

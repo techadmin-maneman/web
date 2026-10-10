@@ -1,4 +1,4 @@
-// WhatsApp messaging, behind an interface. Its callers are the messaging
+// WhatsApp messaging, behind an interface: Evolution's bridge or MSG91. Its callers are the messaging
 // consumer, the login codes and the word that an account is deleted
 // (src/queues/messaging.ts); none of them knows which BSP is behind it.
 
@@ -6,8 +6,9 @@ import { type TemplateName } from "../../config/message-templates.ts";
 import type { ImageType } from "../../lib/image-bytes.ts";
 import type { Logger } from "../../log.ts";
 import { createEvolutionMessaging } from "./evolution.ts";
-import type { EvolutionSettings } from "../../config/evolution.ts";
+import { createMsg91Messaging } from "./msg91.ts";
 import { createStubMessaging } from "./stub.ts";
+import type { MessagingSettings } from "../../config/settings.ts";
 
 export type SendResult =
   | { readonly ok: true; readonly providerMessageId: string | null }
@@ -50,9 +51,12 @@ export interface MessagingProvider {
   connection(): Promise<Connection>;
 }
 
+/** Whoever MESSAGING_PROVIDER names: Evolution's bridge, MSG91, or the stub. */
 export function createMessagingProvider(
-  evolution: EvolutionSettings | null,
+  settings: Pick<MessagingSettings, "evolution" | "msg91">,
   deps: { fetch: typeof fetch; log: Logger },
 ): MessagingProvider {
-  return evolution === null ? createStubMessaging(deps.log) : createEvolutionMessaging(evolution, deps);
+  if (settings.msg91 !== null) return createMsg91Messaging(settings.msg91, deps);
+  if (settings.evolution !== null) return createEvolutionMessaging(settings.evolution, deps);
+  return createStubMessaging(deps.log);
 }

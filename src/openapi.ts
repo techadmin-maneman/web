@@ -57,7 +57,7 @@ const DOCUMENTATION_CONFIG: StaticConfig = {
       linkSigningKey: "",
       ailabApiKey: null,
     },
-    messaging: { enabled: false, allowlist: [], evolution: null },
+    messaging: { enabled: false, allowlist: [], evolution: null, msg91: null },
     devRoutes: false,
   },
 };
