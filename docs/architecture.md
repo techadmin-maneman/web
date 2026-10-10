@@ -67,10 +67,11 @@ held, unpaid ──paid, or taken free or on a credit──▶ held, confirmed �
        made after that is given back: refunded_at
 ```
 
-| Stage                     | Columns                                                                   | In SQL                      |
-| ------------------------- | ------------------------------------------------------------------------- | --------------------------- |
-| Unpaid, keeping its time  | `state = 'held'`, `confirmed_at` empty, before `expires_at` and its grace | `keepingItsTime(hold, now)` |
-| Unpaid, nothing to pay on | the same, with no Razorpay order and no payment link                      | `ownUnpaid(hold, person)`   |
-| Paid, not yet a visit     | `state = 'held'`, `confirmed_at` set                                      | `paidNotBooked(hold)`       |
-| Booked                    | `state = 'booked'`, `appointment_id` set                                  |                             |
-| Released                  | `state = 'released'`; `refunded_at` once a late payment is given back     |                             |
+| Stage                              | Columns                                                                                                       | In SQL                      |
+| ---------------------------------- | ------------------------------------------------------------------------------------------------------------- | --------------------------- |
+| Unpaid, keeping its time           | `state = 'held'`, `confirmed_at` empty, before `expires_at` and its grace                                     | `keepingItsTime(hold, now)` |
+| Unpaid, nothing to pay on          | the same, with no Razorpay order and no payment link                                                          | `ownUnpaid(hold, person)`   |
+| At Checkout, its countdown running | `state = 'held'`, a Razorpay order, before `expires_at`; the client picking its window again is given it back | `ownAtCheckout(hold, on)`   |
+| Paid, not yet a visit              | `state = 'held'`, `confirmed_at` set                                                                          | `paidNotBooked(hold)`       |
+| Booked                             | `state = 'booked'`, `appointment_id` set                                                                      |                             |
+| Released                           | `state = 'released'`; `refunded_at` once a late payment is given back                                         |                             |

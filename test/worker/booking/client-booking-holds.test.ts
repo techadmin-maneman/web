@@ -123,14 +123,59 @@ describe("POST /api/holds", () => {
     expect(await again.json()).toMatchObject({ technician: { name: "Imran Qureshi" } });
   });
 
-  it("keeps the time of a client's hold already at Checkout, which a payment may yet land on", async () => {
+  it("keeps the time of a client's hold already at Checkout through its grace, which a payment may yet land on", async () => {
     const rohit = await client();
     await hold(rohit, TUESDAY_AFTERNOON);
     await env.DB.prepare("UPDATE slot_holds SET razorpay_order_id = 'order_e2e' WHERE person_id = ?1")
       .bind(rohit.id)
       .run();
-    expect(await (await hold(rohit, TUESDAY_AFTERNOON)).json()).toMatchObject({
+    // Eleven minutes on, its countdown is over but its two minutes' grace are not.
+    expect(await (await hold(rohit, TUESDAY_AFTERNOON, later(11))).json()).toMatchObject({
       technician: { name: "Sandeep Rawat" },
+    });
+  });
+
+  describe("a client back from Checkout without paying", () => {
+    const startPaying = (who: { cookie: string }, holdId: string) =>
+      request(app, "/api/bookings", {
+        method: "POST",
+        headers: { Cookie: who.cookie, "Content-Type": "application/json", Origin: "https://maneman.test" },
+        body: JSON.stringify({ hold_id: holdId }),
+      });
+    const afternoonOf = async (who: { cookie: string }) => {
+      const offered = await (
+        await request(app, "/api/availability?type=service&from=2026-09-22", { headers: { Cookie: who.cookie } })
+      ).json<{ days: { windows: { window: string; open: boolean }[] }[] }>();
+      return offered.days[0]?.windows.find((each) => each.window === "afternoon");
+    };
+
+    beforeEach(async () => {
+      // One technician, so a window held by one hold is full to everyone else.
+      await env.DB.prepare("UPDATE technicians SET active = 0 WHERE id = ?1").bind(SANDEEP).run();
+    });
+
+    it("sees the window they were paying for still open, and gets their hold back on its order, its ten minutes again", async () => {
+      const rohit = await client();
+      const first = await (await hold(rohit, TUESDAY_AFTERNOON)).json<{ id: string }>();
+      const paying = await (await startPaying(rohit, first.id)).json<{ checkout: { order_id: string } }>();
+
+      expect(await afternoonOf(rohit)).toMatchObject({ open: true });
+      expect(await afternoonOf(await client())).toMatchObject({ open: false });
+      // Back five minutes later: the same hold, counting ten minutes from then.
+      const again = await hold(rohit, TUESDAY_AFTERNOON, later(5));
+      expect(again.status).toBe(201);
+      expect(await again.json()).toMatchObject({ id: first.id, expires_at: "2026-09-21T06:45:00.000Z" });
+      const repaying = await (await startPaying(rohit, first.id)).json<{ checkout: { order_id: string } }>();
+      expect(repaying.checkout.order_id).toBe(paying.checkout.order_id);
+    });
+
+    it("finds the window taken once the hold's countdown is over and only its grace is left", async () => {
+      const rohit = await client();
+      const first = await (await hold(rohit, TUESDAY_AFTERNOON)).json<{ id: string }>();
+      await startPaying(rohit, first.id);
+      const again = await hold(rohit, TUESDAY_AFTERNOON, later(11));
+      expect(again.status).toBe(409);
+      expect((await again.json<{ error: { code: string } }>()).error.code).toBe("taken");
     });
   });
 
