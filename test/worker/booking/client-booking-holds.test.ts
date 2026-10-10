@@ -154,16 +154,17 @@ describe("POST /api/holds", () => {
       await env.DB.prepare("UPDATE technicians SET active = 0 WHERE id = ?1").bind(SANDEEP).run();
     });
 
-    it("sees the window they were paying for still open, and gets their hold back on its order", async () => {
+    it("sees the window they were paying for still open, and gets their hold back on its order, its ten minutes again", async () => {
       const rohit = await client();
       const first = await (await hold(rohit, TUESDAY_AFTERNOON)).json<{ id: string }>();
       const paying = await (await startPaying(rohit, first.id)).json<{ checkout: { order_id: string } }>();
 
       expect(await afternoonOf(rohit)).toMatchObject({ open: true });
       expect(await afternoonOf(await client())).toMatchObject({ open: false });
-      const again = await hold(rohit, TUESDAY_AFTERNOON);
+      // Back five minutes later: the same hold, counting ten minutes from then.
+      const again = await hold(rohit, TUESDAY_AFTERNOON, later(5));
       expect(again.status).toBe(201);
-      expect(await again.json()).toMatchObject({ id: first.id, expires_at: "2026-09-21T06:40:00.000Z" });
+      expect(await again.json()).toMatchObject({ id: first.id, expires_at: "2026-09-21T06:45:00.000Z" });
       const repaying = await (await startPaying(rohit, first.id)).json<{ checkout: { order_id: string } }>();
       expect(repaying.checkout.order_id).toBe(paying.checkout.order_id);
     });

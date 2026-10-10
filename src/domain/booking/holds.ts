@@ -163,6 +163,24 @@ export async function holdAtCheckout(
 }
 
 /**
+ * Gives a client back their hold at Checkout, its countdown started again from `now`: the same order, and their own
+ * time, so nothing else is held for longer. Its grace stays the one it was made with.
+ */
+export async function takeBackAtCheckout(
+  db: D1Database,
+  hold: { holdId: string; personId: string; now: Date; holdSeconds: number },
+): Promise<void> {
+  const expiresAt = new Date(hold.now.getTime() + hold.holdSeconds * 1000).toISOString();
+  await db
+    .prepare(
+      `UPDATE slot_holds SET expires_at = ?3, updated_at = ?4
+       WHERE id = ?1 AND person_id = ?2 AND state = 'held' AND confirmed_at IS NULL`,
+    )
+    .bind(hold.holdId, hold.personId, expiresAt, hold.now.toISOString())
+    .run();
+}
+
+/**
  * Lets a client's hold go, with the time it held. Once paid for, or booked free, it is still to be booked, and only
  * a booking or a refund ends it. Once it has a Razorpay order, it keeps its time until its grace ends, since a payment
  * on that order may still land; the next hold anyone makes after that lets it go.

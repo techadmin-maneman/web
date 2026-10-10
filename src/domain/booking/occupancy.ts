@@ -99,7 +99,7 @@ export interface Moving {
 }
 
 /** A client and the service they are booking, whose own hold already at Checkout is theirs to take again. */
-export interface OwnCheckout {
+interface OwnCheckout {
   readonly personId: string;
   readonly type: string;
   readonly tier: string;

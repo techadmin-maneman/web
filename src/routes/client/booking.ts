@@ -13,7 +13,7 @@ import { z } from "@hono/zod-openapi";
 import { BOOKING_WINDOWS } from "../../config/scheduling.ts";
 import { VISIT_TYPES, type VisitType } from "../../config/visit-types.ts";
 import { holdSlot } from "../../domain/booking/hold-slot.ts";
-import { clientHold, holdAtCheckout, releaseHold } from "../../domain/booking/holds.ts";
+import { clientHold, holdAtCheckout, releaseHold, takeBackAtCheckout } from "../../domain/booking/holds.ts";
 import { currentAddress } from "../../domain/clients/profile.ts";
 import { isServed } from "../../domain/clients/service-area.ts";
 import { spendableCredits } from "../../domain/money/credits.ts";
@@ -161,7 +161,7 @@ export function registerClientBooking(app: App): void {
       creditPays(c.env.DB, { personId, type, moveKind }, now),
       isFullAddress(address) ? isServed(c.env.DB, address.pincode) : false,
       // A client back from Checkout without paying who picks the same window again gets their hold back, whose order a
-      // payment may still land on, rather than a second technician's time.
+      // payment may still land on, with its countdown started again, rather than a second technician's time.
       move === null && offered !== null
         ? holdAtCheckout(c.env.DB, { personId, type, tier: offered.tier, date, window, now })
         : null,
@@ -172,8 +172,12 @@ export function registerClientBooking(app: App): void {
     }
     if (!isFullAddress(address)) return refuse(c, "address_required");
     if (!served) return refuse(c, "not_served");
-    const resumed = atCheckout === null ? null : await clientHold(c.env.DB, atCheckout, personId, now);
-    if (resumed !== null) return c.json(resumed, 201);
+    if (atCheckout !== null) {
+      const holdSeconds = inputs.paymentHold.countdown * 60;
+      await takeBackAtCheckout(c.env.DB, { holdId: atCheckout, personId, now, holdSeconds });
+      const resumed = await clientHold(c.env.DB, atCheckout, personId, now);
+      if (resumed !== null) return c.json(resumed, 201);
+    }
     // A visit moved late books a new one in its place, which keeps the visit's discount code, unless a credit pays it
     // (docs/decisions/0108-discount-codes.md).
     const carried =
