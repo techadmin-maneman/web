@@ -42,6 +42,10 @@ Every staging deploy also reports mm-api's CPU over the last day in its last ste
 
 **After a deploy that changes the trigger.** Cloudflare attaches the trigger apart from the code (ADR 0010). Until an operator runs `npm run apply-triggers -- --env <env>`, the five-minute trigger fires, and each of its runs runs every job at once, as before, too heavy for the free plan. The deploy's trigger check names the difference.
 
+## The urgent space
+
+A few alerts need someone within the hour: money taken that nothing booked or gave back (`razorpay_payment_unheard`, `razorpay_refund_unheard`, `razorpay_catch_up_not_booked`, `unbooked_hold`, `second_capture`, and the refunds that failed), and a stop to every sign-in or every job (`login_codes_failing`, `whatsapp_bridge`, `cron_run_cut_short`). Each goes to the alert space as usual and, where `URGENT_WEBHOOK_URL` is set (`W secret put URGENT_WEBHOOK_URL --env <env>`), to a second space as well: a Google Chat space, or a Slack or Discord channel, whose members have its notifications set to sound on their phones. The list is `src/policy/alerts.ts`.
+
 ## The outside watchers
 
 Every alert is sent from inside mm-api, so a cron that stops altogether, or an API that is down, tells nobody. Two free monitors outside Cloudflare watch for that:

@@ -18,7 +18,7 @@ import { indiaClock, indiaDate, shortDate } from "@maneman/web-kit/dates";
 import { OPS_ORIGIN, type EnvironmentName } from "../../config/environments.ts";
 import { HOUR_MS } from "../../lib/durations.ts";
 import type { Logger } from "../../log.ts";
-import { alertKind, retellAfterHours } from "../../policy/alerts.ts";
+import { alertKind, isUrgent, retellAfterHours } from "../../policy/alerts.ts";
 import type { Alert } from "../../providers/alerts.ts";
 
 export interface RaisedAlert {
@@ -53,13 +53,21 @@ interface Sighting {
 export function createAlertOnce(deps: {
   db: D1Database;
   alert: Alert;
+  /** The urgent space, told of an urgent alert as well (isUrgent); null where there is none. */
+  urgent?: Alert | null;
   now: () => Date;
   environment: EnvironmentName;
   log: Logger;
 }): AlertOnce {
-  const { db, alert, now, environment, log } = deps;
+  const { db, now, environment, log, urgent = null } = deps;
+  /** Tells the alert space, and the urgent space too for an urgent alert. */
+  const tell = (key: string) => async (text: string) => {
+    await deps.alert(text);
+    if (urgent !== null && isUrgent(key)) await urgent(text);
+  };
 
   return async ({ key, message, link, after = 1 }) => {
+    const alert = tell(key);
     const text = link === undefined ? message : `${message} ${OPS_ORIGIN[environment]}${link}`;
     const at = now();
     let sighting: Sighting;
