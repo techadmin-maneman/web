@@ -41,12 +41,14 @@ Nothing here needs a release. The first two have dates.
   ```sh
   W r2 bucket create mm-prod-client-photos --location apac
   W r2 bucket create mm-prod-referral-cards --location apac
+  W r2 bucket create mm-prod-backups --location apac
   node --env-file=.env.cf-read scripts/release/check-buckets.ts production --strict
   W queues list
   ```
 
 - [ ] **Production's AILabTools key** (item 153): `W secret put AILAB_API_KEY --env production`, with a key of production's own.
 - [ ] **Staging's refund account:** the owner's "Razorpay – staging test" ID as `BOOKS_REFUND_ACCOUNT_ID` in `env.staging.vars`, released through CI (item 10).
+- [ ] **The weekly backup** (RB, "Restoring D1", "From a weekly backup"): the key pair, its public key as staging's and production's `BACKUP_PUBLIC_KEY`, the private key in the owner's password manager. Production's `mm-prod-backups` bucket must exist before the next production release, which binds it.
 - [ ] **Staging's cron heartbeat** (RB, "The outside watchers", point 1): a healthchecks.io check, its ping URL as staging's `HEARTBEAT_URL`; and Account Analytics: Read on `mm-ci-staging`, so each staging deploy reports mm-api's CPU time (provisioning, step 6).
 
 ## 2. Proofs on staging

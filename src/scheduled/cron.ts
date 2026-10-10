@@ -36,7 +36,8 @@ import { queueReminders } from "../domain/messages/visit-messages.ts";
 import type { StaticConfig } from "../guard.ts";
 import { createCallBudget, type CallBudget } from "../lib/call-budget.ts";
 import { meterDatabase, usageFields, usageSince, type MeteredDatabase } from "../lib/d1-meter.ts";
-import { scrubString, type Logger } from "../log.ts";
+import { failureReason, scrubString, type Logger } from "../log.ts";
+import { backupDueOn, deleteOldBackups, writeBackup } from "../domain/platform/backups.ts";
 import { pingHeartbeat } from "../providers/heartbeat.ts";
 import { enqueue, enqueueBatch } from "../domain/platform/enqueue.ts";
 import { razorpayCatchUpJob } from "./razorpay-catch-up.ts";
@@ -162,6 +163,44 @@ async function grievanceAlertsJob({ env, deps, config }: CronContext): Promise<v
 async function storageMeterJob({ env, deps, config }: CronContext): Promise<void> {
   await tellOfStorage(env.DB, deps.alertOnce, config.environment);
   await tellOfDatabaseSize(env.DB, deps.alertOnce, await readDatabaseBytes(env.DB));
+}
+
+/**
+ * The weekly backup, in the hour from 3 am on Sundays in India: written, and backups past thirteen weeks deleted. It
+ * runs once a week, so a failure, or no key to encrypt to outside a local run, alerts at once.
+ */
+async function backupJob({ env, deps, config, log }: CronContext): Promise<void> {
+  const now = deps.now();
+  if (backupDueOn(now) === null) return;
+  const publicKey = config.settings.backupPublicKey;
+  if (publicKey === null) {
+    if (config.environment !== "local") {
+      await deps.alertOnce({
+        key: "backup_not_configured",
+        message: "No weekly backup was written: BACKUP_PUBLIC_KEY is not set (docs/runbook/restoring-d1.md).",
+      });
+    }
+    return;
+  }
+  try {
+    const written = await writeBackup({
+      db: env.DB,
+      bucket: env.BACKUPS,
+      publicKey,
+      environment: config.environment,
+      now,
+    });
+    const deleted = await deleteOldBackups(env.BACKUPS, now);
+    log.info("backup_written", { ...(written === "already" ? { already: true } : written), deleted });
+    await deps.resolveAlert("backup_failed");
+    await deps.resolveAlert("backup_not_configured");
+  } catch (error) {
+    log.error("backup_failed", { error });
+    await deps.alertOnce({
+      key: "backup_failed",
+      message: `The weekly backup failed: ${failureReason(error)}. It tries again next Sunday; RB "From a weekly backup".`,
+    });
+  }
 }
 
 /** A low-stock alert whose consumable was retired since, or whose retirement came round, closes. */
@@ -295,6 +334,7 @@ export const CRON_JOBS: readonly CronJob[] = [
   // What the photographs and cards hold of R2, told at half, 80% and all of their share (docs/decisions/0093), and
   // the database against D1's limit, told at half, 80% and 95%.
   { name: "storage_meter", needs: "nothing", every: 60, at: 39, run: storageMeterJob },
+  { name: "backup", needs: "nothing", every: 60, at: 33, run: backupJob },
   // The operating figure behind the weekend-share assumption (src/policy/dispatch.ts): once a day, the day's board.
   { name: "dispatch_utilisation", needs: "nothing", every: 60, at: 43, run: utilisationJob },
   { name: "low_stock", needs: "nothing", every: 60, at: 50, run: lowStockJob },

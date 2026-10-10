@@ -181,6 +181,8 @@ export interface Settings {
   readonly leadWebhookUrl: string | null;
   /** HEARTBEAT_URL: the outside monitor the cron pings after each run (src/providers/heartbeat.ts). Optional. */
   readonly heartbeatUrl: string | null;
+  /** BACKUP_PUBLIC_KEY: the public key the weekly backup is encrypted to (src/domain/platform/backups.ts). */
+  readonly backupPublicKey: string | null;
   /** Present when CRM_PROVIDER is "zoho". */
   readonly zohoCrm: ZohoSettings | null;
   /** Present when BOOKS_PROVIDER is "zoho". */
