@@ -1,0 +1,60 @@
+# Every hour, staging as a visitor and its apps find it: mm-api's health, with the cron's last run, the site's pages,
+# and each app host serving its app (scripts/release/smoke.ts). It changes nothing. A failure opens an issue, or adds
+# to the open one, so whoever watches the repository hears of it; the next pass closes nothing by itself.
+name: watch staging
+
+on:
+  schedule:
+    - cron: "17 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: watch-staging
+  cancel-in-progress: true
+
+jobs:
+  watch:
+    name: staging answers as it should
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: staging
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+      - name: The API, the cron and the site
+        env:
+          CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
+          CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
+        run: npm run smoke -- --base https://staging.maneman.in --environment staging
+      - name: Each app host and its app
+        env:
+          CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
+          CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
+        run: npm run smoke -- --environment staging --surfaces
+
+  tell:
+    name: tell whoever watches the repository
+    needs: watch
+    if: ${{ failure() }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      issues: write
+    steps:
+      - name: Open the issue, or add this run to the open one
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          title="Staging is failing its hourly watch"
+          open=$(gh issue list --repo "$GITHUB_REPOSITORY" --state open --search "\"$title\" in:title" --json number --jq '.[0].number // empty')
+          if [ -n "$open" ]; then
+            gh issue comment "$open" --repo "$GITHUB_REPOSITORY" --body "Failed again: $RUN"
+          else
+            gh issue create --repo "$GITHUB_REPOSITORY" --title "$title" --body "The hourly watch of staging failed: $RUN. Close this once it passes again."
+          fi
