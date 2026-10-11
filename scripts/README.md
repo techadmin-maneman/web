@@ -57,20 +57,21 @@ checkout: a database, an org, Cloudflare or GitHub. A script that reads a secret
 
 ## release/
 
-| Script                     | What it does                                                                  | Run by, with                                                          | Writes                         |
-| -------------------------- | ----------------------------------------------------------------------------- | --------------------------------------------------------------------- | ------------------------------ |
-| `release.ts`               | uploads, deploys and restores Worker versions                                 | the deploy workflows                                                  | Cloudflare                     |
-| `mark-database.ts`         | writes the database's identity row, and checks it                             | the deploy workflows, `npm run db:local`                              | the database                   |
-| `apply-triggers.ts`        | attaches each Worker's routes, crons and queue consumers                      | `npm run apply-triggers`                                              | Cloudflare                     |
-| `check-triggers.ts`        | the triggers Cloudflare has attached, against the config                      | the deploy workflows                                                  | no                             |
-| `check-buckets.ts`         | every R2 bucket an environment binds exists                                   | `deploy-staging.yml`                                                  | no                             |
-| `check-copy.ts`            | refuses a production release while copy waits for the owner's wording         | `deploy-production.yml`                                               | no                             |
-| `smoke.ts`, `smoke-csp.ts` | an environment's routes, versions and content security policy, once deployed  | `npm run smoke`, `smoke:csp`                                          | no                             |
-| `soak.ts`                  | judges the production canary on real requests; failing rolls the release back | `deploy-production.yml`                                               | no                             |
-| `verify-ci-token.ts`       | an environment's CI secrets have the access the runbook gives them            | `verify-ci-secrets.yml`, `.env.ci-<env>`                              | no                             |
-| `restore-carry.ts`         | the carry-back file of a whole-database restore                               | by hand (`docs/runbook.md`)                                           | a SQL file                     |
-| `check-books-setup.ts`     | the Books org is set up as invoices need                                      | by hand before a release, `.env.books-scripts`                        | no                             |
-| `zoho-contract-probe.ts`   | Zoho still answers as the adapters read it                                    | by hand before a release, `.env.books-scripts` and `.env.crm-scripts` | with `--record`, test fixtures |
+| Script                     | What it does                                                                   | Run by, with                                                          | Writes                           |
+| -------------------------- | ------------------------------------------------------------------------------ | --------------------------------------------------------------------- | -------------------------------- |
+| `release.ts`               | uploads, deploys and restores Worker versions                                  | the deploy workflows                                                  | Cloudflare                       |
+| `mark-database.ts`         | writes the database's identity row, and checks it                              | the deploy workflows, `npm run db:local`                              | the database                     |
+| `apply-triggers.ts`        | attaches each Worker's routes, crons and queue consumers                       | `npm run apply-triggers`                                              | Cloudflare                       |
+| `check-triggers.ts`        | the triggers Cloudflare has attached, against the config                       | the deploy workflows                                                  | no                               |
+| `check-buckets.ts`         | every R2 bucket an environment binds exists                                    | `deploy-staging.yml`                                                  | no                               |
+| `check-copy.ts`            | refuses a production release while copy waits for the owner's wording          | `deploy-production.yml`                                               | no                               |
+| `smoke.ts`, `smoke-csp.ts` | an environment's routes, versions and content security policy, once deployed   | `npm run smoke`, `smoke:csp`                                          | no                               |
+| `money-path.ts`            | a client holds a window on staging, starts its payment and lets it go, nightly | `watch-money-path.yml`, `npm run watch:money-path`                    | a test client's session and hold |
+| `soak.ts`                  | judges the production canary on real requests; failing rolls the release back  | `deploy-production.yml`                                               | no                               |
+| `verify-ci-token.ts`       | an environment's CI secrets have the access the runbook gives them             | `verify-ci-secrets.yml`, `.env.ci-<env>`                              | no                               |
+| `restore-carry.ts`         | the carry-back file of a whole-database restore                                | by hand (`docs/runbook.md`)                                           | a SQL file                       |
+| `check-books-setup.ts`     | the Books org is set up as invoices need                                       | by hand before a release, `.env.books-scripts`                        | no                               |
+| `zoho-contract-probe.ts`   | Zoho still answers as the adapters read it                                     | by hand before a release, `.env.books-scripts` and `.env.crm-scripts` | with `--record`, test fixtures   |
 
 ## staging/
 
