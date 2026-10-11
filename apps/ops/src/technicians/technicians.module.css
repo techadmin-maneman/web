@@ -75,10 +75,11 @@
   color: var(--text-muted);
 }
 
-/* A technician with no city takes no bookings until ops set one: said in words, in oxblood, under the zone. */
+/* A technician with no city takes no bookings until ops set one: said in words, in oxblood, beside the name. */
 .noCity {
-  display: block;
+  margin-left: var(--sp-8);
   color: var(--error-on-paper);
+  white-space: nowrap;
 }
 
 .jobs {
