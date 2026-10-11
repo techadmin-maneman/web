@@ -6,13 +6,7 @@
 // too, as the technician's camera makes a visit photograph (ADR 0084).
 
 import { smallJpeg } from "@maneman/web-kit/small-jpeg";
-import {
-  MAX_COPY_BYTES,
-  MAX_SIDE_PX,
-  MAX_UPLOAD_BYTES,
-  MIN_SIDE_PX,
-  type HairColor,
-} from "../../../src/config/tryon.ts";
+import { MAX_COPY_BYTES, MAX_SIDE_PX, MAX_UPLOAD_BYTES, MIN_SIDE_PX, type HairColor } from "@rules/config/tryon.ts";
 import { DETECTOR_SIDE, detectHairColour } from "./hair-colour.ts";
 
 const QUALITY = 0.92;

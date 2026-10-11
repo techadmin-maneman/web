@@ -13,7 +13,7 @@ import { AddToCalendar } from "../../components/AddToCalendar.tsx";
 import { whatsappWith } from "../../lib/whatsapp.ts";
 import { NoteSheet } from "../NoteSheet.tsx";
 import styles from "../booking.module.css";
-import { firstNameOf } from "../../../../../src/lib/names.ts";
+import { firstNameOf } from "@rules/lib/names.ts";
 import { TITLE_ID, minutesAndSeconds, useHoldLeft, LastMinute } from "./shared.tsx";
 
 /** The outcome step: the payment failed, and the hold's time left. Checkout offers every way to pay again. */

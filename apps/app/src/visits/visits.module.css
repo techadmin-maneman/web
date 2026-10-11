@@ -165,7 +165,7 @@
 .dueLine {
   margin: 0;
   font-size: var(--fs-17);
-  line-height: var(--lh-150);
+  line-height: var(--lh-145);
 }
 
 .record .facts {
@@ -232,7 +232,7 @@
 
 .done dd {
   margin: 0;
-  line-height: var(--lh-165);
+  line-height: var(--lh-160);
 }
 
 /* An upcoming visit's own page: its card, as Home draws the next one, 24 px under the header as C9's page is. */
@@ -288,7 +288,7 @@
 .cancelled {
   margin: 0;
   font-size: var(--fs-16);
-  line-height: var(--lh-155);
+  line-height: var(--lh-160);
 }
 
 /* A visit the client was not home for, above what the visit's page says of it (the board draws none). */
@@ -301,7 +301,7 @@
 .noShowLine {
   margin: 0;
   font-size: var(--fs-16);
-  line-height: var(--lh-155);
+  line-height: var(--lh-160);
 }
 
 /* The way to dispute a no-show's charge, beneath the ruling it disputes; no board draws it (ADR 0096). */

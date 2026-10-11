@@ -3,7 +3,7 @@
 // height and gap with --code-box-height and --code-box-gap on its own class.
 
 import type { Ref } from "react";
-import { ONE_TIME_CODE } from "../../src/policy/one-time-code.ts";
+import { ONE_TIME_CODE } from "@rules/policy/one-time-code.ts";
 import { classes } from "./classes.ts";
 import styles from "./code-field.module.css";
 

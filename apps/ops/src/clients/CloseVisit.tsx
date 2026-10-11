@@ -2,7 +2,7 @@
 // reached us. Ops say how it went, when the work began and ended on the visit's own day, and how they know
 // (src/routes/ops/visit-changes.ts). No board draws it.
 
-import { REASON_MAX_CHARS } from "../../../../src/policy/decision-reasons.ts";
+import { REASON_MAX_CHARS } from "@rules/policy/decision-reasons.ts";
 import { errorText } from "@maneman/web-kit/refusal";
 import { Button } from "@maneman/ui/Button";
 import { Dialog } from "@maneman/ui/Dialog";

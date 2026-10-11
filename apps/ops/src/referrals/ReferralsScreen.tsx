@@ -8,7 +8,7 @@
 // Each name in a held pair is a way to that client's page, and each grant says
 // how long it has been held, as the board writes it.
 
-import { REASON_MAX_CHARS } from "../../../../src/policy/decision-reasons.ts";
+import { REASON_MAX_CHARS } from "@rules/policy/decision-reasons.ts";
 import { errorText } from "@maneman/web-kit/refusal";
 import { capsLook } from "@maneman/ui/Caps";
 import { Button } from "@maneman/ui/Button";

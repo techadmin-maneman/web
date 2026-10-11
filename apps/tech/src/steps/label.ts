@@ -2,7 +2,7 @@
 // label the API would refuse is caught here, where it can still be put right, rather than stopping the job's close-out
 // on its way.
 
-import { isPieceCode } from "../../../../src/config/pieces.ts";
+import { isPieceCode } from "@rules/config/pieces.ts";
 
 /** A label as typed, as the API reads it: in capitals, with a space taken for the hyphen it stands for. */
 export function asLabel(typed: string): string {

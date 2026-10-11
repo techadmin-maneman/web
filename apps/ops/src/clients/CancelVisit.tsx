@@ -2,7 +2,7 @@
 // what the cancel gives back before anything changes: free to the client, unless ops tick the client's own late terms.
 // It goes only with a reason, which is kept with the cancel (src/routes/ops/visit-changes.ts). No board draws it.
 
-import { REASON_MAX_CHARS } from "../../../../src/policy/decision-reasons.ts";
+import { REASON_MAX_CHARS } from "@rules/policy/decision-reasons.ts";
 import { errorText } from "@maneman/web-kit/refusal";
 import { Button } from "@maneman/ui/Button";
 import { Dialog } from "@maneman/ui/Dialog";

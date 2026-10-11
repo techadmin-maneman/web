@@ -25,7 +25,7 @@ import { Shell } from "../components/Shell.tsx";
 import { apiNow } from "../lib/clock.ts";
 import { duration, invoiceState, oneVisitOf, visitName, visitTitle } from "../lib/visit.ts";
 import { whatsappWith } from "../lib/whatsapp.ts";
-import { firstNameOf } from "../../../../src/lib/names.ts";
+import { firstNameOf } from "@rules/lib/names.ts";
 import { Loading } from "../states/Loading.tsx";
 import { NotFound } from "../states/NotFound.tsx";
 import { PageFailed } from "../states/PageFailed.tsx";

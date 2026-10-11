@@ -3,9 +3,9 @@
 // page sends where the visit came from, where the hair loss is, and the invite this browser remembers. Either way the
 // lead is reported once, with the page it came through, and the invite the browser held is let go of.
 
-import type { LossExtent } from "../../../../src/config/booking.ts";
+import type { LossExtent } from "@rules/config/booking.ts";
 import { track } from "../../lib/analytics.ts";
-import type { BookingWindow } from "../../../../src/config/scheduling.ts";
+import type { BookingWindow } from "@rules/config/scheduling.ts";
 import { forgetInvite } from "../../lib/remembered-invite.ts";
 import { readAttribution } from "../../lib/visit.ts";
 import { codeInPath } from "./page.ts";

@@ -23,7 +23,7 @@ import { callLink, wayTo } from "../lib/navigate.ts";
 import { dayMonth, where } from "../lib/when.ts";
 import { paidFor, profileNamesAnother } from "../lib/paid-for.ts";
 import styles from "./job.module.css";
-import { firstNameOf } from "../../../../src/lib/names.ts";
+import { firstNameOf } from "@rules/lib/names.ts";
 
 type Piece = NonNullable<Job["pieces"]>[number];
 

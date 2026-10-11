@@ -8,7 +8,7 @@
 // or a photograph it cannot read, is `unknown`, which the backend renders as
 // UNKNOWN_COLOR_ROUTE says.
 
-import type { HairColor } from "../../../src/config/tryon.ts";
+import type { HairColor } from "@rules/config/tryon.ts";
 
 type Rgb = readonly [number, number, number];
 

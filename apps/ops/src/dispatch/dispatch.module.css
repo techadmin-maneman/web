@@ -91,7 +91,7 @@
 }
 
 .fieldLabel {
-  line-height: var(--lh-125);
+  line-height: var(--lh-130);
 }
 
 .select,
@@ -274,7 +274,7 @@
 .who,
 .what {
   display: block;
-  line-height: var(--lh-125);
+  line-height: var(--lh-115);
   overflow-wrap: anywhere;
 }
 
@@ -408,7 +408,7 @@
   padding: var(--sp-8) var(--sp-16);
   border-bottom: var(--hairline) solid var(--paper-line);
   font-size: var(--fs-14);
-  line-height: var(--lh-150);
+  line-height: var(--lh-145);
 }
 
 .noticeText {
@@ -432,7 +432,7 @@
   padding: var(--sp-12) var(--sp-16);
   border-top: var(--hairline) solid var(--paper-line);
   font-size: var(--fs-13);
-  line-height: var(--lh-140);
+  line-height: var(--lh-145);
   color: var(--text-muted);
 }
 
@@ -521,7 +521,7 @@
 .trayOffered,
 .trayWas {
   display: block;
-  line-height: var(--lh-140);
+  line-height: var(--lh-145);
   color: var(--text-muted);
 }
 
@@ -581,7 +581,7 @@
   font-family: var(--font-serif);
   font-weight: var(--weight-regular);
   font-size: var(--fs-24);
-  line-height: var(--lh-120);
+  line-height: var(--lh-115);
 }
 
 .pickerWhen {

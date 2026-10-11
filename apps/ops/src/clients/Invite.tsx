@@ -6,7 +6,7 @@
 // (docs/decisions/0089-an-invite-is-not-lost.md). No board draws it
 // (docs/fidelity-method.md).
 
-import { REASON_MAX_CHARS } from "../../../../src/policy/decision-reasons.ts";
+import { REASON_MAX_CHARS } from "@rules/policy/decision-reasons.ts";
 import { errorText } from "@maneman/web-kit/refusal";
 import { capsLook } from "@maneman/ui/Caps";
 import { Button } from "@maneman/ui/Button";

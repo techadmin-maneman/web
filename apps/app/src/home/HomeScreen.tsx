@@ -35,7 +35,7 @@ import {
 } from "./VisitCard.tsx";
 import { ProposedMove } from "./ProposedMove.tsx";
 import styles from "./home.module.css";
-import { firstNameOf } from "../../../../src/lib/names.ts";
+import { firstNameOf } from "@rules/lib/names.ts";
 
 export function HomeScreen() {
   const { me, offline } = useSession();

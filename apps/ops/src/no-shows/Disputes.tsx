@@ -4,7 +4,7 @@
 // gives back what the charge took; the client is told the ruling either way, never the note. A dispute waits on the
 // Tasks board too, whose link opens its row here.
 
-import { REASON_MAX_CHARS } from "../../../../src/policy/decision-reasons.ts";
+import { REASON_MAX_CHARS } from "@rules/policy/decision-reasons.ts";
 import { errorText } from "@maneman/web-kit/refusal";
 import { capsLook } from "@maneman/ui/Caps";
 import { Button } from "@maneman/ui/Button";

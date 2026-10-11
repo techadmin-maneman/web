@@ -3,7 +3,7 @@
 // entered sends what it acts on with the code's ID. A code is for the number it was sent to: another number needs
 // its own.
 
-import { CODE_TEXT } from "../../../src/policy/one-time-code.ts";
+import { CODE_TEXT } from "@rules/policy/one-time-code.ts";
 import { useState } from "preact/hooks";
 import { numberCode as words } from "../content/site.ts";
 import { askForNumberCode, verifyNumberCode, type Answer, type NumberCode, type NumberCodeVerify } from "../lib/api.ts";

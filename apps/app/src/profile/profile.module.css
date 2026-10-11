@@ -32,13 +32,13 @@
 
 .address {
   font-size: var(--fs-16);
-  line-height: var(--lh-155);
+  line-height: var(--lh-160);
 }
 
 .muted {
   margin: var(--sp-8) 0 0;
   font-size: var(--fs-15);
-  line-height: var(--lh-150);
+  line-height: var(--lh-145);
   color: var(--text-muted);
 }
 
@@ -49,7 +49,7 @@
 .landmark dd {
   margin: var(--sp-4) 0 0;
   font-size: var(--fs-15);
-  line-height: var(--lh-150);
+  line-height: var(--lh-145);
 }
 
 .link {
@@ -149,7 +149,7 @@
 .error {
   margin: var(--sp-8) 0 0;
   font-size: var(--fs-15);
-  line-height: var(--lh-155);
+  line-height: var(--lh-160);
   color: var(--error-on-paper);
 }
 
@@ -194,7 +194,7 @@ a.secondary {
 textarea.input {
   height: auto;
   padding: var(--sp-12) var(--sp-16);
-  line-height: var(--lh-150);
+  line-height: var(--lh-145);
   resize: vertical;
 }
 
@@ -222,7 +222,7 @@ textarea.input {
   margin: var(--sp-8) 0 0;
   font-family: var(--font-serif);
   font-size: var(--fs-16);
-  line-height: var(--lh-155);
+  line-height: var(--lh-160);
   white-space: pre-line;
   overflow-wrap: anywhere;
 }
@@ -230,7 +230,7 @@ textarea.input {
 .concernAnswer {
   margin: var(--sp-8) 0 0;
   font-size: var(--fs-15);
-  line-height: var(--lh-155);
+  line-height: var(--lh-160);
   color: var(--text-soft);
   white-space: pre-line;
   overflow-wrap: anywhere;
@@ -272,7 +272,7 @@ textarea.input {
 
 .consentName {
   font-size: var(--fs-16);
-  line-height: var(--lh-140);
+  line-height: var(--lh-145);
 }
 
 .consentRow .consentWhen {
@@ -284,7 +284,7 @@ textarea.input {
 .consequence {
   margin: var(--sp-8) 0 0;
   font-size: var(--fs-15);
-  line-height: var(--lh-155);
+  line-height: var(--lh-160);
   color: var(--text-soft);
 }
 
@@ -340,7 +340,7 @@ textarea.input {
   margin: 0 0 var(--sp-16);
   padding-left: var(--sp-16);
   font-size: var(--fs-15);
-  line-height: var(--lh-155);
+  line-height: var(--lh-160);
   color: var(--text-soft);
 }
 

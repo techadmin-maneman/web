@@ -1,6 +1,6 @@
 import { useState } from "preact/hooks";
-import type { LossExtent } from "../../../../src/config/booking.ts";
-import { ONE_VISIT_WINDOWS } from "../../../../src/policy/one-visit.ts";
+import type { LossExtent } from "@rules/config/booking.ts";
+import { ONE_VISIT_WINDOWS } from "@rules/policy/one-visit.ts";
 import { referral } from "../../content/referral.ts";
 import { booking, numberCode as numberCodeWords } from "../../content/site.ts";
 import { track } from "../../lib/analytics.ts";
@@ -43,8 +43,8 @@ import { codeInPath, hairSystemsInPage } from "./page.ts";
 import { byDoor, leadSent } from "./submit.ts";
 import { useOpenWindows } from "./useOpenWindows.ts";
 import { mobileToSend, PERSON_FIELDS, useTurnstileForm, type PersonFields } from "./useTurnstileForm.ts";
-import { isOneOf } from "../../../../src/lib/one-of.ts";
-import { BOOKING_DAYS } from "../../../../src/config/scheduling.ts";
+import { isOneOf } from "@rules/lib/one-of.ts";
+import { BOOKING_DAYS } from "@rules/config/scheduling.ts";
 
 type BookingWindow = ReferralConsultation["window"];
 export type Plan = "consultation" | "one_visit";

@@ -3,7 +3,7 @@
 // remembered, the latest replacing any other, and it is forgotten once a booking has used it. Whether it applies is
 // the API's to say, by the rules the landing's own booking follows.
 
-import { CODE_PATTERN } from "../../../src/config/invite-codes.ts";
+import { CODE_PATTERN } from "@rules/config/invite-codes.ts";
 
 const KEY = "mm_invite";
 const DAY_MS = 86_400_000;

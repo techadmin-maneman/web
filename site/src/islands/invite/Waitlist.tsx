@@ -1,6 +1,6 @@
 import { useState } from "preact/hooks";
 import { ICONS } from "@maneman/brand/icons";
-import type { LossExtent } from "../../../../src/config/booking.ts";
+import type { LossExtent } from "@rules/config/booking.ts";
 import { referral } from "../../content/referral.ts";
 import { booking } from "../../content/site.ts";
 import { track } from "../../lib/analytics.ts";

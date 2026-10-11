@@ -53,7 +53,7 @@
   font-family: var(--font-serif);
   font-weight: var(--weight-regular);
   font-size: var(--landing-title);
-  line-height: var(--lh-108);
+  line-height: var(--lh-115);
   letter-spacing: var(--tracking-heading);
 }
 
@@ -67,7 +67,7 @@
   margin-top: var(--sp-16);
   max-width: var(--measure-form);
   font-size: var(--fs-lead);
-  line-height: var(--lh-165);
+  line-height: var(--lh-160);
   color: var(--text);
 }
 
@@ -188,13 +188,13 @@
   margin: 0;
   font-size: var(--fs-16);
   font-weight: var(--weight-regular);
-  line-height: var(--lh-135);
+  line-height: var(--lh-130);
 }
 
 .stepBody {
   margin: var(--sp-4) 0 0;
   font-size: var(--fs-15);
-  line-height: var(--lh-155);
+  line-height: var(--lh-160);
   color: var(--text-muted);
 }
 
@@ -219,7 +219,7 @@
   font-family: var(--font-serif);
   font-weight: var(--weight-regular);
   font-size: var(--landing-panel-title);
-  line-height: var(--lh-120);
+  line-height: var(--lh-115);
 }
 
 .pincodeForm {
@@ -313,12 +313,12 @@
 
 .formTitle {
   font-size: var(--landing-form-title);
-  line-height: var(--lh-112);
+  line-height: var(--lh-115);
 }
 
 .waitlistTitle {
   font-size: var(--landing-waitlist-title);
-  line-height: var(--lh-114);
+  line-height: var(--lh-115);
 }
 
 .formBody,
@@ -634,7 +634,7 @@
 
 .consentText {
   font-size: var(--fs-15);
-  line-height: var(--lh-155);
+  line-height: var(--lh-160);
   color: var(--text-soft);
 }
 
@@ -667,7 +667,7 @@
 .hint {
   margin: var(--sp-8) 0 0;
   font-size: var(--fs-14);
-  line-height: var(--lh-155);
+  line-height: var(--lh-160);
   color: var(--text-muted);
 }
 
@@ -722,7 +722,7 @@
   font-family: var(--font-serif);
   font-weight: var(--weight-regular);
   font-size: var(--landing-done-title);
-  line-height: var(--lh-112);
+  line-height: var(--lh-115);
   text-wrap: balance;
 }
 
@@ -750,7 +750,7 @@
   font-family: var(--font-serif);
   font-weight: var(--weight-regular);
   font-size: var(--landing-answer);
-  line-height: var(--lh-116);
+  line-height: var(--lh-115);
 }
 
 .frameBody {
@@ -819,7 +819,7 @@
 
   .title {
     margin-top: var(--sp-24);
-    line-height: var(--lh-102);
+    line-height: var(--lh-100);
     letter-spacing: var(--tracking-title);
   }
 
@@ -878,7 +878,7 @@
 
   .stepBody {
     font-size: var(--fs-16);
-    line-height: var(--lh-150);
+    line-height: var(--lh-145);
   }
 
   .panel,
