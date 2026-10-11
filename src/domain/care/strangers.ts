@@ -5,6 +5,7 @@
 
 import { personByMobile } from "../clients/people.ts";
 import { auditStatement, type AuditActor } from "../ops/audit.ts";
+import type { ChannelCode } from "../../policy/channels.ts";
 import { giveCarePerson } from "./care-people.ts";
 
 interface Change {
@@ -61,12 +62,12 @@ export async function linkChat(
 }
 
 /**
- * Saves a stranger as someone new: a person by the chat's number and the name they gave, their WhatsApp lead, and the
- * chat theirs. A number one of our people already has is linked instead, never saved twice.
+ * Saves a stranger as someone new: a person by the chat's number and the name they gave, their WhatsApp lead with how
+ * they told Care they found us, and the chat theirs. A number one of our people already has is linked instead, never saved twice.
  */
 export async function saveStranger(
   db: D1Database,
-  change: Change & { readonly name: string; readonly testRecord: boolean },
+  change: Change & { readonly name: string; readonly testRecord: boolean; readonly foundUs: ChannelCode | null },
 ): Promise<{ readonly personId: string; readonly leadId: string } | "not_found" | "known" | "has_number"> {
   const chat = await strangerChat(db, change.conversationId);
   if (typeof chat === "string") return chat;
@@ -85,8 +86,10 @@ export async function saveStranger(
       at,
     }),
     db
-      .prepare("INSERT INTO leads (id, person_id, created_at, source, request_id) VALUES (?1, ?2, ?3, 'whatsapp', ?4)")
-      .bind(leadId, personId, at, change.requestId),
+      .prepare(
+        "INSERT INTO leads (id, person_id, created_at, source, request_id, found_us) VALUES (?1, ?2, ?3, 'whatsapp', ?4, ?5)",
+      )
+      .bind(leadId, personId, at, change.requestId, change.foundUs),
     db
       .prepare(
         "INSERT INTO events (id, created_at, name, subject_id, payload_json) VALUES (?1, ?2, 'lead_created', ?3, ?4)",

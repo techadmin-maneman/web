@@ -316,6 +316,7 @@ export const MY_DATA = {
         utm_content: text("Campaign content"),
         gclid: text("Google ad click"),
         fbclid: text("Facebook ad click"),
+        found_us: words("How you told us you found us"),
         created_at: time("When"),
       },
     },

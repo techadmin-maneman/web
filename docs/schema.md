@@ -1059,7 +1059,7 @@ Triggers: `last_visits_fitted_added`, `last_visits_fitted_changed`.
 
 Each booking, waitlist sign-up and try-on claim as the CRM receives it, and whether it has reached the CRM and FSM (ADR 0011, ADR 0012).
 
-Made by `0002_lead_path.sql`; changed by `0015_fsm_leads.sql`, `0031_optional_loss_extent.sql`, `0037_cron_indexes.sql`, `0038_alerts.sql`, `0039_money_path.sql`, `0120_whatsapp_leads.sql`.
+Made by `0002_lead_path.sql`; changed by `0015_fsm_leads.sql`, `0031_optional_loss_extent.sql`, `0037_cron_indexes.sql`, `0038_alerts.sql`, `0039_money_path.sql`, `0120_whatsapp_leads.sql`, `0127_found_us.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -1087,6 +1087,7 @@ Made by `0002_lead_path.sql`; changed by `0015_fsm_leads.sql`, `0031_optional_lo
 | `fsm_queued_at` | TEXT | yes |  |  |
 | `fsm_request_tried_at` | TEXT | yes |  |  |
 | `source` | TEXT | yes |  |  |
+| `found_us` | TEXT | yes |  |  |
 
 Indexes:
 

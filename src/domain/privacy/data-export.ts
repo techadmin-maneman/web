@@ -72,7 +72,7 @@ export const EXPORT_QUERIES = {
   waitlist: `SELECT pincode, referral_code, contact_consent_at, launch_alert, alerted_at, created_at FROM waitlist_entries
     WHERE person_id = ?1 ORDER BY created_at`,
   leads: `SELECT source, city, loss_extent, first_choice_window, proposed_visit_date, referrer, landing_path, utm_source,
-      utm_medium, utm_campaign, utm_content, gclid, fbclid, created_at
+      utm_medium, utm_campaign, utm_content, gclid, fbclid, found_us, created_at
     FROM leads WHERE person_id = ?1 ORDER BY created_at`,
   try_ons: `SELECT stage, preset, hair_color, state, photo_consent_version, photo_consent_at, kept_at, upload_deleted_at,
       created_at

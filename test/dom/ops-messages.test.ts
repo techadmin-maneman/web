@@ -431,8 +431,17 @@ describe("the Messages page", () => {
       body: { person_id: ARJUN.person?.id },
     });
     type(page.querySelector<HTMLInputElement>('input[maxlength="80"]') ?? undefined, "Meera Iyer");
+    const foundUs = [...page.querySelectorAll("select")].find((each) => each.querySelector('option[value="partner"]'));
+    act(() => {
+      if (foundUs === undefined) return;
+      Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, "value")?.set?.call(foundUs, "partner");
+      foundUs.dispatchEvent(new Event("change", { bubbles: true }));
+    });
     await click(named(copy.stranger.save));
-    expect(posted.at(-1)).toEqual({ path: `/api/conversations/${STRANGER.id}/save`, body: { name: "Meera Iyer" } });
+    expect(posted.at(-1)).toEqual({
+      path: `/api/conversations/${STRANGER.id}/save`,
+      body: { name: "Meera Iyer", found_us: "partner" },
+    });
   });
 
   it("lists the Care team with their days off and leave", async () => {
