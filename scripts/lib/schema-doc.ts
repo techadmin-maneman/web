@@ -185,9 +185,10 @@ export const RESTORE_GROUPS: readonly RestoreGroup[] = [
       "partial_reasons",
       "pay_grades",
       "visit_pay_rates",
+      "word_versions",
     ],
     leftAtT:
-      "A price, service, rule, area, day's times, day off, consumable, job-sheet list or pay rate set since goes back",
+      "A price, service, rule, area, day's times, day off, consumable, job-sheet list, pay rate or wording set since goes back",
     putBackBy: "Setting it again in the console, which audits it",
   },
   {

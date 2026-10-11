@@ -191,6 +191,14 @@ this map, or when the map names something that no longer exists.
 - **Screens:** `site/src/pages/stop.astro`
 - **Tests:** `test/worker/messages/`
 
+### The Words page
+
+- **Database work** (`src/domain/words/`): `catalogue`, `words`
+- **Rules** (`src/policy/`): `word-checks`
+- **Data** (`src/config/`): `words.json`, which npm run words writes from the site's copy and the message texts
+- **Routes** (`src/routes/`): `ops/words`
+- **Tests:** `test/worker/ops/words.test.ts`, `test/node/words/`, `test/node/policy/word-checks.test.ts`
+
 ### Ops' own work
 
 - **Database work** (`src/domain/ops/`): `alerts`, `needs-a-hand`, `tasks`, `task-closures`, `task-owners`,
