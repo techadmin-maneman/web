@@ -97,6 +97,12 @@ export function shortMonth(isoMonth: string): string {
   return `${MONTHS[Number(month) - 1] ?? ""} ${year}`;
 }
 
+/** "2026-09" → "September 2026", as a statement names its month. */
+export function fullMonth(isoMonth: string): string {
+  const [year = "", month] = isoMonth.split("-");
+  return `${MONTH_NAMES[Number(month) - 1] ?? ""} ${year}`;
+}
+
 /** "2028-03" → "March" in 2028, and "March 2028" in any other year: as listDate dates an entry. */
 export function listMonth(isoMonth: string, thisYear: number): string {
   const [year = "", month] = isoMonth.split("-");

@@ -10311,6 +10311,10 @@ Request body:
       "type": "string",
       "pattern": "^\\d{4}-(0[1-9]|1[0-2])$"
     },
+    "today": {
+      "type": "string",
+      "format": "date"
+    },
     "this_month": {
       "type": "string",
       "pattern": "^\\d{4}-(0[1-9]|1[0-2])$"
@@ -10443,6 +10447,7 @@ Request body:
   },
   "required": [
     "month",
+    "today",
     "this_month",
     "first_month",
     "max_amount",

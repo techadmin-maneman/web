@@ -23,6 +23,7 @@ const PARTNERS: OpsReply<"/api/referral-channels"> = {
       referred: 6,
       fitted: 2,
       earned: 300000,
+      owed: 150000,
     },
   ],
   limits: { max_visits: 12, min_days: 30, max_days: 1095, max_commission: 5000000 },
@@ -55,6 +56,7 @@ test("lists each partner with its link, what its friend gets, its commission and
     "6",
     "2",
     "Rs. 3,000",
+    "Rs. 1,500",
     "EditPause",
   ]);
 });

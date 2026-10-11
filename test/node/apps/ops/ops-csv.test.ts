@@ -88,11 +88,16 @@ describe("the list ops download", () => {
   });
 
   it("starts any cell a spreadsheet would run as a formula with an apostrophe, so it is read as text", () => {
-    for (const area of ["=HYPERLINK(1)", "+91", "-1", "@SUM(1)", "\tTab", "\rReturn"]) {
+    for (const area of ["=HYPERLINK(1)", "+91", "-1+1", "@SUM(1)", "\tTab", "\rReturn"]) {
       const line = serviceAreaCsv([{ ...SECTOR_65, area }]).split("\n")[1] ?? "";
       expect(line, JSON.stringify(area)).not.toMatch(/,"?[=+\-@\t\r]/);
       expect(line, JSON.stringify(area)).toContain(`'${area}`);
     }
+  });
+
+  it("leaves a plain negative number as the number it is, which no spreadsheet runs", () => {
+    const line = serviceAreaCsv([{ ...SECTOR_65, area: "-1500.00" }]).split("\n")[1];
+    expect(line).toBe("122018,Gurgaon,-1500.00,no,");
   });
 
   it("doubles a quote inside a quoted cell", () => {

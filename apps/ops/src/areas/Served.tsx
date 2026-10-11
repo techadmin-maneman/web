@@ -22,6 +22,7 @@ import { useState } from "react";
 import { api, type ServedPincode } from "../api.ts";
 import { areas } from "../content.ts";
 import { useAccess } from "../lib/access.ts";
+import { saveCsv } from "../lib/save-csv.ts";
 import styles from "../components/forms.module.css";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import { Narrowing, SortHeads, TableEnd } from "../components/TableTools.tsx";
@@ -115,15 +116,7 @@ function Area({ pincodes: loadedPincodes, cities }: { pincodes: readonly ServedP
   };
 
   const download = () => {
-    const blob = new Blob([serviceAreaCsv(pincodes)], { type: "text/csv" });
-    const link = document.createElement("a");
-    link.href = URL.createObjectURL(blob);
-    link.download = copy.downloadName;
-    link.click();
-    // Released once the click has been handled: released at once, some browsers cancel the download.
-    setTimeout(() => {
-      URL.revokeObjectURL(link.href);
-    }, 0);
+    saveCsv(copy.downloadName, serviceAreaCsv(pincodes));
   };
 
   const pressSave = () => {

@@ -62,6 +62,7 @@ const StatementSchema = z
 const StatementsSchema = z
   .object({
     month: Month,
+    today: z.iso.date(),
     this_month: Month,
     first_month: Month.openapi({ description: "The month the first partner was added in." }),
     max_amount: z.number().int(),
@@ -128,6 +129,7 @@ export function registerOpsPartnerStatements(app: App): void {
     const now = c.var.deps.now();
     return {
       month,
+      today: indiaDate(now),
       this_month: monthOf(indiaDate(now)),
       first_month: await firstPartnerMonth(c.env.DB, now),
       max_amount: MAX_PAYOUT,

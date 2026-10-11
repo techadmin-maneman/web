@@ -24,7 +24,7 @@ import own from "./partners.module.css";
 /** The site the partner's link opens: the environment's own. */
 const SITE = new URL(BOOKING_URL[import.meta.env.MM_ENV]);
 
-const COLUMNS = 9;
+const COLUMNS = 10;
 
 /** What is open beneath a partner's row. */
 type Acting = { readonly id: string; readonly kind: "edit" | "pause" } | null;
@@ -140,6 +140,7 @@ function PartnerRows({ partner, ...row }: { partner: Partner } & RowProps) {
         <td className={own.figure}>{partner.referred}</td>
         <td className={own.figure}>{partner.fitted}</td>
         <td className={own.figure}>{rupees(partner.earned)}</td>
+        <td className={own.figure}>{rupees(partner.owed)}</td>
         <td className={own.actions}>{row.mayChange && <RowActions partner={partner} {...row} />}</td>
       </tr>
       <ActingRow partner={partner} {...row} />
@@ -149,7 +150,7 @@ function PartnerRows({ partner, ...row }: { partner: Partner } & RowProps) {
 
 function PartnerTable(row: RowProps) {
   const heads = copy.columns;
-  const figures = [heads.commission, heads.opens, heads.referred, heads.fitted, heads.earned];
+  const figures = [heads.commission, heads.opens, heads.referred, heads.fitted, heads.earned, heads.owed];
   return (
     <div className={own.scroll}>
       <Table className={classes(styles.table, own.table)}>

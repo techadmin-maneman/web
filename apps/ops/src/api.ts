@@ -94,6 +94,10 @@ type BlackoutRemove = Sent<paths["/api/blackouts/remove"]["post"]>;
 export type Partners = Body<paths["/api/referral-channels"]["get"]>;
 export type Partner = Partners["channels"][number];
 export type PartnerTerms = Sent<paths["/api/referral-channels"]["post"]>;
+/** Partners' monthly statements, and their payments (docs/decisions/0124-partner-statements.md). */
+export type PartnerStatements = Body<paths["/api/partner-statements"]["get"]>;
+export type PartnerStatement = PartnerStatements["statements"][number];
+type PartnerPayout = Sent<paths["/api/partner-statements/{id}/payouts"]["post"]>;
 /** Discount codes, and a code on a client's visit (docs/decisions/0108-discount-codes.md). */
 export type DiscountCodes = Body<paths["/api/discount-codes"]["get"]>;
 export type DiscountCode = Body<paths["/api/discount-codes"]["get"]>["codes"][number];
@@ -491,6 +495,11 @@ export const api = {
     client.patch("/api/referral-channels/{id}", { path: { id }, body: terms }),
   pausePartner: (id: string, paused: boolean) =>
     client.post("/api/referral-channels/{id}/pause", { path: { id }, body: { paused } }),
+  partnerStatements: (month: string | null) => client.get("/api/partner-statements", { query: setOnly({ month }) }),
+  recordPartnerPayout: (id: string, payout: PartnerPayout) =>
+    client.post("/api/partner-statements/{id}/payouts", { path: { id }, body: payout }),
+  deletePartnerPayout: (id: string, month: string) =>
+    client.post("/api/partner-statements/{id}/payouts/{month}/delete", { path: { id, month } }),
   technicianPay: () => client.get("/api/technician-pay"),
   addPayGrade: (name: string) => client.post("/api/technician-pay/grades", { body: { name } }),
   renamePayGrade: (id: string, name: string) =>

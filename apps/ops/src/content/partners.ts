@@ -16,6 +16,7 @@ export const partners = {
     referred: "Came",
     fitted: "Fitted",
     earned: "Earned",
+    owed: "Owed",
     change: "Change",
   },
   /** "maneman.in/r/LSK7P2QX", as the partner's counter card prints it. */

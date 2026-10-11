@@ -9237,6 +9237,8 @@ export interface components {
         };
         PartnerStatements: {
             month: string;
+            /** Format: date */
+            today: string;
             this_month: string;
             /** @description The month the first partner was added in. */
             first_month: string;
