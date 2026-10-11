@@ -1,4 +1,4 @@
-// The guides and the cities page, as every build but production's draws them while their wording awaits the owner.
+// The guides and the cities page, as every build but production's draws them while their wording awaits approval.
 
 import { expect, test } from "./support.ts";
 import * as guideCopy from "../site/src/content/guides.ts";

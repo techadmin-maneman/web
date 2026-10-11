@@ -1,5 +1,5 @@
 // The guides: the questions people ask a search engine before they ask us, answered in the site's own facts, and the
-// cities we come to. Each is a draft until the owner approves its wording: unpublished, it is built for staging with the
+// cities we come to. Each is a draft until its wording is approved: unpublished, it is built for staging with the
 // design's "Placeholder" tag, and production builds no page for it at all (src/pages/guides/, src/pages/areas/).
 //
 // No price is written here: a guide says what a price depends on, and that it is quoted at the free consultation
@@ -15,7 +15,7 @@ export interface GuideSection {
 export interface Guide {
   /** Its address under /guides/. */
   readonly slug: string;
-  /** The owner has approved its wording; until then production builds no page for it. */
+  /** Its wording is approved; until then production builds no page for it. */
   readonly publish: boolean;
   readonly title: string;
   /** The line a search engine shows beneath the title. */
