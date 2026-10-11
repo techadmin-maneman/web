@@ -333,6 +333,19 @@
   margin-top: 0;
 }
 
+/* /book's "Step 2 of 4 · Your area", over the step it names. */
+.step {
+  margin: 0;
+  font-size: var(--fs-15);
+  color: var(--text-muted);
+  scroll-margin-top: var(--sp-24);
+}
+
+.step + .forPincode,
+.step + .waitlistTitle {
+  margin-top: var(--sp-12);
+}
+
 .forPincode {
   font-variant-numeric: tabular-nums;
 }

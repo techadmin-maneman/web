@@ -52,6 +52,7 @@ import { IdempotencyKeyHeaderSchema } from "../../http/idempotency.ts";
 import { PersonNameSchema } from "../../http/openapi.ts";
 import { addressOf } from "../schemas/address.ts";
 import { AddressSchema, RequiredFlatSchema } from "../schemas/address.ts";
+import { AttributionSchema } from "../schemas/attribution.ts";
 import { bookedWithCode, bookFromForm, joinWaitlistFromForm } from "./forms.ts";
 
 /** Six digits, and never starting with 0 or 9: India's pincodes. */
@@ -59,20 +60,6 @@ const PincodeSchema = z
   .string()
   .regex(/^[1-8]\d{5}$/)
   .openapi({ description: "A six-digit Indian pincode." });
-
-const AttributionSchema = z
-  .object({
-    utm_source: z.string().max(200).optional(),
-    utm_medium: z.string().max(200).optional(),
-    utm_campaign: z.string().max(200).optional(),
-    utm_content: z.string().max(200).optional(),
-    gclid: z.string().max(200).optional(),
-    fbclid: z.string().max(200).optional(),
-    referrer: z.string().max(500).optional(),
-    landing_path: z.string().max(500).optional(),
-  })
-  .strict()
-  .optional();
 
 const Person = {
   name: PersonNameSchema,

@@ -8,14 +8,17 @@ export function currentStep(): Step {
   return stepOf(history.state).step;
 }
 
-export function pushStep(step: "form" | "done", answer: PincodeAnswer): void {
+/** /book's pincode field, once the name and number are kept; or a step the pincode's answer opened. */
+export function pushStep(step: "pincode", answer: null): void;
+export function pushStep(step: "form" | "address" | "done", answer: PincodeAnswer): void;
+export function pushStep(step: Exclude<Step, "start">, answer: PincodeAnswer | null): void {
   const entry: StepEntry = { step, answer };
   history.pushState(entry, "");
 }
 
-/** A reloaded page opens at the pincode field, so the entry it reloaded says so too. */
-export function startAtPincode(): void {
-  if (currentStep() !== "pincode") history.replaceState(null, "");
+/** A reloaded page opens where it always does, so the entry it reloaded says so too. */
+export function startAtTheStart(): void {
+  if (currentStep() !== "start") history.replaceState(null, "");
 }
 
 /** Calls `onStep` with each step Back or Forward lands on; returns what stops it. */

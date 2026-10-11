@@ -155,6 +155,11 @@ describe("lead notices", () => {
     );
   });
 
+  it("says when only the name and number were left, at the first step of booking", () => {
+    const left = { ...lead, source: "form" as const, city: null, first_choice_window: null, proposed_visit_date: null };
+    expect(leadNotice(left)).toBe("New name and number, at the first step of booking. Lead 0b9f1a52.");
+  });
+
   it("names a waitlist's city, and says a try-on lead is not to be chased", () => {
     expect(leadNotice({ ...lead, source: "waitlist", city: "Mumbai" })).toBe(
       "New waitlist sign-up: Mumbai. Lead 0b9f1a52.",

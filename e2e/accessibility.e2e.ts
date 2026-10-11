@@ -64,15 +64,21 @@ test("the forms' error states meet WCAG 2.2 AA", async ({ page }) => {
   await expect(page.getByText("Tell us what to call you, in letters.")).toBeVisible();
   expect(await violations(page)).toEqual([]);
 
-  // The booking page is the referral landing without the invite: a pincode first,
-  // then the form it decides on (docs/decisions/0051-booking-from-the-site.md).
-  await visit(page, "/book?state=served");
-  await page.getByRole("button", { name: "Book the consultation" }).click();
+  // The booking page asks for the name and number first, then the pincode, the visit and the address
+  // (docs/decisions/0116-book-asks-for-the-name-and-number-first.md).
+  await visit(page, "/book");
+  await page.getByRole("button", { name: "Continue" }).click();
   await expect(page.getByText("Enter your name in letters.")).toBeVisible();
+  expect(await violations(page)).toEqual([]);
+
+  await visit(page, "/book?state=served");
+  await page.getByRole("button", { name: "Continue" }).click();
+  await page.getByRole("button", { name: "Book the consultation" }).click();
   await expect(page.getByText("Enter the building or society.")).toBeVisible();
   expect(await violations(page)).toEqual([]);
 
-  await visit(page, "/book");
+  // The invite's page has its pincode first.
+  await visit(page, "/r/RM4K7P");
   await page.getByLabel("Pincode").fill("12");
   await page.getByRole("button", { name: "Check" }).click();
   await expect(page.getByText("That isn’t a six-digit Indian pincode.")).toBeVisible();
