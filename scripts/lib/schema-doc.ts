@@ -99,6 +99,8 @@ export const PURPOSES: Readonly<Record<string, string>> = {
     "Each booking, waitlist sign-up and try-on claim as the CRM receives it, and whether it has reached the CRM and FSM (ADR 0011, ADR 0012).",
   maintenance:
     'One row while D1 is being restored: the cron and the queue consumers stand still until it is deleted (runbook, "Restoring D1").',
+  move_proposals:
+    "A move to another day ops asked a client to confirm: where the visit would go, until when, and whether it was accepted, taken back or made moot (ADR 0115).",
   no_show_cases:
     "The evidence a no-show is ruled on, the ruling, and what a charge cost the client (ADR 0065, ADR 0072, ADR 0096).",
   no_show_disputes:
@@ -251,6 +253,7 @@ export const RESTORE_GROUPS: readonly RestoreGroup[] = [
       "slot_holds",
       "slot_claims",
       "dispatch_moves",
+      "move_proposals",
       "visit_changes",
       "consultation_requests",
       "first_fit_requests",

@@ -42,6 +42,17 @@ export const OneVisitPriceSchema = z
   .strict()
   .openapi("OneVisitPrice");
 
+const ProposedMoveSchema = z
+  .object({
+    id: z.uuid(),
+    date: z.iso.date().openapi({ description: "India's date the visit would move to." }),
+    window: z.enum(["morning", "afternoon", "evening"]),
+    technician: z.union([TechnicianSchema, z.null()]),
+    expires_at: z.iso.datetime().openapi({ description: "The last moment it may be accepted." }),
+  })
+  .strict()
+  .openapi("ProposedMove");
+
 export const VisitSummarySchema = z
   .object({
     id: z.uuid(),
@@ -75,6 +86,11 @@ export const VisitSummarySchema = z
       description:
         "A consultation and fit in one visit not yet closed: the client pays only if they go ahead, once fitted, by " +
         "a link Razorpay texts them. Null for any other visit.",
+    }),
+    proposed_move: z.union([ProposedMoveSchema, z.null()]).openapi({
+      description:
+        "A move to another day ops asked the client to confirm, still open: the visit stays where it is until they " +
+        "accept it (POST /api/visits/{id}/proposed-move/accept) or pick another time. Null for none.",
     }),
   })
   .strict()

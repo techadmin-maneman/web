@@ -58,6 +58,7 @@ import { composeMessagesStopped, stopLink } from "../domain/messages/stop-messag
 import { composeLaunchAlert, composeWaitlistConfirmation } from "../domain/booking/waitlist.ts";
 import { isMessageStale, VISIT_MESSAGE_KINDS, type VisitMessageKind } from "../domain/messages/visit-messages.ts";
 import { composeVisitMessage } from "../domain/messages/visit-message-text.ts";
+import { composeMoveProposed } from "../domain/messages/move-proposal-text.ts";
 import { messageFailedKey } from "../policy/alerts.ts";
 import type { SendResult } from "../providers/messaging/index.ts";
 import { scrubString, type Logger } from "../log.ts";
@@ -273,6 +274,8 @@ async function contentOf(db: D1Database, config: StaticConfig, row: MessageRow, 
       return composeDeletionRejected(db, row.subject_id, row.person_id);
     case "messages_stopped":
       return composeMessagesStopped(db, row.person_id);
+    case "move_proposed":
+      return composeMoveProposed(db, row.subject_id, row.person_id, now);
   }
 }
 

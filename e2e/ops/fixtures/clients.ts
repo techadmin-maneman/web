@@ -57,6 +57,7 @@ export const RECORD = {
         discount_code: null,
         price_open: false,
         requested_code: null,
+        proposed_move: null,
       },
     ],
     past: [
@@ -82,6 +83,7 @@ export const RECORD = {
         discount_code: null,
         price_open: false,
         requested_code: null,
+        proposed_move: null,
       },
     ],
   },
