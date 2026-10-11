@@ -1,6 +1,7 @@
 // Customer Care · Messages (docs/decisions/0129-the-care-inbox.md), which no board draws. Every name and number is
 // made up.
 
+import { indiaClock, indiaDate, shortDate } from "../../packages/web-kit/dates.ts";
 import { expect, test } from "../support.ts";
 import { answer, json, type OpsReply } from "./answer.ts";
 import { care as copy } from "../../apps/ops/src/content/care.ts";
@@ -16,6 +17,7 @@ const ARJUN: Conversation = {
   last_message_at: "2026-09-21T05:12:00.000Z",
   last_line: "Can I move tomorrow's visit to the evening?",
   waiting_since: "2026-09-21T05:12:00.000Z",
+  reply_by: "2026-09-21T06:12:00.000Z",
 };
 
 test("lists the chats waiting on us, and opens one with our automatic messages in it", async ({ page }) => {
@@ -42,7 +44,10 @@ test("lists the chats waiting on us, and opens one with our automatic messages i
   const row = page.getByRole("row").filter({ has: page.getByRole("rowheader", { name: "Arjun Mehta" }) });
   await expect(row.getByRole("cell").nth(1)).toHaveText("asha@maneman.test");
   await expect(row.getByRole("cell").nth(2)).toHaveText(ARJUN.last_line ?? "");
-  await expect(row.getByRole("cell").nth(3)).toHaveText(copy.waitingSince("10:42 am"));
+  const due = ARJUN.reply_by ?? "";
+  await expect(row.getByRole("cell").nth(3)).toHaveText(
+    copy.overdue(`${shortDate(indiaDate(due))}, ${indiaClock(due)}`),
+  );
   await row.getByRole("button", { name: copy.openLabel("Arjun Mehta") }).click();
   await expect(
     page.getByText(copy.thread.auto("Visit reminder", [copy.thread.delivered, copy.thread.read])),

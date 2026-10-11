@@ -11,6 +11,7 @@
 // of their own (price_book, serviceable_pincodes) because a document already
 // issued depends on what was true then; the ADR gives the split.
 
+import { CARE_HOURS, CARE_HOURS_KEYS, careHoursConflicts } from "./care-hours.ts";
 import { CHECKIN_RADIUS_M } from "./check-in.ts";
 import { DAY_BEFORE_REMINDER_HOUR, UNLOCK_HOUR } from "./job-visibility.ts";
 import {
@@ -279,6 +280,24 @@ export const OPS_SETTINGS = [
       valid_days: { min: 30, max: 1095, unit: "days" },
     },
     fallback: REFERRAL_REWARD,
+  },
+  {
+    // The reply clock (docs/decisions/0132-the-reply-clock.md).
+    name: "care_hours",
+    title: "Customer Care hours",
+    note: "When Care are on, how soon they reply, and when a message sent after hours is answered by.",
+    unit: HOUR_OF_DAY,
+    min: 0,
+    max: 720,
+    keys: CARE_HOURS_KEYS,
+    bounds: {
+      opens: { min: 0, max: 23 },
+      closes: { min: 1, max: 23 },
+      first_reply: { min: 5, max: 720, unit: "minutes" },
+      answered_by: { min: 0, max: 23 },
+    },
+    fallback: CARE_HOURS,
+    conflicts: (value) => careHoursConflicts(value),
   },
 ] as const satisfies readonly OpsSetting[];
 

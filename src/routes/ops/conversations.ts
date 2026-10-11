@@ -11,6 +11,7 @@ import { errorResponse, refuse } from "../../http/errors.ts";
 import { json } from "../../http/openapi.ts";
 import type { Context } from "hono";
 import { actorOf, staffMemberOf } from "../../http/audit.ts";
+import { opsInputs } from "../../http/ops-inputs.ts";
 import type { AppEnv } from "../../http/context.ts";
 import { conversationThread, INBOX_VIEWS, listConversations } from "../../domain/care/inbox.ts";
 import { addNote, CLOSE_REASONS, closeConversation, replyTo } from "../../domain/care/replies.ts";
@@ -30,6 +31,9 @@ const ConversationSchema = z
     last_line: z.union([z.string(), z.null()]),
     waiting_since: z.union([z.iso.datetime(), z.null()]).openapi({
       description: "When the client last wrote, unanswered since; null when nothing waits on us.",
+    }),
+    reply_by: z.union([z.iso.datetime(), z.null()]).openapi({
+      description: "When our reply is due, by the Care hours ops set (care_hours); null when nothing waits on us.",
     }),
   })
   .strict()
@@ -159,7 +163,7 @@ function registerAnswers(app: App): void {
     });
     if (replied === "not_found" || replied === "erased") return refuse(c, "not_found");
     if (replied === "unavailable") return refuse(c, "unavailable");
-    const thread = await conversationThread(c.env.DB, id);
+    const thread = await conversationThread(c.env.DB, id, (await opsInputs(c)).careHours);
     return thread === null ? refuse(c, "not_found") : c.json(thread, 200);
   });
 
@@ -168,7 +172,7 @@ function registerAnswers(app: App): void {
     if ((await addNote(c.env.DB, { ...changeOf(c, id), text: c.req.valid("json").text })) === "not_found") {
       return refuse(c, "not_found");
     }
-    const thread = await conversationThread(c.env.DB, id);
+    const thread = await conversationThread(c.env.DB, id, (await opsInputs(c)).careHours);
     return thread === null ? refuse(c, "not_found") : c.json(thread, 200);
   });
 
@@ -176,7 +180,7 @@ function registerAnswers(app: App): void {
     const { id } = c.req.valid("param");
     const closed = await closeConversation(c.env.DB, { ...changeOf(c, id), reason: c.req.valid("json").reason });
     if (closed === "not_found") return refuse(c, "not_found");
-    const thread = await conversationThread(c.env.DB, id);
+    const thread = await conversationThread(c.env.DB, id, (await opsInputs(c)).careHours);
     return thread === null ? refuse(c, "not_found") : c.json(thread, 200);
   });
 }
@@ -185,11 +189,13 @@ export function registerOpsConversations(app: App): void {
   registerAnswers(app);
   app.openapi(listRoute, async (c) => {
     const me = staffMemberOf(c)?.id ?? "";
-    return c.json({ conversations: await listConversations(c.env.DB, c.req.valid("query").view, me) }, 200);
+    const { careHours } = await opsInputs(c);
+    const conversations = await listConversations(c.env.DB, c.req.valid("query").view, me, careHours);
+    return c.json({ conversations }, 200);
   });
 
   app.openapi(threadRoute, async (c) => {
-    const thread = await conversationThread(c.env.DB, c.req.valid("param").id);
+    const thread = await conversationThread(c.env.DB, c.req.valid("param").id, (await opsInputs(c)).careHours);
     if (thread === null) return refuse(c, "not_found");
     return c.json(thread, 200);
   });

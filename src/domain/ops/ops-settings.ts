@@ -13,6 +13,7 @@
 // the committed default. The system runs on the numbers in the code until
 // somebody sets one, and it never runs on a nought.
 
+import type { CareHours } from "../../policy/care-hours.ts";
 import {
   checkValue,
   OPS_SETTINGS,
@@ -56,6 +57,8 @@ export interface OpsInputs {
   readonly nextVisitDays: NextVisitDays;
   readonly paymentHold: PaymentHold;
   readonly technicianWork: TechnicianWorkFigures;
+  /** When Care are on and how soon they reply (src/policy/care-hours.ts). */
+  readonly careHours: CareHours;
   readonly referralReward: ReferralReward;
 }
 
@@ -96,6 +99,7 @@ function shape(values: OpsValues): OpsInputs {
     paymentHold: values.payment_hold,
     technicianWork: values.technician_work,
     referralReward: values.referral_reward,
+    careHours: values.care_hours,
   };
 }
 

@@ -18,6 +18,7 @@ const ARJUN: Conversation = {
   last_message_at: "2026-09-21T05:12:00.000Z",
   last_line: "Can I move tomorrow's visit to the evening?",
   waiting_since: "2026-09-21T05:12:00.000Z",
+  reply_by: "2026-09-21T06:12:00.000Z",
 };
 const STRANGER: Conversation = {
   ...ARJUN,
@@ -119,6 +120,7 @@ describe("the Messages page", () => {
     expect(page.textContent).toContain("Arjun Mehta");
     expect(page.textContent).toContain(ARJUN.last_line);
     expect(page.textContent).toContain(copy.unknown);
+    expect(page.textContent).toContain(copy.overdue(""));
   });
 
   it("opens a chat with our automatic messages in it, and how far each got", async () => {

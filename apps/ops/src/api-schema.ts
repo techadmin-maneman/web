@@ -5855,7 +5855,7 @@ export interface paths {
                 query?: never;
                 header?: never;
                 path: {
-                    name: "checkin_radius_m" | "no_show_wait_min" | "change_notice_hours" | "late_change_charge" | "no_show_charge" | "no_show_waiver" | "address_unlock_hour" | "reminder_hour" | "phone_clock" | "task_sla_hours" | "piece_cycle_days" | "payment_hold" | "dispute_window_days" | "technician_work" | "booking_days" | "referral_reward";
+                    name: "checkin_radius_m" | "no_show_wait_min" | "change_notice_hours" | "late_change_charge" | "no_show_charge" | "no_show_waiver" | "address_unlock_hour" | "reminder_hour" | "phone_clock" | "task_sla_hours" | "piece_cycle_days" | "payment_hold" | "dispute_window_days" | "technician_work" | "booking_days" | "referral_reward" | "care_hours";
                 };
                 cookie?: never;
             };
@@ -9910,6 +9910,8 @@ export interface components {
             last_line: string | null;
             /** @description When the client last wrote, unanswered since; null when nothing waits on us. */
             waiting_since: string | null;
+            /** @description When our reply is due, by the Care hours ops set (care_hours); null when nothing waits on us. */
+            reply_by: string | null;
         };
         ThreadItem: {
             /** @enum {string} */
@@ -10939,7 +10941,7 @@ export interface components {
         OpsSetting: components["schemas"]["NumberRule"] | components["schemas"]["ChoiceRule"];
         NumberRule: {
             /** @enum {string} */
-            name: "checkin_radius_m" | "no_show_wait_min" | "change_notice_hours" | "late_change_charge" | "no_show_charge" | "no_show_waiver" | "address_unlock_hour" | "reminder_hour" | "phone_clock" | "task_sla_hours" | "piece_cycle_days" | "payment_hold" | "dispute_window_days" | "technician_work" | "booking_days" | "referral_reward";
+            name: "checkin_radius_m" | "no_show_wait_min" | "change_notice_hours" | "late_change_charge" | "no_show_charge" | "no_show_waiver" | "address_unlock_hour" | "reminder_hour" | "phone_clock" | "task_sla_hours" | "piece_cycle_days" | "payment_hold" | "dispute_window_days" | "technician_work" | "booking_days" | "referral_reward" | "care_hours";
             title: string;
             note: string;
             set_by: string | null;
@@ -10972,7 +10974,7 @@ export interface components {
         };
         ChoiceRule: {
             /** @enum {string} */
-            name: "checkin_radius_m" | "no_show_wait_min" | "change_notice_hours" | "late_change_charge" | "no_show_charge" | "no_show_waiver" | "address_unlock_hour" | "reminder_hour" | "phone_clock" | "task_sla_hours" | "piece_cycle_days" | "payment_hold" | "dispute_window_days" | "technician_work" | "booking_days" | "referral_reward";
+            name: "checkin_radius_m" | "no_show_wait_min" | "change_notice_hours" | "late_change_charge" | "no_show_charge" | "no_show_waiver" | "address_unlock_hour" | "reminder_hour" | "phone_clock" | "task_sla_hours" | "piece_cycle_days" | "payment_hold" | "dispute_window_days" | "technician_work" | "booking_days" | "referral_reward" | "care_hours";
             title: string;
             note: string;
             set_by: string | null;

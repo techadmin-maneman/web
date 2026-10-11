@@ -26,7 +26,8 @@ const kindName = (kind: string): string => {
   return words.charAt(0).toUpperCase() + words.slice(1);
 };
 
-const when = (at: string): string => `${shortDate(indiaDate(at))}, ${indiaClock(at)}`;
+/** "21 Sep, 11:42 am". */
+export const whenOf = (at: string): string => `${shortDate(indiaDate(at))}, ${indiaClock(at)}`;
 
 function Item({ item }: { item: ThreadItem }) {
   if (item.kind === "auto") {
@@ -37,7 +38,7 @@ function Item({ item }: { item: ThreadItem }) {
     ].filter((each) => each !== null);
     return (
       <li className={own.auto}>
-        <span className={own.when}>{when(item.at)}</span> {thread.auto(kindName(item.message), seen)}
+        <span className={own.when}>{whenOf(item.at)}</span> {thread.auto(kindName(item.message), seen)}
       </li>
     );
   }
@@ -46,7 +47,7 @@ function Item({ item }: { item: ThreadItem }) {
     <li className={item.kind === "in" ? own.theirs : own.ours}>
       <span className={own.when}>
         {item.kind === "note" ? `${thread.note} · ` : ""}
-        {from} · {when(item.at)}
+        {from} · {whenOf(item.at)}
       </span>
       <span className={own.text}>{item.text ?? thread.erased}</span>
       {item.kind === "out" && item.delivery === "failed" && <span className={own.failed}>{thread.notSent}</span>}
