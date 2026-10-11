@@ -47,6 +47,7 @@ export const EXPORT_QUERIES = {
   chats: `SELECT c.created_at AS thread, c.last_message_at, c.closed_at, c.close_reason, m.direction, m.text, m.sent_at
     FROM conversations c LEFT JOIN chat_messages m ON m.conversation_id = c.id AND m.direction <> 'note'
     WHERE c.person_id = ?1 ORDER BY m.sent_at`,
+  care_person: "SELECT email AS care_person, since FROM care_owners WHERE person_id = ?1",
   // In the client's words, and how ops ruled; never ops' own note on it.
   no_show_disputes: `SELECT a.window_start AS visit, d.reason, d.created_at, d.ruling, d.ruled_at FROM no_show_disputes d
     JOIN no_show_cases n ON n.id = d.case_id JOIN appointments a ON a.id = n.appointment_id

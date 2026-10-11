@@ -4830,6 +4830,17 @@
               "closed"
             ]
           },
+          "care_person": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The client's Care person, by e-mail; null for a number we do not know, or a client not given one."
+          },
           "last_message_at": {
             "type": "string",
             "format": "date-time"
@@ -4862,6 +4873,7 @@
           "person",
           "mobile",
           "state",
+          "care_person",
           "last_message_at",
           "last_line",
           "waiting_since"
@@ -5040,6 +5052,59 @@
         },
         "required": [
           "conversations"
+        ],
+        "additionalProperties": false
+      },
+      "CareTeam": {
+        "type": "object",
+        "properties": {
+          "team": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "email": {
+                  "type": "string"
+                },
+                "clients": {
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "email",
+                "clients"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "team"
+        ],
+        "additionalProperties": false
+      },
+      "CarePerson": {
+        "type": "object",
+        "properties": {
+          "care_person": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "care_person"
+        ],
+        "additionalProperties": false
+      },
+      "CarePersonMove": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email"
+          }
+        },
+        "required": [
+          "email"
         ],
         "additionalProperties": false
       },
@@ -5588,6 +5653,7 @@
               "chat.reply",
               "chat.note",
               "chat.close",
+              "care_person.move",
               "word.publish",
               "partner_payout.record",
               "partner_payout.delete",
@@ -14255,6 +14321,7 @@
             "schema": {
               "type": "string",
               "enum": [
+                "mine",
                 "open",
                 "waiting",
                 "closed",
@@ -14328,6 +14395,101 @@
           },
           "404": {
             "description": "not_found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/care-team": {
+      "get": {
+        "summary": "The Care team, each with how many clients are theirs, the fewest first",
+        "responses": {
+          "200": {
+            "description": "The team",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CareTeam"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "access_required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/clients/{id}/care-person": {
+      "post": {
+        "summary": "Move a client to another member of the Care team",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CarePersonMove"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The client's Care person now",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CarePerson"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid_request: fields names email when it is not one of the Care team",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "access_required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found: no such client, or their record is erased",
             "content": {
               "application/json": {
                 "schema": {
@@ -14894,6 +15056,7 @@
                 "chat.reply",
                 "chat.note",
                 "chat.close",
+                "care_person.move",
                 "word.publish",
                 "partner_payout.record",
                 "partner_payout.delete",

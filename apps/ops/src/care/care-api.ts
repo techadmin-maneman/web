@@ -1,5 +1,6 @@
-// The Care inbox's calls (docs/decisions/0129-the-care-inbox.md, 0130-replies-from-the-care-inbox.md): its threads,
-// and replying, noting and closing in one, made with the console's client (../api.ts).
+// The Care inbox's calls (docs/decisions/0129-the-care-inbox.md, 0130-replies-from-the-care-inbox.md,
+// 0131-care-people.md): its threads; replying, noting and closing in one; and each client's Care person. Each is made
+// with the console's client (../api.ts).
 
 import type { Sent, Success } from "@maneman/web-kit/api";
 import { client } from "../api.ts";
@@ -12,6 +13,7 @@ export type ConversationView = NonNullable<
 export type ThreadItem = Success<paths["/api/conversations/{id}"]["get"]>["items"][number];
 export type ChatThread = Success<paths["/api/conversations/{id}"]["get"]>;
 export type CloseReason = Sent<paths["/api/conversations/{id}/close"]["post"]>["reason"];
+export type CareMember = Success<paths["/api/care-team"]["get"]>["team"][number];
 
 export const careApi = {
   conversations: (view: ConversationView) => client.get("/api/conversations", { query: { view } }),
@@ -22,4 +24,7 @@ export const careApi = {
     client.post("/api/conversations/{id}/notes", { path: { id }, body: { text } }),
   closeChat: (id: string, reason: CloseReason) =>
     client.post("/api/conversations/{id}/close", { path: { id }, body: { reason } }),
+  careTeam: () => client.get("/api/care-team"),
+  moveCarePerson: (personId: string, email: string) =>
+    client.post("/api/clients/{id}/care-person", { path: { id: personId }, body: { email } }),
 };

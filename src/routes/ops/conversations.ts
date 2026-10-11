@@ -1,5 +1,5 @@
 // The Care inbox, behind Access (Customer Care; docs/decisions/0129-the-care-inbox.md):
-//   GET /api/conversations?view=   the threads of a view: open, waiting, closed or all, the latest first
+//   GET /api/conversations?view=   the threads of a view, the latest first: mine (my clients'), open, waiting, closed or all
 //   GET /api/conversations/:id     one thread: what the client wrote, our replies and notes, and our automatic messages
 //   POST /api/conversations/:id/replies   a reply from our number, kept in the thread whether it went or not
 //   POST /api/conversations/:id/notes     a note for staff alone
@@ -10,7 +10,7 @@ import type { App } from "../../http/context.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
 import { json } from "../../http/openapi.ts";
 import type { Context } from "hono";
-import { actorOf } from "../../http/audit.ts";
+import { actorOf, staffMemberOf } from "../../http/audit.ts";
 import type { AppEnv } from "../../http/context.ts";
 import { conversationThread, INBOX_VIEWS, listConversations } from "../../domain/care/inbox.ts";
 import { addNote, CLOSE_REASONS, closeConversation, replyTo } from "../../domain/care/replies.ts";
@@ -23,6 +23,9 @@ const ConversationSchema = z
     }),
     mobile: z.string(),
     state: z.enum(["open", "waiting", "closed"]),
+    care_person: z.union([z.string(), z.null()]).openapi({
+      description: "The client's Care person, by e-mail; null for a number we do not know, or a client not given one.",
+    }),
     last_message_at: z.iso.datetime(),
     last_line: z.union([z.string(), z.null()]),
     waiting_since: z.union([z.iso.datetime(), z.null()]).openapi({
@@ -180,9 +183,10 @@ function registerAnswers(app: App): void {
 
 export function registerOpsConversations(app: App): void {
   registerAnswers(app);
-  app.openapi(listRoute, async (c) =>
-    c.json({ conversations: await listConversations(c.env.DB, c.req.valid("query").view) }, 200),
-  );
+  app.openapi(listRoute, async (c) => {
+    const me = staffMemberOf(c)?.id ?? "";
+    return c.json({ conversations: await listConversations(c.env.DB, c.req.valid("query").view, me) }, 200);
+  });
 
   app.openapi(threadRoute, async (c) => {
     const thread = await conversationThread(c.env.DB, c.req.valid("param").id);

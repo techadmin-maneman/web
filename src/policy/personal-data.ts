@@ -136,6 +136,11 @@ export const PERSONAL_COLUMNS: Readonly<Record<string, PersonalTable>> = {
       "Who opened the photographs, and when, is given.",
     erasure: { why: "Kept two years and never changed, as the record of who did what." },
   },
+  care_owners: {
+    leftOut: ["person_id", "assigned_by"],
+    whyLeftOut: "Our key, and whether we gave them their Care person or which manager moved them.",
+    erasure: { deletes: true, why: "Deleted: nobody looks after an erased record." },
+  },
   channel_attributions: {
     leftOut: ["id", "channel_id", "referred_person_id", "first_fit_appointment_id", "commission", "updated_at"],
     whyLeftOut: "Our keys, and what the partner who recommended us earns for it.",

@@ -114,6 +114,8 @@ const HISTORY = [
      '${AGO}', '${AGO}' FROM n`,
   `INSERT INTO chat_messages (id, conversation_id, direction, author, text, sent_at, created_at)
    SELECT 'cm-' || i, 'cv-' || i, 'in', 'client', 'Hello', '${AGO}', '${AGO}' FROM n`,
+  `INSERT INTO care_owners (person_id, email, since, assigned_by)
+   SELECT 'p-' || i, 'care-' || (i % 5) || '@maneman.in', '${AGO}', 'system' FROM n`,
   `INSERT INTO sessions (id, subject_kind, subject_id, created_at, last_seen_at, expires_at)
    SELECT 's-' || i, 'client', 'p-' || i, '${AGO}', '${AGO}', '${IN_TWO_MONTHS}' FROM n`,
   `INSERT OR IGNORE INTO technicians (id, fsm_id, name, initials, active, updated_at)

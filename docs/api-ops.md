@@ -1602,6 +1602,70 @@ One thread: the chat and our automatic messages to the client, in order
 }
 ```
 
+### GET /api/care-team
+
+The Care team, each with how many clients are theirs, the fewest first
+
+**200**: The team
+
+```json
+{
+  "$ref": "#/components/schemas/CareTeam"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/clients/{id}/care-person
+
+Move a client to another member of the Care team
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/CarePersonMove"
+}
+```
+
+**200**: The client's Care person now
+
+```json
+{
+  "$ref": "#/components/schemas/CarePerson"
+}
+```
+
+**400**: invalid_request: fields names email when it is not one of the Care team
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no such client, or their record is erased
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ### GET /api/referral-channels
 
 Every partner, with what has come through each
@@ -10837,6 +10901,17 @@ Request body:
         "closed"
       ]
     },
+    "care_person": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The client's Care person, by e-mail; null for a number we do not know, or a client not given one."
+    },
     "last_message_at": {
       "type": "string",
       "format": "date-time"
@@ -10869,6 +10944,7 @@ Request body:
     "person",
     "mobile",
     "state",
+    "care_person",
     "last_message_at",
     "last_line",
     "waiting_since"
@@ -11072,6 +11148,74 @@ Request body:
   },
   "required": [
     "conversations"
+  ],
+  "additionalProperties": false
+}
+```
+
+### CareTeam
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "team": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string"
+          },
+          "clients": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "email",
+          "clients"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "team"
+  ],
+  "additionalProperties": false
+}
+```
+
+### CarePerson
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "care_person": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "care_person"
+  ],
+  "additionalProperties": false
+}
+```
+
+### CarePersonMove
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "email": {
+      "type": "string",
+      "format": "email"
+    }
+  },
+  "required": [
+    "email"
   ],
   "additionalProperties": false
 }
@@ -11685,6 +11829,7 @@ Request body:
         "chat.reply",
         "chat.note",
         "chat.close",
+        "care_person.move",
         "word.publish",
         "partner_payout.record",
         "partner_payout.delete",

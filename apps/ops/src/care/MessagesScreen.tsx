@@ -18,8 +18,8 @@ import { Thread, whoOf } from "./Thread.tsx";
 import styles from "../components/forms.module.css";
 import own from "./care.module.css";
 
-const VIEWS: readonly ConversationView[] = ["open", "waiting", "closed", "all"];
-const COLUMNS = 6;
+const VIEWS: readonly ConversationView[] = ["open", "mine", "waiting", "closed", "all"];
+const COLUMNS = 7;
 
 const isView = (value: string): value is ConversationView => VIEWS.some((view) => view === value);
 
@@ -58,6 +58,7 @@ function ConversationRows(props: { conversation: Conversation; open: boolean; on
           {conversation.person?.name ?? copy.unknown}
         </th>
         <td className={own.number}>{conversation.mobile}</td>
+        <td>{conversation.care_person ?? ""}</td>
         <td className={own.line}>{conversation.last_line ?? copy.noLine}</td>
         <td className={own.figure}>
           {conversation.waiting_since === null ? "" : copy.waitingSince(indiaClock(conversation.waiting_since))}
@@ -109,6 +110,7 @@ function Conversations({ view }: { view: ConversationView }) {
           <tr>
             <th scope="col">{columns.client}</th>
             <th scope="col">{columns.number}</th>
+            <th scope="col">{columns.carePerson}</th>
             <th scope="col">{columns.said}</th>
             <th scope="col" className={own.figure}>
               {columns.waiting}

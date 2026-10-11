@@ -32,6 +32,8 @@ export const PURPOSES: Readonly<Record<string, string>> = {
     "The Care inbox: one thread for each number that writes to our WhatsApp number, matched to its client where we know the number (ADR 0129).",
   chat_messages:
     "Every message in a Care inbox thread: what the client wrote, our replies, and notes only staff see (ADR 0129).",
+  care_owners:
+    "Each client's named Care person, given at their first chat and moved by a Customer Care manager (ADR 0131).",
   credit_ledger:
     "Service-visit credits, entry by entry, each drawing on the grant it spends; a balance is summed, never kept (ADR 0033).",
   credit_expiry_cursor:

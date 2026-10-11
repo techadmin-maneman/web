@@ -67,6 +67,8 @@ export const ROWS_AT_T: readonly string[] = [
      VALUES ('cv1', 'p1', '+919810000001', '${AT}', '${AT}', '${AT}', '${AT}', '${AT}')`,
   `INSERT INTO chat_messages (id, conversation_id, direction, author, text, sent_at, created_at)
      VALUES ('cm1', 'cv1', 'in', 'client', 'Hello', '${AT}', '${AT}')`,
+  // Their Care person (docs/decisions/0131-care-people.md).
+  `INSERT INTO care_owners (person_id, email, since, assigned_by) VALUES ('p1', 'care@maneman.in', '${AT}', 'system')`,
   `INSERT INTO site_word_publishes (id, words, lines, published_by, published_at)
      VALUES ('sp1', '{}', 0, 'growth@maneman.in', '${AT}')`,
   // Their first fit, done: last_visits follows it.

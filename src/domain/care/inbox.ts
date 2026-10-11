@@ -2,6 +2,8 @@
 // its client where we know the number, and every message in it. A client who writes reopens their thread. A thread
 // reads our automatic messages from outbound_messages beside the chat, so nothing is copied.
 
+import { giveCarePerson } from "./care-people.ts";
+
 /** A message a client wrote to our number, as the bridge or MSG91 reports it. */
 export interface Inbound {
   readonly mobileE164: string;
@@ -11,7 +13,10 @@ export interface Inbound {
   readonly at: Date;
 }
 
-/** Files a client's message in their thread, opening the thread or reopening it; once, however often it is reported. */
+/**
+ * Files a client's message in their thread, opening the thread or reopening it; once, however often it is reported.
+ * A client with no Care person yet is given one (./care-people.ts).
+ */
 export async function fileInbound(db: D1Database, inbound: Inbound): Promise<void> {
   const at = inbound.at.toISOString();
   await db.batch([
@@ -40,9 +45,14 @@ export async function fileInbound(db: D1Database, inbound: Inbound): Promise<voi
       )
       .bind(crypto.randomUUID(), inbound.mobileE164, inbound.text, inbound.providerMessageId, at),
   ]);
+  const filed = await db
+    .prepare("SELECT person_id FROM conversations WHERE mobile_e164 = ?1")
+    .bind(inbound.mobileE164)
+    .first<{ person_id: string | null }>();
+  if (filed !== null && filed.person_id !== null) await giveCarePerson(db, filed.person_id, inbound.at);
 }
 
-export const INBOX_VIEWS = ["open", "waiting", "closed", "all"] as const;
+export const INBOX_VIEWS = ["mine", "open", "waiting", "closed", "all"] as const;
 export type InboxView = (typeof INBOX_VIEWS)[number];
 
 /** How many threads a view lists, newest first. */
@@ -53,6 +63,8 @@ export interface ConversationRow {
   readonly person: { readonly id: string; readonly name: string } | null;
   readonly mobile: string;
   readonly state: "open" | "waiting" | "closed";
+  /** The client's Care person, by e-mail; null for a number we don't know, or a client not given one. */
+  readonly care_person: string | null;
   readonly last_message_at: string;
   /** The last thing said in the chat, ours or theirs; null where only our automatic messages went. */
   readonly last_line: string | null;
@@ -66,6 +78,7 @@ interface ListRow {
   readonly name: string | null;
   readonly mobile_e164: string;
   readonly state: ConversationRow["state"];
+  readonly care_person: string | null;
   readonly last_message_at: string;
   readonly last_inbound_at: string | null;
   readonly last_line: string | null;
@@ -77,6 +90,7 @@ const rowOf = (row: ListRow): ConversationRow => ({
   person: row.person_id === null ? null : { id: row.person_id, name: row.name ?? "" },
   mobile: row.mobile_e164,
   state: row.state,
+  care_person: row.care_person,
   last_message_at: row.last_message_at,
   last_line: row.last_line,
   waiting_since:
@@ -85,20 +99,21 @@ const rowOf = (row: ListRow): ConversationRow => ({
       : null,
 });
 
-/** The threads of a view, the latest first. */
-export async function listConversations(db: D1Database, view: InboxView): Promise<ConversationRow[]> {
+/** The threads of a view, the latest first; "mine" is the open and waiting threads of `me`'s clients. */
+export async function listConversations(db: D1Database, view: InboxView, me: string): Promise<ConversationRow[]> {
   const { results } = await db
     .prepare(
-      `SELECT c.id, c.person_id, p.name, c.mobile_e164, c.state, c.last_message_at, c.last_inbound_at,
+      `SELECT c.id, c.person_id, p.name, c.mobile_e164, c.state, o.email AS care_person, c.last_message_at,
+         c.last_inbound_at,
          (SELECT m.text FROM chat_messages m WHERE m.conversation_id = c.id AND m.direction <> 'note'
           ORDER BY m.sent_at DESC LIMIT 1) AS last_line,
          (SELECT MAX(m.sent_at) FROM chat_messages m WHERE m.conversation_id = c.id AND m.direction = 'out')
            AS last_reply_at
-       FROM conversations c LEFT JOIN people p ON p.id = c.person_id
-       WHERE ?1 = 'all' OR c.state = ?1
+       FROM conversations c LEFT JOIN people p ON p.id = c.person_id LEFT JOIN care_owners o ON o.person_id = c.person_id
+       WHERE ?1 = 'all' OR c.state = ?1 OR (?1 = 'mine' AND o.email = ?3 AND c.state <> 'closed')
        ORDER BY c.last_message_at DESC LIMIT ?2`,
     )
-    .bind(view, LISTED)
+    .bind(view, LISTED, me)
     .all<ListRow>();
   return results.map(rowOf);
 }
@@ -135,11 +150,12 @@ const THREAD_ITEMS = 300;
 export async function conversationThread(db: D1Database, id: string): Promise<Thread | null> {
   const row = await db
     .prepare(
-      `SELECT c.id, c.person_id, p.name, c.mobile_e164, c.state, c.last_message_at, c.last_inbound_at,
-         NULL AS last_line,
+      `SELECT c.id, c.person_id, p.name, c.mobile_e164, c.state, o.email AS care_person, c.last_message_at,
+         c.last_inbound_at, NULL AS last_line,
          (SELECT MAX(m.sent_at) FROM chat_messages m WHERE m.conversation_id = c.id AND m.direction = 'out')
            AS last_reply_at
-       FROM conversations c LEFT JOIN people p ON p.id = c.person_id WHERE c.id = ?1`,
+       FROM conversations c LEFT JOIN people p ON p.id = c.person_id LEFT JOIN care_owners o ON o.person_id = c.person_id
+       WHERE c.id = ?1`,
     )
     .bind(id)
     .first<ListRow>();
