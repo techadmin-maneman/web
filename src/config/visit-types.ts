@@ -7,7 +7,7 @@
 export const VISIT_TYPES = ["consultation", "first_fit", "service", "replacement"] as const;
 export type VisitType = (typeof VISIT_TYPES)[number];
 
-/** The kinds that fit a hair system, which only a technician trained to fit takes (ADR 0119, amended 11 October 2026). */
+/** The kinds that fit a hair system, which only a technician trained to fit takes (ADR 0119). */
 const FITTINGS: readonly VisitType[] = ["first_fit", "replacement"];
 
 export const isAFitting = (type: VisitType | null): boolean => type !== null && FITTINGS.includes(type);
