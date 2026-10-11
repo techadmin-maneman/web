@@ -51,8 +51,8 @@
     }
   },
   "include": ["exports", "types", "files"],
-  // The stub Books provider's types name what its tests drive; the file sits under a path that waits for review, so it
-  // keeps them exported.
-  "ignoreIssues": { "src/providers/books/stub.ts": ["types"] },
+  // Two files under paths that wait for a person's review keep their exported types rather than wait on a dead-code
+  // tidy: the stub Books provider's, and the client profile's geocode source.
+  "ignoreIssues": { "src/providers/books/stub.ts": ["types"], "src/domain/clients/profile.ts": ["types"] },
   "ignoreExportsUsedInFile": false
 }
