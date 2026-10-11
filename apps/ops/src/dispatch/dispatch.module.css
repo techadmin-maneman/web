@@ -789,9 +789,9 @@
 }
 
 .swatch {
+  flex-shrink: 0;
   width: var(--sp-10);
   height: var(--sp-10);
-  border-radius: 50%;
 }
 
 .stops {

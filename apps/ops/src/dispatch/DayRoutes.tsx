@@ -39,7 +39,10 @@ function TechnicianRoute({ technician }: { technician: Technician }) {
   return (
     <section className={styles.route}>
       <h3 className={styles.routeName}>
-        <span className={styles.swatch} style={{ background: `#${technician.colour}` }} aria-hidden="true" />
+        {/* Its colour as the map draws it, by an SVG's fill: the policy allows no inline style. */}
+        <svg className={styles.swatch} viewBox="0 0 10 10" aria-hidden="true">
+          <circle cx="5" cy="5" r="5" fill={`#${technician.colour}`} />
+        </svg>
         {technician.name}
       </h3>
       <ol className={styles.stops}>
