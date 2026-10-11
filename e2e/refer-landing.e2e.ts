@@ -734,10 +734,27 @@ test("names a partner whose code it is, and offers the partner's own visits to t
       referrer_first_name: null,
       partner: "Looks Salon",
       friend_visits: 2,
+      discount: null,
       card: { state: "house", version: 1 },
     },
   });
   await visit(page, `/r/${CODE}`);
   await expect(page.getByText("Recommended by Looks Salon")).toBeVisible();
   await expect(page.getByText("Get fitted and you get 2 service visits free.")).toBeVisible();
+});
+
+// A partner's discount code (docs/decisions/0125-partner-discount-codes.md), which comes off the first fit by itself.
+test("offers what a partner's discount code takes off the first fit", async ({ page }) => {
+  await mockApi(page, {
+    invite: {
+      state: "valid",
+      referrer_first_name: null,
+      partner: "Looks Salon",
+      friend_visits: 0,
+      discount: { kind: "percent", value: 20, cap: 500000 },
+      card: { state: "house", version: 1 },
+    },
+  });
+  await visit(page, `/r/${CODE}`);
+  await expect(page.getByText("20% off your first fit, up to Rs. 5,000.")).toBeVisible();
 });

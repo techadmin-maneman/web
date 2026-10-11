@@ -1515,7 +1515,7 @@ Indexes:
 
 Partners who send us clients on their own code: the friend's reward and the partner's commission (ADR 0123).
 
-Made by `0109_referral_channels.sql`.
+Made by `0109_referral_channels.sql`; changed by `0111_partner_discount.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -1531,9 +1531,11 @@ Made by `0109_referral_channels.sql`.
 | `created_at` | TEXT | no |  |  |
 | `changed_by` | TEXT | yes |  |  |
 | `changed_at` | TEXT | yes |  |  |
+| `discount_code_id` | TEXT | yes |  | → `discount_codes.id` |
 
 Indexes:
 
+- `referral_channels_by_discount_code`: on (`discount_code_id`)
 - A `UNIQUE` constraint: unique on (`name`)
 - A `UNIQUE` constraint: unique on (`code`)
 

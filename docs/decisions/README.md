@@ -2,7 +2,7 @@
 
 Every decision this repository was built on, oldest first. A record says what was decided and why, and is not rewritten to say something else: a later record changes it, and says so in its own header (ADR 0001). **Changed by** gathers those later records, from either side, so an old record's reader knows to read on.
 
-This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. A record names its topic in its header, `- Topic:` and one of the headings below, and the test fails on one that does not. The next free number is 0125.
+This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. A record names its topic in its header, `- Topic:` and one of the headings below, and the test fails on one that does not. The next free number is 0126.
 
 ## By topic
 
@@ -127,6 +127,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 - [0107](0107-referral-rewards-in-the-console.md) What a referral earns, set in the console, each side apart
 - [0123](0123-partner-referral-channels.md) Partner referral channels
 - [0124](0124-partner-statements.md) Partners' monthly statements
+- [0125](0125-partner-discount-codes.md) A partner's discount code
 
 ### The try-on
 
@@ -284,3 +285,4 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0122](0122-technician-pay-per-visit.md) | Technician pay per visit | 2026-10-11 | accepted |  |
 | [0123](0123-partner-referral-channels.md) | Partner referral channels | 2026-10-11 | accepted |  |
 | [0124](0124-partner-statements.md) | Partners' monthly statements | 2026-10-11 | accepted |  |
+| [0125](0125-partner-discount-codes.md) | A partner's discount code | 2026-10-11 | accepted |  |

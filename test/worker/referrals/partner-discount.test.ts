@@ -77,6 +77,14 @@ describe("a partner's discount code", () => {
     expect((await send("POST", "/api/referral-channels", { ...TERMS, discount_code: "salon2k" })).status).toBe(200);
   });
 
+  it("stays while a partner gives it: deleting it is refused", async () => {
+    await partnerWith("SALON2K");
+    const code = await env.DB.prepare("SELECT id FROM discount_codes WHERE code = 'SALON2K'").first<{ id: string }>();
+    const deleted = await send("POST", `/api/discount-codes/${code?.id ?? ""}/delete`, {});
+    expect(deleted.status).toBe(409);
+    expect(await deleted.json()).toMatchObject({ error: { code: "in_use" } });
+  });
+
   it("is offered on the partner's page, by what it takes off", async () => {
     const partner = await partnerWith("SALON2K");
     expect(await (await request(site(), `/api/r/${partner}`)).json()).toMatchObject({
