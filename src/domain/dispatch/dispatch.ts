@@ -31,14 +31,7 @@ import {
 } from "../../policy/dispatch.ts";
 import { unitsFor } from "../../policy/visit-length.ts";
 import { auditStatement, type AuditEntry } from "../ops/audit.ts";
-import {
-  bookedMinutes,
-  claimsOf,
-  loadBlackouts,
-  occupancy,
-  visitCity,
-  type Technician,
-} from "../booking/occupancy.ts";
+import { bookedMinutes, claimsOf, loadBlackouts, occupancy, visitCity, type Technician } from "../booking/occupancy.ts";
 import { breaksRotation, visitsOfClient } from "../booking/technician-rotation.ts";
 import { releaseDeadHolds } from "../booking/hold-slot.ts";
 import { begunPastArrival, visitBegun } from "../visits/visit-begun.ts";
