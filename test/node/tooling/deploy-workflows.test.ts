@@ -81,9 +81,11 @@ describe("ci.yml on a pull request", () => {
     expect(declared).toEqual(["390", "1440", "app", "ops", "tech", "tech-live", "tech-ios"]);
     expect(run).toEqual(declared);
 
+    // In two halves on two runners (CI-02), every project in each; Lighthouse once, in the first.
     const browser = jobOf("browser");
-    expect(browser).toContain("run: npm run test:e2e\n");
-    expect(browser).toMatch(/- name: Lighthouse[^\n]*\n\s+run: npm run lighthouse\n/);
+    expect(browser).toContain("shard: [1, 2]");
+    expect(browser).toContain("run: npm run test:e2e -- --shard=${{ matrix.shard }}/2\n");
+    expect(browser).toMatch(/- name: Lighthouse[^\n]*\n\s+if: matrix\.shard == 1\n\s+run: npm run lighthouse\n/);
   });
 
   it("names the job a later run looks for before it takes the full suite as passed", () => {
