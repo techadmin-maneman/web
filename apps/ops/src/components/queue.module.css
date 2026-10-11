@@ -57,7 +57,11 @@
   font-size: var(--fs-14);
 }
 
+/* At least 24 px tall whatever the line around it, the target size WCAG 2.2 asks of a link set in a line (2.5.8). */
 .reachLink {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--sp-24);
   color: var(--ink);
   text-decoration: underline;
   text-underline-offset: var(--sp-4);

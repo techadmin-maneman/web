@@ -274,7 +274,7 @@
 .who,
 .what {
   display: block;
-  line-height: var(--lh-130);
+  line-height: var(--lh-115);
   overflow-wrap: anywhere;
 }
 
