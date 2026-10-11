@@ -1,31 +1,8 @@
 // The readable copy of a client's data export (GET /api/me/export.html; src/domain/privacy/my-data-page.ts): each part's
 // heading, in the order the page shows them, and each field's label and how its value reads.
 
+import { day, money, text, time, words, yesNo, type Part } from "./my-data-fields.ts";
 import { CODE_WORDS, PURPOSE_WORDS } from "./my-data-words.ts";
-
-/**
- * How a value reads. `time`: an instant, as India's date and clock. `day`: a date. `money`: paise, as rupees.
- * `yesNo`: 1 or 0. `words`: a stored code, as words ("first_fit" reads "First fit"). `purpose`: a consent's purpose.
- * `purposes`: a JSON list of them. `notice`: a notice's version, as the words it showed.
- */
-type FieldKind = "text" | "time" | "day" | "money" | "yesNo" | "words" | "purpose" | "purposes" | "notice";
-
-export interface Field {
-  readonly label: string;
-  readonly as: FieldKind;
-}
-
-export interface Part {
-  readonly title: string;
-  readonly fields: Readonly<Record<string, Field>>;
-}
-
-const text = (label: string): Field => ({ label, as: "text" });
-const time = (label: string): Field => ({ label, as: "time" });
-const day = (label: string): Field => ({ label, as: "day" });
-const money = (label: string): Field => ({ label, as: "money" });
-const yesNo = (label: string): Field => ({ label, as: "yesNo" });
-const words = (label: string): Field => ({ label, as: "words" });
 
 // No design draws the readable copy of a client's data; every word here is ours.
 export const MY_DATA = {
