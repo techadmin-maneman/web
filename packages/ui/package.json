@@ -5,6 +5,7 @@
   "description": "The React parts the Phase 2 apps share: the base stylesheet, the icon and the mark, buttons, sheets, fields, rows, tables, tabs, a page's states, and the hooks behind them. Each app brings its own React.",
   "type": "module",
   "exports": {
+    "./AddressFields": "./AddressFields.tsx",
     "./AddressSearch": "./AddressSearch.tsx",
     "./arrival": "./arrival.ts",
     "./base.css": "./base.css",
@@ -37,6 +38,7 @@
     "./WindowChoice": "./WindowChoice.tsx"
   },
   "dependencies": {
-    "@maneman/brand": "0.0.0"
+    "@maneman/brand": "0.0.0",
+    "@maneman/web-kit": "0.0.0"
   }
 }

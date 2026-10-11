@@ -5,10 +5,11 @@
 // error, and given the focus. The API refuses a pincode we do not come to, which offers the waitlist, and a move to
 // another city while a visit is booked, which offers a message to ops.
 
+import { AddressFields, type AddressFieldsClasses } from "@maneman/ui/AddressFields";
 import { Button } from "@maneman/ui/Button";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { useState } from "react";
-import { given, missingParts } from "@maneman/web-kit/address";
+import { given, missingParts, type AddressPart } from "@maneman/web-kit/address";
 import { api, type Address } from "../api.ts";
 import { BOOKING_URL, messages, profile } from "../content.ts";
 import { whatsappWith } from "../lib/whatsapp.ts";
@@ -30,12 +31,22 @@ const EMPTY: Address = {
   place_id: null,
 };
 
-type Field = Exclude<keyof Address, "place_id">;
-
 /** Why the API would not save the address, where the form offers a way on. */
 type Refused = "not_served" | "visit_booked";
 
 const ERROR_ID = "address-error";
+
+const ADDRESS_WORDS = {
+  labels: { ...profile.form, access_notes: profile.form.accessNotes },
+  hints: { access_notes: profile.form.accessHint },
+};
+
+const ADDRESS_CLASSES: AddressFieldsClasses = {
+  field: styles.formField,
+  label: styles.formLabel,
+  input: styles.input,
+  hint: styles.muted,
+};
 
 /** The site's /book, where a pincode we do not come to joins the waitlist. */
 const WAITLIST_URL = BOOKING_URL[import.meta.env.MM_ENV];
@@ -56,7 +67,7 @@ export function AddressForm({
   const copy = profile;
   const [editing, setEditing] = useState<Address>(address ?? EMPTY);
   const [problem, setProblem] = useState<string | null>(null);
-  const [invalid, setInvalid] = useState<readonly Field[]>([]);
+  const [invalid, setInvalid] = useState<readonly AddressPart[]>([]);
   const [refused, setRefused] = useState<Refused | null>(null);
   // One token for the whole search, made when the form opens: it is what puts
   // Google's autocomplete on the free per-session price rather than per
@@ -107,32 +118,6 @@ export function AddressForm({
       setProblem(copy.change.failed);
     });
 
-  const field = (
-    key: Field,
-    label: string,
-    options: { inputMode?: "numeric"; autoComplete?: string; required?: boolean } = {},
-  ) => {
-    const wrong = invalid.includes(key);
-    return (
-      <label className={styles.formField}>
-        <span className={styles.formLabel}>{label}</span>
-        <input
-          id={`address-${key}`}
-          className={styles.input}
-          value={editing[key] ?? ""}
-          inputMode={options.inputMode}
-          autoComplete={options.autoComplete}
-          required={options.required}
-          aria-invalid={wrong ? true : undefined}
-          aria-describedby={wrong ? ERROR_ID : undefined}
-          onChange={(event) => {
-            setEditing((draft) => ({ ...draft, [key]: event.target.value }));
-          }}
-        />
-      </label>
-    );
-  };
-
   return (
     <form
       className={styles.form}
@@ -159,19 +144,19 @@ export function AddressForm({
           setEditing((draft) => ({ ...draft, place_id: null }));
         }}
       />
-      {field("flat", copy.form.flat, { required: true })}
-      {field("floor", copy.form.floor)}
-      {field("tower", copy.form.tower)}
-      {/* Only for an address nobody searched for: otherwise the building is line one. */}
-      {(editing.building ?? "").trim() === "" &&
-        field("line1", copy.form.line1, { autoComplete: "address-line1", required: true })}
-      {field("line2", copy.form.line2, { autoComplete: "address-line2" })}
-      {field("landmark", copy.form.landmark)}
-      {field("locality", copy.form.locality, { autoComplete: "address-level3", required: true })}
-      {field("city", copy.form.city, { autoComplete: "address-level2", required: true })}
-      {field("pincode", copy.form.pincode, { inputMode: "numeric", autoComplete: "postal-code", required: true })}
-      {field("access_notes", copy.form.accessNotes)}
-      <p className={styles.muted}>{copy.form.accessHint}</p>
+      {/* A building chosen from the search is line one, so line one is asked only where none was. */}
+      <AddressFields
+        idPrefix="address"
+        valueOf={(part) => editing[part] ?? ""}
+        without={given(editing.building) ? ["line1"] : []}
+        marked={invalid}
+        describedBy={ERROR_ID}
+        onChange={(part, value) => {
+          setEditing((draft) => ({ ...draft, [part]: value }));
+        }}
+        words={ADDRESS_WORDS}
+        classes={ADDRESS_CLASSES}
+      />
       {problem !== null && (
         <p className={styles.error} id={ERROR_ID} role="alert">
           {problem}
