@@ -22,7 +22,7 @@ export const bindings = () => ({ MESSAGE_QUEUE: fakeQueue() });
 
 export async function technician(id: string, name: string, initials: string) {
   await env.DB.prepare(
-    "INSERT INTO technicians (id, fsm_id, name, initials, active, updated_at, city) VALUES (?1, ?2, ?3, ?4, 1, ?5, 'Gurgaon')",
+    "INSERT INTO technicians (id, fsm_id, name, initials, active, updated_at, city, fits_trained) VALUES (?1, ?2, ?3, ?4, 1, ?5, 'Gurgaon', 1)",
   )
     .bind(id, id, name, initials, NOW.toISOString())
     .run();

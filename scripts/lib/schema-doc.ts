@@ -172,6 +172,7 @@ export const PURPOSES: Readonly<Record<string, string>> = {
   tryon_sessions:
     "The try-on gate's session, which showed a visitor their result (ADR 0014); written no more since the look goes to WhatsApp only (ADR 0104).",
   visit_blackouts: "Days on which no visit is offered.",
+  city_blackouts: "Days on which no visit is offered in one city alone (ADR 0119).",
   visit_changes:
     "Each move or cancel a client made, and each cancel ops made, with its notice and what it cost (ADR 0046).",
   visits:
@@ -314,6 +315,7 @@ export const RESTORE_GROUPS: readonly RestoreGroup[] = [
       "serviceable_pincodes",
       "technician_leave",
       "visit_blackouts",
+      "city_blackouts",
       "cities",
       "zones",
       "consumables",

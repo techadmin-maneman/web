@@ -9,6 +9,9 @@
 // or took away with the Access identity that had set it. Never the reason: it is
 // text ops type, and the log holds IDs, counts and codes only and is never
 // blanked, so the reason lives in visit_blackouts alone.
+//
+// A day may be closed everywhere (visit_blackouts) or in one city alone (city_blackouts), where a local holiday
+// closes nowhere else (docs/decisions/0119-blackouts-by-city-and-trained-fitters.md).
 
 import { addDays } from "../../lib/india-time.ts";
 import { auditStatement, type AuditActor } from "../ops/audit.ts";
@@ -19,6 +22,8 @@ export const BLACKOUT_MAX_DAYS = 31;
 
 interface Blackout {
   readonly date: string;
+  /** The city it is closed in; null for every city. */
+  readonly city: string | null;
   readonly reason: string;
   /** Null for a day written by the runbook's SQL before the console had a screen for it. */
   readonly set_by: string | null;
@@ -34,17 +39,23 @@ interface Blackout {
 export async function blackoutsFrom(db: D1Database, today: string): Promise<Blackout[]> {
   const { results } = await db
     .prepare(
-      `SELECT b.date, b.reason, b.set_by, b.set_at,
-         (SELECT COUNT(*) FROM appointments a
-          WHERE a.deleted_at IS NULL AND ${statusIn("a.status", VISIT_NOT_BEGUN)}
-            AND a.window_start >= strftime('%Y-%m-%dT%H:%M:%fZ', b.date, '-330 minutes')
-            AND a.window_start < strftime('%Y-%m-%dT%H:%M:%fZ', b.date, '+1 day', '-330 minutes')) AS booked
-       FROM visit_blackouts b WHERE b.date >= ?1 ORDER BY b.date`,
+      `SELECT b.date, NULL AS city, b.reason, b.set_by, b.set_at, ${bookedOn("1 = 1")} AS booked
+       FROM visit_blackouts b WHERE b.date >= ?1
+       UNION ALL
+       SELECT b.date, b.city, b.reason, b.set_by, b.set_at, ${bookedOn("a.service_city = b.city")} AS booked
+       FROM city_blackouts b WHERE b.date >= ?1
+       ORDER BY 2, 1`,
     )
     .bind(today)
     .all<Blackout>();
   return results;
 }
+
+/** The visits still booked on blackout `b`'s day, in India, from its midnight to the next, that `where` keeps. */
+const bookedOn = (where: string) => `(SELECT COUNT(*) FROM appointments a
+  WHERE a.deleted_at IS NULL AND ${statusIn("a.status", VISIT_NOT_BEGUN)} AND ${where}
+    AND a.window_start >= strftime('%Y-%m-%dT%H:%M:%fZ', b.date, '-330 minutes')
+    AND a.window_start < strftime('%Y-%m-%dT%H:%M:%fZ', b.date, '+1 day', '-330 minutes'))`;
 
 /** Every date from `from` to `to`, both ends included. */
 function datesBetween(from: string, to: string): string[] {
@@ -82,17 +93,21 @@ interface HeldDay {
   readonly set_by: string | null;
 }
 
-const heldBetween = async (db: D1Database, from: string, to: string): Promise<HeldDay[]> =>
-  (
-    await db
-      .prepare("SELECT date, set_by FROM visit_blackouts WHERE date BETWEEN ?1 AND ?2 ORDER BY date")
-      .bind(from, to)
-      .all<HeldDay>()
-  ).results;
+const heldBetween = async (db: D1Database, change: Change): Promise<HeldDay[]> => {
+  const held =
+    change.city === null
+      ? db.prepare("SELECT date, set_by FROM visit_blackouts WHERE date BETWEEN ?1 AND ?2 ORDER BY date")
+      : db.prepare("SELECT date, set_by FROM city_blackouts WHERE date BETWEEN ?1 AND ?2 AND city = ?3 ORDER BY date");
+  const bound =
+    change.city === null ? held.bind(change.from, change.to) : held.bind(change.from, change.to, change.city);
+  return (await bound.all<HeldDay>()).results;
+};
 
 interface Change {
   readonly from: string;
   readonly to: string;
+  /** The one city it closes or opens; null for every city. */
+  readonly city: string | null;
   readonly actor: AuditActor;
   readonly requestId: string;
   readonly now: Date;
@@ -104,17 +119,25 @@ interface Change {
  */
 export async function addBlackouts(db: D1Database, change: Change & { readonly reason: string }): Promise<void> {
   const dates = datesBetween(change.from, change.to);
-  const replaced = await heldBetween(db, change.from, change.to);
+  const replaced = await heldBetween(db, change);
   const at = change.now.toISOString();
+  const close = (date: string) =>
+    change.city === null
+      ? db
+          .prepare(
+            `INSERT INTO visit_blackouts (date, reason, set_by, set_at) VALUES (?1, ?2, ?3, ?4)
+             ON CONFLICT (date) DO UPDATE SET reason = excluded.reason, set_by = excluded.set_by, set_at = excluded.set_at`,
+          )
+          .bind(date, change.reason, change.actor.id, at)
+      : db
+          .prepare(
+            `INSERT INTO city_blackouts (date, city, reason, set_by, set_at) VALUES (?1, ?5, ?2, ?3, ?4)
+             ON CONFLICT (date, city) DO UPDATE
+               SET reason = excluded.reason, set_by = excluded.set_by, set_at = excluded.set_at`,
+          )
+          .bind(date, change.reason, change.actor.id, at, change.city);
   await db.batch([
-    ...dates.map((date) =>
-      db
-        .prepare(
-          `INSERT INTO visit_blackouts (date, reason, set_by, set_at) VALUES (?1, ?2, ?3, ?4)
-           ON CONFLICT (date) DO UPDATE SET reason = excluded.reason, set_by = excluded.set_by, set_at = excluded.set_at`,
-        )
-        .bind(date, change.reason, change.actor.id, at),
-    ),
+    ...dates.map(close),
     auditStatement(
       db,
       {
@@ -123,7 +146,13 @@ export async function addBlackouts(db: D1Database, change: Change & { readonly r
         action: "blackout.add",
         subject: { kind: "blackout", id: change.from },
         requestId: change.requestId,
-        detail: { from: change.from, to: change.to, days: dates.length, replaced: JSON.stringify(replaced) },
+        detail: {
+          from: change.from,
+          to: change.to,
+          city: change.city,
+          days: dates.length,
+          replaced: JSON.stringify(replaced),
+        },
       },
       change.now,
     ),
@@ -136,10 +165,16 @@ export async function addBlackouts(db: D1Database, change: Change & { readonly r
  * periodRefusal.
  */
 export async function removeBlackouts(db: D1Database, change: Change): Promise<"removed" | "not_found"> {
-  const removed = await heldBetween(db, change.from, change.to);
+  const removed = await heldBetween(db, change);
   if (removed.length === 0) return "not_found";
+  const open =
+    change.city === null
+      ? db.prepare("DELETE FROM visit_blackouts WHERE date BETWEEN ?1 AND ?2").bind(change.from, change.to)
+      : db
+          .prepare("DELETE FROM city_blackouts WHERE date BETWEEN ?1 AND ?2 AND city = ?3")
+          .bind(change.from, change.to, change.city);
   await db.batch([
-    db.prepare("DELETE FROM visit_blackouts WHERE date BETWEEN ?1 AND ?2").bind(change.from, change.to),
+    open,
     auditStatement(
       db,
       {
@@ -148,7 +183,13 @@ export async function removeBlackouts(db: D1Database, change: Change): Promise<"
         action: "blackout.remove",
         subject: { kind: "blackout", id: change.from },
         requestId: change.requestId,
-        detail: { from: change.from, to: change.to, days: removed.length, removed: JSON.stringify(removed) },
+        detail: {
+          from: change.from,
+          to: change.to,
+          city: change.city,
+          days: removed.length,
+          removed: JSON.stringify(removed),
+        },
       },
       change.now,
     ),

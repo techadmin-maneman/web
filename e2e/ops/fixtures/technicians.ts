@@ -21,6 +21,7 @@ const technician = (
   zone,
   city,
   mobile: `+9198100000${String(n).padStart(2, "0")}`,
+  fits_trained: true,
   sign_in_stopped_at: null,
   devices,
   leave,
@@ -76,6 +77,7 @@ export const RAVI = {
   zone: "Sec 66–80",
   city: "Gurgaon",
   mobile: "+919810000004",
+  fits_trained: true,
 } satisfies Roster["switched_off"][number];
 
 export const TECHNICIAN_ADDED = { id: "88000000-0000-4000-8000-000000000005" } satisfies OpsReply<

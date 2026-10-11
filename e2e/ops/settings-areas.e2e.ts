@@ -196,7 +196,7 @@ test.describe("the service area, Areas' Served tab", () => {
 test.describe("the blackout days", () => {
   test("lists the days run together, why, who added them, and what is still booked on them", async ({ page }) => {
     await open(page, "/settings/blackouts");
-    const diwali = page.getByRole("listitem").filter({ hasText: "Fri 29 Oct to Sat 30 Oct · Diwali" });
+    const diwali = page.getByRole("listitem").filter({ hasText: "Fri 29 Oct to Sat 30 Oct · Every city · Diwali" });
     await expect(diwali).toContainText("Closed by ops@maneman.in on 20 Sep 2027");
     await expect(diwali).toContainText("3 visits are still booked. Move them on the dispatch board.");
     // The way to those visits opens the board on the run's first day.
@@ -204,7 +204,7 @@ test.describe("the blackout days", () => {
       "href",
       "/dispatch?from=2027-10-29",
     );
-    const training = page.getByRole("listitem").filter({ hasText: "Mon 15 Nov · Staff training" });
+    const training = page.getByRole("listitem").filter({ hasText: "Mon 15 Nov · Every city · Staff training" });
     await expect(training).toContainText("Closed before this page existed.");
     await expect(training).not.toContainText("still booked");
     await expect(training.getByRole("link", { name: /Show on board/ })).toHaveCount(0);
@@ -215,6 +215,7 @@ test.describe("the blackout days", () => {
   }) => {
     const christmas = {
       date: "2027-12-24",
+      city: null,
       reason: "Christmas",
       set_by: "ops@maneman.in",
       set_at: "2027-09-21T06:00:00.000Z",
@@ -231,8 +232,35 @@ test.describe("the blackout days", () => {
     await add.click();
     expect((await request).postDataJSON()).toEqual({ from: "2027-12-24", to: "2027-12-24", reason: "Christmas" });
     await expect(page.getByRole("status").filter({ hasText: "Closed." })).toBeVisible();
-    await expect(page.getByRole("listitem").filter({ hasText: "Fri 24 Dec · Christmas" })).toBeVisible();
+    await expect(page.getByRole("listitem").filter({ hasText: "Fri 24 Dec · Every city · Christmas" })).toBeVisible();
     await expect(page.getByLabel("Reason")).toHaveValue("");
+  });
+
+  test("closes the days in one city alone, and names it", async ({ page }) => {
+    const holi = {
+      date: "2028-03-10",
+      city: "Gurgaon",
+      reason: "Holi",
+      set_by: "ops@maneman.in",
+      set_at: "2027-09-21T06:00:00.000Z",
+      booked: 0,
+    };
+    await open(page, "/settings/blackouts", {
+      "POST /api/blackouts": json({ ...BLACKOUTS, blackouts: [...BLACKOUTS.blackouts, holi] }),
+    });
+    await page.getByLabel("From", { exact: true }).fill("2028-03-10");
+    await page.getByLabel("To", { exact: true }).fill("2028-03-10");
+    await page.getByLabel("City").selectOption("Gurgaon");
+    await page.getByLabel("Reason").fill("Holi");
+    const request = posted(page, "/api/blackouts");
+    await page.getByRole("button", { name: "Close these days" }).click();
+    expect((await request).postDataJSON()).toEqual({
+      from: "2028-03-10",
+      to: "2028-03-10",
+      city: "Gurgaon",
+      reason: "Holi",
+    });
+    await expect(page.getByRole("listitem").filter({ hasText: "Fri 10 Mar · Gurgaon · Holi" })).toBeVisible();
   });
 
   test("says why the API refused the days, of the box it refused", async ({ page }) => {
@@ -248,6 +276,7 @@ test.describe("the blackout days", () => {
   test("names who added each run, keeping apart days added by someone else", async ({ page }) => {
     const later = {
       date: "2027-10-31",
+      city: null,
       reason: "Diwali",
       set_by: "owner@maneman.in",
       set_at: "2027-09-21T06:00:00.000Z",
@@ -258,10 +287,10 @@ test.describe("the blackout days", () => {
       blackouts: [...BLACKOUTS.blackouts.slice(0, 2), later, ...BLACKOUTS.blackouts.slice(2)],
     };
     await open(page, "/settings/blackouts", { "GET /api/blackouts": json(split) });
-    await expect(page.getByRole("listitem").filter({ hasText: "Fri 29 Oct to Sat 30 Oct · Diwali" })).toContainText(
-      "Closed by ops@maneman.in on 20 Sep 2027",
-    );
-    await expect(page.getByRole("listitem").filter({ hasText: "Sun 31 Oct · Diwali" })).toContainText(
+    await expect(
+      page.getByRole("listitem").filter({ hasText: "Fri 29 Oct to Sat 30 Oct · Every city · Diwali" }),
+    ).toContainText("Closed by ops@maneman.in on 20 Sep 2027");
+    await expect(page.getByRole("listitem").filter({ hasText: "Sun 31 Oct · Every city · Diwali" })).toContainText(
       "Closed by owner@maneman.in on 21 Sep 2027",
     );
   });

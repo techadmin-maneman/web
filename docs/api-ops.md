@@ -1827,7 +1827,7 @@ Request body:
 }
 ```
 
-**409**: the move's checks, as POST /api/dispatch/move answers them: past_day; window_passed; clash; on_leave; back_to_back; does_not_fit; blackout; other_city; superseded, with what changed in fields; in_progress
+**409**: the move's checks, as POST /api/dispatch/move answers them: past_day; window_passed; clash; on_leave; back_to_back; does_not_fit; blackout; other_city; not_trained; superseded, with what changed in fields; in_progress
 
 ```json
 {
@@ -1901,7 +1901,7 @@ Request body:
 }
 ```
 
-**409**: past_day: the day has gone; window_passed: every start in today's window has passed; clash: the technician already holds a job in that window on that date; on_leave: they are away that day; back_to_back: they took the client's visit just before or just after this one, and a technician never takes two in a row; does_not_fit: the window is free but the visit has no room in it at a start still ahead; blackout: ops blacked the day out, and no blackout_reason came; other_city: the technician works in another city than the visit, or in none; superseded: the job is not as the board showed it, and fields names what changed (technician, time, or moving: another move of it is being written); in_progress: a technician has begun the visit
+**409**: past_day: the day has gone; window_passed: every start in today's window has passed; clash: the technician already holds a job in that window on that date; on_leave: they are away that day; back_to_back: they took the client's visit just before or just after this one, and a technician never takes two in a row; does_not_fit: the window is free but the visit has no room in it at a start still ahead; blackout: ops blacked the day out, and no blackout_reason came; other_city: the technician works in another city than the visit, or in none; not_trained: a first fit, to a technician not trained to fit; superseded: the job is not as the board showed it, and fields names what changed (technician, time, or moving: another move of it is being written); in_progress: a technician has begun the visit
 
 ```json
 {
@@ -1953,7 +1953,7 @@ Request body:
 }
 ```
 
-**409**: past_day; window_passed; clash; on_leave; back_to_back; does_not_fit; blackout; other_city: the technician works in another city than the visit, or in none; superseded, with what changed in fields; in_progress: the technician has begun the visit. One he has only checked in at moves with clear_check_in; one he has started or closed stays where it is. ask_the_client: a client's visit to another day they did not ask for, which POST /api/dispatch/propose asks of them
+**409**: past_day; window_passed; clash; on_leave; back_to_back; does_not_fit; blackout; other_city: the technician works in another city than the visit, or in none; not_trained: a first fit, to a technician not trained to fit; superseded, with what changed in fields; in_progress: the technician has begun the visit. One he has only checked in at moves with clear_check_in; one he has started or closed stays where it is. ask_the_client: a client's visit to another day they did not ask for, which POST /api/dispatch/propose asks of them
 
 ```json
 {
@@ -3489,7 +3489,7 @@ Request body:
 }
 ```
 
-**400**: invalid_request: fields names from when it is before today, to when it is before from or more than a month on, and reason when there is none or it is not one a list can hold
+**400**: invalid_request: fields names from when it is before today, to when it is before from or more than a month on, city when it is not one of ours, and reason when there is none or it is not one a list can hold
 
 ```json
 {
@@ -3525,7 +3525,7 @@ Request body:
 }
 ```
 
-**400**: invalid_request: fields names from when it is before today, and to when it is before from
+**400**: invalid_request: fields names from when it is before today, to when it is before from, and city when it is not one of ours
 
 ```json
 {
@@ -4957,6 +4957,7 @@ Request body:
             "window_passed",
             "blackout",
             "other_city",
+            "not_trained",
             "in_progress",
             "too_early_to_close",
             "too_early_to_arrive",
@@ -8372,6 +8373,7 @@ Request body:
             "window_passed",
             "blackout",
             "other_city",
+            "not_trained",
             "in_progress",
             "too_early_to_close",
             "too_early_to_arrive",
@@ -11427,6 +11429,10 @@ Request body:
             ],
             "description": "The number he signs in with, +91 and ten digits; null where none is recorded."
           },
+          "fits_trained": {
+            "type": "boolean",
+            "description": "Trained to fit: only such a technician is offered or given a first fit (ADR 0119)."
+          },
           "sign_in_stopped_at": {
             "anyOf": [
               {
@@ -11502,6 +11508,7 @@ Request body:
           "zone",
           "city",
           "mobile",
+          "fits_trained",
           "sign_in_stopped_at",
           "devices",
           "leave"
@@ -11552,6 +11559,10 @@ Request body:
               }
             ],
             "description": "The number he signs in with, +91 and ten digits; null where none is recorded."
+          },
+          "fits_trained": {
+            "type": "boolean",
+            "description": "Trained to fit: only such a technician is offered or given a first fit (ADR 0119)."
           }
         },
         "required": [
@@ -11559,7 +11570,8 @@ Request body:
           "name",
           "zone",
           "city",
-          "mobile"
+          "mobile",
+          "fits_trained"
         ],
         "additionalProperties": false
       },
@@ -12730,6 +12742,10 @@ Request body:
         }
       ],
       "description": "The city he works in, one of GET /api/technicians' cities, which are those the caller's grants reach. Staff with a grant of that city or its zone see him; with none, only a national grant does."
+    },
+    "fits_trained": {
+      "type": "boolean",
+      "description": "Trained to fit: only such a technician is offered or given a first fit (ADR 0119)."
     }
   },
   "required": [
@@ -12782,6 +12798,10 @@ Request body:
         }
       ],
       "description": "The city he works in, one of GET /api/technicians' cities, which are those the caller's grants reach. Staff with a grant of that city or its zone see him; with none, only a national grant does."
+    },
+    "fits_trained": {
+      "type": "boolean",
+      "description": "Trained to fit: only such a technician is offered or given a first fit (ADR 0119)."
     }
   },
   "additionalProperties": false,
@@ -13844,12 +13864,20 @@ Request body:
     "max_days": {
       "type": "integer",
       "description": "The most days one addition may cover."
+    },
+    "cities": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "The cities a day may be closed in alone."
     }
   },
   "required": [
     "blackouts",
     "today",
-    "max_days"
+    "max_days",
+    "cities"
   ],
   "additionalProperties": false
 }
@@ -13864,6 +13892,17 @@ Request body:
     "date": {
       "type": "string",
       "format": "date"
+    },
+    "city": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The one city it is closed in; null for every city."
     },
     "reason": {
       "type": "string"
@@ -13897,6 +13936,7 @@ Request body:
   },
   "required": [
     "date",
+    "city",
     "reason",
     "set_by",
     "set_at",
@@ -13921,6 +13961,12 @@ Request body:
       "type": "string",
       "format": "date",
       "description": "The last day, the first included; a month on at most when adding."
+    },
+    "city": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 60,
+      "description": "One of the cities the list names."
     },
     "reason": {
       "type": "string",
@@ -13951,6 +13997,12 @@ Request body:
       "type": "string",
       "format": "date",
       "description": "The last day, the first included; a month on at most when adding."
+    },
+    "city": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 60,
+      "description": "One of the cities the list names."
     }
   },
   "required": [

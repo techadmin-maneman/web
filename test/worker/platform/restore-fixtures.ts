@@ -14,6 +14,7 @@ export const ROWS_AT_T: readonly string[] = [
   `INSERT INTO people (id, created_at, mobile_e164, name) VALUES ('p2', '${AT}', '+919810000002', 'Rohit Malhotra')`,
   `INSERT INTO leads (id, person_id, created_at, source, city, request_id) VALUES ('l1', 'p2', '${AT}', 'form', 'Gurgaon', 'r1')`,
   `INSERT INTO visit_blackouts (date, reason) VALUES ('2026-10-02', 'Gandhi Jayanti')`,
+  `INSERT INTO city_blackouts (date, city, reason) VALUES ('2026-10-03', 'Gurgaon', 'Local holiday')`,
   `INSERT INTO counters (scope, key, window_start, count) VALUES ('otp_send', 'a-hash', '${AT}', 1)`,
   `INSERT INTO idempotency (key, route, request_hash, created_at) VALUES ('k1', 'POST /api/holds', 'h-hash', '${AT}')`,
   `INSERT INTO zoho_token (id, access_token, expires_at) VALUES (1, 'old-token', '${AT}')`,

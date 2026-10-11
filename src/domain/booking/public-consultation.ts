@@ -452,7 +452,7 @@ async function newNumbersState(
 ): Promise<"booked" | "requested" | "taken"> {
   const visit = form.selfServeBooking ? await siteVisit(form.db, request.plan, request.date) : null;
   if (visit === null) return "requested";
-  const length = { minutes: visit.service.minutes };
+  const length = { minutes: visit.service.minutes, fitting: request.plan === "one_visit" };
   const [day] = await availability({
     db: form.db,
     placing: { personId: null, pincode: request.pincode },

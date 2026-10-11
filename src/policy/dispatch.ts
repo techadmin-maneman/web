@@ -108,7 +108,9 @@ export type MoveRefusal =
   | "does_not_fit"
   | "blackout"
   /** Handed to a technician who works in another city than the visit's, or in none yet (ADR 0117). */
-  | "other_city";
+  | "other_city"
+  /** A first fit handed to a technician not trained to fit (ADR 0119). */
+  | "not_trained";
 
 interface MoveCheck {
   readonly time: TargetTime;
