@@ -10813,13 +10813,28 @@ Request body:
               "type": "null"
             }
           ]
+        },
+        "delivery": {
+          "anyOf": [
+            {
+              "type": "string",
+              "enum": [
+                "sent",
+                "failed"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
         }
       },
       "required": [
         "kind",
         "at",
         "author",
-        "text"
+        "text",
+        "delivery"
       ],
       "additionalProperties": false
     },
@@ -11485,6 +11500,9 @@ Request body:
         "channel.pause",
         "channel.resume",
         "word.set",
+        "chat.reply",
+        "chat.note",
+        "chat.close",
         "word.publish",
         "partner_payout.record",
         "partner_payout.delete",

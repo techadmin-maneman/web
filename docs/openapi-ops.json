@@ -4912,13 +4912,28 @@
                     "type": "null"
                   }
                 ]
+              },
+              "delivery": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "enum": [
+                      "sent",
+                      "failed"
+                    ]
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
               }
             },
             "required": [
               "kind",
               "at",
               "author",
-              "text"
+              "text",
+              "delivery"
             ],
             "additionalProperties": false
           },
@@ -5519,6 +5534,9 @@
               "channel.pause",
               "channel.resume",
               "word.set",
+              "chat.reply",
+              "chat.note",
+              "chat.close",
               "word.publish",
               "partner_payout.record",
               "partner_payout.delete",
@@ -14638,6 +14656,9 @@
                 "channel.pause",
                 "channel.resume",
                 "word.set",
+                "chat.reply",
+                "chat.note",
+                "chat.close",
                 "word.publish",
                 "partner_payout.record",
                 "partner_payout.delete",

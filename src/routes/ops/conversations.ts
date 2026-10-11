@@ -1,12 +1,19 @@
 // The Care inbox, behind Access (Customer Care; docs/decisions/0129-the-care-inbox.md):
 //   GET /api/conversations?view=   the threads of a view: open, waiting, closed or all, the latest first
 //   GET /api/conversations/:id     one thread: what the client wrote, our replies and notes, and our automatic messages
+//   POST /api/conversations/:id/replies   a reply from our number, kept in the thread whether it went or not
+//   POST /api/conversations/:id/notes     a note for staff alone
+//   POST /api/conversations/:id/close     the thread closed with what it was about
 
 import { createRoute, z } from "@hono/zod-openapi";
 import type { App } from "../../http/context.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
 import { json } from "../../http/openapi.ts";
+import type { Context } from "hono";
+import { actorOf } from "../../http/audit.ts";
+import type { AppEnv } from "../../http/context.ts";
 import { conversationThread, INBOX_VIEWS, listConversations } from "../../domain/care/inbox.ts";
+import { addNote, CLOSE_REASONS, closeConversation, replyTo } from "../../domain/care/replies.ts";
 
 const ConversationSchema = z
   .object({
@@ -33,6 +40,7 @@ const ItemSchema = z
         at: z.iso.datetime(),
         author: z.string(),
         text: z.union([z.string(), z.null()]),
+        delivery: z.union([z.enum(["sent", "failed"]), z.null()]),
       })
       .strict(),
     z
@@ -47,6 +55,11 @@ const ItemSchema = z
       .strict(),
   ])
   .openapi("ThreadItem");
+
+const ThreadSchema = z
+  .object({ conversation: ConversationSchema, items: z.array(ItemSchema) })
+  .strict()
+  .openapi("ConversationThread");
 
 const listRoute = createRoute({
   method: "get",
@@ -75,19 +88,98 @@ const threadRoute = createRoute({
   responses: {
     200: {
       description: "The thread",
-      ...json(
-        z
-          .object({ conversation: ConversationSchema, items: z.array(ItemSchema) })
-          .strict()
-          .openapi("ConversationThread"),
-      ),
+      ...json(ThreadSchema),
     },
     403: errorResponse("access_required"),
     404: errorResponse("not_found"),
   },
 });
 
+const Id = z.object({ id: z.uuid() });
+const TextBody = z.object({ text: z.string().trim().min(1).max(4096) }).strict();
+const answered = { description: "The thread as it now stands", ...json(ThreadSchema) };
+
+const replyRoute = createRoute({
+  method: "post",
+  path: "/api/conversations/{id}/replies",
+  summary: "Reply from our number; the reply is kept in the thread, sent or failed with why",
+  request: { params: Id, body: { required: true, ...json(TextBody.openapi("ChatReply")) } },
+  responses: {
+    200: answered,
+    403: errorResponse("access_required"),
+    404: errorResponse("not_found: no such thread, or its client's record is erased"),
+    503: errorResponse("unavailable: the WhatsApp provider sends no free text yet"),
+  },
+});
+
+const noteRoute = createRoute({
+  method: "post",
+  path: "/api/conversations/{id}/notes",
+  summary: "A note on the thread for staff alone, never sent",
+  request: { params: Id, body: { required: true, ...json(TextBody.openapi("ChatNote")) } },
+  responses: { 200: answered, 403: errorResponse("access_required"), 404: errorResponse("not_found") },
+});
+
+const closeRoute = createRoute({
+  method: "post",
+  path: "/api/conversations/{id}/close",
+  summary: "Close the thread with what it was about; the client writing again reopens it",
+  request: {
+    params: Id,
+    body: {
+      required: true,
+      ...json(
+        z
+          .object({ reason: z.enum(CLOSE_REASONS) })
+          .strict()
+          .openapi("ChatClose"),
+      ),
+    },
+  },
+  responses: { 200: answered, 403: errorResponse("access_required"), 404: errorResponse("not_found") },
+});
+
+/** Who acts, and when, as each change records it. */
+const changeOf = (c: Context<AppEnv>, conversationId: string) => ({
+  conversationId,
+  actor: actorOf(c),
+  requestId: c.var.requestId,
+  now: c.var.deps.now(),
+});
+
+function registerAnswers(app: App): void {
+  app.openapi(replyRoute, async (c) => {
+    const { id } = c.req.valid("param");
+    const replied = await replyTo(c.env.DB, c.var.deps.messaging, {
+      ...changeOf(c, id),
+      text: c.req.valid("json").text,
+    });
+    if (replied === "not_found" || replied === "erased") return refuse(c, "not_found");
+    if (replied === "unavailable") return refuse(c, "unavailable");
+    const thread = await conversationThread(c.env.DB, id);
+    return thread === null ? refuse(c, "not_found") : c.json(thread, 200);
+  });
+
+  app.openapi(noteRoute, async (c) => {
+    const { id } = c.req.valid("param");
+    if ((await addNote(c.env.DB, { ...changeOf(c, id), text: c.req.valid("json").text })) === "not_found") {
+      return refuse(c, "not_found");
+    }
+    const thread = await conversationThread(c.env.DB, id);
+    return thread === null ? refuse(c, "not_found") : c.json(thread, 200);
+  });
+
+  app.openapi(closeRoute, async (c) => {
+    const { id } = c.req.valid("param");
+    const closed = await closeConversation(c.env.DB, { ...changeOf(c, id), reason: c.req.valid("json").reason });
+    if (closed === "not_found") return refuse(c, "not_found");
+    const thread = await conversationThread(c.env.DB, id);
+    return thread === null ? refuse(c, "not_found") : c.json(thread, 200);
+  });
+}
+
 export function registerOpsConversations(app: App): void {
+  registerAnswers(app);
   app.openapi(listRoute, async (c) =>
     c.json({ conversations: await listConversations(c.env.DB, c.req.valid("query").view) }, 200),
   );
