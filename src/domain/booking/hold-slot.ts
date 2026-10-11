@@ -6,7 +6,7 @@ import { compareTechniciansForHold, tieRange } from "./technician-choice.ts";
 import { techniciansBarredOn, visitsOfClient } from "./technician-rotation.ts";
 import { graceEnds, ownUnpaid } from "./hold-stages.ts";
 import { PAYMENT_GRACE_SECONDS, type BookingWindow } from "../../config/scheduling.ts";
-import type { VisitType } from "../../config/visit-types.ts";
+import { isAFitting, type VisitType } from "../../config/visit-types.ts";
 import { clashes } from "../../policy/dispatch.ts";
 import type { SoldTerms } from "../../policy/moving-a-visit.ts";
 import { unitsFor } from "../../policy/visit-length.ts";
@@ -128,7 +128,7 @@ async function candidatesFor({
   const ties = tieRange(date);
   const [blackouts, technicians, held, visits] = await Promise.all([
     loadBlackouts(db, date, date, { pincode: input.pincode ?? null, personId }),
-    techniciansFor(db, moving, { pincode: input.pincode ?? null, personId }, service.type === "first_fit"),
+    techniciansFor(db, moving, { pincode: input.pincode ?? null, personId }, isAFitting(service.type)),
     occupancy({
       db,
       from: ties.from,

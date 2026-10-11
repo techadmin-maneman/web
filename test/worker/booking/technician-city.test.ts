@@ -150,4 +150,26 @@ describe("a city's own closed days, and first fits", () => {
     // A consultation needs no fitter.
     expect(await holdAt(GURGAON)).toBe("Imran Qureshi");
   });
+
+  // The owner, 11 October 2026: a replacement fits a hair system too.
+  it("holds a replacement only with a technician trained to fit, and a service visit with anyone", async () => {
+    await env.DB.prepare("UPDATE technicians SET fits_trained = 0 WHERE id = 't1'").run();
+    const holding = async (type: "replacement" | "service", minutes: number) =>
+      holdSlot({
+        db: env.DB,
+        input: {
+          personId: await person(),
+          service: { type, tier: "standard", minutes },
+          date: "2026-09-23",
+          window: "morning",
+          price: FREE,
+          from: "app",
+          pincode: GURGAON,
+        },
+        now: NOW,
+        holdSeconds: 600,
+      });
+    expect(await holding("replacement", 135)).toBeNull();
+    expect(await holding("service", 90)).not.toBeNull();
+  });
 });

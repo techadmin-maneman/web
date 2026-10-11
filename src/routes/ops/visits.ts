@@ -10,7 +10,7 @@
 import { createRoute, z } from "@hono/zod-openapi";
 import type { Context } from "hono";
 import { BOOKING_DAYS, BOOKING_WINDOWS } from "../../config/scheduling.ts";
-import { VISIT_TYPES } from "../../config/visit-types.ts";
+import { isAFitting, VISIT_TYPES } from "../../config/visit-types.ts";
 import { freeTechnicians } from "../../domain/booking/availability.ts";
 import { confirmUnpaid } from "../../domain/booking/bookings.ts";
 import { giveBack } from "../../domain/booking/give-back.ts";
@@ -270,7 +270,7 @@ async function windowsOffered({
   reached: ReadonlySet<string> | null;
   now: Date;
 }) {
-  const visit = { minutes: service.minutes, until: service.retired_date, fitting: service.kind === "first_fit" };
+  const visit = { minutes: service.minutes, until: service.retired_date, fitting: isAFitting(service.kind) };
   const [free, schedule] = await Promise.all([
     freeTechnicians({ db, personId: clientId, visit, from: days.start, days: BOOKING_DAYS, now }),
     loadSlotSchedule(db),
