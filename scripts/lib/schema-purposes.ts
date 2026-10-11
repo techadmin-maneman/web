@@ -137,6 +137,8 @@ export const PURPOSES: Readonly<Record<string, string>> = {
     "Partners who send us clients on their own code: the friend's reward and the partner's commission (ADR 0123).",
   channel_attributions:
     "A person who came through a partner's code, and what the friend and the partner earned once fitted (ADR 0123).",
+  partner_payouts:
+    "Each month's payment to a partner, as Finance made it from the payout tool, with its reference (ADR 0124).",
   pay_grades: "The seniority grades Finance names for technicians' pay per visit (ADR 0122).",
   visit_pay_rates:
     "What a visit pays a technician, beside their salary: per grade and kind of visit, for every city or one, from a date (ADR 0122).",

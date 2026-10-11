@@ -1,6 +1,7 @@
 // Partners on Referrals (docs/decisions/0123-partner-referral-channels.md), which no board draws. Every name and
 // figure is made up.
 
+import { readFileSync } from "node:fs";
 import type { Page, Route } from "@playwright/test";
 import { expect, test } from "../support.ts";
 import { answer, json, type OpsReply } from "./answer.ts";
@@ -23,6 +24,8 @@ const PARTNERS: OpsReply<"/api/referral-channels"> = {
       referred: 6,
       fitted: 2,
       earned: 300000,
+      owed: 150000,
+      discount_code: null,
     },
   ],
   limits: { max_visits: 12, min_days: 30, max_days: 1095, max_commission: 5000000 },
@@ -55,7 +58,8 @@ test("lists each partner with its link, what its friend gets, its commission and
     "6",
     "2",
     "Rs. 3,000",
-    "EditPause",
+    "Rs. 1,500",
+    "QR codeEditPause",
   ]);
 });
 
@@ -78,7 +82,13 @@ test("adds a partner in rupees once it is reviewed", async ({ page }) => {
   expect(sent).toBeNull();
   await page.getByRole("button", { name: copy.check.send }).click();
   await expect(page.getByRole("status")).toHaveText(copy.done.added);
-  expect(sent).toEqual({ name: "Northside Gym", friend_visits: 1, valid_days: 90, commission: 100000 });
+  expect(sent).toEqual({
+    name: "Northside Gym",
+    friend_visits: 1,
+    valid_days: 90,
+    commission: 100000,
+    discount_code: null,
+  });
 });
 
 test("changes a partner's commission, and shows only what changes", async ({ page }) => {
@@ -98,7 +108,13 @@ test("changes a partner's commission, and shows only what changes", async ({ pag
   await expect(page.getByText(/^Friend gets: /)).toHaveCount(0);
   await page.getByRole("button", { name: copy.check.send }).click();
   await expect(page.getByRole("status")).toHaveText(copy.done.saved);
-  expect(sent).toEqual({ name: "Looks Salon, Sector 29", friend_visits: 2, valid_days: 180, commission: 200000 });
+  expect(sent).toEqual({
+    name: "Looks Salon, Sector 29",
+    friend_visits: 2,
+    valid_days: 180,
+    commission: 200000,
+    discount_code: null,
+  });
 });
 
 test("pauses a partner once it is confirmed", async ({ page }) => {
@@ -116,4 +132,33 @@ test("pauses a partner once it is confirmed", async ({ page }) => {
   await page.getByRole("button", { name: copy.check.send }).click();
   await expect(page.getByRole("status")).toHaveText(copy.done.paused);
   expect(sent).toEqual({ paused: true });
+});
+
+test("downloads a partner's link as a QR code to print", async ({ page }) => {
+  await open(page);
+  const saved = page.waitForEvent("download");
+  await row(page)
+    .getByRole("button", { name: copy.qrLabel("Looks Salon, Sector 29") })
+    .click();
+  const download = await saved;
+  expect(download.suggestedFilename()).toBe("maneman-LSK7P2QX.svg");
+  expect(readFileSync(await download.path(), "utf8")).toMatch(/^<svg xmlns="http:\/\/www\.w3\.org\/2000\/svg"/);
+});
+
+test("gives a partner's friends a discount code, shown in the review", async ({ page }) => {
+  let sent: unknown = null;
+  await open(page, {
+    "PATCH /api/referral-channels/{id}": (route: Route) => {
+      sent = route.request().postDataJSON();
+      return json(PARTNERS)(route);
+    },
+  });
+  await row(page)
+    .getByRole("button", { name: copy.editLabel("Looks Salon, Sector 29") })
+    .click();
+  await page.getByLabel(copy.form.discountCode).fill("salon2k");
+  await page.getByRole("button", { name: copy.form.next }).click();
+  await expect(page.getByText(copy.check.discount(copy.check.none, "SALON2K"))).toBeVisible();
+  await page.getByRole("button", { name: copy.check.send }).click();
+  expect(sent).toMatchObject({ discount_code: "SALON2K" });
 });

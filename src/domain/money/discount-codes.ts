@@ -278,8 +278,8 @@ export async function listCodes(db: D1Database, now: Date, find: string | null):
 }
 
 /**
- * Deletes a code made by mistake, with its audit entry, while no booking has ever taken it. One that has is switched
- * off instead, and its uses stay.
+ * Deletes a code made by mistake, with its audit entry, while no booking has ever taken it and no partner gives it to
+ * its friends. One that has is switched off instead, and its uses stay.
  */
 export async function deleteCode(
   db: D1Database,
@@ -299,7 +299,8 @@ export async function deleteCode(
   await db.batch([
     db
       .prepare(
-        "DELETE FROM discount_codes WHERE id = ?1 AND NOT EXISTS (SELECT 1 FROM discount_code_uses WHERE code_id = ?1)",
+        `DELETE FROM discount_codes WHERE id = ?1 AND NOT EXISTS (SELECT 1 FROM discount_code_uses WHERE code_id = ?1)
+           AND NOT EXISTS (SELECT 1 FROM referral_channels WHERE discount_code_id = ?1)`,
       )
       .bind(id),
     auditStatementIfDeleted(db, entry, change.now, { table: "discount_codes", column: "id", value: id }),

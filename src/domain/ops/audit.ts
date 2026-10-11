@@ -38,6 +38,9 @@ export const AUDIT_ACTIONS = [
   // A line of the site or a WhatsApp message given new words on the Words page, or put back to the code's
   // (docs/decisions/0126-the-words-page.md).
   "word.set",
+  // A partner's month paid, or a payment recorded by mistake taken off (docs/decisions/0124-partner-statements.md).
+  "partner_payout.record",
+  "partner_payout.delete",
   // Ops opening one of a client's photographs (docs/decisions/0031-access-and-audit.md).
   "photo.view",
   // A client's rights over their data (docs/decisions/0049-dpdp.md).
@@ -215,6 +218,7 @@ export function auditStatementIfWritten(
       | "no_show_disputes"
       | "hair_profiles"
       | "discount_code_uses"
+      | "partner_payouts"
       | "slot_times"
       | "technicians"
       | "visit_changes";
@@ -238,7 +242,11 @@ export function auditStatementIfDeleted(
   entry: AuditEntry,
   now: Date,
   deleted:
-    | { readonly table: "technicians" | "discount_codes"; readonly column: "id"; readonly value: string }
+    | {
+        readonly table: "technicians" | "discount_codes" | "partner_payouts";
+        readonly column: "id";
+        readonly value: string;
+      }
     | { readonly table: "staff"; readonly column: "email"; readonly value: string }
     | { readonly table: "consumables"; readonly column: "code"; readonly value: string },
 ): D1PreparedStatement {

@@ -26,6 +26,7 @@ interface Draft {
   readonly friendVisits: string;
   readonly validDays: string;
   readonly commission: string;
+  readonly discountCode: string;
 }
 
 const draftOf = (partner: Partner | null): Draft => ({
@@ -33,6 +34,7 @@ const draftOf = (partner: Partner | null): Draft => ({
   friendVisits: String(partner?.friend_visits ?? 2),
   validDays: String(partner?.valid_days ?? 365),
   commission: partner === null ? "" : String(partner.commission / 100),
+  discountCode: partner?.discount_code ?? "",
 });
 
 const termsOf = (draft: Draft): PartnerTerms => ({
@@ -40,6 +42,7 @@ const termsOf = (draft: Draft): PartnerTerms => ({
   friend_visits: Number(draft.friendVisits),
   valid_days: Number(draft.validDays),
   commission: paiseFromRupees(draft.commission === "" ? "0" : draft.commission),
+  discount_code: draft.discountCode.trim() === "" ? null : draft.discountCode.trim().toUpperCase(),
 });
 
 /** Whether the terms sit within what the API takes. */
@@ -60,8 +63,10 @@ function withinLimits(terms: PartnerTerms, limits: Partners["limits"]): boolean 
 /** What the check says: a new partner's terms, or each term that changes, was beside now. */
 function checkLines(partner: Partner | null, terms: PartnerTerms): string[] {
   const friend = copy.friendGets(terms.friend_visits, terms.valid_days);
-  if (partner === null)
-    return [check.add(terms.name), check.friendNew(friend), check.commissionNew(rupees(terms.commission))];
+  if (partner === null) {
+    const code = terms.discount_code === null ? [] : [check.discountNew(terms.discount_code)];
+    return [check.add(terms.name), check.friendNew(friend), check.commissionNew(rupees(terms.commission)), ...code];
+  }
   const wasFriend = copy.friendGets(partner.friend_visits, partner.valid_days);
   return [
     partner.name === terms.name ? null : check.name(partner.name, terms.name),
@@ -69,6 +74,9 @@ function checkLines(partner: Partner | null, terms: PartnerTerms): string[] {
     partner.commission === terms.commission
       ? null
       : check.commission(rupees(partner.commission), rupees(terms.commission)),
+    partner.discount_code === terms.discount_code
+      ? null
+      : check.discount(partner.discount_code ?? check.none, terms.discount_code ?? check.none),
   ].filter((line) => line !== null);
 }
 
@@ -138,6 +146,19 @@ function PartnerFields({ draft, edit }: { draft: Draft; edit: (change: Partial<D
           edit({ commission });
         }}
       />
+      <Field label={form.discountCode} className={styles.field}>
+        {(control) => (
+          <TextInput
+            {...control}
+            className={styles.choiceBox}
+            maxLength={40}
+            value={draft.discountCode}
+            onChange={(event) => {
+              edit({ discountCode: event.target.value });
+            }}
+          />
+        )}
+      </Field>
     </div>
   );
 }

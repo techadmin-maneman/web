@@ -62,6 +62,8 @@ const HANDLED: Readonly<Record<string, string>> = {
   // A discount code made by mistake, and never once a booking has taken it.
   "discount_code_uses.code_id -> discount_codes":
     "src/domain/money/discount-codes.ts refuses to delete a code a use names",
+  "referral_channels.discount_code_id -> discount_codes":
+    "src/domain/money/discount-codes.ts refuses to delete a code a partner names",
   // A member of staff taken off the list.
   "staff_grants.email -> staff": "src/domain/ops/staff.ts deletes their grants first",
 };

@@ -1,0 +1,61 @@
+/* Partner commission: the month chosen above a table of partners, each row's actions at its end. */
+
+/* This page's own size, which nothing else draws (ADR 0077, as amended). */
+:root {
+  --local-commission-table: 960px; /* the narrowest the table goes before it scrolls */
+}
+
+.tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: var(--sp-12) var(--sp-24);
+  margin: var(--sp-16) var(--sp-20) var(--sp-8);
+}
+
+.scroll {
+  overflow-x: auto;
+}
+
+.table {
+  min-width: var(--local-commission-table);
+}
+
+.name {
+  font-weight: var(--weight-medium);
+}
+
+.figure {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  text-align: right;
+}
+
+/* A payment's reference, beneath its amount and day. */
+.reference {
+  display: block;
+  font-size: var(--fs-13);
+  color: var(--text-muted);
+}
+
+.table .figure {
+  padding-block: var(--sp-4);
+}
+
+.actions {
+  white-space: nowrap;
+  text-align: right;
+}
+
+.actions button:first-child {
+  margin-left: 0;
+}
+
+.table .acting > td {
+  padding: 0 0 var(--sp-16);
+  background: var(--paper-light);
+}
+
+.ask {
+  padding: var(--sp-12) var(--sp-20) 0;
+}

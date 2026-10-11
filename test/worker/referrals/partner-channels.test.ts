@@ -28,7 +28,13 @@ const send = (method: string, path: string, body: unknown) =>
     body: JSON.stringify(body),
   });
 
-const TERMS = { name: "Looks Salon, Sector 29", friend_visits: 2, valid_days: 180, commission: 150000 };
+const TERMS = {
+  name: "Looks Salon, Sector 29",
+  friend_visits: 2,
+  valid_days: 180,
+  commission: 150000,
+  discount_code: null,
+};
 
 async function addPartner(terms = TERMS): Promise<PartnerInvite> {
   const answer = await send("POST", "/api/referral-channels", terms);
@@ -68,6 +74,7 @@ describe("a partner", () => {
       referrer_first_name: null,
       partner: TERMS.name,
       friend_visits: 2,
+      discount: null,
       card: { state: "house", version: 1 },
     });
     await send("POST", `/api/referral-channels/${partner.channelId}/pause`, { paused: true });
@@ -169,5 +176,9 @@ describe("the friend, fitted", () => {
     expect(await clawBackPartnerRefunded(env.DB, NOW)).toBe(1);
     expect((await creditBalance(env.DB, FRIEND, NOW)).visits).toBe(0);
     expect(await channels()).toMatchObject([{ fitted: 0, earned: 0 }]);
+    const taken = await env.DB.prepare("SELECT clawed_back_at FROM channel_attributions WHERE referred_person_id = ?1")
+      .bind(FRIEND)
+      .first();
+    expect(taken).toEqual({ clawed_back_at: NOW.toISOString() });
   });
 });

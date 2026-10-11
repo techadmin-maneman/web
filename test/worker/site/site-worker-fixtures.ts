@@ -23,6 +23,7 @@ export const VALID = {
   referrer_first_name: "Rohit",
   partner: null,
   friend_visits: null,
+  discount: null,
   card: { state: "personal", version: 3 },
 };
 

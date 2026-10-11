@@ -53,7 +53,7 @@ export const EXPORT_QUERIES = {
     FROM referral_attributions WHERE referred_person_id = ?1`,
   // The partner by name; what the partner earns is between us and them.
   recommended_by: `SELECT c.name AS partner, r.via, r.first_touch_at, r.pincode, r.grant_state, r.friend_visits,
-      r.valid_days, r.granted_at, r.created_at
+      r.valid_days, r.granted_at, r.clawed_back_at, r.created_at
     FROM channel_attributions r JOIN referral_channels c ON c.id = r.channel_id WHERE r.referred_person_id = ?1`,
   consultation_requests: `SELECT pincode, requested_date, requested_window, one_visit, referral_code, discount_code,
       booked, created_at

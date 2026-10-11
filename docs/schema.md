@@ -26,7 +26,7 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 | Technicians' steps, pieces and photographs | `job_events`, `checkins`, `visits`, `consumables_used`, `no_show_cases`, `no_show_disputes`, `pieces`, `photos`, `photo_sets` | Steps, check-ins, outcomes, pieces fitted, no-shows and disputes since are lost; a photograph's file is kept with no row | The rows since `<T>` |
 | Hair profiles | `hair_profiles` | A profile recorded since is lost, and one an erasure blanked since is whole again | Adding the rows since `<T>`: they are only ever added. Erasing again blanks the rest |
 | Stock | `stock_movements` | A delivery, transfer, count or loss recorded since, or a job's use, is lost, so what each kit and the store hold is wrong | Adding the rows since `<T>` |
-| Referrals and credits | `referral_codes`, `referral_attributions`, `credit_ledger`, `waitlist_entries`, `referral_channels`, `channel_attributions` | A credit, a grant, a partner or a place on a waitlist disappears | The rows since `<T>`. `credit_ledger` is only ever added to |
+| Referrals and credits | `referral_codes`, `referral_attributions`, `credit_ledger`, `waitlist_entries`, `referral_channels`, `channel_attributions`, `partner_payouts` | A credit, a grant, a partner, a partner's payment or a place on a waitlist disappears | The rows since `<T>`. `credit_ledger` is only ever added to |
 | Ops' settings and what we sell | `ops_settings`, `price_book`, `services`, `slot_times`, `serviceable_pincodes`, `technician_leave`, `visit_blackouts`, `city_blackouts`, `cities`, `zones`, `consumables`, `consumable_usage`, `checklist_items`, `partial_reasons`, `pay_grades`, `visit_pay_rates` | A price, service, rule, area, day's times, day off, consumable, job-sheet list or pay rate set since goes back | Setting it again in the console, which audits it |
 | Staff and access | `staff`, `staff_grants`, `staff_service_tokens`, `staff_access_mode` | Someone taken off the Staff list since, or a grant taken back, is let in again | Setting it again on the Staff page, before anything else |
 | Tasks | `task_owners`, `task_closures` | A task closed since opens again, and one given to someone since is nobody's | Closing or giving it again on the Tasks board |
@@ -85,6 +85,7 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 - [otp_challenges](#otp_challenges): Each one-time code sent, as a hash, with its sends and attempts (ADR 0030, ADR 0052).
 - [outbound_messages](#outbound_messages): Each WhatsApp message, from queued to sent, delivered and read (ADR 0041).
 - [partial_reasons](#partial_reasons): The reasons a job may be left partly done, as ops set them, one they took off kept as retired; none means the committed list (ADR 0087).
+- [partner_payouts](#partner_payouts): Each month's payment to a partner, as Finance made it from the payout tool, with its reference (ADR 0124).
 - [pay_grades](#pay_grades): The seniority grades Finance names for technicians' pay per visit (ADR 0122).
 - [payment_links](#payment_links): The Razorpay payment link a consultation and fit in one visit is paid by once the client is fitted: one a visit, the product and its price, when Razorpay made and texted it, and the payment that paid it (ADR 0105).
 - [payments](#payments): The mirror of Razorpay's payments, and where each stands in Books (ADR 0044).
@@ -290,7 +291,7 @@ Made by `0090_board_version.sql`.
 
 A person who came through a partner's code, and what the friend and the partner earned once fitted (ADR 0123).
 
-Made by `0109_referral_channels.sql`.
+Made by `0109_referral_channels.sql`; changed by `0110_partner_payouts.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -308,11 +309,14 @@ Made by `0109_referral_channels.sql`.
 | `granted_at` | TEXT | yes |  |  |
 | `created_at` | TEXT | no |  |  |
 | `updated_at` | TEXT | no |  |  |
+| `clawed_back_at` | TEXT | yes |  |  |
 
 Indexes:
 
 - `channel_attributions_by_channel`: on (`channel_id`, `grant_state`)
+- `channel_attributions_by_clawed_back`: on (`clawed_back_at`), where `clawed_back_at IS NOT NULL`
 - `channel_attributions_by_first_fit`: on (`first_fit_appointment_id`), where `first_fit_appointment_id IS NOT NULL`
+- `channel_attributions_by_granted`: on (`granted_at`), where `granted_at IS NOT NULL`
 - `channel_attributions_pending`: on (`referred_person_id`), where `grant_state = 'pending'`
 - A `UNIQUE` constraint: unique on (`referred_person_id`)
 
@@ -1197,6 +1201,27 @@ Made by `0049_consumables_and_stock.sql`.
 | `set_by` | TEXT | no |  |  |
 | `set_at` | TEXT | no |  |  |
 
+## partner_payouts
+
+Each month's payment to a partner, as Finance made it from the payout tool, with its reference (ADR 0124).
+
+Made by `0110_partner_payouts.sql`.
+
+| Column | Type | May be empty | Default | Key |
+| --- | --- | --- | --- | --- |
+| `id` | TEXT | no |  | primary key |
+| `channel_id` | TEXT | no |  | → `referral_channels.id` |
+| `month` | TEXT | no |  |  |
+| `amount` | INTEGER | no |  |  |
+| `paid_on` | TEXT | no |  |  |
+| `reference` | TEXT | no |  |  |
+| `recorded_by` | TEXT | no |  |  |
+| `recorded_at` | TEXT | no |  |  |
+
+Indexes:
+
+- A `UNIQUE` constraint: unique on (`channel_id`, `month`)
+
 ## pay_grades
 
 The seniority grades Finance names for technicians' pay per visit (ADR 0122).
@@ -1491,7 +1516,7 @@ Indexes:
 
 Partners who send us clients on their own code: the friend's reward and the partner's commission (ADR 0123).
 
-Made by `0109_referral_channels.sql`.
+Made by `0109_referral_channels.sql`; changed by `0111_partner_discount.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -1507,9 +1532,11 @@ Made by `0109_referral_channels.sql`.
 | `created_at` | TEXT | no |  |  |
 | `changed_by` | TEXT | yes |  |  |
 | `changed_at` | TEXT | yes |  |  |
+| `discount_code_id` | TEXT | yes |  | → `discount_codes.id` |
 
 Indexes:
 
+- `referral_channels_by_discount_code`: on (`discount_code_id`)
 - A `UNIQUE` constraint: unique on (`name`)
 - A `UNIQUE` constraint: unique on (`code`)
 

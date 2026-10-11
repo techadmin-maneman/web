@@ -18,10 +18,13 @@ import { currentAddress } from "../../domain/clients/profile.ts";
 import { isServed } from "../../domain/clients/service-area.ts";
 import { spendableCredits } from "../../domain/money/credits.ts";
 import { codeToCarry } from "../../domain/money/discount-code-uses.ts";
+import { enterOnHold } from "../../domain/money/discount-code-holds.ts";
+import { partnerCodeFor } from "../../domain/referrals/channels.ts";
 import { keepShownConsents, recordBookingConsents } from "../../domain/privacy/booking-consents.ts";
 import { bookable, movedService, moveTermsFor, rangeFor, soldAs, startCheckout } from "../../http/client-booking.ts";
 import { clientOf } from "../../http/client-session.ts";
-import type { App } from "../../http/context.ts";
+import type { Context } from "hono";
+import type { App, AppEnv } from "../../http/context.ts";
 import { errorBody, errorResponse, refuse } from "../../http/errors.ts";
 import { opsInputs } from "../../http/ops-inputs.ts";
 import { selfServeRoute } from "../../http/session-routes.ts";
@@ -204,6 +207,7 @@ export function registerClientBooking(app: App): void {
     });
     if (hold === null) return refuse(c, "taken");
     c.var.log.info("slot_held", { hold_id: hold.id, type, tier: service.tier, date, window });
+    if (type === "first_fit" && move === null && !useCredit) await enterPartnerCode(c, hold.id, personId, now);
     const held = await clientHold(c.env.DB, hold.id, personId, now);
     if (held === null) return refuse(c, "taken");
     return c.json(held, 201);
@@ -217,6 +221,17 @@ export function registerClientBooking(app: App): void {
   });
 
   registerHoldOutcomes(app);
+}
+
+/**
+ * A friend a partner sent finds the partner's code already on their first fit, entered as the pay step enters one;
+ * where it no longer applies, the hold keeps its price (docs/decisions/0125-partner-discount-codes.md).
+ */
+async function enterPartnerCode(c: Context<AppEnv>, holdId: string, personId: string, now: Date): Promise<void> {
+  const text = await partnerCodeFor(c.env.DB, personId);
+  if (text === null) return;
+  const entered = await enterOnHold(c.env.DB, c.var.deps.payments, { holdId, personId, text }, now);
+  c.var.log.info("partner_code_entered", { hold_id: holdId, outcome: entered.kind });
 }
 
 /** What becomes of a hold: booked, once paid or at once when free, or let go. */

@@ -127,6 +127,10 @@ export const ROUTE_NEEDS: Readonly<Record<string, RouteNeed | typeof SIGNED_IN>>
   "POST /api/technician-pay/grades/{id}/delete": need("finance", "manage"),
   "POST /api/technician-pay/rates": inOwnPlaces("finance", "manage"),
   "POST /api/technician-pay/technicians/{id}": inOwnPlaces("finance", "manage"),
+  // Partners are paid nationally, from the payout tool (docs/decisions/0124-partner-statements.md).
+  "GET /api/partner-statements": need("finance", "view"),
+  "POST /api/partner-statements/{id}/payouts": need("finance", "manage"),
+  "POST /api/partner-statements/{id}/payouts/{month}/delete": need("finance", "manage"),
   "POST /api/visits/{id}/discount-code": inOwnPlaces("finance", "act"),
   "POST /api/visits/{id}/discount-code/remove": inOwnPlaces("finance", "act"),
   // National Finance only until the route keeps to the caller's cities.

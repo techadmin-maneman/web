@@ -4,7 +4,9 @@
 // invite only, a client's or a partner's, whichever they used first.
 
 import { auditStatement, type AuditActor } from "../ops/audit.ts";
+import type { DiscountKind, DiscountTerms } from "../../policy/discount-codes.ts";
 import { inviteLapsed } from "../../policy/invites.ts";
+import { OWED } from "./partner-statements.ts";
 import { inviteOf, newReferralCode, type Invite, type Via } from "./referrals.ts";
 
 /** A partner's invite, as the landing and its forms read it. */
@@ -15,16 +17,52 @@ export interface PartnerInvite {
   readonly partnerName: string;
   /** The service visits the friend gets once fitted; 0 for none. */
   readonly friendVisits: number;
+  /** The partner's discount code, which comes off the friend's first fit by itself, and its terms; null for none. */
+  readonly discount: { readonly code: string; readonly terms: DiscountTerms } | null;
 }
 
-/** A live partner's invite by its code; null for a code no partner has, or one paused. */
-export async function partnerInviteOf(db: D1Database, code: string): Promise<PartnerInvite | null> {
+interface PartnerRow {
+  readonly id: string;
+  readonly code: string;
+  readonly name: string;
+  readonly friend_visits: number;
+  readonly discount_code: string | null;
+  readonly kind: DiscountKind | null;
+  readonly value: number | null;
+  readonly cap: number | null;
+}
+
+/**
+ * A live partner's invite by its code; null for a code no partner has, or one paused. Its discount code stands while
+ * it is switched on, covers a first fit and, given `today`, has not ended.
+ */
+export async function partnerInviteOf(
+  db: D1Database,
+  code: string,
+  today: string | null = null,
+): Promise<PartnerInvite | null> {
   const row = await db
-    .prepare("SELECT id, code, name, friend_visits FROM referral_channels WHERE code = ?1 AND paused_at IS NULL")
-    .bind(code.toUpperCase())
-    .first<{ id: string; code: string; name: string; friend_visits: number }>();
+    .prepare(
+      `SELECT c.id, c.code, c.name, c.friend_visits, d.code AS discount_code, d.kind, d.value, d.cap
+       FROM referral_channels c
+       LEFT JOIN discount_codes d ON d.id = c.discount_code_id AND d.switched_off_at IS NULL AND d.covers_first_fit = 1
+         AND (?2 IS NULL OR d.expires_on IS NULL OR d.expires_on >= ?2)
+       WHERE c.code = ?1 AND c.paused_at IS NULL`,
+    )
+    .bind(code.toUpperCase(), today)
+    .first<PartnerRow>();
   if (row === null) return null;
-  return { kind: "partner", code: row.code, channelId: row.id, partnerName: row.name, friendVisits: row.friend_visits };
+  return {
+    kind: "partner",
+    code: row.code,
+    channelId: row.id,
+    partnerName: row.name,
+    friendVisits: row.friend_visits,
+    discount:
+      row.discount_code === null || row.kind === null || row.value === null
+        ? null
+        : { code: row.discount_code, terms: { kind: row.kind, value: row.value, cap: row.cap } },
+  };
 }
 
 /** Whether a person already came through a client's invite. */
@@ -102,6 +140,23 @@ export interface ChannelTerms {
   readonly validDays: number;
   /** Paise for each friend fitted. */
   readonly commission: number;
+  /** One of Finance's codes, as typed, for the friend's first paid visit; null for none. */
+  readonly discountCode: string | null;
+}
+
+/**
+ * A partner's code, as typed, as the ID of a code Finance made, has not switched off and that covers a first fit;
+ * null for none given.
+ */
+async function discountCodeId(db: D1Database, text: string | null): Promise<{ readonly id: string | null } | null> {
+  if (text === null) return { id: null };
+  const row = await db
+    .prepare(
+      "SELECT id FROM discount_codes WHERE code = upper(?1) AND switched_off_at IS NULL AND covers_first_fit = 1",
+    )
+    .bind(text)
+    .first<{ id: string }>();
+  return row === null ? null : { id: row.id };
 }
 
 interface Change {
@@ -132,18 +187,29 @@ async function freeCode(db: D1Database, name: string): Promise<string> {
   throw new Error("could not find a free partner code");
 }
 
+/** What an audit entry keeps of a partner's terms: figures and IDs, never its name. */
+const termsDetail = (terms: ChannelTerms, codeId: string | null) => ({
+  friend_visits: terms.friendVisits,
+  valid_days: terms.validDays,
+  commission: terms.commission,
+  discount_code_id: codeId,
+});
+
 export async function addChannel(
   db: D1Database,
   change: Change & ChannelTerms,
-): Promise<{ readonly outcome: "taken" } | { readonly outcome: "added"; readonly id: string }> {
+): Promise<{ readonly outcome: "taken" | "no_code" } | { readonly outcome: "added"; readonly id: string }> {
   if (await nameTaken(db, change.name, null)) return { outcome: "taken" };
+  const discount = await discountCodeId(db, change.discountCode);
+  if (discount === null) return { outcome: "no_code" };
   const id = crypto.randomUUID();
   const code = await freeCode(db, change.name);
   await db.batch([
     db
       .prepare(
-        `INSERT INTO referral_channels (id, name, code, friend_visits, valid_days, commission, created_by, created_at)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)`,
+        `INSERT INTO referral_channels (id, name, code, friend_visits, valid_days, commission, discount_code_id,
+           created_by, created_at)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)`,
       )
       .bind(
         id,
@@ -152,6 +218,7 @@ export async function addChannel(
         change.friendVisits,
         change.validDays,
         change.commission,
+        discount.id,
         change.actor.id,
         change.now.toISOString(),
       ),
@@ -163,7 +230,7 @@ export async function addChannel(
         action: "channel.add",
         subject: { kind: "referral_channel", id },
         requestId: change.requestId,
-        detail: { friend_visits: change.friendVisits, valid_days: change.validDays, commission: change.commission },
+        detail: termsDetail(change, discount.id),
       },
       change.now,
     ),
@@ -175,18 +242,29 @@ export async function addChannel(
 export async function changeChannel(
   db: D1Database,
   change: Change & ChannelTerms & { readonly id: string },
-): Promise<"not_found" | "taken" | "changed"> {
+): Promise<"not_found" | "taken" | "no_code" | "changed"> {
   const exists = await db.prepare("SELECT 1 FROM referral_channels WHERE id = ?1").bind(change.id).first();
   if (exists === null) return "not_found";
   if (await nameTaken(db, change.name, change.id)) return "taken";
+  const discount = await discountCodeId(db, change.discountCode);
+  if (discount === null) return "no_code";
   const at = change.now.toISOString();
   await db.batch([
     db
       .prepare(
-        `UPDATE referral_channels SET name = ?2, friend_visits = ?3, valid_days = ?4, commission = ?5, changed_by = ?6,
-           changed_at = ?7 WHERE id = ?1`,
+        `UPDATE referral_channels SET name = ?2, friend_visits = ?3, valid_days = ?4, commission = ?5,
+           discount_code_id = ?6, changed_by = ?7, changed_at = ?8 WHERE id = ?1`,
       )
-      .bind(change.id, change.name, change.friendVisits, change.validDays, change.commission, change.actor.id, at),
+      .bind(
+        change.id,
+        change.name,
+        change.friendVisits,
+        change.validDays,
+        change.commission,
+        discount.id,
+        change.actor.id,
+        at,
+      ),
     auditStatement(
       db,
       {
@@ -195,7 +273,7 @@ export async function changeChannel(
         action: "channel.change",
         subject: { kind: "referral_channel", id: change.id },
         requestId: change.requestId,
-        detail: { friend_visits: change.friendVisits, valid_days: change.validDays, commission: change.commission },
+        detail: termsDetail(change, discount.id),
       },
       change.now,
     ),
@@ -243,6 +321,10 @@ export interface Channel {
   readonly fitted: number;
   /** Paise earned, from each friend fitted, at the commission in force then. */
   readonly earned: number;
+  /** Of that, paise not yet paid (./partner-statements.ts). */
+  readonly owed: number;
+  /** The partner's discount code for the friend's first paid visit; null for none. */
+  readonly discount_code: string | null;
 }
 
 /** Every partner, newest first, with what has come through each. */
@@ -253,7 +335,9 @@ export async function listChannels(db: D1Database): Promise<Channel[]> {
          (SELECT COUNT(*) FROM channel_attributions a WHERE a.channel_id = c.id) AS referred,
          (SELECT COUNT(*) FROM channel_attributions a WHERE a.channel_id = c.id AND a.grant_state = 'granted') AS fitted,
          (SELECT COALESCE(SUM(a.commission), 0) FROM channel_attributions a
-          WHERE a.channel_id = c.id AND a.grant_state = 'granted') AS earned
+          WHERE a.channel_id = c.id AND a.grant_state = 'granted') AS earned,
+         ${OWED} AS owed,
+         (SELECT d.code FROM discount_codes d WHERE d.id = c.discount_code_id) AS discount_code
        FROM referral_channels c ORDER BY c.created_at DESC`,
     )
     .all<Channel>();
@@ -266,10 +350,32 @@ export type AnyInvite = Invite | PartnerInvite;
 export const isPartnerInvite = (invite: AnyInvite): invite is PartnerInvite => "channelId" in invite;
 
 /** The invite behind a code: a client's, else a live partner's; null for a code we do not have. */
-export async function anyInviteOf(db: D1Database, code: string, nameOnInvite: boolean): Promise<AnyInvite | null> {
-  return (await inviteOf({ db, code, nameOnInvite })) ?? (await partnerInviteOf(db, code));
+export async function anyInviteOf(
+  db: D1Database,
+  code: string,
+  nameOnInvite: boolean,
+  today: string | null = null,
+): Promise<AnyInvite | null> {
+  return (await inviteOf({ db, code, nameOnInvite })) ?? (await partnerInviteOf(db, code, today));
 }
 
 /** The client's code an invite carries, for the tables that point at clients' codes; null for a partner's. */
 export const clientCodeOf = (invite: AnyInvite | null): string | null =>
   invite === null || isPartnerInvite(invite) ? null : invite.code;
+
+/**
+ * The partner's code for a friend it sent who is not fitted yet, where the partner has one switched on; null for
+ * anyone else. Their first fit takes it by itself (docs/decisions/0125-partner-discount-codes.md).
+ */
+export async function partnerCodeFor(db: D1Database, personId: string): Promise<string | null> {
+  const row = await db
+    .prepare(
+      `SELECT d.code FROM channel_attributions a
+       JOIN referral_channels c ON c.id = a.channel_id
+       JOIN discount_codes d ON d.id = c.discount_code_id AND d.switched_off_at IS NULL AND d.covers_first_fit = 1
+       WHERE a.referred_person_id = ?1 AND a.grant_state = 'pending'`,
+    )
+    .bind(personId)
+    .first<{ code: string }>();
+  return row?.code ?? null;
+}
