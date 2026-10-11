@@ -12,12 +12,13 @@ import {
   openClient,
   clientTab,
 } from "./clients-fixtures.ts";
+import * as opsCopy from "../../apps/ops/src/content.ts";
 
 // What a client has bought and how
 // often they have been served belongs on the ops console as well as in the app.
 test("counts the client's visits and replacements, and the day their piece falls due", async ({ page }) => {
   await openClient(page, `/clients/${CLIENT.id}/history`);
-  const history = page.getByRole("region", { name: "Overview" });
+  const history = page.getByRole("region", { name: opsCopy.clients.history.title });
   const fact = (label: string) =>
     history
       .getByRole("term")
@@ -35,14 +36,14 @@ test("counts the client's visits and replacements, and the day their piece falls
 
 test("writes a client with no record in words, and their true noughts as noughts", async ({ page }) => {
   await openClient(page, `/clients/${CLIENT.id}/history`, { [READ_RECORD]: json(NEW_RECORD) });
-  const history = page.getByRole("region", { name: "Overview" });
+  const history = page.getByRole("region", { name: opsCopy.clients.history.title });
   const fact = (label: string) =>
     history
       .getByRole("term")
       .filter({ hasText: new RegExp(`^${label}$`) })
       .locator("+ dd");
-  await expect(fact("First fit")).toHaveText("No first fit");
-  await expect(fact("Last visit")).toHaveText("No visits yet");
+  await expect(fact("First fit")).toHaveText(opsCopy.clients.history.noFirstFit);
+  await expect(fact("Last visit")).toHaveText(opsCopy.clients.history.noVisit);
   await expect(fact("Replacement due")).toHaveText("No hair system fitted");
   await expect(fact("Service visits")).toHaveText("0");
   await expect(fact("Paid")).toHaveText("Rs. 0");
@@ -61,20 +62,20 @@ test("moves between the tabs without reading the record again, and keeps the pho
       return json(VIEW)(route);
     },
   });
-  await page.getByRole("button", { name: "View photos" }).click();
+  await page.getByRole("button", { name: opsCopy.clients.photos.open }).click();
   await expect(page.getByRole("img")).toHaveCount(10);
   await page.getByRole("link", { name: "Consents" }).click();
-  await page.getByRole("link", { name: "Hair" }).click();
+  await page.getByRole("link", { name: opsCopy.clients.photos.angles.hair }).click();
   await expect(page.getByText("MM-STD-4417-C")).toBeVisible();
   // Visits, Payments and History are drawn from the record already loaded, so they ask the API for nothing.
-  await page.getByRole("link", { name: "Visits" }).click();
+  await page.getByRole("link", { name: opsCopy.clients.history.rows.visits }).click();
   await expect(page.getByText("Gate 4417, bay B")).toBeVisible();
   await clientTab(page, "Payments").click();
-  await expect(page.getByRole("region", { name: "Payments and refunds" })).toContainText(
+  await expect(page.getByRole("region", { name: opsCopy.clients.payments.title })).toContainText(
     "Service visit of 22 Aug 2027",
   );
-  await page.getByRole("link", { name: "Overview" }).click();
-  await expect(page.getByRole("region", { name: "Overview" })).toBeVisible();
+  await page.getByRole("link", { name: opsCopy.clients.history.title }).click();
+  await expect(page.getByRole("region", { name: opsCopy.clients.history.title })).toBeVisible();
   // Coming back finds the same opening, logged once: a tab changed is not a second look.
   await page.getByRole("link", { name: "Photos" }).click();
   await expect(page.getByText("Open · logged 10:42 am")).toBeVisible();
@@ -84,7 +85,7 @@ test("moves between the tabs without reading the record again, and keeps the pho
 
 test("says so when the client cannot be loaded, and loads them on Try again", async ({ page }) => {
   await openClient(page, `/clients/${CLIENT.id}`, { [READ_RECORD]: fails(503, "unavailable") });
-  await expect(page.getByRole("alert")).toContainText("Couldn't load this.");
+  await expect(page.getByRole("alert")).toContainText(opsCopy.states.failed);
 
   await clientRoutes(page);
   await page.getByRole("button", { name: "Try again" }).click();
@@ -107,7 +108,7 @@ test("meets WCAG 2.2 AA finding a client, and on every tab, locked and open", as
   await expect(page.getByText("MM-STD-4417-C")).toBeVisible();
   await clean("pieces");
 
-  await page.getByRole("link", { name: "Visits" }).click();
+  await page.getByRole("link", { name: opsCopy.clients.history.rows.visits }).click();
   await expect(page.getByText("Gate 4417, bay B")).toBeVisible();
   await clean("visits");
 
@@ -116,21 +117,21 @@ test("meets WCAG 2.2 AA finding a client, and on every tab, locked and open", as
   await clean("payments");
 
   await clientTab(page, "Referrals").click();
-  await expect(page.getByRole("region", { name: "Invite" })).toBeVisible();
+  await expect(page.getByRole("region", { name: opsCopy.clients.invite.title })).toBeVisible();
   await clean("referrals");
 
   await page.getByRole("link", { name: "Photos" }).click();
-  await expect(page.getByText("Locked")).toBeVisible();
+  await expect(page.getByText(opsCopy.clients.photos.locked)).toBeVisible();
   await clean("photos, locked");
 
-  await page.getByRole("button", { name: "View photos" }).click();
+  await page.getByRole("button", { name: opsCopy.clients.photos.open }).click();
   await expect(page.getByRole("img").first()).toBeVisible();
   await clean("photos, open");
 
   await page.getByRole("link", { name: "Consents" }).click();
   await clean("consents");
 
-  await page.getByRole("link", { name: "Overview" }).click();
-  await expect(page.getByRole("region", { name: "Overview" })).toBeVisible();
+  await page.getByRole("link", { name: opsCopy.clients.history.title }).click();
+  await expect(page.getByRole("region", { name: opsCopy.clients.history.title })).toBeVisible();
   await clean("history");
 });

@@ -5,7 +5,7 @@
 export const EVERY_MINUTE = "* * * * *";
 
 /** How often a job runs, in minutes. Each divides an hour, so a job runs in the same minutes every hour. */
-export type Every = 5 | 15 | 60;
+type Every = 5 | 15 | 60;
 
 /** When a job runs: every `every` minutes, in minute `at` of that period, from 0. */
 export interface Timing {

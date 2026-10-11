@@ -18,6 +18,7 @@ import { expect, test } from "../support.ts";
 import { JOB_ID, ONE_VISIT_CHECKLIST } from "./fixtures.ts";
 import { fakeTech } from "./fake-tech.ts";
 import { pageScrolls } from "./on-phone.ts";
+import * as techCopy from "../../apps/tech/src/content.ts";
 
 /** A 401 with no session: what an installed iOS app's own cookie jar produces on its first call. */
 const noSession = { status: 401, json: { error: { code: "session_required", request_id: "test" } } };
@@ -55,12 +56,12 @@ test("opens the route from Navigate, which the geo: link it replaced never did",
   await page.goto(`/jobs/${JOB_ID}`);
 
   const opening = context.waitForEvent("page");
-  await page.getByRole("link", { name: "Navigate" }).click();
+  await page.getByRole("link", { name: techCopy.job.navigate }).click();
   const map = await opening;
   expect(map.url()).toBe("https://www.google.com/maps/dir/?api=1&destination=28.39%2C77.07");
 
   // And the app is still there behind it, which is what the technician comes back to.
-  await expect(page.getByRole("link", { name: "Navigate" })).toBeVisible();
+  await expect(page.getByRole("link", { name: techCopy.job.navigate })).toBeVisible();
 });
 
 test("tells a technician why the app on his home screen is signed out", async ({ page }) => {
@@ -86,7 +87,7 @@ test("draws its screens without one refusal from its own security policy", async
   await page.goto("/");
   await expect(page.getByRole("heading", { name: "3 jobs today" })).toBeVisible();
   await page.goto(`/jobs/${JOB_ID}`);
-  await expect(page.getByRole("link", { name: "Navigate" })).toBeVisible();
+  await expect(page.getByRole("link", { name: techCopy.job.navigate })).toBeVisible();
   await page.goto(`/jobs/${JOB_ID}/checklist`);
   await expect(page.getByRole("heading", { level: 1, name: "Service checklist" })).toBeVisible();
   await page.goto("/waiting");
@@ -117,7 +118,7 @@ test("keeps a long checklist's action at the foot of the screen, with its head i
   await expect(page.getByRole("heading", { level: 1, name: "Consultation and fit checklist" })).toBeInViewport({
     ratio: 1,
   });
-  await expect(page.getByRole("button", { name: "Finish the list to continue" })).toBeInViewport({ ratio: 1 });
+  await expect(page.getByRole("button", { name: techCopy.steps.checklist.unfinished })).toBeInViewport({ ratio: 1 });
   expect(await pageScrolls(page)).toBe(false);
 });
 
@@ -141,8 +142,8 @@ test("wipes everything the phone holds when the technician signs out", async ({ 
   const before = await page.evaluate(() => indexedDB.databases().then((each) => each.map((one) => one.name)));
   expect(before).toContain("mm-tech");
 
-  await page.getByRole("button", { name: "Sign out" }).click();
-  await page.getByRole("alert").getByRole("button", { name: "Sign out" }).click();
+  await page.getByRole("button", { name: techCopy.today.signOut }).click();
+  await page.getByRole("alert").getByRole("button", { name: techCopy.today.signOut }).click();
   await expect(page.getByRole("heading", { level: 1, name: "Technician sign in" })).toBeVisible();
   const after = await page.evaluate(() => indexedDB.databases().then((each) => each.map((one) => one.name)));
   expect(after).not.toContain("mm-tech");

@@ -12,6 +12,7 @@ import type { Page } from "@playwright/test";
 import { expect, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
 import { answer, DELETION_REQUESTS, fails, json, TASKS_READ_ON, type Call, type OpsReply } from "./fixtures.ts";
+import * as opsCopy from "../../apps/ops/src/content.ts";
 
 const FIRST = DELETION_REQUESTS.requests[0];
 const DECISION = `/api/deletion-requests/${FIRST?.id ?? ""}/decision` as const;
@@ -57,7 +58,7 @@ test("lists every request with the client's number, the day, and the days left o
   await expect(row(page, "Rohit Malhotra")).toContainText("+91 98100 04417 · requested 28 Aug 2027");
   await expect(row(page, "Rohit Malhotra")).toContainText("5 days left");
   await expect(row(page, "Ashish Gill")).toContainText("5 days overdue");
-  await expect(row(page, "Karan Bose")).toContainText("Due today");
+  await expect(row(page, "Karan Bose")).toContainText(opsCopy.waiting.today);
 });
 
 test("offers no one-tap delete: the first button only opens the confirmation", async ({ page }) => {
@@ -75,7 +76,7 @@ test("says what a deletion destroys and what it keeps, before it can be sent", a
   await ask(page);
   const confirm = page.getByRole("group", { name: "Deleting the account of Rohit Malhotra" });
   await expect(confirm).toContainText("It can't be undone");
-  await expect(confirm.getByRole("heading", { name: "Deleted" })).toBeVisible();
+  await expect(confirm.getByRole("heading", { name: opsCopy.deletions.queue.deleted.title })).toBeVisible();
   await expect(confirm).toContainText("Every photo: visits and try-ons");
   await expect(confirm.getByRole("heading", { name: "Kept" })).toBeVisible();
   await expect(confirm).toContainText("Invoices in Books, for eight years, by law");
@@ -111,7 +112,7 @@ test("deletes the account once it is confirmed, and the request leaves the queue
 test("keeps the account when the confirmation is called off", async ({ page }) => {
   await open(page);
   await ask(page);
-  await page.getByRole("button", { name: "Keep account" }).click();
+  await page.getByRole("button", { name: opsCopy.deletions.queue.cancel }).click();
   await expect(row(page, "Rohit Malhotra").getByRole("button", { name: DELETE })).toBeVisible();
   // The keyboard goes back to the button that asked, not to the top of the page.
   await expect(row(page, "Rohit Malhotra").getByRole("button", { name: DELETE })).toBeFocused();
@@ -136,7 +137,7 @@ test("brings the request a task named into view, and gives it the keyboard", asy
 test("rejects a request with a reason, which it will not send without", async ({ page }) => {
   await open(page, json({ state: "rejected" }));
   await row(page, "Rohit Malhotra").getByRole("button", { name: "Reject the request of Rohit Malhotra" }).click();
-  const send = page.getByRole("button", { name: "Reject request" });
+  const send = page.getByRole("button", { name: opsCopy.deletions.queue.reason.confirm });
   await expect(send).toBeDisabled();
 
   await page.getByRole("textbox", { name: "Reason" }).fill("The number's owner says they did not ask.");
@@ -164,23 +165,22 @@ test("says what to settle first when the client still has a visit booked, and er
   await page.getByRole("checkbox", { name: CHECKED }).check();
   await page.getByRole("button", { name: "Delete permanently" }).click();
   await expect(page.getByRole("alert")).toContainText("They have a visit booked.");
-  await expect(page.getByRole("alert").getByRole("link", { name: "Open Visits" })).toHaveAttribute(
-    "href",
-    `/clients/${FIRST?.person_id ?? ""}/visits`,
-  );
+  await expect(
+    page.getByRole("alert").getByRole("link", { name: opsCopy.deletions.queue.settleOn.visits }),
+  ).toHaveAttribute("href", `/clients/${FIRST?.person_id ?? ""}/visits`);
   await expect(row(page, "Rohit Malhotra")).toBeVisible();
 });
 
 test("says so when nothing is waiting", async ({ page }) => {
   await answer(page, { "GET /api/deletion-requests": json({ requests: [] }) });
   await page.goto("/deletion-requests");
-  await expect(page.getByText("No deletion requests.")).toBeVisible();
+  await expect(page.getByText(opsCopy.deletions.queue.empty)).toBeVisible();
 });
 
 test("says so when the queue cannot be loaded, and loads it on Try again", async ({ page }) => {
   await answer(page, { "GET /api/deletion-requests": fails(503, "unavailable") });
   await page.goto("/deletion-requests");
-  await expect(page.getByRole("alert")).toContainText("Couldn't load this.");
+  await expect(page.getByRole("alert")).toContainText(opsCopy.states.failed);
 
   await answer(page, { "GET /api/deletion-requests": json(DELETION_REQUESTS) });
   await page.getByRole("button", { name: "Try again" }).click();

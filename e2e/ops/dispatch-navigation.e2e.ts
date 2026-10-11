@@ -12,6 +12,7 @@ import {
   open,
   press,
 } from "./dispatch-fixtures.ts";
+import * as opsCopy from "../../apps/ops/src/content.ts";
 
 // The brief's "city and week picker"; the route took both, and the board sent neither.
 test("moves between weeks and cities, asking the route for each", async ({ page }) => {
@@ -22,7 +23,7 @@ test("moves between weeks and cities, asking the route for each", async ({ page 
   });
   await open(page);
 
-  await page.getByRole("button", { name: "Next week" }).click();
+  await page.getByRole("button", { name: opsCopy.dispatch.tools.next }).click();
   await expect.poll(() => asked.at(-1)).toBe("?from=2025-09-26");
   await page.getByLabel("City", { exact: true }).selectOption("Delhi");
   await expect.poll(() => asked.at(-1)).toBe("?from=2025-09-26&city=Delhi");
@@ -40,7 +41,7 @@ test("opens on the week and the search a link asks for", async ({ page }) => {
   await answer(page, { [READ_BOARD]: json(BOARD), [READ_ROOM]: json(ROOM) });
   await page.goto("/dispatch?from=2025-09-19&find=Sohna");
 
-  await expect(page.getByLabel("Find a technician, client or area")).toHaveValue("Sohna");
+  await expect(page.getByLabel(opsCopy.dispatch.tools.find)).toHaveValue("Sohna");
   await expect(page.getByRole("rowheader")).toHaveText(["Faizan AliSohna Rd"]);
   await expect.poll(() => asked[0]).toBe("?from=2025-09-19");
 });
@@ -60,20 +61,20 @@ test("keeps its week, city, search and open visit in the address, so Back from a
   page,
 }) => {
   await open(page);
-  await page.getByRole("button", { name: "Next week" }).click();
+  await page.getByRole("button", { name: opsCopy.dispatch.tools.next }).click();
   await page.getByLabel("City", { exact: true }).selectOption("Delhi");
-  await page.getByLabel("Find a technician, client or area").fill("Rohit");
+  await page.getByLabel(opsCopy.dispatch.tools.find).fill("Rohit");
   await press(page, ROHIT_BLOCK);
   const kept = `?from=2025-09-26&city=Delhi&find=Rohit&visit=${ROHIT_JOB?.appointment_id ?? ""}`;
   await expect.poll(() => new URL(page.url()).search).toBe(kept);
 
-  await page.getByRole("dialog").getByRole("link", { name: "Open client" }).click();
+  await page.getByRole("dialog").getByRole("link", { name: opsCopy.dispatch.drawer.openClient }).click();
   await expect(page).toHaveURL(new RegExp(`/clients/${ROHIT.id}/visits$`));
   await page.goBack();
 
   await expect(page.getByRole("dialog", { name: "Rohit Malhotra" })).toBeVisible();
   await expect(page.getByLabel("City", { exact: true })).toHaveValue("Delhi");
-  await expect(page.getByLabel("Find a technician, client or area")).toHaveValue("Rohit");
+  await expect(page.getByLabel(opsCopy.dispatch.tools.find)).toHaveValue("Rohit");
 });
 
 // 168 technicians made a board 15,000 px tall whose day headers scrolled away, with no way to find a row.
@@ -85,7 +86,7 @@ test("keeps its header row and technicians' column in place, and finds a row by 
   expect(await page.getByRole("columnheader").first().evaluate(position)).toBe("sticky");
   expect(await page.getByRole("rowheader").first().evaluate(position)).toBe("sticky");
 
-  const find = page.getByLabel("Find a technician, client or area");
+  const find = page.getByLabel(opsCopy.dispatch.tools.find);
   await find.fill("Sohna");
   await expect(page.getByRole("rowheader")).toHaveText(["Faizan AliSohna Rd"]);
   await find.fill("kabir");
@@ -97,7 +98,7 @@ test("keeps its header row and technicians' column in place, and finds a row by 
 // An area on a block found nothing, and a client found left a row of eight with no sign of theirs.
 test("finds a visit by its area or its client, and outlines the blocks it found", async ({ page }) => {
   await open(page);
-  const find = page.getByLabel("Find a technician, client or area");
+  const find = page.getByLabel(opsCopy.dispatch.tools.find);
   const found = page.locator("[data-match]");
 
   await find.fill("dlf 4");
@@ -119,9 +120,9 @@ test("finds a visit by its area or its client, and outlines the blocks it found"
 test("folds an empty tray to a rail, so the week has the width", async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 800 });
   await open(page, { [READ_BOARD]: json({ ...BOARD, unassigned: [] }) });
-  const tray = page.getByRole("complementary", { name: "Unassigned" });
+  const tray = page.getByRole("complementary", { name: opsCopy.dispatch.tray.title });
   expect((await tray.boundingBox())?.width ?? 0).toBeLessThanOrEqual(41);
-  await expect(tray).toContainText("Nothing unassigned.");
+  await expect(tray).toContainText(opsCopy.dispatch.tray.empty);
 });
 
 // At 1280 wide and 200% zoom the days shrank to 15 px and the navigation ran off the page.
@@ -145,14 +146,14 @@ test("meets WCAG 2.2 AA on the board, the drawer, a job in hand, the picker and 
   expect(await axeViolations(page)).toEqual([]);
 
   await press(page, "Move visit");
-  await expect(page.getByLabel("Or choose from a list")).toBeVisible();
+  await expect(page.getByLabel(opsCopy.dispatch.landing.list)).toBeVisible();
   expect(await axeViolations(page)).toEqual([]);
 
   await press(page, TO_SANDEEP);
   expect(await axeViolations(page)).toEqual([]);
 
   await page.getByRole("radio", { name: "Client asked" }).check();
-  await page.getByRole("button", { name: "Move and notify" }).click();
+  await page.getByRole("button", { name: opsCopy.dispatch.move.send }).click();
   await expect(page.getByRole("alert")).toBeVisible();
   expect(await axeViolations(page)).toEqual([]);
 });

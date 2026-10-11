@@ -12,6 +12,7 @@ import { axeViolations } from "../a11y.ts";
 import { JOB_ID } from "./fixtures.ts";
 import { fakeTech } from "./fake-tech.ts";
 import { anglesOnPhone, heldOnPhone } from "./on-phone.ts";
+import * as techCopy from "../../apps/tech/src/content.ts";
 
 const TARGET_BYTES = 250 * 1024;
 /** A thumbnail, at most, as the API takes it (MAX_THUMBNAIL_BYTES, src/domain/field/tech-photos.ts). */
@@ -29,7 +30,7 @@ test("captures the five before angles into the app's own store, never a file inp
   await expect(page.locator("input[type=file]")).toHaveCount(0);
   await expect(page.locator("[capture]")).toHaveCount(0);
 
-  const capture = page.getByRole("button", { name: "Capture" });
+  const capture = page.getByRole("button", { name: techCopy.capture.take });
   await expect(capture).toBeEnabled();
   expect(await axeViolations(page)).toEqual([]);
 
@@ -54,10 +55,10 @@ test("captures the five before angles into the app's own store, never a file inp
 test("a double tap on Capture keeps one frame for one angle, and moves on by one", async ({ page }) => {
   await fakeTech(page);
   await page.goto(BEFORE);
-  const capture = page.getByRole("button", { name: "Capture" });
+  const capture = page.getByRole("button", { name: techCopy.capture.take });
   await expect(capture).toBeEnabled();
   // Each angle has its own guide, not Top's line for all five.
-  await expect(page.getByText("Front · face the camera, eyes level")).toBeVisible();
+  await expect(page.getByText(techCopy.capture.guides.front)).toBeVisible();
 
   await capture.dblclick();
   await expect(page.getByText("1 of 5")).toBeVisible();
@@ -66,7 +67,7 @@ test("a double tap on Capture keeps one frame for one angle, and moves on by one
   await expect(page.getByText("1 of 5")).toBeVisible();
   // One frame per angle: the API keeps one photograph for each, so a second would cost the next angle.
   expect(await anglesOnPhone(page)).toEqual(["front"]);
-  await expect(page.getByText("Top · line up the hairline")).toBeVisible();
+  await expect(page.getByText(techCopy.capture.guides.top)).toBeVisible();
 });
 
 test("Capture is the key at the foot of the screen, Retake beside it, over board B1's framing guide", async ({
@@ -74,7 +75,7 @@ test("Capture is the key at the foot of the screen, Retake beside it, over board
 }) => {
   await fakeTech(page);
   await page.goto(BEFORE);
-  const capture = page.getByRole("button", { name: "Capture" });
+  const capture = page.getByRole("button", { name: techCopy.capture.take });
   await expect(capture).toBeEnabled();
 
   const key = await capture.boundingBox();
@@ -82,7 +83,7 @@ test("Capture is the key at the foot of the screen, Retake beside it, over board
   // The foot of the screen, 24 px up, where every other screen's primary action is.
   expect(Math.round((key?.y ?? 0) + (key?.height ?? 0))).toBe((viewport?.height ?? 0) - 24);
   expect(key?.height).toBe(64);
-  expect((await page.getByRole("button", { name: "Retake" }).boundingBox())?.width).toBe(88);
+  expect((await page.getByRole("button", { name: techCopy.capture.retake }).boundingBox())?.width).toBe(88);
   // No second bar beneath it: Capture is the one gold action until the set is done.
   await expect(page.getByRole("button", { name: "Done" })).toHaveCount(0);
   // The head's outline, the hairline and the corners, drawn over the camera and not read out.
@@ -101,13 +102,13 @@ test("Retake drops the last frame from the phone", async ({ page }) => {
   await fakeTech(page);
   await page.goto(BEFORE);
 
-  const capture = page.getByRole("button", { name: "Capture" });
+  const capture = page.getByRole("button", { name: techCopy.capture.take });
   await expect(capture).toBeEnabled();
   await capture.click();
   await expect(page.getByText("1 of 5")).toBeVisible();
   expect((await heldOnPhone(page)).frames).toBe(1);
 
-  await page.getByRole("button", { name: "Retake" }).click();
+  await page.getByRole("button", { name: techCopy.capture.retake }).click();
   await expect(page.getByText("0 of 5")).toBeVisible();
   expect((await heldOnPhone(page)).frames).toBe(0);
 });
@@ -115,7 +116,7 @@ test("Retake drops the last frame from the phone", async ({ page }) => {
 test("each tile shows its photograph once taken, and a tap on one takes that angle again", async ({ page }) => {
   await fakeTech(page);
   await page.goto(BEFORE);
-  const capture = page.getByRole("button", { name: "Capture" });
+  const capture = page.getByRole("button", { name: techCopy.capture.take });
   await expect(capture).toBeEnabled();
   await capture.click();
   await expect(page.getByText("1 of 5")).toBeVisible();
@@ -129,7 +130,7 @@ test("each tile shows its photograph once taken, and a tap on one takes that ang
   await page.getByRole("button", { name: "Take Front again" }).click();
   await expect(page.getByText("1 of 5")).toBeVisible();
   await expect(pictures).toHaveCount(1);
-  await expect(page.getByText("Front · face the camera, eyes level")).toBeVisible();
+  await expect(page.getByText(techCopy.capture.guides.front)).toBeVisible();
   await capture.click();
   await expect(page.getByText("2 of 5")).toBeVisible();
   expect((await heldOnPhone(page)).frames).toBe(2);
@@ -140,7 +141,7 @@ test("uploads each frame to the link the API hands out, then lands the set", asy
   const fake = await fakeTech(page);
   await page.goto(BEFORE);
 
-  const capture = page.getByRole("button", { name: "Capture" });
+  const capture = page.getByRole("button", { name: techCopy.capture.take });
   await expect(capture).toBeEnabled();
   // A tap while a frame is being kept is ignored, so each waits for the one before to be counted.
   for (let angle = 1; angle <= 5; angle += 1) {
@@ -181,7 +182,7 @@ const shown = (page: Page, visible: boolean) =>
 test("lets go of the camera while the app is hidden, and opens it again on the way back", async ({ page }) => {
   await fakeTech(page);
   await page.goto(BEFORE);
-  const capture = page.getByRole("button", { name: "Capture" });
+  const capture = page.getByRole("button", { name: techCopy.capture.take });
   await expect(capture).toBeEnabled();
   expect(await viewfinder(page)).toEqual(["live"]);
 
@@ -199,7 +200,7 @@ test("lets go of the camera while the app is hidden, and opens it again on the w
 test("a frame the phone has no room for can be taken again, and the phone says it is full", async ({ page }) => {
   await fakeTech(page);
   await page.goto(BEFORE);
-  const capture = page.getByRole("button", { name: "Capture" });
+  const capture = page.getByRole("button", { name: techCopy.capture.take });
   await expect(capture).toBeEnabled();
 
   // The phone runs out of room.
@@ -219,8 +220,8 @@ test("a frame the phone has no room for can be taken again, and the phone says i
     });
   });
   await capture.click();
-  await expect(page.getByText("That photo didn’t save. Take it again.")).toBeVisible();
-  await expect(page.getByText("This phone’s storage is full")).toBeVisible();
+  await expect(page.getByText(techCopy.capture.missed)).toBeVisible();
+  await expect(page.getByText(techCopy.storage.title)).toBeVisible();
   await expect(page.getByText(/won’t open its camera/)).toHaveCount(0);
   expect(await axeViolations(page)).toEqual([]);
 
@@ -230,7 +231,7 @@ test("a frame the phone has no room for can be taken again, and the phone says i
   });
   await capture.click();
   await expect(page.getByText("1 of 5")).toBeVisible();
-  await expect(page.getByText("This phone’s storage is full")).toHaveCount(0);
+  await expect(page.getByText(techCopy.storage.title)).toHaveCount(0);
 });
 
 test("a camera the phone refused can be asked for again", async ({ page }) => {
@@ -248,13 +249,13 @@ test("a camera the phone refused can be asked for again", async ({ page }) => {
 
   await expect(page.getByText(/won’t open its camera/)).toBeVisible();
   await page.getByRole("button", { name: "Try again" }).click();
-  await expect(page.getByRole("button", { name: "Capture" })).toBeEnabled();
+  await expect(page.getByRole("button", { name: techCopy.capture.take })).toBeEnabled();
 });
 
 test("the frames waiting show on the waiting screen, with the design's line about the gallery", async ({ page }) => {
   await fakeTech(page);
   await page.goto(BEFORE);
-  const capture = page.getByRole("button", { name: "Capture" });
+  const capture = page.getByRole("button", { name: techCopy.capture.take });
   await expect(capture).toBeEnabled();
   await capture.click();
   await expect(page.getByText("1 of 5")).toBeVisible();
@@ -262,5 +263,5 @@ test("the frames waiting show on the waiting screen, with the design's line abou
   // A frame goes up only with the set it belongs to, so this one waits.
   await page.goto("/waiting");
   await expect(page.getByText("1 photo set waiting")).toBeVisible();
-  await expect(page.getByText("Never saved to this phone’s gallery.")).toBeVisible();
+  await expect(page.getByText(techCopy.queue.never)).toBeVisible();
 });

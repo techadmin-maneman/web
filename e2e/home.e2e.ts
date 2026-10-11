@@ -2,6 +2,7 @@
 
 import type { Page } from "@playwright/test";
 import { expect, test, visit } from "./support.ts";
+import * as siteCopy from "../site/src/content/site.ts";
 
 const narrow = (width: number | undefined) => (width ?? 0) <= 760;
 
@@ -18,19 +19,19 @@ test.describe("header", () => {
   test("shows the mark and wordmark, and Book a consultation, at every width", async ({ page }) => {
     await page.goto("/");
     const header = page.locator("header");
-    await expect(header.getByRole("link", { name: "Mane Man, home" })).toHaveAttribute("href", "/");
+    await expect(header.getByRole("link", { name: siteCopy.header.homeLabel })).toHaveAttribute("href", "/");
     await expect(header.getByRole("link", { name: "Book a consultation" })).toHaveAttribute("href", "/book");
   });
 
   test("hides the section links and the area tag below 760 px, with no menu button", async ({ page }) => {
     await page.goto("/");
-    const links = page.locator("header").getByRole("link", { name: "The range" });
+    const links = page.locator("header").getByRole("link", { name: siteCopy.range.title });
     if (narrow(page.viewportSize()?.width)) {
       await expect(links).toBeHidden();
-      await expect(page.locator("header").getByText("Delhi NCR")).toBeHidden();
+      await expect(page.locator("header").getByText(siteCopy.header.area)).toBeHidden();
     } else {
       await expect(links).toBeVisible();
-      await expect(page.locator("header").getByText("Delhi NCR")).toBeVisible();
+      await expect(page.locator("header").getByText(siteCopy.header.area)).toBeVisible();
     }
     await expect(page.locator("header").getByRole("button")).toHaveCount(0);
   });
@@ -38,7 +39,7 @@ test.describe("header", () => {
   test("scrolls a section link to its section, 56 px below the top", async ({ page }) => {
     test.skip(narrow(page.viewportSize()?.width), "the links are hidden below 760 px");
     await page.goto("/");
-    await page.locator("header").getByRole("link", { name: "The range" }).click();
+    await page.locator("header").getByRole("link", { name: siteCopy.range.title }).click();
     await expect
       .poll(() => page.evaluate(() => Math.round(document.getElementById("range")?.getBoundingClientRect().top ?? 0)))
       .toBe(56);
@@ -47,7 +48,7 @@ test.describe("header", () => {
   test("goes home first from another page, then to the section", async ({ page }) => {
     test.skip(narrow(page.viewportSize()?.width), "the links are hidden below 760 px");
     await page.goto("/book");
-    await page.locator("header").getByRole("link", { name: "Questions" }).click();
+    await page.locator("header").getByRole("link", { name: siteCopy.faq.title }).click();
     await expect(page).toHaveURL(/\/#faq$/);
     await expect
       .poll(() => page.evaluate(() => Math.round(document.getElementById("faq")?.getBoundingClientRect().top ?? 0)))
@@ -58,11 +59,11 @@ test.describe("header", () => {
 test.describe("sticky bar and footer: the home page only", () => {
   test("appear on the home page", async ({ page }) => {
     await page.goto("/");
-    await expect(page.getByRole("link", { name: "Message us on WhatsApp" })).toBeVisible();
+    await expect(page.getByRole("link", { name: siteCopy.stickyBar.whatsappLabel })).toBeVisible();
     await expect(page.locator("footer")).toBeVisible();
-    await expect(page.locator("footer")).toContainText("Mane Man Grooming Services Private Limited");
-    await expect(page.locator("footer")).toContainText("Delhi NCR · home service only");
-    await expect(page.locator("footer").getByRole("link", { name: "Questions", exact: true })).toHaveAttribute(
+    await expect(page.locator("footer")).toContainText(siteCopy.footer.entity);
+    await expect(page.locator("footer")).toContainText(siteCopy.footer.area);
+    await expect(page.locator("footer").getByRole("link", { name: siteCopy.faq.title, exact: true })).toHaveAttribute(
       "href",
       "/#faq",
     );
@@ -72,7 +73,7 @@ test.describe("sticky bar and footer: the home page only", () => {
   for (const path of ["/try", "/book", "/privacy"]) {
     test(`are absent from ${path}`, async ({ page }) => {
       await page.goto(path);
-      await expect(page.getByRole("link", { name: "Message us on WhatsApp" })).toHaveCount(0);
+      await expect(page.getByRole("link", { name: siteCopy.stickyBar.whatsappLabel })).toHaveCount(0);
       await expect(page.locator("footer")).toHaveCount(0);
     });
   }
@@ -89,7 +90,7 @@ test.describe("sticky bar and footer: the home page only", () => {
   test("the bar is a landmark, and its button keeps to a phone's width", async ({ page }) => {
     await page.goto("/");
     const book = page
-      .getByRole("navigation", { name: "Book or message us" })
+      .getByRole("navigation", { name: siteCopy.stickyBar.label })
       .getByRole("link", { name: "Book a consultation" });
     await expect(book).toBeVisible();
     expect((await book.boundingBox())?.width ?? 0).toBeLessThanOrEqual(480);
@@ -145,7 +146,7 @@ test.describe("home sections", () => {
   test("hero calls to action go to /try and /book", async ({ page }) => {
     await page.goto("/");
     const hero = page.locator('[data-section="hero"]');
-    await expect(hero.getByRole("link", { name: "Try a new look" })).toHaveAttribute("href", "/try");
+    await expect(hero.getByRole("link", { name: siteCopy.hero.tryOn })).toHaveAttribute("href", "/try");
     await expect(hero.getByRole("link", { name: "Book a free consultation" })).toHaveAttribute("href", "/book");
   });
 
@@ -153,7 +154,7 @@ test.describe("home sections", () => {
     await page.goto("/");
     const line = page.locator('[data-section="hero"] .sequence');
     await expect(line).toHaveText("Natural up close. 100% real human hair. Fitted at home. Be the Main Man again.");
-    await expect(page.getByRole("heading", { level: 1 })).toHaveText("A full head of hair, matched to your own.");
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText(siteCopy.hero.title);
   });
 
   // Every phone downloaded the 2.3 MB film.
@@ -170,7 +171,7 @@ test.describe("home sections", () => {
 
   test("shows the design's Placeholder tags outside production", async ({ page }) => {
     await page.goto("/");
-    await expect(page.getByText("Placeholder footage")).toBeVisible();
+    await expect(page.getByText(siteCopy.heroFootage.tag)).toBeVisible();
     expect(await page.locator(".label", { hasText: /^Placeholder$/ }).count()).toBeGreaterThan(10);
   });
 
@@ -179,13 +180,13 @@ test.describe("home sections", () => {
     const norwood = page.locator('[data-section="norwood"]');
     await expect(norwood.locator(".early > li")).toHaveCount(2);
     await expect(norwood.locator(".flow > li")).toHaveCount(5);
-    await expect(norwood.getByText("A system here would cover hair you still have.")).toBeVisible();
+    await expect(norwood.getByText(siteCopy.norwood.early.note)).toBeVisible();
     await expect(norwood.getByRole("link", { name: "Book a free consultation" })).toHaveAttribute("href", "/book");
   });
 
   test("comparison: seven rows, ticks and crosses read as Yes and No", async ({ page }) => {
     await page.goto("/");
-    const table = page.getByRole("table", { name: "Why choose a hair system" });
+    const table = page.getByRole("table", { name: siteCopy.comparison.title });
     await expect(table.getByRole("row")).toHaveCount(8);
     await expect(table.getByRole("rowheader", { name: "Surgery" })).toHaveCount(1);
     const surgery = table.getByRole("row").filter({ has: page.getByRole("rowheader", { name: "Surgery" }) });
@@ -207,13 +208,13 @@ test.describe("home sections", () => {
 
   test("the teaser slider starts at 46% and moves with the keyboard", async ({ page }) => {
     await page.goto("/");
-    const slider = page.getByRole("slider", { name: "Compare before and after" });
+    const slider = page.getByRole("slider", { name: siteCopy.tryOnTeaser.sliderLabel });
     await slider.scrollIntoViewIfNeeded();
     await expect(slider).toHaveValue("46");
     await slider.focus();
     await page.keyboard.press("ArrowRight");
     await expect(slider).toHaveValue("47");
-    await expect(page.getByRole("link", { name: "Start the try-on" })).toHaveAttribute("href", "/try");
+    await expect(page.getByRole("link", { name: siteCopy.tryOnTeaser.start })).toHaveAttribute("href", "/try");
   });
 
   // Nothing books a phone call, so no step promises one.
@@ -272,7 +273,7 @@ test.describe("home sections", () => {
   test("the closing band books a free consultation", async ({ page }) => {
     await page.goto("/");
     const closing = page.locator('[data-section="closing"]');
-    await expect(closing).toContainText("The consultation takes an hour and costs nothing.");
+    await expect(closing).toContainText(siteCopy.closing.title);
     await expect(closing.getByRole("link", { name: "Book a free consultation" })).toHaveAttribute("href", "/book");
   });
 });
@@ -299,7 +300,7 @@ test.describe("reduced motion", () => {
     expect(films).toEqual([]);
     expect(await page.evaluate(() => getComputedStyle(document.documentElement).scrollBehavior)).toBe("auto");
     // Paused already, so the control offers to play it.
-    await expect(page.getByRole("button", { name: "Play the film" })).toBeVisible();
+    await expect(page.getByRole("button", { name: siteCopy.hero.play })).toBeVisible();
   });
 });
 
@@ -321,8 +322,8 @@ test.describe("a visitor saving data", () => {
     expect(await video.evaluate((element: HTMLVideoElement) => element.paused)).toBe(true);
     expect(films).toEqual([]);
 
-    await page.getByRole("button", { name: "Play the film" }).click();
-    await expect(page.getByRole("button", { name: "Pause the film" })).toBeVisible();
+    await page.getByRole("button", { name: siteCopy.hero.play }).click();
+    await expect(page.getByRole("button", { name: siteCopy.hero.pause })).toBeVisible();
     await expect(video).toHaveAttribute("src", /\.mp4$/);
   });
 });
@@ -332,8 +333,8 @@ test.describe("WCAG on the home page", () => {
   test("the hero footage can be paused, and stays paused", async ({ page }) => {
     await page.goto("/");
     const video = page.locator("[data-hero-video]");
-    await page.getByRole("button", { name: "Pause the film" }).click();
-    await expect(page.getByRole("button", { name: "Play the film" })).toBeVisible();
+    await page.getByRole("button", { name: siteCopy.hero.pause }).click();
+    await expect(page.getByRole("button", { name: siteCopy.hero.play })).toBeVisible();
     expect(await video.evaluate((element: HTMLVideoElement) => element.paused)).toBe(true);
     await page.evaluate(() => document.dispatchEvent(new Event("visibilitychange")));
     expect(await video.evaluate((element: HTMLVideoElement) => element.paused)).toBe(true);
@@ -342,7 +343,7 @@ test.describe("WCAG on the home page", () => {
   // A link in its sentence's colour must look like a link (WCAG 1.4.1).
   test("the FAQ's WhatsApp link is underlined", async ({ page }) => {
     await page.goto("/");
-    const link = page.locator('[data-section="faq"]').getByRole("link", { name: "ask on WhatsApp" });
+    const link = page.locator('[data-section="faq"]').getByRole("link", { name: siteCopy.faq.intro.link });
     expect(await link.evaluate((element) => getComputedStyle(element).textDecorationLine)).toBe("underline");
   });
 
@@ -377,7 +378,7 @@ test.describe("other pages", () => {
   test("an unknown path gets the 404 page in the site layout", async ({ page }) => {
     const response = await page.goto("/no-such-page");
     expect(response?.status()).toBe(404);
-    await expect(page.getByRole("heading", { name: "This page is not here." })).toBeVisible();
+    await expect(page.getByRole("heading", { name: siteCopy.notFound.title })).toBeVisible();
     await expect(page.locator("header")).toBeVisible();
   });
 
@@ -389,26 +390,26 @@ test.describe("other pages", () => {
     await expect(page.locator("article h2")).toHaveCount(6);
     await expect(page.getByRole("heading", { name: "Your rights" })).toBeVisible();
     // Twice: to withdraw an agreement, and to ask for erasure.
-    const privacyLinks = page.locator("article a", { hasText: "+91 90079 73247" });
+    const privacyLinks = page.locator("article a", { hasText: siteCopy.whatsapp.display });
     await expect(privacyLinks).toHaveCount(2);
     for (const link of await privacyLinks.all()) {
       await expect(link).toHaveAttribute("href", "https://wa.me/919007973247");
     }
-    await expect(page.locator(".label", { hasText: "Placeholder" })).toHaveCount(0);
+    await expect(page.locator(".label", { hasText: siteCopy.placeholderTag })).toHaveCount(0);
     await page.goto("/terms");
     await expect(page.locator("article h2")).toHaveCount(8);
     await expect(page.getByText("the courts at New Delhi have jurisdiction", { exact: false })).toBeVisible();
-    await expect(page.locator("article a", { hasText: "+91 90079 73247" })).toHaveAttribute(
+    await expect(page.locator("article a", { hasText: siteCopy.whatsapp.display })).toHaveAttribute(
       "href",
       "https://wa.me/919007973247",
     );
-    await expect(page.locator(".label", { hasText: "Placeholder" })).toHaveCount(0);
+    await expect(page.locator(".label", { hasText: siteCopy.placeholderTag })).toHaveCount(0);
   });
 
   // The footer gives the number as WhatsApp, not as a line to call.
   test("the footer gives the business number as WhatsApp, and no line to call", async ({ page }) => {
     await page.goto("/");
-    await expect(page.getByRole("link", { name: "WhatsApp · +91 90079 73247" })).toHaveAttribute(
+    await expect(page.getByRole("link", { name: siteCopy.whatsapp.label })).toHaveAttribute(
       "href",
       "https://wa.me/919007973247",
     );
@@ -423,10 +424,10 @@ test.describe("other pages", () => {
       return route.fulfill({ json: { purpose: "whatsapp_launches" } });
     });
     await visit(page, "/stop#the-token");
-    await page.getByRole("button", { name: "Stop them" }).click();
+    await page.getByRole("button", { name: siteCopy.stopMessages.ask.button }).click();
 
-    await expect(page.getByRole("heading", { name: "Done." })).toBeFocused();
-    await expect(page.getByText("We won’t message you when we come to a new area any more.")).toBeVisible();
+    await expect(page.getByRole("heading", { name: siteCopy.stopMessages.done.title })).toBeFocused();
+    await expect(page.getByText(siteCopy.stopMessages.done.whatsapp_launches)).toBeVisible();
     expect(sent).toEqual([{ token: "the-token" }]);
     expect(new URL(page.url()).hash).toBe("");
   });
@@ -436,12 +437,12 @@ test.describe("other pages", () => {
       route.fulfill({ status: 404, json: { error: { code: "not_found", request_id: "r" } } }),
     );
     await visit(page, "/stop#forged");
-    await page.getByRole("button", { name: "Stop them" }).click();
-    await expect(page.getByRole("heading", { name: "This link no longer works." })).toBeVisible();
+    await page.getByRole("button", { name: siteCopy.stopMessages.ask.button }).click();
+    await expect(page.getByRole("heading", { name: siteCopy.stopMessages.expired.title })).toBeVisible();
 
     await visit(page, "/stop");
-    await expect(page.getByRole("heading", { name: "This link no longer works." })).toBeVisible();
-    await expect(page.getByRole("link", { name: "+91 90079 73247" })).toHaveAttribute(
+    await expect(page.getByRole("heading", { name: siteCopy.stopMessages.expired.title })).toBeVisible();
+    await expect(page.getByRole("link", { name: siteCopy.whatsapp.display })).toHaveAttribute(
       "href",
       "https://wa.me/919007973247",
     );

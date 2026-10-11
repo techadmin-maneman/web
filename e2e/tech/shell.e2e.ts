@@ -7,13 +7,14 @@ import { expect, outsideContract, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
 import { fakeTech } from "./fake-tech.ts";
 import { heldOnPhone, storeOnPhone } from "./on-phone.ts";
+import * as techCopy from "../../apps/tech/src/content.ts";
 
 test("opens on the sign-in, as the Prototype draws it", async ({ page }) => {
   await page.goto("/");
   await expect(page).toHaveTitle("Mane Man technician");
   await expect(page.getByRole("heading", { level: 1, name: "Technician sign in" })).toBeVisible();
-  await expect(page.getByRole("textbox", { name: "Mobile number" })).toBeVisible();
-  await expect(page.getByRole("textbox", { name: "Code" })).toBeVisible();
+  await expect(page.getByRole("textbox", { name: techCopy.signIn.mobileLabel })).toBeVisible();
+  await expect(page.getByRole("textbox", { name: techCopy.signIn.codeLabel })).toBeVisible();
 });
 
 test("serves its policy: its own origin, the camera and geolocation to itself, and noindex", async ({ page }) => {
@@ -80,13 +81,13 @@ test("signs the phone out and forgets everything it held", async ({ page }) => {
   expect(before).toContain("mm-tech");
 
   // Signing out takes the jobs off the phone, so it asks first, even with nothing waiting to be sent.
-  await page.getByRole("button", { name: "Sign out" }).click();
-  await expect(page.getByRole("alert")).toContainText("Sign out of this phone?");
-  await page.getByRole("button", { name: "Stay signed in" }).click();
+  await page.getByRole("button", { name: techCopy.today.signOut }).click();
+  await expect(page.getByRole("alert")).toContainText(techCopy.leaving.confirm);
+  await page.getByRole("button", { name: techCopy.leaving.stay }).click();
   await expect(page.getByRole("alert")).toHaveCount(0);
   await expect(page.getByRole("heading", { name: "3 jobs today" })).toBeVisible();
-  await page.getByRole("button", { name: "Sign out" }).click();
-  await page.getByRole("alert").getByRole("button", { name: "Sign out" }).click();
+  await page.getByRole("button", { name: techCopy.today.signOut }).click();
+  await page.getByRole("alert").getByRole("button", { name: techCopy.today.signOut }).click();
   await expect(page.getByRole("heading", { level: 1, name: "Technician sign in" })).toBeVisible();
   const after = await page.evaluate(() => indexedDB.databases().then((each) => each.map((one) => one.name)));
   expect(after).not.toContain("mm-tech");
@@ -121,10 +122,10 @@ test("a phone revoked while the app is open is wiped at its next call, and shows
   await page.getByText("Rohit M.").first().click();
 
   await expect(page.getByRole("heading", { level: 1, name: "Technician sign in" })).toBeVisible();
-  await expect(page.getByText("This phone is no longer signed in. Ask ops, then sign in again.")).toBeVisible();
+  await expect(page.getByText(techCopy.session.revoked)).toBeVisible();
   await expect(page.getByText("Rohit M.")).toHaveCount(0);
   await expect(page.getByText("Gate code 4417 · visitor bay B")).toHaveCount(0);
-  await expect(page.getByText("No signal · working offline")).toHaveCount(0);
+  await expect(page.getByText(techCopy.today.offline.title)).toHaveCount(0);
   expect(await storeOnPhone(page)).toBe(false);
 });
 
@@ -136,24 +137,24 @@ test("once a code is sent, the number can be changed, and a new code asked for a
   fake.signedIn = false;
   await page.goto("/");
 
-  const number = page.getByRole("textbox", { name: "Mobile number" });
+  const number = page.getByRole("textbox", { name: techCopy.signIn.mobileLabel });
   await number.fill("9811000000");
-  await page.getByRole("button", { name: "Send the code" }).click();
-  await expect(page.getByText("A six-digit code is on its way.")).toBeVisible();
+  await page.getByRole("button", { name: techCopy.signIn.sendCode }).click();
+  await expect(page.getByText(techCopy.signIn.codeSent)).toBeVisible();
   await expect(number).toBeDisabled();
 
   // Not at once: WhatsApp has half a minute to deliver the first.
   await expect(page.getByRole("button", { name: /^New code in \d+ s$/ })).toBeDisabled();
   await page.clock.runFor(30_000);
-  await page.getByRole("button", { name: "Send a new code" }).click();
+  await page.getByRole("button", { name: techCopy.signIn.resend }).click();
   await expect.poll(() => fake.codesSent).toEqual(["9811000000", "9811000000"]);
 
   // A number typed wrong is not a dead end: back to it, and the code goes to the right one.
-  await page.getByRole("button", { name: "Change number" }).click();
+  await page.getByRole("button", { name: techCopy.signIn.changeNumber }).click();
   await expect(number).toBeEnabled();
   await expect(number).toBeFocused();
   await number.fill("9811000001");
-  await page.getByRole("button", { name: "Send the code" }).click();
+  await page.getByRole("button", { name: techCopy.signIn.sendCode }).click();
   await expect.poll(() => fake.codesSent.at(-1)).toBe("9811000001");
 });
 
@@ -166,13 +167,13 @@ test("a number pasted with +91 or 0 in front becomes its own ten digits, and the
   fake.signedIn = false;
   await page.goto("/");
 
-  const number = page.getByRole("textbox", { name: "Mobile number" });
+  const number = page.getByRole("textbox", { name: techCopy.signIn.mobileLabel });
   for (const pasted of ["+91 98110 00000", "091 98110 00000", "9198110 00000", "098110 00000"]) {
     await number.fill(pasted);
     await expect(number).toHaveValue("9811000000");
   }
-  await page.getByRole("button", { name: "Send the code" }).click();
-  await expect(page.getByText("A six-digit code is on its way.")).toBeVisible();
+  await page.getByRole("button", { name: techCopy.signIn.sendCode }).click();
+  await expect(page.getByText(techCopy.signIn.codeSent)).toBeVisible();
   expect(fake.codesSent).toEqual(["9811000000"]);
 });
 
@@ -181,13 +182,13 @@ test("a number one digit short, or not a mobile, says why Send stays off once th
   fake.signedIn = false;
   await page.goto("/");
 
-  const number = page.getByRole("textbox", { name: "Mobile number" });
-  const send = page.getByRole("button", { name: "Send the code" });
+  const number = page.getByRole("textbox", { name: techCopy.signIn.mobileLabel });
+  const send = page.getByRole("button", { name: techCopy.signIn.sendCode });
   for (const typed of ["981100000", "5123456789"]) {
     await number.fill(typed);
     await expect(page.getByRole("alert")).toHaveCount(0);
     await number.blur();
-    await expect(page.getByRole("alert")).toHaveText("Enter your ten-digit mobile number.");
+    await expect(page.getByRole("alert")).toHaveText(techCopy.signIn.mobileError);
     await expect(send).toBeDisabled();
   }
   await number.fill("9811000000");
@@ -201,21 +202,21 @@ test("a code the API has closed takes the sign-in back to sending one, not to a 
   fake.codeClosed = true;
   await page.goto("/");
 
-  await page.getByRole("textbox", { name: "Mobile number" }).fill("9811000000");
-  await page.getByRole("button", { name: "Send the code" }).click();
-  await expect(page.getByRole("button", { name: "Change number" })).toBeVisible();
+  await page.getByRole("textbox", { name: techCopy.signIn.mobileLabel }).fill("9811000000");
+  await page.getByRole("button", { name: techCopy.signIn.sendCode }).click();
+  await expect(page.getByRole("button", { name: techCopy.signIn.changeNumber })).toBeVisible();
   expect(await axeViolations(page)).toEqual([]);
 
-  await page.getByRole("textbox", { name: "Code" }).fill(LOCAL_LOGIN_CODE);
-  await page.getByRole("button", { name: "Sign in" }).click();
+  await page.getByRole("textbox", { name: techCopy.signIn.codeLabel }).fill(LOCAL_LOGIN_CODE);
+  await page.getByRole("button", { name: techCopy.signIn.submit }).click();
 
-  await expect(page.getByRole("alert")).toHaveText("That code no longer works. Send the code again.");
-  await expect(page.getByRole("textbox", { name: "Mobile number" })).toBeEnabled();
+  await expect(page.getByRole("alert")).toHaveText(techCopy.signIn.errors.code_expired);
+  await expect(page.getByRole("textbox", { name: techCopy.signIn.mobileLabel })).toBeEnabled();
 
   fake.codeClosed = false;
-  await page.getByRole("button", { name: "Send the code" }).click();
-  await page.getByRole("textbox", { name: "Code" }).fill(LOCAL_LOGIN_CODE);
-  await page.getByRole("button", { name: "Sign in" }).click();
+  await page.getByRole("button", { name: techCopy.signIn.sendCode }).click();
+  await page.getByRole("textbox", { name: techCopy.signIn.codeLabel }).fill(LOCAL_LOGIN_CODE);
+  await page.getByRole("button", { name: techCopy.signIn.submit }).click();
   await expect(page.getByRole("heading", { name: "3 jobs today" })).toBeVisible();
 });
 
@@ -256,11 +257,11 @@ test("a screen that fails to draw says so and offers a reload, and the reload lo
   outsideContract("GET /api/tech/jobs 200");
   fake.malformed = true;
   await page.reload();
-  await expect(page.getByText("This screen didn’t open. Nothing you recorded is lost.")).toBeVisible();
+  await expect(page.getByText(techCopy.broken.message)).toBeVisible();
   expect(await axeViolations(page)).toEqual([]);
 
   fake.malformed = false;
-  await page.getByRole("button", { name: "Reload" }).click();
+  await page.getByRole("button", { name: techCopy.broken.reload }).click();
   await expect(page.getByRole("heading", { name: "3 jobs today" })).toBeVisible();
   expect(await heldOnPhone(page)).toMatchObject({ outbox: 1 });
 });

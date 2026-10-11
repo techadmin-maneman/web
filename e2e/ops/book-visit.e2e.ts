@@ -18,6 +18,7 @@ import {
   type Call,
   type OpsReply,
 } from "./fixtures.ts";
+import * as opsCopy from "../../apps/ops/src/content.ts";
 
 const AVAILABILITY: Call = "GET /api/visits/availability";
 const BOOK: Call = "POST /api/visits";
@@ -93,17 +94,19 @@ test("books a fitted client's service visit in a window someone is free in, send
   });
   await page.getByRole("button", { name: "Book a visit" }).click();
   const booking = panel(page);
-  await expect(booking.getByLabel("Visit", { exact: true })).toHaveValue("service");
+  await expect(booking.getByLabel(opsCopy.clients.visits.book.kind, { exact: true })).toHaveValue("service");
   // Thursday's morning is full, so it is not offered.
-  await expect(booking.getByLabel("Window", { exact: true }).getByRole("option")).toHaveText([
+  await expect(booking.getByLabel(opsCopy.clients.visits.book.window, { exact: true }).getByRole("option")).toHaveText([
     "afternoon, 12:00 to 16:00",
     "evening, 16:00 to 20:00",
   ]);
-  await booking.getByLabel("Technician", { exact: true }).selectOption({ label: "Sandeep Rawat" });
+  await booking
+    .getByLabel(opsCopy.clients.visits.book.technician, { exact: true })
+    .selectOption({ label: "Sandeep Rawat" });
   await expect(booking).toContainText("by payment link");
   expect(await axeViolations(page, (axe) => axe.include("dialog"))).toEqual([]);
 
-  await booking.getByRole("button", { name: "Book" }).click();
+  await booking.getByRole("button", { name: opsCopy.clients.visits.book.book }).click();
   await expect(booking.getByRole("status")).toContainText("Payment link sent for Rs. 2,000.");
   await expect(booking.getByRole("status")).toContainText("Service visit, Thu 23 Sep, afternoon, with Sandeep Rawat.");
   await expect(booking.getByRole("status")).toContainText("https://rzp.io/i/stub4417");
@@ -117,7 +120,7 @@ test("says why a booking was refused, and books nothing", async ({ page }) => {
     [BOOK]: json({ error: { code: "taken", request_id: "r-1" } }, 409),
   });
   await page.getByRole("button", { name: "Book a visit" }).click();
-  await panel(page).getByRole("button", { name: "Book" }).click();
+  await panel(page).getByRole("button", { name: opsCopy.clients.visits.book.book }).click();
   await expect(panel(page).getByRole("alert")).toHaveText("That window was just taken. Choose another.");
 });
 
@@ -181,10 +184,10 @@ test("books a consultation asked for from its Tasks row, on the day and window a
   const tasks = page.getByRole("region", { name: /^\d+ open$/ });
   await tasks.getByRole("button", { name: `Book a visit · ${CLIENT.name}` }).click();
   const booking = panel(page);
-  await expect(booking.getByLabel("Visit", { exact: true })).toHaveValue("consultation");
+  await expect(booking.getByLabel(opsCopy.clients.visits.book.kind, { exact: true })).toHaveValue("consultation");
   await expect(booking.getByLabel("Day", { exact: true })).toHaveValue("2027-09-24");
-  await expect(booking).toContainText("Nothing to pay.");
-  await booking.getByRole("button", { name: "Book" }).click();
+  await expect(booking).toContainText(opsCopy.clients.visits.book.pays.nothing);
+  await booking.getByRole("button", { name: opsCopy.clients.visits.book.book }).click();
   await expect(booking.getByRole("status")).toContainText("Booked.");
   expect(sent).toEqual([
     { client: CLIENT.id, kind: "consultation", tier: "standard", date: "2027-09-24", window: "morning" },
@@ -206,7 +209,7 @@ test("lists a booking that refunded its payment by itself beneath the visits, an
     refunded_at: "2027-09-22T06:00:00.000Z",
   } satisfies Extract<OpsReply<"/api/clients/{id}">, { auto_refunds: unknown }>["auto_refunds"][number];
   await openVisits(page, { [`GET /api/clients/${CLIENT.id}`]: json({ ...RECORD, auto_refunds: [refunded] }) });
-  const item = page.getByRole("region", { name: "Refunded bookings" }).getByRole("listitem");
+  const item = page.getByRole("region", { name: opsCopy.clients.visits.autoRefunds.title }).getByRole("listitem");
   await expect(item).toContainText("Service visit, 24 Sep 2027 · Rs. 2,000");
   await expect(item).toContainText("Auto-refunded on 22 Sep 2027: paid after the hold expired.");
   expect(await axeViolations(page)).toEqual([]);

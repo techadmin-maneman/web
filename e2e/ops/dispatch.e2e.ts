@@ -1,6 +1,7 @@
 import { expect, test } from "../support.ts";
 import { fails, json, ROHIT, VIKRAM } from "./fixtures.ts";
 import { MOVE_IT, ROHIT_BLOCK, TO_SANDEEP, ROHIT_JOB, open, press, reason, sentTo } from "./dispatch-fixtures.ts";
+import * as opsCopy from "../../apps/ops/src/content.ts";
 
 test("draws the week, every technician and the jobs on their days", async ({ page }) => {
   await open(page);
@@ -71,7 +72,7 @@ test("says how much of a day the job takes, and offers only the windows it would
   );
   // Arjun's Tuesday has no room at all, and says so.
   const arjun = page.getByRole("row", { name: /Arjun Negi/ });
-  await expect(arjun.getByRole("cell").nth(4)).toHaveText("No room");
+  await expect(arjun.getByRole("cell").nth(4)).toHaveText(opsCopy.dispatch.landing.noRoom);
 });
 
 test("names leave when the server refuses a move onto a day off", async ({ page }) => {
@@ -90,7 +91,7 @@ test("lists the tray's jobs with their client, the window asked beside the one o
   page,
 }) => {
   await open(page);
-  const tray = page.getByRole("complementary", { name: "Unassigned" });
+  const tray = page.getByRole("complementary", { name: opsCopy.dispatch.tray.title });
   const first = tray.getByRole("listitem").first();
   await expect(first).toContainText("Vikram Sethi");
   await expect(first).toContainText("First fit");
@@ -101,14 +102,14 @@ test("lists the tray's jobs with their client, the window asked beside the one o
   await expect(first).toContainText("Referred by Rohit Malhotra");
   // A visit with no Request behind it says so, rather than repeating the offered window.
   const last = tray.getByRole("listitem").last();
-  await expect(last).toContainText("Asked · not recorded");
+  await expect(last).toContainText(opsCopy.dispatch.tray.notAsked);
   await expect(last).toContainText("Offered · Sun, afternoon");
 });
 
 // A tray click picked the job up at once, so it could not be read before it was assigned.
 test("opens a tray job's drawer, with the client, Assign and Open client", async ({ page }) => {
   await open(page);
-  const job = page.getByRole("complementary", { name: "Unassigned" }).getByRole("button").first();
+  const job = page.getByRole("complementary", { name: opsCopy.dispatch.tray.title }).getByRole("button").first();
   await job.click();
 
   const drawer = page.getByRole("dialog", { name: "Vikram Sethi" });
@@ -116,12 +117,12 @@ test("opens a tray job's drawer, with the client, Assign and Open client", async
   await expect(drawer).toContainText("First fit · 2 slots");
   await expect(drawer).toContainText("Sec 43 · 122018");
   await expect(drawer).toContainText("Rohit Malhotra");
-  await expect(drawer.getByRole("button", { name: "Assign to a technician" })).toBeVisible();
+  await expect(drawer.getByRole("button", { name: opsCopy.dispatch.drawer.assign })).toBeVisible();
   await expect(drawer.getByRole("link", { name: "WhatsApp Vikram" })).toHaveAttribute(
     "href",
     "https://wa.me/919810000002",
   );
-  await expect(drawer.getByRole("link", { name: "Open client" })).toHaveAttribute(
+  await expect(drawer.getByRole("link", { name: opsCopy.dispatch.drawer.openClient })).toHaveAttribute(
     "href",
     `/clients/${VIKRAM.id}/visits`,
   );
@@ -148,7 +149,7 @@ test("opens a block's drawer with the client, the badge, and both ways to reach 
     "href",
     "https://wa.me/919810000001",
   );
-  await expect(drawer.getByRole("link", { name: "Open client" })).toHaveAttribute(
+  await expect(drawer.getByRole("link", { name: opsCopy.dispatch.drawer.openClient })).toHaveAttribute(
     "href",
     `/clients/${ROHIT.id}/visits`,
   );

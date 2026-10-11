@@ -32,7 +32,7 @@ import { statusIn, statusNotIn, VISIT_CALLED_OFF, VISIT_LIVE, VISIT_NOT_BEGUN } 
 import type { SqlValue } from "../../lib/sql.ts";
 
 /** A visit to come, by its id and its start. */
-export interface TaskVisit {
+interface TaskVisit {
   readonly id: string;
   readonly starts_at: string;
 }

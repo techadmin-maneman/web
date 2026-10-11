@@ -52,7 +52,7 @@ export interface Dependencies {
  * consumer or the cron, which nobody waits on. Zoho's calls in a request give
  * up sooner (src/providers/zoho-http.ts).
  */
-export type Caller = "request" | "background";
+type Caller = "request" | "background";
 
 export type DependencyFactory = (env: Env, log: Logger, caller: Caller) => Dependencies;
 

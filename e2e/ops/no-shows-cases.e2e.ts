@@ -20,6 +20,7 @@ import {
   type Answer,
 } from "./fixtures.ts";
 import { FIRST, QUEUE, MONEY, CASE, PREVIEW, open, disputeCard } from "./no-shows-fixtures.ts";
+import * as opsCopy from "../../apps/ops/src/content.ts";
 
 const SECOND = "Visit of Mon 20 Sep";
 
@@ -119,8 +120,8 @@ test("tells a reminder sent and never delivered from one that was never sent", a
   ];
   await answer(page, { "GET /api/payments": json(DAY_MONEY), "GET /api/no-shows": json({ ...NO_SHOWS, cases }) });
   await page.goto("/payments");
-  await expect(fact(page, FIRST, "WhatsApp")).toHaveText("Sent, not delivered");
-  await expect(fact(page, SECOND, "WhatsApp")).toHaveText("No reminder sent");
+  await expect(fact(page, FIRST, "WhatsApp")).toHaveText(opsCopy.noShows.queue.message.sent);
+  await expect(fact(page, SECOND, "WhatsApp")).toHaveText(opsCopy.noShows.queue.message.none);
 });
 
 // ADR 0036: a distance that was never measured is not a distance of zero, and
@@ -160,10 +161,10 @@ test("reaches the client's visits from the case", async ({ page }) => {
 test("offers neither ruling until a reason is written", async ({ page }) => {
   await open(page);
   const first = caseOf(page, FIRST);
-  await expect(first.getByRole("button", { name: "Charge" })).toBeDisabled();
-  await expect(first.getByRole("button", { name: "Waive" })).toBeDisabled();
+  await expect(first.getByRole("button", { name: opsCopy.noShows.queue.charge })).toBeDisabled();
+  await expect(first.getByRole("button", { name: opsCopy.noShows.queue.waive })).toBeDisabled();
   await first.getByLabel("Your note · required").fill("   ");
-  await expect(first.getByRole("button", { name: "Charge" })).toBeDisabled();
+  await expect(first.getByRole("button", { name: opsCopy.noShows.queue.charge })).toBeDisabled();
 });
 
 // The charge was once asked about with no figure: "Charge X for the visit of Fri 2 Oct?".
@@ -171,7 +172,7 @@ test("asks once more before it charges, with what it keeps, and sends the reason
   await open(page);
   const first = caseOf(page, FIRST);
   await first.getByLabel("Your note · required").fill("Delivered the evening before; nobody came down");
-  await first.getByRole("button", { name: "Charge", exact: true }).click();
+  await first.getByRole("button", { name: opsCopy.noShows.queue.charge, exact: true }).click();
 
   const confirm = first.getByRole("group", { name: "Keep Rs. 2,360 of the Rs. 2,360 paid?" });
   await expect(confirm).toBeFocused();
@@ -179,7 +180,7 @@ test("asks once more before it charges, with what it keeps, and sends the reason
     "Charging Vikram Sethi for the visit of Sun 19 Sep can't be undone.",
   );
   const sent = page.waitForRequest((request) => request.url().includes("/decision") && request.method() === "POST");
-  await confirm.getByRole("button", { name: "Confirm charge" }).click();
+  await confirm.getByRole("button", { name: opsCopy.noShows.queue.confirmCharge }).click();
   expect((await sent).postDataJSON()).toEqual({
     decision: "charged",
     reason: "Delivered the evening before; nobody came down",
@@ -195,7 +196,7 @@ test("says what a charge keeps and what it refunds, and what it keeps of a credi
   await first.getByLabel("Your note · required").fill("Nobody came down");
   const ask = async (preview: object) => {
     await answer(page, { [PREVIEW]: json(preview) });
-    await first.getByRole("button", { name: "Charge", exact: true }).click();
+    await first.getByRole("button", { name: opsCopy.noShows.queue.charge, exact: true }).click();
   };
 
   await ask({ paid: 3_000_000, kept: 400_000, credit_kept: false });
@@ -203,7 +204,7 @@ test("says what a charge keeps and what it refunds, and what it keeps of a credi
   await first.getByRole("button", { name: "Back" }).click();
 
   await ask({ paid: 0, kept: 0, credit_kept: true });
-  await expect(first.getByText("Keep the free service visit it was booked with?")).toBeVisible();
+  await expect(first.getByText(opsCopy.noShows.queue.confirm.keepsCredit)).toBeVisible();
 });
 
 test("sends no charge until it knows what the charge keeps", async ({ page }) => {
@@ -211,9 +212,9 @@ test("sends no charge until it knows what the charge keeps", async ({ page }) =>
   await answer(page, { [PREVIEW]: fails(503, "unavailable") });
   const first = caseOf(page, FIRST);
   await first.getByLabel("Your note · required").fill("Nobody came down");
-  await first.getByRole("button", { name: "Charge", exact: true }).click();
+  await first.getByRole("button", { name: opsCopy.noShows.queue.charge, exact: true }).click();
   await expect(first.getByText("Couldn't calculate the charge.")).toBeVisible();
-  await expect(first.getByRole("button", { name: "Confirm charge" })).toBeDisabled();
+  await expect(first.getByRole("button", { name: opsCopy.noShows.queue.confirmCharge })).toBeDisabled();
 });
 
 // After a charge the page once still said "Nothing was charged today", and the case was gone.
@@ -234,7 +235,7 @@ test("lists the cases ruled on today with their ruling, and reads them and the d
     page.waitForRequest((request) => request.url().includes("/api/no-shows/decided")),
     page.waitForRequest((request) => request.url().includes("/api/payments")),
   ]);
-  await first.getByRole("button", { name: "Waive" }).click();
+  await first.getByRole("button", { name: opsCopy.noShows.queue.waive }).click();
   await readAgain;
 });
 
@@ -245,7 +246,7 @@ test("says so when nothing has been decided today", async ({ page }) => {
     "GET /api/no-shows/decided": json({ cases: [] }),
   });
   await page.goto("/payments");
-  await expect(page.getByRole("region", { name: DECIDED_TODAY })).toContainText("Nothing decided today.");
+  await expect(page.getByRole("region", { name: DECIDED_TODAY })).toContainText(opsCopy.noShows.decided.empty);
 });
 
 test("sends nothing when the charge is taken back, and hands the keyboard to Charge", async ({ page }) => {
@@ -256,9 +257,9 @@ test("sends nothing when the charge is taken back, and hands the keyboard to Cha
   });
   const first = caseOf(page, FIRST);
   await first.getByLabel("Your note · required").fill("Delivered the evening before");
-  await first.getByRole("button", { name: "Charge", exact: true }).click();
+  await first.getByRole("button", { name: opsCopy.noShows.queue.charge, exact: true }).click();
   await first.getByRole("button", { name: "Back" }).click();
-  await expect(first.getByRole("button", { name: "Charge", exact: true })).toBeFocused();
+  await expect(first.getByRole("button", { name: opsCopy.noShows.queue.charge, exact: true })).toBeFocused();
   expect(sent).toBe(0);
 });
 
@@ -267,7 +268,7 @@ test("waives a case with its reason, and the case leaves the queue", async ({ pa
   const first = caseOf(page, FIRST);
   await first.getByLabel("Your note · required").fill("He was stuck in the lift; we have his call");
   const sent = page.waitForRequest((request) => request.url().includes("/decision") && request.method() === "POST");
-  await first.getByRole("button", { name: "Waive" }).click();
+  await first.getByRole("button", { name: opsCopy.noShows.queue.waive }).click();
   expect((await sent).postDataJSON()).toEqual({
     decision: "waived",
     reason: "He was stuck in the lift; we have his call",
@@ -284,7 +285,7 @@ test("says so when someone else has ruled on the case already", async ({ page })
   await open(page, fails(404, "not_found"));
   const first = caseOf(page, FIRST);
   await first.getByLabel("Your note · required").fill("Nobody came down");
-  await first.getByRole("button", { name: "Waive" }).click();
+  await first.getByRole("button", { name: opsCopy.noShows.queue.waive }).click();
   await expect(page.getByRole("alert")).toContainText("Already decided. Reload.");
   await expect(page.getByText(FIRST)).toBeVisible();
 });
@@ -305,13 +306,13 @@ test("lands a link to the old address on the same case, at the new address", asy
 test("says nothing is waiting when the queue is empty", async ({ page }) => {
   await answer(page, { "GET /api/payments": json(DAY_MONEY), "GET /api/no-shows": json({ ...NO_SHOWS, cases: [] }) });
   await page.goto("/payments");
-  await expect(page.getByText("No no-shows to decide.")).toBeVisible();
+  await expect(page.getByText(opsCopy.noShows.queue.empty)).toBeVisible();
 });
 
 test("says so when the queue cannot be loaded, and loads it on Try again", async ({ page }) => {
   await answer(page, { "GET /api/payments": json(DAY_MONEY), "GET /api/no-shows": fails(503, "unavailable") });
   await page.goto("/payments");
-  await expect(page.getByRole("alert")).toContainText("Couldn't load this.");
+  await expect(page.getByRole("alert")).toContainText(opsCopy.states.failed);
 
   await answer(page, { "GET /api/payments": json(DAY_MONEY), "GET /api/no-shows": json(NO_SHOWS) });
   await page.getByRole("button", { name: "Try again" }).click();
@@ -327,7 +328,7 @@ test("meets WCAG 2.2 AA with the day's money, a disputed charge and a queue, and
 
   const first = caseOf(page, FIRST);
   await first.getByLabel("Your note · required").fill("Nobody came down");
-  await first.getByRole("button", { name: "Charge", exact: true }).click();
+  await first.getByRole("button", { name: opsCopy.noShows.queue.charge, exact: true }).click();
   expect(await axeViolations(page)).toEqual([]);
 });
 
@@ -338,9 +339,9 @@ test("offers Finance Act a charge and an uphold, and leaves waiving and refundin
 }) => {
   await openAs(page, financeAt("act", ["POST /api/no-shows/{id}/decision", "POST /api/no-shows/disputes/{id}/ruling"]));
   const first = caseOf(page, FIRST);
-  await expect(first.getByRole("button", { name: "Charge", exact: true })).toBeVisible();
-  await expect(first.getByRole("button", { name: "Waive" })).toHaveCount(0);
-  await expect(disputeCard(page).getByRole("button", { name: "Uphold" })).toBeVisible();
+  await expect(first.getByRole("button", { name: opsCopy.noShows.queue.charge, exact: true })).toBeVisible();
+  await expect(first.getByRole("button", { name: opsCopy.noShows.queue.waive })).toHaveCount(0);
+  await expect(disputeCard(page).getByRole("button", { name: opsCopy.noShows.dispute.uphold })).toBeVisible();
   await expect(disputeCard(page).getByRole("button", { name: "Refund" })).toHaveCount(0);
 });
 

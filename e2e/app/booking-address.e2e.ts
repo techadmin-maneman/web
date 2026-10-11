@@ -10,6 +10,7 @@ import { expect, test } from "../support.ts";
 import { confirmedByRazorpay, fakeCheckout, noRealCheckout } from "./checkout-fakes.ts";
 import { continueToPayment } from "./picking.ts";
 import { toPayment, toWindows, openSheet, profileAs, profileOf, PHOTOS, scanOf } from "./booking-fixtures.ts";
+import * as appCopy from "../../apps/app/src/content.ts";
 
 // One client, one hold at a time: a new hold lets the client's earlier one go, so these run one after another, in
 // order. One failing leaves the rest to run.
@@ -39,31 +40,31 @@ test("asks a client with no address for it first, then books", async ({ page }) 
     return reads === 1 ? route.fulfill({ json: profileOf({ address: false }) }) : route.fallback();
   });
   await openSheet(page);
-  const where = page.getByRole("dialog", { name: "Where we come" });
+  const where = page.getByRole("dialog", { name: appCopy.profile.where });
   await expect(where.getByText("Step 1 of 4")).toBeVisible();
-  await expect(where.getByText("First, your address. Then pick a date.")).toBeVisible();
+  await expect(where.getByText(appCopy.booking.address.why)).toBeVisible();
   await scanOf(page);
-  await where.getByLabel("Flat or house number").fill("House 4417");
-  await where.getByLabel("Building, society or street").fill("Tower C");
-  await where.getByLabel("Sector or area").fill("Sector 65");
-  await where.getByLabel("City").fill("Gurgaon");
-  await where.getByLabel("Pincode").fill("122018");
-  await where.getByRole("button", { name: "Save and continue" }).click();
+  await where.getByLabel(appCopy.profile.form.flat).fill("House 4417");
+  await where.getByLabel(appCopy.profile.form.line1).fill("Tower C");
+  await where.getByLabel(appCopy.profile.form.locality).fill("Sector 65");
+  await where.getByLabel(appCopy.profile.form.city).fill("Gurgaon");
+  await where.getByLabel(appCopy.profile.form.pincode).fill("122018");
+  await where.getByRole("button", { name: appCopy.booking.address.save }).click();
 
-  const dates = page.getByRole("dialog", { name: "Pick a date" });
+  const dates = page.getByRole("dialog", { name: appCopy.booking.date.title });
   await expect(dates.getByText("Step 2 of 4")).toBeVisible();
   await dates.getByRole("radio").and(page.locator(":enabled")).first().click();
   await dates.getByRole("button", { name: "Continue" }).click();
-  await expect(page.getByRole("dialog", { name: "Pick a time" }).getByText("Step 3 of 4")).toBeVisible();
+  await expect(page.getByRole("dialog", { name: appCopy.booking.window.title }).getByText("Step 3 of 4")).toBeVisible();
   await continueToPayment(page);
   await page.getByRole("button", { name: "Pay Rs. 2,000" }).click();
-  await expect(page.getByRole("dialog").getByRole("status").getByText("Confirmed")).toBeVisible();
+  await expect(page.getByRole("dialog").getByRole("status").getByText(appCopy.booking.confirmed.label)).toBeVisible();
 });
 
 test("takes a client who has given their address straight to the date, as board C2 draws it", async ({ page }) => {
   await openSheet(page);
-  await expect(page.getByRole("dialog", { name: "Pick a date" }).getByText("Step 1 of 3")).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Where we come" })).toHaveCount(0);
+  await expect(page.getByRole("dialog", { name: appCopy.booking.date.title }).getByText("Step 1 of 3")).toBeVisible();
+  await expect(page.getByRole("heading", { name: appCopy.profile.where })).toHaveCount(0);
 });
 
 test("goes back to the address, saying why, when the API holds no slot for want of one", async ({ page }) => {
@@ -73,12 +74,12 @@ test("goes back to the address, saying why, when the API holds no slot for want 
       : route.fallback(),
   );
   await toWindows(page);
-  const windows = page.getByRole("dialog", { name: "Pick a time" });
+  const windows = page.getByRole("dialog", { name: appCopy.booking.window.title });
   await windows.getByRole("radio").and(page.locator(":enabled")).first().click();
-  await windows.getByRole("button", { name: "Continue to payment" }).click();
-  const where = page.getByRole("dialog", { name: "Where we come" });
-  await expect(where.getByRole("alert")).toHaveText("Add your address, then pick a time again.");
-  await expect(where.getByRole("button", { name: "Save and continue" })).toBeVisible();
+  await windows.getByRole("button", { name: appCopy.booking.window.continue }).click();
+  const where = page.getByRole("dialog", { name: appCopy.profile.where });
+  await expect(where.getByRole("alert")).toHaveText(appCopy.booking.address.refused);
+  await expect(where.getByRole("button", { name: appCopy.booking.address.save })).toBeVisible();
 });
 
 // An address in a pincode we do not come to was held, paid for and booked.
@@ -88,13 +89,13 @@ test("offers no day at an address we do not come to, but the address to change a
     route.fulfill({ status: 422, json: { error: { code: "not_served", request_id: "e2e" } } }),
   );
   await openSheet(page);
-  const where = page.getByRole("dialog", { name: "Where we come" });
+  const where = page.getByRole("dialog", { name: appCopy.profile.where });
   await expect(where.getByRole("alert")).toHaveText(
     "We don’t come to 122018 yet. Change your address below, or join the waitlist and we’ll tell you when we arrive.",
     { timeout: 30_000 },
   );
-  await expect(where.getByLabel("Pincode")).toHaveValue("122018");
-  await expect(where.getByRole("button", { name: "Save and continue" })).toBeVisible();
+  await expect(where.getByLabel(appCopy.profile.form.pincode)).toHaveValue("122018");
+  await expect(where.getByRole("button", { name: appCopy.booking.address.save })).toBeVisible();
   await expect(where.getByRole("link", { name: "Join the waitlist" })).toHaveAttribute("href", /\/book$/);
 });
 
@@ -107,7 +108,7 @@ test("puts Pay above what booking also agrees to, one tap away, while neither is
   await profileAs(page, { reminders: true, undecided: PHOTOS });
   const sent = bookingsSent(page);
   await toPayment(page);
-  const pay = page.getByRole("dialog", { name: "Pay and confirm" });
+  const pay = page.getByRole("dialog", { name: appCopy.booking.pay.title });
   const payButton = pay.getByRole("button", { name: "Pay Rs. 2,000" });
   const agrees = pay.getByText("What booking agrees to");
   const first = pay.getByText(
@@ -127,7 +128,7 @@ test("puts Pay above what booking also agrees to, one tap away, while neither is
   await scanOf(page);
 
   await payButton.click();
-  await expect(page.getByRole("dialog").getByRole("status").getByText("Confirmed")).toBeVisible();
+  await expect(page.getByRole("dialog").getByRole("status").getByText(appCopy.booking.confirmed.label)).toBeVisible();
   expect(sent).toMatchObject([{ consents: PHOTOS }]);
 });
 
@@ -136,7 +137,7 @@ test("sends what booking agrees to with Pay, whether or not the client opened it
   await profileAs(page, { reminders: true, undecided: PHOTOS });
   const sent = bookingsSent(page);
   await toPayment(page);
-  const pay = page.getByRole("dialog", { name: "Pay and confirm" });
+  const pay = page.getByRole("dialog", { name: appCopy.booking.pay.title });
   await expect(pay.getByText("What booking agrees to")).toBeVisible();
   await pay.getByRole("button", { name: "Pay Rs. 2,000" }).click();
   await expect.poll(() => sent).toMatchObject([{ consents: PHOTOS }]);
@@ -147,7 +148,7 @@ test("shows only the line of a purpose still undecided, and sends only that one"
   await profileAs(page, { reminders: true, undecided: ["photos_own_record"] });
   const sent = bookingsSent(page);
   await toPayment(page);
-  const pay = page.getByRole("dialog", { name: "Pay and confirm" });
+  const pay = page.getByRole("dialog", { name: appCopy.booking.pay.title });
   await pay.getByText("What booking agrees to").click();
   await expect(
     pay.getByText("By booking this visit, you also agree to photographs taken for your visit record."),

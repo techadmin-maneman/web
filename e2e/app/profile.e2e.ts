@@ -2,6 +2,7 @@ import { expect, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
 import { signIn } from "./signed-in.ts";
 import { loggedIn } from "./profile-fixtures.ts";
+import * as appCopy from "../../apps/app/src/content.ts";
 
 test("opens from Home's button, with the client's name and a way back", async ({ page }) => {
   await loggedIn(page);
@@ -32,27 +33,27 @@ test("shows the loading shape while the profile comes", async ({ page }) => {
     await held;
     await route.continue();
   });
-  await page.getByRole("link", { name: "Your profile" }).click();
-  await expect(page.getByRole("status").filter({ hasText: "Loading" })).toBeAttached();
+  await page.getByRole("link", { name: appCopy.titles.profile }).click();
+  await expect(page.getByRole("status").filter({ hasText: appCopy.states.loading })).toBeAttached();
   release();
-  await expect(page.getByRole("heading", { name: "Where we come" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: appCopy.profile.where })).toBeVisible();
 });
 
 test("takes an address and its access notes, and shows them", async ({ page }) => {
   await loggedIn(page);
   await expect(page.getByText("No address yet.")).toBeVisible();
-  await page.getByRole("button", { name: "Add your address and access notes" }).click();
-  await page.getByLabel("Flat or house number").fill("House 4417");
-  await page.getByLabel("Building, society or street").fill("Tower C");
-  await page.getByLabel("Sector or area").fill("Sector 65");
-  await page.getByLabel("City").fill("Gurgaon");
-  await page.getByLabel("Pincode").fill("122018");
-  await page.getByLabel("Access notes (optional)").fill("Gate code 4417 · park in visitor bay B");
-  await page.getByRole("button", { name: "Save" }).click();
+  await page.getByRole("button", { name: appCopy.profile.addAddress }).click();
+  await page.getByLabel(appCopy.profile.form.flat).fill("House 4417");
+  await page.getByLabel(appCopy.profile.form.line1).fill("Tower C");
+  await page.getByLabel(appCopy.profile.form.locality).fill("Sector 65");
+  await page.getByLabel(appCopy.profile.form.city).fill("Gurgaon");
+  await page.getByLabel(appCopy.profile.form.pincode).fill("122018");
+  await page.getByLabel(appCopy.profile.form.accessNotes).fill("Gate code 4417 · park in visitor bay B");
+  await page.getByRole("button", { name: appCopy.profile.form.save }).click();
 
   await expect(page.getByText("House 4417, Tower C, Sector 65, Gurgaon 122018")).toBeVisible();
   await expect(page.getByText("Gate code 4417 · park in visitor bay B")).toBeVisible();
-  await expect(page.getByRole("button", { name: "Edit address and access notes" })).toBeVisible();
+  await expect(page.getByRole("button", { name: appCopy.profile.editAddress })).toBeVisible();
 
   // Home's consultation card now shows the address.
   await page.getByRole("link", { name: "Back" }).click();
@@ -63,41 +64,41 @@ test("takes an address and its access notes, and shows them", async ({ page }) =
 // suggestions are synthetic Gurugram societies.
 test("finds a building, keeps the flat separately, and shows the address as written", async ({ page }) => {
   await loggedIn(page);
-  await page.getByRole("button", { name: "Add your address and access notes" }).click();
+  await page.getByRole("button", { name: appCopy.profile.addAddress }).click();
 
-  const search = page.getByRole("combobox", { name: "Search for your building" });
+  const search = page.getByRole("combobox", { name: appCopy.profile.form.building.label });
   await search.fill("Sunrise");
   const options = page.getByRole("option");
   await expect(options).toHaveCount(1);
   await expect(options.first()).toContainText("Sunrise Greens");
   // Google's condition for showing their suggestions without a Google map.
-  await expect(page.getByText("Google Maps")).toBeVisible();
+  await expect(page.getByText(appCopy.profile.form.building.attribution)).toBeVisible();
   await options.first().click();
   await expect(search).toHaveValue("Sunrise Greens");
 
-  await page.getByLabel("Flat or house number").fill("Flat 1203");
-  await page.getByLabel("Floor (optional)").fill("12");
-  await page.getByLabel("Tower or block (optional)").fill("Tower C");
-  await page.getByLabel("Landmark (optional)").fill("Opposite the sector market");
+  await page.getByLabel(appCopy.profile.form.flat).fill("Flat 1203");
+  await page.getByLabel(appCopy.profile.form.floor).fill("12");
+  await page.getByLabel(appCopy.profile.form.tower).fill("Tower C");
+  await page.getByLabel(appCopy.profile.form.landmark).fill("Opposite the sector market");
   // The chosen building is line one, so the free-text building field is gone.
-  await expect(page.getByLabel("Building, society or street")).toBeHidden();
-  await page.getByLabel("Sector or area").fill("Sector 65");
-  await page.getByLabel("City").fill("Gurgaon");
-  await page.getByLabel("Pincode").fill("122018");
-  await page.getByRole("button", { name: "Save" }).click();
+  await expect(page.getByLabel(appCopy.profile.form.line1)).toBeHidden();
+  await page.getByLabel(appCopy.profile.form.locality).fill("Sector 65");
+  await page.getByLabel(appCopy.profile.form.city).fill("Gurgaon");
+  await page.getByLabel(appCopy.profile.form.pincode).fill("122018");
+  await page.getByRole("button", { name: appCopy.profile.form.save }).click();
 
   await expect(page.getByText("Flat 1203, 12, Tower C, Sunrise Greens, Sector 65, Gurgaon 122018")).toBeVisible();
   // As the client typed it, under its own label, never "Near Opposite the sector market".
-  await expect(page.getByText("Landmark", { exact: true })).toBeVisible();
+  await expect(page.getByText(appCopy.profile.landmark, { exact: true })).toBeVisible();
   await expect(page.getByText("Opposite the sector market", { exact: true })).toBeVisible();
   await expect(page.getByText(/Near Opposite/)).toHaveCount(0);
 });
 
 test("the suggestion list works by keyboard alone", async ({ page }) => {
   await loggedIn(page);
-  await page.getByRole("button", { name: "Add your address and access notes" }).click();
+  await page.getByRole("button", { name: appCopy.profile.addAddress }).click();
 
-  const search = page.getByRole("combobox", { name: "Search for your building" });
+  const search = page.getByRole("combobox", { name: appCopy.profile.form.building.label });
   await search.fill("Sec");
   await expect(page.getByRole("option")).toHaveCount(3);
   await expect(search).toHaveAttribute("aria-expanded", "true");
@@ -120,61 +121,61 @@ test("the suggestion list works by keyboard alone", async ({ page }) => {
 
 test("an address can still be typed when the search gives nothing", async ({ page }) => {
   await loggedIn(page);
-  await page.getByRole("button", { name: "Add your address and access notes" }).click();
+  await page.getByRole("button", { name: appCopy.profile.addAddress }).click();
 
   // The stub answers this query with a 503, as a spent quota or an outage would.
-  const search = page.getByRole("combobox", { name: "Search for your building" });
+  const search = page.getByRole("combobox", { name: appCopy.profile.form.building.label });
   await search.fill("mm-stub:down");
-  await expect(page.getByText("Search isn’t available right now. Type your address below instead.")).toBeVisible();
+  await expect(page.getByText(appCopy.profile.form.building.unavailable)).toBeVisible();
   await expect(page.getByRole("option")).toHaveCount(0);
 
   // Whatever is in the box stands as words: no suggestion was chosen, so no pin.
   await search.fill("Sunrise Greens");
-  await page.getByLabel("Flat or house number").fill("House 4417");
-  await page.getByLabel("Sector or area").fill("Sector 65");
-  await page.getByLabel("City").fill("Gurgaon");
-  await page.getByLabel("Pincode").fill("122018");
-  await page.getByRole("button", { name: "Save" }).click();
+  await page.getByLabel(appCopy.profile.form.flat).fill("House 4417");
+  await page.getByLabel(appCopy.profile.form.locality).fill("Sector 65");
+  await page.getByLabel(appCopy.profile.form.city).fill("Gurgaon");
+  await page.getByLabel(appCopy.profile.form.pincode).fill("122018");
+  await page.getByRole("button", { name: appCopy.profile.form.save }).click();
 
   await expect(page.getByText("House 4417, Sunrise Greens, Sector 65, Gurgaon 122018")).toBeVisible();
 });
 
 test("refuses an address without a six-digit pincode", async ({ page }) => {
   await loggedIn(page);
-  await page.getByRole("button", { name: "Add your address and access notes" }).click();
-  await page.getByLabel("Flat or house number").fill("House 1");
-  await page.getByLabel("Building, society or street").fill("Palm Grove Society");
-  await page.getByLabel("Sector or area").fill("Sector 65");
-  await page.getByLabel("City").fill("Gurgaon");
-  await page.getByLabel("Pincode").fill("1220");
-  await page.getByRole("button", { name: "Save" }).click();
+  await page.getByRole("button", { name: appCopy.profile.addAddress }).click();
+  await page.getByLabel(appCopy.profile.form.flat).fill("House 1");
+  await page.getByLabel(appCopy.profile.form.line1).fill("Palm Grove Society");
+  await page.getByLabel(appCopy.profile.form.locality).fill("Sector 65");
+  await page.getByLabel(appCopy.profile.form.city).fill("Gurgaon");
+  await page.getByLabel(appCopy.profile.form.pincode).fill("1220");
+  await page.getByRole("button", { name: appCopy.profile.form.save }).click();
   await expect(page.getByRole("alert")).toHaveText(
     "Add your flat or house number, building or street, area, city and 6-digit pincode.",
   );
   // The field that is wrong is marked, named by the error, and given the focus.
-  const pincode = page.getByLabel("Pincode");
+  const pincode = page.getByLabel(appCopy.profile.form.pincode);
   await expect(pincode).toHaveAttribute("aria-invalid", "true");
   await expect(pincode).toHaveAccessibleDescription(
     "Add your flat or house number, building or street, area, city and 6-digit pincode.",
   );
   await expect(pincode).toBeFocused();
-  await expect(page.getByLabel("City")).not.toHaveAttribute("aria-invalid", "true");
-  await expect(page.getByLabel("City")).toHaveAttribute("required", "");
+  await expect(page.getByLabel(appCopy.profile.form.city)).not.toHaveAttribute("aria-invalid", "true");
+  await expect(page.getByLabel(appCopy.profile.form.city)).toHaveAttribute("required", "");
 });
 
 // FSM's work order must name the door (docs/open-points.md, item 45).
 test("refuses an address without the flat or house number, and says so on the flat", async ({ page }) => {
   await loggedIn(page);
-  await page.getByRole("button", { name: "Add your address and access notes" }).click();
-  await page.getByLabel("Building, society or street").fill("Palm Grove Society");
-  await page.getByLabel("Sector or area").fill("Sector 65");
-  await page.getByLabel("City").fill("Gurgaon");
-  await page.getByLabel("Pincode").fill("122018");
-  await page.getByRole("button", { name: "Save" }).click();
+  await page.getByRole("button", { name: appCopy.profile.addAddress }).click();
+  await page.getByLabel(appCopy.profile.form.line1).fill("Palm Grove Society");
+  await page.getByLabel(appCopy.profile.form.locality).fill("Sector 65");
+  await page.getByLabel(appCopy.profile.form.city).fill("Gurgaon");
+  await page.getByLabel(appCopy.profile.form.pincode).fill("122018");
+  await page.getByRole("button", { name: appCopy.profile.form.save }).click();
   await expect(page.getByRole("alert")).toHaveText(
     "Add your flat or house number, building or street, area, city and 6-digit pincode.",
   );
-  const flat = page.getByLabel("Flat or house number");
+  const flat = page.getByLabel(appCopy.profile.form.flat);
   await expect(flat).toHaveAttribute("aria-invalid", "true");
   await expect(flat).toHaveAttribute("required", "");
   await expect(flat).toBeFocused();
@@ -214,23 +215,23 @@ test("says an address was given to us on the phone, so the client can check it",
       },
     });
   });
-  await page.getByRole("link", { name: "Your profile" }).click();
+  await page.getByRole("link", { name: appCopy.titles.profile }).click();
   await expect(page.getByText("Flat 1203, Sunrise Greens, Sector 65, Gurgaon 122018")).toBeVisible();
   await expect(page.getByText("You gave us this address by phone on 21 Sep 2026.")).toBeVisible();
-  await expect(page.getByRole("button", { name: "Edit address and access notes" })).toBeVisible();
+  await expect(page.getByRole("button", { name: appCopy.profile.editAddress })).toBeVisible();
   expect(await axeViolations(page)).toEqual([]);
 });
 
 test("lands on where we come once the address is saved", async ({ page }) => {
   await loggedIn(page);
-  await page.getByRole("button", { name: "Add your address and access notes" }).click();
-  await page.getByLabel("Flat or house number").fill("House 4417");
-  await page.getByLabel("Building, society or street").fill("Palm Grove Society");
-  await page.getByLabel("Sector or area").fill("Sector 65");
-  await page.getByLabel("City").fill("Gurgaon");
-  await page.getByLabel("Pincode").fill("122018");
-  await page.getByRole("button", { name: "Save" }).click();
-  const heading = page.getByRole("heading", { name: "Where we come" });
+  await page.getByRole("button", { name: appCopy.profile.addAddress }).click();
+  await page.getByLabel(appCopy.profile.form.flat).fill("House 4417");
+  await page.getByLabel(appCopy.profile.form.line1).fill("Palm Grove Society");
+  await page.getByLabel(appCopy.profile.form.locality).fill("Sector 65");
+  await page.getByLabel(appCopy.profile.form.city).fill("Gurgaon");
+  await page.getByLabel(appCopy.profile.form.pincode).fill("122018");
+  await page.getByRole("button", { name: appCopy.profile.form.save }).click();
+  const heading = page.getByRole("heading", { name: appCopy.profile.where });
   await expect(heading).toBeFocused();
   await expect(heading).toBeInViewport();
 });

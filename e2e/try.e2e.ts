@@ -6,6 +6,7 @@
 
 import type { Page } from "@playwright/test";
 import { drawnHeadPhoto, expect, fakeTurnstile, test, TINY_JPEG } from "./support.ts";
+import * as siteCopy from "../site/src/content/site.ts";
 
 test.beforeEach(async ({ page }) => {
   await fakeTurnstile(page);
@@ -59,7 +60,7 @@ test.describe("chrome", () => {
   for (const [from, to] of BACK) {
     test(`back from ${from} goes to ${to}`, async ({ page }) => {
       await open(page, from);
-      await page.getByRole("button", { name: "Back", exact: true }).click();
+      await page.getByRole("button", { name: siteCopy.tryOn.back, exact: true }).click();
       await expect(page.locator("[data-screen]")).toHaveAttribute("data-screen", to);
     });
   }
@@ -77,8 +78,8 @@ test.describe("upload", () => {
   test("three guidelines, two ways in, and no demo link to the error screen", async ({ page }) => {
     await open(page, "upload");
     await expect(page.locator("[data-screen] ol > li")).toHaveCount(3);
-    await expect(page.getByRole("button", { name: "Choose a photograph" })).toBeVisible();
-    await expect(page.getByRole("button", { name: "Use the camera" })).toBeVisible();
+    await expect(page.getByRole("button", { name: siteCopy.tryOn.upload.choose })).toBeVisible();
+    await expect(page.getByRole("button", { name: siteCopy.tryOn.upload.camera })).toBeVisible();
     await expect(page.getByText("See what happens if the photo will not work")).toHaveCount(0);
     await expect(page.locator('input[type="file"][capture="user"]')).toHaveCount(1);
   });
@@ -87,7 +88,7 @@ test.describe("upload", () => {
   test("the frame's caption sits below the oval and its brackets", async ({ page }) => {
     await open(page, "upload");
     const oval = await page.locator('svg:has(use[href="#oval"])').boundingBox();
-    const caption = await page.getByText("Your photograph appears here").boundingBox();
+    const caption = await page.getByText(siteCopy.tryOn.upload.previewCaption).boundingBox();
     expect(caption?.y ?? 0).toBeGreaterThanOrEqual((oval?.y ?? 0) + (oval?.height ?? 0));
   });
 
@@ -98,8 +99,8 @@ test.describe("upload", () => {
       .first()
       .setInputFiles(await drawnHeadPhoto());
     await expect(page.locator("[data-screen]")).toHaveAttribute("data-screen", "consent");
-    await page.getByRole("button", { name: "Back", exact: true }).click();
-    await expect(page.getByRole("img", { name: "The photograph you chose" })).toBeVisible();
+    await page.getByRole("button", { name: siteCopy.tryOn.back, exact: true }).click();
+    await expect(page.getByRole("img", { name: siteCopy.tryOn.upload.previewAlt })).toBeVisible();
   });
 
   test("a photograph too small for the API is refused before anything is sent", async ({ page }) => {
@@ -113,7 +114,7 @@ test.describe("upload", () => {
     await open(page, "upload");
     await page.locator('input[type="file"]').first().setInputFiles(TINY_JPEG);
     await expect(page.locator("[data-screen]")).toHaveAttribute("data-screen", "error");
-    await expect(page.getByRole("heading", { name: "We cannot use this photograph." })).toBeVisible();
+    await expect(page.getByRole("heading", { name: siteCopy.tryOn.error.kinds.photo.title })).toBeVisible();
     expect(calls).toEqual([]);
   });
 });
@@ -155,7 +156,7 @@ test.describe("stage and looks", () => {
     // Until all six looks have a picture, no empty box stands in for one.
     await expect(page.getByText("Preview", { exact: true })).toHaveCount(0);
     await expect(page.locator("[data-screen] fieldset img")).toHaveCount(0);
-    const next = page.getByRole("button", { name: "Choose one to continue" });
+    const next = page.getByRole("button", { name: siteCopy.tryOn.looks.choose });
     await expect(next).toHaveAttribute("aria-disabled", "true");
     await page.getByText("Light density").first().click();
     const onward = page.getByRole("button", { name: "Continue" });
@@ -171,32 +172,34 @@ test.describe("gate", () => {
     await open(page, "gate");
     await expect(page.getByText("We make your simulation once we have your number", { exact: false })).toBeVisible();
     await expect(page.getByText("never shown on this site", { exact: false })).toBeVisible();
-    await expect(page.getByLabel("Name")).toHaveAttribute("aria-required", "true");
-    await expect(page.getByLabel("Mobile")).toHaveAttribute("aria-required", "true");
-    await page.getByRole("button", { name: "Send my look" }).click();
-    await expect(page.getByText("Tell us what to call you, in letters.")).toBeVisible();
-    await expect(page.getByText("Enter a valid 10-digit mobile number.")).toBeVisible();
-    await expect(page.getByLabel("Name")).toBeFocused();
+    await expect(page.getByLabel(siteCopy.tryOn.gate.name)).toHaveAttribute("aria-required", "true");
+    await expect(page.getByLabel(siteCopy.tryOn.gate.mobile)).toHaveAttribute("aria-required", "true");
+    await page.getByRole("button", { name: siteCopy.tryOn.gate.submit }).click();
+    await expect(page.getByText(siteCopy.tryOn.gate.nameError)).toBeVisible();
+    await expect(page.getByText(siteCopy.tryOn.gate.mobileError)).toBeVisible();
+    await expect(page.getByLabel(siteCopy.tryOn.gate.name)).toBeFocused();
     await expect(page.locator("[data-screen]")).toHaveAttribute("data-screen", "gate");
   });
 
   // A number starting with 5 is not a mobile, and the gate says so at the field.
   test("a gate half filled in says what is missing, focused, then sends the look", async ({ page }) => {
     await open(page, "gate");
-    await page.getByLabel("Mobile").fill("98100");
-    await page.getByRole("button", { name: "Send my look" }).click();
-    await expect(page.getByText("Tell us what to call you, in letters.")).toBeVisible();
-    await expect(page.getByLabel("Name")).toHaveAttribute("aria-invalid", "true");
-    await expect(page.getByLabel("Name")).toBeFocused();
-    await page.getByLabel("Name").fill("Test Visitor");
-    await page.getByLabel("Mobile").fill("5876543210");
-    await page.getByRole("button", { name: "Send my look" }).click();
-    await expect(page.getByLabel("Mobile")).toHaveAttribute("aria-invalid", "true");
-    await expect(page.getByLabel("Mobile")).toHaveAccessibleDescription("Enter a valid 10-digit mobile number.");
-    await expect(page.getByLabel("Mobile")).toBeFocused();
-    await page.getByLabel("Mobile").fill("9810000000");
-    await expect(page.getByLabel("Mobile")).toHaveValue("98100 00000");
-    await page.getByRole("button", { name: "Send my look" }).click();
+    await page.getByLabel(siteCopy.tryOn.gate.mobile).fill("98100");
+    await page.getByRole("button", { name: siteCopy.tryOn.gate.submit }).click();
+    await expect(page.getByText(siteCopy.tryOn.gate.nameError)).toBeVisible();
+    await expect(page.getByLabel(siteCopy.tryOn.gate.name)).toHaveAttribute("aria-invalid", "true");
+    await expect(page.getByLabel(siteCopy.tryOn.gate.name)).toBeFocused();
+    await page.getByLabel(siteCopy.tryOn.gate.name).fill("Test Visitor");
+    await page.getByLabel(siteCopy.tryOn.gate.mobile).fill("5876543210");
+    await page.getByRole("button", { name: siteCopy.tryOn.gate.submit }).click();
+    await expect(page.getByLabel(siteCopy.tryOn.gate.mobile)).toHaveAttribute("aria-invalid", "true");
+    await expect(page.getByLabel(siteCopy.tryOn.gate.mobile)).toHaveAccessibleDescription(
+      "Enter a valid 10-digit mobile number.",
+    );
+    await expect(page.getByLabel(siteCopy.tryOn.gate.mobile)).toBeFocused();
+    await page.getByLabel(siteCopy.tryOn.gate.mobile).fill("9810000000");
+    await expect(page.getByLabel(siteCopy.tryOn.gate.mobile)).toHaveValue("98100 00000");
+    await page.getByRole("button", { name: siteCopy.tryOn.gate.submit }).click();
     await expect(page.locator("[data-screen]")).toHaveAttribute("data-screen", "sent");
   });
 
@@ -211,7 +214,7 @@ test.describe("gate", () => {
   // On a phone an empty frame sat under the form, its label across the gilt divider.
   test("hides the empty frame under 600 px, and keeps its label inside its half above", async ({ page }) => {
     await open(page, "gate");
-    const label = page.getByText("For your WhatsApp only");
+    const label = page.getByText(siteCopy.tryOn.gate.frame);
     if ((page.viewportSize()?.width ?? 0) <= 600) {
       await expect(label).toBeHidden();
       return;
@@ -226,7 +229,7 @@ test.describe("sent", () => {
   // ADR 0104: the look is on its way to WhatsApp, and never on the site.
   test("says the look is on its way to the number given, shows no look, and offers two ways on", async ({ page }) => {
     await open(page, "sent");
-    await expect(page.getByRole("heading", { name: "Your new look is on its way." })).toBeVisible();
+    await expect(page.getByRole("heading", { name: siteCopy.tryOn.sent.title })).toBeVisible();
     await expect(
       page.getByText("It'll reach WhatsApp on +91 98100 00000 within minutes. We delete it after 14 days."),
     ).toBeVisible();
@@ -240,7 +243,7 @@ test.describe("sent", () => {
 
   test("tells a returning visitor their look was sent, without a number or the look", async ({ page }) => {
     await page.goto("/try?state=sent&kind=returning");
-    await expect(page.getByRole("heading", { name: "Your look has already been sent." })).toBeVisible();
+    await expect(page.getByRole("heading", { name: siteCopy.tryOn.sent.returning.title })).toBeVisible();
     await expect(page.getByText("We sent it to the WhatsApp number you gave.", { exact: false })).toBeVisible();
     await expect(page.getByText("+91", { exact: false })).toHaveCount(0);
     await expect(page.locator("[data-screen] img")).toHaveCount(0);
@@ -250,9 +253,9 @@ test.describe("sent", () => {
 test.describe("error", () => {
   test("Choose another returns to the upload; Book a consultation instead goes to /book", async ({ page }) => {
     await open(page, "error");
-    await expect(page.getByRole("heading", { name: "We cannot use this photograph." })).toBeVisible();
-    await expect(page.getByRole("link", { name: "Book a consultation instead" })).toHaveAttribute("href", "/book");
-    await page.getByRole("button", { name: "Choose another" }).click();
+    await expect(page.getByRole("heading", { name: siteCopy.tryOn.error.kinds.photo.title })).toBeVisible();
+    await expect(page.getByRole("link", { name: siteCopy.tryOn.error.book })).toHaveAttribute("href", "/book");
+    await page.getByRole("button", { name: siteCopy.tryOn.error.another }).click();
     await expect(page.locator("[data-screen]")).toHaveAttribute("data-screen", "upload");
   });
 
@@ -286,8 +289,8 @@ test.describe("error", () => {
       await expect(page.getByText(step, { exact: true })).toBeVisible();
       await expect(page.getByText(frame, { exact: true })).toBeVisible();
       await expect(page.getByText("photograph", { exact: false }).filter({ hasText: /Cannot/ })).toHaveCount(0);
-      await expect(page.getByRole("link", { name: "Book a consultation instead" })).toBeVisible();
-      await expect(page.getByRole("button", { name: "Choose another" })).toHaveCount(another ? 1 : 0);
+      await expect(page.getByRole("link", { name: siteCopy.tryOn.error.book })).toBeVisible();
+      await expect(page.getByRole("button", { name: siteCopy.tryOn.error.another })).toHaveCount(another ? 1 : 0);
     });
   }
 });

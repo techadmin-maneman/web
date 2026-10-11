@@ -18,7 +18,7 @@ import type { AccessIdentity } from "../../providers/cloudflare-access.ts";
 import { auditStatement, type AuditActor } from "./audit.ts";
 import { isOneOf } from "../../lib/one-of.ts";
 
-export interface StaffMember extends StaffEntry {
+interface StaffMember extends StaffEntry {
   readonly email: string;
   readonly addedBy: string;
   readonly addedAt: string;
@@ -26,19 +26,19 @@ export interface StaffMember extends StaffEntry {
   readonly changedAt: string | null;
 }
 
-export interface ServiceToken {
+interface ServiceToken {
   readonly clientId: string;
   readonly label: string;
   readonly addedBy: string;
   readonly addedAt: string;
 }
 
-export interface Zone {
+interface Zone {
   readonly name: string;
   readonly cities: readonly string[];
 }
 
-export interface AccessMode {
+interface AccessMode {
   readonly enforced: boolean;
   readonly setBy: string | null;
   readonly setAt: string | null;

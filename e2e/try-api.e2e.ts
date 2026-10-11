@@ -5,6 +5,7 @@
 
 import type { Page } from "@playwright/test";
 import { expect, fakeTurnstile, randomMobile, sendFromGate, test, throughToGate, visit } from "./support.ts";
+import * as siteCopy from "../site/src/content/site.ts";
 
 // One at a time, in order, as for bookings: each upload makes the API verify a Turnstile token.
 test.describe.configure({ mode: "default" });
@@ -33,7 +34,7 @@ test("a drawn photograph's look is made once the gate has the number, and never 
   expect((await claimed).status()).toBe(201);
   const job = (await (await generated).json()) as { job_id: string; state: string };
   expect(job.state).toBe("queued");
-  await expect(page.getByRole("heading", { name: "Your new look is on its way." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: siteCopy.tryOn.sent.title })).toBeVisible();
 
   // The stub renders it; the messaging queue sends it. The page shows none of it.
   await expect
@@ -68,6 +69,6 @@ test("the browser that has had its look is told it was sent, not asked for a pho
   const asked = page.waitForResponse("**/api/tryon/look");
   await visit(page, "/try");
   expect((await asked).status()).toBe(200);
-  await expect(page.getByRole("heading", { name: "Your look has already been sent." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: siteCopy.tryOn.sent.returning.title })).toBeVisible();
   expect(uploads).toEqual([]);
 });

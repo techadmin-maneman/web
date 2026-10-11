@@ -12,7 +12,7 @@ import { DAY_MS } from "../../lib/durations.ts";
 import { failedUniqueOn } from "../../lib/d1-errors.ts";
 import { revokeOthersStatement } from "../sign-in/sessions.ts";
 
-export type NumberChangeState = "verifying" | "awaiting_ops" | "confirmed" | "rejected" | "withdrawn";
+type NumberChangeState = "verifying" | "awaiting_ops" | "confirmed" | "rejected" | "withdrawn";
 type WhichNumber = "old" | "new";
 
 export interface NumberChange {

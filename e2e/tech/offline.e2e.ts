@@ -11,6 +11,7 @@ import { expect, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
 import { JOB_ID, todayInIndia } from "./fixtures.ts";
 import { fakeTech } from "./fake-tech.ts";
+import * as techCopy from "../../apps/tech/src/content.ts";
 
 test.use({ serviceWorkers: "allow" });
 
@@ -57,7 +58,7 @@ test("opens with no connection at all, from the shell and today's jobs it cached
   await page.goto("/");
 
   await expect(page.getByRole("heading", { name: "3 jobs today" })).toBeVisible();
-  await expect(page.getByText("No signal · working offline")).toBeVisible();
+  await expect(page.getByText(techCopy.today.offline.title)).toBeVisible();
 
   expect(await axeViolations(page)).toEqual([]);
 });
@@ -78,7 +79,7 @@ test("opens on a signal that never answers, from the shell and what the phone ho
   await page.goto("/", { timeout: 5_000 });
 
   await expect(page.getByRole("heading", { name: "3 jobs today" })).toBeVisible({ timeout: 15_000 });
-  await expect(page.getByText("No signal · working offline")).toBeVisible();
+  await expect(page.getByText(techCopy.today.offline.title)).toBeVisible();
 });
 
 test("keeps only today's list in its day cache, and lets an earlier day's go", async ({ page, context }) => {
@@ -124,8 +125,8 @@ test("the day the phone cached goes when the technician signs out", async ({ pag
   await expect(page.getByRole("heading", { name: "3 jobs today" })).toBeVisible();
   expect(Object.keys(await cachedPaths(page))).toContain("mm-tech-day");
 
-  await page.getByRole("button", { name: "Sign out" }).click();
-  await page.getByRole("alert").getByRole("button", { name: "Sign out" }).click();
+  await page.getByRole("button", { name: techCopy.today.signOut }).click();
+  await page.getByRole("alert").getByRole("button", { name: techCopy.today.signOut }).click();
   await expect(page.getByRole("heading", { level: 1, name: "Technician sign in" })).toBeVisible();
   expect(Object.keys(await cachedPaths(page))).not.toContain("mm-tech-day");
 });

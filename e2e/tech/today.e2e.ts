@@ -6,6 +6,7 @@ import { axeViolations } from "../a11y.ts";
 import { card, JOB_ID, NOTHING_DONE, ROHITS_PIECE, todayInIndia } from "./fixtures.ts";
 import { fakeTech } from "./fake-tech.ts";
 import { keptOnPhone, leftOnPhone } from "./on-phone.ts";
+import * as techCopy from "../../apps/tech/src/content.ts";
 
 test("lists the day's jobs in order, with no amount anywhere (board A1)", async ({ page }) => {
   await fakeTech(page);
@@ -19,8 +20,8 @@ test("lists the day's jobs in order, with no amount anywhere (board A1)", async 
   await expect(rows.first()).toContainText("Rohit M.");
   await expect(rows.nth(1)).toContainText("Vikram S.");
   await expect(rows.first()).toContainText("Sector 65");
-  await expect(rows.first()).toContainText("Prepaid");
-  await expect(rows.nth(1)).toContainText("Credit");
+  await expect(rows.first()).toContainText(techCopy.badges.prepaid);
+  await expect(rows.nth(1)).toContainText(techCopy.badges.credit);
   // The clock the heading uses, never "2:00", and how long each visit is, never "2 slots".
   await expect(rows.first().getByText("9:30 am", { exact: true })).toBeVisible();
   await expect(rows.first().getByText("90 min", { exact: true })).toBeVisible();
@@ -72,7 +73,7 @@ test("a job closed out on another phone reads as closed on Today, as its card sa
 test("says nothing is booked when the day is empty (board A2)", async ({ page }) => {
   await fakeTech(page, true);
   await page.goto("/");
-  await expect(page.getByText("Nothing booked for today")).toBeVisible();
+  await expect(page.getByText(techCopy.today.empty.title)).toBeVisible();
   expect(await axeViolations(page)).toEqual([]);
 });
 
@@ -91,10 +92,8 @@ test("shows board A2's banner with no signal, and the card still opens from the 
   fake.online = false;
   await context.setOffline(true);
 
-  await expect(page.getByText("No signal · working offline")).toBeVisible();
-  await expect(
-    page.getByText("Today’s jobs and cards are on the phone. Photos go up when signal returns."),
-  ).toBeVisible();
+  await expect(page.getByText(techCopy.today.offline.title)).toBeVisible();
+  await expect(page.getByText(techCopy.today.offline.body)).toBeVisible();
   await expect(page.getByText("Rohit M.").first()).toBeVisible();
 
   // The card comes from what the phone kept, not from the API, which cannot be reached.
@@ -108,21 +107,21 @@ test("says there is no signal when nothing answers, even while the phone says it
   const fake = await fakeTech(page);
   await page.goto("/");
   await expect(page.getByRole("heading", { name: "3 jobs today" })).toBeVisible();
-  await expect(page.getByText("No signal · working offline")).toHaveCount(0);
+  await expect(page.getByText(techCopy.today.offline.title)).toHaveCount(0);
 
   // A weak signal: the phone reports a network, and nothing on it answers.
   fake.online = false;
   await page.getByText("Rohit M.").first().click();
   await expect(page.getByText("Tower C, 14th floor, Sector 65, Gurgaon 122018")).toBeVisible();
   await page.getByRole("button", { name: "Back" }).click();
-  await expect(page.getByText("No signal · working offline")).toBeVisible();
+  await expect(page.getByText(techCopy.today.offline.title)).toBeVisible();
 
   // And once something answers again, it stops saying so.
   fake.online = true;
   await page.getByText("Rohit M.").first().click();
   await page.getByRole("button", { name: "Back" }).click();
   await expect(page.getByRole("heading", { name: "3 jobs today" })).toBeVisible();
-  await expect(page.getByText("No signal · working offline")).toHaveCount(0);
+  await expect(page.getByText(techCopy.today.offline.title)).toHaveCount(0);
 });
 
 test("keeps today's and tomorrow's jobs and lets go of every older day and card as the day arrives", async ({
@@ -161,11 +160,11 @@ test("opens a job's card with its address, access notes and the way in (board A3
   await expect(page.getByText("Tower C, 14th floor, Sector 65, Gurgaon 122018")).toBeVisible();
   await expect(page.getByText("Gate code 4417 · visitor bay B")).toBeVisible();
   // A Maps URL now, not `geo:`, which an iPhone ignores (ADR 0054; e2e/tech/job.e2e.ts).
-  await expect(page.getByRole("link", { name: "Navigate" })).toHaveAttribute(
+  await expect(page.getByRole("link", { name: techCopy.job.navigate })).toHaveAttribute(
     "href",
     /^https:\/\/www\.google\.com\/maps\/dir\//,
   );
-  await expect(page.getByRole("button", { name: "I have arrived" })).toBeVisible();
+  await expect(page.getByRole("button", { name: techCopy.notHome.arrived.action })).toBeVisible();
 
   expect(await axeViolations(page)).toEqual([]);
 });
@@ -178,8 +177,8 @@ test("a job further out shows time, type and sector only, and cannot be started"
   // When it opens, from the card's unlocks_at, not "the day before".
   await expect(page.getByText("Opens at 6 pm tomorrow.")).toBeVisible();
   await expect(page.getByText("Sector 43")).toBeVisible();
-  await expect(page.getByRole("button", { name: "I have arrived" })).toHaveCount(0);
-  await expect(page.getByRole("button", { name: "Start job" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: techCopy.notHome.arrived.action })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: techCopy.job.start })).toHaveCount(0);
 });
 
 test("scrolls the whole day on a screen shorter than it, down to tomorrow's last job", async ({ page }) => {
@@ -205,7 +204,7 @@ test("every target on every screen is at least the design's 48 px, and the prima
   fake.type = "replacement";
   fake.pieces = [ROHITS_PIECE];
   await page.goto(`/jobs/${JOB_ID}`);
-  const arrive = page.getByRole("button", { name: "I have arrived" });
+  const arrive = page.getByRole("button", { name: techCopy.notHome.arrived.action });
   await expect(arrive).toBeVisible();
 
   const box = await arrive.boundingBox();

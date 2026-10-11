@@ -68,7 +68,7 @@ export function validateStaticConfig(env: Readonly<Record<string, unknown>>): St
   return { environment, providers: providers as Providers, settings };
 }
 
-export type DatabaseIdentity =
+type DatabaseIdentity =
   | { readonly state: "ok"; readonly databaseName: string }
   | { readonly state: "unmarked" }
   | { readonly state: "mismatch"; readonly databaseName: string; readonly expected: string }

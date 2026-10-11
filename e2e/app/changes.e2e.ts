@@ -9,6 +9,7 @@ import { changingClients } from "./changing.ts";
 import { confirmedByRazorpay, fakeCheckout, noRealCheckout } from "./checkout-fakes.ts";
 import { continueToPayment } from "./picking.ts";
 import { logIn } from "./signed-in.ts";
+import * as appCopy from "../../apps/app/src/content.ts";
 
 // Each client's visit is moved, then cancelled, so these run one after another, in order. One failing leaves the
 // rest to run.
@@ -24,13 +25,16 @@ async function scan(page: Page): Promise<void> {
 
 async function reschedule(page: Page, mobile: string) {
   await logIn(page, mobile);
-  await page.getByRole("button", { name: "Reschedule" }).click();
+  await page.getByRole("button", { name: appCopy.home.reschedule }).click();
   return page.getByRole("dialog", { name: /^Move \w+day’s visit$/ });
 }
 
 /** Through the date and window steps, to the pay step. */
 async function pickAnother(page: Page, which: "first" | "last"): Promise<void> {
-  const dates = page.getByRole("dialog", { name: "Pick a date" }).getByRole("radio").and(page.locator(":enabled"));
+  const dates = page
+    .getByRole("dialog", { name: appCopy.booking.date.title })
+    .getByRole("radio")
+    .and(page.locator(":enabled"));
   await (which === "first" ? dates.first() : dates.last()).click();
   await page.getByRole("button", { name: "Continue" }).click();
   await continueToPayment(page);
@@ -42,9 +46,9 @@ test("C1: a paid visit is marked Prepaid, and opens with Reschedule", async ({ p
   await logIn(page, changingClients().free.mobile);
   await page.getByRole("navigation").getByRole("link", { name: "Visits" }).click();
   const card = page.getByRole("main").getByRole("link").first();
-  await expect(card).toContainText("Prepaid");
+  await expect(card).toContainText(appCopy.visits.prepaid);
   await card.click();
-  await page.getByRole("button", { name: "Reschedule" }).click();
+  await page.getByRole("button", { name: appCopy.home.reschedule }).click();
   await expect(page.getByRole("dialog", { name: /^Move \w+day’s visit$/ })).toBeVisible();
 });
 
@@ -53,46 +57,46 @@ test("C7: a visit more than 24 hours out moves for free, its payment carried ove
   const sheet = await reschedule(page, changingClients().free.mobile);
   await expect(sheet.getByText("Free to move. Your Rs. 2,000 carries over.")).toBeVisible();
   await scan(page);
-  await sheet.getByRole("button", { name: "Pick a new date" }).click();
+  await sheet.getByRole("button", { name: appCopy.change.move.pick }).click();
   // The furthest day, so the visit stays more than 24 hours out for the cancel below.
   await pickAnother(page, "last");
   // Nothing to pay for a free move, so nothing calls it a payment.
-  const pay = page.getByRole("dialog", { name: "Confirm", exact: true });
+  const pay = page.getByRole("dialog", { name: appCopy.booking.pay.titleFree, exact: true });
   await expect(pay.getByText("Service visit · moved")).toBeVisible();
   await expect(pay.getByText("Free", { exact: true })).toBeVisible();
   await expect(pay.getByText("Your Rs. 2,000 carries over.")).toBeVisible();
   // This client has decided neither photograph consent, and a move agrees to nothing (ADR 0080).
   await expect(pay.getByText(/^By booking this visit/)).toHaveCount(0);
-  await pay.getByRole("button", { name: "Confirm move" }).click();
-  await expect(page.getByRole("dialog").getByRole("status").getByText("Moved")).toBeVisible();
+  await pay.getByRole("button", { name: appCopy.change.confirmMove }).click();
+  await expect(page.getByRole("dialog").getByRole("status").getByText(appCopy.change.moved)).toBeVisible();
 });
 
 test("C8: cancelling more than 24 hours out gives the payment back in full", async ({ page }) => {
   const sheet = await reschedule(page, changingClients().free.mobile);
-  await sheet.getByRole("button", { name: "Cancel instead" }).click();
+  await sheet.getByRole("button", { name: appCopy.change.move.cancelInstead }).click();
   const cancel = page.getByRole("dialog", { name: /^Cancel \w+day’s visit$/ });
   await expect(cancel.getByText("Rs. 2,000 back to your UPI in 5 to 7 working days.")).toBeVisible();
   await scan(page);
-  await cancel.getByRole("button", { name: "Cancel visit" }).click();
+  await cancel.getByRole("button", { name: appCopy.change.cancel.confirm }).click();
   const done = page.getByRole("dialog").getByRole("status");
   await expect(done.getByText("Cancelled", { exact: true })).toBeVisible();
   await expect(done.getByText(/^\w+day’s visit is cancelled\.$/)).toBeVisible();
   await done.getByRole("button", { name: "Done" }).click();
   await expect(page.getByRole("dialog")).toBeHidden();
-  await expect(page.getByRole("button", { name: "Reschedule" })).toBeHidden();
+  await expect(page.getByRole("button", { name: appCopy.home.reschedule })).toBeHidden();
 });
 
 test("C8 inside 24 hours shows the charge before anything is cancelled, and Keep it keeps the visit", async ({
   page,
 }) => {
   const sheet = await reschedule(page, changingClients().late.mobile);
-  await sheet.getByRole("button", { name: "Cancel instead" }).click();
+  await sheet.getByRole("button", { name: appCopy.change.move.cancelInstead }).click();
   const cancel = page.getByRole("dialog", { name: /^Cancel \w+day’s visit$/ });
   await expect(cancel.getByText("This is a late cancellation: your Rs. 2,000 isn’t refunded.")).toBeVisible();
-  await expect(cancel.getByRole("button", { name: "Cancel and accept charge" })).toBeVisible();
+  await expect(cancel.getByRole("button", { name: appCopy.change.cancel.accept })).toBeVisible();
   await cancel.getByRole("button", { name: "Keep it" }).click();
   await expect(page.getByRole("dialog")).toBeHidden();
-  await expect(page.getByRole("button", { name: "Reschedule" })).toBeVisible();
+  await expect(page.getByRole("button", { name: appCopy.home.reschedule })).toBeVisible();
 });
 
 test("C7 inside 24 hours: a service visit's move is charged, and the new visit is paid separately", async ({
@@ -105,10 +109,10 @@ test("C7 inside 24 hours: a service visit's move is charged, and the new visit i
     sheet.getByText("This is a late change: your Rs. 2,000 isn’t refunded, and the new visit is paid separately."),
   ).toBeVisible();
   await scan(page);
-  await sheet.getByRole("button", { name: "Move and accept charge" }).click();
+  await sheet.getByRole("button", { name: appCopy.change.move.accept }).click();
   await pickAnother(page, "first");
-  const pay = page.getByRole("dialog", { name: "Pay and confirm" });
-  await expect(pay.getByText("Service visit", { exact: true })).toBeVisible();
+  const pay = page.getByRole("dialog", { name: appCopy.booking.pay.title });
+  await expect(pay.getByText(appCopy.VISIT_TYPES.service, { exact: true })).toBeVisible();
   await pay.getByRole("button", { name: "Pay Rs. 2,000" }).click();
-  await expect(page.getByRole("dialog").getByRole("status").getByText("Moved")).toBeVisible();
+  await expect(page.getByRole("dialog").getByRole("status").getByText(appCopy.change.moved)).toBeVisible();
 });
