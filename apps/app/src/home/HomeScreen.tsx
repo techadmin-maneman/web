@@ -34,6 +34,7 @@ import {
   type NotingVisit,
 } from "./VisitCard.tsx";
 import styles from "./home.module.css";
+import { firstNameOf } from "../../../../src/lib/names.ts";
 
 export function HomeScreen() {
   const { me, offline } = useSession();
@@ -64,6 +65,7 @@ function HomeBody({ me, offline }: { me: Me; offline: boolean }) {
         changing={changingOf(visit, VISIT_TYPES.consultation)}
         noting={notingOf(visit)}
         begun={hasBegun(visit)}
+        technician={visit.technician}
       />
     );
   }
@@ -125,6 +127,8 @@ function Consultation(props: {
   requested?: boolean;
   /** The consultation and the first fit in one visit: what it costs once fitted. */
   price?: OneVisitPrice | null;
+  /** Who is coming, once a technician has the visit. */
+  technician?: { readonly initials: string; readonly name: string } | null;
 }) {
   const copy = home.consultation;
   const date = shortDate(props.date);
@@ -140,6 +144,14 @@ function Consultation(props: {
         <div className={styles.card}>
           <p className={styles.date}>{date}</p>
           <p className={styles.window}>{props.when}</p>
+          {props.technician !== undefined && props.technician !== null && (
+            <div className={styles.technician}>
+              <span className={styles.initials} aria-hidden="true">
+                {props.technician.initials}
+              </span>
+              <p className={styles.who}>{firstNameOf(props.technician.name)}</p>
+            </div>
+          )}
           {props.place !== "" && <p className={styles.place}>{props.place}</p>}
           {!oneVisit && <p className={styles.free}>{copy.free}</p>}
           {props.requested === true && <p className={styles.free}>{copy.requested}</p>}

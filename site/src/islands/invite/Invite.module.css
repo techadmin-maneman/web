@@ -708,6 +708,7 @@
   font-weight: var(--weight-regular);
   font-size: var(--landing-done-title);
   line-height: var(--lh-112);
+  text-wrap: balance;
 }
 
 .doneBlockBody {
@@ -759,6 +760,18 @@
   display: flex;
   flex-wrap: wrap;
   gap: var(--sp-12);
+}
+
+/* Add to your calendar: its label over Google and the .ics file. */
+.calendar {
+  display: grid;
+  gap: var(--sp-12);
+}
+
+.calendarLabel {
+  margin: 0;
+  font-size: var(--fs-14);
+  color: var(--text-muted);
 }
 
 /* ---- Desktop: prices, pincode and form left; card and how it works right ---- */

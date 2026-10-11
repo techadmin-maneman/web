@@ -19,9 +19,12 @@ async function sendCode(page: Page, mobile: string): Promise<void> {
   await expect(page.getByRole("heading", { level: 1, name: "Enter the code" })).toBeVisible();
 }
 
+/** The sixth digit sends the code. After a wrong one the client waits for its answer, clears it and types again. */
 async function enter(page: Page, code: string): Promise<void> {
-  await page.getByRole("textbox", { name: "The six-digit code" }).fill(code);
-  await page.getByRole("button", { name: "Continue" }).click();
+  await expect(page.getByRole("button", { name: "Continue" })).not.toHaveAttribute("aria-busy", "true");
+  const field = page.getByRole("textbox", { name: "The six-digit code" });
+  await field.clear();
+  await field.fill(code);
 }
 
 test("a booked number logs in with its code and lands on its consultation", async ({ page }) => {
@@ -115,6 +118,11 @@ test("the tabs reach Visits and the empty Photos, Payments and Refer", async ({ 
   await expect(tabs.getByRole("link", { name: "Visits" })).toHaveAttribute("aria-current", "page");
   await tabs.getByRole("link", { name: "Photos" }).click();
   await expect(page.getByText("Your photos begin at your first visit.")).toBeVisible();
+  // Nothing to show yet, so the site's try-on, whose look comes back here.
+  await expect(page.getByRole("link", { name: "Try a look on yourself" })).toHaveAttribute(
+    "href",
+    "http://127.0.0.1:4321/try",
+  );
   await tabs.getByRole("link", { name: "Payments" }).click();
   await expect(page.getByText("Nothing to pay yet.")).toBeVisible();
   await tabs.getByRole("link", { name: "Refer" }).click();

@@ -25,6 +25,12 @@ function partsOf(date: string): { day: number; month: number; weekday: number } 
   return { day, month, weekday: new Date(Date.UTC(year, month - 1, day)).getUTCDay() };
 }
 
+/** "Saturday 3 October". */
+export function longDay(date: string): string {
+  const { day, month, weekday } = partsOf(date);
+  return `${WEEKDAYS[weekday] ?? ""} ${String(day)} ${MONTH_NAMES[month - 1] ?? ""}`;
+}
+
 /** The first day a consultation can be booked: tomorrow in India, wherever the visitor's own clock is set. */
 export function indiaTomorrow(now: Date = new Date()): string {
   return addDays(todayInIndia(now.getTime()), 1);
@@ -50,7 +56,7 @@ export function dayStrip(from: string, days: number): StripDay[] {
       weekday: SHORT_WEEKDAYS[weekday] ?? "",
       number: String(day),
       month: monthName,
-      label: `${WEEKDAYS[weekday] ?? ""} ${String(day)} ${monthName}`,
+      label: longDay(date),
     };
   });
 }
