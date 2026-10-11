@@ -79,8 +79,8 @@ test("Capture is the key at the foot of the screen, Retake beside it, over board
 
   const key = await capture.boundingBox();
   const viewport = page.viewportSize();
-  // The foot of the screen, 22 px up, where every other screen's primary action is.
-  expect(Math.round((key?.y ?? 0) + (key?.height ?? 0))).toBe((viewport?.height ?? 0) - 22);
+  // The foot of the screen, 24 px up, where every other screen's primary action is.
+  expect(Math.round((key?.y ?? 0) + (key?.height ?? 0))).toBe((viewport?.height ?? 0) - 24);
   expect(key?.height).toBe(64);
   expect((await page.getByRole("button", { name: "Retake" }).boundingBox())?.width).toBe(88);
   // No second bar beneath it: Capture is the one gold action until the set is done.

@@ -19,7 +19,7 @@
   .table th,
   .table td {
     height: var(--ops-row);
-    padding-block: var(--sp-7);
+    padding-block: var(--sp-8);
     border-bottom: var(--hairline) solid var(--paper-line);
     font-weight: var(--weight-regular);
     text-align: left;

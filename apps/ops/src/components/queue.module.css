@@ -10,7 +10,7 @@
 /* What the last decision did, above the rows it left. */
 .done {
   margin: 0;
-  padding: var(--sp-14) var(--sp-20);
+  padding: var(--sp-16) var(--sp-20);
   border-bottom: var(--hairline) solid var(--paper-line);
   font-size: var(--fs-14);
   line-height: var(--lh-160);
@@ -42,7 +42,7 @@
 
 .note {
   margin: 0;
-  padding: var(--sp-14) var(--sp-20);
+  padding: var(--sp-16) var(--sp-20);
   font-size: var(--fs-14);
   line-height: var(--lh-160);
   color: var(--text-muted);

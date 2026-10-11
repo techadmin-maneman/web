@@ -49,8 +49,8 @@
   display: flex;
   flex-wrap: wrap;
   align-items: flex-end;
-  gap: var(--sp-10) var(--sp-16);
-  padding: var(--sp-10) var(--sp-14);
+  gap: var(--sp-8) var(--sp-16);
+  padding: var(--sp-8) var(--sp-16);
   border-bottom: var(--hairline) solid var(--paper-line);
 }
 
@@ -97,7 +97,7 @@
 .select,
 .input {
   min-height: var(--ops-row);
-  padding: 0 var(--sp-10);
+  padding: 0 var(--sp-8);
   border: var(--hairline) solid var(--paper-control);
   border-radius: 0;
   background: var(--paper-light);
@@ -120,7 +120,7 @@
 .corner,
 .tech {
   width: var(--local-tech);
-  padding: var(--sp-9) var(--sp-10);
+  padding: var(--sp-8) var(--sp-8);
   font-weight: var(--weight-regular);
   text-align: left;
   vertical-align: top;
@@ -150,7 +150,7 @@
 }
 
 .day {
-  padding: var(--sp-9) var(--sp-8);
+  padding: var(--sp-8) var(--sp-8);
   border-left: var(--hairline) solid var(--paper-line);
   font-weight: var(--weight-regular);
   text-align: left;
@@ -166,7 +166,7 @@
 
 .util,
 .peak {
-  margin-top: var(--sp-3);
+  margin-top: var(--sp-4);
   font-variant-numeric: tabular-nums;
 }
 
@@ -180,13 +180,13 @@
 }
 
 .zone {
-  margin-top: var(--sp-3);
+  margin-top: var(--sp-4);
   color: var(--text-muted);
 }
 
 .cell {
   height: var(--local-cell);
-  padding: var(--sp-3);
+  padding: var(--sp-4);
   border-bottom: var(--hairline) solid var(--paper-line);
   border-left: var(--hairline) solid var(--paper-line);
   vertical-align: top;
@@ -225,7 +225,7 @@
   gap: var(--sp-2);
   width: 100%;
   margin-bottom: var(--sp-2);
-  padding: var(--sp-4) var(--sp-5);
+  padding: var(--sp-4) var(--sp-4);
   border: 0;
   border-left: var(--rule-strong) solid transparent;
   font: inherit;
@@ -332,7 +332,7 @@
 
 .target {
   min-height: var(--sp-28);
-  padding: 0 var(--sp-5);
+  padding: 0 var(--sp-4);
   border: var(--hairline) dashed var(--paper-placeholder);
   background: transparent;
   font: inherit;
@@ -368,8 +368,8 @@
   flex-wrap: wrap;
   align-items: flex-end;
   justify-content: space-between;
-  gap: var(--sp-10) var(--sp-16);
-  padding: var(--sp-10) var(--sp-14);
+  gap: var(--sp-8) var(--sp-16);
+  padding: var(--sp-8) var(--sp-16);
   border-bottom: var(--hairline) solid var(--paper-line);
   background: var(--paper-light);
 }
@@ -395,7 +395,7 @@
   display: flex;
   flex-wrap: wrap;
   align-items: flex-end;
-  gap: var(--sp-10);
+  gap: var(--sp-8);
 }
 
 .done,
@@ -404,8 +404,8 @@
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: var(--sp-10) var(--sp-16);
-  padding: var(--sp-10) var(--sp-14);
+  gap: var(--sp-8) var(--sp-16);
+  padding: var(--sp-8) var(--sp-16);
   border-bottom: var(--hairline) solid var(--paper-line);
   font-size: var(--fs-14);
   line-height: var(--lh-150);
@@ -421,7 +421,7 @@
 
 .empty {
   margin: 0;
-  padding: var(--sp-16) var(--sp-14);
+  padding: var(--sp-16) var(--sp-16);
   font-size: var(--fs-14);
   color: var(--text-muted);
 }
@@ -429,7 +429,7 @@
 /* Where leave is recorded, and where the tray's asked window comes from. */
 .note {
   margin: 0;
-  padding: var(--sp-11) var(--sp-14);
+  padding: var(--sp-12) var(--sp-16);
   border-top: var(--hairline) solid var(--paper-line);
   font-size: var(--fs-13);
   line-height: var(--lh-140);
@@ -456,7 +456,7 @@
 .trayRail .trayHead {
   flex-direction: column;
   align-items: center;
-  padding: var(--sp-11) 0;
+  padding: var(--sp-12) 0;
   border-bottom: 0;
   writing-mode: vertical-rl;
 }
@@ -466,7 +466,7 @@
   align-items: baseline;
   justify-content: space-between;
   gap: var(--sp-8);
-  padding: var(--sp-11) var(--sp-14);
+  padding: var(--sp-12) var(--sp-16);
   border-bottom: var(--hairline) solid var(--paper-line);
 }
 
@@ -493,7 +493,7 @@
 .trayJob {
   display: block;
   width: 100%;
-  padding: var(--sp-11) var(--sp-14);
+  padding: var(--sp-12) var(--sp-16);
   border: 0;
   border-bottom: var(--hairline) solid var(--paper-line);
   background: transparent;
@@ -535,7 +535,7 @@
 }
 
 .trayTop + .trayLine {
-  margin-top: var(--sp-5);
+  margin-top: var(--sp-4);
 }
 
 .trayJob:hover {
@@ -573,7 +573,7 @@
 }
 
 .picker {
-  padding: var(--sp-22);
+  padding: var(--sp-24);
 }
 
 .pickerTitle {
@@ -585,7 +585,7 @@
 }
 
 .pickerWhen {
-  margin: var(--sp-10) 0 0;
+  margin: var(--sp-8) 0 0;
   font-size: var(--fs-15);
   color: var(--text-muted);
 }
@@ -600,9 +600,9 @@
 .reason {
   display: flex;
   align-items: center;
-  gap: var(--sp-14);
+  gap: var(--sp-16);
   min-height: var(--tap);
-  padding: var(--sp-11) 0;
+  padding: var(--sp-12) 0;
   border-bottom: var(--hairline) solid var(--paper-line);
   font-size: var(--fs-15);
   cursor: pointer;
@@ -624,26 +624,26 @@
 .radio:checked {
   border-color: var(--ink);
   background: var(--ink);
-  box-shadow: inset 0 0 0 var(--sp-3) var(--paper);
+  box-shadow: inset 0 0 0 var(--sp-4) var(--paper);
 }
 
 /* What the move does, behind the board's brass rule. */
 .consequence {
-  margin: var(--sp-18) 0 0;
-  padding-left: var(--sp-14);
+  margin: var(--sp-16) 0 0;
+  padding-left: var(--sp-16);
   border-left: var(--rule-strong) solid var(--brass);
   font-size: var(--fs-15);
   line-height: var(--lh-160);
 }
 
 .blackoutReason {
-  margin-top: var(--sp-14);
+  margin-top: var(--sp-16);
 }
 
 .actions {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--sp-10);
+  gap: var(--sp-8);
   margin-top: var(--sp-20);
 }
 
@@ -653,7 +653,7 @@
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  gap: var(--sp-14);
+  gap: var(--sp-16);
   padding: var(--sp-16) var(--sp-20);
   border-bottom: var(--hairline) solid var(--text);
 }
@@ -680,7 +680,7 @@
 }
 
 .drawerBody {
-  padding: var(--sp-18) var(--sp-20);
+  padding: var(--sp-16) var(--sp-20);
 }
 
 .rows {
@@ -691,7 +691,7 @@
   display: flex;
   justify-content: space-between;
   gap: var(--sp-16);
-  padding: var(--sp-10) 0;
+  padding: var(--sp-8) 0;
   border-bottom: var(--hairline) solid var(--paper-line);
   font-size: var(--fs-15);
 }
@@ -710,9 +710,9 @@
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: var(--sp-10);
-  margin-top: var(--sp-18);
-  padding-left: var(--sp-14);
+  gap: var(--sp-8);
+  margin-top: var(--sp-16);
+  padding-left: var(--sp-16);
   border-left: var(--rule-strong) solid var(--error-on-paper);
 }
 
@@ -725,8 +725,8 @@
 .drawerActions {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--sp-10);
-  margin-top: var(--sp-18);
+  gap: var(--sp-8);
+  margin-top: var(--sp-16);
 }
 
 .icon {
@@ -760,7 +760,7 @@
 
   .trayRail .trayHead {
     flex-direction: row;
-    padding: var(--sp-11) var(--sp-14);
+    padding: var(--sp-12) var(--sp-16);
     writing-mode: horizontal-tb;
   }
 }
@@ -775,7 +775,7 @@
 }
 
 .route {
-  padding: var(--sp-14) 0;
+  padding: var(--sp-16) 0;
   border-bottom: var(--hairline) solid var(--paper-line);
 }
 
@@ -790,8 +790,8 @@
 
 .swatch {
   flex-shrink: 0;
-  width: var(--sp-10);
-  height: var(--sp-10);
+  width: var(--sp-8);
+  height: var(--sp-8);
 }
 
 .stops {
@@ -828,7 +828,7 @@
 }
 
 .dayMap {
-  margin-top: var(--sp-3);
+  margin-top: var(--sp-4);
   padding: 0;
   border: 0;
   background: none;

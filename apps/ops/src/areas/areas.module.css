@@ -58,17 +58,17 @@
 /* The pincode is a control, whose own padding makes the row's height (.choose), so the cell has none above or below. */
 .pincode {
   width: var(--ops-figure);
-  padding: 0 var(--sp-6) 0 0;
+  padding: 0 var(--sp-8) 0 0;
   font-variant-numeric: tabular-nums;
   text-align: left;
 }
 
 .table thead .pincode {
-  padding-block: var(--sp-7);
+  padding-block: var(--sp-8);
 }
 
 .area {
-  padding-inline: var(--sp-6);
+  padding-inline: var(--sp-8);
   text-align: left;
 }
 
@@ -138,7 +138,7 @@
  */
 /* 7 px above and below, so the row it stands in is the table's 34 px (packages/ui/table.module.css). */
 .choose {
-  padding: var(--sp-7) 0;
+  padding: var(--sp-8) 0;
   border: 0;
   background: transparent;
   font: inherit;
@@ -165,11 +165,11 @@
 /* ---- Marking a pincode live --------------------------------------------- */
 
 .launch {
-  padding: var(--sp-22);
+  padding: var(--sp-24);
 }
 
 .launchLabel {
-  margin: 0 0 var(--sp-14);
+  margin: 0 0 var(--sp-16);
   font-size: var(--fs-14);
   color: var(--text-muted);
 }
@@ -182,8 +182,8 @@
 }
 
 .figures {
-  margin: var(--sp-14) 0 0;
-  padding-top: var(--sp-14);
+  margin: var(--sp-16) 0 0;
+  padding-top: var(--sp-16);
   border-top: var(--hairline) solid var(--paper-line);
 }
 
@@ -191,7 +191,7 @@
   display: flex;
   justify-content: space-between;
   gap: var(--sp-16);
-  padding: var(--sp-6) 0;
+  padding: var(--sp-8) 0;
   font-size: var(--fs-15);
 }
 
@@ -207,7 +207,7 @@
 /* What each of them gets, as the queue will send it. */
 .message {
   margin: var(--sp-16) 0 0;
-  padding: var(--sp-12) var(--sp-14);
+  padding: var(--sp-12) var(--sp-16);
   background: var(--wa-dark);
   font-size: var(--fs-14);
   line-height: var(--lh-150);
@@ -216,7 +216,7 @@
 
 /* Where the message's name for the area comes from, and the way to a better one. */
 .named {
-  margin: var(--sp-10) 0 0;
+  margin: var(--sp-8) 0 0;
   font-size: var(--fs-14);
   color: var(--text-muted);
 }
@@ -240,8 +240,8 @@
   display: block;
   width: var(--ops-date);
   height: var(--tap);
-  margin-top: var(--sp-6);
-  padding: 0 var(--sp-10);
+  margin-top: var(--sp-8);
+  padding: 0 var(--sp-8);
   border: var(--hairline) solid var(--paper-control);
   border-radius: 0;
   background: var(--white);
@@ -252,14 +252,14 @@
 }
 
 .fieldHint {
-  margin: var(--sp-6) 0 0;
+  margin: var(--sp-8) 0 0;
   font-size: var(--fs-13);
   color: var(--text-muted);
 }
 
 .actions {
   display: flex;
-  gap: var(--sp-10);
+  gap: var(--sp-8);
   margin-top: var(--sp-16);
 }
 
@@ -291,7 +291,7 @@
 
 /* The launch panel where Served opens it, inside the table's own panel. */
 .inPanel {
-  margin: var(--sp-14) var(--sp-20) 0;
+  margin: var(--sp-16) var(--sp-20) 0;
 }
 
 /* ---- Adding a pincode the service area does not hold --------------------- */
@@ -305,8 +305,8 @@
   width: 100%;
   max-width: var(--ops-area);
   height: var(--tap);
-  margin-top: var(--sp-6);
-  padding: 0 var(--sp-10);
+  margin-top: var(--sp-8);
+  padding: 0 var(--sp-8);
   border: var(--hairline) solid var(--paper-control);
   border-radius: 0;
   background: var(--white);

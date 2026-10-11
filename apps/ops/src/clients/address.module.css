@@ -11,7 +11,7 @@
   gap: var(--sp-12);
   max-width: var(--ops-panel);
   border: var(--hairline) solid var(--paper-line);
-  padding: var(--sp-22);
+  padding: var(--sp-24);
 }
 
 .title {
@@ -42,12 +42,12 @@
 .search {
   display: flex;
   flex-direction: column;
-  gap: var(--sp-6);
+  gap: var(--sp-8);
 }
 
 .search .input {
   height: var(--field-h);
-  padding: 0 var(--sp-14);
+  padding: 0 var(--sp-16);
   border: var(--hairline) solid var(--paper-control);
   background: var(--white);
   font: inherit;
@@ -72,8 +72,8 @@
 .suggestionActive {
   display: flex;
   flex-direction: column;
-  gap: var(--sp-3);
-  padding: var(--sp-8) var(--sp-14);
+  gap: var(--sp-4);
+  padding: var(--sp-8) var(--sp-16);
   font-size: var(--fs-15);
   cursor: pointer;
 }
@@ -98,5 +98,5 @@
 
 .actions {
   display: flex;
-  gap: var(--sp-10);
+  gap: var(--sp-8);
 }

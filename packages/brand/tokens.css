@@ -5,7 +5,7 @@
  * px or vw value anywhere else, and on a token that is not defined here.
  *
  * Fluid values are the design's own clamp() expressions, named for what they
- * size. The scales are named for their value: a space (--sp-14 is 14px), a
+ * size. The scales are named for their value: a space (--sp-16 is 16px), a
  * type size (--fs-15), a leading (--lh-155 is 1.55). Each value is written
  * once in its scale; a name for what a value is for, such as tokens-apps.css's
  * --fs-app-title, points at the scale's token rather than repeating the value
@@ -142,29 +142,15 @@
   --fs-upload-title: clamp(32px, 4.6vw, 60px);
   --fs-error-title: clamp(28px, 3.6vw, 44px);
 
-  /* ---- Fixed spaces ------------------------------------------------------ */
+  /* ---- Fixed spaces: a 4-point scale, and a 2 px step for what sits against a line ---------------- */
   --sp-2: 2px;
-  --sp-3: 3px;
   --sp-4: 4px;
-  --sp-5: 5px;
-  --sp-6: 6px;
-  --sp-7: 7px;
   --sp-8: 8px;
-  --sp-9: 9px;
-  --sp-10: 10px;
-  --sp-11: 11px;
   --sp-12: 12px;
-  --sp-13: 13px;
-  --sp-14: 14px;
-  --sp-15: 15px;
   --sp-16: 16px;
-  --sp-18: 18px;
   --sp-20: 20px;
-  --sp-22: 22px;
   --sp-24: 24px;
-  --sp-26: 26px;
   --sp-28: 28px;
-  --sp-30: 30px;
   --sp-32: 32px;
   --sp-36: 36px;
   --sp-48: 48px;

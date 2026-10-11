@@ -13,14 +13,14 @@
   display: flex;
   flex-shrink: 0;
   align-items: center;
-  gap: var(--sp-14);
+  gap: var(--sp-16);
   height: var(--btn-lg);
   padding: 0 var(--sp-20);
   border-bottom: var(--hairline) solid var(--ink-rule);
 }
 
 .back {
-  margin-left: calc(-1 * var(--sp-11));
+  margin-left: calc(-1 * var(--sp-12));
   color: var(--ink-soft);
 }
 
@@ -41,8 +41,8 @@
 .pickers {
   display: flex;
   flex-shrink: 0;
-  gap: var(--sp-10);
-  padding: var(--sp-18) var(--sp-20);
+  gap: var(--sp-8);
+  padding: var(--sp-16) var(--sp-20);
 }
 
 /* The chosen date is drawn; the select over it, unseen, is what a tap or the keyboard opens. */
@@ -53,7 +53,7 @@
   flex-direction: column;
   justify-content: center;
   min-height: var(--btn-md);
-  padding: 0 var(--sp-14);
+  padding: 0 var(--sp-16);
   border: var(--hairline) solid var(--ink-line-strong);
 }
 
@@ -89,7 +89,7 @@
   position: relative;
   flex: 1;
   min-height: 0;
-  margin: 0 var(--sp-20) var(--sp-18);
+  margin: 0 var(--sp-20) var(--sp-16);
   overflow: hidden;
   background: var(--ink-frame);
   cursor: ew-resize;
@@ -123,18 +123,18 @@
 
 .date {
   position: absolute;
-  top: var(--sp-14);
+  top: var(--sp-16);
   font-size: var(--fs-14);
   font-variant-numeric: tabular-nums;
 }
 
 .later .date {
-  right: var(--sp-14);
+  right: var(--sp-16);
   color: var(--ink-soft);
 }
 
 .earlier .date {
-  left: var(--sp-14);
+  left: var(--sp-16);
   color: var(--ink-muted);
 }
 
@@ -166,8 +166,8 @@
 .angles {
   display: flex;
   flex-shrink: 0;
-  gap: var(--sp-10);
-  padding: 0 var(--sp-20) var(--sp-22);
+  gap: var(--sp-8);
+  padding: 0 var(--sp-20) var(--sp-24);
 }
 
 .angle {

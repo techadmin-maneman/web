@@ -13,7 +13,7 @@
   gap: var(--sp-12);
   align-items: center;
   margin: 0;
-  padding: var(--sp-14) var(--sp-20);
+  padding: var(--sp-16) var(--sp-20);
   background: var(--paper);
   font-size: var(--fs-17);
   font-weight: var(--weight-medium);
@@ -31,7 +31,7 @@
 /* A failure, as the evidence chain draws one: the error's rule, words in paper. */
 .stopped {
   flex-shrink: 0;
-  padding: var(--sp-14) var(--sp-20) var(--sp-16);
+  padding: var(--sp-16) var(--sp-20) var(--sp-16);
   border-top: var(--rule-strong) solid var(--error-on-ink);
   border-bottom: var(--hairline) solid var(--ink-rule);
   background: var(--ink-deep);
