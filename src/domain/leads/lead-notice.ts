@@ -25,6 +25,8 @@ export function leadNotice(lead: NoticeLead): string {
     return `New booking: ${lead.city ?? "no city"}${window}${date}. ${reference}`;
   }
   if (lead.source === "waitlist") return `New waitlist sign-up: ${lead.city ?? "no city"}. ${reference}`;
+  if (lead.source === "whatsapp")
+    return `New WhatsApp lead, saved by Care from a chat: answered there, not to be chased. ${reference}`;
   // The gate promises no marketing, to a client as much as to anyone.
   return `New try-on lead: WhatsApp copy only, not to be chased. ${reference}`;
 }

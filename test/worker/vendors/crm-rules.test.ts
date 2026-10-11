@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { CrmLead, LeadSource } from "../../../src/providers/crm/index.ts";
 import {
+  ANSWER_IN_CHAT,
   DELIVERY_ONLY,
   assertStatusAllowed,
   shouldAssign,
@@ -54,13 +55,24 @@ describe("CRM status rules", () => {
   });
 });
 
-describe("a person who is not contactable (a try-on only)", () => {
+describe("a person who is not contactable (a try-on only, or someone who only wrote to us)", () => {
   it.each(SOURCES)("is never given a chase status, whatever the lead source (%s)", (source) => {
     const lead = crmLead({ source, contactable: false });
     expect(statusForNewRecord(lead)).toBe(DELIVERY_ONLY);
     expect(statusForUpdate(lead)).toBeNull();
     expect(shouldAssign(lead)).toBe(false);
     expect(shouldRunWorkflows(lead)).toBe(false);
+  });
+
+  it("saved by Care from a chat, is to be answered there: never assigned, never chased", () => {
+    const lead = crmLead({ source: "whatsapp", contactable: false, proposedVisitDate: null });
+    expect(statusForNewRecord(lead)).toBe(ANSWER_IN_CHAT);
+    expect(statusForUpdate(lead)).toBeNull();
+    expect(shouldAssign(lead)).toBe(false);
+    expect(shouldRunWorkflows(lead)).toBe(false);
+    expect(() => {
+      assertStatusAllowed(lead, ANSWER_IN_CHAT);
+    }).not.toThrow();
   });
 
   it("cannot be given New or Waitlist even by a caller that tries", () => {

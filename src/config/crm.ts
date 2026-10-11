@@ -17,9 +17,11 @@ import type { BookingWindow } from "./scheduling.ts";
 export const CRM_ORG_HAS_REFERRAL_FIELDS = true as boolean;
 
 /**
- * Whether the org has what Customer Care's work writes, the last-contact fields (docs/decisions/0137-last-contact-in-the-crm.md): Last_Contact_Date, and
- * Last_Contact_Reason with LAST_CONTACT_REASONS' values. Off until scripts/ops/setup-crm.ts has made them and
- * scripts/ops/check-zoho-setup.ts proves them; nothing of the last contact is written before.
+ * Whether the org has what Customer Care's work writes: the last-contact fields (docs/decisions/0137-last-contact-in-the-crm.md),
+ * Last_Contact_Date and Last_Contact_Reason with LAST_CONTACT_REASONS' values; and for a stranger saved from a chat
+ * (docs/decisions/0138-strangers-in-the-inbox.md), the Lead_Source WhatsApp and the Lead_Status "WhatsApp — answer
+ * in chat". Off until scripts/ops/setup-crm.ts has made them and scripts/ops/check-zoho-setup.ts proves them: until
+ * then nothing of the last contact is written, and a WhatsApp lead waits, pending, unsent.
  */
 export const CRM_ORG_HAS_CARE_FIELDS = false as boolean;
 

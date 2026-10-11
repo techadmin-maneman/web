@@ -7,9 +7,12 @@ import type { CrmLead, LeadStatus } from "./index.ts";
 
 export const DELIVERY_ONLY: LeadStatus = "Try-on — delivery only";
 
+/** Someone who only wrote to us, whom Care saved from the chat: answered there, never chased (ADR 0138). */
+export const ANSWER_IN_CHAT: LeadStatus = "WhatsApp — answer in chat";
+
 /** The status for a person's first CRM record. */
 export function statusForNewRecord(lead: CrmLead): LeadStatus {
-  if (!lead.contactable) return DELIVERY_ONLY;
+  if (!lead.contactable) return lead.source === "whatsapp" ? ANSWER_IN_CHAT : DELIVERY_ONLY;
   return lead.source === "waitlist" ? "Waitlist" : "New";
 }
 
@@ -35,7 +38,7 @@ export function shouldRunWorkflows(lead: CrmLead): boolean {
 
 /** The last line of defence: every CRM implementation calls this before writing a status. */
 export function assertStatusAllowed(lead: CrmLead, status: LeadStatus | null): void {
-  if (!lead.contactable && status !== null && status !== DELIVERY_ONLY) {
+  if (!lead.contactable && status !== null && status !== DELIVERY_ONLY && status !== ANSWER_IN_CHAT) {
     throw new Error(`refusing to give lead ${lead.leadId} the chase status "${status}": the person is not contactable`);
   }
 }

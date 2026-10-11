@@ -14,7 +14,7 @@ import type { Dependencies } from "../dependencies.ts";
 import { scrubString, type Logger } from "../log.ts";
 import type { Plan } from "../policy/one-visit.ts";
 import type { CrmLead, LeadSource } from "../providers/crm/index.ts";
-import { LAST_CONTACT_REASONS } from "../config/crm.ts";
+import { CRM_ORG_HAS_CARE_FIELDS, LAST_CONTACT_REASONS } from "../config/crm.ts";
 import { indiaDate } from "../lib/india-time.ts";
 import { resolveAlertStatement } from "../domain/ops/alerts.ts";
 import { leadNotice } from "../domain/leads/lead-notice.ts";
@@ -195,6 +195,8 @@ export async function syncLead(
     return { retrySoon: false };
   }
   if (row.sync_state === "synced") return { retrySoon: false }; // a duplicate message
+  // Zoho refuses the WhatsApp source and status until the org has them: the lead waits, pending, for the switch.
+  if (row.source === "whatsapp" && !CRM_ORG_HAS_CARE_FIELDS) return { retrySoon: false };
   if (row.erased_at !== null) {
     // Sending it would put the person back in the CRM. Given up at once, so the sweeper leaves it alone.
     await db

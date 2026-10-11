@@ -72,6 +72,15 @@ describe("sweeper: leads", () => {
     ]);
   });
 
+  // A WhatsApp lead waits, pending, for the org's source and status (ADR 0138): resending it each run would do nothing.
+  it("leaves a pending WhatsApp lead alone until the org has its source and status", async () => {
+    await insertLead("whatsapp-old", "pending", 0, minutesAgo(30));
+    await env.DB.prepare("UPDATE leads SET source = 'whatsapp' WHERE id = 'whatsapp-old'").run();
+    const { bindings, queues } = sweepEnv();
+    expect((await sweep(bindings, fakeDependencies(), createLogger(), OPTIONS)).leadsRequeued).toBe(0);
+    expect(queues.crm.sent).toEqual([]);
+  });
+
   it("sends nothing when there is nothing to retry", async () => {
     const { bindings, queues } = sweepEnv();
     const summary = await sweep(bindings, fakeDependencies(), createLogger(), OPTIONS);

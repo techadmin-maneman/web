@@ -1,7 +1,7 @@
 // A chat from a number we don't know (docs/decisions/0138-strangers-in-the-inbox.md): Customer Care link it to the
 // client it turns out to be, writing from another phone, or save the person as someone new by the name they gave.
-// Either way the chat is theirs from then on, with a Care person. Each is audited. Someone saved this way is no CRM
-// lead: whether we may follow up someone who only wrote to us waits on counsel.
+// Either way the chat is theirs from then on, with a Care person. Each is audited. Someone saved is a WhatsApp lead,
+// which the CRM hears of as any lead, marked to be answered in the chat and never chased: they only wrote to us.
 
 import { personByMobile } from "../clients/people.ts";
 import { auditStatement, type AuditActor } from "../ops/audit.ts";
@@ -61,18 +61,19 @@ export async function linkChat(
 }
 
 /**
- * Saves a stranger as someone new: a person by the chat's number and the name they gave, and the chat theirs. A number
- * one of our people already has is linked instead, never saved twice.
+ * Saves a stranger as someone new: a person by the chat's number and the name they gave, their WhatsApp lead, and the
+ * chat theirs. A number one of our people already has is linked instead, never saved twice.
  */
 export async function saveStranger(
   db: D1Database,
   change: Change & { readonly name: string; readonly testRecord: boolean },
-): Promise<{ readonly personId: string } | "not_found" | "known" | "has_number"> {
+): Promise<{ readonly personId: string; readonly leadId: string } | "not_found" | "known" | "has_number"> {
   const chat = await strangerChat(db, change.conversationId);
   if (typeof chat === "string") return chat;
   const holder = await db.prepare("SELECT id FROM people WHERE mobile_e164 = ?1").bind(chat.mobile).first();
   if (holder !== null) return "has_number";
   const personId = crypto.randomUUID();
+  const leadId = crypto.randomUUID();
   const at = change.now.toISOString();
   await db.batch([
     personByMobile(db, {
@@ -84,10 +85,18 @@ export async function saveStranger(
       at,
     }),
     db
+      .prepare("INSERT INTO leads (id, person_id, created_at, source, request_id) VALUES (?1, ?2, ?3, 'whatsapp', ?4)")
+      .bind(leadId, personId, at, change.requestId),
+    db
+      .prepare(
+        "INSERT INTO events (id, created_at, name, subject_id, payload_json) VALUES (?1, ?2, 'lead_created', ?3, ?4)",
+      )
+      .bind(crypto.randomUUID(), at, leadId, JSON.stringify({ source: "whatsapp", city: null })),
+    db
       .prepare("UPDATE conversations SET person_id = ?2, updated_at = ?3 WHERE id = ?1 AND person_id IS NULL")
       .bind(change.conversationId, personId, at),
     audited(db, change, "chat.save", personId),
   ]);
   await giveCarePerson(db, personId, change.now);
-  return { personId };
+  return { personId, leadId };
 }

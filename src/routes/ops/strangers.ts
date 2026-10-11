@@ -1,6 +1,6 @@
 // A chat from a number we don't know, behind Access (Customer Care Act; docs/decisions/0138-strangers-in-the-inbox.md):
 //   POST /api/conversations/:id/link   the chat linked to the client it turns out to be
-//   POST /api/conversations/:id/save   the person saved as someone new, by the name they gave
+//   POST /api/conversations/:id/save   the person saved as someone new, by the name they gave, and their WhatsApp lead
 
 import { createRoute, z } from "@hono/zod-openapi";
 import type { Context } from "hono";
@@ -10,6 +10,7 @@ import { json } from "../../http/openapi.ts";
 import { actorOf } from "../../http/audit.ts";
 import { linkChat, saveStranger } from "../../domain/care/strangers.ts";
 import { testRecordAtCreation } from "../../policy/staging-test-records.ts";
+import { enqueue } from "../../domain/platform/enqueue.ts";
 
 const Id = z.object({ id: z.uuid() });
 const linked = errorResponse("invalid_request: fields names conversation when the chat is a client's already");
@@ -33,7 +34,7 @@ const linkRoute = createRoute({
 const saveRoute = createRoute({
   method: "post",
   path: "/api/conversations/{id}/save",
-  summary: "Save the person behind a chat from a number we don't know as someone new, by the name they gave",
+  summary: "Save the person behind a chat from a number we don't know as someone new, and their WhatsApp lead",
   request: {
     params: Id,
     body: {
@@ -78,6 +79,9 @@ export function registerOpsStrangers(app: App): void {
     if (saved === "not_found") return refuse(c, "not_found");
     if (saved === "known") return refuse(c, "invalid_request", ["conversation"]);
     if (saved === "has_number") return refuse(c, "number_in_use");
+    // A lead lost on the way is the sweeper's to send, as any lead is.
+    const toCrm = { lead_id: saved.leadId, request_id: c.var.requestId };
+    await enqueue(c.env.CRM_QUEUE, toCrm, { log: c.var.log, ifLost: "sweeper" });
     return c.json({ person_id: saved.personId }, 200);
   });
 }

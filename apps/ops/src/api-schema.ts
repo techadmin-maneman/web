@@ -2826,7 +2826,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Save the person behind a chat from a number we don't know as someone new, by the name they gave */
+        /** Save the person behind a chat from a number we don't know as someone new, and their WhatsApp lead */
         post: {
             parameters: {
                 query?: never;

@@ -5,7 +5,7 @@
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { App } from "../../../src/http/context.ts";
-import { captureLogs, markDatabase, NOW, request } from "../helpers.ts";
+import { captureLogs, fakeQueue, markDatabase, NOW, request } from "../helpers.ts";
 import { insertPerson } from "../tryon-fixtures.ts";
 import { listStaff, opsAs, person } from "../ops/staff-fixtures.ts";
 
@@ -13,12 +13,19 @@ const CHAT = "9d2e0a5c-6f7b-4c8d-8e9f-4a5b6c7d8e9f";
 const ARJUN = "11111111-1111-4111-8111-111111111111";
 const CARE = "care@maneman.test";
 
+let crmQueue: ReturnType<typeof fakeQueue>;
+
 const post = (app: App, path: string, body: unknown) =>
-  request(app, path, {
-    method: "POST",
-    headers: { Origin: "https://maneman.test", "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  });
+  request(
+    app,
+    path,
+    {
+      method: "POST",
+      headers: { Origin: "https://maneman.test", "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    },
+    { CRM_QUEUE: crmQueue },
+  );
 
 const care = () => opsAs(person(CARE));
 const chatOwner = async () =>
@@ -27,6 +34,7 @@ const chatOwner = async () =>
 
 beforeEach(async () => {
   captureLogs();
+  crmQueue = fakeQueue();
   await markDatabase();
   await listStaff(CARE, ["customer_care:act:national"]);
   await insertPerson(ARJUN, "+919810000001", "Arjun Mehta");
@@ -53,14 +61,16 @@ describe("a stranger's chat", () => {
     expect(results).toEqual([{ action: "chat.link", subject_id: CHAT, detail: JSON.stringify({ person: ARJUN }) }]);
   });
 
-  it("saves the person as someone new, by the name they gave, with no lead", async () => {
+  it("saves the person as someone new, by the name they gave, with a WhatsApp lead for the CRM", async () => {
     const answer = await post(care(), `/api/conversations/${CHAT}/save`, { name: " Meera Iyer " });
     const { person_id: personId } = await answer.json<{ person_id: string }>();
     expect(await chatOwner()).toBe(personId);
     expect(
       await env.DB.prepare("SELECT name, mobile_e164, contactable FROM people WHERE id = ?1").bind(personId).first(),
     ).toEqual({ name: "Meera Iyer", mobile_e164: "+919811112222", contactable: 0 });
-    expect(await env.DB.prepare("SELECT COUNT(*) AS n FROM leads").first("n")).toBe(0);
+    const lead = await env.DB.prepare("SELECT id, person_id, source FROM leads").first<{ id: string }>();
+    expect(lead).toMatchObject({ person_id: personId, source: "whatsapp" });
+    expect(crmQueue.sent).toMatchObject([{ lead_id: lead?.id }]);
   });
 
   it("is a client's once, and never saves a number one of our people has", async () => {

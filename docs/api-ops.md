@@ -1957,7 +1957,7 @@ Request body:
 
 ### POST /api/conversations/{id}/save
 
-Save the person behind a chat from a number we don't know as someone new, by the name they gave
+Save the person behind a chat from a number we don't know as someone new, and their WhatsApp lead
 
 Request body:
 
