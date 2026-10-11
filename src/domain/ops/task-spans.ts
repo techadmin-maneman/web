@@ -1,19 +1,24 @@
-// Each task's span (docs/decisions/0147-task-spans.md): each hour the cron reads the Tasks board, opens a span for each
+// Each task's span (docs/decisions/0147-task-spans.md): each night the cron reads the Tasks board, opens a span for each
 // task it has not seen, from the task's own start, and closes the span of each it no longer finds. The reporting copy
 // counts Care cases opened and closed from them.
 
 import { clientCityOf } from "../clients/places.ts";
 import type { Task } from "./tasks.ts";
 
-/** New spans a run, well inside its statements; any more open the hour after, each from its own start. */
-export const SPANS_PER_RUN = 200;
+/** New spans a night, in one statement; any more open the night after, each from its own start. */
+export const SPANS_PER_RUN = 500;
 
 /** A grievance is counted from its own table, which holds every one since the first. */
 const COUNTED_ELSEWHERE: ReadonlySet<string> = new Set(["grievance"]);
 
+const field = (name: string) => `json_extract(t.value, '$.${name}')`;
+
+/** Each new task, as a JSON list, with the client's city; none for a record marked as a test. */
 const OPEN = `INSERT INTO task_spans (id, task_group, subject_id, episode, city, opened_at)
-  SELECT ?1, ?2, ?3, ?4, (SELECT ${clientCityOf("client")} FROM people client WHERE client.id = ?5), ?6
-  WHERE NOT EXISTS (SELECT 1 FROM people tester WHERE tester.id = ?5 AND tester.test_record = 1)
+  SELECT ${field("id")}, ${field("group")}, ${field("subject")}, ${field("episode")},
+    (SELECT ${clientCityOf("client")} FROM people client WHERE client.id = ${field("person")}), ${field("since")}
+  FROM json_each(?1) t
+  WHERE NOT EXISTS (SELECT 1 FROM people tester WHERE tester.id = ${field("person")} AND tester.test_record = 1)
   ON CONFLICT DO NOTHING`;
 
 interface OpenSpan {
@@ -45,9 +50,18 @@ export async function recordTaskSpans(
   const gone = board.truncated
     ? []
     : open.filter((span) => !onBoard.has(identity(span.task_group, span.subject_id, span.episode)));
-  const statements = fresh.map((task) =>
-    db.prepare(OPEN).bind(crypto.randomUUID(), task.group, task.id, task.episode, task.person?.id ?? null, task.since),
-  );
+  const statements: D1PreparedStatement[] = [];
+  if (fresh.length > 0) {
+    const spans = fresh.map((task) => ({
+      id: crypto.randomUUID(),
+      group: task.group,
+      subject: task.id,
+      episode: task.episode,
+      person: task.person?.id ?? null,
+      since: task.since,
+    }));
+    statements.push(db.prepare(OPEN).bind(JSON.stringify(spans)));
+  }
   if (gone.length > 0) {
     statements.push(
       db
