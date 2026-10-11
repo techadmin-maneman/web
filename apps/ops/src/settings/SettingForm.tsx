@@ -17,7 +17,7 @@ export function sentOf<B, T>(answer: Answer<B>, handOn: (body: B) => T): Sent<T>
   return answer.ok ? { ok: true, ...handOn(answer.body) } : { ok: false, code: answer.code, fields: answer.fields };
 }
 
-export interface Steps {
+interface Steps {
   readonly step: "editing" | "checking" | "saving";
   readonly failed: Failure | null;
   /** Back to the boxes, as a change to any of them goes. */
