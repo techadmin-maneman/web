@@ -2,6 +2,7 @@
 // WhatsApp, and the object URLs the page shows the photograph from.
 
 import { useEffect } from "preact/hooks";
+import { useLatest } from "../useLatest.ts";
 import { jobStatus } from "../../lib/api.ts";
 import { jobProblem, type Failure } from "../../lib/tryon-errors.ts";
 
@@ -12,14 +13,14 @@ const WATCH_MS = 5 * 60_000;
 
 /**
  * While `watching`, asks after the render named by `jobId` until it is ready, and reports how it failed, if it does.
- * Only `watching` starts and stops it: the island draws a new `onProblem` each time, and the one it started with
- * does the same.
+ * Only `watching` starts and stops it: the island draws a new `onProblem` each time, and the newest is the one called.
  */
 export function useRenderWatch(
   watching: boolean,
   jobId: { readonly current: string | null },
   onProblem: (failure: Failure) => void,
 ): void {
+  const problem = useLatest(onProblem);
   useEffect(() => {
     if (!watching) return;
     const started = Date.now();
@@ -33,14 +34,14 @@ export function useRenderWatch(
       void jobStatus(id).then((answer) => {
         if (!answer.ok || jobId.current !== id) return;
         if (answer.body.state === "ready") clearInterval(timer);
-        const problem = jobProblem(answer.body);
-        if (problem !== null) onProblem(problem);
+        const found = jobProblem(answer.body);
+        if (found !== null) problem.current(found);
       });
     }, POLL_MS);
     return () => {
       clearInterval(timer);
     };
-  }, [watching]);
+  }, [watching, jobId, problem]);
 }
 
 /** Releases an object URL once it is replaced or the page is done with it. */
