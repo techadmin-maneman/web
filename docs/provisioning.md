@@ -229,22 +229,26 @@ Zoho names a new field from its label, so the script reads each one back: the sy
 
 1. **Fields.** Setup → Customization → Modules and Fields → Leads → Standard layout. Add these fields; their API names must match exactly:
 
-   | Field                                                    | Type        | Values                                                             |
-   | -------------------------------------------------------- | ----------- | ------------------------------------------------------------------ |
-   | First Choice Window (`First_Choice_Window`)              | Pick list   | Weekday morning, Weekday evening, Weekend morning, Weekend evening |
-   | Loss Extent (`Loss_Extent`)                              | Pick list   | Crown thinning, Receding front, Advanced                           |
-   | Proposed Visit Date (`Proposed_Visit_Date`)              | Date        |                                                                    |
-   | Contact Consent (`Contact_Consent`)                      | Checkbox    |                                                                    |
-   | Try On (`Try_On`)                                        | Checkbox    |                                                                    |
-   | D1 Lead ID (`D1_Lead_ID`)                                | Single line |                                                                    |
-   | D1 Person ID (`D1_Person_ID`)                            | Single line | tick "Do not allow duplicate values"                               |
-   | UTM Source (`UTM_Source`), UTM Campaign (`UTM_Campaign`) | Single line |                                                                    |
-   | Referral Code (`Referral_Code`)                          | Single line |                                                                    |
-   | Booked Window (`Booked_Window`)                          | Pick list   | Morning, 9 am to 12 pm; Afternoon, 12 to 4 pm; Evening, 4 to 8 pm  |
+   | Field                                                    | Type        | Values                                                                                          |
+   | -------------------------------------------------------- | ----------- | ----------------------------------------------------------------------------------------------- |
+   | First Choice Window (`First_Choice_Window`)              | Pick list   | Weekday morning, Weekday evening, Weekend morning, Weekend evening                              |
+   | Loss Extent (`Loss_Extent`)                              | Pick list   | Crown thinning, Receding front, Advanced                                                        |
+   | Proposed Visit Date (`Proposed_Visit_Date`)              | Date        |                                                                                                 |
+   | Contact Consent (`Contact_Consent`)                      | Checkbox    |                                                                                                 |
+   | Try On (`Try_On`)                                        | Checkbox    |                                                                                                 |
+   | D1 Lead ID (`D1_Lead_ID`)                                | Single line |                                                                                                 |
+   | D1 Person ID (`D1_Person_ID`)                            | Single line | tick "Do not allow duplicate values"                                                            |
+   | UTM Source (`UTM_Source`), UTM Campaign (`UTM_Campaign`) | Single line |                                                                                                 |
+   | Referral Code (`Referral_Code`)                          | Single line |                                                                                                 |
+   | Booked Window (`Booked_Window`)                          | Pick list   | Morning, 9 am to 12 pm; Afternoon, 12 to 4 pm; Evening, 4 to 8 pm                               |
+   | Last Contact Date (`Last_Contact_Date`)                  | Date        |                                                                                                 |
+   | Last Contact Reason (`Last_Contact_Reason`)              | Pick list   | Booking, Move or cancel, Fit problem, Aftercare, Billing, Signing in, Try-on, Their data, Other |
 
 2. **Pick-list values.** Lead Status: add `New`, `Waitlist` and `Try-on — delivery only` (with the em dash). Lead Source: add `Booking form`, `Waitlist`, `Try-on` and `Referral`.
 
    The last two fields and `Referral` came with ADR 0074, for an invited friend and the window a booking asked for. Zoho refuses a lead carrying a pick-list value it does not have, so the sync writes none of the three until `CRM_ORG_HAS_REFERRAL_FIELDS` in `src/config/crm.ts` is turned on: run `scripts/ops/setup-crm.ts`, then `scripts/ops/check-zoho-setup.ts` to prove them, then turn it on in a release. Until then a record the CRM already has gets the invite and the window in its note.
+
+   The last-contact fields came with ADR 0137, for a client's last closed chat with Care. They wait the same way, on `CRM_ORG_HAS_CARE_FIELDS`: until it is on, nothing of the last contact is written.
 
 3. **Assignment rule.** Setup → Automation → Assignment Rules → Leads: create the rule that gives each new booking an owner. Its ID becomes `ZOHO_LAR_ID`; `scripts/ops/check-zoho-setup.ts` (step 6) lists it. An org may have none: leave `ZOHO_LAR_ID` unset and Zoho leaves each record with the API user.
 4. **Workflows.** Setup → Automation → Workflow Rules → Leads:

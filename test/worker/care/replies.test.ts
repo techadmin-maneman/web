@@ -5,7 +5,7 @@
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { MessagingProvider, SendResult } from "../../../src/providers/messaging/index.ts";
-import { appFor, captureLogs, fakeDependencies, markDatabase, NOW, request } from "../helpers.ts";
+import { appFor, captureLogs, fakeDependencies, fakeQueue, markDatabase, NOW, request } from "../helpers.ts";
 import { insertPerson } from "../tryon-fixtures.ts";
 
 const THREAD = "8c1d9f4b-5e6a-4b7c-9d8e-3f4a5b6c7d8e";
@@ -33,15 +33,23 @@ function provider(result: SendResult = { ok: true, providerMessageId: "wa-9" }, 
   return { messaging, sent };
 }
 
+let crmQueue: ReturnType<typeof fakeQueue>;
+
 const post = (messaging: MessagingProvider, path: string, body: unknown) =>
-  request(appFor("local", fakeDependencies({ messaging }), {}, "ops"), path, {
-    method: "POST",
-    headers: { Origin: "https://maneman.test", "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  });
+  request(
+    appFor("local", fakeDependencies({ messaging }), {}, "ops"),
+    path,
+    {
+      method: "POST",
+      headers: { Origin: "https://maneman.test", "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    },
+    { CRM_QUEUE: crmQueue },
+  );
 
 beforeEach(async () => {
   captureLogs();
+  crmQueue = fakeQueue();
   await markDatabase();
   await insertPerson("p1", "+919810000001", "Arjun Mehta");
   await env.DB.prepare(
@@ -112,6 +120,8 @@ describe("a note and closing", () => {
     expect(results).toEqual([
       { action: "chat.close", subject_id: THREAD, detail: JSON.stringify({ reason: "move_or_cancel" }) },
     ]);
+    // The client's CRM lead is told when they were last in touch, and what about (ADR 0137).
+    expect(crmQueue.sent).toMatchObject([{ update_person_id: "p1" }]);
   });
 
   it("knows no thread it does not have", async () => {

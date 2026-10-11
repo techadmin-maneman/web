@@ -16,6 +16,26 @@ import type { BookingWindow } from "./scheduling.ts";
  */
 export const CRM_ORG_HAS_REFERRAL_FIELDS = true as boolean;
 
+/**
+ * Whether the org has what Customer Care's work writes, the last-contact fields (docs/decisions/0137-last-contact-in-the-crm.md): Last_Contact_Date, and
+ * Last_Contact_Reason with LAST_CONTACT_REASONS' values. Off until scripts/ops/setup-crm.ts has made them and
+ * scripts/ops/check-zoho-setup.ts proves them; nothing of the last contact is written before.
+ */
+export const CRM_ORG_HAS_CARE_FIELDS = false as boolean;
+
+/** Last_Contact_Reason's values: what a closed chat was about, by the reason Care closed it with. */
+export const LAST_CONTACT_REASONS: Readonly<Record<string, string>> = {
+  booking: "Booking",
+  move_or_cancel: "Move or cancel",
+  fit_problem: "Fit problem",
+  aftercare: "Aftercare",
+  billing: "Billing",
+  sign_in: "Signing in",
+  try_on: "Try-on",
+  data_request: "Their data",
+  other: "Other",
+};
+
 /** Lead_Source's value for a lead who came through a friend's invite. */
 export const REFERRAL_LEAD_SOURCE = "Referral";
 

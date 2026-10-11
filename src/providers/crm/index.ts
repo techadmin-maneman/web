@@ -58,6 +58,8 @@ export interface CrmContact {
   readonly inviteCode: string | null;
   /** Ops have just attached that invite, which the record is told of in a note, as a new lead's invite is. */
   readonly inviteAttached: boolean;
+  /** Their last chat with Care, closed: India's date, and what it was about by LAST_CONTACT_REASONS; null for none. */
+  readonly lastContact: { readonly date: string; readonly reason: string | null } | null;
 }
 
 export interface CrmProvider {

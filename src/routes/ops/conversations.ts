@@ -12,6 +12,7 @@ import { json } from "../../http/openapi.ts";
 import type { Context } from "hono";
 import { actorOf, staffMemberOf } from "../../http/audit.ts";
 import { opsInputs } from "../../http/ops-inputs.ts";
+import { queueCrmContact } from "../../http/contact-sync.ts";
 import type { AppEnv } from "../../http/context.ts";
 import { conversationThread, INBOX_VIEWS, listConversations, type InboxContext } from "../../domain/care/inbox.ts";
 import { coverOn } from "../../domain/care/cover.ts";
@@ -192,7 +193,10 @@ function registerAnswers(app: App): void {
     const closed = await closeConversation(c.env.DB, { ...changeOf(c, id), reason: c.req.valid("json").reason });
     if (closed === "not_found") return refuse(c, "not_found");
     const thread = await conversationThread(c.env.DB, id, await inboxContext(c));
-    return thread === null ? refuse(c, "not_found") : c.json(thread, 200);
+    if (thread === null) return refuse(c, "not_found");
+    // The client's CRM lead gets when they were last in touch, and what about.
+    if (thread.conversation.person !== null) await queueCrmContact(c, thread.conversation.person.id);
+    return c.json(thread, 200);
   });
 }
 

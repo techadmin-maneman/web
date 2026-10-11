@@ -9,15 +9,20 @@ import { enqueue, type IfLost } from "../domain/platform/enqueue.ts";
 import { type CrmSyncMessage } from "../config/pipeline.ts";
 
 export async function queueContactSync(c: Context<AppEnv>, personId: string): Promise<void> {
+  await markCustomerChanged(c.env.DB, personId, c.var.deps.now());
+  await queueCrmContact(c, personId);
+}
+
+/** The CRM lead alone, as a chat closed asks (docs/decisions/0137-last-contact-in-the-crm.md). */
+export async function queueCrmContact(c: Context<AppEnv>, personId: string): Promise<void> {
   const { requestId, log, deps } = c.var;
-  await markCustomerChanged(c.env.DB, personId, deps.now());
 
   const alertKey = `contact_sync:${personId}`;
   const ifLost: IfLost = {
     alertOnce: deps.alertOnce,
     alert: {
       key: alertKey,
-      message: `Client ${personId}'s new number or address could not be sent on to the CRM. Update their CRM lead by hand.`,
+      message: `Client ${personId}'s new number, address or last chat could not be sent on to the CRM. Update their CRM lead by hand.`,
       link: `/clients/${personId}`,
     },
   };
