@@ -454,7 +454,7 @@ describe("the reminder of the next service", () => {
       { to: MOBILE, template: "next_visit_due_v1", params: ["Rohit", "service visit", "Mon 28 Sep"] },
     ]);
     expect(renderMessage("next_visit_due_v1", sent[0]?.params ?? [])).toBe(
-      "Hi Rohit, your next service visit is due on Mon 28 Sep. Book it in the Mane Man app.",
+      "Hi Rohit, time to book your next visit.\nYour service visit is due on Mon 28 Sep. Book it in the Mane Man app.",
     );
   });
 

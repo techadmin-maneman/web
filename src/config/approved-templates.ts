@@ -38,7 +38,7 @@ const STOP: ApprovedButton = { kind: "stop", label: "Stop these messages" };
 const DIFFERS: Partial<Record<TemplateName, { readonly text?: string; readonly buttons: readonly ApprovedButton[] }>> =
   {
     tryon_result_v1: {
-      text: "Hi {{1}}, here's your new look from Mane Man. It's a simulation: your real hair system is matched to your own hair. See it for real at a free consultation.",
+      text: "Hi {{1}}, your new look is ready.\nIt's a preview: your hair system is matched to your own hair. See it for real at a free consultation.",
       buttons: [{ kind: "link", label: "Book a consultation", param: 2 }],
     },
     launch_alert_v1: {

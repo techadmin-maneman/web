@@ -75,7 +75,7 @@ describe("the grant", () => {
     ]);
     const composed = await composeFriendFitted(env.DB, ATTRIBUTION, REFERRER);
     expect("skip" in composed ? composed : renderMessage(composed.template, composed.params)).toBe(
-      "Hi Rohit, Karan has been fitted. You each get 3 service visits free, to use by 21 Sep 2027. Thanks for sending them our way.",
+      "Hi Rohit, Karan has joined Mane Man: thank you for sending them our way.\nYou each get 3 service visits free, to use by 21 Sep 2027.",
     );
 
     expect(await settleReferrals(env.DB, NOW, REFERRAL_REWARD)).toMatchObject({ granted: 0 });

@@ -9,6 +9,7 @@ import {
   renderWithStopLink,
   STOP_LINKS,
   stopLinkPurpose,
+  TEMPLATES,
 } from "../../../src/config/message-templates.ts";
 import { MESSAGE_KINDS } from "../../../src/config/message-kinds.ts";
 
@@ -81,5 +82,29 @@ describe("the link that stops a message", () => {
     expect(renderWithStopLink("launch_alert_v1", params, "https://maneman.in/stop#t")).toBe(
       `${renderMessage("launch_alert_v1", params) ?? ""}\n\nStop these messages: https://maneman.in/stop#t`,
     );
+  });
+});
+
+/** Where a text's {{2}} is not the visit: a friend's name, an area, or a count of service visits. */
+const SECOND_IS_NOT_THE_VISIT: ReadonlySet<string> = new Set([
+  "waitlist_listed_v1",
+  "waitlist_listed_alert_v1",
+  "launch_alert_v1",
+  "friend_fitted_v2",
+  "friend_fitted_each_v1",
+  "friend_fitted_yours_v1",
+  "friend_fitted_thanks_v1",
+  "referral_rejected_referrer_v1",
+  "credits_expiring_v1",
+]);
+
+// A phone shows a message's first line on its lock screen, to anyone near it.
+describe("a message's first line", () => {
+  it("names no hair system, no fitting and no visit", () => {
+    for (const [name, text] of Object.entries(TEMPLATES)) {
+      const first = text.split("\n")[0] ?? "";
+      expect(first, name).not.toMatch(/hair|fit/i);
+      if (!SECOND_IS_NOT_THE_VISIT.has(name)) expect(first, name).not.toContain("{{2}}");
+    }
   });
 });

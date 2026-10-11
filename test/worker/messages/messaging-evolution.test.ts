@@ -31,7 +31,7 @@ describe("Evolution API", () => {
       number: "919810000001",
       mediatype: "image",
       mimetype: "image/png",
-      caption: expect.stringMatching(/^Hi Arjun, here's your new look from Mane Man\./) as string,
+      caption: expect.stringMatching(/^Hi Arjun, your new look is ready\./) as string,
       media: "https://x.test/r.png",
       fileName: "mane-man.png",
     });
