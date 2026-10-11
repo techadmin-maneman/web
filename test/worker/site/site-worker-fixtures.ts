@@ -18,7 +18,13 @@ export const PAGE = `<!doctype html><html><head>
 <meta property="og:image:height" content="630">
 </head><body><div id="invite" data-invite=""></div><p>The landing</p></body></html>`;
 
-export const VALID = { state: "valid", referrer_first_name: "Rohit", card: { state: "personal", version: 3 } };
+export const VALID = {
+  state: "valid",
+  referrer_first_name: "Rohit",
+  partner: null,
+  friend_visits: null,
+  card: { state: "personal", version: 3 },
+};
 
 export const price = (amountExGst: number) => ({ amount_ex_gst: amountExGst, amount: amountExGst, gst_percent: 0 });
 
