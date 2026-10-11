@@ -28,7 +28,7 @@ export const shell = {
     grievances: "Concerns",
     "number-changes": "Number changes",
     "deletion-requests": "Deletion requests",
-    "no-shows": "Payments",
+    payments: "Payments",
     prices: "Prices",
     "discount-codes": "Discount codes",
     referrals: "Referrals",

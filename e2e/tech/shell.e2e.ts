@@ -79,7 +79,14 @@ test("signs the phone out and forgets everything it held", async ({ page }) => {
   const before = await page.evaluate(() => indexedDB.databases().then((each) => each.map((one) => one.name)));
   expect(before).toContain("mm-tech");
 
+  // Signing out takes the jobs off the phone, so it asks first, even with nothing waiting to be sent.
   await page.getByRole("button", { name: "Sign out" }).click();
+  await expect(page.getByRole("alert")).toContainText("Sign out of this phone?");
+  await page.getByRole("button", { name: "Stay signed in" }).click();
+  await expect(page.getByRole("alert")).toHaveCount(0);
+  await expect(page.getByRole("heading", { name: "3 jobs today" })).toBeVisible();
+  await page.getByRole("button", { name: "Sign out" }).click();
+  await page.getByRole("alert").getByRole("button", { name: "Sign out" }).click();
   await expect(page.getByRole("heading", { level: 1, name: "Technician sign in" })).toBeVisible();
   const after = await page.evaluate(() => indexedDB.databases().then((each) => each.map((one) => one.name)));
   expect(after).not.toContain("mm-tech");

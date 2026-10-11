@@ -82,6 +82,10 @@ export const leaving = {
     return `${held.join(" and ")} not sent yet`;
   },
   body: "Signing out deletes them from this phone, and they never reach us.",
+  // Nothing is waiting to be sent: signing out still takes the jobs off the phone.
+  confirm: "Sign out of this phone?",
+  confirmBody: "Your jobs come off it until you sign in again.",
+  stay: "Stay signed in",
   send: "Send first",
   anyway: "Sign out anyway",
   stayed: "No signal. You’re still signed in. Try again with signal.",
@@ -384,6 +388,8 @@ export const capture = {
   before: "Before photos",
   after: "After photos",
   retake: "Retake",
+  /** Not drawn: what a screen reader calls a tile, a tap on which takes that angle again. */
+  retakeAngle: (angle: string) => `Take ${angle} again`,
   take: "Capture",
   angles: { front: "Front", top: "Top", left: "Left", right: "Right", hair: "Hair" },
   // The board writes Top's guide alone; the other four are ours.
@@ -607,6 +613,8 @@ export const profile = {
     product: "Product",
     attachment: "Tape or glue",
   },
+  /** Not drawn: the base typed in inches, in centimetres beneath it. */
+  baseInCentimetres: (width: string, length: string) => `That is ${width} × ${length} cm.`,
   measurements: {
     head_circumference_cm: "Circumference",
     front_to_nape_cm: "Front to nape",

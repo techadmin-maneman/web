@@ -16,7 +16,8 @@ export async function open(page: Page, body: OpsReply<"/api/tasks"> = TASKS, ale
 }
 
 /** The list itself; the console's navigation is a list too. */
-export const list = (page: Page) => page.getByRole("region", { name: "Tasks" });
+/** The list of tasks, named by how many are open. */
+export const list = (page: Page) => page.getByRole("region", { name: /^\d+ open$/ });
 
 /** A task's row, found by the line that heads it. */
 export const row = (page: Page, heading: string) => list(page).getByRole("listitem").filter({ hasText: heading });

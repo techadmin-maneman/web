@@ -68,7 +68,7 @@ test("the forms' error states meet WCAG 2.2 AA", async ({ page }) => {
   // then the form it decides on (docs/decisions/0051-booking-from-the-site.md).
   await visit(page, "/book?state=served");
   await page.getByRole("button", { name: "Book the consultation" }).click();
-  await expect(page.getByText("Enter your name, in letters.")).toBeVisible();
+  await expect(page.getByText("Enter your name in letters.")).toBeVisible();
   await expect(page.getByText("Enter the building or society.")).toBeVisible();
   expect(await violations(page)).toEqual([]);
 

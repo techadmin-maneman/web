@@ -440,6 +440,13 @@
 }
 
 /* The head's four figures and the base's two, two to a row. */
+/* The base in centimetres, beneath its figures in inches. */
+.inCentimetres {
+  margin: var(--sp-12) 0 0;
+  font-size: var(--fs-16);
+  color: var(--ink-muted);
+}
+
 .figures {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

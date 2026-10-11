@@ -172,7 +172,7 @@ function ChangeVisit({ visit, name, onChanged }: { visit: ClientVisit; name: str
         variant="outline"
         size="small"
         ref={opener}
-        className={styles.secondary}
+        className={styles.rowAction}
         aria-label={change === "cancel" ? copy.cancel.openLabel(when) : copy.handClose.openLabel(when)}
         onClick={() => {
           setOpen(true);

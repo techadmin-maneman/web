@@ -2,9 +2,9 @@
 // offline banner sits above them when the phone has no signal, and its empty
 // state stands in when nothing is booked.
 //
-// Sign out wipes the phone, so with work on it that has not reached us it asks
-// first, and offers to send it. With no signal the session stays open and
-// nothing is wiped, and it says so (apps/tech/src/App.tsx).
+// Sign out wipes the phone, so it always asks first: with work on it that has
+// not reached us, it offers to send it. With no signal the session stays open
+// and nothing is wiped, and it says so (apps/tech/src/App.tsx).
 
 import { capsLook } from "@maneman/ui/Caps";
 import { ICONS, APP_ICONS } from "@maneman/brand/icons";
@@ -118,8 +118,7 @@ export function TodayScreen() {
             className={styles.account}
             disabled={leaving === "going"}
             onClick={() => {
-              if (unsentSets + unsentActions > 0) setLeaving("asking");
-              else void leave();
+              setLeaving("asking");
             }}
           >
             <span className={styles.initials}>{me.initials}</span>
@@ -155,6 +154,26 @@ export function TodayScreen() {
             </Button>
             <Button variant="outlineOnInk" size="small" onClick={() => void leave()}>
               {leavingCopy.anyway}
+            </Button>
+          </div>
+        </div>
+      )}
+      {leaving === "asking" && unsentSets + unsentActions === 0 && (
+        <div className={styles.leave} role="alert">
+          <p className={styles.leaveTitle}>{leavingCopy.confirm}</p>
+          <p className={styles.leaveBody}>{leavingCopy.confirmBody}</p>
+          <div className={styles.leaveActions}>
+            <Button
+              variant="outlineOnInk"
+              size="small"
+              onClick={() => {
+                setLeaving(null);
+              }}
+            >
+              {leavingCopy.stay}
+            </Button>
+            <Button variant="outlineOnInk" size="small" onClick={() => void leave()}>
+              {copy.signOut}
             </Button>
           </div>
         </div>

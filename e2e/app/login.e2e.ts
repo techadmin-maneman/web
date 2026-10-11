@@ -118,6 +118,11 @@ test("the tabs reach Visits and the empty Photos, Payments and Refer", async ({ 
   await expect(tabs.getByRole("link", { name: "Visits" })).toHaveAttribute("aria-current", "page");
   await tabs.getByRole("link", { name: "Photos" }).click();
   await expect(page.getByText("Your photos begin at your first visit.")).toBeVisible();
+  // Nothing to show yet, so the site's try-on, whose look comes back here.
+  await expect(page.getByRole("link", { name: "Try a look on yourself" })).toHaveAttribute(
+    "href",
+    "http://127.0.0.1:4321/try",
+  );
   await tabs.getByRole("link", { name: "Payments" }).click();
   await expect(page.getByText("Nothing to pay yet.")).toBeVisible();
   await tabs.getByRole("link", { name: "Refer" }).click();

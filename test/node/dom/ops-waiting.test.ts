@@ -72,7 +72,7 @@ describe("the counts beside the console's sections", () => {
       ]),
       NOW,
     );
-    expect(waiting.get("/no-shows")).toEqual({ count: 3, overdue: true, of: "tasks" });
+    expect(waiting.get("/payments")).toEqual({ count: 3, overdue: true, of: "tasks" });
   });
 
   it("counts a due date of today as not yet overdue", () => {

@@ -61,7 +61,7 @@ const SCREENS: Readonly<Record<PlainPage, ComponentType>> = {
   grievances: GrievancesScreen,
   "number-changes": NumberChangesScreen,
   "deletion-requests": DeletionsScreen,
-  "no-shows": NoShowsScreen,
+  payments: NoShowsScreen,
   prices: PricesScreen,
   "discount-codes": DiscountCodesScreen,
   referrals: ReferralsScreen,
@@ -95,7 +95,8 @@ export function App() {
   }, [title]);
   useEffect(() => {
     const to = redirectOf(path, mayCall);
-    if (to !== null) redirect(to);
+    // The hash names a row to land on, as "/no-shows#case-…" from an older task.
+    if (to !== null) redirect(`${to}${window.location.hash}`);
   }, [path, mayCall]);
   // Keyed by the path, so each section opens at its top with its own data.
   return (

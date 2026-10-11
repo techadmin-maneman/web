@@ -11,7 +11,6 @@ import { allConsumables } from "../../domain/field/consumables.ts";
 import { profileLanded, recordAtVisit } from "../../domain/clients/hair-profiles.ts";
 import {
   answerBeforeLanding,
-  closedAt,
   kindsLanded,
   landInOrder,
   jobChangesSince,
@@ -21,27 +20,13 @@ import { pieceLabelTaken, pieceStepOf } from "../../domain/field/pieces.ts";
 import { checklistOf, jobSheet, knownCodes } from "../../domain/field/job-sheet-settings.ts";
 import { recordJobUse } from "../../domain/field/job-use.ts";
 import { tellOfLowStock } from "../../domain/field/stock.ts";
-import { hasStorageRoom } from "../../domain/platform/storage-meter.ts";
 import { noShowReadiness, openNoShowCase } from "../../domain/no-shows/no-shows.ts";
 import { closeOneVisit } from "../../domain/visits/one-visit.ts";
 import { progressOf } from "../../domain/field/job-card.ts";
-import { workableJob, type WorkableJob } from "../../domain/field/workable-job.ts";
-import {
-  anglesHeld,
-  MAX_PHOTO_BYTES,
-  MAX_THUMBNAIL_BYTES,
-  slotOfLink,
-  storeTechnicianPhoto,
-  storeThumbnail,
-  uploadLink,
-  type PhotoSlot,
-} from "../../domain/field/tech-photos.ts";
-import { type Phase } from "../../domain/field/visit-photos.ts";
-import { cappedBody } from "../../http/capped-body.ts";
+import { type WorkableJob } from "../../domain/field/workable-job.ts";
 import { refuse } from "../../http/errors.ts";
 import { technicianOf } from "../../http/technician-session.ts";
 import { timeOfUuidV7 } from "../../lib/uuidv7.ts";
-import { takesStep } from "../../policy/in-job-steps.ts";
 import { takesProfile } from "../../policy/hair-profile.ts";
 import { noShowWaitEnds } from "../../policy/no-show.ts";
 import { boundedPhoneTime } from "../../policy/phone-clock.ts";
@@ -52,10 +37,6 @@ import { arrivalNotice } from "../../domain/messages/visit-messages.ts";
 import {
   checkinRoute,
   startRoute,
-  uploadUrlRoute,
-  uploadRoute,
-  smallUploadRoute,
-  photosRoute,
   checklistRoute,
   consumablesRoute,
   pieceRoute,
@@ -76,9 +57,12 @@ import {
   refusedOf,
   resultOf,
   checkInReplayed,
+  hasClosed,
 } from "./jobs.record.ts";
 
 import { pieceBody } from "./jobs.piece.ts";
+import { registerPhotographs } from "./jobs.photos.ts";
+
 export function registerTechJobSteps(app: App): void {
   registerArrival(app);
   registerNoShow(app);
@@ -108,12 +92,16 @@ function registerArrival(app: App): void {
     if (answered !== null) return c.json(refusalOf(c, refusedOf(c, write, answered)), 409);
 
     const device = { lat: body.lat, lng: body.lng };
-    const measured = await measureArrival(c.env.DB, {
-      appointmentId: job.id,
-      personId: job.personId,
-      device,
-      radiusM: inputs.checkinRadiusM,
-    });
+    // The steps the job holds are read beside the arrival's measure, in the same round trip to D1.
+    const [measured, done] = await Promise.all([
+      measureArrival(c.env.DB, {
+        appointmentId: job.id,
+        personId: job.personId,
+        device,
+        radiusM: inputs.checkinRadiusM,
+      }),
+      kindsLanded(c.env.DB, job.id),
+    ]);
     c.var.log.info("technician_checked_in", {
       appointment_id: job.id,
       passed: measured.passed,
@@ -138,11 +126,15 @@ function registerArrival(app: App): void {
     }
 
     const checkIn: EventInput = { ...write, body: { at: at.toISOString(), distance_m: measured.distanceM } };
-    const landing = await landInOrder(c.env.DB, {
-      ...checkIn,
-      records: await recordsOf(c, checkIn),
-      withEvent: [passedArrivalStatement(c.env.DB, arrival, eventId)],
-    });
+    const landing = await landInOrder(
+      c.env.DB,
+      {
+        ...checkIn,
+        records: await recordsOf(c, checkIn),
+        withEvent: [passedArrivalStatement(c.env.DB, arrival, eventId)],
+      },
+      done,
+    );
     if (landing.kind === "landed" && landing.replayed) {
       return c.json(await checkInReplayed(c, job, landing.event), 200);
     }
@@ -195,87 +187,6 @@ function registerNoShow(app: App): void {
       },
       200,
     );
-  });
-}
-
-/** The photographs: a link for each, the photograph and its small copy, and the set once complete. */
-function registerPhotographs(app: App): void {
-  // A job given away or cancelled while its photographs waited on the phone says so, as a refused write does.
-  app.openapi(uploadUrlRoute, async (c) => {
-    const { technicianId } = technicianOf(c);
-    const now = c.var.deps.now();
-    const id = c.req.valid("param").id;
-    const job = await namedJob(c, id);
-    if (job === null) return refuse(c, "not_found");
-    const superseding = await jobChangesSince(c.env.DB, job, technicianId, null);
-    if (superseding.changed.length > 0) {
-      c.var.log.info("upload_link_superseded", { appointment_id: job.id, changed: superseding.changed });
-      return c.json(refusalOf(c, superseded(superseding)), 409);
-    }
-    if (await hasClosed(c, job.id)) return refuse(c, "already_closed");
-    const { phase, angle } = c.req.valid("json");
-    if (!takesPhotoSet(job, phase)) return refuse(c, "invalid_request", ["phase"]);
-    const link = await uploadLink(c.var.config.settings.tryon.linkSigningKey, { appointmentId: id, phase, angle }, now);
-    return c.json(
-      { upload_url: link.url, small_upload_url: link.smallUrl, expires_at: link.expiresAt.toISOString() },
-      201,
-    );
-  });
-
-  app.openapi(uploadRoute, async (c) => {
-    const { deps } = c.var;
-    const now = deps.now();
-    const slot = await uploadSlot(c, c.req.valid("param").token);
-    if (slot === null) return refuse(c, "not_found");
-    if (await hasClosed(c, slot.appointmentId)) return refuse(c, "already_closed");
-
-    const bytes = await cappedBody(c.req.raw, MAX_PHOTO_BYTES);
-    if (bytes === null || bytes.byteLength === 0) return refuse(c, "photo_invalid_file");
-    if (!(await hasStorageRoom(c.env.DB, deps.alertOnce, bytes.byteLength))) {
-      return refuse(c, "busy");
-    }
-    const stored = await storeTechnicianPhoto({
-      db: c.env.DB,
-      bucket: c.env.CLIENT_PHOTOS,
-      slot,
-      bytes,
-      takenAt: now,
-      now,
-    });
-    if (stored.kind === "not_an_image") return refuse(c, "photo_invalid_file");
-    c.var.log.info("technician_photo_stored", { appointment_id: slot.appointmentId, phase: slot.phase });
-    return c.json({ take: stored.take }, 200);
-  });
-
-  app.openapi(smallUploadRoute, async (c) => {
-    const { deps } = c.var;
-    const slot = await uploadSlot(c, c.req.valid("param").token);
-    if (slot === null) return refuse(c, "not_found");
-    if (await hasClosed(c, slot.appointmentId)) return refuse(c, "already_closed");
-
-    const bytes = await cappedBody(c.req.raw, MAX_THUMBNAIL_BYTES);
-    if (bytes === null) return refuse(c, "photo_invalid_file");
-    if (!(await hasStorageRoom(c.env.DB, deps.alertOnce, bytes.byteLength))) {
-      return refuse(c, "busy");
-    }
-    const stored = await storeThumbnail({
-      db: c.env.DB,
-      bucket: c.env.CLIENT_PHOTOS,
-      slot,
-      take: c.req.valid("query").take,
-      bytes,
-    });
-    if (stored === "not_a_thumbnail") return refuse(c, "photo_invalid_file");
-    if (stored === "no_photograph") return refuse(c, "upload_missing");
-    return c.body(null, 204);
-  });
-
-  app.openapi(photosRoute, async (c) => {
-    const phase = c.req.valid("json").phase;
-    return step(c, photoStepOf(phase), async (job) => {
-      if (!takesPhotoSet(job, phase)) return { invalid: ["phase"] };
-      return { phase, angles: await anglesHeld(c.env.DB, job.id, phase) };
-    });
   });
 }
 
@@ -405,26 +316,6 @@ function registerProfileAndOutcome(app: App): void {
       },
     );
   });
-}
-
-/** Whether the job has closed: an outcome landed, or ops closed it by hand. */
-async function hasClosed(c: Ctx, appointmentId: string): Promise<boolean> {
-  return (await closedAt(c.env.DB, appointmentId)) !== null;
-}
-
-/** The slot an upload link names, while its job is still this technician's; null for any other link. */
-async function uploadSlot(c: Ctx, token: string): Promise<PhotoSlot | null> {
-  const slot = await slotOfLink(c.var.config.settings.tryon.linkSigningKey, token, c.var.deps.now());
-  if (slot === null) return null;
-  const job = await workableJob(c.env.DB, slot.appointmentId);
-  return job?.technicianId === technicianOf(c).technicianId ? slot : null;
-}
-
-const photoStepOf = (phase: Phase) => (phase === "before" ? "before_photos" : "after_photos");
-
-/** Whether the job takes this set of photographs: a consultation takes none after. */
-function takesPhotoSet(job: WorkableJob, phase: Phase): boolean {
-  return takesStep(photoStepOf(phase), job.type, job.oneVisit !== null);
 }
 
 /**

@@ -267,7 +267,7 @@ export const referral = {
   form: {
     name: "Name",
     namePlaceholder: "Your name",
-    nameError: "Enter your name, in letters.",
+    nameError: "Enter your name in letters.",
     mobile: "Mobile",
     mobilePlaceholder: "Your number",
     mobileError: "Enter a valid 10-digit mobile number.",
