@@ -16,6 +16,7 @@ import { api, type Stock } from "../api.ts";
 import { OpsLink, Shell } from "../components/Shell.tsx";
 import { stock as copy } from "../content.ts";
 import { useAccess, type OpsCall } from "../lib/access.ts";
+import { recordedBy } from "../lib/who.ts";
 import { settingsPath } from "../route.ts";
 import form from "../components/forms.module.css";
 import { Loading, PanelFailed } from "../states/States.tsx";
@@ -113,7 +114,7 @@ function Movements({ book }: { book: Stock }) {
     book.consumables.find((each) => each.code === row.consumable_code)?.name ?? row.consumable_code;
   const place = (row: Movement) => placeName(book, row.technician_id);
   const why = (row: Movement) => words.reasons[row.reason] ?? row.reason;
-  const who = (row: Movement) => (row.reason === "used" ? placeName(book, row.by) : row.by);
+  const who = (row: Movement) => (row.reason === "used" ? placeName(book, row.by) : recordedBy(row.by));
   const [when, what, where, change, reason, by] = words.columns;
   const columns: readonly Column<Movement>[] = [
     { label: when, sort: (row) => row.at },

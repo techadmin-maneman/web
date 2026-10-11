@@ -4,3 +4,6 @@
 import { shell } from "../content.ts";
 
 export const whoWords = (who: string): string => (who.includes("@") ? who : shell.serviceToken);
+
+/** One who recorded something: a service token the Staff list has no label for as one, never by its ID. */
+export const recordedBy = (who: string): string => (who.endsWith(".access") ? shell.serviceToken : who);

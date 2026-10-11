@@ -14,6 +14,7 @@ import { json } from "../../http/openapi.ts";
 import { callerAccess, permits } from "../../http/staff-access.ts";
 import { markDone, openAlert, openAlerts, sendAgain, type OpenAlert } from "../../domain/ops/needs-a-hand.ts";
 import type { AuditAction, AuditEntry } from "../../domain/ops/audit.ts";
+import { namedForTheConsole } from "../../domain/field/low-stock.ts";
 import { maySendAgain } from "../../policy/alerts.ts";
 import { alertNeed, markDoneNeed, callerMeetsNeed } from "../../policy/console-routes.ts";
 
@@ -24,7 +25,9 @@ const AlertSchema = z
   .object({
     id: z.uuid(),
     kind: z.string().openapi({ description: 'What went wrong: the alert\'s key up to its first colon, "crm_lead".' }),
-    message: z.string().openapi({ description: "What happened and what to do, with IDs only, as the chat was told." }),
+    message: z.string().openapi({
+      description: "What happened and what to do, as the chat was told, with IDs only; a low kit names its technician.",
+    }),
     link: z
       .union([z.string(), z.null()])
       .openapi({ description: 'Where in the console to act on it, as a path: "/clients/<personId>".' }),
@@ -118,7 +121,8 @@ export function registerOpsAlerts(app: App): void {
   app.openapi(listRoute, async (c) => {
     const [alerts, sees] = await Promise.all([openAlerts(c.env.DB), seenBy(c)]);
     const theirs = alerts.filter((alert) => sees(alert.kind));
-    return c.json({ count: theirs.length, alerts: theirs.slice(0, ALERTS_SHOWN).map(shown) }, 200);
+    const named = await namedForTheConsole(c.env.DB, theirs.slice(0, ALERTS_SHOWN));
+    return c.json({ count: theirs.length, alerts: named.map(shown) }, 200);
   });
 
   app.openapi(resolveRoute, async (c) => {

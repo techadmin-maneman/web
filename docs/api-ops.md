@@ -12120,7 +12120,7 @@ Request body:
     },
     "message": {
       "type": "string",
-      "description": "What happened and what to do, with IDs only, as the chat was told."
+      "description": "What happened and what to do, as the chat was told, with IDs only; a low kit names its technician."
     },
     "link": {
       "anyOf": [
@@ -14769,7 +14769,7 @@ Request body:
           },
           "by": {
             "type": "string",
-            "description": "Who: ops' Access identity, or the technician's ID for a job's use."
+            "description": "Who: ops' Access identity, a service token by its label on the Staff list, or the technician's ID for a job's use."
           },
           "note": {
             "anyOf": [

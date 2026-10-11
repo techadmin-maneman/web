@@ -407,8 +407,9 @@ function Queue() {
   return (
     <section className={styles.queue} aria-labelledby="tasks">
       <div className={styles.queueHead}>
+        {/* The bar above names the page; the list says how much is open, beside how much is late. */}
         <h2 className={styles.panelTitle} id="tasks" ref={heading} tabIndex={-1}>
-          {tasks.title}
+          {tasks.openCount(groups.reduce((sum, group) => sum + group.count, 0))}
         </h2>
         <OverdueCount count={overdue} onJump={first === null ? null : goToFirstOverdue} />
       </div>
