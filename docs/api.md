@@ -539,6 +539,143 @@ Request body:
 }
 ```
 
+### POST /api/lead
+
+Leave a name and number before choosing the visit
+
+Request body:
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 60,
+      "description": "Letters, spaces, dots, apostrophes and hyphens, starting with a letter."
+    },
+    "mobile": {
+      "type": "string",
+      "maxLength": 20
+    },
+    "consent": {
+      "type": "boolean",
+      "enum": [
+        true
+      ],
+      "description": "\"You may contact me on WhatsApp about this consultation.\""
+    },
+    "turnstile_token": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 2048
+    },
+    "attribution": {
+      "type": "object",
+      "properties": {
+        "utm_source": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "utm_medium": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "utm_campaign": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "utm_content": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "gclid": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "fbclid": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "referrer": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "landing_path": {
+          "type": "string",
+          "maxLength": 500
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "name",
+    "mobile",
+    "consent",
+    "turnstile_token"
+  ],
+  "additionalProperties": false
+}
+```
+
+**201**: Kept. Every number gets this answer, a client's too, for whom nothing is written.
+
+```json
+{
+  "$ref": "#/components/schemas/LeadLeft"
+}
+```
+
+**400**: invalid_request: fields names what was refused
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**403**: turnstile_failed
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**409**: idempotency_in_progress: the first request with this key is still running
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**422**: idempotency_key_reused: the key was used with a different body
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**429**: rate_limited
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**503**: unavailable: Turnstile could not be reached
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ### GET /api/r/{code}
 
 An invite: valid or unknown
@@ -1344,6 +1481,7 @@ Razorpay's webhook: payments and refunds
             "already_closed",
             "no_service_area",
             "launch_in_future",
+            "no_technician",
             "pincode_held",
             "service_exists",
             "last_of_kind",
@@ -1356,6 +1494,7 @@ Razorpay's webhook: payments and refunds
             "not_disputable",
             "dispute_window_closed",
             "move_gone",
+            "ask_the_client",
             "code_not_applicable",
             "code_off",
             "already_discounted",
@@ -2015,6 +2154,16 @@ Razorpay's webhook: payments and refunds
     "credits",
     "invite"
   ],
+  "additionalProperties": false
+}
+```
+
+### LeadLeft
+
+```json
+{
+  "type": "object",
+  "properties": {},
   "additionalProperties": false
 }
 ```

@@ -79,7 +79,7 @@ test("names leave when the server refuses a move onto a day off", async ({ page 
   await press(page, ROHIT_BLOCK);
   await press(page, "Move visit");
   await press(page, TO_SANDEEP);
-  await reason(page, "Zone rebalance");
+  await reason(page, "Client asked");
   await press(page, "Move and notify");
 
   await expect(page.getByRole("alert")).toHaveText("Sandeep Yadav is away on Sat 20 Sep.");

@@ -49,6 +49,7 @@ export interface HoldRow {
   appointment_id: string | null;
   moves_appointment_id: string | null;
   move_kind: "move" | "replace" | null;
+  created_at: string;
   use_credit: number;
   /** 1 for a consultation and fit in one visit, booked from the site with nothing paid (ADR 0105). */
   one_visit: number;
@@ -66,7 +67,8 @@ export async function bookingHoldRow(db: D1Database, holdId: string): Promise<Ho
     .prepare(
       `SELECT h.id, h.person_id, p.erased_at AS person_erased_at, h.type, h.tier, h.minutes, h.date, h.window_label,
               h.start_unit, h.technician_id, h.amount, h.state, h.expires_at, h.grace_seconds, h.confirmed_at,
-              h.razorpay_order_id, h.appointment_id, h.moves_appointment_id, h.move_kind, h.use_credit, h.one_visit,
+              h.razorpay_order_id, h.appointment_id, h.moves_appointment_id, h.move_kind, h.created_at, h.use_credit,
+              h.one_visit,
               h.pay_by_link, h.refunded_at, h.pincode, sp.city
        FROM slot_holds h JOIN people p ON p.id = h.person_id
        LEFT JOIN serviceable_pincodes sp ON sp.pincode = h.pincode

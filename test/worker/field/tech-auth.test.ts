@@ -111,8 +111,8 @@ describe("POST /api/tech/auth/otp", () => {
   // src/policy/staging-test-records.ts): e2e/tech-staging/seed.ts's invented technician is one of these.
   it("holds back a code to a 'Staging test technician' record off the allowlist", async () => {
     await env.DB.prepare(
-      `INSERT INTO technicians (id, fsm_id, name, initials, active, zone, mobile_e164, updated_at, hand_written)
-       VALUES ('t-script', 'tech-proof-1', 'Staging test technician', 'ST', 1, 'Gurgaon', '+919810000050', ?1, 1)`,
+      `INSERT INTO technicians (id, fsm_id, name, initials, active, zone, mobile_e164, updated_at, hand_written, test_record)
+       VALUES ('t-script', 'tech-proof-1', 'Staging test technician', 'ST', 1, 'Gurgaon', '+919810000050', ?1, 1, 1)`,
     )
       .bind(NOW.toISOString())
       .run();

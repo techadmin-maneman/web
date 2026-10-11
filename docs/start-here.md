@@ -38,7 +38,7 @@ this map, or when the map names something that no longer exists.
 - **Database work** (`src/domain/booking/`): `availability`, `open-windows`, `asked-windows`, `occupancy`, `slot-times`,
   `technician-choice`, `technician-rotation`, `hold-slot`, `holds`, `hold-stages`, `booked-hold`, `unbooked-holds`,
   `give-back`, `bookings`, `visit-booking`, `move-in-place`, `public-booking`, `public-consultation`,
-  `public-waitlist`, `site-visit`, `form-person`, `proposed-visits`,
+  `public-waitlist`, `public-lead`, `site-visit`, `form-person`, `proposed-visits`,
   `waitlist`, `services`
 - **Rules** (`src/policy/`): `booking`, `slot-times`, `site-booking`, `moving-a-visit`, `prepayment`, `services`,
   `visit-length`
@@ -62,7 +62,7 @@ this map, or when the map names something that no longer exists.
 
 ### Dispatch
 
-- **Database work** (`src/domain/dispatch/`): `dispatch`, `move-proposals`, `dispatch-board`, `dispatch-landing`, `dispatch-utilisation`, `technicians`, `technician-roster`,
+- **Database work** (`src/domain/dispatch/`): `dispatch`, `move-proposals`, `open-proposals`, `dispatch-board`, `dispatch-landing`, `dispatch-utilisation`, `technicians`, `technician-roster`,
   `technician-work`, `leave`, `blackouts`, `cities`
 - **Rules** (`src/policy/`): `dispatch`, `technician-work`
 - **Routes** (`src/routes/`): `ops/dispatch`, `ops/dispatch-moves`, `ops/blackouts`, `ops/technicians`,

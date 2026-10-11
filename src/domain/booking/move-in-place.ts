@@ -17,7 +17,10 @@ interface VisitToMove {
   technician_id: string | null;
 }
 
-/** Moves the visit to the hold's time, with its technician; its payment carries over, and a late fee is kept. */
+/**
+ * Moves the visit to the hold's time, with the hold's technician, its own or another in its city; its payment carries
+ * over, and a late fee is kept.
+ */
 export async function moveInPlace(context: BookingContext, hold: HoldRow): Promise<Confirmed> {
   const { db, now } = context;
   const options: ConfirmOptions = context;
@@ -44,10 +47,11 @@ export async function moveInPlace(context: BookingContext, hold: HoldRow): Promi
     db
       // The client chose this time, so their notice counts from it, however ops had moved the visit before.
       .prepare(
-        `UPDATE appointments SET window_start = ?1, window_end = ?2, synced_at = ?3, start_before_move = NULL
+        `UPDATE appointments SET window_start = ?1, window_end = ?2, synced_at = ?3, start_before_move = NULL,
+           technician_id = ?5
          WHERE id = ?4`,
       )
-      .bind(start.toISOString(), end.toISOString(), at, visit.id),
+      .bind(start.toISOString(), end.toISOString(), at, visit.id, hold.technician_id),
     db
       .prepare("UPDATE slot_holds SET state = 'booked', appointment_id = ?1, updated_at = ?2 WHERE id = ?3")
       .bind(visit.id, at, hold.id),
@@ -83,11 +87,15 @@ export async function moveInPlace(context: BookingContext, hold: HoldRow): Promi
 }
 
 /**
- * Whether the visit can still take the hold's time: it is still with the technician the time was held on, since ops
- * may have given it to another after the client chose it, and nothing else has taken that time on their day.
+ * Whether the visit can still take the hold's time: ops have not moved it since the client chose it, and nothing else
+ * has taken that time on the held technician's day.
  */
 async function takesHeldTime(db: D1Database, hold: HoldRow, visit: VisitToMove, now: Date): Promise<boolean> {
-  if (visit.technician_id !== hold.technician_id) return false;
+  const movedSince = await db
+    .prepare("SELECT 1 FROM dispatch_moves WHERE appointment_id = ?1 AND created_at >= ?2 LIMIT 1")
+    .bind(visit.id, hold.created_at)
+    .first();
+  if (movedSince !== null) return false;
   return heldTimeFree(db, hold, now, visit.id);
 }
 

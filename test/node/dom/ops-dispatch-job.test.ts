@@ -46,6 +46,7 @@ const block = (overrides: Partial<Block> = {}): Block => ({
   notice_hours: 24,
   untold: null,
   begun: null,
+  proposal: null,
   ...overrides,
 });
 

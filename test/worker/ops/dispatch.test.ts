@@ -20,6 +20,7 @@ import {
   TUESDAY,
   insertJob,
   shown,
+  askedForWednesdayMorning,
   toSameerWednesdayMorning,
 } from "./dispatch-fixtures.ts";
 
@@ -229,7 +230,7 @@ describe("a move and the time it goes to", () => {
   it("lets go of a hold nobody paid for, whose time ran out, to make the move", async () => {
     const hold = await holdOnWednesday({ paid: false, expiresAt: minutesBeforeNow(10) });
 
-    const answer = await move(toSameerWednesdayMorning(A));
+    const answer = await move(askedForWednesdayMorning(A));
 
     expect(answer.status).toBe(200);
     expect(await holdState(hold)).toBe("released");

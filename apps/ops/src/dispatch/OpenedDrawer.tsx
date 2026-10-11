@@ -13,6 +13,7 @@ export function OpenedDrawer({
   onClose,
   onTake,
   onTold,
+  onWithdraw,
   onChange,
 }: {
   opened: Job;
@@ -21,6 +22,8 @@ export function OpenedDrawer({
   /** Takes the job up to move it; with the technician's check-in cleared, when ops chose that past the warning. */
   onTake: (job: Job, clearingCheckIn?: boolean) => void;
   onTold: (moveId: string, name: string) => void;
+  /** Takes back a move to another day the client was asked to confirm. */
+  onWithdraw: (proposalId: string, name: string) => void;
   onChange: (changing: Changing) => void;
 }) {
   const mayMove = access.mayCall("POST /api/dispatch/move");
@@ -61,6 +64,13 @@ export function OpenedDrawer({
         access.mayCall("POST /api/dispatch/moves/{id}/told")
           ? (moveId) => {
               onTold(moveId, opened.block.person?.name ?? nameOf(opened));
+            }
+          : null
+      }
+      onWithdraw={
+        access.mayCall("POST /api/dispatch/proposals/{id}/withdraw")
+          ? (proposalId) => {
+              onWithdraw(proposalId, nameOf(opened));
             }
           : null
       }

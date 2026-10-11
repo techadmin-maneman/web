@@ -163,6 +163,7 @@ export type Block = BoardDay["blocks"][number];
 export type Unassigned = Board["unassigned"][number];
 export type BoardClient = NonNullable<Block["person"]>;
 export type Moved = Body<paths["/api/dispatch/move"]["post"]>;
+export type Proposed = Body<paths["/api/dispatch/propose"]["post"]>;
 export type Room = Body<paths["/api/dispatch/room"]["get"]>["rooms"][number];
 
 type MoveRequest = Sent<paths["/api/dispatch/move"]["post"]>;
@@ -268,6 +269,12 @@ export const api = {
         ? { ...moveBody(appointmentId, to, shown), clear_check_in: true as const }
         : moveBody(appointmentId, to, shown),
     }),
+  /** A client's visit to another day, asked of them rather than moved (ADR 0115): it stays put until they accept. */
+  propose: (appointmentId: string, to: Landing, shown: Shown) =>
+    client.post("/api/dispatch/propose", { body: moveBody(appointmentId, to, shown) }),
+  /** Ops take back what they asked of the client; the visit stays where it is. */
+  withdrawProposal: (proposalId: string) =>
+    client.post("/api/dispatch/proposals/{id}/withdraw", { path: { id: proposalId } }),
   /** Ops called a client who had not heard of a move; its task leaves the Tasks board. */
   toldByPhone: (moveId: string) => client.post("/api/dispatch/moves/{id}/told", { path: { id: moveId } }),
   held: () => client.get("/api/referrals/held"),

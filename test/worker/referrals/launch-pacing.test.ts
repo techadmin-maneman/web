@@ -10,6 +10,7 @@ import { PACED_GAP_SECONDS, PACED_PER_MINUTE } from "../../../src/policy/message
 import type { Connection } from "../../../src/providers/messaging/index.ts";
 import { requeueUnsentMessages } from "../../../src/scheduled/unsent-messages.ts";
 import { appFor, captureLogs, fakeDependencies, markDatabase, NOW, request } from "../helpers.ts";
+import { aTechnicianInEveryCity } from "../clients.ts";
 import { type MessagingMessage } from "../../../src/config/pipeline.ts";
 
 const MINUTE_MS = 60_000;
@@ -146,6 +147,7 @@ const minutesAfterLaunch = (minutes: number) => new Date(NOW.getTime() + minutes
 
 beforeEach(async () => {
   await markDatabase();
+  await aTechnicianInEveryCity();
   captureLogs();
 });
 

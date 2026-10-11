@@ -6,7 +6,7 @@
 import { STANDARD_TIER, type VisitType } from "../../config/visit-types.ts";
 import { indiaDate } from "../../lib/india-time.ts";
 import { FITTED } from "../clients/fitted.ts";
-import { openProposalJson, openProposalOf } from "../dispatch/move-proposals.ts";
+import { openProposalJson, openProposalOf } from "../dispatch/open-proposals.ts";
 import { signToken } from "../../lib/signed-token.ts";
 import type { OneVisitState } from "../../policy/one-visit.ts";
 import { namesMoreThanItsKind } from "../../policy/services.ts";
@@ -179,15 +179,8 @@ async function visitSummaryOf(
     place: context.place(row),
     one_visit: await oneVisitOf(db, row),
     client_note: row.client_note,
-    proposed_move: proposedMoveOf(row.proposal, now),
+    proposed_move: openProposalOf(row.proposal, now),
   };
-}
-
-/** The visit's open move proposal as the app shows it; null for none, or one run out. */
-function proposedMoveOf(json: string | null, now: Date): VisitSummary["proposed_move"] {
-  const open = openProposalOf(json, now);
-  if (open === null) return null;
-  return { id: open.id, date: open.date, window: open.window, technician: open.technician, expires_at: open.expiresAt };
 }
 
 /**

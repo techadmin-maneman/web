@@ -138,6 +138,16 @@ describe("adding a technician", () => {
     expect(await me.json()).toMatchObject({ id, name: "Naveen Rao" });
   });
 
+  // Marked only when added so named on staging (src/policy/staging-test-records.ts), and never by a rename.
+  it("marks no technician a test record outside staging, and a rename never makes one", async () => {
+    const answer = await send(ops, "POST", "/api/technicians", { name: "Staging test Naveen", mobile: "9810000007" });
+    const { id } = await answer.json<{ id: string }>();
+    expect(await one("SELECT test_record FROM technicians WHERE id = ?1", id)).toEqual({ test_record: 0 });
+
+    await send(ops, "PATCH", `/api/technicians/${IMRAN}`, { name: "Staging test Imran" });
+    expect(await one("SELECT test_record FROM technicians WHERE id = ?1", IMRAN)).toEqual({ test_record: 0 });
+  });
+
   it("refuses a number another active technician signs in with, and adds no one", async () => {
     const answer = await send(ops, "POST", "/api/technicians", { name: "Naveen Rao", mobile: "+91 98100 00009" });
 
