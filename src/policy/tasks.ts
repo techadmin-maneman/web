@@ -68,6 +68,7 @@ import { DELETION_DECIDED_WITHIN_DAYS } from "./account-deletion.ts";
 /** The queues a task is read from, in the order the console lists them. */
 export const TASK_GROUPS = [
   "untold_move",
+  "move_unanswered",
   "leave_conflict",
   "address_to_confirm",
   "consultation_request",
@@ -99,6 +100,8 @@ export type Slas = Readonly<Record<TaskGroup, number>>;
 export const TASK_SLA_HOURS: Slas = {
   // A client who does not know their visit moved will not be home for it: a call the same day.
   untold_move: 4,
+  // A move to another day the client has not answered keeps them waiting on a day: a call the same day too.
+  move_unanswered: 4,
   // These two are never later than the visit itself (src/domain/ops/tasks.ts).
   leave_conflict: 48,
   address_to_confirm: 48,

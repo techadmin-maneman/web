@@ -125,7 +125,8 @@ describe("dispatch", () => {
       technician_id: SAMEER,
       date: "2026-09-22",
       window: "morning",
-      reason: "technician_unavailable",
+      // Another day, so the client asked for it: ops' own reasons ask the client first (ADR 0115).
+      reason: "client_asked",
     });
 
     expect(answer.status).toBe(200);
@@ -144,7 +145,7 @@ describe("dispatch", () => {
     expect(move).toMatchObject({
       was_technician_id: IMRAN,
       now_technician_id: SAMEER,
-      reason: "technician_unavailable",
+      reason: "client_asked",
       fsm_write_state: "written",
       write_state: "written",
     });

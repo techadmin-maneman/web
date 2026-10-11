@@ -16,7 +16,7 @@ import { ButtonLink } from "@maneman/ui/Button";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { indiaDate, listDate, monthInIndia, shortDate } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";
-import { documentUrl, type Me, type OneVisitPrice } from "../api.ts";
+import { documentUrl, type Me, type OneVisitPrice, type VisitSummary } from "../api.ts";
 import { BOOKING_URL, home, messages, ONE_VISIT, VISIT_TYPES, visits, windowText } from "../content.ts";
 import { apiNow } from "../lib/clock.ts";
 import { bookingName, oneVisitOf, visitName } from "../lib/visit.ts";
@@ -33,6 +33,7 @@ import {
   whenText,
   type NotingVisit,
 } from "./VisitCard.tsx";
+import { ProposedMove } from "./ProposedMove.tsx";
 import styles from "./home.module.css";
 import { firstNameOf } from "../../../../src/lib/names.ts";
 
@@ -66,6 +67,7 @@ function HomeBody({ me, offline }: { me: Me; offline: boolean }) {
         noting={notingOf(visit)}
         begun={hasBegun(visit)}
         technician={visit.technician}
+        proposal={visit.proposed_move === null ? null : { visitId: visit.id, move: visit.proposed_move }}
       />
     );
   }
@@ -132,12 +134,15 @@ function Consultation(props: {
   price?: OneVisitPrice | null;
   /** Who is coming, once a technician has the visit. */
   technician?: { readonly initials: string; readonly name: string } | null;
+  /** A move to another day ops asked the client to confirm, still open. */
+  proposal?: { readonly visitId: string; readonly move: NonNullable<VisitSummary["proposed_move"]> } | null;
 }) {
   const copy = home.consultation;
   const date = shortDate(props.date);
   const begun = props.begun === true;
   const price = props.price ?? null;
   const oneVisit = price !== null;
+  const proposal = props.proposal ?? null;
   return (
     <>
       <section aria-labelledby="consultation">
@@ -159,12 +164,14 @@ function Consultation(props: {
           {!oneVisit && <p className={styles.free}>{copy.free}</p>}
           {props.requested === true && <p className={styles.free}>{copy.requested}</p>}
           {price !== null && <OneVisitTerms price={price} />}
+          {!begun && proposal !== null && <ProposedMove visitId={proposal.visitId} proposal={proposal.move} />}
           {!begun && (
             <Actions
               what={oneVisit ? ONE_VISIT : VISIT_TYPES.consultation}
               date={date}
               changing={props.changing}
               noting={props.noting}
+              proposed={proposal !== null}
             />
           )}
         </div>

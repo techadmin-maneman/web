@@ -57,6 +57,8 @@ describe("tasks", () => {
     const promised: Partial<Record<string, number>> = {
       // A client who does not know their visit moved will not be home for it (ADR 0069).
       untold_move: 4,
+      // A move to another day the client has not answered (ADR 0115).
+      move_unanswered: 4,
       // "The 30 days run from the client's request to ops' decision" (ADR 0049).
       erasure_request: 30 * 24,
       // The client's app: "within 30 days at the latest" (docs/open-points.md, item 51).

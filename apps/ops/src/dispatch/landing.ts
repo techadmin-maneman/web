@@ -3,7 +3,7 @@
 // with the code alone.
 
 import { shortDate } from "@maneman/web-kit/dates";
-import type { Board, Moved } from "../api.ts";
+import type { Board, Moved, Proposed } from "../api.ts";
 import { dispatch } from "../content.ts";
 import { phoneWords } from "../lib/phone.ts";
 import { idOf, nameOf, personOf, shownOf, typeOf, windowWord, type Job, type Target } from "./job.ts";
@@ -35,6 +35,17 @@ export function doneNotice(job: Job, to: Target, moved: Moved): Notice {
     };
   }
   return { tone: "done", text: copy.noClient(name), call: null };
+}
+
+/** What ops hear once a client is asked to confirm a move to another day: asked on WhatsApp, or theirs to call. */
+export function askedNotice(job: Job, to: Target, proposed: Proposed): Notice {
+  const copy = dispatch.landing.asked;
+  const person = personOf(job);
+  const when = `${shortDate(to.date)}, ${windowWord(to.window)}`;
+  if (proposed.client_notice === "call" && person !== null) {
+    return { tone: "done", text: copy.call(person.name, phoneWords(person.mobile), when), call: null };
+  }
+  return { tone: "done", text: copy.messaged(nameOf(job), when), call: null };
 }
 
 /** Why a move was refused, in the board's words. Nothing was written either way. */

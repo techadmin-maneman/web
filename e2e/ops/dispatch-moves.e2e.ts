@@ -11,7 +11,7 @@
 
 import type { Route } from "@playwright/test";
 import { expect, test } from "../support.ts";
-import { BOARD, fails, json, MOVED, ROOM, VIKRAM, type Call } from "./fixtures.ts";
+import { BOARD, empty, fails, json, MOVED, PROPOSED, ROOM, VIKRAM, type Call } from "./fixtures.ts";
 import {
   MOVE,
   READ_BOARD,
@@ -27,6 +27,14 @@ import {
 } from "./dispatch-fixtures.ts";
 
 const ASSIGN = "/api/dispatch/assign";
+
+const PROPOSE = "/api/dispatch/propose";
+
+const PROPOSE_IT: Call = `POST ${PROPOSE}`;
+
+const WITHDRAW = `/api/dispatch/proposals/${PROPOSED.proposal_id}/withdraw` as const;
+
+const WITHDRAW_IT: Call = `POST ${WITHDRAW}`;
 
 const TOLD = `/api/dispatch/moves/${MOVED.move_id}/told` as const;
 
@@ -56,7 +64,7 @@ test("moves a job from a list, sends the board it was taken from, and says only 
   expect(sent).toEqual([]);
   await expect(picker.getByRole("button", { name: "Move and notify" })).toBeDisabled();
 
-  await reason(page, "Zone rebalance");
+  await reason(page, "Client asked");
   await press(page, "Move and notify");
 
   // Queued is not sent: the notice says the message is on its way, and what happens if it fails.
@@ -67,7 +75,7 @@ test("moves a job from a list, sends the board it was taken from, and says only 
       technician_id: BOARD.technicians[1]?.technician_id,
       date: "2025-09-20",
       window: "morning",
-      reason: "zone_rebalance",
+      reason: "client_asked",
       expected_technician_id: BOARD.technicians[0]?.technician_id,
       expected_starts_at: ROHIT_JOB?.starts_at,
     },
@@ -77,6 +85,51 @@ test("moves a job from a list, sends the board it was taken from, and says only 
 });
 
 // A free visit, or one paid once the client is fitted, has no payment to carry over.
+// ADR 0115: a client's visit goes to another day for ops' own reasons only once the client agrees.
+test("asks the client to confirm a move to another day, sending it as a proposal the visit waits on", async ({
+  page,
+}) => {
+  await open(page, { [PROPOSE_IT]: json(PROPOSED) });
+  const sent = sentTo(page, PROPOSE);
+  const moved = sentTo(page, MOVE);
+
+  await press(page, ROHIT_BLOCK);
+  await press(page, "Move visit");
+  await press(page, TO_SANDEEP);
+  await reason(page, "Zone rebalance");
+  const picker = page.getByRole("dialog", { name: "Move Rohit M. to Sandeep Yadav" });
+  await expect(picker).toContainText("Rohit M. is asked on WhatsApp to confirm. The visit stays put until they do.");
+  await press(page, "Ask Rohit M. to confirm");
+
+  await expect(page.getByRole("status")).toHaveText("Rohit M. is asked to confirm Sat 20 Sep, morning on WhatsApp.");
+  expect(sent).toEqual([expect.objectContaining({ date: "2025-09-20", window: "morning", reason: "zone_rebalance" })]);
+  expect(moved).toEqual([]);
+});
+
+test("shows a proposal waiting on the client in the visit's drawer, and takes it back", async ({ page }) => {
+  const waiting = structuredClone(BOARD);
+  const block = waiting.technicians[0]?.days[0]?.blocks[0];
+  if (block !== undefined) {
+    block.proposal = {
+      id: PROPOSED.proposal_id,
+      date: "2025-09-20",
+      window: "morning",
+      technician: { name: "Sandeep Yadav", initials: "SY" },
+      expires_at: "2025-09-20T03:30:00.000Z",
+    };
+  }
+  const withdrawn = sentTo(page, WITHDRAW);
+  await open(page, { [READ_BOARD]: json(waiting), [WITHDRAW_IT]: empty() });
+
+  await press(page, ROHIT_BLOCK);
+  const drawer = page.getByRole("dialog", { name: "Rohit Malhotra" });
+  await expect(drawer).toContainText("Waiting for Rohit to confirm Sat 20 Sep, morning.");
+  await press(page, "Withdraw");
+
+  await expect(page.getByRole("status")).toHaveText("Withdrawn. Rohit M. stays where it is.");
+  expect(withdrawn).toHaveLength(1);
+});
+
 test("says a payment carries over only where one was made", async ({ page }) => {
   const free = structuredClone(BOARD);
   const block = free.technicians[0]?.days[0]?.blocks[0];
@@ -177,7 +230,7 @@ test("says which technician and which window clashed, and keeps the job in hand"
   await press(page, ROHIT_BLOCK);
   await press(page, "Move visit");
   await press(page, TO_SANDEEP);
-  await page.getByRole("radio", { name: "Technician unavailable" }).check();
+  await page.getByRole("radio", { name: "Client asked" }).check();
   await page.getByRole("button", { name: "Move and notify" }).click();
 
   await expect(page.getByRole("alert")).toHaveText("Sandeep Yadav already has a job on Sat 20 Sep, morning.");
@@ -320,7 +373,7 @@ test("lets go of nothing while a move is being sent, so it cannot be sent twice"
   await press(page, ROHIT_BLOCK);
   await press(page, "Move visit");
   await press(page, TO_SANDEEP);
-  await reason(page, "Zone rebalance");
+  await reason(page, "Client asked");
   await press(page, "Move and notify");
   await expect(page.getByRole("button", { name: "Moving" })).toBeDisabled();
 
@@ -352,7 +405,7 @@ test("refuses a move made from a stale board, and says where the job is now", as
   await press(page, ROHIT_BLOCK);
   await press(page, "Move visit");
   await press(page, TO_SANDEEP);
-  await reason(page, "Zone rebalance");
+  await reason(page, "Client asked");
   await press(page, "Move and notify");
 
   await expect(page.getByRole("alert")).toHaveText(

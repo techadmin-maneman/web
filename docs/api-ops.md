@@ -1945,7 +1945,7 @@ Request body:
 }
 ```
 
-**409**: past_day; window_passed; clash; on_leave; back_to_back; does_not_fit; blackout; superseded, with what changed in fields; in_progress: the technician has begun the visit. One he has only checked in at moves with clear_check_in; one he has started or closed stays where it is
+**409**: past_day; window_passed; clash; on_leave; back_to_back; does_not_fit; blackout; superseded, with what changed in fields; in_progress: the technician has begun the visit. One he has only checked in at moves with clear_check_in; one he has started or closed stays where it is. ask_the_client: a client's visit to another day they did not ask for, which POST /api/dispatch/propose asks of them
 
 ```json
 {
@@ -4958,6 +4958,7 @@ Request body:
             "not_disputable",
             "dispute_window_closed",
             "move_gone",
+            "ask_the_client",
             "code_not_applicable",
             "code_off",
             "already_discounted",
@@ -8370,6 +8371,7 @@ Request body:
             "not_disputable",
             "dispute_window_closed",
             "move_gone",
+            "ask_the_client",
             "code_not_applicable",
             "code_off",
             "already_discounted",
@@ -10497,6 +10499,17 @@ Request body:
       ],
       "description": "The latest move of this visit its client has not heard of, and why. no_consent: he has not agreed to WhatsApp about his visits; not_sent: the WhatsApp was skipped or failed. Ops call him, then POST /api/dispatch/moves/{id}/told."
     },
+    "proposal": {
+      "anyOf": [
+        {
+          "$ref": "#/components/schemas/ProposedMove"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "A move to another day the client has been asked to confirm (POST /api/dispatch/propose), still open: the visit stays where it is until they accept it. Ops may withdraw it. Null for none."
+    },
     "begun": {
       "anyOf": [
         {
@@ -10530,6 +10543,7 @@ Request body:
     "status",
     "notice_hours",
     "untold",
+    "proposal",
     "begun"
   ],
   "additionalProperties": false
@@ -12126,6 +12140,7 @@ Request body:
             "type": "string",
             "enum": [
               "untold_move",
+              "move_unanswered",
               "leave_conflict",
               "address_to_confirm",
               "consultation_request",

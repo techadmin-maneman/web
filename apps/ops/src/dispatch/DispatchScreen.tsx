@@ -22,7 +22,7 @@
 // keeps all four as ops change them (./address.ts).
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { api, type Answer, type Board, type BoardQuery, type Landing, type Moved, type MoveReason } from "../api.ts";
+import { api, type Board, type BoardQuery, type Landing, type MoveReason } from "../api.ts";
 import { Shell } from "../components/Shell.tsx";
 import { dispatch } from "../content.ts";
 import { useAccess } from "../lib/access.ts";
@@ -39,7 +39,7 @@ import { Tray } from "./Tray.tsx";
 import { useBoard } from "./useBoard.ts";
 import { answersTo, foundBy, weekOf } from "./board-view.ts";
 import { ChangePanel, changedNotice, type Changing } from "./ChangePanel.tsx";
-import { doneNotice, moveRefusal, STALE, staleWords, type Notice } from "./landing.ts";
+import { askedNotice, doneNotice, moveRefusal, STALE, staleWords, type Notice } from "./landing.ts";
 import { NoticeLine } from "./NoticeLine.tsx";
 import { OpenedDrawer } from "./OpenedDrawer.tsx";
 import { isBlackout, landsAtFrom, useRooms, windowsFrom } from "./rooms.ts";
@@ -199,8 +199,22 @@ export function DispatchScreen() {
     [refresh],
   );
 
+  /** Ops take back a move to another day the client was asked to confirm; the visit stays where it is. */
+  const withdraw = useCallback(
+    async (proposalId: string, name: string) => {
+      const answer = await api.withdrawProposal(proposalId);
+      setNotice(
+        answer.ok
+          ? { tone: "done", text: dispatch.landing.withdrawn(name), call: null }
+          : { tone: "refusal", text: dispatch.landing.withdrawFailed, call: null },
+      );
+      await refresh();
+    },
+    [refresh],
+  );
+
   const send = useCallback(
-    async (reason: MoveReason, blackoutReason: string | null) => {
+    async (reason: MoveReason, blackoutReason: string | null, asking: boolean) => {
       const to = move?.to ?? null;
       if (move === null || to === null || move.sending) return;
       const { job } = move;
@@ -214,14 +228,16 @@ export function DispatchScreen() {
         blackoutReason,
       };
       const shown = shownOf(job);
-      const answer: Answer<Moved> =
+      // A client's visit to another day, for a reason not theirs, is asked of them; anything else is moved.
+      const moved = () =>
         job.kind === "block"
-          ? await api.move(idOf(job), landing, shown, move.clearingCheckIn)
-          : await api.assign(idOf(job), landing, shown);
+          ? api.move(idOf(job), landing, shown, move.clearingCheckIn)
+          : api.assign(idOf(job), landing, shown);
+      const answer = asking ? await api.propose(idOf(job), landing, shown) : await moved();
 
       if (answer.ok) {
         setMove(null);
-        setNotice(doneNotice(job, to, answer.body));
+        setNotice("proposal_id" in answer.body ? askedNotice(job, to, answer.body) : doneNotice(job, to, answer.body));
         opener.current = null;
         await refresh();
         focusBlock(idOf(job));
@@ -323,6 +339,10 @@ export function DispatchScreen() {
             setOpened(null);
             void told(moveId, name).then(restore);
           }}
+          onWithdraw={(proposalId, name) => {
+            setOpened(null);
+            void withdraw(proposalId, name).then(restore);
+          }}
           onChange={(next) => {
             setOpened(null);
             setNotice(null);
@@ -335,7 +355,7 @@ export function DispatchScreen() {
         <MovePicker
           job={picking.job}
           onCancel={unpick}
-          onSend={(reason, blackoutReason) => void send(reason, blackoutReason)}
+          onSend={(reason, blackoutReason, asking) => void send(reason, blackoutReason, asking)}
           sending={picking.sending}
           clearingCheckIn={picking.clearingCheckIn}
           to={picking.to}
