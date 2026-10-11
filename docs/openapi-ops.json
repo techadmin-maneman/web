@@ -296,6 +296,85 @@
         ],
         "additionalProperties": false
       },
+      "ClientList": {
+        "type": "object",
+        "properties": {
+          "clients": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "mobile": {
+                  "type": "string"
+                },
+                "state": {
+                  "type": "string",
+                  "enum": [
+                    "fitted",
+                    "lead",
+                    "nothing_booked"
+                  ]
+                },
+                "city": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "description": "Their address's city, else where they last booked or asked to be told."
+                },
+                "next_visit": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "id",
+                "name",
+                "mobile",
+                "state",
+                "city",
+                "next_visit"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "more": {
+            "type": "boolean",
+            "description": "Another page of 50 follows."
+          },
+          "cities": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "The cities served that the caller reaches, by name."
+          }
+        },
+        "required": [
+          "clients",
+          "more",
+          "cities"
+        ],
+        "additionalProperties": false
+      },
       "ClientSearch": {
         "type": "object",
         "properties": {
@@ -6906,7 +6985,7 @@
           },
           "message": {
             "type": "string",
-            "description": "What happened and what to do, with IDs only, as the chat was told."
+            "description": "What happened and what to do, as the chat was told, with IDs only; a low kit names its technician."
           },
           "link": {
             "anyOf": [
@@ -9315,7 +9394,7 @@
                 },
                 "by": {
                   "type": "string",
-                  "description": "Who: ops' Access identity, or the technician's ID for a job's use."
+                  "description": "Who: ops' Access identity, a service token by its label on the Staff list, or the technician's ID for a job's use."
                 },
                 "note": {
                   "anyOf": [
@@ -10339,6 +10418,75 @@
           },
           "429": {
             "description": "rate_limited: this address has sent its reports for the hour, or every address has",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/clients": {
+      "get": {
+        "summary": "Every client in the caller's cities, the soonest next visit first, then those with none, newest first",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "fitted",
+                "lead",
+                "nothing_booked"
+              ],
+              "description": "Where they stand; any, left out."
+            },
+            "required": false,
+            "description": "Where they stand; any, left out.",
+            "name": "state",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 60
+            },
+            "required": false,
+            "name": "city",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "minimum": 0,
+              "maximum": 10000,
+              "description": "From 0."
+            },
+            "required": false,
+            "description": "From 0.",
+            "name": "page",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A page of the list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClientList"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid_request",
             "content": {
               "application/json": {
                 "schema": {
@@ -12450,6 +12598,19 @@
             "required": false,
             "description": "The page after the one whose `next_before` this is.",
             "name": "before",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "include"
+              ],
+              "description": "include: the calls that only read, as each page opened makes, too. Left out, what changed alone."
+            },
+            "required": false,
+            "description": "include: the calls that only read, as each page opened makes, too. Left out, what changed alone.",
+            "name": "reads",
             "in": "query"
           }
         ],

@@ -24,6 +24,7 @@ interface Entry {
   actor: { kind: string; id: string; name: string | null };
   action: string;
   subject: { kind: string; id: string } | null;
+  detail: Record<string, unknown> | null;
 }
 
 const READER = "owner@maneman.in";
@@ -140,6 +141,26 @@ describe("the activity log", () => {
     await env.DB.prepare("UPDATE people SET erased_at = ?2 WHERE id = ?1").bind(CLIENT, NOW.toISOString()).run();
 
     expect((await read()).entries[0]?.actor).toEqual({ kind: "client", id: CLIENT, name: null });
+  });
+
+  // A minute of browsing filled the first screen with the pages opened.
+  it("shows what changed, and the pages opened only when asked for them", async () => {
+    await logged([
+      {
+        surface: "ops",
+        actor: staff("care@maneman.in"),
+        action: "ops.call",
+        detail: { method: "GET", route: "/api/clients/{id}", path: `/api/clients/${CLIENT}` },
+      },
+      {
+        surface: "ops",
+        actor: staff("care@maneman.in"),
+        action: "ops.call",
+        detail: { method: "POST", route: "/api/visits/{id}/cancel", path: `/api/visits/${VISIT}/cancel` },
+      },
+    ]);
+    expect((await read()).entries.map((entry) => entry.detail?.method)).toEqual(["POST"]);
+    expect((await read("?reads=include")).entries.map((entry) => entry.detail?.method)).toEqual(["POST", "GET"]);
   });
 
   it("is itself written to the log, under whoever read it", async () => {

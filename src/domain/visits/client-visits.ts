@@ -191,7 +191,7 @@ export async function nextVisit(db: D1Database, personId: string, now: Date): Pr
 
 /** The three states the apps show a client in. */
 export const CLIENT_STATES = ["fitted", "lead", "nothing_booked"] as const;
-type ClientState = (typeof CLIENT_STATES)[number];
+export type ClientState = (typeof CLIENT_STATES)[number];
 
 /**
  * A client is fitted once a fit or a later visit is done, a lead while

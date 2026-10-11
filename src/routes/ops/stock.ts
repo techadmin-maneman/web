@@ -91,9 +91,11 @@ const StockSchema = z
             technician_id: PlaceId,
             quantity: z.number().int().openapi({ description: "Into the place, positive; out of it, negative." }),
             reason: z.enum(MOVEMENT_REASONS),
-            by: z
-              .string()
-              .openapi({ description: "Who: ops' Access identity, or the technician's ID for a job's use." }),
+            by: z.string().openapi({
+              description:
+                "Who: ops' Access identity, a service token by its label on the Staff list, or the technician's ID " +
+                "for a job's use.",
+            }),
             note: z.union([z.string(), z.null()]),
           })
           .strict(),
