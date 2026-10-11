@@ -112,6 +112,30 @@ test("Retake drops the last frame from the phone", async ({ page }) => {
   expect((await heldOnPhone(page)).frames).toBe(0);
 });
 
+test("each tile shows its photograph once taken, and a tap on one takes that angle again", async ({ page }) => {
+  await fakeTech(page);
+  await page.goto(BEFORE);
+  const capture = page.getByRole("button", { name: "Capture" });
+  await expect(capture).toBeEnabled();
+  await capture.click();
+  await expect(page.getByText("1 of 5")).toBeVisible();
+  await capture.click();
+  await expect(page.getByText("2 of 5")).toBeVisible();
+  const pictures = page.locator("li img");
+  await expect(pictures).toHaveCount(2);
+  expect(await pictures.first().getAttribute("src")).toMatch(/^blob:/);
+
+  // Not only the last: the front, taken first, is taken again, and is the angle Capture takes next.
+  await page.getByRole("button", { name: "Take Front again" }).click();
+  await expect(page.getByText("1 of 5")).toBeVisible();
+  await expect(pictures).toHaveCount(1);
+  await expect(page.getByText("Front · face the camera, eyes level")).toBeVisible();
+  await capture.click();
+  await expect(page.getByText("2 of 5")).toBeVisible();
+  expect((await heldOnPhone(page)).frames).toBe(2);
+  expect(await axeViolations(page)).toEqual([]);
+});
+
 test("uploads each frame to the link the API hands out, then lands the set", async ({ page }) => {
   const fake = await fakeTech(page);
   await page.goto(BEFORE);
