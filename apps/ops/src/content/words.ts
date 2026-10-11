@@ -1,0 +1,57 @@
+// The Words page's words (Growth; docs/decisions/0126-the-words-page.md). The page imports them itself, so they stay
+// out of the console's first load.
+
+import { FAILED, NOT_PERMITTED, OFFLINE } from "./common.ts";
+
+export const words = {
+  title: "Words",
+  narrow: "Find words",
+  columns: { page: "Page", where: "Where", wording: "Wording", actions: "Change" },
+  changed: (by: string, day: string) => `Changed by ${by}, ${day}`,
+  edit: "Edit",
+  editLabel: (where: string) => `Edit ${where}`,
+  history: "History",
+  historyLabel: (where: string) => `History of ${where}`,
+  form: {
+    title: (where: string) => `Edit: ${where}`,
+    wording: "Wording",
+    inCode: (wording: string) => `In the code: ${wording}`,
+    keep: (holes: string) => `Keep ${holes}.`,
+    longest: (count: number) => `Up to ${String(count)} characters.`,
+    toCode: "Back to the code's wording",
+    next: "Review",
+    cancel: "Cancel",
+  },
+  check: {
+    title: "Review the change",
+    was: (wording: string) => `Was: ${wording}`,
+    now: (wording: string) => `Now: ${wording}`,
+    send: "Confirm",
+    saving: "Saving",
+    back: "Back",
+  },
+  versions: {
+    title: (where: string) => `History: ${where}`,
+    none: "Never changed.",
+    inCode: "The code's wording",
+    by: (by: string, day: string) => `${by}, ${day}`,
+    use: "Use",
+    useLabel: (day: string) => `Use the wording of ${day}`,
+    close: "Close",
+  },
+  done: "Saved.",
+  errors: {
+    empty: "Write something, or go back to the code's wording.",
+    holes: "Keep every {…} the page fills, and add none.",
+    price: "No prices: they come from the price book.",
+    visits: "No visit counts: what a referral earns is set in the console.",
+    placeholder: "No placeholder text.",
+    length: "Too long for where it sits.",
+    first_line: "The first line shows on a locked phone: no hair system, fitting or visit, and only its own details.",
+    ends_on_detail: "End on words, not a detail.",
+    not_found: "Not found. Reload.",
+    not_permitted: NOT_PERMITTED,
+    offline: OFFLINE,
+    unknown: FAILED,
+  },
+};

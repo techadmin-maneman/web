@@ -35,6 +35,7 @@ export const shell = {
     "partner-commission": "Partner commission",
     referrals: "Referrals",
     areas: "Areas",
+    words: "Words",
     settings: "Settings",
     staff: "Staff",
     activity: "Activity",

@@ -1,0 +1,107 @@
+/* Words: the lines in a table found by page or by what they say, each line's form and history beneath its row. */
+
+/* This page's own sizes, which nothing else draws (ADR 0077, as amended). */
+:root {
+  --local-words-table: 960px; /* the narrowest the table goes before it scrolls */
+  --local-words-text: 560px; /* the widest a line's wording runs before it wraps */
+}
+
+.narrow {
+  margin: var(--sp-16) var(--sp-20) var(--sp-8);
+}
+
+.scroll {
+  overflow-x: auto;
+}
+
+.table {
+  min-width: var(--local-words-table);
+}
+
+.table th,
+.table td {
+  vertical-align: top;
+  padding-block: var(--sp-8);
+}
+
+.page {
+  white-space: nowrap;
+  color: var(--text-muted);
+}
+
+.where {
+  font-weight: var(--weight-regular);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.text {
+  max-width: var(--local-words-text);
+  white-space: pre-line;
+}
+
+.changed {
+  display: block;
+  margin-top: var(--sp-4);
+  font-size: var(--fs-13);
+  color: var(--text-muted);
+}
+
+.actions {
+  white-space: nowrap;
+  text-align: right;
+}
+
+.actions button:first-child {
+  margin-left: 0;
+}
+
+.table .acting > td {
+  padding: 0 0 var(--sp-16);
+  background: var(--paper-light);
+}
+
+/* The form's box, as wide as the line it holds. */
+.wording {
+  flex: 1;
+  max-width: var(--local-words-text);
+}
+
+.box {
+  width: 100%;
+  white-space: pre-wrap;
+}
+
+.code,
+.hint {
+  margin: var(--sp-8) 0 0;
+  font-size: var(--fs-13);
+  color: var(--text-muted);
+  white-space: pre-line;
+}
+
+.versions {
+  margin: var(--sp-12) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.version {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--sp-4) var(--sp-16);
+  padding: var(--sp-8) 0;
+  border-top: var(--hairline) solid var(--paper-line);
+}
+
+.when {
+  min-width: var(--ops-figure);
+  font-size: var(--fs-13);
+  color: var(--text-muted);
+}
+
+.said {
+  flex: 1;
+  white-space: pre-line;
+}
