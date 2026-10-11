@@ -261,6 +261,7 @@ export const MY_DATA = {
         friend_visits: text("Free visits for you"),
         valid_days: text("Days they last"),
         granted_at: time("Given"),
+        clawed_back_at: time("Taken back"),
         created_at: time("When"),
       },
     },
