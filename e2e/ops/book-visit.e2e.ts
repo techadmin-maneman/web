@@ -178,7 +178,7 @@ test("books a consultation asked for from its Tasks row, on the day and window a
     },
   });
   await page.goto("/tasks");
-  const tasks = page.getByRole("region", { name: "Tasks" });
+  const tasks = page.getByRole("region", { name: /^\d+ open$/ });
   await tasks.getByRole("button", { name: `Book a visit · ${CLIENT.name}` }).click();
   const booking = panel(page);
   await expect(booking.getByLabel("Visit", { exact: true })).toHaveValue("consultation");

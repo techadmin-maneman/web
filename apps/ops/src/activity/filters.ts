@@ -33,6 +33,7 @@ export function filtersOf(search: string): Filters {
     visit: text("visit"),
     from: date("from"),
     to: date("to"),
+    reads: query.get("reads") === "include" ? "include" : undefined,
   };
 }
 

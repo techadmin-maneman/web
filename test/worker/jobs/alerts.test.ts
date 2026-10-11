@@ -250,3 +250,28 @@ describe("alertOnce", () => {
     expect(logs.lines()).toContainEqual(expect.objectContaining({ event: "alert_not_stored", key: "k" }));
   });
 });
+
+describe("the urgent space", () => {
+  it("is told of money nothing books or gives back, and of nothing else, beside the alert space", async () => {
+    const urgent: string[] = [];
+    const telling = createAlertOnce({
+      db: env.DB,
+      alert: (message) => {
+        told.push(message);
+        return Promise.resolve();
+      },
+      urgent: (message) => {
+        urgent.push(message);
+        return Promise.resolve();
+      },
+      now: () => NOW,
+      environment: "staging",
+      log: createLogger(),
+    });
+    told = [];
+    await telling({ key: "razorpay_payment_unheard:pay_1", message: "A payment nothing has booked." });
+    await telling({ key: `crm_lead:${PERSON}`, message: "A lead the CRM sync gave up on." });
+    expect(told).toEqual(["A payment nothing has booked.", "A lead the CRM sync gave up on."]);
+    expect(urgent).toEqual(["A payment nothing has booked."]);
+  });
+});

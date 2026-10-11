@@ -393,9 +393,12 @@ export async function stockView(
       .all<TechnicianRow>(),
     db
       .prepare(
-        `SELECT created_at, consumable_code, technician_id, quantity, reason, actor, note FROM stock_movements
-         WHERE ?2 IS NULL OR technician_id IN (SELECT value FROM json_each(?2))
-         ORDER BY created_at DESC, rowid DESC LIMIT ?1`,
+        // A service token by its label on the Staff list, as Activity names it.
+        `SELECT m.created_at, m.consumable_code, m.technician_id, m.quantity, m.reason, m.note,
+           COALESCE((SELECT label FROM staff_service_tokens WHERE client_id = m.actor), m.actor) AS actor
+         FROM stock_movements m
+         WHERE ?2 IS NULL OR m.technician_id IN (SELECT value FROM json_each(?2))
+         ORDER BY m.created_at DESC, m.rowid DESC LIMIT ?1`,
       )
       .bind(MOVEMENTS_SHOWN, kits === null ? null : JSON.stringify([...kits]))
       .all<MovementRow>(),

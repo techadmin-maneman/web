@@ -33,7 +33,7 @@ export const visits = {
     overdue: (month: string) => `Your replacement was due in ${month}.`,
     rows: { firstFit: "First fit", services: "Service visits", replacements: "Replacements", spend: "Total paid" },
     /** A client fitted before their visits were recorded has no first fit to name, which is not the same as none. */
-    noFirstFit: "Not on record",
+    noFirstFit: "Not yet",
     /** Beside the total, so a figure that includes tax is not read as one that does not. */
     gst: "GST included",
   },

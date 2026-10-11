@@ -19,11 +19,13 @@ import { fullDate, indiaDate, shortDate } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";
 import { useCallback, useState } from "react";
 import { api, documentUrl, type VisitDetail } from "../api.ts";
-import { messages, visits } from "../content.ts";
+import { messages, ONE_VISIT, visits } from "../content.ts";
+import { AddToCalendar } from "../components/AddToCalendar.tsx";
 import { Shell } from "../components/Shell.tsx";
 import { apiNow } from "../lib/clock.ts";
-import { duration, invoiceState, visitName, visitTitle } from "../lib/visit.ts";
+import { duration, invoiceState, oneVisitOf, visitName, visitTitle } from "../lib/visit.ts";
 import { whatsappWith } from "../lib/whatsapp.ts";
+import { firstNameOf } from "../../../../src/lib/names.ts";
 import { Loading } from "../states/Loading.tsx";
 import { NotFound } from "../states/NotFound.tsx";
 import { PageFailed } from "../states/PageFailed.tsx";
@@ -185,6 +187,19 @@ function Visit({ visit, onChanged }: { visit: VisitDetail; onChanged: () => void
   return (
     <div className={styles.coming}>
       <VisitCard visit={visit} />
+      {visit.stage === "booked" && (
+        <div className={styles.calendar}>
+          <AddToCalendar
+            visit={{
+              id: visit.id,
+              date: visit.date,
+              window: visit.window_label,
+              name: oneVisitOf(visit) === null ? visitName(visit.type) : ONE_VISIT,
+              technician: visit.technician === null ? null : firstNameOf(visit.technician.name),
+            }}
+          />
+        </div>
+      )}
     </div>
   );
 }

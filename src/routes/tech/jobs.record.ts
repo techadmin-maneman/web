@@ -6,6 +6,7 @@ import type { Context } from "hono";
 import type { AppEnv } from "../../http/context.ts";
 import { arrivalOfEvent } from "../../domain/visits/check-ins.ts";
 import {
+  closedAt,
   eventByClientId,
   landJobEvent,
   wasTechniciansJob,
@@ -244,4 +245,9 @@ export async function checkInReplayed(
     wait_ends_at: noShowWaitEnds(arrival, job.windowStart, job.type, noShowWaitMin).toISOString(),
     accepted,
   };
+}
+
+/** Whether the job has closed: an outcome landed, or ops closed it by hand. */
+export async function hasClosed(c: Ctx, appointmentId: string): Promise<boolean> {
+  return (await closedAt(c.env.DB, appointmentId)) !== null;
 }

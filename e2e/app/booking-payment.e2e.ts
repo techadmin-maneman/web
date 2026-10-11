@@ -17,7 +17,9 @@ import {
   paidInCheckout,
   refundedAfterPaying,
 } from "./checkout-fakes.ts";
-import { continueToPayment, TAKEN } from "./picking.ts";
+import { PORTS } from "../../scripts/lib/local-stack.ts";
+import { windowSpan, type BookingWindow } from "../../src/config/scheduling.ts";
+import { continueToPayment, TAKEN, windowsAskedAgain } from "./picking.ts";
 import { toPayment, toWindows, holdAs } from "./booking-fixtures.ts";
 
 // One client, one hold at a time: a new hold lets the client's earlier one go, so these run one after another, in
@@ -166,6 +168,29 @@ test("starts one payment, and one order, when the failed step is tapped twice", 
   });
 });
 
+/** "20261013T063000Z", as a calendar link writes an instant. */
+const stamp = (instant: Date): string => instant.toISOString().replace(/[-:]|\.\d{3}/g, "");
+
+test("offers the visit just booked to the client's calendar, at the window held", async ({ page }) => {
+  await fakeCheckout(page, "paid");
+  await confirmedByRazorpay(page);
+  const held = page.waitForResponse(
+    (response) =>
+      response.request().method() === "POST" && new URL(response.url()).pathname === "/api/holds" && response.ok(),
+  );
+  await toPayment(page);
+  const hold = (await (await held).json()) as { date: string; window: BookingWindow };
+  await page.getByRole("button", { name: "Pay Rs. 2,000" }).click();
+  const confirmed = page.getByRole("dialog", { name: "Confirmed" });
+  await expect(confirmed).toBeVisible({ timeout: 15_000 });
+
+  const { start, end } = windowSpan(hold.date, hold.window);
+  const google = new URL((await confirmed.getByRole("link", { name: "Google Calendar" }).getAttribute("href")) ?? "");
+  expect(google.searchParams.get("dates")).toBe(`${stamp(start)}/${stamp(end)}`);
+  const file = confirmed.getByRole("link", { name: "Apple or Outlook" });
+  await expect(file).toHaveAttribute("download", "mane-man-visit.ics");
+});
+
 test("picks another window when one has just gone, and pays for that one", async ({ page }) => {
   await fakeCheckout(page, "paid");
   await confirmedByRazorpay(page);
@@ -179,14 +204,67 @@ test("picks another window when one has just gone, and pays for that one", async
   await toWindows(page);
   const windows = page.getByRole("dialog", { name: "Pick a time" });
   await windows.getByRole("radio").and(page.locator(":enabled")).first().click();
+  const redrawn = windowsAskedAgain(page);
   await windows.getByRole("button", { name: "Continue to payment" }).click();
   await expect(windows.getByRole("alert")).toHaveText(TAKEN);
   // Nothing is chosen any more: the day's windows have been asked for again, and the client picks from those.
   await expect(windows.getByRole("button", { name: "Continue to payment" })).toBeDisabled();
+  await redrawn();
 
   await continueToPayment(page);
   await page.getByRole("button", { name: "Pay Rs. 2,000" }).click();
   await expect(page.getByRole("dialog").getByRole("status").getByText("Confirmed")).toBeVisible();
+});
+
+test("keeps the window picked while the day's windows are still being asked for again", async ({ page }) => {
+  await fakeCheckout(page, "paid");
+  await confirmedByRazorpay(page);
+  let taken = false;
+  await page.route("**/api/holds", (route) => {
+    if (taken || route.request().method() !== "POST") return route.fallback();
+    taken = true;
+    return route.fulfill({ status: 409, json: { error: { code: "taken", request_id: "e2e" } } });
+  });
+  await toWindows(page);
+  // The windows asked for again after the refusal come back slowly, after the client has picked.
+  let release: () => void = () => undefined;
+  const answered = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  let gone = "";
+  let kept = "";
+  await page.route("**/api/availability**", async (route) => {
+    if (!taken) return route.fallback();
+    await answered;
+    // The window that went is full in the fresh answer, as it would be. The one picked stays open, whatever the
+    // other tests' clients have held since.
+    const asked = new URL(route.request().url());
+    const answer = await route.fetch({
+      url: `http://127.0.0.1:${String(PORTS.app)}${asked.pathname}${asked.search}`,
+      headers: { ...route.request().headers(), host: `app.localhost:${String(PORTS.app)}` },
+    });
+    const body = (await answer.json()) as { days: { windows: { window: string; open: boolean }[] }[] };
+    for (const day of body.days)
+      for (const each of day.windows) each.open = each.window === gone ? false : each.window === kept || each.open;
+    return route.fulfill({ response: answer, json: body });
+  });
+  const windows = page.getByRole("dialog", { name: "Pick a time" });
+  const open = windows.getByRole("radio").and(page.locator(":enabled"));
+  /** A window's name, "Morning", from its radio's accessible name. */
+  const nameOf = async (radio: Locator) => /radio "(\w+)/.exec(await radio.ariaSnapshot())?.[1] ?? "";
+  const goneName = await nameOf(open.first());
+  const pickedName = await nameOf(open.last());
+  gone = goneName.toLowerCase();
+  kept = pickedName.toLowerCase();
+  await open.first().click();
+  await windows.getByRole("button", { name: "Continue to payment" }).click();
+  await expect(windows.getByRole("alert")).toHaveText(TAKEN);
+  const picked = windows.getByRole("radio", { name: new RegExp(`^${pickedName}`) });
+  await picked.click();
+  release();
+  await expect(windows.getByRole("radio", { name: new RegExp(`^${goneName}`) })).toBeDisabled();
+  await expect(picked).toBeChecked();
+  await expect(windows.getByRole("button", { name: "Continue to payment" })).toBeEnabled();
 });
 
 test("fetches Home again when the sheet is closed after paying, before the booking is confirmed", async ({ page }) => {

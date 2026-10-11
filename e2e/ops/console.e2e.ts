@@ -58,7 +58,7 @@ test("shows a person only the sections their access opens, and opens on the firs
     ]),
   });
   await page.goto("/");
-  await expect(page).toHaveURL(/\/no-shows$/);
+  await expect(page).toHaveURL(/\/payments$/);
   await expect(page.getByRole("heading", { level: 1, name: "Payments" })).toBeVisible();
   await expect(navigation(page).getByRole("list")).toHaveCount(1);
   await expectNames(navigation(page).getByRole("list", { name: "Finance" }).getByRole("link"), ["Payments", "Prices"]);

@@ -103,9 +103,15 @@ interface LandingInput extends EventInput {
  * already holds changes nothing and is answered as it was the first time.
  */
 export async function landJobEvent(db: D1Database, input: LandingInput): Promise<Landing> {
-  const answered = await answerBeforeLanding(db, input);
+  // What the write is checked against, read in one round trip to D1: a replay, the job's close, the steps it holds.
+  const [held, closed, done] = await Promise.all([
+    eventByClientId(db, input.job.id, input.eventId),
+    closedAt(db, input.job.id),
+    kindsLanded(db, input.job.id),
+  ]);
+  const answered = await answeredWith(db, input, { held, closed });
   if (answered !== null) return answered;
-  return landInOrder(db, input);
+  return landInOrder(db, input, done);
 }
 
 /**
@@ -115,7 +121,20 @@ export async function landJobEvent(db: D1Database, input: LandingInput): Promise
  * the write may go on to land.
  */
 export async function answerBeforeLanding(db: D1Database, input: EventInput): Promise<Landing | null> {
-  const held = await eventByClientId(db, input.job.id, input.eventId);
+  const [held, closed] = await Promise.all([
+    eventByClientId(db, input.job.id, input.eventId),
+    closedAt(db, input.job.id),
+  ]);
+  return answeredWith(db, input, { held, closed });
+}
+
+/** answerBeforeLanding, given the event this ID landed as, if any, and when the job closed, if it has. */
+async function answeredWith(
+  db: D1Database,
+  input: EventInput,
+  read: { readonly held: JobEvent | null; readonly closed: Date | null },
+): Promise<Landing | null> {
+  const { held, closed } = read;
   if (held !== null) return replayOf(db, held, input);
 
   const superseding = await jobChangesSince(db, input.job, input.technicianId, input.expectedStart);
@@ -124,7 +143,6 @@ export async function answerBeforeLanding(db: D1Database, input: EventInput): Pr
     return { kind: "superseded", ...superseding };
   }
 
-  const closed = await closedAt(db, input.job.id);
   if (closed !== null && !landsAfterClose(input.kind, closed, input.now)) return { kind: "already_closed" };
 
   const startsTheDay = input.kind === "check_in" || input.kind === "start";
@@ -141,9 +159,12 @@ async function replayOf(db: D1Database, held: JobEvent, input: EventInput): Prom
   return { kind: "superseded", ...(await jobChangesSince(db, input.job, input.technicianId, input.expectedStart)) };
 }
 
-/** Lands a write answerBeforeLanding let through: refused before a step it needs, else recorded once. */
-export async function landInOrder(db: D1Database, input: LandingInput): Promise<Landing> {
-  const done = await kindsLanded(db, input.job.id);
+/**
+ * Lands a write answerBeforeLanding let through: refused before a step it needs, else recorded once. `landed`: the
+ * steps the job holds, where the caller has read them already.
+ */
+export async function landInOrder(db: D1Database, input: LandingInput, landed?: Set<string>): Promise<Landing> {
+  const done = landed ?? (await kindsLanded(db, input.job.id));
   if (isNoShow(input.kind, input.body) && done.has("start")) return { kind: "already_started" };
   const needs = stepBefore({
     kind: input.kind,

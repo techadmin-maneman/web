@@ -12,6 +12,7 @@ const VENDOR_NAMES = {
   "zoho-books": "Zoho Books",
   razorpay: "Razorpay",
   evolution: "WhatsApp bridge",
+  msg91: "MSG91",
   ailabtools: "AILabTools",
   google: "Google",
   turnstile: "Turnstile",

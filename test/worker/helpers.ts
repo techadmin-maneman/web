@@ -41,8 +41,10 @@ export const LOCAL_SETTINGS: Settings = {
   referrerNameOnInvite: true,
   ipHashSalt: "test-salt-that-is-long-enough-000000",
   alertWebhookUrl: null,
+  urgentWebhookUrl: null,
   leadWebhookUrl: null,
   heartbeatUrl: null,
+  sentryDsn: null,
   zohoCrm: null,
   zohoBooks: null,
   razorpay: null,
@@ -70,7 +72,7 @@ export const LOCAL_SETTINGS: Settings = {
     linkSigningKey: "test-link-signing-key-that-is-long-enough",
     ailabApiKey: null,
   },
-  messaging: { enabled: true, allowlist: [], evolution: null },
+  messaging: { enabled: true, allowlist: [], evolution: null, msg91: null },
   devRoutes: false,
 };
 

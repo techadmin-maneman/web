@@ -200,3 +200,27 @@ describe("the address search", () => {
     expect(problemsOf({ ...stagingBase, GEOCODE_DAILY_CEILING: "0" })).toEqual([]);
   });
 });
+
+describe("validateStaticConfig: MSG91", () => {
+  const msg91 = {
+    MESSAGING_PROVIDER: "msg91",
+    MSG91_AUTH_KEY: "msg91-key",
+    MSG91_INTEGRATED_NUMBER: "+91 98000 00000",
+  };
+
+  it("reads the key and the sending number, digits only, and leaves Evolution unread", () => {
+    const config = validateStaticConfig({ ...production, ...msg91 });
+    expect(config.settings.messaging.msg91).toEqual({ authKey: "msg91-key", integratedNumber: "919800000000" });
+    expect(config.settings.messaging.evolution).toBeNull();
+  });
+
+  it("requires both while MSG91 sends, and the number with its country code", () => {
+    expect(problemsOf(without({ ...production, ...msg91 }, ["MSG91_AUTH_KEY", "MSG91_INTEGRATED_NUMBER"]))).toEqual([
+      "MSG91_AUTH_KEY is not set",
+      "MSG91_INTEGRATED_NUMBER is not set",
+    ]);
+    expect(problemsOf({ ...production, ...msg91, MSG91_INTEGRATED_NUMBER: "98000 00000" })).toEqual([
+      "MSG91_INTEGRATED_NUMBER must be the sending number with its country code, as 919810000000",
+    ]);
+  });
+});

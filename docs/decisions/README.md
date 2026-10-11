@@ -2,7 +2,7 @@
 
 Every decision this repository was built on, oldest first. A record says what was decided and why, and is not rewritten to say something else: a later record changes it, and says so in its own header (ADR 0001). **Changed by** gathers those later records, from either side, so an old record's reader knows to read on.
 
-This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. A record names its topic in its header, `- Topic:` and one of the headings below, and the test fails on one that does not. The next free number is 0114.
+This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. A record names its topic in its header, `- Topic:` and one of the headings below, and the test fails on one that does not. The next free number is 0115.
 
 ## By topic
 
@@ -109,6 +109,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 - [0060](0060-an-invited-friend-reaches-ops-and-the-crm.md) An invited friend reaches ops and the CRM
 - [0070](0070-vendor-correctness.md) What we write to Zoho is right, written once, and asked for sparingly
 - [0074](0074-hand-offs-and-messages.md) What each person learns when something changes for them
+- [0114](0114-whatsapp-business-platform-through-msg91.md) The WhatsApp Business Platform through MSG91
 
 ### Referrals
 
@@ -166,7 +167,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0013](0013-departures-from-the-ailabtools-harness.md) | Departures from the AILabTools harness | 2026-09-21 | accepted |  |
 | [0014](0014-try-on-api.md) | The try-on API | 2026-09-21 | accepted | [0018](0018-one-look-pro-only-lead-notices.md), [0039](0039-phase-2-budget.md), [0084](0084-a-clients-try-on-is-kept.md), [0104](0104-the-try-ons-look-on-whatsapp-only.md) |
 | [0015](0015-render-pipeline.md) | The render pipeline and its budget | 2026-09-21 | accepted | [0070](0070-vendor-correctness.md) |
-| [0016](0016-whatsapp-through-evolution.md) | WhatsApp through Evolution API, for now | 2026-09-21 | accepted |  |
+| [0016](0016-whatsapp-through-evolution.md) | WhatsApp through Evolution API, for now | 2026-09-21 | accepted | [0114](0114-whatsapp-business-platform-through-msg91.md) |
 | [0017](0017-no-paid-face-precheck.md) | No paid face pre-check | 2026-09-21 | accepted |  |
 | [0018](0018-one-look-pro-only-lead-notices.md) | One look per visitor, Pro only, and new-lead notices | 2026-09-21 | accepted | [0104](0104-the-try-ons-look-on-whatsapp-only.md) |
 | [0019](0019-erasure.md) | Erasure | 2026-09-21 | accepted | [0066](0066-erasure-all-or-nothing.md), [0094](0094-where-a-consent-was-given.md) |
@@ -262,3 +263,4 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0111](0111-a-technician-never-takes-two-visits-in-a-row.md) | A technician never takes two visits in a row | 2026-10-05 | accepted, on the owner's ruling of 5 October 2026 |  |
 | [0112](0112-workers-paid.md) | Workers Paid | 2026-10-06 | accepted, on the owner's purchase of 6 October 2026 |  |
 | [0113](0113-fsms-columns-go.md) | FSM's columns go | 2026-10-06 | accepted |  |
+| [0114](0114-whatsapp-business-platform-through-msg91.md) | The WhatsApp Business Platform through MSG91 | 2026-10-11 | accepted |  |

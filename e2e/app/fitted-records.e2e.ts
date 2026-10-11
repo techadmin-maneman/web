@@ -1,4 +1,5 @@
 import { fullDate } from "../../packages/web-kit/dates.ts";
+import { windowSpan } from "../../src/config/scheduling.ts";
 import { assertInContract } from "../contract.ts";
 import { expect, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
@@ -40,6 +41,28 @@ test("a past visit carries its own invoice, or says why there is none", async ({
   // The consultation was free, so no invoice will ever exist.
   await page.goto(`/visits/${client.consultation.id}`);
   await expect(page.getByText("No charge for this visit, so there is no invoice.")).toBeVisible();
+});
+
+test("a visit to come offers itself to the client's calendar, at its window; one done does not", async ({ page }) => {
+  const client = fittedClient();
+  await logIn(page, client.mobile);
+  await expect(page.getByRole("heading", { level: 1, name: "Your next visit" })).toBeVisible();
+  await page.goto(`/visits/${client.next.id}`);
+  const google = new URL((await page.getByRole("link", { name: "Google Calendar" }).getAttribute("href")) ?? "");
+  const { start, end } = windowSpan(client.next.date, "afternoon");
+  const stamp = (instant: Date) => instant.toISOString().replace(/[-:]|\.\d{3}/g, "");
+  expect(Object.fromEntries(google.searchParams)).toMatchObject({
+    text: "Mane Man: Service visit",
+    dates: `${stamp(start)}/${stamp(end)}`,
+    details: "Imran arrives in the window, 12 to 4 pm.",
+  });
+  const file = page.getByRole("link", { name: "Apple or Outlook" });
+  const ics = decodeURIComponent((await file.getAttribute("href"))?.split(",")[1] ?? "");
+  expect(ics).toContain(`UID:${client.next.id}@maneman.in`);
+
+  await page.goto(`/visits/${client.service.id}`);
+  await expect(page.getByRole("link", { name: "Tax invoice" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Google Calendar" })).toHaveCount(0);
 });
 
 test("Photos: the timeline, a photograph saved to the phone, and the compare", async ({ page }) => {

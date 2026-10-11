@@ -8,7 +8,7 @@
 // Every other page's header searches here too. The words and what they found
 // are kept in the history entry, so Back from a client finds the results again;
 // before any search, the clients opened this session are offered
-// (lib/client-search.ts).
+// (lib/client-search.ts), and beneath them every client (./ClientList.tsx).
 
 import { errorText } from "@maneman/web-kit/refusal";
 import { Button } from "@maneman/ui/Button";
@@ -20,6 +20,7 @@ import { clients } from "../content.ts";
 import { keepSearch, keptSearch, recentClients, type KeptSearch } from "../lib/client-search.ts";
 import { phoneWords } from "../lib/phone.ts";
 import { clientPath } from "../route.ts";
+import { ClientList } from "./ClientList.tsx";
 import styles from "./clients.module.css";
 
 const copy = clients.find;
@@ -152,6 +153,7 @@ export function FindClientScreen() {
       </form>
       {finding.step === "found" && <Found text={finding.text} found={finding.found} />}
       {finding.step === "idle" && <Recent />}
+      {finding.step !== "found" && <ClientList />}
     </Shell>
   );
 }

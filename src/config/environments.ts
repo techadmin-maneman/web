@@ -125,8 +125,9 @@ export const ZONE_ID = "d33891be281c088bf3e0e927d7ed20f9";
 export const PROVIDER_VARS = {
   IMAGE_PROVIDER: ["ailabtools", "stub"],
   CRM_PROVIDER: ["zoho", "stub"],
-  // Evolution for now; an official BSP later (docs/decisions/0016-whatsapp-through-evolution.md).
-  MESSAGING_PROVIDER: ["evolution", "stub"],
+  // Evolution's bridge, or the WhatsApp Business Platform through MSG91 once the business number's templates are
+  // approved (docs/decisions/0114-whatsapp-business-platform-through-msg91.md).
+  MESSAGING_PROVIDER: ["evolution", "msg91", "stub"],
   // Verifies the Cloudflare Access token on the ops surface (docs/decisions/0031-access-and-audit.md).
   ACCESS_PROVIDER: ["cloudflare", "stub"],
   // Login codes by SMS need a DLT-registered provider. Until one is chosen, "none": the app offers WhatsApp only

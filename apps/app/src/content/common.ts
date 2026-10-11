@@ -40,6 +40,13 @@ export const BOOKING_URL: Readonly<Record<EnvironmentName, string>> = {
   production: "https://maneman.in/book",
 };
 
+/** The public site's try-on, for a client with no photographs yet: the look it makes comes back to Photos. */
+export const TRY_ON_URL: Readonly<Record<EnvironmentName, string>> = {
+  local: "http://127.0.0.1:4321/try",
+  staging: "https://staging.maneman.in/try",
+  production: "https://maneman.in/try",
+};
+
 /** The three windows a visit is booked in (design/phase2/Client App, the windows data). */
 export const WINDOW_NAMES = { morning: "Morning", afternoon: "Afternoon", evening: "Evening" } as const;
 
@@ -49,6 +56,17 @@ type WindowLabel = keyof typeof WINDOW_NAMES;
 
 /** "Afternoon, 12 to 4 pm", as a visit's card gives its window. */
 export const windowText = (label: WindowLabel) => `${WINDOW_NAMES[label]}, ${WINDOW_HOURS[label]}`;
+
+/** Not drawn: a visit to come, offered to the client's own calendar. */
+export const calendar = {
+  label: "Add to your calendar",
+  google: "Google Calendar",
+  file: "Apple or Outlook",
+  fileName: "mane-man-visit.ics",
+  title: (visit: string) => `Mane Man: ${visit}`,
+  details: (hours: string, technician: string | null) =>
+    `${technician ?? "Your technician"} arrives in the window, ${hours}.`,
+};
 
 /** Each kind of visit, as the design names it. */
 export const VISIT_TYPES = {
@@ -101,6 +119,8 @@ export const empty = {
   photos: {
     title: "Photos",
     lines: ["Your photos begin at your first visit.", "Five angles at every visit, for your record."],
+    // Not drawn: a way on while there is nothing to show.
+    tryOn: "Try a look on yourself",
   },
   payments: {
     title: "Payments",

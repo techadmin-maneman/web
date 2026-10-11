@@ -4,9 +4,9 @@ The checklist that takes the site and the apps to production, in this order: **t
 
 Nothing reaches production while a point in `docs/open-points.md` is open, except its engineering follow-ups. Each step here names the point it closes, who does it, and the section of `docs/runbook.md` (RB) that has the commands. `W` is `node node_modules/wrangler/bin/wrangler.js`. Tick a box when the step is done, and record the date where the open point says so.
 
-## Where production stands, 27 September 2026
+## Where production stands, checked 11 October 2026
 
-- **Code:** 268eaa4, of 21 September 2026, with migrations to 0004. The next release carries every migration since.
+- **Code:** 268eaa4, of 21 September 2026, with migrations to 0004: no release since. The next release carries every migration since.
 - **Surfaces:** the public surface alone (`ENABLED_SURFACES`, `src/config/environments.ts`); `mm-site` serves `site/placeholder/production`.
 - **Providers** (`wrangler.jsonc`, `env.production.vars`): CRM `zoho`, WhatsApp `evolution` with `MESSAGING_ENABLED` `"false"`, Books, payments and the geocoder `none`, `SELF_SERVE_BOOKING` `"false"`.
 - **Apps:** `mm-app-production` exists with no route. The release leaves every app alone until its surface is switched on (item 152, fixed 27 September 2026).
@@ -17,14 +17,15 @@ Nothing here needs a release. The first two have dates.
 
 **The owner**
 
-- [ ] **Subscribe to Books Standard before its trial ends, on or about 7 October 2026** (item 4). FSM's trial lapses: no plan is bought (ADR 0110).
+- [x] **Zoho Books Professional,** bought 8 October 2026 (item 4). FSM's trial lapses: no plan is bought (ADR 0110).
 - [x] **Workers Paid,** bought 6 October 2026 (ADR 0112). The zone stays on the Free website plan.
 - [x] **Zoho CRM Professional,** bought 6 October 2026: the sync writes 11 custom fields on a Lead, past Standard's 10.
 - [ ] **Start Razorpay's KYC** for live mode (item 6); it takes days and gates every live payment.
 - [ ] **Start DLT registration** for SMS login codes (item 37): the entity, a sender ID and the login-code template.
 - [ ] **A dedicated WhatsApp number** on its own Evolution instance, its webhook to us (item 38; provisioning, step 12, and "The WhatsApp number is banned" for moving a number).
 - [ ] **Fix staging's Google key** (item 54; provisioning, step 13): in Google Cloud, on the key's project, enable the **Places API (New)** and the **Geocoding API**; link billing; restrict the key to those two APIs and give it **no application restriction by website**, since our server calls it; set the quotas provisioning, step 13 lists. Then save an address on app-staging with a building chosen from the list and check it carries a pin (provisioning, step 13, "If the address search misbehaves").
-- [ ] **Buy GitHub Team** (items 88 and 89), then require every `ci.yml` job on `main`, limit the `production` environment to `main`, and delete merged branches. Check whether required reviewers on a private repository's environment need a higher plan.
+- [ ] **Make the repository private, before the site's release** (items 88 and 89). It is public for free Actions minutes, so its briefs, rulings, prices and runbooks are readable by anyone. Buy GitHub Team, switch the repository to private, then require every `ci.yml` job on `main`, limit the `production` environment to `main`, and check whether required reviewers on a private repository's environment need a higher plan.
+- [ ] **Switch on the console's permissions on staging** (ADR 0109). On staging's Admin › Staff, signed in as yourself: add your own e-mail with Admin · Manage, national, if it is not listed, then switch Access control on. For a week, read staging's `staff_access_refused` log lines and correct any grant they show is missing.
 - [ ] **Zoho tokens** (provisioning, step 8 and 11b.1): a Self Client refresh token for scripts and proofs alone (item 32); the CRM token again with `ZohoCRM.modules.contacts.ALL` (item 21); and every token with only the scopes its sync uses (item 36).
 - [ ] **The CRM** (provisioning, step 8): `node --env-file=.env.crm-<env> scripts/ops/setup-crm.ts --check`, then without `--check`, then `node --env-file=.env.worker-<env> scripts/ops/check-zoho-setup.ts` (item 34); and, by hand, the one workflow rule: contact consent becoming true assigns an owner, nothing firing for "Try-on — delivery only" (item 35).
 - [ ] **The technicians:** each one added in the console's Technicians with his mobile number, his city and his zone; your own as well, to sign in to the technician app yourself.
@@ -46,6 +47,7 @@ Nothing here needs a release. The first two have dates.
 
 - [ ] **Production's AILabTools key** (item 153): `W secret put AILAB_API_KEY --env production`, with a key of production's own.
 - [ ] **Staging's refund account:** the owner's "Razorpay – staging test" ID as `BOOKS_REFUND_ACCOUNT_ID` in `env.staging.vars`, released through CI (item 10).
+- [ ] **Error tracking** (RB, "The outside watchers", point 4): a Sentry project for staging and one for production, on the free plan, each DSN as that environment's `SENTRY_DSN`.
 - [ ] **Staging's cron heartbeat** (RB, "The outside watchers", point 1): a healthchecks.io check, its ping URL as staging's `HEARTBEAT_URL`; and Account Analytics: Read on `mm-ci-staging`, so each staging deploy reports mm-api's CPU time (provisioning, step 6).
 
 ## 2. Proofs on staging
@@ -104,6 +106,7 @@ With self-serve booking off, a consultation booked on the site is a request: the
 **Before it:**
 
 - [ ] The payment run of section 2 passed (item 8).
+- [ ] **The console's permissions in production** (ADR 0109): each person's grants on production's Admin › Staff, and Access control switched on, before anyone but you can reach `ops.maneman.in`. While it is off, everyone Access lets in can refund, waive, set prices and erase.
 - [ ] Razorpay live: KYC, live keys, and the live webhook to `https://maneman.in/api/hooks/razorpay` with the nine events of "The dashboards" below (items 5, 6 and 154; provisioning, step 11c).
 - [ ] The Razorpay and Zoho tables of "The dashboards" below walked on staging and production, each result recorded.
 - [ ] The CA's answers, and GST on in Books with the real GSTIN, Books synced again (items 2, 3, 9, 14, 16, 17 and 26).

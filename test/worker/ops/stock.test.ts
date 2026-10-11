@@ -193,6 +193,11 @@ describe("low stock", () => {
       expect.stringContaining(`Stock is low in technician ${IMRAN}'s kit: Tape strips 4 strip (level 5)`),
     ]);
     expect(job.deps.alerts[0]).not.toContain("Imran");
+    // The console names the kit by its technician, as the chat is never told.
+    const listed = await (await request(job.ops, "/api/alerts")).json<{ alerts: { message: string }[] }>();
+    expect(listed.alerts.map((alert) => alert.message)).toEqual([
+      expect.stringContaining("Stock is low in Imran Qureshi's kit: Tape strips 4 strip (level 5)"),
+    ]);
 
     // Lower still, and the same alert is counted, not told again.
     await job.post(

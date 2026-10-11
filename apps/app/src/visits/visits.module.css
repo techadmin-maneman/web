@@ -240,6 +240,10 @@
   padding: var(--sp-10) var(--sp-20) var(--sp-24);
 }
 
+.calendar {
+  margin-top: var(--sp-22);
+}
+
 /* An invoice a day late, and a way to ask for it. */
 .late {
   display: flex;

@@ -39,7 +39,7 @@ function cards(stages: readonly NorwoodStage[], offset: number) {
                     <DesignPicture
                       file={photo.file}
                       alt={photo.alt}
-                      sizes="(min-width: 761px) 240px, 46vw"
+                      sizes="(min-width: 761px) 210px, 104px"
                       widths={[240, 480]}
                       class="focus-norwood"
                     />
@@ -104,18 +104,22 @@ function cards(stages: readonly NorwoodStage[], offset: number) {
     margin: 0;
     padding: 0;
   }
-  .early {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(min(46%, var(--norwood-early-min)), 1fr));
-    gap: var(--norwood-gap);
-    max-width: var(--norwood-early-max);
-  }
-  /* v2 centres this row; here it starts at the left edge, like the early group, by request. */
+  /*
+   * Both groups on one grid of equal columns, so the two stages we do not fit are drawn no larger than the five we
+   * do. v2 centres the late row; here both start at the left edge, by request.
+   */
+  .early,
   .flow {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(min(46%, var(--norwood-flow-basis)), 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(var(--norwood-flow-basis), 1fr));
     gap: var(--norwood-gap);
     max-width: var(--norwood-flow-row-max);
+  }
+  @media (min-width: 1024px) {
+    .early,
+    .flow {
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+    }
   }
   /*
    * Each card is three rows of its group's grid (subgrid): picture, name,
@@ -197,6 +201,40 @@ function cards(stages: readonly NorwoodStage[], offset: number) {
     color: var(--text-muted);
     max-width: var(--measure-note);
     text-wrap: pretty;
+  }
+  /*
+   * A phone: one card a row, its picture beside its words, so names and tags keep to a line and no stage stands
+   * alone.
+   */
+  @media (max-width: 760px) {
+    .early,
+    .flow {
+      grid-template-columns: minmax(0, 1fr);
+    }
+    .card {
+      grid-row: auto;
+      grid-template-columns: var(--norwood-thumb) minmax(0, 1fr);
+      grid-template-rows: auto 1fr;
+    }
+    .picture {
+      grid-row: 1 / span 2;
+      border-right: var(--hairline) solid var(--paper-line);
+    }
+    .head {
+      grid-row: 1;
+      border-top: 0;
+      flex-wrap: wrap;
+      row-gap: var(--sp-4);
+    }
+    .late .head {
+      border-top: 0;
+    }
+    .late .picture {
+      border-right: var(--rule-strong) solid var(--ink);
+    }
+    .description {
+      grid-row: 2;
+    }
   }
   .actions {
     margin-top: var(--norwood-actions-gap);

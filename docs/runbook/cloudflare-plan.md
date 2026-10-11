@@ -14,15 +14,15 @@ Cloudflare is not the only card now. The owner's own card is on Google Maps Plat
 
 If an R2 alert fires: set `UPLOAD_DAILY_CEILING`, `RENDER_DAILY_CEILING` and `RESULT_READ_DAILY_CEILING` to `"0"` in `wrangler.jsonc` and deploy. New uploads, renders and result reads then answer `busy`. Find the cause before raising them again. `test/node/tooling/free-tier-budget.test.ts` refuses any ceiling that could take R2 past 80% of its free allowance, counting the share set aside for Phase 2 (`docs/decisions/0015-render-pipeline.md`, `docs/decisions/0039-phase-2-budget.md`).
 
-## Workers daily limit reached (1027)
+## A flood of requests
 
-Workers requests, 100,000 a day, are the account's too, staging and production together, and every surface spends them: the API on every host, the site's home, `/book` and `/r/*` pages, and the three apps. On Workers Free, past them Cloudflare answered every request a Worker would have served with **error 1027** until midnight UTC. On Workers Paid (ADR 0112) there is no daily limit: a flood is billed, at each million requests past the month's 10 million, instead of stopping every surface. The steps below still find and block one.
+Workers Paid has no daily limit: requests past the monthly allowance, 10 million on the account, staging and production together, are billed. A flood of them shows first as the budget alert's email, or as the day's count in **Workers & Pages** → **Overview**. Every surface spends them: the API on every host, the site's pages and the three apps.
 
-1. **Confirm it.** Cloudflare dashboard → **Workers & Pages** → **Overview** shows the day's requests near 100,000. A page that answers 1027 on one host answers it on all of them.
+1. **Confirm it.** **Workers & Pages** → **Overview** shows the day's requests far above the usual.
 2. **Find who is spending them.** `maneman.in` → **Security** → **Analytics** (or **Analytics & Logs** → **HTTP Traffic**): group by source IP, then by path and user agent. The rate-limiting rule's blocks (provisioning, step 15) show there too. A test run on staging is the usual cause: stop it.
 3. **Block the attacker.** **Security** → **Security rules** → **Create rule** → **Custom rules** (the free plan has five): match the addresses, their AS number or their country, action **Block**. This stops them spending tomorrow's allowance as well. Keep the rule until the traffic has stopped for a day, then delete it.
 4. **Many addresses at once** cannot be held off by a rule per address. Lower the rate-limiting rule's **Requests** for the day, and tell the owner what it is costing.
-5. **After the reset,** check the cron ran (the heartbeat, [The outside watchers](alerts.md#the-outside-watchers)) and that Razorpay's retried webhooks arrived ([Razorpay's webhook is not arriving](razorpay.md#razorpays-webhook-is-not-arriving)).
+5. **Once it stops,** check the cron ran (the heartbeat, [The outside watchers](alerts.md#the-outside-watchers)) and that Razorpay's retried webhooks arrived ([Razorpay's webhook is not arriving](razorpay.md#razorpays-webhook-is-not-arriving)).
 
 ## R2 storage growing
 

@@ -33,7 +33,7 @@ A capability with more than one way to run has a folder: `providers/books/`, `cr
 implementation from the settings; the vendor's own file sits beside it (`zoho.ts`, `razorpay.ts`, `evolution.ts`,
 `ailabtools.ts`, `google-places.ts`); and `stub.ts` is the local and test stand-in, with whatever a test steers it by.
 Where a capability is switched off, the factory answers with an implementation that refuses every call. One-file
-providers (`alerts.ts`, `codes.ts`, `turnstile.ts`, `cloudflare-access.ts`) and what every vendor shares
+providers (`alerts.ts`, `codes.ts`, `turnstile.ts`, `cloudflare-access.ts`, `error-tracking.ts`) and what every vendor shares
 (`vendor-fetch.ts`, `vendor-answer.ts`, `zoho-http.ts`, `provider-error.ts`) stay at the top.
 
 A provider answers what the domain is expected to handle as a result (`{ ok: false, reason }`: an address not found,
