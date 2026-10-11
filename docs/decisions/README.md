@@ -2,7 +2,7 @@
 
 Every decision this repository was built on, oldest first. A record says what was decided and why, and is not rewritten to say something else: a later record changes it, and says so in its own header (ADR 0001). **Changed by** gathers those later records, from either side, so an old record's reader knows to read on.
 
-This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. A record names its topic in its header, `- Topic:` and one of the headings below, and the test fails on one that does not. The next free number is 0122.
+This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. A record names its topic in its header, `- Topic:` and one of the headings below, and the test fails on one that does not. The next free number is 0123.
 
 ## By topic
 
@@ -79,6 +79,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 - [0106](0106-a-clients-hair-profile.md) A client's hair profile: the fit spec and their history
 - [0110](0110-field-work-without-fsm.md) Field work without Zoho FSM
 - [0113](0113-fsms-columns-go.md) FSM's columns go
+- [0122](0122-technician-pay-per-visit.md) Technician pay per visit
 
 ### Money and Books
 
@@ -278,3 +279,4 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0119](0119-blackouts-by-city-and-trained-fitters.md) | Blackouts by city, and trained fitters | 2026-10-11 | accepted |  |
 | [0120](0120-the-board-sees-the-road.md) | The board sees the road | 2026-10-11 | accepted |  |
 | [0121](0121-the-site-and-the-app-book-with-the-same-parts.md) | The site and the app book with the same parts | 2026-10-11 | accepted |  |
+| [0122](0122-technician-pay-per-visit.md) | Technician pay per visit | 2026-10-11 | accepted |  |
