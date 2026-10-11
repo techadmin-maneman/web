@@ -16,7 +16,7 @@ const read = (page: string) =>
     .replace(/<[^>]+>/g, " ")
     .replace(/[ \t]+/g, " ");
 
-// DS-04: the page drew its own greys.
+// A downloaded page carries no stylesheet of ours, so its colours are written out and held to the tokens here.
 it("is drawn in the brand's colours", () => {
   const tokens = readFileSync("packages/brand/tokens.css", "utf8");
   for (const [name, value] of Object.entries(PAGE_COLOURS)) expect(value, name).toBe(colourOf(name, tokens));
