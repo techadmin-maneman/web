@@ -248,7 +248,7 @@ test("names the client of a no-show, and leads to their visits and to the case",
     "/clients/22000000-0000-4000-8000-000000000010/visits",
   );
   await noShow.getByRole("link", { name: /^Decide in Payments/ }).click();
-  expect(new URL(page.url()).pathname).toBe("/no-shows");
+  expect(new URL(page.url()).pathname).toBe("/payments");
   expect(new URL(page.url()).hash).toBe("#case-66000000-0000-4000-8000-000000000001");
 });
 
@@ -292,7 +292,7 @@ test("names a disputed charge and what it kept, and leads to the dispute in Paym
   );
   await expect(vikram.getByRole("link", { name: "Decide in Payments · Vikram Sethi", exact: true })).toHaveAttribute(
     "href",
-    "/no-shows#dispute-dd000000-0000-4000-8000-000000000001",
+    "/payments#dispute-dd000000-0000-4000-8000-000000000001",
   );
   // A client since erased still has their charge ruled on.
   await expect(row(page, "Erased client")).toContainText("Disputes a charge: a free service visit");

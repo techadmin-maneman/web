@@ -535,7 +535,7 @@ async function photos(browser: Browser, design: Page): Promise<void> {
  * and a disputed charge (docs/decisions/0096-a-no-shows-charge-and-its-dispute.md).
  */
 async function noShows(browser: Browser, design: Page): Promise<void> {
-  const page = await openConsole(browser, "/no-shows");
+  const page = await openConsole(browser, "/payments");
   const money = page.getByRole("region", { name: /^Today/ });
   await money.getByText("Cancelled 9:14 am · visit was 10 am").waitFor();
   await pair({

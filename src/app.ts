@@ -141,15 +141,12 @@ const SURFACE_ROUTES: Readonly<Record<Surface, readonly ((app: App) => void)[]>>
     registerClientVisits,
     registerClientMoveProposals,
     registerClientPhotos,
-    // After the visits: they put the session on every /api/visits/* route.
     registerClientDisputes,
     registerClientPayments,
     registerClientAvailability,
     registerClientBooking,
-    // After the booking: it puts the session and the self-serve switch on every /api/holds/* route.
     registerClientDiscountCodes,
     registerClientChanges,
-    // After the changes: they put the session and the self-serve switch on every /api/appointments/* route.
     registerClientNotes,
     registerClientRefer,
     registerClientData,
@@ -215,7 +212,6 @@ const SURFACE_ROUTES: Readonly<Record<Surface, readonly ((app: App) => void)[]>>
     // Who may do what in the console.
     registerOpsStaff,
   ],
-  // The discount code after the jobs, which put the technician's session on every /api/tech/jobs/* route.
   tech: [
     registerHealth,
     registerClientErrors,

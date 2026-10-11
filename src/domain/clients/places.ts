@@ -107,6 +107,9 @@ function cityOfRow(kind: PlacedRecord, row: string): string {
   return RECORD_PLACES[kind].city(row);
 }
 
+/** The city of the client in the row named, as SQL: their address's, else where they last booked or asked to be told. */
+export const clientCityOf = (row: string): string => cityOfRow("client", row);
+
 /** The city a record is in; null where none can be found, or there is no such record. */
 export async function cityOf(db: D1Database, kind: PlacedRecord, id: string): Promise<string | null> {
   const { table } = RECORD_PLACES[kind];

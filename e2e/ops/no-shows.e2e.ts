@@ -78,7 +78,7 @@ test("says a no-show's amount was not recorded where its charge kept none on rec
     charges: DAY_MONEY.charges.map((charge) => (charge.kind === "no_show" ? { ...charge, amount: null } : charge)),
   };
   await answer(page, { "GET /api/payments": json(unrecorded), "GET /api/no-shows": json(NO_SHOWS) });
-  await page.goto("/no-shows");
+  await page.goto("/payments");
   const charge = page.getByRole("listitem").filter({ hasText: "Karan Bose · no-show" });
   await expect(charge.getByText("Amount not recorded")).toBeVisible();
   await expect(charge.getByText("Rs.")).toBeHidden();
@@ -86,7 +86,7 @@ test("says a no-show's amount was not recorded where its charge kept none on rec
 
 // A disputed charge once floated between the panels, with no count and nothing that could link to it.
 test("lists the disputed charges in a queue with their count, and opens the one a task names", async ({ page }) => {
-  await open(page, undefined, `/no-shows#dispute-${DISPUTE}`);
+  await open(page, undefined, `/payments#dispute-${DISPUTE}`);
   const queue = page.getByRole("region", { name: DISPUTES_QUEUE });
   await expect(queue.getByRole("listitem")).toHaveCount(1);
   await expect(queue.getByText("1", { exact: true })).toBeVisible();
@@ -126,7 +126,7 @@ test("says beside a disputed check-in when the bounds moved the phone's time", a
     "GET /api/no-shows/disputes": json({ disputes: [moved] }),
     "GET /api/no-shows/decided": json(DECIDED),
   });
-  await page.goto("/no-shows");
+  await page.goto("/payments");
   const checkIn = disputeCard(page)
     .getByRole("term")
     .filter({ hasText: /^Check-in$/ })
@@ -163,7 +163,7 @@ test("says on a disputed charge that the reminder never went, where it was not s
     "GET /api/no-shows/decided": json(DECIDED),
   });
   await page.clock.setFixedTime(TASKS_READ_ON);
-  await page.goto("/no-shows");
+  await page.goto("/payments");
   const whatsapp = disputeCard(page)
     .getByRole("term")
     .filter({ hasText: /^WhatsApp$/ })
@@ -219,7 +219,7 @@ test("says so when nothing was charged on the day", async ({ page }) => {
     "GET /api/no-shows": json(NO_SHOWS),
   });
   await page.clock.setFixedTime(TASKS_READ_ON);
-  await page.goto("/no-shows");
+  await page.goto("/payments");
   await expect(page.getByText("No charges today.")).toBeVisible();
   // A day on which nothing came in is a nought, which is true and not a guess.
   await expect(page.getByRole("region", { name: MONEY, exact: true }).getByText("Rs. 0").first()).toBeVisible();
@@ -228,7 +228,7 @@ test("says so when nothing was charged on the day", async ({ page }) => {
 
 test("says so when the day's money cannot be loaded, and leaves the queue standing", async ({ page }) => {
   await answer(page, { "GET /api/payments": fails(503, "unavailable"), "GET /api/no-shows": json(NO_SHOWS) });
-  await page.goto("/no-shows");
+  await page.goto("/payments");
   await expect(page.getByRole("alert")).toContainText("Couldn't load this.");
   await expect(page.getByText(FIRST)).toBeVisible();
 });
