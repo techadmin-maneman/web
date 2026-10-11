@@ -17,12 +17,23 @@ interface Repo {
   failing?: string;
 }
 
+/** The jobs that do the work of each check, every one run and passed. */
+const WORK = {
+  "unit tests (1 of 2)": "success",
+  "unit tests (2 of 2)": "success",
+  build: "success",
+  "browser tests (1 of 2)": "success",
+  "browser tests (2 of 2)": "success",
+  "smoke (local)": "success",
+};
 const FULL = {
+  ...WORK,
   "static checks": "success",
   "tests (unit, contract, coverage)": "success",
   "full suite": "success",
 };
 const SUITE_FAILED = {
+  ...WORK,
   "static checks": "success",
   "tests (unit, contract, coverage)": "success",
   "full suite": "failure",
@@ -64,7 +75,7 @@ describe("a staging deploy's merge", () => {
   });
 
   it("gathers the passes from every run on the head, a failed run's passing jobs among them", async () => {
-    const failedTests = { "static checks": "success", "tests (unit, contract, coverage)": "failure" };
+    const failedTests = { ...WORK, "static checks": "success", "tests (unit, contract, coverage)": "failure" };
     const answer = await alreadyChecked("o/r", MERGE, github({ runs: [failedTests, SUITE_FAILED] }));
     expect(answer.passed).toEqual(["static", "tests"]);
   });
@@ -76,6 +87,22 @@ describe("a staging deploy's merge", () => {
       "full suite": "skipped",
     };
     expect((await alreadyChecked("o/r", MERGE, github({ runs: [nothing] }))).passed).toEqual([]);
+  });
+
+  // A stacked pull request whose base holds its head skips the build, the browser tests and the smoke, having nothing
+  // to do against that base, and its full suite job passes on the skips; the same head against main has everything to
+  // do.
+  it("takes no check as passed whose own jobs were skipped, though its gate job passed on the skips", async () => {
+    const skipped = {
+      ...FULL,
+      build: "skipped",
+      "browser tests (${{ matrix.shard }} of 2)": "skipped",
+      "smoke (local)": "skipped",
+      "unit tests (1 of 2)": "skipped",
+    };
+    delete (skipped as Record<string, string>)["browser tests (1 of 2)"];
+    delete (skipped as Record<string, string>)["browser tests (2 of 2)"];
+    expect((await alreadyChecked("o/r", MERGE, github({ runs: [skipped] }))).passed).toEqual(["static"]);
   });
 
   it("takes nothing as passed when its files differ from the head, as when main moved on after the checks", async () => {
