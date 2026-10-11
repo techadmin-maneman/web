@@ -9535,6 +9535,11 @@ export interface components {
         Words: {
             words: components["schemas"]["Word"][];
             published: components["schemas"]["WordsPublish"] | null;
+            /**
+             * @description Whether messages send in new words at once, as the bridge's plain text does, or only once WhatsApp approves them, as MSG91's templates do (docs/decisions/0128-messages-with-the-words-set.md).
+             * @enum {string}
+             */
+            messages: "at_once" | "after_approval";
         };
         Word: {
             /** @description The line's key in src/config/words.json. */

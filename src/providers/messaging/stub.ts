@@ -10,8 +10,8 @@ import type { MessagingProvider } from "./index.ts";
  */
 export function createStubMessaging(log: Logger): MessagingProvider {
   return {
-    send: ({ template, params, media, stopLink }) => {
-      if (renderWithStopLink(template, params, stopLink) === null) {
+    send: ({ template, params, media, stopLink, wording }) => {
+      if (renderWithStopLink(template, params, stopLink, wording) === null) {
         return Promise.resolve({ ok: false, transient: false, detail: `template ${template} is missing a param` });
       }
       log.info("messaging_stub_send", {

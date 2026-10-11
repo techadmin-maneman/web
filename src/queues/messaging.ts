@@ -28,7 +28,14 @@
 // (src/scheduled/unsent-messages.ts).
 
 import { PUBLIC_ORIGIN } from "../config/environments.ts";
-import { messageClass, RESULT_TEMPLATE, stopLinkPurpose, type TemplateName } from "../config/message-templates.ts";
+import {
+  messageClass,
+  RESULT_TEMPLATE,
+  stopLinkPurpose,
+  type TemplateName,
+  type Wording,
+} from "../config/message-templates.ts";
+import { messageWording } from "../domain/words/words.ts";
 import { typeOfKey, type ImageType } from "../lib/image-bytes.ts";
 import { MAX_SEND_ATTEMPTS } from "../config/pipeline.ts";
 import { type MessagingSettings } from "../config/settings.ts";
@@ -172,6 +179,8 @@ interface Sendable {
   readonly params: string[];
   readonly media?: { readonly url: () => Promise<string>; readonly type: ImageType };
   readonly stopLink?: string;
+  /** The words the Words page set for the text and its stop line (docs/decisions/0128-messages-with-the-words-set.md). */
+  readonly wording?: Wording;
 }
 
 type Content = Sendable | { readonly skip: string };
@@ -331,7 +340,12 @@ export async function sendMessage({
   const claim = await claimSend(db, messageId, now);
   if (claim === null) return {};
 
-  const result = await sendContent(deps, row.mobile_e164, { ...content, stopLink });
+  const wording = await messageWording(db, content.template, stopLink !== undefined);
+  const result = await sendContent(deps, row.mobile_e164, {
+    ...content,
+    stopLink,
+    ...(wording === undefined ? {} : { wording }),
+  });
 
   if (result.ok) {
     await db
@@ -410,6 +424,7 @@ async function sendContent(deps: Dependencies, to: string, content: Sendable): P
       params: content.params,
       ...(media === undefined ? {} : { media }),
       ...(content.stopLink === undefined ? {} : { stopLink: content.stopLink }),
+      ...(content.wording === undefined ? {} : { wording: content.wording }),
     });
   } catch (error) {
     return { ok: false, transient: true, detail: `threw ${error instanceof Error ? error.name : "error"}` };
