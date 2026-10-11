@@ -41,13 +41,16 @@
 // table, and the job's order leaves it out, so it needs only
 // the start (docs/decisions/0106-a-clients-hair-profile.md).
 
-// The schemas are ./jobs.schemas.ts, the reads ./jobs.read.ts, and the steps ./jobs.steps.ts.
+// The schemas are ./jobs.schemas.ts, the reads ./jobs.read.ts, the steps ./jobs.steps.ts, and a word to the client
+// from the card ./jobs.updates.ts.
 
 import type { App } from "../../http/context.ts";
 import { registerTechJobReads } from "./jobs.read.ts";
 import { registerTechJobSteps } from "./jobs.steps.ts";
+import { registerTechUpdates } from "./jobs.updates.ts";
 
 export function registerTechJobs(app: App): void {
   registerTechJobReads(app);
   registerTechJobSteps(app);
+  registerTechUpdates(app);
 }

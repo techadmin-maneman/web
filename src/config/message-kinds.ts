@@ -20,6 +20,7 @@ export const MESSAGE_KINDS = [
   "visit_moved", // ops moved the visit: the new window
   "move_proposed", // ops ask the client to confirm a move to another day; its subject is the proposal (ADR 0115)
   "arrival_notice", // the technician has arrived
+  "technician_update", // on the way, at the gate, or running late, from the job card
   "no_show_decided", // ops ruled on a visit the client was not home for
   "no_show_dispute_ruled", // ops refunded or upheld a no-show's charge the client disputed
   "booking_refunded", // a booking given back by itself; its subject is the hold

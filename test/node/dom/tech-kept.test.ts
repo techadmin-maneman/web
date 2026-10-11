@@ -81,7 +81,7 @@ const card = (id: string, date: string) =>
       lng: null,
     },
     access_notes: "Gate code 4417",
-    client: { name: `Client ${id}`, mobile: "+919810000000", note: null },
+    client: { name: `Client ${id}`, mobile: "+919810000000", note: null, whatsapp: true },
     progress: {
       checked_in_at: null,
       wait_ends_at: null,

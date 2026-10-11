@@ -135,6 +135,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 - [0142](0142-moving-every-client.md) Moving every client, and technicians in the inbox
 - [0143](0143-remedies.md) Remedies
 - [0144](0144-care-numbers.md) The Care numbers
+- [0145](0145-technician-presets.md) A technician's word from the job card
 
 ### Referrals
 
@@ -325,4 +326,5 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0142](0142-moving-every-client.md) | Moving every client, and technicians in the inbox | 2026-10-12 | accepted |  |
 | [0143](0143-remedies.md) | Remedies | 2026-10-12 | accepted |  |
 | [0144](0144-care-numbers.md) | The Care numbers | 2026-10-12 | accepted |  |
+| [0145](0145-technician-presets.md) | A technician's word from the job card | 2026-10-12 | accepted |  |
 | [0146](0146-the-nightly-analytics-copy.md) | The nightly analytics copy | 2026-10-12 | accepted |  |
