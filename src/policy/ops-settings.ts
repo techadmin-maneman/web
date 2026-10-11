@@ -13,6 +13,7 @@
 
 import { CARE_HOURS, CARE_HOURS_KEYS, careHoursConflicts } from "./care-hours.ts";
 import { CHECKIN_RADIUS_M } from "./check-in.ts";
+import { MOST_REMEDY_VISITS, REMEDY_LIMIT, REMEDY_LIMIT_KEYS } from "./remedies.ts";
 import { DAY_BEFORE_REMINDER_HOUR, UNLOCK_HOUR } from "./job-visibility.ts";
 import {
   NEXT_VISIT_DAY_BOUNDS,
@@ -298,6 +299,21 @@ export const OPS_SETTINGS = [
     },
     fallback: CARE_HOURS,
     conflicts: (value) => careHoursConflicts(value),
+  },
+  {
+    // Remedies (docs/decisions/0143-remedies.md): above this, a Customer Care manager approves.
+    name: "remedy_limit",
+    title: "Remedies without approval",
+    note: "Free service visits Customer Care can give a client without a manager's approval, and over how many days.",
+    unit: "service visits",
+    min: 0,
+    max: 365,
+    keys: REMEDY_LIMIT_KEYS,
+    bounds: {
+      visits: { min: 0, max: MOST_REMEDY_VISITS },
+      days: { min: 7, max: 365, unit: "days" },
+    },
+    fallback: REMEDY_LIMIT,
   },
 ] as const satisfies readonly OpsSetting[];
 

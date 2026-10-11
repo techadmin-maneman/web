@@ -25,6 +25,7 @@ const DECIDE: Readonly<Partial<Record<Group, string>>> = {
   untold_move: "Open in Dispatch",
   move_unanswered: "Open in Dispatch",
   unanswered_chat: "Answer in Messages",
+  remedy_approval: "Decide in Messages",
   leave_conflict: "Move in Dispatch",
   referral_review: "Decide in Referrals",
   no_show_decision: "Decide in Payments",
@@ -60,6 +61,8 @@ export const tasks = {
     unanswered_chat: "Unanswered chat",
     // Not drawn: a matter Care sent to the city (docs/decisions/0135-city-matters.md).
     city_matter: "City matter",
+    // Not drawn: a remedy above the limit, for a manager (docs/decisions/0143-remedies.md).
+    remedy_approval: "Remedy to approve",
     // Two groups the board does not draw (docs/decisions/0074-hand-offs-and-messages.md).
     leave_conflict: "Job on a day off",
     address_to_confirm: "Address to confirm",
@@ -188,6 +191,8 @@ export const tasks = {
     unanswered_chat: (since: string) => `Waiting since ${since}`,
     /** Care's note to the city team, as they wrote it. */
     city_matter: (note: string) => note,
+    /** "2 free service visits"; why is in the Remedies panel on Messages. */
+    remedy_approval: (visits: number) => `${String(visits)} free service ${visits === 1 ? "visit" : "visits"}`,
     number_change: "Both numbers verified",
     erasure_request: "Requested in the app",
     // A concern about their data, which the app promises an answer to within 30 days.
