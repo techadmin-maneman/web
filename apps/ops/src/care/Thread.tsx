@@ -5,7 +5,7 @@ import { Button } from "@maneman/ui/Button";
 import { useLoad } from "@maneman/ui/useLoad";
 import { indiaClock, indiaDate, shortDate } from "@maneman/web-kit/dates";
 import { useCallback, useState } from "react";
-import { api, type ChatThread, type Conversation, type ThreadItem } from "../api.ts";
+import { careApi, type ChatThread, type Conversation, type ThreadItem } from "./care-api.ts";
 import { care as copy } from "../content/care.ts";
 import { useAccess } from "../lib/access.ts";
 import { clientPath } from "../route.ts";
@@ -54,7 +54,7 @@ function Item({ item }: { item: ThreadItem }) {
 }
 
 export function Thread({ conversation, onClose }: { conversation: Conversation; onClose: () => void }) {
-  const load = useCallback(() => api.conversation(conversation.id), [conversation.id]);
+  const load = useCallback(() => careApi.conversation(conversation.id), [conversation.id]);
   const [loaded, retry] = useLoad(load);
   /** The chat as Care's last reply, note or close left it. */
   const [changed, setChanged] = useState<ChatThread | null>(null);

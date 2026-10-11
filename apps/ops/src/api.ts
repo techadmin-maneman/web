@@ -98,14 +98,6 @@ export type PartnerTerms = Sent<paths["/api/referral-channels"]["post"]>;
 export type PartnerStatements = Body<paths["/api/partner-statements"]["get"]>;
 export type PartnerStatement = PartnerStatements["statements"][number];
 type PartnerPayout = Sent<paths["/api/partner-statements/{id}/payouts"]["post"]>;
-/** The Care inbox's threads (docs/decisions/0129-the-care-inbox.md). */
-export type Conversation = Body<paths["/api/conversations"]["get"]>["conversations"][number];
-export type ConversationView = NonNullable<
-  NonNullable<paths["/api/conversations"]["get"]["parameters"]["query"]>["view"]
->;
-export type ThreadItem = Body<paths["/api/conversations/{id}"]["get"]>["items"][number];
-export type ChatThread = Body<paths["/api/conversations/{id}"]["get"]>;
-export type CloseReason = Sent<paths["/api/conversations/{id}/close"]["post"]>["reason"];
 /** The site's words and the WhatsApp messages, as the Words page changes them (docs/decisions/0126-the-words-page.md). */
 export type Word = Body<paths["/api/words"]["get"]>["words"][number];
 export type WordsPublish = NonNullable<Body<paths["/api/words"]["get"]>["published"]>;
@@ -217,7 +209,8 @@ function lapsedIn(response: Response, code: string | undefined): boolean {
   return response.status === 401 || code === "access_required";
 }
 
-const client = createClient<paths, ErrorCode | "signed_out">({
+/** The console's one client; a feature with calls of its own (./care/care-api.ts) makes them with it. */
+export const client = createClient<paths, ErrorCode | "signed_out">({
   // A redirect is never followed: the only one a call meets is Access's, to a login page on another origin.
   redirect: "manual",
   sessionEnded: lapsedIn,
@@ -511,14 +504,6 @@ export const api = {
     client.post("/api/partner-statements/{id}/payouts", { path: { id }, body: payout }),
   deletePartnerPayout: (id: string, month: string) =>
     client.post("/api/partner-statements/{id}/payouts/{month}/delete", { path: { id, month } }),
-  conversations: (view: ConversationView) => client.get("/api/conversations", { query: { view } }),
-  conversation: (id: string) => client.get("/api/conversations/{id}", { path: { id } }),
-  replyChat: (id: string, text: string) =>
-    client.post("/api/conversations/{id}/replies", { path: { id }, body: { text } }),
-  noteChat: (id: string, text: string) =>
-    client.post("/api/conversations/{id}/notes", { path: { id }, body: { text } }),
-  closeChat: (id: string, reason: CloseReason) =>
-    client.post("/api/conversations/{id}/close", { path: { id }, body: { reason } }),
   words: () => client.get("/api/words"),
   wordHistory: (key: string) => client.get("/api/words/history", { query: { key } }),
   setWord: (key: string, text: string | null) => client.post("/api/words", { body: { key, text } }),

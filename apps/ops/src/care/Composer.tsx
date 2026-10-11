@@ -5,7 +5,8 @@ import { Button } from "@maneman/ui/Button";
 import { Field, Select, TextArea } from "@maneman/ui/Field";
 import type { Failure } from "@maneman/web-kit/refusal";
 import { useState } from "react";
-import { api, type Answer, type ChatThread, type CloseReason } from "../api.ts";
+import type { Answer } from "../api.ts";
+import { careApi, type ChatThread, type CloseReason } from "./care-api.ts";
 import { care as copy } from "../content/care.ts";
 import { Refused } from "../settings/index.ts";
 import styles from "../components/forms.module.css";
@@ -111,7 +112,7 @@ export function Composer(props: {
           disabled={busy || empty}
           onClick={() =>
             void act(
-              () => api.replyChat(conversationId, text.trim()),
+              () => careApi.replyChat(conversationId, text.trim()),
               (thread) => (lastFailed(thread) ? compose.failed : compose.sent),
             )
           }
@@ -125,7 +126,7 @@ export function Composer(props: {
           disabled={busy || empty}
           onClick={() =>
             void act(
-              () => api.noteChat(conversationId, text.trim()),
+              () => careApi.noteChat(conversationId, text.trim()),
               () => compose.noted,
             )
           }
@@ -142,7 +143,7 @@ export function Composer(props: {
           disabled={busy}
           onClick={() =>
             void act(
-              () => api.closeChat(conversationId, reason),
+              () => careApi.closeChat(conversationId, reason),
               () => compose.closed,
             )
           }

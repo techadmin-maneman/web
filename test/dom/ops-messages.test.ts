@@ -4,7 +4,7 @@
 import { act, createElement } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { Conversation } from "../../apps/ops/src/api.ts";
+import type { Conversation } from "../../apps/ops/src/care/care-api.ts";
 import { MessagesScreen } from "../../apps/ops/src/care/MessagesScreen.tsx";
 import { care as copy } from "../../apps/ops/src/content/care.ts";
 
