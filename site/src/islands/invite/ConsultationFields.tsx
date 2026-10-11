@@ -1,6 +1,7 @@
 // The consultation form's own fieldsets (./Consultation.tsx): what to book, the discount code on the site's own page,
 // the day strip, and the windows on the day picked. Each window and day the API says is full is drawn, and disabled.
 
+import { DateStrip, type DateStripClasses } from "@maneman/ui/DateStrip";
 import { WindowChoice, type WindowChoiceClasses } from "@maneman/ui/WindowChoice";
 import { whatsappChat } from "@maneman/web-kit/whatsapp";
 import { referral } from "../../content/referral.ts";
@@ -94,6 +95,15 @@ export function DiscountCode({
   );
 }
 
+const DATE_CLASSES: DateStripClasses = {
+  strip: styles.dates,
+  day: styles.day,
+  dayOn: styles.dayOn,
+  radio: "visually-hidden",
+  weekday: styles.dayName,
+  number: styles.dayNumber,
+};
+
 /** The days to pick from, a day with no window open disabled; and, with none open at all, WhatsApp for the next. */
 export function DayStrip({
   days,
@@ -122,25 +132,13 @@ export function DayStrip({
         </p>
       )}
       <p class={styles.months}>{stripMonths(days)}</p>
-      <div class={styles.dates}>
-        {days.map((day) => (
-          <label key={day.date} class={`${styles.day} ${slot.date === day.date ? styles.dayOn : ""}`}>
-            <input
-              type="radio"
-              name="date"
-              class="visually-hidden"
-              aria-label={day.label}
-              checked={slot.date === day.date}
-              disabled={!dayOpen(open, day.date, windowIds)}
-              onChange={() => {
-                onDay(day.date);
-              }}
-            />
-            <span class={styles.dayName}>{day.weekday}</span>
-            <span class={styles.dayNumber}>{day.number}</span>
-          </label>
-        ))}
-      </div>
+      <DateStrip
+        name="date"
+        days={days.map((day) => ({ ...day, open: dayOpen(open, day.date, windowIds) }))}
+        chosen={slot.date}
+        onChoose={onDay}
+        classes={DATE_CLASSES}
+      />
     </fieldset>
   );
 }

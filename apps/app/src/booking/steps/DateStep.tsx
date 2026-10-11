@@ -2,6 +2,7 @@
 
 import { classes } from "@maneman/ui/classes";
 import { Button } from "@maneman/ui/Button";
+import { DateStrip, type DateStripClasses, type StripDate } from "@maneman/ui/DateStrip";
 import { weekdayDate } from "@maneman/web-kit/dates";
 import { booking } from "../../content.ts";
 import { dayInsideNotice, isFull, offeredFullLine, type Day } from "../days.ts";
@@ -16,6 +17,27 @@ function dayLabel(day: Day, noticeHours: number): string {
   return weekdayDate(day.date);
 }
 
+const DATE_CLASSES: DateStripClasses = {
+  strip: styles.strip,
+  day: styles.day,
+  radio: styles.radio,
+  weekday: styles.weekday,
+  number: styles.number,
+  mark: styles.dayLate,
+};
+
+/** A day as the strip draws it: full ones drawn but not chosen, those with a window inside the notice marked. */
+function stripDate(day: Day, noticeHours: number): StripDate {
+  return {
+    date: day.date,
+    weekday: DAY_NAMES[new Date(`${day.date}T00:00:00Z`).getUTCDay()] ?? "",
+    number: String(Number(day.date.slice(8))),
+    label: dayLabel(day, noticeHours),
+    open: !isFull(day),
+    marked: dayInsideNotice(day),
+  };
+}
+
 /** Later days, up to the last a visit may be booked on: asking for them, and whether that failed. */
 interface LaterDays {
   readonly busy: boolean;
@@ -25,8 +47,7 @@ interface LaterDays {
 
 /**
  * Fourteen days, full ones shown but not chosen, those with a window inside the notice marked, and later
- * ones added beneath them on asking. The days are one group of native radio buttons, drawn as the design's squares:
- * one tab stop, and the arrow keys move between the days. `before`: the steps the sheet took before the date.
+ * ones added beneath them on asking. `before`: the steps the sheet took before the date.
  * `offered`: the day the visit is offered on.
  */
 export function DateStep(props: {
@@ -47,33 +68,14 @@ export function DateStep(props: {
     <>
       <Heading title={copy.title} step={stepOf(1, props.before)} />
       {fullLine !== null && <p className={styles.why}>{fullLine}</p>}
-      <div className={styles.strip} role="radiogroup" aria-labelledby={TITLE_ID}>
-        {props.days.map((day) => {
-          const weekday = DAY_NAMES[new Date(`${day.date}T00:00:00Z`).getUTCDay()] ?? "";
-          return (
-            <label key={day.date} className={styles.day}>
-              <input
-                className={styles.radio}
-                type="radio"
-                name="booking-date"
-                checked={day.date === props.chosen}
-                disabled={isFull(day)}
-                aria-label={dayLabel(day, props.noticeHours)}
-                onChange={() => {
-                  props.onChoose(day.date);
-                }}
-              />
-              <span className={styles.weekday} aria-hidden="true">
-                {weekday}
-              </span>
-              <span className={styles.number} aria-hidden="true">
-                {String(Number(day.date.slice(8)))}
-              </span>
-              {dayInsideNotice(day) && <span className={styles.dayLate} aria-hidden="true" />}
-            </label>
-          );
-        })}
-      </div>
+      <DateStrip
+        name="booking-date"
+        labelledBy={TITLE_ID}
+        days={props.days.map((day) => stripDate(day, props.noticeHours))}
+        chosen={props.chosen}
+        onChoose={props.onChoose}
+        classes={DATE_CLASSES}
+      />
       <div className={styles.legend} aria-hidden="true">
         <span>
           <span className={styles.swatch} />
