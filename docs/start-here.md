@@ -193,7 +193,7 @@ this map, or when the map names something that no longer exists.
 
 ### The Care inbox
 
-- **Database work** (`src/domain/care/`): `inbox`, `replies`, `care-people` (each client's named Care person), `chat-tasks` (a chat past its reply-by time, on Tasks)
+- **Database work** (`src/domain/care/`): `inbox`, `replies`, `care-people` (each client's named Care person), `chat-tasks` (a chat past its reply-by time, on Tasks), `after-hours` (the answer to a message sent while Care are off)
 - **Routes** (`src/routes/`): `ops/conversations`, `ops/care-people`, `hooks/evolution` (files what clients write)
 - **Tests:** `test/worker/care/`
 

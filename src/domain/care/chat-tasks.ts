@@ -3,13 +3,13 @@
 
 import { replyBy, type CareHours } from "../../policy/care-hours.ts";
 
-/** Every chat waiting on us: open, with nothing sent since the client last wrote. */
+/** Every chat waiting on us: open, with nothing sent since the client last wrote but the after-hours answer. */
 export const CHATS_WAITING = `SELECT 'unanswered_chat' AS "group", c.id AS id, c.person_id AS person_id,
      pe.name AS person_name, c.mobile_e164 AS detail, c.last_inbound_at AS since, NULL AS due_by, '' AS episode
   FROM conversations c LEFT JOIN people pe ON pe.id = c.person_id
  WHERE c.state = 'open' AND c.last_inbound_at IS NOT NULL
    AND NOT EXISTS (SELECT 1 FROM chat_messages m WHERE m.conversation_id = c.id AND m.direction = 'out'
-     AND m.sent_at >= c.last_inbound_at)`;
+     AND m.author <> 'auto' AND m.sent_at >= c.last_inbound_at)`;
 
 interface BoardRow {
   readonly group: string;

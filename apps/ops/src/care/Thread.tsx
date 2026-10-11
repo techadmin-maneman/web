@@ -29,6 +29,12 @@ const kindName = (kind: string): string => {
 /** "21 Sep, 11:42 am". */
 export const whenOf = (at: string): string => `${shortDate(indiaDate(at))}, ${indiaClock(at)}`;
 
+/** Who said it: the client, our automatic reply, or the member of staff who wrote it. */
+function fromOf(item: Extract<ThreadItem, { kind: "in" | "out" | "note" }>): string {
+  if (item.kind === "in") return thread.client;
+  return item.author === "auto" ? thread.autoReply : item.author;
+}
+
 function Item({ item }: { item: ThreadItem }) {
   if (item.kind === "auto") {
     const seen = [
@@ -42,7 +48,7 @@ function Item({ item }: { item: ThreadItem }) {
       </li>
     );
   }
-  const from = item.kind === "in" ? thread.client : item.author;
+  const from = fromOf(item);
   return (
     <li className={item.kind === "in" ? own.theirs : own.ours}>
       <span className={own.when}>

@@ -38,6 +38,8 @@ export const care = {
     close: "Close",
     page: "Client's page",
     notSent: "Not sent",
+    /** The after-hours answer, kept in the chat under our number. */
+    autoReply: "Automatic reply",
   },
   compose: {
     label: "Reply",

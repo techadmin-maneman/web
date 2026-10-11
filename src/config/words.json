@@ -4849,5 +4849,12 @@
     "group": "Messages",
     "where": "messages_stopped_v1",
     "text": "Done, {{1}}. We won't message you here about your visits, or when we come to a new area."
+  },
+  {
+    "key": "message:care_after_hours_v1",
+    "surface": "message",
+    "group": "Messages",
+    "where": "care_after_hours_v1",
+    "text": "Thank you for your message.\nOur team is back at {{1}} and will reply by {{2}}."
   }
 ]

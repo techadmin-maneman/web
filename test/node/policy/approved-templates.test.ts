@@ -36,14 +36,15 @@ describe("the templates submitted to WhatsApp", () => {
     expect(approvedParams(arrived, ["Arjun"])).toBeNull();
   });
 
-  it("send a login code as an authentication template, and leave out the stop line and STOP's answer", () => {
+  it("send a login code as an authentication template, and leave out the stop line and the replies in an open chat", () => {
     expect(approvedTemplate("login_code_v1")).toMatchObject({
       category: "authentication",
       buttons: [{ kind: "copy_code" }],
     });
     expect(approvedTemplate("stop_link_v1")).toBeNull();
     expect(approvedTemplate("messages_stopped_v1")).toBeNull();
-    expect(APPROVED_TEMPLATES).toHaveLength(Object.keys(TEMPLATES).length - 2);
+    expect(approvedTemplate("care_after_hours_v1")).toBeNull();
+    expect(APPROVED_TEMPLATES).toHaveLength(Object.keys(TEMPLATES).length - 3);
   });
 
   it("give every reminder sent with a stop link a button to stop it", () => {

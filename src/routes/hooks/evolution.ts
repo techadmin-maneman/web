@@ -17,7 +17,9 @@ import type { App, AppEnv } from "../../http/context.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
 import { queueMessage } from "../../http/queue-message.ts";
 import { secretsMatch } from "../../lib/hash.ts";
+import { answerAfterHours } from "../../domain/care/after-hours.ts";
 import { fileInbound } from "../../domain/care/inbox.ts";
+import { opsInputs } from "../../http/ops-inputs.ts";
 import { stopByReply } from "../../domain/messages/stop-messages.ts";
 import { isStopReply } from "../../policy/consents.ts";
 
@@ -139,9 +141,13 @@ async function takeReplies(c: Context<AppEnv>, body: unknown): Promise<void> {
   let stopped = 0;
   let filed = 0;
   for (const message of messages) {
-    filed += await fileReply(c.env.DB, message, deps.now());
+    const from = await fileReply(c.env.DB, message, deps.now());
+    filed += from === null ? 0 : 1;
     const mobileE164 = stopReplyFrom(message);
-    if (mobileE164 === null) continue;
+    if (mobileE164 === null) {
+      if (from !== null) await answerAfterHours(c.env.DB, deps.messaging, await afterHours(c, from));
+      continue;
+    }
     const answerId = await stopByReply(c.env.DB, { mobileE164, requestId, now: deps.now() });
     if (answerId === null) continue;
     stopped += 1;
@@ -151,14 +157,22 @@ async function takeReplies(c: Context<AppEnv>, body: unknown): Promise<void> {
 }
 
 /** Files a client's message in their thread in the Care inbox (src/domain/care/inbox.ts); 1 if it was theirs. */
-async function fileReply(db: D1Database, message: Message, now: Date): Promise<number> {
-  if (message.key?.fromMe !== false) return 0;
+/** Files a client's message in the Care inbox; the number it came from, or null for anything not filed. */
+async function fileReply(db: D1Database, message: Message, now: Date): Promise<string | null> {
+  if (message.key?.fromMe !== false) return null;
   const text = textOf(message);
   const mobileE164 = senderNumber(message.key);
-  if (text === undefined || mobileE164 === null) return 0;
+  if (text === undefined || mobileE164 === null) return null;
   await fileInbound(db, { mobileE164, text, providerMessageId: message.key.id ?? null, at: now });
-  return 1;
+  return mobileE164;
 }
+
+/** A message just filed, as the after-hours answer reads it: who, when, and the Care hours ops set. */
+const afterHours = async (c: Context<AppEnv>, mobileE164: string) => ({
+  mobileE164,
+  at: c.var.deps.now(),
+  hours: (await opsInputs(c)).careHours,
+});
 
 const textOf = (message: Message): string | undefined =>
   message.message?.conversation ?? message.message?.extendedTextMessage?.text;

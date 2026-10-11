@@ -3,6 +3,7 @@
 // reads our automatic messages from outbound_messages beside the chat, so nothing is copied.
 
 import { replyBy, type CareHours } from "../../policy/care-hours.ts";
+import { AUTO_REPLY } from "./after-hours.ts";
 import { giveCarePerson } from "./care-people.ts";
 
 /** A message a client wrote to our number, as the bridge or MSG91 reports it. */
@@ -121,14 +122,14 @@ export async function listConversations(
       `SELECT c.id, c.person_id, p.name, c.mobile_e164, c.state, o.email AS care_person, c.last_message_at,
          c.last_inbound_at,
          (SELECT m.text FROM chat_messages m WHERE m.conversation_id = c.id AND m.direction <> 'note'
-          ORDER BY m.sent_at DESC LIMIT 1) AS last_line,
-         (SELECT MAX(m.sent_at) FROM chat_messages m WHERE m.conversation_id = c.id AND m.direction = 'out')
-           AS last_reply_at
+            AND m.author <> ?4 ORDER BY m.sent_at DESC LIMIT 1) AS last_line,
+         (SELECT MAX(m.sent_at) FROM chat_messages m WHERE m.conversation_id = c.id AND m.direction = 'out'
+            AND m.author <> ?4) AS last_reply_at
        FROM conversations c LEFT JOIN people p ON p.id = c.person_id LEFT JOIN care_owners o ON o.person_id = c.person_id
        WHERE ?1 = 'all' OR c.state = ?1 OR (?1 = 'mine' AND o.email = ?3 AND c.state <> 'closed')
        ORDER BY c.last_message_at DESC LIMIT ?2`,
     )
-    .bind(view, LISTED, me)
+    .bind(view, LISTED, me, AUTO_REPLY)
     .all<ListRow>();
   return results.map((row) => rowOf(row, hours));
 }
@@ -167,12 +168,12 @@ export async function conversationThread(db: D1Database, id: string, hours: Care
     .prepare(
       `SELECT c.id, c.person_id, p.name, c.mobile_e164, c.state, o.email AS care_person, c.last_message_at,
          c.last_inbound_at, NULL AS last_line,
-         (SELECT MAX(m.sent_at) FROM chat_messages m WHERE m.conversation_id = c.id AND m.direction = 'out')
-           AS last_reply_at
+         (SELECT MAX(m.sent_at) FROM chat_messages m WHERE m.conversation_id = c.id AND m.direction = 'out'
+            AND m.author <> ?2) AS last_reply_at
        FROM conversations c LEFT JOIN people p ON p.id = c.person_id LEFT JOIN care_owners o ON o.person_id = c.person_id
        WHERE c.id = ?1`,
     )
-    .bind(id)
+    .bind(id, AUTO_REPLY)
     .first<ListRow>();
   if (row === null) return null;
   const [chat, auto] = await db.batch([
