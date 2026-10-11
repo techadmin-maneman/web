@@ -715,10 +715,7 @@ async function fitted(browser: Browser, design: Page): Promise<void> {
   const detail = await openApp({
     browser,
     path: `/visits/${AUGUST.id}`,
-    api: {
-      ...me,
-      [`/api/visits/${AUGUST.id}`]: json(VISIT_DETAIL),
-    },
+    api: { ...me, [`/api/visits/${AUGUST.id}`]: json(VISIT_DETAIL) },
   });
   await detail.getByRole("heading", { name: "Photos from this visit" }).waitFor();
   await photographsIn(detail);
