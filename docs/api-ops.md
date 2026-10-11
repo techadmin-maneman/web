@@ -67,6 +67,26 @@ Request body:
 }
 ```
 
+### GET /api/clients
+
+Every client in the caller's cities, the soonest next visit first, then those with none, newest first
+
+**200**: A page of the list
+
+```json
+{
+  "$ref": "#/components/schemas/ClientList"
+}
+```
+
+**400**: invalid_request
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ### POST /api/clients/search
 
 Find a client by mobile number. A POST, so the number stays out of the URL
@@ -5067,6 +5087,90 @@ Request body:
     "kind",
     "message",
     "path"
+  ],
+  "additionalProperties": false
+}
+```
+
+### ClientList
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "clients": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "mobile": {
+            "type": "string"
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "fitted",
+              "lead",
+              "nothing_booked"
+            ]
+          },
+          "city": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Their address's city, else where they last booked or asked to be told."
+          },
+          "next_visit": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "mobile",
+          "state",
+          "city",
+          "next_visit"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "more": {
+      "type": "boolean",
+      "description": "Another page of 50 follows."
+    },
+    "cities": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "The cities served that the caller reaches, by name."
+    }
+  },
+  "required": [
+    "clients",
+    "more",
+    "cities"
   ],
   "additionalProperties": false
 }

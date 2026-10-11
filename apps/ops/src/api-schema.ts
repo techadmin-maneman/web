@@ -105,6 +105,57 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/clients": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Every client in the caller's cities, the soonest next visit first, then those with none, newest first */
+        get: {
+            parameters: {
+                query?: {
+                    /** @description Where they stand; any, left out. */
+                    state?: "fitted" | "lead" | "nothing_booked";
+                    city?: string;
+                    /** @description From 0. */
+                    page?: number | null;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description A page of the list */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ClientList"];
+                    };
+                };
+                /** @description invalid_request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/clients/search": {
         parameters: {
             query?: never;
@@ -7089,6 +7140,23 @@ export interface components {
             status?: number;
             /** @description outbox_gave_up: the refusal's request ID, which its own log lines carry. */
             request_id?: string;
+        };
+        ClientList: {
+            clients: {
+                /** Format: uuid */
+                id: string;
+                name: string;
+                mobile: string;
+                /** @enum {string} */
+                state: "fitted" | "lead" | "nothing_booked";
+                /** @description Their address's city, else where they last booked or asked to be told. */
+                city: string | null;
+                next_visit: string | null;
+            }[];
+            /** @description Another page of 50 follows. */
+            more: boolean;
+            /** @description The cities served that the caller reaches, by name. */
+            cities: string[];
         };
         ClientSearch: {
             mobile: string;
