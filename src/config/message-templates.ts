@@ -153,9 +153,18 @@ export const TEMPLATES = {
 /** A template's name: a misspelt one is a type error, never a message that does not go. */
 export type TemplateName = keyof typeof TEMPLATES;
 
+/**
+ * The words the Words page set for a message and for its stop line, where they differ from the code's
+ * (docs/decisions/0128-messages-with-the-words-set.md). The page keeps each one's params as the code has them.
+ */
+export interface Wording {
+  readonly text?: string;
+  readonly stop?: string;
+}
+
 /** The text with its params filled in, or null for an unknown template or a missing param. */
-export function renderMessage(name: TemplateName, params: readonly string[]): string | null {
-  const template: string = TEMPLATES[name];
+export function renderMessage(name: TemplateName, params: readonly string[], wording?: string): string | null {
+  const template: string = wording ?? TEMPLATES[name];
 
   const positions = [...template.matchAll(PARAM)].map((match) => Number(match[1]));
   if (positions.some((position) => params[position - 1] === undefined)) return null;
@@ -164,11 +173,16 @@ export function renderMessage(name: TemplateName, params: readonly string[]): st
 
 const PARAM = /\{\{(\d+)\}\}/g;
 
-/** The text, ending with the line that stops it when the message carries a stop link. */
-export function renderWithStopLink(name: TemplateName, params: readonly string[], stopLink?: string): string | null {
-  const text = renderMessage(name, params);
+/** The text, ending with the line that stops it when the message carries a stop link; in the words set, if any. */
+export function renderWithStopLink(
+  name: TemplateName,
+  params: readonly string[],
+  stopLink?: string,
+  wording: Wording = {},
+): string | null {
+  const text = renderMessage(name, params, wording.text);
   if (text === null || stopLink === undefined) return text;
-  return `${text}\n\n${renderMessage("stop_link_v1", [stopLink]) ?? ""}`;
+  return `${text}\n\n${renderMessage("stop_link_v1", [stopLink], wording.stop) ?? ""}`;
 }
 
 /**

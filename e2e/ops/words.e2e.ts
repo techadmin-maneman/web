@@ -41,7 +41,10 @@ const FAQ: Word = {
 };
 
 async function open(page: Page, extra: Parameters<typeof answer>[1] = {}) {
-  await answer(page, { "GET /api/words": json({ words: [REMINDER, HERO, FAQ], published: null }), ...extra });
+  await answer(page, {
+    "GET /api/words": json({ words: [REMINDER, HERO, FAQ], published: null, messages: "at_once" }),
+    ...extra,
+  });
   await page.goto("/words");
   await expect(page.getByRole("heading", { level: 1, name: copy.title })).toBeVisible();
 }

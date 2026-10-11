@@ -55,7 +55,15 @@ const listRoute = createRoute({
       description: "The lines, and when the site's words were last published",
       ...json(
         z
-          .object({ words: z.array(WordSchema), published: z.union([PublishSchema, z.null()]) })
+          .object({
+            words: z.array(WordSchema),
+            published: z.union([PublishSchema, z.null()]),
+            messages: z.enum(["at_once", "after_approval"]).openapi({
+              description:
+                "Whether messages send in new words at once, as the bridge's plain text does, or only once WhatsApp " +
+                "approves them, as MSG91's templates do (docs/decisions/0128-messages-with-the-words-set.md).",
+            }),
+          })
           .strict()
           .openapi("Words"),
       ),
@@ -141,7 +149,9 @@ export function registerOpsWords(app: App): void {
   app.openapi(listRoute, async (c) => {
     const [words, publish] = await Promise.all([listWords(c.env.DB), latestPublish(c.env.DB)]);
     const published = publish === null ? null : publishedOf(publish);
-    return c.json({ words: words.map((word) => withSite(word, publish)), published }, 200);
+    const messages =
+      c.var.config.settings.messaging.msg91 === null ? ("at_once" as const) : ("after_approval" as const);
+    return c.json({ words: words.map((word) => withSite(word, publish)), published, messages }, 200);
   });
 
   app.openapi(historyRoute, async (c) => {

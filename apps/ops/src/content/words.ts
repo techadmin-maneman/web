@@ -19,6 +19,8 @@ export const words = {
     keep: (holes: string) => `Keep ${holes}.`,
     longest: (count: number) => `Up to ${String(count)} characters.`,
     toCode: "Back to the code's wording",
+    atOnce: "Sends in these words from the next message.",
+    afterApproval: "MSG91 sends only wording WhatsApp approved: new words wait for its approval.",
     next: "Review",
     cancel: "Cancel",
   },

@@ -10867,11 +10867,20 @@ Request body:
           "type": "null"
         }
       ]
+    },
+    "messages": {
+      "type": "string",
+      "enum": [
+        "at_once",
+        "after_approval"
+      ],
+      "description": "Whether messages send in new words at once, as the bridge's plain text does, or only once WhatsApp approves them, as MSG91's templates do (docs/decisions/0128-messages-with-the-words-set.md)."
     }
   },
   "required": [
     "words",
-    "published"
+    "published",
+    "messages"
   ],
   "additionalProperties": false
 }

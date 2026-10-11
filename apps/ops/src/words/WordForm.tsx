@@ -24,6 +24,9 @@ const WORDS: FormWords = {
 /** What the page or the sender fills: "{city}", "{{2}}". */
 const holesOf = (text: string): string[] => [...new Set(text.match(/\{\{\d+\}\}|\{[a-zA-Z]+\}/g) ?? [])];
 
+/** Whether messages send in new words at once, as the bridge does, or once WhatsApp approves them, as MSG91 does. */
+export type Messages = "at_once" | "after_approval";
+
 /** Where a line sits, as the table names it: "hero.title", "visit_reminder_v1". */
 export const placeOf = (word: Word): string => word.key.replace(/^site:[^/]+\//, "").replace(/^message:/, "");
 
@@ -31,6 +34,7 @@ export function WordForm(props: {
   readonly word: Word;
   /** The wording the box opens with: the one in force, or an earlier one to go back to. */
   readonly start: string;
+  readonly messages: Messages;
   readonly onDone: (word: Word) => void;
   readonly onCancel: () => void;
 }) {
@@ -80,6 +84,9 @@ export function WordForm(props: {
         {holes.length > 0 && `${form.keep(holes.join(", "))} `}
         {form.longest(word.longest)}
       </p>
+      {word.surface === "message" && (
+        <p className={own.hint}>{props.messages === "at_once" ? form.atOnce : form.afterApproval}</p>
+      )}
     </SettingForm>
   );
 }

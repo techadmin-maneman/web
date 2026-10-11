@@ -2,7 +2,7 @@
 // consumer, the login codes and the word that an account is deleted
 // (src/queues/messaging.ts); none of them knows which BSP is behind it.
 
-import { type TemplateName } from "../../config/message-templates.ts";
+import { type TemplateName, type Wording } from "../../config/message-templates.ts";
 import type { ImageType } from "../../lib/image-bytes.ts";
 import type { Logger } from "../../log.ts";
 import { createEvolutionMessaging } from "./evolution.ts";
@@ -36,6 +36,11 @@ export interface OutboundMessage {
   readonly media?: { readonly url: string; readonly type: ImageType };
   /** The link that stops messages of this kind, which the text ends with. */
   readonly stopLink?: string;
+  /**
+   * The words the Words page set for the text and its stop line. The bridge sends plain text, so they go at once;
+   * MSG91 sends only templates WhatsApp approved, by name, so it keeps the code's until one is approved.
+   */
+  readonly wording?: Wording;
 }
 
 /** Why the bridge cannot reach WhatsApp. Each has its own fix (src/scheduled/whatsapp-bridge.ts). */
