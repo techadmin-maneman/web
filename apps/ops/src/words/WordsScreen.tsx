@@ -17,7 +17,7 @@ import { words as copy } from "../content/words.ts";
 import { useAccess } from "../lib/access.ts";
 import { SECTION_NAMES } from "../route.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
-import { placeOf, WordForm } from "./WordForm.tsx";
+import { placeOf, WordForm, type Messages } from "./WordForm.tsx";
 import { WordHistory } from "./WordHistory.tsx";
 import { LastPublished, PublishCheck } from "./WordsPublish.tsx";
 import styles from "../components/forms.module.css";
@@ -33,6 +33,8 @@ type Acting =
 
 interface RowProps {
   readonly mayChange: boolean;
+  /** Whether messages send in new words at once, or once WhatsApp approves them. */
+  readonly messages: Messages;
   readonly acting: Acting;
   readonly onAct: (acting: Acting) => void;
   readonly onDone: (word: Word) => void;
@@ -80,7 +82,7 @@ function ActingRow({ word, ...row }: { word: Word } & RowProps) {
     <tr className={own.acting}>
       <td colSpan={COLUMNS}>
         {acting.kind === "edit" ? (
-          <WordForm word={word} start={acting.start} onDone={row.onDone} onCancel={close} />
+          <WordForm word={word} start={acting.start} messages={row.messages} onDone={row.onDone} onCancel={close} />
         ) : (
           <WordHistory
             word={word}
@@ -165,6 +167,7 @@ function Words() {
   if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
   const row: RowProps = {
     mayChange: access.mayCall("POST /api/words"),
+    messages: loaded.value.messages,
     acting,
     onAct: (next) => {
       setSaid(null);

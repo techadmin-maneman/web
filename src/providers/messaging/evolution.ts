@@ -32,8 +32,8 @@ export function createEvolutionMessaging(
   deps: VendorFetchDependencies,
 ): MessagingProvider {
   return {
-    async send({ to, template, params, media, stopLink }): Promise<SendResult> {
-      const text = renderWithStopLink(template, params, stopLink);
+    async send({ to, template, params, media, stopLink, wording }): Promise<SendResult> {
+      const text = renderWithStopLink(template, params, stopLink, wording);
       if (text === null) return { ok: false, transient: false, detail: `template ${template} is missing a param` };
 
       const number = to.replace(/\D/g, ""); // "+919810000000" -> "919810000000"

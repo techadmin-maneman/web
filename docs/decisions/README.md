@@ -117,6 +117,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 - [0070](0070-vendor-correctness.md) What we write to Zoho is right, written once, and asked for sparingly
 - [0074](0074-hand-offs-and-messages.md) What each person learns when something changes for them
 - [0114](0114-whatsapp-business-platform-through-msg91.md) The WhatsApp Business Platform through MSG91
+- [0128](0128-messages-with-the-words-set.md) Messages in the words set
 - [0129](0129-the-care-inbox.md) The Care inbox
 
 ### Referrals
@@ -291,4 +292,5 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0125](0125-partner-discount-codes.md) | A partner's discount code | 2026-10-11 | accepted |  |
 | [0126](0126-the-words-page.md) | The Words page | 2026-10-11 | accepted |  |
 | [0127](0127-publishing-the-words.md) | Publishing the site's words | 2026-10-11 | accepted |  |
+| [0128](0128-messages-with-the-words-set.md) | Messages in the words set | 2026-10-11 | accepted |  |
 | [0129](0129-the-care-inbox.md) | The Care inbox | 2026-10-12 | accepted |  |

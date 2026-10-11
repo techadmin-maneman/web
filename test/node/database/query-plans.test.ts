@@ -88,6 +88,8 @@ const SMALL_TABLES = new Set([
   "partial_reasons",
   "consumables",
   "consumable_usage",
+  // What Growth sets on the Words page, a row an edit: it grows with ops' work, not with clients.
+  "word_versions",
   // One row for each Zoho product.
   "zoho_access_tokens",
   "sync_cursors",

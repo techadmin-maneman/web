@@ -199,7 +199,7 @@ this map, or when the map names something that no longer exists.
 
 ### The Words page
 
-- **Database work** (`src/domain/words/`): `catalogue`, `words`, `publish`
+- **Database work** (`src/domain/words/`): `catalogue`, `words`, `publish`, `message-wording`
 - **Rules** (`src/policy/`): `word-checks`
 - **Data** (`src/config/`): `words.json`, which npm run words writes from the site's copy and the message texts
 - **Routes** (`src/routes/`): `ops/words`, `public/site-words`

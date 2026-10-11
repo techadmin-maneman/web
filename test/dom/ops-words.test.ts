@@ -37,7 +37,9 @@ let answers: Map<string, (init?: RequestInit) => Response>;
 let sent: unknown[];
 
 beforeEach(() => {
-  answers = new Map([["GET /api/words", () => Response.json({ words: [REMINDER, HERO], published: null })]]);
+  answers = new Map([
+    ["GET /api/words", () => Response.json({ words: [REMINDER, HERO], published: null, messages: "at_once" })],
+  ]);
   sent = [];
   vi.stubGlobal("fetch", (url: string, init?: RequestInit) => {
     const path = new URL(url, "https://ops.maneman.test").pathname;
@@ -110,6 +112,7 @@ describe("the Words page", () => {
     await show();
     await press(copy.editLabel("visit_reminder_v1"));
     expect(page.textContent).toContain(copy.form.inCode(REMINDER.text));
+    expect(page.textContent).toContain(copy.form.atOnce);
     type(reworded);
     await press(copy.form.next);
     expect(page.textContent).toContain(copy.check.now(reworded));
