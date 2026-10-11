@@ -53,8 +53,8 @@ describe("the ops console's routes", () => {
 
   // The day's money sat under "No-shows".
   it("names the money section Payments, at the address it has always had", () => {
-    expect(SECTION_NAMES[routeOf("/no-shows").page]).toBe("Payments");
-    expect(titleOf(routeOf("/no-shows"))).toBe("Payments · Mane Man operations");
+    expect(SECTION_NAMES[routeOf("/payments").page]).toBe("Payments");
+    expect(titleOf(routeOf("/payments"))).toBe("Payments · Mane Man operations");
   });
 
   it("shows each section to those whose call opening its page is one the API lists", () => {
@@ -141,6 +141,7 @@ describe("the ops console's routes", () => {
       "/settings/staff": "/staff",
       "/waitlist": "/areas",
       "/service-area": "/areas/served",
+      "/no-shows": "/payments",
     };
     for (const [old, now] of Object.entries(moved)) {
       expect(routeOf(old), old).toEqual(routeOf(now));
@@ -174,19 +175,19 @@ describe("what the console shows the person signed in", () => {
 
   it("shows only the sections whose opening call goes ahead for them", () => {
     const open = SECTIONS.filter((section) => mayOpen(finance, section.page)).map((section) => section.page);
-    expect(open).toEqual(["no-shows", "prices"]);
+    expect(open).toEqual(["payments", "prices"]);
   });
 
   it("opens on Tasks, or for one who may not open it, the first section they may", () => {
     expect(landingPath(null)).toBe("/tasks");
     expect(landingPath(new Set(Object.keys(ROUTE_NEEDS)))).toBe("/tasks");
-    expect(landingPath(finance)).toBe("/no-shows");
+    expect(landingPath(finance)).toBe("/payments");
     expect(landingPath(new Set(["GET /api/whoami"]))).toBeNull();
   });
 
   it("moves a path with no page to where the console opens, once the API has said", () => {
     expect(redirectOf("/", null)).toBeNull();
-    expect(redirectOf("/", finance)).toBe("/no-shows");
+    expect(redirectOf("/", finance)).toBe("/payments");
     expect(redirectOf("/nowhere", new Set(Object.keys(ROUTE_NEEDS)))).toBe("/tasks");
     expect(redirectOf("/areas", finance)).toBeNull();
     expect(redirectOf("/", new Set(["GET /api/whoami"]))).toBeNull();

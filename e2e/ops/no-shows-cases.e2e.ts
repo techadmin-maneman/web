@@ -65,7 +65,7 @@ async function openAs(page: Page, whoami: Answer): Promise<void> {
     "GET /api/no-shows/disputes": json(DISPUTES),
     "GET /api/no-shows/decided": json(DECIDED),
   });
-  await page.goto("/no-shows");
+  await page.goto("/payments");
   await expect(page.getByRole("heading", { name: QUEUE })).toBeVisible();
 }
 
@@ -102,7 +102,7 @@ test("shows what the phone said when the bounds would not take its time", async 
     "GET /api/payments": json(DAY_MONEY),
     "GET /api/no-shows": json({ ...NO_SHOWS, cases: [claimed] }),
   });
-  await page.goto("/no-shows");
+  await page.goto("/payments");
   await expect(fact(page, FIRST, "Phone time")).toHaveText("Sun 19 Sep, 9:30 am");
 });
 
@@ -118,7 +118,7 @@ test("tells a reminder sent and never delivered from one that was never sent", a
     { ...NO_SHOWS.cases[1], message_state: "none" },
   ];
   await answer(page, { "GET /api/payments": json(DAY_MONEY), "GET /api/no-shows": json({ ...NO_SHOWS, cases }) });
-  await page.goto("/no-shows");
+  await page.goto("/payments");
   await expect(fact(page, FIRST, "WhatsApp")).toHaveText("Sent, not delivered");
   await expect(fact(page, SECOND, "WhatsApp")).toHaveText("No reminder sent");
 });
@@ -128,7 +128,7 @@ test("tells a reminder sent and never delivered from one that was never sent", a
 // where the number would, and no 0 may appear in the case at all.
 test("says the distance was never measured, and shows no number, when the route carries none", async ({ page }) => {
   await answer(page, { "GET /api/payments": json(DAY_MONEY), "GET /api/no-shows": json(NO_SHOW_UNMEASURED) });
-  await page.goto("/no-shows");
+  await page.goto("/payments");
 
   const only = page.getByRole("listitem").filter({ hasText: FIRST });
   await expect(only.getByText("Not measured")).toBeVisible();
@@ -144,7 +144,7 @@ test("says when ops let the technician check in past the fence, and why", async 
     "GET /api/payments": json(DAY_MONEY),
     "GET /api/no-shows": json({ ...NO_SHOWS, cases: [letIn, ...rest] }),
   });
-  await page.goto("/no-shows");
+  await page.goto("/payments");
   await expect(fact(page, FIRST, "Distance")).toHaveText(
     "240 m · over 200 m fence · check-in allowed by ops: The pin is at the society gate",
   );
@@ -244,7 +244,7 @@ test("says so when nothing has been decided today", async ({ page }) => {
     "GET /api/no-shows": json(NO_SHOWS),
     "GET /api/no-shows/decided": json({ cases: [] }),
   });
-  await page.goto("/no-shows");
+  await page.goto("/payments");
   await expect(page.getByRole("region", { name: DECIDED_TODAY })).toContainText("Nothing decided today.");
 });
 
@@ -291,19 +291,26 @@ test("says so when someone else has ruled on the case already", async ({ page })
 
 // The Tasks board links a no-show to its case here.
 test("brings the case a task named into view, and gives it the keyboard", async ({ page }) => {
+  await open(page, undefined, `/payments#case-${CASE}`);
+  await expect(caseOf(page, FIRST)).toBeFocused();
+});
+
+// Tasks and alerts written before the page was called Payments link to /no-shows.
+test("lands a link to the old address on the same case, at the new address", async ({ page }) => {
   await open(page, undefined, `/no-shows#case-${CASE}`);
   await expect(caseOf(page, FIRST)).toBeFocused();
+  await expect(page).toHaveURL(new RegExp(`/payments#case-${CASE}$`));
 });
 
 test("says nothing is waiting when the queue is empty", async ({ page }) => {
   await answer(page, { "GET /api/payments": json(DAY_MONEY), "GET /api/no-shows": json({ ...NO_SHOWS, cases: [] }) });
-  await page.goto("/no-shows");
+  await page.goto("/payments");
   await expect(page.getByText("No no-shows to decide.")).toBeVisible();
 });
 
 test("says so when the queue cannot be loaded, and loads it on Try again", async ({ page }) => {
   await answer(page, { "GET /api/payments": json(DAY_MONEY), "GET /api/no-shows": fails(503, "unavailable") });
-  await page.goto("/no-shows");
+  await page.goto("/payments");
   await expect(page.getByRole("alert")).toContainText("Couldn't load this.");
 
   await answer(page, { "GET /api/payments": json(DAY_MONEY), "GET /api/no-shows": json(NO_SHOWS) });
