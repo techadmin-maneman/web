@@ -61,6 +61,12 @@ export const AUDIT_ACTIONS = [
   "technician.reactivate",
   // One added by mistake, deleted before any work of theirs was recorded.
   "technician.delete",
+  // A technician's seniority grade, the grades and the rates per visit (docs/decisions/0122-technician-pay-per-visit.md).
+  "technician.pay_grade",
+  "pay_grade.add",
+  "pay_grade.rename",
+  "pay_grade.delete",
+  "pay_rate.set",
   // The business inputs ops set for themselves (docs/decisions/0061-ops-editable-inputs.md):
   // one of the rules, a price from a date, and whether we go to a pincode. A price still to
   // come taken back, and an area's name (docs/decisions/0071-what-ops-see-before-a-setting-changes.md).

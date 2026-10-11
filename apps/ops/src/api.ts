@@ -102,6 +102,11 @@ export type VisitDiscountCode = NonNullable<ClientVisit["discount_code"]>;
 export type Price = Body<paths["/api/prices"]["post"]>["prices"][number];
 type PriceChange = Sent<paths["/api/prices"]["post"]>;
 type PriceWithdrawal = Sent<paths["/api/prices/withdraw"]["post"]>;
+/** What technicians are paid for each visit (docs/decisions/0122-technician-pay-per-visit.md). */
+export type TechnicianPay = Body<paths["/api/technician-pay"]["get"]>;
+export type PayRate = TechnicianPay["rates"][number];
+export type PayKind = PayRate["kind"];
+type PayRateSet = Sent<paths["/api/technician-pay/rates"]["post"]>;
 type PriceCorrection = Sent<paths["/api/prices/correct"]["post"]>;
 /** The services clients book, kind by kind, each with its prices (docs/decisions/0085-services-ops-can-edit.md). */
 export type ServiceBook = Body<paths["/api/services"]["get"]>;
@@ -486,6 +491,16 @@ export const api = {
     client.patch("/api/referral-channels/{id}", { path: { id }, body: terms }),
   pausePartner: (id: string, paused: boolean) =>
     client.post("/api/referral-channels/{id}/pause", { path: { id }, body: { paused } }),
+  technicianPay: () => client.get("/api/technician-pay"),
+  addPayGrade: (name: string) => client.post("/api/technician-pay/grades", { body: { name } }),
+  renamePayGrade: (id: string, name: string) =>
+    client.patch("/api/technician-pay/grades/{id}", { path: { id }, body: { name } }),
+  /** Refused, as in_use, while a technician holds it or a rate has named it. */
+  deletePayGrade: (id: string) => client.post("/api/technician-pay/grades/{id}/delete", { path: { id } }),
+  /** From today or later; an amount of null leaves the grade no rate of its own from that day. */
+  setPayRate: (rate: PayRateSet) => client.post("/api/technician-pay/rates", { body: rate }),
+  setPayGradeOf: (technicianId: string, gradeId: string | null) =>
+    client.post("/api/technician-pay/technicians/{id}", { path: { id: technicianId }, body: { grade_id: gradeId } }),
   blackouts: () => client.get("/api/blackouts"),
   /** Every day from the first to the last, both included. A day already blacked out takes this reason. */
   addBlackouts: (period: BlackoutAdd) => client.post("/api/blackouts", { body: period }),

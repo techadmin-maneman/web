@@ -82,7 +82,14 @@ function usePartnerSave(partner: Partner | null, onSaved: (list: PartnerList) =>
     onSaved(answer.body);
     return true;
   };
-  return { sending, failure, save, clear: () => { setFailure(null); } };
+  return {
+    sending,
+    failure,
+    save,
+    clear: () => {
+      setFailure(null);
+    },
+  };
 }
 
 /** Adds a partner, or changes one: its name and terms. */

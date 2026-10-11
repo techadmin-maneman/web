@@ -121,6 +121,12 @@ export const ROUTE_NEEDS: Readonly<Record<string, RouteNeed | typeof SIGNED_IN>>
   "POST /api/discount-codes": need("finance", "manage"),
   "POST /api/discount-codes/{id}/off": need("finance", "manage"),
   "POST /api/discount-codes/{id}/delete": need("finance", "manage"),
+  "GET /api/technician-pay": inOwnPlaces("finance", "view"),
+  "POST /api/technician-pay/grades": need("finance", "manage"),
+  "PATCH /api/technician-pay/grades/{id}": need("finance", "manage"),
+  "POST /api/technician-pay/grades/{id}/delete": need("finance", "manage"),
+  "POST /api/technician-pay/rates": inOwnPlaces("finance", "manage"),
+  "POST /api/technician-pay/technicians/{id}": inOwnPlaces("finance", "manage"),
   "POST /api/visits/{id}/discount-code": inOwnPlaces("finance", "act"),
   "POST /api/visits/{id}/discount-code/remove": inOwnPlaces("finance", "act"),
   // National Finance only until the route keeps to the caller's cities.

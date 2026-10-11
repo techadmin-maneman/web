@@ -296,7 +296,7 @@ export const referral = {
   booked: {
     label: "Booked",
     when: (day: string, hours: string) => `${day}, ${hours}`,
-    body: "Your technician arrives in that window. Details on WhatsApp, at +91 {mobile}.",
+    body: "Your technician arrives in that window. Details are on WhatsApp at +91 {mobile}.",
     ready: {
       consultation: `${capitalised(visitLength.consultation)} at home, and free. Nothing is fitted.`,
       oneVisit: `${capitalised(visitLength.firstFit)} at home. You pay once fitted, by a link to your phone.`,
@@ -307,7 +307,7 @@ export const referral = {
       file: "Apple or Outlook",
       fileName: "mane-man-visit.ics",
       title: { consultation: "Mane Man consultation", oneVisit: "Mane Man consultation and fit" },
-      details: (hours: string, ready: string) => `Your technician arrives in the window, ${hours}. ${ready}`,
+      details: (hours: string, ready: string) => `Arriving ${hours}. ${ready}`,
     },
     credits: visitsLand,
     // Not drawn: the discount code given with the one visit, as it stands on the booking, or not, when another

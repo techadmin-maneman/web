@@ -13,6 +13,11 @@ import { describe, expect, it } from "vitest";
 
 /** "child.column -> parent": how the rows pointing at a deleted row are dealt with first. */
 const HANDLED: Readonly<Record<string, string>> = {
+  // A pay grade goes only once nothing uses it (docs/decisions/0122-technician-pay-per-visit.md).
+  "technicians.pay_grade_id -> pay_grades":
+    "src/domain/field/technician-pay.ts deletes a grade only while no technician holds it",
+  "visit_pay_rates.grade_id -> pay_grades":
+    "src/domain/field/technician-pay.ts deletes a grade only while no rate names it",
   "technician_devices.session_id -> sessions":
     "src/scheduled/sweeper.ts clears it in the batch that deletes the session",
   "photos.photo_set_id -> photo_sets": "src/domain/privacy/erasure.ts deletes a set's photographs first",

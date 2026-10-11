@@ -79,6 +79,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 - [0106](0106-a-clients-hair-profile.md) A client's hair profile: the fit spec and their history
 - [0110](0110-field-work-without-fsm.md) Field work without Zoho FSM
 - [0113](0113-fsms-columns-go.md) FSM's columns go
+- [0122](0122-technician-pay-per-visit.md) Technician pay per visit
 
 ### Money and Books
 
@@ -279,4 +280,5 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0119](0119-blackouts-by-city-and-trained-fitters.md) | Blackouts by city, and trained fitters | 2026-10-11 | accepted |  |
 | [0120](0120-the-board-sees-the-road.md) | The board sees the road | 2026-10-11 | accepted |  |
 | [0121](0121-the-site-and-the-app-book-with-the-same-parts.md) | The site and the app book with the same parts | 2026-10-11 | accepted |  |
+| [0122](0122-technician-pay-per-visit.md) | Technician pay per visit | 2026-10-11 | accepted |  |
 | [0123](0123-partner-referral-channels.md) | Partner referral channels | 2026-10-11 | accepted |  |

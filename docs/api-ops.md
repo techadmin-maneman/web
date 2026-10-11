@@ -3150,6 +3150,238 @@ Per technician: jobs finished over a period, and how they ran against the planne
 }
 ```
 
+### GET /api/technician-pay
+
+The grades, each technician's grade, and the rates per visit
+
+**200**: The pay as it now stands
+
+```json
+{
+  "$ref": "#/components/schemas/TechnicianPay"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/technician-pay/grades
+
+Add a grade
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/PayGradeAdd"
+}
+```
+
+**200**: The pay as it now stands
+
+```json
+{
+  "$ref": "#/components/schemas/TechnicianPay"
+}
+```
+
+**400**: invalid_request: fields names name
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**409**: taken: a grade has that name
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### PATCH /api/technician-pay/grades/{id}
+
+Rename a grade
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/PayGradeRename"
+}
+```
+
+**200**: The pay as it now stands
+
+```json
+{
+  "$ref": "#/components/schemas/TechnicianPay"
+}
+```
+
+**400**: invalid_request: fields names name
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**409**: taken: another grade has that name
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/technician-pay/grades/{id}/delete
+
+Delete a grade no technician holds and no rate has named
+
+**200**: The pay as it now stands
+
+```json
+{
+  "$ref": "#/components/schemas/TechnicianPay"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**409**: in_use: a technician holds it, or a rate has named it
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/technician-pay/rates
+
+Set a grade's rate for a kind of visit, for every city or one, from today or later
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/PayRateSet"
+}
+```
+
+**200**: The pay as it now stands
+
+```json
+{
+  "$ref": "#/components/schemas/TechnicianPay"
+}
+```
+
+**400**: invalid_request: fields names from when it is before today, and city when it is not ours
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**403**: not_permitted: every city's rate, and Finance does not reach every city for the caller
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no such grade, or a city outside the caller's
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/technician-pay/technicians/{id}
+
+Give a technician a grade, or take theirs away
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/TechnicianPayGrade"
+}
+```
+
+**200**: The pay as it now stands
+
+```json
+{
+  "$ref": "#/components/schemas/TechnicianPay"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no such technician in the caller's cities, or no such grade
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ### GET /api/settings
 
 Every business rule ops may change, with its unit, its bounds and who last set it
@@ -10268,6 +10500,11 @@ Request body:
         "technician.deactivate",
         "technician.reactivate",
         "technician.delete",
+        "technician.pay_grade",
+        "pay_grade.add",
+        "pay_grade.rename",
+        "pay_grade.delete",
+        "pay_rate.set",
         "setting.change",
         "price.set",
         "price.withdraw",
@@ -13571,6 +13808,316 @@ Request body:
     "average_planned_minutes",
     "runs_over",
     "skill"
+  ],
+  "additionalProperties": false
+}
+```
+
+### TechnicianPay
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "today": {
+      "type": "string",
+      "format": "date",
+      "description": "India's date, the first a rate may start from."
+    },
+    "kinds": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "consultation",
+          "one_visit",
+          "first_fit",
+          "service",
+          "replacement",
+          "no_show"
+        ],
+        "description": "consultation, one_visit (a consultation and fit in one visit), first_fit, service, replacement, no_show."
+      }
+    },
+    "cities": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "The cities a rate may be set for alone, within reach."
+    },
+    "max_amount": {
+      "type": "integer",
+      "description": "The most one visit may pay, in paise."
+    },
+    "grades": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "technicians": {
+            "type": "integer",
+            "description": "Active technicians on it."
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "technicians"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "technicians": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "city": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "grade_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "city",
+          "grade_id"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "rates": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "grade_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "city": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "One city's rate; null for every city."
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "consultation",
+              "one_visit",
+              "first_fit",
+              "service",
+              "replacement",
+              "no_show"
+            ],
+            "description": "consultation, one_visit (a consultation and fit in one visit), first_fit, service, replacement, no_show."
+          },
+          "amount": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Paise; null from that date for no rate of its own."
+          },
+          "effective_from": {
+            "type": "string",
+            "format": "date"
+          },
+          "set_by": {
+            "type": "string"
+          },
+          "set_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "grade_id",
+          "city",
+          "kind",
+          "amount",
+          "effective_from",
+          "set_by",
+          "set_at"
+        ],
+        "additionalProperties": false
+      },
+      "description": "The rates in force today, and every one set to start later."
+    }
+  },
+  "required": [
+    "today",
+    "kinds",
+    "cities",
+    "max_amount",
+    "grades",
+    "technicians",
+    "rates"
+  ],
+  "additionalProperties": false
+}
+```
+
+### PayGradeAdd
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "pattern": "^[\\p{L}\\p{N}][\\p{L}\\p{N} .,'()&/-]{0,39}$/u"
+    }
+  },
+  "required": [
+    "name"
+  ],
+  "additionalProperties": false
+}
+```
+
+### PayGradeRename
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "pattern": "^[\\p{L}\\p{N}][\\p{L}\\p{N} .,'()&/-]{0,39}$/u"
+    }
+  },
+  "required": [
+    "name"
+  ],
+  "additionalProperties": false
+}
+```
+
+### PayRateSet
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "grade_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "city": {
+      "anyOf": [
+        {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 60
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "kind": {
+      "type": "string",
+      "enum": [
+        "consultation",
+        "one_visit",
+        "first_fit",
+        "service",
+        "replacement",
+        "no_show"
+      ],
+      "description": "consultation, one_visit (a consultation and fit in one visit), first_fit, service, replacement, no_show."
+    },
+    "amount": {
+      "anyOf": [
+        {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000000
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Paise; null for no rate of its own from that date."
+    },
+    "from": {
+      "type": "string",
+      "format": "date"
+    }
+  },
+  "required": [
+    "grade_id",
+    "city",
+    "kind",
+    "amount",
+    "from"
+  ],
+  "additionalProperties": false
+}
+```
+
+### TechnicianPayGrade
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "grade_id": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "uuid"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  },
+  "required": [
+    "grade_id"
   ],
   "additionalProperties": false
 }

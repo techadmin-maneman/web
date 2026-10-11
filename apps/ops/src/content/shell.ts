@@ -31,6 +31,7 @@ export const shell = {
     payments: "Payments",
     prices: "Prices",
     "discount-codes": "Discount codes",
+    "technician-pay": "Technician pay",
     referrals: "Referrals",
     areas: "Areas",
     settings: "Settings",

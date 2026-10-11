@@ -227,9 +227,9 @@ export const dispatch = {
      * A client's visit to another day, for a reason other than theirs: they are asked, and the visit stays put until
      * they accept (docs/decisions/0115-a-move-to-another-day-waits-for-the-client.md).
      */
-    ask: (job: string) => `${job} is asked on WhatsApp to confirm. The visit stays put until they do.`,
+    ask: (job: string) => `We'll ask ${job} on WhatsApp. It moves when they accept.`,
     askCall: (name: string, mobile: string) =>
-      `${name} isn't on WhatsApp updates. Call ${mobile} to ask. The visit stays put until they agree.`,
+      `${name} isn't on WhatsApp updates. Call ${mobile}, and move it once they agree.`,
     askSend: (job: string) => `Ask ${job} to confirm`,
     asking: "Asking",
     send: "Move and notify",
@@ -287,10 +287,10 @@ export const dispatch = {
     },
     /** A client asked to confirm a move to another day: on WhatsApp, or by ops' call. */
     asked: {
-      messaged: (job: string, when: string) => `${job} is asked to confirm ${when} on WhatsApp.`,
+      messaged: (job: string, when: string) => `Asked ${job} on WhatsApp to confirm ${when}.`,
       call: (name: string, mobile: string, when: string) => `Call ${name} on ${mobile} to ask about ${when}.`,
     },
-    withdrawn: (job: string) => `Withdrawn. ${job} stays where it is.`,
+    withdrawn: (job: string) => `Withdrawn. ${job} stays as booked.`,
     withdrawFailed: "Couldn't withdraw. Reload and try again.",
     /** The button that closes the call's task, beside the line that asks for the call. */
     told: "Told by phone",
@@ -337,7 +337,7 @@ export const dispatch = {
       not_found: "This visit no longer exists.",
       /** The technician began the visit after the board was read. */
       in_progress: "The technician has started this visit. It can't be moved.",
-      ask_the_client: "Another day needs the client's yes. Choose Client asked if they gave it.",
+      ask_the_client: "Another day needs the client's OK. If you have it, choose Client asked.",
       offline: OFFLINE,
       unknown: FAILED,
     },

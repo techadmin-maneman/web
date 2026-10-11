@@ -271,7 +271,7 @@ test("a number with +91, 91, 0 or 0091 in front books its own ten digits, pasted
   await continueAndBook(page);
 
   await expect(
-    page.getByText("Your technician arrives in that window. Details on WhatsApp, at +91 98765 43210."),
+    page.getByText("Your technician arrives in that window. Details are on WhatsApp at +91 98765 43210."),
   ).toBeVisible();
   expect(leads[0]?.postDataJSON()).toMatchObject({ mobile: "9876543210" });
   expect(requests[0]?.postDataJSON()).toMatchObject({ mobile: "9876543210" });
@@ -538,7 +538,7 @@ test("every number is sent to WhatsApp, and offered the app with the number fill
 
   await expect(page.getByRole("heading", { level: 1, name: "Friday 25 September, 9 am to 12 pm" })).toBeVisible();
   await expect(
-    page.getByText("Your technician arrives in that window. Details on WhatsApp, at +91 98100 00000."),
+    page.getByText("Your technician arrives in that window. Details are on WhatsApp at +91 98100 00000."),
   ).toBeVisible();
   const app = page.getByRole("link", { name: referralCopy.referral.booked.app });
   // The link carries no number until it is followed, so no tag that reads the page's links sees it.

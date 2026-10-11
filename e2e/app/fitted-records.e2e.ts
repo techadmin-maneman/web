@@ -53,7 +53,7 @@ test("a visit to come offers itself to the client's calendar, at its window; one
   expect(Object.fromEntries(google.searchParams)).toMatchObject({
     text: "Mane Man: Service visit",
     dates: `${stamp(start)}/${stamp(end)}`,
-    details: "Imran arrives in the window, 12 to 4 pm.",
+    details: "Arriving 12 to 4 pm, with Imran.",
   });
   const file = page.getByRole("link", { name: appCopy.calendar.file });
   const ics = decodeURIComponent((await file.getAttribute("href"))?.split(",")[1] ?? "");

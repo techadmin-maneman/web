@@ -1,0 +1,82 @@
+// The Technician pay page's words (Finance; docs/decisions/0122-technician-pay-per-visit.md). The page imports them
+// itself, so they stay out of the console's first load.
+
+import { FAILED, NOT_PERMITTED, OFFLINE } from "./common.ts";
+
+export const technicianPay = {
+  kinds: {
+    consultation: "Consultation",
+    one_visit: "Consultation and fit",
+    first_fit: "First fit",
+    service: "Service visit",
+    replacement: "Replacement",
+    no_show: "Client not home",
+  },
+  grades: {
+    title: "Grades",
+    none: "No grades yet. Add one to set its rates.",
+    name: "New grade",
+    add: "Add",
+    adding: "Adding",
+    holders: (count: number) => (count === 1 ? "1 technician" : `${String(count)} technicians`),
+    rename: "Rename",
+    renameLabel: (name: string) => `Rename ${name}`,
+    newName: (name: string) => `New name for ${name}`,
+    save: "Save",
+    cancel: "Cancel",
+    delete: "Delete",
+    deleteLabel: (name: string) => `Delete ${name}`,
+    errors: {
+      name: "Up to 40 letters or digits.",
+      taken: "A grade has that name.",
+      in_use: "In use: a technician holds it, or a rate names it.",
+      not_found: "Already gone. Reload.",
+      not_permitted: NOT_PERMITTED,
+      offline: OFFLINE,
+      unknown: FAILED,
+    },
+  },
+  rates: {
+    title: "Rates per visit",
+    showing: "Showing",
+    everyCity: "Every city",
+    grade: "Grade",
+    none: "—",
+    /** A city's cell with no rate of its own: every city's, which stands in. */
+    inherited: (amount: string) => `${amount} (every city)`,
+    later: (amount: string, date: string) => `${amount} from ${date}`,
+    laterNone: (date: string) => `None from ${date}`,
+    set: {
+      title: "Set a rate",
+      grade: "Grade",
+      kind: "Visit",
+      city: "City",
+      amount: "Rs. per visit",
+      clear: "No rate",
+      from: "From",
+      save: "Save rate",
+      saving: "Saving",
+      saved: "Saved.",
+    },
+    errors: {
+      from: "Today or later.",
+      city: "Choose one of our cities.",
+      amount: "A whole amount, up to the most a visit may pay.",
+      not_found: "That grade has gone. Reload.",
+      not_permitted: NOT_PERMITTED,
+      offline: OFFLINE,
+      unknown: FAILED,
+    },
+  },
+  technicians: {
+    title: "Technicians",
+    none: "No technicians.",
+    name: "Technician",
+    city: "City",
+    noCity: "No city",
+    grade: "Grade",
+    gradeOf: (name: string) => `Grade for ${name}`,
+    noGrade: "No grade",
+    errors: { not_found: "Not found. Reload.", offline: OFFLINE, unknown: FAILED },
+  },
+};
