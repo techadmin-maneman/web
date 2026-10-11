@@ -106,6 +106,10 @@
   color: var(--error-on-paper);
 }
 
+.carePerson {
+  margin-bottom: var(--sp-12);
+}
+
 /* Writing in the chat: the reply box across, its buttons, then closing it with a reason. */
 .compose {
   margin-top: var(--sp-16);

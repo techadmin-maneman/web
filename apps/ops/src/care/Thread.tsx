@@ -10,6 +10,7 @@ import { care as copy } from "../content/care.ts";
 import { useAccess } from "../lib/access.ts";
 import { clientPath } from "../route.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
+import { CarePerson } from "./CarePerson.tsx";
 import { Composer } from "./Composer.tsx";
 import styles from "../components/forms.module.css";
 import own from "./care.module.css";
@@ -72,6 +73,9 @@ export function Thread({ conversation, onClose }: { conversation: Conversation; 
             {thread.page}
           </a>
         </p>
+      )}
+      {conversation.person !== null && (
+        <CarePerson personId={conversation.person.id} email={conversation.care_person} />
       )}
       {items.length === 0 ? (
         <p className={styles.note}>{thread.empty}</p>

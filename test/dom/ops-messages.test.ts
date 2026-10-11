@@ -1,5 +1,6 @@
-// Customer Care · Messages in the console (apps/ops/src/care/; docs/decisions/0129-the-care-inbox.md): the chats a view
-// at a time, and a chat opened with our automatic messages in it. Every name and number is made up.
+// Customer Care · Messages in the console (apps/ops/src/care/; docs/decisions/0129-the-care-inbox.md,
+// 0131-care-people.md): the chats a view at a time, a chat opened with our automatic messages in it, and its client
+// moved to another Care person. Every name, number and address is made up.
 
 import { act, createElement } from "react";
 import { createRoot, type Root } from "react-dom/client";
@@ -13,6 +14,7 @@ const ARJUN: Conversation = {
   person: { id: "11111111-1111-4111-8111-111111111111", name: "Arjun Mehta" },
   mobile: "+919810000001",
   state: "open",
+  care_person: "asha@maneman.test",
   last_message_at: "2026-09-21T05:12:00.000Z",
   last_line: "Can I move tomorrow's visit to the evening?",
   waiting_since: "2026-09-21T05:12:00.000Z",
@@ -21,6 +23,7 @@ const STRANGER: Conversation = {
   ...ARJUN,
   id: "9d2e0a5c-6f7b-4c8d-0e9f-4a5b6c7d8e9f",
   person: null,
+  care_person: null,
   mobile: "+919811112222",
   last_line: "Do you come to Noida?",
 };
@@ -38,6 +41,9 @@ beforeEach(() => {
     asked.push(`${address.pathname}${address.search}`);
     if (init?.method === "POST" && typeof init.body === "string") {
       posted.push({ path: address.pathname, body: JSON.parse(init.body) as unknown });
+      if (address.pathname.endsWith("/care-person")) {
+        return Promise.resolve(Response.json({ care_person: "ravi@maneman.test" }));
+      }
       const replied = {
         kind: "out",
         at: "2026-09-21T05:20:00.000Z",
@@ -46,6 +52,16 @@ beforeEach(() => {
         delivery: "sent",
       };
       return Promise.resolve(Response.json({ conversation: { ...ARJUN, state: "waiting" }, items: [replied] }));
+    }
+    if (address.pathname === "/api/care-team") {
+      return Promise.resolve(
+        Response.json({
+          team: [
+            { email: "ravi@maneman.test", clients: 3 },
+            { email: "asha@maneman.test", clients: 12 },
+          ],
+        }),
+      );
     }
     if (address.pathname === "/api/conversations") {
       const view = address.searchParams.get("view");
@@ -128,6 +144,49 @@ describe("the Messages page", () => {
     });
     expect(asked).toContain("/api/conversations?view=closed");
     expect(page.textContent).toContain(copy.none);
+  });
+
+  it("shows each chat's Care person, and asks for my clients' chats as Mine", async () => {
+    await show();
+    expect(page.textContent).toContain("asha@maneman.test");
+    const select = page.querySelector("select");
+    await act(async () => {
+      if (select !== null) {
+        select.value = "mine";
+        select.dispatchEvent(new Event("change", { bubbles: true }));
+      }
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
+    expect(asked).toContain("/api/conversations?view=mine");
+  });
+
+  it("moves the client to another of the Care team", async () => {
+    await show();
+    await act(async () => {
+      page.querySelector<HTMLButtonElement>(`button[aria-label="${copy.openLabel("Arjun Mehta")}"]`)?.click();
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
+    expect(page.textContent).toContain(`${copy.carePerson.label}: asha@maneman.test`);
+    const choice = [...page.querySelectorAll("select")].find((each) =>
+      [...each.options].some((option) => option.value === "ravi@maneman.test"),
+    );
+    expect(choice?.textContent).toContain(copy.carePerson.member("ravi@maneman.test", 3));
+    await act(async () => {
+      if (choice !== undefined) {
+        choice.value = "ravi@maneman.test";
+        choice.dispatchEvent(new Event("change", { bubbles: true }));
+      }
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
+    await act(async () => {
+      [...page.querySelectorAll("button")].find((each) => each.textContent.trim() === copy.carePerson.move)?.click();
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
+    expect(posted).toEqual([
+      { path: "/api/clients/11111111-1111-4111-8111-111111111111/care-person", body: { email: "ravi@maneman.test" } },
+    ]);
+    expect(page.textContent).toContain(copy.carePerson.moved("ravi@maneman.test"));
+    expect(page.textContent).toContain(`${copy.carePerson.label}: ravi@maneman.test`);
   });
 
   it("replies from our number, adds a note, and closes the chat with what it was about", async () => {

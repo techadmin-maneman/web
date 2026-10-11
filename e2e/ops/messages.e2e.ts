@@ -12,6 +12,7 @@ const ARJUN: Conversation = {
   person: { id: "11111111-1111-4111-8111-111111111111", name: "Arjun Mehta" },
   mobile: "+919810000001",
   state: "open",
+  care_person: "asha@maneman.test",
   last_message_at: "2026-09-21T05:12:00.000Z",
   last_line: "Can I move tomorrow's visit to the evening?",
   waiting_since: "2026-09-21T05:12:00.000Z",
@@ -20,6 +21,7 @@ const ARJUN: Conversation = {
 test("lists the chats waiting on us, and opens one with our automatic messages in it", async ({ page }) => {
   await answer(page, {
     "GET /api/conversations": json({ conversations: [ARJUN] }),
+    "GET /api/care-team": json({ team: [{ email: "asha@maneman.test", clients: 12 }] }),
     "GET /api/conversations/{id}": json({
       conversation: ARJUN,
       items: [
@@ -38,8 +40,9 @@ test("lists the chats waiting on us, and opens one with our automatic messages i
   await page.goto("/messages");
   await expect(page.getByRole("heading", { level: 1, name: copy.title })).toBeVisible();
   const row = page.getByRole("row").filter({ has: page.getByRole("rowheader", { name: "Arjun Mehta" }) });
-  await expect(row.getByRole("cell").nth(1)).toHaveText(ARJUN.last_line ?? "");
-  await expect(row.getByRole("cell").nth(2)).toHaveText(copy.waitingSince("10:42 am"));
+  await expect(row.getByRole("cell").nth(1)).toHaveText("asha@maneman.test");
+  await expect(row.getByRole("cell").nth(2)).toHaveText(ARJUN.last_line ?? "");
+  await expect(row.getByRole("cell").nth(3)).toHaveText(copy.waitingSince("10:42 am"));
   await row.getByRole("button", { name: copy.openLabel("Arjun Mehta") }).click();
   await expect(
     page.getByText(copy.thread.auto("Visit reminder", [copy.thread.delivered, copy.thread.read])),
@@ -48,4 +51,5 @@ test("lists the chats waiting on us, and opens one with our automatic messages i
     "href",
     `/clients/${ARJUN.person?.id ?? ""}/visits`,
   );
+  await expect(page.getByText(`${copy.carePerson.label}: asha@maneman.test`)).toBeVisible();
 });

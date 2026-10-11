@@ -5,10 +5,18 @@ import { FAILED, NOT_PERMITTED, OFFLINE } from "./common.ts";
 
 export const care = {
   title: "Messages",
-  views: { open: "Waiting on us", waiting: "Waiting on the client", closed: "Closed", all: "All" },
+  views: { mine: "My clients", open: "Waiting on us", waiting: "Waiting on the client", closed: "Closed", all: "All" },
   show: "Show",
   none: "No chats here.",
-  columns: { client: "Client", number: "Number", said: "Last message", waiting: "Waiting", at: "Last", open: "Open" },
+  columns: {
+    client: "Client",
+    number: "Number",
+    carePerson: "Care person",
+    said: "Last message",
+    waiting: "Waiting",
+    at: "Last",
+    open: "Open",
+  },
   unknown: "Number we don't know",
   waitingSince: (clock: string) => `Since ${clock}`,
   noLine: "Only our messages",
@@ -40,6 +48,24 @@ export const care = {
     noted: "Note added.",
     closed: "Chat closed.",
     failed: "WhatsApp did not take it. It is kept in the chat as not sent.",
+  },
+  carePerson: {
+    label: "Care person",
+    none: "Not given yet",
+    moveTo: "Move to",
+    /** "care@maneman.in · 12 clients" */
+    member: (email: string, clients: number) => `${email} · ${String(clients)} ${clients === 1 ? "client" : "clients"}`,
+    move: "Move",
+    moving: "Moving",
+    moved: (email: string) => `Moved to ${email}.`,
+    noTeam: "Nobody has Customer Care Act or Manage for all cities yet.",
+    errors: {
+      email: "No longer on the Care team. Reload.",
+      not_found: "Not found. Reload.",
+      not_permitted: NOT_PERMITTED,
+      offline: OFFLINE,
+      unknown: FAILED,
+    },
   },
   reasons: {
     booking: "Booking",

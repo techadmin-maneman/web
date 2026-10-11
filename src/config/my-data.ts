@@ -262,6 +262,10 @@ export const MY_DATA = {
         sent_at: time("When"),
       },
     },
+    care_person: {
+      title: "Your Care person",
+      fields: { care_person: text("Who"), since: time("Since") },
+    },
     recommended_by: {
       title: "The partner who recommended us",
       fields: {
