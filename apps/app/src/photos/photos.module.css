@@ -140,3 +140,9 @@ div.cell {
   margin-top: var(--sp-16);
   border-color: var(--paper-line);
 }
+
+/* Photos' way on while it is empty: the site's try-on, its width its words'. */
+.tryOn {
+  align-self: flex-start;
+  margin-top: var(--sp-8);
+}
