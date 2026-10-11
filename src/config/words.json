@@ -4438,13 +4438,6 @@
     "text": "Home-fitted hair systems across Delhi NCR."
   },
   {
-    "key": "site:service/serviceArea",
-    "surface": "site",
-    "group": "Every page",
-    "where": "serviceArea",
-    "text": "Delhi NCR"
-  },
-  {
     "key": "site:service/visitLength.consultation",
     "surface": "site",
     "group": "Every page",

@@ -26,3 +26,6 @@ private/
 # What tsc -b keeps between runs (npm run typecheck).
 *.tsbuildinfo
 .vitest-reports/
+
+# The words the Words page published, which a site build fetches (site/src/lib/published-words.ts).
+site/.words.json

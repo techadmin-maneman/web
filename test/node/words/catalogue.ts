@@ -78,7 +78,8 @@ function siteLines(): WordLine[] {
   return MODULES.flatMap(([module, group, exports]) =>
     Object.entries(exports).flatMap(([name, value]) => {
       const at = `${module}/${name}`;
-      if (LOCKED_EXPORTS.has(at)) return [];
+      // A string exported on its own cannot be set from outside its module, as a published line is.
+      if (LOCKED_EXPORTS.has(at) || typeof value === "string") return [];
       return linesOf(at, PAGES[at] ?? group, name, value);
     }),
   );
