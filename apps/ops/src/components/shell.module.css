@@ -232,9 +232,14 @@
   color: var(--error-on-paper);
 }
 
-/* Each section pads itself, as its board does. */
+/*
+ * Each section pads itself, as its board does. The section is what anything positioned inside it, such as a visually
+ * hidden legend, is placed against: placed against the window instead, it would stretch the document past the frame,
+ * and the whole console would scroll, the navigation with it.
+ */
 .page,
 .flushPage {
+  position: relative;
   flex: 1;
   min-height: 0;
   overflow-y: auto;

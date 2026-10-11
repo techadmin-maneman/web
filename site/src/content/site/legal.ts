@@ -57,7 +57,7 @@ export const legalPages: { readonly privacy: LegalPage; readonly terms: LegalPag
         paragraphs: [
           // PLACEHOLDER: the invite's sentence awaits counsel (docs/open-points.md, item 156).
           "When you open a friend's invite, this browser keeps the invite's code for thirty days, so that a consultation you book here later still comes with it; it is removed once a booking has used it, or on your first visit after the thirty days.",
-          "We count visits with Cloudflare Web Analytics, and measure our advertising with Google Analytics, Google Ads and Meta, which set their own cookies and never receive your name, number or photograph. Visitors' network addresses are kept only in scrambled form, to limit abuse.",
+          "We measure our visits and advertising with Google Analytics, Google Ads and Meta, which set their own cookies and never receive your name, number or photograph. Visitors' network addresses are kept only in scrambled form, to limit abuse.",
         ],
       },
       {

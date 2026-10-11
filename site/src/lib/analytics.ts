@@ -1,6 +1,5 @@
 // The site's analytics: GA4, the Google Ads conversion tag and the Meta Pixel,
 // each loaded only when its ID is set for this environment (analytics-ids.ts).
-// Cloudflare Web Analytics needs nothing here: Cloudflare adds it at the edge.
 //
 // Every event goes onto GA's dataLayer queue whether or not a tag is loaded,
 // so the browser tests can read exactly what would be sent. No event carries a
