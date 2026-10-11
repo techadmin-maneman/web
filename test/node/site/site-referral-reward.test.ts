@@ -19,6 +19,7 @@ const VALID = {
   referrer_first_name: null,
   partner: null,
   friend_visits: null,
+  discount: null,
   card: { state: "house" as const, version: 1 },
 };
 const UNKNOWN = { ...VALID, state: "unknown" as const };

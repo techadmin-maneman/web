@@ -23,6 +23,16 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
 }
 
+/** A partner's discount as the API gives it: per cent or paise, and a cap or none. */
+function isDiscount(value: unknown): boolean {
+  return (
+    isRecord(value) &&
+    (value.kind === "percent" || value.kind === "amount") &&
+    Number.isInteger(value.value) &&
+    (value.cap === null || Number.isInteger(value.cap))
+  );
+}
+
 export function isInvite(value: unknown): value is Invite {
   if (!isRecord(value) || !isRecord(value.card)) return false;
   const name = value.referrer_first_name;
@@ -32,6 +42,7 @@ export function isInvite(value: unknown): value is Invite {
     Object.hasOwn(STATES, value.state) &&
     (name === null || typeof name === "string") &&
     (value.partner === null || typeof value.partner === "string") &&
+    (value.discount === null || isDiscount(value.discount)) &&
     (visits === null || Number.isInteger(visits)) &&
     typeof value.card.state === "string" &&
     Object.hasOwn(CARD_STATES, value.card.state) &&

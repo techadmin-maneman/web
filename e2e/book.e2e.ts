@@ -42,6 +42,7 @@ const INVITE = {
   referrer_first_name: "Rohit",
   partner: null,
   friend_visits: null,
+  discount: null,
   card: { state: "house", version: 1 },
 };
 
@@ -694,6 +695,7 @@ test("an invite opened more than 30 days ago, or one we do not know, is not sent
         referrer_first_name: null,
         partner: null,
         friend_visits: null,
+        discount: null,
         card: { state: "house", version: 1 },
       },
     }),

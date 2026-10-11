@@ -15,6 +15,7 @@
 // they are the design's.
 
 import type { Invite, OpenWindows, ReferralConsultation, ReferralReward } from "../lib/api.ts";
+import { rupees } from "@maneman/web-kit/money";
 import { fill } from "../lib/text.ts";
 import { capitalised, serviceArea, visitLength } from "./service.ts";
 import { booking, notices, pageTitles, type Notice } from "./site.ts";
@@ -63,6 +64,16 @@ function inviteOffer(reward: ReferralReward): string | null {
   return `Get fitted and you get ${serviceVisits(friend)} free. Your friend gets ${String(referrer)}.`;
 }
 
+/**
+ * A partner's discount, which comes off the friend's first fit by itself (docs/decisions/0125-partner-discount-codes.md):
+ * "Rs. 2,000 off your first fit.", or "20% off your first fit, up to Rs. 5,000."
+ */
+function discountOffer(terms: NonNullable<Invite["discount"]>): string {
+  if (terms.kind === "amount") return `${rupees(terms.value)} off your first fit.`;
+  const percent = `${String(terms.value)}% off your first fit`;
+  return terms.cap === null ? `${percent}.` : `${percent}, up to ${rupees(terms.cap)}.`;
+}
+
 /** A code we do not know, whose visits the friend does not get. */
 function unknownBody(reward: ReferralReward | null): string {
   const friend = friendVisits(reward);
@@ -106,6 +117,7 @@ export const referral = {
     unnamed: "You have an invite",
     title: "A hair system, fitted at home. The consultation is free.",
     offer: inviteOffer,
+    discount: discountOffer,
     /**
      * A code we do not know: a typo, a revoked code, or one more than 12 months
      * old (the design's "Code expired"). The API does not say which, so the page

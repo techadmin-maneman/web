@@ -1,11 +1,12 @@
 // The panels that were tabs of Settings and are now sections of their own departments: the price book, the
-// discount codes and technicians' pay under Finance, and the Staff list under Admin. Each is laid out as a Settings panel is. The service
-// area is the Served tab of Areas, under Growth.
+// discount codes, technicians' pay and partners' commission under Finance, and the Staff list under Admin. Each is
+// laid out as a Settings panel is. The service area is the Served tab of Areas, under Growth.
 
 import type { ReactNode } from "react";
 import { Shell } from "../components/Shell.tsx";
 import { sectionOf, SECTION_NAMES, type Page } from "../route.ts";
 import { DiscountCodes } from "./DiscountCodes.tsx";
+import { PartnerCommission } from "./PartnerCommission.tsx";
 import { Services } from "./Services.tsx";
 import { Staff } from "./Staff.tsx";
 import { TechnicianPay } from "./TechnicianPay.tsx";
@@ -39,6 +40,14 @@ export function TechnicianPayScreen() {
   return (
     <PanelScreen page="technician-pay">
       <TechnicianPay />
+    </PanelScreen>
+  );
+}
+
+export function PartnerCommissionScreen() {
+  return (
+    <PanelScreen page="partner-commission">
+      <PartnerCommission />
     </PanelScreen>
   );
 }

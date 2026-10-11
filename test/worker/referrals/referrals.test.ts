@@ -117,6 +117,7 @@ describe("GET /api/r/:code", () => {
       referrer_first_name: null,
       partner: null,
       friend_visits: null,
+      discount: null,
       card: { state: "house", version: 1 },
     });
     await cardConsent("photos-referral-cards-v1");
@@ -151,6 +152,7 @@ describe("GET /api/r/:code", () => {
       referrer_first_name: null,
       partner: null,
       friend_visits: null,
+      discount: null,
       card: { state: "house", version: 2 },
     });
   });

@@ -15,6 +15,8 @@
 // The splitter is scripts/lib/pincodes.ts's, kept here because the console
 // cannot import a node script.
 
+import { csvCell } from "../lib/csv.ts";
+
 /** A row of a simple CSV: commas between fields, a field in double quotes may hold commas. */
 function fields(line: string): string[] {
   const out: string[] = [];
@@ -83,23 +85,12 @@ export function readServiceAreaCsv(text: string): CsvRead {
   return { ok: true, rows };
 }
 
-/**
- * A cell as the list writes it. One a spreadsheet would run as a formula -- it
- * opens with = + - @, a tab or a carriage return -- starts with an apostrophe,
- * so it is shown as the text it is. One holding a comma, a quote or a
- * line break is quoted, with its quotes doubled.
- */
-function cell(value: string): string {
-  const safe = /^[=+\-@\t\r]/.test(value) ? `'${value}` : value;
-  return /[",\r\n]/.test(safe) ? `"${safe.replaceAll('"', '""')}"` : safe;
-}
-
 /** The list as it stands, in the shape the file uses, so it can be edited and uploaded back. */
 export function serviceAreaCsv(
   pincodes: readonly { pincode: string; area: string; city: string; served: boolean; launch_on: string | null }[],
 ): string {
   const lines = pincodes.map((each) =>
-    [each.pincode, each.city, each.area, each.served ? "yes" : "no", each.launch_on ?? ""].map(cell).join(","),
+    [each.pincode, each.city, each.area, each.served ? "yes" : "no", each.launch_on ?? ""].map(csvCell).join(","),
   );
   return [["pincode", "city", "area", "served", "launch_on"].join(","), ...lines].join("\n");
 }

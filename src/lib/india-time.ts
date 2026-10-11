@@ -19,6 +19,13 @@ export function indiaHour(instant: Date): string {
 /** A date's month, "YYYY-MM". */
 export const monthOf = (date: string): string => date.slice(0, 7);
 
+/** The month `months` after a month, or before it for a negative count, "YYYY-MM". */
+export function addMonths(month: string, months: number): string {
+  const first = new Date(`${month}-01T00:00:00Z`);
+  first.setUTCMonth(first.getUTCMonth() + months);
+  return first.toISOString().slice(0, 7);
+}
+
 export function addDays(date: string, days: number): string {
   return new Date(Date.parse(`${date}T00:00:00Z`) + days * DAY_MS).toISOString().slice(0, 10);
 }

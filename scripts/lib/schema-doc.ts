@@ -161,8 +161,9 @@ export const RESTORE_GROUPS: readonly RestoreGroup[] = [
       "waitlist_entries",
       "referral_channels",
       "channel_attributions",
+      "partner_payouts",
     ],
-    leftAtT: "A credit, a grant, a partner or a place on a waitlist disappears",
+    leftAtT: "A credit, a grant, a partner, a partner's payment or a place on a waitlist disappears",
     putBackBy: "The rows since `<T>`. `credit_ledger` is only ever added to",
   },
   {

@@ -19,6 +19,7 @@
 // (src/policy/site-booking.ts). An unknown code still books or waits, without an invite. The same submission sent
 // again under its Idempotency-Key gets its first answer.
 
+import { indiaDate } from "../../lib/india-time.ts";
 import { createRoute, z } from "@hono/zod-openapi";
 import type { Context } from "hono";
 import type { App, AppEnv } from "../../http/context.ts";
@@ -72,6 +73,22 @@ const InviteSchema = z
       description:
         "A partner's own service visits for the friend; null for a client's invite, which gives the reward in force.",
     }),
+    discount: z
+      .union([
+        z
+          .object({
+            kind: z.enum(["percent", "amount"]),
+            value: z.number().int(),
+            cap: z.union([z.number().int(), z.null()]),
+          })
+          .strict(),
+        z.null(),
+      ])
+      .openapi({
+        description:
+          "What a partner's discount code takes off the friend's first fit, which it comes off by itself: per cent or " +
+          "paise, and the most a percentage takes off (docs/decisions/0125-partner-discount-codes.md); null for none.",
+      }),
     card: z
       .object({ state: z.enum(["house", "personal"]), version: z.number().int() })
       .strict()
@@ -153,6 +170,7 @@ const UNKNOWN_INVITE = {
   referrer_first_name: null,
   partner: null,
   friend_visits: null,
+  discount: null,
   card: { state: "house" as const, version: 1 },
 };
 
@@ -266,7 +284,7 @@ const waitlistRoute = createRoute({
 
 /** The invite behind a code, a client's or a partner's, as the landing and its forms read it. */
 const invite = (c: Context<AppEnv>, code: string): Promise<AnyInvite | null> =>
-  anyInviteOf(c.env.DB, code, c.var.config.settings.referrerNameOnInvite);
+  anyInviteOf(c.env.DB, code, c.var.config.settings.referrerNameOnInvite, indiaDate(c.var.deps.now()));
 
 /** The landing's answer for an invite: a partner's carries its name and its friend's reward, and the house card. */
 function inviteBody(found: AnyInvite) {
@@ -277,6 +295,7 @@ function inviteBody(found: AnyInvite) {
       referrer_first_name: null,
       partner: found.partnerName,
       friend_visits: found.friendVisits,
+      discount: found.discount?.terms ?? null,
       card,
     };
   }
@@ -285,6 +304,7 @@ function inviteBody(found: AnyInvite) {
     referrer_first_name: found.referrerFirstName,
     partner: null,
     friend_visits: null,
+    discount: null,
     card: found.card,
   };
 }

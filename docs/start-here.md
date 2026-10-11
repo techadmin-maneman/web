@@ -147,11 +147,11 @@ this map, or when the map names something that no longer exists.
 ### Referrals
 
 - **Database work** (`src/domain/referrals/`): `referrals`, `referral-grants`, `referral-cards`, `referral-messages`,
-  `invite-lookups`, `channels`, `channel-grants`
+  `invite-lookups`, `channels`, `channel-grants`, `partner-statements`
 - **Rules** (`src/policy/`): `referral-reward`, `invites`
 - **Data** (`src/config/`): `referral-cards`, `invite-codes`, `house-card`, `card-overlay`
 - **Routes** (`src/routes/`): `client/refer`, `ops/referrals`, `ops/client-referral`, `ops/referral-channels`,
-  `public/referral-landing`, `public/referral-reward`
+  `ops/partner-statements`, `public/referral-landing`, `public/referral-reward`
 - **Screens:** `apps/app/src/refer/`, `apps/ops/src/referrals/`, `site/src/pages/r/`, `site/src/islands/invite/`
 - **Tests:** `test/worker/referrals/`, `e2e/app/refer.e2e.ts`, `e2e/refer-landing.e2e.ts`, `e2e/ops/referrals.e2e.ts`
 
