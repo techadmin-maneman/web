@@ -99,6 +99,19 @@ describe("days off", () => {
   });
 });
 
+describe("the name clients see", () => {
+  it("is set by a manager, shown with the team, and audited", async () => {
+    const lead = opsAs(person(LEAD));
+    expect((await post(lead, "/api/care-team/name", { email: ASHA, name: " Asha " })).status).toBe(200);
+    expect(await memberOf(ASHA)).toMatchObject({ name: "Asha" });
+    expect(await memberOf(RAVI)).toMatchObject({ name: null });
+    const refused = await post(lead, "/api/care-team/name", { email: "viewer@maneman.test", name: "Vik" });
+    expect(await refused.json()).toMatchObject({ error: { code: "invalid_request", fields: ["email"] } });
+    const { results } = await env.DB.prepare("SELECT detail FROM audit_log WHERE action = 'care_name.set'").all();
+    expect(results).toEqual([{ detail: JSON.stringify({ name: "Asha" }) }]);
+  });
+});
+
 describe("cover in the inbox", () => {
   it("puts an off Care person's chats in the cover's own, and says who covers on each", async () => {
     await post(opsAs(person(LEAD)), "/api/care-team/days-off", { email: ASHA, weekdays: [MONDAY] });

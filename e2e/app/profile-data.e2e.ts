@@ -41,6 +41,7 @@ test("shows the concerns the client raised, and our answer", async ({ page }) =>
         deletion: null,
         deletion_rejected: null,
         address: null,
+        care_person: null,
         address_given_to_ops: null,
         grievances: [
           {
@@ -89,6 +90,7 @@ test("says when ops kept the account, and why, and still lets the client ask aga
         deletion: null,
         deletion_rejected: { decided_at: "2026-10-02T06:30:00.000Z", reason: "You still have a consultation booked" },
         address: null,
+        care_person: null,
         address_given_to_ops: null,
         grievances: [],
       },

@@ -3360,6 +3360,17 @@ Request body:
       "type": "string",
       "description": "Masked: +91 98xxx x4417."
     },
+    "care_person": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The first name of the client's Care person (ADR 0136); null until they have one with a name."
+    },
     "address": {
       "anyOf": [
         {
@@ -3591,6 +3602,7 @@ Request body:
   "required": [
     "name",
     "mobile",
+    "care_person",
     "address",
     "address_given_to_ops",
     "consents",

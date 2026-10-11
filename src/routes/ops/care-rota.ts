@@ -2,6 +2,7 @@
 //   POST /api/care-team/days-off           a member's weekly days off, replaced whole
 //   POST /api/care-team/leave              leave for a member, from one date to another
 //   POST /api/care-team/leave/:id/delete   leave taken back
+//   POST /api/care-team/name               the first name a member is known by to clients (docs/decisions/0136-care-names.md)
 // The team as it stands, with who covers whom today, is GET /api/care-team (./care-people.ts).
 
 import { createRoute, z } from "@hono/zod-openapi";
@@ -10,7 +11,7 @@ import type { App, AppEnv } from "../../http/context.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
 import { json } from "../../http/openapi.ts";
 import { actorOf } from "../../http/audit.ts";
-import { careTeam } from "../../domain/care/care-people.ts";
+import { careTeam, setCareName } from "../../domain/care/care-people.ts";
 import { addLeave, deleteLeave, setWeeklyOff } from "../../domain/care/cover.ts";
 import { indiaDate } from "../../lib/india-time.ts";
 
@@ -63,6 +64,24 @@ const deleteRoute = createRoute({
   responses: { 200: done, 403: errorResponse("access_required"), 404: errorResponse("not_found") },
 });
 
+const nameRoute = createRoute({
+  method: "post",
+  path: "/api/care-team/name",
+  summary: "The first name a Care team member is known by to clients, as their Support card shows it",
+  request: {
+    body: {
+      required: true,
+      ...json(
+        z
+          .object({ email: z.email(), name: z.string().trim().min(1).max(40) })
+          .strict()
+          .openapi("CareName"),
+      ),
+    },
+  },
+  responses: { 200: done, 400: notCare, 403: errorResponse("access_required") },
+});
+
 const changeOf = (c: Context<AppEnv>) => ({ actor: actorOf(c), requestId: c.var.requestId, now: c.var.deps.now() });
 
 const onTheTeam = async (c: Context<AppEnv>, email: string) =>
@@ -81,6 +100,13 @@ export function registerOpsCareRota(app: App): void {
     if (!(await onTheTeam(c, email))) return refuse(c, "invalid_request", ["email"]);
     if (to < from || to < indiaDate(c.var.deps.now())) return refuse(c, "invalid_request", ["to"]);
     return c.json({ id: await addLeave(c.env.DB, { ...changeOf(c), email, from, to }) }, 200);
+  });
+
+  app.openapi(nameRoute, async (c) => {
+    const { email, name } = c.req.valid("json");
+    if (!(await onTheTeam(c, email))) return refuse(c, "invalid_request", ["email"]);
+    await setCareName(c.env.DB, { ...changeOf(c), email, name });
+    return c.json({ ok: true as const }, 200);
   });
 
   app.openapi(deleteRoute, async (c) => {

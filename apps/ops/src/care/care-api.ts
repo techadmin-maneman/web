@@ -32,6 +32,7 @@ export const careApi = {
   addLeave: (email: string, from: string, to: string) =>
     client.post("/api/care-team/leave", { body: { email, from, to } }),
   deleteLeave: (id: string) => client.post("/api/care-team/leave/{id}/delete", { path: { id } }),
+  setCareName: (email: string, name: string) => client.post("/api/care-team/name", { body: { email, name } }),
   raiseCityMatter: (id: string, note: string) =>
     client.post("/api/conversations/{id}/city-matter", { path: { id }, body: { note } }),
 };

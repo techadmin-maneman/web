@@ -5101,6 +5101,17 @@
           "email": {
             "type": "string"
           },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The first name clients know them by."
+          },
           "clients": {
             "type": "integer"
           },
@@ -5154,6 +5165,7 @@
         },
         "required": [
           "email",
+          "name",
           "clients",
           "weekly_off",
           "leave",
@@ -5230,6 +5242,25 @@
           "email",
           "from",
           "to"
+        ],
+        "additionalProperties": false
+      },
+      "CareName": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 40
+          }
+        },
+        "required": [
+          "email",
+          "name"
         ],
         "additionalProperties": false
       },
@@ -5798,6 +5829,7 @@
               "care_leave.add",
               "care_leave.delete",
               "city_matter.raise",
+              "care_name.set",
               "word.publish",
               "partner_payout.record",
               "partner_payout.delete",
@@ -14765,6 +14797,65 @@
         }
       }
     },
+    "/api/care-team/name": {
+      "post": {
+        "summary": "The first name a Care team member is known by to clients, as their Support card shows it",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CareName"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Done",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    }
+                  },
+                  "required": [
+                    "ok"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid_request: fields names email when it is not one of the Care team",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "access_required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/care-team/leave/{id}/delete": {
       "post": {
         "summary": "Leave taken back",
@@ -15462,6 +15553,7 @@
                 "care_leave.add",
                 "care_leave.delete",
                 "city_matter.raise",
+                "care_name.set",
                 "word.publish",
                 "partner_payout.record",
                 "partner_payout.delete",

@@ -64,9 +64,18 @@ beforeEach(() => {
       return Promise.resolve(
         Response.json({
           team: [
-            { email: "ravi@maneman.test", clients: 3, weekly_off: [0], leave: [], off_today: false, covered_by: null },
+            {
+              email: "ravi@maneman.test",
+              name: null,
+              clients: 3,
+              weekly_off: [0],
+              leave: [],
+              off_today: false,
+              covered_by: null,
+            },
             {
               email: "asha@maneman.test",
+              name: "Asha",
               clients: 12,
               weekly_off: [],
               leave: [LEAVE],
@@ -238,6 +247,29 @@ describe("the Messages page", () => {
     expect(team.textContent).toContain("ravi@maneman.test");
     expect(team.textContent).toContain(copy.team.weekdays[0]);
     expect(team.textContent).toContain(copy.team.period(shortDate(LEAVE.from), shortDate(LEAVE.to)));
+  });
+
+  it("sets the name clients know a member by", async () => {
+    await show();
+    await act(async () => {
+      page
+        .querySelector<HTMLButtonElement>(`button[aria-label="${copy.team.editNameLabel("ravi@maneman.test")}"]`)
+        ?.click();
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
+    const box = page.querySelector<HTMLInputElement>('input[maxlength="40"]');
+    act(() => {
+      if (box !== null) {
+        Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")?.set?.call(box, "Ravi");
+        box.dispatchEvent(new Event("input", { bubbles: true }));
+      }
+    });
+    await act(async () => {
+      [...page.querySelectorAll("button")].find((each) => each.textContent.trim() === copy.team.save)?.click();
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
+    expect(posted.at(-1)).toEqual({ path: "/api/care-team/name", body: { email: "ravi@maneman.test", name: "Ravi" } });
+    expect(page.textContent).toContain("Asha");
   });
 
   it("sets a member's days off, adds leave and takes it back", async () => {

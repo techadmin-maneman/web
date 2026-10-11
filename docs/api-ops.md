@@ -1760,6 +1760,54 @@ Request body:
 }
 ```
 
+### POST /api/care-team/name
+
+The first name a Care team member is known by to clients, as their Support card shows it
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/CareName"
+}
+```
+
+**200**: Done
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "ok": {
+      "type": "boolean",
+      "enum": [
+        true
+      ]
+    }
+  },
+  "required": [
+    "ok"
+  ],
+  "additionalProperties": false
+}
+```
+
+**400**: invalid_request: fields names email when it is not one of the Care team
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ### POST /api/care-team/leave/{id}/delete
 
 Leave taken back
@@ -11394,6 +11442,17 @@ Request body:
     "email": {
       "type": "string"
     },
+    "name": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The first name clients know them by."
+    },
     "clients": {
       "type": "integer"
     },
@@ -11447,6 +11506,7 @@ Request body:
   },
   "required": [
     "email",
+    "name",
     "clients",
     "weekly_off",
     "leave",
@@ -11543,6 +11603,30 @@ Request body:
     "email",
     "from",
     "to"
+  ],
+  "additionalProperties": false
+}
+```
+
+### CareName
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "email": {
+      "type": "string",
+      "format": "email"
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 40
+    }
+  },
+  "required": [
+    "email",
+    "name"
   ],
   "additionalProperties": false
 }
@@ -12181,6 +12265,7 @@ Request body:
         "care_leave.add",
         "care_leave.delete",
         "city_matter.raise",
+        "care_name.set",
         "word.publish",
         "partner_payout.record",
         "partner_payout.delete",

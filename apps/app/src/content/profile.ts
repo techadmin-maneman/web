@@ -116,6 +116,8 @@ export const profile = {
     label: "Support",
     message: "Message us on WhatsApp",
     hint: "Replies the same day. Everything in writing.",
+    /** Their named Care person (docs/decisions/0136-care-names.md). */
+    carePerson: (name: string) => `Your Care person is ${name}.`,
   },
   // The design has no card for the client's rights over their data (docs/decisions/0049-dpdp.md).
   data: {

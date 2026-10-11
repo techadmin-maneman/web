@@ -211,6 +211,7 @@ test("says an address was given to us on the phone, so the client can check it",
           landmark: null,
           place_id: null,
         },
+        care_person: null,
         address_given_to_ops: "2026-09-21T06:30:00.000Z",
       },
     });

@@ -3340,6 +3340,8 @@ export interface components {
             name: string;
             /** @description Masked: +91 98xxx x4417. */
             mobile: string;
+            /** @description The first name of the client's Care person (ADR 0136); null until they have one with a name. */
+            care_person: string | null;
             address: components["schemas"]["Address"] | null;
             /** @description When the client gave this address to ops on the phone, who saved it for them; null for one they saved themselves. */
             address_given_to_ops: string | null;

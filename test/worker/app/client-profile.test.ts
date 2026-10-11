@@ -77,6 +77,7 @@ describe("GET /api/profile", () => {
     expect(await profile()).toEqual({
       name: "Rohit Malhotra",
       mobile: "+91 98xxx x0001",
+      care_person: null,
       address: null,
       address_given_to_ops: null,
       consents: [
@@ -92,6 +93,22 @@ describe("GET /api/profile", () => {
       deletion_rejected: null,
       grievances: [],
     });
+  });
+
+  it("names their Care person once Customer Care have given that person a name", async () => {
+    const at = NOW.toISOString();
+    await env.DB.prepare(
+      "INSERT INTO care_owners (person_id, email, since, assigned_by) VALUES ('p1', 'asha@maneman.test', ?1, 'system')",
+    )
+      .bind(at)
+      .run();
+    expect((await profile()).care_person).toBeNull();
+    await env.DB.prepare(
+      "INSERT INTO care_names (email, name, set_by, set_at) VALUES ('asha@maneman.test', 'Asha', 'lead@maneman.test', ?1)",
+    )
+      .bind(at)
+      .run();
+    expect((await profile()).care_person).toBe("Asha");
   });
 
   it("needs a session, like every profile route", async () => {

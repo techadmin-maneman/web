@@ -47,6 +47,7 @@ export const AUDIT_ACTIONS = [
   "care_leave.add",
   "care_leave.delete",
   "city_matter.raise",
+  "care_name.set",
   // The site's changed words published, for its next build (docs/decisions/0127-publishing-the-words.md).
   "word.publish",
   // A partner's month paid, or a payment recorded by mistake taken off (docs/decisions/0124-partner-statements.md).
