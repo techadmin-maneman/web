@@ -149,15 +149,14 @@ export function offeredProducts(db: D1Database, on: string): Promise<PricedServi
 
 /**
  * The service a visit of this kind is offered to a client as (docs/decisions/0086-the-next-visit-is-offered.md): the
- * one their last visit of the kind was, while it is offered and priced on the day, else the kind's first offered in
- * the console's order. A visit that names no service was the standard one. Null where the kind offers
- * nothing that day.
+ * one `preferred` names, as the hair system a consultation recommended, then the one their last visit of the kind
+ * was, each while it is offered and priced on the day, else the kind's first offered in the console's order. A visit
+ * that names no service was the standard one. Null where the kind offers nothing that day.
  */
 export async function serviceToOffer(
   db: D1Database,
   personId: string,
-  kind: VisitType,
-  on: string,
+  { kind, on, preferred = null }: { kind: VisitType; on: string; preferred?: string | null },
 ): Promise<string | null> {
   const [offered, last] = await Promise.all([
     offeredServices(db, on, [kind]),
@@ -170,7 +169,8 @@ export async function serviceToOffer(
       .bind(personId, kind)
       .first<{ tier: string }>(),
   ]);
-  return offered.find((service) => service.tier === last?.tier)?.tier ?? offered[0]?.tier ?? null;
+  const among = (tier: string | null | undefined) => offered.find((service) => service.tier === tier)?.tier;
+  return among(preferred) ?? among(last?.tier) ?? offered[0]?.tier ?? null;
 }
 
 /** Why a change to a service was refused: the box it names, where there is one. */

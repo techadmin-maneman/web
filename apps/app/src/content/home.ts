@@ -133,6 +133,14 @@ export const home = {
     told: TOLD_WHEN_BOOKED,
   },
   // The design draws no Home for a client with nothing booked.
+  /** Not drawn: the consultation done and the first fit not yet booked. */
+  consulted: {
+    label: "Your consultation",
+    /** "Thu 8 Oct · Imran". */
+    when: (date: string, technician: string | null) => (technician === null ? date : `${date} · ${technician}`),
+    recommends: (technician: string | null, product: string) =>
+      `${technician ?? "Your technician"} recommends ${product}.`,
+  },
   nothing: {
     title: "Nothing booked",
     book: "Book a free consultation",

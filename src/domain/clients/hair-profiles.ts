@@ -208,6 +208,18 @@ export async function correctByOps(
 const latestIdQuery = (person: string): string =>
   `SELECT id FROM hair_profiles WHERE person_id = ${person} ORDER BY created_at DESC, rowid DESC LIMIT 1`;
 
+/**
+ * The hair system the client's profile recommends, by the tier of its first-fit service: the latest version's, as a
+ * first fit is offered (src/domain/visits/next-visit.ts) and the client's Home recaps the consultation. Null for none.
+ */
+export async function recommendedProduct(db: D1Database, personId: string): Promise<string | null> {
+  const row = await db
+    .prepare("SELECT product FROM hair_profiles WHERE person_id = ?1 ORDER BY created_at DESC, rowid DESC LIMIT 1")
+    .bind(personId)
+    .first<{ product: string | null }>();
+  return row?.product ?? null;
+}
+
 /** The ID of the client's latest version; null before one is recorded. */
 async function latestIdOf(db: D1Database, personId: string): Promise<string | null> {
   const row = await db.prepare(latestIdQuery("?1")).bind(personId).first<{ id: string }>();

@@ -122,6 +122,8 @@ const ALLOWED = [
   },
   { file: "src/domain/no-shows/no-shows.ts", sql: "FROM no_show_cases n JOIN checkins c ON c.id = n.checkin_id" },
   { file: "src/domain/money/discount-codes.ts", sql: "AS uses, (SELECT COALESCE(SUM(u.amount_off), 0)" },
+  // The weekly backup's list of tables: SQLite's own catalogue, which holds a row a table.
+  { file: "src/domain/platform/backups.ts", sql: "SELECT name, sql FROM sqlite_master" },
 ];
 
 /**
@@ -129,6 +131,9 @@ const ALLOWED = [
  * no growing table from end to end.
  */
 const UNPLANNED = [
+  // The weekly backup reads every table whole, a page at a time, once a week in the hour from 3 am in India.
+  { file: "src/domain/platform/backups.ts", source: "SELECT * FROM ${quoted(table.name)}" },
+  { file: "src/domain/platform/backups.ts", source: "SELECT rowid AS backup_rowid, * FROM ${quoted(table.name)}" },
   // An entry written only if the row it is about was: that row, by its key.
   { file: "src/domain/ops/audit.ts", source: "SELECT 1 FROM ${written.table} WHERE id = ?10" },
   { file: "src/domain/ops/audit.ts", source: "SELECT 1 FROM ${deleted.table} WHERE ${deleted.column} = ?10" },

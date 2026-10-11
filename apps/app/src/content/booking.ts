@@ -162,6 +162,8 @@ export const booking = {
     title: "That time has been released.",
     pickAgain: "Pick again",
   },
+  /** Not drawn: the hair system the consultation recommended, beside its name in the chooser. */
+  recommended: (technician: string | null) => (technician === null ? "Recommended" : `Recommended by ${technician}`),
   confirmed: {
     label: "Confirmed",
     /** The board writes "Imran messages you the day before."; the reminder is ours, sent automatically. */

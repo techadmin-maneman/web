@@ -135,7 +135,14 @@ export function registerClientAvailability(app: App): void {
     const terms = move !== null && moving !== null ? move.terms.sold : termsInForce(await opsInputs(c), type);
     const until = offered?.retired_date ?? null;
     // A charged move books a new visit in place of the old, which stands beside it no longer.
-    const placing = { personId: session.subjectId, moving, replacing: move?.moving.visitId ?? null, ownUnpaid: true };
+    const placing = {
+      personId: session.subjectId,
+      moving,
+      replacing: move?.moving.visitId ?? null,
+      ownUnpaid: true,
+      // A new visit's window the client is already paying for stays open to them: picking it gives their hold back.
+      atCheckout: move === null ? { type, tier: service.tier } : null,
+    };
     const [days, schedule] = await Promise.all([
       availability({ db, placing, visit: { minutes: service.minutes, until }, from: start, days: BOOKING_DAYS, now }),
       loadSlotSchedule(db),

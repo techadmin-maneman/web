@@ -184,6 +184,8 @@ export interface Settings {
   readonly urgentWebhookUrl: string | null;
   /** HEARTBEAT_URL: the outside monitor the cron pings after each run (src/providers/heartbeat.ts). Optional. */
   readonly heartbeatUrl: string | null;
+  /** BACKUP_PUBLIC_KEY: the public key the weekly backup is encrypted to (src/domain/platform/backups.ts). */
+  readonly backupPublicKey: string | null;
   /** SENTRY_DSN: where each error line is reported (src/providers/error-tracking.ts). Optional: unset, none is. */
   readonly sentryDsn: SentryDsn | null;
   /** Present when CRM_PROVIDER is "zoho". */

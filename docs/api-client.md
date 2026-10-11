@@ -2427,6 +2427,17 @@ Request body:
       ],
       "description": "The next visit that has not happened: a consultation for a lead."
     },
+    "consulted": {
+      "anyOf": [
+        {
+          "$ref": "#/components/schemas/Consulted"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The latest consultation done, while the client is not yet fitted. Null before one, and once fitted."
+    },
     "being_booked": {
       "anyOf": [
         {
@@ -2804,6 +2815,7 @@ Request body:
     "initials",
     "consultation",
     "next_visit",
+    "consulted",
     "being_booked",
     "payment_owed",
     "credits",
@@ -3097,6 +3109,45 @@ Request body:
     "expires_at"
   ],
   "additionalProperties": false
+}
+```
+
+### Consulted
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "date": {
+      "type": "string",
+      "format": "date",
+      "description": "India's date of the consultation."
+    },
+    "technician": {
+      "anyOf": [
+        {
+          "$ref": "#/components/schemas/Technician"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "recommended": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "The tier of the first-fit service the technician recommended, as the hair profile records it; null for none. booking.next offers the first fit as it, while it is offered."
+    }
+  },
+  "required": [
+    "date",
+    "technician",
+    "recommended"
+  ],
+  "additionalProperties": false,
+  "description": "A consultation done: its day, who came, and the hair system recommended there."
 }
 ```
 

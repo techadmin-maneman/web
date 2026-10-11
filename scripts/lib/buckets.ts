@@ -26,6 +26,8 @@ export const RETENTION: Readonly<Record<string, Retention>> = {
   CLIENT_PHOTOS: "never expires",
   // A referral card serves its invite until the referrer or a revoke takes it down (docs/decisions/0048-referrals.md).
   REFERRAL_CARDS: "never expires",
+  // The weekly backup deletes its own backups past thirteen weeks (src/domain/platform/backups.ts).
+  BACKUPS: "never expires",
 };
 
 const THIRTY_DAYS = 30 * 24 * 60 * 60;
