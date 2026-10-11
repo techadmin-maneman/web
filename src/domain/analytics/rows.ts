@@ -29,7 +29,7 @@ export function dateRows(from: string, to: string): TableRows {
       weekday_name: date.toLocaleDateString("en-GB", { weekday: "long", timeZone: "UTC" }),
     });
   }
-  return { table: "dim_date", key: ["day"], rows };
+  return { table: "dim_date", stamped: false, key: ["day"], rows };
 }
 
 export async function cityRows(db: D1Database): Promise<TableRows> {
@@ -38,6 +38,7 @@ export async function cityRows(db: D1Database): Promise<TableRows> {
     .all<{ city: string; zone: string | null; served: number; active: number }>();
   return {
     table: "dim_city",
+    stamped: false,
     key: ["city"],
     rows: results.map((row) => ({ ...row, served: row.served === 1, active: row.active === 1 })),
   };
@@ -61,6 +62,7 @@ export async function technicianRows(db: D1Database): Promise<TableRows> {
     }>();
   return {
     table: "dim_technician",
+    stamped: false,
     key: ["technician_key"],
     rows: results.map((row) => ({
       technician_key: row.id,
@@ -79,6 +81,7 @@ export async function serviceRows(db: D1Database): Promise<TableRows> {
     .all<{ kind: string; tier: string; name: string; minutes: number }>();
   return {
     table: "dim_service",
+    stamped: false,
     key: ["service_key"],
     rows: results.map((row) => ({
       service_key: `${row.kind}:${row.tier}`,
@@ -100,7 +103,7 @@ interface ClientRow {
 }
 
 /**
- * Each client who has a lead or a visit: their first lead's day, their first fit's day, month and city, and whether a
+ * Each client who has a lead or a visit on the books: their first lead's day, their first fit's day, month and city, and whether a
  * friend's invite brought them. The channel rule comes with the growth figures; until then every client is "direct".
  */
 export async function clientRows(db: D1Database, keys: ReadonlyMap<string, string>): Promise<TableRows> {
@@ -113,12 +116,14 @@ export async function clientRows(db: D1Database, keys: ReadonlyMap<string, strin
          (SELECT a.service_city FROM appointments a WHERE a.person_id = p.id AND a.type = 'first_fit'
             AND a.status = 'completed' AND a.deleted_at IS NULL ORDER BY a.window_start LIMIT 1) AS first_fit_city,
          EXISTS (SELECT 1 FROM referral_attributions r WHERE r.referred_person_id = p.id) AS referred
-       FROM people p WHERE p.test_record = 0 AND p.erased_at IS NULL`,
+       FROM people p WHERE p.test_record = 0 AND p.erased_at IS NULL
+         AND (EXISTS (SELECT 1 FROM leads l WHERE l.person_id = p.id)
+           OR EXISTS (SELECT 1 FROM appointments a WHERE a.person_id = p.id AND a.deleted_at IS NULL))`,
     )
     .all<ClientRow>();
   const rows = results.flatMap((row) => {
     const key = keys.get(row.id);
-    if (key === undefined || (row.first_lead === null && row.first_fit === null)) return [];
+    if (key === undefined) return [];
     const fitDay = dayOf(row.first_fit);
     return [
       {
@@ -133,7 +138,7 @@ export async function clientRows(db: D1Database, keys: ReadonlyMap<string, strin
       },
     ];
   });
-  return { table: "dim_client", key: ["client_key"], rows };
+  return { table: "dim_client", stamped: true, key: ["client_key"], rows };
 }
 
 interface VisitRow {
@@ -182,6 +187,7 @@ export async function visitRows(db: D1Database, keys: ReadonlyMap<string, string
     .all<VisitRow>();
   return {
     table: "fact_visit",
+    stamped: true,
     key: ["visit_key"],
     rows: results.map((row) => ({
       visit_key: row.id,
@@ -240,6 +246,7 @@ export async function paymentRows(db: D1Database, keys: ReadonlyMap<string, stri
     .all<PaymentRow>();
   return {
     table: "fact_payment",
+    stamped: true,
     key: ["payment_key"],
     rows: results.map((row) => {
       const exGst = row.amount_ex_gst ?? row.amount;

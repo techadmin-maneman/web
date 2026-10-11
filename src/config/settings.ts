@@ -306,8 +306,12 @@ export function readSettings(
   return { settings, problems: read.problems };
 }
 
+/** The stub copy's key secret, for local runs and tests; a real copy never uses it. */
+const STUB_CLIENT_KEY = "the stub reporting copy, which no one reads";
+
 /** The reporting copy's key secret, long enough that a key cannot be guessed back to a person. */
 function readClientKeySecret(read: Reader, providers: ProvidersRead): string | null {
+  if (providers.ANALYTICS_PROVIDER === "stub") return STUB_CLIENT_KEY;
   if (providers.ANALYTICS_PROVIDER !== "supabase") return null;
   const secret = read.text("ANALYTICS_CLIENT_KEY");
   if (secret.length < 32) read.problems.push("ANALYTICS_CLIENT_KEY must be at least 32 characters");

@@ -17,14 +17,19 @@ const quoted = (name: string) => `"${name.replaceAll('"', '""')}"`;
  * The upsert for one batch: new rows inserted, a row whose values differ updated and stamped, an unchanged row left as
  * it was. Answers one row for each written or changed, so the count of what it answers is what changed.
  */
-export function upsertSql(table: string, key: readonly string[], columns: readonly string[], rows: number): string {
+export function upsertSql(
+  { table, key, stamped }: Omit<TableRows, "rows">,
+  columns: readonly string[],
+  rows: number,
+): string {
   const values = Array.from({ length: rows }, (_, row) => {
     const cells = columns.map((_, column) => `$${String(row * columns.length + column + 1)}`);
     return `(${cells.join(", ")})`;
   });
   const others = columns.filter((column) => !key.includes(column));
   const target = `${quoted(SCHEMA)}.${quoted(table)}`;
-  const set = [...others.map((column) => `${quoted(column)} = excluded.${quoted(column)}`), `"updated_at" = now()`];
+  const set = others.map((column) => `${quoted(column)} = excluded.${quoted(column)}`);
+  if (stamped) set.push(`"updated_at" = now()`);
   const differs = `(${others.map((column) => `t.${quoted(column)}`).join(", ")}) IS DISTINCT FROM (${others
     .map((column) => `excluded.${quoted(column)}`)
     .join(", ")})`;
@@ -51,17 +56,17 @@ export function createSupabaseWarehouse(connectionString: string): WarehouseProv
       );
       return found.length > 0;
     },
-    replace: async ({ table, key, rows }: TableRows) => {
+    replace: async ({ rows, ...table }: TableRows) => {
       let changed = 0;
       const columns = Object.keys(rows[0] ?? {});
       for (let start = 0; start < rows.length; start += BATCH) {
         const batch = rows.slice(start, start + BATCH);
         const params: Cell[] = batch.flatMap((row) => columns.map((column) => row[column] ?? null));
-        const answered = await sql.unsafe(upsertSql(table, key, columns, batch.length), params as never[]);
+        const answered = await sql.unsafe(upsertSql(table, columns, batch.length), params as never[]);
         changed += answered.length;
       }
-      const keys = rows.map((row) => key.map((column) => String(row[column])).join("|"));
-      await sql.unsafe(staleSql(table, key), [keys] as never[]);
+      const keys = rows.map((row) => table.key.map((column) => String(row[column])).join("|"));
+      await sql.unsafe(staleSql(table.table, table.key), [keys] as never[]);
       return { written: rows.length, changed };
     },
     count: async (table) => {

@@ -32,7 +32,17 @@ describe("validateStaticConfig: environment and providers", () => {
 
   it("refuses a production Worker holding any stub provider, naming each one", () => {
     expect(problemsOf({ ...production, IMAGE_PROVIDER: "stub" })).toEqual(["IMAGE_PROVIDER is a stub in production"]);
-    expect(problemsOf({ ...production, ...STUBS })).toHaveLength(9);
+    expect(problemsOf({ ...production, ...STUBS })).toHaveLength(10);
+  });
+
+  it("needs a long key secret for the reporting copy in Supabase, and none otherwise", () => {
+    expect(problemsOf({ ...production, ANALYTICS_PROVIDER: "supabase", ANALYTICS_CLIENT_KEY: "short" })).toEqual([
+      "ANALYTICS_CLIENT_KEY must be at least 32 characters",
+    ]);
+    expect(
+      problemsOf({ ...production, ANALYTICS_PROVIDER: "supabase", ANALYTICS_CLIENT_KEY: "k".repeat(32) }),
+    ).toEqual([]);
+    expect(problemsOf({ ...production, ANALYTICS_PROVIDER: "none" })).toEqual([]);
   });
 
   it("refuses a missing or unknown provider", () => {
