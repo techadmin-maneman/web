@@ -2,8 +2,9 @@
 // or a job from the unassigned tray. The two are moved the same way and are
 // written by the same two routes, so the board holds them under one type.
 
-import type { Block, Board, BoardClient, BookingWindow, BoardRow, Shown, Unassigned } from "../api.ts";
+import type { Block, Board, BoardClient, BookingWindow, BoardRow, MoveReason, Shown, Unassigned } from "../api.ts";
 import { indiaDate } from "@maneman/web-kit/dates";
+import { asksTheClient } from "../../../../src/policy/dispatch.ts";
 import { dispatch } from "../content.ts";
 
 /** The three windows a day is booked in, in their order (src/config/scheduling.ts). */
@@ -98,6 +99,13 @@ export function changesTime(job: Job, to: Target, landsAt: string | null = null)
   if (landsAt !== null) return Date.parse(landsAt) !== Date.parse(startOf(job));
   const was = whenOf(job);
   return was.date !== to.date || was.window !== to.window;
+}
+
+/** Whether this move is asked of the client rather than made: their visit to another day, for a reason not theirs. */
+export function asksTheClientOf(job: Job, to: Target, reason: MoveReason | null): boolean {
+  const { date } = whenOf(job);
+  if (reason === null || date === null) return false;
+  return asksTheClient({ reason, sameDay: date === to.date, hasClient: personOf(job) !== null });
 }
 
 /** A visit done stays where it was worked, and one the technician has begun where they are working it. */

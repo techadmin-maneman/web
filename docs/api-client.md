@@ -1965,6 +1965,7 @@ Request body:
             "not_disputable",
             "dispute_window_closed",
             "move_gone",
+            "ask_the_client",
             "code_not_applicable",
             "code_off",
             "already_discounted",

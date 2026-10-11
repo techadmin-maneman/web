@@ -35,6 +35,20 @@ export const home = {
   /** The avatar's name begins with the initials it shows, so "tap RM" reaches it by voice. */
   profile: (initials: string) => `${initials}, your profile`,
   reschedule: "Reschedule",
+  /**
+   * Not drawn: a move to another day ops asked the client to confirm (docs/decisions/0115-a-move-to-another-day-waits-for-the-client.md).
+   * The card's Reschedule reads "Pick another time" beside it.
+   */
+  proposal: {
+    ask: (when: string, technician: string | null) =>
+      technician === null
+        ? `We need to move this visit. Could you do ${when} instead?`
+        : `We need to move this visit. Could you do ${when}, with ${technician}, instead?`,
+    accept: (date: string) => `Accept ${date}`,
+    pick: "Pick another time",
+    gone: "That time has just gone. Pick another.",
+    failed: "That didn't go through. Try again.",
+  },
   note: "Add a note",
   consultation: {
     label: "Your consultation",

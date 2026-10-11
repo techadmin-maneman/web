@@ -23,6 +23,7 @@ import { failedNotNullOn, failedUniqueOn } from "../../lib/d1-errors.ts";
 import { BOOKING_WINDOWS, type BookingWindow } from "../../config/scheduling.ts";
 import { indiaDate } from "../../lib/india-time.ts";
 import {
+  asksTheClient,
   clientNotice,
   keepsTheClientsNotice,
   type ClientNotice,
@@ -128,6 +129,26 @@ export async function moveJob(db: D1Database, deps: MoveDeps, input: MoveInput, 
   const planned = await planMove(db, input, now);
   if (planned.kind !== "planned") return planned;
   return writeMove(db, deps, planned.move, now);
+}
+
+/**
+ * A move ops make from the board: made, unless it takes a client's visit to another day they did not ask for, which
+ * is asked of them instead (POST /api/dispatch/propose, ./move-proposals.ts).
+ */
+export async function moveFromTheBoard(
+  db: D1Database,
+  deps: MoveDeps,
+  input: MoveInput,
+  now: Date,
+): Promise<MoveOutcome | { readonly kind: "ask_the_client" }> {
+  const planned = await planMove(db, input, now);
+  if (planned.kind !== "planned") return planned;
+  const { move } = planned;
+  const sameDay = move.date === indiaDate(new Date(move.job.window_start));
+  if (asksTheClient({ reason: input.reason, sameDay, hasClient: move.job.person_id !== null })) {
+    return { kind: "ask_the_client" };
+  }
+  return writeMove(db, deps, move, now);
 }
 
 /** What a move's checks come to: the move to write, or why there is none. */

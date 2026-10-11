@@ -42,7 +42,7 @@ export const OneVisitPriceSchema = z
   .strict()
   .openapi("OneVisitPrice");
 
-const ProposedMoveSchema = z
+export const ProposedMoveSchema = z
   .object({
     id: z.uuid(),
     date: z.iso.date().openapi({ description: "India's date the visit would move to." }),

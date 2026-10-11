@@ -22,6 +22,7 @@ import { creditSpentOn } from "../visits/visit-facts.ts";
 import type { AppointmentStatus } from "../visits/visit-status.ts";
 import { boardCities } from "./cities.ts";
 import { leaveBetween } from "./leave.ts";
+import { openProposalJson, openProposalOf, type ProposedMove } from "./open-proposals.ts";
 
 /** Seven days, as the board shows them. */
 export const BOARD_DAYS = 7;
@@ -68,6 +69,8 @@ interface Block extends Visit {
   readonly untold: { readonly move_id: string; readonly starts_at: string; readonly reason: UntoldReason } | null;
   /** How far the technician has got, from their phone's steps; null before they arrive. A visit begun is not moved. */
   readonly begun: Begun | null;
+  /** A move to another day the client has been asked to confirm, still open; the visit stays put until they do. */
+  readonly proposal: ProposedMove | null;
 }
 
 interface BoardDay {
@@ -170,7 +173,8 @@ const BOARD_JOBS = `
               WHERE b.item = a.type AND b.tier = COALESCE(a.tier, 'standard')
                 AND b.valid_from <= date(a.window_start, '+330 minutes')
               ORDER BY b.valid_from DESC LIMIT 1), 0) AS free,
-    ${landed("check_in")} AS checked_in, ${landed("start")} AS started, ${landed("outcome")} AS closed
+    ${landed("check_in")} AS checked_in, ${landed("start")} AS started, ${landed("outcome")} AS closed,
+    ${openProposalJson("a")} AS proposal
   FROM appointments a LEFT JOIN people p ON p.id = a.person_id
   LEFT JOIN technicians t ON t.id = a.technician_id
   LEFT JOIN addresses d ON d.person_id = a.person_id AND d.replaced_at IS NULL
@@ -203,8 +207,9 @@ export async function boardVersion(db: D1Database): Promise<number> {
  */
 export async function dispatchBoard(
   db: D1Database,
-  options: { from: string; city: string | null; noticeHours?: number; reach?: PlacesReached },
+  options: { from: string; city: string | null; noticeHours?: number; reach?: PlacesReached; now?: Date },
 ): Promise<Board> {
+  const now = options.now ?? new Date();
   const reach = options.reach ?? EVERYWHERE;
   const dates = weekFrom(options.from);
   const last = dates[dates.length - 1] ?? options.from;
@@ -246,7 +251,10 @@ export async function dispatchBoard(
       date,
       blocks: scheduled.results
         .filter((job) => job.technician_id === technician.id && indiaDate(new Date(job.window_start)) === date)
-        .map((job) => blockOf(job, untoldOf(job.id), options.noticeHours ?? FREE_CHANGE_NOTICE_HOURS, schedule)),
+        .map((job) => {
+          const about = { untold: untoldOf(job.id), proposal: openProposalOf(job.proposal, now) };
+          return blockOf(job, about, options.noticeHours ?? FREE_CHANGE_NOTICE_HOURS, schedule);
+        }),
     }));
     return {
       technician_id: technician.id,
@@ -316,6 +324,8 @@ interface BoardJobRow {
   checked_in: number;
   started: number;
   closed: number;
+  /** The open move proposal, as openProposalJson writes it; null for none. */
+  proposal: string | null;
 }
 
 function visitOf(job: BoardJobRow): Visit {
@@ -351,7 +361,13 @@ function clientOf(job: BoardJobRow): BoardClient | null {
   };
 }
 
-function blockOf(job: BoardJobRow, untold: Block["untold"], noticeInForce: number, schedule: SlotSchedule): Block {
+/** What the board knows of a visit beyond its own row: a move its client has not heard of, and one they are asked. */
+interface AboutTheVisit {
+  readonly untold: Block["untold"];
+  readonly proposal: Block["proposal"];
+}
+
+function blockOf(job: BoardJobRow, about: AboutTheVisit, noticeInForce: number, schedule: SlotSchedule): Block {
   const start = new Date(job.window_start);
   return {
     ...visitOf(job),
@@ -359,8 +375,9 @@ function blockOf(job: BoardJobRow, untold: Block["untold"], noticeInForce: numbe
     window: schedule.at(start).window,
     status: job.status,
     notice_hours: job.sold_notice_hours ?? noticeInForce,
-    untold,
+    untold: about.untold,
     begun: begunFrom({ checkIn: job.checked_in === 1, start: job.started === 1, outcome: job.closed === 1 }),
+    proposal: about.proposal,
   };
 }
 

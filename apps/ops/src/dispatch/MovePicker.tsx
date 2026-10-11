@@ -28,7 +28,17 @@ import type { MoveReason } from "../api.ts";
 import { dispatch } from "../content.ts";
 import styles from "./dispatch.module.css";
 import { phoneWords } from "../lib/phone.ts";
-import { changesTime, nameOf, personOf, startOf, whenOf, type Job, type Target, windowWord } from "./job.ts";
+import {
+  asksTheClientOf,
+  changesTime,
+  nameOf,
+  personOf,
+  startOf,
+  whenOf,
+  type Job,
+  type Target,
+  windowWord,
+} from "./job.ts";
 
 const AN_HOUR = 60 * 60 * 1000;
 
@@ -52,10 +62,19 @@ function noticeOf(job: Job, to: Target, landsAt: string | null): { readonly line
   return { line: withPayment(copy.call(person.name, phoneWords(person.mobile))), messaged: false };
 }
 
-/** "Move and notify" only where a message will go. */
-function sendLabel(sending: boolean, messaged: boolean): string {
-  if (sending) return dispatch.move.sending;
-  return messaged ? dispatch.move.send : dispatch.move.sendQuietly;
+/** "Move and notify" only where a message will go; "Ask Rohit M. to confirm" where the client is asked instead. */
+function sendLabel(job: Job, sending: boolean, messaged: boolean, asking: boolean): string {
+  const copy = dispatch.move;
+  if (asking) return sending ? copy.asking : copy.askSend(nameOf(job));
+  if (sending) return copy.sending;
+  return messaged ? copy.send : copy.sendQuietly;
+}
+
+/** What the client hears when they are asked: on WhatsApp, or by a call from ops. */
+function askLine(job: Job): string {
+  const person = personOf(job);
+  if (person === null || person.whatsapp_visits) return dispatch.move.ask(nameOf(job));
+  return dispatch.move.askCall(person.name, phoneWords(person.mobile));
 }
 
 /** "Sat 20 Sep, 10:30 am" where the board knows the start the move takes; else "Sat 20 Sep, morning". */
@@ -80,7 +99,8 @@ interface Props {
   readonly sending: boolean;
   /** Ops chose, after the drawer's warning, to clear the technician's check-in. */
   readonly clearingCheckIn: boolean;
-  readonly onSend: (reason: MoveReason, blackoutReason: string | null) => void;
+  /** `asking`: the client is asked to confirm the move rather than told of it (ADR 0115). */
+  readonly onSend: (reason: MoveReason, blackoutReason: string | null, asking: boolean) => void;
   readonly onCancel: () => void;
 }
 
@@ -95,6 +115,7 @@ export function MovePicker({ job, to, landsAt, blackout, sending, clearingCheckI
   const inside = noticeInside(job, new Date());
   const typed = blackoutReason.trim();
   const ready = reason !== null && (!blackout || typed !== "");
+  const asking = asksTheClientOf(job, to, reason);
 
   return (
     <Dialog
@@ -143,7 +164,7 @@ export function MovePicker({ job, to, landsAt, blackout, sending, clearingCheckI
           </Field>
         </>
       )}
-      <p className={styles.consequence}>{notice.line}</p>
+      <p className={styles.consequence}>{asking ? askLine(job) : notice.line}</p>
       {inside !== null && <p className={styles.consequence}>{copy.soon(inside)}</p>}
       {clearingCheckIn && <p className={styles.consequence}>{copy.checkInCleared}</p>}
       <div className={styles.actions}>
@@ -153,10 +174,10 @@ export function MovePicker({ job, to, landsAt, blackout, sending, clearingCheckI
           disabled={!ready || sending}
           busy={sending}
           onClick={() => {
-            if (reason !== null) onSend(reason, blackout ? typed : null);
+            if (reason !== null) onSend(reason, blackout ? typed : null, asking);
           }}
         >
-          {sendLabel(sending, notice.messaged)}
+          {sendLabel(job, sending, notice.messaged, asking)}
         </Button>
         <Button variant="outline" size="small" disabled={sending} onClick={onCancel}>
           {copy.cancel}
