@@ -19,7 +19,7 @@ import {
   type ErrorCode,
   type ReferralConsultation,
 } from "../../lib/api.ts";
-import { dayStrip, indiaTomorrow } from "../../lib/dates.ts";
+import { dayStrip, indiaTomorrow, type StripDay } from "../../lib/dates.ts";
 import { anyOpen, chosenSlot, type Slot } from "../../lib/open-windows.ts";
 import { forgetInvite, rememberedInvite } from "../../lib/remembered-invite.ts";
 import { fill } from "../../lib/text.ts";
@@ -90,6 +90,132 @@ const MARKED_WITH_PERSON: readonly string[] = [...PERSON_FIELDS, ...MARKED_HERE]
 
 /** Whether a refusal means the strip is out of date: a window filled, or a day closed, since it was drawn. */
 const outOfDate = (code: ErrorCode | "network"): boolean => code === "taken" || code === "not_bookable";
+
+/** The visit's part of the form: what it books, the day and the window. On /book, its third step. */
+function VisitPart(
+  props: ConsultationProps & {
+    oneVisitOffered: boolean;
+    days: readonly StripDay[];
+    slot: Slot;
+    open: ReturnType<typeof useOpenWindows>["days"];
+    windows: typeof referral.consultation.windows;
+    nothingOpen: boolean;
+    onPick: (slot: Slot) => void;
+  },
+) {
+  const { plan, stage, slot } = props;
+  const { consultation } = referral;
+  const windowIds = props.windows.map((option) => option.id);
+  return (
+    <>
+      <div>
+        {stage === "visit" && <StepLine at={3} of={BOOK_STEPS} name={booking.steps.visit} focus={false} />}
+        {/* The site's own page is already headed and introduced; the invite's is not. */}
+        {props.invited && (
+          <>
+            <h2 class={styles.formTitle}>{plan === "one_visit" ? consultation.titleOneVisit : consultation.title}</h2>
+            <p class={styles.formBody}>{consultation.body}</p>
+          </>
+        )}
+        <ForPincode
+          text={fill(consultation.forPincode, { pincode: props.answer.pincode })}
+          onChange={props.onChangePincode}
+        />
+      </div>
+
+      <PlanChoice plan={plan} oneVisitOffered={props.oneVisitOffered} onPlanChange={props.onPlanChange} />
+
+      <DayStrip
+        days={props.days}
+        slot={slot}
+        open={props.open}
+        windowIds={windowIds}
+        nothingOpen={props.nothingOpen}
+        onDay={(date) => {
+          props.onPick({ date, window: slot.window });
+        }}
+      />
+
+      <WindowChoice
+        windows={props.windows}
+        slot={slot}
+        open={props.open}
+        onWindow={(window) => {
+          props.onPick({ date: slot.date, window });
+        }}
+      />
+    </>
+  );
+}
+
+/** The address's part of the form, and who is booking. On /book, its fourth step. */
+function AddressPart(
+  props: ConsultationProps & {
+    form: ReturnType<typeof useTurnstileForm>;
+    address: AddressFields;
+    addressBad: ReturnType<typeof partsToMark>;
+    onAddress: (address: AddressFields) => void;
+    extent: LossExtent | null;
+    onExtent: (extent: LossExtent | null) => void;
+    /** The site's own page takes a discount code for the one visit (ADR 0108); null where it takes none. */
+    discount: { code: string; refused: boolean; onCode: (code: string) => void } | null;
+    remembered: ReturnType<typeof rememberedInvite>;
+    onWithout: () => void;
+    /** The WhatsApp code the number is waiting for; null when none is. */
+    numberCode: ReturnType<typeof useNumberCode> | null;
+    onCodeAgain: (event: Event) => void;
+  },
+) {
+  const { form, numberCode, discount } = props;
+  const { consultation } = referral;
+  return (
+    <>
+      {props.stage === "address" && <StepLine at={4} of={BOOK_STEPS} name={booking.steps.address} focus />}
+      <AddressFieldset
+        address={props.address}
+        missing={props.addressBad}
+        pincode={props.answer.pincode}
+        idPrefix="invite-consultation"
+        onChange={props.onAddress}
+      />
+
+      {!props.invited && <ExtentFieldset extent={props.extent} onChange={props.onExtent} />}
+
+      {discount !== null && <DiscountCode code={discount.code} refused={discount.refused} onCode={discount.onCode} />}
+
+      {props.person === null && (
+        <PersonFieldset
+          fields={form.fields}
+          bad={form.personBad}
+          idPrefix="invite-consultation"
+          consentLabel={consultation.consent}
+          consentNote=""
+          onChange={form.setFields}
+        />
+      )}
+
+      {props.remembered !== null && (
+        <RememberedInvite
+          line={referral.remembered.consultation(props.reward)}
+          without={referral.remembered.bookWithout}
+          onWithout={props.onWithout}
+        />
+      )}
+
+      {numberCode !== null && (
+        <NumberCodeField
+          idPrefix="invite-number"
+          mobile={form.fields.mobile}
+          code={numberCode.code}
+          failure={numberCode.failure}
+          classes={CODE_FIELD}
+          onInput={numberCode.setCode}
+          onAgain={props.onCodeAgain}
+        />
+      )}
+    </>
+  );
+}
 
 /**
  * The pincode is served, so the page books a free consultation. The form also takes the address the
@@ -223,91 +349,33 @@ export function Consultation(props: ConsultationProps) {
   return (
     <form ref={form.element} class={styles.form} onSubmit={submit} noValidate>
       {stage !== "address" && (
-        <>
-          <div>
-            {stage === "visit" && <StepLine at={3} of={BOOK_STEPS} name={booking.steps.visit} focus={false} />}
-            {/* The site's own page is already headed and introduced; the invite's is not. */}
-            {props.invited && (
-              <>
-                <h2 class={styles.formTitle}>
-                  {plan === "one_visit" ? consultation.titleOneVisit : consultation.title}
-                </h2>
-                <p class={styles.formBody}>{consultation.body}</p>
-              </>
-            )}
-            <ForPincode text={fill(consultation.forPincode, { pincode })} onChange={props.onChangePincode} />
-          </div>
-
-          <PlanChoice plan={plan} oneVisitOffered={oneVisitOffered} onPlanChange={props.onPlanChange} />
-
-          <DayStrip
-            days={days}
-            slot={slot}
-            open={open.days}
-            windowIds={windowIds}
-            nothingOpen={nothingOpen}
-            onDay={(date) => {
-              setPicked({ date, window: slot.window });
-            }}
-          />
-
-          <WindowChoice
-            windows={windows}
-            slot={slot}
-            open={open.days}
-            onWindow={(window) => {
-              setPicked({ date: slot.date, window });
-            }}
-          />
-        </>
+        <VisitPart
+          {...props}
+          oneVisitOffered={oneVisitOffered}
+          days={days}
+          slot={slot}
+          open={open.days}
+          windows={windows}
+          nothingOpen={nothingOpen}
+          onPick={setPicked}
+        />
       )}
 
       {stage !== "visit" && (
-        <>
-          {stage === "address" && <StepLine at={4} of={BOOK_STEPS} name={booking.steps.address} focus />}
-          <AddressFieldset
-            address={address}
-            missing={addressBad}
-            pincode={pincode}
-            idPrefix="invite-consultation"
-            onChange={setAddress}
-          />
-
-          {!props.invited && <ExtentFieldset extent={extent} onChange={setExtent} />}
-
-          {takesCode && <DiscountCode code={code} refused={codeRefused} onCode={setCode} />}
-
-          {person === null && (
-            <PersonFieldset
-              fields={form.fields}
-              bad={form.personBad}
-              idPrefix="invite-consultation"
-              consentLabel={consultation.consent}
-              consentNote=""
-              onChange={form.setFields}
-            />
-          )}
-
-          {remembered !== null && (
-            <RememberedInvite
-              line={referral.remembered.consultation(props.reward)}
-              without={referral.remembered.bookWithout}
-              onWithout={bookWithoutInvite}
-            />
-          )}
-
-          {codeWaiting && (
-            <NumberCodeField
-              idPrefix="invite-number"
-              mobile={form.fields.mobile}
-              code={numberCode.code}
-              failure={numberCode.failure}
-              classes={CODE_FIELD}
-              onInput={numberCode.setCode}
-              onAgain={askForCode}
-            />
-          )}
-        </>
+        <AddressPart
+          {...props}
+          form={form}
+          address={address}
+          addressBad={addressBad}
+          onAddress={setAddress}
+          extent={extent}
+          onExtent={setExtent}
+          discount={takesCode ? { code, refused: codeRefused, onCode: setCode } : null}
+          remembered={remembered}
+          onWithout={bookWithoutInvite}
+          numberCode={codeWaiting ? numberCode : null}
+          onCodeAgain={askForCode}
+        />
       )}
 
       <div ref={form.box} class={styles.turnstile} />
