@@ -1,303 +1,258 @@
-// What each grade is paid for each kind of visit, for every city or one, and the form that sets a rate from a date
-// (docs/decisions/0122-technician-pay-per-visit.md). A city's own rate stands in for every city's there; where it has
-// none, every city's shows, marked.
+// What each grade is paid for each kind of visit, for every city or one (docs/decisions/0122-technician-pay-per-visit.md).
+// A city with no rate of its own shows every city's, marked; a rate set to start later shows beneath the one in force.
+// Each grade's row sets a rate, renames the grade, or, while no technician holds it, deletes it.
 
 import { Button } from "@maneman/ui/Button";
+import { Field, Select } from "@maneman/ui/Field";
 import { Panel } from "@maneman/ui/Panel";
-import { shortDate } from "@maneman/web-kit/dates";
-import { paiseFromRupees, rupees } from "@maneman/web-kit/money";
+import { Table } from "@maneman/ui/Table";
+import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
+import { classes } from "@maneman/ui/classes";
 import { errorText } from "@maneman/web-kit/refusal";
-import { useState, type InputHTMLAttributes } from "react";
-import { api, type PayKind, type PayRate, type TechnicianPay } from "../api.ts";
+import { useState } from "react";
+import { api, type TechnicianPay } from "../api.ts";
+import { DeleteAction } from "../components/DeleteAction.tsx";
 import { technicianPay } from "../content/technician-pay.ts";
-import { usePaySend } from "./pay-send.ts";
+import { AddGradeForm, RenameGradeForm, SetRateForm } from "./PayForms.tsx";
+import { rateNow, ratesLater } from "./pay-rates.ts";
 import styles from "../components/forms.module.css";
+import own from "./technician-pay.module.css";
 
 const copy = technicianPay.rates;
 
-/** A city of "" is every city. */
-const cityOrEvery = (city: string): string | null => (city === "" ? null : city);
+type Grade = TechnicianPay["grades"][number];
 
-interface Cell {
-  readonly grade: string;
-  readonly kind: PayKind;
-  readonly city: string | null;
+/** What is open beneath a grade's row. */
+type Acting = { readonly id: string; readonly kind: "rate" | "rename" | "delete" } | null;
+
+/** Which row actions the person's access reaches. */
+interface May {
+  readonly grades: boolean;
+  readonly rates: boolean;
 }
 
-/** The rate in force on `today` for one cell, if any is set. */
-const rateOf = (rates: readonly PayRate[], cell: Cell, today: string) =>
-  rates.find(
-    (r) => r.grade_id === cell.grade && r.kind === cell.kind && r.city === cell.city && r.effective_from <= today,
-  );
-
-/** What a cell says: the rate in force today for the city shown, and each one set to start later. */
-function cellLines(pay: TechnicianPay, grade: string, kind: PayKind, city: string | null): string[] {
-  const own = rateOf(pay.rates, { grade, kind, city }, pay.today);
-  const every = city === null ? undefined : rateOf(pay.rates, { grade, kind, city: null }, pay.today);
-  let now: string = copy.none;
-  if (own !== undefined && own.amount !== null) now = rupees(own.amount);
-  else if (every !== undefined && every.amount !== null) now = copy.inherited(rupees(every.amount));
-  const later = pay.rates
-    .filter((r) => r.grade_id === grade && r.kind === kind && r.city === city && r.effective_from > pay.today)
-    .map((r) =>
-      r.amount === null
-        ? copy.laterNone(shortDate(r.effective_from))
-        : copy.later(rupees(r.amount), shortDate(r.effective_from)),
-    );
-  return [now, ...later];
-}
-
-function RateTable({ pay, city }: { pay: TechnicianPay; city: string | null }) {
-  return (
-    <table className={styles.table}>
-      <thead>
-        <tr>
-          <th scope="col">{copy.grade}</th>
-          {pay.kinds.map((kind) => (
-            <th key={kind} scope="col">
-              {technicianPay.kinds[kind]}
-            </th>
-          ))}
-        </tr>
-      </thead>
-      <tbody>
-        {pay.grades.map((grade) => (
-          <tr key={grade.id}>
-            <th scope="row">{grade.name}</th>
-            {pay.kinds.map((kind) => (
-              <td key={kind} className={styles.figure}>
-                {cellLines(pay, grade.id, kind, city).map((line) => (
-                  <span key={line} className={styles.inline}>
-                    {line}
-                  </span>
-                ))}
-              </td>
-            ))}
-          </tr>
-        ))}
-      </tbody>
-    </table>
-  );
-}
-
-interface Draft {
-  readonly grade: string;
-  readonly kind: PayKind;
+interface RowProps {
+  readonly pay: TechnicianPay;
+  /** "" for every city. */
   readonly city: string;
-  readonly amount: string;
-  readonly clear: boolean;
-  readonly from: string;
+  readonly acting: Acting;
+  readonly may: May;
+  readonly onAct: (acting: Acting) => void;
+  readonly onDone: (pay: TechnicianPay, said: string) => void;
 }
 
-function Select(props: {
-  id: string;
-  label: string;
-  value: string;
-  onChange: (value: string) => void;
-  options: readonly (readonly [string, string])[];
-}) {
+/** A grade's row actions; Delete only while no technician holds it. */
+function RowActions({ grade, acting, may, onAct }: { grade: Grade } & Pick<RowProps, "acting" | "may" | "onAct">) {
+  const actions: readonly (readonly [boolean, NonNullable<Acting>["kind"], string, string])[] = [
+    [may.rates, "rate", copy.setRate, copy.setRateLabel(grade.name)],
+    [may.grades, "rename", copy.rename, copy.renameLabel(grade.name)],
+    [may.grades && grade.technicians === 0, "delete", copy.delete, copy.deleteLabel(grade.name)],
+  ];
   return (
-    <div className={styles.field}>
-      <label className={styles.fieldLabel} htmlFor={props.id}>
-        {props.label}
-      </label>
-      <select
-        className={styles.select}
-        id={props.id}
-        value={props.value}
-        onChange={(event) => {
-          props.onChange(event.target.value);
-        }}
-      >
-        {props.options.map(([value, label]) => (
-          <option key={value} value={value}>
-            {label}
-          </option>
+    <td className={own.actions}>
+      {actions
+        .filter(([shown]) => shown)
+        .map(([, kind, words, label]) => (
+          <button
+            key={kind}
+            className={styles.inline}
+            type="button"
+            aria-label={label}
+            disabled={acting !== null}
+            onClick={() => {
+              onAct({ id: grade.id, kind });
+            }}
+          >
+            {words}
+          </button>
         ))}
-      </select>
-    </div>
+    </td>
   );
 }
 
-/** A labelled input of the form's: the amount, or the first day. */
-function Input({
-  label,
-  onChange,
-  ...input
-}: Omit<InputHTMLAttributes<HTMLInputElement>, "onChange"> & {
-  id: string;
-  label: string;
-  onChange: (value: string) => void;
-}) {
+/** Beneath a grade's row, what its action opened. */
+function ActingRow({ grade, span, ...row }: { grade: Grade; span: number } & RowProps) {
+  const { acting, onAct, onDone } = row;
+  if (acting?.id !== grade.id) return null;
+  const cancel = () => {
+    onAct(null);
+  };
+  const saved = (pay: TechnicianPay) => {
+    onDone(pay, technicianPay.done.saved);
+  };
   return (
-    <div className={styles.field}>
-      <label className={styles.fieldLabel} htmlFor={input.id}>
-        {label}
-      </label>
-      <input
-        {...input}
-        onChange={(event) => {
-          onChange(event.target.value);
-        }}
-      />
-    </div>
+    <tr className={own.acting}>
+      <td colSpan={span}>
+        {acting.kind === "rate" && (
+          <SetRateForm grade={grade} pay={row.pay} city={row.city} onDone={saved} onCancel={cancel} />
+        )}
+        {acting.kind === "rename" && <RenameGradeForm grade={grade} onDone={saved} onCancel={cancel} />}
+        {acting.kind === "delete" && (
+          <div className={own.ask}>
+            <DeleteAction
+              name={grade.name}
+              send={() => api.deletePayGrade(grade.id)}
+              refusal={(refused) =>
+                refused === "in_use" ? copy.inUse : errorText(technicianPay.errors, { code: refused, fields: [] })
+              }
+              onDeleted={(pay) => {
+                onDone(pay, technicianPay.done.deleted);
+              }}
+              onCancel={cancel}
+            />
+          </div>
+        )}
+      </td>
+    </tr>
   );
 }
 
-function RateFields({
-  pay,
-  draft,
-  edit,
-}: {
-  pay: TechnicianPay;
-  draft: Draft;
-  edit: (change: Partial<Draft>) => void;
-}) {
-  const words = copy.set;
+function GradeRows({ grade, ...row }: { grade: Grade } & RowProps) {
+  const { pay } = row;
+  const city = row.city === "" ? null : row.city;
   return (
     <>
-      <div className={styles.fields}>
-        <Select
-          id="pay-rate-grade"
-          label={words.grade}
-          value={draft.grade}
-          onChange={(grade) => {
-            edit({ grade });
-          }}
-          options={pay.grades.map((g) => [g.id, g.name] as const)}
-        />
-        <Select
-          id="pay-rate-kind"
-          label={words.kind}
-          value={draft.kind}
-          onChange={(kind) => {
-            edit({ kind: pay.kinds.find((each) => each === kind) ?? draft.kind });
-          }}
-          options={pay.kinds.map((k) => [k, technicianPay.kinds[k]] as const)}
-        />
-        <Select
-          id="pay-rate-city"
-          label={words.city}
-          value={draft.city}
-          onChange={(city) => {
-            edit({ city });
-          }}
-          options={[["", copy.everyCity] as const, ...pay.cities.map((c) => [c, c] as const)]}
-        />
-        <Input
-          id="pay-rate-amount"
-          label={words.amount}
-          className={styles.number}
-          type="number"
-          min="0"
-          step={1}
-          disabled={draft.clear}
-          value={draft.amount}
-          onChange={(amount) => {
-            edit({ amount });
-          }}
-        />
-        <Input
-          id="pay-rate-from"
-          label={words.from}
-          className={styles.date}
-          type="date"
-          min={pay.today}
-          value={draft.from}
-          onChange={(from) => {
-            edit({ from });
-          }}
-        />
-      </div>
-      <label className={styles.check}>
-        <input
-          type="checkbox"
-          checked={draft.clear}
-          onChange={(event) => {
-            edit({ clear: event.target.checked });
-          }}
-        />{" "}
-        {words.clear}
-      </label>
+      <tr>
+        <th scope="row" className={own.grade}>
+          {grade.name}
+        </th>
+        <td className={own.figure}>{grade.technicians}</td>
+        {pay.kinds.map((kind) => (
+          <td key={kind} className={own.figure}>
+            {rateNow(pay, { grade: grade.id, kind, city })}
+            {ratesLater(pay, { grade: grade.id, kind, city }).map((line) => (
+              <span key={line} className={own.later}>
+                {line}
+              </span>
+            ))}
+          </td>
+        ))}
+        <RowActions grade={grade} {...row} />
+      </tr>
+      <ActingRow grade={grade} span={pay.kinds.length + 3} {...row} />
     </>
   );
 }
 
-function SetRate({ pay, onChanged }: { pay: TechnicianPay; onChanged: (pay: TechnicianPay) => void }) {
-  const words = copy.set;
-  const [draft, setDraft] = useState<Draft>({
-    grade: pay.grades[0]?.id ?? "",
-    kind: "service",
-    city: "",
-    amount: "",
-    clear: false,
-    from: pay.today,
-  });
-  const [saved, setSaved] = useState(false);
-  const { sending, failure, send } = usePaySend(onChanged);
-  const edit = (change: Partial<Draft>) => {
-    setDraft({ ...draft, ...change });
-    setSaved(false);
-  };
-  const amount = draft.clear ? null : paiseFromRupees(draft.amount);
-  const ready =
-    draft.grade !== "" &&
-    draft.from !== "" &&
-    (amount === null || (Number.isInteger(amount) && amount >= 0 && amount <= pay.max_amount && draft.amount !== ""));
-  const save = () =>
-    void send(() =>
-      api.setPayRate({
-        grade_id: draft.grade,
-        city: cityOrEvery(draft.city),
-        kind: draft.kind,
-        amount,
-        from: draft.from,
-      }),
-    ).then(setSaved);
-
+function RatesTable(row: RowProps) {
   return (
-    <form
-      className={styles.group}
-      onSubmit={(event) => {
-        event.preventDefault();
-        save();
-      }}
-    >
-      <h3 className={styles.ruleTitle}>{words.title}</h3>
-      <RateFields pay={pay} draft={draft} edit={edit} />
-      <div className={styles.actions}>
-        <Button type="submit" variant="primary" size="small" disabled={!ready || sending}>
-          {sending ? words.saving : words.save}
-        </Button>
-      </div>
-      {saved && (
-        <p className={styles.saved} role="status">
-          {words.saved}
-        </p>
-      )}
-      {failure !== null && (
-        <p className={styles.error} role="alert">
-          {errorText(copy.errors, failure)}
-        </p>
-      )}
-    </form>
+    <div className={own.scroll}>
+      <Table className={classes(styles.table, own.table, own.rates)}>
+        <thead>
+          <tr>
+            <th scope="col">{copy.grade}</th>
+            <th scope="col" className={own.figure}>
+              {copy.technicians}
+            </th>
+            {row.pay.kinds.map((kind) => (
+              <th key={kind} scope="col" className={own.figure}>
+                {technicianPay.kinds[kind]}
+              </th>
+            ))}
+            <th scope="col">
+              <VisuallyHidden>{copy.actions}</VisuallyHidden>
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {row.pay.grades.map((grade) => (
+            <GradeRows key={grade.id} grade={grade} {...row} />
+          ))}
+        </tbody>
+      </Table>
+    </div>
   );
 }
 
-export function PayRates(props: { pay: TechnicianPay; maySet: boolean; onChanged: (pay: TechnicianPay) => void }) {
-  const [showing, setShowing] = useState("");
-  const { pay } = props;
+/** The city the rates are shown for: every city's, or one city's with every city's standing in. */
+function CityChoice({ pay, city, onCity }: { pay: TechnicianPay; city: string; onCity: (city: string) => void }) {
   return (
-    <Panel titleId="pay-rates" title={copy.title} className={styles.panel}>
-      <Select
-        id="pay-rates-city"
-        label={copy.showing}
-        value={showing}
-        onChange={setShowing}
-        options={[["", copy.everyCity] as const, ...pay.cities.map((c) => [c, c] as const)]}
-      />
-      <RateTable pay={pay} city={cityOrEvery(showing)} />
-      {props.maySet && <SetRate pay={pay} onChanged={props.onChanged} />}
+    <div className={own.tools}>
+      <Field label={copy.city}>
+        {(control) => (
+          <Select
+            {...control}
+            className={styles.choiceBox}
+            value={city}
+            onChange={(event) => {
+              onCity(event.target.value);
+            }}
+          >
+            <option value="">{copy.everyCity}</option>
+            {pay.cities.map((each) => (
+              <option key={each} value={each}>
+                {each}
+              </option>
+            ))}
+          </Select>
+        )}
+      </Field>
+    </div>
+  );
+}
+
+export function PayRates(props: { pay: TechnicianPay; may: May; onChanged: (pay: TechnicianPay) => void }) {
+  const { pay, may } = props;
+  const [city, setCity] = useState("");
+  const [adding, setAdding] = useState(false);
+  const [acting, setActing] = useState<Acting>(null);
+  const [said, setSaid] = useState<string | null>(null);
+  const done = (next: TechnicianPay, words: string) => {
+    setAdding(false);
+    setActing(null);
+    setSaid(words);
+    props.onChanged(next);
+  };
+  const act = (next: Acting) => {
+    setSaid(null);
+    setActing(next);
+  };
+  const row: RowProps = { pay, city, acting, may, onAct: act, onDone: done };
+  return (
+    <Panel
+      titleId="pay-rates"
+      title={copy.title}
+      className={styles.panel}
+      actions={
+        may.grades &&
+        !adding && (
+          <Button
+            variant="outline"
+            size="small"
+            className={styles.quiet}
+            onClick={() => {
+              setSaid(null);
+              setAdding(true);
+            }}
+          >
+            {copy.addGrade}
+          </Button>
+        )
+      }
+    >
+      {adding && (
+        <AddGradeForm
+          onDone={(next) => {
+            done(next, technicianPay.done.saved);
+          }}
+          onCancel={() => {
+            setAdding(false);
+          }}
+        />
+      )}
+      {said !== null && (
+        <p className={styles.saved} role="status">
+          {said}
+        </p>
+      )}
+      {pay.grades.length === 0 ? (
+        <p className={styles.note}>{copy.none}</p>
+      ) : (
+        <>
+          <CityChoice pay={pay} city={city} onCity={setCity} />
+          <RatesTable {...row} />
+        </>
+      )}
     </Panel>
   );
 }

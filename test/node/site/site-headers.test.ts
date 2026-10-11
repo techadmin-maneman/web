@@ -41,17 +41,17 @@ describe("the content security policy", () => {
     expect(policy).not.toContain("unsafe-eval");
   });
 
-  it("allows only the site, Turnstile and Cloudflare Web Analytics when no tag is set", () => {
+  it("allows only the site and Turnstile when no tag is set", () => {
     const policy = contentSecurityPolicy({ scripts: [], styles: [] }, NO_TAGS);
     expect(policy).toBe(
       [
         "default-src 'self'",
-        "script-src 'self' https://challenges.cloudflare.com https://static.cloudflareinsights.com",
+        "script-src 'self' https://challenges.cloudflare.com",
         "style-src 'self'",
         "img-src 'self' blob:",
         "font-src 'self'",
         "media-src 'self'",
-        "connect-src 'self' https://cloudflareinsights.com",
+        "connect-src 'self'",
         "frame-src https://challenges.cloudflare.com",
         "object-src 'none'",
         "base-uri 'self'",
