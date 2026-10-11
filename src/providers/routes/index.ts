@@ -1,4 +1,4 @@
-// Drive times and the day map on the dispatch board, behind an interface (OPS-03). Only this file knows which
+// Drive times and the day map on the dispatch board, behind an interface (ADR 0120). Only this file knows which
 // implementation runs, and only google.ts knows Google. Every call goes through our API: the console never holds the
 // key, and its policy is img-src 'self'.
 

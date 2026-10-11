@@ -1,4 +1,4 @@
-// Google's Routes and Maps Static APIs for the dispatch board's day (OPS-03). Two of these are about money: a route
+// Google's Routes and Maps Static APIs for the dispatch board's day (ADR 0120). Two of these are about money: a route
 // that asks for traffic, or names more than ten stops between its ends, bills as Compute Routes Pro; and the key must
 // never reach the console.
 
@@ -53,7 +53,7 @@ describe("a day's route", () => {
     expect(call?.headers.get("X-Goog-FieldMask")).toBe(
       "routes.legs.duration,routes.legs.distanceMeters,routes.polyline.encodedPolyline",
     );
-    const body = (await call?.json()) as Record<string, unknown>;
+    const body = await call?.json<Record<string, unknown>>();
     expect(body).toMatchObject({
       origin: { location: { latLng: { latitude: HOME.lat, longitude: HOME.lng } } },
       destination: { location: { latLng: { latitude: LAST.lat, longitude: LAST.lng } } },

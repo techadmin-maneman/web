@@ -1,5 +1,5 @@
 // How far a job in hand is from each technician's other visits on a day, as the crow flies, so the move picker can
-// list the nearest first (OPS-03). A straight line costs no call to Google and is close enough to rank by.
+// list the nearest first (ADR 0120). A straight line costs no call to Google and is close enough to rank by.
 
 import { addDays, indiaDate, indiaInstant } from "../../lib/india-time.ts";
 import type { Point } from "../../providers/routes/index.ts";

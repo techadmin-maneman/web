@@ -2,7 +2,7 @@
 // of a day it takes (the brief's "a hint shows its slot size", A2), and the
 // keyboard's way to a destination: "choose a destination from a list, then the
 // same sheet". The list holds the windows the job would land in, on the rows
-// ops have narrowed the board to, so it is as short as the search makes it, the nearest first (OPS-03).
+// ops have narrowed the board to, so it is as short as the search makes it, the nearest first (ADR 0120).
 
 import { Button } from "@maneman/ui/Button";
 import { shortDate } from "@maneman/web-kit/dates";

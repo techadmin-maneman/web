@@ -238,7 +238,7 @@ export const dispatch = {
     sending: "Moving",
     cancel: "Cancel",
   },
-  /** A day on the road, opened from a column's head (OPS-03). */
+  /** A day on the road, opened from a column's head (ADR 0120). */
   routes: {
     open: "Routes",
     /** The button's whole name, since each column has one. */
