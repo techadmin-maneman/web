@@ -5,8 +5,8 @@
 // kind: this decides by who it is about. Our own scripts invent a client or technician with a random
 // 9xxxxxxxxx number, very likely a real person's, since India publishes no reserved test range for mobiles.
 // Every one of them names its invented record "Staging test" or "Load test", and a record so named when it is made
-// on staging is marked a test record, on the person (people.test_record). The mark is read from there, never from the
-// name again, so a rename can make nothing a test record that was not one.
+// on staging is marked a test record, on the person (people.test_record) or the technician (technicians.test_record).
+// The mark is read from there, never from the name again, so a rename can make nothing a test record that was not one.
 
 import type { EnvironmentName } from "../config/environments.ts";
 import { onAllowlist, type MessagingSettings } from "../config/settings.ts";

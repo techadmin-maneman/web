@@ -80,6 +80,8 @@ interface NewTechnician {
   readonly zone: string | null;
   readonly city: string | null;
   readonly fitsTrained: boolean;
+  /** Whether a technician so named, added here, is a test record (testRecordAtCreation, src/policy/staging-test-records.ts). */
+  readonly testRecord: boolean;
 }
 
 /** Adds an active technician, unless another active technician has their number. */
@@ -93,8 +95,8 @@ export async function addTechnician(
     db
       .prepare(
         `INSERT INTO technicians (id, fsm_id, name, initials, active, zone, city, mobile_e164, updated_at, hand_written,
-           fits_trained)
-         SELECT ?1, ?1, ?3, ?4, 1, ?5, ?7, ?2, ?6, 1, ?8 WHERE NOT ${NUMBER_TAKEN}`,
+           fits_trained, test_record)
+         SELECT ?1, ?1, ?3, ?4, 1, ?5, ?7, ?2, ?6, 1, ?8, ?9 WHERE NOT ${NUMBER_TAKEN}`,
       )
       .bind(
         technician.id,
@@ -105,6 +107,7 @@ export async function addTechnician(
         now.toISOString(),
         technician.city,
         technician.fitsTrained ? 1 : 0,
+        technician.testRecord ? 1 : 0,
       ),
     auditStatementIfWritten(db, audit, now, { table: "technicians", id: technician.id }),
   ]);
