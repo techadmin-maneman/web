@@ -33,6 +33,11 @@ async function proposeOnHome(page: Page): Promise<void> {
   });
 }
 
+// A request still passing through when a test ends is let go, rather than failing the test it outlived.
+test.afterEach(async ({ page }) => {
+  await page.unrouteAll({ behavior: "ignoreErrors" });
+});
+
 test("Home asks the client to confirm a move ops proposed, beside another time of their own", async ({ page }) => {
   await proposeOnHome(page);
   const accepted: string[] = [];
