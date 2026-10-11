@@ -1,0 +1,163 @@
+/*
+ * The public site's own sizes: its type, which grows with the screen, and each page's frame and spaces. They sit here,
+ * beside the pages, and not in packages/brand, which holds what the site and the apps share (docs/decisions/0077).
+ * Every value is written once; test/node/site/site-tokens.test.ts holds the site's styles to this file and
+ * packages/brand/tokens.css.
+ */
+
+:root {
+  /* ---- Type: the site's sizes, which grow with the screen ------------------------------------- */
+  /* Headings, largest first, then the larger text beneath a heading; a size a single place draws is named for it. */
+  --fs-hero: clamp(42px, 7.4vw, 96px);
+  --fs-band: clamp(34px, 6.4vw, 84px);
+  --fs-step-number: clamp(40px, 5vw, 72px);
+  --fs-h1: clamp(32px, 4.6vw, 62px);
+  --fs-h2: clamp(30px, 4vw, 54px);
+  --fs-h3: clamp(28px, 3.4vw, 44px);
+  --fs-h4: clamp(24px, 2.8vw, 38px);
+  --fs-h5: clamp(20px, 2vw, 26px);
+  --fs-price: clamp(24px, 3vw, 40px);
+  --fs-guarantee: clamp(26px, 3.2vw, 40px);
+  --fs-range-tagline: clamp(26px, 2.4vw, 34px);
+  --fs-column-head: clamp(17px, 2vw, 28px);
+  --fs-quote: clamp(19px, 1.8vw, 23px);
+  --fs-large: clamp(17px, 1.5vw, 21px);
+  --fs-lead: clamp(17px, 1.4vw, 20px);
+  --fs-body: clamp(16px, 1.3vw, 18px);
+
+  /* ---- Page frame -------------------------------------------------------- */
+  --page-max: 1440px;
+  --gutter: clamp(20px, 4vw, 48px);
+  --header-gap: clamp(16px, 2.5vw, 34px);
+  --bar-h: 64px;
+  --bar-reserve: 72px; /* the space the home page keeps for the sticky bar */
+  --section-gap: clamp(56px, 8vw, 112px);
+  --section-gap-lg: clamp(64px, 10vw, 160px);
+  --section-gap-xl: clamp(72px, 12vw, 180px);
+  --band-pad: clamp(48px, 7vw, 96px);
+  --intro-gap: clamp(28px, 4vw, 48px);
+  --three-up-gap: 20px;
+  --split-min: 300px;
+  --split-min-mid: 340px;
+  --split-min-wide: 360px;
+  --split-gap: clamp(32px, 5vw, 64px);
+
+  /* ---- Line lengths ------------------------------------------------------ */
+  --measure-hero: 900px;
+  --measure-lead: 620px;
+  --measure-hero-body: 600px;
+  --measure-note: 560px;
+  --measure-closing: 520px;
+  --measure-upload-title: 520px;
+  --measure-error: 520px;
+  --measure-short: 480px;
+  --measure-button-column: 360px;
+
+  /* ---- Home ---------------------------------------------------------------- */
+  --hero-min-h: clamp(520px, 82vh, 780px);
+  --hero-tag-top: clamp(16px, 2.4vw, 26px);
+  --hero-pad-bottom: clamp(36px, 5vw, 64px);
+  --hero-body-gap: clamp(18px, 2.4vw, 28px);
+  --hero-actions-gap: clamp(26px, 3.4vw, 40px);
+
+  --what-plate-h: clamp(320px, 52vw, 620px);
+  --what-pad-top: clamp(48px, 7vw, 104px);
+
+  --norwood-intro-gap: clamp(32px, 4vw, 48px);
+  --norwood-gap: clamp(12px, 1.6vw, 20px);
+  --norwood-flow-basis: 150px;
+  --norwood-flow-max: 210px;
+  /* Five late cards at their widest: the late row's width, from the left edge. */
+  --norwood-flow-row-max: calc(5 * var(--norwood-flow-max) + 4 * var(--norwood-gap));
+  --norwood-card-pad: clamp(14px, 1.6vw, 20px);
+  /* A phone's Norwood card: the picture's width beside its words. */
+  --norwood-thumb: 104px;
+  --norwood-late-gap: clamp(40px, 5vw, 64px);
+  --norwood-late-pad: clamp(32px, 4vw, 48px);
+  --norwood-actions-gap: clamp(28px, 3vw, 40px);
+
+  --comparison-label-w: 260px;
+  --comparison-head-pad-top: clamp(14px, 2vw, 22px);
+  --comparison-head-pad-bottom: clamp(14px, 2vw, 20px);
+  --comparison-cell-pad: clamp(8px, 1.2vw, 24px);
+
+  --teaser-frame-h: clamp(280px, 42vw, 420px);
+  --teaser-handle: 46px;
+  --teaser-start-gap: clamp(28px, 4vw, 40px);
+
+  --band-max: 1100px;
+  --discretion-pad-y: clamp(120px, 20vw, 280px);
+  --discretion-pad-x: clamp(24px, 5vw, 64px);
+
+  --how-title-gap: clamp(28px, 4vw, 56px);
+  --how-gap: clamp(24px, 4vw, 64px);
+  --how-step-pad: clamp(28px, 4vw, 52px);
+  --how-number-gap: clamp(20px, 2.6vw, 36px);
+  --how-photo-h: clamp(200px, 26vw, 320px);
+
+  --technician-pad: clamp(18px, 2vw, 26px);
+
+  --range-card-min: 260px;
+  --range-pad-y: clamp(26px, 3vw, 40px);
+
+  --materials-photo-h: clamp(200px, 24vw, 300px);
+
+  --prices-pad-top: clamp(36px, 5vw, 64px);
+  --price-column: clamp(96px, 16vw, 240px);
+  --price-cell-pad: clamp(8px, 1.5vw, 28px);
+  --price-row-pad: clamp(20px, 3vw, 32px);
+
+  --testimonials-intro-gap: clamp(32px, 4vw, 56px);
+  --testimonial-pad: clamp(20px, 2.2vw, 28px);
+
+  --founder-gap: clamp(48px, 7vw, 88px);
+
+  --faq-pad-top: clamp(64px, 10vw, 144px);
+  --faq-gap: clamp(28px, 4vw, 64px);
+  --faq-intro-max: 380px;
+
+  --closing-pad-y: clamp(40px, 6vw, 72px);
+  --closing-pad-x: clamp(24px, 4vw, 56px);
+
+  --footer-pad-top: clamp(40px, 5vw, 64px);
+  --footer-pad-bottom: 96px;
+  --footer-gap: clamp(28px, 4vw, 48px);
+  --footer-rule-gap: clamp(28px, 4vw, 40px);
+  --footer-columns-gap: clamp(28px, 4vw, 56px);
+
+  /* ---- Try-on ------------------------------------------------------------ */
+  --flow-pad-top: clamp(28px, 4vw, 56px);
+  --flow-pad-bottom: clamp(48px, 6vw, 72px);
+  --flow-topline-gap: clamp(24px, 3vw, 40px);
+  --flow-split-gap: clamp(32px, 5vw, 72px);
+  --flow-guidelines-gap: clamp(28px, 4vw, 40px);
+  --flow-actions-gap: clamp(28px, 4vw, 44px);
+  --flow-rows-gap: clamp(24px, 3vw, 36px);
+  --flow-choices-gap: clamp(24px, 3vw, 32px);
+  --flow-button-max: 320px;
+  --flow-medium-max: 720px;
+  --oval-max: 300px;
+  --consent-key-w: 116px;
+  --stage-min: 220px;
+  --look-min: 200px;
+  --gate-frame-h: clamp(300px, 44vw, 420px);
+  --gate-blur: 7px;
+  --error-frame-h: clamp(200px, 28vw, 260px);
+  --error-title-gap: clamp(24px, 3vw, 36px);
+
+  /* ---- The legal pages and the 404, whose tops are the retired booking page's ---- */
+  --book-pad-top: clamp(40px, 6vw, 88px);
+
+  /* ---- The referral landing and /book (Referral and Waitlist, C1 to C5): 390, then 1440 ---- */
+  --landing-pad-top: clamp(26px, 4.4vw, 64px);
+  --landing-column-gap: 72px;
+  --landing-title: clamp(36px, 4.45vw, 64px);
+  --landing-price: clamp(24px, 2.1vw, 30px);
+  --landing-step-number: clamp(22px, 1.8vw, 26px);
+  --landing-panel-title: clamp(24px, 1.8vw, 26px);
+  --landing-answer: 26px;
+  --landing-form-title: 30px;
+  --landing-waitlist-title: 28px;
+  --landing-done-title: 28px;
+  --landing-check-w: clamp(104px, 8.3vw, 120px);
+}

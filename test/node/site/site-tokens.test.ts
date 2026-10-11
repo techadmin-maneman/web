@@ -1,6 +1,6 @@
-// Every colour, size and space on the site comes from packages/brand/tokens.css:
-// no component writes a raw colour, px, vw or em value, and every token a
-// component uses is defined there. The site does not use the apps' layer.
+// Every colour, size and space on the site comes from packages/brand/tokens.css or the site's own
+// site/src/styles/tokens-site.css: no component writes a raw colour, px, vw or em value, and every token a
+// component uses is defined in one of them. The site does not use the apps' layer.
 
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
@@ -9,6 +9,8 @@ import { rawValues } from "../raw-values.ts";
 
 const SOURCE = "site/src";
 const TOKENS = "packages/brand/tokens.css";
+/** The site's own layer, where its values are written, as tokens.css's are. */
+const SITE_TOKENS = "site/src/styles/tokens-site.css";
 
 function files(dir: string): string[] {
   return readdirSync(dir).flatMap((name) => {
@@ -24,9 +26,11 @@ function cssOf(path: string): string {
   return [...text.matchAll(/<style[^>]*>([\s\S]*?)<\/style>/g)].map((match) => match[1] ?? "").join("\n");
 }
 
-const styled = files(SOURCE).filter((path) => /\.(astro|css)$/.test(path));
+const styled = files(SOURCE).filter((path) => /\.(astro|css)$/.test(path) && path !== SITE_TOKENS);
 const defined = new Set(
-  [...readFileSync(TOKENS, "utf8").matchAll(/(--[a-z0-9-]+)\s*:/g)].map((match) => match[1] ?? ""),
+  [TOKENS, SITE_TOKENS].flatMap((file) =>
+    [...readFileSync(file, "utf8").matchAll(/(--[a-z0-9-]+)\s*:/g)].map((match) => match[1] ?? ""),
+  ),
 );
 
 describe("design tokens", () => {

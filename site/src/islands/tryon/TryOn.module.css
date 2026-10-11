@@ -85,13 +85,13 @@
   color: var(--paper);
 }
 .title {
-  font-size: var(--fs-flow-title);
+  font-size: var(--fs-h2);
   line-height: var(--lh-100);
   letter-spacing: var(--tracking-title);
   text-wrap: balance;
 }
 .titleLarge {
-  font-size: var(--fs-upload-title);
+  font-size: var(--fs-h1);
   line-height: var(--lh-100);
   letter-spacing: var(--tracking-title);
   max-width: var(--measure-upload-title);
@@ -560,7 +560,7 @@
 }
 .noticeTitle {
   margin-top: var(--error-title-gap);
-  font-size: var(--fs-error-title);
+  font-size: var(--fs-h3);
   line-height: var(--lh-115);
   text-wrap: balance;
 }
