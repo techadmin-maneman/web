@@ -73,6 +73,24 @@ export const care = {
   },
   /** "asha@maneman.in · covered by ravi@maneman.in", while the Care person is off. */
   coveredBy: (person: string, cover: string) => `${person} · covered by ${cover}`,
+  /** The client beside their chat (docs/decisions/0140-the-client-panel.md). */
+  panel: {
+    title: "The client",
+    next: "Next visit",
+    last: "Last visit",
+    credits: "Free service visits",
+    city: "City",
+    none: "None",
+    noAddress: "No address yet",
+    /** "Thu 24 Sep, 12 pm · Service visit" */
+    visit: (when: string, kind: string) => (kind === "" ? when : `${when} · ${kind}`),
+    links: {
+      visits: "Book or move a visit",
+      payments: "Payments and links",
+      pieces: "Hair system",
+      consents: "Consents",
+    },
+  },
   /** A chat from a number we don't know (docs/decisions/0138-strangers-in-the-inbox.md). */
   stranger: {
     title: "A number we don't know. Link it to a client, or save them as someone new.",

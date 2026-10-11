@@ -110,6 +110,22 @@ beforeEach(() => {
       const view = address.searchParams.get("view");
       return Promise.resolve(Response.json({ conversations: view === "closed" ? [] : [ARJUN, STRANGER] }));
     }
+    if (address.pathname === `/api/clients/${ARJUN.person?.id ?? ""}`) {
+      const visit = {
+        id: "v1",
+        date: "2026-09-24",
+        starts_at: "2026-09-24T06:30:00.000Z",
+        type: "service",
+        service: null,
+      };
+      return Promise.resolve(
+        Response.json({
+          visits: { upcoming: [visit], past: [] },
+          credits: { visits: 2, earliest_expiry: null },
+          address: { city: "Gurgaon" },
+        }),
+      );
+    }
     if (address.pathname === `/api/conversations/${STRANGER.id}`) {
       return Promise.resolve(Response.json({ conversation: STRANGER, items: [] }));
     }
@@ -234,6 +250,18 @@ describe("the Messages page", () => {
     ]);
     expect(page.textContent).toContain(copy.carePerson.moved("ravi@maneman.test"));
     expect(page.textContent).toContain(`${copy.carePerson.label}: ravi@maneman.test`);
+  });
+
+  it("shows the client beside the chat, with the ways into their page", async () => {
+    await show();
+    await act(async () => {
+      page.querySelector<HTMLButtonElement>(`button[aria-label="${copy.openLabel("Arjun Mehta")}"]`)?.click();
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
+    const panel = page.querySelector(`[aria-label="${copy.panel.title}"]`);
+    expect(panel?.textContent).toContain(copy.panel.visit("Thu 24 Sep, 12 pm", "Service visit"));
+    expect(panel?.textContent).toContain("Gurgaon");
+    expect(panel?.querySelector(`a[href$="/payments"]`)?.textContent).toBe(copy.panel.links.payments);
   });
 
   it("sends a matter from the chat to the client's city", async () => {
