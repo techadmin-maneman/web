@@ -21,5 +21,8 @@ export function usePaySend(onChanged: (pay: TechnicianPay) => void) {
     onChanged(answer.body);
     return true;
   };
-  return { sending, failure, send, clear: () => setFailure(null) };
+  const clear = () => {
+    setFailure(null);
+  };
+  return { sending, failure, send, clear };
 }

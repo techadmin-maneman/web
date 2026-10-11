@@ -1,6 +1,7 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { DAY_VALUED_AT, migratedTables, PURPOSES, RESTORE_GROUPS, schemaDoc } from "../../../scripts/lib/schema-doc.ts";
+import { DAY_VALUED_AT, migratedTables, RESTORE_GROUPS, schemaDoc } from "../../../scripts/lib/schema-doc.ts";
+import { PURPOSES } from "../../../scripts/lib/schema-purposes.ts";
 
 const migration = (name: string, sql: string) => ({ name, sql });
 
