@@ -159,8 +159,49 @@ test("a number with +91, 91, 0 or 0091 in front books its own ten digits, pasted
   await page.getByText("You may contact me on WhatsApp about this consultation.").click();
   await page.getByRole("button", { name: "Book the consultation" }).click();
 
-  await expect(page.getByText("Your booking details are on their way to +91 98765 43210.")).toBeVisible();
+  await expect(
+    page.getByText("Your technician arrives in that window. Details on WhatsApp, at +91 98765 43210."),
+  ).toBeVisible();
   expect(requests[0]?.postDataJSON()).toMatchObject({ mobile: "9876543210" });
+});
+
+test("restates the day and window booked, says what the visit asks, and offers it to the calendar", async ({
+  page,
+}) => {
+  await mockApi(page);
+  await visit(page, "/book");
+  await page.getByLabel("Pincode").fill(SERVED.pincode);
+  await page.getByRole("button", { name: "Check" }).click();
+  await fillAddress(page);
+  await page.getByLabel("Name").fill("Test Visitor");
+  await page.getByLabel("Mobile").fill("9810000000");
+  await page.getByText("You may contact me on WhatsApp about this consultation.").click();
+  await page.getByRole("button", { name: "Book the consultation" }).click();
+
+  await expect(page.getByRole("heading", { level: 1, name: "Friday 25 September, 9 am to 12 pm" })).toBeVisible();
+  await expect(page.getByText("An hour at home, and free. Nothing is fitted.")).toBeVisible();
+  const google = new URL((await page.getByRole("link", { name: "Google Calendar" }).getAttribute("href")) ?? "");
+  expect(google.searchParams.get("dates")).toBe("20260925T033000Z/20260925T063000Z");
+  expect(google.searchParams.get("text")).toBe("Mane Man consultation");
+  const file = page.getByRole("link", { name: "Apple or Outlook" });
+  await expect(file).toHaveAttribute("download", "mane-man-visit.ics");
+  const ics = decodeURIComponent((await file.getAttribute("href"))?.split(",")[1] ?? "");
+  expect(ics).toContain("DTSTART:20260925T033000Z\r\nDTEND:20260925T063000Z");
+});
+
+test("a request waiting for ops to fix the hour offers no calendar", async ({ page }) => {
+  await mockApi(page, { consultation: { status: 201, body: { ...BOOKED, state: "requested" } } });
+  await visit(page, "/book");
+  await page.getByLabel("Pincode").fill(SERVED.pincode);
+  await page.getByRole("button", { name: "Check" }).click();
+  await fillAddress(page);
+  await page.getByLabel("Name").fill("Test Visitor");
+  await page.getByLabel("Mobile").fill("9810000000");
+  await page.getByText("You may contact me on WhatsApp about this consultation.").click();
+  await page.getByRole("button", { name: "Book the consultation" }).click();
+
+  await expect(page.getByRole("heading", { level: 1, name: "We will message you" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Google Calendar" })).toHaveCount(0);
 });
 
 test("a served pincode books, and sends where the hair loss is", async ({ page }) => {
@@ -178,7 +219,7 @@ test("a served pincode books, and sends where the hair loss is", async ({ page }
   await page.getByText("You may contact me on WhatsApp about this consultation.").click();
   await page.getByRole("button", { name: "Book the consultation" }).click();
 
-  await expect(page.getByText("Booking received")).toBeVisible();
+  await expect(page.getByText("Booked", { exact: true })).toBeVisible();
   const sent = requests[0]?.postDataJSON() as Record<string, unknown>;
   expect(sent).toMatchObject({ pincode: SERVED.pincode, window: "morning", consent: true, loss_extent: "receding" });
   expect(sent.turnstile_token).toBeTruthy();
@@ -227,7 +268,7 @@ test("offers the consultation and fit in one visit, and says what it holds", asy
   expect(await axeViolations(page)).toEqual([]);
   await enterNumberCode(page, "Confirm and book");
 
-  await expect(page.getByText("Booking received")).toBeVisible();
+  await expect(page.getByText("Booked", { exact: true })).toBeVisible();
   const sent = requests[0]?.postDataJSON() as Record<string, unknown>;
   expect(sent).toMatchObject({ one_visit: true, window: "morning", consent: true, number_code_id: NUMBER_CODE_ID });
   // Where the hair loss is was skipped, so nothing is said of it.
@@ -265,7 +306,7 @@ test("books the one visit only with the right WhatsApp code, and a new number ne
 
   await page.getByLabel("WhatsApp code").fill(NUMBER_CODE);
   await page.getByRole("button", { name: "Confirm and book" }).click();
-  await expect(page.getByText("Booking received")).toBeVisible();
+  await expect(page.getByText("Booked", { exact: true })).toBeVisible();
   expect(verified).toEqual([
     { code_id: NUMBER_CODE_ID, code: "111111" },
     { code_id: NUMBER_CODE_ID, code: NUMBER_CODE },
@@ -315,7 +356,7 @@ test("says a wrong code under its box, and what a right one takes off once booke
   applies = true;
   await box.fill(" WEDDNG25 ");
   await page.getByRole("button", { name: "Book the consultation and fit" }).click();
-  await expect(page.getByText("Booking received")).toBeVisible();
+  await expect(page.getByText("Booked", { exact: true })).toBeVisible();
   await expect(page.getByText("Code WEDDNG25: Rs. 1,000 off, taken when you pay.")).toBeVisible();
   const sent = requests.at(-1)?.postDataJSON() as Record<string, unknown>;
   expect(sent).toMatchObject({ one_visit: true, discount_code: "WEDDNG25" });
@@ -325,7 +366,7 @@ test("says a wrong code under its box, and what a right one takes off once booke
 test("says when the code sent could not be applied, and that the booking stands without it", async ({ page }) => {
   await mockApi(page, { consultation: { status: 201, body: { ...BOOKED, one_visit: true, discount_code: null } } });
   await bookOneVisitWithCode(page, "weddng25");
-  await expect(page.getByText("Booking received")).toBeVisible();
+  await expect(page.getByText("Booked", { exact: true })).toBeVisible();
   await expect(page.getByText("We couldn’t apply code WEDDNG25. Your booking stands without it.")).toBeVisible();
 });
 
@@ -361,7 +402,7 @@ test("offers the one visit the morning and the afternoon, never the evening, and
   await page.getByLabel("Mobile").fill("9810000000");
   await page.getByText("You may contact me on WhatsApp about this consultation.").click();
   await page.getByRole("button", { name: "Book the consultation" }).click();
-  await expect(page.getByText("Booking received")).toBeVisible();
+  await expect(page.getByText("Booked", { exact: true })).toBeVisible();
   expect(requests[0]?.postDataJSON() as Record<string, unknown>).not.toHaveProperty("one_visit");
 });
 
@@ -394,7 +435,7 @@ test("a booking without the address is stopped at the form, each part it needs m
   await page.getByLabel("City").fill("Gurugram");
   await page.getByLabel("Access notes (optional)").fill("Gate 2, visitor parking");
   await page.getByRole("button", { name: "Book the consultation" }).click();
-  await expect(page.getByText("Booking received")).toBeVisible();
+  await expect(page.getByText("Booked", { exact: true })).toBeVisible();
   expect((requests[0]?.postDataJSON() as Record<string, unknown>).address).toEqual({
     flat: "Flat 402",
     floor: null,
@@ -422,8 +463,10 @@ test("every number is sent to WhatsApp, and offered the app with the number fill
   await page.getByText("You may contact me on WhatsApp about this consultation.").click();
   await page.getByRole("button", { name: "Book the consultation" }).click();
 
-  await expect(page.getByRole("heading", { level: 1, name: "Check WhatsApp" })).toBeVisible();
-  await expect(page.getByText("Your booking details are on their way to +91 98100 00000.")).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "Friday 25 September, 9 am to 12 pm" })).toBeVisible();
+  await expect(
+    page.getByText("Your technician arrives in that window. Details on WhatsApp, at +91 98100 00000."),
+  ).toBeVisible();
   const app = page.getByRole("link", { name: "Open the app" });
   // The link carries no number until it is followed, so no tag that reads the page's links sees it.
   await expect(app).toHaveAttribute("href", "http://app.localhost:4322");
@@ -488,7 +531,7 @@ test("a booking and a waitlist are both counted, with nothing personal", async (
   await page.getByLabel("Mobile").fill("9810000000");
   await page.getByText("You may contact me on WhatsApp about this consultation.").click();
   await page.getByRole("button", { name: "Book the consultation" }).click();
-  await expect(page.getByText("Booking received")).toBeVisible();
+  await expect(page.getByText("Booked", { exact: true })).toBeVisible();
   expect(await analyticsEvents(page)).toEqual([
     ["lead_submitted", { page: "book", served: true, area: "Sector 65", window: "morning", loss_extent: "receding" }],
     ["booking_confirmed", { page: "book", area: "Sector 65", window: "morning", state: "booked" }],
@@ -531,7 +574,7 @@ test("a friend who opened an invite books here with it, and is told the invite's
   await expect(page.getByRole("button", { name: "Book without the invite" })).toBeVisible();
   await fillAndBook(page);
 
-  await expect(page.getByText("Booking received")).toBeVisible();
+  await expect(page.getByText("Booked", { exact: true })).toBeVisible();
   expect(requests[0]?.postDataJSON()).toMatchObject({ invite_code: CODE, invite_told: true });
   await expect(page.getByText("The 3 service visits land when you are fitted.")).toBeVisible();
   expect(await axeViolations(page)).toEqual([]);
@@ -549,7 +592,7 @@ test("a friend who opened an invite may book here without it, and the browser fo
   await expect(page.getByText(TOLD)).toBeHidden();
   expect(await remembered(page)).toBeNull();
   await fillAndBook(page);
-  await expect(page.getByText("Booking received")).toBeVisible();
+  await expect(page.getByText("Booked", { exact: true })).toBeVisible();
   expect(requests[0]?.postDataJSON()).not.toHaveProperty("invite_code");
   expect(requests[0]?.postDataJSON()).not.toHaveProperty("invite_told");
 });
@@ -595,7 +638,7 @@ test("an invite opened more than 30 days ago, or one we do not know, is not sent
     localStorage.setItem("mm_invite", JSON.stringify({ code: "RM4K7P", saved_at: savedAt }));
   }, opened);
   await bookHere(page);
-  await expect(page.getByText("Booking received")).toBeVisible();
+  await expect(page.getByText("Booked", { exact: true })).toBeVisible();
   expect(requests[0]?.postDataJSON()).not.toHaveProperty("invite_code");
   await expect(page.getByText("The 3 service visits land when you are fitted.")).toBeHidden();
   // Past its thirty days it is not kept either, as the privacy page says.
@@ -628,12 +671,12 @@ test("a browser that blocks storage books on the invite's page and here, and sen
   await page.getByLabel("Mobile").fill("9810000000");
   await page.getByText("You may contact me on WhatsApp about this consultation.").click();
   await page.getByRole("button", { name: "Book the consultation" }).click();
-  await expect(page.getByText("Booking received")).toBeVisible();
+  await expect(page.getByText("Booked", { exact: true })).toBeVisible();
   await expect(page.getByText("The 3 service visits land when you are fitted.")).toBeVisible();
   expect(new URL(requests[0]?.url() ?? "").pathname).toBe(`/api/r/${CODE}/consultation`);
 
   await bookHere(page);
-  await expect(page.getByText("Booking received")).toBeVisible();
+  await expect(page.getByText("Booked", { exact: true })).toBeVisible();
   expect(new URL(requests[1]?.url() ?? "").pathname).toBe("/api/consultation");
   expect(requests[1]?.postDataJSON()).not.toHaveProperty("invite_code");
 });
@@ -780,7 +823,7 @@ test("draws full days and windows closed, and starts on the first open one", asy
   expect(await axeViolations(page)).toEqual([]);
 
   await fillAndBook(page);
-  await expect(page.getByText("Booking received")).toBeVisible();
+  await expect(page.getByText("Booked", { exact: true })).toBeVisible();
   expect(requests[0]?.postDataJSON()).toMatchObject({ date: "2026-10-04", window: "afternoon" });
 });
 
@@ -853,12 +896,12 @@ test("Back steps back through the page, and Forward returns to the confirmation"
   await expect(page.getByRole("heading", { name: "We come to Sector 65" })).toBeFocused();
 
   await fillAndBook(page);
-  await expect(page.getByText("Booking received")).toBeVisible();
+  await expect(page.getByText("Booked", { exact: true })).toBeVisible();
   await page.goBack();
   await expect(page.getByRole("heading", { name: "We come to Sector 65" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Book the consultation" })).toBeVisible();
   await page.goForward();
-  await expect(page.getByText("Booking received")).toBeVisible();
+  await expect(page.getByText("Booked", { exact: true })).toBeVisible();
 });
 
 // Fourteen tiles read "Sat 31 … Fri 6" with no month, and a screen reader heard "Sat 31".
@@ -897,7 +940,7 @@ test("the address asks for the street once, and folds the floor, tower and landm
   await address.getByLabel("Tower or block (optional)").fill("Tower C");
 
   await fillAndBook(page);
-  await expect(page.getByText("Booking received")).toBeVisible();
+  await expect(page.getByText("Booked", { exact: true })).toBeVisible();
   expect((requests[0]?.postDataJSON() as { address: Record<string, unknown> }).address).toMatchObject({
     tower: "Tower C",
     line1: "Palm Grove Society",

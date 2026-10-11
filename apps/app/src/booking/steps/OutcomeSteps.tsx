@@ -9,6 +9,7 @@ import { rupees } from "@maneman/web-kit/money";
 import { useState } from "react";
 import type { Hold } from "../../api.ts";
 import { booking, change, messages, VISIT_TYPES, WINDOW_HOURS } from "../../content.ts";
+import { AddToCalendar } from "../../components/AddToCalendar.tsx";
 import { whatsappWith } from "../../lib/whatsapp.ts";
 import { NoteSheet } from "../NoteSheet.tsx";
 import styles from "../booking.module.css";
@@ -94,6 +95,18 @@ export function ConfirmedStep(props: { hold: Hold; moved: boolean; reminded: boo
       <p className={styles.confirmedTitle}>{when}</p>
       {reminded && <p className={styles.confirmedLine}>{copy.tellsYou}</p>}
       <Settled hold={hold} />
+      <div className={styles.confirmedCalendar}>
+        <AddToCalendar
+          visit={{
+            id: hold.visit_id ?? hold.id,
+            date: hold.date,
+            window: hold.window,
+            name: VISIT_TYPES[hold.type],
+            technician,
+          }}
+          onInk
+        />
+      </div>
       <ConfirmedNote hold={hold} technician={technician} />
       <button className={styles.done} type="button" onClick={onDone}>
         {copy.close}

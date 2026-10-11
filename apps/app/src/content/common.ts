@@ -50,6 +50,17 @@ type WindowLabel = keyof typeof WINDOW_NAMES;
 /** "Afternoon, 12 to 4 pm", as a visit's card gives its window. */
 export const windowText = (label: WindowLabel) => `${WINDOW_NAMES[label]}, ${WINDOW_HOURS[label]}`;
 
+/** Not drawn: a visit to come, offered to the client's own calendar. */
+export const calendar = {
+  label: "Add to your calendar",
+  google: "Google Calendar",
+  file: "Apple or Outlook",
+  fileName: "mane-man-visit.ics",
+  title: (visit: string) => `Mane Man: ${visit}`,
+  details: (hours: string, technician: string | null) =>
+    `${technician ?? "Your technician"} arrives in the window, ${hours}.`,
+};
+
 /** Each kind of visit, as the design names it. */
 export const VISIT_TYPES = {
   consultation: "Consultation",

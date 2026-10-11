@@ -19,9 +19,12 @@ async function sendCode(page: Page, mobile: string): Promise<void> {
   await expect(page.getByRole("heading", { level: 1, name: "Enter the code" })).toBeVisible();
 }
 
+/** The sixth digit sends the code. After a wrong one the client waits for its answer, clears it and types again. */
 async function enter(page: Page, code: string): Promise<void> {
-  await page.getByRole("textbox", { name: "The six-digit code" }).fill(code);
-  await page.getByRole("button", { name: "Continue" }).click();
+  await expect(page.getByRole("button", { name: "Continue" })).not.toHaveAttribute("aria-busy", "true");
+  const field = page.getByRole("textbox", { name: "The six-digit code" });
+  await field.clear();
+  await field.fill(code);
 }
 
 test("a booked number logs in with its code and lands on its consultation", async ({ page }) => {
