@@ -69,7 +69,6 @@ type OpenAlerts = Body<paths["/api/alerts"]["get"]>;
 export type OpenAlert = OpenAlerts["alerts"][number];
 /** An address a client gives ops on the phone, as the page sends it. */
 export type AddressGiven = Sent<paths["/api/clients/{id}/address"]["post"]>;
-export type Suggestion = Body<paths["/api/clients/{id}/address/suggestions"]["post"]>["suggestions"][number];
 
 /** The three queues a client's rights over their data put in front of ops (docs/decisions/0049-dpdp.md). */
 export type Grievance = Body<paths["/api/grievances"]["get"]>["grievances"][number];

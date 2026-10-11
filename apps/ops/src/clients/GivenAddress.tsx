@@ -10,19 +10,14 @@ import { capsLook } from "@maneman/ui/Caps";
 import { Button } from "@maneman/ui/Button";
 import { Field, TextInput } from "@maneman/ui/Field";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
-import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
-import { useEffect, useId, useRef, useState } from "react";
+import { AddressSearch, type AddressSearchClasses, type AddressSuggestion } from "@maneman/ui/AddressSearch";
+import { useId, useRef, useState } from "react";
 import { given, missingParts } from "@maneman/web-kit/address";
-import { api, type AddressGiven, type ClientRecord, type Suggestion } from "../api.ts";
+import { api, type AddressGiven, type ClientRecord } from "../api.ts";
 import { clients, NOT_PERMITTED } from "../content.ts";
 import styles from "./address.module.css";
 
 const copy = clients.visits.given;
-
-/** Waited out before asking Google, so a typed word is one request, not eight. */
-const TYPING_PAUSE_MS = 300;
-/** Below this, a search returns the whole city and costs a request to say so. */
-const SHORTEST_QUERY = 3;
 
 type Draft = Omit<AddressGiven, "session_token">;
 type Part = Exclude<keyof Draft, "place_id" | "building">;
@@ -45,7 +40,19 @@ const EMPTY: Draft = {
 /** A part left blank is none, as the API holds it. */
 const orNull = (part: string | null | undefined): string | null => (given(part) ? part.trim() : null);
 
-/** The building search: a combobox whose list is described through aria-activedescendant, as the app's is. */
+const SEARCH_CLASSES: AddressSearchClasses = {
+  field: styles.search,
+  label: styles.label,
+  input: styles.input,
+  suggestions: styles.suggestions,
+  suggestion: styles.suggestion,
+  suggestionActive: styles.suggestionActive,
+  where: styles.where,
+  hint: styles.hint,
+  attribution: styles.hint,
+};
+
+/** The building search: the shared one (@maneman/ui/AddressSearch), in the console's words and on its form's look. */
 function BuildingSearch({
   clientId,
   value,
@@ -58,138 +65,27 @@ function BuildingSearch({
   sessionToken: string;
   /** Typing after a choice abandons it: the building is then whatever was typed, with no pin. */
   onType: (building: string) => void;
-  onChoose: (chosen: Suggestion) => void;
+  onChoose: (chosen: AddressSuggestion) => void;
 }) {
   const searchCopy = copy.building;
-  const listId = useId();
-  const optionId = useId();
-  const [suggestions, setSuggestions] = useState<readonly Suggestion[]>([]);
-  const [active, setActive] = useState(-1);
-  const [open, setOpen] = useState(false);
-  const [state, setState] = useState<"idle" | "searching" | "unavailable">("idle");
-  // What the last answer was for, so a slow reply cannot overwrite a newer one.
-  const asked = useRef("");
-  const typingPause = useRef<ReturnType<typeof setTimeout>>(undefined);
-
-  useEffect(() => {
-    return () => {
-      clearTimeout(typingPause.current);
-    };
-  }, []);
-
-  function ask(query: string) {
-    asked.current = query;
-    setState("searching");
-    void api.addressSuggestions(clientId, query, sessionToken).then((answer) => {
-      if (asked.current !== query) return;
-      setSuggestions(answer.ok ? answer.body.suggestions : []);
-      setState(answer.ok ? "idle" : "unavailable");
-      setOpen(answer.ok);
-      setActive(-1);
-    });
-  }
-
-  // Only typing searches: a building chosen from the list is not looked up again.
-  function searchAfterTyping(typed: string) {
-    clearTimeout(typingPause.current);
-    const query = typed.trim();
-    if (query.length < SHORTEST_QUERY) {
-      asked.current = "";
-      setSuggestions([]);
-      setState("idle");
-      return;
-    }
-    typingPause.current = setTimeout(() => {
-      ask(query);
-    }, TYPING_PAUSE_MS);
-  }
-
-  const shown = open && suggestions.length > 0;
-
-  function choose(index: number) {
-    const picked = suggestions[index];
-    if (picked === undefined) return;
-    clearTimeout(typingPause.current);
-    asked.current = "";
-    onChoose(picked);
-    setSuggestions([]);
-    setOpen(false);
-    setActive(-1);
-  }
-
-  function onKeyDown(event: React.KeyboardEvent<HTMLInputElement>) {
-    if (event.key === "Escape") {
-      setOpen(false);
-      setActive(-1);
-      return;
-    }
-    if (!shown) return;
-    if (event.key === "ArrowDown" || event.key === "ArrowUp") {
-      event.preventDefault();
-      const step = event.key === "ArrowDown" ? 1 : -1;
-      setActive((was) => (was + step + suggestions.length) % suggestions.length);
-    } else if (event.key === "Enter" && active >= 0) {
-      // Only when an option is highlighted; otherwise Enter submits the form.
-      event.preventDefault();
-      choose(active);
-    }
-  }
-
   return (
-    <div className={styles.search}>
-      <label className={styles.label} htmlFor={`${listId}-input`}>
-        {searchCopy.label}
-      </label>
-      <input
-        id={`${listId}-input`}
-        className={styles.input}
-        type="text"
-        role="combobox"
-        autoComplete="off"
-        aria-expanded={shown}
-        aria-controls={listId}
-        aria-autocomplete="list"
-        aria-describedby={`${listId}-hint`}
-        aria-activedescendant={shown && active >= 0 ? `${optionId}-${String(active)}` : undefined}
-        value={value}
-        onKeyDown={onKeyDown}
-        onChange={(event) => {
-          onType(event.target.value);
-          searchAfterTyping(event.target.value);
-        }}
-      />
-      {shown && (
-        <ul className={styles.suggestions} id={listId} role="listbox" aria-label={searchCopy.label}>
-          {suggestions.map((suggestion, index) => (
-            <li
-              key={suggestion.place_id}
-              id={`${optionId}-${String(index)}`}
-              className={index === active ? styles.suggestionActive : styles.suggestion}
-              role="option"
-              aria-selected={index === active}
-              // A listbox option is not a button; the input keeps the focus.
-              onMouseDown={(event) => {
-                event.preventDefault();
-                choose(index);
-              }}
-            >
-              <span>{suggestion.primary}</span>
-              <span className={styles.where}>{suggestion.secondary}</span>
-            </li>
-          ))}
-        </ul>
-      )}
-      {/* Google requires their name against suggestions shown without a Google map. */}
-      {shown && <p className={styles.hint}>{searchCopy.attribution}</p>}
-      {state === "unavailable" && (
-        <p className={styles.hint} id={`${listId}-hint`}>
-          {searchCopy.unavailable}
-        </p>
-      )}
-      <VisuallyHidden as="p" role="status">
-        {state === "searching" || !shown ? "" : searchCopy.found(suggestions.length)}
-      </VisuallyHidden>
-    </div>
+    <AddressSearch
+      value={value}
+      search={async (query) => {
+        const answer = await api.addressSuggestions(clientId, query, sessionToken);
+        return answer.ok ? { ok: true, suggestions: answer.body.suggestions } : { ok: false };
+      }}
+      onType={onType}
+      onChoose={onChoose}
+      words={{
+        label: searchCopy.label,
+        hint: null,
+        unavailable: searchCopy.unavailable,
+        attribution: searchCopy.attribution,
+        found: searchCopy.found,
+      }}
+      classes={SEARCH_CLASSES}
+    />
   );
 }
 
