@@ -10,7 +10,7 @@ import { addDays, longDate } from "@maneman/web-kit/dates";
 import { paiseFromRupees, rupees } from "@maneman/web-kit/money";
 import { useState } from "react";
 import { api, type Kind, type OpsService, type Price, type ServiceBook } from "../api.ts";
-import { settings } from "../content.ts";
+import { settings } from "../content/settings.ts";
 import { PRICE_TIER, tierCodeOf } from "@rules/policy/services.ts";
 import styles from "../components/forms.module.css";
 import { Refused, SettingForm, sentOf, useSteps, type FormWords, type Sent } from "./SettingForm.tsx";

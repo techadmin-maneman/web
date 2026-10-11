@@ -632,7 +632,7 @@ Indexes:
 
 The Care inbox: one thread for each number that writes to our WhatsApp number, matched to its client where we know the number (ADR 0129).
 
-Made by `0114_conversations.sql`; changed by `0115_chat_replies.sql`.
+Made by `0114_conversations.sql`; changed by `0115_chat_replies.sql`, `0124_care_numbers_indexes.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -652,6 +652,7 @@ Made by `0114_conversations.sql`; changed by `0115_chat_replies.sql`.
 Indexes:
 
 - `conversations_by_number`: unique on (`mobile_e164`)
+- `conversations_by_opened`: on (`opened_at`)
 - `conversations_by_person`: on (`person_id`), where `person_id IS NOT NULL`
 - `conversations_by_state`: on (`state`, `last_message_at`)
 
@@ -1751,7 +1752,7 @@ Indexes:
 
 Free service visits Customer Care gave a client, with why: given within the limit, or awaiting a manager (ADR 0143).
 
-Made by `0123_remedies.sql`.
+Made by `0123_remedies.sql`; changed by `0124_care_numbers_indexes.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -1769,6 +1770,7 @@ Made by `0123_remedies.sql`.
 Indexes:
 
 - `remedies_awaiting`: on (`given_at`), where `state = 'awaiting'`
+- `remedies_by_given`: on (`given_at`)
 - `remedies_by_person`: on (`person_id`, `given_at`)
 
 ## serviceable_pincodes

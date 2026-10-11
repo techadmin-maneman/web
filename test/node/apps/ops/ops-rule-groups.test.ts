@@ -2,7 +2,7 @@
 // were one page of seventeen, in no order a person would look for one.
 
 import { describe, expect, it } from "vitest";
-import { settings } from "../../../../apps/ops/src/content.ts";
+import { settings } from "../../../../apps/ops/src/content/settings.ts";
 import { OTHER_GROUP, RULE_GROUPS, rulePath, sectionsOf } from "../../../../apps/ops/src/settings/rule-groups.ts";
 import { OPS_SETTINGS } from "../../../../src/policy/ops-settings.ts";
 

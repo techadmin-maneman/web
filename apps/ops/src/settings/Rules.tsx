@@ -21,7 +21,7 @@ import { useState, type ReactNode } from "react";
 import { HOUR_OF_DAY } from "@rules/config/setting-units.ts";
 import { api, type ChoiceRule, type NumberRule, type OpsSetting, type SettingValue } from "../api.ts";
 import { OpsLink } from "../components/Shell.tsx";
-import { settings } from "../content.ts";
+import { settings } from "../content/settings.ts";
 import { useAccess } from "../lib/access.ts";
 import { useTargetRow } from "../lib/target.ts";
 import type { SectionPath } from "../route.ts";

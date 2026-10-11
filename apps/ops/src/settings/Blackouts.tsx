@@ -15,7 +15,7 @@ import { addDays, longDate, shortDate } from "@maneman/web-kit/dates";
 import { useState } from "react";
 import { api, type Blackout } from "../api.ts";
 import { OpsLink } from "../components/Shell.tsx";
-import { settings } from "../content.ts";
+import { settings } from "../content/settings.ts";
 import { useAccess } from "../lib/access.ts";
 import { whoWords } from "../lib/who.ts";
 import { dispatchPath } from "../route.ts";

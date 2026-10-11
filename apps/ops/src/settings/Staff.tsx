@@ -11,7 +11,7 @@ import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { longDate } from "@maneman/web-kit/dates";
 import { useState } from "react";
 import { api, type StaffBook, type StaffToken } from "../api.ts";
-import { settings } from "../content.ts";
+import { settings } from "../content/settings.ts";
 import { useAccess, whoami } from "../lib/access.ts";
 import { DeleteAction } from "../components/DeleteAction.tsx";
 import { whoWords } from "../lib/who.ts";
