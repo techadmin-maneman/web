@@ -97,7 +97,7 @@
     "lighthouse": "13.5.0",
     "openapi-typescript": "7.13.0",
     "preact": "10.29.8",
-    "prettier": "3.9.8",
+    "prettier": "3.9.9",
     "prettier-plugin-astro": "1.0.1",
     "react": "18.3.1",
     "react-dom": "18.3.1",
