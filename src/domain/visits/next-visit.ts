@@ -34,6 +34,7 @@ import { DAY_BEFORE_REMINDER_HOUR } from "../../policy/job-visibility.ts";
 import { loadSlotSchedule } from "../booking/slot-times.ts";
 import { consentGiven } from "../privacy/consents.ts";
 import { serviceToOffer } from "../booking/services.ts";
+import { recommendedProduct } from "../clients/hair-profiles.ts";
 import { remindersFrom } from "../messages/visit-messages.ts";
 import { NO_VISITS_CONSENT, type Composed } from "../messages/visit-message-text.ts";
 import { paidNotBooked } from "../booking/hold-stages.ts";
@@ -105,7 +106,12 @@ export async function nextVisitFacts(
   now: Date,
   days: NextVisitDays,
 ): Promise<NextVisitFacts> {
-  const row = await db.prepare(FACTS).bind(personId).first<FactsRow>();
+  // The hair system a consultation recommended, which a first fit is offered as while it is offered; read beside the
+  // facts, so it costs no trip of its own.
+  const [row, recommended] = await Promise.all([
+    db.prepare(FACTS).bind(personId).first<FactsRow>(),
+    recommendedProduct(db, personId),
+  ]);
   if (row === null) return { booked: false, offer: null };
   const booked = row.booked === 1;
   if (booked) return { booked, offer: null };
@@ -114,7 +120,7 @@ export async function nextVisitFacts(
     const last = new Date(row.last_start);
     const next = nextVisitAfter(indiaDate(last), row.piece_due, tomorrow, days);
     const [tier, schedule] = await Promise.all([
-      serviceToOffer(db, personId, next.type, next.offeredOn),
+      serviceToOffer(db, personId, { kind: next.type, on: next.offeredOn }),
       loadSlotSchedule(db),
     ]);
     return {
@@ -132,7 +138,10 @@ export async function nextVisitFacts(
   const consulted = new Date(row.consulted_start);
   const due = firstFitDue(indiaDate(consulted), days);
   const date = offeredDay(due, tomorrow);
-  const [tier, schedule] = await Promise.all([serviceToOffer(db, personId, "first_fit", date), loadSlotSchedule(db)]);
+  const [tier, schedule] = await Promise.all([
+    serviceToOffer(db, personId, { kind: "first_fit", on: date, preferred: recommended }),
+    loadSlotSchedule(db),
+  ]);
   return {
     booked,
     offer: {

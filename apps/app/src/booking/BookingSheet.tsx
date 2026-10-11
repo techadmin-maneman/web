@@ -56,7 +56,7 @@ import { ConfirmedStep, ExpiredStep, FailedStep, WaitStep } from "./steps/Outcom
 import { DateStep } from "./steps/DateStep.tsx";
 import { LoadingStep, paysNothing, TITLE_ID } from "./steps/shared.tsx";
 import { PayStep } from "./steps/PayStep.tsx";
-import { ServiceStep } from "./steps/ServiceStep.tsx";
+import { ServiceStep, type Recommended } from "./steps/ServiceStep.tsx";
 import { WindowStep } from "./steps/WindowStep.tsx";
 import styles from "./booking.module.css";
 
@@ -92,6 +92,7 @@ export function BookingSheet({
   type,
   services = [],
   tier,
+  recommended,
   moving,
   from,
   offer,
@@ -103,6 +104,8 @@ export function BookingSheet({
   services?: readonly OfferedService[];
   /** The service the app offers among them, chosen when the sheet opens for the client to take or change. */
   tier?: string;
+  /** The hair system the consultation recommended, marked among a first fit's. */
+  recommended?: Recommended;
   /** The visit being moved, and what moving it costs. */
   moving?: MoveTerms;
   /** The strip's first day, where it should not start from the first day open. */
@@ -395,6 +398,7 @@ export function BookingSheet({
             before={before}
             services={services}
             chosen={picked}
+            recommended={recommended}
             onChoose={setPicked}
             onNext={() => {
               if (picked !== null) void pick(picked);

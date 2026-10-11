@@ -11,6 +11,24 @@ const TechnicianSchema = z
   .strict()
   .openapi("Technician", { description: "Display name and initials only." });
 
+export const ConsultedSchema = z
+  .object({
+    date: z.iso.date().openapi({ description: "India's date of the consultation." }),
+    technician: z.union([TechnicianSchema, z.null()]),
+    recommended: z
+      .string()
+      .nullable()
+      .openapi({
+        description:
+          "The tier of the first-fit service the technician recommended, as the hair profile records it; null for " +
+          "none. booking.next offers the first fit as it, while it is offered.",
+      }),
+  })
+  .strict()
+  .openapi("Consulted", {
+    description: "A consultation done: its day, who came, and the hair system recommended there.",
+  });
+
 export const OneVisitPriceSchema = z
   .object({
     amount: z.union([z.number().int(), z.null()]).openapi({

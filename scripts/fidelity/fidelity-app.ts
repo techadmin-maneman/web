@@ -53,6 +53,7 @@ const ME = {
     one_visit: null,
   },
   next_visit: null,
+  consulted: null,
   being_booked: null,
   payment_owed: null,
   credits: null,

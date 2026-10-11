@@ -13,11 +13,21 @@
 
 import { Button, ButtonLink } from "@maneman/ui/Button";
 import { useState } from "react";
-import type { BookableType } from "../api.ts";
+import type { BookableType, Me } from "../api.ts";
 import { booking } from "../content.ts";
 import { whatsappWith } from "../lib/whatsapp.ts";
 import { useSession } from "../session.ts";
 import { BookingSheet, type Offered } from "./BookingSheet.tsx";
+import type { Recommended } from "./steps/ServiceStep.tsx";
+import { firstNameOf } from "../../../../src/lib/names.ts";
+
+/** The hair system the client's consultation recommended, and who recommended it; none before one is recorded. */
+function recommendationOf(me: Me): Recommended | undefined {
+  const tier = me.consulted?.recommended ?? null;
+  if (tier === null) return undefined;
+  const technician = me.consulted?.technician ?? null;
+  return { tier, by: technician === null ? null : firstNameOf(technician.name) };
+}
 
 export function BookButton({
   label,
@@ -94,6 +104,7 @@ export function BookButton({
           type={kind}
           services={services}
           tier={tier ?? undefined}
+          recommended={kind === "first_fit" ? recommendationOf(me) : undefined}
           offer={offer}
           from={from}
           onClose={(changed) => {
