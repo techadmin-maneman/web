@@ -12,6 +12,7 @@ import { clientPath } from "../route.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import { CarePerson } from "./CarePerson.tsx";
 import { CityMatter } from "./CityMatter.tsx";
+import { ClientPanel } from "./ClientPanel.tsx";
 import { Stranger } from "./Stranger.tsx";
 import { Composer } from "./Composer.tsx";
 import styles from "../components/forms.module.css";
@@ -92,6 +93,7 @@ export function Thread({
           </a>
         </p>
       )}
+      {conversation.person !== null && <ClientPanel personId={conversation.person.id} />}
       {conversation.person !== null && (
         <CarePerson
           personId={conversation.person.id}

@@ -131,6 +131,30 @@
   margin-bottom: var(--sp-12);
 }
 
+/* The client beside the chat: a short list of facts, then the ways into their page. */
+.panel {
+  margin-bottom: var(--sp-12);
+}
+
+.facts {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: var(--sp-4) var(--sp-16);
+  margin: 0 0 var(--sp-8);
+}
+
+.facts dt {
+  color: var(--text-muted);
+}
+
+.facts dd {
+  margin: 0;
+}
+
+.panel .link + .link {
+  margin-left: var(--sp-16);
+}
+
 .stranger {
   margin-bottom: var(--sp-12);
 }
