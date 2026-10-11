@@ -195,6 +195,8 @@ const HISTORY = [
    SELECT 'wl-' || i, '560001', 'p-' || i, '${AGO}', '${AGO}' FROM n`,
   `INSERT INTO task_closures (id, task_group, subject_id, reason, closed_by, closed_at)
    SELECT 'tc-' || i, 'at_risk_client', 'p-' || i, 'Moved away', 'ops@localhost', '${AGO}' FROM n`,
+  `INSERT INTO task_spans (id, task_group, subject_id, episode, city, opened_at, closed_at)
+   SELECT 'ts-' || i, 'at_risk_client', 'p-' || i, '', 'Gurgaon', '${AGO}', '${AGO}' FROM n`,
   `INSERT INTO alerts (id, key, message, count, first_seen_at, last_seen_at, resolved_at)
    SELECT 'al-' || i, 'history:' || i, 'Dealt with', 1, '${AGO}', '${AGO}', '${AGO}' FROM n`,
   `INSERT INTO audit_log (at, surface, actor_kind, actor, action, subject_kind, subject_id, request_id, detail)

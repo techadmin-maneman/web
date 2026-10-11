@@ -128,6 +128,7 @@ const ALLOWED = [
   },
   { file: "src/domain/no-shows/no-shows.ts", sql: "FROM no_show_cases n JOIN checkins c ON c.id = n.checkin_id" },
   { file: "src/domain/money/discount-codes.ts", sql: "AS uses, (SELECT COALESCE(SUM(u.amount_off), 0)" },
+  { file: "src/domain/care/remedies.ts", sql: "FROM remedies r JOIN people p ON p.id = r.person_id" },
   // The weekly backup's list of tables: SQLite's own catalogue, which holds a row a table.
   { file: "src/domain/platform/backups.ts", sql: "SELECT name, sql FROM sqlite_master" },
   // The reporting copy reads every client, visit and payment, once a night in the hour from 3 am in India
@@ -136,6 +137,10 @@ const ALLOWED = [
   { file: "src/domain/analytics/rows.ts", sql: "FROM people p WHERE p.test_record = 0 AND p.erased_at IS NULL" },
   { file: "src/domain/analytics/rows.ts", sql: "FROM appointments a JOIN people p ON p.id = a.person_id" },
   { file: "src/domain/analytics/rows.ts", sql: "FROM payments y JOIN people p ON p.id = y.person_id" },
+  { file: "src/domain/analytics/care-cases.ts", sql: "FROM grievances g JOIN people p ON p.id = g.person_id" },
+  { file: "src/domain/analytics/care-cases.ts", sql: "FROM task_spans s" },
+  // The new tasks a night's look at the board found, handed over as a JSON list (docs/decisions/0147-task-spans.md).
+  { file: "src/domain/ops/task-spans.ts", sql: "FROM json_each(?1) t WHERE NOT EXISTS" },
 ];
 
 /**
@@ -176,6 +181,9 @@ const UNPLANNED = [
   { file: "src/domain/clients/places.ts", source: "FROM ${table} record WHERE record.id = ?1" },
   // The cities of the tasks a look at the board found: each record by its key. The cron never runs it.
   { file: "src/domain/clients/places.ts", source: "FROM ${RECORD_PLACES[kind].table} record WHERE record.id IN" },
+  // The Tasks board, read once a night by the task spans job, as the console reads it at each look
+  // (docs/decisions/0147-task-spans.md).
+  { file: "src/domain/ops/tasks.ts", source: "withOwners(queue.sql)" },
   // One row inserted from an object's columns, its conflict clause at most reading the row's own key.
   { file: "src/lib/sql.ts", source: 'tail === "" ? sql : `${sql} ${tail}`' },
 ];

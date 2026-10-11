@@ -177,6 +177,8 @@ export const ROWS_AT_T: readonly string[] = [
      VALUES ('at_risk', 'p1', '', 'ops@example.com', 'ops@example.com', '${AT}')`,
   `INSERT INTO task_closures (id, task_group, subject_id, reason, closed_by, closed_at)
      VALUES ('tc1', 'first_fit_to_book', 'p2', 'Not ready yet', 'ops@example.com', '${AT}')`,
+  `INSERT INTO task_spans (id, task_group, subject_id, episode, city, opened_at)
+     VALUES ('ts1', 'first_fit_to_book', 'p2', '', 'Gurgaon', '${AT}')`,
   `INSERT INTO payment_links (id, appointment_id, tier, amount, amount_ex_gst, gst_percent, created_at, updated_at)
      VALUES ('pl1', 'ap2', 'standard', 2500000, 2118644, 18, '${AT}', '${AT}')`,
   `INSERT INTO discount_codes (id, code, kind, value, covers_first_fit, covers_service, covers_replacement,

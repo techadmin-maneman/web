@@ -216,8 +216,9 @@ export const RESTORE_GROUPS: readonly RestoreGroup[] = [
   },
   {
     what: "Tasks",
-    tables: ["task_owners", "task_closures"],
-    leftAtT: "A task closed since opens again, and one given to someone since is nobody's",
+    tables: ["task_owners", "task_closures", "task_spans"],
+    leftAtT:
+      "A task closed since opens again, one given to someone since is nobody's, and a task's span closed since closes again the next night, dated then",
     putBackBy: "Closing or giving it again on the Tasks board",
   },
   {
