@@ -7,8 +7,8 @@ const STAGING_TEST_NAME_PREFIXES = ["Staging test", "Load test"] as const;
 /**
  * Whether this name is one our own scripts and fixtures give an invented record. Exactly one of the names above, or
  * either followed by a word ("Staging test technician"), counts; nothing else does, so a script that gives its
- * invented record another name is the one that is wrong, not this check. A person's mark is read from people.test_record
- * once they exist; a technician's, whom ops alone name, from their name.
+ * invented record another name is the one that is wrong, not this check. Once the record exists its mark is read from
+ * people.test_record or technicians.test_record, never from its name again.
  */
 export function isStagingTestName(name: string): boolean {
   return STAGING_TEST_NAME_PREFIXES.some((prefix) => name === prefix || name.startsWith(`${prefix} `));

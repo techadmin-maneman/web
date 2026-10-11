@@ -43,6 +43,7 @@ import { reachesCity } from "../../policy/access.ts";
 import { GIVING_NO_CITY } from "../../policy/console-routes.ts";
 import { opsInputs } from "../../http/ops-inputs.ts";
 import { INDIAN_MOBILE_PATTERN, toE164 } from "../../lib/mobile.ts";
+import { testRecordAtCreation } from "../../policy/staging-test-records.ts";
 import { runsOver } from "../../policy/technician-work.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
 import { json } from "../../http/openapi.ts";
@@ -292,7 +293,14 @@ export function registerOpsTechnicians(app: App): void {
     const id = crypto.randomUUID();
     const added = await addTechnician(
       c.env.DB,
-      { id, name, mobileE164, zone: zone ?? null, city: city ?? null },
+      {
+        id,
+        name,
+        mobileE164,
+        zone: zone ?? null,
+        city: city ?? null,
+        testRecord: testRecordAtCreation(c.var.config.environment, name),
+      },
       auditOf(c, "technician.add", id),
       c.var.deps.now(),
     );
