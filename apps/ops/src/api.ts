@@ -22,6 +22,8 @@ export type Area = Body<paths["/api/waitlist"]["get"]>["areas"][number];
 export type Launch = Body<paths["/api/pincodes/{pin}/launch"]["post"]>;
 
 export type ClientsFound = Body<paths["/api/clients/find"]["post"]>;
+export type ClientList = Body<paths["/api/clients"]["get"]>;
+export type ClientListQuery = NonNullable<paths["/api/clients"]["get"]["parameters"]["query"]>;
 /** A client's page: their record, or what is kept of them once erased. */
 type ClientPage = Body<paths["/api/clients/{id}"]["get"]>;
 export type ClientRecord = components["schemas"]["ClientRecord"];
@@ -286,6 +288,8 @@ export const api = {
    * never in a path or a query string, so a number stays out of logs and referrers.
    */
   findClients: (text: string) => client.post("/api/clients/find", { body: { text } }),
+  /** Every client in the caller's cities, narrowed by where they stand and city, a page at a time. */
+  clientList: (query: ClientListQuery) => client.get("/api/clients", { query }),
   client: (id: string) => client.get("/api/clients/{id}", { path: { id } }),
   /** A client's 14 days of windows for a kind of visit, who is free in each, and how it would be paid. */
   visitAvailability: (query: AvailabilityQuery) => client.get("/api/visits/availability", { query }),
