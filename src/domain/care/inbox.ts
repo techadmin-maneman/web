@@ -2,6 +2,7 @@
 // its client where we know the number, and every message in it. A client who writes reopens their thread. A thread
 // reads our automatic messages from outbound_messages beside the chat, so nothing is copied.
 
+import { replyBy, type CareHours } from "../../policy/care-hours.ts";
 import { giveCarePerson } from "./care-people.ts";
 
 /** A message a client wrote to our number, as the bridge or MSG91 reports it. */
@@ -70,6 +71,8 @@ export interface ConversationRow {
   readonly last_line: string | null;
   /** When the client last wrote, unanswered since; null when nothing waits on us. */
   readonly waiting_since: string | null;
+  /** When our reply is due, by the Care hours (src/policy/care-hours.ts); null when nothing waits on us. */
+  readonly reply_by: string | null;
 }
 
 interface ListRow {
@@ -85,22 +88,34 @@ interface ListRow {
   readonly last_reply_at: string | null;
 }
 
-const rowOf = (row: ListRow): ConversationRow => ({
-  id: row.id,
-  person: row.person_id === null ? null : { id: row.person_id, name: row.name ?? "" },
-  mobile: row.mobile_e164,
-  state: row.state,
-  care_person: row.care_person,
-  last_message_at: row.last_message_at,
-  last_line: row.last_line,
-  waiting_since:
-    row.state === "open" && row.last_inbound_at !== null && (row.last_reply_at ?? "") < row.last_inbound_at
-      ? row.last_inbound_at
-      : null,
-});
+/** When the client last wrote, unanswered since; null when nothing waits on us. */
+const waitingSince = (row: ListRow): string | null =>
+  row.state === "open" && row.last_inbound_at !== null && (row.last_reply_at ?? "") < row.last_inbound_at
+    ? row.last_inbound_at
+    : null;
+
+function rowOf(row: ListRow, hours: CareHours): ConversationRow {
+  const since = waitingSince(row);
+  return {
+    id: row.id,
+    person: row.person_id === null ? null : { id: row.person_id, name: row.name ?? "" },
+    mobile: row.mobile_e164,
+    state: row.state,
+    care_person: row.care_person,
+    last_message_at: row.last_message_at,
+    last_line: row.last_line,
+    waiting_since: since,
+    reply_by: since === null ? null : replyBy(new Date(since), hours).toISOString(),
+  };
+}
 
 /** The threads of a view, the latest first; "mine" is the open and waiting threads of `me`'s clients. */
-export async function listConversations(db: D1Database, view: InboxView, me: string): Promise<ConversationRow[]> {
+export async function listConversations(
+  db: D1Database,
+  view: InboxView,
+  me: string,
+  hours: CareHours,
+): Promise<ConversationRow[]> {
   const { results } = await db
     .prepare(
       `SELECT c.id, c.person_id, p.name, c.mobile_e164, c.state, o.email AS care_person, c.last_message_at,
@@ -115,7 +130,7 @@ export async function listConversations(db: D1Database, view: InboxView, me: str
     )
     .bind(view, LISTED, me)
     .all<ListRow>();
-  return results.map(rowOf);
+  return results.map((row) => rowOf(row, hours));
 }
 
 /** One entry of a thread: a chat message, or one of our automatic messages to the client. */
@@ -147,7 +162,7 @@ export interface Thread {
 const THREAD_ITEMS = 300;
 
 /** A thread with its chat and our automatic messages to the client, in order; null for one we do not have. */
-export async function conversationThread(db: D1Database, id: string): Promise<Thread | null> {
+export async function conversationThread(db: D1Database, id: string, hours: CareHours): Promise<Thread | null> {
   const row = await db
     .prepare(
       `SELECT c.id, c.person_id, p.name, c.mobile_e164, c.state, o.email AS care_person, c.last_message_at,
@@ -178,5 +193,5 @@ export async function conversationThread(db: D1Database, id: string): Promise<Th
   const items = [...((chat?.results ?? []) as ThreadItem[]), ...((auto?.results ?? []) as ThreadItem[])]
     .sort((one, other) => one.at.localeCompare(other.at))
     .slice(-THREAD_ITEMS);
-  return { conversation: rowOf({ ...row, last_line: null }), items };
+  return { conversation: rowOf({ ...row, last_line: null }, hours), items };
 }

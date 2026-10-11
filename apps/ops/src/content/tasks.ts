@@ -24,6 +24,7 @@ const PAYMENT_LINK_STATES: Readonly<Record<LinkState, string>> = {
 const DECIDE: Readonly<Partial<Record<Group, string>>> = {
   untold_move: "Open in Dispatch",
   move_unanswered: "Open in Dispatch",
+  unanswered_chat: "Answer in Messages",
   leave_conflict: "Move in Dispatch",
   referral_review: "Decide in Referrals",
   no_show_decision: "Decide in Payments",
@@ -55,6 +56,8 @@ export const tasks = {
     untold_move: "Call about a move",
     // Not drawn: a move to another day the client has not answered (docs/decisions/0115-a-move-to-another-day-waits-for-the-client.md).
     move_unanswered: "Move not answered",
+    // Not drawn: a chat past its reply-by time (docs/decisions/0132-the-reply-clock.md).
+    unanswered_chat: "Unanswered chat",
     // Two groups the board does not draw (docs/decisions/0074-hand-offs-and-messages.md).
     leave_conflict: "Job on a day off",
     address_to_confirm: "Address to confirm",
@@ -179,6 +182,8 @@ export const tasks = {
     /** "Disputes the charge that kept Rs. 2,000", or the free service visit it spent. */
     no_show_dispute: (took: string) => `Disputes a charge: ${took}`,
     disputedCredit: "a free service visit",
+    /** "Waiting since 21 Sep, 9:12 pm": the client's last message, unanswered past its reply-by time. */
+    unanswered_chat: (since: string) => `Waiting since ${since}`,
     number_change: "Both numbers verified",
     erasure_request: "Requested in the app",
     // A concern about their data, which the app promises an answer to within 30 days.

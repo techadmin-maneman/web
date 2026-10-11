@@ -7,14 +7,14 @@ import { Table } from "@maneman/ui/Table";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { classes } from "@maneman/ui/classes";
 import { useLoad } from "@maneman/ui/useLoad";
-import { indiaClock, indiaDate, shortDate } from "@maneman/web-kit/dates";
+import { indiaDate, shortDate } from "@maneman/web-kit/dates";
 import { useCallback, useState } from "react";
 import { careApi, type Conversation, type ConversationView } from "./care-api.ts";
 import { Shell } from "../components/Shell.tsx";
 import { care as copy } from "../content/care.ts";
 import { SECTION_NAMES } from "../route.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
-import { Thread, whoOf } from "./Thread.tsx";
+import { Thread, whenOf, whoOf } from "./Thread.tsx";
 import styles from "../components/forms.module.css";
 import own from "./care.module.css";
 
@@ -48,6 +48,13 @@ function ViewChoice({ view, onView }: { view: ConversationView; onView: (view: C
   );
 }
 
+/** When our reply is due, in red once it has passed. */
+function ReplyBy({ at }: { at: string | null }) {
+  if (at === null) return null;
+  const when = whenOf(at);
+  return Date.parse(at) < Date.now() ? <span className={own.overdue}>{copy.overdue(when)}</span> : copy.replyBy(when);
+}
+
 function ConversationRows(props: { conversation: Conversation; open: boolean; onOpen: (id: string | null) => void }) {
   const { conversation } = props;
   const who = whoOf(conversation);
@@ -61,7 +68,7 @@ function ConversationRows(props: { conversation: Conversation; open: boolean; on
         <td>{conversation.care_person ?? ""}</td>
         <td className={own.line}>{conversation.last_line ?? copy.noLine}</td>
         <td className={own.figure}>
-          {conversation.waiting_since === null ? "" : copy.waitingSince(indiaClock(conversation.waiting_since))}
+          <ReplyBy at={conversation.reply_by} />
         </td>
         <td className={own.figure}>{shortDate(indiaDate(conversation.last_message_at))}</td>
         <td className={own.actions}>
@@ -113,7 +120,7 @@ function Conversations({ view }: { view: ConversationView }) {
             <th scope="col">{columns.carePerson}</th>
             <th scope="col">{columns.said}</th>
             <th scope="col" className={own.figure}>
-              {columns.waiting}
+              {columns.replyBy}
             </th>
             <th scope="col" className={own.figure}>
               {columns.at}

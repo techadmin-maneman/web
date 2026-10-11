@@ -15,6 +15,7 @@ export const DECIDED_IN: Partial<Record<Group, { readonly page: SectionPath; rea
   // The dispatch board draws a week, not a list: the link opens the task's visit there, in its own drawer.
   untold_move: { page: "/dispatch", row: null },
   move_unanswered: { page: "/dispatch", row: null },
+  unanswered_chat: { page: "/messages", row: null },
   leave_conflict: { page: "/dispatch", row: null },
   referral_review: { page: "/referrals", row: "held" },
   no_show_decision: { page: "/payments", row: "case" },

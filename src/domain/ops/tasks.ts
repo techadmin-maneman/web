@@ -27,6 +27,8 @@ import {
 } from "../../policy/next-visit.ts";
 import { closedIfSentBy } from "../../policy/one-visit.ts";
 import { dueAt, type Slas, type TaskGroup } from "../../policy/tasks.ts";
+import { CARE_HOURS, type CareHours } from "../../policy/care-hours.ts";
+import { CHATS_WAITING, overdueChats } from "../care/chat-tasks.ts";
 import { paidNotBooked } from "../booking/hold-stages.ts";
 import { statusIn, statusNotIn, VISIT_CALLED_OFF, VISIT_LIVE, VISIT_NOT_BEGUN } from "../../config/statuses.ts";
 import type { SqlValue } from "../../lib/sql.ts";
@@ -145,6 +147,8 @@ interface Queue {
 }
 
 const QUEUES: readonly Queue[] = [
+  // A chat waiting on us, kept once its reply-by time has passed (../care/chat-tasks.ts).
+  { sql: CHATS_WAITING },
   // A move is still to be told of while its visit is today or later.
   {
     sql: `SELECT 'untold_move' AS "group", m.id AS id, a.person_id AS person_id, pe.name AS person_name,
@@ -439,14 +443,15 @@ interface Outstanding {
 const daysOn = (days: number) => `+${String(days)} days`;
 
 /**
- * What ops still have to do, the longest wait first. `days` are the next visit's figures ops set
- * (src/policy/next-visit.ts), which At-risk client and First fit to book are counted by.
+ * What ops still have to do, the longest wait first. The figures ops set, the committed ones where left out: `days`,
+ * the next visit's (src/policy/next-visit.ts), which At-risk client and First fit to book are counted by; and `hours`,
+ * Care's (src/policy/care-hours.ts), which a chat's reply-by time is counted by.
  */
 export async function outstandingTasks(
   db: D1Database,
   now: Date,
   sla: Slas,
-  days: NextVisitDays = NEXT_VISIT_DAYS,
+  { days = NEXT_VISIT_DAYS, hours = CARE_HOURS }: { readonly days?: NextVisitDays; readonly hours?: CareHours } = {},
 ): Promise<Outstanding> {
   const today = indiaDate(now);
   // The first moment after each last day, as the instants the visits' starts are compared with.
@@ -466,7 +471,8 @@ export async function outstandingTasks(
   ]);
   const truncated = answers.some((answer) => answer.results.length >= READ_CAP);
   // Each queue sorted its own rows; the board wants one list, so they are merged on the same column.
-  const results = answers.flatMap((answer) => answer.results).sort((a, b) => a.since.localeCompare(b.since));
+  const read = answers.flatMap((answer) => answer.results);
+  const results = overdueChats(read, hours, now).sort((a, b) => a.since.localeCompare(b.since));
   return { tasks: results.map((row) => taskOf(row, sla, schedule)), truncated };
 }
 
@@ -507,6 +513,7 @@ function taskOf(row: Row, sla: Slas, schedule: SlotSchedule): Task {
 const TASK_RECORDS: Readonly<Record<TaskGroup, PlacedRecord>> = {
   untold_move: "move",
   move_unanswered: "visit",
+  unanswered_chat: "conversation",
   leave_conflict: "visit",
   address_to_confirm: "visit",
   consultation_request: "consultation_request",

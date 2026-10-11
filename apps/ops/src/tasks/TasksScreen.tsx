@@ -76,6 +76,9 @@ const weeksBetween = (from: string, to: Date): number => Math.floor((to.getTime(
 function subOf(group: Group, task: Task, now: Date): string {
   const copy = tasks.subs;
   if (group === "untold_move") return untoldMoveOf(task.detail);
+  if (group === "unanswered_chat") {
+    return copy.unanswered_chat(`${shortDate(indiaDate(task.since))}, ${indiaClock(task.since)}`);
+  }
   if (group === "leave_conflict") {
     // The job's start, then the technician who is away that day.
     const [start = "", ...technician] = task.detail?.split(" ") ?? [];
@@ -172,6 +175,8 @@ function disputedTook(kept: string | null): string {
  */
 function unnamedSubject(group: Group, task: Task): string {
   if (group === "no_show_dispute") return tasks.disputeErased;
+  // A chat from a number we don't know is named by the number.
+  if (group === "unanswered_chat") return task.detail ?? tasks.unknown;
   return tasks.visit(shortDate(indiaDate(task.since)));
 }
 

@@ -48,6 +48,7 @@ interface Listed {
     mobile: string;
     last_line: string | null;
     waiting_since: string | null;
+    reply_by: string | null;
   }[];
 }
 
@@ -77,6 +78,8 @@ describe("the Care inbox", () => {
       last_line: "Can I move tomorrow's visit to the evening?",
       waiting_since: expect.any(String) as string,
     });
+    // Written at noon, in the Care hours, it is due within the hour.
+    expect(Date.parse(thread?.reply_by ?? "") - Date.parse(thread?.waiting_since ?? "")).toBe(60 * 60 * 1000);
 
     const opened = await (
       await request(ops, `/api/conversations/${thread?.id ?? ""}`)

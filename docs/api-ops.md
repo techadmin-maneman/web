@@ -10937,6 +10937,18 @@ Request body:
         }
       ],
       "description": "When the client last wrote, unanswered since; null when nothing waits on us."
+    },
+    "reply_by": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date-time"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "When our reply is due, by the Care hours ops set (care_hours); null when nothing waits on us."
     }
   },
   "required": [
@@ -10947,7 +10959,8 @@ Request body:
     "care_person",
     "last_message_at",
     "last_line",
-    "waiting_since"
+    "waiting_since",
+    "reply_by"
   ],
   "additionalProperties": false
 }
@@ -14368,6 +14381,7 @@ Request body:
             "enum": [
               "untold_move",
               "move_unanswered",
+              "unanswered_chat",
               "leave_conflict",
               "address_to_confirm",
               "consultation_request",
@@ -15519,7 +15533,8 @@ Request body:
         "dispute_window_days",
         "technician_work",
         "booking_days",
-        "referral_reward"
+        "referral_reward",
+        "care_hours"
       ]
     },
     "title": {
@@ -15686,7 +15701,8 @@ Request body:
         "dispute_window_days",
         "technician_work",
         "booking_days",
-        "referral_reward"
+        "referral_reward",
+        "care_hours"
       ]
     },
     "title": {

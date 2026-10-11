@@ -144,6 +144,7 @@ export const settings = {
       field: "Visits in the field",
       reminders: "Reminders and replacements",
       referrals: "Referrals",
+      care: "Customer Care",
       console: "The console",
       other: "Other policies",
     },
@@ -213,6 +214,13 @@ export const settings = {
         referrer_visits: "Referrer",
         friend_visits: "Friend",
         valid_days: "Free visits valid for",
+      },
+      // The reply clock (docs/decisions/0132-the-reply-clock.md).
+      care_hours: {
+        opens: "Care opens",
+        closes: "Care closes",
+        first_reply: "First reply within",
+        answered_by: "After-hours messages answered by",
       },
     } as Readonly<Record<string, Readonly<Record<string, string>>>>,
     /** Each choice a rule of choices offers, by the rule's name (docs/decisions/0088-every-policy-in-the-console.md). */

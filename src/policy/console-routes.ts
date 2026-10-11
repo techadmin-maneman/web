@@ -217,6 +217,7 @@ export const GIVING_NO_CITY: RouteNeed = need("operations", "manage");
 export const TASK_DEPARTMENTS: Readonly<Record<TaskGroup, Department>> = {
   untold_move: "operations",
   move_unanswered: "operations",
+  unanswered_chat: "customer_care",
   leave_conflict: "operations",
   address_to_confirm: "customer_care",
   consultation_request: "customer_care",
