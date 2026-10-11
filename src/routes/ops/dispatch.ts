@@ -25,6 +25,7 @@ import { routeReach, withinRouteReach } from "../../http/staff-access.ts";
 import { indiaDate } from "../../lib/india-time.ts";
 import { BEGUN, UNTOLD_REASONS } from "../../policy/dispatch.ts";
 import { PAYMENT_BADGES } from "../../policy/job-visibility.ts";
+import { ProposedMoveSchema } from "../schemas/visits.ts";
 
 const ClientSchema = z
   .object({
@@ -84,6 +85,11 @@ const BlockSchema = z
         description:
           "The latest move of this visit its client has not heard of, and why. no_consent: he has not agreed to WhatsApp about his visits; not_sent: the WhatsApp was skipped or failed. Ops call him, then POST /api/dispatch/moves/{id}/told.",
       }),
+    proposal: z.union([ProposedMoveSchema, z.null()]).openapi({
+      description:
+        "A move to another day the client has been asked to confirm (POST /api/dispatch/propose), still open: the " +
+        "visit stays where it is until they accept it. Ops may withdraw it. Null for none.",
+    }),
     begun: z.union([z.enum(BEGUN), z.null()]).openapi({
       description:
         "How far the technician has got, from the steps his phone sent: arrived (checked in), started, or closed (an outcome, a no-show among them). Null before he arrives. A visit he has begun, or one in progress, is not moved.",
@@ -231,7 +237,7 @@ export function registerOpsDispatch(app: App): void {
     const [inputs, reach] = await Promise.all([opsInputs(c), routeReach(c)]);
     const noticeHours = inputs.changeNoticeHours;
     return c.json(
-      await dispatchBoard(c.env.DB, { from: from ?? indiaDate(now), city: city ?? null, noticeHours, reach }),
+      await dispatchBoard(c.env.DB, { from: from ?? indiaDate(now), city: city ?? null, noticeHours, reach, now }),
       200,
     );
   });

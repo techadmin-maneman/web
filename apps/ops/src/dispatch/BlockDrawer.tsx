@@ -36,6 +36,7 @@ interface Props {
   /** Takes up a visit the technician has checked in at, to move once their check-in is cleared. */
   readonly onMoveAnyway: (() => void) | null;
   readonly onTold: ((moveId: string) => void) | null;
+  readonly onWithdraw: ((proposalId: string) => void) | null;
   /** The change the visit takes now, if their access reaches it: cancelled ahead, or closed by hand after. */
   readonly change: VisitChange | null;
   readonly onChange: (change: VisitChange) => void;
@@ -59,7 +60,8 @@ function warningOf(job: BlockJob): string | null {
   return dispatch.drawer.stays;
 }
 
-export function BlockDrawer({ job, onMove, onMoveAnyway, onTold, change, onChange, onLetIn, onClose }: Props) {
+export function BlockDrawer(props: Props) {
+  const { job, onMove, onMoveAnyway, onTold, onWithdraw, change, onChange, onLetIn, onClose } = props;
   const copy = dispatch.drawer;
   const { block } = job;
   const person = block.person;
@@ -116,6 +118,27 @@ export function BlockDrawer({ job, onMove, onMoveAnyway, onTold, change, onChang
                 }}
               >
                 {dispatch.landing.told}
+              </Button>
+            )}
+          </div>
+        )}
+        {block.proposal !== null && (
+          <div className={styles.untold}>
+            <p className={styles.untoldLine}>
+              {copy.proposal(
+                person === null ? nameOf(job) : firstNameOf(person.name),
+                `${shortDate(block.proposal.date)}, ${windowWord(block.proposal.window)}`,
+              )}
+            </p>
+            {onWithdraw !== null && (
+              <Button
+                variant="outline"
+                size="small"
+                onClick={() => {
+                  if (block.proposal !== null) onWithdraw(block.proposal.id);
+                }}
+              >
+                {copy.withdraw}
               </Button>
             )}
           </div>

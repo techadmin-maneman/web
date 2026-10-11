@@ -187,6 +187,7 @@ export const GIVING_NO_CITY: RouteNeed = need("operations", "manage");
 /** The department that decides each group of tasks: its people see the group on Tasks, and Act may take a task of it. */
 export const TASK_DEPARTMENTS: Readonly<Record<TaskGroup, Department>> = {
   untold_move: "operations",
+  move_unanswered: "operations",
   leave_conflict: "operations",
   address_to_confirm: "customer_care",
   consultation_request: "customer_care",

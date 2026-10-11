@@ -272,7 +272,8 @@ describe("leave", () => {
       technician_id: SAMEER,
       date: "2026-09-22",
       window: "morning",
-      reason: "zone_rebalance",
+      // Another day, so the client asked for it: ops' own reasons ask the client first (ADR 0115).
+      reason: "client_asked",
     });
     expect(answer.status).toBe(200);
   });

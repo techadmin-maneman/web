@@ -157,6 +157,8 @@ export const api = {
   revokeCard: () => client.delete("/api/refer/card"),
   visits: () => client.get("/api/visits"),
   visit: (id: string) => client.get("/api/visits/{id}", { path: { id } }),
+  /** The move to another day ops asked of the client, accepted: the visit moves there (ADR 0115). */
+  acceptProposedMove: (id: string) => client.post("/api/visits/{id}/proposed-move/accept", { path: { id } }),
   photos: () => client.get("/api/photos"),
   payments: () => client.get("/api/payments"),
   entry: (id: string) => client.get("/api/payments/{id}", { path: { id } }),

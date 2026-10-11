@@ -25,7 +25,7 @@ export {
   RECORD,
   inkPhoto,
 } from "./fixtures/clients.ts";
-export { BOARD, MOVED, ROHIT, ROOM, VIKRAM } from "./fixtures/dispatch.ts";
+export { BOARD, MOVED, PROPOSED, ROHIT, ROOM, VIKRAM } from "./fixtures/dispatch.ts";
 export {
   CHARGE_PREVIEW,
   DAY_MONEY,

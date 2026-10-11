@@ -21,7 +21,7 @@ import {
   TUESDAY,
   insertJob,
   shown,
-  toSameerWednesdayMorning,
+  askedForWednesdayMorning,
   type BoardBody,
   agreeToVisitMessages,
 } from "./dispatch-fixtures.ts";
@@ -248,7 +248,7 @@ describe("what the board carries of each visit", () => {
 
   it("names the move the client was not told of on the visit it moved", async () => {
     await insertJob(A, { type: "service", start: TUESDAY["09:00"], technician: IMRAN });
-    const { move_id: moveId } = await (await move(toSameerWednesdayMorning(A))).json<{ move_id: string }>();
+    const { move_id: moveId } = await (await move(askedForWednesdayMorning(A))).json<{ move_id: string }>();
 
     const block = (await board("from=2026-09-22")).technicians[1]?.days[1]?.blocks[0];
     expect(block?.untold).toEqual({ move_id: moveId, starts_at: "2026-09-23T03:30:00.000Z", reason: "no_consent" });

@@ -143,7 +143,8 @@ describe("GET /api/availability", () => {
   });
 
   // A technician never takes two of a client's visits in a row (docs/decisions/0111).
-  it("marks a window full where only the technician of the client's last visit is free", async () => {
+  // Never the same technician twice in a row, unless nobody else in the city is free (ADR 0117).
+  it("keeps a window open with the technician of the client's last visit where nobody else is free", async () => {
     const rohit = await client(false, { lastWith: IMRAN });
     const strip = async () =>
       (
@@ -152,17 +153,17 @@ describe("GET /api/availability", () => {
     expect((await strip()).days[0]?.windows[1]).toMatchObject({ window: "afternoon", open: true });
 
     await visit(null, "first_fit", "dispatched", "2026-09-23T07:30:00.000Z", SANDEEP); // Wednesday, 1 pm
-    expect((await strip()).days[0]?.windows[1]).toMatchObject({ window: "afternoon", open: false });
+    expect((await strip()).days[0]?.windows[1]).toMatchObject({ window: "afternoon", open: true });
   });
 
-  it("marks a window full where only the technician of the client's next visit is free", async () => {
+  it("keeps a window open with the technician of the client's next visit where nobody else is free", async () => {
     const rohit = await client();
     await visit(rohit.id, "service", "scheduled", "2026-09-28T06:30:00.000Z", IMRAN); // next Monday, with Imran
     await visit(null, "first_fit", "dispatched", "2026-09-23T07:30:00.000Z", SANDEEP); // Wednesday, 1 pm
     const strip = await (
       await request(app, "/api/availability?type=service&from=2026-09-23", { headers: { Cookie: rohit.cookie } })
     ).json<{ days: { windows: { window: string; open: boolean }[] }[] }>();
-    expect(strip.days[0]?.windows[1]).toMatchObject({ window: "afternoon", open: false });
+    expect(strip.days[0]?.windows[1]).toMatchObject({ window: "afternoon", open: true });
   });
 
   it("will not offer a kind of visit the client may not book, and is off where self-serve booking is", async () => {

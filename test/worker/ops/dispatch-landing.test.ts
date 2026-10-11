@@ -118,6 +118,16 @@ describe("a client's visits in a row", () => {
     expect(rooms.filter((room) => room.technician_id === SAMEER)).toEqual([]);
   });
 
+  // Unless nobody else in the city has room (ADR 0117): a visit is never left with no one to take it.
+  it("gives a visit to the technician of the client's visit before it where nobody else could take it", async () => {
+    await insertJob(A, { type: "service", start: "2026-09-01T06:30:00.000Z", technician: SAMEER, status: "completed" });
+    await insertJob(FIT, { type: "first_fit", start: TUESDAY["12:00"], technician: IMRAN });
+    await env.DB.prepare("UPDATE technicians SET active = 0 WHERE id = ?1").bind(IMRAN).run();
+
+    const answer = await move({ appointment_id: FIT, technician_id: SAMEER, date: WEDNESDAY, reason: "client_asked" });
+    expect(answer.status).toBe(200);
+  });
+
   it("refuses the technician of the client's visit after it, and lets the visit keep its own", async () => {
     await insertJob(B, { type: "service", start: "2026-09-25T06:30:00.000Z", technician: SAMEER });
     await insertJob(FIT, { type: "first_fit", start: TUESDAY["12:00"], technician: IMRAN });

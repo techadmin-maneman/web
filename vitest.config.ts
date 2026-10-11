@@ -43,7 +43,13 @@ export default defineConfig({
      */
     maxWorkers: process.env.CI === undefined ? undefined : 4,
     // Vitest's own, and a watchdog that ends a run whose files have stopped reporting (test/stalled-files.ts).
-    reporters: ["default", ...(process.env.GITHUB_ACTIONS === "true" ? ["github-actions"] : []), new StalledFiles()],
+    // A half of CI's suite also keeps its results, coverage and all, for the merge (.github/workflows/ci.yml).
+    reporters: [
+      "default",
+      ...(process.env.GITHUB_ACTIONS === "true" ? ["github-actions"] : []),
+      ...(process.env.COVERAGE_SHARD === undefined ? [] : ["blob"]),
+      new StalledFiles(),
+    ],
     coverage: {
       provider: "istanbul",
       include: ["src/**/*.ts", "scripts/lib/**/*.ts"],
@@ -56,23 +62,28 @@ export default defineConfig({
        * of their own, so a weak one cannot hide in the whole; each was below 70% on branches before its
        * recorded-reply tests.
        */
-      thresholds: {
-        // Just under what the suite reaches, so a fall shows.
-        lines: 97,
-        branches: 87,
-        "src/providers/**": { lines: 90, branches: 85 },
-        "src/providers/payments/razorpay.ts": { lines: 95, branches: 95 },
-        "src/domain/money/payments.ts": { lines: 90, branches: 90 },
-        // Where money is taken, held, owed back or given as credit: a branch untested there is money lost unseen.
-        "src/domain/{payment-links,discount-code-holds,discount-code-uses,holds,bookings,credits,refunds,no-shows}.ts":
-          { lines: 90, branches: 90 },
-        // Its one branch untaken is a hold with no client, which every hold has.
-        "src/http/book-hold.ts": { lines: 90, branches: 85 },
-        "src/routes/hooks/razorpay.ts": { lines: 90, branches: 90 },
-        // What the deploy and check scripts share. A release's recovery from a lost reply first runs in an incident.
-        "scripts/lib/**": { lines: 85, branches: 70 },
-        "scripts/lib/release.ts": { lines: 95, branches: 90 },
-      },
+      // CI runs the suite in halves and merges their coverage; a half alone falls short, so only the merge is held
+      // to these (.github/workflows/ci.yml, "unit tests").
+      thresholds:
+        process.env.COVERAGE_SHARD === undefined
+          ? {
+              // Just under what the suite reaches, so a fall shows.
+              lines: 97,
+              branches: 87,
+              "src/providers/**": { lines: 90, branches: 85 },
+              "src/providers/payments/razorpay.ts": { lines: 95, branches: 95 },
+              "src/domain/money/payments.ts": { lines: 90, branches: 90 },
+              // Where money is taken, held, owed back or given as credit: a branch untested there is money lost unseen.
+              "src/domain/{payment-links,discount-code-holds,discount-code-uses,holds,bookings,credits,refunds,no-shows}.ts":
+                { lines: 90, branches: 90 },
+              // Its one branch untaken is a hold with no client, which every hold has.
+              "src/http/book-hold.ts": { lines: 90, branches: 85 },
+              "src/routes/hooks/razorpay.ts": { lines: 90, branches: 90 },
+              // What the deploy and check scripts share. A release's recovery from a lost reply first runs in an incident.
+              "scripts/lib/**": { lines: 85, branches: 70 },
+              "scripts/lib/release.ts": { lines: 95, branches: 90 },
+            }
+          : {},
     },
     projects: [
       {

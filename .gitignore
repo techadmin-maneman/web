@@ -25,3 +25,4 @@ private/
 
 # What tsc -b keeps between runs (npm run typecheck).
 *.tsbuildinfo
+.vitest-reports/

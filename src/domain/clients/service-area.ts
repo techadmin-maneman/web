@@ -112,7 +112,25 @@ export async function serviceArea(db: D1Database): Promise<AreaPincode[]> {
 type AreaRefusal =
   | { readonly kind: "unknown"; readonly pincodes: readonly string[] }
   | { readonly kind: "launch_in_future"; readonly pincodes: readonly string[] }
+  | { readonly kind: "no_technician"; readonly pincodes: readonly string[] }
   | { readonly kind: "empty_area" };
+
+/**
+ * The pincodes among these in a city no active technician works in. Served there, a pincode would tell its waitlist
+ * and the site that we come, and offer nothing to book (docs/decisions/0117-a-technician-takes-visits-in-their-own-city.md).
+ */
+export async function pincodesWithNoTechnician(db: D1Database, pincodes: readonly string[]): Promise<string[]> {
+  if (pincodes.length === 0) return [];
+  const { results } = await db
+    .prepare(
+      `SELECT p.pincode FROM serviceable_pincodes p
+       WHERE p.pincode IN (SELECT value FROM json_each(?1))
+         AND NOT EXISTS (SELECT 1 FROM technicians t WHERE t.active = 1 AND t.city = p.city)`,
+    )
+    .bind(JSON.stringify(pincodes))
+    .all<{ pincode: string }>();
+  return results.map((row) => row.pincode);
+}
 
 interface AreaResult {
   /** The pincodes this actually altered: served, launch date or name. */
@@ -131,6 +149,29 @@ const renamed = (was: AreaPincode, change: AreaChange) => change.area !== undefi
 function servesLater(was: AreaPincode, change: AreaChange, today: string): boolean {
   if (!change.served || change.launch_on === null || !servingChanged(was, change)) return false;
   return isLaunchInFuture(change.launch_on, today);
+}
+
+/** Why a change of the service area is refused before anything is written; null where it may go ahead. */
+async function refusalOf(
+  db: D1Database,
+  input: { changes: readonly AreaChange[]; held: ReadonlyMap<string, AreaPincode>; today: string },
+): Promise<AreaRefusal | null> {
+  const { changes, held, today } = input;
+  const unknown = changes.filter((change) => !held.has(change.pincode)).map((change) => change.pincode);
+  if (unknown.length > 0) return { kind: "unknown", pincodes: unknown };
+
+  const later = changes.filter((change) => {
+    const was = held.get(change.pincode);
+    return was !== undefined && servesLater(was, change, today);
+  });
+  if (later.length > 0) return { kind: "launch_in_future", pincodes: later.map((change) => change.pincode) };
+
+  const launching = changes.filter((change) => change.served && held.get(change.pincode)?.served === false);
+  const unstaffed = await pincodesWithNoTechnician(
+    db,
+    launching.map((change) => change.pincode),
+  );
+  return unstaffed.length > 0 ? { kind: "no_technician", pincodes: unstaffed } : null;
 }
 
 /**
@@ -161,14 +202,8 @@ export async function setServiceArea(
   const today = indiaDate(now);
   const held = new Map((await serviceArea(db)).map((pincode) => [pincode.pincode, pincode]));
 
-  const unknown = changes.filter((change) => !held.has(change.pincode)).map((change) => change.pincode);
-  if (unknown.length > 0) return { kind: "unknown", pincodes: unknown };
-
-  const later = changes.filter((change) => {
-    const was = held.get(change.pincode);
-    return was !== undefined && servesLater(was, change, today);
-  });
-  if (later.length > 0) return { kind: "launch_in_future", pincodes: later.map((change) => change.pincode) };
+  const refused = await refusalOf(db, { changes, held, today });
+  if (refused !== null) return refused;
 
   const after = new Map(held);
   for (const change of changes) {

@@ -115,6 +115,8 @@ export const ERROR_CODES = [
   // A pincode served from a day still to come, which /book would take bookings for at once; and a pincode ops would add
   // that the service area holds already.
   "launch_in_future",
+  // Serving a pincode in a city no active technician works in, where nothing could be booked (ADR 0117).
+  "no_technician",
   "pincode_held",
   // The services clients book (docs/decisions/0085-services-ops-can-edit.md): another service has the name, or its
   // kind the code; retiring it would leave its kind with nothing to book; a price for a service retired by its day.
@@ -136,6 +138,8 @@ export const ERROR_CODES = [
   // A move to another day the client tried to accept, whose time was taken since or whose visit cannot move now
   // (docs/decisions/0115-a-move-to-another-day-waits-for-the-client.md).
   "move_gone",
+  // A move ops tried to make to another day, which the client is asked to confirm instead (ADR 0115).
+  "ask_the_client",
   // Discount codes (docs/decisions/0108-discount-codes.md): the code entered does not apply, which is all its enterer
   // is told; the booking carries a code already; the booking's price is settled, so no code goes on or comes off; or
   // ops typed a code that already exists. Ops alone are told a code is switched off, since they switch them off.
@@ -265,6 +269,7 @@ export const ERROR_STATUS = {
   already_closed: 409,
   no_service_area: 400,
   launch_in_future: 400,
+  no_technician: 409,
   pincode_held: 409,
   service_exists: 409,
   last_of_kind: 409,
@@ -277,6 +282,7 @@ export const ERROR_STATUS = {
   not_disputable: 409,
   dispute_window_closed: 409,
   move_gone: 409,
+  ask_the_client: 409,
   code_not_applicable: 422,
   code_off: 422,
   already_discounted: 409,

@@ -19,6 +19,7 @@ import { oneVisitOf, summaryName, visitTitle } from "../lib/visit.ts";
 import { whatsappWith } from "../lib/whatsapp.ts";
 import { useSession } from "../session.ts";
 import { oneVisitLines } from "./one-visit-words.ts";
+import { ProposedMove } from "./ProposedMove.tsx";
 import styles from "./home.module.css";
 import { firstNameOf } from "../../../../src/lib/names.ts";
 
@@ -52,12 +53,19 @@ export function stageText(visit: VisitSummary): string | null {
 /** The window, or where a visit that has begun stands. */
 export const whenText = (visit: VisitSummary): string => stageText(visit) ?? windowText(visit.window_label);
 
-function Reschedule(props: { what: string; date: string; changing: ChangingVisit | null; onOpen: () => void }) {
+function Reschedule(props: {
+  what: string;
+  date: string;
+  changing: ChangingVisit | null;
+  /** "Pick another time" while a move is proposed; "Reschedule" otherwise. */
+  label: string;
+  onOpen: () => void;
+}) {
   const { me, offline } = useSession();
   if (offline) {
     return (
       <Button variant="outlineOnInk" size="control" className={styles.action} disabled>
-        {home.reschedule}
+        {props.label}
       </Button>
     );
   }
@@ -70,13 +78,13 @@ function Reschedule(props: { what: string; date: string; changing: ChangingVisit
         href={whatsappWith(messages.reschedule(props.what, props.date))}
         rel="noopener"
       >
-        {home.reschedule}
+        {props.label}
       </ButtonLink>
     );
   }
   return (
     <Button variant="outlineOnInk" size="control" className={styles.action} onClick={props.onOpen}>
-      {home.reschedule}
+      {props.label}
     </Button>
   );
 }
@@ -153,6 +161,8 @@ export function Actions(props: {
   changing: ChangingVisit | null;
   noting: NotingVisit | null;
   onNoted?: (note: string) => void;
+  /** A move to another day is proposed, so Reschedule offers another time instead. */
+  proposed?: boolean;
 }) {
   const { what, date, changing } = props;
   const { refresh } = useSession();
@@ -163,6 +173,7 @@ export function Actions(props: {
         what={what}
         date={date}
         changing={changing}
+        label={props.proposed === true ? home.proposal.pick : home.reschedule}
         onOpen={() => {
           setOpen(true);
         }}
@@ -225,6 +236,9 @@ export function VisitCard({ visit }: { visit: VisitSummary }) {
       {visit.place !== "" && <p className={styles.place}>{visit.place}</p>}
       {oneVisit !== null && <OneVisitTerms price={oneVisit} />}
       {clientNote !== null && <p className={styles.place}>{note.shown(clientNote)}</p>}
+      {!hasBegun(visit) && visit.proposed_move !== null && (
+        <ProposedMove visitId={visit.id} proposal={visit.proposed_move} />
+      )}
       {!hasBegun(visit) && (
         <Actions
           what={what}
@@ -232,6 +246,7 @@ export function VisitCard({ visit }: { visit: VisitSummary }) {
           changing={changingOf(visit, what)}
           noting={{ ...notingOf(visit), note: clientNote }}
           onNoted={setNoted}
+          proposed={visit.proposed_move !== null}
         />
       )}
     </div>

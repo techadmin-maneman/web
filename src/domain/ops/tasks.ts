@@ -11,6 +11,7 @@
 // (src/domain/ops/task-owners.ts).
 
 import { PARTIAL_REASONS } from "../../config/job-sheet.ts";
+import { DAY_MS } from "../../lib/durations.ts";
 import { addDays, indiaDate, indiaInstant } from "../../lib/india-time.ts";
 import { UNTOLD_MOVE, UNTOLD_REASON } from "../dispatch/dispatch-board.ts";
 import { LEAVE_ON_THE_DAY } from "../dispatch/leave.ts";
@@ -86,8 +87,9 @@ export const READ_CAP = 2000;
  */
 const BOARD_VISIT = `
   LEFT JOIN dispatch_moves m ON t."group" = 'untold_move' AND m.id = t.id
-  LEFT JOIN appointments v ON v.id = COALESCE(m.appointment_id, CASE WHEN t."group" = 'leave_conflict' THEN t.id END)
-  LEFT JOIN people caller ON m.id IS NOT NULL AND caller.id = v.person_id`;
+  LEFT JOIN appointments v ON v.id = COALESCE(m.appointment_id,
+    CASE WHEN t."group" IN ('leave_conflict', 'move_unanswered') THEN t.id END)
+  LEFT JOIN people caller ON (m.id IS NOT NULL OR t."group" = 'move_unanswered') AND caller.id = v.person_id`;
 
 /**
  * One statement's arms, each task with the member of staff ops made it theirs, and the longest wait first. The
@@ -151,6 +153,21 @@ const QUEUES: readonly Queue[] = [
    WHERE a.deleted_at IS NULL AND ${statusIn("a.status", VISIT_NOT_BEGUN)} AND a.window_start >= ?1
      AND m.now_start >= ?1 AND pe.erased_at IS NULL AND ${UNTOLD_MOVE}`,
     binds: (at) => [at.today],
+  },
+  // A move to another day the client has not answered in a day, or cannot be messaged about, while it stands against
+  // the visit and the visit is still to come; one that ran out unanswered too, until ops withdraw it. Each proposal is
+  // its own episode of the visit's task (docs/decisions/0115-a-move-to-another-day-waits-for-the-client.md).
+  {
+    sql: `SELECT 'move_unanswered' AS "group", a.id AS id, a.person_id AS person_id, pe.name AS person_name,
+         p.date || ' ' || p.window_label || CASE WHEN p.expires_at <= ?1 THEN ' ran_out' ELSE '' END AS detail,
+         CASE WHEN p.message_id IS NULL THEN p.created_at
+              ELSE strftime('%Y-%m-%dT%H:%M:%fZ', p.created_at, '+1 day') END AS since,
+         NULL AS due_by, p.id AS episode
+    FROM move_proposals p JOIN appointments a ON a.id = p.appointment_id JOIN people pe ON pe.id = a.person_id
+   WHERE p.answered_at IS NULL AND p.expected_start = a.window_start AND (p.message_id IS NULL OR p.created_at <= ?2)
+     AND a.deleted_at IS NULL AND ${statusIn("a.status", VISIT_NOT_BEGUN)} AND a.window_start >= ?1
+     AND pe.erased_at IS NULL`,
+    binds: (at) => [at.now, new Date(Date.parse(at.now) - DAY_MS).toISOString()],
   },
   // A consultation asked for is read only while the client has no consultation booked or done, `booked`, which the
   // database keeps as their consultations are written (migration 0056). One asked for as a consultation and fit in
@@ -489,6 +506,7 @@ function taskOf(row: Row, sla: Slas, schedule: SlotSchedule): Task {
 /** The record each group's task is read from, which its id names and which says where the task is. */
 const TASK_RECORDS: Readonly<Record<TaskGroup, PlacedRecord>> = {
   untold_move: "move",
+  move_unanswered: "visit",
   leave_conflict: "visit",
   address_to_confirm: "visit",
   consultation_request: "consultation_request",

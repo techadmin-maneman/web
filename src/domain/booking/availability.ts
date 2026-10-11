@@ -127,8 +127,17 @@ interface Placing {
 }
 
 /**
+ * The technicians free for a window, less those who took the client's visit just before or just after it; all of them
+ * where nobody else is free, so a city with few technicians never leaves a client unable to book (ADR 0117).
+ */
+function notBesideUnlessOnly(free: Technician[], beside: ReadonlySet<string>): Technician[] {
+  const others = free.filter((technician) => !beside.has(technician.id));
+  return others.length > 0 ? others : free;
+}
+
+/**
  * Each window of each day from `from` that a visit this long can start in, and the technicians free to take it: none
- * who took the client's visit just before or just after that day (src/domain/booking/technician-rotation.ts). A window the visit
+ * who took the client's visit just before or just after that day, unless nobody else is free (src/domain/booking/technician-rotation.ts). A window the visit
  * is too long to start in, as a first fit's evening, is left out. A day ops black out, or from `until` on, is offered to
  * nobody.
  */
@@ -170,10 +179,8 @@ async function windowsOf({
     const beside = techniciansBarredOn(visits, date);
     const windows = startable.map((window): WindowTechnicians => {
       if (closed.has(date) || retired(date)) return { window, technicians: [] };
-      const free = technicians.filter(
-        (technician) => !beside.has(technician.id) && placement(held(technician.id, date), window, units) !== null,
-      );
-      return { window, technicians: free };
+      const free = technicians.filter((technician) => placement(held(technician.id, date), window, units) !== null);
+      return { window, technicians: notBesideUnlessOnly(free, beside) };
     });
     return { date, windows };
   });

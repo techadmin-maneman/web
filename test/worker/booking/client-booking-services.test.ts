@@ -114,8 +114,9 @@ describe("choosing a service", () => {
   });
 
   it("keeps a visit of a longer service from being overlapped, as long as its service is", async () => {
-    // Sandeep took the client's last visit, so only Imran's time is offered.
-    const rohit = await client(false, { lastWith: SANDEEP });
+    // Sandeep is switched off, so only Imran's time is offered.
+    const rohit = await client();
+    await env.DB.prepare("UPDATE technicians SET active = 0 WHERE id = ?1").bind(SANDEEP).run();
     await service("first_fit", "premium", "Premium first fit", 300, 4_000_000);
     // Imran fits a premium first fit from 9 am on Wednesday: seven half-slots, into the evening's first.
     const booked = await visit(null, "first_fit", "scheduled", "2026-09-23T03:30:00.000Z", IMRAN);

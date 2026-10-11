@@ -104,6 +104,26 @@
   color: var(--ink-soft);
 }
 
+/* A move to another day ops asked of the client, above Reschedule, which offers another time beside it. */
+.proposal {
+  margin-top: var(--sp-18);
+  padding-top: var(--sp-18);
+  border-top: var(--hairline) solid var(--ink-rule);
+  font-size: var(--fs-16);
+  color: var(--paper);
+}
+
+.proposalNote {
+  margin-top: var(--sp-8);
+  font-size: var(--fs-14);
+  color: var(--ink-soft);
+}
+
+.accept {
+  width: 100%;
+  margin-top: var(--sp-14);
+}
+
 .actions {
   display: flex;
   gap: var(--sp-10);

@@ -273,8 +273,9 @@ describe("POST /api/visits: what is refused", () => {
 describe("GET /api/visits/availability", () => {
   const look = (query: string) => request(opsApp(), `/api/visits/availability?${query}`);
 
-  it("offers each window's free technicians, never the one who took the client's last visit, with how it is paid", async () => {
-    // Imran fitted Rohit, so they do not take Rohit's next visit (docs/decisions/0111).
+  it("offers each window's free technicians, the one who took the client's last visit only alone, with how it is paid", async () => {
+    // Imran fitted Rohit, so they do not take Rohit's next visit (docs/decisions/0111), unless nobody else is free
+    // (docs/decisions/0117-a-technician-takes-visits-in-their-own-city.md).
     await rohit("fitted");
     await visit(null, "service", "scheduled", "2026-09-22T03:30:00.000Z", SANDEEP); // Tuesday, 9 am
     const answer = await look(`client=${ROHIT}&kind=service`);
@@ -297,7 +298,7 @@ describe("GET /api/visits/availability", () => {
     expect(body.days[0]?.date).toBe("2026-09-22");
     const tuesday = body.days[0]?.windows.map((each) => [each.window, each.technicians.map((one) => one.id)]);
     expect(tuesday).toEqual([
-      ["morning", []],
+      ["morning", [IMRAN]],
       ["afternoon", [SANDEEP]],
       ["evening", [SANDEEP]],
     ]);

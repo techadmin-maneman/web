@@ -157,3 +157,92 @@ describe("a move to another day ops ask the client to confirm", () => {
     expect(await env.DB.prepare("SELECT COUNT(*) AS n FROM outbound_messages").first("n")).toBe(0);
   });
 });
+
+describe("the board, with a proposal open", () => {
+  /** The board's block for visit A, wherever it sits in the week from Tuesday. */
+  async function blockOfA(): Promise<Record<string, unknown> | undefined> {
+    const answer = await request(ops, "/api/dispatch?from=2026-09-22", {}, bindings());
+    const board = await answer.json<{ technicians: { days: { blocks: Record<string, unknown>[] }[] }[] }>();
+    return board.technicians
+      .flatMap((row) => row.days.flatMap((day) => day.blocks))
+      .find((block) => block.appointment_id === A);
+  }
+
+  const move = async (body: Record<string, unknown>) => {
+    const job = await shown(A);
+    return sent(ops, "/api/dispatch/move", {
+      appointment_id: A,
+      expected_technician_id: job?.technician_id ?? null,
+      expected_starts_at: job?.window_start,
+      ...body,
+    });
+  };
+
+  it("shows the proposal on the visit, where it still is", async () => {
+    expect((await blockOfA())?.proposal).toBeNull();
+    await propose(toSameerWednesdayMorning(A));
+
+    expect((await blockOfA())?.proposal).toMatchObject({
+      date: WEDNESDAY,
+      window: "morning",
+      technician: { name: "Sameer Bhatt", initials: "SB" },
+    });
+  });
+
+  // ADR 0115: a client's visit goes to another day at once only when they asked; within its day the board moves it.
+  it("asks the client of a move to another day, and makes one within the day, or one they asked for", async () => {
+    const asked = await move({ technician_id: SAMEER, date: WEDNESDAY, window: "morning", reason: "zone_rebalance" });
+    expect(asked.status).toBe(409);
+    expect(await asked.json()).toMatchObject({ error: { code: "ask_the_client" } });
+    expect(await shown(A)).toMatchObject({ technician_id: IMRAN, window_start: TUESDAY["09:00"] });
+
+    expect((await move({ window: "afternoon", reason: "zone_rebalance" })).status).toBe(200);
+    expect((await move({ date: WEDNESDAY, window: "morning", reason: "client_asked" })).status).toBe(200);
+  });
+
+  it("moves a visit with no client to another day at once", async () => {
+    await env.DB.prepare("UPDATE appointments SET person_id = NULL WHERE id = ?1").bind(A).run();
+    const moved = await move({ technician_id: SAMEER, date: WEDNESDAY, window: "morning", reason: "zone_rebalance" });
+    expect(moved.status).toBe(200);
+  });
+});
+
+describe("a move the client has not answered, on the Tasks board", () => {
+  interface Task {
+    id: string;
+    detail: string | null;
+    visit: { id: string } | null;
+  }
+  /** The task about visit A in the group, read at the moment given. */
+  async function unanswered(at: Date): Promise<Task | undefined> {
+    const board = appFor("local", fakeDependencies({ now: () => at }), {}, "ops");
+    const answer = await request(board, "/api/tasks", {}, bindings());
+    const { groups } = await answer.json<{ groups: { group: string; tasks: Task[] }[] }>();
+    return groups.find((group) => group.group === "move_unanswered")?.tasks.find((task) => task.id === A);
+  }
+  const DAY_LATER = new Date(NOW.getTime() + 25 * 60 * 60 * 1000);
+
+  it("waits a day for a client who was messaged, then asks ops to call", async () => {
+    // A visit on Thursday, so it is still to come a day after the proposal.
+    await env.DB.prepare(
+      "UPDATE appointments SET window_start = '2026-09-24T03:30:00.000Z', window_end = '2026-09-24T05:00:00.000Z' WHERE id = ?1",
+    )
+      .bind(A)
+      .run();
+    await agreeToVisitMessages(true);
+    await propose(toSameerWednesdayMorning(A));
+
+    expect(await unanswered(NOW)).toBeUndefined();
+    expect(await unanswered(DAY_LATER)).toMatchObject({ id: A, visit: { id: A }, detail: `${WEDNESDAY} morning` });
+  });
+
+  it("asks ops to call at once a client who cannot be messaged, until they withdraw it", async () => {
+    await agreeToVisitMessages(false);
+    await propose(toSameerWednesdayMorning(A));
+    expect(await unanswered(NOW)).toMatchObject({ id: A, detail: `${WEDNESDAY} morning` });
+
+    const proposal = await env.DB.prepare("SELECT id FROM move_proposals").first<{ id: string }>();
+    await sent(ops, `/api/dispatch/proposals/${proposal?.id ?? ""}/withdraw`, {});
+    expect(await unanswered(NOW)).toBeUndefined();
+  });
+});
