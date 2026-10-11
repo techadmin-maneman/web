@@ -2,7 +2,6 @@
 // has had. A change is checked (src/policy/word-checks.ts) and written with its audit entry, which keeps the line's
 // key, never its words. Going back to an earlier wording, or to the code's, is a change like any other.
 
-import type { Wording } from "../../config/message-templates.ts";
 import { longestOf, wordRefusal, type WordRefusal } from "../../policy/word-checks.ts";
 import { auditStatement, type AuditActor } from "../ops/audit.ts";
 import { WORD_LINES, wordLine, type WordLine } from "./catalogue.ts";
@@ -116,31 +115,4 @@ export async function setWord(
     ),
   ]);
   return { outcome: "set", word: await wordAt(db, line) };
-}
-
-/**
- * The words set for a message, and for its stop line where it carries one, where they differ from the code's
- * (docs/decisions/0128-messages-with-the-words-set.md); undefined while neither was changed.
- */
-export async function messageWording(
-  db: D1Database,
-  template: string,
-  withStop: boolean,
-): Promise<Wording | undefined> {
-  const text = `message:${template}`;
-  const stop = "message:stop_link_v1";
-  const { results } = await db
-    .prepare(
-      `SELECT key, text FROM (
-         SELECT key, text, ROW_NUMBER() OVER (PARTITION BY key ORDER BY set_at DESC, rowid DESC) AS n
-         FROM word_versions WHERE key IN (?1, ?2)
-       ) WHERE n = 1`,
-    )
-    .bind(text, withStop ? stop : text)
-    .all<{ key: string; text: string | null }>();
-  const set = (key: string) => results.find((row) => row.key === key)?.text ?? null;
-  const textSet = set(text);
-  const stopSet = withStop ? set(stop) : null;
-  if (textSet === null && stopSet === null) return undefined;
-  return { ...(textSet === null ? {} : { text: textSet }), ...(stopSet === null ? {} : { stop: stopSet }) };
 }

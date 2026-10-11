@@ -149,7 +149,8 @@ export function registerOpsWords(app: App): void {
   app.openapi(listRoute, async (c) => {
     const [words, publish] = await Promise.all([listWords(c.env.DB), latestPublish(c.env.DB)]);
     const published = publish === null ? null : publishedOf(publish);
-    const messages = c.var.config.settings.messaging.msg91 === null ? "at_once" : "after_approval";
+    const messages =
+      c.var.config.settings.messaging.msg91 === null ? ("at_once" as const) : ("after_approval" as const);
     return c.json({ words: words.map((word) => withSite(word, publish)), published, messages }, 200);
   });
 

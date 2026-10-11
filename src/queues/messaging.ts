@@ -35,7 +35,7 @@ import {
   type TemplateName,
   type Wording,
 } from "../config/message-templates.ts";
-import { messageWording } from "../domain/words/words.ts";
+import { messageWording } from "../domain/words/message-wording.ts";
 import { typeOfKey, type ImageType } from "../lib/image-bytes.ts";
 import { MAX_SEND_ATTEMPTS } from "../config/pipeline.ts";
 import { type MessagingSettings } from "../config/settings.ts";
