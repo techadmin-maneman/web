@@ -3,12 +3,13 @@
 // state. Above them, a try-on the client made on the site, while it is kept
 // (ADR 0082). A photograph opens in a sheet, to download.
 
+import { ButtonLink } from "@maneman/ui/Button";
 import { useLoad, whenLoaded } from "@maneman/ui/useLoad";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { fullDate } from "@maneman/web-kit/dates";
 import { useState } from "react";
 import { api, type PhotoTimeline } from "../api.ts";
-import { empty, photos, states } from "../content.ts";
+import { empty, photos, states, TRY_ON_URL } from "../content.ts";
 import { AppLink, Shell } from "../components/Shell.tsx";
 import { EmptyState } from "../components/EmptyState.tsx";
 import { TAB_ICONS } from "../icons.ts";
@@ -40,7 +41,12 @@ function PhotosLoading() {
 function Timeline({ timeline, onOpen }: { timeline: PhotoTimeline; onOpen: (photo: OpenPhoto) => void }) {
   const { visits, try_ons: tryOns } = timeline;
   if (visits.length === 0 && tryOns.length === 0) {
-    return <EmptyState lines={empty.photos.lines} icon={TAB_ICONS.photos} />;
+    const tryOn = (
+      <ButtonLink variant="outline" size="small" className={styles.tryOn} href={TRY_ON_URL[import.meta.env.MM_ENV]}>
+        {empty.photos.tryOn}
+      </ButtonLink>
+    );
+    return <EmptyState lines={empty.photos.lines} icon={TAB_ICONS.photos} action={tryOn} />;
   }
   return (
     <>
