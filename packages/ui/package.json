@@ -12,6 +12,7 @@
     "./Caps": "./Caps.tsx",
     "./classes": "./classes.ts",
     "./CodeField": "./CodeField.tsx",
+    "./DateStrip": "./DateStrip.tsx",
     "./cssToken": "./cssToken.ts",
     "./Dialog": "./Dialog.tsx",
     "./ErrorBoundary": "./ErrorBoundary.tsx",
