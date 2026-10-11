@@ -13,6 +13,9 @@ export const stock = {
   /** A technician who has left, whose kit still holds stock. */
   left: (name: string) => `${name} (left)`,
   consumable: "Consumable",
+  // Not drawn: past a handful of kits, the one shown beside the central store, and a kit low on anything.
+  kit: "Kit",
+  kitLow: " · low",
   /** "12 strip", and a mark for a place at or below its level. */
   held: (quantity: number, unit: string) => `${String(quantity)} ${unit}`,
   low: "Low",

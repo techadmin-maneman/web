@@ -8,6 +8,7 @@
 // rest here. A place at or below its level is marked Low in words, and raises
 // one alert (src/domain/field/stock.ts), which is why there is no Tasks group for it.
 
+import { Field, Select } from "@maneman/ui/Field";
 import { Table } from "@maneman/ui/Table";
 import { useLoad } from "@maneman/ui/useLoad";
 import { indiaClock, indiaDate, shortDate } from "@maneman/web-kit/dates";
@@ -60,7 +61,46 @@ function ToSettings() {
   );
 }
 
+/** Past this many places, a column each grows too wide to read: the table shows the central store and one kit. */
+const PLACES_SIDE_BY_SIDE = 6;
+
+/** The kit the table shows beside the central store, past a handful: each named, and marked where any is low. */
+function KitPicker({ book, kit, onKit }: { book: Stock; kit: string | null; onKit: (kit: string) => void }) {
+  const lowIn = (technicianId: string) =>
+    book.holdings.some((holding) => holding.technician_id === technicianId && holding.low);
+  return (
+    <Field label={copy.kit} className={styles.kitPicker}>
+      {(control) => (
+        <Select
+          {...control}
+          value={kit ?? ""}
+          onChange={(event) => {
+            onKit(event.target.value);
+          }}
+        >
+          {book.places.flatMap((place) =>
+            place.technician_id === null
+              ? []
+              : [
+                  <option key={place.technician_id} value={place.technician_id}>
+                    {placeName(book, place.technician_id)}
+                    {lowIn(place.technician_id) ? copy.kitLow : ""}
+                  </option>,
+                ],
+          )}
+        </Select>
+      )}
+    </Field>
+  );
+}
+
 function OnHand({ book }: { book: Stock }) {
+  const [picked, setPicked] = useState<string | null>(null);
+  const many = book.places.length > PLACES_SIDE_BY_SIDE;
+  const kit = picked ?? book.places.find((place) => place.technician_id !== null)?.technician_id ?? null;
+  const places = many
+    ? book.places.filter((place) => place.technician_id === null || place.technician_id === kit)
+    : book.places;
   if (book.consumables.length === 0) {
     return (
       <p className={form.note}>
@@ -70,11 +110,12 @@ function OnHand({ book }: { book: Stock }) {
   }
   return (
     <div className={styles.scroll}>
+      {many && <KitPicker book={book} kit={kit} onKit={setPicked} />}
       <Table className={form.table}>
         <thead>
           <tr>
             <th scope="col">{copy.consumable}</th>
-            {book.places.map((place) => (
+            {places.map((place) => (
               <th scope="col" key={place.technician_id ?? "central"}>
                 {placeName(book, place.technician_id)}
               </th>
@@ -88,7 +129,7 @@ function OnHand({ book }: { book: Stock }) {
                 {consumable.name}
                 {consumable.retired && <span className={styles.retired}>{copy.retired}</span>}
               </th>
-              {book.places.map((place) => (
+              {places.map((place) => (
                 <Held
                   key={place.technician_id ?? "central"}
                   book={book}
