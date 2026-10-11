@@ -46,6 +46,7 @@ const DOCUMENTATION_CONFIG: StaticConfig = {
       techCodeDailyCeiling: 0,
       fixedCode: null,
       testRecordCode: null,
+      sms: null,
     },
     tryon: {
       uploadIpHourlyLimit: 0,
