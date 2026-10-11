@@ -115,6 +115,8 @@ export const ERROR_CODES = [
   // A pincode served from a day still to come, which /book would take bookings for at once; and a pincode ops would add
   // that the service area holds already.
   "launch_in_future",
+  // Serving a pincode in a city no active technician works in, where nothing could be booked (ADR 0117).
+  "no_technician",
   "pincode_held",
   // The services clients book (docs/decisions/0085-services-ops-can-edit.md): another service has the name, or its
   // kind the code; retiring it would leave its kind with nothing to book; a price for a service retired by its day.
@@ -265,6 +267,7 @@ export const ERROR_STATUS = {
   already_closed: 409,
   no_service_area: 400,
   launch_in_future: 400,
+  no_technician: 409,
   pincode_held: 409,
   service_exists: 409,
   last_of_kind: 409,

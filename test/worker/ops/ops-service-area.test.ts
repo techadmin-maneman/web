@@ -15,6 +15,7 @@ import { renderMessage } from "../../../src/config/message-templates.ts";
 import { composeLaunchAlert } from "../../../src/domain/booking/waitlist.ts";
 import { pincodeUpsert } from "../../../scripts/lib/pincodes.ts";
 import { appFor, fakeDependencies, fakeQueue, markDatabase, NOW, request } from "../helpers.ts";
+import { aTechnicianInEveryCity } from "../clients.ts";
 import { POST, auditFor } from "./ops-settings-fixtures.ts";
 
 let ops: App;
@@ -32,6 +33,7 @@ async function pincode(pin: string, city: string, area: string, served: number, 
 
 beforeEach(async () => {
   await markDatabase();
+  await aTechnicianInEveryCity();
   ops = appFor("local", fakeDependencies(), {}, "ops");
 });
 
@@ -109,6 +111,19 @@ describe("the service area", () => {
     expect(await answer.json()).toMatchObject({ error: { code: "launch_in_future", fields: ["122018"] } });
     const body = await (await request(ops, "/api/service-area")).json<{ pincodes: { served: boolean }[] }>();
     expect(body.pincodes.filter((each) => each.served)).toHaveLength(1);
+    expect((await auditFor("pincode.set")).results).toHaveLength(0);
+  });
+
+  it("refuses to begin serving a pincode in a city no technician works in, and changes nothing", async () => {
+    await env.DB.prepare("DELETE FROM technicians WHERE city = 'Gurgaon'").run();
+    const answer = await post("/api/service-area", {
+      changes: [
+        { pincode: "122018", served: true, launch_on: null },
+        { pincode: "110017", served: true, launch_on: "2026-09-21" },
+      ],
+    });
+    expect(answer.status).toBe(409);
+    expect(await answer.json()).toMatchObject({ error: { code: "no_technician", fields: ["122018"] } });
     expect((await auditFor("pincode.set")).results).toHaveLength(0);
   });
 

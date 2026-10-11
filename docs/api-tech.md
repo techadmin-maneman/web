@@ -1042,6 +1042,7 @@ Request body:
             "already_closed",
             "no_service_area",
             "launch_in_future",
+            "no_technician",
             "pincode_held",
             "service_exists",
             "last_of_kind",

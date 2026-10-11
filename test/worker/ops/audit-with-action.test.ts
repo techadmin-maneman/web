@@ -9,6 +9,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import type { App } from "../../../src/http/context.ts";
 import { openSession } from "../../../src/domain/sign-in/sessions.ts";
 import { appFor, captureLogs, fakeDependencies, fakeQueue, markDatabase, NOW, request } from "../helpers.ts";
+import { aTechnicianInEveryCity } from "../clients.ts";
 
 const PERSON = "11111111-1111-4111-8111-111111111111";
 const FRIEND = "22222222-2222-4222-8222-222222222222";
@@ -27,6 +28,7 @@ let cookie: string;
 
 beforeEach(async () => {
   await markDatabase();
+  await aTechnicianInEveryCity();
   captureLogs();
   ops = appFor("local", fakeDependencies(), {}, "ops");
   client = appFor("local", fakeDependencies(), {}, "client");

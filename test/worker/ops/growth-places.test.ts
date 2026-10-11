@@ -6,6 +6,7 @@ import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { App } from "../../../src/http/context.ts";
 import { captureLogs, fakeQueue, markDatabase, NOW, request } from "../helpers.ts";
+import { aTechnicianInEveryCity } from "../clients.ts";
 import { enforce, listStaff, opsAs, person, type GrantCode } from "./staff-fixtures.ts";
 
 interface Client {
@@ -119,6 +120,7 @@ const waitingStatement = (id: string, pincode: string, client: Client): D1Prepar
 beforeEach(async () => {
   captureLogs();
   await markDatabase();
+  await aTechnicianInEveryCity();
   const db = env.DB;
   const clients = [
     REFERRER_IN_DELHI,
