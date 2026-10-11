@@ -35,23 +35,25 @@ describe("MSG91", () => {
     const http = fakeFetch({ [SEND_URL]: accepted });
     const msg91 = createMsg91Messaging(settings, { fetch: http.fetch, log });
 
-    // "Hi {{1}}, {{5}} is at your door for your {{2}}." is approved as "Hi {{1}}, {{2}} is at your door for your {{3}}."
+    // "{{5}} waited {{9}} minutes for your {{2}} on {{3}}" is approved as "{{2}} waited {{3}} minutes for your {{4}} on {{5}}".
     const result = await msg91.send({
       to: "+919810000001",
-      template: "technician_arrived_v1",
-      params: ["Arjun", "service visit", "Thu 24 Sep", "12 to 4 pm", "Imran"],
+      template: "no_show_missed_v1",
+      params: ["Arjun", "service visit", "Thu 24 Sep", "12 to 4 pm", "Imran", "", "", "", "15"],
     });
 
     expect(result).toEqual({ ok: true, providerMessageId: "req-1" });
     expect(http.calls[0]?.headers.get("authkey")).toBe("msg91-key");
     const { body, template, to, components } = sent(http);
     expect(body).toMatchObject({ integrated_number: "919800000000", content_type: "template" });
-    expect(template).toMatchObject({ name: "technician_arrived_v1", language: { code: "en" } });
+    expect(template).toMatchObject({ name: "no_show_missed_v1", language: { code: "en" } });
     expect(to).toEqual(["919810000001"]);
     expect(components).toEqual({
       body_1: { type: "text", value: "Arjun" },
       body_2: { type: "text", value: "Imran" },
-      body_3: { type: "text", value: "service visit" },
+      body_3: { type: "text", value: "15" },
+      body_4: { type: "text", value: "service visit" },
+      body_5: { type: "text", value: "Thu 24 Sep" },
     });
   });
 

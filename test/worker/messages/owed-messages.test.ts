@@ -96,7 +96,7 @@ describe("the arrival notice", () => {
     await visit();
     await consent("whatsapp_visits", true);
     const sent = await send(await queued("arrival_notice", "appointment", VISIT));
-    expect(sent.text).toBe("Hi Karan, Imran is at your door for your service visit.");
+    expect(sent.text).toBe("Hi Karan, Imran is at your door for your visit.");
   });
 
   it("still goes once the visit is under way, which the check-in itself may have moved it to", async () => {
@@ -173,7 +173,8 @@ describe("the no-show ruling", () => {
     return queued("no_show_decided", "appointment", VISIT);
   }
 
-  const MISSED = "Hi Karan, Imran waited 15 minutes for your service visit on Mon 21 Sep but couldn't reach you.";
+  const MISSED =
+    "Hi Karan, we missed you.\nImran waited 15 minutes for your service visit on Mon 21 Sep but couldn't reach you.";
 
   // The no-show's charge is set apart from a late cancel's (docs/decisions/0088-every-policy-in-the-console.md), so the
   // texts no longer say "As with a late cancel": each says what the charge was, and that the client may dispute it in
@@ -306,7 +307,7 @@ describe("the no-show ruling", () => {
   // The client disputes the charge in the app, ops rule Refund or Uphold, "and the client is told"
   // (docs/decisions/0096-a-no-shows-charge-and-its-dispute.md). Never ops' reason.
   describe("the ruling on a disputed charge", () => {
-    const LOOKED_AT = "Hi Karan, we've reviewed your dispute about your service visit on Mon 21 Sep";
+    const LOOKED_AT = "Hi Karan, we've reviewed your dispute.\nAbout your service visit on Mon 21 Sep:";
 
     async function disputed(paid: "payment" | "credit", ruling: "refunded" | "upheld" | null) {
       await ruled("charged", paid);
@@ -323,25 +324,25 @@ describe("the no-show ruling", () => {
 
     it("says a refund is on its way back", async () => {
       expect((await send(await disputed("payment", "refunded"))).text).toBe(
-        `${LOOKED_AT} and refunded Rs. 2,000 to your UPI (5 to 7 working days).`,
+        `${LOOKED_AT} we've refunded Rs. 2,000 to your UPI (5 to 7 working days).`,
       );
     });
 
     it("says the credit is back, where the charge spent it", async () => {
       const message = await disputed("credit", "refunded");
       await creditRestored();
-      expect((await send(message)).text).toBe(`${LOOKED_AT} and returned your free service visit.`);
+      expect((await send(message)).text).toBe(`${LOOKED_AT} your free service visit is back.`);
     });
 
     it("says the credit cannot come back, where the refund found nothing to give it back to", async () => {
       expect((await send(await disputed("credit", "refunded"))).text).toBe(
-        `${LOOKED_AT}, and the charge shouldn't stand. The free service visit it used has expired, so we can't return it.`,
+        `${LOOKED_AT} the charge shouldn't stand, but the free service visit it used has expired, so we can't return it.`,
       );
     });
 
     it("says the charge stands, and never why", async () => {
       const text = (await send(await disputed("payment", "upheld"))).text;
-      expect(text).toBe(`${LOOKED_AT}. The charge stands. Message us if you'd like to know why.`);
+      expect(text).toBe(`${LOOKED_AT} the charge stands. Message us if you'd like to know why.`);
       expect(text).not.toContain("bell");
     });
 

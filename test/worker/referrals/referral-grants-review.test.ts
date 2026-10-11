@@ -155,7 +155,7 @@ describe("ops' review", () => {
     expect(queue.sent).toHaveLength(2);
     await visitsConsent(FRIEND);
     expect(await told("referral_rejected", REFERRER)).toBe(
-      "Hi Rohit, we couldn't add free service visits for Karan's fit. Message us if you'd like to know why.",
+      "Hi Rohit, about your invite to Karan.\nWe couldn't add free service visits for it. Message us if you'd like to know why.",
     );
     expect(await told("referral_rejected", FRIEND)).toBe(
       "Hi Karan, we couldn't add free service visits from your invite. Message us if you'd like to know why.",
@@ -222,7 +222,7 @@ describe("what the friend is told", () => {
     await settleReferrals(env.DB, NOW, REFERRAL_REWARD);
     await visitsConsent(FRIEND);
     expect(await told("friend_credited", FRIEND)).toBe(
-      "Hi Karan, welcome to Mane Man. Your invite gives you 3 service visits free, to use by 21 Sep 2027. You'll find them in the app.",
+      "Hi Karan, welcome to Mane Man.\nYour invite gives you 3 service visits free, to use by 21 Sep 2027. They're in the app.",
     );
   });
 

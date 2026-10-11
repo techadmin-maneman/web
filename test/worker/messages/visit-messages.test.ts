@@ -155,7 +155,7 @@ describe("sending a visit message", () => {
       expect(await stateOf(stale)).toEqual({ state: "skipped", last_error: REMINDER_DAY_MOVED });
       const sent = await sendAt(tuesdayEvening, fresh ?? "");
       expect(sent.map((message) => renderMessage(message.template, message.params))).toEqual([
-        "Hi Rohit, see you tomorrow: your consultation is Wed 23 Sep, 12 to 4 pm, with Imran. Need to move it? Open the Mane Man app.",
+        "Hi Rohit, see you tomorrow.\nYour consultation is Wed 23 Sep, 12 to 4 pm, with Imran. Need to move it? Open the Mane Man app.",
       ]);
     });
 
@@ -166,7 +166,7 @@ describe("sending a visit message", () => {
       await env.DB.prepare("UPDATE appointments SET window_start = '2026-09-22T03:30:00.000Z'").run();
       const sent = await sendAt(mondayEvening, reminder);
       expect(sent.map((message) => renderMessage(message.template, message.params))).toEqual([
-        "Hi Rohit, see you tomorrow: your consultation is Tue 22 Sep, 9 am to 12 pm, with Imran. Need to move it? Open the Mane Man app.",
+        "Hi Rohit, see you tomorrow.\nYour consultation is Tue 22 Sep, 9 am to 12 pm, with Imran. Need to move it? Open the Mane Man app.",
       ]);
     });
   });
@@ -187,7 +187,7 @@ describe("sending a visit message", () => {
     const deps = fakeDependencies({ messaging: provider });
     for (const move of moves) await sendMessage({ db: env.DB, config: config(), deps, log, messageId: move.id });
     expect(sent.map((message) => renderMessage(message.template, message.params))).toEqual([
-      "Hi Rohit, your service visit is now on Thu 24 Sep, 12 to 4 pm, with Imran.",
+      "Hi Rohit, your booking has moved.\nYour service visit is now Thu 24 Sep, 12 to 4 pm, with Imran. See it in the Mane Man app.",
     ]);
     const { results } = await env.DB.prepare(
       "SELECT state, last_error FROM outbound_messages ORDER BY created_at",
