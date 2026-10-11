@@ -119,6 +119,9 @@ export const dispatch = {
   drawer: {
     /** The way past the geofence, for a visit today they have not checked in to. */
     letIn: "Allow check-in",
+    /** A move to another day the client is asked to confirm: the visit is still here until they do. */
+    proposal: (name: string, when: string) => `Waiting for ${name} to confirm ${when}.`,
+    withdraw: "Withdraw",
     /** Beneath the name: "Fri 19 Sep · 12 to 4 pm · Imran Qureshi". */
     when: (date: string, hours: string, technician: string) => `${date} · ${hours} · ${technician}`,
     /** The badge at the drawer's head: never an amount (ADR 0025, item 33). */
@@ -220,6 +223,15 @@ export const dispatch = {
     /** A move onto a day ops blacked out goes only with a reason, kept with the move. */
     blackout: (date: string) => `${date} is a closed day. Give a reason.`,
     blackoutReason: "Reason",
+    /**
+     * A client's visit to another day, for a reason other than theirs: they are asked, and the visit stays put until
+     * they accept (docs/decisions/0115-a-move-to-another-day-waits-for-the-client.md).
+     */
+    ask: (job: string) => `${job} is asked on WhatsApp to confirm. The visit stays put until they do.`,
+    askCall: (name: string, mobile: string) =>
+      `${name} isn't on WhatsApp updates. Call ${mobile} to ask. The visit stays put until they agree.`,
+    askSend: (job: string) => `Ask ${job} to confirm`,
+    asking: "Asking",
     send: "Move and notify",
     /** The same button where nothing goes to the client, so it does not promise a message. */
     sendQuietly: "Move",
@@ -255,6 +267,13 @@ export const dispatch = {
       unchanged: (job: string, technician: string) => `${job} is now with ${technician}. Same window.`,
       noClient: (job: string) => `${job} moved. No client to notify.`,
     },
+    /** A client asked to confirm a move to another day: on WhatsApp, or by ops' call. */
+    asked: {
+      messaged: (job: string, when: string) => `${job} is asked to confirm ${when} on WhatsApp.`,
+      call: (name: string, mobile: string, when: string) => `Call ${name} on ${mobile} to ask about ${when}.`,
+    },
+    withdrawn: (job: string) => `Withdrawn. ${job} stays where it is.`,
+    withdrawFailed: "Couldn't withdraw. Reload and try again.",
     /** The button that closes the call's task, beside the line that asks for the call. */
     told: "Told by phone",
     toldDone: (name: string) => `Recorded: ${name} told by phone.`,
@@ -300,6 +319,7 @@ export const dispatch = {
       not_found: "This visit no longer exists.",
       /** The technician began the visit after the board was read. */
       in_progress: "The technician has started this visit. It can't be moved.",
+      ask_the_client: "Another day needs the client's yes. Choose Client asked if they gave it.",
       offline: OFFLINE,
       unknown: FAILED,
     },

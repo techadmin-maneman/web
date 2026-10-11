@@ -79,6 +79,7 @@ const job = (
   notice_hours: 24,
   untold: null,
   begun: null,
+  proposal: null,
 });
 
 /** One technician's row: their seven days, from the blocks given against the day each falls on. */
@@ -216,3 +217,9 @@ export const MOVED = {
   move_id: "79000000-0000-4000-8000-000000000001",
   client_notice: "messaged",
 } satisfies OpsReply<"/api/dispatch/move", "post">;
+
+/** A move to another day the client is asked to confirm (docs/decisions/0115-a-move-to-another-day-waits-for-the-client.md). */
+export const PROPOSED = {
+  proposal_id: "7a000000-0000-4000-8000-000000000001",
+  client_notice: "messaged",
+} satisfies OpsReply<"/api/dispatch/propose", "post">;

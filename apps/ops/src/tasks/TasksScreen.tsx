@@ -98,6 +98,13 @@ function subOf(group: Group, task: Task, now: Date): string {
     }
     return plan === "first_fit" ? `${asked} ${copy.withFirstFit(fitWindow(fitInOrCode))}` : asked;
   }
+  if (group === "move_unanswered") {
+    // The day and window proposed, then whether it ran out unanswered.
+    const [day = "", window = "", ranOut] = task.detail?.split(" ") ?? [];
+    if (day === "") return tasks.unknown;
+    const when = `${shortDate(day)}, ${(dispatch.windows[window] ?? window).toLowerCase()}`;
+    return ranOut === "ran_out" ? copy.move_unanswered.ranOut(when) : copy.move_unanswered.open(when);
+  }
   if (group === "first_fit_to_book") {
     // The consultation's start, and the window the fit is offered in.
     const [consulted = "", fitIn] = task.detail?.split(" ") ?? [];

@@ -90,55 +90,6 @@ export async function proposeMove(
   return { kind: "proposed", proposalId: id, clientNotice: messageId === null ? "call" : "messaged" };
 }
 
-/** A proposal still open on a visit, as the client's app and the dispatch board show it. */
-interface OpenProposal {
-  readonly id: string;
-  /** India's date, and the window, the visit would go to. */
-  readonly date: string;
-  readonly window: BookingWindow;
-  readonly technician: { readonly name: string; readonly initials: string } | null;
-  readonly createdAt: string;
-  readonly expiresAt: string;
-}
-
-/**
- * The visit's open proposal, as a JSON object, in a query of the visits whose row is named \`visit\`; null for none.
- * One the visit has moved since is not open: it names the start it was made against.
- */
-export const openProposalJson = (visit: string): string => `(SELECT json_object('id', p.id, 'date', p.date,
-    'window', p.window_label, 'technician_name', t.name, 'technician_initials', t.initials,
-    'created_at', p.created_at, 'expires_at', p.expires_at)
-  FROM move_proposals p LEFT JOIN technicians t ON t.id = p.technician_id
-  WHERE p.appointment_id = ${visit}.id AND p.answered_at IS NULL AND p.expected_start = ${visit}.window_start)`;
-
-interface ProposalJson {
-  id: string;
-  date: string;
-  window: BookingWindow;
-  technician_name: string | null;
-  technician_initials: string | null;
-  created_at: string;
-  expires_at: string;
-}
-
-/** The open proposal openProposalJson read, while it may still be accepted; null for none. */
-export function openProposalOf(json: string | null, now: Date): OpenProposal | null {
-  if (json === null) return null;
-  const read = JSON.parse(json) as ProposalJson;
-  if (Date.parse(read.expires_at) <= now.getTime()) return null;
-  return {
-    id: read.id,
-    date: read.date,
-    window: read.window,
-    technician:
-      read.technician_name === null || read.technician_initials === null
-        ? null
-        : { name: read.technician_name, initials: read.technician_initials },
-    createdAt: read.created_at,
-    expiresAt: read.expires_at,
-  };
-}
-
 interface ProposalRow {
   id: string;
   appointment_id: string;

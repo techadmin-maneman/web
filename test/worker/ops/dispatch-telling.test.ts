@@ -17,7 +17,7 @@ import {
   TUESDAY,
   insertJob,
   shown,
-  toSameerWednesdayMorning,
+  askedForWednesdayMorning,
   type BoardBody,
   agreeToVisitMessages,
   type TaskGroupBody,
@@ -93,7 +93,7 @@ describe("telling the client of a move", () => {
   it("messages a client who agreed to WhatsApp about his visits, and says so", async () => {
     await agreeToVisitMessages(true);
 
-    const answer = await move(toSameerWednesdayMorning(A));
+    const answer = await move(askedForWednesdayMorning(A));
 
     expect(await answer.json()).toMatchObject({ client_notice: "messaged" });
     expect(messageQueue.sent).toHaveLength(1);
@@ -104,7 +104,7 @@ describe("telling the client of a move", () => {
     await agreeToVisitMessages(true);
     await agreeToVisitMessages(false);
 
-    const answer = await move(toSameerWednesdayMorning(A));
+    const answer = await move(askedForWednesdayMorning(A));
     const { move_id: moveId, client_notice: notice } = await answer.json<{ move_id: string; client_notice: string }>();
 
     expect(notice).toBe("call");
@@ -131,13 +131,13 @@ describe("telling the client of a move", () => {
   });
 
   it("treats a client who never answered the question as one who has not agreed", async () => {
-    const answer = await move(toSameerWednesdayMorning(A));
+    const answer = await move(askedForWednesdayMorning(A));
     expect(await answer.json()).toMatchObject({ client_notice: "call" });
   });
 
   it("counts a message that was never sent as the client not told", async () => {
     await agreeToVisitMessages(true);
-    const { move_id: moveId } = await (await move(toSameerWednesdayMorning(A))).json<{ move_id: string }>();
+    const { move_id: moveId } = await (await move(askedForWednesdayMorning(A))).json<{ move_id: string }>();
 
     // The consumer found the consent withdrawn by the time it sent.
     await env.DB.prepare("UPDATE outbound_messages SET state = 'skipped', last_error = ?1")
@@ -152,7 +152,7 @@ describe("telling the client of a move", () => {
   // A WhatsApp that failed read as "not on WhatsApp", for a client who had agreed to it.
   it("says the WhatsApp did not go, not that the client never agreed, where it failed", async () => {
     await agreeToVisitMessages(true);
-    const { move_id: moveId } = await (await move(toSameerWednesdayMorning(A))).json<{ move_id: string }>();
+    const { move_id: moveId } = await (await move(askedForWednesdayMorning(A))).json<{ move_id: string }>();
 
     await env.DB.prepare("UPDATE outbound_messages SET state = 'failed', last_error = 'the bridge is down'").run();
 
@@ -164,15 +164,15 @@ describe("telling the client of a move", () => {
   });
 
   it("drops the task when a later move tells the client, or the visit has gone", async () => {
-    const { move_id: first } = await (await move(toSameerWednesdayMorning(A))).json<{ move_id: string }>();
+    const { move_id: first } = await (await move(askedForWednesdayMorning(A))).json<{ move_id: string }>();
     expect((await untoldTasks()).map((task) => task.id)).toEqual([first]);
 
     await agreeToVisitMessages(true);
-    await move({ ...toSameerWednesdayMorning(A), date: "2026-09-24" });
+    await move({ ...askedForWednesdayMorning(A), date: "2026-09-24" });
     expect(await untoldTasks()).toEqual([]);
 
     await agreeToVisitMessages(false);
-    await move({ ...toSameerWednesdayMorning(A), date: "2026-09-25" });
+    await move({ ...askedForWednesdayMorning(A), date: "2026-09-25" });
     expect(await untoldTasks()).toHaveLength(1);
     await env.DB.prepare("UPDATE appointments SET status = 'cancelled' WHERE id = ?1").bind(A).run();
     expect(await untoldTasks()).toEqual([]);
@@ -180,7 +180,7 @@ describe("telling the client of a move", () => {
 
   it("refuses to record a call for a move nobody needed to call about", async () => {
     await agreeToVisitMessages(true);
-    const { move_id: moveId } = await (await move(toSameerWednesdayMorning(A))).json<{ move_id: string }>();
+    const { move_id: moveId } = await (await move(askedForWednesdayMorning(A))).json<{ move_id: string }>();
 
     expect((await opsPost(`/api/dispatch/moves/${moveId}/told`, {})).status).toBe(404);
     expect((await opsPost(`/api/dispatch/moves/${crypto.randomUUID()}/told`, {})).status).toBe(404);

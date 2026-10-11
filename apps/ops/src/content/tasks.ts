@@ -23,6 +23,7 @@ const PAYMENT_LINK_STATES: Readonly<Record<LinkState, string>> = {
  */
 const DECIDE: Readonly<Partial<Record<Group, string>>> = {
   untold_move: "Open in Dispatch",
+  move_unanswered: "Open in Dispatch",
   leave_conflict: "Move in Dispatch",
   referral_review: "Decide in Referrals",
   no_show_decision: "Decide in Payments",
@@ -52,6 +53,8 @@ export const tasks = {
   groups: {
     // A group the board does not draw (docs/decisions/0069-dispatch-under-concurrency.md).
     untold_move: "Call about a move",
+    // Not drawn: a move to another day the client has not answered (docs/decisions/0115-a-move-to-another-day-waits-for-the-client.md).
+    move_unanswered: "Move not answered",
     // Two groups the board does not draw (docs/decisions/0074-hand-offs-and-messages.md).
     leave_conflict: "Job on a day off",
     address_to_confirm: "Address to confirm",
@@ -112,6 +115,14 @@ export const tasks = {
       no_consent: (when: string) => `Moved to ${when} · not opted in to WhatsApp`,
       not_sent: (when: string) => `Moved to ${when} · WhatsApp failed`,
       unknown: (when: string) => `Moved to ${when} · not told`,
+    },
+    /**
+     * "Asked to move to Wed 23 Sep, morning": call the client. One that ran out says so; withdraw it on the board, or
+     * move the visit there with the client's word.
+     */
+    move_unanswered: {
+      open: (when: string) => `Asked to move to ${when}`,
+      ranOut: (when: string) => `Asked to move to ${when} · ran out`,
     },
     /** "Wed 23 Sep, 10:30 am, and Sameer is away": move it on the dispatch board, or take the leave back. */
     leave_conflict: (when: string, technician: string) => `${when} · ${technician} is away`,

@@ -48,6 +48,14 @@ export type MoveReason = (typeof MOVE_REASONS)[number];
 export const keepsTheClientsNotice = (reason: MoveReason): boolean => reason !== "client_asked";
 
 /**
+ * Whether a move ops make must be asked of the client rather than made
+ * (docs/decisions/0115-a-move-to-another-day-waits-for-the-client.md): one to another day, of a visit with a client,
+ * that the client did not ask for. Within the visit's own day the board moves at once.
+ */
+export const asksTheClient = (move: { reason: MoveReason; sameDay: boolean; hasClient: boolean }): boolean =>
+  !move.sameDay && move.hasClient && move.reason !== "client_asked";
+
+/**
  * How far the technician has got on a visit, by the steps their phone has sent: they have arrived, started, or closed it (a no-show closes it too).
  */
 export const BEGUN = ["arrived", "started", "closed"] as const;
