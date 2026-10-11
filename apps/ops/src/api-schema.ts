@@ -2026,6 +2026,109 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/conversations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The Care inbox's threads of a view, the latest first */
+        get: {
+            parameters: {
+                query?: {
+                    view?: "open" | "waiting" | "closed" | "all";
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The threads */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Conversations"];
+                    };
+                };
+                /** @description access_required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/conversations/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One thread: the chat and our automatic messages to the client, in order */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The thread */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ConversationThread"];
+                    };
+                };
+                /** @description access_required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description not_found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/referral-channels": {
         parameters: {
             query?: never;
@@ -9480,6 +9583,49 @@ export interface components {
             /** Format: date */
             paid_on: string;
             reference: string;
+        };
+        Conversations: {
+            conversations: components["schemas"]["Conversation"][];
+        };
+        Conversation: {
+            /** Format: uuid */
+            id: string;
+            /** @description The client whose number it is; null for a number we do not know. */
+            person: {
+                /** Format: uuid */
+                id: string;
+                name: string;
+            } | null;
+            mobile: string;
+            /** @enum {string} */
+            state: "open" | "waiting" | "closed";
+            /** Format: date-time */
+            last_message_at: string;
+            last_line: string | null;
+            /** @description When the client last wrote, unanswered since; null when nothing waits on us. */
+            waiting_since: string | null;
+        };
+        ConversationThread: {
+            conversation: components["schemas"]["Conversation"];
+            items: components["schemas"]["ThreadItem"][];
+        };
+        ThreadItem: {
+            /** @enum {string} */
+            kind: "in" | "out" | "note";
+            /** Format: date-time */
+            at: string;
+            author: string;
+            text: string | null;
+        } | {
+            /** @enum {string} */
+            kind: "auto";
+            /** Format: date-time */
+            at: string;
+            /** @description The automatic message's kind, as outbound_messages names it. */
+            message: string;
+            state: string;
+            delivered_at: string | null;
+            read_at: string | null;
         };
         ReferralChannels: {
             channels: {

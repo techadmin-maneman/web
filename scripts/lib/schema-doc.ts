@@ -123,6 +123,12 @@ export const RESTORE_GROUPS: readonly RestoreGroup[] = [
     putBackBy: "The rows since `<T>`, before the switch is turned off",
   },
   {
+    what: "The Care inbox",
+    tables: ["conversations", "chat_messages"],
+    leftAtT: "A message written since, the client's or ours, is gone from its thread",
+    putBackBy: "The rows since `<T>`; WhatsApp's own copy shows what was said",
+  },
+  {
     what: "Technicians' steps, pieces and photographs",
     tables: [
       "job_events",

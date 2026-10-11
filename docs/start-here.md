@@ -191,6 +191,12 @@ this map, or when the map names something that no longer exists.
 - **Screens:** `site/src/pages/stop.astro`
 - **Tests:** `test/worker/messages/`
 
+### The Care inbox
+
+- **Database work** (`src/domain/care/`): `inbox`
+- **Routes** (`src/routes/`): `ops/conversations`, `hooks/evolution` (files what clients write)
+- **Tests:** `test/worker/care/`
+
 ### The Words page
 
 - **Database work** (`src/domain/words/`): `catalogue`, `words`, `publish`

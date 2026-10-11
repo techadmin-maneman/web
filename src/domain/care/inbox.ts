@@ -104,7 +104,7 @@ export async function listConversations(db: D1Database, view: InboxView): Promis
 }
 
 /** One entry of a thread: a chat message, or one of our automatic messages to the client. */
-export type ThreadItem =
+type ThreadItem =
   | {
       readonly kind: "in" | "out" | "note";
       readonly at: string;

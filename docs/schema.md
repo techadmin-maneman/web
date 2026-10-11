@@ -23,6 +23,7 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 | Discount codes | `discount_codes`, `discount_code_uses` | A code made or switched off since goes back, and a use since is forgotten, so a single-use code works again | Making or switching off the code again in the console. `discount_code_uses` is only ever added to |
 | Bookings and moves | `appointments`, `slot_holds`, `slot_claims`, `dispatch_moves`, `move_proposals`, `visit_changes`, `consultation_requests`, `first_fit_requests` | A visit booked, moved or cancelled since is lost, and its time can be booked again. Where FSM still holds visits, the cron books them there a second time | The rows since `<T>`, before the switch is turned off |
 | Messages | `outbound_messages` | The sweeper sends again what was sent since | The rows since `<T>`, before the switch is turned off |
+| The Care inbox | `conversations`, `chat_messages` | A message written since, the client's or ours, is gone from its thread | The rows since `<T>`; WhatsApp's own copy shows what was said |
 | Technicians' steps, pieces and photographs | `job_events`, `checkins`, `visits`, `consumables_used`, `no_show_cases`, `no_show_disputes`, `pieces`, `photos`, `photo_sets` | Steps, check-ins, outcomes, pieces fitted, no-shows and disputes since are lost; a photograph's file is kept with no row | The rows since `<T>` |
 | Hair profiles | `hair_profiles` | A profile recorded since is lost, and one an erasure blanked since is whole again | Adding the rows since `<T>`: they are only ever added. Erasing again blanks the rest |
 | Stock | `stock_movements` | A delivery, transfer, count or loss recorded since, or a job's use, is lost, so what each kit and the store hold is wrong | Adding the rows since `<T>` |
@@ -46,6 +47,7 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 - [audit_log](#audit_log): Every ops action that reads or changes a client's data, and who took it. An entry is never changed (ADR 0031).
 - [board_version](#board_version): One row: a number that triggers raise whenever a visit, a move, leave, a technician or the day's slot times change, so the open dispatch board reads itself again only then (ADR 0069).
 - [channel_attributions](#channel_attributions): A person who came through a partner's code, and what the friend and the partner earned once fitted (ADR 0123).
+- [chat_messages](#chat_messages): Every message in a Care inbox thread: what the client wrote, our replies, and notes only staff see (ADR 0129).
 - [checkins](#checkins): Each "I have arrived", passed or not, with the distance measured and the radius in force (ADR 0065); an erasure blanks where the phone was (ADR 0094).
 - [checklist_items](#checklist_items): Each kind of visit's checklist as ops set it, an item they took off kept as retired; a kind with no rows takes the committed list (ADR 0087).
 - [cities](#cities): The cities the site's first booking form offered. The leads it left name one, a booking's lead names its pincode's, the dispatch board filters by them, and a zone groups them for staff access (ADR 0109).
@@ -55,6 +57,7 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 - [consumable_usage](#consumable_usage): What each service, a kind of visit at a tier of the price book, is expected to use of each consumable: where the technician's steppers start (ADR 0087).
 - [consumables](#consumables): The consumables ops keep: name, unit, what one costs, the reorder levels, the day it is retired from, and FSM's part for it (ADR 0087).
 - [consumables_used](#consumables_used): The consumables a technician recorded at a job's third step, with what its service expected and what one cost that day (ADR 0038, ADR 0087).
+- [conversations](#conversations): The Care inbox: one thread for each number that writes to our WhatsApp number, matched to its client where we know the number (ADR 0129).
 - [counters](#counters): Fixed-window counters for the rate limits and the daily ceilings (ADR 0011).
 - [credit_expiry_cursor](#credit_expiry_cursor): One row: how far the pass that closes expired credits has got, so it reads only the grants that expired since.
 - [credit_ledger](#credit_ledger): Service-visit credits, entry by entry, each drawing on the grant it spends; a balance is summed, never kept (ADR 0033).
@@ -321,6 +324,28 @@ Indexes:
 - `channel_attributions_pending`: on (`referred_person_id`), where `grant_state = 'pending'`
 - A `UNIQUE` constraint: unique on (`referred_person_id`)
 
+## chat_messages
+
+Every message in a Care inbox thread: what the client wrote, our replies, and notes only staff see (ADR 0129).
+
+Made by `0114_conversations.sql`.
+
+| Column | Type | May be empty | Default | Key |
+| --- | --- | --- | --- | --- |
+| `id` | TEXT | no |  | primary key |
+| `conversation_id` | TEXT | no |  | → `conversations.id` |
+| `direction` | TEXT | no |  |  |
+| `author` | TEXT | no |  |  |
+| `text` | TEXT | yes |  |  |
+| `provider_message_id` | TEXT | yes |  |  |
+| `sent_at` | TEXT | no |  |  |
+| `created_at` | TEXT | no |  |  |
+
+Indexes:
+
+- `chat_messages_by_conversation`: on (`conversation_id`, `sent_at`)
+- `chat_messages_by_provider_id`: unique on (`provider_message_id`), where `provider_message_id IS NOT NULL`
+
 ## checkins
 
 Each "I have arrived", passed or not, with the distance measured and the radius in force (ADR 0065); an erasure blanks where the phone was (ADR 0094).
@@ -511,6 +536,32 @@ Indexes:
 - `consumables_used_by_appointment`: on (`appointment_id`)
 - `consumables_used_by_event_and_code`: unique on (`job_event_id`, `consumable_code`), where `consumable_code IS NOT NULL`
 - A `UNIQUE` constraint: unique on (`job_event_id`, `name`)
+
+## conversations
+
+The Care inbox: one thread for each number that writes to our WhatsApp number, matched to its client where we know the number (ADR 0129).
+
+Made by `0114_conversations.sql`.
+
+| Column | Type | May be empty | Default | Key |
+| --- | --- | --- | --- | --- |
+| `id` | TEXT | no |  | primary key |
+| `person_id` | TEXT | yes |  | → `people.id` |
+| `mobile_e164` | TEXT | no |  |  |
+| `state` | TEXT | no | `'open'` |  |
+| `opened_at` | TEXT | no |  |  |
+| `last_message_at` | TEXT | no |  |  |
+| `last_inbound_at` | TEXT | yes |  |  |
+| `closed_at` | TEXT | yes |  |  |
+| `closed_by` | TEXT | yes |  |  |
+| `created_at` | TEXT | no |  |  |
+| `updated_at` | TEXT | no |  |  |
+
+Indexes:
+
+- `conversations_by_number`: unique on (`mobile_e164`)
+- `conversations_by_person`: on (`person_id`), where `person_id IS NOT NULL`
+- `conversations_by_state`: on (`state`, `last_message_at`)
 
 ## counters
 

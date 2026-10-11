@@ -28,6 +28,10 @@ export const PURPOSES: Readonly<Record<string, string>> = {
   consumables_used:
     "The consumables a technician recorded at a job's third step, with what its service expected and what one cost that day (ADR 0038, ADR 0087).",
   counters: "Fixed-window counters for the rate limits and the daily ceilings (ADR 0011).",
+  conversations:
+    "The Care inbox: one thread for each number that writes to our WhatsApp number, matched to its client where we know the number (ADR 0129).",
+  chat_messages:
+    "Every message in a Care inbox thread: what the client wrote, our replies, and notes only staff see (ADR 0129).",
   credit_ledger:
     "Service-visit credits, entry by entry, each drawing on the grant it spends; a balance is summed, never kept (ADR 0033).",
   credit_expiry_cursor:

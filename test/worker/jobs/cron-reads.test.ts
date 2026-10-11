@@ -108,6 +108,12 @@ const HISTORY = [
    SELECT 'g-' || i, 'p-' || i, 'grant', 3, 'referral', 'ra-' || i, '${AGO}', '${AGO}' FROM n`,
   `INSERT INTO credit_ledger (id, person_id, kind, visits, grant_id, source_kind, source_id, created_at)
    SELECT 'e-' || i, 'p-' || i, 'expire', -3, 'g-' || i, 'referral', 'ra-' || i, '${AGO}' FROM n`,
+  `INSERT INTO conversations (id, person_id, mobile_e164, state, opened_at, last_message_at, last_inbound_at,
+     closed_at, created_at, updated_at)
+   SELECT 'cv-' || i, 'p-' || i, '+9170' || printf('%08d', i), 'closed', '${AGO}', '${AGO}', '${AGO}', '${AGO}',
+     '${AGO}', '${AGO}' FROM n`,
+  `INSERT INTO chat_messages (id, conversation_id, direction, author, text, sent_at, created_at)
+   SELECT 'cm-' || i, 'cv-' || i, 'in', 'client', 'Hello', '${AGO}', '${AGO}' FROM n`,
   `INSERT INTO sessions (id, subject_kind, subject_id, created_at, last_seen_at, expires_at)
    SELECT 's-' || i, 'client', 'p-' || i, '${AGO}', '${AGO}', '${IN_TWO_MONTHS}' FROM n`,
   `INSERT OR IGNORE INTO technicians (id, fsm_id, name, initials, active, updated_at)

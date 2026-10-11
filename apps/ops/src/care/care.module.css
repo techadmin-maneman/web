@@ -1,0 +1,102 @@
+/* Messages: the chats as a table, a view at a time, each chat opened beneath its row: the client's messages on one
+   side, ours on the other, our automatic messages as quiet lines between. */
+
+/* This page's own sizes, which nothing else draws (ADR 0077, as amended). */
+:root {
+  --local-care-table: 900px; /* the narrowest the table goes before it scrolls */
+  --local-care-line: 360px; /* the widest the last message runs before it is cut short */
+  --local-care-bubble: 560px; /* the widest a message in a chat runs */
+}
+
+.tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: var(--sp-12) var(--sp-24);
+  margin: var(--sp-16) var(--sp-20) var(--sp-8);
+}
+
+.scroll {
+  overflow-x: auto;
+}
+
+.table {
+  min-width: var(--local-care-table);
+}
+
+.who {
+  font-weight: var(--weight-medium);
+}
+
+.number {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.line {
+  max-width: var(--local-care-line);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.figure {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  text-align: right;
+}
+
+.actions {
+  white-space: nowrap;
+  text-align: right;
+}
+
+.table .acting > td {
+  padding: 0 0 var(--sp-16);
+  background: var(--paper-light);
+}
+
+.link {
+  color: var(--text);
+  text-decoration: underline;
+  text-underline-offset: var(--sp-4);
+}
+
+.items {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-8);
+  margin: var(--sp-12) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.theirs,
+.ours {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+  max-width: var(--local-care-bubble);
+  padding: var(--sp-8) var(--sp-12);
+  border: var(--hairline) solid var(--paper-line);
+  background: var(--paper);
+}
+
+.ours {
+  align-self: flex-end;
+}
+
+.auto {
+  align-self: center;
+  font-size: var(--fs-13);
+  color: var(--text-muted);
+}
+
+.when {
+  font-size: var(--fs-13);
+  color: var(--text-muted);
+}
+
+.text {
+  white-space: pre-line;
+}

@@ -1,0 +1,51 @@
+// Customer Care · Messages (docs/decisions/0129-the-care-inbox.md), which no board draws. Every name and number is
+// made up.
+
+import { expect, test } from "../support.ts";
+import { answer, json, type OpsReply } from "./answer.ts";
+import { care as copy } from "../../apps/ops/src/content/care.ts";
+
+type Conversation = OpsReply<"/api/conversations">["conversations"][number];
+
+const ARJUN: Conversation = {
+  id: "8c1d9f4b-5e6a-4b7c-9d8e-3f4a5b6c7d8e",
+  person: { id: "11111111-1111-4111-8111-111111111111", name: "Arjun Mehta" },
+  mobile: "+919810000001",
+  state: "open",
+  last_message_at: "2026-09-21T05:12:00.000Z",
+  last_line: "Can I move tomorrow's visit to the evening?",
+  waiting_since: "2026-09-21T05:12:00.000Z",
+};
+
+test("lists the chats waiting on us, and opens one with our automatic messages in it", async ({ page }) => {
+  await answer(page, {
+    "GET /api/conversations": json({ conversations: [ARJUN] }),
+    "GET /api/conversations/{id}": json({
+      conversation: ARJUN,
+      items: [
+        {
+          kind: "auto",
+          at: "2026-09-20T04:00:01.000Z",
+          message: "visit_reminder",
+          state: "sent",
+          delivered_at: "2026-09-20T04:00:05.000Z",
+          read_at: "2026-09-20T05:00:00.000Z",
+        },
+        { kind: "in", at: ARJUN.last_message_at, author: "client", text: ARJUN.last_line },
+      ],
+    }),
+  });
+  await page.goto("/messages");
+  await expect(page.getByRole("heading", { level: 1, name: copy.title })).toBeVisible();
+  const row = page.getByRole("row").filter({ has: page.getByRole("rowheader", { name: "Arjun Mehta" }) });
+  await expect(row.getByRole("cell").nth(1)).toHaveText(ARJUN.last_line ?? "");
+  await expect(row.getByRole("cell").nth(2)).toHaveText(copy.waitingSince("10:42 am"));
+  await row.getByRole("button", { name: copy.openLabel("Arjun Mehta") }).click();
+  await expect(
+    page.getByText(copy.thread.auto("Visit reminder", [copy.thread.delivered, copy.thread.read])),
+  ).toBeVisible();
+  await expect(page.getByRole("link", { name: copy.thread.page })).toHaveAttribute(
+    "href",
+    `/clients/${ARJUN.person?.id ?? ""}/visits`,
+  );
+});
