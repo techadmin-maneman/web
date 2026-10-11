@@ -6,7 +6,7 @@ import { coversOf, isOff, type OffDays } from "../../policy/care-cover.ts";
 import { auditStatement, type AuditAction, type AuditActor } from "../ops/audit.ts";
 import { careTeam } from "./care-people.ts";
 
-export interface Leave {
+interface Leave {
   readonly id: string;
   readonly from: string;
   readonly to: string;
