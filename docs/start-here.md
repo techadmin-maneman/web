@@ -206,7 +206,7 @@ this map, or when the map names something that no longer exists.
 
 ### The platform
 
-- **Database work** (`src/domain/platform/`): `cron-runs`, `maintenance`, `storage-meter`, `ceilings`, `test-records`,
+- **Database work** (`src/domain/platform/`): `cron-runs`, `backups`, `maintenance`, `storage-meter`, `ceilings`, `test-records`,
   `enqueue`
 - **Rules** (`src/policy/`): `database-size`, `storage-share`, `launch`, `staging-test-records`
 - **Jobs:** `src/scheduled/`, `src/queues/consumer`
