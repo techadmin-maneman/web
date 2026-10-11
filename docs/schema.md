@@ -85,6 +85,7 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 - [otp_challenges](#otp_challenges): Each one-time code sent, as a hash, with its sends and attempts (ADR 0030, ADR 0052).
 - [outbound_messages](#outbound_messages): Each WhatsApp message, from queued to sent, delivered and read (ADR 0041).
 - [partial_reasons](#partial_reasons): The reasons a job may be left partly done, as ops set them, one they took off kept as retired; none means the committed list (ADR 0087).
+- [partner_payouts](#partner_payouts): 
 - [pay_grades](#pay_grades): The seniority grades Finance names for technicians' pay per visit (ADR 0122).
 - [payment_links](#payment_links): The Razorpay payment link a consultation and fit in one visit is paid by once the client is fitted: one a visit, the product and its price, when Razorpay made and texted it, and the payment that paid it (ADR 0105).
 - [payments](#payments): The mirror of Razorpay's payments, and where each stands in Books (ADR 0044).
@@ -289,7 +290,7 @@ Made by `0090_board_version.sql`.
 
 A person who came through a partner's code, and what the friend and the partner earned once fitted (ADR 0123).
 
-Made by `0109_referral_channels.sql`.
+Made by `0109_referral_channels.sql`; changed by `0110_partner_payouts.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -307,11 +308,14 @@ Made by `0109_referral_channels.sql`.
 | `granted_at` | TEXT | yes |  |  |
 | `created_at` | TEXT | no |  |  |
 | `updated_at` | TEXT | no |  |  |
+| `clawed_back_at` | TEXT | yes |  |  |
 
 Indexes:
 
 - `channel_attributions_by_channel`: on (`channel_id`, `grant_state`)
+- `channel_attributions_by_clawed_back`: on (`clawed_back_at`), where `clawed_back_at IS NOT NULL`
 - `channel_attributions_by_first_fit`: on (`first_fit_appointment_id`), where `first_fit_appointment_id IS NOT NULL`
+- `channel_attributions_by_granted`: on (`granted_at`), where `granted_at IS NOT NULL`
 - `channel_attributions_pending`: on (`referred_person_id`), where `grant_state = 'pending'`
 - A `UNIQUE` constraint: unique on (`referred_person_id`)
 
@@ -1195,6 +1199,27 @@ Made by `0049_consumables_and_stock.sql`.
 | `retired_at` | TEXT | yes |  |  |
 | `set_by` | TEXT | no |  |  |
 | `set_at` | TEXT | no |  |  |
+
+## partner_payouts
+
+
+
+Made by `0110_partner_payouts.sql`.
+
+| Column | Type | May be empty | Default | Key |
+| --- | --- | --- | --- | --- |
+| `id` | TEXT | no |  | primary key |
+| `channel_id` | TEXT | no |  | → `referral_channels.id` |
+| `month` | TEXT | no |  |  |
+| `amount` | INTEGER | no |  |  |
+| `paid_on` | TEXT | no |  |  |
+| `reference` | TEXT | no |  |  |
+| `recorded_by` | TEXT | no |  |  |
+| `recorded_at` | TEXT | no |  |  |
+
+Indexes:
+
+- A `UNIQUE` constraint: unique on (`channel_id`, `month`)
 
 ## pay_grades
 

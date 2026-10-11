@@ -127,7 +127,9 @@ export async function clawBackPartnerRefunded(db: D1Database, now: Date): Promis
   for (const { id } of results) {
     await clawBack(db, "referral", id, now);
     await db
-      .prepare("UPDATE channel_attributions SET grant_state = 'clawed_back', updated_at = ?2 WHERE id = ?1")
+      .prepare(
+        "UPDATE channel_attributions SET grant_state = 'clawed_back', clawed_back_at = ?2, updated_at = ?2 WHERE id = ?1",
+      )
       .bind(id, now.toISOString())
       .run();
   }

@@ -1330,6 +1330,114 @@ Request body:
 }
 ```
 
+### GET /api/partner-statements
+
+Each partner's month, and what each is owed
+
+**200**: The month's statements, as they now stand
+
+```json
+{
+  "$ref": "#/components/schemas/PartnerStatements"
+}
+```
+
+**400**: invalid_request
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/partner-statements/{id}/payouts
+
+Record a month's payment to a partner, made from the payout tool
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/PartnerPayout"
+}
+```
+
+**200**: The month's statements, as they now stand
+
+```json
+{
+  "$ref": "#/components/schemas/PartnerStatements"
+}
+```
+
+**400**: invalid_request: fields names month (one that has ended), amount, paid_on or reference
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**409**: taken: the month's payment is already recorded
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/partner-statements/{id}/payouts/{month}/delete
+
+Take off a payment recorded by mistake; the month is owed again
+
+**200**: The month's statements, as they now stand
+
+```json
+{
+  "$ref": "#/components/schemas/PartnerStatements"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ### GET /api/referral-channels
 
 Every partner, with what has come through each
@@ -10193,6 +10301,191 @@ Request body:
 }
 ```
 
+### PartnerStatements
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "month": {
+      "type": "string",
+      "pattern": "^\\d{4}-(0[1-9]|1[0-2])$"
+    },
+    "this_month": {
+      "type": "string",
+      "pattern": "^\\d{4}-(0[1-9]|1[0-2])$"
+    },
+    "first_month": {
+      "type": "string",
+      "pattern": "^\\d{4}-(0[1-9]|1[0-2])$",
+      "description": "The month the first partner was added in."
+    },
+    "max_amount": {
+      "type": "integer"
+    },
+    "statements": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "channel_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          },
+          "fitted": {
+            "type": "integer",
+            "description": "Friends fitted in the month."
+          },
+          "earned": {
+            "type": "integer",
+            "description": "Paise they earned, at the commission in force for each."
+          },
+          "taken_back": {
+            "type": "integer",
+            "description": "Friends whose first fit a refund under the guarantee took back in the month."
+          },
+          "taken_back_amount": {
+            "type": "integer",
+            "description": "Paise taken back with them."
+          },
+          "due": {
+            "type": "integer",
+            "description": "What the month came to: earned, less taken back. May be below 0."
+          },
+          "payout": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "amount": {
+                    "type": "integer"
+                  },
+                  "paid_on": {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  "reference": {
+                    "type": "string"
+                  },
+                  "recorded_by": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "amount",
+                  "paid_on",
+                  "reference",
+                  "recorded_by"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "owed": {
+            "type": "integer",
+            "description": "Paise owed to date, this month and every other."
+          },
+          "lines": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "day": {
+                  "type": "string",
+                  "format": "date"
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "fitted",
+                    "taken_back"
+                  ]
+                },
+                "commission": {
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "day",
+                "kind",
+                "commission"
+              ],
+              "additionalProperties": false
+            },
+            "description": "Each fit and each taking back, by day in India: days and amounts, never a client."
+          }
+        },
+        "required": [
+          "channel_id",
+          "name",
+          "code",
+          "fitted",
+          "earned",
+          "taken_back",
+          "taken_back_amount",
+          "due",
+          "payout",
+          "owed",
+          "lines"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "month",
+    "this_month",
+    "first_month",
+    "max_amount",
+    "statements"
+  ],
+  "additionalProperties": false
+}
+```
+
+### PartnerPayout
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "month": {
+      "type": "string",
+      "pattern": "^\\d{4}-(0[1-9]|1[0-2])$"
+    },
+    "amount": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100000000
+    },
+    "paid_on": {
+      "type": "string",
+      "format": "date"
+    },
+    "reference": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9 ._/-]{0,59}$"
+    }
+  },
+  "required": [
+    "month",
+    "amount",
+    "paid_on",
+    "reference"
+  ],
+  "additionalProperties": false
+}
+```
+
 ### ReferralChannels
 
 ```json
@@ -10251,6 +10544,10 @@ Request body:
           "earned": {
             "type": "integer",
             "description": "Paise earned, at the commission in force when each was fitted."
+          },
+          "owed": {
+            "type": "integer",
+            "description": "Of that, paise not yet paid (GET /api/partner-statements)."
           }
         },
         "required": [
@@ -10264,7 +10561,8 @@ Request body:
           "opens",
           "referred",
           "fitted",
-          "earned"
+          "earned",
+          "owed"
         ],
         "additionalProperties": false
       }
@@ -10483,6 +10781,8 @@ Request body:
         "channel.change",
         "channel.pause",
         "channel.resume",
+        "partner_payout.record",
+        "partner_payout.delete",
         "photo.view",
         "pincode.launch",
         "data.export",

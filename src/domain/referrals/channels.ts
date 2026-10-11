@@ -5,6 +5,7 @@
 
 import { auditStatement, type AuditActor } from "../ops/audit.ts";
 import { inviteLapsed } from "../../policy/invites.ts";
+import { OWED } from "./partner-statements.ts";
 import { inviteOf, newReferralCode, type Invite, type Via } from "./referrals.ts";
 
 /** A partner's invite, as the landing and its forms read it. */
@@ -243,6 +244,8 @@ export interface Channel {
   readonly fitted: number;
   /** Paise earned, from each friend fitted, at the commission in force then. */
   readonly earned: number;
+  /** Of that, paise not yet paid (./partner-statements.ts). */
+  readonly owed: number;
 }
 
 /** Every partner, newest first, with what has come through each. */
@@ -253,7 +256,8 @@ export async function listChannels(db: D1Database): Promise<Channel[]> {
          (SELECT COUNT(*) FROM channel_attributions a WHERE a.channel_id = c.id) AS referred,
          (SELECT COUNT(*) FROM channel_attributions a WHERE a.channel_id = c.id AND a.grant_state = 'granted') AS fitted,
          (SELECT COALESCE(SUM(a.commission), 0) FROM channel_attributions a
-          WHERE a.channel_id = c.id AND a.grant_state = 'granted') AS earned
+          WHERE a.channel_id = c.id AND a.grant_state = 'granted') AS earned,
+         ${OWED} AS owed
        FROM referral_channels c ORDER BY c.created_at DESC`,
     )
     .all<Channel>();

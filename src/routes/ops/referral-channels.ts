@@ -38,6 +38,7 @@ const ChannelSchema = z
       .int()
       .openapi({ description: "Of those, fitted: the friend's visits given, the commission earned." }),
     earned: z.number().int().openapi({ description: "Paise earned, at the commission in force when each was fitted." }),
+    owed: z.number().int().openapi({ description: "Of that, paise not yet paid (GET /api/partner-statements)." }),
   })
   .strict();
 

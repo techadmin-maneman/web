@@ -169,5 +169,9 @@ describe("the friend, fitted", () => {
     expect(await clawBackPartnerRefunded(env.DB, NOW)).toBe(1);
     expect((await creditBalance(env.DB, FRIEND, NOW)).visits).toBe(0);
     expect(await channels()).toMatchObject([{ fitted: 0, earned: 0 }]);
+    const taken = await env.DB.prepare("SELECT clawed_back_at FROM channel_attributions WHERE referred_person_id = ?1")
+      .bind(FRIEND)
+      .first();
+    expect(taken).toEqual({ clawed_back_at: NOW.toISOString() });
   });
 });
