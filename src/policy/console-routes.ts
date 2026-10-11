@@ -145,6 +145,9 @@ export const ROUTE_NEEDS: Readonly<Record<string, RouteNeed | typeof SIGNED_IN>>
   // area lists every pincode we know, in every city, with how many wait in each, so it stays national.
   "GET /api/referrals/held": inOwnPlaces("growth", "view"),
   "GET /api/referral-channels": need("growth", "view"),
+  // The Care inbox: one central team answers every city (docs/decisions/0129-the-care-inbox.md).
+  "GET /api/conversations": need("customer_care", "view"),
+  "GET /api/conversations/{id}": need("customer_care", "view"),
   // The site's words and the WhatsApp messages (docs/decisions/0126-the-words-page.md).
   "GET /api/words": need("growth", "view"),
   "GET /api/words/history": need("growth", "view"),

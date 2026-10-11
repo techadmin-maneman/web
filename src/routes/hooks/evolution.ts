@@ -17,6 +17,7 @@ import type { App, AppEnv } from "../../http/context.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
 import { queueMessage } from "../../http/queue-message.ts";
 import { secretsMatch } from "../../lib/hash.ts";
+import { fileInbound } from "../../domain/care/inbox.ts";
 import { stopByReply } from "../../domain/messages/stop-messages.ts";
 import { isStopReply } from "../../policy/consents.ts";
 
@@ -39,6 +40,7 @@ const ReceiptsSchema = z.object({ data: z.union([ReceiptSchema, z.array(ReceiptS
 const MessageSchema = z.object({
   key: z
     .object({
+      id: z.string().optional(),
       remoteJid: z.string().optional(),
       // The sender's number, where remoteJid is WhatsApp's private "@lid" address for them.
       remoteJidAlt: z.string().optional(),
@@ -135,7 +137,9 @@ async function takeReplies(c: Context<AppEnv>, body: unknown): Promise<void> {
   }
   const messages = [parsed.data.data ?? []].flat().slice(0, MAX_ITEMS);
   let stopped = 0;
+  let filed = 0;
   for (const message of messages) {
+    filed += await fileReply(c.env.DB, message, deps.now());
     const mobileE164 = stopReplyFrom(message);
     if (mobileE164 === null) continue;
     const answerId = await stopByReply(c.env.DB, { mobileE164, requestId, now: deps.now() });
@@ -143,13 +147,26 @@ async function takeReplies(c: Context<AppEnv>, body: unknown): Promise<void> {
     stopped += 1;
     await queueMessage(c, answerId);
   }
-  log.info("evolution_replies", { messages: messages.length, stopped });
+  log.info("evolution_replies", { messages: messages.length, stopped, filed });
 }
+
+/** Files a client's message in their thread in the Care inbox (src/domain/care/inbox.ts); 1 if it was theirs. */
+async function fileReply(db: D1Database, message: Message, now: Date): Promise<number> {
+  if (message.key?.fromMe !== false) return 0;
+  const text = textOf(message);
+  const mobileE164 = senderNumber(message.key);
+  if (text === undefined || mobileE164 === null) return 0;
+  await fileInbound(db, { mobileE164, text, providerMessageId: message.key.id ?? null, at: now });
+  return 1;
+}
+
+const textOf = (message: Message): string | undefined =>
+  message.message?.conversation ?? message.message?.extendedTextMessage?.text;
 
 /** The number a STOP reply came from, as E.164; null for anything else, ours, or from a group. */
 function stopReplyFrom(message: Message): string | null {
   if (message.key?.fromMe !== false) return null;
-  const text = message.message?.conversation ?? message.message?.extendedTextMessage?.text;
+  const text = textOf(message);
   if (text === undefined || !isStopReply(text)) return null;
   return senderNumber(message.key);
 }
