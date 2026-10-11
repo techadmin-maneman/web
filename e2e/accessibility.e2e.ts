@@ -28,6 +28,10 @@ const PAGES = [
   "/book?state=expired",
   "/privacy",
   "/terms",
+  // The guides and the cities, drafts on every build but production's.
+  "/guides",
+  "/guides/what-is-a-hair-system",
+  "/areas",
   // The referral landing: every /r/:code is the one page, and ?state= opens each state.
   "/r/RM4K7P",
   "/r/RM4K7P?state=served",

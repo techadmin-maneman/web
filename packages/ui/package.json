@@ -6,6 +6,7 @@
   "type": "module",
   "exports": {
     "./AddressFields": "./AddressFields.tsx",
+    "./AddressSearch": "./AddressSearch.tsx",
     "./arrival": "./arrival.ts",
     "./base.css": "./base.css",
     "./Button": "./Button.tsx",
