@@ -31,16 +31,19 @@ export async function careTeam(db: D1Database): Promise<CareMember[]> {
  * where they have one already, or the team is empty: their chats then wait for whoever is on shift.
  */
 export async function giveCarePerson(db: D1Database, personId: string, now: Date): Promise<void> {
-  await db
+  await carePersonStatement(db, personId, now).run();
+}
+
+/** The same, as a statement for a batch of the caller's, so it costs no round trip of its own. */
+export const carePersonStatement = (db: D1Database, personId: string, now: Date): D1PreparedStatement =>
+  db
     .prepare(
       `INSERT INTO care_owners (person_id, email, since, assigned_by)
        SELECT ?1, t.email, ?2, 'system' FROM (${CARE_TEAM}) t
        ORDER BY (SELECT COUNT(*) FROM care_owners o WHERE o.email = t.email), t.email LIMIT 1
        ON CONFLICT (person_id) DO NOTHING`,
     )
-    .bind(personId, now.toISOString())
-    .run();
-}
+    .bind(personId, now.toISOString());
 
 /** The first name a client knows their Care person by; null until they have one with a name. */
 export async function careNameOf(db: D1Database, personId: string): Promise<string | null> {
