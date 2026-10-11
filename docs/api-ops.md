@@ -1800,6 +1800,59 @@ Leave taken back
 }
 ```
 
+### POST /api/conversations/{id}/city-matter
+
+Send a matter from a chat to its client's city, as a City matter on their Tasks
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/CityMatter"
+}
+```
+
+**200**: Sent, and to which city
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "city": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "city"
+  ],
+  "additionalProperties": false
+}
+```
+
+**400**: invalid_request: fields names city when we know no city for the client
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no such chat, a number we don't know, or an erased client
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ### GET /api/referral-channels
 
 Every partner, with what has come through each
@@ -11495,6 +11548,26 @@ Request body:
 }
 ```
 
+### CityMatter
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "note": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 300,
+      "description": "What the city team need to know, in Care's words; blanked if the client is erased."
+    }
+  },
+  "required": [
+    "note"
+  ],
+  "additionalProperties": false
+}
+```
+
 ### ReferralChannels
 
 ```json
@@ -12107,6 +12180,7 @@ Request body:
         "care_rota.set",
         "care_leave.add",
         "care_leave.delete",
+        "city_matter.raise",
         "word.publish",
         "partner_payout.record",
         "partner_payout.delete",
@@ -14646,6 +14720,7 @@ Request body:
               "untold_move",
               "move_unanswered",
               "unanswered_chat",
+              "city_matter",
               "leave_conflict",
               "address_to_confirm",
               "consultation_request",

@@ -100,6 +100,8 @@ const RECORD_PLACES = {
   visit_change: { table: "visit_changes", city: (row) => pincodeCity(visitPincode(`${row}.appointment_id`)) },
   // A chat's is its client's; a number we don't know is in no city.
   conversation: { table: "conversations", city: (row) => clientCity(`${row}.person_id`) },
+  // A City matter's is the city it was sent to.
+  city_matter: { table: "city_matters", city: (row) => `${row}.city` },
 } satisfies Record<string, RecordPlace>;
 
 export type PlacedRecord = keyof typeof RECORD_PLACES;

@@ -69,6 +69,9 @@ export const ROWS_AT_T: readonly string[] = [
      VALUES ('cm1', 'cv1', 'in', 'client', 'Hello', '${AT}', '${AT}')`,
   // Their Care person (docs/decisions/0131-care-people.md).
   `INSERT INTO care_owners (person_id, email, since, assigned_by) VALUES ('p1', 'care@maneman.in', '${AT}', 'system')`,
+  // A matter sent to their city (docs/decisions/0135-city-matters.md).
+  `INSERT INTO city_matters (id, person_id, conversation_id, city, note, raised_by, raised_at)
+     VALUES ('cm-city-1', 'p1', 'cv1', 'Gurgaon', 'Needs a re-fit.', 'care@maneman.in', '${AT}')`,
   // Their days off (docs/decisions/0134-care-cover.md).
   `INSERT INTO care_weekly_off (email, weekday, set_by, set_at) VALUES ('care@maneman.in', 0, 'lead@maneman.in', '${AT}')`,
   `INSERT INTO care_leave (id, email, from_date, to_date, set_by, set_at)

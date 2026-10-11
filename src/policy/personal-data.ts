@@ -158,6 +158,11 @@ export const PERSONAL_COLUMNS: Readonly<Record<string, PersonalTable>> = {
       why: "Kept, as the record of a booking asked for: a pincode, a day and a window, nothing that names them.",
     },
   },
+  city_matters: {
+    leftOut: ["id", "person_id", "conversation_id", "note", "raised_by"],
+    whyLeftOut: "Our keys, and Care's note to the city team about them, which is staff's own to-do list.",
+    erasure: { blanks: ["note"], why: "Care's words about them go; that a matter went to their city stays." },
+  },
   conversations: {
     leftOut: ["id", "person_id", "mobile_e164", "state", "opened_at", "last_inbound_at", "closed_by", "updated_at"],
     whyLeftOut:

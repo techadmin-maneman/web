@@ -76,6 +76,7 @@ const weeksBetween = (from: string, to: Date): number => Math.floor((to.getTime(
 function subOf(group: Group, task: Task, now: Date): string {
   const copy = tasks.subs;
   if (group === "untold_move") return untoldMoveOf(task.detail);
+  if (group === "city_matter") return task.detail === null ? tasks.unknown : copy.city_matter(task.detail);
   if (group === "unanswered_chat") {
     return copy.unanswered_chat(`${shortDate(indiaDate(task.since))}, ${indiaClock(task.since)}`);
   }

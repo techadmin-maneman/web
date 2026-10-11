@@ -124,7 +124,7 @@ export const RESTORE_GROUPS: readonly RestoreGroup[] = [
   },
   {
     what: "The Care inbox",
-    tables: ["conversations", "chat_messages", "care_owners", "care_weekly_off", "care_leave"],
+    tables: ["conversations", "chat_messages", "care_owners", "care_weekly_off", "care_leave", "city_matters"],
     leftAtT: "A message written since, the client's or ours, is gone from its thread",
     putBackBy: "The rows since `<T>`; WhatsApp's own copy shows what was said",
   },

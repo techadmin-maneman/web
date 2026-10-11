@@ -61,6 +61,8 @@ describe("tasks", () => {
       move_unanswered: 4,
       // A chat falls due by the reply clock, which comes first; a day bounds it (ADR 0132).
       unanswered_chat: 24,
+      // A client waiting on their city: within the day (ADR 0135).
+      city_matter: 24,
       // "The 30 days run from the client's request to ops' decision" (ADR 0049).
       erasure_request: 30 * 24,
       // The client's app: "within 30 days at the latest" (docs/open-points.md, item 51).
@@ -96,8 +98,8 @@ describe("tasks", () => {
   });
 
   // Every other task leaves the board only when its thing is done.
-  it("lets ops close a partial visit's task without a follow-up, and no other", () => {
-    expect(CLOSABLE_TASK_GROUPS).toEqual(["partial_visit"]);
-    expect(TASK_GROUPS.filter(isClosable)).toEqual(["partial_visit"]);
+  it("lets ops close a partial visit's task without a follow-up, and a City matter with what was done, and no other", () => {
+    expect(CLOSABLE_TASK_GROUPS).toEqual(["partial_visit", "city_matter"]);
+    expect(TASK_GROUPS.filter(isClosable)).toEqual(["city_matter", "partial_visit"]);
   });
 });
