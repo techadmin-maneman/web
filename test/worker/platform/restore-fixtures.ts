@@ -58,6 +58,9 @@ export const ROWS_AT_T: readonly string[] = [
   `INSERT INTO pay_grades (id, name, created_by, created_at) VALUES ('pg1', 'Senior', 'finance@maneman.in', '${AT}')`,
   `INSERT INTO visit_pay_rates (id, grade_id, city, visit_kind, amount, effective_from, set_by, set_at)
      VALUES ('vr1', 'pg1', NULL, 'service', 30000, '2026-09-01', 'finance@maneman.in', '${AT}')`,
+  // A line of the site given new words on the Words page (docs/decisions/0126-the-words-page.md).
+  `INSERT INTO word_versions (id, key, text, set_by, set_at)
+     VALUES ('wv1', 'site:home/hero.title', 'Hair, fitted at home.', 'growth@maneman.in', '${AT}')`,
   // Their first fit, done: last_visits follows it.
   `INSERT INTO appointments (id, fsm_id, person_id, type, window_start, window_end, technician_id, status, synced_at)
      VALUES ('ap1', 'ap1', 'p1', 'first_fit', '2026-09-22T03:30:00.000Z', '2026-09-22T06:30:00.000Z', 't1',

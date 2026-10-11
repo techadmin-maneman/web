@@ -1,0 +1,4860 @@
+[
+  {
+    "key": "site:home/header.homeLabel",
+    "surface": "site",
+    "group": "Home",
+    "where": "header",
+    "text": "Mane Man, home"
+  },
+  {
+    "key": "site:home/header.navLabel",
+    "surface": "site",
+    "group": "Home",
+    "where": "header",
+    "text": "Sections"
+  },
+  {
+    "key": "site:home/header.nav.0.label",
+    "surface": "site",
+    "group": "Home",
+    "where": "header",
+    "text": "What it is"
+  },
+  {
+    "key": "site:home/header.nav.1.label",
+    "surface": "site",
+    "group": "Home",
+    "where": "header",
+    "text": "The range"
+  },
+  {
+    "key": "site:home/header.nav.2.label",
+    "surface": "site",
+    "group": "Home",
+    "where": "header",
+    "text": "Questions"
+  },
+  {
+    "key": "site:home/header.area",
+    "surface": "site",
+    "group": "Home",
+    "where": "header",
+    "text": "Delhi NCR"
+  },
+  {
+    "key": "site:home/header.book",
+    "surface": "site",
+    "group": "Home",
+    "where": "header",
+    "text": "Book a consultation"
+  },
+  {
+    "key": "site:home/stickyBar.label",
+    "surface": "site",
+    "group": "Home",
+    "where": "stickyBar",
+    "text": "Book or message us"
+  },
+  {
+    "key": "site:home/stickyBar.whatsappLabel",
+    "surface": "site",
+    "group": "Home",
+    "where": "stickyBar",
+    "text": "Message us on WhatsApp"
+  },
+  {
+    "key": "site:home/stickyBar.book",
+    "surface": "site",
+    "group": "Home",
+    "where": "stickyBar",
+    "text": "Book a consultation"
+  },
+  {
+    "key": "site:home/footer.columns.service.title",
+    "surface": "site",
+    "group": "Home",
+    "where": "footer",
+    "text": "Service"
+  },
+  {
+    "key": "site:home/footer.columns.service.links.0.label",
+    "surface": "site",
+    "group": "Home",
+    "where": "footer",
+    "text": "What it is"
+  },
+  {
+    "key": "site:home/footer.columns.service.links.1.label",
+    "surface": "site",
+    "group": "Home",
+    "where": "footer",
+    "text": "The range"
+  },
+  {
+    "key": "site:home/footer.columns.service.links.2.label",
+    "surface": "site",
+    "group": "Home",
+    "where": "footer",
+    "text": "Try-on"
+  },
+  {
+    "key": "site:home/footer.columns.service.links.3.label",
+    "surface": "site",
+    "group": "Home",
+    "where": "footer",
+    "text": "Questions"
+  },
+  {
+    "key": "site:home/footer.columns.service.links.4.label",
+    "surface": "site",
+    "group": "Home",
+    "where": "footer",
+    "text": "Book a consultation"
+  },
+  {
+    "key": "site:home/footer.columns.reach.title",
+    "surface": "site",
+    "group": "Home",
+    "where": "footer",
+    "text": "Reach us"
+  },
+  {
+    "key": "site:home/footer.columns.legal.title",
+    "surface": "site",
+    "group": "Home",
+    "where": "footer",
+    "text": "Legal"
+  },
+  {
+    "key": "site:home/footer.columns.legal.links.0.label",
+    "surface": "site",
+    "group": "Home",
+    "where": "footer",
+    "text": "Privacy"
+  },
+  {
+    "key": "site:home/footer.columns.legal.links.1.label",
+    "surface": "site",
+    "group": "Home",
+    "where": "footer",
+    "text": "Terms"
+  },
+  {
+    "key": "site:home/footer.area",
+    "surface": "site",
+    "group": "Home",
+    "where": "footer",
+    "text": "Delhi NCR · home service only"
+  },
+  {
+    "key": "site:home/footer.entity",
+    "surface": "site",
+    "group": "Home",
+    "where": "footer",
+    "text": "Mane Man Grooming Services Private Limited"
+  },
+  {
+    "key": "site:home/hero.sequence.0",
+    "surface": "site",
+    "group": "Home",
+    "where": "hero",
+    "text": "Natural up close."
+  },
+  {
+    "key": "site:home/hero.sequence.1",
+    "surface": "site",
+    "group": "Home",
+    "where": "hero",
+    "text": "100% real human hair."
+  },
+  {
+    "key": "site:home/hero.sequence.2",
+    "surface": "site",
+    "group": "Home",
+    "where": "hero",
+    "text": "Fitted at home."
+  },
+  {
+    "key": "site:home/hero.sequence.3",
+    "surface": "site",
+    "group": "Home",
+    "where": "hero",
+    "text": "Be the Main Man again."
+  },
+  {
+    "key": "site:home/hero.title",
+    "surface": "site",
+    "group": "Home",
+    "where": "hero",
+    "text": "A full head of hair, matched to your own."
+  },
+  {
+    "key": "site:home/hero.body",
+    "surface": "site",
+    "group": "Home",
+    "where": "hero",
+    "text": "Your technician comes when it suits you, matches a hair system to your own hair and fits it."
+  },
+  {
+    "key": "site:home/hero.tryOn",
+    "surface": "site",
+    "group": "Home",
+    "where": "hero",
+    "text": "Try a new look"
+  },
+  {
+    "key": "site:home/hero.book",
+    "surface": "site",
+    "group": "Home",
+    "where": "hero",
+    "text": "Book a free consultation"
+  },
+  {
+    "key": "site:home/hero.pause",
+    "surface": "site",
+    "group": "Home",
+    "where": "hero",
+    "text": "Pause the film"
+  },
+  {
+    "key": "site:home/hero.play",
+    "surface": "site",
+    "group": "Home",
+    "where": "hero",
+    "text": "Play the film"
+  },
+  {
+    "key": "site:home/whatItIs.title",
+    "surface": "site",
+    "group": "Home",
+    "where": "whatItIs",
+    "text": "What it is"
+  },
+  {
+    "key": "site:home/whatItIs.body",
+    "surface": "site",
+    "group": "Home",
+    "where": "whatItIs",
+    "text": "A fine base of lace, mono or skin, with 100% real human hair tied in strand by strand. Shaped to your scalp, matched to your own hair, and bonded to the skin. It is not a wig."
+  },
+  {
+    "key": "site:home/whatItIs.statement",
+    "surface": "site",
+    "group": "Home",
+    "where": "whatItIs",
+    "text": "You sleep in it, shower in it, train in it."
+  },
+  {
+    "key": "site:home/norwood.title",
+    "surface": "site",
+    "group": "Home",
+    "where": "norwood",
+    "text": "Where you are on the scale"
+  },
+  {
+    "key": "site:home/norwood.intro",
+    "surface": "site",
+    "group": "Home",
+    "where": "norwood",
+    "text": "Hair loss in men is graded in seven stages."
+  },
+  {
+    "key": "site:home/norwood.early.label",
+    "surface": "site",
+    "group": "Home",
+    "where": "norwood",
+    "text": "Stages one and two · nothing to fit yet"
+  },
+  {
+    "key": "site:home/norwood.early.note",
+    "surface": "site",
+    "group": "Home",
+    "where": "norwood",
+    "text": "A system here would cover hair you still have."
+  },
+  {
+    "key": "site:home/norwood.early.stages.0.name",
+    "surface": "site",
+    "group": "Home",
+    "where": "norwood",
+    "text": "No recession"
+  },
+  {
+    "key": "site:home/norwood.early.stages.0.tag",
+    "surface": "site",
+    "group": "Home",
+    "where": "norwood",
+    "text": "No loss"
+  },
+  {
+    "key": "site:home/norwood.early.stages.0.description",
+    "surface": "site",
+    "group": "Home",
+    "where": "norwood",
+    "text": "The hairline sits where it always has."
+  },
+  {
+    "key": "site:home/norwood.early.stages.0.bald",
+    "surface": "site",
+    "group": "Home",
+    "where": "norwood",
+    "text": "M0 0 Z"
+  },
+  {
+    "key": "site:home/norwood.early.stages.1.name",
+    "surface": "site",
+    "group": "Home",
+    "where": "norwood",
+    "text": "Temple recession"
+  },
+  {
+    "key": "site:home/norwood.early.stages.1.tag",
+    "surface": "site",
+    "group": "Home",
+    "where": "norwood",
+    "text": "Early"
+  },
+  {
+    "key": "site:home/norwood.early.stages.1.description",
+    "surface": "site",
+    "group": "Home",
+    "where": "norwood",
+    "text": "The corners have moved back a little. Most men reach this and go no further."
+  },
+  {
+    "key": "site:home/norwood.early.stages.1.bald",
+    "surface": "site",
+    "group": "Home",
+    "where": "norwood",
+    "text": "M96 0 L96 26 C90 20 80 15 68 13 L63 0 Z"
+  },
+  {
+    "key": "site:home/norwood.late.label",
+    "surface": "site",
+    "group": "Home",
+    "where": "norwood",
+    "text": "Stages three to seven · we can fit all of these"
+  },
+  {
+    "key": "site:home/norwood.late.stages.0.name",
+    "surface": "site",
+    "group": "Home",
+    "where": "norwood",
+    "text": "A clear M"
+  },
+  {
+    "key": "site:home/norwood.late.stages.0.tag",
+    "surface": "site",
+    "group": "Home",
+    "where": "norwood",
+    "text": "We fit"
+  },
+  {
+    "key": "site:home/norwood.late.stages.0.description",
+    "surface": "site",
+    "group": "Home",
+    "where": "norwood",
+    "text": "Deep recession at both temples. The first stage other people notice."
+  },
+  {
+    "key": "site:home/norwood.late.stages.0.bald",
+    "surface": "site",
+    "group": "Home",
+    "where": "norwood",
+    "text": "M96 0 L96 30 C88 21 76 15 60 13 L53 0 Z"
+  },
+  {
+    "key": "site:home/norwood.late.stages.1.name",
+    "surface": "site",
+    "group": "Home",
+    "where": "norwood",
+    "text": "Front and crown"
+  },
+  {
+    "key": "site:home/norwood.late.stages.1.tag",
+    "surface": "site",
+    "group": "Home",
+    "where": "norwood",
+    "text": "We fit"
+  },
+  {
+    "key": "site:home/norwood.late.stages.1.description",
+    "surface": "site",
+    "group": "Home",
+    "where": "norwood",
+    "text": "The front has gone back further and the crown has opened separately."
+  },
+  {
+    "key": "site:home/norwood.late.stages.1.bald",
+    "surface": "site",
+    "group": "Home",
+    "where": "norwood",
+    "text": "M96 0 L96 32 C87 21 73 15 55 13 L47 0 Z M45 27 C51 27 54 23 54 18 C54 13 50 10 45 10 C40 10 36 13 36 18 C36 23 39 27 45 27 Z"
+  },
+  {
+    "key": "site:home/norwood.late.stages.2.name",
+    "surface": "site",
+    "group": "Home",
+    "where": "norwood",
+    "text": "The bridge narrows"
+  },
+  {
+    "key": "site:home/norwood.late.stages.2.tag",
+    "surface": "site",
+    "group": "Home",
+    "where": "norwood",
+    "text": "We fit"
+  },
+  {
+    "key": "site:home/norwood.late.stages.2.description",
+    "surface": "site",
+    "group": "Home",
+    "where": "norwood",
+    "text": "Front and crown are both bare, divided by a thinning band of hair."
+  },
+  {
+    "key": "site:home/norwood.late.stages.2.bald",
+    "surface": "site",
+    "group": "Home",
+    "where": "norwood",
+    "text": "M96 0 L96 35 C85 22 69 15 49 14 L40 0 Z M42 31 C50 31 56 25 56 19 C56 12 50 8 42 8 C34 8 28 12 28 19 C28 25 34 31 42 31 Z"
+  },
+  {
+    "key": "site:home/norwood.late.stages.3.name",
+    "surface": "site",
+    "group": "Home",
+    "where": "norwood",
+    "text": "The bridge is gone"
+  },
+  {
+    "key": "site:home/norwood.late.stages.3.tag",
+    "surface": "site",
+    "group": "Home",
+    "where": "norwood",
+    "text": "We fit"
+  },
+  {
+    "key": "site:home/norwood.late.stages.3.description",
+    "surface": "site",
+    "group": "Home",
+    "where": "norwood",
+    "text": "Front and crown have joined into one continuous bare area."
+  },
+  {
+    "key": "site:home/norwood.late.stages.3.bald",
+    "surface": "site",
+    "group": "Home",
+    "where": "norwood",
+    "text": "M0 0 L96 0 L96 37 C80 20 46 12 26 27 C16 35 10 47 8 61 L0 61 Z"
+  },
+  {
+    "key": "site:home/norwood.late.stages.4.name",
+    "surface": "site",
+    "group": "Home",
+    "where": "norwood",
+    "text": "A rim only"
+  },
+  {
+    "key": "site:home/norwood.late.stages.4.tag",
+    "surface": "site",
+    "group": "Home",
+    "where": "norwood",
+    "text": "We fit"
+  },
+  {
+    "key": "site:home/norwood.late.stages.4.description",
+    "surface": "site",
+    "group": "Home",
+    "where": "norwood",
+    "text": "Hair remains as a band around the sides and back of the head."
+  },
+  {
+    "key": "site:home/norwood.late.stages.4.bald",
+    "surface": "site",
+    "group": "Home",
+    "where": "norwood",
+    "text": "M0 0 L96 0 L96 45 C80 27 44 18 22 35 C12 45 6 59 5 74 L0 74 Z"
+  },
+  {
+    "key": "site:home/norwood.book",
+    "surface": "site",
+    "group": "Home",
+    "where": "norwood",
+    "text": "Book a free consultation"
+  },
+  {
+    "key": "site:home/comparison.title",
+    "surface": "site",
+    "group": "Home",
+    "where": "comparison",
+    "text": "Why choose a hair system"
+  },
+  {
+    "key": "site:home/comparison.intro",
+    "surface": "site",
+    "group": "Home",
+    "where": "comparison",
+    "text": "Two of these are not ours."
+  },
+  {
+    "key": "site:home/comparison.columns.0",
+    "surface": "site",
+    "group": "Home",
+    "where": "comparison",
+    "text": "Transplant"
+  },
+  {
+    "key": "site:home/comparison.columns.1",
+    "surface": "site",
+    "group": "Home",
+    "where": "comparison",
+    "text": "Medication"
+  },
+  {
+    "key": "site:home/comparison.columns.2",
+    "surface": "site",
+    "group": "Home",
+    "where": "comparison",
+    "text": "Hair system"
+  },
+  {
+    "key": "site:home/comparison.yes",
+    "surface": "site",
+    "group": "Home",
+    "where": "comparison",
+    "text": "Yes"
+  },
+  {
+    "key": "site:home/comparison.no",
+    "surface": "site",
+    "group": "Home",
+    "where": "comparison",
+    "text": "No"
+  },
+  {
+    "key": "site:home/comparison.rows.0.label",
+    "surface": "site",
+    "group": "Home",
+    "where": "comparison",
+    "text": "Cost"
+  },
+  {
+    "key": "site:home/comparison.rows.0.cells.0",
+    "surface": "site",
+    "group": "Home",
+    "where": "comparison",
+    "text": "Rs. 1.2–3 lakh for 4,000–5,000 hairs"
+  },
+  {
+    "key": "site:home/comparison.rows.0.cells.1",
+    "surface": "site",
+    "group": "Home",
+    "where": "comparison",
+    "text": "Rs. 800–2,000 a month, for life"
+  },
+  {
+    "key": "site:home/comparison.rows.0.cells.2",
+    "surface": "site",
+    "group": "Home",
+    "where": "comparison",
+    "text": "Quoted at your free consultation"
+  },
+  {
+    "key": "site:home/comparison.rows.1.label",
+    "surface": "site",
+    "group": "Home",
+    "where": "comparison",
+    "text": "Visible result"
+  },
+  {
+    "key": "site:home/comparison.rows.1.cells.0",
+    "surface": "site",
+    "group": "Home",
+    "where": "comparison",
+    "text": "9–12 months"
+  },
+  {
+    "key": "site:home/comparison.rows.1.cells.1",
+    "surface": "site",
+    "group": "Home",
+    "where": "comparison",
+    "text": "4–6 months"
+  },
+  {
+    "key": "site:home/comparison.rows.1.cells.2",
+    "surface": "site",
+    "group": "Home",
+    "where": "comparison",
+    "text": "The same day"
+  },
+  {
+    "key": "site:home/comparison.rows.2.label",
+    "surface": "site",
+    "group": "Home",
+    "where": "comparison",
+    "text": "Covers advanced loss"
+  },
+  {
+    "key": "site:home/comparison.rows.3.label",
+    "surface": "site",
+    "group": "Home",
+    "where": "comparison",
+    "text": "Surgery"
+  },
+  {
+    "key": "site:home/comparison.rows.4.label",
+    "surface": "site",
+    "group": "Home",
+    "where": "comparison",
+    "text": "Side effects"
+  },
+  {
+    "key": "site:home/comparison.rows.4.cells.0",
+    "surface": "site",
+    "group": "Home",
+    "where": "comparison",
+    "text": "Infection, scarring, shock loss"
+  },
+  {
+    "key": "site:home/comparison.rows.4.cells.1",
+    "surface": "site",
+    "group": "Home",
+    "where": "comparison",
+    "text": "Lower libido, scalp irritation"
+  },
+  {
+    "key": "site:home/comparison.rows.4.cells.2",
+    "surface": "site",
+    "group": "Home",
+    "where": "comparison",
+    "text": "Nothing implanted or swallowed"
+  },
+  {
+    "key": "site:home/comparison.rows.5.label",
+    "surface": "site",
+    "group": "Home",
+    "where": "comparison",
+    "text": "Reversible"
+  },
+  {
+    "key": "site:home/comparison.rows.6.label",
+    "surface": "site",
+    "group": "Home",
+    "where": "comparison",
+    "text": "Upkeep"
+  },
+  {
+    "key": "site:home/comparison.rows.6.cells.0",
+    "surface": "site",
+    "group": "Home",
+    "where": "comparison",
+    "text": "Loss carries on; often a second transplant in a few years"
+  },
+  {
+    "key": "site:home/comparison.rows.6.cells.1",
+    "surface": "site",
+    "group": "Home",
+    "where": "comparison",
+    "text": "Daily, for life"
+  },
+  {
+    "key": "site:home/comparison.rows.6.cells.2",
+    "surface": "site",
+    "group": "Home",
+    "where": "comparison",
+    "text": "One visit a month"
+  },
+  {
+    "key": "site:home/tryOnTeaser.eyebrow",
+    "surface": "site",
+    "group": "Home",
+    "where": "tryOnTeaser",
+    "text": "Try-on"
+  },
+  {
+    "key": "site:home/tryOnTeaser.title",
+    "surface": "site",
+    "group": "Home",
+    "where": "tryOnTeaser",
+    "text": "See yourself with hair before anyone comes to your home."
+  },
+  {
+    "key": "site:home/tryOnTeaser.body",
+    "surface": "site",
+    "group": "Home",
+    "where": "tryOnTeaser",
+    "text": "One photograph, one look from six, sent privately to your WhatsApp. A simulation, not a photograph of a result. Your photograph is deleted within the hour."
+  },
+  {
+    "key": "site:home/tryOnTeaser.start",
+    "surface": "site",
+    "group": "Home",
+    "where": "tryOnTeaser",
+    "text": "Start the try-on"
+  },
+  {
+    "key": "site:home/tryOnTeaser.before",
+    "surface": "site",
+    "group": "Home",
+    "where": "tryOnTeaser",
+    "text": "Before"
+  },
+  {
+    "key": "site:home/tryOnTeaser.after",
+    "surface": "site",
+    "group": "Home",
+    "where": "tryOnTeaser",
+    "text": "After"
+  },
+  {
+    "key": "site:home/tryOnTeaser.sliderLabel",
+    "surface": "site",
+    "group": "Home",
+    "where": "tryOnTeaser",
+    "text": "Compare before and after"
+  },
+  {
+    "key": "site:home/tryOnTeaser.sliderValue",
+    "surface": "site",
+    "group": "Home",
+    "where": "tryOnTeaser",
+    "text": "{before}% before, {after}% after"
+  },
+  {
+    "key": "site:home/discretionBand.text",
+    "surface": "site",
+    "group": "Home",
+    "where": "discretionBand",
+    "text": "Three hours at your own table, and nobody else need ever know."
+  },
+  {
+    "key": "site:home/howItWorks.title",
+    "surface": "site",
+    "group": "Home",
+    "where": "howItWorks",
+    "text": "How it works"
+  },
+  {
+    "key": "site:home/howItWorks.steps.0.title",
+    "surface": "site",
+    "group": "Home",
+    "where": "howItWorks",
+    "text": "Consultation at home"
+  },
+  {
+    "key": "site:home/howItWorks.steps.0.body",
+    "surface": "site",
+    "group": "Home",
+    "where": "howItWorks",
+    "text": "Your scalp measured, your colour matched in daylight, and your hair system chosen with you."
+  },
+  {
+    "key": "site:home/howItWorks.steps.0.meta",
+    "surface": "site",
+    "group": "Home",
+    "where": "howItWorks",
+    "text": "An hour · free"
+  },
+  {
+    "key": "site:home/howItWorks.steps.1.title",
+    "surface": "site",
+    "group": "Home",
+    "where": "howItWorks",
+    "text": "The fit"
+  },
+  {
+    "key": "site:home/howItWorks.steps.1.body",
+    "surface": "site",
+    "group": "Home",
+    "where": "howItWorks",
+    "text": "The same visit or a later one: your choice. Bonded, cut into your own hair and styled. Your new look, on the spot."
+  },
+  {
+    "key": "site:home/howItWorks.steps.1.meta",
+    "surface": "site",
+    "group": "Home",
+    "where": "howItWorks",
+    "text": "Three hours · at your home"
+  },
+  {
+    "key": "site:home/howItWorks.steps.2.title",
+    "surface": "site",
+    "group": "Home",
+    "where": "howItWorks",
+    "text": "Monthly service"
+  },
+  {
+    "key": "site:home/howItWorks.steps.2.body",
+    "surface": "site",
+    "group": "Home",
+    "where": "howItWorks",
+    "text": "Lifted, cleaned, re-bonded and trimmed to your own growth, so it looks right every month."
+  },
+  {
+    "key": "site:home/howItWorks.steps.2.meta",
+    "surface": "site",
+    "group": "Home",
+    "where": "howItWorks",
+    "text": "Every month · ninety minutes"
+  },
+  {
+    "key": "site:home/range.title",
+    "surface": "site",
+    "group": "Home",
+    "where": "range",
+    "text": "The range"
+  },
+  {
+    "key": "site:home/range.intro",
+    "surface": "site",
+    "group": "Home",
+    "where": "range",
+    "text": "Four hair systems. Every one 100% real human hair."
+  },
+  {
+    "key": "site:home/range.products.0.name",
+    "surface": "site",
+    "group": "Home",
+    "where": "range",
+    "text": "Mane Man Essential"
+  },
+  {
+    "key": "site:home/range.products.0.tagline",
+    "surface": "site",
+    "group": "Home",
+    "where": "range",
+    "text": "Built for everyday wear. The place to start."
+  },
+  {
+    "key": "site:home/range.products.0.body",
+    "surface": "site",
+    "group": "Home",
+    "where": "range",
+    "text": "Fine mono, the strongest base we fit, with a soft lace hairline."
+  },
+  {
+    "key": "site:home/range.products.1.name",
+    "surface": "site",
+    "group": "Home",
+    "where": "range",
+    "text": "Mane Man Active"
+  },
+  {
+    "key": "site:home/range.products.1.tagline",
+    "surface": "site",
+    "group": "Home",
+    "where": "range",
+    "text": "Made for men who sweat."
+  },
+  {
+    "key": "site:home/range.products.1.body",
+    "surface": "site",
+    "group": "Home",
+    "where": "range",
+    "text": "A French lace top, the most breathable base there is, and a bleached lace hairline. For the gym, the field and a Delhi summer."
+  },
+  {
+    "key": "site:home/range.products.2.name",
+    "surface": "site",
+    "group": "Home",
+    "where": "range",
+    "text": "Mane Man Natural"
+  },
+  {
+    "key": "site:home/range.products.2.tagline",
+    "surface": "site",
+    "group": "Home",
+    "where": "range",
+    "text": "A hairline that passes a close look."
+  },
+  {
+    "key": "site:home/range.products.2.body",
+    "surface": "site",
+    "group": "Home",
+    "where": "range",
+    "text": "A fine skin base with a bleached lace front. No mesh to see, so the hair seems to grow from your scalp."
+  },
+  {
+    "key": "site:home/range.products.3.name",
+    "surface": "site",
+    "group": "Home",
+    "where": "range",
+    "text": "Mane Man NatMax"
+  },
+  {
+    "key": "site:home/range.products.3.tagline",
+    "surface": "site",
+    "group": "Home",
+    "where": "range",
+    "text": "Natural, even at the parting."
+  },
+  {
+    "key": "site:home/range.products.3.body",
+    "surface": "site",
+    "group": "Home",
+    "where": "range",
+    "text": "A silk top over lace hides every knot, so a parting shows scalp, not mesh."
+  },
+  {
+    "key": "site:home/materials.title",
+    "surface": "site",
+    "group": "Home",
+    "where": "materials",
+    "text": "Materials and construction"
+  },
+  {
+    "key": "site:home/materials.intro",
+    "surface": "site",
+    "group": "Home",
+    "where": "materials",
+    "text": "What each hair system is made of, and what that means for how it looks, breathes and lasts."
+  },
+  {
+    "key": "site:home/materials.groups.0.title",
+    "surface": "site",
+    "group": "Home",
+    "where": "materials",
+    "text": "The base: lace, mono, skin and silk"
+  },
+  {
+    "key": "site:home/materials.groups.0.lead",
+    "surface": "site",
+    "group": "Home",
+    "where": "materials",
+    "text": "The base decides everything: how natural it looks, how cool it feels, how long it lasts. The thinner the base, the better it looks and the sooner it wears."
+  },
+  {
+    "key": "site:home/materials.groups.0.rated.0",
+    "surface": "site",
+    "group": "Home",
+    "where": "materials",
+    "text": "Natural look"
+  },
+  {
+    "key": "site:home/materials.groups.0.rated.1",
+    "surface": "site",
+    "group": "Home",
+    "where": "materials",
+    "text": "Breathes"
+  },
+  {
+    "key": "site:home/materials.groups.0.rated.2",
+    "surface": "site",
+    "group": "Home",
+    "where": "materials",
+    "text": "Strength"
+  },
+  {
+    "key": "site:home/materials.groups.0.photos.images.0.alt",
+    "surface": "site",
+    "group": "Home",
+    "where": "materials",
+    "text": "Macro of a monofilament mesh base with hairs hand-tied into it as visible knots"
+  },
+  {
+    "key": "site:home/materials.groups.0.photos.images.1.alt",
+    "surface": "site",
+    "group": "Home",
+    "where": "materials",
+    "text": "Macro of a thin polyurethane base held between finger and thumb, hair passing through it"
+  },
+  {
+    "key": "site:home/materials.groups.0.items.0.name",
+    "surface": "site",
+    "group": "Home",
+    "where": "materials",
+    "text": "Lace"
+  },
+  {
+    "key": "site:home/materials.groups.0.items.0.text",
+    "surface": "site",
+    "group": "Home",
+    "where": "materials",
+    "text": "The finest, softest mesh. Its knots can be bleached until they vanish, which is why every hairline we fit is lace."
+  },
+  {
+    "key": "site:home/materials.groups.0.items.0.ratings.0",
+    "surface": "site",
+    "group": "Home",
+    "where": "materials",
+    "text": "Best"
+  },
+  {
+    "key": "site:home/materials.groups.0.items.0.ratings.1",
+    "surface": "site",
+    "group": "Home",
+    "where": "materials",
+    "text": "Most"
+  },
+  {
+    "key": "site:home/materials.groups.0.items.0.ratings.2",
+    "surface": "site",
+    "group": "Home",
+    "where": "materials",
+    "text": "Delicate"
+  },
+  {
+    "key": "site:home/materials.groups.0.items.1.name",
+    "surface": "site",
+    "group": "Home",
+    "where": "materials",
+    "text": "Mono"
+  },
+  {
+    "key": "site:home/materials.groups.0.items.1.text",
+    "surface": "site",
+    "group": "Home",
+    "where": "materials",
+    "text": "Monofilament: a fine, tough mesh. It breathes, takes the most hair, and outlasts every other base."
+  },
+  {
+    "key": "site:home/materials.groups.0.items.1.ratings.0",
+    "surface": "site",
+    "group": "Home",
+    "where": "materials",
+    "text": "Good"
+  },
+  {
+    "key": "site:home/materials.groups.0.items.1.ratings.1",
+    "surface": "site",
+    "group": "Home",
+    "where": "materials",
+    "text": "Well"
+  },
+  {
+    "key": "site:home/materials.groups.0.items.1.ratings.2",
+    "surface": "site",
+    "group": "Home",
+    "where": "materials",
+    "text": "Strongest"
+  },
+  {
+    "key": "site:home/materials.groups.0.items.2.name",
+    "surface": "site",
+    "group": "Home",
+    "where": "materials",
+    "text": "Skin"
+  },
+  {
+    "key": "site:home/materials.groups.0.items.2.text",
+    "surface": "site",
+    "group": "Home",
+    "where": "materials",
+    "text": "A clear polyurethane film, 0.08 to 0.10 mm thin. No mesh to see, so the hair seems to grow straight from the scalp."
+  },
+  {
+    "key": "site:home/materials.groups.0.items.2.ratings.0",
+    "surface": "site",
+    "group": "Home",
+    "where": "materials",
+    "text": "Very good"
+  },
+  {
+    "key": "site:home/materials.groups.0.items.2.ratings.1",
+    "surface": "site",
+    "group": "Home",
+    "where": "materials",
+    "text": "Little"
+  },
+  {
+    "key": "site:home/materials.groups.0.items.2.ratings.2",
+    "surface": "site",
+    "group": "Home",
+    "where": "materials",
+    "text": "Moderate"
+  },
+  {
+    "key": "site:home/materials.groups.0.items.3.name",
+    "surface": "site",
+    "group": "Home",
+    "where": "materials",
+    "text": "Silk, multi-layer"
+  },
+  {
+    "key": "site:home/materials.groups.0.items.3.text",
+    "surface": "site",
+    "group": "Home",
+    "where": "materials",
+    "text": "Hair knotted onto a lace layer and drawn up through silk, so every knot sits hidden between the two. A parting shows scalp."
+  },
+  {
+    "key": "site:home/materials.groups.0.items.3.ratings.0",
+    "surface": "site",
+    "group": "Home",
+    "where": "materials",
+    "text": "Best at the parting"
+  },
+  {
+    "key": "site:home/materials.groups.0.items.3.ratings.1",
+    "surface": "site",
+    "group": "Home",
+    "where": "materials",
+    "text": "Least"
+  },
+  {
+    "key": "site:home/materials.groups.0.items.3.ratings.2",
+    "surface": "site",
+    "group": "Home",
+    "where": "materials",
+    "text": "Protected"
+  },
+  {
+    "key": "site:home/materials.groups.1.title",
+    "surface": "site",
+    "group": "Home",
+    "where": "materials",
+    "text": "How the hair is tied in: knots and loops"
+  },
+  {
+    "key": "site:home/materials.groups.1.lead",
+    "surface": "site",
+    "group": "Home",
+    "where": "materials",
+    "text": "Every hair is tied or looped into the base by hand. How it is tied decides how natural the root looks and how well it holds."
+  },
+  {
+    "key": "site:home/materials.groups.1.rated.0",
+    "surface": "site",
+    "group": "Home",
+    "where": "materials",
+    "text": "Natural look"
+  },
+  {
+    "key": "site:home/materials.groups.1.rated.1",
+    "surface": "site",
+    "group": "Home",
+    "where": "materials",
+    "text": "Shedding"
+  },
+  {
+    "key": "site:home/materials.groups.1.rated.2",
+    "surface": "site",
+    "group": "Home",
+    "where": "materials",
+    "text": "Durability"
+  },
+  {
+    "key": "site:home/materials.groups.1.items.0.name",
+    "surface": "site",
+    "group": "Home",
+    "where": "materials",
+    "text": "Single knot"
+  },
+  {
+    "key": "site:home/materials.groups.1.items.0.text",
+    "surface": "site",
+    "group": "Home",
+    "where": "materials",
+    "text": "One small knot for each hair. Fine and flat, on lace and skin."
+  },
+  {
+    "key": "site:home/materials.groups.1.items.0.ratings.0",
+    "surface": "site",
+    "group": "Home",
+    "where": "materials",
+    "text": "High"
+  },
+  {
+    "key": "site:home/materials.groups.1.items.0.ratings.1",
+    "surface": "site",
+    "group": "Home",
+    "where": "materials",
+    "text": "Low to medium"
+  },
+  {
+    "key": "site:home/materials.groups.1.items.0.ratings.2",
+    "surface": "site",
+    "group": "Home",
+    "where": "materials",
+    "text": "Medium"
+  },
+  {
+    "key": "site:home/materials.groups.1.items.1.name",
+    "surface": "site",
+    "group": "Home",
+    "where": "materials",
+    "text": "Double knot"
+  },
+  {
+    "key": "site:home/materials.groups.1.items.1.text",
+    "surface": "site",
+    "group": "Home",
+    "where": "materials",
+    "text": "Each hair knotted twice, for the sides and back of a mono base."
+  },
+  {
+    "key": "site:home/materials.groups.1.items.1.ratings.0",
+    "surface": "site",
+    "group": "Home",
+    "where": "materials",
+    "text": "Medium"
+  },
+  {
+    "key": "site:home/materials.groups.1.items.1.ratings.1",
+    "surface": "site",
+    "group": "Home",
+    "where": "materials",
+    "text": "Low"
+  },
+  {
+    "key": "site:home/materials.groups.1.items.1.ratings.2",
+    "surface": "site",
+    "group": "Home",
+    "where": "materials",
+    "text": "High"
+  },
+  {
+    "key": "site:home/materials.groups.1.items.2.name",
+    "surface": "site",
+    "group": "Home",
+    "where": "materials",
+    "text": "Bleached knot"
+  },
+  {
+    "key": "site:home/materials.groups.1.items.2.text",
+    "surface": "site",
+    "group": "Home",
+    "where": "materials",
+    "text": "Knots lightened until they disappear. Only lace takes it, so it is kept for the hairline."
+  },
+  {
+    "key": "site:home/materials.groups.1.items.2.ratings.0",
+    "surface": "site",
+    "group": "Home",
+    "where": "materials",
+    "text": "Highest at the hairline"
+  },
+  {
+    "key": "site:home/materials.groups.1.items.2.ratings.1",
+    "surface": "site",
+    "group": "Home",
+    "where": "materials",
+    "text": "Higher"
+  },
+  {
+    "key": "site:home/materials.groups.1.items.2.ratings.2",
+    "surface": "site",
+    "group": "Home",
+    "where": "materials",
+    "text": "Low"
+  },
+  {
+    "key": "site:home/materials.groups.1.items.3.name",
+    "surface": "site",
+    "group": "Home",
+    "where": "materials",
+    "text": "V-looped"
+  },
+  {
+    "key": "site:home/materials.groups.1.items.3.text",
+    "surface": "site",
+    "group": "Home",
+    "where": "materials",
+    "text": "No knot at all: each hair is looped through the skin, so it seems to grow from it."
+  },
+  {
+    "key": "site:home/materials.groups.1.items.3.ratings.0",
+    "surface": "site",
+    "group": "Home",
+    "where": "materials",
+    "text": "Very high"
+  },
+  {
+    "key": "site:home/materials.groups.1.items.3.ratings.1",
+    "surface": "site",
+    "group": "Home",
+    "where": "materials",
+    "text": "Very low"
+  },
+  {
+    "key": "site:home/materials.groups.1.items.3.ratings.2",
+    "surface": "site",
+    "group": "Home",
+    "where": "materials",
+    "text": "Low"
+  },
+  {
+    "key": "site:home/materials.groups.1.items.4.name",
+    "surface": "site",
+    "group": "Home",
+    "where": "materials",
+    "text": "Injected"
+  },
+  {
+    "key": "site:home/materials.groups.1.items.4.text",
+    "surface": "site",
+    "group": "Home",
+    "where": "materials",
+    "text": "Hair set into the skin so that it stands up from the root. Made for a parting or a brushed-back style."
+  },
+  {
+    "key": "site:home/materials.groups.1.items.4.ratings.0",
+    "surface": "site",
+    "group": "Home",
+    "where": "materials",
+    "text": "Very high"
+  },
+  {
+    "key": "site:home/materials.groups.1.items.4.ratings.1",
+    "surface": "site",
+    "group": "Home",
+    "where": "materials",
+    "text": "Very low"
+  },
+  {
+    "key": "site:home/materials.groups.1.items.4.ratings.2",
+    "surface": "site",
+    "group": "Home",
+    "where": "materials",
+    "text": "High"
+  },
+  {
+    "key": "site:home/materials.groups.2.title",
+    "surface": "site",
+    "group": "Home",
+    "where": "materials",
+    "text": "The rim and the hairline"
+  },
+  {
+    "key": "site:home/materials.groups.2.lead",
+    "surface": "site",
+    "group": "Home",
+    "where": "materials",
+    "text": "The edges are where a hair system is held, and where it is seen."
+  },
+  {
+    "key": "site:home/materials.groups.2.items.0.name",
+    "surface": "site",
+    "group": "Home",
+    "where": "materials",
+    "text": "Clear PU rim"
+  },
+  {
+    "key": "site:home/materials.groups.2.items.0.text",
+    "surface": "site",
+    "group": "Home",
+    "where": "materials",
+    "text": "A thin, transparent polyurethane edge. The tape grips it, never the mesh, and it disappears at the temples."
+  },
+  {
+    "key": "site:home/materials.groups.2.items.1.name",
+    "surface": "site",
+    "group": "Home",
+    "where": "materials",
+    "text": "NPU rim"
+  },
+  {
+    "key": "site:home/materials.groups.2.items.1.text",
+    "surface": "site",
+    "group": "Home",
+    "where": "materials",
+    "text": "Polyurethane reinforced with mesh: stronger and slightly thicker, so it is kept to the sides and back, where nobody looks."
+  },
+  {
+    "key": "site:home/materials.groups.2.items.2.name",
+    "surface": "site",
+    "group": "Home",
+    "where": "materials",
+    "text": "Lace front"
+  },
+  {
+    "key": "site:home/materials.groups.2.items.2.text",
+    "surface": "site",
+    "group": "Home",
+    "where": "materials",
+    "text": "Up to an inch of lace along the hairline, its knots bleached until they disappear. It is what lets a hairline pass a close look, and every hair system we fit has one."
+  },
+  {
+    "key": "site:home/materials.groups.3.title",
+    "surface": "site",
+    "group": "Home",
+    "where": "materials",
+    "text": "How much hair: density"
+  },
+  {
+    "key": "site:home/materials.groups.3.lead",
+    "surface": "site",
+    "group": "Home",
+    "where": "materials",
+    "text": "Density is how much hair is tied in, against a full natural head. More is not better: too much hair is what gives a hair system away. We match yours to the hair you still have at the sides, not the hair you had at twenty."
+  },
+  {
+    "key": "site:home/materials.groups.3.items.0.name",
+    "surface": "site",
+    "group": "Home",
+    "where": "materials",
+    "text": "80% · Light"
+  },
+  {
+    "key": "site:home/materials.groups.3.items.0.text",
+    "surface": "site",
+    "group": "Home",
+    "where": "materials",
+    "text": "The scalp shows at a parting. For men over sixty."
+  },
+  {
+    "key": "site:home/materials.groups.3.items.1.name",
+    "surface": "site",
+    "group": "Home",
+    "where": "materials",
+    "text": "100% · Medium light"
+  },
+  {
+    "key": "site:home/materials.groups.3.items.1.text",
+    "surface": "site",
+    "group": "Home",
+    "where": "materials",
+    "text": "Natural, without much volume. Most men's choice, and ours over forty."
+  },
+  {
+    "key": "site:home/materials.groups.3.items.2.name",
+    "surface": "site",
+    "group": "Home",
+    "where": "materials",
+    "text": "120% · Medium"
+  },
+  {
+    "key": "site:home/materials.groups.3.items.2.text",
+    "surface": "site",
+    "group": "Home",
+    "where": "materials",
+    "text": "Visibly fuller, and holds a style. For younger men, and men whose own hair is thick."
+  },
+  {
+    "key": "site:home/materials.groups.3.items.3.name",
+    "surface": "site",
+    "group": "Home",
+    "where": "materials",
+    "text": "140% · Medium heavy"
+  },
+  {
+    "key": "site:home/materials.groups.3.items.3.text",
+    "surface": "site",
+    "group": "Home",
+    "where": "materials",
+    "text": "Heavy for daily wear. On request only."
+  },
+  {
+    "key": "site:home/materials.groups.4.title",
+    "surface": "site",
+    "group": "Home",
+    "where": "materials",
+    "text": "The hair"
+  },
+  {
+    "key": "site:home/materials.groups.4.items.0.name",
+    "surface": "site",
+    "group": "Home",
+    "where": "materials",
+    "text": "100% real human hair"
+  },
+  {
+    "key": "site:home/materials.groups.4.items.0.text",
+    "surface": "site",
+    "group": "Home",
+    "where": "materials",
+    "text": "Cut, washed and styled like your own. It does not grow, so the hair system is renewed when it wears."
+  },
+  {
+    "key": "site:home/materials.groups.4.items.1.name",
+    "surface": "site",
+    "group": "Home",
+    "where": "materials",
+    "text": "Indian remy hair, on Mane Man Natural"
+  },
+  {
+    "key": "site:home/materials.groups.4.items.1.text",
+    "surface": "site",
+    "group": "Home",
+    "where": "materials",
+    "text": "Every hair runs the same way, root to tip, so it tangles less and holds its shine longer."
+  },
+  {
+    "key": "site:home/materials.groups.4.items.2.name",
+    "surface": "site",
+    "group": "Home",
+    "where": "materials",
+    "text": "Matched to you"
+  },
+  {
+    "key": "site:home/materials.groups.4.items.2.text",
+    "surface": "site",
+    "group": "Home",
+    "where": "materials",
+    "text": "Colour, grey and wave matched to your own hair in daylight, at the consultation."
+  },
+  {
+    "key": "site:home/materials.groups.5.title",
+    "surface": "site",
+    "group": "Home",
+    "where": "materials",
+    "text": "What we do not fit, and why"
+  },
+  {
+    "key": "site:home/materials.groups.5.items.0.name",
+    "surface": "site",
+    "group": "Home",
+    "where": "materials",
+    "text": "Ultra-thin skin, 0.03 mm"
+  },
+  {
+    "key": "site:home/materials.groups.5.items.0.text",
+    "surface": "site",
+    "group": "Home",
+    "where": "materials",
+    "text": "The most invisible base made, and it lasts about a month."
+  },
+  {
+    "key": "site:home/materials.groups.5.items.1.name",
+    "surface": "site",
+    "group": "Home",
+    "where": "materials",
+    "text": "Full Swiss lace"
+  },
+  {
+    "key": "site:home/materials.groups.5.items.1.text",
+    "surface": "site",
+    "group": "Home",
+    "where": "materials",
+    "text": "The most fragile base there is: one to two months."
+  },
+  {
+    "key": "site:home/materials.groups.5.items.2.name",
+    "surface": "site",
+    "group": "Home",
+    "where": "materials",
+    "text": "Lace with no rim"
+  },
+  {
+    "key": "site:home/materials.groups.5.items.2.text",
+    "surface": "site",
+    "group": "Home",
+    "where": "materials",
+    "text": "It must be glued along its whole edge every few weeks: a salon job, not a home service."
+  },
+  {
+    "key": "site:home/materials.groups.5.items.3.name",
+    "surface": "site",
+    "group": "Home",
+    "where": "materials",
+    "text": "140% and denser, as standard"
+  },
+  {
+    "key": "site:home/materials.groups.5.items.3.text",
+    "surface": "site",
+    "group": "Home",
+    "where": "materials",
+    "text": "Too much hair is what makes a hair system obvious."
+  },
+  {
+    "key": "site:home/materials.groups.5.items.4.name",
+    "surface": "site",
+    "group": "Home",
+    "where": "materials",
+    "text": "European hair"
+  },
+  {
+    "key": "site:home/materials.groups.5.items.4.text",
+    "surface": "site",
+    "group": "Home",
+    "where": "materials",
+    "text": "Finer, dearer, and a poor match for Indian hair."
+  },
+  {
+    "key": "site:home/prices.label",
+    "surface": "site",
+    "group": "Home",
+    "where": "prices",
+    "text": "Published prices"
+  },
+  {
+    "key": "site:home/prices.intro",
+    "surface": "site",
+    "group": "Home",
+    "where": "prices",
+    "text": "No consultation fee, no deposit, no package. You pay for your hair system and the visits you take."
+  },
+  {
+    "key": "site:home/prices.column",
+    "surface": "site",
+    "group": "Home",
+    "where": "prices",
+    "text": "Price"
+  },
+  {
+    "key": "site:home/prices.rows.0.label",
+    "surface": "site",
+    "group": "Home",
+    "where": "prices",
+    "text": "First fit"
+  },
+  {
+    "key": "site:home/prices.rows.0.note",
+    "surface": "site",
+    "group": "Home",
+    "where": "prices",
+    "text": "Your hair system, the fitting and the cut"
+  },
+  {
+    "key": "site:home/prices.rows.0.amount",
+    "surface": "site",
+    "group": "Home",
+    "where": "prices",
+    "text": "From {firstFit}"
+  },
+  {
+    "key": "site:home/prices.rows.1.label",
+    "surface": "site",
+    "group": "Home",
+    "where": "prices",
+    "text": "Monthly service visit"
+  },
+  {
+    "key": "site:home/prices.rows.1.note",
+    "surface": "site",
+    "group": "Home",
+    "where": "prices",
+    "text": "Refit, clean, trim — at your home"
+  },
+  {
+    "key": "site:home/prices.rows.2.label",
+    "surface": "site",
+    "group": "Home",
+    "where": "prices",
+    "text": "Replacement hair system"
+  },
+  {
+    "key": "site:home/prices.rows.2.note",
+    "surface": "site",
+    "group": "Home",
+    "where": "prices",
+    "text": "Every six months"
+  },
+  {
+    "key": "site:home/prices.example",
+    "surface": "site",
+    "group": "Home",
+    "where": "prices",
+    "text": "Your first year, from {firstYear}: the first fit and twelve service visits at {service}."
+  },
+  {
+    "key": "site:home/prices.payment",
+    "surface": "site",
+    "group": "Home",
+    "where": "prices",
+    "text": "Pay by UPI or card: in the app as you book, or by a link once you are fitted."
+  },
+  {
+    "key": "site:home/prices.book",
+    "surface": "site",
+    "group": "Home",
+    "where": "prices",
+    "text": "Book a free consultation"
+  },
+  {
+    "key": "site:home/prices.tryOn",
+    "surface": "site",
+    "group": "Home",
+    "where": "prices",
+    "text": "Or try a new look first"
+  },
+  {
+    "key": "site:home/guarantee.label",
+    "surface": "site",
+    "group": "Home",
+    "where": "guarantee",
+    "text": "The guarantee"
+  },
+  {
+    "key": "site:home/guarantee.text",
+    "surface": "site",
+    "group": "Home",
+    "where": "guarantee",
+    "text": "If the fit isn't right, tell us within 14 days. We'll refit it free or refund you in full."
+  },
+  {
+    "key": "site:home/faq.title",
+    "surface": "site",
+    "group": "Home",
+    "where": "faq",
+    "text": "Questions"
+  },
+  {
+    "key": "site:home/faq.intro.before",
+    "surface": "site",
+    "group": "Home",
+    "where": "faq",
+    "text": "If yours is not here, "
+  },
+  {
+    "key": "site:home/faq.intro.link",
+    "surface": "site",
+    "group": "Home",
+    "where": "faq",
+    "text": "ask on WhatsApp"
+  },
+  {
+    "key": "site:home/faq.items.0.q",
+    "surface": "site",
+    "group": "Home",
+    "where": "faq",
+    "text": "Will anyone be able to tell?"
+  },
+  {
+    "key": "site:home/faq.items.0.a",
+    "surface": "site",
+    "group": "Home",
+    "where": "faq",
+    "text": "Not at conversational distance. The hairline is where it is won or lost, and every hair system we fit has a lace front that melts into the skin. Under a shower, or with a hand run back through the hair, someone could tell."
+  },
+  {
+    "key": "site:home/faq.items.1.q",
+    "surface": "site",
+    "group": "Home",
+    "where": "faq",
+    "text": "How long does a hair system last?"
+  },
+  {
+    "key": "site:home/faq.items.1.a",
+    "surface": "site",
+    "group": "Home",
+    "where": "faq",
+    "text": "Months, not years: the base wears out before the hair does. How many depends on the base you choose, the heat and your care, and your technician tells you what to expect from yours. The monthly visit keeps it at its best."
+  },
+  {
+    "key": "site:home/faq.items.2.q",
+    "surface": "site",
+    "group": "Home",
+    "where": "faq",
+    "text": "What happens during the monthly service visit?"
+  },
+  {
+    "key": "site:home/faq.items.2.a",
+    "surface": "site",
+    "group": "Home",
+    "where": "faq",
+    "text": "The technician lifts the hair system, cleans the adhesive off the base and your scalp, checks the knots, re-bonds it and trims the hair to match your own growth. About ninety minutes, at your home."
+  },
+  {
+    "key": "site:home/faq.items.3.q",
+    "surface": "site",
+    "group": "Home",
+    "where": "faq",
+    "text": "Can I swim, shower and exercise with it?"
+  },
+  {
+    "key": "site:home/faq.items.3.a",
+    "surface": "site",
+    "group": "Home",
+    "where": "faq",
+    "text": "Yes to all three. Chlorine and sea salt shorten the life of the base, so rinse it in fresh water afterwards. Heavy sweating is fine."
+  },
+  {
+    "key": "site:home/faq.items.4.q",
+    "surface": "site",
+    "group": "Home",
+    "where": "faq",
+    "text": "Does it damage the hair I still have?"
+  },
+  {
+    "key": "site:home/faq.items.4.a",
+    "surface": "site",
+    "group": "Home",
+    "where": "faq",
+    "text": "The base sits on skin, not on hair, and the perimeter is bonded to areas where you have little or none. Hair under the base is trimmed short rather than shaved."
+  },
+  {
+    "key": "site:home/faq.items.5.q",
+    "surface": "site",
+    "group": "Home",
+    "where": "faq",
+    "text": "How do you match the colour and the hairline?"
+  },
+  {
+    "key": "site:home/faq.items.5.a",
+    "surface": "site",
+    "group": "Home",
+    "where": "faq",
+    "text": "Colour is matched against forty samples in daylight at the consultation, including the grey percentage. The hairline is drawn on your forehead with a pencil and agreed with you before anything is fitted."
+  },
+  {
+    "key": "site:home/faq.items.6.q",
+    "surface": "site",
+    "group": "Home",
+    "where": "faq",
+    "text": "What if I do not like it at the fit?"
+  },
+  {
+    "key": "site:home/faq.items.6.a",
+    "surface": "site",
+    "group": "Home",
+    "where": "faq",
+    "text": "If the fit isn't right, tell us within 14 days. We'll refit it free or refund you in full."
+  },
+  {
+    "key": "site:home/faq.items.7.q",
+    "surface": "site",
+    "group": "Home",
+    "where": "faq",
+    "text": "Which cities do you cover?"
+  },
+  {
+    "key": "site:home/faq.items.7.a",
+    "surface": "site",
+    "group": "Home",
+    "where": "faq",
+    "text": "All of Delhi NCR: Gurgaon, Delhi, Noida, Faridabad and Ghaziabad. Mumbai and Bengaluru are next. Leave your number and we will tell you when a technician is working in your city."
+  },
+  {
+    "key": "site:home/faq.items.8.q",
+    "surface": "site",
+    "group": "Home",
+    "where": "faq",
+    "text": "What does it cost?"
+  },
+  {
+    "key": "site:home/faq.items.8.a",
+    "surface": "site",
+    "group": "Home",
+    "where": "faq",
+    "text": "It depends on the hair system you choose. Your technician quotes it at the free consultation, before anything is fitted. No deposit, no package."
+  },
+  {
+    "key": "site:home/faq.items.9.q",
+    "surface": "site",
+    "group": "Home",
+    "where": "faq",
+    "text": "Is this the same thing as a wig?"
+  },
+  {
+    "key": "site:home/faq.items.9.a",
+    "surface": "site",
+    "group": "Home",
+    "where": "faq",
+    "text": "No. A wig sits on the whole head, is held by tension or clips, and comes off at night. This is bonded to the skin over the area you have lost, is cut to your face, and stays on for weeks at a time."
+  },
+  {
+    "key": "site:home/closing.title",
+    "surface": "site",
+    "group": "Home",
+    "where": "closing",
+    "text": "The consultation takes an hour and costs nothing."
+  },
+  {
+    "key": "site:home/closing.book",
+    "surface": "site",
+    "group": "Home",
+    "where": "closing",
+    "text": "Book a free consultation"
+  },
+  {
+    "key": "site:pages/booking.title",
+    "surface": "site",
+    "group": "Book",
+    "where": "booking",
+    "text": "Book a free consultation"
+  },
+  {
+    "key": "site:pages/booking.titleOneVisit",
+    "surface": "site",
+    "group": "Book",
+    "where": "booking",
+    "text": "Book a consultation and fit"
+  },
+  {
+    "key": "site:pages/booking.titleWaitlist",
+    "surface": "site",
+    "group": "Book",
+    "where": "booking",
+    "text": "Not in your area yet"
+  },
+  {
+    "key": "site:pages/booking.intro",
+    "surface": "site",
+    "group": "Book",
+    "where": "booking",
+    "text": "Your technician measures your scalp and matches your colour: an hour, free. Or add the fit and wear your hair system the same day."
+  },
+  {
+    "key": "site:pages/booking.introWaitlist",
+    "surface": "site",
+    "group": "Book",
+    "where": "booking",
+    "text": "Join the list and we'll WhatsApp you the week we start coming to you."
+  },
+  {
+    "key": "site:pages/booking.extent",
+    "surface": "site",
+    "group": "Book",
+    "where": "booking",
+    "text": "Extent of hair loss (optional)"
+  },
+  {
+    "key": "site:pages/booking.step",
+    "surface": "site",
+    "group": "Book",
+    "where": "booking",
+    "text": "Step {at} of {of} · {name}"
+  },
+  {
+    "key": "site:pages/booking.steps.you",
+    "surface": "site",
+    "group": "Book",
+    "where": "booking",
+    "text": "You"
+  },
+  {
+    "key": "site:pages/booking.steps.area",
+    "surface": "site",
+    "group": "Book",
+    "where": "booking",
+    "text": "Your area"
+  },
+  {
+    "key": "site:pages/booking.steps.visit",
+    "surface": "site",
+    "group": "Book",
+    "where": "booking",
+    "text": "Your visit"
+  },
+  {
+    "key": "site:pages/booking.steps.address",
+    "surface": "site",
+    "group": "Book",
+    "where": "booking",
+    "text": "Your address"
+  },
+  {
+    "key": "site:pages/booking.steps.list",
+    "surface": "site",
+    "group": "Book",
+    "where": "booking",
+    "text": "The list"
+  },
+  {
+    "key": "site:pages/booking.next",
+    "surface": "site",
+    "group": "Book",
+    "where": "booking",
+    "text": "Continue"
+  },
+  {
+    "key": "site:pages/booking.saving",
+    "surface": "site",
+    "group": "Book",
+    "where": "booking",
+    "text": "One moment"
+  },
+  {
+    "key": "site:pages/booking.bookingFor",
+    "surface": "site",
+    "group": "Book",
+    "where": "booking",
+    "text": "For {name}, +91 {mobile}"
+  },
+  {
+    "key": "site:pages/booking.changeYou",
+    "surface": "site",
+    "group": "Book",
+    "where": "booking",
+    "text": "Change"
+  },
+  {
+    "key": "site:pages/booking.changeYouLabel",
+    "surface": "site",
+    "group": "Book",
+    "where": "booking",
+    "text": "Change your name or number"
+  },
+  {
+    "key": "site:pages/booking.waitlistTitle",
+    "surface": "site",
+    "group": "Book",
+    "where": "booking",
+    "text": "Join the list"
+  },
+  {
+    "key": "site:pages/notFound.title",
+    "surface": "site",
+    "group": "Page not found",
+    "where": "notFound",
+    "text": "This page is not here."
+  },
+  {
+    "key": "site:pages/notFound.body",
+    "surface": "site",
+    "group": "Page not found",
+    "where": "notFound",
+    "text": "The address may have changed. Everything is on the home page."
+  },
+  {
+    "key": "site:pages/notFound.home",
+    "surface": "site",
+    "group": "Page not found",
+    "where": "notFound",
+    "text": "Back to the site"
+  },
+  {
+    "key": "site:pages/stopMessages.ask.title",
+    "surface": "site",
+    "group": "Stop messages",
+    "where": "stopMessages",
+    "text": "Stop these messages"
+  },
+  {
+    "key": "site:pages/stopMessages.ask.body",
+    "surface": "site",
+    "group": "Stop messages",
+    "where": "stopMessages",
+    "text": "One tap, and we stop sending them on WhatsApp."
+  },
+  {
+    "key": "site:pages/stopMessages.ask.button",
+    "surface": "site",
+    "group": "Stop messages",
+    "where": "stopMessages",
+    "text": "Stop them"
+  },
+  {
+    "key": "site:pages/stopMessages.done.title",
+    "surface": "site",
+    "group": "Stop messages",
+    "where": "stopMessages",
+    "text": "Done."
+  },
+  {
+    "key": "site:pages/stopMessages.done.whatsapp_visits",
+    "surface": "site",
+    "group": "Stop messages",
+    "where": "stopMessages",
+    "text": "We won’t message you on WhatsApp about your visits any more. We’ll call you about any change."
+  },
+  {
+    "key": "site:pages/stopMessages.done.whatsapp_launches",
+    "surface": "site",
+    "group": "Stop messages",
+    "where": "stopMessages",
+    "text": "We won’t message you when we come to a new area any more."
+  },
+  {
+    "key": "site:pages/stopMessages.done.again",
+    "surface": "site",
+    "group": "Stop messages",
+    "where": "stopMessages",
+    "text": "Changed your mind? Switch them back on in the Mane Man app, or message us at {whatsapp}."
+  },
+  {
+    "key": "site:pages/stopMessages.expired.title",
+    "surface": "site",
+    "group": "Stop messages",
+    "where": "stopMessages",
+    "text": "This link no longer works."
+  },
+  {
+    "key": "site:pages/stopMessages.expired.body",
+    "surface": "site",
+    "group": "Stop messages",
+    "where": "stopMessages",
+    "text": "Reply STOP to any of our WhatsApp messages, or message us at {whatsapp}, and we will stop them."
+  },
+  {
+    "key": "site:pages/stopMessages.offline",
+    "surface": "site",
+    "group": "Stop messages",
+    "where": "stopMessages",
+    "text": "We couldn’t reach Mane Man. Check your connection and try again."
+  },
+  {
+    "key": "site:pages/pageTitles.home",
+    "surface": "site",
+    "group": "Page titles",
+    "where": "pageTitles",
+    "text": "Mane Man — hair systems, fitted at your home across Delhi NCR"
+  },
+  {
+    "key": "site:pages/pageTitles.tryOn",
+    "surface": "site",
+    "group": "Page titles",
+    "where": "pageTitles",
+    "text": "Try a new look — Mane Man"
+  },
+  {
+    "key": "site:pages/pageTitles.book",
+    "surface": "site",
+    "group": "Page titles",
+    "where": "pageTitles",
+    "text": "Book a free consultation — Mane Man"
+  },
+  {
+    "key": "site:pages/pageTitles.privacy",
+    "surface": "site",
+    "group": "Page titles",
+    "where": "pageTitles",
+    "text": "Privacy — Mane Man"
+  },
+  {
+    "key": "site:pages/pageTitles.terms",
+    "surface": "site",
+    "group": "Page titles",
+    "where": "pageTitles",
+    "text": "Terms — Mane Man"
+  },
+  {
+    "key": "site:pages/pageTitles.notFound",
+    "surface": "site",
+    "group": "Page titles",
+    "where": "pageTitles",
+    "text": "Not found — Mane Man"
+  },
+  {
+    "key": "site:pages/pageTitles.stop",
+    "surface": "site",
+    "group": "Page titles",
+    "where": "pageTitles",
+    "text": "Stop messages — Mane Man"
+  },
+  {
+    "key": "site:pages/pageDescriptions.home",
+    "surface": "site",
+    "group": "Page titles",
+    "where": "pageDescriptions",
+    "text": "Hair systems in 100% real human hair, fitted at your home across Delhi NCR. The consultation is free."
+  },
+  {
+    "key": "site:pages/pageDescriptions.tryOn",
+    "surface": "site",
+    "group": "Page titles",
+    "where": "pageDescriptions",
+    "text": "One photograph, one look from six, sent privately to your WhatsApp. A simulation, not a photograph of a result. Your photograph is deleted within the hour."
+  },
+  {
+    "key": "site:pages/pageDescriptions.book",
+    "surface": "site",
+    "group": "Page titles",
+    "where": "pageDescriptions",
+    "text": "Your technician measures your scalp and matches your colour: an hour, free. Or add the fit and wear your hair system the same day."
+  },
+  {
+    "key": "site:pages/pageDescriptions.privacy",
+    "surface": "site",
+    "group": "Page titles",
+    "where": "pageDescriptions",
+    "text": "What Mane Man keeps about you, who processes it, how long it is kept, and how to have it erased."
+  },
+  {
+    "key": "site:pages/pageDescriptions.terms",
+    "surface": "site",
+    "group": "Page titles",
+    "where": "pageDescriptions",
+    "text": "The terms of Mane Man's hair system service."
+  },
+  {
+    "key": "site:tryon/stageOptions.0.title",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "stageOptions",
+    "text": "Thinning at the crown"
+  },
+  {
+    "key": "site:tryon/stageOptions.0.sub",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "stageOptions",
+    "text": "The parting has widened"
+  },
+  {
+    "key": "site:tryon/stageOptions.0.short",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "stageOptions",
+    "text": "Crown thinning"
+  },
+  {
+    "key": "site:tryon/stageOptions.0.hair",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "stageOptions",
+    "text": "M13 28 C20 17 44 17 51 28"
+  },
+  {
+    "key": "site:tryon/stageOptions.0.zone",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "stageOptions",
+    "text": "M32 33 C41 33 46 38 46 44 C46 50 40 55 32 55 C24 55 18 50 18 44 C18 38 23 33 32 33 Z"
+  },
+  {
+    "key": "site:tryon/stageOptions.1.title",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "stageOptions",
+    "text": "Receding at the front"
+  },
+  {
+    "key": "site:tryon/stageOptions.1.sub",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "stageOptions",
+    "text": "The corners have gone back"
+  },
+  {
+    "key": "site:tryon/stageOptions.1.short",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "stageOptions",
+    "text": "Receding front"
+  },
+  {
+    "key": "site:tryon/stageOptions.1.hair",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "stageOptions",
+    "text": "M11 34 C16 22 24 18 32 18 C40 18 48 22 53 34"
+  },
+  {
+    "key": "site:tryon/stageOptions.1.zone",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "stageOptions",
+    "text": "M13 30 C18 19 25 25 32 25 C39 25 46 19 51 30"
+  },
+  {
+    "key": "site:tryon/stageOptions.2.title",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "stageOptions",
+    "text": "Advanced, front and crown"
+  },
+  {
+    "key": "site:tryon/stageOptions.2.sub",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "stageOptions",
+    "text": "Little left on top"
+  },
+  {
+    "key": "site:tryon/stageOptions.2.short",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "stageOptions",
+    "text": "Advanced"
+  },
+  {
+    "key": "site:tryon/stageOptions.2.hair",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "stageOptions",
+    "text": "M10 40 C14 30 22 26 32 26 C42 26 50 30 54 40"
+  },
+  {
+    "key": "site:tryon/stageOptions.2.zone",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "stageOptions",
+    "text": "M12 34 C18 16 46 16 52 34 C46 28 18 28 12 34 Z"
+  },
+  {
+    "key": "site:tryon/looks.0.label",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "looks",
+    "text": "Full density · Natural hairline · short"
+  },
+  {
+    "key": "site:tryon/looks.0.density",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "looks",
+    "text": "Full density"
+  },
+  {
+    "key": "site:tryon/looks.0.detail",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "looks",
+    "text": "Natural hairline · short"
+  },
+  {
+    "key": "site:tryon/looks.1.label",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "looks",
+    "text": "Full density · Straight hairline · medium"
+  },
+  {
+    "key": "site:tryon/looks.1.density",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "looks",
+    "text": "Full density"
+  },
+  {
+    "key": "site:tryon/looks.1.detail",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "looks",
+    "text": "Straight hairline · medium"
+  },
+  {
+    "key": "site:tryon/looks.2.label",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "looks",
+    "text": "Medium density · Natural hairline · short"
+  },
+  {
+    "key": "site:tryon/looks.2.density",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "looks",
+    "text": "Medium density"
+  },
+  {
+    "key": "site:tryon/looks.2.detail",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "looks",
+    "text": "Natural hairline · short"
+  },
+  {
+    "key": "site:tryon/looks.3.label",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "looks",
+    "text": "Medium density · Receded hairline · medium"
+  },
+  {
+    "key": "site:tryon/looks.3.density",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "looks",
+    "text": "Medium density"
+  },
+  {
+    "key": "site:tryon/looks.3.detail",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "looks",
+    "text": "Receded hairline · medium"
+  },
+  {
+    "key": "site:tryon/looks.4.label",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "looks",
+    "text": "Light density · Natural hairline · short"
+  },
+  {
+    "key": "site:tryon/looks.4.density",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "looks",
+    "text": "Light density"
+  },
+  {
+    "key": "site:tryon/looks.4.detail",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "looks",
+    "text": "Natural hairline · short"
+  },
+  {
+    "key": "site:tryon/looks.5.label",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "looks",
+    "text": "Light density · Receded hairline · cropped"
+  },
+  {
+    "key": "site:tryon/looks.5.density",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "looks",
+    "text": "Light density"
+  },
+  {
+    "key": "site:tryon/looks.5.detail",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "looks",
+    "text": "Receded hairline · cropped"
+  },
+  {
+    "key": "site:tryon/tryOn.back",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "tryOn",
+    "text": "Back"
+  },
+  {
+    "key": "site:tryon/tryOn.backToSite",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "tryOn",
+    "text": "Back to the site"
+  },
+  {
+    "key": "site:tryon/tryOn.stepLabels.upload",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "tryOn",
+    "text": "Step one of four"
+  },
+  {
+    "key": "site:tryon/tryOn.stepLabels.consent",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "tryOn",
+    "text": "Before we begin"
+  },
+  {
+    "key": "site:tryon/tryOn.stepLabels.stage",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "tryOn",
+    "text": "Step two of four"
+  },
+  {
+    "key": "site:tryon/tryOn.stepLabels.looks",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "tryOn",
+    "text": "Step three of four"
+  },
+  {
+    "key": "site:tryon/tryOn.stepLabels.gate",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "tryOn",
+    "text": "Step four of four"
+  },
+  {
+    "key": "site:tryon/tryOn.stepLabels.sent",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "tryOn",
+    "text": "Sent to WhatsApp"
+  },
+  {
+    "key": "site:tryon/tryOn.stepLabels.error",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "tryOn",
+    "text": "Cannot use this photograph"
+  },
+  {
+    "key": "site:tryon/tryOn.upload.title",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "tryOn",
+    "text": "One photo, taken straight on."
+  },
+  {
+    "key": "site:tryon/tryOn.upload.body",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "tryOn",
+    "text": "The simulation is only as good as the photo. Three things matter, and none of them need a good camera."
+  },
+  {
+    "key": "site:tryon/tryOn.upload.guidelines.0.title",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "tryOn",
+    "text": "Face the window"
+  },
+  {
+    "key": "site:tryon/tryOn.upload.guidelines.0.body",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "tryOn",
+    "text": "Daylight from the front, nothing bright behind you."
+  },
+  {
+    "key": "site:tryon/tryOn.upload.guidelines.1.title",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "tryOn",
+    "text": "Straight on, no tilt"
+  },
+  {
+    "key": "site:tryon/tryOn.upload.guidelines.1.body",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "tryOn",
+    "text": "Phone at eye level, arm out, chin level."
+  },
+  {
+    "key": "site:tryon/tryOn.upload.guidelines.2.title",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "tryOn",
+    "text": "Nothing on your head"
+  },
+  {
+    "key": "site:tryon/tryOn.upload.guidelines.2.body",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "tryOn",
+    "text": "No cap, no hood, hair as it is today."
+  },
+  {
+    "key": "site:tryon/tryOn.upload.choose",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "tryOn",
+    "text": "Choose a photograph"
+  },
+  {
+    "key": "site:tryon/tryOn.upload.camera",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "tryOn",
+    "text": "Use the camera"
+  },
+  {
+    "key": "site:tryon/tryOn.upload.previewCaption",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "tryOn",
+    "text": "Your photograph appears here"
+  },
+  {
+    "key": "site:tryon/tryOn.upload.previewAlt",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "tryOn",
+    "text": "The photograph you chose"
+  },
+  {
+    "key": "site:tryon/tryOn.upload.oval",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "tryOn",
+    "text": "Fill the oval"
+  },
+  {
+    "key": "site:tryon/tryOn.consent.continue",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "tryOn",
+    "text": "Continue"
+  },
+  {
+    "key": "site:tryon/tryOn.consent.privacy.before",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "tryOn",
+    "text": "Read the full "
+  },
+  {
+    "key": "site:tryon/tryOn.consent.privacy.link",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "tryOn",
+    "text": "privacy notice"
+  },
+  {
+    "key": "site:tryon/tryOn.stage.title",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "tryOn",
+    "text": "Where are you now?"
+  },
+  {
+    "key": "site:tryon/tryOn.stage.body",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "tryOn",
+    "text": "Pick whichever is closest. Your technician measures properly at the visit."
+  },
+  {
+    "key": "site:tryon/tryOn.stage.continue",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "tryOn",
+    "text": "Continue"
+  },
+  {
+    "key": "site:tryon/tryOn.looks.title",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "tryOn",
+    "text": "Choose a look."
+  },
+  {
+    "key": "site:tryon/tryOn.looks.body",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "tryOn",
+    "text": "You get one look, so pick the one you'd wear."
+  },
+  {
+    "key": "site:tryon/tryOn.looks.choose",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "tryOn",
+    "text": "Choose one to continue"
+  },
+  {
+    "key": "site:tryon/tryOn.looks.continue",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "tryOn",
+    "text": "Continue"
+  },
+  {
+    "key": "site:tryon/tryOn.gate.frame",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "tryOn",
+    "text": "For your WhatsApp only"
+  },
+  {
+    "key": "site:tryon/tryOn.gate.name",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "tryOn",
+    "text": "Name"
+  },
+  {
+    "key": "site:tryon/tryOn.gate.namePlaceholder",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "tryOn",
+    "text": "Your name"
+  },
+  {
+    "key": "site:tryon/tryOn.gate.nameError",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "tryOn",
+    "text": "Tell us what to call you, in letters."
+  },
+  {
+    "key": "site:tryon/tryOn.gate.mobile",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "tryOn",
+    "text": "Mobile"
+  },
+  {
+    "key": "site:tryon/tryOn.gate.mobileError",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "tryOn",
+    "text": "Enter a valid 10-digit mobile number."
+  },
+  {
+    "key": "site:tryon/tryOn.gate.submit",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "tryOn",
+    "text": "Send my look"
+  },
+  {
+    "key": "site:tryon/tryOn.gate.confirm",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "tryOn",
+    "text": "Confirm and send my look"
+  },
+  {
+    "key": "site:tryon/tryOn.gate.sending",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "tryOn",
+    "text": "Sending"
+  },
+  {
+    "key": "site:tryon/tryOn.gate.errors.rateLimited",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "tryOn",
+    "text": "This number is out of tries for today. Try again tomorrow."
+  },
+  {
+    "key": "site:tryon/tryOn.gate.errors.taken",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "tryOn",
+    "text": "This look is already on its way to another number."
+  },
+  {
+    "key": "site:tryon/tryOn.gate.errors.other",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "tryOn",
+    "text": "That didn't go through. Try again in a minute."
+  },
+  {
+    "key": "site:tryon/tryOn.gate.errors.codes",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "tryOn",
+    "text": "That’s too many codes for this number today. Try again tomorrow."
+  },
+  {
+    "key": "site:tryon/tryOn.gate.errors.turnstile",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "tryOn",
+    "text": "We couldn’t confirm you’re a person. Try again."
+  },
+  {
+    "key": "site:tryon/tryOn.gate.errors.notProved",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "tryOn",
+    "text": "Your WhatsApp code has expired. Press Send my look for a new one."
+  },
+  {
+    "key": "site:tryon/tryOn.sent.frame",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "tryOn",
+    "text": "On its way to your WhatsApp"
+  },
+  {
+    "key": "site:tryon/tryOn.sent.title",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "tryOn",
+    "text": "Your new look is on its way."
+  },
+  {
+    "key": "site:tryon/tryOn.sent.to.before",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "tryOn",
+    "text": "It'll reach WhatsApp on "
+  },
+  {
+    "key": "site:tryon/tryOn.sent.to.after",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "tryOn",
+    "text": " within minutes."
+  },
+  {
+    "key": "site:tryon/tryOn.sent.privacy",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "tryOn",
+    "text": "We delete it after 14 days."
+  },
+  {
+    "key": "site:tryon/tryOn.sent.disclaimer",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "tryOn",
+    "text": "An illustrative simulation, not a photograph of a result. Your hair system is matched to your own hair colour, density and growth pattern."
+  },
+  {
+    "key": "site:tryon/tryOn.sent.book",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "tryOn",
+    "text": "Book a free consultation"
+  },
+  {
+    "key": "site:tryon/tryOn.sent.home",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "tryOn",
+    "text": "Back to the site"
+  },
+  {
+    "key": "site:tryon/tryOn.sent.returning.title",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "tryOn",
+    "text": "Your look has already been sent."
+  },
+  {
+    "key": "site:tryon/tryOn.sent.returning.body",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "tryOn",
+    "text": "We sent it to the WhatsApp number you gave. It's one look per person, every 30 days."
+  },
+  {
+    "key": "site:tryon/tryOn.error.another",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "tryOn",
+    "text": "Choose another"
+  },
+  {
+    "key": "site:tryon/tryOn.error.book",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "tryOn",
+    "text": "Book a consultation instead"
+  },
+  {
+    "key": "site:tryon/tryOn.error.kinds.photo.step",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "tryOn",
+    "text": "Cannot use this photograph"
+  },
+  {
+    "key": "site:tryon/tryOn.error.kinds.photo.frame",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "tryOn",
+    "text": "Cannot read the photograph"
+  },
+  {
+    "key": "site:tryon/tryOn.error.kinds.photo.title",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "tryOn",
+    "text": "We cannot use this photograph."
+  },
+  {
+    "key": "site:tryon/tryOn.error.kinds.photo.body",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "tryOn",
+    "text": "Your face may be turned, your hairline covered, or the light too low. Face a window and shoot straight on."
+  },
+  {
+    "key": "site:tryon/tryOn.error.kinds.renderFailed.step",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "tryOn",
+    "text": "Something went wrong"
+  },
+  {
+    "key": "site:tryon/tryOn.error.kinds.renderFailed.frame",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "tryOn",
+    "text": "The simulation failed"
+  },
+  {
+    "key": "site:tryon/tryOn.error.kinds.renderFailed.title",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "tryOn",
+    "text": "The simulation did not work this time."
+  },
+  {
+    "key": "site:tryon/tryOn.error.kinds.renderFailed.body",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "tryOn",
+    "text": "The photograph looked fine; the simulation failed on our side. Try again with the same photograph or another, or book a consultation and see it in person."
+  },
+  {
+    "key": "site:tryon/tryOn.error.kinds.busy.step",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "tryOn",
+    "text": "Please try again shortly"
+  },
+  {
+    "key": "site:tryon/tryOn.error.kinds.busy.frame",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "tryOn",
+    "text": "The simulation is busy"
+  },
+  {
+    "key": "site:tryon/tryOn.error.kinds.busy.title",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "tryOn",
+    "text": "The simulation is busy just now."
+  },
+  {
+    "key": "site:tryon/tryOn.error.kinds.busy.body",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "tryOn",
+    "text": "Try again in a few minutes, or book a consultation and see it in person."
+  },
+  {
+    "key": "site:tryon/tryOn.error.kinds.unavailable.step",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "tryOn",
+    "text": "Not available right now"
+  },
+  {
+    "key": "site:tryon/tryOn.error.kinds.unavailable.frame",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "tryOn",
+    "text": "Paused"
+  },
+  {
+    "key": "site:tryon/tryOn.error.kinds.unavailable.title",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "tryOn",
+    "text": "The try-on is paused."
+  },
+  {
+    "key": "site:tryon/tryOn.error.kinds.unavailable.body",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "tryOn",
+    "text": "We send every look on WhatsApp, and that isn't switched on yet. Book a free consultation and see the real thing."
+  },
+  {
+    "key": "site:tryon/numberCode.label",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "numberCode",
+    "text": "WhatsApp code"
+  },
+  {
+    "key": "site:tryon/numberCode.sentTo",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "numberCode",
+    "text": "Sent on WhatsApp to +91 "
+  },
+  {
+    "key": "site:tryon/numberCode.hint",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "numberCode",
+    "text": "It confirms the number is yours."
+  },
+  {
+    "key": "site:tryon/numberCode.incomplete",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "numberCode",
+    "text": "Enter the six digits from WhatsApp."
+  },
+  {
+    "key": "site:tryon/numberCode.expired",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "numberCode",
+    "text": "That code has expired. Send a new one."
+  },
+  {
+    "key": "site:tryon/numberCode.failed",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "numberCode",
+    "text": "That didn’t go through. Try again."
+  },
+  {
+    "key": "site:tryon/numberCode.again",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "numberCode",
+    "text": "Send a new code"
+  },
+  {
+    "key": "site:tryon/numberCode.checking",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "numberCode",
+    "text": "Checking"
+  },
+  {
+    "key": "site:contact/whatsapp.display",
+    "surface": "site",
+    "group": "Contact",
+    "where": "whatsapp",
+    "text": "+91 90079 73247"
+  },
+  {
+    "key": "site:contact/whatsapp.label",
+    "surface": "site",
+    "group": "Contact",
+    "where": "whatsapp",
+    "text": "WhatsApp · +91 90079 73247"
+  },
+  {
+    "key": "site:guides/guidesPage.title",
+    "surface": "site",
+    "group": "Guides",
+    "where": "guidesPage",
+    "text": "Guides"
+  },
+  {
+    "key": "site:guides/guidesPage.pageTitle",
+    "surface": "site",
+    "group": "Guides",
+    "where": "guidesPage",
+    "text": "Hair system guides · Mane Man"
+  },
+  {
+    "key": "site:guides/guidesPage.description",
+    "surface": "site",
+    "group": "Guides",
+    "where": "guidesPage",
+    "text": "Straight answers on hair systems: how they compare with a transplant, and how they're fitted, cared for and priced."
+  },
+  {
+    "key": "site:guides/guidesPage.lead",
+    "surface": "site",
+    "group": "Guides",
+    "where": "guidesPage",
+    "text": "Straight answers, before you book anything."
+  },
+  {
+    "key": "site:guides/guidesPage.read",
+    "surface": "site",
+    "group": "Guides",
+    "where": "guidesPage",
+    "text": "Read"
+  },
+  {
+    "key": "site:guides/guidesPage.book",
+    "surface": "site",
+    "group": "Guides",
+    "where": "guidesPage",
+    "text": "Book a free consultation"
+  },
+  {
+    "key": "site:guides/guides.0.title",
+    "surface": "site",
+    "group": "Guides",
+    "where": "guides",
+    "text": "Hair system or hair transplant"
+  },
+  {
+    "key": "site:guides/guides.0.description",
+    "surface": "site",
+    "group": "Guides",
+    "where": "guides",
+    "text": "Hair system or transplant: what each involves, how soon you see a result, and who each suits."
+  },
+  {
+    "key": "site:guides/guides.0.lead",
+    "surface": "site",
+    "group": "Guides",
+    "where": "guides",
+    "text": "Two answers to the same mirror. Here's how they differ."
+  },
+  {
+    "key": "site:guides/guides.0.sections.0.heading",
+    "surface": "site",
+    "group": "Guides",
+    "where": "guides",
+    "text": "What each one is"
+  },
+  {
+    "key": "site:guides/guides.0.sections.0.paragraphs.0",
+    "surface": "site",
+    "group": "Guides",
+    "where": "guides",
+    "text": "A transplant moves hair you still have, usually from the back of your head, to where it has thinned. It is surgery, and the moved hair grows in over the months that follow."
+  },
+  {
+    "key": "site:guides/guides.0.sections.0.paragraphs.1",
+    "surface": "site",
+    "group": "Guides",
+    "where": "guides",
+    "text": "A hair system is 100% real human hair on a fine base, shaped to your scalp and bonded over the area you've lost. Nothing is cut or moved, and you leave the visit with the look you chose."
+  },
+  {
+    "key": "site:guides/guides.0.sections.1.heading",
+    "surface": "site",
+    "group": "Guides",
+    "where": "guides",
+    "text": "When you see it"
+  },
+  {
+    "key": "site:guides/guides.0.sections.1.paragraphs.0",
+    "surface": "site",
+    "group": "Guides",
+    "where": "guides",
+    "text": "A transplant takes months to show, and how full it ends up depends on how much hair you have to move."
+  },
+  {
+    "key": "site:guides/guides.0.sections.1.paragraphs.1",
+    "surface": "site",
+    "group": "Guides",
+    "where": "guides",
+    "text": "A hair system shows the day it's fitted. Its density is matched to the hair at your sides, so it reads as yours, not as new."
+  },
+  {
+    "key": "site:guides/guides.0.sections.2.heading",
+    "surface": "site",
+    "group": "Guides",
+    "where": "guides",
+    "text": "What it asks of you"
+  },
+  {
+    "key": "site:guides/guides.0.sections.2.paragraphs.0",
+    "surface": "site",
+    "group": "Guides",
+    "where": "guides",
+    "text": "A transplant asks for recovery time, and patience while the hair grows."
+  },
+  {
+    "key": "site:guides/guides.0.sections.2.paragraphs.1",
+    "surface": "site",
+    "group": "Guides",
+    "where": "guides",
+    "text": "A hair system asks for a visit about once a month: your technician lifts it, cleans the base, bonds it again and keeps the cut sharp. The base wears in months, not years, and is renewed when it does."
+  },
+  {
+    "key": "site:guides/guides.0.sections.3.heading",
+    "surface": "site",
+    "group": "Guides",
+    "where": "guides",
+    "text": "Which suits you"
+  },
+  {
+    "key": "site:guides/guides.0.sections.3.paragraphs.0",
+    "surface": "site",
+    "group": "Guides",
+    "where": "guides",
+    "text": "If there's little hair left to move, or you'd rather avoid surgery, a hair system is the straighter road. If you have the hair to move and want something you never think about again, a transplant may suit you better: ask a surgeon."
+  },
+  {
+    "key": "site:guides/guides.0.sections.3.paragraphs.1",
+    "surface": "site",
+    "group": "Guides",
+    "where": "guides",
+    "text": "At the free consultation, your technician looks at your hair, tells you honestly what a hair system will and won't do, and quotes before anything is fitted."
+  },
+  {
+    "key": "site:guides/guides.1.title",
+    "surface": "site",
+    "group": "Guides",
+    "where": "guides",
+    "text": "What a hair system is"
+  },
+  {
+    "key": "site:guides/guides.1.description",
+    "surface": "site",
+    "group": "Guides",
+    "where": "guides",
+    "text": "100% real human hair on a fine base, bonded to the skin. What a hair system is made of, and why it isn't a wig."
+  },
+  {
+    "key": "site:guides/guides.1.lead",
+    "surface": "site",
+    "group": "Guides",
+    "where": "guides",
+    "text": "100% real human hair, a fine base, and a hairline that passes a close look."
+  },
+  {
+    "key": "site:guides/guides.1.sections.0.heading",
+    "surface": "site",
+    "group": "Guides",
+    "where": "guides",
+    "text": "The hair and the base"
+  },
+  {
+    "key": "site:guides/guides.1.sections.0.paragraphs.0",
+    "surface": "site",
+    "group": "Guides",
+    "where": "guides",
+    "text": "Every strand is 100% real human hair, tied into the base by hand. The base is fine lace, monofilament mesh or a clear skin film, and it decides almost everything: how natural it looks, how cool it feels and how long it lasts."
+  },
+  {
+    "key": "site:guides/guides.1.sections.0.paragraphs.1",
+    "surface": "site",
+    "group": "Guides",
+    "where": "guides",
+    "text": "The thinner the base, the better it looks and the sooner it wears. Your technician helps you choose at the consultation."
+  },
+  {
+    "key": "site:guides/guides.1.sections.1.heading",
+    "surface": "site",
+    "group": "Guides",
+    "where": "guides",
+    "text": "The hairline"
+  },
+  {
+    "key": "site:guides/guides.1.sections.1.paragraphs.0",
+    "surface": "site",
+    "group": "Guides",
+    "where": "guides",
+    "text": "The hairline is where a hair system is won or lost. Every hairline we fit is lace, its knots bleached until they vanish, so it melts into the skin at your forehead."
+  },
+  {
+    "key": "site:guides/guides.1.sections.2.heading",
+    "surface": "site",
+    "group": "Guides",
+    "where": "guides",
+    "text": "Why it isn't a wig"
+  },
+  {
+    "key": "site:guides/guides.1.sections.2.paragraphs.0",
+    "surface": "site",
+    "group": "Guides",
+    "where": "guides",
+    "text": "A wig covers the whole head, is held by tension or clips and comes off at night. A hair system covers only the area you've lost, is bonded to the skin, is cut into your own hair and stays on for weeks at a time. You shower, swim and sleep in it."
+  },
+  {
+    "key": "site:guides/guides.2.title",
+    "surface": "site",
+    "group": "Guides",
+    "where": "guides",
+    "text": "How a hair system is fitted at home"
+  },
+  {
+    "key": "site:guides/guides.2.description",
+    "surface": "site",
+    "group": "Guides",
+    "where": "guides",
+    "text": "What happens when a technician fits a hair system at your home: the consultation, the colour match, the fit and the cut."
+  },
+  {
+    "key": "site:guides/guides.2.lead",
+    "surface": "site",
+    "group": "Guides",
+    "where": "guides",
+    "text": "Your technician comes to you. No one sees you walk in anywhere."
+  },
+  {
+    "key": "site:guides/guides.2.sections.0.heading",
+    "surface": "site",
+    "group": "Guides",
+    "where": "guides",
+    "text": "The free consultation"
+  },
+  {
+    "key": "site:guides/guides.2.sections.0.paragraphs.0",
+    "surface": "site",
+    "group": "Guides",
+    "where": "guides",
+    "text": "Your technician measures your scalp, matches your colour to samples in daylight, grey included, and draws the hairline on your forehead in pencil for you to agree. You choose the base together, and you hear the price before anything is fitted."
+  },
+  {
+    "key": "site:guides/guides.2.sections.1.heading",
+    "surface": "site",
+    "group": "Guides",
+    "where": "guides",
+    "text": "The fit"
+  },
+  {
+    "key": "site:guides/guides.2.sections.1.paragraphs.0",
+    "surface": "site",
+    "group": "Guides",
+    "where": "guides",
+    "text": "At the same visit or a later one, as you prefer, the hair under the base is trimmed short, not shaved. The hair system is bonded to the skin, then cut into your own hair and styled. You see the result in the mirror before your technician leaves."
+  },
+  {
+    "key": "site:guides/guides.2.sections.2.heading",
+    "surface": "site",
+    "group": "Guides",
+    "where": "guides",
+    "text": "Where it happens"
+  },
+  {
+    "key": "site:guides/guides.2.sections.2.paragraphs.0",
+    "surface": "site",
+    "group": "Guides",
+    "where": "guides",
+    "text": "At home, at a time that suits you. All you need is a chair in good light and somewhere to wash hair."
+  },
+  {
+    "key": "site:guides/guides.3.title",
+    "surface": "site",
+    "group": "Guides",
+    "where": "guides",
+    "text": "Looking after a hair system"
+  },
+  {
+    "key": "site:guides/guides.3.description",
+    "surface": "site",
+    "group": "Guides",
+    "where": "guides",
+    "text": "Daily care for a hair system, what to do after a swim, and what happens at the monthly visit."
+  },
+  {
+    "key": "site:guides/guides.3.lead",
+    "surface": "site",
+    "group": "Guides",
+    "where": "guides",
+    "text": "A few habits at home, and a visit about once a month."
+  },
+  {
+    "key": "site:guides/guides.3.sections.0.heading",
+    "surface": "site",
+    "group": "Guides",
+    "where": "guides",
+    "text": "Every day"
+  },
+  {
+    "key": "site:guides/guides.3.sections.0.paragraphs.0",
+    "surface": "site",
+    "group": "Guides",
+    "where": "guides",
+    "text": "Wash and style it like your own hair, gently. It doesn't grow, so the cut stays as it was left."
+  },
+  {
+    "key": "site:guides/guides.3.sections.0.paragraphs.1",
+    "surface": "site",
+    "group": "Guides",
+    "where": "guides",
+    "text": "Heavy sweating is fine. After a swim in chlorine or the sea, rinse it in fresh water: both shorten the life of the base."
+  },
+  {
+    "key": "site:guides/guides.3.sections.1.heading",
+    "surface": "site",
+    "group": "Guides",
+    "where": "guides",
+    "text": "The monthly visit"
+  },
+  {
+    "key": "site:guides/guides.3.sections.1.paragraphs.0",
+    "surface": "site",
+    "group": "Guides",
+    "where": "guides",
+    "text": "About once a month, your technician comes back to lift the hair system, clean the base and your scalp, bond it again and refresh the cut. It takes ninety minutes, and keeps it looking like the day it was fitted."
+  },
+  {
+    "key": "site:guides/guides.3.sections.2.heading",
+    "surface": "site",
+    "group": "Guides",
+    "where": "guides",
+    "text": "When it's time for a new one"
+  },
+  {
+    "key": "site:guides/guides.3.sections.2.paragraphs.0",
+    "surface": "site",
+    "group": "Guides",
+    "where": "guides",
+    "text": "The base wears before the hair does. When it does, your technician tells you, and your new hair system is matched to the last, so no one notices the change."
+  },
+  {
+    "key": "site:guides/guides.4.title",
+    "surface": "site",
+    "group": "Guides",
+    "where": "guides",
+    "text": "How long a hair system lasts"
+  },
+  {
+    "key": "site:guides/guides.4.description",
+    "surface": "site",
+    "group": "Guides",
+    "where": "guides",
+    "text": "A hair system lasts months, not years. What decides how long yours lasts, and how to make it last longer."
+  },
+  {
+    "key": "site:guides/guides.4.lead",
+    "surface": "site",
+    "group": "Guides",
+    "where": "guides",
+    "text": "Months, not years: the base wears before the hair does."
+  },
+  {
+    "key": "site:guides/guides.4.sections.0.heading",
+    "surface": "site",
+    "group": "Guides",
+    "where": "guides",
+    "text": "What decides it"
+  },
+  {
+    "key": "site:guides/guides.4.sections.0.paragraphs.0",
+    "surface": "site",
+    "group": "Guides",
+    "where": "guides",
+    "text": "The base. A clear skin film looks the most natural and wears the soonest; monofilament mesh outlasts every other base. Heat, sea water and chlorine all shorten its life, and so does skipping the monthly visit."
+  },
+  {
+    "key": "site:guides/guides.4.sections.1.heading",
+    "surface": "site",
+    "group": "Guides",
+    "where": "guides",
+    "text": "How to make it last"
+  },
+  {
+    "key": "site:guides/guides.4.sections.1.paragraphs.0",
+    "surface": "site",
+    "group": "Guides",
+    "where": "guides",
+    "text": "Rinse it in fresh water after a swim, keep the monthly visit, and choose a base that suits how you live: a lace top for the gym and a Delhi summer, a skin base where nothing must show."
+  },
+  {
+    "key": "site:guides/guides.4.sections.2.heading",
+    "surface": "site",
+    "group": "Guides",
+    "where": "guides",
+    "text": "What we tell you"
+  },
+  {
+    "key": "site:guides/guides.4.sections.2.paragraphs.0",
+    "surface": "site",
+    "group": "Guides",
+    "where": "guides",
+    "text": "At the consultation, before anything is fitted, your technician tells you what to expect from the base you choose."
+  },
+  {
+    "key": "site:guides/guides.5.title",
+    "surface": "site",
+    "group": "Guides",
+    "where": "guides",
+    "text": "What decides the cost of a hair system"
+  },
+  {
+    "key": "site:guides/guides.5.description",
+    "surface": "site",
+    "group": "Guides",
+    "where": "guides",
+    "text": "What decides the price of a hair system, what you pay for and when, and why you hear the price before anything is fitted."
+  },
+  {
+    "key": "site:guides/guides.5.lead",
+    "surface": "site",
+    "group": "Guides",
+    "where": "guides",
+    "text": "You hear the price at a free consultation, before anything is fitted or paid."
+  },
+  {
+    "key": "site:guides/guides.5.sections.0.heading",
+    "surface": "site",
+    "group": "Guides",
+    "where": "guides",
+    "text": "What you pay for"
+  },
+  {
+    "key": "site:guides/guides.5.sections.0.paragraphs.0",
+    "surface": "site",
+    "group": "Guides",
+    "where": "guides",
+    "text": "The hair system itself, and the visits: the fit, then a visit about once a month. No consultation fee, no deposit, no package."
+  },
+  {
+    "key": "site:guides/guides.5.sections.1.heading",
+    "surface": "site",
+    "group": "Guides",
+    "where": "guides",
+    "text": "What decides the price"
+  },
+  {
+    "key": "site:guides/guides.5.sections.1.paragraphs.0",
+    "surface": "site",
+    "group": "Guides",
+    "where": "guides",
+    "text": "The base most of all: lace, monofilament and skin are made differently and last differently. The size of the area to cover, and the density matched to your own hair, matter too."
+  },
+  {
+    "key": "site:guides/guides.5.sections.2.heading",
+    "surface": "site",
+    "group": "Guides",
+    "where": "guides",
+    "text": "When you hear it"
+  },
+  {
+    "key": "site:guides/guides.5.sections.2.paragraphs.0",
+    "surface": "site",
+    "group": "Guides",
+    "where": "guides",
+    "text": "At the free consultation, from your technician, before anything is fitted. If it isn't for you, you owe nothing."
+  },
+  {
+    "key": "site:guides/areasPage.pageTitle",
+    "surface": "site",
+    "group": "Areas",
+    "where": "areasPage",
+    "text": "Where we come · Mane Man"
+  },
+  {
+    "key": "site:guides/areasPage.description",
+    "surface": "site",
+    "group": "Areas",
+    "where": "areasPage",
+    "text": "Hair systems fitted at home across Delhi NCR: Gurgaon, Delhi, Noida, Faridabad and Ghaziabad."
+  },
+  {
+    "key": "site:guides/areasPage.title",
+    "surface": "site",
+    "group": "Areas",
+    "where": "areasPage",
+    "text": "Where we come"
+  },
+  {
+    "key": "site:guides/areasPage.lead",
+    "surface": "site",
+    "group": "Areas",
+    "where": "areasPage",
+    "text": "Your technician comes to your home, anywhere we serve in Delhi NCR."
+  },
+  {
+    "key": "site:guides/areasPage.streets",
+    "surface": "site",
+    "group": "Areas",
+    "where": "areasPage",
+    "text": "Within each city, we serve by pincode. Check yours to see the days we can come."
+  },
+  {
+    "key": "site:guides/areasPage.next",
+    "surface": "site",
+    "group": "Areas",
+    "where": "areasPage",
+    "text": "Mumbai and Bengaluru are next. Leave your number on the booking page, and we'll tell you when we reach your city."
+  },
+  {
+    "key": "site:guides/areasPage.check",
+    "surface": "site",
+    "group": "Areas",
+    "where": "areasPage",
+    "text": "Check your pincode"
+  },
+  {
+    "key": "site:referral/referral.arrival.invited",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "{name} sent you this"
+  },
+  {
+    "key": "site:referral/referral.arrival.partner",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "Recommended by {partner}"
+  },
+  {
+    "key": "site:referral/referral.arrival.unnamed",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "You have an invite"
+  },
+  {
+    "key": "site:referral/referral.arrival.title",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "A hair system, fitted at home. The consultation is free."
+  },
+  {
+    "key": "site:referral/referral.arrival.unknown.title",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "Book a free consultation"
+  },
+  {
+    "key": "site:referral/referral.arrival.unknown.notice",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "We do not recognise this invite"
+  },
+  {
+    "key": "site:referral/referral.prices.rows.0.what",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "First fit, from"
+  },
+  {
+    "key": "site:referral/referral.prices.rows.0.note",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "The hair system you choose"
+  },
+  {
+    "key": "site:referral/referral.prices.rows.0.incl",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "With the fitting and the cut"
+  },
+  {
+    "key": "site:referral/referral.prices.rows.1.what",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "Service visit"
+  },
+  {
+    "key": "site:referral/referral.prices.rows.1.note",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "Every month, at home"
+  },
+  {
+    "key": "site:referral/referral.prices.rows.1.incl",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "Lifted, cleaned, re-bonded, trimmed"
+  },
+  {
+    "key": "site:referral/referral.howItWorks.title",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "How it works"
+  },
+  {
+    "key": "site:referral/referral.howItWorks.steps.0.title",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "A free consultation at home"
+  },
+  {
+    "key": "site:referral/referral.howItWorks.steps.0.body",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "An hour. A scalp template and a colour match."
+  },
+  {
+    "key": "site:referral/referral.howItWorks.steps.1.title",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "The fit, also at home"
+  },
+  {
+    "key": "site:referral/referral.howItWorks.steps.1.body",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "Three hours. You're wearing it by the end."
+  },
+  {
+    "key": "site:referral/referral.howItWorks.steps.2.title",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "A service visit every month"
+  },
+  {
+    "key": "site:referral/referral.howItWorks.steps.2.body",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "Lifted, cleaned, re-bonded, trimmed. Ninety minutes."
+  },
+  {
+    "key": "site:referral/referral.pincode.title",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "Do we come to you?"
+  },
+  {
+    "key": "site:referral/referral.pincode.label",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "Pincode"
+  },
+  {
+    "key": "site:referral/referral.pincode.check",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "Check"
+  },
+  {
+    "key": "site:referral/referral.pincode.checking",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "Checking"
+  },
+  {
+    "key": "site:referral/referral.pincode.empty",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "Enter your pincode."
+  },
+  {
+    "key": "site:referral/referral.pincode.invalid",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "That isn’t a six-digit Indian pincode."
+  },
+  {
+    "key": "site:referral/referral.pincode.failed",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "We couldn’t check that right now. Try again."
+  },
+  {
+    "key": "site:referral/referral.pincode.change",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "Change"
+  },
+  {
+    "key": "site:referral/referral.pincode.changeLabel",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "Change the pincode"
+  },
+  {
+    "key": "site:referral/referral.consultation.served",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "We come to {area}"
+  },
+  {
+    "key": "site:referral/referral.consultation.title",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "Book a free consultation"
+  },
+  {
+    "key": "site:referral/referral.consultation.titleOneVisit",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "Book a consultation and fit"
+  },
+  {
+    "key": "site:referral/referral.consultation.body",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "An hour, and free. Or have your fit in the same visit."
+  },
+  {
+    "key": "site:referral/referral.consultation.forPincode",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "For {pincode}"
+  },
+  {
+    "key": "site:referral/referral.consultation.date",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "Pick a date"
+  },
+  {
+    "key": "site:referral/referral.consultation.window",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "Window"
+  },
+  {
+    "key": "site:referral/referral.consultation.windows.0.label",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "Morning"
+  },
+  {
+    "key": "site:referral/referral.consultation.windows.0.hours",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "9 am to 12 pm"
+  },
+  {
+    "key": "site:referral/referral.consultation.windows.1.label",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "Afternoon"
+  },
+  {
+    "key": "site:referral/referral.consultation.windows.1.hours",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "12 to 4 pm"
+  },
+  {
+    "key": "site:referral/referral.consultation.windows.2.label",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "Evening"
+  },
+  {
+    "key": "site:referral/referral.consultation.windows.2.hours",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "4 to 8 pm"
+  },
+  {
+    "key": "site:referral/referral.consultation.full",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "Full"
+  },
+  {
+    "key": "site:referral/referral.consultation.noneOpen",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "Fully booked for the next two weeks."
+  },
+  {
+    "key": "site:referral/referral.consultation.noneOpenAction",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "Message us on WhatsApp for the next opening"
+  },
+  {
+    "key": "site:referral/referral.consultation.plan.legend",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "What to book"
+  },
+  {
+    "key": "site:referral/referral.consultation.plan.options.0.label",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "Consultation · an hour"
+  },
+  {
+    "key": "site:referral/referral.consultation.plan.options.1.label",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "Consultation and fit · three hours"
+  },
+  {
+    "key": "site:referral/referral.consultation.plan.note",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "Starts in the morning or the afternoon. Choose your hair system with your technician and have it fitted there and then. Pay once fitted, by a link to your phone; decide against it and you pay nothing."
+  },
+  {
+    "key": "site:referral/referral.consultation.plan.notYet",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "Consultation and fit in one visit isn’t open to book yet."
+  },
+  {
+    "key": "site:referral/referral.consultation.code.label",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "Discount code (optional)"
+  },
+  {
+    "key": "site:referral/referral.consultation.code.hint",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "It comes off the price of your hair system when you pay."
+  },
+  {
+    "key": "site:referral/referral.consultation.consent",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "You may contact me on WhatsApp about this consultation."
+  },
+  {
+    "key": "site:referral/referral.consultation.submit",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "Book the consultation"
+  },
+  {
+    "key": "site:referral/referral.consultation.submitOneVisit",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "Book the consultation and fit"
+  },
+  {
+    "key": "site:referral/referral.consultation.confirmOneVisit",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "Confirm and book"
+  },
+  {
+    "key": "site:referral/referral.consultation.sending",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "Booking"
+  },
+  {
+    "key": "site:referral/referral.address.legend",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "Your address"
+  },
+  {
+    "key": "site:referral/referral.address.labels.flat",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "Flat or house number"
+  },
+  {
+    "key": "site:referral/referral.address.labels.floor",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "Floor (optional)"
+  },
+  {
+    "key": "site:referral/referral.address.labels.tower",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "Tower or block (optional)"
+  },
+  {
+    "key": "site:referral/referral.address.labels.line1",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "Building or society"
+  },
+  {
+    "key": "site:referral/referral.address.labels.line2",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "Street (optional)"
+  },
+  {
+    "key": "site:referral/referral.address.labels.landmark",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "Landmark (optional)"
+  },
+  {
+    "key": "site:referral/referral.address.labels.locality",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "Sector or area"
+  },
+  {
+    "key": "site:referral/referral.address.labels.city",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "City"
+  },
+  {
+    "key": "site:referral/referral.address.labels.accessNotes",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "Access notes (optional)"
+  },
+  {
+    "key": "site:referral/referral.address.errors.flat",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "Enter the flat or house number."
+  },
+  {
+    "key": "site:referral/referral.address.errors.line1",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "Enter the building or society."
+  },
+  {
+    "key": "site:referral/referral.address.errors.locality",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "Enter the sector or area."
+  },
+  {
+    "key": "site:referral/referral.address.errors.city",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "Enter the city."
+  },
+  {
+    "key": "site:referral/referral.address.more",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "Add floor, tower or landmark"
+  },
+  {
+    "key": "site:referral/referral.address.pincode",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "Pincode"
+  },
+  {
+    "key": "site:referral/referral.address.accessHint",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "A gate code, or where to park. Your technician sees it the day before the visit."
+  },
+  {
+    "key": "site:referral/referral.waitlist.title",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "We are not in {area} yet"
+  },
+  {
+    "key": "site:referral/referral.waitlist.titleUnknown",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "We are not there yet"
+  },
+  {
+    "key": "site:referral/referral.waitlist.body",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "Delhi NCR only, for now."
+  },
+  {
+    "key": "site:referral/referral.waitlist.leave",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "Leave us your number"
+  },
+  {
+    "key": "site:referral/referral.waitlist.forPincode",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "For {pincode}{area}"
+  },
+  {
+    "key": "site:referral/referral.waitlist.contactConsent",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "You may contact me about this request."
+  },
+  {
+    "key": "site:referral/referral.waitlist.required",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "Required"
+  },
+  {
+    "key": "site:referral/referral.waitlist.launchAlert",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "Tell me when you launch in my area."
+  },
+  {
+    "key": "site:referral/referral.waitlist.optional",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "Optional"
+  },
+  {
+    "key": "site:referral/referral.waitlist.submit",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "Add me to the list"
+  },
+  {
+    "key": "site:referral/referral.waitlist.sending",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "Adding"
+  },
+  {
+    "key": "site:referral/referral.waitlist.holds",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "{name}’s invite stays valid for 12 months after we launch there. {name} is told when you are fitted."
+  },
+  {
+    "key": "site:referral/referral.waitlist.holdsUnnamed",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "The invite stays valid for 12 months after we launch there. Whoever invited you is told when you are fitted."
+  },
+  {
+    "key": "site:referral/referral.remembered.waitlist",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "You have an invite. It stays valid for 12 months after we launch there. Whoever invited you is told when you are fitted."
+  },
+  {
+    "key": "site:referral/referral.remembered.bookWithout",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "Book without the invite"
+  },
+  {
+    "key": "site:referral/referral.remembered.joinWithout",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "Join without the invite"
+  },
+  {
+    "key": "site:referral/referral.form.name",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "Name"
+  },
+  {
+    "key": "site:referral/referral.form.namePlaceholder",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "Your name"
+  },
+  {
+    "key": "site:referral/referral.form.nameError",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "Enter your name in letters."
+  },
+  {
+    "key": "site:referral/referral.form.mobile",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "Mobile"
+  },
+  {
+    "key": "site:referral/referral.form.mobilePlaceholder",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "Your number"
+  },
+  {
+    "key": "site:referral/referral.form.mobileError",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "Enter a valid 10-digit mobile number."
+  },
+  {
+    "key": "site:referral/referral.form.consentError",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "We need this to contact you."
+  },
+  {
+    "key": "site:referral/referral.form.marked",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "Check the {count} fields marked above."
+  },
+  {
+    "key": "site:referral/referral.booked.label",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "Booked"
+  },
+  {
+    "key": "site:referral/referral.booked.body",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "Your technician arrives in that window. Details are on WhatsApp at +91 {mobile}."
+  },
+  {
+    "key": "site:referral/referral.booked.ready.consultation",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "An hour at home, and free. Nothing is fitted."
+  },
+  {
+    "key": "site:referral/referral.booked.ready.oneVisit",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "Three hours at home. You pay once fitted, by a link to your phone."
+  },
+  {
+    "key": "site:referral/referral.booked.calendar.label",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "Add to your calendar"
+  },
+  {
+    "key": "site:referral/referral.booked.calendar.google",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "Google Calendar"
+  },
+  {
+    "key": "site:referral/referral.booked.calendar.fileName",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "mane-man-visit.ics"
+  },
+  {
+    "key": "site:referral/referral.booked.calendar.title.consultation",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "Mane Man consultation"
+  },
+  {
+    "key": "site:referral/referral.booked.calendar.title.oneVisit",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "Mane Man consultation and fit"
+  },
+  {
+    "key": "site:referral/referral.booked.appHint",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "See it in the app too: sign in with this number."
+  },
+  {
+    "key": "site:referral/referral.booked.app",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "Open the app"
+  },
+  {
+    "key": "site:referral/referral.booked.back",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "Back to the site"
+  },
+  {
+    "key": "site:referral/referral.expired.label",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "Code expired"
+  },
+  {
+    "key": "site:referral/referral.expired.title",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "This invite has expired"
+  },
+  {
+    "key": "site:referral/referral.requested.label",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "Request received"
+  },
+  {
+    "key": "site:referral/referral.requested.title",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "We will message you"
+  },
+  {
+    "key": "site:referral/referral.requested.body",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "On WhatsApp, at +91 {mobile}, to fix the hour."
+  },
+  {
+    "key": "site:referral/referral.listed.label",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "On the list"
+  },
+  {
+    "key": "site:referral/referral.listed.title",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "You are on the {area} list"
+  },
+  {
+    "key": "site:referral/referral.listed.titleUnknown",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "You are on the list"
+  },
+  {
+    "key": "site:referral/referral.listed.alerted",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "We’ll message you on WhatsApp when we start coming to {pincode}."
+  },
+  {
+    "key": "site:referral/referral.listed.creditsFrom",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "{name}’s invite holds for 12 months from when we start coming to {pincode}."
+  },
+  {
+    "key": "site:referral/referral.listed.credits",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "The invite holds for 12 months from when we start coming to {pincode}."
+  },
+  {
+    "key": "site:referral/referral.listed.tryOn",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "Try a new look"
+  },
+  {
+    "key": "site:referral/referral.listed.back",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "Back to the site"
+  },
+  {
+    "key": "site:referral/referral.errors.rateLimited",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "That’s too many tries for today. Try again tomorrow."
+  },
+  {
+    "key": "site:referral/referral.errors.turnstile",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "We couldn’t confirm you’re a person. Try again."
+  },
+  {
+    "key": "site:referral/referral.errors.taken",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "That time isn’t available. Pick another."
+  },
+  {
+    "key": "site:referral/referral.errors.notBookable",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "That day’s no longer open. Pick another."
+  },
+  {
+    "key": "site:referral/referral.errors.other",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "Something went wrong on our side. Try again."
+  },
+  {
+    "key": "site:referral/referral.errors.codeNotApplicable",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "That discount code doesn’t apply. Check it, or leave it out to book without it."
+  },
+  {
+    "key": "site:referral/referral.errors.noProduct",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "Consultation and fit in one visit isn’t open to book yet. Book the consultation instead."
+  },
+  {
+    "key": "site:referral/referral.errors.notProved",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "Your WhatsApp code has expired. Book again for a new one."
+  },
+  {
+    "key": "site:referral/referral.preview.title",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "{name} sent you a Mane Man invite"
+  },
+  {
+    "key": "site:referral/referral.preview.titleUnnamed",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "You have a Mane Man invite"
+  },
+  {
+    "key": "site:referral/referral.preview.titlePartner",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "Mane Man, recommended by {partner}"
+  },
+  {
+    "key": "site:referral/referral.preview.descriptionWithout",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "Home-fitted hair systems across Delhi NCR."
+  },
+  {
+    "key": "site:service/serviceArea",
+    "surface": "site",
+    "group": "Every page",
+    "where": "serviceArea",
+    "text": "Delhi NCR"
+  },
+  {
+    "key": "site:service/visitLength.consultation",
+    "surface": "site",
+    "group": "Every page",
+    "where": "visitLength",
+    "text": "an hour"
+  },
+  {
+    "key": "site:service/visitLength.service",
+    "surface": "site",
+    "group": "Every page",
+    "where": "visitLength",
+    "text": "ninety minutes"
+  },
+  {
+    "key": "site:service/visitLength.firstFit",
+    "surface": "site",
+    "group": "Every page",
+    "where": "visitLength",
+    "text": "three hours"
+  },
+  {
+    "key": "message:tryon_result_v1",
+    "surface": "message",
+    "group": "Messages",
+    "where": "tryon_result_v1",
+    "text": "Hi {{1}}, your new look is ready.\nIt's a preview: your hair system is matched to your own hair. See it for real at a free consultation: {{2}}"
+  },
+  {
+    "key": "message:consultation_booked_v1",
+    "surface": "message",
+    "group": "Messages",
+    "where": "consultation_booked_v1",
+    "text": "Hi {{1}}, you're booked.\nYour free consultation is {{3}}, {{4}}, at home. To change it, open the Mane Man app."
+  },
+  {
+    "key": "message:one_visit_booked_v1",
+    "surface": "message",
+    "group": "Messages",
+    "where": "one_visit_booked_v1",
+    "text": "Hi {{1}}, you're booked.\nYour consultation and fit is {{3}}, {{4}}, at home. Choose your hair system with your technician, and pay only once you're fitted."
+  },
+  {
+    "key": "message:visit_booked_v1",
+    "surface": "message",
+    "group": "Messages",
+    "where": "visit_booked_v1",
+    "text": "Hi {{1}}, you're booked.\nYour {{2}} is {{3}}, {{4}}, with {{5}}. We've received {{6}} (ref {{7}}). Your receipt is in the app."
+  },
+  {
+    "key": "message:visit_booked_credit_v1",
+    "surface": "message",
+    "group": "Messages",
+    "where": "visit_booked_credit_v1",
+    "text": "Hi {{1}}, you're booked.\nYour {{2}} is {{3}}, {{4}}, with {{5}}, covered by one of your free service visits."
+  },
+  {
+    "key": "message:link_paid_v1",
+    "surface": "message",
+    "group": "Messages",
+    "where": "link_paid_v1",
+    "text": "Hi {{1}}, thank you: payment received.\n{{6}} for your {{2}} (ref {{7}}). Welcome to Mane Man. Your receipt is in the app."
+  },
+  {
+    "key": "message:visit_booked_code_v1",
+    "surface": "message",
+    "group": "Messages",
+    "where": "visit_booked_code_v1",
+    "text": "Hi {{1}}, you're booked.\nYour {{2}} is {{3}}, {{4}}, with {{5}}. Your discount code covers it: nothing to pay."
+  },
+  {
+    "key": "message:visit_fitted_code_v1",
+    "surface": "message",
+    "group": "Messages",
+    "where": "visit_fitted_code_v1",
+    "text": "Hi {{1}}, welcome to Mane Man.\nYour discount code covers your hair system: nothing to pay."
+  },
+  {
+    "key": "message:visit_reminder_v1",
+    "surface": "message",
+    "group": "Messages",
+    "where": "visit_reminder_v1",
+    "text": "Hi {{1}}, see you tomorrow.\nYour {{2}} is {{3}}, {{4}}, with {{5}}. Need to move it? Open the Mane Man app."
+  },
+  {
+    "key": "message:visit_moved_v1",
+    "surface": "message",
+    "group": "Messages",
+    "where": "visit_moved_v1",
+    "text": "Hi {{1}}, your booking has moved.\nYour {{2}} is now {{3}}, {{4}}, with {{5}}. See it in the Mane Man app."
+  },
+  {
+    "key": "message:move_proposed_v1",
+    "surface": "message",
+    "group": "Messages",
+    "where": "move_proposed_v1",
+    "text": "Hi {{1}}, we need to move a booking.\nYour {{2}} on {{3}}: could you do {{4}}, {{5}}, with {{6}} instead? Accept it, or pick another time, in the Mane Man app."
+  },
+  {
+    "key": "message:technician_arrived_v1",
+    "surface": "message",
+    "group": "Messages",
+    "where": "technician_arrived_v1",
+    "text": "Hi {{1}}, {{5}} is at your door for your visit."
+  },
+  {
+    "key": "message:no_show_missed_v1",
+    "surface": "message",
+    "group": "Messages",
+    "where": "no_show_missed_v1",
+    "text": "Hi {{1}}, we missed you.\n{{5}} waited {{9}} minutes for your {{2}} on {{3}} but couldn't reach you. Book a new time in the Mane Man app."
+  },
+  {
+    "key": "message:no_show_charged_paid_v1",
+    "surface": "message",
+    "group": "Messages",
+    "where": "no_show_charged_paid_v1",
+    "text": "Hi {{1}}, we missed you.\n{{5}} waited {{9}} minutes for your {{2}} on {{3}} but couldn't reach you. We've kept the {{6}} you paid as the no-show charge. If you were home, dispute it in the Mane Man app."
+  },
+  {
+    "key": "message:no_show_charged_fee_v1",
+    "surface": "message",
+    "group": "Messages",
+    "where": "no_show_charged_fee_v1",
+    "text": "Hi {{1}}, we missed you.\n{{5}} waited {{9}} minutes for your {{2}} on {{3}} but couldn't reach you. We've kept {{6}} as the no-show charge and refunded {{10}} to your {{8}} (5 to 7 working days). If you were home, dispute it in the Mane Man app."
+  },
+  {
+    "key": "message:no_show_charged_credit_v1",
+    "surface": "message",
+    "group": "Messages",
+    "where": "no_show_charged_credit_v1",
+    "text": "Hi {{1}}, we missed you.\n{{5}} waited {{9}} minutes for your {{2}} on {{3}} but couldn't reach you. The free service visit it used counts as the no-show charge. If you were home, dispute it in the Mane Man app."
+  },
+  {
+    "key": "message:no_show_waived_v1",
+    "surface": "message",
+    "group": "Messages",
+    "where": "no_show_waived_v1",
+    "text": "Hi {{1}}, we missed you.\n{{5}} waited {{9}} minutes for your {{2}} on {{3}} but couldn't reach you. There's no charge. Book a new time in the Mane Man app."
+  },
+  {
+    "key": "message:no_show_waived_paid_v1",
+    "surface": "message",
+    "group": "Messages",
+    "where": "no_show_waived_paid_v1",
+    "text": "Hi {{1}}, we missed you.\n{{5}} waited {{9}} minutes for your {{2}} on {{3}} but couldn't reach you. There's no charge. Message us about the {{6}} you paid."
+  },
+  {
+    "key": "message:no_show_waived_credit_v1",
+    "surface": "message",
+    "group": "Messages",
+    "where": "no_show_waived_credit_v1",
+    "text": "Hi {{1}}, we missed you.\n{{5}} waited {{9}} minutes for your {{2}} on {{3}} but couldn't reach you. There's no charge. Message us about the free service visit it used."
+  },
+  {
+    "key": "message:no_show_waived_refund_v1",
+    "surface": "message",
+    "group": "Messages",
+    "where": "no_show_waived_refund_v1",
+    "text": "Hi {{1}}, we missed you.\n{{5}} waited {{9}} minutes for your {{2}} on {{3}} but couldn't reach you. There's no charge: we've refunded {{6}} to your {{8}} (5 to 7 working days)."
+  },
+  {
+    "key": "message:no_show_waived_credit_back_v1",
+    "surface": "message",
+    "group": "Messages",
+    "where": "no_show_waived_credit_back_v1",
+    "text": "Hi {{1}}, we missed you.\n{{5}} waited {{9}} minutes for your {{2}} on {{3}} but couldn't reach you. There's no charge, and your free service visit is back."
+  },
+  {
+    "key": "message:no_show_waived_credit_gone_v1",
+    "surface": "message",
+    "group": "Messages",
+    "where": "no_show_waived_credit_gone_v1",
+    "text": "Hi {{1}}, we missed you.\n{{5}} waited {{9}} minutes for your {{2}} on {{3}} but couldn't reach you. There's no charge, but the free service visit it used has expired, so we can't return it."
+  },
+  {
+    "key": "message:no_show_dispute_refunded_v1",
+    "surface": "message",
+    "group": "Messages",
+    "where": "no_show_dispute_refunded_v1",
+    "text": "Hi {{1}}, we've reviewed your dispute.\nAbout your {{2}} on {{3}}: we've refunded {{6}} to your {{8}} (5 to 7 working days)."
+  },
+  {
+    "key": "message:no_show_dispute_credit_back_v1",
+    "surface": "message",
+    "group": "Messages",
+    "where": "no_show_dispute_credit_back_v1",
+    "text": "Hi {{1}}, we've reviewed your dispute.\nAbout your {{2}} on {{3}}: your free service visit is back."
+  },
+  {
+    "key": "message:no_show_dispute_credit_gone_v1",
+    "surface": "message",
+    "group": "Messages",
+    "where": "no_show_dispute_credit_gone_v1",
+    "text": "Hi {{1}}, we've reviewed your dispute.\nAbout your {{2}} on {{3}}: the charge shouldn't stand, but the free service visit it used has expired, so we can't return it."
+  },
+  {
+    "key": "message:no_show_dispute_upheld_v1",
+    "surface": "message",
+    "group": "Messages",
+    "where": "no_show_dispute_upheld_v1",
+    "text": "Hi {{1}}, we've reviewed your dispute.\nAbout your {{2}} on {{3}}: the charge stands. Message us if you'd like to know why."
+  },
+  {
+    "key": "message:next_visit_due_v1",
+    "surface": "message",
+    "group": "Messages",
+    "where": "next_visit_due_v1",
+    "text": "Hi {{1}}, time to book your next visit.\nYour {{2}} is due on {{3}}. Book it in the Mane Man app."
+  },
+  {
+    "key": "message:visit_cancelled_v1",
+    "surface": "message",
+    "group": "Messages",
+    "where": "visit_cancelled_v1",
+    "text": "Hi {{1}}, your booking is cancelled.\nThat's your {{2}} on {{3}}. Book a new time whenever suits you, in the Mane Man app."
+  },
+  {
+    "key": "message:visit_cancelled_credit_v1",
+    "surface": "message",
+    "group": "Messages",
+    "where": "visit_cancelled_credit_v1",
+    "text": "Hi {{1}}, your booking is cancelled.\nThat's your {{2}} on {{3}}. Your free service visit is back."
+  },
+  {
+    "key": "message:visit_cancelled_credit_lost_v1",
+    "surface": "message",
+    "group": "Messages",
+    "where": "visit_cancelled_credit_lost_v1",
+    "text": "Hi {{1}}, your booking is cancelled.\nThat's your {{2}} on {{3}}. As it was cancelled late, the free service visit it used can't be returned."
+  },
+  {
+    "key": "message:visit_cancelled_credit_gone_v1",
+    "surface": "message",
+    "group": "Messages",
+    "where": "visit_cancelled_credit_gone_v1",
+    "text": "Hi {{1}}, your booking is cancelled.\nThat's your {{2}} on {{3}}. The free service visit it used has expired, so we can't return it."
+  },
+  {
+    "key": "message:waitlist_listed_v1",
+    "surface": "message",
+    "group": "Messages",
+    "where": "waitlist_listed_v1",
+    "text": "Hi {{1}}, you're on our list for {{2}}. We don't cover it yet."
+  },
+  {
+    "key": "message:waitlist_listed_alert_v1",
+    "surface": "message",
+    "group": "Messages",
+    "where": "waitlist_listed_alert_v1",
+    "text": "Hi {{1}}, you're on our list for {{2}}. We'll WhatsApp you as soon as we start coming there."
+  },
+  {
+    "key": "message:launch_alert_v1",
+    "surface": "message",
+    "group": "Messages",
+    "where": "launch_alert_v1",
+    "text": "Hi {{1}}, Mane Man now comes to {{2}}. Book your free consultation: {{3}}"
+  },
+  {
+    "key": "message:friend_fitted_v2",
+    "surface": "message",
+    "group": "Messages",
+    "where": "friend_fitted_v2",
+    "text": "Hi {{1}}, {{2}} has joined Mane Man: thank you for sending them our way.\nYou each get {{3}} free, to use by {{4}}."
+  },
+  {
+    "key": "message:friend_fitted_each_v1",
+    "surface": "message",
+    "group": "Messages",
+    "where": "friend_fitted_each_v1",
+    "text": "Hi {{1}}, {{2}} has joined Mane Man: thank you for sending them our way.\nYou get {{3}} free, to use by {{4}}, and {{2}} gets {{5}}."
+  },
+  {
+    "key": "message:friend_fitted_yours_v1",
+    "surface": "message",
+    "group": "Messages",
+    "where": "friend_fitted_yours_v1",
+    "text": "Hi {{1}}, {{2}} has joined Mane Man: thank you for sending them our way.\nYou get {{3}} free, to use by {{4}}."
+  },
+  {
+    "key": "message:friend_fitted_thanks_v1",
+    "surface": "message",
+    "group": "Messages",
+    "where": "friend_fitted_thanks_v1",
+    "text": "Hi {{1}}, {{2}} has joined Mane Man: thank you for sending them our way."
+  },
+  {
+    "key": "message:friend_credited_v2",
+    "surface": "message",
+    "group": "Messages",
+    "where": "friend_credited_v2",
+    "text": "Hi {{1}}, welcome to Mane Man.\nYour invite gives you {{2}} free, to use by {{3}}. They're in the app."
+  },
+  {
+    "key": "message:referral_rejected_referrer_v1",
+    "surface": "message",
+    "group": "Messages",
+    "where": "referral_rejected_referrer_v1",
+    "text": "Hi {{1}}, about your invite to {{2}}.\nWe couldn't add free service visits for it. Message us if you'd like to know why."
+  },
+  {
+    "key": "message:referral_rejected_friend_v1",
+    "surface": "message",
+    "group": "Messages",
+    "where": "referral_rejected_friend_v1",
+    "text": "Hi {{1}}, we couldn't add free service visits from your invite. Message us if you'd like to know why."
+  },
+  {
+    "key": "message:credits_expiring_v1",
+    "surface": "message",
+    "group": "Messages",
+    "where": "credits_expiring_v1",
+    "text": "Hi {{1}}, you have {{2}} free to book by {{3}}.\nA visit booked by then is covered, even on a later date. Book in the Mane Man app."
+  },
+  {
+    "key": "message:visit_cancelled_refund_v1",
+    "surface": "message",
+    "group": "Messages",
+    "where": "visit_cancelled_refund_v1",
+    "text": "Hi {{1}}, your booking is cancelled.\nThat's your {{2}} on {{3}}. We've refunded {{6}} to your {{8}} (5 to 7 working days)."
+  },
+  {
+    "key": "message:booking_refunded_v1",
+    "surface": "message",
+    "group": "Messages",
+    "where": "booking_refunded_v1",
+    "text": "Hi {{1}}, we couldn't confirm your booking.\nYour {{2}} on {{3}} didn't go through, so we've refunded {{6}} to your {{8}} (5 to 7 working days). Book another time in the Mane Man app. Our apologies."
+  },
+  {
+    "key": "message:booking_not_made_v1",
+    "surface": "message",
+    "group": "Messages",
+    "where": "booking_not_made_v1",
+    "text": "Hi {{1}}, we couldn't confirm your booking.\nYour {{2}} on {{3}} didn't go through. Book another time in the Mane Man app. Our apologies."
+  },
+  {
+    "key": "message:booking_not_made_credit_v1",
+    "surface": "message",
+    "group": "Messages",
+    "where": "booking_not_made_credit_v1",
+    "text": "Hi {{1}}, we couldn't confirm your booking.\nYour {{2}} on {{3}} didn't go through, but your free service visit is still yours. Book another time in the Mane Man app. Our apologies."
+  },
+  {
+    "key": "message:move_refunded_v1",
+    "surface": "message",
+    "group": "Messages",
+    "where": "move_refunded_v1",
+    "text": "Hi {{1}}, your booking hasn't changed.\nWe couldn't move your {{2}} to {{3}}, so it stays as booked. We've refunded {{6}} to your {{8}} (5 to 7 working days)."
+  },
+  {
+    "key": "message:move_not_made_v1",
+    "surface": "message",
+    "group": "Messages",
+    "where": "move_not_made_v1",
+    "text": "Hi {{1}}, your booking hasn't changed.\nWe couldn't move your {{2}} to {{3}}, so it stays as booked."
+  },
+  {
+    "key": "message:consultation_exists_v1",
+    "surface": "message",
+    "group": "Messages",
+    "where": "consultation_exists_v1",
+    "text": "Hi {{1}}, this number was just used to book on our site.\nYour {{2}} is already booked for {{3}}, {{4}}, so we haven't booked another. See or move it in the Mane Man app."
+  },
+  {
+    "key": "message:book_in_app_v1",
+    "surface": "message",
+    "group": "Messages",
+    "where": "book_in_app_v1",
+    "text": "Hi {{1}}, this number was just used to book on our site.\nAs a Mane Man client, you book in the Mane Man app. Sign in with this number."
+  },
+  {
+    "key": "message:address_on_account_v1",
+    "surface": "message",
+    "group": "Messages",
+    "where": "address_on_account_v1",
+    "text": "Hi {{1}}, we'll come to the address on your account, not the one typed on our site.\nTo change it, open the Mane Man app."
+  },
+  {
+    "key": "message:address_not_served_v1",
+    "surface": "message",
+    "group": "Messages",
+    "where": "address_not_served_v1",
+    "text": "Hi {{1}}, this number was just used to book on our site.\nThe address on your account is at pincode {{2}}, which we don't cover yet, so nothing was booked. If you've moved, change your address in the Mane Man app and book there."
+  },
+  {
+    "key": "message:deletion_rejected_v1",
+    "surface": "message",
+    "group": "Messages",
+    "where": "deletion_rejected_v1",
+    "text": "Hi {{1}}, we haven't deleted your Mane Man account.\nOur reason: {{2}} Message us if you disagree."
+  },
+  {
+    "key": "message:deletion_done_v1",
+    "surface": "message",
+    "group": "Messages",
+    "where": "deletion_done_v1",
+    "text": "Hi {{1}}, as you asked, we've deleted your Mane Man account.\nYour invoices are kept for eight years, as the law requires."
+  },
+  {
+    "key": "message:stop_link_v1",
+    "surface": "message",
+    "group": "Messages",
+    "where": "stop_link_v1",
+    "text": "Stop these messages: {{1}}"
+  },
+  {
+    "key": "message:messages_stopped_v1",
+    "surface": "message",
+    "group": "Messages",
+    "where": "messages_stopped_v1",
+    "text": "Done, {{1}}. We won't message you here about your visits, or when we come to a new area."
+  }
+]

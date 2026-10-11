@@ -27,7 +27,7 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 | Hair profiles | `hair_profiles` | A profile recorded since is lost, and one an erasure blanked since is whole again | Adding the rows since `<T>`: they are only ever added. Erasing again blanks the rest |
 | Stock | `stock_movements` | A delivery, transfer, count or loss recorded since, or a job's use, is lost, so what each kit and the store hold is wrong | Adding the rows since `<T>` |
 | Referrals and credits | `referral_codes`, `referral_attributions`, `credit_ledger`, `waitlist_entries`, `referral_channels`, `channel_attributions`, `partner_payouts` | A credit, a grant, a partner, a partner's payment or a place on a waitlist disappears | The rows since `<T>`. `credit_ledger` is only ever added to |
-| Ops' settings and what we sell | `ops_settings`, `price_book`, `services`, `slot_times`, `serviceable_pincodes`, `technician_leave`, `visit_blackouts`, `city_blackouts`, `cities`, `zones`, `consumables`, `consumable_usage`, `checklist_items`, `partial_reasons`, `pay_grades`, `visit_pay_rates` | A price, service, rule, area, day's times, day off, consumable, job-sheet list or pay rate set since goes back | Setting it again in the console, which audits it |
+| Ops' settings and what we sell | `ops_settings`, `price_book`, `services`, `slot_times`, `serviceable_pincodes`, `technician_leave`, `visit_blackouts`, `city_blackouts`, `cities`, `zones`, `consumables`, `consumable_usage`, `checklist_items`, `partial_reasons`, `pay_grades`, `visit_pay_rates`, `word_versions` | A price, service, rule, area, day's times, day off, consumable, job-sheet list, pay rate or wording set since goes back | Setting it again in the console, which audits it |
 | Staff and access | `staff`, `staff_grants`, `staff_service_tokens`, `staff_access_mode` | Someone taken off the Staff list since, or a grant taken back, is let in again | Setting it again on the Staff page, before anything else |
 | Tasks | `task_owners`, `task_closures` | A task closed since opens again, and one given to someone since is nobody's | Closing or giving it again on the Tasks board |
 | The audit log | `audit_log` | Who did what since `<T>` | Adding the rows since `<T>`: they are only ever added |
@@ -127,6 +127,7 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 - [visits](#visits): What an appointment became once it closed, or ops closed it by hand: the outcome, its reason and its times (ADR 0032, ADR 0074).
 - [waitlist_entries](#waitlist_entries): Someone waiting for us to reach their pincode, and whether they were told it launched (ADR 0048).
 - [webhook_inbox](#webhook_inbox): FSM's webhook deliveries, each kept once (ADR 0032).
+- [word_versions](#word_versions): Every wording a line of the site or a WhatsApp message has had on the Words page; the newest is in force (ADR 0126).
 - [zoho_access_tokens](#zoho_access_tokens): Each Zoho client's access token, the CRM's, FSM's and Books', and the lease one caller holds while it asks for a new one (ADR 0070, ADR 0110).
 - [zoho_token](#zoho_token): The CRM's access token before migration 0041; unread since, and dropped later (open point 90).
 - [zoho_tokens](#zoho_tokens): FSM's and Books' access token before migration 0041; unread since, and dropped later (open point 90).
@@ -2230,6 +2231,24 @@ Indexes:
 
 - A `UNIQUE` constraint: unique on (`dedupe_key`)
 - `webhook_inbox_unprocessed`: on (`processed_at`, `received_at`)
+
+## word_versions
+
+Every wording a line of the site or a WhatsApp message has had on the Words page; the newest is in force (ADR 0126).
+
+Made by `0112_words.sql`.
+
+| Column | Type | May be empty | Default | Key |
+| --- | --- | --- | --- | --- |
+| `id` | TEXT | no |  | primary key |
+| `key` | TEXT | no |  |  |
+| `text` | TEXT | yes |  |  |
+| `set_by` | TEXT | no |  |  |
+| `set_at` | TEXT | no |  |  |
+
+Indexes:
+
+- `word_versions_by_key`: on (`key`, `set_at`)
 
 ## zoho_access_tokens
 

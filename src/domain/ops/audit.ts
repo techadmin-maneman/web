@@ -35,6 +35,9 @@ export const AUDIT_ACTIONS = [
   "channel.change",
   "channel.pause",
   "channel.resume",
+  // A line of the site or a WhatsApp message given new words on the Words page, or put back to the code's
+  // (docs/decisions/0126-the-words-page.md).
+  "word.set",
   // A partner's month paid, or a payment recorded by mistake taken off (docs/decisions/0124-partner-statements.md).
   "partner_payout.record",
   "partner_payout.delete",

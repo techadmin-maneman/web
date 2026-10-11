@@ -79,6 +79,7 @@ describe("the production gate on the apps' copy", () => {
         "apps/ops/src/content/tasks.ts",
         "apps/ops/src/content/technician-pay.ts",
         "apps/ops/src/content/technicians.ts",
+        "apps/ops/src/content/words.ts",
       ],
       tech: ["apps/tech/src/content.ts"],
       api: ["src/config/job-sheet.ts", "src/config/message-templates.ts"],

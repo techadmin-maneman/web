@@ -51,7 +51,7 @@ test("opens on Tasks, with the sections under their departments and what waits i
     "Technician pay",
     "Partner commission",
   ]);
-  await expectNames(department("Growth"), ["Referrals, 2 waiting, some overdue", "Areas"]);
+  await expectNames(department("Growth"), ["Referrals, 2 waiting, some overdue", "Areas", "Words"]);
   await expectNames(department("Admin"), ["Settings", "Staff", "Activity"]);
   await expect(department("Operations").first()).toHaveAttribute("aria-current", "page");
 });
@@ -85,10 +85,9 @@ test("opens the waitlist and the service area at their old addresses, as the tab
     await page.goto(old);
     await expect(page.getByRole("heading", { level: 1, name: "Areas" })).toBeVisible();
     await expect(page).toHaveURL(now);
-    await expect(navigation(page).getByRole("list", { name: "Growth" }).getByRole("link").last()).toHaveAttribute(
-      "aria-current",
-      "page",
-    );
+    await expect(
+      navigation(page).getByRole("list", { name: "Growth" }).getByRole("link", { name: "Areas" }),
+    ).toHaveAttribute("aria-current", "page");
   }
   const tabs = page.getByRole("navigation", { name: "Areas" });
   await expect(tabs.getByRole("link")).toHaveText(["Waiting", "Served"]);

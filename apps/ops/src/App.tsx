@@ -51,6 +51,9 @@ const ActivityScreen = lazy(() =>
 const AreasScreen = lazy(() =>
   loadOrReload(() => import("./areas/AreasScreen.tsx")).then((module) => ({ default: module.AreasScreen })),
 );
+const WordsScreen = lazy(() =>
+  loadOrReload(() => import("./words/WordsScreen.tsx")).then((module) => ({ default: module.WordsScreen })),
+);
 const TechnicianScreen = lazy(() =>
   loadOrReload(() => import("./technicians/TechnicianScreen.tsx")).then((module) => ({
     default: module.TechnicianScreen,
@@ -71,6 +74,7 @@ const SCREENS: Readonly<Record<PlainPage, ComponentType>> = {
   "technician-pay": TechnicianPayScreen,
   "partner-commission": PartnerCommissionScreen,
   referrals: ReferralsScreen,
+  words: WordsScreen,
   staff: StaffScreen,
   activity: ActivityScreen,
 };

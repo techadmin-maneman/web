@@ -98,6 +98,8 @@ export type PartnerTerms = Sent<paths["/api/referral-channels"]["post"]>;
 export type PartnerStatements = Body<paths["/api/partner-statements"]["get"]>;
 export type PartnerStatement = PartnerStatements["statements"][number];
 type PartnerPayout = Sent<paths["/api/partner-statements/{id}/payouts"]["post"]>;
+/** The site's words and the WhatsApp messages, as the Words page changes them (docs/decisions/0126-the-words-page.md). */
+export type Word = Body<paths["/api/words"]["get"]>["words"][number];
 /** Discount codes, and a code on a client's visit (docs/decisions/0108-discount-codes.md). */
 export type DiscountCodes = Body<paths["/api/discount-codes"]["get"]>;
 export type DiscountCode = Body<paths["/api/discount-codes"]["get"]>["codes"][number];
@@ -500,6 +502,9 @@ export const api = {
     client.post("/api/partner-statements/{id}/payouts", { path: { id }, body: payout }),
   deletePartnerPayout: (id: string, month: string) =>
     client.post("/api/partner-statements/{id}/payouts/{month}/delete", { path: { id, month } }),
+  words: () => client.get("/api/words"),
+  wordHistory: (key: string) => client.get("/api/words/history", { query: { key } }),
+  setWord: (key: string, text: string | null) => client.post("/api/words", { body: { key, text } }),
   technicianPay: () => client.get("/api/technician-pay"),
   addPayGrade: (name: string) => client.post("/api/technician-pay/grades", { body: { name } }),
   renamePayGrade: (id: string, name: string) =>
