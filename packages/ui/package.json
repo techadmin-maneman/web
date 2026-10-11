@@ -31,7 +31,8 @@
     "./useLoad": "./useLoad.ts",
     "./useOneAtATime": "./useOneAtATime.ts",
     "./useSecondsLeft": "./useSecondsLeft.ts",
-    "./VisuallyHidden": "./VisuallyHidden.tsx"
+    "./VisuallyHidden": "./VisuallyHidden.tsx",
+    "./WindowChoice": "./WindowChoice.tsx"
   },
   "dependencies": {
     "@maneman/brand": "0.0.0"

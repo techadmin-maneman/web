@@ -1,6 +1,7 @@
 // The consultation form's own fieldsets (./Consultation.tsx): what to book, the discount code on the site's own page,
 // the day strip, and the windows on the day picked. Each window and day the API says is full is drawn, and disabled.
 
+import { WindowChoice, type WindowChoiceClasses } from "@maneman/ui/WindowChoice";
 import { whatsappChat } from "@maneman/web-kit/whatsapp";
 import { referral } from "../../content/referral.ts";
 import { whatsapp } from "../../content/site.ts";
@@ -144,8 +145,19 @@ export function DayStrip({
   );
 }
 
-/** The windows the plan may start in, on the day picked: a full one says so. */
-export function WindowChoice({
+const WINDOW_CLASSES: WindowChoiceClasses = {
+  group: styles.group,
+  legend: `caps ${styles.legend}`,
+  options: styles.windows,
+  option: styles.window,
+  optionOn: styles.windowOn,
+  radio: "visually-hidden",
+  name: styles.windowLabel,
+  hours: styles.windowHours,
+};
+
+/** The windows the plan may start in, on the day picked: a full one says so in place of its hours. */
+export function DayWindows({
   windows,
   slot,
   open,
@@ -157,30 +169,15 @@ export function WindowChoice({
   onWindow: (window: Slot["window"]) => void;
 }) {
   return (
-    <fieldset class={styles.group}>
-      <legend class={`caps ${styles.legend}`}>{consultation.window}</legend>
-      <div class={styles.windows}>
-        {windows.map((option) => {
-          const { id } = option;
-          const windowOpen = isOpen(open, slot.date, id);
-          return (
-            <label key={id} class={`${styles.window} ${slot.window === id ? styles.windowOn : ""}`}>
-              <input
-                type="radio"
-                name="window"
-                class="visually-hidden"
-                checked={slot.window === id}
-                disabled={!windowOpen}
-                onChange={() => {
-                  onWindow(id);
-                }}
-              />
-              <span class={styles.windowLabel}>{option.label}</span>
-              <span class={styles.windowHours}>{windowOpen ? option.hours : consultation.full}</span>
-            </label>
-          );
-        })}
-      </div>
-    </fieldset>
+    <WindowChoice
+      name="window"
+      legend={consultation.window}
+      options={windows.map(({ id, label, hours }) => ({ id, name: label, hours, open: isOpen(open, slot.date, id) }))}
+      chosen={slot.window}
+      fullWord={consultation.full}
+      fullInPlaceOfHours
+      onChoose={onWindow}
+      classes={WINDOW_CLASSES}
+    />
   );
 }

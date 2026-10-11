@@ -1,6 +1,6 @@
 # @maneman/ui
 
-The React parts the three Phase 2 apps share: the client app, the ops console and the technician app. What they have in common is written here once, so a fix reaches all three (ADR 0076). The calls to the API, India's dates, rupees and WhatsApp's links are `@maneman/web-kit`'s. The public site is Astro and Preact, and uses none of it.
+The React parts the three Phase 2 apps share: the client app, the ops console and the technician app. What they have in common is written here once, so a fix reaches all three (ADR 0076). The calls to the API, India's dates, rupees and WhatsApp's links are `@maneman/web-kit`'s. The public site is Astro and Preact; its booking islands draw the parts they share with the client app's booking sheet from here, through Preact's compatibility layer (ADR 0121).
 
 | Import                       | What it holds                                                                                                                           |
 | ---------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
@@ -9,6 +9,7 @@ The React parts the three Phase 2 apps share: the client app, the ops console an
 | `@maneman/ui/IconButton`     | A control that is only its icon, named for a screen reader, and `iconButtonLook()` for such a link                                      |
 | `@maneman/ui/Mark`           | The brand's mark, in the surrounding text colour                                                                                        |
 | `@maneman/ui/VisuallyHidden` | Words for a screen reader alone                                                                                                         |
+| `@maneman/ui/WindowChoice`   | The windows a visit can start in on a day, open or full; the site's /book and invite pages draw it too                                  |
 | `@maneman/ui/Caps`           | The boards' small-caps serif label                                                                                                      |
 | `@maneman/ui/Button`         | `Button` and `ButtonLink`: a variant (the colours) and a size (what it is for), with every state                                        |
 | `@maneman/ui/Sheet`          | A sheet that rises from the foot of the column, as a native modal dialog that Back closes, and `SheetPanel`, its paper                  |
@@ -37,6 +38,6 @@ A button's size is what it is for, and each app says how big that is. `base.css`
 
 - **Tokens only.** Every colour, size and space comes from `@maneman/brand`, as in the apps; `test/node/apps/app/app-tokens.test.ts` reads these stylesheets too.
 - **A screen's own class wins.** `base.css` is the `base` cascade layer and each component's stylesheet the `ui` layer, above it; an app's own rules are in no layer, so they beat both. A screen sets a shared component's margin or width with its own class, and nothing else is needed. It never sets a button's ground, words' colour or edge, which would erase its pressed, disabled and busy looks; `test/dom/ui-button-looks.test.ts` reads every class an app hands a button. Every stylesheet here names the two layers first (`@layer base, ui;`), so the order holds whichever a browser meets first. The visually-hidden recipe alone stays outside the layers, so no screen can bring its words into view.
-- **Each app brings its own React.** This package imports `react` but does not install it. Each app's `vite.config.ts` dedupes `react` and `react-dom`, since from here Node would find the repository root's React 18, kept for the fidelity runs (`docs/fidelity-method.md`).
+- **Each app brings its own React.** This package imports `react` but does not install it. The site's islands get Preact's compatibility layer in its place, so what the site uses (`WindowChoice`) holds to what Preact has. Each app's `vite.config.ts` dedupes `react` and `react-dom`, since from here Node would find the repository root's React 18, kept for the fidelity runs (`docs/fidelity-method.md`).
 - **No copies in the apps.** `test/node/dom/ui-package.test.ts` fails an app that keeps its own icon, mark, router, loader, tap guard or error boundary, hides words its own way, or calls `/api/` itself.
 - **Sources, not builds,** as `@maneman/brand`: each app's Vite compiles what it imports. `packages/ui/tsconfig.json` type-checks and lints the package on its own.

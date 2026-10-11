@@ -2,12 +2,24 @@
 
 import { classes } from "@maneman/ui/classes";
 import { Button } from "@maneman/ui/Button";
+import { WindowChoice, type WindowChoiceClasses } from "@maneman/ui/WindowChoice";
 import { weekdayDate } from "@maneman/web-kit/dates";
 import type { BookingWindow } from "../../api.ts";
 import { booking, WINDOW_HOURS, WINDOW_NAMES } from "../../content.ts";
 import { windowContinue, type Day } from "../days.ts";
 import styles from "../booking.module.css";
 import { TITLE_ID, stepOf, Heading } from "./shared.tsx";
+
+const WINDOW_CLASSES: WindowChoiceClasses = {
+  options: styles.windows,
+  option: styles.window,
+  radio: styles.radio,
+  text: styles.windowText,
+  name: styles.windowName,
+  hours: styles.windowTime,
+  note: classes(styles.windowTime, styles.windowLate),
+  full: styles.windowNote,
+};
 
 /**
  * The day's windows the visit can start in, open or full. Who comes is never promised: a technician never
@@ -30,34 +42,21 @@ export function WindowStep(props: {
     <>
       <Heading title={copy.title} step={stepOf(2, props.before)} />
       <p className={styles.dayLine}>{weekdayDate(props.day.date)}</p>
-      <div className={styles.windows} role="radiogroup" aria-labelledby={TITLE_ID}>
-        {props.day.windows.map(({ window, open, change_charged: changeCharged }) => {
-          return (
-            <label key={window} className={styles.window}>
-              <input
-                className={styles.radio}
-                type="radio"
-                name="booking-window"
-                checked={window === props.chosen}
-                disabled={!open}
-                onChange={() => {
-                  props.onChoose(window);
-                }}
-              />
-              <span>
-                <span className={styles.windowName}>{WINDOW_NAMES[window]}</span>
-                <span className={styles.windowTime}>{WINDOW_HOURS[window]}</span>
-                {open && changeCharged && (
-                  <span className={classes(styles.windowTime, styles.windowLate)}>
-                    {copy.within(props.noticeHours)}
-                  </span>
-                )}
-              </span>
-              {!open && <span className={styles.windowNote}>{copy.full}</span>}
-            </label>
-          );
-        })}
-      </div>
+      <WindowChoice
+        name="booking-window"
+        labelledBy={TITLE_ID}
+        options={props.day.windows.map(({ window, open, change_charged: changeCharged }) => ({
+          id: window,
+          name: WINDOW_NAMES[window],
+          hours: WINDOW_HOURS[window],
+          open,
+          note: open && changeCharged ? copy.within(props.noticeHours) : undefined,
+        }))}
+        chosen={props.chosen}
+        fullWord={copy.full}
+        onChoose={props.onChoose}
+        classes={WINDOW_CLASSES}
+      />
       {props.problem !== null && (
         <p className={styles.problem} role="alert">
           {props.problem}

@@ -231,6 +231,11 @@
   cursor: pointer;
 }
 
+/* A window's name and hours, stacked: they give way before its note does. */
+.windowText {
+  min-width: 0;
+}
+
 .windowName,
 .windowTime {
   display: block;
