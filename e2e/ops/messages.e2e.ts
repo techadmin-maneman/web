@@ -26,7 +26,15 @@ test("lists the chats waiting on us, and opens one with our automatic messages i
     "GET /api/conversations": json({ conversations: [ARJUN] }),
     "GET /api/care-team": json({
       team: [
-        { email: "asha@maneman.test", clients: 12, weekly_off: [0], leave: [], off_today: false, covered_by: null },
+        {
+          email: "asha@maneman.test",
+          name: "Asha",
+          clients: 12,
+          weekly_off: [0],
+          leave: [],
+          off_today: false,
+          covered_by: null,
+        },
       ],
     }),
     "GET /api/conversations/{id}": json({
