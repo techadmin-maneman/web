@@ -27,7 +27,7 @@ import { NumberCodeField, type CodeFieldClasses } from "../NumberCodeField.tsx";
 import { useNumberCode } from "../useNumberCode.ts";
 import { AddressFieldset } from "./AddressFieldset.tsx";
 import { BOOK_STEPS } from "./AboutYou.tsx";
-import { DayStrip, DiscountCode, PlanChoice, WindowChoice } from "./ConsultationFields.tsx";
+import { DayStrip, DayWindows, DiscountCode, PlanChoice } from "./ConsultationFields.tsx";
 import type { Booking } from "./Done.tsx";
 import {
   ExtentFieldset,
@@ -136,7 +136,7 @@ function VisitPart(
         }}
       />
 
-      <WindowChoice
+      <DayWindows
         windows={props.windows}
         slot={slot}
         open={props.open}

@@ -51,7 +51,7 @@ export default defineConfig({
   build: { format: "file" },
   trailingSlash: "never",
   integrations: [
-    preact(),
+    preact({ compat: true }),
     {
       name: "mm-environment-files",
       hooks: {

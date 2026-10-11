@@ -2,7 +2,7 @@
 
 Every decision this repository was built on, oldest first. A record says what was decided and why, and is not rewritten to say something else: a later record changes it, and says so in its own header (ADR 0001). **Changed by** gathers those later records, from either side, so an old record's reader knows to read on.
 
-This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. A record names its topic in its header, `- Topic:` and one of the headings below, and the test fails on one that does not. The next free number is 0121.
+This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. A record names its topic in its header, `- Topic:` and one of the headings below, and the test fails on one that does not. The next free number is 0122.
 
 ## By topic
 
@@ -31,6 +31,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 - [0093](0093-the-storage-meter.md) The storage meter, the photograph upload limit, and thumbnails made on the phone
 - [0097](0097-staging-logins-open-reminders-fenced.md) Staging logins open, reminders fenced
 - [0112](0112-workers-paid.md) Workers Paid
+- [0121](0121-the-site-and-the-app-book-with-the-same-parts.md) The site and the app book with the same parts
 
 ### Booking and visits
 
@@ -233,7 +234,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0073](0073-prices-from-the-price-book.md) | Prices from the price book, on the site and in FSM's catalogue | 2026-09-26 | accepted | [0085](0085-services-ops-can-edit.md), [0087](0087-consumables-and-stock.md), [0103](0103-the-home-pages-first-copy-round.md) |
 | [0074](0074-hand-offs-and-messages.md) | What each person learns when something changes for them | 2026-09-26 | accepted | [0092](0092-task-owners.md), [0096](0096-a-no-shows-charge-and-its-dispute.md), [0099](0099-the-clients-note-in-fsm.md) |
 | [0075](0075-tests-held-to-the-contract-and-the-local-stack.md) | Tests held to the API's contract, and the whole system on a laptop | 2026-09-27 | accepted |  |
-| [0076](0076-one-ui-layer-and-one-api-client.md) | One component layer and one API client for the front ends | 2026-09-27 | accepted |  |
+| [0076](0076-one-ui-layer-and-one-api-client.md) | One component layer and one API client for the front ends | 2026-09-27 | accepted | [0121](0121-the-site-and-the-app-book-with-the-same-parts.md) |
 | [0077](0077-a-token-scale-written-once.md) | A token scale written once, and names for what a value is for | 2026-09-27 | accepted |  |
 | [0078](0078-the-queues-no-board-draws.md) | The console's queues that no board draws | 2026-09-27 | accepted |  |
 | [0079](0079-an-address-before-a-slot.md) | An address before any slot | 2026-09-27 | accepted |  |
@@ -276,3 +277,4 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0118](0118-booking-never-dead-ends.md) | Booking never dead-ends | 2026-10-11 | accepted |  |
 | [0119](0119-blackouts-by-city-and-trained-fitters.md) | Blackouts by city, and trained fitters | 2026-10-11 | accepted |  |
 | [0120](0120-the-board-sees-the-road.md) | The board sees the road | 2026-10-11 | accepted |  |
+| [0121](0121-the-site-and-the-app-book-with-the-same-parts.md) | The site and the app book with the same parts | 2026-10-11 | accepted |  |
