@@ -35,6 +35,7 @@
 // that, a code we do not have, or one not shaped like a code, is ignored, and the
 // booking goes ahead without an invite (docs/decisions/0089-an-invite-is-not-lost.md).
 
+import { indiaDate } from "../../lib/india-time.ts";
 import { createRoute, z } from "@hono/zod-openapi";
 import type { Context } from "hono";
 import type { App, AppEnv } from "../../http/context.ts";
@@ -323,7 +324,7 @@ function rememberedInvite(
 ): Promise<AnyInvite | null> {
   const code = sent.invite_code;
   if (sent.invite_told !== true || code === undefined || !CODE_PATTERN.test(code)) return Promise.resolve(null);
-  return anyInviteOf(c.env.DB, code, c.var.config.settings.referrerNameOnInvite);
+  return anyInviteOf(c.env.DB, code, c.var.config.settings.referrerNameOnInvite, indiaDate(c.var.deps.now()));
 }
 
 export function registerConsultations(app: App): void {

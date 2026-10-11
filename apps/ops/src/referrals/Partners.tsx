@@ -152,7 +152,10 @@ function PartnerRows({ partner, ...row }: { partner: Partner } & RowProps) {
             {copy.link(SITE.host, partner.code)}
           </a>
         </td>
-        <td>{copy.friendGets(partner.friend_visits, partner.valid_days)}</td>
+        <td>
+          {copy.friendGets(partner.friend_visits, partner.valid_days)}
+          {partner.discount_code !== null && <span className={own.code}>{partner.discount_code}</span>}
+        </td>
         <td className={own.figure}>{rupees(partner.commission)}</td>
         <td className={own.figure}>{partner.opens}</td>
         <td className={own.figure}>{partner.referred}</td>

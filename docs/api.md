@@ -2215,6 +2215,45 @@ Razorpay's webhook: payments and refunds
       ],
       "description": "A partner's own service visits for the friend; null for a client's invite, which gives the reward in force."
     },
+    "discount": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "type": "string",
+              "enum": [
+                "percent",
+                "amount"
+              ]
+            },
+            "value": {
+              "type": "integer"
+            },
+            "cap": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "required": [
+            "kind",
+            "value",
+            "cap"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "What a partner's discount code takes off the friend's first fit, which it comes off by itself: per cent or paise, and the most a percentage takes off (docs/decisions/0125-partner-discount-codes.md); null for none."
+    },
     "card": {
       "type": "object",
       "properties": {
@@ -2242,6 +2281,7 @@ Razorpay's webhook: payments and refunds
     "referrer_first_name",
     "partner",
     "friend_visits",
+    "discount",
     "card"
   ],
   "additionalProperties": false

@@ -2047,6 +2047,13 @@ export interface components {
             partner: string | null;
             /** @description A partner's own service visits for the friend; null for a client's invite, which gives the reward in force. */
             friend_visits: number | null;
+            /** @description What a partner's discount code takes off the friend's first fit, which it comes off by itself: per cent or paise, and the most a percentage takes off (docs/decisions/0125-partner-discount-codes.md); null for none. */
+            discount: {
+                /** @enum {string} */
+                kind: "percent" | "amount";
+                value: number;
+                cap: number | null;
+            } | null;
             /** @description Which card the invite shows, and its version for the preview's URL. */
             card: {
                 /** @enum {string} */

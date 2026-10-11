@@ -26,6 +26,7 @@ const UNKNOWN = {
   referrer_first_name: null,
   partner: null,
   friend_visits: null,
+  discount: null,
   card: { state: "house", version: 1 },
 };
 

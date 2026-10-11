@@ -4,6 +4,7 @@
 // invite only, a client's or a partner's, whichever they used first.
 
 import { auditStatement, type AuditActor } from "../ops/audit.ts";
+import type { DiscountKind, DiscountTerms } from "../../policy/discount-codes.ts";
 import { inviteLapsed } from "../../policy/invites.ts";
 import { OWED } from "./partner-statements.ts";
 import { inviteOf, newReferralCode, type Invite, type Via } from "./referrals.ts";
@@ -16,20 +17,40 @@ export interface PartnerInvite {
   readonly partnerName: string;
   /** The service visits the friend gets once fitted; 0 for none. */
   readonly friendVisits: number;
-  /** The partner's discount code, which comes off the friend's first paid visit by itself; null for none. */
-  readonly discountCode: string | null;
+  /** The partner's discount code, which comes off the friend's first fit by itself, and its terms; null for none. */
+  readonly discount: { readonly code: string; readonly terms: DiscountTerms } | null;
 }
 
-/** A live partner's invite by its code; null for a code no partner has, or one paused. */
-export async function partnerInviteOf(db: D1Database, code: string): Promise<PartnerInvite | null> {
+interface PartnerRow {
+  readonly id: string;
+  readonly code: string;
+  readonly name: string;
+  readonly friend_visits: number;
+  readonly discount_code: string | null;
+  readonly kind: DiscountKind | null;
+  readonly value: number | null;
+  readonly cap: number | null;
+}
+
+/**
+ * A live partner's invite by its code; null for a code no partner has, or one paused. Its discount code stands while
+ * it is switched on, covers a first fit and, given `today`, has not ended.
+ */
+export async function partnerInviteOf(
+  db: D1Database,
+  code: string,
+  today: string | null = null,
+): Promise<PartnerInvite | null> {
   const row = await db
     .prepare(
-      `SELECT c.id, c.code, c.name, c.friend_visits, d.code AS discount_code FROM referral_channels c
-       LEFT JOIN discount_codes d ON d.id = c.discount_code_id AND d.switched_off_at IS NULL
+      `SELECT c.id, c.code, c.name, c.friend_visits, d.code AS discount_code, d.kind, d.value, d.cap
+       FROM referral_channels c
+       LEFT JOIN discount_codes d ON d.id = c.discount_code_id AND d.switched_off_at IS NULL AND d.covers_first_fit = 1
+         AND (?2 IS NULL OR d.expires_on IS NULL OR d.expires_on >= ?2)
        WHERE c.code = ?1 AND c.paused_at IS NULL`,
     )
-    .bind(code.toUpperCase())
-    .first<{ id: string; code: string; name: string; friend_visits: number; discount_code: string | null }>();
+    .bind(code.toUpperCase(), today)
+    .first<PartnerRow>();
   if (row === null) return null;
   return {
     kind: "partner",
@@ -37,7 +58,10 @@ export async function partnerInviteOf(db: D1Database, code: string): Promise<Par
     channelId: row.id,
     partnerName: row.name,
     friendVisits: row.friend_visits,
-    discountCode: row.discount_code,
+    discount:
+      row.discount_code === null || row.kind === null || row.value === null
+        ? null
+        : { code: row.discount_code, terms: { kind: row.kind, value: row.value, cap: row.cap } },
   };
 }
 
@@ -120,11 +144,16 @@ export interface ChannelTerms {
   readonly discountCode: string | null;
 }
 
-/** A partner's code, as typed, as the ID of a code Finance made and has not switched off; null for none given. */
+/**
+ * A partner's code, as typed, as the ID of a code Finance made, has not switched off and that covers a first fit;
+ * null for none given.
+ */
 async function discountCodeId(db: D1Database, text: string | null): Promise<{ readonly id: string | null } | null> {
   if (text === null) return { id: null };
   const row = await db
-    .prepare("SELECT id FROM discount_codes WHERE code = upper(?1) AND switched_off_at IS NULL")
+    .prepare(
+      "SELECT id FROM discount_codes WHERE code = upper(?1) AND switched_off_at IS NULL AND covers_first_fit = 1",
+    )
     .bind(text)
     .first<{ id: string }>();
   return row === null ? null : { id: row.id };
@@ -321,8 +350,13 @@ export type AnyInvite = Invite | PartnerInvite;
 export const isPartnerInvite = (invite: AnyInvite): invite is PartnerInvite => "channelId" in invite;
 
 /** The invite behind a code: a client's, else a live partner's; null for a code we do not have. */
-export async function anyInviteOf(db: D1Database, code: string, nameOnInvite: boolean): Promise<AnyInvite | null> {
-  return (await inviteOf({ db, code, nameOnInvite })) ?? (await partnerInviteOf(db, code));
+export async function anyInviteOf(
+  db: D1Database,
+  code: string,
+  nameOnInvite: boolean,
+  today: string | null = null,
+): Promise<AnyInvite | null> {
+  return (await inviteOf({ db, code, nameOnInvite })) ?? (await partnerInviteOf(db, code, today));
 }
 
 /** The client's code an invite carries, for the tables that point at clients' codes; null for a partner's. */
@@ -338,7 +372,7 @@ export async function partnerCodeFor(db: D1Database, personId: string): Promise<
     .prepare(
       `SELECT d.code FROM channel_attributions a
        JOIN referral_channels c ON c.id = a.channel_id
-       JOIN discount_codes d ON d.id = c.discount_code_id AND d.switched_off_at IS NULL
+       JOIN discount_codes d ON d.id = c.discount_code_id AND d.switched_off_at IS NULL AND d.covers_first_fit = 1
        WHERE a.referred_person_id = ?1 AND a.grant_state = 'pending'`,
     )
     .bind(personId)

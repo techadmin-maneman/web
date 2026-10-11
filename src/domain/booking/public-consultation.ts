@@ -477,8 +477,8 @@ async function tellPrivately(form: FormRequest, personId: string, kind: SiteNoti
 function askedCode(request: ConsultationRequest): { readonly text: string; readonly fromInvite: boolean } | null {
   if (request.discountCode !== null) return { text: request.discountCode, fromInvite: false };
   const { invite } = request;
-  if (invite === null || !isPartnerInvite(invite) || invite.discountCode === null) return null;
-  return { text: invite.discountCode, fromInvite: true };
+  if (invite === null || !isPartnerInvite(invite) || invite.discount === null) return null;
+  return { text: invite.discount.code, fromInvite: true };
 }
 
 /**

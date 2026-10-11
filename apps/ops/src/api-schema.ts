@@ -2087,7 +2087,7 @@ export interface paths {
                         "application/json": components["schemas"]["ReferralChannels"];
                     };
                 };
-                /** @description invalid_request: fields names name, friend_visits, valid_days or commission */
+                /** @description invalid_request: fields names name, friend_visits, valid_days, commission or discount_code (none switched on) */
                 400: {
                     headers: {
                         [name: string]: unknown;
@@ -2160,7 +2160,7 @@ export interface paths {
                         "application/json": components["schemas"]["ReferralChannels"];
                     };
                 };
-                /** @description invalid_request: fields names name, friend_visits, valid_days or commission */
+                /** @description invalid_request: fields names name, friend_visits, valid_days, commission or discount_code (none switched on) */
                 400: {
                     headers: {
                         [name: string]: unknown;
@@ -9306,6 +9306,8 @@ export interface components {
                 earned: number;
                 /** @description Of that, paise not yet paid (GET /api/partner-statements). */
                 owed: number;
+                /** @description The partner's discount code, off the friend's first paid visit by itself; null for none. */
+                discount_code: string | null;
             }[];
             limits: {
                 max_visits: number;
@@ -9319,12 +9321,16 @@ export interface components {
             friend_visits: number;
             valid_days: number;
             commission: number;
+            /** @description One of Finance's codes, switched on, any case; null for none. */
+            discount_code: string | null;
         };
         ReferralChannelChange: {
             name: string;
             friend_visits: number;
             valid_days: number;
             commission: number;
+            /** @description One of Finance's codes, switched on, any case; null for none. */
+            discount_code: string | null;
         };
         ReferralChannelPause: {
             paused: boolean;

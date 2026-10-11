@@ -179,6 +179,7 @@ export default function Invite(props: Props) {
     onChangePincode: pincode.change,
   };
   const offer = credits && reward !== null ? referral.arrival.offer(reward) : null;
+  const discount = invited && !unknown ? (invite?.discount ?? null) : null;
 
   function keepPerson(fields: PersonFields) {
     setKept(fields);
@@ -211,6 +212,7 @@ export default function Invite(props: Props) {
           <div class={styles.offer}>
             {!invited && <p>{answer?.served === false ? booking.introWaitlist : booking.intro}</p>}
             {offer !== null && <p>{offer}</p>}
+            {discount !== null && <p>{referral.arrival.discount(discount)}</p>}
             {unknown && (
               <p>
                 <span class={styles.unknownTitle}>{referral.arrival.unknown.notice}</span>

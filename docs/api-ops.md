@@ -1478,7 +1478,7 @@ Request body:
 }
 ```
 
-**400**: invalid_request: fields names name, friend_visits, valid_days or commission
+**400**: invalid_request: fields names name, friend_visits, valid_days, commission or discount_code (none switched on)
 
 ```json
 {
@@ -1522,7 +1522,7 @@ Request body:
 }
 ```
 
-**400**: invalid_request: fields names name, friend_visits, valid_days or commission
+**400**: invalid_request: fields names name, friend_visits, valid_days, commission or discount_code (none switched on)
 
 ```json
 {
@@ -10553,6 +10553,17 @@ Request body:
           "owed": {
             "type": "integer",
             "description": "Of that, paise not yet paid (GET /api/partner-statements)."
+          },
+          "discount_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The partner's discount code, off the friend's first paid visit by itself; null for none."
           }
         },
         "required": [
@@ -10567,7 +10578,8 @@ Request body:
           "referred",
           "fitted",
           "earned",
-          "owed"
+          "owed",
+          "discount_code"
         ],
         "additionalProperties": false
       }
@@ -10629,13 +10641,27 @@ Request body:
       "type": "integer",
       "minimum": 0,
       "maximum": 5000000
+    },
+    "discount_code": {
+      "anyOf": [
+        {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 40
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "One of Finance's codes, switched on, any case; null for none."
     }
   },
   "required": [
     "name",
     "friend_visits",
     "valid_days",
-    "commission"
+    "commission",
+    "discount_code"
   ],
   "additionalProperties": false
 }
@@ -10665,13 +10691,27 @@ Request body:
       "type": "integer",
       "minimum": 0,
       "maximum": 5000000
+    },
+    "discount_code": {
+      "anyOf": [
+        {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 40
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "One of Finance's codes, switched on, any case; null for none."
     }
   },
   "required": [
     "name",
     "friend_visits",
     "valid_days",
-    "commission"
+    "commission",
+    "discount_code"
   ],
   "additionalProperties": false
 }

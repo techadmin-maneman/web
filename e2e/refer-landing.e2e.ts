@@ -32,6 +32,7 @@ const INVITE = {
   referrer_first_name: "Rohit",
   partner: null,
   friend_visits: null,
+  discount: null,
   card: { state: "personal" as const, version: 2 },
 };
 
@@ -253,6 +254,7 @@ test("a code we do not know still books, without the invite's visits", async ({ 
       referrer_first_name: null,
       partner: null,
       friend_visits: null,
+      discount: null,
       card: { state: "house", version: 1 },
     },
     consultation: {
@@ -298,6 +300,7 @@ test("a code we do not know promises nothing to hold on the waitlist either", as
       referrer_first_name: null,
       partner: null,
       friend_visits: null,
+      discount: null,
       card: { state: "house", version: 1 },
     },
   });

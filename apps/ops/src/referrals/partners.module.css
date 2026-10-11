@@ -17,6 +17,13 @@
   font-weight: var(--weight-medium);
 }
 
+/* The partner's discount code, beneath what the friend gets. */
+.code {
+  display: block;
+  font-size: var(--fs-13);
+  color: var(--text-muted);
+}
+
 .paused {
   font-weight: var(--weight-regular);
   color: var(--text-muted);
