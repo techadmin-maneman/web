@@ -33,6 +33,7 @@ import { registerClientDiscountCodes } from "./routes/client/discount-codes.ts";
 import { registerOpsDiscountCodes } from "./routes/ops/discount-codes.ts";
 import { registerTechDiscountCodes } from "./routes/tech/discount-codes.ts";
 import { registerClientDisputes } from "./routes/client/disputes.ts";
+import { registerClientMoveProposals } from "./routes/client/move-proposals.ts";
 import { registerClientErrors } from "./routes/client-errors.ts";
 import { registerClientRefer } from "./routes/client/refer.ts";
 import { registerOpsBlackouts } from "./routes/ops/blackouts.ts";
@@ -140,16 +141,14 @@ const SURFACE_ROUTES: Readonly<Record<Surface, readonly ((app: App) => void)[]>>
     registerClientDeletionRequest,
     registerClientSessions,
     registerClientVisits,
+    registerClientMoveProposals,
     registerClientPhotos,
-    // After the visits: they put the session on every /api/visits/* route.
     registerClientDisputes,
     registerClientPayments,
     registerClientAvailability,
     registerClientBooking,
-    // After the booking: it puts the session and the self-serve switch on every /api/holds/* route.
     registerClientDiscountCodes,
     registerClientChanges,
-    // After the changes: they put the session and the self-serve switch on every /api/appointments/* route.
     registerClientNotes,
     registerClientRefer,
     registerClientData,
@@ -215,7 +214,6 @@ const SURFACE_ROUTES: Readonly<Record<Surface, readonly ((app: App) => void)[]>>
     // Who may do what in the console.
     registerOpsStaff,
   ],
-  // The discount code after the jobs, which put the technician's session on every /api/tech/jobs/* route.
   tech: [
     registerHealth,
     registerClientErrors,

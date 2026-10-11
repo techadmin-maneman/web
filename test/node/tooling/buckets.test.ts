@@ -51,7 +51,7 @@ const abortOnly = {
   abortMultipartUploadsTransition: { condition: { type: "Age", maxAge: DAY } },
 };
 
-/** Staging's four buckets, each existing with the lifecycle rules given, unless `answers` says otherwise. */
+/** Staging's five buckets, each existing with the lifecycle rules given, unless `answers` says otherwise. */
 function account(rules: Record<string, unknown[]>, answers: Record<string, Answer> = {}): typeof fetch {
   return (input: string | URL | Request) => {
     const url = input instanceof Request ? input.url : input.toString();
@@ -68,6 +68,7 @@ const RIGHT = {
   "mm-staging-tryon-results": [expireAfter(30)],
   "mm-staging-client-photos": [abortOnly],
   "mm-staging-referral-cards": [],
+  "mm-staging-backups": [],
 };
 
 function check(doFetch: typeof fetch) {
@@ -80,7 +81,7 @@ const differences = async (doFetch: typeof fetch) =>
 describe("the live buckets", () => {
   it("match when the try-on buckets expire everything within 30 days and no other bucket expires anything", async () => {
     const findings = await check(account(RIGHT));
-    expect(findings).toHaveLength(4);
+    expect(findings).toHaveLength(5);
     expect(findings.every((finding) => finding.outcome === "matches")).toBe(true);
   });
 

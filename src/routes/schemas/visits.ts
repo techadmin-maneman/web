@@ -11,6 +11,24 @@ const TechnicianSchema = z
   .strict()
   .openapi("Technician", { description: "Display name and initials only." });
 
+export const ConsultedSchema = z
+  .object({
+    date: z.iso.date().openapi({ description: "India's date of the consultation." }),
+    technician: z.union([TechnicianSchema, z.null()]),
+    recommended: z
+      .string()
+      .nullable()
+      .openapi({
+        description:
+          "The tier of the first-fit service the technician recommended, as the hair profile records it; null for " +
+          "none. booking.next offers the first fit as it, while it is offered.",
+      }),
+  })
+  .strict()
+  .openapi("Consulted", {
+    description: "A consultation done: its day, who came, and the hair system recommended there.",
+  });
+
 export const OneVisitPriceSchema = z
   .object({
     amount: z.union([z.number().int(), z.null()]).openapi({
@@ -23,6 +41,17 @@ export const OneVisitPriceSchema = z
   })
   .strict()
   .openapi("OneVisitPrice");
+
+const ProposedMoveSchema = z
+  .object({
+    id: z.uuid(),
+    date: z.iso.date().openapi({ description: "India's date the visit would move to." }),
+    window: z.enum(["morning", "afternoon", "evening"]),
+    technician: z.union([TechnicianSchema, z.null()]),
+    expires_at: z.iso.datetime().openapi({ description: "The last moment it may be accepted." }),
+  })
+  .strict()
+  .openapi("ProposedMove");
 
 export const VisitSummarySchema = z
   .object({
@@ -57,6 +86,11 @@ export const VisitSummarySchema = z
       description:
         "A consultation and fit in one visit not yet closed: the client pays only if they go ahead, once fitted, by " +
         "a link Razorpay texts them. Null for any other visit.",
+    }),
+    proposed_move: z.union([ProposedMoveSchema, z.null()]).openapi({
+      description:
+        "A move to another day ops asked the client to confirm, still open: the visit stays where it is until they " +
+        "accept it (POST /api/visits/{id}/proposed-move/accept) or pick another time. Null for none.",
     }),
   })
   .strict()

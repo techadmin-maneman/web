@@ -120,6 +120,10 @@ interface Placing {
   readonly replacing?: string | null;
   /** The client's own unpaid holds are left out, which the app's hold would let go. */
   readonly ownUnpaid?: boolean;
+  /** The service of a new visit, whose window the client's own hold at Checkout leaves open to them. */
+  readonly atCheckout?: { readonly type: string; readonly tier: string } | null;
+  /** The pincode the visit is booked at, as the site's form gives it; left out, the client's current address. */
+  readonly pincode?: string | null;
 }
 
 /**
@@ -141,11 +145,11 @@ async function windowsOf({
   range: { readonly from: string; readonly days: number };
   now: Date;
 }): Promise<{ date: string; windows: WindowTechnicians[] }[]> {
-  const { personId, moving = null, replacing = null, ownUnpaid = false } = placing;
+  const { personId, moving = null, replacing = null, ownUnpaid = false, atCheckout = null, pincode = null } = placing;
   const units = unitsFor(visit.minutes);
   const to = addDays(range.from, range.days - 1);
   const [technicians, held, closed, visits] = await Promise.all([
-    techniciansFor(db, moving),
+    techniciansFor(db, moving, { pincode, personId }),
     occupancy({
       db,
       from: range.from,
@@ -154,6 +158,7 @@ async function windowsOf({
       exceptVisitId: moving?.visitId ?? null,
       exceptHoldId: null,
       ownUnpaidOf: ownUnpaid ? personId : null,
+      ownCheckoutOf: atCheckout === null || personId === null ? null : { personId, ...atCheckout },
     }),
     loadBlackouts(db, range.from, to),
     visitsOfClient(db, personId, moving?.visitId ?? replacing),

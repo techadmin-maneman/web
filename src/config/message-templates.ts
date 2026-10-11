@@ -34,6 +34,10 @@ export const TEMPLATES = {
   visit_reminder_v1:
     "Hi {{1}}, see you tomorrow: your {{2}} is {{3}}, {{4}}, with {{5}}. Need to move it? Open the Mane Man app.",
   visit_moved_v1: "Hi {{1}}, your {{2}} is now on {{3}}, {{4}}, with {{5}}.",
+  // A move to another day ops ask the client to confirm (ADR 0115): {{3}} the visit's day now, {{4}} and {{5}} the day
+  // and window proposed, {{6}} the technician there.
+  move_proposed_v1:
+    "Hi {{1}}, we need to move your {{2}} on {{3}}. Could you do {{4}}, {{5}}, with {{6}} instead? Accept it, or pick another time, in the Mane Man app.",
   // At the technician's check-in, which is also the no-show's evidence.
   technician_arrived_v1: "Hi {{1}}, {{5}} is at your door for your {{2}}.",
   // Ops' ruling on a visit the client was not home for: {{6}} what is kept, {{10}} what goes back. Never ops' reason.
@@ -214,6 +218,7 @@ export const MESSAGE_CLASSES: Readonly<Record<MessageKind, MessageClass>> = {
   waitlist_confirmation: "answering", // their own place on the list, just joined
   visit_reminder: "automatic", // the day-before cron
   visit_moved: "automatic", // ops moved it, on the dispatch board
+  move_proposed: "automatic", // ops ask, on the dispatch board
   arrival_notice: "automatic", // the technician's own action, not the client's
   no_show_decided: "automatic", // ops ruled on it
   no_show_dispute_ruled: "automatic", // ops ruled on the client's dispute

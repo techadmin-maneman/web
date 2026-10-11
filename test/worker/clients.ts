@@ -9,9 +9,10 @@ import { appFor, fakeDependencies, NOW, request, savedAddress, type TestDependen
 /** The technician most booking tests are fitted by. */
 export const IMRAN = "t1";
 
+/** A technician in Gurgaon, where the clients below live: a visit goes only to a technician in its own city (ADR 0117). */
 export async function technician(id = IMRAN, name = "Imran Qureshi", initials = "IQ"): Promise<void> {
   await env.DB.prepare(
-    "INSERT INTO technicians (id, fsm_id, name, initials, active, updated_at) VALUES (?1, ?1, ?2, ?3, 1, ?4)",
+    "INSERT INTO technicians (id, fsm_id, name, initials, active, updated_at, city) VALUES (?1, ?1, ?2, ?3, 1, ?4, 'Gurgaon')",
   )
     .bind(id, name, initials, NOW.toISOString())
     .run();

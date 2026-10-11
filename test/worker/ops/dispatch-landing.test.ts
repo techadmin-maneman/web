@@ -21,6 +21,7 @@ import {
   insertJob,
   shown,
 } from "./dispatch-fixtures.ts";
+import { pincode } from "../site/consultations-fixtures.ts";
 
 let ops: App;
 
@@ -358,5 +359,34 @@ describe("leave recorded over jobs already booked", () => {
     await opsPost(`/api/technicians/${SAMEER}/leave`, { from: WEDNESDAY, to: WEDNESDAY });
     await env.DB.prepare("UPDATE appointments SET technician_id = ?1 WHERE id = ?2").bind(IMRAN, A).run();
     expect(await tasksOf("leave_conflict")).toEqual([]);
+  });
+});
+
+// A visit goes only to a technician in its own city; one with no city takes none (ADR 0117).
+describe("a technician in another city, or in none", () => {
+  beforeEach(async () => {
+    await pincode("122018", "Sector 65", "Gurgaon", true);
+    await env.DB.prepare("UPDATE technicians SET city = 'Gurgaon' WHERE id = ?1").bind(IMRAN).run();
+    await insertJob(A, { type: "service", start: TUESDAY["09:00"], technician: IMRAN });
+  });
+
+  it("is refused a Gurgaon visit, and offered no room for it", async () => {
+    await env.DB.prepare("UPDATE technicians SET city = 'Delhi' WHERE id = ?1").bind(SAMEER).run();
+
+    const answer = await move({ appointment_id: A, technician_id: SAMEER, reason: "zone_rebalance" });
+    expect(answer.status).toBe(409);
+    expect(await answer.json()).toMatchObject({ error: { code: "other_city" } });
+    expect(await shown(A)).toEqual({ technician_id: IMRAN, window_start: TUESDAY["09:00"] });
+
+    const { rooms } = await (await roomFor(A, "2026-09-22")).json<RoomBody>();
+    expect(rooms.some((room) => room.technician_id === IMRAN)).toBe(true);
+    expect(rooms.filter((room) => room.technician_id === SAMEER)).toEqual([]);
+  });
+
+  it("is refused one with no city, while the visit's own technician still moves it within its day", async () => {
+    const answer = await move({ appointment_id: A, technician_id: SAMEER, reason: "zone_rebalance" });
+    expect(await answer.json()).toMatchObject({ error: { code: "other_city" } });
+
+    expect((await move({ appointment_id: A, window: "afternoon", reason: "zone_rebalance" })).status).toBe(200);
   });
 });

@@ -1201,6 +1201,72 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/visits/{id}/proposed-move/accept": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Accept the move to another day ops asked of the client: the visit moves there */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description The visit's ID. */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Moved; the visit's new window goes to the client as any move's does */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProposedMoveAccepted"];
+                    };
+                };
+                /** @description session_required */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description not_found: no proposal open on a visit of this client's, or it has run out */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description move_gone: that time was taken since, or the visit cannot move now; the client picks again */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/photos": {
         parameters: {
             query?: never;
@@ -2916,7 +2982,7 @@ export interface components {
         ErrorResponse: {
             error: {
                 /** @enum {string} */
-                code: "not_found" | "invalid_request" | "turnstile_failed" | "rate_limited" | "idempotency_in_progress" | "idempotency_key_reused" | "environment_mismatch" | "unavailable" | "internal_error" | "busy" | "photo_invalid_file" | "upload_already_received" | "upload_missing" | "session_required" | "job_not_claimable" | "look_limit_reached" | "claim_required" | "whatsapp_unavailable" | "number_not_proved" | "unauthorized" | "visit_booked" | "payment_held" | "payment_owed" | "forbidden_origin" | "access_required" | "code_expired" | "too_early" | "number_in_use" | "not_ready" | "ops_assisted" | "taken" | "not_bookable" | "hold_expired" | "address_required" | "not_served" | "already_booked" | "not_changeable" | "terms_changed" | "consent_required" | "not_fitted" | "not_paid" | "device_revoked" | "sign_in_stopped" | "superseded" | "out_of_order" | "not_today" | "already_started" | "piece_code" | "technician_inactive" | "clash" | "on_leave" | "does_not_fit" | "back_to_back" | "past_day" | "window_passed" | "blackout" | "in_progress" | "too_early_to_close" | "too_early_to_arrive" | "already_closed" | "no_service_area" | "launch_in_future" | "pincode_held" | "service_exists" | "last_of_kind" | "service_retired" | "no_product" | "unknown_invite" | "own_invite" | "already_invited" | "already_disputed" | "not_disputable" | "dispute_window_closed" | "code_not_applicable" | "code_off" | "already_discounted" | "price_settled" | "code_exists" | "slot_times_too_soon" | "not_permitted" | "last_admin" | "in_use" | "figures_conflict";
+                code: "not_found" | "invalid_request" | "turnstile_failed" | "rate_limited" | "idempotency_in_progress" | "idempotency_key_reused" | "environment_mismatch" | "unavailable" | "internal_error" | "busy" | "photo_invalid_file" | "upload_already_received" | "upload_missing" | "session_required" | "job_not_claimable" | "look_limit_reached" | "claim_required" | "whatsapp_unavailable" | "number_not_proved" | "unauthorized" | "visit_booked" | "payment_held" | "payment_owed" | "forbidden_origin" | "access_required" | "code_expired" | "too_early" | "number_in_use" | "not_ready" | "ops_assisted" | "taken" | "not_bookable" | "hold_expired" | "address_required" | "not_served" | "already_booked" | "not_changeable" | "terms_changed" | "consent_required" | "not_fitted" | "not_paid" | "device_revoked" | "sign_in_stopped" | "superseded" | "out_of_order" | "not_today" | "already_started" | "piece_code" | "technician_inactive" | "clash" | "on_leave" | "does_not_fit" | "back_to_back" | "past_day" | "window_passed" | "blackout" | "other_city" | "in_progress" | "too_early_to_close" | "too_early_to_arrive" | "already_closed" | "no_service_area" | "launch_in_future" | "pincode_held" | "service_exists" | "last_of_kind" | "service_retired" | "no_product" | "unknown_invite" | "own_invite" | "already_invited" | "already_disputed" | "not_disputable" | "dispute_window_closed" | "move_gone" | "code_not_applicable" | "code_off" | "already_discounted" | "price_settled" | "code_exists" | "slot_times_too_soon" | "not_permitted" | "last_admin" | "in_use" | "figures_conflict";
                 request_id: string;
                 /** @description invalid_request: the fields that failed validation, never their values; superseded: what changed under the caller. */
                 fields?: string[];
@@ -3041,6 +3107,8 @@ export interface components {
             } | null;
             /** @description The next visit that has not happened: a consultation for a lead. */
             next_visit: components["schemas"]["VisitSummary"] | null;
+            /** @description The latest consultation done, while the client is not yet fitted. Null before one, and once fitted. */
+            consulted: components["schemas"]["Consulted"] | null;
             /** @description The soonest visit paid for, or booked free, that is not booked yet: neither booked nor refunded. It is on its way, and becomes a visit once it is booked (ADR 0068). */
             being_booked: {
                 /** @enum {string} */
@@ -3180,11 +3248,41 @@ export interface components {
             client_note: string | null;
             /** @description A consultation and fit in one visit not yet closed: the client pays only if they go ahead, once fitted, by a link Razorpay texts them. Null for any other visit. */
             one_visit: components["schemas"]["OneVisitPrice"] | null;
+            /** @description A move to another day ops asked the client to confirm, still open: the visit stays where it is until they accept it (POST /api/visits/{id}/proposed-move/accept) or pick another time. Null for none. */
+            proposed_move: components["schemas"]["ProposedMove"] | null;
         };
         /** @description Display name and initials only. */
         Technician: {
             name: string;
             initials: string;
+        };
+        ProposedMove: {
+            /** Format: uuid */
+            id: string;
+            /**
+             * Format: date
+             * @description India's date the visit would move to.
+             */
+            date: string;
+            /** @enum {string} */
+            window: "morning" | "afternoon" | "evening";
+            technician: components["schemas"]["Technician"] | null;
+            /**
+             * Format: date-time
+             * @description The last moment it may be accepted.
+             */
+            expires_at: string;
+        };
+        /** @description A consultation done: its day, who came, and the hair system recommended there. */
+        Consulted: {
+            /**
+             * Format: date
+             * @description India's date of the consultation.
+             */
+            date: string;
+            technician: components["schemas"]["Technician"] | null;
+            /** @description The tier of the first-fit service the technician recommended, as the hair profile records it; null for none. booking.next offers the first fit as it, while it is offered. */
+            recommended: string | null;
         };
         OwedPayment: {
             /** Format: uuid */
@@ -3443,6 +3541,8 @@ export interface components {
             client_note: string | null;
             /** @description A consultation and fit in one visit not yet closed: the client pays only if they go ahead, once fitted, by a link Razorpay texts them. Null for any other visit. */
             one_visit: components["schemas"]["OneVisitPrice"] | null;
+            /** @description A move to another day ops asked the client to confirm, still open: the visit stays where it is until they accept it (POST /api/visits/{id}/proposed-move/accept) or pick another time. Null for none. */
+            proposed_move: components["schemas"]["ProposedMove"] | null;
             /** @description From start to finish, once done. */
             duration_minutes: number | null;
             /** @description Done, partly done, or a no-show: the client was not home. Null until it is closed. */
@@ -3495,6 +3595,10 @@ export interface components {
             disputable: boolean;
             /** @description When the days to dispute the charge ran out, once they have, for a charge that took something and was never disputed; null otherwise. */
             dispute_closed_at: string | null;
+        };
+        ProposedMoveAccepted: {
+            /** @enum {boolean} */
+            moved: true;
         };
         PhotoTimeline: {
             visits: {

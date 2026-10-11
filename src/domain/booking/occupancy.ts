@@ -1,7 +1,7 @@
 // What a technician's days already hold (docs/decisions/0034-clash-check.md): eight half-slots a day, taken by
 // holds' claims, live visits and leave. Days ops black out are never offered.
 
-import { keepingItsTime, ownUnpaid } from "./hold-stages.ts";
+import { keepingItsTime, ownAtCheckout, ownUnpaid } from "./hold-stages.ts";
 import { UNITS_PER_DAY, VISIT_BLOCKS, WINDOW_SLOT_MAP, type BookingWindow } from "../../config/scheduling.ts";
 import type { VisitType } from "../../config/visit-types.ts";
 import { addDays, indiaInstant } from "../../lib/india-time.ts";
@@ -78,14 +78,42 @@ export interface Technician {
   readonly initials: string;
 }
 
-/** Who can take a booking: every active technician, or, for a move, the visit's own. */
-export async function techniciansFor(db: D1Database, moving: Moving | null): Promise<Technician[]> {
-  const technicians = await activeTechnicians(db);
-  return moving === null ? technicians : technicians.filter((technician) => technician.id === moving.technicianId);
+/**
+ * The city a visit is in, as SQL: the city of the pincode it is at, else of its client's current address; null where
+ * neither is known. `pincode` and `person` are the statement's parameters for them.
+ */
+export const visitCity = (pincode: string, person: string): string => `COALESCE(
+    (SELECT p.city FROM serviceable_pincodes p WHERE p.pincode = ${pincode}),
+    (SELECT p.city FROM addresses a JOIN serviceable_pincodes p ON p.pincode = a.pincode
+      WHERE a.person_id = ${person} AND a.replaced_at IS NULL))`;
+
+/** Where a visit is: the pincode it is booked at, else the client's current address. Either may be unknown. */
+interface VisitPlace {
+  readonly pincode: string | null;
+  readonly personId: string | null;
+}
+
+/**
+ * The active technicians ops placed in the city a visit is in: the city of the pincode it is booked at, else of the
+ * client's current address. Nobody where that city is unknown, and a technician with no city takes no booking until
+ * ops set one (docs/decisions/0117-a-technician-takes-visits-in-their-own-city.md).
+ */
+const TECHNICIANS_IN_THE_CITY = `SELECT t.id, t.name, t.initials FROM technicians t
+  WHERE t.active = 1 AND t.city = ${visitCity("?1", "?2")}
+  ORDER BY t.name`;
+
+/** Who can take a booking: for a move in place, the visit's own technician; else those in the visit's city. */
+export async function techniciansFor(db: D1Database, moving: Moving | null, place: VisitPlace): Promise<Technician[]> {
+  if (moving !== null) {
+    const technicians = await activeTechnicians(db);
+    return technicians.filter((technician) => technician.id === moving.technicianId);
+  }
+  const { results } = await db.prepare(TECHNICIANS_IN_THE_CITY).bind(place.pincode, place.personId).all<Technician>();
+  return results;
 }
 
 /** Technicians switched on. Whether one is away on a given day is `occupancy`'s answer, not this one's. */
-export async function activeTechnicians(db: D1Database): Promise<Technician[]> {
+async function activeTechnicians(db: D1Database): Promise<Technician[]> {
   const { results } = await db
     .prepare("SELECT id, name, initials FROM technicians WHERE active = 1 ORDER BY name")
     .all<Technician>();
@@ -98,10 +126,51 @@ export interface Moving {
   readonly technicianId: string;
 }
 
+/** A client and the service they are booking, whose own hold already at Checkout is theirs to take again. */
+interface OwnCheckout {
+  readonly personId: string;
+  readonly type: string;
+  readonly tier: string;
+}
+
+/**
+ * The claims of the holds keeping their time from `from` to `to`, but those occupancy leaves out. A dispatch move's
+ * claims are let go in the batch that writes it.
+ */
+function claimsHeld(held: {
+  db: D1Database;
+  from: string;
+  to: string;
+  now: Date;
+  exceptHoldId: string | null;
+  ownUnpaidOf: string | null;
+  ownCheckoutOf: OwnCheckout | null;
+}) {
+  return held.db
+    .prepare(
+      `SELECT c.technician_id, c.date, c.claim FROM slot_claims c JOIN slot_holds h ON h.id = c.hold_id
+       WHERE c.date BETWEEN ?1 AND ?2 AND ${keepingItsTime("h", "?3")}
+         AND h.id IS NOT ?4 AND NOT (?5 IS NOT NULL AND ${ownUnpaid("h", "?5")})
+         AND NOT (?6 IS NOT NULL AND ${ownAtCheckout("h", { person: "?6", type: "?7", tier: "?8", now: "?3" })})`,
+    )
+    .bind(
+      held.from,
+      held.to,
+      held.now.toISOString(),
+      held.exceptHoldId,
+      held.ownUnpaidOf,
+      held.ownCheckoutOf?.personId ?? null,
+      held.ownCheckoutOf?.type ?? null,
+      held.ownCheckoutOf?.tier ?? null,
+    )
+    .all<{ technician_id: string; date: string; claim: string }>();
+}
+
 /**
  * What each technician's days already hold, from `from` to `to` (India's dates), as of `now`. The visit
  * `exceptVisitId` and the claims of the hold `exceptHoldId` are left out, and so are the claims of the client
- * `ownUnpaidOf`'s own unpaid holds, which the hold they are asking for lets go.
+ * `ownUnpaidOf`'s own unpaid holds, which the hold they are asking for lets go, and of `ownCheckoutOf`'s own hold
+ * already at Checkout for the same service, which asking again gives back.
  */
 export async function occupancy({
   db,
@@ -111,6 +180,7 @@ export async function occupancy({
   exceptVisitId = null,
   exceptHoldId = null,
   ownUnpaidOf = null,
+  ownCheckoutOf = null,
 }: {
   db: D1Database;
   from: string;
@@ -119,6 +189,7 @@ export async function occupancy({
   exceptVisitId?: string | null;
   exceptHoldId?: string | null;
   ownUnpaidOf?: string | null;
+  ownCheckoutOf?: OwnCheckout | null;
 }): Promise<(technicianId: string, date: string) => Day> {
   const days = new Map<string, Day>();
   const dayOf = (technicianId: string, date: string) => {
@@ -129,15 +200,7 @@ export async function occupancy({
   };
 
   const [claims, leave, visits, schedule] = await Promise.all([
-    // A hold's claims. A dispatch move's claims are let go in the batch that writes it.
-    db
-      .prepare(
-        `SELECT c.technician_id, c.date, c.claim FROM slot_claims c JOIN slot_holds h ON h.id = c.hold_id
-         WHERE c.date BETWEEN ?1 AND ?2 AND ${keepingItsTime("h", "?3")}
-           AND h.id IS NOT ?4 AND NOT (?5 IS NOT NULL AND ${ownUnpaid("h", "?5")})`,
-      )
-      .bind(from, to, now.toISOString(), exceptHoldId, ownUnpaidOf)
-      .all<{ technician_id: string; date: string; claim: string }>(),
+    claimsHeld({ db, from, to, now, exceptHoldId, ownUnpaidOf, ownCheckoutOf }),
     db
       .prepare(
         `SELECT technician_id, from_date, to_date FROM technician_leave

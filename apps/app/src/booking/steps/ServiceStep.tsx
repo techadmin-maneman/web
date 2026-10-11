@@ -8,6 +8,12 @@ import { priceFigures } from "../../lib/money.ts";
 import styles from "../booking.module.css";
 import { Heading } from "./shared.tsx";
 
+/** A first fit's hair system as the consultation recommended it: its tier, and the technician's first name. */
+export interface Recommended {
+  readonly tier: string;
+  readonly by: string | null;
+}
+
 /**
  * No board draws it: every service open to the client, when there is more than one, a kind at a time in the order
  * ops keep them, each with the line ops wrote for it, how long it takes and what it costs from the first day it can
@@ -19,6 +25,8 @@ export function ServiceStep(props: {
   before: number;
   services: readonly OfferedService[];
   chosen: OfferedService | null;
+  /** The hair system the consultation recommended, and who recommended it; marked beside its name. */
+  recommended?: Recommended;
   onChoose: (service: OfferedService) => void;
   onNext: () => void;
 }) {
@@ -51,6 +59,11 @@ export function ServiceStep(props: {
                     />
                     <span>
                       <span className={styles.windowName}>{service.name}</span>
+                      {service.type === "first_fit" && service.tier === props.recommended?.tier && (
+                        <span className={capsLook(styles.recommended)}>
+                          {booking.recommended(props.recommended.by)}
+                        </span>
+                      )}
                       {service.description !== null && (
                         <span className={styles.serviceLine}>{service.description}</span>
                       )}

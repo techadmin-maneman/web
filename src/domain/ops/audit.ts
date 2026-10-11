@@ -86,6 +86,10 @@ export const AUDIT_ACTIONS = [
   "dispatch.client_told",
   // Ops moving a visit the technician had checked in at, which clears their check-in.
   "dispatch.check_in_cleared",
+  // A move to another day ops asked the client to confirm, and one they took back; the client's acceptance is
+  // visit.move_accepted (docs/decisions/0115-a-move-to-another-day-waits-for-the-client.md).
+  "dispatch.move_proposed",
+  "dispatch.proposal_withdrawn",
   // The consumables ops keep and what each service is expected to use, the job sheet the technician
   // app reads, and the stock in each kit and the central store (docs/decisions/0087-consumables-and-stock.md).
   "consumable.add",
@@ -117,6 +121,7 @@ export const AUDIT_ACTIONS = [
   "visit.cancel",
   "visit.close",
   "visit.checkin_waive",
+  "visit.move_accepted",
   // Ops correcting a client's hair profile, which keeps every version (docs/decisions/0106-a-clients-hair-profile.md).
   // The entry names the client and the version, never a word of the profile.
   "hair_profile.correct",

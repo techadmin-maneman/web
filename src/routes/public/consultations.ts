@@ -331,7 +331,7 @@ export function registerConsultations(app: App): void {
     const { pincode, plan } = c.req.valid("query");
     if (!(await isServed(c.env.DB, pincode))) return refuse(c, "not_bookable");
     const { settings } = c.var.config;
-    const days = await openDays(c.env.DB, plan, settings.selfServeBooking, c.var.deps.now());
+    const days = await openDays(c.env.DB, { plan, pincode }, settings.selfServeBooking, c.var.deps.now());
     return c.json({ plan, days }, 200, { "Cache-Control": "public, max-age=60" });
   });
 

@@ -31,6 +31,7 @@ const DOCUMENTATION_CONFIG: StaticConfig = {
     urgentWebhookUrl: null,
     leadWebhookUrl: null,
     heartbeatUrl: null,
+    backupPublicKey: null,
     sentryDsn: null,
     zohoCrm: null,
     zohoBooks: null,

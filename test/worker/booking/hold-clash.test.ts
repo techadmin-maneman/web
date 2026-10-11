@@ -5,6 +5,7 @@ import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import { holdSlot } from "../../../src/domain/booking/hold-slot.ts";
 import { markDatabase, NOW } from "../helpers.ts";
+import { pincode } from "../site/consultations-fixtures.ts";
 
 const PERSON = "11111111-1111-4111-8111-111111111111";
 const CONSULTATION = { type: "consultation", tier: "standard", minutes: 60 } as const;
@@ -12,9 +13,11 @@ const FREE = { amount_ex_gst: 0, amount: 0, gst_percent: 0 };
 
 beforeEach(async () => {
   await markDatabase();
+  // Gurgaon, where the technician works: a visit goes only to a technician in its own city (ADR 0117).
+  await pincode("122018", "Sector 65", "Gurgaon", true);
   await env.DB.batch([
     env.DB.prepare(
-      "INSERT INTO technicians (id, fsm_id, name, initials, active, updated_at) VALUES ('t1', 't1', 'Imran Qureshi', 'IQ', 1, ?1)",
+      "INSERT INTO technicians (id, fsm_id, name, initials, active, updated_at, city) VALUES ('t1', 't1', 'Imran Qureshi', 'IQ', 1, ?1, 'Gurgaon')",
     ).bind(NOW.toISOString()),
     env.DB.prepare(
       "INSERT INTO people (id, created_at, mobile_e164, name) VALUES (?1, ?2, '+919810000001', 'Rohit Malhotra')",
@@ -38,6 +41,7 @@ describe("a hold whose batch fails on another table's key", () => {
         window: "morning",
         price: FREE,
         from: "site",
+        pincode: "122018",
         alongside: [twice],
       },
       now: NOW,

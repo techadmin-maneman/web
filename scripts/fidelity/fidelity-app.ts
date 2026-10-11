@@ -53,6 +53,7 @@ const ME = {
     one_visit: null,
   },
   next_visit: null,
+  consulted: null,
   being_booked: null,
   payment_owed: null,
   credits: null,
@@ -109,6 +110,7 @@ const visit = (n: number, date: string, type: NonNullable<VisitSummary["type"]>,
     place: PLACE,
     client_note: null,
     one_visit: null,
+    proposed_move: null,
   }) satisfies VisitSummary;
 
 /** A Thursday, as B1's "Thu 19 Sep" is; paid ahead, as C1's "Prepaid" says. */

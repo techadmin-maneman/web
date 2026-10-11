@@ -12,11 +12,12 @@ export const SANDEEP = "t2";
 /** Who did the clients' last visits here: a technician since switched off, who stands beside no one's next. */
 export const SANA = "t0";
 
-export async function technician(id: string, name: string, initials: string) {
+/** A technician in Gurgaon, where the client books: a visit goes only to a technician in its own city (ADR 0117). */
+export async function technician(id: string, name: string, initials: string, city: string | null = "Gurgaon") {
   await env.DB.prepare(
-    "INSERT INTO technicians (id, fsm_id, name, initials, active, updated_at) VALUES (?1, ?2, ?3, ?4, 1, ?5)",
+    "INSERT INTO technicians (id, fsm_id, name, initials, active, updated_at, city) VALUES (?1, ?2, ?3, ?4, 1, ?5, ?6)",
   )
-    .bind(id, `fsm-${id}`, name, initials, NOW.toISOString())
+    .bind(id, `fsm-${id}`, name, initials, NOW.toISOString(), city)
     .run();
 }
 

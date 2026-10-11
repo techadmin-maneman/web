@@ -37,6 +37,7 @@ import { spendableCredits } from "../../domain/money/credits.ts";
 import { heldOneVisitPrice, owedPayments, requestedOneVisitPrice } from "../../domain/money/one-visit-money.ts";
 import { pendingInviteOf } from "../../domain/referrals/referrals.ts";
 import { CLIENT_STATES, clientStateOf, isFitted, nextVisit } from "../../domain/visits/client-visits.ts";
+import { consultationRecap } from "../../domain/visits/consultation-recap.ts";
 import { nextVisitFacts } from "../../domain/visits/next-visit.ts";
 import { clientOf } from "../../http/client-session.ts";
 import type { App, AppEnv } from "../../http/context.ts";
@@ -46,7 +47,7 @@ import { clientRoute } from "../../http/session-routes.ts";
 import { addDays, indiaDate } from "../../lib/india-time.ts";
 import { firstNameOf, initialsOf } from "../../lib/names.ts";
 import { ReferralRewardSchema } from "../public/referral-reward.ts";
-import { OneVisitPriceSchema, VisitSummarySchema } from "../schemas/visits.ts";
+import { ConsultedSchema, OneVisitPriceSchema, VisitSummarySchema } from "../schemas/visits.ts";
 import { PriceSchema } from "../schemas/booking.ts";
 import { OwedPaymentSchema } from "./payments.ts";
 import { creditsBody, CreditsSchema } from "./refer.ts";
@@ -95,6 +96,10 @@ const MeSchema = z
     next_visit: z
       .union([VisitSummarySchema, z.null()])
       .openapi({ description: "The next visit that has not happened: a consultation for a lead." }),
+    consulted: z.union([ConsultedSchema, z.null()]).openapi({
+      description:
+        "The latest consultation done, while the client is not yet fitted. Null before one, and once fitted.",
+    }),
     being_booked: z
       .union([
         z
@@ -370,19 +375,21 @@ export function registerClientMe(app: App): void {
 
     // Each read is a trip to D1 and back, so the reads that need nothing from each other go together.
     const nameOnInvite = c.var.config.settings.referrerNameOnInvite;
-    const [person, upcoming, underWay, credits, fitted, form, types, services, home, invite, owed] = await Promise.all([
-      liveContact(db, personId),
-      nextVisit(db, personId, now),
-      bookingUnderWay(db, personId),
-      spendableCredits(db, personId, now),
-      isFitted(db, personId),
-      formBookingOf(c, personId, today),
-      bookableTypes(db, personId),
-      servicesOnDay(db, tomorrow),
-      homeFactsOf(c, personId, now),
-      pendingInviteOf(db, personId, now, nameOnInvite),
-      owedPayments(db, personId),
-    ]);
+    const [person, upcoming, underWay, credits, fitted, form, types, services, home, invite, owed, recap] =
+      await Promise.all([
+        liveContact(db, personId),
+        nextVisit(db, personId, now),
+        bookingUnderWay(db, personId),
+        spendableCredits(db, personId, now),
+        isFitted(db, personId),
+        formBookingOf(c, personId, today),
+        bookableTypes(db, personId),
+        servicesOnDay(db, tomorrow),
+        homeFactsOf(c, personId, now),
+        pendingInviteOf(db, personId, now, nameOnInvite),
+        owedPayments(db, personId),
+        consultationRecap(db, personId),
+      ]);
     if (person === null) return refuse(c, "session_required");
 
     const { name } = person;
@@ -417,6 +424,7 @@ export function registerClientMe(app: App): void {
         // A one visit on its way to being booked is shown as itself, not as the consultation it began as.
         consultation: underWay?.one_visit === true ? null : form.card,
         next_visit: upcoming,
+        consulted: fitted ? null : recap,
         being_booked: await beingBookedBody(db, underWay),
         payment_owed: owed[0] ?? null,
         credits: credits.visits > 0 ? creditsBody(credits) : null,

@@ -290,6 +290,8 @@ export const dispatch = {
     supersededGone: "off this board",
     /** Another ops user's move of the same job is still being written. */
     beingMoved: (job: string) => `Someone else is moving ${job} right now.`,
+    /** A visit goes only to a technician in its own city; one with no city yet takes none (ADR 0117). */
+    otherCity: (technician: string) => `${technician} doesn't work in this visit's city.`,
     errors: {
       not_permitted: NOT_PERMITTED,
       invalid_request: "That move isn't possible.",

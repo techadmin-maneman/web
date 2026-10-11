@@ -37,8 +37,8 @@ beforeEach(async () => {
        VALUES ('122018', 'Gurgaon South City II', 'Gurgaon', 1, ?1)`,
     ).bind(NOW.toISOString()),
     env.DB.prepare(
-      `INSERT INTO technicians (id, fsm_id, name, initials, active, updated_at)
-       VALUES ('t1', 'resource-1', 'Imran Qureshi', 'IQ', 1, ?1)`,
+      `INSERT INTO technicians (id, fsm_id, name, initials, active, updated_at, city)
+       VALUES ('t1', 'resource-1', 'Imran Qureshi', 'IQ', 1, ?1, 'Gurgaon')`,
     ).bind(NOW.toISOString()),
   ]);
 });

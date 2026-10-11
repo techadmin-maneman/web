@@ -40,6 +40,8 @@ const HANDLED: Readonly<Record<string, string>> = {
     "src/domain/dispatch/technician-roster.ts refuses to delete a technician it names",
   "dispatch_moves.now_technician_id -> technicians":
     "src/domain/dispatch/technician-roster.ts refuses to delete a technician it names",
+  "move_proposals.technician_id -> technicians":
+    "src/domain/dispatch/technician-roster.ts refuses to delete a technician it names",
   "slot_claims.technician_id -> technicians":
     "src/domain/dispatch/technician-roster.ts refuses to delete a technician it names",
   "stock_movements.technician_id -> technicians":

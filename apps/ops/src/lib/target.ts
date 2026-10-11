@@ -1,4 +1,4 @@
-// A queue row named in the address, as "/no-shows#case-…": the Tasks board
+// A queue row named in the address, as "/payments#case-…": the Tasks board
 // links each task to the row it is decided on. Once the queue has loaded, the
 // row is scrolled to and given the keyboard, so ops land on the thing to do.
 
@@ -7,7 +7,7 @@ import { useEffect, useState } from "react";
 /** The id of a queue row, as its element carries it and a link names it. */
 export const rowId = (kind: string, id: string): string => `${kind}-${id}`;
 
-/** A path to one row of a queue: "/no-shows#case-…". */
+/** A path to one row of a queue: "/payments#case-…". */
 export const rowPath = (page: string, kind: string, id: string): string => `${page}#${rowId(kind, id)}`;
 
 /**

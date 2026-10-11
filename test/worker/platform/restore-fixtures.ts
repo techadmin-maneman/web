@@ -108,6 +108,9 @@ export const ROWS_AT_T: readonly string[] = [
      VALUES ('sm1', 'strip', 'central', 100, 'received', 'staff', 'ops@example.com', '${AT}')`,
   `INSERT INTO dispatch_moves (id, appointment_id, was_technician_id, now_technician_id, reason, actor, created_at, updated_at)
      VALUES ('dm1', 'ap2', 't1', 't1', 'client_asked', 'ops@example.com', '${AT}', '${AT}')`,
+  `INSERT INTO move_proposals (id, appointment_id, technician_id, date, window_label, reason, proposed_by, expected_start,
+       created_at, expires_at)
+     VALUES ('mp1', 'ap2', 't1', '2026-09-24', 'morning', 'zone_rebalance', 'ops@example.com', '${AT}', '${AT}', '${AT}')`,
   `INSERT INTO pieces (id, fsm_id, person_id, piece_code, fitted_at, replacement_due_at, appointment_id, synced_at)
      VALUES ('pc1', 'pc1', 'p1', 'MM-STD-4417-B', '2026-09-22', '2026-11-20', 'ap1', '${AT}')`,
   `INSERT INTO consultation_requests (id, person_id, pincode, requested_date, requested_window, created_at)

@@ -4,9 +4,9 @@ The checklist that takes the site and the apps to production, in this order: **t
 
 Nothing reaches production while a point in `docs/open-points.md` is open, except its engineering follow-ups. Each step here names the point it closes, who does it, and the section of `docs/runbook.md` (RB) that has the commands. `W` is `node node_modules/wrangler/bin/wrangler.js`. Tick a box when the step is done, and record the date where the open point says so.
 
-## Where production stands, 27 September 2026
+## Where production stands, checked 11 October 2026
 
-- **Code:** 268eaa4, of 21 September 2026, with migrations to 0004. The next release carries every migration since.
+- **Code:** 268eaa4, of 21 September 2026, with migrations to 0004: no release since. The next release carries every migration since.
 - **Surfaces:** the public surface alone (`ENABLED_SURFACES`, `src/config/environments.ts`); `mm-site` serves `site/placeholder/production`.
 - **Providers** (`wrangler.jsonc`, `env.production.vars`): CRM `zoho`, WhatsApp `evolution` with `MESSAGING_ENABLED` `"false"`, Books, payments and the geocoder `none`, `SELF_SERVE_BOOKING` `"false"`.
 - **Apps:** `mm-app-production` exists with no route. The release leaves every app alone until its surface is switched on (item 152, fixed 27 September 2026).
@@ -17,7 +17,7 @@ Nothing here needs a release. The first two have dates.
 
 **The owner**
 
-- [ ] **Subscribe to Books Standard before its trial ends, on or about 7 October 2026** (item 4). FSM's trial lapses: no plan is bought (ADR 0110).
+- [x] **Zoho Books Professional,** bought 8 October 2026 (item 4). FSM's trial lapses: no plan is bought (ADR 0110).
 - [x] **Workers Paid,** bought 6 October 2026 (ADR 0112). The zone stays on the Free website plan.
 - [x] **Zoho CRM Professional,** bought 6 October 2026: the sync writes 11 custom fields on a Lead, past Standard's 10.
 - [ ] **Start Razorpay's KYC** for live mode (item 6); it takes days and gates every live payment.
@@ -41,12 +41,14 @@ Nothing here needs a release. The first two have dates.
   ```sh
   W r2 bucket create mm-prod-client-photos --location apac
   W r2 bucket create mm-prod-referral-cards --location apac
+  W r2 bucket create mm-prod-backups --location apac
   node --env-file=.env.cf-read scripts/release/check-buckets.ts production --strict
   W queues list
   ```
 
 - [ ] **Production's AILabTools key** (item 153): `W secret put AILAB_API_KEY --env production`, with a key of production's own.
 - [ ] **Staging's refund account:** the owner's "Razorpay – staging test" ID as `BOOKS_REFUND_ACCOUNT_ID` in `env.staging.vars`, released through CI (item 10).
+- [ ] **The weekly backup** (RB, "Restoring D1", "From a weekly backup"): the key pair, its public key as staging's and production's `BACKUP_PUBLIC_KEY`, the private key in the owner's password manager. Production's `mm-prod-backups` bucket must exist before the next production release, which binds it.
 - [ ] **Error tracking** (RB, "The outside watchers", point 4): a Sentry project for staging and one for production, on the free plan, each DSN as that environment's `SENTRY_DSN`.
 - [ ] **Staging's cron heartbeat** (RB, "The outside watchers", point 1): a healthchecks.io check, its ping URL as staging's `HEARTBEAT_URL`; and Account Analytics: Read on `mm-ci-staging`, so each staging deploy reports mm-api's CPU time (provisioning, step 6).
 

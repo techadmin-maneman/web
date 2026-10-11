@@ -47,6 +47,38 @@ test("shows what each place holds, a low kit in words, a store below nothing, an
   await expect(solvent.getByRole("cell").nth(0)).toHaveText("-20 ml");
 });
 
+// A column a kit was unreadable past eight or ten.
+test("past six places, shows the central store and one kit, picked, marking each kit low on anything", async ({
+  page,
+}) => {
+  const kits = Array.from({ length: 6 }, (_, index) => ({
+    technician_id: `e2e00000-0000-4000-8000-00000000000${String(index + 1)}`,
+    name: `Technician ${String(index + 1)}`,
+    active: true,
+  }));
+  const holdings = kits.map((kit, index) => ({
+    consumable_code: "tape_strips",
+    technician_id: kit.technician_id,
+    quantity: index + 1,
+    low: index === 4,
+    counted_at: null,
+  }));
+  const many = { ...STOCK, places: [STOCK.places[0], ...kits], holdings: [...STOCK.holdings, ...holdings] };
+  await answer(page, { "GET /api/stock": json(many) });
+  await page.goto("/stock");
+  const table = onHand(page);
+  await expect(table.getByRole("columnheader")).toHaveText(["Consumable", "Central store", "Technician 1"]);
+
+  const kit = table.getByLabel("Kit");
+  await expect(kit.getByRole("option", { name: "Technician 5 · low" })).toHaveCount(1);
+  await kit.selectOption({ label: "Technician 5 · low" });
+  await expect(table.getByRole("columnheader")).toHaveText(["Consumable", "Central store", "Technician 5"]);
+  const tape = table.getByRole("row").filter({ has: page.getByRole("rowheader", { name: "Tape strips" }) });
+  await expect(tape.getByRole("cell").nth(1)).toContainText("5 strip");
+  await expect(tape.getByRole("cell").nth(1)).toContainText("Low");
+  expect(await axeViolations(page)).toEqual([]);
+});
+
 test("records a delivery into the store, showing what it holds before and after", async ({ page }) => {
   await open(page, { "POST /api/stock/deliveries": json(STOCK) });
   const form = recording(page);

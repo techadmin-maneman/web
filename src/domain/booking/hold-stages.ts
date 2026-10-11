@@ -32,3 +32,16 @@ export const paidNotBooked = (hold: string): string => `${hold}.state = 'held' A
  */
 export const ownUnpaid = (hold: string, person: string): string =>
   `${hold}.person_id = ${person} AND ${hold}.confirmed_at IS NULL AND ${hold}.razorpay_order_id IS NULL AND ${hold}.pay_by_link = 0`;
+
+/**
+ * A client's own hold for a new visit of this service, already at Checkout, with its countdown still running. A payment
+ * may still land on its order, so it is never let go; asked for again, the client is given it back to pay on. Each
+ * parameter is the query's placeholder for it.
+ */
+export const ownAtCheckout = (
+  hold: string,
+  on: { readonly person: string; readonly type: string; readonly tier: string; readonly now: string },
+): string =>
+  `${hold}.person_id = ${on.person} AND ${hold}.type = ${on.type} AND ${hold}.tier = ${on.tier}
+   AND ${hold}.state = 'held' AND ${hold}.confirmed_at IS NULL AND ${hold}.razorpay_order_id IS NOT NULL
+   AND ${hold}.pay_by_link = 0 AND ${hold}.moves_appointment_id IS NULL AND ${hold}.expires_at > ${on.now}`;

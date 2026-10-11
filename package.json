@@ -41,6 +41,7 @@
     "schema": "node scripts/build/generate-schema-doc.ts",
     "openapi": "node scripts/build/generate-openapi.ts && openapi-typescript docs/openapi.json --output site/src/lib/api-schema.ts && openapi-typescript docs/openapi-client.json --output apps/app/src/api-schema.ts && openapi-typescript docs/openapi-ops.json --output apps/ops/src/api-schema.ts && openapi-typescript docs/openapi-tech.json --output apps/tech/src/api-schema.ts",
     "smoke": "node scripts/release/smoke.ts",
+    "watch:money-path": "node scripts/release/money-path.ts",
     "smoke:csp": "node scripts/release/smoke-csp.ts",
     "apply-triggers": "node scripts/release/apply-triggers.ts",
     "check:triggers": "node scripts/release/check-triggers.ts",
@@ -66,12 +67,12 @@
   },
   "dependencies": {
     "@hono/zod-openapi": "1.6.3",
-    "hono": "4.13.8",
+    "hono": "4.13.13",
     "zod": "4.6.5"
   },
   "devDependencies": {
     "@astrojs/check": "0.9.10",
-    "@astrojs/preact": "6.0.5",
+    "@astrojs/preact": "6.0.6",
     "@axe-core/playwright": "4.13.0",
     "@babel/standalone": "7.29.0",
     "@cloudflare/vitest-pool-workers": "0.22.0",

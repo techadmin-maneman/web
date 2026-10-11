@@ -42,6 +42,8 @@ export const ROUTE_NEEDS: Readonly<Record<string, RouteNeed | typeof SIGNED_IN>>
   "GET /api/dispatch/version": readFromAnyPlace("operations"),
   "GET /api/dispatch/room": inOwnPlaces("operations", "view"),
   "POST /api/dispatch/assign": inOwnPlaces("operations", "act"),
+  "POST /api/dispatch/propose": inOwnPlaces("operations", "act"),
+  "POST /api/dispatch/proposals/{id}/withdraw": inOwnPlaces("operations", "act"),
   "POST /api/dispatch/move": inOwnPlaces("operations", "act"),
   "POST /api/dispatch/moves/{id}/told": inOwnPlaces("operations", "act"),
   // Each department sees its own groups of tasks, and Act takes one of them or gives it to someone (TASK_DEPARTMENTS).

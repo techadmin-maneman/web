@@ -594,7 +594,7 @@ If the site's pages carry no beacon once the rules are in, the automatic setup i
 
 ## 15. The rate-limiting rule
 
-**Not set, 4 October 2026:** the dashboard asks for a paid plan to make the rule, and the owner keeps the free one. Until it is set, the API's own limits per address and per number (`src/config/limits.ts`) are what hold a flood off, and they count against the Workers allowance as they refuse; "Workers daily limit reached (1027)" below is what to do if one gets through.
+**Not set, 4 October 2026:** the dashboard asks for a paid plan to make the rule, and the owner keeps the free one. Until it is set, the API's own limits per address and per number (`src/config/limits.ts`) are what hold a flood off, and they count against the Workers allowance as they refuse; "A flood of requests" (`docs/runbook/cloudflare-plan.md`) is what to do if one gets through.
 
 The free plan gives the zone one rate-limiting rule. It keeps one address from spending the account's 100,000 Workers requests a day in minutes (ADR 0009, "Update, 4 October 2026: a flood"). A request it blocks is refused at the edge and never reaches a Worker, so it costs nothing. It covers every host in the zone, staging's and production's alike.
 

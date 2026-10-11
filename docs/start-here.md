@@ -52,7 +52,8 @@ this map, or when the map names something that no longer exists.
 ### A visit, and changing it
 
 - **Database work** (`src/domain/visits/`): `visit-status`, `visit-times`, `visit-changes`, `visit-cancel`, `visit-facts`,
-  `visit-begun`, `client-visits`, `client-history`, `check-ins`, `next-visit`, `one-visit`, `hand-close`
+  `visit-begun`, `client-visits`, `client-history`, `check-ins`, `next-visit`, `consultation-recap`, `one-visit`,
+  `hand-close`
 - **Rules** (`src/policy/`): `check-in`, `next-visit`, `one-visit`
 - **Routes** (`src/routes/`): `client/visits`, `ops/visits`, `ops/visit-changes`
 - **Screens:** `apps/app/src/visits/`, `apps/ops/src/clients/`
@@ -61,7 +62,7 @@ this map, or when the map names something that no longer exists.
 
 ### Dispatch
 
-- **Database work** (`src/domain/dispatch/`): `dispatch`, `dispatch-board`, `dispatch-landing`, `dispatch-utilisation`, `technicians`, `technician-roster`,
+- **Database work** (`src/domain/dispatch/`): `dispatch`, `move-proposals`, `dispatch-board`, `dispatch-landing`, `dispatch-utilisation`, `technicians`, `technician-roster`,
   `technician-work`, `leave`, `blackouts`, `cities`
 - **Rules** (`src/policy/`): `dispatch`, `technician-work`
 - **Routes** (`src/routes/`): `ops/dispatch`, `ops/dispatch-moves`, `ops/blackouts`, `ops/technicians`,
@@ -171,7 +172,7 @@ this map, or when the map names something that no longer exists.
 
 ### Messages
 
-- **Database work** (`src/domain/messages/`): `queued-messages`, `visit-messages`, `visit-message-text`, `stop-messages`,
+- **Database work** (`src/domain/messages/`): `queued-messages`, `visit-messages`, `visit-message-text`, `move-proposal-text`, `stop-messages`,
   `paced-line`
 - **Rules** (`src/policy/`): `message-pacing`
 - **Data** (`src/config/`): `message-templates`, `message-kinds`
@@ -206,7 +207,7 @@ this map, or when the map names something that no longer exists.
 
 ### The platform
 
-- **Database work** (`src/domain/platform/`): `cron-runs`, `maintenance`, `storage-meter`, `ceilings`, `test-records`,
+- **Database work** (`src/domain/platform/`): `cron-runs`, `backups`, `maintenance`, `storage-meter`, `ceilings`, `test-records`,
   `enqueue`
 - **Rules** (`src/policy/`): `database-size`, `storage-share`, `launch`, `staging-test-records`
 - **Jobs:** `src/scheduled/`, `src/queues/consumer`

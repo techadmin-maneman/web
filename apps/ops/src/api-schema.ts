@@ -1953,7 +1953,7 @@ export interface paths {
                 query?: {
                     actor_kind?: "staff" | "service" | "client" | "technician" | "system";
                     actor?: string;
-                    action?: "ops.call" | "client.call" | "tech.call" | "consent.switch" | "number_change.request" | "number_change.withdraw" | "number_change.decide" | "deletion.request" | "deletion.decide" | "person.erase" | "referral.decide" | "referral.attach" | "photo.view" | "pincode.launch" | "data.export" | "grievance.raise" | "grievance.resolve" | "no_show.decide" | "technician_device.revoke" | "technician.allow_sign_in" | "no_show.dispute" | "no_show.dispute_rule" | "technician.leave" | "technician.leave_cancelled" | "technician.add" | "technician.change" | "technician.deactivate" | "technician.reactivate" | "technician.delete" | "setting.change" | "price.set" | "price.withdraw" | "slot_times.set" | "pincode.set" | "pincode.rename" | "pincode.add" | "blackout.add" | "blackout.remove" | "service.add" | "service.rename" | "service.describe" | "service.length" | "service.reorder" | "service.retire" | "service.restore" | "credit.adjust" | "dispatch.client_told" | "dispatch.check_in_cleared" | "consumable.add" | "consumable.change" | "consumable.retire" | "consumable.restore" | "consumable.delete" | "consumable.usage" | "job_sheet.set" | "stock.receive" | "stock.transfer" | "stock.count" | "stock.write_off" | "task.assign" | "task.hand_back" | "task.close" | "address.given_to_ops" | "alert.resolve" | "alert.send_again" | "booking.give_back" | "visit.book" | "visit.cancel" | "visit.close" | "visit.checkin_waive" | "hair_profile.correct" | "discount_code.make" | "discount_code.switch_off" | "discount_code.delete" | "discount_code.apply" | "discount_code.remove" | "staff.set" | "staff.enforce" | "staff.token_add" | "staff.token_remove" | "staff.delete";
+                    action?: "ops.call" | "client.call" | "tech.call" | "consent.switch" | "number_change.request" | "number_change.withdraw" | "number_change.decide" | "deletion.request" | "deletion.decide" | "person.erase" | "referral.decide" | "referral.attach" | "photo.view" | "pincode.launch" | "data.export" | "grievance.raise" | "grievance.resolve" | "no_show.decide" | "technician_device.revoke" | "technician.allow_sign_in" | "no_show.dispute" | "no_show.dispute_rule" | "technician.leave" | "technician.leave_cancelled" | "technician.add" | "technician.change" | "technician.deactivate" | "technician.reactivate" | "technician.delete" | "setting.change" | "price.set" | "price.withdraw" | "slot_times.set" | "pincode.set" | "pincode.rename" | "pincode.add" | "blackout.add" | "blackout.remove" | "service.add" | "service.rename" | "service.describe" | "service.length" | "service.reorder" | "service.retire" | "service.restore" | "credit.adjust" | "dispatch.client_told" | "dispatch.check_in_cleared" | "dispatch.move_proposed" | "dispatch.proposal_withdrawn" | "consumable.add" | "consumable.change" | "consumable.retire" | "consumable.restore" | "consumable.delete" | "consumable.usage" | "job_sheet.set" | "stock.receive" | "stock.transfer" | "stock.count" | "stock.write_off" | "task.assign" | "task.hand_back" | "task.close" | "address.given_to_ops" | "alert.resolve" | "alert.send_again" | "booking.give_back" | "visit.book" | "visit.cancel" | "visit.close" | "visit.checkin_waive" | "visit.move_accepted" | "hair_profile.correct" | "discount_code.make" | "discount_code.switch_off" | "discount_code.delete" | "discount_code.apply" | "discount_code.remove" | "staff.set" | "staff.enforce" | "staff.token_add" | "staff.token_remove" | "staff.delete";
                     /** @description A client's ID: what they did, and what was done to their record, visits, holds and requests. */
                     person?: string;
                     visit?: string;
@@ -2330,6 +2330,136 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/dispatch/propose": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Ask the client to confirm a move to another day: the move's checks run, and the visit stays where it is until the client accepts (ADR 0115) */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["DispatchMoveRequest"];
+                };
+            };
+            responses: {
+                /** @description Asked */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["DispatchProposed"];
+                    };
+                };
+                /** @description invalid_request: the move keeps the visit's day (fields: date), names a technician not in the caller's cities, or the visit has no client */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description access_required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description not_found: no such live job in the caller's cities */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description the move's checks, as POST /api/dispatch/move answers them: past_day; window_passed; clash; on_leave; back_to_back; does_not_fit; blackout; other_city; superseded, with what changed in fields; in_progress */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/dispatch/proposals/{id}/withdraw": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Take back a move to another day the client has not yet accepted */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Taken back */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description access_required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description not_found: no open proposal of a visit in the caller's cities */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/dispatch/assign": {
         parameters: {
             query?: never;
@@ -2389,7 +2519,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description past_day: the day has gone; window_passed: every start in today's window has passed; clash: the technician already holds a job in that window on that date; on_leave: they are away that day; back_to_back: they took the client's visit just before or just after this one, and a technician never takes two in a row; does_not_fit: the window is free but the visit has no room in it at a start still ahead; blackout: ops blacked the day out, and no blackout_reason came; superseded: the job is not as the board showed it, and fields names what changed (technician, time, or moving: another move of it is being written); in_progress: a technician has begun the visit */
+                /** @description past_day: the day has gone; window_passed: every start in today's window has passed; clash: the technician already holds a job in that window on that date; on_leave: they are away that day; back_to_back: they took the client's visit just before or just after this one, and a technician never takes two in a row; does_not_fit: the window is free but the visit has no room in it at a start still ahead; blackout: ops blacked the day out, and no blackout_reason came; other_city: the technician works in another city than the visit, or in none; superseded: the job is not as the board showed it, and fields names what changed (technician, time, or moving: another move of it is being written); in_progress: a technician has begun the visit */
                 409: {
                     headers: {
                         [name: string]: unknown;
@@ -2465,7 +2595,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description past_day; window_passed; clash; on_leave; back_to_back; does_not_fit; blackout; superseded, with what changed in fields; in_progress: the technician has begun the visit. One he has only checked in at moves with clear_check_in; one he has started or closed stays where it is */
+                /** @description past_day; window_passed; clash; on_leave; back_to_back; does_not_fit; blackout; other_city: the technician works in another city than the visit, or in none; superseded, with what changed in fields; in_progress: the technician has begun the visit. One he has only checked in at moves with clear_check_in; one he has started or closed stays where it is */
                 409: {
                     headers: {
                         [name: string]: unknown;
@@ -7084,7 +7214,7 @@ export interface components {
         ErrorResponse: {
             error: {
                 /** @enum {string} */
-                code: "not_found" | "invalid_request" | "turnstile_failed" | "rate_limited" | "idempotency_in_progress" | "idempotency_key_reused" | "environment_mismatch" | "unavailable" | "internal_error" | "busy" | "photo_invalid_file" | "upload_already_received" | "upload_missing" | "session_required" | "job_not_claimable" | "look_limit_reached" | "claim_required" | "whatsapp_unavailable" | "number_not_proved" | "unauthorized" | "visit_booked" | "payment_held" | "payment_owed" | "forbidden_origin" | "access_required" | "code_expired" | "too_early" | "number_in_use" | "not_ready" | "ops_assisted" | "taken" | "not_bookable" | "hold_expired" | "address_required" | "not_served" | "already_booked" | "not_changeable" | "terms_changed" | "consent_required" | "not_fitted" | "not_paid" | "device_revoked" | "sign_in_stopped" | "superseded" | "out_of_order" | "not_today" | "already_started" | "piece_code" | "technician_inactive" | "clash" | "on_leave" | "does_not_fit" | "back_to_back" | "past_day" | "window_passed" | "blackout" | "in_progress" | "too_early_to_close" | "too_early_to_arrive" | "already_closed" | "no_service_area" | "launch_in_future" | "pincode_held" | "service_exists" | "last_of_kind" | "service_retired" | "no_product" | "unknown_invite" | "own_invite" | "already_invited" | "already_disputed" | "not_disputable" | "dispute_window_closed" | "code_not_applicable" | "code_off" | "already_discounted" | "price_settled" | "code_exists" | "slot_times_too_soon" | "not_permitted" | "last_admin" | "in_use" | "figures_conflict";
+                code: "not_found" | "invalid_request" | "turnstile_failed" | "rate_limited" | "idempotency_in_progress" | "idempotency_key_reused" | "environment_mismatch" | "unavailable" | "internal_error" | "busy" | "photo_invalid_file" | "upload_already_received" | "upload_missing" | "session_required" | "job_not_claimable" | "look_limit_reached" | "claim_required" | "whatsapp_unavailable" | "number_not_proved" | "unauthorized" | "visit_booked" | "payment_held" | "payment_owed" | "forbidden_origin" | "access_required" | "code_expired" | "too_early" | "number_in_use" | "not_ready" | "ops_assisted" | "taken" | "not_bookable" | "hold_expired" | "address_required" | "not_served" | "already_booked" | "not_changeable" | "terms_changed" | "consent_required" | "not_fitted" | "not_paid" | "device_revoked" | "sign_in_stopped" | "superseded" | "out_of_order" | "not_today" | "already_started" | "piece_code" | "technician_inactive" | "clash" | "on_leave" | "does_not_fit" | "back_to_back" | "past_day" | "window_passed" | "blackout" | "other_city" | "in_progress" | "too_early_to_close" | "too_early_to_arrive" | "already_closed" | "no_service_area" | "launch_in_future" | "pincode_held" | "service_exists" | "last_of_kind" | "service_retired" | "no_product" | "unknown_invite" | "own_invite" | "already_invited" | "already_disputed" | "not_disputable" | "dispute_window_closed" | "move_gone" | "code_not_applicable" | "code_off" | "already_discounted" | "price_settled" | "code_exists" | "slot_times_too_soon" | "not_permitted" | "last_admin" | "in_use" | "figures_conflict";
                 request_id: string;
                 /** @description invalid_request: the fields that failed validation, never their values; superseded: what changed under the caller. */
                 fields?: string[];
@@ -7272,6 +7402,8 @@ export interface components {
             client_note: string | null;
             /** @description A consultation and fit in one visit not yet closed: the client pays only if they go ahead, once fitted, by a link Razorpay texts them. Null for any other visit. */
             one_visit: components["schemas"]["OneVisitPrice"] | null;
+            /** @description A move to another day ops asked the client to confirm, still open: the visit stays where it is until they accept it (POST /api/visits/{id}/proposed-move/accept) or pick another time. Null for none. */
+            proposed_move: components["schemas"]["ProposedMove"] | null;
             /** @description What the visit was closed as, a no-show being its own; null until it is closed. */
             outcome: ("done" | "partial" | "no_show") | null;
             /** @description For a visit left partly done, ops closing its task without a follow-up visit; null otherwise. */
@@ -7309,6 +7441,23 @@ export interface components {
             /** @description The discount code on the visit; null for none. */
             code: string | null;
         };
+        ProposedMove: {
+            /** Format: uuid */
+            id: string;
+            /**
+             * Format: date
+             * @description India's date the visit would move to.
+             */
+            date: string;
+            /** @enum {string} */
+            window: "morning" | "afternoon" | "evening";
+            technician: components["schemas"]["Technician"] | null;
+            /**
+             * Format: date-time
+             * @description The last moment it may be accepted.
+             */
+            expires_at: string;
+        };
         VisitSummary: {
             /** Format: uuid */
             id: string;
@@ -7342,6 +7491,8 @@ export interface components {
             client_note: string | null;
             /** @description A consultation and fit in one visit not yet closed: the client pays only if they go ahead, once fitted, by a link Razorpay texts them. Null for any other visit. */
             one_visit: components["schemas"]["OneVisitPrice"] | null;
+            /** @description A move to another day ops asked the client to confirm, still open: the visit stays where it is until they accept it (POST /api/visits/{id}/proposed-move/accept) or pick another time. Null for none. */
+            proposed_move: components["schemas"]["ProposedMove"] | null;
         };
         PaymentEntry: {
             /**
@@ -7865,7 +8016,7 @@ export interface components {
         AlreadyInvited: {
             error: {
                 /** @enum {string} */
-                code: "not_found" | "invalid_request" | "turnstile_failed" | "rate_limited" | "idempotency_in_progress" | "idempotency_key_reused" | "environment_mismatch" | "unavailable" | "internal_error" | "busy" | "photo_invalid_file" | "upload_already_received" | "upload_missing" | "session_required" | "job_not_claimable" | "look_limit_reached" | "claim_required" | "whatsapp_unavailable" | "number_not_proved" | "unauthorized" | "visit_booked" | "payment_held" | "payment_owed" | "forbidden_origin" | "access_required" | "code_expired" | "too_early" | "number_in_use" | "not_ready" | "ops_assisted" | "taken" | "not_bookable" | "hold_expired" | "address_required" | "not_served" | "already_booked" | "not_changeable" | "terms_changed" | "consent_required" | "not_fitted" | "not_paid" | "device_revoked" | "sign_in_stopped" | "superseded" | "out_of_order" | "not_today" | "already_started" | "piece_code" | "technician_inactive" | "clash" | "on_leave" | "does_not_fit" | "back_to_back" | "past_day" | "window_passed" | "blackout" | "in_progress" | "too_early_to_close" | "too_early_to_arrive" | "already_closed" | "no_service_area" | "launch_in_future" | "pincode_held" | "service_exists" | "last_of_kind" | "service_retired" | "no_product" | "unknown_invite" | "own_invite" | "already_invited" | "already_disputed" | "not_disputable" | "dispute_window_closed" | "code_not_applicable" | "code_off" | "already_discounted" | "price_settled" | "code_exists" | "slot_times_too_soon" | "not_permitted" | "last_admin" | "in_use" | "figures_conflict";
+                code: "not_found" | "invalid_request" | "turnstile_failed" | "rate_limited" | "idempotency_in_progress" | "idempotency_key_reused" | "environment_mismatch" | "unavailable" | "internal_error" | "busy" | "photo_invalid_file" | "upload_already_received" | "upload_missing" | "session_required" | "job_not_claimable" | "look_limit_reached" | "claim_required" | "whatsapp_unavailable" | "number_not_proved" | "unauthorized" | "visit_booked" | "payment_held" | "payment_owed" | "forbidden_origin" | "access_required" | "code_expired" | "too_early" | "number_in_use" | "not_ready" | "ops_assisted" | "taken" | "not_bookable" | "hold_expired" | "address_required" | "not_served" | "already_booked" | "not_changeable" | "terms_changed" | "consent_required" | "not_fitted" | "not_paid" | "device_revoked" | "sign_in_stopped" | "superseded" | "out_of_order" | "not_today" | "already_started" | "piece_code" | "technician_inactive" | "clash" | "on_leave" | "does_not_fit" | "back_to_back" | "past_day" | "window_passed" | "blackout" | "other_city" | "in_progress" | "too_early_to_close" | "too_early_to_arrive" | "already_closed" | "no_service_area" | "launch_in_future" | "pincode_held" | "service_exists" | "last_of_kind" | "service_retired" | "no_product" | "unknown_invite" | "own_invite" | "already_invited" | "already_disputed" | "not_disputable" | "dispute_window_closed" | "move_gone" | "code_not_applicable" | "code_off" | "already_discounted" | "price_settled" | "code_exists" | "slot_times_too_soon" | "not_permitted" | "last_admin" | "in_use" | "figures_conflict";
                 request_id: string;
                 /** @description invalid_request: the fields that failed validation, never their values; superseded: what changed under the caller. */
                 fields?: string[];
@@ -8161,7 +8312,7 @@ export interface components {
                 name: string | null;
             };
             /** @enum {string} */
-            action: "ops.call" | "client.call" | "tech.call" | "consent.switch" | "number_change.request" | "number_change.withdraw" | "number_change.decide" | "deletion.request" | "deletion.decide" | "person.erase" | "referral.decide" | "referral.attach" | "photo.view" | "pincode.launch" | "data.export" | "grievance.raise" | "grievance.resolve" | "no_show.decide" | "technician_device.revoke" | "technician.allow_sign_in" | "no_show.dispute" | "no_show.dispute_rule" | "technician.leave" | "technician.leave_cancelled" | "technician.add" | "technician.change" | "technician.deactivate" | "technician.reactivate" | "technician.delete" | "setting.change" | "price.set" | "price.withdraw" | "slot_times.set" | "pincode.set" | "pincode.rename" | "pincode.add" | "blackout.add" | "blackout.remove" | "service.add" | "service.rename" | "service.describe" | "service.length" | "service.reorder" | "service.retire" | "service.restore" | "credit.adjust" | "dispatch.client_told" | "dispatch.check_in_cleared" | "consumable.add" | "consumable.change" | "consumable.retire" | "consumable.restore" | "consumable.delete" | "consumable.usage" | "job_sheet.set" | "stock.receive" | "stock.transfer" | "stock.count" | "stock.write_off" | "task.assign" | "task.hand_back" | "task.close" | "address.given_to_ops" | "alert.resolve" | "alert.send_again" | "booking.give_back" | "visit.book" | "visit.cancel" | "visit.close" | "visit.checkin_waive" | "hair_profile.correct" | "discount_code.make" | "discount_code.switch_off" | "discount_code.delete" | "discount_code.apply" | "discount_code.remove" | "staff.set" | "staff.enforce" | "staff.token_add" | "staff.token_remove" | "staff.delete";
+            action: "ops.call" | "client.call" | "tech.call" | "consent.switch" | "number_change.request" | "number_change.withdraw" | "number_change.decide" | "deletion.request" | "deletion.decide" | "person.erase" | "referral.decide" | "referral.attach" | "photo.view" | "pincode.launch" | "data.export" | "grievance.raise" | "grievance.resolve" | "no_show.decide" | "technician_device.revoke" | "technician.allow_sign_in" | "no_show.dispute" | "no_show.dispute_rule" | "technician.leave" | "technician.leave_cancelled" | "technician.add" | "technician.change" | "technician.deactivate" | "technician.reactivate" | "technician.delete" | "setting.change" | "price.set" | "price.withdraw" | "slot_times.set" | "pincode.set" | "pincode.rename" | "pincode.add" | "blackout.add" | "blackout.remove" | "service.add" | "service.rename" | "service.describe" | "service.length" | "service.reorder" | "service.retire" | "service.restore" | "credit.adjust" | "dispatch.client_told" | "dispatch.check_in_cleared" | "dispatch.move_proposed" | "dispatch.proposal_withdrawn" | "consumable.add" | "consumable.change" | "consumable.retire" | "consumable.restore" | "consumable.delete" | "consumable.usage" | "job_sheet.set" | "stock.receive" | "stock.transfer" | "stock.count" | "stock.write_off" | "task.assign" | "task.hand_back" | "task.close" | "address.given_to_ops" | "alert.resolve" | "alert.send_again" | "booking.give_back" | "visit.book" | "visit.cancel" | "visit.close" | "visit.checkin_waive" | "visit.move_accepted" | "hair_profile.correct" | "discount_code.make" | "discount_code.switch_off" | "discount_code.delete" | "discount_code.apply" | "discount_code.remove" | "staff.set" | "staff.enforce" | "staff.token_add" | "staff.token_remove" | "staff.delete";
             subject: {
                 kind: string;
                 id: string;
@@ -8333,35 +8484,14 @@ export interface components {
             /** @description The days of the week ops blacked out, other than the job's own. A move onto one needs a blackout_reason. */
             blackouts: string[];
         };
-        DispatchMoved: {
+        DispatchProposed: {
             /** Format: uuid */
-            move_id: string;
+            proposal_id: string;
             /**
-             * @description messaged: the new window was queued to go on WhatsApp; call: the client has not agreed to WhatsApp about his visits, so ops call him, and a task waits until they say they have; unchanged: only the technician changed, so there was nothing to tell; no_client: the visit has no client on our records.
+             * @description messaged: the client was sent the proposal on WhatsApp; call: they have not agreed to WhatsApp about their visits, so ops call them, and they accept it in the app.
              * @enum {string}
              */
-            client_notice: "messaged" | "call" | "unchanged" | "no_client";
-        };
-        DispatchAssignRequest: {
-            /** Format: uuid */
-            appointment_id: string;
-            /** Format: uuid */
-            technician_id: string;
-            /** Format: date */
-            date?: string;
-            /** @enum {string} */
-            window?: "morning" | "afternoon" | "evening";
-            /** @enum {string} */
-            reason: "technician_unavailable" | "client_asked" | "zone_rebalance" | "skill_needed" | "running_over";
-            /** @description The technician the board showed the job with; null for a job in the tray. */
-            expected_technician_id: string | null;
-            /**
-             * Format: date-time
-             * @description The start the board showed the job with.
-             */
-            expected_starts_at: string;
-            /** @description Why the visit goes onto a day ops blacked out, as ops typed it: kept with the move, blanked if the client is erased. Without it, a move onto a blacked-out day answers 409 blackout. Ignored for any other day. */
-            blackout_reason?: string;
+            client_notice: "messaged" | "call";
         };
         DispatchMoveRequest: {
             /** Format: uuid */
@@ -8391,6 +8521,36 @@ export interface components {
              * @enum {boolean}
              */
             clear_check_in?: true;
+        };
+        DispatchMoved: {
+            /** Format: uuid */
+            move_id: string;
+            /**
+             * @description messaged: the new window was queued to go on WhatsApp; call: the client has not agreed to WhatsApp about his visits, so ops call him, and a task waits until they say they have; unchanged: only the technician changed, so there was nothing to tell; no_client: the visit has no client on our records.
+             * @enum {string}
+             */
+            client_notice: "messaged" | "call" | "unchanged" | "no_client";
+        };
+        DispatchAssignRequest: {
+            /** Format: uuid */
+            appointment_id: string;
+            /** Format: uuid */
+            technician_id: string;
+            /** Format: date */
+            date?: string;
+            /** @enum {string} */
+            window?: "morning" | "afternoon" | "evening";
+            /** @enum {string} */
+            reason: "technician_unavailable" | "client_asked" | "zone_rebalance" | "skill_needed" | "running_over";
+            /** @description The technician the board showed the job with; null for a job in the tray. */
+            expected_technician_id: string | null;
+            /**
+             * Format: date-time
+             * @description The start the board showed the job with.
+             */
+            expected_starts_at: string;
+            /** @description Why the visit goes onto a day ops blacked out, as ops typed it: kept with the move, blanked if the client is erased. Without it, a move onto a blacked-out day answers 409 blackout. Ignored for any other day. */
+            blackout_reason?: string;
         };
         NoShowCases: {
             cases: components["schemas"]["NoShowCase"][];
