@@ -44,6 +44,7 @@ import { analyticsJob } from "./analytics.ts";
 import { razorpayCatchUpJob } from "./razorpay-catch-up.ts";
 import { referralPass } from "./referrals.ts";
 import { retentionJob } from "./retention.ts";
+import { taskSpansJob } from "./task-spans.ts";
 import {
   checkAilabCredits,
   deletePhotos,
@@ -338,6 +339,8 @@ export const CRON_JOBS: readonly CronJob[] = [
   { name: "backup", needs: "nothing", every: 60, at: 33, run: backupJob },
   // The nightly copy Zoho Analytics reports from (docs/decisions/0146-the-nightly-analytics-copy.md).
   { name: "analytics_nightly", needs: "nothing", every: 60, at: 31, run: analyticsJob },
+  // When each task opened and closed, for the reporting copy (docs/decisions/0147-task-spans.md).
+  { name: "task_spans", needs: "nothing", every: 60, at: 26, run: taskSpansJob },
   // The operating figure behind the weekend-share assumption (src/policy/dispatch.ts): once a day, the day's board.
   { name: "dispatch_utilisation", needs: "nothing", every: 60, at: 43, run: utilisationJob },
   { name: "low_stock", needs: "nothing", every: 60, at: 50, run: lowStockJob },
