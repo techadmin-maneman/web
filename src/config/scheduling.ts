@@ -5,6 +5,7 @@
 // each from a day nothing is booked or bookable on (src/policy/slot-times.ts;
 // docs/decisions/0102-window-times.md). Which half-slots each window has stays here.
 
+import { indiaInstant } from "../lib/india-time.ts";
 import type { VisitType } from "./visit-types.ts";
 
 export const SLOTS_PER_DAY = 4;
@@ -28,6 +29,12 @@ export const WINDOW_TIMES: Readonly<Record<BookingWindow, { start: string; end: 
   afternoon: { start: "12:00", end: "16:00" },
   evening: { start: "16:00", end: "20:00" },
 };
+
+/** A window on a date under the default times, as the instants it starts and ends: what a client's calendar holds. */
+export function windowSpan(date: string, window: BookingWindow): { start: Date; end: Date } {
+  const { start, end } = WINDOW_TIMES[window];
+  return { start: indiaInstant(date, start), end: indiaInstant(date, end) };
+}
 
 /** WINDOW_SLOT_MAP: the half-slots a visit booked in each window may start in. */
 export const WINDOW_SLOT_MAP: Readonly<Record<BookingWindow, readonly number[]>> = {

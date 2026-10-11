@@ -163,11 +163,15 @@ function redactValue(value: unknown, depth: number, seen: WeakSet<object>): unkn
 // Workers Logs sets each line's level from the console method used.
 const CONSOLE_METHOD = { debug: "debug", info: "log", warn: "warn", error: "error" } as const;
 
-export function createLogger(baseFields: LogFields = {}): Logger {
+/** Given each error line as it is written, redacted: what reports errors to a tracker (src/providers/error-tracking.ts). */
+export type ErrorSink = (event: string, fields: Readonly<Record<string, unknown>>) => void;
+
+export function createLogger(baseFields: LogFields = {}, onError?: ErrorSink): Logger {
   const write = (level: LogLevel, event: string, fields: LogFields = {}): void => {
     const safeFields = redact({ ...baseFields, ...fields }) as Record<string, unknown>;
     const line = JSON.stringify({ level, event, time: new Date().toISOString(), ...safeFields });
     console[CONSOLE_METHOD[level]](line);
+    if (level === "error") onError?.(event, safeFields);
   };
 
   return {
@@ -183,6 +187,6 @@ export function createLogger(baseFields: LogFields = {}): Logger {
     error: (event, fields) => {
       write("error", event, fields);
     },
-    child: (fields) => createLogger({ ...baseFields, ...fields }),
+    child: (fields) => createLogger({ ...baseFields, ...fields }, onError),
   };
 }

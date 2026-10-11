@@ -15,7 +15,7 @@ export const FIRST_FIT = { amount_ex_gst: 3000000, amount: 3540000, gst_percent:
 export const LATE_FEE = { amount_ex_gst: 400000, amount: 472000, gst_percent: 18 };
 
 export const LATE_FEE_LINE =
-  "Moving inside 24 hours costs Rs. 4,720 (Rs. 4,000 + Rs. 720 GST). The balance carries over.";
+  "Moving or cancelling inside 24 hours costs Rs. 4,720 (Rs. 4,000 + Rs. 720 GST). The rest moves with your visit, or comes back to you.";
 
 /** The pay step's promise for a visit ahead of its notice, and for one already inside it, whose payment is kept. */
 export const FREE_UNTIL = /^Free to move or cancel until .+\. After that, changes are charged\.$/;

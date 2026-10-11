@@ -3,6 +3,9 @@
 // visitor downloads the whole latin-ext file (57 KB) to draw it. Instrument
 // Sans has no ₹ to cut (fonts.css).
 //
+// The file is WOFF, not WOFF2: one glyph compresses to more bytes than it holds, and Chrome refuses a WOFF2 file
+// that does ("Size of decompressed WOFF 2.0 is less than compressed size"). WOFF keeps such a table uncompressed.
+//
 //   node scripts/build/subset-fonts.ts
 
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
@@ -16,8 +19,8 @@ for (const [family, weight] of FACES) {
   const source = readFileSync(
     `node_modules/@fontsource/${family}/files/${family}-latin-ext-${String(weight)}-normal.woff2`,
   );
-  const subset = await subsetFont(source, "₹", { targetFormat: "woff2" });
-  const file = `${OUT}/${family}-rupee-${String(weight)}.woff2`;
+  const subset = await subsetFont(source, "₹", { targetFormat: "woff" });
+  const file = `${OUT}/${family}-rupee-${String(weight)}.woff`;
   writeFileSync(file, subset);
   console.log(`${file}: ${String(subset.length)} bytes`);
 }

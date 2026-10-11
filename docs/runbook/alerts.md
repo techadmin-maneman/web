@@ -48,11 +48,12 @@ A few alerts need someone within the hour: money taken that nothing booked or ga
 
 ## The outside watchers
 
-Every alert is sent from inside mm-api, so a cron that stops altogether, or an API that is down, tells nobody. Two free monitors outside Cloudflare watch for that:
+Every alert is sent from inside mm-api, so a cron that stops altogether, or an API that is down, tells nobody. These watch from outside it:
 
 1. **The cron's heartbeat.** On healthchecks.io, a check for each environment (`mm-api-staging cron`, `mm-api-production cron`): period 5 minutes, grace 10 minutes, and its Google Chat integration on the alert space (or e-mail). Put its ping URL in the environment as `HEARTBEAT_URL` (`W secret put HEARTBEAT_URL --env <env>`). The cron pings it every five minutes while all is well, and pings `/fail` at once with the jobs' names when one failed, or when the run before never finished ("A cron run cut short"). No ping for 15 minutes means the cron is not running: check the triggers (provisioning, step 9), then Workers Logs for the scheduled event.
 2. **Staging, hourly.** The `watch staging` workflow runs the smoke tests against staging every hour (the API, the cron's last run, the site and each app host) and opens an issue, "Staging is failing its hourly watch", or adds to the open one, when they fail. The nightly browser run does the same ("The nightly browser tests are failing"). Close the issue once a run passes again.
 3. **The API.** Any free uptime monitor checking `https://maneman.in/api/health` every 5 minutes for HTTP 200, telling the owner's e-mail. Production only: staging is behind Access. A 503 means the database is unreachable or not production's, and the answer's `d1` says which.
+4. **Errors.** Sentry, on its free plan: a project for each environment (platform "JavaScript", alerts to the alert space or e-mail). Put its DSN in the environment as `SENTRY_DSN` (`W secret put SENTRY_DSN --env <env>`). Every error line mm-api logs goes there as an event, redacted as the logs are, tagged with its route, queue or job, and the apps' own reports (`client_error`) with them; one isolate sends each kind of error once a minute and twenty a minute at most. An event's `request_id` finds its request in Workers Logs. Unset, nothing is sent.
 
 ## What each alert means
 

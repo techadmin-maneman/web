@@ -9,7 +9,7 @@ test("offers support on WhatsApp, with the design's line", async ({ page }) => {
     "href",
     "https://wa.me/919007973247",
   );
-  await expect(page.getByText("Replies within a working day. Everything in writing.")).toBeVisible();
+  await expect(page.getByText("Replies the same day. Everything in writing.")).toBeVisible();
 });
 
 test("Your data: a download of everything held, and a concern sent to ops", async ({ page }) => {
@@ -19,9 +19,7 @@ test("Your data: a download of everything held, and a concern sent to ops", asyn
   await page.getByRole("textbox", { name: "Your concern" }).fill("Please explain who sees my photographs.");
   await page.getByRole("button", { name: "Send" }).click();
   await expect(
-    page.getByText(
-      "Received. We’ll reply here and on WhatsApp, usually within a working day and always within 30 days.",
-    ),
+    page.getByText("Received. We’ll reply here and on WhatsApp, usually the same day and always within 30 days."),
   ).toBeVisible();
   const concerns = page.getByRole("list", { name: "Your concerns" });
   await expect(concerns).toContainText("Please explain who sees my photographs.");

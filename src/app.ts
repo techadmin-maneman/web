@@ -16,6 +16,7 @@ import { ErrorResponseSchema, refuse } from "./http/errors.ts";
 import { requireSameOrigin } from "./http/origin.ts";
 import { meterDatabase, serverTiming, usageFields } from "./lib/d1-meter.ts";
 import { createLogger } from "./log.ts";
+import type { ErrorTracker } from "./providers/error-tracking.ts";
 import { registerClientAuth } from "./routes/client/auth.ts";
 import { registerClientMe } from "./routes/client/me.ts";
 import { registerClientDeletionRequest, registerClientProfile } from "./routes/client/profile.ts";
@@ -227,6 +228,7 @@ export function createApp(
   config: StaticConfig,
   makeDependencies?: DependencyFactory,
   surface: Surface = "public",
+  errors: ErrorTracker | null = null,
 ): App {
   const app = new OpenAPIHono<AppEnv>({
     // A request that fails its zod schema: name the fields, never echo their values.
@@ -246,6 +248,7 @@ export function createApp(
       checkIdentity: createCachedIdentityCheck(),
       readOpsInputs: createCachedOpsInputs(),
       surface,
+      errors,
     }),
   );
   app.use("/api/*", requireOwnDatabase);
@@ -280,7 +283,7 @@ export function createApp(
 
 /**
  * Gives each request an ID, a logger, its dependencies and a metered database; sets common headers; logs the request
- * with what it cost D1 and how long it waited on it.
+ * with what it cost D1 and how long it waited on it. Each error the request logs goes to the error tracker, if any.
  */
 function requestContext({
   config,
@@ -288,19 +291,27 @@ function requestContext({
   checkIdentity,
   readOpsInputs,
   surface,
+  errors,
 }: {
   config: StaticConfig;
   makeDependencies: DependencyFactory;
   checkIdentity: IdentityCheck;
   readOpsInputs: ReadOpsInputs;
   surface: Surface;
+  errors: ErrorTracker | null;
 }): MiddlewareHandler<AppEnv> {
-  const baseLog = createLogger({ worker: "mm-api", environment: config.environment, surface });
+  const baseFields = { worker: "mm-api", environment: config.environment, surface };
 
   return createMiddleware<AppEnv>(async (c, next) => {
     const started = Date.now();
     const requestId = crypto.randomUUID();
-    const log = baseLog.child({ request_id: requestId });
+    const sink = errors?.sink({
+      waitUntil: (sending) => {
+        c.executionCtx.waitUntil(sending);
+      },
+      log: () => log,
+    });
+    const log = createLogger({ ...baseFields, request_id: requestId }, sink);
     const meter = meterDatabase(c.env.DB);
     c.env = { ...c.env, DB: meter.db };
     c.set("requestId", requestId);

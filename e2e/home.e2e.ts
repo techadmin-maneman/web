@@ -62,6 +62,11 @@ test.describe("sticky bar and footer: the home page only", () => {
     await expect(page.locator("footer")).toBeVisible();
     await expect(page.locator("footer")).toContainText("Mane Man Grooming Services Private Limited");
     await expect(page.locator("footer")).toContainText("Delhi NCR · home service only");
+    await expect(page.locator("footer").getByRole("link", { name: "Questions", exact: true })).toHaveAttribute(
+      "href",
+      "/#faq",
+    );
+    await expect(page.locator('footer a[href="/book"]')).toHaveCount(1);
   });
 
   for (const path of ["/try", "/book", "/privacy"]) {

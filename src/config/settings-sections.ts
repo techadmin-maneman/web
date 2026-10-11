@@ -17,6 +17,7 @@ import type {
 } from "./settings.ts";
 import { type GstRegistration, GSTIN_FORMAT, STATE_CODE_FORMAT, SAC_FORMAT } from "./gst.ts";
 import type { EvolutionSettings } from "./evolution.ts";
+import { parseDsn } from "../lib/sentry-dsn.ts";
 import type { Msg91Settings } from "./msg91.ts";
 
 /**
@@ -44,13 +45,17 @@ const ACCESS_TEAM_DOMAIN = /^[a-z0-9-]+\.cloudflareaccess\.com$/;
 /** The provider vars as the guard read them, before it has refused any: one that failed its check is missing. */
 export type ProvidersRead = Partial<Record<ProviderVar, string>>;
 
-/** What watches mm-api from outside it: the cron's heartbeat. */
-export function readWatchers(read: Reader): Pick<Settings, "heartbeatUrl"> {
+/** What watches mm-api from outside it: the cron's heartbeat, and the error tracker. */
+export function readWatchers(read: Reader): Pick<Settings, "heartbeatUrl" | "sentryDsn"> {
   const heartbeatUrl = read.optionalText("HEARTBEAT_URL");
   if (heartbeatUrl !== null && !heartbeatUrl.startsWith("https://")) {
     read.problems.push("HEARTBEAT_URL must be an https:// URL");
   }
-  return { heartbeatUrl };
+  const dsn = read.optionalText("SENTRY_DSN");
+  const sentryDsn = dsn === null ? null : parseDsn(dsn);
+  if (dsn !== null && sentryDsn === null)
+    read.problems.push("SENTRY_DSN must be a Sentry DSN: https://<key>@<host>/<project>");
+  return { heartbeatUrl, sentryDsn };
 }
 
 /** Each Zoho host named, which must be a hostname without https://. */
