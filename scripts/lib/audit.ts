@@ -17,12 +17,6 @@ export const ALLOWED: readonly Allowance[] = [
     reason: "braces, inside knip (the dead-code check), runs only in development and CI; no fixed release yet",
     until: "2026-11-03",
   },
-  {
-    advisory: "https://github.com/advisories/GHSA-ch52-4w7c-c8xp",
-    reason:
-      "http-cache-semantics, inside astro, caches remote images during the static build only; no fixed release yet",
-    until: "2026-11-03",
-  },
 ];
 
 export interface AuditReport {
