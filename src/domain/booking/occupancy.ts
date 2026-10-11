@@ -78,14 +78,42 @@ export interface Technician {
   readonly initials: string;
 }
 
-/** Who can take a booking: every active technician, or, for a move, the visit's own. */
-export async function techniciansFor(db: D1Database, moving: Moving | null): Promise<Technician[]> {
-  const technicians = await activeTechnicians(db);
-  return moving === null ? technicians : technicians.filter((technician) => technician.id === moving.technicianId);
+/**
+ * The city a visit is in, as SQL: the city of the pincode it is at, else of its client's current address; null where
+ * neither is known. `pincode` and `person` are the statement's parameters for them.
+ */
+export const visitCity = (pincode: string, person: string): string => `COALESCE(
+    (SELECT p.city FROM serviceable_pincodes p WHERE p.pincode = ${pincode}),
+    (SELECT p.city FROM addresses a JOIN serviceable_pincodes p ON p.pincode = a.pincode
+      WHERE a.person_id = ${person} AND a.replaced_at IS NULL))`;
+
+/** Where a visit is: the pincode it is booked at, else the client's current address. Either may be unknown. */
+interface VisitPlace {
+  readonly pincode: string | null;
+  readonly personId: string | null;
+}
+
+/**
+ * The active technicians ops placed in the city a visit is in: the city of the pincode it is booked at, else of the
+ * client's current address. Nobody where that city is unknown, and a technician with no city takes no booking until
+ * ops set one (docs/decisions/0117-a-technician-takes-visits-in-their-own-city.md).
+ */
+const TECHNICIANS_IN_THE_CITY = `SELECT t.id, t.name, t.initials FROM technicians t
+  WHERE t.active = 1 AND t.city = ${visitCity("?1", "?2")}
+  ORDER BY t.name`;
+
+/** Who can take a booking: for a move in place, the visit's own technician; else those in the visit's city. */
+export async function techniciansFor(db: D1Database, moving: Moving | null, place: VisitPlace): Promise<Technician[]> {
+  if (moving !== null) {
+    const technicians = await activeTechnicians(db);
+    return technicians.filter((technician) => technician.id === moving.technicianId);
+  }
+  const { results } = await db.prepare(TECHNICIANS_IN_THE_CITY).bind(place.pincode, place.personId).all<Technician>();
+  return results;
 }
 
 /** Technicians switched on. Whether one is away on a given day is `occupancy`'s answer, not this one's. */
-export async function activeTechnicians(db: D1Database): Promise<Technician[]> {
+async function activeTechnicians(db: D1Database): Promise<Technician[]> {
   const { results } = await db
     .prepare("SELECT id, name, initials FROM technicians WHERE active = 1 ORDER BY name")
     .all<Technician>();

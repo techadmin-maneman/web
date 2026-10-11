@@ -128,7 +128,7 @@ async function candidatesFor({
   const ties = tieRange(date);
   const [blackouts, technicians, held, visits] = await Promise.all([
     loadBlackouts(db, date, date),
-    techniciansFor(db, moving),
+    techniciansFor(db, moving, { pincode: input.pincode ?? null, personId }),
     occupancy({
       db,
       from: ties.from,
