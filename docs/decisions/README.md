@@ -158,6 +158,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 - [0092](0092-task-owners.md) Whose each task is, a visit ops close without a follow-up, and an address given to ops
 - [0109](0109-console-departments-and-access.md) The console by departments, and who may do what in it
 - [0120](0120-the-board-sees-the-road.md) The board sees the road
+- [0126](0126-the-words-page.md) The Words page
 
 ## Every decision, oldest first
 

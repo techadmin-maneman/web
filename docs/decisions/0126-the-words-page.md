@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Date: 2026-10-11
-- Topic: Growth
+- Topic: The ops console
 
 ## Context
 
