@@ -15,6 +15,9 @@ The owner's rulings, 11 October 2026:
 
 1. **A day may be closed in one city.** `city_blackouts` holds a city's own closed days beside `visit_blackouts`' days closed everywhere. A visit's day is closed where either closes it, by the visit's city: its pincode's, else its client's address. Settings' Closed days chooses Every city or one.
 2. **A first fit goes only to a technician trained to fit.** `technicians.fits_trained`, which ops set on the technician's page, is read wherever a technician is offered or given a first fit, the one visit among them: the app, the site, ops' booking and the dispatch board (`not_trained`). A visit keeps its own technician through a change of time.
+
+   > **Amended 11 October 2026 (the owner's ruling):** a replacement fits a hair system too, so it goes only to a technician trained to fit, by the same checks (`isAFitting`, `src/config/visit-types.ts`).
+
 3. **A technician carrying a hair system** is the owner's other condition for a first fit. Stock counts consumables, not hair systems, so it waits for hair systems to be stock that a kit holds (the inventory scope).
 
 ## Consequences

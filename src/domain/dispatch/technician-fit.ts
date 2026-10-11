@@ -2,6 +2,7 @@
 // (docs/decisions/0117-a-technician-takes-visits-in-their-own-city.md,
 // docs/decisions/0119-blackouts-by-city-and-trained-fitters.md).
 
+import { isAFitting } from "../../config/visit-types.ts";
 import { visitCity, type Technician } from "../booking/occupancy.ts";
 import type { LiveJob } from "./dispatch-landing.ts";
 
@@ -25,7 +26,7 @@ export async function whyNotThem(
     .first<{ visit_city: string | null; technician_city: string | null; fits_trained: number }>();
   const where = row?.visit_city ?? null;
   if (where !== null && row?.technician_city !== where) return "other_city";
-  return job.type === "first_fit" && row?.fits_trained !== 1 ? "not_trained" : null;
+  return isAFitting(job.type) && row?.fits_trained !== 1 ? "not_trained" : null;
 }
 
 /**
@@ -40,7 +41,7 @@ export function roomTechnicians(db: D1Database, job: LiveJob): Promise<Technicia
          AND (?4 = 0 OR t.fits_trained = 1)))
        ORDER BY t.name`,
     )
-    .bind(job.technician_id, job.service_pincode, job.person_id, job.type === "first_fit" ? 1 : 0)
+    .bind(job.technician_id, job.service_pincode, job.person_id, isAFitting(job.type) ? 1 : 0)
     .all<Technician>()
     .then((all) => all.results);
 }
