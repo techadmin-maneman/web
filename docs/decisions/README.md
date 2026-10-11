@@ -2,7 +2,7 @@
 
 Every decision this repository was built on, oldest first. A record says what was decided and why, and is not rewritten to say something else: a later record changes it, and says so in its own header (ADR 0001). **Changed by** gathers those later records, from either side, so an old record's reader knows to read on.
 
-This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. A record names its topic in its header, `- Topic:` and one of the headings below, and the test fails on one that does not. The next free number is 0145.
+This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. A record names its topic in its header, `- Topic:` and one of the headings below, and the test fails on one that does not. The next free number is 0146.
 
 ## By topic
 
@@ -134,6 +134,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 - [0142](0142-moving-every-client.md) Moving every client, and technicians in the inbox
 - [0143](0143-remedies.md) Remedies
 - [0144](0144-care-numbers.md) The Care numbers
+- [0145](0145-technician-presets.md) A technician's word from the job card
 
 ### Referrals
 
@@ -324,3 +325,4 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0142](0142-moving-every-client.md) | Moving every client, and technicians in the inbox | 2026-10-12 | accepted |  |
 | [0143](0143-remedies.md) | Remedies | 2026-10-12 | accepted |  |
 | [0144](0144-care-numbers.md) | The Care numbers | 2026-10-12 | accepted |  |
+| [0145](0145-technician-presets.md) | A technician's word from the job card | 2026-10-12 | accepted |  |

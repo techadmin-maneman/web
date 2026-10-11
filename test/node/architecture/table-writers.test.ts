@@ -15,6 +15,7 @@ const WRITERS: Readonly<Record<string, readonly string[]>> = {
     "src/domain/no-shows/ruling-claims.ts",
     "src/domain/try-on/tryon-claims.ts",
     "src/domain/messages/visit-messages.ts",
+    "src/domain/messages/technician-updates.ts",
     "src/domain/booking/waitlist.ts",
   ],
   credit_ledger: [

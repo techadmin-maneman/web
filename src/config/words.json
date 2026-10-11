@@ -4543,6 +4543,27 @@
     "text": "Hi {{1}}, {{5}} is at your door for your visit."
   },
   {
+    "key": "message:technician_on_the_way_v1",
+    "surface": "message",
+    "group": "Messages",
+    "where": "technician_on_the_way_v1",
+    "text": "Hi {{1}}, {{5}} is on the way, about {{9}} minutes."
+  },
+  {
+    "key": "message:technician_at_gate_v1",
+    "surface": "message",
+    "group": "Messages",
+    "where": "technician_at_gate_v1",
+    "text": "Hi {{1}}, {{5}} is at your gate."
+  },
+  {
+    "key": "message:technician_running_late_v1",
+    "surface": "message",
+    "group": "Messages",
+    "where": "technician_running_late_v1",
+    "text": "Hi {{1}}, {{5}} is running about {{9}} minutes late. Sorry for the wait."
+  },
+  {
     "key": "message:no_show_missed_v1",
     "surface": "message",
     "group": "Messages",
