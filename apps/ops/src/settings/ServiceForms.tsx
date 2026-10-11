@@ -6,23 +6,34 @@
 import { errorText } from "@maneman/web-kit/refusal";
 import { DateInput, Field, NumberInput, TextInput } from "@maneman/ui/Field";
 import { CheckPanel } from "../components/CheckPanel.tsx";
-import { Button } from "@maneman/ui/Button";
 import { addDays, longDate } from "@maneman/web-kit/dates";
 import { paiseFromRupees, rupees } from "@maneman/web-kit/money";
-import { useState, type ReactNode } from "react";
+import { useState } from "react";
 import { api, type Kind, type OpsService, type Price, type ServiceBook } from "../api.ts";
 import { settings } from "../content.ts";
 import { PRICE_TIER, tierCodeOf } from "@rules/policy/services.ts";
 import styles from "../components/forms.module.css";
+import { Refused, SettingForm, sentOf, useSteps, type FormWords, type Sent } from "./SettingForm.tsx";
 
 const copy = settings.services;
 const form = copy.form;
 const check = copy.check;
 
+const WORDS: FormWords = {
+  next: form.next,
+  cancel: form.cancel,
+  checkTitle: check.title,
+  send: check.send,
+  saving: copy.saving,
+  back: check.back,
+};
+
 /** What a write answered: the book as it now stands, or the refusal, with the boxes it names. */
-export type Written =
-  | { readonly ok: true; readonly services?: ServiceBook; readonly prices?: readonly Price[]; readonly said: string }
-  | { readonly ok: false; readonly code: string; readonly fields: readonly string[] };
+export type Written = Sent<{
+  readonly services?: ServiceBook;
+  readonly prices?: readonly Price[];
+  readonly said: string;
+}>;
 
 /** What a price is set for: a service, or a late fee, by the book's item and tier, and the name ops read. */
 export interface Priced {
@@ -37,82 +48,8 @@ export interface Priced {
 export const priceWords = (price: { amount_ex_gst: number; gst_percent: number }) =>
   copy.price(rupees(price.amount_ex_gst), price.gst_percent);
 
-/** The check before anything is sent, headed by its title, with the change beneath. */
-function Check(props: {
-  readonly title: string;
-  readonly children: ReactNode;
-  readonly busy: boolean;
-  readonly send: string;
-  readonly back: string;
-  readonly onSend: () => void;
-  readonly onBack: () => void;
-}) {
-  return (
-    <CheckPanel
-      title={props.title}
-      send={props.send}
-      sending={copy.saving}
-      back={props.back}
-      busy={props.busy}
-      onSend={props.onSend}
-      onBack={props.onBack}
-    >
-      {props.children}
-    </CheckPanel>
-  );
-}
-
-/** A form's two steps: its boxes, then the check; and what sending it came to. */
-function useSteps(send: () => Promise<Written>, onDone: (written: Written & { ok: true }) => void) {
-  const [step, setStep] = useState<"editing" | "checking" | "saving">("editing");
-  const [failed, setFailed] = useState<(Written & { ok: false }) | null>(null);
-  const edit = () => {
-    setStep("editing");
-    setFailed(null);
-  };
-  const go = async () => {
-    setStep("saving");
-    const written = await send();
-    if (written.ok) {
-      onDone(written);
-      return;
-    }
-    setFailed(written);
-    setStep("checking");
-  };
-  return {
-    step,
-    failed,
-    edit,
-    check: () => {
-      setStep("checking");
-    },
-    go: () => void go(),
-  };
-}
-
-/** The line a refused send leaves beneath its form. */
-function Refused({ failed }: { failed: { code: string; fields: readonly string[] } | null }) {
-  if (failed === null) return null;
-  return (
-    <p className={styles.error} role="alert">
-      {errorText(copy.errors, failed)}
-    </p>
-  );
-}
-
-function FormButtons(props: { readonly ready: boolean; readonly onNext: () => void; readonly onCancel: () => void }) {
-  return (
-    <div className={styles.actions}>
-      <Button variant="primary" size="small" className={styles.save} disabled={!props.ready} onClick={props.onNext}>
-        {form.next}
-      </Button>
-      <Button variant="outline" size="small" className={styles.quiet} onClick={props.onCancel}>
-        {form.cancel}
-      </Button>
-    </div>
-  );
-}
+/** A service's book, as a write that changes a service answers it. */
+const savedBook = (services: ServiceBook) => ({ services, said: copy.done.saved });
 
 /**
  * A new price from a day, tomorrow at the earliest, or, given `correcting`, the price still to come it corrects: taken
@@ -147,9 +84,7 @@ export function PriceForm(props: {
       correcting === undefined
         ? await api.setPrice(change)
         : await api.correctPrice({ ...change, was_valid_from: correcting.valid_from });
-    return answer.ok
-      ? { ok: true, prices: answer.body.prices, said: copy.done.price }
-      : { ok: false, code: answer.code, fields: answer.fields };
+    return sentOf(answer, (body) => ({ prices: body.prices, said: copy.done.price }));
   }, props.onDone);
   // A day typed before tomorrow, which the date picker's min alone does not stop.
   const tooSoon = from !== "" && from < firstDay;
@@ -160,12 +95,42 @@ export function PriceForm(props: {
   );
 
   return (
-    <fieldset className={styles.group}>
-      <legend className={styles.ruleTitle}>
-        {correcting === undefined
+    <SettingForm
+      title={
+        correcting === undefined
           ? form.priceTitle(target.name)
-          : form.correctTitle(target.name, longDate(correcting.valid_from))}
-      </legend>
+          : form.correctTitle(target.name, longDate(correcting.valid_from))
+      }
+      steps={steps}
+      ready={ready}
+      words={{ ...WORDS, send: form.setPrice }}
+      errors={copy.errors}
+      onCancel={props.onCancel}
+      checking={
+        <>
+          <p className={styles.checkLine}>
+            {correcting === undefined
+              ? check.price(
+                  target.name,
+                  was === undefined ? check.nothing : priceWords(was),
+                  priceWords(change),
+                  longDate(change.valid_from),
+                )
+              : check.correct({
+                  name: target.name,
+                  was: priceWords(correcting),
+                  wasFrom: longDate(correcting.valid_from),
+                  now: priceWords(change),
+                  from: longDate(change.valid_from),
+                })}
+          </p>
+          {was !== undefined && was.gst_percent !== change.gst_percent && (
+            <p className={styles.checkWarning}>{check.gstChanges(was.gst_percent, change.gst_percent)}</p>
+          )}
+          {sameDay && <p className={styles.checkLine}>{check.sameDay}</p>}
+        </>
+      }
+    >
       {inForce !== undefined && correcting === undefined && (
         <p className={styles.formNow}>{copy.now(priceWords(inForce), longDate(inForce.valid_from))}</p>
       )}
@@ -227,41 +192,7 @@ export function PriceForm(props: {
           )}
         </Field>
       </div>
-      {steps.step === "editing" ? (
-        <FormButtons ready={ready} onNext={steps.check} onCancel={props.onCancel} />
-      ) : (
-        <Check
-          title={check.title}
-          busy={steps.step === "saving"}
-          send={form.setPrice}
-          back={check.back}
-          onSend={steps.go}
-          onBack={steps.edit}
-        >
-          <p className={styles.checkLine}>
-            {correcting === undefined
-              ? check.price(
-                  target.name,
-                  was === undefined ? check.nothing : priceWords(was),
-                  priceWords(change),
-                  longDate(change.valid_from),
-                )
-              : check.correct({
-                  name: target.name,
-                  was: priceWords(correcting),
-                  wasFrom: longDate(correcting.valid_from),
-                  now: priceWords(change),
-                  from: longDate(change.valid_from),
-                })}
-          </p>
-          {was !== undefined && was.gst_percent !== change.gst_percent && (
-            <p className={styles.checkWarning}>{check.gstChanges(was.gst_percent, change.gst_percent)}</p>
-          )}
-          {sameDay && <p className={styles.checkLine}>{check.sameDay}</p>}
-        </Check>
-      )}
-      <Refused failed={steps.failed} />
-    </fieldset>
+    </SettingForm>
   );
 }
 
@@ -275,9 +206,7 @@ export function TakeBack(props: {
   const { target, row } = props;
   const steps = useSteps(async () => {
     const answer = await api.withdrawPrice({ item: target.item, tier: target.tier, valid_from: row.valid_from });
-    return answer.ok
-      ? { ok: true, prices: answer.body.prices, said: copy.done.takenBack }
-      : { ok: false, code: answer.code, fields: answer.fields };
+    return sentOf(answer, (body) => ({ prices: body.prices, said: copy.done.takenBack }));
   }, props.onDone);
   return (
     <>
@@ -309,13 +238,18 @@ export function RenameForm(props: {
   const [name, setName] = useState(service.name);
   const steps = useSteps(async () => {
     const answer = await api.renameService(service.kind, service.tier, name.trim());
-    return answer.ok
-      ? { ok: true, services: answer.body, said: copy.done.saved }
-      : { ok: false, code: answer.code, fields: answer.fields };
+    return sentOf(answer, savedBook);
   }, props.onDone);
   return (
-    <fieldset className={styles.group}>
-      <legend className={styles.ruleTitle}>{form.renameTitle(service.name)}</legend>
+    <SettingForm
+      title={form.renameTitle(service.name)}
+      steps={steps}
+      ready={name.trim() !== "" && name.trim() !== service.name}
+      words={WORDS}
+      errors={copy.errors}
+      onCancel={props.onCancel}
+      checking={<p className={styles.checkLine}>{check.rename(service.name, name.trim(), service.tier)}</p>}
+    >
       <div className={styles.fields}>
         <Field label={form.name} className={styles.field}>
           {(control) => (
@@ -332,26 +266,7 @@ export function RenameForm(props: {
           )}
         </Field>
       </div>
-      {steps.step === "editing" ? (
-        <FormButtons
-          ready={name.trim() !== "" && name.trim() !== service.name}
-          onNext={steps.check}
-          onCancel={props.onCancel}
-        />
-      ) : (
-        <Check
-          title={check.title}
-          busy={steps.step === "saving"}
-          send={check.send}
-          back={check.back}
-          onSend={steps.go}
-          onBack={steps.edit}
-        >
-          <p className={styles.checkLine}>{check.rename(service.name, name.trim(), service.tier)}</p>
-        </Check>
-      )}
-      <Refused failed={steps.failed} />
-    </fieldset>
+    </SettingForm>
   );
 }
 
@@ -367,13 +282,18 @@ export function DescribeForm(props: {
   const [line, setLine] = useState(was);
   const steps = useSteps(async () => {
     const answer = await api.describeService(service.kind, service.tier, line.trim());
-    return answer.ok
-      ? { ok: true, services: answer.body, said: copy.done.saved }
-      : { ok: false, code: answer.code, fields: answer.fields };
+    return sentOf(answer, savedBook);
   }, props.onDone);
   return (
-    <fieldset className={styles.group}>
-      <legend className={styles.ruleTitle}>{form.describeTitle(service.name)}</legend>
+    <SettingForm
+      title={form.describeTitle(service.name)}
+      steps={steps}
+      ready={line.trim() !== was}
+      words={WORDS}
+      errors={copy.errors}
+      onCancel={props.onCancel}
+      checking={<p className={styles.checkLine}>{check.describe(service.name, was, line.trim())}</p>}
+    >
       <div className={styles.fields}>
         <Field label={form.description} className={styles.field}>
           {(control) => (
@@ -390,22 +310,7 @@ export function DescribeForm(props: {
           )}
         </Field>
       </div>
-      {steps.step === "editing" ? (
-        <FormButtons ready={line.trim() !== was} onNext={steps.check} onCancel={props.onCancel} />
-      ) : (
-        <Check
-          title={check.title}
-          busy={steps.step === "saving"}
-          send={check.send}
-          back={check.back}
-          onSend={steps.go}
-          onBack={steps.edit}
-        >
-          <p className={styles.checkLine}>{check.describe(service.name, was, line.trim())}</p>
-        </Check>
-      )}
-      <Refused failed={steps.failed} />
-    </fieldset>
+    </SettingForm>
   );
 }
 
@@ -420,13 +325,18 @@ export function LengthForm(props: {
   const [minutes, setMinutes] = useState(String(service.minutes));
   const steps = useSteps(async () => {
     const answer = await api.setServiceLength(service.kind, service.tier, Number(minutes));
-    return answer.ok
-      ? { ok: true, services: answer.body, said: copy.done.saved }
-      : { ok: false, code: answer.code, fields: answer.fields };
+    return sentOf(answer, savedBook);
   }, props.onDone);
   return (
-    <fieldset className={styles.group}>
-      <legend className={styles.ruleTitle}>{form.lengthTitle(service.name)}</legend>
+    <SettingForm
+      title={form.lengthTitle(service.name)}
+      steps={steps}
+      ready={minutes.trim() !== "" && Number(minutes) !== service.minutes}
+      words={WORDS}
+      errors={copy.errors}
+      onCancel={props.onCancel}
+      checking={<p className={styles.checkLine}>{check.length(service.name, service.minutes, Number(minutes))}</p>}
+    >
       <div className={styles.fields}>
         <Field label={form.minutes} className={styles.field}>
           {(control) => (
@@ -446,26 +356,7 @@ export function LengthForm(props: {
           )}
         </Field>
       </div>
-      {steps.step === "editing" ? (
-        <FormButtons
-          ready={minutes.trim() !== "" && Number(minutes) !== service.minutes}
-          onNext={steps.check}
-          onCancel={props.onCancel}
-        />
-      ) : (
-        <Check
-          title={check.title}
-          busy={steps.step === "saving"}
-          send={check.send}
-          back={check.back}
-          onSend={steps.go}
-          onBack={steps.edit}
-        >
-          <p className={styles.checkLine}>{check.length(service.name, service.minutes, Number(minutes))}</p>
-        </Check>
-      )}
-      <Refused failed={steps.failed} />
-    </fieldset>
+    </SettingForm>
   );
 }
 
@@ -480,13 +371,18 @@ export function RetireForm(props: {
   const [from, setFrom] = useState(today);
   const steps = useSteps(async () => {
     const answer = await api.retireService(service.kind, service.tier, from);
-    return answer.ok
-      ? { ok: true, services: answer.body, said: copy.done.saved }
-      : { ok: false, code: answer.code, fields: answer.fields };
+    return sentOf(answer, savedBook);
   }, props.onDone);
   return (
-    <fieldset className={styles.group}>
-      <legend className={styles.ruleTitle}>{form.retireTitle(service.name)}</legend>
+    <SettingForm
+      title={form.retireTitle(service.name)}
+      steps={steps}
+      ready={from !== ""}
+      words={WORDS}
+      errors={copy.errors}
+      onCancel={props.onCancel}
+      checking={<p className={styles.checkLine}>{check.retire(service.name, longDate(from))}</p>}
+    >
       <div className={styles.fields}>
         <Field label={form.retireFrom} className={styles.field}>
           {(control) => (
@@ -503,22 +399,7 @@ export function RetireForm(props: {
           )}
         </Field>
       </div>
-      {steps.step === "editing" ? (
-        <FormButtons ready={from !== ""} onNext={steps.check} onCancel={props.onCancel} />
-      ) : (
-        <Check
-          title={check.title}
-          busy={steps.step === "saving"}
-          send={check.send}
-          back={check.back}
-          onSend={steps.go}
-          onBack={steps.edit}
-        >
-          <p className={styles.checkLine}>{check.retire(service.name, longDate(from))}</p>
-        </Check>
-      )}
-      <Refused failed={steps.failed} />
-    </fieldset>
+    </SettingForm>
   );
 }
 
@@ -531,9 +412,7 @@ export function RestoreCheck(props: {
   const { service } = props;
   const steps = useSteps(async () => {
     const answer = await api.restoreService(service.kind, service.tier);
-    return answer.ok
-      ? { ok: true, services: answer.body, said: copy.done.saved }
-      : { ok: false, code: answer.code, fields: answer.fields };
+    return sentOf(answer, savedBook);
   }, props.onDone);
   return (
     <>
@@ -546,7 +425,7 @@ export function RestoreCheck(props: {
         onSend={steps.go}
         onBack={props.onKeep}
       />
-      <Refused failed={steps.failed} />
+      <Refused failed={steps.failed} errors={copy.errors} />
     </>
   );
 }
@@ -565,9 +444,7 @@ export function OrderCheck(props: {
       props.kind,
       props.now.map((service) => service.tier),
     );
-    return answer.ok
-      ? { ok: true, services: answer.body, said: copy.done.saved }
-      : { ok: false, code: answer.code, fields: answer.fields };
+    return sentOf(answer, savedBook);
   }, props.onDone);
   return (
     <>
@@ -580,7 +457,7 @@ export function OrderCheck(props: {
         onSend={steps.go}
         onBack={props.onKeep}
       />
-      <Refused failed={steps.failed} />
+      <Refused failed={steps.failed} errors={copy.errors} />
     </>
   );
 }
@@ -602,14 +479,19 @@ export function AddForm(props: {
   const codeSent = codeTyped ? code.trim() : (tierCodeOf(name) ?? "");
   const steps = useSteps(async () => {
     const answer = await api.addService({ kind, name: name.trim(), tier: codeSent, minutes: Number(minutes) });
-    return answer.ok
-      ? { ok: true, services: answer.body, said: copy.done.saved }
-      : { ok: false, code: answer.code, fields: answer.fields };
+    return sentOf(answer, savedBook);
   }, props.onDone);
   const ready = name.trim() !== "" && PRICE_TIER.test(codeSent) && minutes.trim() !== "";
   return (
-    <fieldset className={styles.group}>
-      <legend className={styles.ruleTitle}>{form.addTitle(kindName)}</legend>
+    <SettingForm
+      title={form.addTitle(kindName)}
+      steps={steps}
+      ready={ready}
+      words={WORDS}
+      errors={copy.errors}
+      onCancel={props.onCancel}
+      checking={<p className={styles.checkLine}>{check.add(kindName, name.trim(), Number(minutes), codeSent)}</p>}
+    >
       <div className={styles.fields}>
         <Field label={form.name} className={styles.field}>
           {(control) => (
@@ -658,21 +540,6 @@ export function AddForm(props: {
           )}
         </Field>
       </div>
-      {steps.step === "editing" ? (
-        <FormButtons ready={ready} onNext={steps.check} onCancel={props.onCancel} />
-      ) : (
-        <Check
-          title={check.title}
-          busy={steps.step === "saving"}
-          send={check.send}
-          back={check.back}
-          onSend={steps.go}
-          onBack={steps.edit}
-        >
-          <p className={styles.checkLine}>{check.add(kindName, name.trim(), Number(minutes), codeSent)}</p>
-        </Check>
-      )}
-      <Refused failed={steps.failed} />
-    </fieldset>
+    </SettingForm>
   );
 }

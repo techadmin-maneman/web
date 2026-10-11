@@ -3,7 +3,7 @@
 
 import { z } from "@hono/zod-openapi";
 import { BOOKING_DAYS, BOOKING_WINDOWS } from "../../config/scheduling.ts";
-import { VISIT_TYPES } from "../../config/visit-types.ts";
+import { isAFitting, VISIT_TYPES } from "../../config/visit-types.ts";
 import { availability } from "../../domain/booking/availability.ts";
 import { loadSlotSchedule } from "../../domain/booking/slot-times.ts";
 import { currentAddress } from "../../domain/clients/profile.ts";
@@ -147,7 +147,7 @@ export function registerClientAvailability(app: App): void {
       availability({
         db,
         placing,
-        visit: { minutes: service.minutes, until, fitting: type === "first_fit" },
+        visit: { minutes: service.minutes, until, fitting: isAFitting(type) },
         from: start,
         days: BOOKING_DAYS,
         now,

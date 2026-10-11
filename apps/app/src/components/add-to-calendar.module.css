@@ -18,7 +18,7 @@
 
 .links {
   display: flex;
-  gap: var(--sp-10);
+  gap: var(--sp-8);
 }
 
 .link {

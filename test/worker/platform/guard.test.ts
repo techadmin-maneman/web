@@ -32,7 +32,7 @@ describe("validateStaticConfig: environment and providers", () => {
 
   it("refuses a production Worker holding any stub provider, naming each one", () => {
     expect(problemsOf({ ...production, IMAGE_PROVIDER: "stub" })).toEqual(["IMAGE_PROVIDER is a stub in production"]);
-    expect(problemsOf({ ...production, ...STUBS })).toHaveLength(8);
+    expect(problemsOf({ ...production, ...STUBS })).toHaveLength(9);
   });
 
   it("refuses a missing or unknown provider", () => {

@@ -172,6 +172,7 @@ test("carries a job in hand to the next week, asks where it fits there, and move
         date: NEXT[0],
         windows: ["morning"],
         starts: [{ window: "morning", starts_at: "2025-09-26T03:30:00.000Z" }],
+        km: null,
       },
     ],
   };

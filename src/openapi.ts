@@ -18,6 +18,7 @@ const DOCUMENTATION_CONFIG: StaticConfig = {
     BOOKS_PROVIDER: "stub",
     PAYMENTS_PROVIDER: "stub",
     GEOCODE_PROVIDER: "stub",
+    ROUTES_PROVIDER: "stub",
   },
   settings: {
     leadMobileDailyLimit: 5,
@@ -37,6 +38,7 @@ const DOCUMENTATION_CONFIG: StaticConfig = {
     zohoBooks: null,
     razorpay: null,
     geocode: { apiKey: null, dailyCeiling: 0 },
+    routes: { apiKey: null },
     access: null,
     login: {
       codePepper: "",

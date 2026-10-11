@@ -74,6 +74,8 @@ export function Sheet({
   useBackCloses(dialog, onCancel);
 
   return (
+    // Its click is a tap on the ground around the sheet; the keyboard's way out is Escape, which the dialog answers.
+    // eslint-disable-next-line jsx-a11y-x/click-events-have-key-events, jsx-a11y-x/no-noninteractive-element-interactions
     <dialog
       ref={dialog}
       className={classes(styles.frame, rises && styles.rises, className)}

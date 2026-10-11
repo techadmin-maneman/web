@@ -1783,6 +1783,56 @@ Where a job in hand can go in the board's week, before ops pick a reason. Writes
 }
 ```
 
+### GET /api/dispatch/day
+
+A day's routes: each technician's visits in order, the drive between each two, and whether it fits
+
+**200**: The day
+
+```json
+{
+  "$ref": "#/components/schemas/DispatchDay"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### GET /api/dispatch/day/map
+
+The picture of a day's routes, each technician's in their colour, their visits numbered in order
+
+**200**: The map
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no visit that day has a pin, so there is nothing to draw
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**503**: unavailable: the map is not switched on here, Google failed, or the day's ceiling is spent
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ### POST /api/dispatch/propose
 
 Ask the client to confirm a move to another day: the move's checks run, and the visit stays where it is until the client accepts (ADR 0115)
@@ -1901,7 +1951,7 @@ Request body:
 }
 ```
 
-**409**: past_day: the day has gone; window_passed: every start in today's window has passed; clash: the technician already holds a job in that window on that date; on_leave: they are away that day; back_to_back: they took the client's visit just before or just after this one, and a technician never takes two in a row; does_not_fit: the window is free but the visit has no room in it at a start still ahead; blackout: ops blacked the day out, and no blackout_reason came; other_city: the technician works in another city than the visit, or in none; not_trained: a first fit, to a technician not trained to fit; superseded: the job is not as the board showed it, and fields names what changed (technician, time, or moving: another move of it is being written); in_progress: a technician has begun the visit
+**409**: past_day: the day has gone; window_passed: every start in today's window has passed; clash: the technician already holds a job in that window on that date; on_leave: they are away that day; back_to_back: they took the client's visit just before or just after this one, and a technician never takes two in a row; does_not_fit: the window is free but the visit has no room in it at a start still ahead; blackout: ops blacked the day out, and no blackout_reason came; other_city: the technician works in another city than the visit, or in none; not_trained: a first fit or a replacement, to a technician not trained to fit; superseded: the job is not as the board showed it, and fields names what changed (technician, time, or moving: another move of it is being written); in_progress: a technician has begun the visit
 
 ```json
 {
@@ -1953,7 +2003,7 @@ Request body:
 }
 ```
 
-**409**: past_day; window_passed; clash; on_leave; back_to_back; does_not_fit; blackout; other_city: the technician works in another city than the visit, or in none; not_trained: a first fit, to a technician not trained to fit; superseded, with what changed in fields; in_progress: the technician has begun the visit. One he has only checked in at moves with clear_check_in; one he has started or closed stays where it is. ask_the_client: a client's visit to another day they did not ask for, which POST /api/dispatch/propose asks of them
+**409**: past_day; window_passed; clash; on_leave; back_to_back; does_not_fit; blackout; other_city: the technician works in another city than the visit, or in none; not_trained: a first fit or a replacement, to a technician not trained to fit; superseded, with what changed in fields; in_progress: the technician has begun the visit. One he has only checked in at moves with clear_check_in; one he has started or closed stays where it is. ask_the_client: a client's visit to another day they did not ask for, which POST /api/dispatch/propose asks of them
 
 ```json
 {
@@ -10696,13 +10746,25 @@ Request body:
             },
             "minItems": 1,
             "description": "When the job would start in each of those windows, as the move would place it."
+          },
+          "km": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "As the crow flies, from the job to the nearest of the technician's other visits that day, to one decimal; null where the job or none of those visits has a pin. The picker lists the nearest first."
           }
         },
         "required": [
           "technician_id",
           "date",
           "windows",
-          "starts"
+          "starts",
+          "km"
         ],
         "additionalProperties": false
       }
@@ -10723,6 +10785,198 @@ Request body:
   ],
   "additionalProperties": false,
   "description": "Each technician's day in the caller's cities with a window the job would land in, by the check a move runs: today, only at a start still ahead, and never on a day gone. A day not listed has none. Not where the job already is."
+}
+```
+
+### DispatchDay
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "date": {
+      "type": "string",
+      "format": "date"
+    },
+    "city": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "drive_times": {
+      "type": "string",
+      "enum": [
+        "shown",
+        "off",
+        "unavailable"
+      ],
+      "description": "shown: every drive between two visits next to each other with a pin each is in legs. off: drive times are not switched on here. unavailable: Google failed, or the day's ceiling is spent; some legs may be missing."
+    },
+    "technicians": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "technician_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "initials": {
+            "type": "string"
+          },
+          "colour": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{6}$",
+            "description": "Their route's colour on the map."
+          },
+          "stops": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "appointment_id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "starts_at": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "ends_at": {
+                  "type": "string",
+                  "format": "date-time",
+                  "description": "When the visit's time on the board ends."
+                },
+                "window": {
+                  "type": "string",
+                  "enum": [
+                    "morning",
+                    "afternoon",
+                    "evening"
+                  ]
+                },
+                "type": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "enum": [
+                        "consultation",
+                        "first_fit",
+                        "service",
+                        "replacement"
+                      ]
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "sector": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "client": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "located": {
+                  "type": "boolean",
+                  "description": "Whether the client's address has a pin. A visit without one has no drive to or from it."
+                }
+              },
+              "required": [
+                "appointment_id",
+                "starts_at",
+                "ends_at",
+                "window",
+                "type",
+                "sector",
+                "client",
+                "located"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "legs": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "from": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "to": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "minutes": {
+                  "type": "integer"
+                },
+                "km": {
+                  "type": "number"
+                },
+                "gap_minutes": {
+                  "type": "integer",
+                  "description": "From the end of one visit's time on the board to the start of the next's."
+                },
+                "fits": {
+                  "type": "boolean",
+                  "description": "Whether the drive fits that gap."
+                }
+              },
+              "required": [
+                "from",
+                "to",
+                "minutes",
+                "km",
+                "gap_minutes",
+                "fits"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "technician_id",
+          "name",
+          "initials",
+          "colour",
+          "stops",
+          "legs"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "date",
+    "city",
+    "drive_times",
+    "technicians"
+  ],
+  "additionalProperties": false,
+  "description": "Only technicians with a visit that day, each in board order."
 }
 ```
 

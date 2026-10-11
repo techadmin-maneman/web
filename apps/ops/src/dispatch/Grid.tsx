@@ -26,6 +26,8 @@ import { begunWord, isMovable, nameOf, type Job, type Target, windowWord } from 
 export interface InHand {
   readonly job: Job;
   readonly windowsAt: (technicianId: string, date: string) => readonly BookingWindow[] | null;
+  /** As the crow flies, from the job to the technician's nearest other visit that day; null where unknown. */
+  readonly kmAt: (technicianId: string, date: string) => number | null;
 }
 
 /** "Fri 19", as a column is headed. */
@@ -214,9 +216,11 @@ interface GridProps {
   readonly onOpen: (job: Job, from: HTMLElement) => void;
   readonly onTake: Take;
   readonly onLand: (to: Target) => void;
+  /** Opens a day's routes; null where the person's access does not reach them. */
+  readonly onRoutes: ((date: string) => void) | null;
 }
 
-export function Grid({ board, rows, inHand, found, onOpen, onTake, onLand }: GridProps) {
+export function Grid({ board, rows, inHand, found, onOpen, onTake, onLand, onRoutes }: GridProps) {
   return (
     <table className={styles.grid}>
       <thead>
@@ -228,6 +232,18 @@ export function Grid({ board, rows, inHand, found, onOpen, onTake, onLand }: Gri
               <th className={styles.day} key={date} scope="col">
                 <span className={styles.dayName}>{dayHead(date)}</span>
                 <span className={percent >= dispatch.peak ? styles.peak : styles.util}>{dispatch.util(percent)}</span>
+                {onRoutes !== null && (
+                  <button
+                    className={styles.dayMap}
+                    type="button"
+                    aria-label={dispatch.routes.openLabel(dayHead(date))}
+                    onClick={() => {
+                      onRoutes(date);
+                    }}
+                  >
+                    {dispatch.routes.open}
+                  </button>
+                )}
               </th>
             );
           })}

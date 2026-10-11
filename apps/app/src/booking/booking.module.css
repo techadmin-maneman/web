@@ -39,7 +39,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: var(--sp-22);
+  margin-bottom: var(--sp-24);
 }
 
 .title {
@@ -67,7 +67,7 @@
 .strip {
   display: grid;
   grid-template-columns: repeat(7, minmax(0, 1fr));
-  gap: var(--sp-6);
+  gap: var(--sp-8);
 }
 
 /*
@@ -102,7 +102,7 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: var(--sp-3);
+  gap: var(--sp-4);
   aspect-ratio: 1 / 1.15;
   padding: 0;
   border: var(--hairline) solid var(--paper-control);
@@ -153,9 +153,9 @@
 /* A day with a window inside the notice: a short rule beneath its number, as the legend shows it. */
 .dayLate {
   position: absolute;
-  bottom: var(--sp-6);
+  bottom: var(--sp-8);
   left: 50%;
-  width: var(--sp-13);
+  width: var(--sp-12);
   height: var(--rule-strong);
   background: var(--error-on-paper);
   transform: translateX(-50%);
@@ -169,7 +169,7 @@
   display: flex;
   flex-wrap: wrap;
   gap: var(--sp-8) var(--sp-20);
-  margin-top: var(--sp-18);
+  margin-top: var(--sp-16);
   font-size: var(--fs-14);
   color: var(--text-muted);
 }
@@ -181,8 +181,8 @@
 }
 
 .swatch {
-  width: var(--sp-13);
-  height: var(--sp-13);
+  width: var(--sp-12);
+  height: var(--sp-12);
   border: var(--hairline) solid var(--paper-line);
   background: var(--white);
 }
@@ -193,7 +193,7 @@
 }
 
 .swatchLate {
-  width: var(--sp-13);
+  width: var(--sp-12);
   height: var(--rule-strong);
   background: var(--error-on-paper);
 }
@@ -212,17 +212,17 @@
 .windows {
   display: flex;
   flex-direction: column;
-  gap: var(--sp-10);
+  gap: var(--sp-8);
 }
 
 .window {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--sp-14);
+  gap: var(--sp-16);
   width: 100%;
   min-height: var(--tap-row);
-  padding: 0 var(--sp-18);
+  padding: 0 var(--sp-16);
   border: var(--hairline) solid var(--paper-control);
   background: var(--white);
   font: inherit;
@@ -241,7 +241,7 @@
 }
 
 .windowTime {
-  margin-top: var(--sp-3);
+  margin-top: var(--sp-4);
   font-size: var(--fs-14);
   color: var(--text-muted);
 }
@@ -281,7 +281,7 @@
 
 .serviceLine {
   display: block;
-  margin-top: var(--sp-3);
+  margin-top: var(--sp-4);
   font-size: var(--fs-14);
   color: var(--text-muted);
 }
@@ -353,7 +353,7 @@
 }
 
 .sheet .incl {
-  margin-top: var(--sp-5);
+  margin-top: var(--sp-4);
   font-size: var(--fs-13);
   font-variant-numeric: tabular-nums;
   color: var(--text-muted);
@@ -398,7 +398,7 @@
  * first line in the text's own ink and the card's lines after it muted.
  */
 .consents {
-  margin-top: var(--sp-6);
+  margin-top: var(--sp-8);
   font-size: var(--fs-14);
   line-height: var(--lh-150);
   color: var(--text-muted);
@@ -419,7 +419,7 @@
 }
 
 .sheet .consents p + p {
-  margin-top: var(--sp-6);
+  margin-top: var(--sp-8);
 }
 
 .sheet .consentsOpen + p {
@@ -447,12 +447,12 @@
 }
 
 .primary {
-  margin-top: var(--sp-22);
+  margin-top: var(--sp-24);
   font-variant-numeric: tabular-nums;
 }
 
 .secondary {
-  margin-top: var(--sp-18);
+  margin-top: var(--sp-16);
 }
 
 /* The change, and what it costs. */
@@ -475,7 +475,7 @@
 }
 
 .noteInput {
-  padding: var(--sp-12) var(--sp-15);
+  padding: var(--sp-12) var(--sp-16);
   border: var(--hairline) solid var(--paper-control);
   background: var(--white);
   font: inherit;
@@ -504,8 +504,8 @@
 }
 
 .sheet .terms {
-  margin-top: var(--sp-14);
-  padding-top: var(--sp-14);
+  margin-top: var(--sp-16);
+  padding-top: var(--sp-16);
   border-top: var(--hairline) solid var(--paper-line);
   font-size: var(--fs-16);
   line-height: var(--lh-160);
@@ -526,8 +526,8 @@
   justify-content: center;
   width: fit-content;
   min-height: var(--tap);
-  margin: var(--sp-18) auto 0;
-  padding: 0 var(--sp-10);
+  margin: var(--sp-16) auto 0;
+  padding: 0 var(--sp-8);
   border: 0;
   background: none;
   font: inherit;
@@ -566,7 +566,7 @@
 
 .codeRow {
   display: flex;
-  gap: var(--sp-9);
+  gap: var(--sp-8);
   margin-top: var(--sp-8);
 }
 
@@ -574,7 +574,7 @@
   flex: 1;
   min-width: 0;
   height: var(--btn-md);
-  padding: 0 var(--sp-15);
+  padding: 0 var(--sp-16);
   border: var(--hairline) solid var(--paper-control);
   background: var(--white);
   font: inherit;
@@ -589,7 +589,7 @@
 }
 
 .sheet .moneyNote {
-  margin-top: var(--sp-14);
+  margin-top: var(--sp-16);
   font-size: var(--fs-14);
   color: var(--text-muted);
   text-align: center;
@@ -604,14 +604,14 @@
 }
 
 .sheet .problem {
-  margin-top: var(--sp-14);
+  margin-top: var(--sp-16);
   font-size: var(--fs-15);
   color: var(--error-on-paper);
 }
 
 /* The outcome step. Within the sheet, so its margin outweighs the sheet's own for a paragraph. */
 .sheet .caption {
-  margin-bottom: var(--sp-14);
+  margin-bottom: var(--sp-16);
   font-size: var(--fs-14);
   color: var(--text-muted);
 }
@@ -628,7 +628,7 @@
 }
 
 .sheet .outcomeLine {
-  margin-top: var(--sp-10);
+  margin-top: var(--sp-8);
   font-size: var(--fs-15);
   line-height: var(--lh-160);
   font-variant-numeric: tabular-nums;
@@ -637,8 +637,8 @@
 
 .pair {
   display: flex;
-  gap: var(--sp-10);
-  margin-top: var(--sp-18);
+  gap: var(--sp-8);
+  margin-top: var(--sp-16);
 }
 
 /* Side by side, both 48 px (size="control"). */
@@ -657,8 +657,8 @@
 }
 
 .confirmed {
-  margin: calc(-1 * var(--sp-22)) calc(-1 * var(--sp-20)) calc(-1 * var(--sp-24));
-  padding: var(--sp-26) var(--sp-20);
+  margin: calc(-1 * var(--sp-24)) calc(-1 * var(--sp-20)) calc(-1 * var(--sp-24));
+  padding: var(--sp-24) var(--sp-20);
   background: var(--ink);
   color: var(--paper);
   --focus-colour: var(--paper);
@@ -676,7 +676,7 @@
 }
 
 .sheet .confirmedTitle {
-  margin-top: var(--sp-18);
+  margin-top: var(--sp-16);
   font-family: var(--font-serif);
   font-size: var(--fs-28);
   line-height: var(--lh-112);
@@ -693,7 +693,7 @@
   display: flex;
   justify-content: space-between;
   margin-top: var(--sp-20);
-  padding-top: var(--sp-18);
+  padding-top: var(--sp-16);
   border-top: var(--hairline) solid var(--ink-rule);
   font-size: var(--fs-15);
   color: var(--ink-soft);
@@ -722,15 +722,15 @@
 }
 
 .confirmedCalendar {
-  margin-top: var(--sp-22);
+  margin-top: var(--sp-24);
 }
 
 .note {
-  margin-top: var(--sp-22);
+  margin-top: var(--sp-24);
 }
 
 .done {
-  margin-top: var(--sp-10);
+  margin-top: var(--sp-8);
   border-color: transparent;
   color: var(--ink-soft);
 }

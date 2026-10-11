@@ -7,6 +7,11 @@
 export const VISIT_TYPES = ["consultation", "first_fit", "service", "replacement"] as const;
 export type VisitType = (typeof VISIT_TYPES)[number];
 
+/** The kinds that fit a hair system, which only a technician trained to fit takes (ADR 0119). */
+const FITTINGS: readonly VisitType[] = ["first_fit", "replacement"];
+
+export const isAFitting = (type: VisitType | null): boolean => type !== null && FITTINGS.includes(type);
+
 /** What each kind of visit is called, as clients, technicians and ops read it. */
 export const VISIT_TYPE_NAMES: Readonly<Record<VisitType, string>> = {
   consultation: "Consultation",

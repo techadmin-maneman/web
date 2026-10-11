@@ -11,7 +11,7 @@
   /* The defaults, which an app's own class on the field replaces: it is in no layer, so it wins. */
   .field {
     --code-box-height: var(--tap-row);
-    --code-box-gap: var(--sp-9);
+    --code-box-gap: var(--sp-8);
     --code-box-next: var(--gilt);
 
     position: relative;
@@ -57,7 +57,7 @@
   .caret {
     display: none;
     width: var(--hairline);
-    height: var(--sp-26);
+    height: var(--sp-24);
     background: var(--paper);
   }
 

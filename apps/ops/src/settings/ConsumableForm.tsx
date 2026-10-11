@@ -5,15 +5,13 @@
 // before anything is sent (ADR 0071). Every box holds text: an empty level is
 // no level, never a nought.
 
-import { errorText, type Failure } from "@maneman/web-kit/refusal";
 import { Field, TextInput } from "@maneman/ui/Field";
-import { Button } from "@maneman/ui/Button";
 import { paiseFromRupees, rupees } from "@maneman/web-kit/money";
 import { useState } from "react";
 import { api, type Consumable, type Consumables } from "../api.ts";
 import { settings } from "../content.ts";
-import { CheckPanel } from "../components/CheckPanel.tsx";
 import styles from "../components/forms.module.css";
+import { SettingForm, sentOf, useSteps } from "./SettingForm.tsx";
 
 const copy = settings.consumables;
 const form = copy.form;
@@ -62,8 +60,6 @@ function changes(was: Consumable, draft: Draft): string[] {
   return lines;
 }
 
-type Step = { readonly step: "editing" | "checking" | "saving" } | ({ readonly step: "failed" } & Failure);
-
 export function ConsumableForm({
   consumable,
   maxUnitCost,
@@ -77,35 +73,32 @@ export function ConsumableForm({
   onCancel: (() => void) | null;
 }) {
   const [draft, setDraft] = useState<Draft>(() => draftOf(consumable));
-  const [step, setStep] = useState<Step>({ step: "editing" });
   const ready =
     draft.name.trim() !== "" &&
     draft.unit.trim() !== "" &&
     RUPEES.test(draft.cost.trim()) &&
     paiseFromRupees(draft.cost) <= maxUnitCost &&
     [draft.kit, draft.central].every((level) => level.trim() === "" || WHOLE.test(level.trim()));
-  const checking = step.step === "checking" || step.step === "saving";
+  const steps = useSteps(
+    async () => {
+      const fields = {
+        name: draft.name.trim(),
+        unit: draft.unit.trim(),
+        unit_cost: paiseFromRupees(draft.cost),
+        reorder_kit: levelOf(draft.kit),
+        reorder_central: levelOf(draft.central),
+      };
+      const answer =
+        consumable === null ? await api.addConsumable(fields) : await api.changeConsumable(consumable.code, fields);
+      return sentOf(answer, (book) => ({ book }));
+    },
+    (sent) => {
+      onSaved(sent.book, consumable === null ? form.added : form.saved);
+    },
+  );
   const edit = (field: keyof Draft) => (text: string) => {
     setDraft({ ...draft, [field]: text });
-    setStep({ step: "editing" });
-  };
-
-  const send = async () => {
-    setStep({ step: "saving" });
-    const fields = {
-      name: draft.name.trim(),
-      unit: draft.unit.trim(),
-      unit_cost: paiseFromRupees(draft.cost),
-      reorder_kit: levelOf(draft.kit),
-      reorder_central: levelOf(draft.central),
-    };
-    const answer =
-      consumable === null ? await api.addConsumable(fields) : await api.changeConsumable(consumable.code, fields);
-    if (!answer.ok) {
-      setStep({ step: "failed", code: answer.code, fields: answer.fields });
-      return;
-    }
-    onSaved(answer.body, consumable === null ? form.added : form.saved);
+    steps.edit();
   };
 
   const lines =
@@ -117,10 +110,27 @@ export function ConsumableForm({
       : changes(consumable, draft);
 
   return (
-    <fieldset className={styles.group}>
-      <legend className={styles.ruleTitle}>
-        {consumable === null ? form.addTitle : form.changeTitle(consumable.name)}
-      </legend>
+    <SettingForm
+      title={consumable === null ? form.addTitle : form.changeTitle(consumable.name)}
+      steps={steps}
+      ready={ready}
+      words={{
+        next: consumable === null ? form.add : form.save,
+        cancel: form.cancel,
+        checkTitle: form.confirm.title,
+        send: form.confirm.send,
+        saving: form.saving,
+        back: form.confirm.back,
+      }}
+      errors={copy.errors}
+      onCancel={onCancel}
+      sendable={lines.length > 0}
+      checking={(lines.length === 0 ? [form.confirm.nothing] : lines).map((line) => (
+        <p className={styles.checkLine} key={line}>
+          {line}
+        </p>
+      ))}
+    >
       <div className={styles.fields}>
         <Field label={form.name} className={styles.field}>
           {(control) => (
@@ -193,45 +203,6 @@ export function ConsumableForm({
           )}
         </Field>
       </div>
-      {checking && (
-        <CheckPanel
-          title={form.confirm.title}
-          lines={lines.length === 0 ? [form.confirm.nothing] : lines}
-          send={form.confirm.send}
-          sending={form.saving}
-          back={form.confirm.back}
-          busy={step.step === "saving"}
-          ready={lines.length > 0}
-          onSend={() => void send()}
-          onBack={() => {
-            setStep({ step: "editing" });
-          }}
-        />
-      )}
-      {!checking && (
-        <div className={styles.actions}>
-          <Button
-            variant="primary"
-            size="small"
-            disabled={!ready}
-            onClick={() => {
-              setStep({ step: "checking" });
-            }}
-          >
-            {consumable === null ? form.add : form.save}
-          </Button>
-          {onCancel !== null && (
-            <Button variant="outline" size="small" className={styles.quiet} onClick={onCancel}>
-              {form.cancel}
-            </Button>
-          )}
-        </div>
-      )}
-      {step.step === "failed" && (
-        <p className={styles.error} role="alert">
-          {errorText(copy.errors, step)}
-        </p>
-      )}
-    </fieldset>
+    </SettingForm>
   );
 }

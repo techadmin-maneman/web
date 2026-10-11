@@ -143,6 +143,9 @@ export const PROVIDER_VARS = {
   // (docs/decisions/0054-address-capture.md). "none" wherever a Google key is not yet in place: the address form
   // then takes a typed address, as it did before, and saves no coordinate.
   GEOCODE_PROVIDER: ["google", "stub", "none"],
+  // Google's Routes and Maps Static APIs, for the dispatch board's drive times and day map (ADR 0120). "none" until the
+  // owner switches them on for the key (docs/provisioning.md, step 13): the board then shows neither.
+  ROUTES_PROVIDER: ["google", "stub", "none"],
 } as const;
 export type ProviderVar = keyof typeof PROVIDER_VARS;
 

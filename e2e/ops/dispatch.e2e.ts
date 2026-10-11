@@ -8,13 +8,13 @@ test("draws the week, every technician and the jobs on their days", async ({ pag
 
   const grid = page.getByRole("table");
   await expect(grid.getByRole("columnheader")).toHaveText([
-    "Fri 1964%",
-    "Sat 2092%",
-    "Sun 2188%",
-    "Mon 2258%",
-    "Tue 2364%",
-    "Wed 2461%",
-    "Thu 2567%",
+    "Fri 1964%Routes",
+    "Sat 2092%Routes",
+    "Sun 2188%Routes",
+    "Mon 2258%Routes",
+    "Tue 2364%Routes",
+    "Wed 2461%Routes",
+    "Thu 2567%Routes",
   ]);
   await expect(grid.getByRole("rowheader")).toHaveText([
     "Imran QureshiSec 40–65",

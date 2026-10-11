@@ -67,6 +67,9 @@ export const RATE_LIMITS = {
   "ceiling:tech_code": { per: "day", limit: (settings) => settings.login.techCodeDailyCeiling },
   "ceiling:form_code": { per: "day", limit: (settings) => settings.login.codeDailyCeiling },
   "ceiling:geocode": { per: "day", limit: (settings) => settings.geocode.dailyCeiling },
+  // The dispatch board's Google calls: a month of either stays far inside the 70,000 Google gives free (ADR 0120).
+  "ceiling:route": { per: "day", limit: 1000 },
+  "ceiling:route_map": { per: "day", limit: 300 },
   "alert:ceiling": { per: "day", limit: 1 },
 } as const satisfies Readonly<Record<string, RateLimit>>;
 

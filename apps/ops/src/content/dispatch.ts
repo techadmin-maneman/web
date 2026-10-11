@@ -238,6 +238,22 @@ export const dispatch = {
     sending: "Moving",
     cancel: "Cancel",
   },
+  /** A day on the road, opened from a column's head (ADR 0120). */
+  routes: {
+    open: "Routes",
+    /** The button's whole name, since each column has one. */
+    openLabel: (day: string) => `Routes for ${day}`,
+    title: (day: string) => `Routes · ${day}`,
+    mapAlt: (day: string) => `Map of each technician's route on ${day}`,
+    loading: "Loading.",
+    failed: "Couldn't load the routes.",
+    none: "No visits this day.",
+    driveTimes: { off: "Drive times are off.", unavailable: "Some drive times are unavailable." },
+    noPin: "no pin",
+    drive: (minutes: number, km: number) => `${String(minutes)} min · ${km.toFixed(1)} km`,
+    /** A drive longer than the gap between two visits. */
+    tight: (minutes: number, gap: number) => `${String(minutes)} min drive, ${String(Math.max(gap, 0))} min gap`,
+  },
   /** Choosing where a job lands, which the design does by dragging. */
   landing: {
     /** The bar above the board while a job is in hand, with the slot-size hint the brief asks for. */
@@ -254,7 +270,9 @@ export const dispatch = {
     /** The brief's "keyboard alternative: choose a destination from a list". */
     list: "Or choose from a list",
     listPrompt: "A technician, day and window",
-    listOption: (technician: string, date: string, window: string) => `${technician} · ${date} · ${window}`,
+    /** With how far the job is from that technician's nearest other visit that day, where known. */
+    listOption: (technician: string, date: string, window: string, km: number | null) =>
+      [technician, date, window, km === null ? null : `${km.toFixed(1)} km`].filter(Boolean).join(" · "),
     listGo: "Choose",
     // A week with nowhere the job fits.
     nowhere: "No room this week.",
@@ -311,7 +329,7 @@ export const dispatch = {
     beingMoved: (job: string) => `Someone else is moving ${job} right now.`,
     /** A visit goes only to a technician in its own city; one with no city yet takes none (ADR 0117). */
     otherCity: (technician: string) => `${technician} doesn't work in this visit's city.`,
-    /** A first fit goes only to a technician trained to fit (ADR 0119). */
+    /** A first fit or a replacement goes only to a technician trained to fit (ADR 0119). */
     notTrained: (technician: string) => `${technician} isn't trained to fit.`,
     errors: {
       not_permitted: NOT_PERMITTED,

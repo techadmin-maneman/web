@@ -699,7 +699,7 @@ async function fitted(browser: Browser, design: Page): Promise<void> {
       "/api/visits": json({ upcoming: [NEXT], past: PAST, history: HISTORY }),
     },
   });
-  await visits.getByRole("heading", { name: "Past" }).waitFor();
+  await visits.getByRole("heading", { name: "History" }).waitFor();
   await pair({
     dir: OUT,
     width: WIDTH,
@@ -772,7 +772,7 @@ async function fitted(browser: Browser, design: Page): Promise<void> {
     path: "/photos",
     api: { ...me, "/api/photos": json({ visits: [], try_ons: [] }) },
   });
-  await none.getByText("Your photos start at your first visit.").waitFor();
+  await none.getByText("Your photos begin at your first visit.").waitFor();
   await pair({
     dir: OUT,
     width: WIDTH,
@@ -1072,7 +1072,7 @@ async function changePairs(browser: Browser, design: Page): Promise<void> {
     design: await version("Reschedule", "More than 24 hours out"),
     built: await shot(free),
   });
-  await free.getByRole("button", { name: "Cancel the visit instead" }).click();
+  await free.getByRole("button", { name: "Cancel instead" }).click();
   await free.getByText("Rs. 2,360 back to your UPI in 5 to 7 working days.").waitFor();
   await pair({
     dir: OUT,
@@ -1085,7 +1085,10 @@ async function changePairs(browser: Browser, design: Page): Promise<void> {
 
   const late = await openApp({ browser, path: "/", api: api("late"), now: IN_2030 });
   await late.getByRole("button", { name: "Reschedule" }).click();
-  await late.getByText(/^Charged\./).waitFor();
+  await late
+    .getByText(/late change|inside \d+ hours costs/i)
+    .first()
+    .waitFor();
   await pair({
     dir: OUT,
     width: WIDTH,
