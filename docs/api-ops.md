@@ -1482,6 +1482,107 @@ Request body:
 }
 ```
 
+### GET /api/words
+
+Every line of the site and every WhatsApp message to a client, with the wording in force
+
+**200**: The lines
+
+```json
+{
+  "$ref": "#/components/schemas/Words"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/words
+
+Give a line new words, or put it back to the code's with a null text
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/WordSet"
+}
+```
+
+**200**: The line as it now stands
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "word": {
+      "$ref": "#/components/schemas/Word"
+    }
+  },
+  "required": [
+    "word"
+  ],
+  "additionalProperties": false
+}
+```
+
+**400**: invalid_request: fields names text.empty, text.holes (one the page fills taken out or added), text.price, text.visits, text.placeholder, text.length, text.first_line or text.ends_on_detail
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### GET /api/words/history
+
+Every wording one line has had, newest first
+
+**200**: The line's wordings; a null text went back to the code's
+
+```json
+{
+  "$ref": "#/components/schemas/WordHistory"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ### GET /api/grievances
 
 Open grievances in the caller's cities, oldest first, as Tasks counts them: none of an erased client's
@@ -10391,6 +10492,183 @@ Request body:
 }
 ```
 
+### Words
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "words": {
+      "type": "array",
+      "items": {
+        "$ref": "#/components/schemas/Word"
+      }
+    }
+  },
+  "required": [
+    "words"
+  ],
+  "additionalProperties": false
+}
+```
+
+### Word
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "key": {
+      "type": "string",
+      "description": "The line's key in src/config/words.json."
+    },
+    "surface": {
+      "type": "string",
+      "enum": [
+        "site",
+        "message"
+      ]
+    },
+    "group": {
+      "type": "string",
+      "description": "The page, or Messages."
+    },
+    "where": {
+      "type": "string",
+      "description": "The part of the page, or the message's name."
+    },
+    "text": {
+      "type": "string",
+      "description": "The wording in the code."
+    },
+    "now": {
+      "type": "string",
+      "description": "The wording in force: the one set here, else the code's."
+    },
+    "changed": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "by": {
+              "type": "string"
+            },
+            "at": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          "required": [
+            "by",
+            "at"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "longest": {
+      "type": "integer",
+      "description": "The longest the line may grow, in characters."
+    }
+  },
+  "required": [
+    "key",
+    "surface",
+    "group",
+    "where",
+    "text",
+    "now",
+    "changed",
+    "longest"
+  ],
+  "additionalProperties": false
+}
+```
+
+### WordHistory
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "versions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "set_by": {
+            "type": "string"
+          },
+          "set_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "text",
+          "set_by",
+          "set_at"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "versions"
+  ],
+  "additionalProperties": false
+}
+```
+
+### WordSet
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "key": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "text": {
+      "anyOf": [
+        {
+          "type": "string",
+          "maxLength": 4000
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  },
+  "required": [
+    "key",
+    "text"
+  ],
+  "additionalProperties": false
+}
+```
+
 ### GrievanceAnswer
 
 ```json
@@ -10483,6 +10761,7 @@ Request body:
         "channel.change",
         "channel.pause",
         "channel.resume",
+        "word.set",
         "photo.view",
         "pincode.launch",
         "data.export",

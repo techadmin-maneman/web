@@ -126,6 +126,7 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 - [visits](#visits): What an appointment became once it closed, or ops closed it by hand: the outcome, its reason and its times (ADR 0032, ADR 0074).
 - [waitlist_entries](#waitlist_entries): Someone waiting for us to reach their pincode, and whether they were told it launched (ADR 0048).
 - [webhook_inbox](#webhook_inbox): FSM's webhook deliveries, each kept once (ADR 0032).
+- [word_versions](#word_versions): 
 - [zoho_access_tokens](#zoho_access_tokens): Each Zoho client's access token, the CRM's, FSM's and Books', and the lease one caller holds while it asks for a new one (ADR 0070, ADR 0110).
 - [zoho_token](#zoho_token): The CRM's access token before migration 0041; unread since, and dropped later (open point 90).
 - [zoho_tokens](#zoho_tokens): FSM's and Books' access token before migration 0041; unread since, and dropped later (open point 90).
@@ -2203,6 +2204,24 @@ Indexes:
 
 - A `UNIQUE` constraint: unique on (`dedupe_key`)
 - `webhook_inbox_unprocessed`: on (`processed_at`, `received_at`)
+
+## word_versions
+
+
+
+Made by `0112_words.sql`.
+
+| Column | Type | May be empty | Default | Key |
+| --- | --- | --- | --- | --- |
+| `id` | TEXT | no |  | primary key |
+| `key` | TEXT | no |  |  |
+| `text` | TEXT | yes |  |  |
+| `set_by` | TEXT | no |  |  |
+| `set_at` | TEXT | no |  |  |
+
+Indexes:
+
+- `word_versions_by_key`: on (`key`, `set_at`)
 
 ## zoho_access_tokens
 

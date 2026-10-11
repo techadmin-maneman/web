@@ -35,6 +35,9 @@ export const AUDIT_ACTIONS = [
   "channel.change",
   "channel.pause",
   "channel.resume",
+  // A line of the site or a WhatsApp message given new words on the Words page, or put back to the code's
+  // (docs/decisions/0126-the-words-page.md).
+  "word.set",
   // Ops opening one of a client's photographs (docs/decisions/0031-access-and-audit.md).
   "photo.view",
   // A client's rights over their data (docs/decisions/0049-dpdp.md).

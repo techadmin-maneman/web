@@ -4766,6 +4766,163 @@
         ],
         "additionalProperties": false
       },
+      "Words": {
+        "type": "object",
+        "properties": {
+          "words": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Word"
+            }
+          }
+        },
+        "required": [
+          "words"
+        ],
+        "additionalProperties": false
+      },
+      "Word": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string",
+            "description": "The line's key in src/config/words.json."
+          },
+          "surface": {
+            "type": "string",
+            "enum": [
+              "site",
+              "message"
+            ]
+          },
+          "group": {
+            "type": "string",
+            "description": "The page, or Messages."
+          },
+          "where": {
+            "type": "string",
+            "description": "The part of the page, or the message's name."
+          },
+          "text": {
+            "type": "string",
+            "description": "The wording in the code."
+          },
+          "now": {
+            "type": "string",
+            "description": "The wording in force: the one set here, else the code's."
+          },
+          "changed": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "by": {
+                    "type": "string"
+                  },
+                  "at": {
+                    "type": "string",
+                    "format": "date-time"
+                  }
+                },
+                "required": [
+                  "by",
+                  "at"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "longest": {
+            "type": "integer",
+            "description": "The longest the line may grow, in characters."
+          }
+        },
+        "required": [
+          "key",
+          "surface",
+          "group",
+          "where",
+          "text",
+          "now",
+          "changed",
+          "longest"
+        ],
+        "additionalProperties": false
+      },
+      "WordHistory": {
+        "type": "object",
+        "properties": {
+          "versions": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "text": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "set_by": {
+                  "type": "string"
+                },
+                "set_at": {
+                  "type": "string",
+                  "format": "date-time"
+                }
+              },
+              "required": [
+                "id",
+                "text",
+                "set_by",
+                "set_at"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "versions"
+        ],
+        "additionalProperties": false
+      },
+      "WordSet": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "text": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 4000
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "key",
+          "text"
+        ],
+        "additionalProperties": false
+      },
       "GrievanceAnswer": {
         "type": "object",
         "properties": {
@@ -4850,6 +5007,7 @@
               "channel.change",
               "channel.pause",
               "channel.resume",
+              "word.set",
               "photo.view",
               "pincode.launch",
               "data.export",
@@ -13355,6 +13513,146 @@
         }
       }
     },
+    "/api/words": {
+      "get": {
+        "summary": "Every line of the site and every WhatsApp message to a client, with the wording in force",
+        "responses": {
+          "200": {
+            "description": "The lines",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Words"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "access_required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Give a line new words, or put it back to the code's with a null text",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WordSet"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The line as it now stands",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "word": {
+                      "$ref": "#/components/schemas/Word"
+                    }
+                  },
+                  "required": [
+                    "word"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid_request: fields names text.empty, text.holes (one the page fills taken out or added), text.price, text.visits, text.placeholder, text.length, text.first_line or text.ends_on_detail",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "access_required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/words/history": {
+      "get": {
+        "summary": "Every wording one line has had, newest first",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200
+            },
+            "required": true,
+            "name": "key",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The line's wordings; a null text went back to the code's",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WordHistory"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "access_required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/grievances": {
       "get": {
         "summary": "Open grievances in the caller's cities, oldest first, as Tasks counts them: none of an erased client's",
@@ -13530,6 +13828,7 @@
                 "channel.change",
                 "channel.pause",
                 "channel.resume",
+                "word.set",
                 "photo.view",
                 "pincode.launch",
                 "data.export",

@@ -64,6 +64,7 @@ import { registerOpsNoShowRulings } from "./routes/ops/no-show-rulings.ts";
 import { registerOpsPayments } from "./routes/ops/payments.ts";
 import { registerOpsReferrals } from "./routes/ops/referrals.ts";
 import { registerOpsReferralChannels } from "./routes/ops/referral-channels.ts";
+import { registerOpsWords } from "./routes/ops/words.ts";
 import { registerOpsTasks } from "./routes/ops/tasks.ts";
 import { registerOpsAlerts } from "./routes/ops/alerts.ts";
 import { registerOpsTechnicians } from "./routes/ops/technicians.ts";
@@ -179,6 +180,7 @@ const SURFACE_ROUTES: Readonly<Record<Surface, readonly ((app: App) => void)[]>>
     registerOpsReferrals,
     // Partners who send us clients on their own code (docs/decisions/0123-partner-referral-channels.md).
     registerOpsReferralChannels,
+    registerOpsWords,
     registerOpsGrievances,
     registerOpsActivity,
     registerOpsWaitlist,

@@ -141,6 +141,10 @@ export const ROUTE_NEEDS: Readonly<Record<string, RouteNeed | typeof SIGNED_IN>>
   // area lists every pincode we know, in every city, with how many wait in each, so it stays national.
   "GET /api/referrals/held": inOwnPlaces("growth", "view"),
   "GET /api/referral-channels": need("growth", "view"),
+  // The site's words and the WhatsApp messages (docs/decisions/0126-the-words-page.md).
+  "GET /api/words": need("growth", "view"),
+  "GET /api/words/history": need("growth", "view"),
+  "POST /api/words": need("growth", "manage"),
   "POST /api/referral-channels": need("growth", "manage"),
   "PATCH /api/referral-channels/{id}": need("growth", "manage"),
   "POST /api/referral-channels/{id}/pause": need("growth", "manage"),
