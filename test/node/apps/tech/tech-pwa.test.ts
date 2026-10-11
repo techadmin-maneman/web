@@ -66,7 +66,7 @@ describe("what the service worker keeps", () => {
       "assets/instrument-sans-latin-400-normal-a.woff2",
       "assets/instrument-sans-latin-ext-400-normal-b.woff2",
       "assets/eb-garamond-latin-ext-400-normal-c.woff2",
-      "assets/eb-garamond-rupee-400-d.woff2",
+      "assets/eb-garamond-rupee-400-d.woff",
     ];
     expect(precacheList(built)).toEqual(["/", "/assets/instrument-sans-latin-400-normal-a.woff2"]);
   });
