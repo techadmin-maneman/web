@@ -38,6 +38,10 @@ export const AUDIT_ACTIONS = [
   // A line of the site or a WhatsApp message given new words on the Words page, or put back to the code's
   // (docs/decisions/0126-the-words-page.md).
   "word.set",
+  // A reply, a note or a chat closed in the Care inbox (docs/decisions/0130-replies-from-the-care-inbox.md).
+  "chat.reply",
+  "chat.note",
+  "chat.close",
   // The site's changed words published, for its next build (docs/decisions/0127-publishing-the-words.md).
   "word.publish",
   // A partner's month paid, or a payment recorded by mistake taken off (docs/decisions/0124-partner-statements.md).

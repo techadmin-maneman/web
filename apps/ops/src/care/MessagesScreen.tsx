@@ -9,7 +9,7 @@ import { classes } from "@maneman/ui/classes";
 import { useLoad } from "@maneman/ui/useLoad";
 import { indiaClock, indiaDate, shortDate } from "@maneman/web-kit/dates";
 import { useCallback, useState } from "react";
-import { api, type Conversation, type ConversationView } from "../api.ts";
+import { careApi, type Conversation, type ConversationView } from "./care-api.ts";
 import { Shell } from "../components/Shell.tsx";
 import { care as copy } from "../content/care.ts";
 import { SECTION_NAMES } from "../route.ts";
@@ -94,7 +94,7 @@ function ConversationRows(props: { conversation: Conversation; open: boolean; on
 }
 
 function Conversations({ view }: { view: ConversationView }) {
-  const load = useCallback(() => api.conversations(view), [view]);
+  const load = useCallback(() => careApi.conversations(view), [view]);
   const [loaded, retry] = useLoad(load);
   const [opened, setOpened] = useState<string | null>(null);
   if (loaded.state === "loading") return <Loading />;

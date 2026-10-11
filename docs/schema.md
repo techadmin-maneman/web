@@ -328,7 +328,7 @@ Indexes:
 
 Every message in a Care inbox thread: what the client wrote, our replies, and notes only staff see (ADR 0129).
 
-Made by `0114_conversations.sql`.
+Made by `0114_conversations.sql`; changed by `0115_chat_replies.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -340,6 +340,8 @@ Made by `0114_conversations.sql`.
 | `provider_message_id` | TEXT | yes |  |  |
 | `sent_at` | TEXT | no |  |  |
 | `created_at` | TEXT | no |  |  |
+| `delivery` | TEXT | yes |  |  |
+| `failure` | TEXT | yes |  |  |
 
 Indexes:
 
@@ -541,7 +543,7 @@ Indexes:
 
 The Care inbox: one thread for each number that writes to our WhatsApp number, matched to its client where we know the number (ADR 0129).
 
-Made by `0114_conversations.sql`.
+Made by `0114_conversations.sql`; changed by `0115_chat_replies.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -556,6 +558,7 @@ Made by `0114_conversations.sql`.
 | `closed_by` | TEXT | yes |  |  |
 | `created_at` | TEXT | no |  |  |
 | `updated_at` | TEXT | no |  |  |
+| `close_reason` | TEXT | yes |  |  |
 
 Indexes:
 

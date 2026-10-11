@@ -27,6 +27,44 @@ import type { EvolutionSettings } from "../../config/evolution.ts";
 export const SEND_TIMEOUT_MS = { sendText: 20_000, sendMedia: 60_000 } as const;
 const STATE_TIMEOUT_MS = 10_000;
 
+/** Posts a text or an image with its caption to the bridge, and reads what came of it. */
+async function deliver(
+  settings: EvolutionSettings,
+  deps: VendorFetchDependencies,
+  path: keyof typeof SEND_TIMEOUT_MS,
+  body: Readonly<Record<string, string>>,
+): Promise<SendResult> {
+  const timeoutMs = SEND_TIMEOUT_MS[path];
+  const response = await vendorFetch(
+    deps,
+    { vendor: "evolution", step: path, timeoutMs, codeOf: errorCodeIn },
+    `${settings.baseUrl}/message/${path}/${encodeURIComponent(settings.instance)}`,
+    {
+      method: "POST",
+      headers: { apikey: settings.apiKey, "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    },
+  );
+  // A timeout means the bridge took the request and did not answer: the message may be on the
+  // phone already, and sending again would duplicate it. Only a failure to connect is retried.
+  if (response instanceof VendorUnreachable && response.timedOut) {
+    return {
+      ok: false,
+      transient: false,
+      detail: `no reply within ${String(timeoutMs / 1000)} s: delivery unconfirmed`,
+    };
+  }
+  if (response instanceof VendorUnreachable) {
+    return { ok: false, transient: true, detail: `unreachable: ${response.reason}` };
+  }
+
+  const reply = await response.text();
+  if (response.ok) {
+    return { ok: true, providerMessageId: messageIdOf(reply) };
+  }
+  return refusal(response.status, reply, settings.instance);
+}
+
 export function createEvolutionMessaging(
   settings: EvolutionSettings,
   deps: VendorFetchDependencies,
@@ -51,37 +89,11 @@ export function createEvolutionMessaging(
                 fileName: `mane-man.${fileExtension(media.type)}`,
               },
             ] as const);
-      const timeoutMs = SEND_TIMEOUT_MS[path];
-
-      const response = await vendorFetch(
-        deps,
-        { vendor: "evolution", step: path, timeoutMs, codeOf: errorCodeIn },
-        `${settings.baseUrl}/message/${path}/${encodeURIComponent(settings.instance)}`,
-        {
-          method: "POST",
-          headers: { apikey: settings.apiKey, "Content-Type": "application/json" },
-          body: JSON.stringify(body),
-        },
-      );
-      // A timeout means the bridge took the request and did not answer: the message may be on the
-      // phone already, and sending again would duplicate it. Only a failure to connect is retried.
-      if (response instanceof VendorUnreachable && response.timedOut) {
-        return {
-          ok: false,
-          transient: false,
-          detail: `no reply within ${String(timeoutMs / 1000)} s: delivery unconfirmed`,
-        };
-      }
-      if (response instanceof VendorUnreachable) {
-        return { ok: false, transient: true, detail: `unreachable: ${response.reason}` };
-      }
-
-      const reply = await response.text();
-      if (response.ok) {
-        return { ok: true, providerMessageId: messageIdOf(reply) };
-      }
-      return refusal(response.status, reply, settings.instance);
+      return deliver(settings, deps, path, body);
     },
+
+    // A Care reply in the team's own words, as plain text (docs/decisions/0130-replies-from-the-care-inbox.md).
+    reply: (to, text) => deliver(settings, deps, "sendText", { number: to.replace(/\D/g, ""), text }),
 
     // The runbook's first check when WhatsApp is down, made by the cron instead.
     async connection(): Promise<Connection> {

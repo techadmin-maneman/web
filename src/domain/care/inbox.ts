@@ -110,6 +110,8 @@ type ThreadItem =
       readonly at: string;
       readonly author: string;
       readonly text: string | null;
+      /** For a reply: sent, or failed; null for the client's messages and notes. */
+      readonly delivery: "sent" | "failed" | null;
     }
   | {
       readonly kind: "auto";
@@ -145,7 +147,7 @@ export async function conversationThread(db: D1Database, id: string): Promise<Th
   const [chat, auto] = await db.batch([
     db
       .prepare(
-        `SELECT direction AS kind, sent_at AS at, author, text FROM chat_messages WHERE conversation_id = ?1
+        `SELECT direction AS kind, sent_at AS at, author, text, delivery FROM chat_messages WHERE conversation_id = ?1
          ORDER BY sent_at DESC LIMIT ?2`,
       )
       .bind(id, THREAD_ITEMS),

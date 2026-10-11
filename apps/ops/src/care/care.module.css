@@ -100,3 +100,32 @@
 .text {
   white-space: pre-line;
 }
+
+.failed {
+  font-size: var(--fs-13);
+  color: var(--error-on-paper);
+}
+
+/* Writing in the chat: the reply box across, its buttons, then closing it with a reason. */
+.compose {
+  margin-top: var(--sp-16);
+  padding-top: var(--sp-12);
+  border-top: var(--hairline) solid var(--paper-line);
+}
+
+.reply {
+  flex: 1;
+  max-width: var(--local-care-bubble);
+}
+
+.box {
+  width: 100%;
+}
+
+.closing {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: var(--sp-8) var(--sp-16);
+  margin-top: var(--sp-16);
+}

@@ -1,7 +1,7 @@
 // The Care inbox's words (Customer Care; docs/decisions/0129-the-care-inbox.md). The page imports them itself, so
 // they stay out of the console's first load.
 
-import { FAILED, OFFLINE } from "./common.ts";
+import { FAILED, NOT_PERMITTED, OFFLINE } from "./common.ts";
 
 export const care = {
   title: "Messages",
@@ -27,6 +27,37 @@ export const care = {
     queued: "waiting to send",
     close: "Close",
     page: "Client's page",
+    notSent: "Not sent",
   },
-  errors: { not_found: "Not found. Reload.", offline: OFFLINE, unknown: FAILED },
+  compose: {
+    label: "Reply",
+    send: "Send",
+    sending: "Sending",
+    note: "Add note",
+    reason: "What it was about",
+    closeChat: "Close chat",
+    sent: "Sent.",
+    noted: "Note added.",
+    closed: "Chat closed.",
+    failed: "WhatsApp did not take it. It is kept in the chat as not sent.",
+  },
+  reasons: {
+    booking: "Booking",
+    move_or_cancel: "Move or cancel",
+    fit_problem: "Fit problem",
+    aftercare: "Aftercare",
+    billing: "Billing",
+    sign_in: "Signing in",
+    try_on: "Try-on",
+    data_request: "Their data",
+    other: "Other",
+  },
+  errors: {
+    text: "Write something first.",
+    unavailable: "Replies wait for the office number on MSG91.",
+    not_found: "Not found. Reload.",
+    not_permitted: NOT_PERMITTED,
+    offline: OFFLINE,
+    unknown: FAILED,
+  },
 };

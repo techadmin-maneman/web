@@ -1438,6 +1438,122 @@ Take off a payment recorded by mistake; the month is owed again
 }
 ```
 
+### POST /api/conversations/{id}/replies
+
+Reply from our number; the reply is kept in the thread, sent or failed with why
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/ChatReply"
+}
+```
+
+**200**: The thread as it now stands
+
+```json
+{
+  "$ref": "#/components/schemas/ConversationThread"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no such thread, or its client's record is erased
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**503**: unavailable: the WhatsApp provider sends no free text yet
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/conversations/{id}/notes
+
+A note on the thread for staff alone, never sent
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/ChatNote"
+}
+```
+
+**200**: The thread as it now stands
+
+```json
+{
+  "$ref": "#/components/schemas/ConversationThread"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/conversations/{id}/close
+
+Close the thread with what it was about; the client writing again reopens it
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/ChatClose"
+}
+```
+
+**200**: The thread as it now stands
+
+```json
+{
+  "$ref": "#/components/schemas/ConversationThread"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ### GET /api/conversations
 
 The Care inbox's threads of a view, the latest first
@@ -10651,21 +10767,25 @@ Request body:
 }
 ```
 
-### Conversations
+### ConversationThread
 
 ```json
 {
   "type": "object",
   "properties": {
-    "conversations": {
+    "conversation": {
+      "$ref": "#/components/schemas/Conversation"
+    },
+    "items": {
       "type": "array",
       "items": {
-        "$ref": "#/components/schemas/Conversation"
+        "$ref": "#/components/schemas/ThreadItem"
       }
     }
   },
   "required": [
-    "conversations"
+    "conversation",
+    "items"
   ],
   "additionalProperties": false
 }
@@ -10757,30 +10877,6 @@ Request body:
 }
 ```
 
-### ConversationThread
-
-```json
-{
-  "type": "object",
-  "properties": {
-    "conversation": {
-      "$ref": "#/components/schemas/Conversation"
-    },
-    "items": {
-      "type": "array",
-      "items": {
-        "$ref": "#/components/schemas/ThreadItem"
-      }
-    }
-  },
-  "required": [
-    "conversation",
-    "items"
-  ],
-  "additionalProperties": false
-}
-```
-
 ### ThreadItem
 
 ```json
@@ -10813,13 +10909,28 @@ Request body:
               "type": "null"
             }
           ]
+        },
+        "delivery": {
+          "anyOf": [
+            {
+              "type": "string",
+              "enum": [
+                "sent",
+                "failed"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
         }
       },
       "required": [
         "kind",
         "at",
         "author",
-        "text"
+        "text",
+        "delivery"
       ],
       "additionalProperties": false
     },
@@ -10877,6 +10988,92 @@ Request body:
       "additionalProperties": false
     }
   ]
+}
+```
+
+### ChatReply
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "text": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 4096
+    }
+  },
+  "required": [
+    "text"
+  ],
+  "additionalProperties": false
+}
+```
+
+### ChatNote
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "text": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 4096
+    }
+  },
+  "required": [
+    "text"
+  ],
+  "additionalProperties": false
+}
+```
+
+### ChatClose
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "reason": {
+      "type": "string",
+      "enum": [
+        "booking",
+        "move_or_cancel",
+        "fit_problem",
+        "aftercare",
+        "billing",
+        "sign_in",
+        "try_on",
+        "data_request",
+        "other"
+      ]
+    }
+  },
+  "required": [
+    "reason"
+  ],
+  "additionalProperties": false
+}
+```
+
+### Conversations
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "conversations": {
+      "type": "array",
+      "items": {
+        "$ref": "#/components/schemas/Conversation"
+      }
+    }
+  },
+  "required": [
+    "conversations"
+  ],
+  "additionalProperties": false
 }
 ```
 
@@ -11485,6 +11682,9 @@ Request body:
         "channel.pause",
         "channel.resume",
         "word.set",
+        "chat.reply",
+        "chat.note",
+        "chat.close",
         "word.publish",
         "partner_payout.record",
         "partner_payout.delete",

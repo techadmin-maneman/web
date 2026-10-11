@@ -193,7 +193,7 @@ this map, or when the map names something that no longer exists.
 
 ### The Care inbox
 
-- **Database work** (`src/domain/care/`): `inbox`
+- **Database work** (`src/domain/care/`): `inbox`, `replies`
 - **Routes** (`src/routes/`): `ops/conversations`, `hooks/evolution` (files what clients write)
 - **Tests:** `test/worker/care/`
 

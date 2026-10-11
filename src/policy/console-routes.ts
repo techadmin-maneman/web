@@ -148,6 +148,9 @@ export const ROUTE_NEEDS: Readonly<Record<string, RouteNeed | typeof SIGNED_IN>>
   // The Care inbox: one central team answers every city (docs/decisions/0129-the-care-inbox.md).
   "GET /api/conversations": need("customer_care", "view"),
   "GET /api/conversations/{id}": need("customer_care", "view"),
+  "POST /api/conversations/{id}/replies": need("customer_care", "act"),
+  "POST /api/conversations/{id}/notes": need("customer_care", "act"),
+  "POST /api/conversations/{id}/close": need("customer_care", "act"),
   // The site's words and the WhatsApp messages (docs/decisions/0126-the-words-page.md).
   "GET /api/words": need("growth", "view"),
   "GET /api/words/history": need("growth", "view"),

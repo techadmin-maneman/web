@@ -44,7 +44,7 @@ export const EXPORT_QUERIES = {
     FROM discount_code_uses u JOIN discount_codes c ON c.id = u.code_id WHERE u.person_id = ?1 ORDER BY u.created_at`,
   credits: "SELECT kind, visits, expires_at, created_at FROM credit_ledger WHERE person_id = ?1 ORDER BY created_at",
   // Their chats with the Care team, and when each thread began, ended and last moved; never staff's notes.
-  chats: `SELECT c.created_at AS thread, c.last_message_at, c.closed_at, m.direction, m.text, m.sent_at
+  chats: `SELECT c.created_at AS thread, c.last_message_at, c.closed_at, c.close_reason, m.direction, m.text, m.sent_at
     FROM conversations c LEFT JOIN chat_messages m ON m.conversation_id = c.id AND m.direction <> 'note'
     WHERE c.person_id = ?1 ORDER BY m.sent_at`,
   // In the client's words, and how ops ruled; never ops' own note on it.
