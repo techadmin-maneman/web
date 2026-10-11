@@ -80,6 +80,7 @@ export async function personalDataStatements(
     db.prepare("DELETE FROM care_owners WHERE person_id = ?1").bind(personId),
     // Care's words to the city team about them (docs/decisions/0135-city-matters.md).
     db.prepare("UPDATE city_matters SET note = NULL WHERE person_id = ?1").bind(personId),
+    db.prepare("UPDATE remedies SET note = NULL WHERE person_id = ?1").bind(personId),
     // And the client's own words to the technician on a visit (src/domain/clients/client-notes.ts), and why they disputed a
     // no-show's charge (src/domain/no-shows/no-show-disputes.ts).
     db.prepare("UPDATE appointments SET client_note = NULL, client_note_at = NULL WHERE person_id = ?1").bind(personId),

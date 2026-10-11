@@ -2210,6 +2210,172 @@ Take a saved answer off the list
 }
 ```
 
+### POST /api/clients/{id}/remedies
+
+Give a client free service visits, with why: at once within the limit ops set, else for a manager
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/RemedyNew"
+}
+```
+
+**200**: Given, or awaiting a manager
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "state": {
+      "type": "string",
+      "enum": [
+        "given",
+        "awaiting"
+      ]
+    }
+  },
+  "required": [
+    "id",
+    "state"
+  ],
+  "additionalProperties": false
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no such client, or their record is erased
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### GET /api/remedies
+
+The remedies awaiting a manager, and those given or declined in the last 30 days
+
+**200**: The remedies
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "remedies": {
+      "type": "array",
+      "items": {
+        "$ref": "#/components/schemas/Remedy"
+      }
+    }
+  },
+  "required": [
+    "remedies"
+  ],
+  "additionalProperties": false
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/remedies/{id}/approve
+
+Approve a remedy: the visits are granted, and a note left in the client's chat
+
+**200**: Decided
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "ok": {
+      "type": "boolean",
+      "enum": [
+        true
+      ]
+    }
+  },
+  "required": [
+    "ok"
+  ],
+  "additionalProperties": false
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no such remedy awaiting a manager
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/remedies/{id}/decline
+
+Decline a remedy
+
+**200**: Decided
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "ok": {
+      "type": "boolean",
+      "enum": [
+        true
+      ]
+    }
+  },
+  "required": [
+    "ok"
+  ],
+  "additionalProperties": false
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no such remedy awaiting a manager
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ### GET /api/referral-channels
 
 Every partner, with what has come through each
@@ -12154,6 +12320,122 @@ Request body:
 }
 ```
 
+### RemedyNew
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "visits": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 6
+    },
+    "reason": {
+      "type": "string",
+      "enum": [
+        "fit_problem",
+        "technician_late",
+        "visit_missed",
+        "product_fault",
+        "other"
+      ]
+    },
+    "note": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 300
+    }
+  },
+  "required": [
+    "visits",
+    "reason",
+    "note"
+  ],
+  "additionalProperties": false
+}
+```
+
+### Remedy
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "person": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "name": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "name"
+      ],
+      "additionalProperties": false
+    },
+    "visits": {
+      "type": "integer"
+    },
+    "reason": {
+      "type": "string",
+      "enum": [
+        "fit_problem",
+        "technician_late",
+        "visit_missed",
+        "product_fault",
+        "other"
+      ]
+    },
+    "note": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "given_by": {
+      "type": "string"
+    },
+    "given_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "state": {
+      "type": "string",
+      "enum": [
+        "given",
+        "awaiting",
+        "declined"
+      ]
+    }
+  },
+  "required": [
+    "id",
+    "person",
+    "visits",
+    "reason",
+    "note",
+    "given_by",
+    "given_at",
+    "state"
+  ],
+  "additionalProperties": false
+}
+```
+
 ### ReferralChannels
 
 ```json
@@ -12773,6 +13055,10 @@ Request body:
         "care_name.set",
         "quick_reply.add",
         "quick_reply.retire",
+        "remedy.give",
+        "remedy.ask",
+        "remedy.approve",
+        "remedy.decline",
         "word.publish",
         "partner_payout.record",
         "partner_payout.delete",
@@ -15313,6 +15599,7 @@ Request body:
               "move_unanswered",
               "unanswered_chat",
               "city_matter",
+              "remedy_approval",
               "leave_conflict",
               "address_to_confirm",
               "consultation_request",
@@ -16465,7 +16752,8 @@ Request body:
         "technician_work",
         "booking_days",
         "referral_reward",
-        "care_hours"
+        "care_hours",
+        "remedy_limit"
       ]
     },
     "title": {
@@ -16633,7 +16921,8 @@ Request body:
         "technician_work",
         "booking_days",
         "referral_reward",
-        "care_hours"
+        "care_hours",
+        "remedy_limit"
       ]
     },
     "title": {

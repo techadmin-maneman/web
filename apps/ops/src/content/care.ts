@@ -77,6 +77,35 @@ export const care = {
   },
   /** "asha@maneman.in · covered by ravi@maneman.in", while the Care person is off. */
   coveredBy: (person: string, cover: string) => `${person} · covered by ${cover}`,
+  /** Free visits Care give (docs/decisions/0143-remedies.md). */
+  remedy: {
+    panel: "Remedies",
+    open: "Give free visits",
+    visits: "Free service visits",
+    reason: "Why",
+    note: "Note for the team",
+    give: "Give",
+    given: (visits: number) =>
+      `Given: ${String(visits)} free service ${visits === 1 ? "visit" : "visits"}, on their account now.`,
+    awaiting: "Above your limit, so a manager approves it first.",
+    none: "No remedies in the last 30 days.",
+    /** "2 free visits · Fit problem · Mon 21 Sep" */
+    line: (visits: number, reason: string, date: string) =>
+      `${String(visits)} free ${visits === 1 ? "visit" : "visits"} · ${reason} · ${date}`,
+    states: { given: "Given", awaiting: "Awaiting approval", declined: "Declined" },
+    reasons: {
+      fit_problem: "Fit problem",
+      technician_late: "Technician late",
+      visit_missed: "Visit missed by us",
+      product_fault: "Product fault",
+      other: "Other",
+    },
+    approve: "Approve",
+    decline: "Decline",
+    approveLabel: (name: string) => `Approve the remedy for ${name}`,
+    declineLabel: (name: string) => `Decline the remedy for ${name}`,
+    errors: { not_found: "Not found. Reload.", not_permitted: NOT_PERMITTED, offline: OFFLINE, unknown: FAILED },
+  },
   /** Saved answers (docs/decisions/0141-quick-replies.md). */
   quick: {
     panel: "Quick replies",

@@ -12,6 +12,7 @@ import { clientPath, technicianPath } from "../route.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import { CarePerson } from "./CarePerson.tsx";
 import { CityMatter } from "./CityMatter.tsx";
+import { RemedyForm } from "./Remedies.tsx";
 import { ClientPanel } from "./ClientPanel.tsx";
 import { Stranger } from "./Stranger.tsx";
 import { Composer } from "./Composer.tsx";
@@ -135,6 +136,7 @@ export function Thread({
         <Stranger conversationId={conversation.id} onDone={onChanged} />
       )}
       {mayAct && conversation.person !== null && <CityMatter conversationId={conversation.id} />}
+      {mayAct && conversation.person !== null && <RemedyForm personId={conversation.person.id} />}
       {mayAct && (
         <Composer
           conversationId={conversation.id}

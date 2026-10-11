@@ -132,6 +132,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 - [0139](0139-care-shifts.md) Care on shift
 - [0140](0140-the-client-panel.md) The client beside their chat
 - [0142](0142-moving-every-client.md) Moving every client, and technicians in the inbox
+- [0143](0143-remedies.md) Remedies
 
 ### Referrals
 
@@ -319,4 +320,5 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0139](0139-care-shifts.md) | Care on shift | 2026-10-12 | accepted |  |
 | [0140](0140-the-client-panel.md) | The client beside their chat | 2026-10-12 | accepted |  |
 | [0142](0142-moving-every-client.md) | Moving every client, and technicians in the inbox | 2026-10-12 | accepted |  |
+| [0143](0143-remedies.md) | Remedies | 2026-10-12 | accepted |  |
 | [0146](0146-the-nightly-analytics-copy.md) | The nightly analytics copy | 2026-10-12 | accepted |  |
