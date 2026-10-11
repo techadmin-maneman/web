@@ -135,7 +135,7 @@ export const founderNote = {
   label: "A note from the founder",
   paragraphs: [
     "I started losing my hair at twenty-six. By thirty I had been to four clinics, and not one would tell me a price before I was sitting in the chair with a consultant beside me.",
-    "So Mane Man does two things differently. The technician comes to your home, so nobody sees you walk into anywhere. And every price is on this page, so you can decide before you speak to us.",
+    "So Mane Man does two things differently. The technician comes to your home, so nobody sees you walk in anywhere. And you hear the price at the free consultation, before anything is fitted or paid.",
   ],
   signature: "Founder, Mane Man",
 };

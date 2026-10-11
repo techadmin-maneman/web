@@ -174,7 +174,7 @@ export const tryOn = {
   },
   error: {
     another: "Choose another",
-    book: "Book a visit instead",
+    book: "Book a consultation instead",
     /** By ErrorKind (lib/tryon-errors.ts). v2's labels, heading and body are the photograph's. */
     kinds: {
       photo: {

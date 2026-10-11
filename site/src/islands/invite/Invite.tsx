@@ -157,7 +157,7 @@ export default function Invite(props: Props) {
             {invited ? inviteHeading(invite) : bookingTitle(answer, plan)}
           </h1>
           <div class={styles.offer}>
-            {!invited && <p>{booking.intro}</p>}
+            {!invited && <p>{answer?.served === false ? booking.introWaitlist : booking.intro}</p>}
             {offer !== null && <p>{offer}</p>}
             {unknown && (
               <p>
