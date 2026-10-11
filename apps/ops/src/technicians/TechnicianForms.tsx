@@ -286,7 +286,7 @@ function Facts({ technician }: { technician: TechnicianSummary }) {
       </div>
       <div className={styles.fact}>
         <dt className={styles.label}>{copy.city}</dt>
-        <dd className={styles.factValue}>{technician.city ?? technicians.unknown}</dd>
+        <dd className={styles.factValue}>{technician.city ?? technicians.noCity}</dd>
       </div>
     </dl>
   );

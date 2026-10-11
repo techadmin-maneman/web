@@ -98,6 +98,8 @@ export const ERROR_CODES = [
   "past_day",
   "window_passed",
   "blackout",
+  // A dispatch move handing the visit to a technician in another city, or in none yet (ADR 0117).
+  "other_city",
   // The technician has begun the visit, so a move would leave their work on another day or with another technician.
   "in_progress",
   // The no-show wait has not run out yet (src/policy/no-show.ts), or a visit ops would close by hand is still to come.
@@ -258,6 +260,7 @@ export const ERROR_STATUS = {
   past_day: 409,
   window_passed: 409,
   blackout: 409,
+  other_city: 409,
   in_progress: 409,
   too_early_to_close: 425,
   too_early_to_arrive: 409,

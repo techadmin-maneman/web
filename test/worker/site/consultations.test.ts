@@ -20,7 +20,7 @@ const BOOKING_TRIPS = 8;
 beforeEach(async () => {
   await markDatabase();
   await env.DB.prepare(
-    "INSERT INTO technicians (id, fsm_id, name, initials, active, updated_at) VALUES ('t1', 't1', 'Imran Qureshi', 'IQ', 1, ?1)",
+    "INSERT INTO technicians (id, fsm_id, name, initials, active, updated_at, city) VALUES ('t1', 't1', 'Imran Qureshi', 'IQ', 1, ?1, 'Gurgaon')",
   )
     .bind(NOW.toISOString())
     .run();
@@ -202,6 +202,12 @@ describe("POST /api/consultation", () => {
 describe("an area ops have not named yet", () => {
   it("is booked as its city", async () => {
     await pincode("110048", "Masjid Moth", "Delhi", true, false);
+    // A technician in Delhi, since a visit goes only to a technician in its own city (ADR 0117).
+    await env.DB.prepare(
+      "INSERT INTO technicians (id, fsm_id, name, initials, active, updated_at, city) VALUES ('t-delhi', 't-delhi', 'Kabir Sood', 'KS', 1, ?1, 'Delhi')",
+    )
+      .bind(NOW.toISOString())
+      .run();
     const answer = await request(
       site(),
       "/api/consultation",

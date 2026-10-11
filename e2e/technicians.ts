@@ -28,8 +28,11 @@ const everyId = Object.values(E2E_TECHNICIANS)
 export function technicianFor(seed: Seed, now: string): string[] {
   const { id, fsmId } = E2E_TECHNICIANS[seed];
   return [
-    `INSERT OR IGNORE INTO technicians (id, fsm_id, name, initials, active, updated_at)
-       VALUES ('${id}', '${fsmId}', 'Imran Qureshi', 'IQ', 1, '${now}');`,
+    `INSERT OR IGNORE INTO technicians (id, fsm_id, name, initials, active, updated_at, city)
+       VALUES ('${id}', '${fsmId}', 'Imran Qureshi', 'IQ', 1, '${now}', 'Gurgaon');`,
+    // Gurgaon, where the tests book: a visit goes only to a technician in its own city (ADR 0117). A database kept
+    // from runs before this was so still has them with none.
+    `UPDATE technicians SET city = 'Gurgaon' WHERE id = '${id}';`,
     `UPDATE technicians SET active = 0, updated_at = '${now}'
        WHERE fsm_id LIKE 'e2e-%' AND active = 1 AND id NOT IN (${everyId});`,
     `UPDATE appointments SET status = 'cancelled', fsm_status = 'Cancelled', synced_at = '${now}'

@@ -26,6 +26,8 @@ export interface LiveJob {
   window_end: string | null;
   start_before_move: string | null;
   technician_id: string | null;
+  /** Where the visit is, which says the city a technician taking it must work in. */
+  service_pincode: string | null;
   service_minutes: number | null;
   /** 1 once the technician has begun it (src/domain/visits/visit-begun.ts). */
   begun: number;
@@ -45,7 +47,7 @@ export function liveJob(db: D1Database, appointmentId: string): Promise<LiveJob 
   return db
     .prepare(
       `SELECT a.id, a.person_id, a.type, a.status, a.window_start, a.window_end, a.start_before_move,
-         a.technician_id, s.minutes AS service_minutes, ${visitBegun("a")} AS begun,
+         a.technician_id, a.service_pincode, s.minutes AS service_minutes, ${visitBegun("a")} AS begun,
          ${begunPastArrival("a")} AS begun_past_arrival, ${CLIENT_MOVING} AS client_moving
        FROM appointments a LEFT JOIN services s ON s.kind = a.type AND s.tier = COALESCE(a.tier, 'standard')
        WHERE a.id = ?1 AND a.deleted_at IS NULL AND a.status IN ${LIVE} AND a.type IS NOT NULL

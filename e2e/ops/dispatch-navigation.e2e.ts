@@ -151,7 +151,7 @@ test("meets WCAG 2.2 AA on the board, the drawer, a job in hand, the picker and 
   await press(page, TO_SANDEEP);
   expect(await axeViolations(page)).toEqual([]);
 
-  await page.getByRole("radio", { name: "Earlier job running over" }).check();
+  await page.getByRole("radio", { name: "Client asked" }).check();
   await page.getByRole("button", { name: "Move and notify" }).click();
   await expect(page.getByRole("alert")).toBeVisible();
   expect(await axeViolations(page)).toEqual([]);

@@ -455,7 +455,7 @@ async function newNumbersState(
   const length = { minutes: visit.service.minutes };
   const [day] = await availability({
     db: form.db,
-    placing: { personId: null },
+    placing: { personId: null, pincode: request.pincode },
     visit: length,
     from: request.date,
     days: 1,

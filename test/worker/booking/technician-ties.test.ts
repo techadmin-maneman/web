@@ -6,6 +6,7 @@ import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import { holdSlot } from "../../../src/domain/booking/hold-slot.ts";
 import { markDatabase, NOW } from "../helpers.ts";
+import { pincode } from "../site/consultations-fixtures.ts";
 
 const ADITYA = "t1";
 const ZUBIN = "t2";
@@ -36,7 +37,15 @@ async function booked(technicianId: string, date: string): Promise<void> {
 const holdOn = async (date: string, window: "morning" | "afternoon") => {
   const hold = await holdSlot({
     db: env.DB,
-    input: { personId: await person(), service: CONSULTATION, date, window, price: FREE, from: "site" },
+    input: {
+      personId: await person(),
+      service: CONSULTATION,
+      date,
+      window,
+      price: FREE,
+      from: "site",
+      pincode: "122018",
+    },
     now: NOW,
     holdSeconds: 600,
   });
@@ -45,13 +54,15 @@ const holdOn = async (date: string, window: "morning" | "afternoon") => {
 
 beforeEach(async () => {
   await markDatabase();
+  // Gurgaon, where both technicians work: a visit goes only to a technician in its own city (ADR 0117).
+  await pincode("122018", "Sector 65", "Gurgaon", true);
   await env.DB.batch(
     [
       [ADITYA, "Aditya Rao", "AR"],
       [ZUBIN, "Zubin Shah", "ZS"],
     ].map(([id, name, initials]) =>
       env.DB.prepare(
-        "INSERT INTO technicians (id, fsm_id, name, initials, active, updated_at) VALUES (?1, ?1, ?2, ?3, 1, ?4)",
+        "INSERT INTO technicians (id, fsm_id, name, initials, active, updated_at, city) VALUES (?1, ?1, ?2, ?3, 1, ?4, 'Gurgaon')",
       ).bind(id, name, initials, NOW.toISOString()),
     ),
   );
