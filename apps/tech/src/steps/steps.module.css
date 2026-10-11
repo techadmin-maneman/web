@@ -73,7 +73,7 @@
   border-top: var(--rule-strong) solid var(--error-on-ink);
   border-bottom: var(--hairline) solid var(--ink-rule);
   font-size: var(--fs-17);
-  line-height: var(--lh-150);
+  line-height: var(--lh-145);
   color: var(--paper);
 }
 
@@ -187,7 +187,7 @@
   margin: 0;
   padding: var(--sp-16) var(--sp-20);
   font-size: var(--fs-17);
-  line-height: var(--lh-155);
+  line-height: var(--lh-160);
   color: var(--ink-soft);
 }
 
@@ -195,7 +195,7 @@
   margin: 0;
   padding: var(--sp-16) var(--sp-20);
   font-size: var(--fs-17);
-  line-height: var(--lh-155);
+  line-height: var(--lh-160);
   color: var(--error-on-ink);
 }
 
@@ -283,7 +283,7 @@
 .hint {
   margin: var(--sp-8) 0 0;
   font-size: var(--fs-17);
-  line-height: var(--lh-150);
+  line-height: var(--lh-145);
   color: var(--error-on-ink);
 }
 
@@ -481,7 +481,7 @@
   font-family: var(--font-serif);
   font-size: var(--fs-28);
   font-weight: var(--weight-regular);
-  line-height: var(--lh-112);
+  line-height: var(--lh-115);
   color: var(--paper);
 }
 
@@ -493,7 +493,7 @@
 .closeNote {
   margin: var(--sp-16) 0 0;
   font-size: var(--fs-17);
-  line-height: var(--lh-155);
+  line-height: var(--lh-160);
   color: var(--ink-soft);
 }
 

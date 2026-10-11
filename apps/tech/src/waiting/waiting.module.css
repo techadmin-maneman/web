@@ -122,7 +122,7 @@
 .stoppedLine {
   margin: 0 0 var(--sp-16);
   font-size: var(--fs-17);
-  line-height: var(--lh-150);
+  line-height: var(--lh-145);
   color: var(--paper);
 }
 

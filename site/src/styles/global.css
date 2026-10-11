@@ -124,7 +124,7 @@ select {
   font-family: var(--font-serif);
   font-weight: var(--weight-regular);
   font-size: var(--fs-h2);
-  line-height: var(--lh-105);
+  line-height: var(--lh-100);
   letter-spacing: var(--tracking-heading);
 }
 
