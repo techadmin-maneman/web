@@ -1,7 +1,7 @@
 /* A failure, on ink, at the technician app's sizes (packages/ui/States.tsx draws the rest). */
 
 .failed {
-  gap: var(--sp-18);
+  gap: var(--sp-16);
 }
 
 .message {

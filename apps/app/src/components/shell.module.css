@@ -26,7 +26,7 @@
 
 .mark {
   width: var(--sp-28);
-  height: var(--sp-30);
+  height: var(--sp-32);
   color: var(--ink);
   fill: currentColor;
 }
@@ -47,11 +47,11 @@
 
 .titled {
   justify-content: flex-start;
-  gap: var(--sp-14);
+  gap: var(--sp-16);
 }
 
 .back {
-  margin-left: calc(-1 * var(--sp-11));
+  margin-left: calc(-1 * var(--sp-12));
   color: var(--text);
 }
 
@@ -77,7 +77,7 @@
   align-items: center;
   gap: var(--sp-12);
   margin: 0;
-  padding: var(--sp-13) var(--sp-20);
+  padding: var(--sp-12) var(--sp-20);
   background: var(--ink-deep);
   font-size: var(--fs-15);
   color: var(--paper);
@@ -128,7 +128,7 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: var(--sp-5);
+  gap: var(--sp-4);
   font-size: var(--fs-13);
   color: var(--text-muted);
   text-decoration: none;

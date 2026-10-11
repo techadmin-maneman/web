@@ -87,7 +87,7 @@
 
 .check {
   display: flex;
-  gap: var(--sp-18);
+  gap: var(--sp-16);
   align-items: center;
   width: 100%;
   min-height: var(--tech-row);
@@ -209,14 +209,14 @@
 }
 
 .fieldTitle {
-  margin: 0 0 var(--sp-14);
+  margin: 0 0 var(--sp-16);
   font-size: var(--fs-15);
   color: var(--ink-muted);
 }
 
 .fieldLabel {
   display: block;
-  margin-bottom: var(--sp-10);
+  margin-bottom: var(--sp-8);
   font-size: var(--fs-16);
   color: var(--ink-muted);
 }
@@ -281,7 +281,7 @@
 }
 
 .hint {
-  margin: var(--sp-10) 0 0;
+  margin: var(--sp-8) 0 0;
   font-size: var(--fs-17);
   line-height: var(--lh-145);
   color: var(--error-on-ink);
@@ -295,14 +295,14 @@
 
 .second {
   width: 100%;
-  margin-top: var(--sp-14);
+  margin-top: var(--sp-16);
 }
 
 /* The client's pieces, one 56 px row each, from the card. */
 .picks {
   display: flex;
   flex-direction: column;
-  gap: var(--sp-10);
+  gap: var(--sp-8);
   margin: var(--sp-12) 0 0;
   padding: 0;
   list-style: none;
@@ -331,7 +331,7 @@
   display: flex;
   gap: var(--sp-16);
   justify-content: space-between;
-  padding: var(--sp-14) 0;
+  padding: var(--sp-16) 0;
   border-bottom: var(--hairline) solid var(--ink-rule);
 }
 
@@ -362,7 +362,7 @@
   display: flex;
   align-items: center;
   min-height: var(--tech-primary);
-  padding: 0 var(--sp-18);
+  padding: 0 var(--sp-16);
   border: var(--hairline) solid var(--ink-line);
   background: transparent;
   font: inherit;
@@ -382,7 +382,7 @@
 .reasons {
   display: flex;
   flex-direction: column;
-  gap: var(--sp-10);
+  gap: var(--sp-8);
   margin: 0;
   padding: var(--sp-16) var(--sp-20) var(--sp-20);
   border-top: var(--hairline) solid var(--ink-rule);
@@ -416,7 +416,7 @@
 .chips {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--sp-10);
+  gap: var(--sp-8);
 }
 
 .chip,
@@ -477,7 +477,7 @@
 }
 
 .closeWho {
-  margin: var(--sp-18) 0 var(--sp-14);
+  margin: var(--sp-16) 0 var(--sp-16);
   font-family: var(--font-serif);
   font-size: var(--fs-28);
   font-weight: var(--weight-regular);
@@ -491,7 +491,7 @@
 }
 
 .closeNote {
-  margin: var(--sp-18) 0 0;
+  margin: var(--sp-16) 0 0;
   font-size: var(--fs-17);
   line-height: var(--lh-160);
   color: var(--ink-soft);

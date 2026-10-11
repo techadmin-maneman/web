@@ -29,7 +29,7 @@
 }
 
 .who {
-  margin: var(--sp-3) 0 0;
+  margin: var(--sp-4) 0 0;
   font-size: var(--fs-14);
   color: var(--text-muted);
   font-variant-numeric: tabular-nums;
@@ -54,7 +54,7 @@
 
 .answer {
   max-width: var(--measure-column);
-  margin-top: var(--sp-14);
+  margin-top: var(--sp-16);
 }
 
 /* An answer to a client can run long, so the field grows as ops write. */
@@ -65,7 +65,7 @@
 
 .actions {
   display: flex;
-  gap: var(--sp-10);
+  gap: var(--sp-8);
   margin-top: var(--sp-12);
 }
 

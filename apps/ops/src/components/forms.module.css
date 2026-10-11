@@ -43,7 +43,7 @@
 /* ---- The rules, a section per subject ------------------------------------- */
 
 .jump {
-  margin: var(--sp-14) var(--sp-20) 0;
+  margin: var(--sp-16) var(--sp-20) 0;
 }
 
 .jumpList {
@@ -75,7 +75,7 @@
 
 .ruleGroupTitle {
   margin: 0;
-  padding: var(--sp-14) var(--sp-20) 0;
+  padding: var(--sp-16) var(--sp-20) 0;
   font-family: var(--font-serif);
   font-weight: var(--weight-regular);
   font-size: var(--fs-20);
@@ -130,7 +130,7 @@
   display: flex;
   flex-wrap: wrap;
   gap: var(--sp-16) var(--sp-24);
-  margin-top: var(--sp-14);
+  margin-top: var(--sp-16);
 }
 
 .field {
@@ -160,8 +160,8 @@
 .date {
   display: block;
   height: var(--tap);
-  margin-top: var(--sp-6);
-  padding: 0 var(--sp-10);
+  margin-top: var(--sp-8);
+  padding: 0 var(--sp-8);
   border: var(--hairline) solid var(--paper-control);
   border-radius: 0;
   background: var(--white);
@@ -193,34 +193,34 @@
 /* The browser's own arrow is drawn in the system's colours; this one is the text's, in two strokes. */
 .select {
   min-width: var(--ops-area);
-  padding-right: var(--sp-30);
+  padding-right: var(--sp-32);
   appearance: none;
   background-image:
     linear-gradient(45deg, transparent 50%, var(--text) 50%), linear-gradient(135deg, var(--text) 50%, transparent 50%);
   background-position:
-    calc(100% - var(--sp-15)) 50%,
-    calc(100% - var(--sp-10)) 50%;
-  background-size: var(--sp-5) var(--sp-5);
+    calc(100% - var(--sp-16)) 50%,
+    calc(100% - var(--sp-8)) 50%;
+  background-size: var(--sp-4) var(--sp-4);
   background-repeat: no-repeat;
 }
 
 /* The unit beside the box, so nobody has to guess whether 15 is minutes or hours. */
 .unit {
-  margin-top: var(--sp-6);
+  margin-top: var(--sp-8);
   font-size: var(--fs-14);
   color: var(--text-muted);
 }
 
 .field .hint {
   max-width: var(--measure-form);
-  margin: var(--sp-6) 0 0;
+  margin: var(--sp-8) 0 0;
   font-size: var(--fs-13);
 }
 
 /* A box's hint turned into what is wrong with what is in it. */
 .fieldError {
   max-width: var(--measure-form);
-  margin: var(--sp-6) 0 0;
+  margin: var(--sp-8) 0 0;
   font-size: var(--fs-13);
   color: var(--error-on-paper);
 }
@@ -238,7 +238,7 @@
   align-items: flex-end;
   gap: var(--sp-12);
   margin-top: var(--sp-16);
-  padding-top: var(--sp-14);
+  padding-top: var(--sp-16);
   border-top: var(--hairline) solid var(--paper-line);
 }
 
@@ -253,7 +253,7 @@
 .actions {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--sp-10);
+  gap: var(--sp-8);
   margin: var(--sp-12) var(--sp-20) 0;
 }
 
@@ -276,13 +276,13 @@
 }
 
 .saved {
-  margin: var(--sp-10) var(--sp-20) 0;
+  margin: var(--sp-8) var(--sp-20) 0;
   font-size: var(--fs-14);
   color: var(--text-muted);
 }
 
 .error {
-  margin: var(--sp-10) var(--sp-20) 0;
+  margin: var(--sp-8) var(--sp-20) 0;
   font-size: var(--fs-14);
   color: var(--error-on-paper);
 }
@@ -301,7 +301,7 @@
  * opens, so it is read at once and never opens out of sight.
  */
 .check {
-  margin: var(--sp-14) var(--sp-20) 0;
+  margin: var(--sp-16) var(--sp-20) 0;
   padding: var(--sp-16) var(--sp-20);
   border: var(--hairline) solid var(--paper-line);
   border-left: var(--rule-strong) solid var(--ink);
@@ -333,7 +333,7 @@
 }
 
 .checkList {
-  margin: var(--sp-10) 0 0;
+  margin: var(--sp-8) 0 0;
   padding: 0;
   list-style: none;
   font-size: var(--fs-14);
@@ -349,7 +349,7 @@
 
 .table th,
 .table td {
-  padding: 0 var(--sp-10);
+  padding: 0 var(--sp-8);
   vertical-align: middle;
 }
 
@@ -376,8 +376,8 @@
 /* A button inside a row: as tall as the row allows, so the table keeps its 34 px. */
 .inline {
   height: var(--local-control);
-  margin-left: var(--sp-10);
-  padding: 0 var(--sp-10);
+  margin-left: var(--sp-8);
+  padding: 0 var(--sp-8);
   border: var(--hairline) solid var(--ink);
   background: transparent;
   color: var(--text);
@@ -395,7 +395,7 @@
 }
 
 .kindTitle {
-  margin: var(--sp-14) var(--sp-20) 0;
+  margin: var(--sp-16) var(--sp-20) 0;
   font-family: var(--font-serif);
   font-weight: var(--weight-regular);
   font-size: var(--fs-18);
@@ -407,12 +407,12 @@
   display: flex;
   flex-wrap: wrap;
   gap: var(--sp-8);
-  margin: var(--sp-14) var(--sp-20) 0;
+  margin: var(--sp-16) var(--sp-20) 0;
 }
 
 .city {
   min-height: var(--tap);
-  padding: 0 var(--sp-14);
+  padding: 0 var(--sp-16);
   border: var(--hairline) solid var(--paper-line);
   background: var(--white);
   color: var(--text-muted);
@@ -430,7 +430,7 @@
 .cellText,
 .cellDate {
   height: var(--local-control);
-  padding: 0 var(--sp-6);
+  padding: 0 var(--sp-8);
   border: var(--hairline) solid var(--paper-control);
   border-radius: 0;
   background: var(--white);
@@ -464,7 +464,7 @@
 .box:checked {
   border-color: var(--ink);
   background: var(--ink);
-  box-shadow: inset 0 0 0 var(--sp-3) var(--white);
+  box-shadow: inset 0 0 0 var(--sp-4) var(--white);
 }
 
 .uploaded {
@@ -478,7 +478,7 @@
 
 .file {
   display: block;
-  margin-top: var(--sp-6);
+  margin-top: var(--sp-8);
   font: inherit;
   font-size: var(--fs-14);
   color: var(--text-muted);
@@ -487,7 +487,7 @@
 .file::file-selector-button {
   min-height: var(--tap);
   margin-right: var(--sp-12);
-  padding: 0 var(--sp-14);
+  padding: 0 var(--sp-16);
   border: var(--hairline) solid var(--ink);
   background: transparent;
   color: var(--text);
@@ -499,7 +499,7 @@
 
 /* The rules' and service area's quieter buttons (packages/ui/Button.tsx) sit a little narrower than Save. */
 .quiet {
-  padding: 0 var(--sp-14);
+  padding: 0 var(--sp-16);
 }
 
 /* What storage and the database hold, two plain lines under The console's heading; no board draws them. */

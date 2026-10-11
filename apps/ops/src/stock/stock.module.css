@@ -33,7 +33,7 @@
 
 /* At or below its level: said in words, and in oxblood, never by colour alone. */
 .low {
-  margin-left: var(--sp-6);
+  margin-left: var(--sp-8);
   font-size: var(--fs-13);
   font-weight: var(--weight-medium);
   color: var(--error-on-paper);
@@ -63,7 +63,7 @@
   display: flex;
   flex-wrap: wrap;
   gap: var(--sp-8) var(--sp-20);
-  margin: var(--sp-10) 0 0;
+  margin: var(--sp-8) 0 0;
   padding: 0;
   border: 0;
 }

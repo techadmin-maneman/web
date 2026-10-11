@@ -7,11 +7,11 @@
 .profile {
   display: flex;
   flex-direction: column;
-  gap: var(--sp-14);
+  gap: var(--sp-16);
   max-width: var(--ops-panel);
   margin-bottom: var(--sp-28);
   border: var(--hairline) solid var(--paper-line);
-  padding: var(--sp-22);
+  padding: var(--sp-24);
 }
 
 .title,
@@ -98,7 +98,7 @@
 
 .select {
   min-height: var(--ops-row);
-  padding: 0 var(--sp-10);
+  padding: 0 var(--sp-8);
   border: var(--hairline) solid var(--paper-control);
   border-radius: 0;
   background: var(--paper-light);
@@ -124,5 +124,5 @@
 
 .actions {
   display: flex;
-  gap: var(--sp-10);
+  gap: var(--sp-8);
 }

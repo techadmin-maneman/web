@@ -31,7 +31,7 @@
   top: var(--sp-8);
   left: var(--sp-8);
   z-index: 4;
-  padding: var(--sp-8) var(--sp-14);
+  padding: var(--sp-8) var(--sp-16);
   background: var(--paper);
   color: var(--text);
   transform: translateY(-200%);
@@ -42,7 +42,7 @@
 }
 
 .department {
-  padding-top: var(--sp-14);
+  padding-top: var(--sp-16);
 }
 
 .departmentName {
@@ -64,7 +64,7 @@
 
 .mark {
   width: var(--sp-24);
-  height: var(--sp-26);
+  height: var(--sp-24);
   fill: var(--gilt);
 }
 
@@ -106,8 +106,8 @@
 /* How many tasks wait in a section; filled where any of them is overdue. */
 .count,
 .overdue {
-  min-width: var(--sp-22);
-  padding: 0 var(--sp-6);
+  min-width: var(--sp-24);
+  padding: 0 var(--sp-8);
   font-size: var(--fs-13);
   font-variant-numeric: tabular-nums;
   text-align: center;
@@ -175,7 +175,7 @@
   width: 100%;
   max-width: var(--local-finder);
   height: var(--tap);
-  padding: 0 var(--sp-11);
+  padding: 0 var(--sp-12);
   border: var(--hairline) solid var(--paper-control);
   background: var(--white);
   font: inherit;
@@ -192,7 +192,7 @@
   display: flex;
   flex-shrink: 0;
   align-items: center;
-  gap: var(--sp-14);
+  gap: var(--sp-16);
   font-size: var(--fs-13);
   color: var(--text-muted);
 }
@@ -201,8 +201,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: var(--sp-30);
-  height: var(--sp-30);
+  width: var(--sp-32);
+  height: var(--sp-32);
   border: var(--hairline) solid var(--paper-line);
   background: var(--paper-light);
   font-family: var(--font-serif);
@@ -220,7 +220,7 @@
   align-items: center;
   justify-content: space-between;
   gap: var(--sp-16);
-  padding: var(--sp-10) var(--sp-24);
+  padding: var(--sp-8) var(--sp-24);
   border-bottom: var(--hairline) solid var(--paper-line);
   border-left: var(--rule-strong) solid var(--error-on-paper);
   background: var(--paper-light);

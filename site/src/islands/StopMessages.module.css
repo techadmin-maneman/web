@@ -10,7 +10,7 @@
 }
 
 .body {
-  margin: var(--sp-22) 0 var(--sp-32);
+  margin: var(--sp-24) 0 var(--sp-32);
 }
 
 .note {
@@ -23,7 +23,7 @@
 .page a {
   color: inherit;
   text-decoration: underline;
-  text-underline-offset: var(--sp-3);
+  text-underline-offset: var(--sp-4);
   white-space: nowrap;
 }
 
