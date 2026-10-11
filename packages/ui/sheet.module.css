@@ -37,7 +37,7 @@
   }
 
   .frame::backdrop {
-    background: var(--ink-night);
+    background: var(--sheet-scrim);
   }
 
   .rises[open] {

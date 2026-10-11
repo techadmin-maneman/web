@@ -19,6 +19,28 @@ export const crmErasureKey = (personId: string): string => `crm_erasure:${person
 /** A deletion request near the end of the days it must be decided in. */
 export const deletionWaitingKey = (requestId: string): string => `deletion_waiting:${requestId}`;
 
+/**
+ * The alerts a person must act on within the hour, which go to the urgent space as well: money taken that nothing
+ * books or gives back, and a stop to every sign-in or every job.
+ */
+const URGENT_KINDS = [
+  "razorpay_payment_unheard",
+  "razorpay_refund_unheard",
+  "razorpay_catch_up_not_booked",
+  "unbooked_hold",
+  "second_capture",
+  "refund_failed",
+  "hold_refund_failed",
+  "cancel_refund_failed",
+  "no_show_refund_failed",
+  "login_codes_failing",
+  "whatsapp_bridge",
+  "cron_run_cut_short",
+];
+
+/** Whether an alert goes to the urgent space too. */
+export const isUrgent = (key: string): boolean => URGENT_KINDS.includes(alertKind(key));
+
 /** About the client themselves: their messages, contact and notes. */
 export const CUSTOMER_CARE_KINDS = [
   "message_failed",

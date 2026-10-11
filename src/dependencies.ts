@@ -62,6 +62,20 @@ function lazily<T>(make: () => T): () => T {
   };
 }
 
+/** The alert space, the urgent space where there is one, and telling and closing alerts: each made when first used. */
+function alertsFor(config: StaticConfig, deps: { db: D1Database; fetch: typeof fetch; now: () => Date; log: Logger }) {
+  const { settings, environment } = config;
+  const { db, fetch: httpFetch, now, log } = deps;
+  const chat = (webhookUrl: string | null) => createAlert({ webhookUrl, environment, fetch: httpFetch, log });
+  const alert = lazily(() => chat(settings.alertWebhookUrl));
+  const urgent = lazily(() => (settings.urgentWebhookUrl === null ? null : chat(settings.urgentWebhookUrl)));
+  return {
+    alert,
+    alertOnce: lazily(() => createAlertOnce({ db, alert: alert(), urgent: urgent(), now, environment, log })),
+    resolveAlert: lazily(() => createResolveAlert({ db, now })),
+  };
+}
+
 export function productionDependencies(config: StaticConfig): DependencyFactory {
   const { settings, providers, environment } = config;
   // A bare reference to the global fetch throws "Illegal invocation" in Workers when called as a method.
@@ -80,11 +94,7 @@ export function productionDependencies(config: StaticConfig): DependencyFactory 
       timeoutMs: caller === "request" ? WAITED_TIMEOUT_MS : BACKGROUND_TIMEOUT_MS,
     };
     const messaging = lazily(() => createMessagingProvider(settings.messaging, { fetch: httpFetch, log }));
-    const alert = lazily(() =>
-      createAlert({ webhookUrl: settings.alertWebhookUrl, environment, fetch: httpFetch, log }),
-    );
-    const alertOnce = lazily(() => createAlertOnce({ db: env.DB, alert: alert(), now, environment, log }));
-    const resolveAlert = lazily(() => createResolveAlert({ db: env.DB, now }));
+    const { alert, alertOnce, resolveAlert } = alertsFor(config, { db: env.DB, fetch: httpFetch, now, log });
     const notifyLead = lazily(() =>
       createLeadNotice({ webhookUrl: settings.leadWebhookUrl, environment, fetch: httpFetch, log }),
     );

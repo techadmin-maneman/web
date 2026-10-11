@@ -8,6 +8,7 @@ import { createCachedIdentityCheck, validateStaticConfig } from "./guard.ts";
 import { byHost } from "./http/surfaces.ts";
 import { meterDatabase, usageFields } from "./lib/d1-meter.ts";
 import { createLogger, type Logger } from "./log.ts";
+import { createErrorTracker } from "./providers/error-tracking.ts";
 import { handleCrmSyncBatch } from "./queues/crm-sync.ts";
 import { handleMessagingBatch } from "./queues/messaging.ts";
 import { handleRenderBatch } from "./queues/render.ts";
@@ -20,12 +21,41 @@ import { jobsDue, pingsWhenWell } from "./scheduled/schedule.ts";
 const config = validateStaticConfig(env as unknown as Record<string, unknown>);
 
 const makeDependencies = productionDependencies(config);
+/** Where error lines are reported, while SENTRY_DSN is set: one tracker for the isolate, its sends counted together. */
+const errors =
+  config.settings.sentryDsn === null
+    ? null
+    : createErrorTracker({
+        dsn: config.settings.sentryDsn,
+        environment: config.environment,
+        release: env.CF_VERSION_METADATA.tag === "" ? env.CF_VERSION_METADATA.id : env.CF_VERSION_METADATA.tag,
+        fetch: (input, init) => fetch(input, init),
+        now: () => new Date(),
+      });
 /** One app per switched-on surface, chosen by the request's host (docs/decisions/0026). */
 const apps = new Map<Surface, App>(
-  ENABLED_SURFACES[config.environment].map((surface) => [surface, createApp(config, makeDependencies, surface)]),
+  ENABLED_SURFACES[config.environment].map((surface) => [
+    surface,
+    createApp(config, makeDependencies, surface, errors),
+  ]),
 );
 const checkIdentity = createCachedIdentityCheck();
-const baseLog = createLogger({ worker: "mm-api", environment: config.environment });
+const BASE_FIELDS = { worker: "mm-api", environment: config.environment };
+
+/**
+ * A queue batch's or cron run's logger, whose error lines go to the tracker, kept alive by the run's waitUntil.
+ * Cloudflare always passes the run's context; a test that calls the handler itself may leave it out.
+ */
+function runLogger(fields: Record<string, string>, ctx: ExecutionContext | undefined): Logger {
+  const sink = errors?.sink({
+    waitUntil: (sending) => {
+      ctx?.waitUntil(sending);
+    },
+    log: () => log,
+  });
+  const log = createLogger({ ...BASE_FIELDS, ...fields }, sink);
+  return log;
+}
 
 /** A step slower than this is logged, to find where a stalled consumer run spends its time. */
 const SLOW_STEP_MS = 2_000;
@@ -103,8 +133,8 @@ export default {
   fetch: byHost(apps, config.environment),
 
   /** Each batch ends with one line saying what it cost D1, whether it was consumed or threw. */
-  async queue(batch, workerEnv) {
-    const log = baseLog.child({ queue: batch.queue });
+  async queue(batch, workerEnv, ctx?: ExecutionContext) {
+    const log = runLogger({ queue: batch.queue }, ctx);
     const started = Date.now();
     const meter = meterDatabase(workerEnv.DB);
     try {
@@ -118,8 +148,8 @@ export default {
     }
   },
 
-  async scheduled(controller, workerEnv) {
-    const log = baseLog.child({ job: "cron" });
+  async scheduled(controller, workerEnv, ctx?: ExecutionContext) {
+    const log = runLogger({ job: "cron" }, ctx);
     const meter = meterDatabase(workerEnv.DB);
     const meteredEnv = { ...workerEnv, DB: meter.db };
     await assertOwnDatabase(meteredEnv.DB);

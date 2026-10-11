@@ -1,6 +1,6 @@
 # Every night, the browser tests on main, with a flaky test failing the run. A pull request's run retries a failed
 # test once and passes when the retry does, so a test that fails some of the time never shows there; here it fails
-# the run, and GitHub tells whoever watches the repository (docs/runbook/ci-runner.md, "Flaky browser tests").
+# the run, and an issue tells whoever watches the repository (docs/runbook/ci-runner.md, "Flaky browser tests").
 name: nightly browser tests
 
 on:
@@ -43,3 +43,25 @@ jobs:
           name: playwright-traces
           path: test-results/
           retention-days: 7
+
+  tell:
+    name: tell whoever watches the repository
+    needs: browser
+    if: ${{ failure() }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      issues: write
+    steps:
+      - name: Open the issue, or add this run to the open one
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          title="The nightly browser tests are failing"
+          open=$(gh issue list --repo "$GITHUB_REPOSITORY" --state open --search "\"$title\" in:title" --json number --jq '.[0].number // empty')
+          if [ -n "$open" ]; then
+            gh issue comment "$open" --repo "$GITHUB_REPOSITORY" --body "Failed again: $RUN"
+          else
+            gh issue create --repo "$GITHUB_REPOSITORY" --title "$title" --body "Last night's run failed: $RUN. Its traces are the run's artifact. Close this once it passes again."
+          fi

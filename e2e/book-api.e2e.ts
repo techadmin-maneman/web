@@ -30,7 +30,7 @@ test("a served pincode books a real date and window, at the address given", asyn
   const answered = page.waitForResponse("**/api/consultation");
   await page.getByRole("button", { name: "Book the consultation" }).click();
 
-  await expect(page.getByRole("heading", { level: 1, name: "Check WhatsApp" })).toBeVisible();
+  await expect(page.getByText("Booked", { exact: true })).toBeVisible();
   // The day the strip opens on is tomorrow, and the API answers with the day it booked.
   expect(await (await answered).json()).toMatchObject({ state: "booked", date: tomorrow() });
 });

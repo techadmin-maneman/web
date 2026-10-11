@@ -292,14 +292,17 @@ export function BookingSheet({
     if (answer.ok) dispatch({ kind: "held", hold: answer.body });
     else if (answer.code === "taken") {
       setProblem(booking.window.taken);
-      // From the day chosen, which may be among the later days.
+      setChosenWindow(null);
+      // From the day chosen, which may be among the later days. A window the client picks while this is asked for
+      // stays picked where it is still open.
       const fresh = await api.availability(wanted, movingId, date);
       if (fresh.ok) {
         setAvailability((now) =>
           now === null ? fresh.body : { ...fresh.body, days: withDays(now.days, fresh.body.days) },
         );
+        const day = fresh.body.days.find((each) => each.date === date);
+        setChosenWindow((picked) => openWindow(day, picked));
       }
-      setChosenWindow(null);
     } else if (answer.code === "address_required") askForAddress(true);
     else if (answer.code === "not_served") showNotServed();
     else setProblem(booking.failedToStart);
