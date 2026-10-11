@@ -122,7 +122,7 @@ export const tasks = {
      */
     move_unanswered: {
       open: (when: string) => `Asked to move to ${when}`,
-      ranOut: (when: string) => `Asked to move to ${when} · ran out`,
+      ranOut: (when: string) => `Asked to move to ${when} · expired`,
     },
     /** "Wed 23 Sep, 10:30 am, and Sameer is away": move it on the dispatch board, or take the leave back. */
     leave_conflict: (when: string, technician: string) => `${when} · ${technician} is away`,
