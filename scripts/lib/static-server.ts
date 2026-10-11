@@ -33,6 +33,7 @@ const TYPES: Readonly<Record<string, string>> = {
   ".png": "image/png",
   ".webp": "image/webp",
   ".avif": "image/avif",
+  ".woff": "font/woff",
   ".woff2": "font/woff2",
   ".mp4": "video/mp4",
   ".txt": "text/plain; charset=utf-8",
