@@ -73,6 +73,10 @@ type ButtonLinkProps = Look &
   Omit<AnchorHTMLAttributes<HTMLAnchorElement>, "className"> & { readonly ref?: Ref<HTMLAnchorElement> };
 
 /** A link that looks like a button: somewhere to go, such as WhatsApp or a document, rather than something to do. */
-export function ButtonLink({ variant, size, className, ...rest }: ButtonLinkProps) {
-  return <a {...rest} className={buttonLook({ variant, size, className })} />;
+export function ButtonLink({ variant, size, className, children, ...rest }: ButtonLinkProps) {
+  return (
+    <a {...rest} className={buttonLook({ variant, size, className })}>
+      {children}
+    </a>
+  );
 }

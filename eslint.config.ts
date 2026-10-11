@@ -2,6 +2,7 @@ import eslint from "@eslint/js";
 import type { Linter } from "eslint";
 import { defineConfig } from "eslint/config";
 import reactHooks from "eslint-plugin-react-hooks";
+import jsxA11y from "eslint-plugin-jsx-a11y-x";
 import tseslint from "typescript-eslint";
 
 // A suppression comment must cite the ADR that justifies it.
@@ -156,6 +157,17 @@ export default defineConfig(
     rules: {
       "react-hooks/rules-of-hooks": "error",
       "react-hooks/exhaustive-deps": "error",
+    },
+  },
+  {
+    // Accessibility, read in every component (TOOL-01): axe in the browser tests sees only the states a test reaches.
+    files: ["apps/**/*.tsx", "packages/**/*.tsx", "site/src/**/*.tsx"],
+    ...jsxA11y.configs.recommended,
+    rules: {
+      ...jsxA11y.configs.recommended.rules,
+      // Focus moves only into what the person has just opened, a step or a panel, as the dialog pattern asks; each
+      // autoFocus says why.
+      "jsx-a11y-x/no-autofocus": "off",
     },
   },
   {
