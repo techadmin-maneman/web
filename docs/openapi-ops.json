@@ -5279,6 +5279,33 @@
         ],
         "additionalProperties": false
       },
+      "ChatLink": {
+        "type": "object",
+        "properties": {
+          "person_id": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "person_id"
+        ],
+        "additionalProperties": false
+      },
+      "ChatSave": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "additionalProperties": false
+      },
       "ReferralChannels": {
         "type": "object",
         "properties": {
@@ -5824,6 +5851,8 @@
               "chat.reply",
               "chat.note",
               "chat.close",
+              "chat.link",
+              "chat.save",
               "care_person.move",
               "care_rota.set",
               "care_leave.add",
@@ -14993,6 +15022,172 @@
         }
       }
     },
+    "/api/conversations/{id}/link": {
+      "post": {
+        "summary": "Link a chat from a number we don't know to the client it turns out to be",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChatLink"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Linked",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "person_id": {
+                      "type": "string",
+                      "format": "uuid"
+                    }
+                  },
+                  "required": [
+                    "person_id"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid_request: fields names conversation when the chat is a client's already",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "access_required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found: no such chat, or no such client",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/conversations/{id}/save": {
+      "post": {
+        "summary": "Save the person behind a chat from a number we don't know as someone new, by the name they gave",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChatSave"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Saved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "person_id": {
+                      "type": "string",
+                      "format": "uuid"
+                    }
+                  },
+                  "required": [
+                    "person_id"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid_request: fields names conversation when the chat is a client's already",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "access_required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found: no such chat",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "number_in_use: one of our people has this number already; link the chat to them",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/referral-channels": {
       "get": {
         "summary": "Every partner, with what has come through each",
@@ -15548,6 +15743,8 @@
                 "chat.reply",
                 "chat.note",
                 "chat.close",
+                "chat.link",
+                "chat.save",
                 "care_person.move",
                 "care_rota.set",
                 "care_leave.add",

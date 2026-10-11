@@ -33,6 +33,10 @@ export const careApi = {
     client.post("/api/care-team/leave", { body: { email, from, to } }),
   deleteLeave: (id: string) => client.post("/api/care-team/leave/{id}/delete", { path: { id } }),
   setCareName: (email: string, name: string) => client.post("/api/care-team/name", { body: { email, name } }),
+  linkChat: (id: string, personId: string) =>
+    client.post("/api/conversations/{id}/link", { path: { id }, body: { person_id: personId } }),
+  saveStranger: (id: string, name: string) =>
+    client.post("/api/conversations/{id}/save", { path: { id }, body: { name } }),
   raiseCityMatter: (id: string, note: string) =>
     client.post("/api/conversations/{id}/city-matter", { path: { id }, body: { note } }),
 };

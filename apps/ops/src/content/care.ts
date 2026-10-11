@@ -73,6 +73,28 @@ export const care = {
   },
   /** "asha@maneman.in · covered by ravi@maneman.in", while the Care person is off. */
   coveredBy: (person: string, cover: string) => `${person} · covered by ${cover}`,
+  /** A chat from a number we don't know (docs/decisions/0138-strangers-in-the-inbox.md). */
+  stranger: {
+    title: "A number we don't know. Link it to a client, or save them as someone new.",
+    find: "Find a client by name or number",
+    search: "Search",
+    noneFound: "No client matches.",
+    /** "Arjun Mehta · +91 98100 00001" */
+    client: (name: string, mobile: string) => `${name} · ${mobile}`,
+    link: "Link",
+    linkLabel: (name: string) => `Link this chat to ${name}`,
+    name: "Their name",
+    save: "Save as someone new",
+    errors: {
+      conversation: "This chat is a client's already. Reload.",
+      number_in_use: "One of our clients has this number. Find them and link the chat instead.",
+      invalid_request: "Type two letters of a name, or four digits of a number.",
+      not_found: "Not found. Reload.",
+      not_permitted: NOT_PERMITTED,
+      offline: OFFLINE,
+      unknown: FAILED,
+    },
+  },
   /** A matter sent to the client's city team (docs/decisions/0135-city-matters.md). */
   cityMatter: {
     open: "Send to city",

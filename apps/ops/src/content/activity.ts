@@ -28,6 +28,8 @@ const ACTIONS: Readonly<Record<ActivityAction, string>> = {
   "chat.reply": "Chat replied to",
   "chat.note": "Chat note added",
   "chat.close": "Chat closed",
+  "chat.link": "Chat linked to a client",
+  "chat.save": "Chat saved as someone new",
   "care_person.move": "Care person changed",
   "care_rota.set": "Care days off set",
   "care_leave.add": "Care leave added",

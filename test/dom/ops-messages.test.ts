@@ -48,6 +48,19 @@ beforeEach(() => {
     if (init?.method === "POST" && typeof init.body === "string") {
       posted.push({ path: address.pathname, body: JSON.parse(init.body) as unknown });
       if (address.pathname.endsWith("/city-matter")) return Promise.resolve(Response.json({ city: "Gurgaon" }));
+      if (address.pathname === "/api/clients/find") {
+        const found = {
+          id: ARJUN.person?.id,
+          name: "Arjun Mehta",
+          mobile: "+919810000001",
+          state: "fitted",
+          next_visit: null,
+        };
+        return Promise.resolve(Response.json({ clients: [found], more: false }));
+      }
+      if (address.pathname.endsWith("/link") || address.pathname.endsWith("/save")) {
+        return Promise.resolve(Response.json({ person_id: ARJUN.person?.id }));
+      }
       if (address.pathname.endsWith("/care-person")) {
         return Promise.resolve(Response.json({ care_person: "ravi@maneman.test" }));
       }
@@ -89,6 +102,9 @@ beforeEach(() => {
     if (address.pathname === "/api/conversations") {
       const view = address.searchParams.get("view");
       return Promise.resolve(Response.json({ conversations: view === "closed" ? [] : [ARJUN, STRANGER] }));
+    }
+    if (address.pathname === `/api/conversations/${STRANGER.id}`) {
+      return Promise.resolve(Response.json({ conversation: STRANGER, items: [] }));
     }
     if (address.pathname === `/api/conversations/${ARJUN.id}`) {
       return Promise.resolve(
@@ -239,6 +255,37 @@ describe("the Messages page", () => {
       body: { note: "Needs a re-fit." },
     });
     expect(page.textContent).toContain(copy.cityMatter.sent("Gurgaon"));
+  });
+
+  it("links a stranger's chat to the client it turns out to be, or saves them as someone new", async () => {
+    await show();
+    const click = async (element: Element | null | undefined) => {
+      await act(async () => {
+        (element as HTMLElement | null | undefined)?.click();
+        await new Promise((resolve) => setTimeout(resolve, 0));
+      });
+    };
+    const type = (input: HTMLInputElement | undefined, value: string) => {
+      act(() => {
+        if (input === undefined) return;
+        Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")?.set?.call(input, value);
+        input.dispatchEvent(new Event("input", { bubbles: true }));
+      });
+    };
+    const named = (text: string) =>
+      [...page.querySelectorAll("button")].find((each) => each.textContent.trim() === text);
+    await click(page.querySelector(`button[aria-label="${copy.openLabel(STRANGER.mobile)}"]`));
+    expect(page.textContent).toContain(copy.stranger.title);
+    type(page.querySelector<HTMLInputElement>('input[maxlength="60"]') ?? undefined, "Arjun");
+    await click(named(copy.stranger.search));
+    await click(page.querySelector(`button[aria-label="${copy.stranger.linkLabel("Arjun Mehta")}"]`));
+    expect(posted.at(-1)).toEqual({
+      path: `/api/conversations/${STRANGER.id}/link`,
+      body: { person_id: ARJUN.person?.id },
+    });
+    type(page.querySelector<HTMLInputElement>('input[maxlength="80"]') ?? undefined, "Meera Iyer");
+    await click(named(copy.stranger.save));
+    expect(posted.at(-1)).toEqual({ path: `/api/conversations/${STRANGER.id}/save`, body: { name: "Meera Iyer" } });
   });
 
   it("lists the Care team with their days off and leave", async () => {

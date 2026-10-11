@@ -12,6 +12,7 @@ import { clientPath } from "../route.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import { CarePerson } from "./CarePerson.tsx";
 import { CityMatter } from "./CityMatter.tsx";
+import { Stranger } from "./Stranger.tsx";
 import { Composer } from "./Composer.tsx";
 import styles from "../components/forms.module.css";
 import own from "./care.module.css";
@@ -62,7 +63,16 @@ function Item({ item }: { item: ThreadItem }) {
   );
 }
 
-export function Thread({ conversation, onClose }: { conversation: Conversation; onClose: () => void }) {
+export function Thread({
+  conversation,
+  onClose,
+  onChanged,
+}: {
+  conversation: Conversation;
+  onClose: () => void;
+  /** The chat became a client's: the list is read again. */
+  onChanged: () => void;
+}) {
   const load = useCallback(() => careApi.conversation(conversation.id), [conversation.id]);
   const [loaded, retry] = useLoad(load);
   /** The chat as Care's last reply, note or close left it. */
@@ -106,6 +116,7 @@ export function Thread({ conversation, onClose }: { conversation: Conversation; 
           {said}
         </p>
       )}
+      {mayAct && conversation.person === null && <Stranger conversationId={conversation.id} onDone={onChanged} />}
       {mayAct && conversation.person !== null && <CityMatter conversationId={conversation.id} />}
       {mayAct && (
         <Composer

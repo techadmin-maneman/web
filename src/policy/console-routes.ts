@@ -152,6 +152,8 @@ export const ROUTE_NEEDS: Readonly<Record<string, RouteNeed | typeof SIGNED_IN>>
   "POST /api/conversations/{id}/notes": need("customer_care", "act"),
   "POST /api/conversations/{id}/close": need("customer_care", "act"),
   "POST /api/conversations/{id}/city-matter": need("customer_care", "act"),
+  "POST /api/conversations/{id}/link": need("customer_care", "act"),
+  "POST /api/conversations/{id}/save": need("customer_care", "act"),
   "GET /api/care-team": need("customer_care", "view"),
   "POST /api/clients/{id}/care-person": need("customer_care", "manage"),
   "POST /api/care-team/days-off": need("customer_care", "manage"),
