@@ -40,6 +40,7 @@ const SettingsScreen = lazy(() =>
 );
 const PricesScreen = lazy(() => settingsPanels().then((module) => ({ default: module.PricesScreen })));
 const DiscountCodesScreen = lazy(() => settingsPanels().then((module) => ({ default: module.DiscountCodesScreen })));
+const TechnicianPayScreen = lazy(() => settingsPanels().then((module) => ({ default: module.TechnicianPayScreen })));
 const StaffScreen = lazy(() => settingsPanels().then((module) => ({ default: module.StaffScreen })));
 const ActivityScreen = lazy(() =>
   loadOrReload(() => import("./activity/ActivityScreen.tsx")).then((module) => ({ default: module.ActivityScreen })),
@@ -64,6 +65,7 @@ const SCREENS: Readonly<Record<PlainPage, ComponentType>> = {
   payments: NoShowsScreen,
   prices: PricesScreen,
   "discount-codes": DiscountCodesScreen,
+  "technician-pay": TechnicianPayScreen,
   referrals: ReferralsScreen,
   staff: StaffScreen,
   activity: ActivityScreen,

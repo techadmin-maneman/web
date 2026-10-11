@@ -172,6 +172,9 @@ export const PURPOSES: Readonly<Record<string, string>> = {
   tryon_sessions:
     "The try-on gate's session, which showed a visitor their result (ADR 0014); written no more since the look goes to WhatsApp only (ADR 0104).",
   visit_blackouts: "Days on which no visit is offered.",
+  pay_grades: "The seniority grades Finance names for technicians' pay per visit (ADR 0122).",
+  visit_pay_rates:
+    "What a visit pays a technician, beside their salary: per grade and kind of visit, for every city or one, from a date (ADR 0122).",
   city_blackouts: "Days on which no visit is offered in one city alone (ADR 0119).",
   visit_changes:
     "Each move or cancel a client made, and each cancel ops made, with its notice and what it cost (ADR 0046).",

@@ -72,6 +72,14 @@ this map, or when the map names something that no longer exists.
 - **Tests:** `test/worker/ops/dispatch.test.ts`, `test/worker/field/field-dispatch.test.ts`,
   `e2e/ops/dispatch.e2e.ts`, `e2e/ops/technicians.e2e.ts`
 
+### Technicians' pay
+
+- **Database work** (`src/domain/field/`): `technician-pay`
+- **Routes** (`src/routes/`): `ops/technician-pay`
+- **Screens:** `apps/ops/src/settings/TechnicianPay.tsx`, `apps/ops/src/settings/PayGrades.tsx`,
+  `apps/ops/src/settings/PayRates.tsx`
+- **Tests:** `test/worker/ops/technician-pay.test.ts`, `e2e/ops/technician-pay.e2e.ts`
+
 ### The technician's work in the field
 
 - **Database work** (`src/domain/field/`): `tech-jobs`, `job-card`, `workable-job`, `job-events`, `job-event-bodies`, `job-record`, `job-use`,

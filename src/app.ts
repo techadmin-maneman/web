@@ -66,6 +66,7 @@ import { registerOpsReferrals } from "./routes/ops/referrals.ts";
 import { registerOpsTasks } from "./routes/ops/tasks.ts";
 import { registerOpsAlerts } from "./routes/ops/alerts.ts";
 import { registerOpsTechnicians } from "./routes/ops/technicians.ts";
+import { registerOpsTechnicianPay } from "./routes/ops/technician-pay.ts";
 import { registerOpsServices } from "./routes/ops/services.ts";
 import { registerOpsSettings } from "./routes/ops/settings.ts";
 import { registerOpsPrices } from "./routes/ops/prices.ts";
@@ -195,6 +196,8 @@ const SURFACE_ROUTES: Readonly<Record<Surface, readonly ((app: App) => void)[]>>
     // A one visit's payment link texted to the client again.
     registerOpsPaymentLinks,
     registerOpsTechnicians,
+    // What technicians are paid for each visit (docs/decisions/0122-technician-pay-per-visit.md).
+    registerOpsTechnicianPay,
     registerOpsSettings,
     registerOpsPrices,
     registerOpsServiceArea,
