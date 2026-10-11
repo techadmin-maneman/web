@@ -445,7 +445,7 @@ async function dispatch(browser: Browser, design: Page): Promise<void> {
     built: await drawer.screenshot(),
   });
 
-  await page.getByRole("button", { name: "Move this visit" }).click();
+  await page.getByRole("button", { name: "Move visit" }).click();
   await page.getByRole("button", { name: "Move Rohit M. to Sandeep Yadav, Sat 20 Sep, morning" }).click();
   const picker = page.getByRole("dialog", { name: "Move Rohit M. to Sandeep Yadav" });
   await picker.getByText("Fri 19 Sep, 9 am → Sat 20 Sep, 9 am").waitFor();
@@ -462,7 +462,7 @@ async function dispatch(browser: Browser, design: Page): Promise<void> {
 async function referrals(browser: Browser, design: Page): Promise<void> {
   const page = await openConsole(browser, "/referrals");
   await page.getByRole("heading", { name: "Held for review" }).waitFor();
-  await page.getByText("Opens and consultations stay here.").waitFor();
+  await page.getByRole("button", { name: "Approve" }).first().waitFor();
 
   const queue = page.getByRole("region", { name: "Held for review" });
   await pair({
@@ -485,9 +485,9 @@ async function referrals(browser: Browser, design: Page): Promise<void> {
 }
 
 async function waitlist(browser: Browser, design: Page): Promise<void> {
-  const page = await openConsole(browser, "/waitlist");
+  const page = await openConsole(browser, "/areas");
   await page.getByRole("button", { name: "Mark 400050 live, Bandra W" }).click();
-  await page.getByText("This messages 84 people").waitFor();
+  await page.getByText("Messages 84 people").waitFor();
 
   // The board's frame is the table and the confirmation, one above the other, which is the section itself.
   const column = page.locator("main > div");
@@ -507,8 +507,8 @@ async function waitlist(browser: Browser, design: Page): Promise<void> {
  */
 async function photos(browser: Browser, design: Page): Promise<void> {
   const page = await openConsole(browser, `/clients/${CLIENT_ID}/photos`, AT_1042);
-  const panel = page.getByRole("region", { name: "Photographs of Rohit Malhotra" });
-  await panel.getByRole("heading", { name: "Photographs of Rohit Malhotra" }).waitFor();
+  const panel = page.getByRole("region", { name: "Photos of Rohit Malhotra" });
+  await panel.getByRole("heading", { name: "Photos of Rohit Malhotra" }).waitFor();
   await pair({
     dir: OUT,
     width: PANEL,
@@ -581,7 +581,7 @@ async function pieces(browser: Browser, design: Page): Promise<void> {
 async function tasks(browser: Browser, design: Page): Promise<void> {
   const page = await openConsole(browser, "/tasks");
   await page.getByRole("heading", { level: 1, name: "Tasks" }).waitFor();
-  const panel = page.getByRole("region", { name: "Tasks" });
+  const panel = page.locator('section[aria-labelledby="tasks"]');
   await panel.waitFor();
   await pair({
     dir: OUT,
@@ -612,7 +612,7 @@ async function technicians(browser: Browser, design: Page): Promise<void> {
 async function consents(browser: Browser, design: Page): Promise<void> {
   const page = await openConsole(browser, `/clients/${CLIENT_ID}/consents`);
   const panel = page.getByRole("region", { name: "Consents" });
-  await page.getByText("Ops cannot grant a consent.").waitFor();
+  await panel.getByText("Photos for the visit record").waitFor();
   await pair({
     dir: OUT,
     width: PANEL,

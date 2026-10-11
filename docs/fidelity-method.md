@@ -1,6 +1,6 @@
 # The fidelity method
 
-How `npm run fidelity` pairs the design with the build. Its screenshots are in `docs/fidelity/`.
+How `npm run fidelity` pairs the design with the build. Its screenshots are in `docs/fidelity/`, last shot on 11 October 2026. Every pair is shot afresh each night on main (`.github/workflows/nightly-browser.yml`, "fidelity"), as the run's `fidelity-pairs` artifact; a script that a change broke fails the run, and the run's issue says so.
 
 ## Phase 1
 

@@ -483,7 +483,7 @@ async function steps(browser: Browser, design: Page): Promise<void> {
     },
     FRAME_HEIGHT,
   );
-  await piece.getByRole("textbox", { name: "The new piece's label" }).fill("MM-STD-4417-B");
+  await piece.getByLabel("The new piece’s label").fill("MM-STD-4417-B");
   await piece.getByRole("button", { name: "Check the label", exact: true }).click();
   // The lookup fills the base in, as the board's "Base · Mono" reads it.
   await piece.waitForFunction(() => document.querySelector<HTMLInputElement>("#piece-base")?.value === "Mono");

@@ -1,6 +1,7 @@
-# Every night, the browser tests on main, with a flaky test failing the run. A pull request's run retries a failed
-# test once and passes when the retry does, so a test that fails some of the time never shows there; here it fails
-# the run, and an issue tells whoever watches the repository (docs/runbook/ci-runner.md, "Flaky browser tests").
+# Every night, the browser tests on main, with a flaky test failing the run, and the fidelity pairs shot afresh. A pull
+# request's run retries a failed test once and passes when the retry does, so a test that fails some of the time never
+# shows there; here it fails the run, and an issue tells whoever watches the repository (docs/runbook/ci-runner.md,
+# "Flaky browser tests").
 name: nightly browser tests
 
 on:
@@ -44,9 +45,43 @@ jobs:
           path: test-results/
           retention-days: 7
 
+  # The design's frames beside the builds (docs/fidelity-method.md), shot fresh each night, so a pair is never older
+  # than a day and a script a change broke fails the run. The pairs are the run's artifact.
+  fidelity:
+    name: the design's frames beside the builds
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+      - name: Chromium for Playwright
+        run: npx playwright install --with-deps chromium
+      - name: Build the site and the Phase 2 apps (local)
+        run: |
+          npm run build:site -- --env local
+          npm run build:app -- --env local
+          npm run build:ops -- --env local
+          npm run build:tech -- --env local
+      - name: Every fidelity pair, the site's, the referral landing's and each app's
+        run: |
+          npm run fidelity
+          npm run fidelity:refer
+          npm run fidelity:app
+          npm run fidelity:ops
+          npm run fidelity:tech
+      - name: The pairs
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: fidelity-pairs
+          path: docs/fidelity/
+          retention-days: 14
+
   tell:
     name: tell whoever watches the repository
-    needs: browser
+    needs: [browser, fidelity]
     if: ${{ failure() }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
