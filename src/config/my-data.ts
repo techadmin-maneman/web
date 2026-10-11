@@ -256,6 +256,7 @@ export const MY_DATA = {
         thread: time("Chat began"),
         last_message_at: time("Last message"),
         closed_at: time("Closed"),
+        close_reason: words("What it was about"),
         direction: words("From"),
         text: text("Message"),
         sent_at: time("When"),

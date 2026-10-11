@@ -28,12 +28,25 @@ const STRANGER: Conversation = {
 let page: HTMLDivElement;
 let root: Root;
 let asked: string[];
+let posted: { path: string; body: unknown }[];
 
 beforeEach(() => {
   asked = [];
-  vi.stubGlobal("fetch", (url: string) => {
+  posted = [];
+  vi.stubGlobal("fetch", (url: string, init?: RequestInit) => {
     const address = new URL(url, "https://ops.maneman.test");
     asked.push(`${address.pathname}${address.search}`);
+    if (init?.method === "POST" && typeof init.body === "string") {
+      posted.push({ path: address.pathname, body: JSON.parse(init.body) as unknown });
+      const replied = {
+        kind: "out",
+        at: "2026-09-21T05:20:00.000Z",
+        author: "care@maneman.test",
+        text: "Yes, 6 pm works.",
+        delivery: "sent",
+      };
+      return Promise.resolve(Response.json({ conversation: { ...ARJUN, state: "waiting" }, items: [replied] }));
+    }
     if (address.pathname === "/api/conversations") {
       const view = address.searchParams.get("view");
       return Promise.resolve(Response.json({ conversations: view === "closed" ? [] : [ARJUN, STRANGER] }));
@@ -115,5 +128,32 @@ describe("the Messages page", () => {
     });
     expect(asked).toContain("/api/conversations?view=closed");
     expect(page.textContent).toContain(copy.none);
+  });
+
+  it("replies from our number, adds a note, and closes the chat with what it was about", async () => {
+    await show();
+    await act(async () => {
+      page.querySelector<HTMLButtonElement>(`button[aria-label="${copy.openLabel("Arjun Mehta")}"]`)?.click();
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
+    const box = page.querySelector("textarea");
+    act(() => {
+      if (box !== null) {
+        Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, "value")?.set?.call(box, "Yes, 6 pm works.");
+        box.dispatchEvent(new Event("input", { bubbles: true }));
+      }
+    });
+    const press = async (label: string) => {
+      await act(async () => {
+        [...page.querySelectorAll("button")].find((each) => each.textContent.trim() === label)?.click();
+        await new Promise((resolve) => setTimeout(resolve, 0));
+      });
+    };
+    await press(copy.compose.send);
+    expect(posted).toEqual([{ path: `/api/conversations/${ARJUN.id}/replies`, body: { text: "Yes, 6 pm works." } }]);
+    expect(page.querySelector('[role="status"]')?.textContent).toBe(copy.compose.sent);
+    await press(copy.compose.closeChat);
+    expect(posted.at(-1)).toEqual({ path: `/api/conversations/${ARJUN.id}/close`, body: { reason: "other" } });
+    expect(page.querySelector('[role="status"]')?.textContent).toBe(copy.compose.closed);
   });
 });

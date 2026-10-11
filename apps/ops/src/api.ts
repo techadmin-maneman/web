@@ -104,6 +104,8 @@ export type ConversationView = NonNullable<
   NonNullable<paths["/api/conversations"]["get"]["parameters"]["query"]>["view"]
 >;
 export type ThreadItem = Body<paths["/api/conversations/{id}"]["get"]>["items"][number];
+export type ChatThread = Body<paths["/api/conversations/{id}"]["get"]>;
+export type CloseReason = Sent<paths["/api/conversations/{id}/close"]["post"]>["reason"];
 /** The site's words and the WhatsApp messages, as the Words page changes them (docs/decisions/0126-the-words-page.md). */
 export type Word = Body<paths["/api/words"]["get"]>["words"][number];
 export type WordsPublish = NonNullable<Body<paths["/api/words"]["get"]>["published"]>;
@@ -511,6 +513,12 @@ export const api = {
     client.post("/api/partner-statements/{id}/payouts/{month}/delete", { path: { id, month } }),
   conversations: (view: ConversationView) => client.get("/api/conversations", { query: { view } }),
   conversation: (id: string) => client.get("/api/conversations/{id}", { path: { id } }),
+  replyChat: (id: string, text: string) =>
+    client.post("/api/conversations/{id}/replies", { path: { id }, body: { text } }),
+  noteChat: (id: string, text: string) =>
+    client.post("/api/conversations/{id}/notes", { path: { id }, body: { text } }),
+  closeChat: (id: string, reason: CloseReason) =>
+    client.post("/api/conversations/{id}/close", { path: { id }, body: { reason } }),
   words: () => client.get("/api/words"),
   wordHistory: (key: string) => client.get("/api/words/history", { query: { key } }),
   setWord: (key: string, text: string | null) => client.post("/api/words", { body: { key, text } }),

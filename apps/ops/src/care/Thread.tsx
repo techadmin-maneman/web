@@ -4,11 +4,13 @@
 import { Button } from "@maneman/ui/Button";
 import { useLoad } from "@maneman/ui/useLoad";
 import { indiaClock, indiaDate, shortDate } from "@maneman/web-kit/dates";
-import { useCallback } from "react";
-import { api, type Conversation, type ThreadItem } from "../api.ts";
+import { useCallback, useState } from "react";
+import { api, type ChatThread, type Conversation, type ThreadItem } from "../api.ts";
 import { care as copy } from "../content/care.ts";
+import { useAccess } from "../lib/access.ts";
 import { clientPath } from "../route.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
+import { Composer } from "./Composer.tsx";
 import styles from "../components/forms.module.css";
 import own from "./care.module.css";
 
@@ -46,6 +48,7 @@ function Item({ item }: { item: ThreadItem }) {
         {from} · {when(item.at)}
       </span>
       <span className={own.text}>{item.text ?? thread.erased}</span>
+      {item.kind === "out" && item.delivery === "failed" && <span className={own.failed}>{thread.notSent}</span>}
     </li>
   );
 }
@@ -53,9 +56,13 @@ function Item({ item }: { item: ThreadItem }) {
 export function Thread({ conversation, onClose }: { conversation: Conversation; onClose: () => void }) {
   const load = useCallback(() => api.conversation(conversation.id), [conversation.id]);
   const [loaded, retry] = useLoad(load);
+  /** The chat as Care's last reply, note or close left it. */
+  const [changed, setChanged] = useState<ChatThread | null>(null);
+  const [said, setSaid] = useState<string | null>(null);
+  const mayAct = useAccess().mayCall("POST /api/conversations/{id}/replies");
   if (loaded.state === "loading") return <Loading />;
   if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
-  const { items } = loaded.value;
+  const { items } = changed ?? loaded.value;
   return (
     <section className={styles.group} aria-label={thread.title(whoOf(conversation))}>
       <h3 className={styles.ruleTitle}>{thread.title(whoOf(conversation))}</h3>
@@ -77,6 +84,20 @@ export function Thread({ conversation, onClose }: { conversation: Conversation; 
             />
           ))}
         </ol>
+      )}
+      {said !== null && (
+        <p className={styles.saved} role="status">
+          {said}
+        </p>
+      )}
+      {mayAct && (
+        <Composer
+          conversationId={conversation.id}
+          onThread={(next, words) => {
+            setChanged(next);
+            setSaid(words);
+          }}
+        />
       )}
       <div className={styles.actions}>
         <Button variant="outline" size="small" className={styles.quiet} onClick={onClose}>

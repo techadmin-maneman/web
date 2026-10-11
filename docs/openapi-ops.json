@@ -4768,18 +4768,22 @@
         ],
         "additionalProperties": false
       },
-      "Conversations": {
+      "ConversationThread": {
         "type": "object",
         "properties": {
-          "conversations": {
+          "conversation": {
+            "$ref": "#/components/schemas/Conversation"
+          },
+          "items": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/Conversation"
+              "$ref": "#/components/schemas/ThreadItem"
             }
           }
         },
         "required": [
-          "conversations"
+          "conversation",
+          "items"
         ],
         "additionalProperties": false
       },
@@ -4861,25 +4865,6 @@
           "last_message_at",
           "last_line",
           "waiting_since"
-        ],
-        "additionalProperties": false
-      },
-      "ConversationThread": {
-        "type": "object",
-        "properties": {
-          "conversation": {
-            "$ref": "#/components/schemas/Conversation"
-          },
-          "items": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/ThreadItem"
-            }
-          }
-        },
-        "required": [
-          "conversation",
-          "items"
         ],
         "additionalProperties": false
       },
@@ -4991,6 +4976,72 @@
             "additionalProperties": false
           }
         ]
+      },
+      "ChatReply": {
+        "type": "object",
+        "properties": {
+          "text": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4096
+          }
+        },
+        "required": [
+          "text"
+        ],
+        "additionalProperties": false
+      },
+      "ChatNote": {
+        "type": "object",
+        "properties": {
+          "text": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4096
+          }
+        },
+        "required": [
+          "text"
+        ],
+        "additionalProperties": false
+      },
+      "ChatClose": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string",
+            "enum": [
+              "booking",
+              "move_or_cancel",
+              "fit_problem",
+              "aftercare",
+              "billing",
+              "sign_in",
+              "try_on",
+              "data_request",
+              "other"
+            ]
+          }
+        },
+        "required": [
+          "reason"
+        ],
+        "additionalProperties": false
+      },
+      "Conversations": {
+        "type": "object",
+        "properties": {
+          "conversations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Conversation"
+            }
+          }
+        },
+        "required": [
+          "conversations"
+        ],
+        "additionalProperties": false
       },
       "ReferralChannels": {
         "type": "object",
@@ -13985,6 +14036,190 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/PartnerStatements"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "access_required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/conversations/{id}/replies": {
+      "post": {
+        "summary": "Reply from our number; the reply is kept in the thread, sent or failed with why",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChatReply"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The thread as it now stands",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConversationThread"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "access_required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found: no such thread, or its client's record is erased",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "unavailable: the WhatsApp provider sends no free text yet",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/conversations/{id}/notes": {
+      "post": {
+        "summary": "A note on the thread for staff alone, never sent",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChatNote"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The thread as it now stands",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConversationThread"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "access_required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/conversations/{id}/close": {
+      "post": {
+        "summary": "Close the thread with what it was about; the client writing again reopens it",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChatClose"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The thread as it now stands",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConversationThread"
                 }
               }
             }

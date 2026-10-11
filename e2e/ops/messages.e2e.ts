@@ -31,7 +31,7 @@ test("lists the chats waiting on us, and opens one with our automatic messages i
           delivered_at: "2026-09-20T04:00:05.000Z",
           read_at: "2026-09-20T05:00:00.000Z",
         },
-        { kind: "in", at: ARJUN.last_message_at, author: "client", text: ARJUN.last_line },
+        { kind: "in", at: ARJUN.last_message_at, author: "client", text: ARJUN.last_line, delivery: null },
       ],
     }),
   });
