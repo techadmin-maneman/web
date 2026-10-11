@@ -38,7 +38,7 @@ export const guidesPage = {
 export const guides: readonly Guide[] = [
   {
     slug: "hair-system-or-transplant",
-    publish: false,
+    publish: true,
     title: "Hair system or hair transplant",
     description: "Hair system or transplant: what each involves, how soon you see a result, and who each suits.",
     lead: "Two answers to the same mirror. Here's how they differ.",
@@ -75,7 +75,7 @@ export const guides: readonly Guide[] = [
   },
   {
     slug: "what-is-a-hair-system",
-    publish: false,
+    publish: true,
     title: "What a hair system is",
     description:
       "100% real human hair on a fine base, bonded to the skin. What a hair system is made of, and why it isn't a wig.",
@@ -104,7 +104,7 @@ export const guides: readonly Guide[] = [
   },
   {
     slug: "how-a-hair-system-is-fitted",
-    publish: false,
+    publish: true,
     title: "How a hair system is fitted at home",
     description:
       "What happens when a technician fits a hair system at your home: the consultation, the colour match, the fit and the cut.",
@@ -132,7 +132,7 @@ export const guides: readonly Guide[] = [
   },
   {
     slug: "looking-after-a-hair-system",
-    publish: false,
+    publish: true,
     title: "Looking after a hair system",
     description: "Daily care for a hair system, what to do after a swim, and what happens at the monthly visit.",
     lead: "A few habits at home, and a visit about once a month.",
@@ -160,7 +160,7 @@ export const guides: readonly Guide[] = [
   },
   {
     slug: "how-long-a-hair-system-lasts",
-    publish: false,
+    publish: true,
     title: "How long a hair system lasts",
     description:
       "A hair system lasts months, not years. What decides how long yours lasts, and how to make it last longer.",
@@ -188,7 +188,7 @@ export const guides: readonly Guide[] = [
   },
   {
     slug: "what-a-hair-system-costs",
-    publish: false,
+    publish: true,
     title: "What decides the cost of a hair system",
     description:
       "What decides the price of a hair system, what you pay for and when, and why you hear the price before anything is fitted.",
@@ -218,7 +218,7 @@ export const guides: readonly Guide[] = [
 
 /** The cities we come to, as the home page's questions name them; the served pincodes decide the streets. */
 export const areasPage = {
-  publish: false,
+  publish: true,
   pageTitle: "Where we come · Mane Man",
   description: "Hair systems fitted at home across Delhi NCR: Gurgaon, Delhi, Noida, Faridabad and Ghaziabad.",
   title: "Where we come",
