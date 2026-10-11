@@ -291,19 +291,9 @@ export function registerOpsTechnicians(app: App): void {
     }
 
     const id = crypto.randomUUID();
-    const added = await addTechnician(
-      c.env.DB,
-      {
-        id,
-        name,
-        mobileE164,
-        zone: zone ?? null,
-        city: city ?? null,
-        testRecord: testRecordAtCreation(c.var.config.environment, name),
-      },
-      auditOf(c, "technician.add", id),
-      c.var.deps.now(),
-    );
+    const testRecord = testRecordAtCreation(c.var.config.environment, name);
+    const technician = { id, name, mobileE164, zone: zone ?? null, city: city ?? null, testRecord };
+    const added = await addTechnician(c.env.DB, technician, auditOf(c, "technician.add", id), c.var.deps.now());
     if (added === "number_in_use") return refuse(c, "number_in_use");
     return c.json({ id }, 201);
   });
