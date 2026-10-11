@@ -101,6 +101,10 @@ const SMALL_TABLES = new Set([
   "storage_meter",
   // One row, the dispatch board's version.
   "board_version",
+  // The Staff list and its grants, and the names the Care team go by: a row a member of staff, not a client.
+  "staff",
+  "staff_grants",
+  "care_names",
 ]);
 
 /** Statements that do read a whole table, each with why that is all right. */

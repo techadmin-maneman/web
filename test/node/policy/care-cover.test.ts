@@ -17,13 +17,13 @@ describe("a day off", () => {
 
 describe("cover", () => {
   const team = [
-    { email: "asha@maneman.test", clients: 10 },
-    { email: "lead@maneman.test", clients: 4 },
-    { email: "ravi@maneman.test", clients: 6 },
-    { email: "zara@maneman.test", clients: 3 },
+    { email: "asha@maneman.test", load: 10 },
+    { email: "lead@maneman.test", load: 4 },
+    { email: "ravi@maneman.test", load: 6 },
+    { email: "zara@maneman.test", load: 3 },
   ];
 
-  it("goes to the member on with the fewest clients, each taking on who they cover before the next", () => {
+  it("goes to the member on with the fewest open chats, each taking on who they cover before the next", () => {
     const covers = coversOf(team, new Set(["asha@maneman.test", "zara@maneman.test"]));
     expect(covers).toEqual(
       new Map([

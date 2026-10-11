@@ -49,7 +49,36 @@ beforeEach(async () => {
          created_at, updated_at)
        VALUES ('8c1d9f4b-5e6a-4b7c-9d8e-3f4a5b6c7d8e', 'p1', '+919810000001', 'open', ?1, ?1, ?1, ?1, ?1)`,
     ).bind(at),
+    // The whole team on shift, so only a day off or leave puts one of them off.
+    env.DB.prepare("UPDATE staff SET on_shift_since = ?1").bind(at),
   ]);
+});
+
+describe("a shift", () => {
+  it("is each member's own to go on and off, and off it their chats are covered", async () => {
+    const asha = opsAs(person(ASHA));
+    expect((await post(asha, "/api/care-team/shift", { on: false })).status).toBe(200);
+    expect(await memberOf(ASHA)).toMatchObject({
+      on_shift_since: null,
+      off_today: true,
+      day_off: false,
+      covered_by: LEAD,
+    });
+    await post(asha, "/api/care-team/shift", { on: true });
+    expect(await memberOf(ASHA)).toMatchObject({
+      on_shift_since: NOW.toISOString(),
+      off_today: false,
+      covered_by: null,
+    });
+    const answer = await request(asha, "/api/care-team");
+    expect(await answer.json()).toMatchObject({ me: ASHA });
+  });
+
+  it("is only for the Care team", async () => {
+    await listStaff("viewer@maneman.test", ["customer_care:view:national"]);
+    const refused = await post(opsAs(person("viewer@maneman.test")), "/api/care-team/shift", { on: true });
+    expect(await refused.json()).toMatchObject({ error: { code: "invalid_request", fields: ["on"] } });
+  });
 });
 
 describe("days off", () => {

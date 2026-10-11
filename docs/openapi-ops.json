@@ -5088,10 +5088,22 @@
             "items": {
               "$ref": "#/components/schemas/CareMember"
             }
+          },
+          "me": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The caller, by e-mail; null for a service token."
           }
         },
         "required": [
-          "team"
+          "team",
+          "me"
         ],
         "additionalProperties": false
       },
@@ -5149,7 +5161,26 @@
             }
           },
           "off_today": {
-            "type": "boolean"
+            "type": "boolean",
+            "description": "Not answering now: off shift, or on a day off or leave."
+          },
+          "on_shift_since": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "day_off": {
+            "type": "boolean",
+            "description": "A weekly day off or leave today."
+          },
+          "open_chats": {
+            "type": "integer"
           },
           "covered_by": {
             "anyOf": [
@@ -5170,6 +5201,9 @@
           "weekly_off",
           "leave",
           "off_today",
+          "on_shift_since",
+          "day_off",
+          "open_chats",
           "covered_by"
         ],
         "additionalProperties": false
@@ -5261,6 +5295,18 @@
         "required": [
           "email",
           "name"
+        ],
+        "additionalProperties": false
+      },
+      "CareShift": {
+        "type": "object",
+        "properties": {
+          "on": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "on"
         ],
         "additionalProperties": false
       },
@@ -14864,6 +14910,65 @@
           },
           "400": {
             "description": "invalid_request: fields names email when it is not one of the Care team",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "access_required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/care-team/shift": {
+      "post": {
+        "summary": "Go on shift, or off it: the caller, as a member of the Care team",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CareShift"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Done",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    }
+                  },
+                  "required": [
+                    "ok"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid_request: fields names on when the caller is not one of the Care team",
             "content": {
               "application/json": {
                 "schema": {

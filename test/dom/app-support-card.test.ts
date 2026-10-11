@@ -26,19 +26,19 @@ afterEach(() => {
 
 const draw = (carePerson: string | null) => {
   act(() => {
-    root.render(createElement(SupportCard, { carePerson }));
+    root.render(createElement(SupportCard, { carePerson, hours: { opens: 9, closes: 21 } }));
   });
 };
 
 describe("the Support card", () => {
   it("names the client's Care person", () => {
     draw("Asha");
-    expect(page.textContent).toContain(profile.support.carePerson("Asha"));
+    expect(page.textContent).toContain("Asha, your Care person · 9 am–9 pm daily");
     expect(page.textContent).toContain(profile.support.message);
   });
 
   it("says nothing of one before they have a name", () => {
     draw(null);
-    expect(page.textContent).not.toContain(profile.support.carePerson(""));
+    expect(page.textContent).not.toContain("your Care person");
   });
 });

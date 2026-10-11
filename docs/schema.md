@@ -1924,7 +1924,7 @@ Triggers: `slot_times_board_added`, `slot_times_no_delete`, `slot_times_no_updat
 
 Each member of staff on the console's Staff list, by their Access e-mail, and whether they are let in (ADR 0109).
 
-Made by `0069_staff_and_access.sql`.
+Made by `0069_staff_and_access.sql`; changed by `0121_care_shifts.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -1934,6 +1934,7 @@ Made by `0069_staff_and_access.sql`.
 | `added_at` | TEXT | no |  |  |
 | `changed_by` | TEXT | yes |  |  |
 | `changed_at` | TEXT | yes |  |  |
+| `on_shift_since` | TEXT | yes |  |  |
 
 ## staff_access_mode
 

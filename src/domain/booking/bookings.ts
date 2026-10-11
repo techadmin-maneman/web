@@ -2,6 +2,7 @@
 // visit, books it in one batch; a paid hold keeps its time until it is booked, by the half-hour pass if its request
 // failed (src/domain/booking/unbooked-holds.ts), or is given back (src/domain/booking/give-back.ts).
 
+import { giveCarePerson } from "../care/care-people.ts";
 import type { PaymentsProvider } from "../../providers/payments/index.ts";
 import { paymentsTab } from "../ops/alerts.ts";
 import { creditRedeemedFor, redeemCreditForBooking, SPENDABLE_CREDITS } from "../money/credits.ts";
@@ -378,6 +379,8 @@ function confirmationOf(hold: HoldRow): VisitMessageKind {
 async function afterBooked(db: D1Database, hold: HoldRow, now: Date, options: ConfirmOptions): Promise<void> {
   const visitId = hold.appointment_id;
   if (visitId === null || hold.move_kind === "move") return;
+  // Their Care person, at their first booking where no chat has given them one (docs/decisions/0131-care-people.md).
+  await giveCarePerson(db, hold.person_id, now);
   const kind = confirmationOf(hold);
   const told = await db
     .prepare("SELECT 1 FROM outbound_messages WHERE subject_id = ?1 AND kind = ?2")

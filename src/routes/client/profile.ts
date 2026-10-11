@@ -23,6 +23,7 @@ import { latestGrievances, type ShownGrievance } from "../../domain/ops/grievanc
 import { lastRejectedDeletion, openDeletion, requestDeletion } from "../../domain/privacy/deletion.ts";
 import { clientAudit } from "../../http/audit.ts";
 import { clientOf } from "../../http/client-session.ts";
+import { opsInputs } from "../../http/ops-inputs.ts";
 import type { App } from "../../http/context.ts";
 import { refuse } from "../../http/errors.ts";
 import { json } from "../../http/openapi.ts";
@@ -40,6 +41,10 @@ const ProfileSchema = z
     care_person: z.union([z.string(), z.null()]).openapi({
       description: "The first name of the client's Care person (ADR 0136); null until they have one with a name.",
     }),
+    care_hours: z
+      .object({ opens: z.number().int(), closes: z.number().int() })
+      .strict()
+      .openapi({ description: "The hours Customer Care are on every day, India's clock, as ops set them (ADR 0132)." }),
     // A union, not .nullable(): that would make the Address component itself nullable, request bodies and all.
     address: z.union([AddressSchema, z.null()]),
     address_given_to_ops: z.union([z.iso.datetime(), z.null()]).openapi({
@@ -152,21 +157,24 @@ export function registerClientProfile(app: App): void {
     if (person === null) return refuse(c, "session_required");
 
     const now = c.var.deps.now();
-    const [address, consents, change, decided, deletion, deletionRejected, grievances, carePerson] = await Promise.all([
-      currentAddress(db, personId),
-      consentsOf(db, personId),
-      openNumberChange(db, personId),
-      lastDecidedChange(db, personId, now),
-      openDeletion(db, personId),
-      lastRejectedDeletion(db, personId, now),
-      latestGrievances(db, personId, now),
-      careNameOf(db, personId),
-    ]);
+    const [address, consents, change, decided, deletion, deletionRejected, grievances, carePerson, inputs] =
+      await Promise.all([
+        currentAddress(db, personId),
+        consentsOf(db, personId),
+        openNumberChange(db, personId),
+        lastDecidedChange(db, personId, now),
+        openDeletion(db, personId),
+        lastRejectedDeletion(db, personId, now),
+        latestGrievances(db, personId, now),
+        careNameOf(db, personId),
+        opsInputs(c),
+      ]);
     return c.json(
       {
         name: person.name,
         mobile: maskedMobile(person.mobileE164),
         care_person: carePerson,
+        care_hours: { opens: inputs.careHours.opens, closes: inputs.careHours.closes },
         address:
           address === null
             ? null

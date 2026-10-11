@@ -419,6 +419,7 @@ const PROFILE = {
   deletion_rejected: null,
   address_given_to_ops: null,
   care_person: null,
+  care_hours: { opens: 9, closes: 21 },
   grievances: [],
 } satisfies Schemas["Profile"];
 
