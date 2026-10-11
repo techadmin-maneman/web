@@ -10,7 +10,7 @@ import { ADDRESS, pincode, VISITOR, post, site, BOOKED_MORNING } from "./consult
 beforeEach(async () => {
   await markDatabase();
   await env.DB.prepare(
-    "INSERT INTO technicians (id, fsm_id, name, initials, active, updated_at) VALUES ('t1', 't1', 'Imran Qureshi', 'IQ', 1, ?1)",
+    "INSERT INTO technicians (id, fsm_id, name, initials, active, updated_at, city) VALUES ('t1', 't1', 'Imran Qureshi', 'IQ', 1, ?1, 'Gurgaon')",
   )
     .bind(NOW.toISOString())
     .run();

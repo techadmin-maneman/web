@@ -134,13 +134,13 @@ beforeEach(async () => {
   await markDatabase();
   captureLogs();
   await env.DB.prepare(
-    "INSERT INTO technicians (id, fsm_id, name, initials, active, updated_at) VALUES ('t1', 'resource-1', 'Imran Qureshi', 'IQ', 1, ?1)",
+    "INSERT INTO technicians (id, fsm_id, name, initials, active, updated_at, city) VALUES ('t1', 'resource-1', 'Imran Qureshi', 'IQ', 1, ?1, 'Gurgaon')",
   )
     .bind(NOW.toISOString())
     .run();
   // A second, who may take the visit after one of Imran's: no technician takes two in a row.
   await env.DB.prepare(
-    "INSERT INTO technicians (id, fsm_id, name, initials, active, updated_at) VALUES ('t2', 'resource-2', 'Sandeep Rawat', 'SR', 1, ?1)",
+    "INSERT INTO technicians (id, fsm_id, name, initials, active, updated_at, city) VALUES ('t2', 'resource-2', 'Sandeep Rawat', 'SR', 1, ?1, 'Gurgaon')",
   )
     .bind(NOW.toISOString())
     .run();

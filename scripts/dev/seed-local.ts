@@ -128,7 +128,8 @@ async function seedTechnician(): Promise<void> {
   const sql = [
     `INSERT OR IGNORE INTO technicians (id, fsm_id, name, initials, active, zone, mobile_e164, updated_at)
        VALUES ${sqlRow(TECHNICIAN.id, TECHNICIAN.fsmId, TECHNICIAN.name, "SY", 1, "Gurgaon", `+91${TECHNICIAN.mobile}`, now)};`,
-    `UPDATE technicians SET active = 1, updated_at = '${now}' WHERE id = '${TECHNICIAN.id}';`,
+    // Gurgaon, where the seeded visits are: a visit goes only to a technician in its own city (ADR 0117).
+    `UPDATE technicians SET active = 1, city = 'Gurgaon', updated_at = '${now}' WHERE id = '${TECHNICIAN.id}';`,
     `INSERT OR IGNORE INTO people (id, created_at, mobile_e164, name, contactable)
        VALUES ${sqlRow(CLIENT.id, now, `+91${CLIENT.mobile}`, CLIENT.name, 1)};`,
     // No coordinates, as an address typed rather than chosen has none: "I have arrived" then passes anywhere,

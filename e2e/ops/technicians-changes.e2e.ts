@@ -132,7 +132,7 @@ test("moves a technician to another city, or to none", async ({ page }) => {
   await main.getByRole("button", { name: "Edit Imran Qureshi's details" }).click();
   const city = main.getByRole("combobox", { name: "City" });
   await expect(city).toHaveValue("Gurgaon");
-  await city.selectOption("No city");
+  await city.selectOption("No city (no bookings)");
   const sent = page.waitForRequest((request) => request.method() === "PATCH");
   await main.getByRole("button", { name: "Save" }).click();
 
