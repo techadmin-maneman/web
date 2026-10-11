@@ -3,6 +3,7 @@ import type { Linter } from "eslint";
 import { defineConfig } from "eslint/config";
 import reactHooks from "eslint-plugin-react-hooks";
 import jsxA11y from "eslint-plugin-jsx-a11y-x";
+import { FRONT_PINNED } from "./eslint.front-pinned.ts";
 import tseslint from "typescript-eslint";
 
 // A suppression comment must cite the ADR that justifies it.
@@ -129,15 +130,28 @@ export default defineConfig(
     },
   })),
   {
-    // The same sizes for the apps, the site and the scripts, as warnings while they are brought within them. The
-    // copy tables are long by nature and left out.
+    // The same sizes for the apps, the site and the scripts; a file past them today is held at its size
+    // (eslint.front-pinned.ts). The copy tables are long by nature and left out.
     files: ["apps/**/*.{ts,tsx}", "packages/**/*.{ts,tsx}", "site/src/**/*.{ts,tsx}", "scripts/**/*.ts"],
-    ignores: ["apps/*/src/content.ts", "site/src/content/**", "apps/*/src/api-schema.ts", "site/src/lib/api-schema.ts"],
+    ignores: [
+      "apps/*/src/content.ts",
+      "apps/*/src/content/**",
+      "site/src/content/**",
+      "apps/*/src/api-schema.ts",
+      "site/src/lib/api-schema.ts",
+    ],
     rules: {
-      "max-lines-per-function": sized("warn", SIZE.fn),
-      "max-lines": sized("warn", SIZE.lines),
+      "max-lines-per-function": sized("error", SIZE.fn),
+      "max-lines": sized("error", SIZE.lines),
     },
   },
+  ...Object.entries(FRONT_PINNED).map(([file, pinned]) => ({
+    files: [file],
+    rules: {
+      ...(pinned.fn === undefined ? {} : { "max-lines-per-function": sized("error", pinned.fn) }),
+      ...(pinned.lines === undefined ? {} : { "max-lines": sized("error", pinned.lines) }),
+    },
+  })),
   {
     files: ["scripts/**/*.ts"],
     rules: { "no-nested-ternary": "error" },

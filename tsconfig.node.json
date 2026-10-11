@@ -25,7 +25,8 @@
     "vitest.config.ts",
     "vitest.front.config.ts",
     "test/stalled-files.ts",
-    "eslint.config.ts"
+    "eslint.config.ts",
+    "eslint.front-pinned.ts"
   ],
   // Browser-side tooling has its own config, tsconfig.browser.json, and so does
   // every test in test/node/dom/: they run in Node but import the apps' code,
