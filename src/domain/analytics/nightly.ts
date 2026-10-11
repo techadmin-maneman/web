@@ -5,7 +5,9 @@
 
 import { addDays, indiaDate, indiaHour } from "../../lib/india-time.ts";
 import type { RunLog, TableRows, WarehouseProvider } from "../../providers/warehouse/index.ts";
+import { capacityRows, CAPACITY_DAYS_AHEAD } from "./capacity.ts";
 import { clientKeys } from "./client-key.ts";
+import { messageDayRows } from "./message-days.ts";
 import { cityRows, clientRows, dateRows, paymentRows, serviceRows, technicianRows, visitRows } from "./rows.ts";
 
 /** The free plan holds 500 MB of Postgres; told at 400, so there is time to trim or upgrade. */
@@ -46,14 +48,23 @@ export async function copyTonight(
   const payments = await paymentRows(db, keys);
   const days = [...visits.rows.map((row) => row.visit_date), ...payments.rows.map((row) => row.payment_date)];
   const first = days.filter((day) => typeof day === "string").sort()[0] ?? date;
+  const yesterday = addDays(date, -1);
+  const technicians = await technicianRows(db);
+  const cities = new Map(
+    technicians.rows.map((row) => [String(row.technician_key), typeof row.city === "string" ? row.city : null]),
+  );
+  // The first night fills every day since the first visit; each night after rewrites yesterday on.
+  const since = (await warehouse.count("fact_capacity")) === 0 && first < yesterday ? first : yesterday;
   const tables = [
     dateRows(first < date ? first : date, addDays(date, DAYS_AHEAD)),
     await cityRows(db),
-    await technicianRows(db),
+    technicians,
     await serviceRows(db),
     await clientRows(db, keys),
     visits,
     payments,
+    await capacityRows(db, cities, { from: since, to: addDays(date, CAPACITY_DAYS_AHEAD), now: startedAt }),
+    await messageDayRows(db),
   ];
   let rowsWritten = 0;
   let rowsChanged = 0;

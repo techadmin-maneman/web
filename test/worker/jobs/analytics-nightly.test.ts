@@ -104,3 +104,64 @@ describe("the nightly reporting copy", () => {
     expect(elsewhere.get("p-rohit")).not.toBe(tonight.get("p-rohit"));
   });
 });
+
+describe("the copy's capacity and messages", () => {
+  const capacityOn = (warehouse: ReturnType<typeof createStubWarehouse>, day: string) =>
+    warehouse.tables.get("fact_capacity")?.get(`${day}|${IMRAN}`);
+
+  it("holds each technician's half-slots, open and taken, with a day on leave open to nothing", async () => {
+    await env.DB.prepare(
+      `INSERT INTO technician_leave (id, technician_id, from_date, to_date, actor, created_at)
+       VALUES ('l1', ?1, '2026-09-25', '2026-09-25', 'ops@maneman.in', ?2)`,
+    )
+      .bind(IMRAN, NOW.toISOString())
+      .run();
+    const warehouse = createStubWarehouse();
+
+    await copyTonight(env.DB, warehouse, night);
+
+    expect(capacityOn(warehouse, "2026-09-20")).toMatchObject({ half_slots_open: 8, on_leave: false, city: "Gurgaon" });
+    expect(capacityOn(warehouse, "2026-09-20")?.half_slots_taken).toBeGreaterThan(0);
+    expect(capacityOn(warehouse, "2026-09-24")).toMatchObject({ half_slots_open: 8, half_slots_taken: 0 });
+    expect(capacityOn(warehouse, "2026-09-25")).toMatchObject({ half_slots_open: 0, on_leave: true });
+    expect(capacityOn(warehouse, "2026-10-18")).toBeDefined();
+    expect(capacityOn(warehouse, "2026-10-19")).toBeUndefined();
+  });
+
+  it("keeps a day already worked as it was written", async () => {
+    const warehouse = createStubWarehouse();
+    await copyTonight(env.DB, warehouse, night);
+    const worked = capacityOn(warehouse, "2026-09-20");
+    await env.DB.prepare("UPDATE appointments SET status = 'cancelled' WHERE id = 'v-rohit'").run();
+
+    await copyTonight(env.DB, warehouse, { ...night, date: "2026-09-23" });
+
+    expect(capacityOn(warehouse, "2026-09-20")).toEqual(worked);
+  });
+
+  it("counts the messages sent each day by kind, leaving test records out", async () => {
+    const message = (id: string, personId: string, state: string) =>
+      env.DB.prepare(
+        `INSERT INTO outbound_messages (id, created_at, person_id, kind, subject_id, state, sent_at, delivered_at)
+         VALUES (?1, '2026-09-20T04:00:00Z', ?2, 'visit_reminder', 'v-rohit', ?3, '2026-09-20T04:00:01Z',
+           CASE WHEN ?3 = 'sent' THEN '2026-09-20T04:00:05Z' END)`,
+      ).bind(id, personId, state);
+    await env.DB.batch([
+      message("m1", "p-rohit", "sent"),
+      message("m2", "p-rohit", "failed"),
+      message("m3", "p-test", "sent"),
+    ]);
+    const warehouse = createStubWarehouse();
+
+    await copyTonight(env.DB, warehouse, night);
+
+    expect(warehouse.tables.get("fact_message_day")?.get("2026-09-20|visit_reminder")).toEqual({
+      day: "2026-09-20",
+      kind: "visit_reminder",
+      sent: 1,
+      delivered: 1,
+      read: 0,
+      failed: 1,
+    });
+  });
+});

@@ -19,12 +19,15 @@ export function createStubWarehouse(): StubWarehouse {
     tables,
     runs,
     ranOn: (date) => Promise.resolve(runs.some((run) => run.date === date)),
-    replace: ({ table, key, rows }: TableRows) => {
+    replace: ({ table, key, rows, keepBefore }: TableRows) => {
       const held = tables.get(table) ?? new Map<string, Row>();
-      const tonight = new Map(rows.map((row) => [keyOf(row, key), row] as const));
+      const kept = [...held].filter(
+        ([, row]) => keepBefore !== undefined && String(row[keepBefore.column]) < keepBefore.from,
+      );
+      const tonight = new Map([...kept, ...rows.map((row) => [keyOf(row, key), row] as const)]);
       let changed = 0;
-      for (const [name, row] of tonight) {
-        const was = held.get(name);
+      for (const row of rows) {
+        const was = held.get(keyOf(row, key));
         if (was === undefined || !same(row, was)) changed += 1;
       }
       tables.set(table, tonight);
