@@ -1,22 +1,27 @@
 // How a lead found us, for the growth figures (docs/decisions/0148-the-channel-rule.md). A client keeps the channel of
 // their first lead for life. A lead is a friend's referral or a partner's when the client came through one before it;
-// otherwise its click ID, its campaign tags and the page it came from decide. A campaign's city is the first word of its
-// name, or none for a name that starts with "national".
+// a lead Care saved from a chat, what the client told them; otherwise its click ID, its campaign tags and the page it
+// came from decide. A campaign's city is the first word of its name, or none for a name that starts with "national".
 
 import { slugOf } from "../lib/slug.ts";
 
 /** The channels, in the order the figures list them, each with its group: the names the dashboards are built on. */
 export const CHANNELS = [
-  { channel: "Google Ads", group: "Paid" },
-  { channel: "Meta Ads", group: "Paid" },
-  { channel: "Referral", group: "Referral" },
-  { channel: "Organic search", group: "Organic" },
-  { channel: "Direct", group: "Direct" },
-  { channel: "Offline and partners", group: "Offline" },
-  { channel: "Organic social", group: "Organic" },
+  { code: "google_ads", channel: "Google Ads", group: "Paid" },
+  { code: "meta_ads", channel: "Meta Ads", group: "Paid" },
+  { code: "referral", channel: "Referral", group: "Referral" },
+  { code: "organic_search", channel: "Organic search", group: "Organic" },
+  { code: "direct", channel: "Direct", group: "Direct" },
+  { code: "partner", channel: "Offline and partners", group: "Offline" },
+  { code: "organic_social", channel: "Organic social", group: "Organic" },
 ] as const;
 
 export type Channel = (typeof CHANNELS)[number]["channel"];
+
+/** A channel as a lead stores it, where the client told Care how they found us. */
+export type ChannelCode = (typeof CHANNELS)[number]["code"];
+
+export const CHANNEL_CODES = CHANNELS.map((each) => each.code) as [ChannelCode, ...ChannelCode[]];
 
 export interface LeadTouch {
   readonly utmSource: string | null;
@@ -27,6 +32,8 @@ export interface LeadTouch {
   /** A friend's invite, or a partner's code, the client came through before this lead. */
   readonly referredBefore: boolean;
   readonly partnerBefore: boolean;
+  /** What the client told Care, for a lead saved from a chat; null where the site's tags tell. */
+  readonly foundUs: string | null;
 }
 
 const SEARCH = ["google", "bing", "duckduckgo", "yahoo", "ecosia"];
@@ -51,6 +58,8 @@ const isOneOf = (names: readonly string[], value: string) =>
 export function channelOf(touch: LeadTouch): Channel {
   if (touch.referredBefore) return "Referral";
   if (touch.partnerBefore) return "Offline and partners";
+  const told = CHANNELS.find((each) => each.code === touch.foundUs);
+  if (told !== undefined) return told.channel;
   const source = lower(touch.utmSource);
   const paid = PAID.includes(lower(touch.utmMedium));
   if (touch.gclid !== null || (paid && source === "google")) return "Google Ads";

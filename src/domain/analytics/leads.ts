@@ -23,6 +23,7 @@ interface LeadRow {
   readonly gclid: string | null;
   readonly fbclid: string | null;
   readonly referrer: string | null;
+  readonly found_us: string | null;
   readonly referred_before: number;
   readonly partner_before: number;
   readonly consultation_booked: string | null;
@@ -62,7 +63,7 @@ export async function leadTables(
   const { results } = await db
     .prepare(
       `SELECT l.id, l.person_id, p.erased_at IS NOT NULL AS erased, l.created_at, l.city, l.source, l.landing_path,
-         l.utm_source, l.utm_medium, l.utm_campaign, l.gclid, l.fbclid, l.referrer,
+         l.utm_source, l.utm_medium, l.utm_campaign, l.gclid, l.fbclid, l.referrer, l.found_us,
          EXISTS (SELECT 1 FROM referral_attributions r WHERE r.referred_person_id = l.person_id
            AND r.first_touch_at <= l.created_at) AS referred_before,
          EXISTS (SELECT 1 FROM channel_attributions c WHERE c.referred_person_id = l.person_id
@@ -89,6 +90,7 @@ export async function leadTables(
       referrer: row.referrer,
       referredBefore: row.referred_before === 1,
       partnerBefore: row.partner_before === 1,
+      foundUs: row.found_us,
     });
     const campaign = campaignKeyOf(row.utm_campaign);
     if (campaign !== null && !campaigns.has(campaign)) {

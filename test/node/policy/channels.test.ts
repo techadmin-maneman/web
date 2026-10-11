@@ -12,6 +12,7 @@ const NONE: LeadTouch = {
   referrer: null,
   referredBefore: false,
   partnerBefore: false,
+  foundUs: null,
 };
 
 describe("a lead's channel", () => {
