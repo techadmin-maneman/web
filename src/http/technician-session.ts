@@ -37,10 +37,13 @@ export const requireTechnicianSession = createMiddleware<AppEnv>(async (c, next)
   const now = c.var.deps.now();
   if (token === null) return refuse(c, "session_required");
 
-  // The device is read first: revoking one, or switching its technician off, ends its session too, and the phone
-  // must hear which, not just that it is logged out.
+  // The device is checked first: revoking one, or switching its technician off, ends its session too, and the phone
+  // must hear which, not just that it is logged out. It is read beside the session, in one round trip to D1.
   const sessionId = await sha256Hex(token);
-  const device = await deviceOfSession(c.env.DB, sessionId);
+  const [device, session] = await Promise.all([
+    deviceOfSession(c.env.DB, sessionId),
+    findSession(c.env.DB, "technician", token, now),
+  ]);
   if (device !== null && device.revokedAt !== null) {
     await markWiped(c.env.DB, device.id, now);
     clearTechnicianCookie(c);
@@ -55,7 +58,6 @@ export const requireTechnicianSession = createMiddleware<AppEnv>(async (c, next)
     return refuse(c, "technician_inactive");
   }
 
-  const session = await findSession(c.env.DB, "technician", token, now);
   if (session === null || device === null) return refuse(c, "session_required");
 
   if (now.getTime() - session.lastSeenAt.getTime() > SESSION_TOUCH_MS) {

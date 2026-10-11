@@ -145,9 +145,9 @@ export const booking = {
    */
   lateFee: {
     /** The notice is the one the visit is sold under, which ops set: 24 hours to begin with. */
-    costs: (amount: string, hours: number) => `Moving inside ${String(hours)} hours costs ${amount}`,
+    costs: (amount: string, hours: number) => `Moving or cancelling inside ${String(hours)} hours costs ${amount}`,
     split: (split: string) => ` (${split})`,
-    rest: ". The balance carries over.",
+    rest: ". The rest moves with your visit, or comes back to you.",
   },
   // Said to a screen reader, once, a minute before the hold lapses.
   lastMinute: "One minute left to pay. Then the time is released.",

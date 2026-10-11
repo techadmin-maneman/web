@@ -4,8 +4,10 @@
 //
 // The board's layout: the viewfinder with its framing guide — the head's
 // dashed outline, the hairline, the corners — so every visit's photos
-// are framed alike and the client's comparison lines up; the five angle tiles;
-// and at the foot, where every screen keeps its action, Retake beside Capture.
+// are framed alike and the client's comparison lines up; the five angle tiles,
+// each showing its photograph once taken, and a tap on one still on the phone
+// takes that angle again; and at the foot, where every screen keeps its action,
+// Retake beside Capture.
 // Once the five are in, the same key finishes the step. Nothing slides here:
 // nothing moves while the camera is capturing.
 //
@@ -36,6 +38,7 @@ import { dropFrame, events as queuedEvents, frames as keptFrames, keepFrame } fr
 import { ANGLES, anglesRefused, anglesTaken, type TakenAngle } from "../lib/sets.ts";
 import { captureFrame } from "./capture.ts";
 import { useCamera } from "./useCamera.ts";
+import { useThumbnails } from "./useThumbnails.ts";
 import styles from "./capture.module.css";
 
 /** Why a refused set is open again: the angles still to take again, or the set as a whole. Null once nothing is. */
@@ -76,6 +79,7 @@ export function CaptureScreen({ id, phase }: { id: string; phase: Phase }) {
   const [missed, setMissed] = useState(false);
   const [, once] = useOneAtATime();
   const settled = useSettled();
+  const pictures = useThumbnails(taken);
 
   /**
    * The camera and the element arrive in either order — the job's card may still
@@ -126,13 +130,14 @@ export function CaptureScreen({ id, phase }: { id: string; phase: Phase }) {
       }
     });
 
-  // Only a frame on the phone can be taken again: a photograph that reached us stays.
+  // Only a frame on the phone can be taken again: a photograph that reached us stays. The angle let go is the first
+  // not taken, so it is the one taken next.
   const lastOnPhone = taken.at(-1)?.frameId ?? null;
-  const retake = () =>
+  const retake = (frameId: string | null) =>
     once(async () => {
-      if (lastOnPhone === null) return;
-      await dropFrame(lastOnPhone);
-      setTaken((already) => already.slice(0, -1));
+      if (frameId === null) return;
+      await dropFrame(frameId);
+      setTaken((already) => already.filter((one) => one.frameId !== frameId));
     });
 
   if (loaded.state === "loading") return <Loading />;
@@ -151,7 +156,7 @@ export function CaptureScreen({ id, phase }: { id: string; phase: Phase }) {
         size="action"
         className={styles.retake}
         disabled={lastOnPhone === null}
-        onClick={() => void retake()}
+        onClick={() => void retake(lastOnPhone)}
       >
         {copy.retake}
       </Button>
@@ -220,11 +225,28 @@ export function CaptureScreen({ id, phase }: { id: string; phase: Phase }) {
       </div>
 
       <ul className={styles.tiles}>
-        {ANGLES.map((name) => (
-          <li className={styles.tile} key={name} data-state={tileState(name, taken, angle)}>
-            <span className={styles.tileLabel}>{copy.angles[name]}</span>
-          </li>
-        ))}
+        {ANGLES.map((name) => {
+          const frameId = taken.find((one) => one.angle === name)?.frameId ?? null;
+          const picture = frameId === null ? undefined : pictures.get(frameId);
+          const label = <span className={styles.tileLabel}>{copy.angles[name]}</span>;
+          return (
+            <li className={styles.tile} key={name} data-state={tileState(name, taken, angle)}>
+              {picture !== undefined && <img className={styles.tilePicture} src={picture} alt="" />}
+              {frameId === null ? (
+                label
+              ) : (
+                <button
+                  type="button"
+                  className={styles.tileRetake}
+                  aria-label={copy.retakeAngle(copy.angles[name])}
+                  onClick={() => void retake(frameId)}
+                >
+                  {label}
+                </button>
+              )}
+            </li>
+          );
+        })}
       </ul>
     </StepFrame>
   );

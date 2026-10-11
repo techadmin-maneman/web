@@ -492,7 +492,7 @@ export function NoShowsScreen() {
     setRulings((count) => count + 1);
   }, []);
   return (
-    <Shell section="/no-shows" title={noShows.title}>
+    <Shell section="/payments" title={noShows.title}>
       <div className={styles.column}>
         <Money key={`money-${String(rulings)}`} />
         <Disputes onRuled={ruled} />

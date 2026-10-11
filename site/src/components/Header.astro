@@ -2,6 +2,10 @@
 // The fixed header. Below 760 px the section links and the area tag hide; v2
 // has no menu button there, so there is none.
 import { header } from "../content/site.ts";
+
+// A page that is itself the booking form offers no button to it.
+const path = Astro.url.pathname.replace(/\/+$/, "");
+const booking = path === "/book" || path.startsWith("/r/") || path === "/r";
 ---
 
 <div class="space" aria-hidden="true"></div>
@@ -23,9 +27,11 @@ import { header } from "../content/site.ts";
       ))}
     </nav>
     <span class="area caps wide-only">{header.area}</span>
-    <a class="btn btn--sm btn--line-on-ink" href="/book">
-      {header.book}
-    </a>
+    {!booking && (
+      <a class="btn btn--sm btn--line-on-ink" href="/book">
+        {header.book}
+      </a>
+    )}
   </div>
 </header>
 

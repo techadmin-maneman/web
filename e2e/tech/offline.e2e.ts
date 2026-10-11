@@ -125,6 +125,7 @@ test("the day the phone cached goes when the technician signs out", async ({ pag
   expect(Object.keys(await cachedPaths(page))).toContain("mm-tech-day");
 
   await page.getByRole("button", { name: "Sign out" }).click();
+  await page.getByRole("alert").getByRole("button", { name: "Sign out" }).click();
   await expect(page.getByRole("heading", { level: 1, name: "Technician sign in" })).toBeVisible();
   expect(Object.keys(await cachedPaths(page))).not.toContain("mm-tech-day");
 });

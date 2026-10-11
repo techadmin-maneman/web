@@ -1,6 +1,8 @@
 // One client's record on the ops surface behind Access (Ops Console, B1 to B3;
 // docs/decisions/0031-access-and-audit.md). Finding a client is here; each section of their page has its file beside
 // it: the record (./client-record.ts), the photographs (./client-photos.ts) and the consents (./client-consents.ts).
+//   GET  /api/clients                      every client in the caller's cities, the soonest next visit first, by
+//                                          where they stand and city, a page at a time
 //   POST /api/clients/search               find a client by their whole mobile number
 //   POST /api/clients/find                 find clients by part of a name or of a number
 //   GET  /api/clients/:id                  who they are, their address, their visits, their payments, payment links
@@ -23,6 +25,7 @@
 
 import { createRoute, z } from "@hono/zod-openapi";
 import { typedDigits } from "@maneman/web-kit/mobile";
+import { CLIENTS_PER_PAGE, listClients } from "../../domain/clients/client-list.ts";
 import { fittedSql } from "../../domain/clients/fitted.ts";
 import { reachBinding, withinReach } from "../../domain/clients/places.ts";
 import { CLIENT_STATES, clientStateOf, UPCOMING_STATUSES } from "../../domain/visits/client-visits.ts";
@@ -116,6 +119,48 @@ const findRoute = createRoute({
   },
 });
 
+const listRoute = createRoute({
+  method: "get",
+  path: "/api/clients",
+  summary: "Every client in the caller's cities, the soonest next visit first, then those with none, newest first",
+  request: {
+    query: z.object({
+      state: z.enum(CLIENT_STATES).optional().openapi({ description: "Where they stand; any, left out." }),
+      city: z.string().trim().min(1).max(60).optional(),
+      page: z.coerce.number().int().min(0).max(10_000).optional().openapi({ description: "From 0." }),
+    }),
+  },
+  responses: {
+    200: {
+      description: "A page of the list",
+      ...json(
+        z
+          .object({
+            clients: z.array(
+              z
+                .object({
+                  id: z.uuid(),
+                  name: z.string(),
+                  mobile: z.string(),
+                  state: z.enum(CLIENT_STATES),
+                  city: z.union([z.string(), z.null()]).openapi({
+                    description: "Their address's city, else where they last booked or asked to be told.",
+                  }),
+                  next_visit: z.union([z.iso.datetime(), z.null()]),
+                })
+                .strict(),
+            ),
+            more: z.boolean().openapi({ description: `Another page of ${String(CLIENTS_PER_PAGE)} follows.` }),
+            cities: z.array(z.string()).openapi({ description: "The cities served that the caller reaches, by name." }),
+          })
+          .strict()
+          .openapi("ClientList"),
+      ),
+    },
+    400: errorResponse("invalid_request"),
+  },
+});
+
 /** What a search looks in: the number, when it is digits as a number is typed, else the name. */
 type Search = { readonly by: "number" | "name"; readonly text: string };
 
@@ -129,6 +174,34 @@ function searchOf(typed: string): Search | null {
 const containing = (text: string): string => `%${text.replace(/[\\%_]/g, (character) => `\\${character}`)}%`;
 
 export function registerOpsClients(app: App): void {
+  app.openapi(listRoute, async (c) => {
+    const { state, city, page } = c.req.valid("query");
+    const reach = reachBinding(await routeReach(c));
+    const [listed, served] = await Promise.all([
+      listClients(c.env.DB, { state, city, page: page ?? 0, reach }),
+      c.env.DB.prepare(
+        "SELECT name FROM cities WHERE served = 1 AND (?1 IS NULL OR name IN (SELECT value FROM json_each(?1))) ORDER BY name",
+      )
+        .bind(reach)
+        .all<{ name: string }>(),
+    ]);
+    return c.json(
+      {
+        clients: listed.clients.map((client) => ({
+          id: client.id,
+          name: client.name,
+          mobile: client.mobile,
+          state: client.state,
+          city: client.city,
+          next_visit: client.nextVisit,
+        })),
+        more: listed.more,
+        cities: served.results.map((row) => row.name),
+      },
+      200,
+    );
+  });
+
   app.openapi(searchRoute, async (c) => {
     const mobile = toE164(c.req.valid("json").mobile);
     if (mobile === null) return refuse(c, "invalid_request", ["mobile"]);

@@ -99,18 +99,20 @@ export async function storeTechnicianPhoto({
   if (info === null) return { kind: "not_an_image" };
 
   const at = now.toISOString();
-  await db
-    .prepare(
-      `INSERT INTO photo_sets (id, appointment_id, phase, created_at) VALUES (?1, ?2, ?3, ?4)
-       ON CONFLICT (appointment_id, phase) DO NOTHING`,
-    )
-    .bind(crypto.randomUUID(), slot.appointmentId, slot.phase, at)
-    .run();
-  const set = await db
-    .prepare("SELECT id FROM photo_sets WHERE appointment_id = ?1 AND phase = ?2")
-    .bind(slot.appointmentId, slot.phase)
-    .first<{ id: string }>();
-  if (set === null) throw new Error("the photo set was not written");
+  // The set, made if it is the phase's first photograph, and its ID, in one round trip to D1.
+  const [, chosen] = await db.batch<{ id: string }>([
+    db
+      .prepare(
+        `INSERT INTO photo_sets (id, appointment_id, phase, created_at) VALUES (?1, ?2, ?3, ?4)
+         ON CONFLICT (appointment_id, phase) DO NOTHING`,
+      )
+      .bind(crypto.randomUUID(), slot.appointmentId, slot.phase, at),
+    db
+      .prepare("SELECT id FROM photo_sets WHERE appointment_id = ?1 AND phase = ?2")
+      .bind(slot.appointmentId, slot.phase),
+  ]);
+  const set = chosen?.results[0];
+  if (set === undefined) throw new Error("the photo set was not written");
 
   const take = crypto.randomUUID();
   const key = `${takeKey(slot, take)}.${fileExtension(info.type)}`;

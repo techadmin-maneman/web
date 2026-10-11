@@ -424,5 +424,6 @@ test("asks before a sign-out would lose unsent work, sends it first if asked, an
   await expect(page.getByRole("link", { name: /action waiting/ })).toHaveCount(0);
   expect(fake.writes.at(-1)?.path).toBe(`/api/tech/jobs/${JOB_ID}/start`);
   await account.click();
+  await page.getByRole("alert").getByRole("button", { name: "Sign out" }).click();
   await expect(page.getByRole("heading", { level: 1, name: "Technician sign in" })).toBeVisible();
 });

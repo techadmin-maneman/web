@@ -38,6 +38,7 @@ import {
   type HistoryForm,
   type Measurement,
 } from "@maneman/web-kit/hair-profile";
+import { BaseInCentimetres, Chips, Figure, type Option } from "./ProfileFields.tsx";
 import { StepFrame } from "./StepFrame.tsx";
 import { useStep } from "./useStep.ts";
 import styles from "./steps.module.css";
@@ -62,11 +63,6 @@ function useDraft(jobId: string): { readonly read: boolean; readonly draft: Draf
     };
   }, [jobId]);
   return kept;
-}
-
-interface Option<T> {
-  readonly id: T;
-  readonly label: string;
 }
 
 const HEAD: readonly Measurement[] = [
@@ -105,84 +101,6 @@ function startingPoint(
   if (sent !== null) return { fit: sent.fit, history: sent.history, basedOn: sent.based_on };
   const latest = job.profile;
   return { fit: latest?.fit ?? null, history: latest?.history ?? null, basedOn: latest?.id ?? null };
-}
-
-/** A list of choices under its title, one tap each. */
-function Chips<T extends string | number>({
-  title,
-  options,
-  isChosen,
-  onChoose,
-}: {
-  title: string;
-  options: readonly Option<T>[];
-  isChosen: (id: T) => boolean;
-  onChoose: (id: T) => void;
-}) {
-  const titleId = useId();
-  return (
-    <section className={styles.field} aria-labelledby={titleId}>
-      <h2 className={capsLook(styles.fieldTitle)} id={titleId}>
-        {title}
-      </h2>
-      <div className={styles.chips}>
-        {options.map((option) => (
-          <button
-            key={option.id}
-            className={isChosen(option.id) ? styles.chipOn : styles.chip}
-            type="button"
-            aria-pressed={isChosen(option.id)}
-            onClick={() => {
-              onChoose(option.id);
-            }}
-          >
-            {option.label}
-          </button>
-        ))}
-      </div>
-    </section>
-  );
-}
-
-/** One figure, typed, with the range it must be in said beneath it while it is not. */
-function Figure({
-  label,
-  value,
-  invalid,
-  hint,
-  onChange,
-}: {
-  label: string;
-  value: string;
-  invalid: boolean;
-  hint: string;
-  onChange: (text: string) => void;
-}) {
-  const id = useId();
-  return (
-    <div className={styles.figure}>
-      <label className={styles.fieldLabel} htmlFor={id}>
-        {label}
-      </label>
-      <input
-        className={styles.box64}
-        id={id}
-        value={value}
-        inputMode="decimal"
-        autoComplete="off"
-        aria-invalid={invalid}
-        aria-describedby={invalid ? `${id}-hint` : undefined}
-        onChange={(event) => {
-          onChange(event.target.value);
-        }}
-      />
-      {invalid && (
-        <p className={styles.hint} id={`${id}-hint`}>
-          {hint}
-        </p>
-      )}
-    </div>
-  );
 }
 
 function FitFields({
@@ -238,6 +156,7 @@ function FitFields({
           {copy.sections.base}
         </h2>
         <div className={styles.figures}>{BASE.map(figure)}</div>
+        <BaseInCentimetres width={typed.base_width_in} length={typed.base_length_in} />
       </section>
       <Chips
         title={copy.sections.colour}
@@ -311,6 +230,7 @@ function HistoryFields({
         onChoose={(id) => {
           onChange({ ...form, remedies: toggleRemedy(form.remedies, id) });
         }}
+        many
       />
       {form.remedies.includes("transplant") && (
         <div className={styles.field}>

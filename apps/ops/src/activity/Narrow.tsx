@@ -2,7 +2,7 @@
 // narrowed to from a link to it (../route.ts, activityPath), and shown above the form as a filter to take off.
 
 import { Button } from "@maneman/ui/Button";
-import { DateInput, Field, Select, TextInput } from "@maneman/ui/Field";
+import { Checkbox, DateInput, Field, Select, TextInput } from "@maneman/ui/Field";
 import { useState } from "react";
 import { activity } from "../content/activity.ts";
 import styles from "./activity.module.css";
@@ -98,6 +98,14 @@ export function Narrow({ filters, onApply }: { filters: Filters; onApply: (filte
       <Choice label={copy.action} any={copy.anyAction} options={ACTION_OPTIONS} {...box("action")} />
       <DateBox label={copy.from} {...box("from")} />
       <DateBox label={copy.to} {...box("to")} />
+      <Checkbox
+        className={styles.reads}
+        label={copy.reads}
+        checked={draft.reads === "include"}
+        onChange={(event) => {
+          setDraft({ ...draft, reads: event.target.checked ? "include" : undefined });
+        }}
+      />
       <div className={styles.apply}>
         <Button variant="primary" size="small" type="submit">
           {copy.show}

@@ -303,6 +303,42 @@
 }
 
 /* A visit left partly done that ops closed without a follow-up, beneath its state. */
+/* Every client, beneath the search: how they are narrowed, the table, and its pages. */
+.list {
+  margin-top: var(--sp-32);
+  max-width: var(--ops-list);
+}
+
+.listNarrow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-16);
+  margin: var(--sp-12) 0 var(--sp-16);
+}
+
+.listScroll {
+  overflow-x: auto;
+}
+
+.listPages {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-12);
+  margin-top: var(--sp-16);
+}
+
+.listPage {
+  font-size: var(--fs-14);
+  color: var(--text-muted);
+}
+
+/* A visit's own action, beneath where it stands in its row. */
+.rowAction {
+  display: flex;
+  width: fit-content;
+  margin-top: var(--sp-8);
+}
+
 .closedLine {
   display: block;
   margin-top: var(--sp-3);

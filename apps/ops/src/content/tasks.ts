@@ -41,6 +41,8 @@ const DECIDE: Readonly<Partial<Record<Group, string>>> = {
 export const tasks = {
   title: "Tasks",
   /** The head's count, in oxblood, as the board writes "4 overdue". */
+  // Not drawn: the list's heading, the tasks open, as the page's bar already says "Tasks".
+  openCount: (count: number) => `${String(count)} open`,
   overdue: (count: number) => `${String(count)} overdue`,
   /** The head's count as a screen reader names it, with what it does. */
   overdueJump: (count: number) => `${String(count)} overdue, go to the first`,

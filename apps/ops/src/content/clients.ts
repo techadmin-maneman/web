@@ -31,6 +31,23 @@ export const clients = {
       unknown: FAILED,
     } as Readonly<Record<string, string>>,
   },
+  /** Not drawn: every client, beneath the search, narrowed by where they stand and city. */
+  list: {
+    title: "All clients",
+    name: "Name",
+    mobile: "Mobile",
+    state: "Status",
+    anyState: "Any status",
+    city: "City",
+    anyCity: "Any city",
+    noCity: "Not known",
+    nextVisit: "Next visit",
+    noVisit: "None booked",
+    none: "No client stands so here.",
+    previous: "Previous",
+    next: "Next",
+    page: (page: number) => `Page ${String(page)}`,
+  },
   /**
    * The line beneath the name. The board draws five: tier, status, the usual
    * technician, credits and when a replacement is due. Nothing records a tier

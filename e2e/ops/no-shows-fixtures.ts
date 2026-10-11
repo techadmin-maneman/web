@@ -37,7 +37,7 @@ export const PREVIEW = `GET /api/no-shows/${CASE}/charge` as const satisfies Cal
 export async function open(
   page: Page,
   decision = json({ decided: true }),
-  path = "/no-shows",
+  path = "/payments",
   ruling = json({ ruled: true }),
 ): Promise<void> {
   await answer(page, {

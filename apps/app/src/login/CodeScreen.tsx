@@ -152,6 +152,9 @@ export function CodeScreen(props: Props) {
           onChange={(typed) => {
             setCode(typed);
             setTypedSince(problem);
+            // The sixth digit sends the code: Continue is there for a code pasted while the screen was busy.
+            if (typed.length === ONE_TIME_CODE.digits && typed !== code && !closed && !props.busy)
+              props.onVerify(typed);
           }}
         />
         {message !== null && (

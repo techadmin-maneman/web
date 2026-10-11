@@ -186,7 +186,7 @@ export function NotHome({ job, queued, card }: { job: Job; queued: readonly Queu
           <p className={capsLook(styles.stageLabel)}>{copy.arrived.step}</p>
           <p className={styles.stageBody}>{copy.arrived.body(job.checkin_radius_m)}</p>
           {saysWhenItOpens && (
-            <p className={styles.stageWarn} role="status">
+            <p className={styles.stageOpens} role="status">
               {copy.arrived.opensAt(clock(job.checkin_from))}
             </p>
           )}

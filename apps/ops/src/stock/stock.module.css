@@ -19,6 +19,12 @@
   overflow-x: auto;
 }
 
+/* The kit shown beside the central store, once there are too many for a column each. */
+.kitPicker {
+  max-width: var(--measure-form);
+  margin-bottom: var(--sp-16);
+}
+
 /* A place's figure, and beneath it when it was last counted. */
 .held {
   font-variant-numeric: tabular-nums;

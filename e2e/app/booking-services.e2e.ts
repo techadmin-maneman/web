@@ -218,5 +218,5 @@ test("says a late change keeps the payment, never a late fee, where the booking 
   await toPayment(page);
   const pay = page.getByRole("dialog", { name: "Pay and confirm" });
   await expect(pay.getByText(FREE_UNTIL)).toBeVisible();
-  await expect(pay.getByText(/Moving inside/)).toHaveCount(0);
+  await expect(pay.getByText(/Moving or cancelling inside/)).toHaveCount(0);
 });
