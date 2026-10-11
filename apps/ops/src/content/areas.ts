@@ -50,6 +50,7 @@ export const areas = {
       not_permitted: NOT_PERMITTED,
       not_found: "Unknown pincode. Add it first.",
       launch_in_future: "The launch date must be today or earlier.",
+      no_technician: "No technician works in this city yet. Add one in Technicians first.",
       offline: OFFLINE,
       unknown: FAILED,
     } as Readonly<Record<string, string>>,
@@ -134,6 +135,7 @@ export const areas = {
       not_permitted: NOT_PERMITTED,
       no_service_area: "At least one pincode must stay served.",
       launch_in_future: "Launch dates must be today or earlier.",
+      no_technician: "No technician works in that city yet. Add one in Technicians first.",
       /** A pincode we do not hold: one is added below, never by the file. */
       invalid_request: "Unknown pincode. Add it first.",
       offline: OFFLINE,

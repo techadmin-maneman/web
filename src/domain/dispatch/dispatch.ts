@@ -158,16 +158,32 @@ export async function planMove(db: D1Database, input: MoveInput, now: Date): Pro
 
   // The check runs before anything is written. The job's own time does not
   // count against its own move.
-  const [held, ontoBlackout, clientVisits, inTheCity] = await Promise.all([
+  const [held, ontoBlackout, clientVisits, inTheCity, cityTechnicians] = await Promise.all([
     occupancy({ db, from: date, to: date, now, exceptVisitId: job.id }),
     movesOntoBlackout(db, job, date),
     visitsOfClient(db, job.person_id, job.id),
     worksWhereTheVisitIs(db, job, technicianId),
+    roomTechnicians(db, job),
   ]);
   if (!inTheCity) return { kind: "refused", reason: "other_city" };
   const blackoutReason = ontoBlackout ? (input.blackoutReason ?? null) : null;
   const placing = { minutes: bookedMinutes(job), start: wasStart };
-  const beside = breaksRotation(clientVisits, { technicianId: job.technician_id, date: indiaDate(wasStart) }, target);
+  const from = { technicianId: job.technician_id, date: indiaDate(wasStart) };
+  // Never the technician of the client's visit before or after, unless nobody else in the city has room (ADR 0117).
+  const someoneElseFits = cityTechnicians.some((each) => {
+    if (each.id === technicianId) return false;
+    const theirs = targetOf({ job, technicianId: each.id, place: { date, window }, schedule, now });
+    if (breaksRotation(clientVisits, from, theirs)) return false;
+    const fit = landingOf({
+      day: held(each.id, date),
+      job: placing,
+      target: theirs,
+      blackoutWithoutReason: false,
+      beside: false,
+    });
+    return fit.kind !== "refused";
+  });
+  const beside = breaksRotation(clientVisits, from, target) && someoneElseFits;
   const landing = landingOf({
     day: held(technicianId, date),
     job: placing,
@@ -428,20 +444,35 @@ export async function dispatchRoomFor(
   ]);
   const visit = { minutes: bookedMinutes(job), start: new Date(job.window_start) };
   const from = { technicianId: job.technician_id, date: indiaDate(visit.start) };
+  /** Where the job would land with a technician in a window, rotation aside; null where it would not. */
+  const landsWith = (technicianId: string, date: string, window: BookingWindow) => {
+    const target = targetOf({ job, technicianId, place: { date, window }, schedule, now });
+    if (isWhereItIs(job, target)) return null;
+    const landing = landingOf({
+      day: held(technicianId, date),
+      job: visit,
+      target,
+      blackoutWithoutReason: false,
+      beside: false,
+    });
+    if (landing.kind === "refused") return null;
+    const startsAt = timesAt(target, landing.start, visit, schedule).start.toISOString();
+    return { startsAt, beside: breaksRotation(clientVisits, from, target) };
+  };
+  // Never the technician of the client's visit before or after, unless nobody else in the city has room (ADR 0117).
+  const othersHaveRoom = (date: string, window: BookingWindow) =>
+    technicians.some((technician) => {
+      // The job staying where it is counts as room: it need not go to the barred technician.
+      if (isWhereItIs(job, targetOf({ job, technicianId: technician.id, place: { date, window }, schedule, now }))) {
+        return true;
+      }
+      return landsWith(technician.id, date, window)?.beside === false;
+    });
   const startsFor = (technicianId: string, date: string): RoomStart[] =>
     BOOKING_WINDOWS.flatMap((window) => {
-      const target = targetOf({ job, technicianId, place: { date, window }, schedule, now });
-      if (isWhereItIs(job, target)) return [];
-      const beside = breaksRotation(clientVisits, from, target);
-      const landing = landingOf({
-        day: held(technicianId, date),
-        job: visit,
-        target,
-        blackoutWithoutReason: false,
-        beside,
-      });
-      if (landing.kind === "refused") return [];
-      return [{ window, starts_at: timesAt(target, landing.start, visit, schedule).start.toISOString() }];
+      const lands = landsWith(technicianId, date, window);
+      if (lands === null || (lands.beside && othersHaveRoom(date, window))) return [];
+      return [{ window, starts_at: lands.startsAt }];
     });
   const roomOn = (technicianId: string, date: string): Room => {
     const starts = startsFor(technicianId, date);

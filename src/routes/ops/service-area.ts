@@ -134,6 +134,9 @@ const setServiceAreaRoute = createRoute({
         "serve from a day still to come. no_service_area: it would leave none served",
     ),
     403: errorResponse("access_required"),
+    409: errorResponse(
+      "no_technician: fields names a pincode it would begin serving in a city no active technician works in",
+    ),
   },
 });
 
@@ -156,6 +159,7 @@ export function registerOpsServiceArea(app: App): void {
       if (result.kind === "launch_in_future") {
         return refuse(c, "launch_in_future", result.pincodes);
       }
+      if (result.kind === "no_technician") return refuse(c, "no_technician", result.pincodes);
       return refuse(c, "invalid_request", result.pincodes);
     }
     await queuePacedMessages(c, result.alerts);

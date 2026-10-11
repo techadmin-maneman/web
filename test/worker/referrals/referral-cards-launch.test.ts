@@ -9,10 +9,12 @@ import { openSession } from "../../../src/domain/sign-in/sessions.ts";
 import { composeLaunchAlert } from "../../../src/domain/booking/waitlist.ts";
 import { WAITLIST_AREAS } from "../../../src/routes/ops/waitlist.ts";
 import { captureLogs, fakeQueue, markDatabase, NOW, request, fittedAndPhotographed } from "../helpers.ts";
+import { aTechnicianInEveryCity } from "../clients.ts";
 import { PERSON, FRIEND, CODE, ops, consent } from "./referral-cards-fixtures.ts";
 
 beforeEach(async () => {
   await markDatabase();
+  await aTechnicianInEveryCity();
   captureLogs();
   await env.DB.prepare(
     "INSERT INTO people (id, created_at, mobile_e164, name) VALUES (?1, ?2, '+919810000001', 'Rohit Malhotra')",
@@ -229,6 +231,19 @@ describe("the waitlist and a launch", () => {
     const answer = await launch({ confirm: true, launch_on: "2026-09-22" }, queue);
     expect(answer.status).toBe(400);
     expect(await answer.json()).toMatchObject({ error: { code: "launch_in_future", fields: ["launch_on"] } });
+    expect(queue.sent).toEqual([]);
+    const pincode = await env.DB.prepare("SELECT served, launched_at FROM serviceable_pincodes").first();
+    expect(pincode).toEqual({ served: 0, launched_at: null });
+  });
+
+  // Live where no technician works, the waitlist would be told we come and could book nothing (ADR 0117).
+  it("refuses a launch in a city no technician works in, and sends nothing", async () => {
+    await waiting(true);
+    await env.DB.prepare("UPDATE technicians SET active = 0 WHERE city = 'Mumbai'").run();
+    const queue = fakeQueue();
+    const answer = await launch({ confirm: true }, queue);
+    expect(answer.status).toBe(409);
+    expect(await answer.json()).toMatchObject({ error: { code: "no_technician" } });
     expect(queue.sent).toEqual([]);
     const pincode = await env.DB.prepare("SELECT served, launched_at FROM serviceable_pincodes").first();
     expect(pincode).toEqual({ served: 0, launched_at: null });
