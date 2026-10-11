@@ -11,7 +11,7 @@ export type WordRefusal =
 const HOLE = /\{\{\d+\}\}|\{[a-zA-Z]+\}/g;
 
 /** "Rs." or a rupee sign before a digit: a price written into a sentence, where the price book fills a hole. */
-const TYPED_PRICE = /(?:Rs\.|₹)\s?\d/;
+const TYPED_PRICE = /(?:Rs\.|\u20B9)\s?\d/;
 
 /** A count of visits a referral earns, in figures or in words, which what ops set builds. */
 const TYPED_VISITS =
