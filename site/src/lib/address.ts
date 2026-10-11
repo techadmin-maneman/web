@@ -3,7 +3,6 @@
 // are the client app's; the pincode is the one the page has already checked, so it is never typed again.
 
 import type { TypedAddress } from "./api.ts";
-import { isOneOf } from "@rules/lib/one-of.ts";
 
 /** What the form holds: each part as typed. */
 export interface AddressFields {
@@ -21,10 +20,6 @@ export interface AddressFields {
 /** The parts an address is not one without, in the order the form asks for them. */
 const REQUIRED = ["flat", "line1", "locality", "city"] as const;
 export type RequiredPart = (typeof REQUIRED)[number];
-
-export function isRequiredPart(part: keyof AddressFields): part is RequiredPart {
-  return isOneOf(REQUIRED, part);
-}
 
 /** A new address, in the city of the pincode checked where we know it. */
 export function emptyAddress(city: string | null): AddressFields {

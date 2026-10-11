@@ -502,7 +502,7 @@ test("a booking without the address is stopped at the form, each part it needs m
   await expect(page.getByText(referralCopy.referral.address.errors.city)).toBeVisible();
   await expect(page.getByLabel(referralCopy.referral.address.labels.flat)).toHaveAttribute("aria-invalid", "true");
   await expect(page.getByLabel(referralCopy.referral.address.labels.line1)).toHaveAttribute("aria-invalid", "true");
-  await expect(page.getByLabel(referralCopy.referral.address.labels.line2)).toHaveAttribute("aria-invalid", "false");
+  await expect(page.getByLabel(referralCopy.referral.address.labels.line2)).not.toHaveAttribute("aria-invalid", "true");
   expect(requests).toHaveLength(0);
 
   await fillAddress(page);
