@@ -43,6 +43,16 @@ function agreeing(count: number, one: string, many: string): string {
 /** The friend's visits, or none where the reward is not known. */
 const friendVisits = (reward: ReferralReward | null): number => reward?.friend_visits ?? 0;
 
+/**
+ * What an invite earns each side: the reward ops set, or a partner's own, which gives the friend its visits and the
+ * partner nothing in visits (docs/decisions/0123-partner-referral-channels.md).
+ */
+export function inviteReward(invite: Invite | null, reward: ReferralReward | null): ReferralReward | null {
+  const visits = invite?.partner === null ? null : (invite?.friend_visits ?? null);
+  if (visits === null) return reward;
+  return { referrer_visits: 0, friend_visits: visits, valid_days: reward?.valid_days ?? 0 };
+}
+
 /** The navy block's offer: what the invite earns each side. Null where it earns nobody anything. */
 function inviteOffer(reward: ReferralReward): string | null {
   const { referrer_visits: referrer, friend_visits: friend } = reward;
@@ -92,6 +102,7 @@ export const referral = {
   /** The navy block at the top, before the pincode is known. */
   arrival: {
     invited: "{name} sent you this",
+    partner: "Recommended by {partner}",
     unnamed: "You have an invite",
     title: "A hair system, fitted at home. The consultation is free.",
     offer: inviteOffer,
@@ -362,21 +373,23 @@ export const referral = {
   preview: {
     title: "{name} sent you a Mane Man invite",
     titleUnnamed: "You have a Mane Man invite",
+    titlePartner: "Mane Man, recommended by {partner}",
     description: (friend: number) =>
       `Home-fitted hair systems across ${serviceArea}. ${serviceVisits(friend)} free when you’re fitted.`,
     descriptionWithout: `Home-fitted hair systems across ${serviceArea}.`,
   },
 };
 
-/** The title a shared invite carries. */
-export function inviteTitle(name: string | null): string {
+/** The title a shared invite carries: a partner's names the partner (docs/decisions/0123-partner-referral-channels.md). */
+export function inviteTitle(name: string | null, partner: string | null = null): string {
+  if (partner !== null) return fill(referral.preview.titlePartner, { partner });
   return name === null ? referral.preview.titleUnnamed : fill(referral.preview.title, { name });
 }
 
 /** The browser tab's title: the invite's own, or /book's for a code we do not know, which the page is headed as. */
 export function invitePageTitle(invite: Invite | null): string {
   if (invite?.state === "unknown") return pageTitles.book;
-  return inviteTitle(invite?.referrer_first_name ?? null);
+  return inviteTitle(invite?.referrer_first_name ?? null, invite?.partner ?? null);
 }
 
 /**
@@ -384,7 +397,7 @@ export function invitePageTitle(invite: Invite | null): string {
  * read, and never a count the reward does not give or that is not known.
  */
 export function inviteDescription(invite: Invite | null, reward: ReferralReward | null): string {
-  const friend = friendVisits(reward);
+  const friend = friendVisits(inviteReward(invite, reward));
   if (invite?.state !== "valid" || friend === 0) return referral.preview.descriptionWithout;
   return referral.preview.description(friend);
 }

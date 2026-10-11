@@ -1,9 +1,7 @@
-// Referrals: the grants the fraud rules held,
-// each approved or rejected here, over every referrer's figures. Approving a
-// grant releases its credits. The board asks for a reason on either decision,
-// the server refuses one without it, and it is kept with the decision under
-// whoever Access says is signed in (docs/decisions/0048-referrals.md,
-// src/policy/decision-reasons.ts).
+// Referrals: the grants the fraud rules held, each approved or rejected here, over every referrer's figures, and the
+// partners who refer on their own code (./Partners.tsx). Approving a grant releases its credits. The board asks for a
+// reason on either decision, the server refuses one without it, and it is kept with the decision under whoever Access
+// says is signed in (docs/decisions/0048-referrals.md, src/policy/decision-reasons.ts).
 //
 // Each name in a held pair is a way to that client's page, and each grant says
 // how long it has been held, as the board writes it.
@@ -16,7 +14,7 @@ import { Field, TextArea } from "@maneman/ui/Field";
 import { Table } from "@maneman/ui/Table";
 import { useLoad } from "@maneman/ui/useLoad";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
-import { useEffect, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { api, type Held, type Referrer } from "../api.ts";
 import { DecisionQueue } from "../components/DecisionQueue.tsx";
 import { OpsLink, Shell } from "../components/Shell.tsx";
@@ -28,6 +26,9 @@ import { Loading, PanelFailed } from "../states/States.tsx";
 import { Narrowing, SortHeads, TableEnd } from "../components/TableTools.tsx";
 import { useTableView, type Column } from "../components/useTableView.ts";
 import styles from "./referrals.module.css";
+
+/** The partners' panel, fetched as the page draws it: it stays out of the console's first load. */
+const Partners = lazy(() => import("./Partners.tsx").then((module) => ({ default: module.Partners })));
 
 type Choice = "approve" | "reject";
 
@@ -348,6 +349,9 @@ export function ReferralsScreen() {
           }}
         />
         <ReferrersTable version={version} />
+        <Suspense fallback={<Loading />}>
+          <Partners />
+        </Suspense>
       </div>
     </Shell>
   );

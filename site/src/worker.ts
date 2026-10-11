@@ -172,7 +172,7 @@ class Meta {
     const image = this.invite === null ? HOUSE_CARD : cardPath(this.invite, this.code);
     const description = inviteDescription(this.invite, this.reward);
     if (element.getAttribute("name") === "description") element.setAttribute("content", description);
-    if (property === "og:title") element.setAttribute("content", inviteTitle(name));
+    if (property === "og:title") element.setAttribute("content", inviteTitle(name, this.invite?.partner ?? null));
     if (property === "og:description") element.setAttribute("content", description);
     if (property === "og:image" || property === "og:image:secure_url") {
       element.setAttribute("content", this.origin + image);

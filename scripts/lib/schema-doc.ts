@@ -172,6 +172,10 @@ export const PURPOSES: Readonly<Record<string, string>> = {
   tryon_sessions:
     "The try-on gate's session, which showed a visitor their result (ADR 0014); written no more since the look goes to WhatsApp only (ADR 0104).",
   visit_blackouts: "Days on which no visit is offered.",
+  referral_channels:
+    "Partners who send us clients on their own code: the friend's reward and the partner's commission (ADR 0123).",
+  channel_attributions:
+    "A person who came through a partner's code, and what the friend and the partner earned once fitted (ADR 0123).",
   city_blackouts: "Days on which no visit is offered in one city alone (ADR 0119).",
   visit_changes:
     "Each move or cancel a client made, and each cancel ops made, with its notice and what it cost (ADR 0046).",

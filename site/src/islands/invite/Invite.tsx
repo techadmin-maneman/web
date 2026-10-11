@@ -28,7 +28,7 @@
 // page, which the design draws, asks for everything in one form.
 
 import { useEffect, useRef, useState } from "preact/hooks";
-import { referral } from "../../content/referral.ts";
+import { inviteReward, referral } from "../../content/referral.ts";
 import { booking } from "../../content/site.ts";
 import { PRICES_SHOWN } from "../../lib/flags.ts";
 import { type Invite as InviteAnswer, type PincodeAnswer } from "../../lib/api.ts";
@@ -86,6 +86,12 @@ function bookingTitle(answer: PincodeAnswer | null, plan: Plan): string {
 }
 
 /** The invite's heading, which for a code we do not know promises nothing the invite would have. */
+/** Who the invite is from: a partner, a client who agreed to be named, or no one named. */
+function fromLine(name: string | null, partner: string | null): string {
+  if (partner !== null) return fill(referral.arrival.partner, { partner });
+  return name === null ? referral.arrival.unnamed : fill(referral.arrival.invited, { name });
+}
+
 function inviteHeading(invite: InviteAnswer | null): string {
   if (invite?.state === "unknown") return referral.arrival.unknown.title;
   return referral.arrival.title;
@@ -93,7 +99,9 @@ function inviteHeading(invite: InviteAnswer | null): string {
 
 export default function Invite(props: Props) {
   const invited = (props.mode ?? "invited") === "invited";
-  const { invite, prices, reward } = useLandingData(invited);
+  const landing = useLandingData(invited);
+  const { invite, prices } = landing;
+  const reward = inviteReward(invite, landing.reward);
   const [state, setState] = useState<State>("arrival");
   // Kept here rather than in the form, so the page's heading follows it and a changed pincode keeps it.
   const [plan, setPlan] = useState<Plan>("consultation");
@@ -196,11 +204,7 @@ export default function Invite(props: Props) {
     <section class={styles.arrival}>
       <div class={`${styles.inner} ${styles.grid}`}>
         <div class={styles.lead}>
-          {invited && !unknown && (
-            <div class={`caps ${styles.from}`}>
-              {name === null ? referral.arrival.unnamed : fill(referral.arrival.invited, { name })}
-            </div>
-          )}
+          {invited && !unknown && <div class={`caps ${styles.from}`}>{fromLine(name, invite?.partner ?? null)}</div>}
           <h1 ref={heading} tabIndex={-1} class={styles.title}>
             {invited ? inviteHeading(invite) : bookingTitle(answer, plan)}
           </h1>

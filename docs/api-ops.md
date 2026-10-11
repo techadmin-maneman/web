@@ -1330,6 +1330,158 @@ Request body:
 }
 ```
 
+### GET /api/referral-channels
+
+Every partner, with what has come through each
+
+**200**: The partners as they now stand
+
+```json
+{
+  "$ref": "#/components/schemas/ReferralChannels"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/referral-channels
+
+Add a partner: its code is made for it
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/ReferralChannelAdd"
+}
+```
+
+**200**: The partners as they now stand
+
+```json
+{
+  "$ref": "#/components/schemas/ReferralChannels"
+}
+```
+
+**400**: invalid_request: fields names name, friend_visits, valid_days or commission
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**409**: taken: a partner has that name
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### PATCH /api/referral-channels/{id}
+
+Change a partner's name or terms; a friend fitted from now on earns the new terms
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/ReferralChannelChange"
+}
+```
+
+**200**: The partners as they now stand
+
+```json
+{
+  "$ref": "#/components/schemas/ReferralChannels"
+}
+```
+
+**400**: invalid_request: fields names name, friend_visits, valid_days or commission
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**409**: taken: another partner has that name
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/referral-channels/{id}/pause
+
+Pause a partner, so nobody new comes through its code, or take the pause off
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/ReferralChannelPause"
+}
+```
+
+**200**: The partners as they now stand
+
+```json
+{
+  "$ref": "#/components/schemas/ReferralChannels"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ### GET /api/grievances
 
 Open grievances in the caller's cities, oldest first, as Tasks counts them: none of an erased client's
@@ -9804,6 +9956,204 @@ Request body:
   "required": [
     "decision",
     "reason"
+  ],
+  "additionalProperties": false
+}
+```
+
+### ReferralChannels
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "channels": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string",
+            "description": "The partner's code, as its link and QR carry it: /r/<code>."
+          },
+          "friend_visits": {
+            "type": "integer"
+          },
+          "valid_days": {
+            "type": "integer"
+          },
+          "commission": {
+            "type": "integer",
+            "description": "Paise for each friend fitted; 0 for none."
+          },
+          "paused_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "opens": {
+            "type": "integer",
+            "description": "The invite page opened, once a day for each address."
+          },
+          "referred": {
+            "type": "integer",
+            "description": "People who came through the code."
+          },
+          "fitted": {
+            "type": "integer",
+            "description": "Of those, fitted: the friend's visits given, the commission earned."
+          },
+          "earned": {
+            "type": "integer",
+            "description": "Paise earned, at the commission in force when each was fitted."
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "code",
+          "friend_visits",
+          "valid_days",
+          "commission",
+          "paused_at",
+          "opens",
+          "referred",
+          "fitted",
+          "earned"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "limits": {
+      "type": "object",
+      "properties": {
+        "max_visits": {
+          "type": "integer"
+        },
+        "min_days": {
+          "type": "integer"
+        },
+        "max_days": {
+          "type": "integer"
+        },
+        "max_commission": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "max_visits",
+        "min_days",
+        "max_days",
+        "max_commission"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "channels",
+    "limits"
+  ],
+  "additionalProperties": false
+}
+```
+
+### ReferralChannelAdd
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "pattern": "^[\\p{L}\\p{N}][\\p{L}\\p{N} .,'()&/-]{0,59}$/u"
+    },
+    "friend_visits": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 12
+    },
+    "valid_days": {
+      "type": "integer",
+      "minimum": 30,
+      "maximum": 1095
+    },
+    "commission": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 5000000
+    }
+  },
+  "required": [
+    "name",
+    "friend_visits",
+    "valid_days",
+    "commission"
+  ],
+  "additionalProperties": false
+}
+```
+
+### ReferralChannelChange
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "pattern": "^[\\p{L}\\p{N}][\\p{L}\\p{N} .,'()&/-]{0,59}$/u"
+    },
+    "friend_visits": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 12
+    },
+    "valid_days": {
+      "type": "integer",
+      "minimum": 30,
+      "maximum": 1095
+    },
+    "commission": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 5000000
+    }
+  },
+  "required": [
+    "name",
+    "friend_visits",
+    "valid_days",
+    "commission"
+  ],
+  "additionalProperties": false
+}
+```
+
+### ReferralChannelPause
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "paused": {
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "paused"
   ],
   "additionalProperties": false
 }

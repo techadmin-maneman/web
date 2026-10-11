@@ -11,6 +11,7 @@ const WRITERS: Readonly<Record<string, readonly string[]>> = {
     "src/domain/money/payment-links-paid.ts",
     "src/domain/messages/queued-messages.ts",
     "src/domain/referrals/referral-grants.ts",
+    "src/domain/referrals/channel-grants.ts",
     "src/domain/no-shows/ruling-claims.ts",
     "src/domain/try-on/tryon-claims.ts",
     "src/domain/messages/visit-messages.ts",
@@ -19,6 +20,7 @@ const WRITERS: Readonly<Record<string, readonly string[]>> = {
   credit_ledger: [
     "src/domain/money/credits.ts",
     "src/domain/referrals/referral-grants.ts",
+    "src/domain/referrals/channel-grants.ts",
     "src/domain/no-shows/ruling-claims.ts",
     "src/domain/visits/visit-cancel.ts",
   ],

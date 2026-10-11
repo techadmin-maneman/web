@@ -112,7 +112,13 @@ describe("GET /api/r/:code", () => {
   it("names the referrer only with their consent to the invite's current lines", async () => {
     const code = await codeOf();
     const read = async (settings = {}) => (await request(site(settings), `/api/r/${code}`)).json();
-    expect(await read()).toEqual({ state: "valid", referrer_first_name: null, card: { state: "house", version: 1 } });
+    expect(await read()).toEqual({
+      state: "valid",
+      referrer_first_name: null,
+      partner: null,
+      friend_visits: null,
+      card: { state: "house", version: 1 },
+    });
     await cardConsent("photos-referral-cards-v1");
     expect(await read()).toMatchObject({ referrer_first_name: null });
     await cardConsent("photos-referral-cards-v2");
@@ -143,6 +149,8 @@ describe("GET /api/r/:code", () => {
     expect(await (await request(site(), `/api/r/${code}`)).json()).toEqual({
       state: "valid",
       referrer_first_name: null,
+      partner: null,
+      friend_visits: null,
       card: { state: "house", version: 2 },
     });
   });

@@ -8,7 +8,13 @@ import { describe, expect, it } from "vitest";
 import { empty, refer } from "../../../../apps/app/src/content.ts";
 import { inviteDescription, inviteTitle } from "../../../../site/src/content/referral.ts";
 
-const VALID = { state: "valid" as const, referrer_first_name: null, card: { state: "house" as const, version: 1 } };
+const VALID = {
+  state: "valid" as const,
+  referrer_first_name: null,
+  partner: null,
+  friend_visits: null,
+  card: { state: "house" as const, version: 1 },
+};
 
 describe("the app's preview of an invite", () => {
   it("is titled as the landing's preview, named and not", () => {

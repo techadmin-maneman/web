@@ -134,6 +134,10 @@ export const ROUTE_NEEDS: Readonly<Record<string, RouteNeed | typeof SIGNED_IN>>
   // Growth: referrals, the waitlist, and adding and launching a pincode, each kept to the caller's cities. The service
   // area lists every pincode we know, in every city, with how many wait in each, so it stays national.
   "GET /api/referrals/held": inOwnPlaces("growth", "view"),
+  "GET /api/referral-channels": need("growth", "view"),
+  "POST /api/referral-channels": need("growth", "manage"),
+  "PATCH /api/referral-channels/{id}": need("growth", "manage"),
+  "POST /api/referral-channels/{id}/pause": need("growth", "manage"),
   "POST /api/referrals/{id}/decision": inOwnPlaces("growth", "act"),
   "GET /api/referrers": inOwnPlaces("growth", "view"),
   "POST /api/clients/{id}/referral": inOwnPlaces("growth", "act"),

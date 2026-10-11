@@ -42,12 +42,12 @@ export default defineConfig({
     assetsInlineLimit: 0,
     sourcemap: false,
     // The console's copy, one file a feature (src/content/), in one chunk: its words compress best together, and
-    // scattered over the shared chunks they cost the first load more than a kilobyte. Activity's, read only by its
-    // page, which loads when opened, stays in that page's chunk.
+    // scattered over the shared chunks they cost the first load more than a kilobyte. Activity's and the Partners
+    // panel's, each read only by its own page, which loads when opened, stay in that page's chunk.
     rolldownOptions: {
       output: {
         advancedChunks: {
-          groups: [{ name: "content", test: /[\\/]src[\\/]content(?:[\\/](?!activity\.ts$)|\.ts$)/ }],
+          groups: [{ name: "content", test: /[\\/]src[\\/]content(?:[\\/](?!(?:activity|partners)\.ts$)|\.ts$)/ }],
         },
       },
     },

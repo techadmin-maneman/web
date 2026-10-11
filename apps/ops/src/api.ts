@@ -90,6 +90,10 @@ export type SettingValue = OpsSetting["value"];
 export type Blackout = Body<paths["/api/blackouts"]["get"]>["blackouts"][number];
 type BlackoutAdd = Sent<paths["/api/blackouts"]["post"]>;
 type BlackoutRemove = Sent<paths["/api/blackouts/remove"]["post"]>;
+/** Partners who send us clients on their own code (docs/decisions/0123-partner-referral-channels.md). */
+export type Partners = Body<paths["/api/referral-channels"]["get"]>;
+export type Partner = Partners["channels"][number];
+export type PartnerTerms = Sent<paths["/api/referral-channels"]["post"]>;
 /** Discount codes, and a code on a client's visit (docs/decisions/0108-discount-codes.md). */
 export type DiscountCodes = Body<paths["/api/discount-codes"]["get"]>;
 export type DiscountCode = Body<paths["/api/discount-codes"]["get"]>["codes"][number];
@@ -476,6 +480,12 @@ export const api = {
   restoreService: (kind: Kind, tier: string) =>
     client.post("/api/services/{kind}/{tier}/restore", { path: { kind, tier } }),
   /** Every day from today on that no visit is offered, with what is still booked on each. */
+  partners: () => client.get("/api/referral-channels"),
+  addPartner: (terms: PartnerTerms) => client.post("/api/referral-channels", { body: terms }),
+  changePartner: (id: string, terms: PartnerTerms) =>
+    client.patch("/api/referral-channels/{id}", { path: { id }, body: terms }),
+  pausePartner: (id: string, paused: boolean) =>
+    client.post("/api/referral-channels/{id}/pause", { path: { id }, body: { paused } }),
   blackouts: () => client.get("/api/blackouts"),
   /** Every day from the first to the last, both included. A day already blacked out takes this reason. */
   addBlackouts: (period: BlackoutAdd) => client.post("/api/blackouts", { body: period }),

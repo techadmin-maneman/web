@@ -1834,6 +1834,240 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/referral-channels": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Every partner, with what has come through each */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The partners as they now stand */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ReferralChannels"];
+                    };
+                };
+                /** @description access_required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        /** Add a partner: its code is made for it */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["ReferralChannelAdd"];
+                };
+            };
+            responses: {
+                /** @description The partners as they now stand */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ReferralChannels"];
+                    };
+                };
+                /** @description invalid_request: fields names name, friend_visits, valid_days or commission */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description access_required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description taken: a partner has that name */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/referral-channels/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Change a partner's name or terms; a friend fitted from now on earns the new terms */
+        patch: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["ReferralChannelChange"];
+                };
+            };
+            responses: {
+                /** @description The partners as they now stand */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ReferralChannels"];
+                    };
+                };
+                /** @description invalid_request: fields names name, friend_visits, valid_days or commission */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description access_required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description not_found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description taken: another partner has that name */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        trace?: never;
+    };
+    "/api/referral-channels/{id}/pause": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Pause a partner, so nobody new comes through its code, or take the pause off */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["ReferralChannelPause"];
+                };
+            };
+            responses: {
+                /** @description The partners as they now stand */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ReferralChannels"];
+                    };
+                };
+                /** @description access_required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description not_found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/grievances": {
         parameters: {
             query?: never;
@@ -8426,6 +8660,49 @@ export interface components {
             decision: "approve" | "reject";
             /** @description Required either way, and kept with the decision (src/policy/decision-reasons.ts). */
             reason: string | null;
+        };
+        ReferralChannels: {
+            channels: {
+                /** Format: uuid */
+                id: string;
+                name: string;
+                /** @description The partner's code, as its link and QR carry it: /r/<code>. */
+                code: string;
+                friend_visits: number;
+                valid_days: number;
+                /** @description Paise for each friend fitted; 0 for none. */
+                commission: number;
+                paused_at: string | null;
+                /** @description The invite page opened, once a day for each address. */
+                opens: number;
+                /** @description People who came through the code. */
+                referred: number;
+                /** @description Of those, fitted: the friend's visits given, the commission earned. */
+                fitted: number;
+                /** @description Paise earned, at the commission in force when each was fitted. */
+                earned: number;
+            }[];
+            limits: {
+                max_visits: number;
+                min_days: number;
+                max_days: number;
+                max_commission: number;
+            };
+        };
+        ReferralChannelAdd: {
+            name: string;
+            friend_visits: number;
+            valid_days: number;
+            commission: number;
+        };
+        ReferralChannelChange: {
+            name: string;
+            friend_visits: number;
+            valid_days: number;
+            commission: number;
+        };
+        ReferralChannelPause: {
+            paused: boolean;
         };
         GrievanceAnswer: {
             response: string;

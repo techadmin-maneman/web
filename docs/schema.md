@@ -45,6 +45,7 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 - [appointments](#appointments): Each visit, mirrored from FSM or booked without it: when, with whom, of what type and in what state, and what we have learnt of each since, such as the window asked for and its invoice. `fsm_id` is FSM's ID for a visit FSM holds, otherwise the row's own (ADR 0032, ADR 0110).
 - [audit_log](#audit_log): Every ops action that reads or changes a client's data, and who took it. An entry is never changed (ADR 0031).
 - [board_version](#board_version): One row: a number that triggers raise whenever a visit, a move, leave, a technician or the day's slot times change, so the open dispatch board reads itself again only then (ADR 0069).
+- [channel_attributions](#channel_attributions): A person who came through a partner's code, and what the friend and the partner earned once fitted (ADR 0123).
 - [checkins](#checkins): Each "I have arrived", passed or not, with the distance measured and the radius in force (ADR 0065); an erasure blanks where the phone was (ADR 0094).
 - [checklist_items](#checklist_items): Each kind of visit's checklist as ops set it, an item they took off kept as retired; a kind with no rows takes the committed list (ADR 0087).
 - [cities](#cities): The cities the site's first booking form offered. The leads it left name one, a booking's lead names its pincode's, the dispatch board filters by them, and a zone groups them for staff access (ADR 0109).
@@ -93,6 +94,7 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 - [price_book](#price_book): Every price from its date, and the only source of prices; an old row stays for what was sold under it (ADR 0045, ADR 0061).
 - [razorpay_events](#razorpay_events): Each Razorpay webhook event, once, by its event ID (ADR 0044).
 - [referral_attributions](#referral_attributions): A person who came through an invite, to the first invite they used, what became of its grant, and who attached it and why where ops did (ADR 0048, ADR 0089).
+- [referral_channels](#referral_channels): Partners who send us clients on their own code: the friend's reward and the partner's commission (ADR 0123).
 - [referral_codes](#referral_codes): A client's invite code, the version of their card, and how often the invite was opened (ADR 0048).
 - [refunds](#refunds): The mirror of Razorpay's refunds, and where each stands in Books (ADR 0044).
 - [serviceable_pincodes](#serviceable_pincodes): Every NCR pincode, its area and city, and whether and since when we serve it (ADR 0048, ADR 0061).
@@ -280,6 +282,34 @@ Made by `0090_board_version.sql`.
 | --- | --- | --- | --- | --- |
 | `id` | INTEGER | no |  | primary key |
 | `version` | INTEGER | no |  |  |
+
+## channel_attributions
+
+A person who came through a partner's code, and what the friend and the partner earned once fitted (ADR 0123).
+
+Made by `0109_referral_channels.sql`.
+
+| Column | Type | May be empty | Default | Key |
+| --- | --- | --- | --- | --- |
+| `id` | TEXT | no |  | primary key |
+| `channel_id` | TEXT | no |  | → `referral_channels.id` |
+| `referred_person_id` | TEXT | no |  | → `people.id` |
+| `first_touch_at` | TEXT | no |  |  |
+| `via` | TEXT | no |  |  |
+| `pincode` | TEXT | yes |  |  |
+| `first_fit_appointment_id` | TEXT | yes |  | → `appointments.id` |
+| `grant_state` | TEXT | no | `'pending'` |  |
+| `friend_visits` | INTEGER | yes |  |  |
+| `valid_days` | INTEGER | yes |  |  |
+| `commission` | INTEGER | yes |  |  |
+| `granted_at` | TEXT | yes |  |  |
+| `created_at` | TEXT | no |  |  |
+| `updated_at` | TEXT | no |  |  |
+
+Indexes:
+
+- `channel_attributions_by_channel`: on (`channel_id`, `grant_state`)
+- A `UNIQUE` constraint: unique on (`referred_person_id`)
 
 ## checkins
 
@@ -1434,6 +1464,32 @@ Indexes:
 - `referral_attributions_held`: on (`code`), where `grant_state = 'held'`
 - `referral_attributions_pending`: on (`referred_person_id`), where `grant_state = 'pending'`
 - A `UNIQUE` constraint: unique on (`referred_person_id`)
+
+## referral_channels
+
+Partners who send us clients on their own code: the friend's reward and the partner's commission (ADR 0123).
+
+Made by `0109_referral_channels.sql`.
+
+| Column | Type | May be empty | Default | Key |
+| --- | --- | --- | --- | --- |
+| `id` | TEXT | no |  | primary key |
+| `name` | TEXT | no |  |  |
+| `code` | TEXT | no |  |  |
+| `friend_visits` | INTEGER | no |  |  |
+| `valid_days` | INTEGER | no |  |  |
+| `commission` | INTEGER | no |  |  |
+| `paused_at` | TEXT | yes |  |  |
+| `opens` | INTEGER | no | `0` |  |
+| `created_by` | TEXT | no |  |  |
+| `created_at` | TEXT | no |  |  |
+| `changed_by` | TEXT | yes |  |  |
+| `changed_at` | TEXT | yes |  |  |
+
+Indexes:
+
+- A `UNIQUE` constraint: unique on (`name`)
+- A `UNIQUE` constraint: unique on (`code`)
 
 ## referral_codes
 
