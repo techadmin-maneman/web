@@ -1912,6 +1912,8 @@ export interface paths {
                     to?: string;
                     /** @description The page after the one whose `next_before` this is. */
                     before?: number;
+                    /** @description include: the calls that only read, as each page opened makes, too. Left out, what changed alone. */
+                    reads?: "include";
                 };
                 header?: never;
                 path?: never;
@@ -8674,7 +8676,7 @@ export interface components {
             id: string;
             /** @description What went wrong: the alert's key up to its first colon, "crm_lead". */
             kind: string;
-            /** @description What happened and what to do, with IDs only, as the chat was told. */
+            /** @description What happened and what to do, as the chat was told, with IDs only; a low kit names its technician. */
             message: string;
             /** @description Where in the console to act on it, as a path: "/clients/<personId>". */
             link: string | null;
@@ -9290,7 +9292,7 @@ export interface components {
                 quantity: number;
                 /** @enum {string} */
                 reason: "received" | "transferred" | "used" | "counted" | "written_off";
-                /** @description Who: ops' Access identity, or the technician's ID for a job's use. */
+                /** @description Who: ops' Access identity, a service token by its label on the Staff list, or the technician's ID for a job's use. */
                 by: string;
                 note: string | null;
             }[];

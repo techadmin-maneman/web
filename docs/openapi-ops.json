@@ -6906,7 +6906,7 @@
           },
           "message": {
             "type": "string",
-            "description": "What happened and what to do, with IDs only, as the chat was told."
+            "description": "What happened and what to do, as the chat was told, with IDs only; a low kit names its technician."
           },
           "link": {
             "anyOf": [
@@ -9315,7 +9315,7 @@
                 },
                 "by": {
                   "type": "string",
-                  "description": "Who: ops' Access identity, or the technician's ID for a job's use."
+                  "description": "Who: ops' Access identity, a service token by its label on the Staff list, or the technician's ID for a job's use."
                 },
                 "note": {
                   "anyOf": [
@@ -12450,6 +12450,19 @@
             "required": false,
             "description": "The page after the one whose `next_before` this is.",
             "name": "before",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "include"
+              ],
+              "description": "include: the calls that only read, as each page opened makes, too. Left out, what changed alone."
+            },
+            "required": false,
+            "description": "include: the calls that only read, as each page opened makes, too. Left out, what changed alone.",
+            "name": "reads",
             "in": "query"
           }
         ],

@@ -130,7 +130,7 @@ test("closes a visit left partly done with a reason, and it leaves the list", as
   await closeIt.click();
   await expect(list(page).getByRole("listitem")).toHaveCount(1);
   await expect(page.getByText("0 overdue")).toBeVisible();
-  await expect(page.getByRole("heading", { level: 2, name: "Tasks" })).toBeFocused();
+  await expect(page.getByRole("heading", { level: 2, name: /^\d+ open$/ })).toBeFocused();
   expect(reasons).toEqual([{ reason: "Moving to Pune; wants no more visits." }]);
 });
 
@@ -208,7 +208,7 @@ test("records a call about a move from its row, and opens each of the board's ta
 
   await vikram.getByRole("button", { name: "Told by phone · Vikram Sethi" }).click();
   await expect(list(page).getByRole("listitem")).toHaveCount(1);
-  await expect(page.getByRole("heading", { level: 2, name: "Tasks" })).toBeFocused();
+  await expect(page.getByRole("heading", { level: 2, name: /^\d+ open$/ })).toBeFocused();
   expect(told).toEqual([`/api/dispatch/moves/${MOVE}/told`]);
 });
 

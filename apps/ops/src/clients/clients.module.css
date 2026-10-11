@@ -303,6 +303,13 @@
 }
 
 /* A visit left partly done that ops closed without a follow-up, beneath its state. */
+/* A visit's own action, beneath where it stands in its row. */
+.rowAction {
+  display: flex;
+  width: fit-content;
+  margin-top: var(--sp-8);
+}
+
 .closedLine {
   display: block;
   margin-top: var(--sp-3);

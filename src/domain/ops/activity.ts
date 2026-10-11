@@ -23,6 +23,8 @@ interface ActivityFilter {
   readonly to?: string | undefined;
   /** The page goes on from the entry before this one. */
   readonly before?: number | undefined;
+  /** The calls that only read, as each page a member of staff opens makes, shown too; else what changed alone. */
+  readonly reads?: boolean | undefined;
 }
 
 interface ActivityEntry {
@@ -82,6 +84,8 @@ const ACTIVITY_SQL = `
     AND (?6 IS NULL OR a.at >= ?6)
     AND (?7 IS NULL OR a.at < ?7)
     AND (?8 IS NULL OR a.id < ?8)
+    AND (?10 = 1 OR a.action NOT IN ('ops.call', 'client.call', 'tech.call')
+         OR COALESCE(json_extract(a.detail, '$.method'), '') <> 'GET')
   ORDER BY a.id DESC
   LIMIT ?9`;
 
@@ -129,6 +133,7 @@ export async function activity(db: D1Database, filter: ActivityFilter): Promise<
       filter.to === undefined ? null : startOf(addDays(filter.to, 1)),
       filter.before ?? null,
       ACTIVITY_PAGE + 1,
+      filter.reads === true ? 1 : 0,
     )
     .all<Row>();
   const entries = results.slice(0, ACTIVITY_PAGE).map(entryOf);

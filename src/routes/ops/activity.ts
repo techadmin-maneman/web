@@ -63,6 +63,9 @@ const listRoute = createRoute({
       before: z.coerce.number().int().positive().optional().openapi({
         description: "The page after the one whose `next_before` this is.",
       }),
+      reads: z.enum(["include"]).optional().openapi({
+        description: "include: the calls that only read, as each page opened makes, too. Left out, what changed alone.",
+      }),
     }),
   },
   responses: {
@@ -94,6 +97,7 @@ export function registerOpsActivity(app: App): void {
       from: query.from,
       to: query.to,
       before: query.before,
+      reads: query.reads === "include",
     });
     return c.json(
       {

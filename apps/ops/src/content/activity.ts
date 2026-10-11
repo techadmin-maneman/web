@@ -107,6 +107,8 @@ export const activity = {
     },
     actor: "Email or ID",
     action: "What",
+    // Not drawn: each page opened is logged as a call; the log shows what changed unless asked.
+    reads: "Show pages opened too",
     anyAction: "Any action",
     /** A filter a link set, above the form: "Client · Rohit Malhotra", with its own way off. */
     person: "Client",
