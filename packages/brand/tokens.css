@@ -237,14 +237,14 @@
   --what-pad-top: clamp(48px, 7vw, 104px);
 
   --norwood-intro-gap: clamp(32px, 4vw, 48px);
-  --norwood-early-min: 240px;
-  --norwood-early-max: 760px;
   --norwood-gap: clamp(12px, 1.6vw, 20px);
   --norwood-flow-basis: 150px;
   --norwood-flow-max: 210px;
   /* Five late cards at their widest: the late row's width, from the left edge. */
   --norwood-flow-row-max: calc(5 * var(--norwood-flow-max) + 4 * var(--norwood-gap));
   --norwood-card-pad: clamp(14px, 1.6vw, 20px);
+  /* A phone's Norwood card: the picture's width beside its words. */
+  --norwood-thumb: 104px;
   --norwood-late-gap: clamp(40px, 5vw, 64px);
   --norwood-late-pad: clamp(32px, 4vw, 48px);
   --norwood-actions-gap: clamp(28px, 3vw, 40px);
