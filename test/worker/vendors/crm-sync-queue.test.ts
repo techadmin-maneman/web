@@ -272,6 +272,7 @@ describe("crm-sync: a changed number, address or invite", () => {
           city: "Gurgaon",
           inviteCode: null,
           inviteAttached: false,
+          lastContact: null,
         },
         knownId: "zoho-9",
       },
@@ -298,6 +299,20 @@ describe("crm-sync: a changed number, address or invite", () => {
     const crm = recordingCrm();
     await update(crm, 1, { invite_attached: true }).done;
     expect(crm.updates).toMatchObject([{ contact: { personId: PERSON, inviteCode: "VSAB23", inviteAttached: true } }]);
+  });
+
+  it("writes their last closed chat: India's date, and what it was about", async () => {
+    await env.DB.prepare(
+      `INSERT INTO conversations (id, person_id, mobile_e164, state, opened_at, last_message_at, last_inbound_at,
+         closed_at, close_reason, created_at, updated_at)
+       VALUES ('cv1', ?1, '+919810000003', 'closed', ?2, ?2, ?2, '2026-10-11T19:00:00.000Z', 'fit_problem', ?2, ?2)`,
+    )
+      .bind(PERSON, NOW.toISOString())
+      .run();
+    const crm = recordingCrm();
+    await update(crm).done;
+    // 7 pm in UTC on the 11th is half past midnight on the 12th in India.
+    expect(crm.updates).toMatchObject([{ contact: { lastContact: { date: "2026-10-12", reason: "Fit problem" } } }]);
   });
 
   it("writes nothing for a person erased since", async () => {

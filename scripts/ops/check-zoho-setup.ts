@@ -11,7 +11,7 @@
 
 import type { z } from "zod";
 import { LOSS_EXTENT_NAMES, WINDOW_NAMES } from "../../src/config/booking.ts";
-import { BOOKED_WINDOW_NAMES, REFERRAL_LEAD_SOURCE } from "../../src/config/crm.ts";
+import { BOOKED_WINDOW_NAMES, LAST_CONTACT_REASONS, REFERRAL_LEAD_SOURCE } from "../../src/config/crm.ts";
 import { LEAD_STATUSES } from "../../src/providers/crm/index.ts";
 import { LEAD_SOURCE_NAMES } from "../../src/providers/crm/zoho.ts";
 import { ASSIGNMENT_RULES, LEAD_FIELDS } from "../lib/crm-settings.ts";
@@ -48,6 +48,9 @@ const EXPECTED_FIELDS: readonly ExpectedField[] = [
   // What CRM_ORG_HAS_REFERRAL_FIELDS (src/config/crm.ts) needs before it is turned on: scripts/ops/setup-crm.ts makes them.
   { apiName: "Referral_Code", type: "text" },
   { apiName: "Booked_Window", type: "picklist", values: Object.values(BOOKED_WINDOW_NAMES) },
+  // What CRM_ORG_HAS_CONTACT_FIELDS needs before it is turned on, made the same way.
+  { apiName: "Last_Contact_Date", type: "date" },
+  { apiName: "Last_Contact_Reason", type: "picklist", values: Object.values(LAST_CONTACT_REASONS) },
 ];
 
 /** Empty when unset. */

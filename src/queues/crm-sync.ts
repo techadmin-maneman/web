@@ -14,6 +14,8 @@ import type { Dependencies } from "../dependencies.ts";
 import { scrubString, type Logger } from "../log.ts";
 import type { Plan } from "../policy/one-visit.ts";
 import type { CrmLead, LeadSource } from "../providers/crm/index.ts";
+import { LAST_CONTACT_REASONS } from "../config/crm.ts";
+import { indiaDate } from "../lib/india-time.ts";
 import { resolveAlertStatement } from "../domain/ops/alerts.ts";
 import { leadNotice } from "../domain/leads/lead-notice.ts";
 import { crmErasureKey, crmLeadKey } from "../policy/alerts.ts";
@@ -49,10 +51,26 @@ export function handleCrmSyncBatch(
 /** Tries of a contact update before ops are told to make it by hand. */
 export const MAX_CONTACT_UPDATE_ATTEMPTS = 5;
 
+interface PersonRow {
+  readonly mobile_e164: string;
+  readonly zoho_lead_id: string | null;
+  readonly city: string | null;
+  readonly invite_code: string | null;
+  /** "<closed_at> <close_reason>" of their last closed chat. */
+  readonly last_contact: string | null;
+}
+
+/** Their last closed chat, as the CRM records it: India's date, and what it was about. */
+function lastContactOf(row: string | null): { date: string; reason: string | null } | null {
+  if (row === null) return null;
+  const [closedAt = "", reason = ""] = row.split(" ");
+  return { date: indiaDate(new Date(closedAt)), reason: LAST_CONTACT_REASONS[reason] ?? null };
+}
+
 /**
- * Writes a person's number, the city of their address and the invite they came
- * through onto their CRM record, read afresh from D1, with a note when ops have
- * just attached the invite. Nothing is written for an erased person or one the
+ * Writes a person's number, the city of their address, the invite they came
+ * through and their last closed chat onto their CRM record, read afresh from D1,
+ * with a note when ops have just attached the invite. Nothing is written for an erased person or one the
  * CRM never had. A failure is tried again on the queue, and the fifth tells ops.
  */
 async function updateContact(
@@ -66,15 +84,24 @@ async function updateContact(
       `SELECT p.mobile_e164, p.zoho_lead_id,
          (SELECT city FROM addresses a WHERE a.person_id = p.id AND a.replaced_at IS NULL
           ORDER BY a.created_at DESC LIMIT 1) AS city,
-         (SELECT r.code FROM referral_attributions r WHERE r.referred_person_id = p.id) AS invite_code
+         (SELECT r.code FROM referral_attributions r WHERE r.referred_person_id = p.id) AS invite_code,
+         (SELECT c.closed_at || ' ' || COALESCE(c.close_reason, '') FROM conversations c
+          WHERE c.person_id = p.id AND c.closed_at IS NOT NULL ORDER BY c.closed_at DESC LIMIT 1) AS last_contact
        FROM people p WHERE p.id = ?1 AND p.erased_at IS NULL`,
     )
     .bind(personId)
-    .first<{ mobile_e164: string; zoho_lead_id: string | null; city: string | null; invite_code: string | null }>();
+    .first<PersonRow>();
   if (person === null) return DONE;
   try {
     const { crmLeadId } = await deps.crm.updateContact(
-      { personId, mobileE164: person.mobile_e164, city: person.city, inviteCode: person.invite_code, inviteAttached },
+      {
+        personId,
+        mobileE164: person.mobile_e164,
+        city: person.city,
+        inviteCode: person.invite_code,
+        inviteAttached,
+        lastContact: lastContactOf(person.last_contact),
+      },
       person.zoho_lead_id,
     );
     if (crmLeadId !== null && crmLeadId !== person.zoho_lead_id) {

@@ -118,6 +118,7 @@ describe("Zoho: a person's changed number, address or invite", () => {
     city: "Gurgaon",
     inviteCode: null,
     inviteAttached: false,
+    lastContact: null,
   };
 
   it("writes the number and city onto the known record, with workflows off, and adds no note", async () => {
@@ -167,6 +168,18 @@ describe("Zoho: a person's changed number, address or invite", () => {
     });
     expect(contactRecordFor(invited, { referral: false })).toEqual({ Mobile: "+919810000003", City: "Gurgaon" });
     expect(contactRecordFor({ ...CONTACT, city: null }, { referral: true })).toEqual({ Mobile: "+919810000003" });
+  });
+
+  // A client's last closed chat (ADR 0137), in the fields the org gains with scripts/ops/setup-crm.ts.
+  it("writes the last chat's date and what it was about once the org has the fields, and nothing of it before", () => {
+    const talked = { ...CONTACT, lastContact: { date: "2026-10-12", reason: "Fit problem" } };
+    expect(contactRecordFor(talked, { referral: true, contact: true })).toEqual({
+      Mobile: "+919810000003",
+      City: "Gurgaon",
+      Last_Contact_Date: "2026-10-12",
+      Last_Contact_Reason: "Fit problem",
+    });
+    expect(contactRecordFor(talked, { referral: true })).toEqual({ Mobile: "+919810000003", City: "Gurgaon" });
   });
 });
 

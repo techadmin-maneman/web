@@ -13,7 +13,12 @@
 
 import { z } from "zod";
 import { LOSS_EXTENT_NAMES, WINDOW_NAMES } from "../../config/booking.ts";
-import { BOOKED_WINDOW_NAMES, CRM_ORG_HAS_REFERRAL_FIELDS, REFERRAL_LEAD_SOURCE } from "../../config/crm.ts";
+import {
+  BOOKED_WINDOW_NAMES,
+  CRM_ORG_HAS_CONTACT_FIELDS,
+  CRM_ORG_HAS_REFERRAL_FIELDS,
+  REFERRAL_LEAD_SOURCE,
+} from "../../config/crm.ts";
 import type { ZohoSettings } from "../../config/settings.ts";
 import type { Plan } from "../../policy/one-visit.ts";
 
@@ -213,6 +218,8 @@ function sourceOf(lead: CrmLead, fields: OrgFields): string {
 /** Which of the fields the org may not have yet it does have (src/config/crm.ts). */
 interface OrgFields {
   readonly referral: boolean;
+  /** The last-contact fields; left out, off. */
+  readonly contact?: boolean;
 }
 
 /**
@@ -225,14 +232,21 @@ const INVITE_ATTACHED_NOTE = {
   content: "Came through a friend's invite, which ops attached by hand.",
 } as const;
 
-/** The Zoho Leads fields a change of number, address or invite writes: the invite's only where the org has it. */
+/**
+ * The Zoho Leads fields a change of number, address or invite, or a chat closed, writes: the invite's and the last
+ * contact's only where the org has them.
+ */
 export function contactRecordFor(
   contact: CrmContact,
-  fields: OrgFields = { referral: CRM_ORG_HAS_REFERRAL_FIELDS },
+  fields: OrgFields = { referral: CRM_ORG_HAS_REFERRAL_FIELDS, contact: CRM_ORG_HAS_CONTACT_FIELDS },
 ): Record<string, unknown> {
   const record: Record<string, unknown> = { Mobile: contact.mobileE164 };
   if (contact.city !== null) record.City = contact.city;
   if (fields.referral && contact.inviteCode !== null) record.Referral_Code = contact.inviteCode;
+  if (fields.contact === true && contact.lastContact !== null) {
+    record.Last_Contact_Date = contact.lastContact.date;
+    if (contact.lastContact.reason !== null) record.Last_Contact_Reason = contact.lastContact.reason;
+  }
   return record;
 }
 
