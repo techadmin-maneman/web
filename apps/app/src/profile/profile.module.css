@@ -4,7 +4,7 @@
 .page {
   display: flex;
   flex-direction: column;
-  gap: var(--sp-26);
+  gap: var(--sp-24);
   padding: var(--sp-24) var(--sp-20);
 }
 
@@ -47,7 +47,7 @@
 }
 
 .landmark dd {
-  margin: var(--sp-3) 0 0;
+  margin: var(--sp-4) 0 0;
   font-size: var(--fs-15);
   line-height: var(--lh-150);
 }
@@ -67,14 +67,14 @@
 }
 
 .link span {
-  padding-bottom: var(--sp-3);
+  padding-bottom: var(--sp-4);
   border-bottom: var(--hairline) solid var(--paper-line);
 }
 
 .form {
   display: flex;
   flex-direction: column;
-  gap: var(--sp-14);
+  gap: var(--sp-16);
   margin-top: var(--sp-12);
   padding-top: var(--sp-16);
   border-top: var(--hairline) solid var(--text);
@@ -83,8 +83,8 @@
 .formField {
   display: flex;
   flex-direction: column;
-  gap: var(--sp-6);
-  margin-top: var(--sp-14);
+  gap: var(--sp-8);
+  margin-top: var(--sp-16);
 }
 
 .form .formField {
@@ -100,7 +100,7 @@
 .input,
 .numberInput {
   height: var(--btn-lg);
-  padding: 0 var(--sp-15);
+  padding: 0 var(--sp-16);
   border: var(--hairline) solid var(--paper-control);
   background: var(--white);
   font: inherit;
@@ -125,7 +125,7 @@
 .prefix {
   display: flex;
   align-items: center;
-  padding: 0 var(--sp-15);
+  padding: 0 var(--sp-16);
   border-right: var(--hairline) solid var(--paper-line);
   font-size: var(--fs-16);
   font-variant-numeric: tabular-nums;
@@ -147,7 +147,7 @@
 }
 
 .error {
-  margin: var(--sp-10) 0 0;
+  margin: var(--sp-8) 0 0;
   font-size: var(--fs-15);
   line-height: var(--lh-155);
   color: var(--error-on-paper);
@@ -155,7 +155,7 @@
 
 .row {
   display: flex;
-  gap: var(--sp-10);
+  gap: var(--sp-8);
 }
 
 /*
@@ -165,7 +165,7 @@
 .primary {
   flex: 1;
   width: 100%;
-  margin-top: var(--sp-14);
+  margin-top: var(--sp-16);
 }
 
 .row .primary,
@@ -188,12 +188,12 @@ a.secondary {
 }
 
 .card > a.secondary + .secondary {
-  margin-top: var(--sp-10);
+  margin-top: var(--sp-8);
 }
 
 textarea.input {
   height: auto;
-  padding: var(--sp-12) var(--sp-15);
+  padding: var(--sp-12) var(--sp-16);
   line-height: var(--lh-150);
   resize: vertical;
 }
@@ -207,7 +207,7 @@ textarea.input {
 }
 
 .concern {
-  padding: var(--sp-14) 0;
+  padding: var(--sp-16) 0;
   border-bottom: var(--hairline) solid var(--paper-line);
 }
 
@@ -282,7 +282,7 @@ textarea.input {
 }
 
 .consequence {
-  margin: var(--sp-10) 0 0;
+  margin: var(--sp-8) 0 0;
   font-size: var(--fs-15);
   line-height: var(--lh-155);
   color: var(--text-soft);
@@ -299,7 +299,7 @@ textarea.input {
   align-items: center;
   justify-content: flex-start;
   width: var(--switch-width);
-  height: var(--sp-26);
+  height: var(--sp-24);
   padding: var(--sp-2);
   border: var(--hairline) solid var(--paper-control);
   background: var(--white);
@@ -310,7 +310,7 @@ textarea.input {
   content: "";
   position: absolute;
   /* Measured from inside the border, which the 26 px includes. */
-  inset: calc((var(--sp-26) - var(--tap)) / 2 - var(--hairline)) 0;
+  inset: calc((var(--sp-24) - var(--tap)) / 2 - var(--hairline)) 0;
 }
 
 .knob {
@@ -330,15 +330,15 @@ textarea.input {
 }
 
 .confirm {
-  margin-top: var(--sp-14);
+  margin-top: var(--sp-16);
 }
 
 .lines {
   display: flex;
   flex-direction: column;
   gap: var(--sp-8);
-  margin: 0 0 var(--sp-14);
-  padding-left: var(--sp-18);
+  margin: 0 0 var(--sp-16);
+  padding-left: var(--sp-16);
   font-size: var(--fs-15);
   line-height: var(--lh-155);
   color: var(--text-soft);
@@ -351,7 +351,7 @@ textarea.input {
 }
 
 .cardLabel {
-  margin-bottom: var(--sp-14);
+  margin-bottom: var(--sp-16);
   font-size: var(--fs-14);
 }
 
@@ -371,7 +371,7 @@ textarea.input {
 .whatsapp {
   display: flex;
   align-items: center;
-  gap: var(--sp-14);
+  gap: var(--sp-16);
   min-height: var(--btn-lg);
   padding: 0 var(--sp-16);
   border: var(--hairline) solid var(--ink);
@@ -405,7 +405,7 @@ textarea.input {
   display: inline-flex;
   align-items: center;
   min-height: var(--tap);
-  margin-top: var(--sp-10);
+  margin-top: var(--sp-8);
   padding: 0;
   border: 0;
   background: none;
@@ -413,7 +413,7 @@ textarea.input {
   font-size: var(--fs-15);
   color: var(--text);
   text-decoration: underline;
-  text-underline-offset: var(--sp-3);
+  text-underline-offset: var(--sp-4);
   cursor: pointer;
 }
 
@@ -424,7 +424,7 @@ textarea.input {
 .searchField {
   display: flex;
   flex-direction: column;
-  gap: var(--sp-6);
+  gap: var(--sp-8);
 }
 
 .suggestions {
@@ -443,7 +443,7 @@ textarea.input {
   gap: var(--sp-2);
   min-height: var(--tap-row);
   justify-content: center;
-  padding: var(--sp-8) var(--sp-15);
+  padding: var(--sp-8) var(--sp-16);
   border-bottom: var(--hairline) solid var(--paper-line);
   cursor: pointer;
 }
@@ -472,7 +472,7 @@ textarea.input {
 
 /* Google's condition for showing their suggestions without a Google map. */
 .attribution {
-  margin: var(--sp-6) 0 0;
+  margin: var(--sp-8) 0 0;
   font-size: var(--fs-13);
   color: var(--text-muted);
 }

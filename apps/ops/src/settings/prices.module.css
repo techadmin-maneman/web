@@ -48,7 +48,7 @@
 
 .table th,
 .table td {
-  padding-block: var(--sp-6);
+  padding-block: var(--sp-8);
 }
 
 .figure {
@@ -80,7 +80,7 @@
 
 /* The open row's strip: no padding of its own, as its actions and forms set their own margins. */
 .table .strip > td {
-  padding: 0 0 var(--sp-14);
+  padding: 0 0 var(--sp-16);
   background: var(--paper-light);
 }
 
@@ -90,11 +90,11 @@
 }
 
 .add {
-  margin-top: var(--sp-14);
+  margin-top: var(--sp-16);
 }
 
 .line {
-  margin: var(--sp-10) var(--sp-20) 0;
+  margin: var(--sp-8) var(--sp-20) 0;
   font-size: var(--fs-14);
 }
 

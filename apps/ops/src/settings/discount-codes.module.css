@@ -51,7 +51,7 @@
 }
 
 .table .acting > td {
-  padding: 0 0 var(--sp-14);
+  padding: 0 0 var(--sp-16);
   background: var(--paper-light);
 }
 
@@ -79,7 +79,7 @@
 .find {
   display: flex;
   align-items: end;
-  gap: var(--sp-10);
+  gap: var(--sp-8);
 }
 
 .narrow {

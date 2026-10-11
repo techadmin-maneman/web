@@ -65,7 +65,7 @@
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  padding-bottom: var(--sp-10);
+  padding-bottom: var(--sp-8);
   border-bottom: var(--hairline) solid var(--text);
 }
 
@@ -78,7 +78,7 @@
 .departmentHead {
   display: flex;
   align-items: baseline;
-  gap: var(--sp-10);
+  gap: var(--sp-8);
 }
 
 .departmentName {
@@ -105,8 +105,8 @@
 .groupHead {
   display: flex;
   justify-content: space-between;
-  gap: var(--sp-14);
-  padding: var(--sp-10) var(--sp-20);
+  gap: var(--sp-16);
+  padding: var(--sp-8) var(--sp-20);
   background: var(--paper-light);
 }
 
@@ -183,7 +183,7 @@
 .what {
   display: flex;
   flex-direction: column;
-  gap: var(--sp-3);
+  gap: var(--sp-4);
   min-width: 0;
 }
 
@@ -236,7 +236,7 @@ a.subject {
 .ownerActs {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--sp-3) var(--sp-14);
+  gap: var(--sp-4) var(--sp-16);
 }
 
 /*
@@ -276,7 +276,7 @@ a.subject {
 
 .select {
   min-height: var(--ops-row);
-  padding: 0 var(--sp-10);
+  padding: 0 var(--sp-8);
   border: var(--hairline) solid var(--paper-control);
   border-radius: 0;
   background: var(--paper-light);
@@ -292,7 +292,7 @@ a.subject {
 
 .formActions {
   display: flex;
-  gap: var(--sp-10);
+  gap: var(--sp-8);
 }
 
 .error {

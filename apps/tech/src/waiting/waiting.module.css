@@ -67,13 +67,13 @@
 }
 
 .job {
-  padding: var(--sp-18) var(--sp-20);
+  padding: var(--sp-16) var(--sp-20);
   border-bottom: var(--hairline) solid var(--ink-rule);
 }
 
 .jobTop {
   display: flex;
-  gap: var(--sp-14);
+  gap: var(--sp-16);
   align-items: baseline;
   justify-content: space-between;
 }
@@ -108,26 +108,26 @@
 }
 
 .count {
-  margin: var(--sp-10) 0 0;
+  margin: var(--sp-8) 0 0;
   font-size: var(--fs-15);
   color: var(--ink-muted);
 }
 
 .stopped {
-  margin-top: var(--sp-14);
-  padding: var(--sp-14);
+  margin-top: var(--sp-16);
+  padding: var(--sp-16);
   border: var(--hairline) solid var(--error-on-paper);
 }
 
 .stoppedLine {
-  margin: 0 0 var(--sp-14);
+  margin: 0 0 var(--sp-16);
   font-size: var(--fs-17);
   line-height: var(--lh-150);
   color: var(--paper);
 }
 
 .reference {
-  margin-bottom: var(--sp-14);
+  margin-bottom: var(--sp-16);
   font-size: var(--fs-15);
   color: var(--ink-muted);
 }
@@ -150,7 +150,7 @@
 .nothing,
 .never {
   margin: 0;
-  padding: var(--sp-18) var(--sp-20);
+  padding: var(--sp-16) var(--sp-20);
   font-size: var(--fs-15);
   line-height: var(--lh-160);
   color: var(--ink-muted);

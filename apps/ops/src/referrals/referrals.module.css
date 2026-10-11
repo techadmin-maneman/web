@@ -61,8 +61,8 @@
 
 /* The rules the grant met, in oxblood behind one rule, as the board marks them. */
 .signals {
-  margin: var(--sp-10) 0 0;
-  padding: 0 0 0 var(--sp-14);
+  margin: var(--sp-8) 0 0;
+  padding: 0 0 0 var(--sp-16);
   border-left: var(--rule-strong) solid var(--error-on-paper);
   list-style: none;
 }
@@ -75,13 +75,13 @@
 
 .actions {
   display: flex;
-  gap: var(--sp-10);
-  margin-top: var(--sp-14);
+  gap: var(--sp-8);
+  margin-top: var(--sp-16);
 }
 
 /* The reason the design asks for on either decision, for which it draws no field. */
 .reason {
-  margin-top: var(--sp-14);
+  margin-top: var(--sp-16);
 }
 
 /* The reason's field, as tall as the design draws it. */
@@ -120,7 +120,7 @@
 }
 
 .note {
-  margin: var(--sp-14) 0 0;
+  margin: var(--sp-16) 0 0;
   font-size: var(--fs-14);
   line-height: var(--lh-160);
   color: var(--text-muted);

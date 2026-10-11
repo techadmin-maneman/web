@@ -24,7 +24,7 @@
 
 .foot {
   flex-shrink: 0;
-  padding: var(--sp-16) var(--sp-20) calc(var(--sp-22) + env(safe-area-inset-bottom));
+  padding: var(--sp-16) var(--sp-20) calc(var(--sp-24) + env(safe-area-inset-bottom));
   border-top: var(--hairline) solid var(--ink-rule);
 }
 

@@ -29,7 +29,7 @@
 
 .actions {
   display: flex;
-  gap: var(--sp-10);
+  gap: var(--sp-8);
 }
 
 /* The states screen's two ways on (packages/ui/Button.tsx), a little wider than the app's other small buttons. */

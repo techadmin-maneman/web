@@ -28,7 +28,7 @@
 /* ---- A list ops edit: its items in order, each with its own buttons ------ */
 
 .items {
-  margin: var(--sp-14) 0 0;
+  margin: var(--sp-16) 0 0;
   padding: 0 0 0 var(--sp-24);
 }
 
@@ -44,7 +44,7 @@
   flex: 1 1 var(--ops-area);
   min-width: 0;
   height: var(--tap);
-  padding: 0 var(--sp-10);
+  padding: 0 var(--sp-8);
   border: var(--hairline) solid var(--paper-control);
   border-radius: 0;
   background: var(--white);
@@ -56,7 +56,7 @@
 /* A button beside an item, as tall as the box: the same outlined ink as a row's own. */
 .move {
   min-height: var(--tap);
-  padding: 0 var(--sp-10);
+  padding: 0 var(--sp-8);
   border: var(--hairline) solid var(--ink);
   background: transparent;
   color: var(--text);
@@ -89,7 +89,7 @@
 }
 
 .retiredList {
-  margin: var(--sp-6) 0 0;
+  margin: var(--sp-8) 0 0;
   padding: 0;
   list-style: none;
 }
@@ -107,7 +107,7 @@
 /* ---- A service's expected use: one row a consumable ----------------------- */
 
 .uses {
-  margin: var(--sp-14) 0 0;
+  margin: var(--sp-16) 0 0;
   padding: 0;
   list-style: none;
 }
@@ -117,7 +117,7 @@
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: var(--sp-6) var(--sp-16);
+  gap: var(--sp-8) var(--sp-16);
   padding: var(--sp-8) 0;
   border-bottom: var(--hairline) solid var(--paper-line);
 }

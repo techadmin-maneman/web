@@ -60,14 +60,14 @@
 }
 
 .access {
-  margin: var(--sp-10) 0 0;
+  margin: var(--sp-8) 0 0;
   font-size: var(--fs-16);
   line-height: var(--lh-155);
   color: var(--ink-soft);
 }
 
 .landmark {
-  margin: var(--sp-10) 0 0;
+  margin: var(--sp-8) 0 0;
 }
 
 .landmarkLabel {
@@ -76,7 +76,7 @@
 }
 
 .landmark .access {
-  margin: var(--sp-3) 0 0;
+  margin: var(--sp-4) 0 0;
 }
 
 .navigate,
@@ -116,7 +116,7 @@
 }
 
 .lockedBody {
-  margin: var(--sp-10) 0 0;
+  margin: var(--sp-8) 0 0;
   font-size: var(--fs-17);
   line-height: var(--lh-155);
   color: var(--ink-soft);
@@ -142,20 +142,20 @@
 }
 
 .pieceNone {
-  margin: var(--sp-10) 0 0;
+  margin: var(--sp-8) 0 0;
   font-size: var(--fs-16);
   color: var(--ink-soft);
 }
 
 .pieceWarn {
-  margin: var(--sp-10) 0 0;
+  margin: var(--sp-8) 0 0;
   font-size: var(--fs-16);
   line-height: var(--lh-155);
   color: var(--error-on-ink);
 }
 
 .rows {
-  margin: var(--sp-10) 0 0;
+  margin: var(--sp-8) 0 0;
   border-top: var(--hairline) solid var(--ink-rule);
 }
 
@@ -163,7 +163,7 @@
   display: flex;
   gap: var(--sp-16);
   justify-content: space-between;
-  padding: var(--sp-11) 0;
+  padding: var(--sp-12) 0;
   border-bottom: var(--hairline) solid var(--ink-rule);
 }
 
@@ -181,9 +181,9 @@
 
 .lastVisit {
   display: flex;
-  gap: var(--sp-14);
+  gap: var(--sp-16);
   align-items: center;
-  margin-top: var(--sp-14);
+  margin-top: var(--sp-16);
 }
 
 .lastVisitPhoto {
@@ -214,13 +214,13 @@
 
 /* Ops changed the job under the phone: the evidence chain's failure, across the card. */
 .changed {
-  padding: var(--sp-22) var(--sp-20);
+  padding: var(--sp-24) var(--sp-20);
   border-top: var(--rule-strong) solid var(--error-on-ink);
   border-bottom: var(--hairline) solid var(--ink-rule);
 }
 
 .changedTitle {
-  margin: 0 0 var(--sp-14);
+  margin: 0 0 var(--sp-16);
   font-size: var(--fs-15);
   color: var(--error-on-ink);
 }
@@ -237,7 +237,7 @@
 
 .stage,
 .failed {
-  padding: var(--sp-22) var(--sp-20);
+  padding: var(--sp-24) var(--sp-20);
   border-top: var(--hairline) solid var(--ink-rule);
 }
 
@@ -247,7 +247,7 @@
 
 .stageLabel,
 .failedLabel {
-  margin: 0 0 var(--sp-14);
+  margin: 0 0 var(--sp-16);
   font-size: var(--fs-14);
   color: var(--ink-muted);
 }
@@ -295,7 +295,7 @@
 
 /* The wait, in whole seconds: the board's one large number. */
 .timer {
-  margin: 0 0 var(--sp-10);
+  margin: 0 0 var(--sp-8);
   font-family: var(--font-serif);
   font-size: var(--fs-timer);
   font-variant-numeric: lining-nums tabular-nums;
@@ -307,7 +307,7 @@
   display: flex;
   gap: var(--sp-12);
   align-items: flex-start;
-  margin: var(--sp-18) 0 0;
+  margin: var(--sp-16) 0 0;
   padding-top: var(--sp-16);
   border-top: var(--hairline) solid var(--ink-rule);
   font-size: var(--fs-17);
@@ -329,7 +329,7 @@
 .outline,
 .second {
   width: 100%;
-  margin-top: var(--sp-18);
+  margin-top: var(--sp-16);
 }
 
 /* The way to a closed job's close-out, the foot's one action: as tall as the gold one it stands in for. */

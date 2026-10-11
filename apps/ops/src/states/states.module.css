@@ -1,10 +1,10 @@
 /* A panel waiting for its data, and a panel whose data did not come, at a panel's padding. */
 
 .loading {
-  padding: var(--sp-22);
+  padding: var(--sp-24);
 }
 
 .failed {
-  padding: var(--sp-22);
+  padding: var(--sp-24);
   font-size: var(--fs-15);
 }
