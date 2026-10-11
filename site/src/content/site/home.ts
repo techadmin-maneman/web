@@ -32,6 +32,8 @@ export const footer = {
         { label: "What it is", href: "/#what" },
         { label: "The range", href: "/#range" },
         { label: "Try-on", href: "/try" },
+        { label: "Questions", href: "/#faq" },
+        { label: header.book, href: "/book" },
       ],
     },
     reach: { title: "Reach us" },
