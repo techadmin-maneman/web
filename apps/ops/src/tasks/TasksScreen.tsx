@@ -77,6 +77,11 @@ function subOf(group: Group, task: Task, now: Date): string {
   const copy = tasks.subs;
   if (group === "untold_move") return untoldMoveOf(task.detail);
   if (group === "city_matter") return task.detail === null ? tasks.unknown : copy.city_matter(task.detail);
+  if (group === "remedy_approval") {
+    // The visits asked for, then why, as the remedy recorded them.
+    const [visits = "", reason = ""] = task.detail?.split(" ") ?? [];
+    return copy.remedy_approval(Number(visits), copy.remedyReasons[reason] ?? reason);
+  }
   if (group === "unanswered_chat") {
     return copy.unanswered_chat(`${shortDate(indiaDate(task.since))}, ${indiaClock(task.since)}`);
   }

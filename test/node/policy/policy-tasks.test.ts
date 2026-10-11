@@ -63,6 +63,8 @@ describe("tasks", () => {
       unanswered_chat: 24,
       // A client waiting on their city: within the day (ADR 0135).
       city_matter: 24,
+      // A remedy awaiting a manager: within the day (ADR 0143).
+      remedy_approval: 24,
       // "The 30 days run from the client's request to ops' decision" (ADR 0049).
       erasure_request: 30 * 24,
       // The client's app: "within 30 days at the latest" (docs/open-points.md, item 51).
