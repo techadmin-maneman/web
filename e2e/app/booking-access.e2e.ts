@@ -133,8 +133,7 @@ test("each booking step meets WCAG 2.2 AA", async ({ page }) => {
   await page.getByRole("button", { name: "Continue" }).click();
   await expect(page.getByRole("dialog", { name: "Pick a time" })).toBeVisible();
   await scan();
-  await page.getByRole("dialog").getByRole("radio").and(page.locator(":enabled")).first().click();
-  await page.getByRole("button", { name: "Continue to payment" }).click();
+  await continueToPayment(page);
   await expect(page.getByRole("dialog", { name: "Pay and confirm" })).toBeVisible();
   await scan();
 });
