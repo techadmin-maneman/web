@@ -61,6 +61,12 @@ export const ROWS_AT_T: readonly string[] = [
   // A line of the site given new words on the Words page (docs/decisions/0126-the-words-page.md).
   `INSERT INTO word_versions (id, key, text, set_by, set_at)
      VALUES ('wv1', 'site:home/hero.title', 'Hair, fitted at home.', 'growth@maneman.in', '${AT}')`,
+  // A client's thread in the Care inbox, and what they wrote (docs/decisions/0129-the-care-inbox.md).
+  `INSERT INTO conversations (id, person_id, mobile_e164, opened_at, last_message_at, last_inbound_at, created_at,
+     updated_at)
+     VALUES ('cv1', 'p1', '+919810000001', '${AT}', '${AT}', '${AT}', '${AT}', '${AT}')`,
+  `INSERT INTO chat_messages (id, conversation_id, direction, author, text, sent_at, created_at)
+     VALUES ('cm1', 'cv1', 'in', 'client', 'Hello', '${AT}', '${AT}')`,
   `INSERT INTO site_word_publishes (id, words, lines, published_by, published_at)
      VALUES ('sp1', '{}', 0, 'growth@maneman.in', '${AT}')`,
   // Their first fit, done: last_visits follows it.

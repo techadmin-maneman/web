@@ -1438,6 +1438,54 @@ Take off a payment recorded by mistake; the month is owed again
 }
 ```
 
+### GET /api/conversations
+
+The Care inbox's threads of a view, the latest first
+
+**200**: The threads
+
+```json
+{
+  "$ref": "#/components/schemas/Conversations"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### GET /api/conversations/{id}
+
+One thread: the chat and our automatic messages to the client, in order
+
+**200**: The thread
+
+```json
+{
+  "$ref": "#/components/schemas/ConversationThread"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ### GET /api/referral-channels
 
 Every partner, with what has come through each
@@ -10600,6 +10648,235 @@ Request body:
     "reference"
   ],
   "additionalProperties": false
+}
+```
+
+### Conversations
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "conversations": {
+      "type": "array",
+      "items": {
+        "$ref": "#/components/schemas/Conversation"
+      }
+    }
+  },
+  "required": [
+    "conversations"
+  ],
+  "additionalProperties": false
+}
+```
+
+### Conversation
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "person": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "name": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "id",
+            "name"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The client whose number it is; null for a number we do not know."
+    },
+    "mobile": {
+      "type": "string"
+    },
+    "state": {
+      "type": "string",
+      "enum": [
+        "open",
+        "waiting",
+        "closed"
+      ]
+    },
+    "last_message_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "last_line": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "waiting_since": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date-time"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "When the client last wrote, unanswered since; null when nothing waits on us."
+    }
+  },
+  "required": [
+    "id",
+    "person",
+    "mobile",
+    "state",
+    "last_message_at",
+    "last_line",
+    "waiting_since"
+  ],
+  "additionalProperties": false
+}
+```
+
+### ConversationThread
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "conversation": {
+      "$ref": "#/components/schemas/Conversation"
+    },
+    "items": {
+      "type": "array",
+      "items": {
+        "$ref": "#/components/schemas/ThreadItem"
+      }
+    }
+  },
+  "required": [
+    "conversation",
+    "items"
+  ],
+  "additionalProperties": false
+}
+```
+
+### ThreadItem
+
+```json
+{
+  "anyOf": [
+    {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": [
+            "in",
+            "out",
+            "note"
+          ]
+        },
+        "at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "author": {
+          "type": "string"
+        },
+        "text": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "kind",
+        "at",
+        "author",
+        "text"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": [
+            "auto"
+          ]
+        },
+        "at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "message": {
+          "type": "string",
+          "description": "The automatic message's kind, as outbound_messages names it."
+        },
+        "state": {
+          "type": "string"
+        },
+        "delivered_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "read_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "kind",
+        "at",
+        "message",
+        "state",
+        "delivered_at",
+        "read_at"
+      ],
+      "additionalProperties": false
+    }
+  ]
 }
 ```
 

@@ -2,7 +2,7 @@
 
 Every decision this repository was built on, oldest first. A record says what was decided and why, and is not rewritten to say something else: a later record changes it, and says so in its own header (ADR 0001). **Changed by** gathers those later records, from either side, so an old record's reader knows to read on.
 
-This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. A record names its topic in its header, `- Topic:` and one of the headings below, and the test fails on one that does not. The next free number is 0129.
+This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. A record names its topic in its header, `- Topic:` and one of the headings below, and the test fails on one that does not. The next free number is 0130.
 
 ## By topic
 
@@ -118,6 +118,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 - [0074](0074-hand-offs-and-messages.md) What each person learns when something changes for them
 - [0114](0114-whatsapp-business-platform-through-msg91.md) The WhatsApp Business Platform through MSG91
 - [0128](0128-messages-with-the-words-set.md) Messages in the words set
+- [0129](0129-the-care-inbox.md) The Care inbox
 
 ### Referrals
 
@@ -292,3 +293,4 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0126](0126-the-words-page.md) | The Words page | 2026-10-11 | accepted |  |
 | [0127](0127-publishing-the-words.md) | Publishing the site's words | 2026-10-11 | accepted |  |
 | [0128](0128-messages-with-the-words-set.md) | Messages in the words set | 2026-10-11 | accepted |  |
+| [0129](0129-the-care-inbox.md) | The Care inbox | 2026-10-12 | accepted |  |

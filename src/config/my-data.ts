@@ -250,6 +250,17 @@ export const MY_DATA = {
         created_at: time("When"),
       },
     },
+    chats: {
+      title: "Your chats with us",
+      fields: {
+        thread: time("Chat began"),
+        last_message_at: time("Last message"),
+        closed_at: time("Closed"),
+        direction: words("From"),
+        text: text("Message"),
+        sent_at: time("When"),
+      },
+    },
     recommended_by: {
       title: "The partner who recommended us",
       fields: {

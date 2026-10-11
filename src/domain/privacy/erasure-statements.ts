@@ -68,6 +68,14 @@ export async function personalDataStatements(
     db
       .prepare("UPDATE referral_attributions SET friend_first_name = NULL WHERE referred_person_id = ?1")
       .bind(personId),
+    // Their chats with the Care team: the words go, and the thread's number becomes nobody's
+    // (docs/decisions/0129-the-care-inbox.md).
+    db
+      .prepare(
+        "UPDATE chat_messages SET text = NULL WHERE conversation_id IN (SELECT id FROM conversations WHERE person_id = ?1)",
+      )
+      .bind(personId),
+    db.prepare("UPDATE conversations SET mobile_e164 = 'erased:' || id WHERE person_id = ?1").bind(personId),
     // And the client's own words to the technician on a visit (src/domain/clients/client-notes.ts), and why they disputed a
     // no-show's charge (src/domain/no-shows/no-show-disputes.ts).
     db.prepare("UPDATE appointments SET client_note = NULL, client_note_at = NULL WHERE person_id = ?1").bind(personId),

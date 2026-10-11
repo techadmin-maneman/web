@@ -153,6 +153,15 @@ export const PERSONAL_COLUMNS: Readonly<Record<string, PersonalTable>> = {
       why: "Kept, as the record of a booking asked for: a pincode, a day and a window, nothing that names them.",
     },
   },
+  conversations: {
+    leftOut: ["id", "person_id", "mobile_e164", "state", "opened_at", "last_inbound_at", "closed_by", "updated_at"],
+    whyLeftOut:
+      "Our keys and their own number; how the thread stands for the team and who closed it. What was said is in their chats.",
+    erasure: {
+      blanks: ["mobile_e164"],
+      why: "The words of every message go, and the thread's number becomes nobody's; that a thread was kept stays.",
+    },
+  },
   credit_ledger: {
     leftOut: ["id", "person_id", "grant_id", "source_kind", "source_id"],
     whyLeftOut: "Which grant each entry draws on, and the record it came from, by our own keys.",
