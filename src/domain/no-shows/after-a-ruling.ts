@@ -60,7 +60,7 @@ async function alertIfCreditNotBack(db: D1Database, alertOnce: AlertOnce, credit
     message:
       `The visit credit for visit ${credit.appointmentId}, a no-show ${credit.why}, could not come back: its grant ` +
       "has expired or been withdrawn. The client is told so; settle it with them by hand if they are owed one.",
-    link: credit.personId === null ? "/no-shows" : paymentsTab(credit.personId),
+    link: credit.personId === null ? "/payments" : paymentsTab(credit.personId),
   });
 }
 
@@ -96,6 +96,6 @@ export async function refundNoShow(
       payment === null || outcome === "unread"
         ? `The refund of ${what}, failed (its payment could not be read). Refund it by hand in Razorpay, once.`
         : refundLeftToOps(outcome, what, payment.razorpayPaymentId, amount),
-    link: refund.personId === null ? "/no-shows" : paymentsTab(refund.personId),
+    link: refund.personId === null ? "/payments" : paymentsTab(refund.personId),
   });
 }

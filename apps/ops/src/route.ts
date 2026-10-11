@@ -41,7 +41,7 @@ export const SECTIONS = [
     department: "customer_care",
     reads: "GET /api/deletion-requests",
   },
-  { page: "no-shows", path: "/no-shows", department: "finance", reads: "GET /api/no-shows" },
+  { page: "payments", path: "/payments", department: "finance", reads: "GET /api/no-shows" },
   { page: "prices", path: "/prices", department: "finance", reads: "GET /api/services" },
   { page: "discount-codes", path: "/discount-codes", department: "finance", reads: "GET /api/discount-codes" },
   { page: "referrals", path: "/referrals", department: "growth", reads: "GET /api/referrals/held" },
@@ -94,8 +94,8 @@ const AREAS_PATH = /^\/areas(?:\/(served))?$/;
 const TECHNICIAN_PATH = /^\/technicians(?:\/([0-9a-f-]{36})(?:\/(week|leave|phones|kit))?)?$/;
 
 /**
- * Pages that moved, so a link or bookmark to one still lands: Settings tabs now in their own departments, and the
- * waitlist and the service area, now the tabs of Areas.
+ * Pages that moved, so a link or bookmark to one still lands: Settings tabs now in their own departments, the
+ * waitlist and the service area, now the tabs of Areas, and the no-shows, now under Payments.
  */
 const MOVED: Readonly<Record<string, string>> = {
   "/settings/prices": "/prices",
@@ -104,6 +104,7 @@ const MOVED: Readonly<Record<string, string>> = {
   "/settings/staff": "/staff",
   "/waitlist": "/areas",
   "/service-area": "/areas/served",
+  "/no-shows": "/payments",
 };
 
 /** Where a page that has moved is now; null for a path that has not moved. */
