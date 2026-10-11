@@ -134,6 +134,30 @@ describe("a free booking", () => {
     ]);
   });
 
+  // A client is given a Care person at their first booking where no chat has given one (ADR 0131).
+  it("gives the client a Care person at their first booking", async () => {
+    await env.DB.prepare(
+      "INSERT INTO staff (email, active, added_by, added_at) VALUES ('care@maneman.test', 1, 'test', ?1)",
+    )
+      .bind(NOW.toISOString())
+      .run();
+    await env.DB.prepare(
+      `INSERT INTO staff_grants (email, department, level, geography, place, granted_by, granted_at)
+       VALUES ('care@maneman.test', 'customer_care', 'act', 'national', NULL, 'test', ?1)`,
+    )
+      .bind(NOW.toISOString())
+      .run();
+    await signedInClient(NEWCOMER, "+919810000005", "Karan Bhatia");
+    const held = await call(NEWCOMER, "/api/holds", {
+      method: "POST",
+      body: { type: "consultation", date: "2026-09-24", window: "morning" },
+    });
+    const hold = await held.json<{ id: string }>();
+    await call(NEWCOMER, "/api/bookings", { method: "POST", body: { hold_id: hold.id } });
+    const owner = await env.DB.prepare("SELECT email FROM care_owners WHERE person_id = ?1").bind(NEWCOMER).first();
+    expect(owner).toEqual({ email: "care@maneman.test" });
+  });
+
   it("spends one credit on a visit a credit pays for, and books it at once", async () => {
     await fittedClient();
     await grantCredits(env.DB, { personId: PERSON, visits: 1, source: "ops", sourceId: "o1", now: NOW }).run();

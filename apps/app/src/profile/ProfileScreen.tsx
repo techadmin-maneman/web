@@ -70,7 +70,7 @@ export function ProfileScreen({ onChanged }: { onChanged: () => void }) {
           onChanged={() => void load()}
         />
         <SessionsCard />
-        <SupportCard carePerson={loaded.care_person} />
+        <SupportCard carePerson={loaded.care_person} hours={loaded.care_hours} />
         <DataCard grievances={loaded.grievances} onRaised={() => void load()} />
         <DeletionCard deletion={loaded.deletion} rejected={loaded.deletion_rejected} onRequested={() => void load()} />
         <LogOut className={styles.logout} />

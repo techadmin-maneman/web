@@ -3,6 +3,7 @@
 //   POST /api/care-team/leave              leave for a member, from one date to another
 //   POST /api/care-team/leave/:id/delete   leave taken back
 //   POST /api/care-team/name               the first name a member is known by to clients (docs/decisions/0136-care-names.md)
+//   POST /api/care-team/shift              the caller on shift or off it, as they mark it (docs/decisions/0139-care-shifts.md)
 // The team as it stands, with who covers whom today, is GET /api/care-team (./care-people.ts).
 
 import { createRoute, z } from "@hono/zod-openapi";
@@ -10,9 +11,9 @@ import type { Context } from "hono";
 import type { App, AppEnv } from "../../http/context.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
 import { json } from "../../http/openapi.ts";
-import { actorOf } from "../../http/audit.ts";
+import { actorOf, staffMemberOf } from "../../http/audit.ts";
 import { careTeam, setCareName } from "../../domain/care/care-people.ts";
-import { addLeave, deleteLeave, setWeeklyOff } from "../../domain/care/cover.ts";
+import { addLeave, deleteLeave, setOnShift, setWeeklyOff } from "../../domain/care/cover.ts";
 import { indiaDate } from "../../lib/india-time.ts";
 
 const DATE = z.iso.date();
@@ -82,6 +83,18 @@ const nameRoute = createRoute({
   responses: { 200: done, 400: notCare, 403: errorResponse("access_required") },
 });
 
+const shiftRoute = createRoute({
+  method: "post",
+  path: "/api/care-team/shift",
+  summary: "Go on shift, or off it: the caller, as a member of the Care team",
+  request: { body: { required: true, ...json(z.object({ on: z.boolean() }).strict().openapi("CareShift")) } },
+  responses: {
+    200: done,
+    400: errorResponse("invalid_request: fields names on when the caller is not one of the Care team"),
+    403: errorResponse("access_required"),
+  },
+});
+
 const changeOf = (c: Context<AppEnv>) => ({ actor: actorOf(c), requestId: c.var.requestId, now: c.var.deps.now() });
 
 const onTheTeam = async (c: Context<AppEnv>, email: string) =>
@@ -106,6 +119,13 @@ export function registerOpsCareRota(app: App): void {
     const { email, name } = c.req.valid("json");
     if (!(await onTheTeam(c, email))) return refuse(c, "invalid_request", ["email"]);
     await setCareName(c.env.DB, { ...changeOf(c), email, name });
+    return c.json({ ok: true as const }, 200);
+  });
+
+  app.openapi(shiftRoute, async (c) => {
+    const me = staffMemberOf(c)?.id ?? "";
+    if (!(await onTheTeam(c, me))) return refuse(c, "invalid_request", ["on"]);
+    await setOnShift(c.env.DB, me, c.req.valid("json").on, c.var.deps.now());
     return c.json({ ok: true as const }, 200);
   });
 

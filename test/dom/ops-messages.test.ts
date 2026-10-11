@@ -85,6 +85,9 @@ beforeEach(() => {
               leave: [],
               off_today: false,
               covered_by: null,
+              on_shift_since: "2026-09-21T03:30:00.000Z",
+              day_off: false,
+              open_chats: 1,
             },
             {
               email: "asha@maneman.test",
@@ -92,10 +95,14 @@ beforeEach(() => {
               clients: 12,
               weekly_off: [],
               leave: [LEAVE],
-              off_today: false,
-              covered_by: null,
+              off_today: true,
+              covered_by: "ravi@maneman.test",
+              on_shift_since: null,
+              day_off: false,
+              open_chats: 2,
             },
           ],
+          me: "ravi@maneman.test",
         }),
       );
     }
@@ -294,6 +301,17 @@ describe("the Messages page", () => {
     expect(team.textContent).toContain("ravi@maneman.test");
     expect(team.textContent).toContain(copy.team.weekdays[0]);
     expect(team.textContent).toContain(copy.team.period(shortDate(LEAVE.from), shortDate(LEAVE.to)));
+    expect(team.textContent).toContain(copy.team.offShift + copy.team.coveredBy("ravi@maneman.test"));
+    expect(team.textContent).toContain(copy.team.you.on("9 am"));
+  });
+
+  it("takes the signed-in member off shift", async () => {
+    await show();
+    await act(async () => {
+      [...page.querySelectorAll("button")].find((each) => each.textContent.trim() === copy.team.goOff)?.click();
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
+    expect(posted.at(-1)).toEqual({ path: "/api/care-team/shift", body: { on: false } });
   });
 
   it("sets the name clients know a member by", async () => {

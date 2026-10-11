@@ -3371,6 +3371,23 @@ Request body:
       ],
       "description": "The first name of the client's Care person (ADR 0136); null until they have one with a name."
     },
+    "care_hours": {
+      "type": "object",
+      "properties": {
+        "opens": {
+          "type": "integer"
+        },
+        "closes": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "opens",
+        "closes"
+      ],
+      "additionalProperties": false,
+      "description": "The hours Customer Care are on every day, India's clock, as ops set them (ADR 0132)."
+    },
     "address": {
       "anyOf": [
         {
@@ -3603,6 +3620,7 @@ Request body:
     "name",
     "mobile",
     "care_person",
+    "care_hours",
     "address",
     "address_given_to_ops",
     "consents",

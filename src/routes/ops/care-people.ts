@@ -6,7 +6,7 @@ import { createRoute, z } from "@hono/zod-openapi";
 import type { App } from "../../http/context.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
 import { json } from "../../http/openapi.ts";
-import { actorOf } from "../../http/audit.ts";
+import { actorOf, staffMemberOf } from "../../http/audit.ts";
 import { moveCarePerson } from "../../domain/care/care-people.ts";
 import { careRota } from "../../domain/care/cover.ts";
 import { indiaDate } from "../../lib/india-time.ts";
@@ -18,7 +18,10 @@ const MemberSchema = z
     clients: z.number().int(),
     weekly_off: z.array(z.number().int()).openapi({ description: "Weekly days off, 0 Sunday to 6 Saturday." }),
     leave: z.array(z.object({ id: z.uuid(), from: z.iso.date(), to: z.iso.date() }).strict()),
-    off_today: z.boolean(),
+    off_today: z.boolean().openapi({ description: "Not answering now: off shift, or on a day off or leave." }),
+    on_shift_since: z.union([z.iso.datetime(), z.null()]),
+    day_off: z.boolean().openapi({ description: "A weekly day off or leave today." }),
+    open_chats: z.number().int(),
     covered_by: z.union([z.string(), z.null()]).openapi({
       description: "Who covers them today; null while they are on, or the whole team is off.",
     }),
@@ -35,7 +38,12 @@ const teamRoute = createRoute({
       description: "The team",
       ...json(
         z
-          .object({ team: z.array(MemberSchema) })
+          .object({
+            team: z.array(MemberSchema),
+            me: z
+              .union([z.string(), z.null()])
+              .openapi({ description: "The caller, by e-mail; null for a service token." }),
+          })
           .strict()
           .openapi("CareTeam"),
       ),
@@ -67,7 +75,10 @@ const moveRoute = createRoute({
 });
 
 export function registerOpsCarePeople(app: App): void {
-  app.openapi(teamRoute, async (c) => c.json({ team: await careRota(c.env.DB, indiaDate(c.var.deps.now())) }, 200));
+  app.openapi(teamRoute, async (c) => {
+    const team = await careRota(c.env.DB, indiaDate(c.var.deps.now()));
+    return c.json({ team, me: staffMemberOf(c)?.id ?? null }, 200);
+  });
 
   app.openapi(moveRoute, async (c) => {
     const { email } = c.req.valid("json");

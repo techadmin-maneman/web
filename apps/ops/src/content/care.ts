@@ -130,8 +130,15 @@ export const care = {
     noLeave: "None",
     /** "Mon 20 Oct to Fri 24 Oct", or one day on its own. */
     period: (from: string, to: string) => (from === to ? from : `${from} to ${to}`),
-    on: "On",
-    off: (cover: string | null) => (cover === null ? "Off, nobody on" : `Off · covered by ${cover}`),
+    /** "On shift since 9:02 am" */
+    onShift: (since: string) => `On shift since ${since}`,
+    offShift: "Off shift",
+    dayOff: "Day off",
+    /** Beside who is off: "covered by ravi@maneman.in". */
+    coveredBy: (cover: string) => ` · covered by ${cover}`,
+    you: { on: (since: string) => `You're on shift since ${since}.`, off: "You're off shift." },
+    goOn: "Go on shift",
+    goOff: "Go off shift",
     editDays: "Days off",
     editDaysLabel: (email: string) => `Set the days off of ${email}`,
     addLeave: "Add leave",
@@ -146,6 +153,7 @@ export const care = {
     errors: {
       email: "No longer on the Care team. Reload.",
       to: "The leave must end today or later, and not before it starts.",
+      on: "Only the Care team go on shift.",
       not_found: "Not found. Reload.",
       not_permitted: NOT_PERMITTED,
       offline: OFFLINE,

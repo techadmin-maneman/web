@@ -1,6 +1,6 @@
-// The Care team's days off and who covers them (docs/decisions/0134-care-cover.md): each member's weekly days off and
-// leave as a Customer Care manager sets them, and on any day, the member covering each one who is off
-// (src/policy/care-cover.ts). Each change is audited.
+// The Care team's shifts, days off and who covers them (docs/decisions/0134-care-cover.md, 0139-care-shifts.md): each
+// member on or off shift as they mark it, their weekly days off and leave as a Customer Care manager sets them, and the
+// member covering each one who is off (src/policy/care-cover.ts). Each change to days off is audited.
 
 import { coversOf, isOff, type OffDays } from "../../policy/care-cover.ts";
 import { auditStatement, type AuditAction, type AuditActor } from "../ops/audit.ts";
@@ -23,7 +23,14 @@ export interface RotaMember {
   readonly leave: Leave[];
   /** Who covers them today; null while they are on, or the whole team is off. */
   readonly covered_by: string | null;
+  /** Not answering now: off shift, or on a day off or leave. */
   readonly off_today: boolean;
+  /** When they went on shift; null while off shift. */
+  readonly on_shift_since: string | null;
+  /** A weekly day off or leave today. */
+  readonly day_off: boolean;
+  /** Their clients' chats open now. */
+  readonly open_chats: number;
 }
 
 /** The team as it stands on an India date: each member's days off, and who covers whom. */
@@ -33,6 +40,11 @@ export async function careRota(db: D1Database, today: string): Promise<RotaMembe
     db.batch([
       db.prepare("SELECT email, weekday FROM care_weekly_off ORDER BY weekday"),
       db.prepare("SELECT email, name FROM care_names"),
+      db.prepare("SELECT email, on_shift_since FROM staff WHERE on_shift_since IS NOT NULL"),
+      db.prepare(
+        `SELECT o.email, COUNT(*) AS n FROM conversations c JOIN care_owners o ON o.person_id = c.person_id
+         WHERE c.state = 'open' GROUP BY o.email`,
+      ),
       db
         .prepare("SELECT id, email, from_date, to_date FROM care_leave WHERE to_date >= ?1 ORDER BY from_date")
         .bind(today),
@@ -40,13 +52,25 @@ export async function careRota(db: D1Database, today: string): Promise<RotaMembe
   ]);
   const weekly = (rows[0]?.results ?? []) as { email: string; weekday: number }[];
   const names = (rows[1]?.results ?? []) as { email: string; name: string }[];
-  const leave = (rows[2]?.results ?? []) as { id: string; email: string; from_date: string; to_date: string }[];
+  const shifts = (rows[2]?.results ?? []) as { email: string; on_shift_since: string }[];
+  const open = (rows[3]?.results ?? []) as { email: string; n: number }[];
+  const leave = (rows[4]?.results ?? []) as { id: string; email: string; from_date: string; to_date: string }[];
+  const onShiftSince = (email: string) => shifts.find((row) => row.email === email)?.on_shift_since ?? null;
+  const openChats = (email: string) => open.find((row) => row.email === email)?.n ?? 0;
   const offOf = (email: string): OffDays => ({
     weekly: weekly.filter((row) => row.email === email).map((row) => row.weekday),
     leave: leave.filter((row) => row.email === email).map((row) => ({ from: row.from_date, to: row.to_date })),
   });
-  const off = new Set(team.filter((member) => isOff(today, offOf(member.email))).map((member) => member.email));
-  const covers = coversOf(team, off);
+  const dayOff = new Set(team.filter((member) => isOff(today, offOf(member.email))).map((member) => member.email));
+  const off = new Set(
+    team
+      .filter((member) => dayOff.has(member.email) || onShiftSince(member.email) === null)
+      .map((member) => member.email),
+  );
+  const covers = coversOf(
+    team.map((member) => ({ email: member.email, load: openChats(member.email) })),
+    off,
+  );
   return team.map((member) => ({
     email: member.email,
     name: names.find((row) => row.email === member.email)?.name ?? null,
@@ -57,6 +81,9 @@ export async function careRota(db: D1Database, today: string): Promise<RotaMembe
       .map((row) => ({ id: row.id, from: row.from_date, to: row.to_date })),
     covered_by: covers.get(member.email) ?? null,
     off_today: off.has(member.email),
+    on_shift_since: onShiftSince(member.email),
+    day_off: dayOff.has(member.email),
+    open_chats: openChats(member.email),
   }));
 }
 
@@ -133,6 +160,14 @@ export async function addLeave(
     }),
   ]);
   return id;
+}
+
+/** A member of the Care team on shift from now, or off it; their own to mark. */
+export async function setOnShift(db: D1Database, email: string, on: boolean, now: Date): Promise<void> {
+  await db
+    .prepare("UPDATE staff SET on_shift_since = ?2 WHERE email = ?1")
+    .bind(email, on ? now.toISOString() : null)
+    .run();
 }
 
 /** Leave taken back; false for leave we do not have. */

@@ -2615,6 +2615,67 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/care-team/shift": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Go on shift, or off it: the caller, as a member of the Care team */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["CareShift"];
+                };
+            };
+            responses: {
+                /** @description Done */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @enum {boolean} */
+                            ok: true;
+                        };
+                    };
+                };
+                /** @description invalid_request: fields names on when the caller is not one of the Care team */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description access_required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/care-team/leave/{id}/delete": {
         parameters: {
             query?: never;
@@ -10415,6 +10476,8 @@ export interface components {
         };
         CareTeam: {
             team: components["schemas"]["CareMember"][];
+            /** @description The caller, by e-mail; null for a service token. */
+            me: string | null;
         };
         CareMember: {
             email: string;
@@ -10431,7 +10494,12 @@ export interface components {
                 /** Format: date */
                 to: string;
             }[];
+            /** @description Not answering now: off shift, or on a day off or leave. */
             off_today: boolean;
+            on_shift_since: string | null;
+            /** @description A weekly day off or leave today. */
+            day_off: boolean;
+            open_chats: number;
             /** @description Who covers them today; null while they are on, or the whole team is off. */
             covered_by: string | null;
         };
@@ -10459,6 +10527,9 @@ export interface components {
             /** Format: email */
             email: string;
             name: string;
+        };
+        CareShift: {
+            on: boolean;
         };
         CityMatter: {
             /** @description What the city team need to know, in Care's words; blanked if the client is erased. */

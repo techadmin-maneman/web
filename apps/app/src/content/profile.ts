@@ -116,8 +116,16 @@ export const profile = {
     label: "Support",
     message: "Message us on WhatsApp",
     hint: "Replies the same day. Everything in writing.",
-    /** Their named Care person (docs/decisions/0136-care-names.md). */
-    carePerson: (name: string) => `Your Care person is ${name}.`,
+    /** Their named Care person and Care's hours: "Asha, your Care person · 9 am–9 pm daily". */
+    carePerson: (name: string, hours: string) => `${name}, your Care person · ${hours} daily`,
+    /** "9 am–9 pm" */
+    hours: (opens: string, closes: string) => `${opens}–${closes}`,
+    /** An hour of the day as the card says it: "9 am", "noon", "9 pm". */
+    hour: (hour: number) => {
+      if (hour === 0) return "midnight";
+      if (hour === 12) return "noon";
+      return hour < 12 ? `${String(hour)} am` : `${String(hour - 12)} pm`;
+    },
   },
   // The design has no card for the client's rights over their data (docs/decisions/0049-dpdp.md).
   data: {

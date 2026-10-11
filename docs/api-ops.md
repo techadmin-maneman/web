@@ -1808,6 +1808,54 @@ Request body:
 }
 ```
 
+### POST /api/care-team/shift
+
+Go on shift, or off it: the caller, as a member of the Care team
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/CareShift"
+}
+```
+
+**200**: Done
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "ok": {
+      "type": "boolean",
+      "enum": [
+        true
+      ]
+    }
+  },
+  "required": [
+    "ok"
+  ],
+  "additionalProperties": false
+}
+```
+
+**400**: invalid_request: fields names on when the caller is not one of the Care team
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ### POST /api/care-team/leave/{id}/delete
 
 Leave taken back
@@ -11540,10 +11588,22 @@ Request body:
       "items": {
         "$ref": "#/components/schemas/CareMember"
       }
+    },
+    "me": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The caller, by e-mail; null for a service token."
     }
   },
   "required": [
-    "team"
+    "team",
+    "me"
   ],
   "additionalProperties": false
 }
@@ -11606,7 +11666,26 @@ Request body:
       }
     },
     "off_today": {
-      "type": "boolean"
+      "type": "boolean",
+      "description": "Not answering now: off shift, or on a day off or leave."
+    },
+    "on_shift_since": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date-time"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "day_off": {
+      "type": "boolean",
+      "description": "A weekly day off or leave today."
+    },
+    "open_chats": {
+      "type": "integer"
     },
     "covered_by": {
       "anyOf": [
@@ -11627,6 +11706,9 @@ Request body:
     "weekly_off",
     "leave",
     "off_today",
+    "on_shift_since",
+    "day_off",
+    "open_chats",
     "covered_by"
   ],
   "additionalProperties": false
@@ -11743,6 +11825,23 @@ Request body:
   "required": [
     "email",
     "name"
+  ],
+  "additionalProperties": false
+}
+```
+
+### CareShift
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "on": {
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "on"
   ],
   "additionalProperties": false
 }

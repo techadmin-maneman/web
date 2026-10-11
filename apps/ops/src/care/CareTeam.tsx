@@ -8,7 +8,7 @@ import { Table } from "@maneman/ui/Table";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { classes } from "@maneman/ui/classes";
 import { useLoad } from "@maneman/ui/useLoad";
-import { shortDate } from "@maneman/web-kit/dates";
+import { indiaClock, shortDate } from "@maneman/web-kit/dates";
 import type { Failure } from "@maneman/web-kit/refusal";
 import { useCallback, useState } from "react";
 import type { Answer } from "../api.ts";
@@ -194,6 +194,36 @@ function LeaveList(props: { leave: readonly Leave[]; mayManage: boolean; onChang
   );
 }
 
+/** On shift, off it, or a day off; and who covers them while they are off. */
+function stateOf(member: CareMember): string {
+  if (member.day_off) return copy.dayOff;
+  return member.on_shift_since === null ? copy.offShift : copy.onShift(indiaClock(member.on_shift_since));
+}
+
+function todayOf(member: CareMember): string {
+  return member.covered_by === null ? stateOf(member) : stateOf(member) + copy.coveredBy(member.covered_by);
+}
+
+/** The signed-in member going on shift, or off it. */
+function ShiftSwitch(props: { me: CareMember; onDone: () => void }) {
+  const { busy, failure, send } = useSend(props.onDone);
+  const since = props.me.on_shift_since;
+  return (
+    <div className={own.tools}>
+      <p className={styles.note}>{since === null ? copy.you.off : copy.you.on(indiaClock(since))}</p>
+      <Button
+        variant={since === null ? "primary" : "outline"}
+        size="small"
+        disabled={busy}
+        onClick={() => void send(() => careApi.setOnShift(since === null))}
+      >
+        {since === null ? copy.goOn : copy.goOff}
+      </Button>
+      <Refused failed={failure} errors={copy.errors} />
+    </div>
+  );
+}
+
 type Acting = "name" | "days" | "leave" | null;
 
 function MemberRows(props: { member: CareMember; mayManage: boolean; onChanged: () => void }) {
@@ -219,7 +249,7 @@ function MemberRows(props: { member: CareMember; mayManage: boolean; onChanged: 
         <td>
           <LeaveList leave={member.leave} mayManage={mayManage} onChanged={props.onChanged} />
         </td>
-        <td>{member.off_today ? copy.off(member.covered_by) : copy.on}</td>
+        <td>{todayOf(member)}</td>
         <td className={own.actions}>
           {mayManage && (
             <>
@@ -279,8 +309,10 @@ export function CareTeam() {
   const { team } = loaded.value;
   if (team.length === 0) return <p className={styles.note}>{care.carePerson.noTeam}</p>;
   const columns = copy.columns;
+  const me = team.find((member) => member.email === loaded.value.me);
   return (
     <div className={own.scroll}>
+      {me !== undefined && <ShiftSwitch me={me} onDone={retry} />}
       <Table className={classes(styles.table, own.table)}>
         <thead>
           <tr>
