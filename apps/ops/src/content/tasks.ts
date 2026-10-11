@@ -191,16 +191,8 @@ export const tasks = {
     unanswered_chat: (since: string) => `Waiting since ${since}`,
     /** Care's note to the city team, as they wrote it. */
     city_matter: (note: string) => note,
-    /** "2 free service visits · Fit problem" */
-    remedyReasons: {
-      fit_problem: "Fit problem",
-      technician_late: "Technician late",
-      visit_missed: "Visit missed by us",
-      product_fault: "Product fault",
-      other: "Other",
-    } as Readonly<Record<string, string>>,
-    remedy_approval: (visits: number, reason: string) =>
-      `${String(visits)} free service ${visits === 1 ? "visit" : "visits"} · ${reason}`,
+    /** "2 free service visits"; why is in the Remedies panel on Messages. */
+    remedy_approval: (visits: number) => `${String(visits)} free service ${visits === 1 ? "visit" : "visits"}`,
     number_change: "Both numbers verified",
     erasure_request: "Requested in the app",
     // A concern about their data, which the app promises an answer to within 30 days.
