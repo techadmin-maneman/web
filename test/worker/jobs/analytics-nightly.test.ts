@@ -197,10 +197,41 @@ describe("the copy's leads", () => {
       lead_date: "2026-09-01",
       source: "form",
       landing_page: "/book",
-      channel: "direct",
+      channel: "Direct",
       consultation_done_date: "2026-09-05",
       first_fit_done_date: null,
     });
     expect(leads?.get("l-rohit")?.consultation_booked_date).not.toBeNull();
+  });
+});
+
+describe("the copy's channels", () => {
+  it("gives a lead its channel and campaign, the campaign its city, and the client their first lead's channel", async () => {
+    await env.DB.batch([
+      env.DB.prepare(
+        `INSERT INTO leads (id, person_id, created_at, source, utm_source, utm_medium, utm_campaign, gclid, loss_extent,
+           request_id)
+         VALUES ('l-ad', 'p-rohit', '2026-09-01T05:00:00.000Z', 'form', 'google', 'cpc', 'Gurgaon-Search-Hair-Systems',
+           'gc1', 'crown', 'r1')`,
+      ),
+      env.DB.prepare(
+        `INSERT INTO leads (id, person_id, created_at, source, referrer, loss_extent, request_id)
+         VALUES ('l-later', 'p-rohit', '2026-09-03T05:00:00.000Z', 'form', 'https://www.google.com/', 'crown', 'r2')`,
+      ),
+    ]);
+    const warehouse = createStubWarehouse();
+
+    await copyTonight(env.DB, warehouse, night);
+
+    const leads = warehouse.tables.get("fact_lead");
+    expect(leads?.get("l-ad")).toMatchObject({ channel: "Google Ads", campaign_key: "gurgaon-search-hair-systems" });
+    expect(leads?.get("l-later")).toMatchObject({ channel: "Organic search", campaign_key: null });
+    expect(warehouse.tables.get("dim_campaign")?.get("gurgaon-search-hair-systems")).toMatchObject({
+      channel: "Google Ads",
+      city: "Gurgaon",
+    });
+    const [rohit] = (await clientKeys(SECRET, ["p-rohit"])).values();
+    expect(warehouse.tables.get("dim_client")?.get(rohit ?? "")).toMatchObject({ channel: "Google Ads" });
+    expect(warehouse.tables.get("dim_channel")?.size).toBe(7);
   });
 });
