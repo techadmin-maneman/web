@@ -8,6 +8,7 @@ import type { Page } from "@playwright/test";
 import { expect, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
 import { answer, JOB_SHEET, json, type Answers } from "./fixtures.ts";
+import * as opsCopy from "../../apps/ops/src/content.ts";
 
 async function open(page: Page, extra: Answers = {}): Promise<void> {
   await answer(page, { "GET /api/job-sheet": json(JOB_SHEET), ...extra });
@@ -31,10 +32,10 @@ test("shows a kind's checklist in its order, who set it, and what was taken off"
   await expect(list).toContainText("Adhesive renewed");
   await expect(list.getByRole("button", { name: "Restore: Adhesive renewed" })).toBeVisible();
 
-  await page.getByLabel("Kind of visit").selectOption({ label: "Replacement" });
+  await page.getByLabel(opsCopy.settings.jobSheet.kind).selectOption({ label: "Replacement" });
   const replacement = page.getByRole("group", { name: "Replacement checklist" });
   await expect(replacement.getByLabel("Item 1")).toHaveValue("Old piece removed");
-  await expect(replacement).toContainText("Default");
+  await expect(replacement).toContainText(opsCopy.settings.jobSheet.committed);
 });
 
 test("renames, moves, takes off and adds, shows each before it is sent, and keeps every code", async ({ page }) => {
@@ -43,7 +44,7 @@ test("renames, moves, takes off and adds, shows each before it is sent, and keep
   await list.getByLabel("Item 2").fill("Scalp cleaned and dried");
   await list.getByRole("button", { name: "Move up: Piece refitted" }).click();
   await list.getByRole("button", { name: "Remove: Piece removed" }).click();
-  await list.getByRole("button", { name: "Add item" }).click();
+  await list.getByRole("button", { name: opsCopy.settings.jobSheet.add }).click();
   await list.getByLabel("Item 3").fill("Photo angles checked");
   await list.getByRole("button", { name: "Save" }).click();
 
@@ -52,7 +53,7 @@ test("renames, moves, takes off and adds, shows each before it is sent, and keep
   await expect(check).toContainText("Renamed: Scalp cleaned → Scalp cleaned and dried");
   await expect(check).toContainText("Added: Photo angles checked");
   await expect(check).toContainText("Removed: Piece removed");
-  await expect(check).toContainText("Order changed.");
+  await expect(check).toContainText(opsCopy.settings.jobSheet.confirm.moved);
 
   const sent = posted(page, "/api/job-sheet/checklists/service");
   await check.getByRole("button", { name: "Confirm" }).click();
@@ -83,7 +84,7 @@ test("puts an item taken off back on the list, under its own code", async ({ pag
 test("will not save an item with no words, nor two alike", async ({ page }) => {
   await open(page);
   const list = checklist(page);
-  await list.getByRole("button", { name: "Add item" }).click();
+  await list.getByRole("button", { name: opsCopy.settings.jobSheet.add }).click();
   await expect(list.getByRole("button", { name: "Save" })).toBeDisabled();
 
   await list.getByLabel("Item 4").fill("piece removed");
@@ -94,8 +95,8 @@ test("will not save an item with no words, nor two alike", async ({ page }) => {
 
 test("sets the partial reasons the Tasks board reads", async ({ page }) => {
   await open(page, { "POST /api/job-sheet/partial-reasons": json(JOB_SHEET) });
-  const reasons = page.getByRole("group", { name: "Partial reasons" });
-  await reasons.getByRole("button", { name: "Add reason" }).click();
+  const reasons = page.getByRole("group", { name: opsCopy.settings.jobSheet.reasons });
+  await reasons.getByRole("button", { name: opsCopy.settings.jobSheet.addReason }).click();
   await reasons.getByLabel("Reason 3").fill("Power cut");
   await reasons.getByRole("button", { name: "Save" }).click();
   await expect(reasons.getByRole("group", { name: "Review the change" })).toContainText("Added: Power cut");

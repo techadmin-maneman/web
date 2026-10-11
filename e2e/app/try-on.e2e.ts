@@ -11,6 +11,7 @@ import { expect, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
 import { logIn } from "./signed-in.ts";
 import { tryOnClient } from "./try-on.ts";
+import * as appCopy from "../../apps/app/src/content.ts";
 
 const tab = (page: Page, name: string) => page.getByRole("navigation").getByRole("link", { name });
 
@@ -29,7 +30,7 @@ test("Photos shows a booked client's before photo beside its look, each kept, ea
   await tab(page, "Photos").click();
 
   const tryOn = page.getByRole("region", { name: date });
-  await expect(tryOn.getByText("Your try-on")).toBeVisible();
+  await expect(tryOn.getByText(appCopy.photos.tryOn.title)).toBeVisible();
   const photo = tryOn.getByRole("button", { name: `Your photo, try-on of ${date}` });
   const look = tryOn.getByRole("button", { name: `Your look, try-on of ${date}` });
   await arrived(photo);
@@ -49,7 +50,7 @@ test("Photos shows a booked client's before photo beside its look, each kept, ea
   const sheet = page.getByRole("dialog", { name: `Your look · ${date}` });
   await expect(sheet.getByAltText(`Your look, try-on of ${date}`)).toBeVisible();
   const download = page.waitForEvent("download");
-  await sheet.getByRole("link", { name: "Download" }).click();
+  await sheet.getByRole("link", { name: appCopy.photos.download }).click();
   // The file's own type names its extension.
   expect((await download).suggestedFilename()).toBe(`mane-man-${madeOn}-try-on-look.jpg`);
   await sheet.getByRole("button", { name: "Close" }).click();
@@ -64,6 +65,6 @@ test("the tab meets WCAG 2.2 AA with a try-on above the empty state", async ({ p
   await logIn(page, tryOnClient().mobile);
   await expect(page.getByRole("heading", { name: "Your consultation" })).toBeVisible();
   await tab(page, "Photos").click();
-  await expect(page.getByText("Your try-on")).toBeVisible();
+  await expect(page.getByText(appCopy.photos.tryOn.title)).toBeVisible();
   expect(await axeViolations(page)).toEqual([]);
 });

@@ -1,6 +1,7 @@
 import { expect, test } from "../support.ts";
 import { answer, DAY_MONEY, DECIDED, DISPUTES, fails, json, NO_SHOWS, TASKS_READ_ON } from "./fixtures.ts";
 import { FIRST, MONEY, DISPUTE, RULE, DISPUTED, open, disputeCard } from "./no-shows-fixtures.ts";
+import * as opsCopy from "../../apps/ops/src/content.ts";
 
 const DISPUTES_QUEUE = "Disputed charges";
 
@@ -41,7 +42,7 @@ test("heads the day with the board's three figures, as money", async ({ page }) 
   const money = page.getByRole("region", { name: MONEY, exact: true });
   await expect(money.getByText("Collected today")).toBeVisible();
   await expect(money.getByText("Rs. 84,000")).toBeVisible();
-  await expect(money.getByText("Refunds processing")).toBeVisible();
+  await expect(money.getByText(opsCopy.noShows.money.figures.processing)).toBeVisible();
   await expect(money.getByText("Rs. 7,080")).toBeVisible();
   await expect(money.getByText("Rs. 2,360 refunded today")).toBeVisible();
 });
@@ -51,7 +52,7 @@ test("heads the day with the board's three figures, as money", async ({ page }) 
 test("adds what a charged no-show kept to the charges figure", async ({ page }) => {
   await open(page);
   const money = page.getByRole("region", { name: MONEY, exact: true });
-  await expect(money.getByText("Charges and no-shows")).toBeVisible();
+  await expect(money.getByText(opsCopy.noShows.money.figures.charged)).toBeVisible();
   await expect(money.getByText("Rs. 4,720")).toBeVisible();
   await expect(money.getByText("not charged yet")).toBeHidden();
 });
@@ -80,7 +81,7 @@ test("says a no-show's amount was not recorded where its charge kept none on rec
   await answer(page, { "GET /api/payments": json(unrecorded), "GET /api/no-shows": json(NO_SHOWS) });
   await page.goto("/payments");
   const charge = page.getByRole("listitem").filter({ hasText: "Karan Bose · no-show" });
-  await expect(charge.getByText("Amount not recorded")).toBeVisible();
+  await expect(charge.getByText(opsCopy.noShows.money.charges.noAmount)).toBeVisible();
   await expect(charge.getByText("Rs.")).toBeHidden();
 });
 
@@ -175,7 +176,7 @@ test("offers Refund and Uphold only once the note is written, and sends the ruli
   await open(page);
   const card = disputeCard(page);
   await expect(card.getByRole("button", { name: "Refund" })).toBeDisabled();
-  await expect(card.getByRole("button", { name: "Uphold" })).toBeDisabled();
+  await expect(card.getByRole("button", { name: opsCopy.noShows.dispute.uphold })).toBeDisabled();
   await card.getByLabel("Your note · required").fill("The bell was broken that week");
 
   const sent = page.waitForRequest((request) => request.url().includes("/ruling") && request.method() === "POST");
@@ -184,7 +185,9 @@ test("offers Refund and Uphold only once the note is written, and sends the ruli
   await card.getByRole("button", { name: "Refund" }).click();
   expect((await sent).postDataJSON()).toEqual({ ruling: "refunded", reason: "The bell was broken that week" });
   await expect(page.getByText(DISPUTED)).toBeHidden();
-  await expect(page.getByRole("region", { name: DISPUTES_QUEUE }).getByText("No disputed charges.")).toBeVisible();
+  await expect(
+    page.getByRole("region", { name: DISPUTES_QUEUE }).getByText(opsCopy.noShows.dispute.none),
+  ).toBeVisible();
   // The dispute is gone, so the keyboard goes to the queue's heading.
   await expect(page.getByRole("heading", { name: DISPUTES_QUEUE })).toBeFocused();
 });
@@ -194,7 +197,7 @@ test("upholds a charge with its note", async ({ page }) => {
   const card = disputeCard(page);
   await card.getByLabel("Your note · required").fill("He rang twice and waited");
   const sent = page.waitForRequest((request) => request.url().includes("/ruling") && request.method() === "POST");
-  await card.getByRole("button", { name: "Uphold" }).click();
+  await card.getByRole("button", { name: opsCopy.noShows.dispute.uphold }).click();
   expect((await sent).postDataJSON()).toEqual({ ruling: "upheld", reason: "He rang twice and waited" });
 });
 
@@ -202,7 +205,7 @@ test("says so when someone else has ruled on the dispute already", async ({ page
   await open(page, undefined, undefined, fails(404, "not_found"));
   const card = disputeCard(page);
   await card.getByLabel("Your note · required").fill("The bell was broken");
-  await card.getByRole("button", { name: "Uphold" }).click();
+  await card.getByRole("button", { name: opsCopy.noShows.dispute.uphold }).click();
   await expect(card.getByRole("alert")).toContainText("Already ruled on. Reload.");
 });
 
@@ -229,7 +232,7 @@ test("says so when nothing was charged on the day", async ({ page }) => {
 test("says so when the day's money cannot be loaded, and leaves the queue standing", async ({ page }) => {
   await answer(page, { "GET /api/payments": fails(503, "unavailable"), "GET /api/no-shows": json(NO_SHOWS) });
   await page.goto("/payments");
-  await expect(page.getByRole("alert")).toContainText("Couldn't load this.");
+  await expect(page.getByRole("alert")).toContainText(opsCopy.states.failed);
   await expect(page.getByText(FIRST)).toBeVisible();
 });
 

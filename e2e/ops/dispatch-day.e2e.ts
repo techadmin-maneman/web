@@ -4,6 +4,7 @@
 import { expect, test } from "../support.ts";
 import { fails, json, ROOM, type OpsReply } from "./fixtures.ts";
 import { open, press, READ_ROOM, ROHIT_BLOCK } from "./dispatch-fixtures.ts";
+import * as opsCopy from "../../apps/ops/src/content.ts";
 
 const IMRAN = "66000000-0000-4000-8000-000000000001";
 const SANDEEP = "66000000-0000-4000-8000-000000000002";
@@ -71,7 +72,7 @@ test("opens a day's routes from its column's head, and calls out a drive longer 
   await expect(routes.getByRole("heading", { name: "Imran Qureshi" })).toBeVisible();
   await expect(routes).toContainText("45 min drive, 30 min gap");
   // A visit whose address has no pin is listed, with no drive to it.
-  await expect(routes.getByRole("listitem").filter({ hasText: "DLF 2" })).toContainText("no pin");
+  await expect(routes.getByRole("listitem").filter({ hasText: "DLF 2" })).toContainText(opsCopy.dispatch.routes.noPin);
 });
 
 test("says when drive times are off, and still lists the visits", async ({ page }) => {
@@ -82,7 +83,7 @@ test("says when drive times are off, and still lists the visits", async ({ page 
 
   await press(page, "Routes for Fri 19");
   const routes = page.getByRole("dialog", { name: "Routes · Fri 19 Sep" });
-  await expect(routes).toContainText("Drive times are off.");
+  await expect(routes).toContainText(opsCopy.dispatch.routes.driveTimes.off);
   await expect(routes.getByRole("listitem")).toHaveCount(3);
   await expect(routes.getByRole("img")).toHaveCount(0);
 });
@@ -100,7 +101,7 @@ test("offers a job in hand to the nearest technician's day first, with how far",
 
   await press(page, ROHIT_BLOCK);
   await press(page, "Move visit");
-  const options = page.getByLabel("Or choose from a list").locator("option:not([disabled])");
+  const options = page.getByLabel(opsCopy.dispatch.landing.list).locator("option:not([disabled])");
   await expect(options.first()).toHaveText("Sandeep Yadav · Sat 20 Sep · morning · 2.4 km");
   await expect(options.nth(2)).toContainText("Faizan Ali · Fri 19 Sep");
   await expect(options.nth(2)).toContainText("8.1 km");

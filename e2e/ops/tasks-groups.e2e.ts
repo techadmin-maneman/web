@@ -2,6 +2,7 @@ import { expect, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
 import { answer, json, type OpsReply } from "./fixtures.ts";
 import { open, row, groupNames } from "./tasks-fixtures.ts";
+import * as opsCopy from "../../apps/ops/src/content.ts";
 
 // The board draws no consultation request, so it is left out of the fixture the
 // fidelity run reads and given its own answer here
@@ -178,7 +179,7 @@ test("names a one visit asked for, and a fitted client's payment still owed, wit
     ],
   });
   await expect(groupNames(page)).toHaveText(["Consultation request", "Payment owed"]);
-  await expect(row(page, "Arjun Kapoor")).toContainText("+ consultation and fit together");
+  await expect(row(page, "Arjun Kapoor")).toContainText(opsCopy.tasks.subs.withOneVisit);
   await expect(row(page, "Nikhil Suri")).toContainText("Mane Man Natural, Rs. 35,000 · link sent");
   await expect(row(page, "Manoj Iyer")).toContainText("Mane Man Essential, Rs. 25,000 · link not sent");
   await expect(row(page, "Ravi Menon")).toContainText("link refused by Razorpay");
@@ -297,7 +298,7 @@ test("names a disputed charge and what it kept, and leads to the dispute in Paym
   // A client since erased still has their charge ruled on.
   await expect(row(page, "Erased client")).toContainText("Disputes a charge: a free service visit");
   await expect(
-    page.getByRole("navigation", { name: "Console" }).getByRole("link", { name: /^Payments, 2 waiting/ }),
+    page.getByRole("navigation", { name: opsCopy.shell.title }).getByRole("link", { name: /^Payments, 2 waiting/ }),
   ).toBeVisible();
 });
 
@@ -357,7 +358,7 @@ test("counts an open grievance down, and leads to it in Grievances", async ({ pa
   });
   await expect(groupNames(page)).toHaveText(["Concern"]);
   const grievance = row(page, "Neha Kapoor");
-  await expect(grievance).toContainText("Raised in the app");
+  await expect(grievance).toContainText(opsCopy.tasks.subs.grievance);
   await expect(grievance).toContainText("22 days left");
   await expect(grievance.getByRole("link", { name: /^Answer in Concerns/ })).toHaveAttribute(
     "href",

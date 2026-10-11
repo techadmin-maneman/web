@@ -13,6 +13,7 @@ import {
   FIRST_FIT,
   LATE_FEE_LINE,
 } from "./booking-fixtures.ts";
+import * as appCopy from "../../apps/app/src/content.ts";
 
 // One client, one hold at a time: a new hold lets the client's earlier one go, so these run one after another, in
 // order. One failing leaves the rest to run.
@@ -31,7 +32,7 @@ test("says a visit sold inside its notice is charged to change from now, never f
 }) => {
   await holdAs(page, { free_until: PASSED() });
   await toPayment(page);
-  const pay = page.getByRole("dialog", { name: "Pay and confirm" });
+  const pay = page.getByRole("dialog", { name: appCopy.booking.pay.title });
   await expect(
     pay.getByText(
       "This visit is less than 24 hours away: if you move or cancel it, the Rs. 2,000 paid isn’t refunded.",
@@ -49,7 +50,7 @@ test("says a first fit sold inside its notice costs its late fee to change from 
     free_until: PASSED(),
   });
   await toPayment(page);
-  const pay = page.getByRole("dialog", { name: "Pay and confirm" });
+  const pay = page.getByRole("dialog", { name: appCopy.booking.pay.title });
   await expect(
     pay.getByText(
       "This visit is less than 24 hours away: moving or cancelling it costs Rs. 4,720 (Rs. 4,000 + Rs. 720 GST).",
@@ -63,7 +64,7 @@ test("says a free service visit is not returned for a visit it covers that is so
 }) => {
   await holdAs(page, { credit: { remaining: 2 }, free_until: PASSED() });
   await toPayment(page);
-  const confirm = page.getByRole("dialog", { name: "Confirm", exact: true });
+  const confirm = page.getByRole("dialog", { name: appCopy.booking.pay.titleFree, exact: true });
   await expect(
     confirm.getByText(
       "This visit is less than 24 hours away: if you move or cancel it, the free service visit isn’t returned.",
@@ -82,13 +83,13 @@ test("marks the days and windows inside the notice, which are still sold", async
     })),
   }));
   await openSheet(page);
-  const dates = page.getByRole("dialog", { name: "Pick a date" });
+  const dates = page.getByRole("dialog", { name: appCopy.booking.date.title });
   const marked = dates.getByRole("radio", { name: /, Within 24 hours: changes are charged$/ });
   await expect(marked).toHaveCount(1);
   await expect(dates.getByText("Within 24 hours: changes are charged")).toBeVisible();
   await marked.click();
   await dates.getByRole("button", { name: "Continue" }).click();
-  const windows = page.getByRole("dialog", { name: "Pick a time" });
+  const windows = page.getByRole("dialog", { name: appCopy.booking.window.title });
   await expect(windows.getByRole("radio").first()).toBeVisible();
   const open = await windows.getByRole("radio").count();
   await expect(windows.getByText("Within 24 hours: changes are charged")).toHaveCount(open);
@@ -105,31 +106,31 @@ test("takes a visit that costs nothing to Confirm, never to a payment", async ({
   }));
   await holdAs(page, { type: "consultation", price: free, late_change_charge: "nothing" });
   await toWindows(page);
-  const windows = page.getByRole("dialog", { name: "Pick a time" });
+  const windows = page.getByRole("dialog", { name: appCopy.booking.window.title });
   await windows.getByRole("radio").and(page.locator(":enabled")).first().click();
-  await expect(windows.getByRole("button", { name: "Continue to payment" })).toHaveCount(0);
+  await expect(windows.getByRole("button", { name: appCopy.booking.window.continue })).toHaveCount(0);
   await windows.getByRole("button", { name: "Continue", exact: true }).click();
-  const confirm = page.getByRole("dialog", { name: "Confirm", exact: true });
+  const confirm = page.getByRole("dialog", { name: appCopy.booking.pay.titleFree, exact: true });
   await expect(confirm.getByText("Free", { exact: true })).toBeVisible();
-  await expect(confirm.getByRole("button", { name: "Confirm visit" })).toBeVisible();
-  await expect(page.getByRole("dialog", { name: "Pay and confirm" })).toHaveCount(0);
+  await expect(confirm.getByRole("button", { name: appCopy.booking.pay.confirm })).toBeVisible();
+  await expect(page.getByRole("dialog", { name: appCopy.booking.pay.title })).toHaveCount(0);
 });
 
 test("says a visit moves or cancels free at any time where the booking is sold so", async ({ page }) => {
   await holdAs(page, { late_change_charge: "nothing" });
   await toPayment(page);
-  const pay = page.getByRole("dialog", { name: "Pay and confirm" });
-  await expect(pay.getByText("Free to move or cancel at any time.")).toBeVisible();
+  const pay = page.getByRole("dialog", { name: appCopy.booking.pay.title });
+  await expect(pay.getByText(appCopy.booking.pay.freeAnyTime)).toBeVisible();
   await expect(pay.getByText(/After that, changes are charged/)).toHaveCount(0);
 });
 
 test("says a credit is gone after a late cancel only where the booking is sold so", async ({ page }) => {
   await holdAs(page, { credit: { remaining: 2 }, late_change_charge: "nothing" });
   await toPayment(page);
-  const pay = page.getByRole("dialog", { name: "Confirm", exact: true });
-  await expect(pay.getByText("1 free service visit used")).toBeVisible();
+  const pay = page.getByRole("dialog", { name: appCopy.booking.pay.titleFree, exact: true });
+  await expect(pay.getByText(appCopy.booking.pay.credit.used)).toBeVisible();
   await expect(pay.getByText(/the free service visit is gone/)).toHaveCount(0);
-  await expect(pay.getByText("Free to move or cancel at any time.")).toBeVisible();
+  await expect(pay.getByText(appCopy.booking.pay.freeAnyTime)).toBeVisible();
 });
 
 test("says a credit is gone after a cancel inside the notice the booking is sold under", async ({ page }) => {
@@ -137,7 +138,7 @@ test("says a credit is gone after a cancel inside the notice the booking is sold
   await toPayment(page);
   await expect(
     page
-      .getByRole("dialog", { name: "Confirm", exact: true })
+      .getByRole("dialog", { name: appCopy.booking.pay.titleFree, exact: true })
       .getByText("Cancel inside 48 hours and the free service visit is gone."),
   ).toBeVisible();
 });
@@ -161,10 +162,10 @@ test("writes the late fee to move a visit as the pay step does, and C7's way to 
     }),
   );
   await logIn(page, fittedClient().mobile);
-  await page.getByRole("button", { name: "Reschedule" }).click();
+  await page.getByRole("button", { name: appCopy.home.reschedule }).click();
   const sheet = page.getByRole("dialog", { name: /^Move \w+day’s visit$/ });
   await expect(sheet.getByText(LATE_FEE_LINE)).toBeVisible();
-  const instead = await sheet.getByRole("button", { name: "Cancel instead" }).boundingBox();
+  const instead = await sheet.getByRole("button", { name: appCopy.change.move.cancelInstead }).boundingBox();
   expect(instead?.height).toBeGreaterThanOrEqual(44);
 });
 
@@ -173,7 +174,7 @@ test("draws a change's outcome in the serif's one weight, never a made-up bold",
     route.fulfill({ status: 500, json: { error: { code: "internal_error", request_id: "e2e" } } }),
   );
   await logIn(page, fittedClient().mobile);
-  await page.getByRole("button", { name: "Reschedule" }).click();
+  await page.getByRole("button", { name: appCopy.home.reschedule }).click();
   const outcome = page.getByRole("dialog").getByRole("heading", { name: /^That didn’t go through/ });
   await expect(outcome).toBeVisible();
   expect(await outcome.evaluate((heading) => getComputedStyle(heading).fontWeight)).toBe("400");

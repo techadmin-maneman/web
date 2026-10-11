@@ -9,6 +9,7 @@ import type { Page } from "@playwright/test";
 import { expect, test } from "../support.ts";
 import { checkoutOnTop, confirmedByRazorpay, fakeCheckout, noRealCheckout } from "./checkout-fakes.ts";
 import { FREE_UNTIL, toPayment, profileAs, type Hold, holdAs, scanOf } from "./booking-fixtures.ts";
+import * as appCopy from "../../apps/app/src/content.ts";
 
 // One client, one hold at a time: a new hold lets the client's earlier one go, so these run one after another, in
 // order. One failing leaves the rest to run.
@@ -42,7 +43,7 @@ test("books and pays for a service visit through Razorpay Checkout", async ({ pa
   await confirmedByRazorpay(page);
   await profileAs(page, { reminders: true });
   await toPayment(page);
-  const pay = page.getByRole("dialog", { name: "Pay and confirm" });
+  const pay = page.getByRole("dialog", { name: appCopy.booking.pay.title });
   await expect(pay.getByText(/^Held for \d:\d\d$/)).toBeVisible();
   await expect(pay.getByText("Rs. 2,000", { exact: true })).toBeVisible();
   // GST is nothing here, so the figure is said once, with no "incl. GST" repeating it.
@@ -60,7 +61,7 @@ test("books and pays for a service visit through Razorpay Checkout", async ({ pa
   await expect(pay.getByText(/^By booking this visit/)).toHaveCount(0);
 
   await pay.getByRole("button", { name: "Pay Rs. 2,000" }).click();
-  const confirmed = page.getByRole("dialog", { name: "Confirmed" });
+  const confirmed = page.getByRole("dialog", { name: appCopy.booking.confirmed.label });
   await expect(confirmed.getByRole("status").getByText(REMINDED)).toBeVisible();
   await expect(confirmed.getByText("Paid", { exact: true })).toBeVisible();
   await expect(confirmed.getByText("Rs. 2,000")).toBeVisible();
@@ -73,7 +74,7 @@ test("lets Checkout's own window through, in front of the sheet", async ({ page 
   await confirmedByRazorpay(page);
   await toPayment(page);
   await page.getByRole("button", { name: "Pay Rs. 2,000" }).click();
-  await expect(page.getByRole("dialog").getByRole("status").getByText("Confirmed")).toBeVisible();
+  await expect(page.getByRole("dialog").getByRole("status").getByText(appCopy.booking.confirmed.label)).toBeVisible();
   expect(await page.evaluate(() => (window as unknown as { __checkoutOnTop: boolean | null }).__checkoutOnTop)).toBe(
     true,
   );
@@ -83,13 +84,13 @@ test("confirms a visit a credit covers as a credit used, never as a payment", as
   const hold = await holdAs(page, { credit: { remaining: 2 } });
   await bookedWithoutPaying(page, hold);
   await toPayment(page);
-  const pay = page.getByRole("dialog", { name: "Confirm", exact: true });
-  await expect(pay.getByText("1 free service visit used")).toBeVisible();
-  await pay.getByRole("button", { name: "Confirm visit" }).click();
+  const pay = page.getByRole("dialog", { name: appCopy.booking.pay.titleFree, exact: true });
+  await expect(pay.getByText(appCopy.booking.pay.credit.used)).toBeVisible();
+  await pay.getByRole("button", { name: appCopy.booking.pay.confirm }).click();
 
   const confirmed = page.getByRole("dialog").getByRole("status");
-  await expect(confirmed.getByText("Confirmed")).toBeVisible();
-  await expect(confirmed.getByText("1 free service visit used")).toBeVisible();
+  await expect(confirmed.getByText(appCopy.booking.confirmed.label)).toBeVisible();
+  await expect(confirmed.getByText(appCopy.booking.pay.credit.used)).toBeVisible();
   await expect(confirmed.getByText("2 remaining")).toBeVisible();
   await expect(confirmed.getByText("Paid", { exact: true })).toHaveCount(0);
   await expect(confirmed.getByText("Rs. 2,000")).toHaveCount(0);
@@ -115,18 +116,18 @@ test("shows the price, and opens no Checkout, when the credit went on another bo
   );
   await toPayment(page);
   await page
-    .getByRole("dialog", { name: "Confirm", exact: true })
-    .getByRole("button", { name: "Confirm visit" })
+    .getByRole("dialog", { name: appCopy.booking.pay.titleFree, exact: true })
+    .getByRole("button", { name: appCopy.booking.pay.confirm })
     .click();
 
   // Now there is a price to pay, the step is named for paying it.
-  const pay = page.getByRole("dialog", { name: "Pay and confirm" });
+  const pay = page.getByRole("dialog", { name: appCopy.booking.pay.title });
   await expect(
     pay.getByText(
       "Your free service visit is already used on another booking. This visit is charged at the price below.",
     ),
   ).toBeVisible();
-  await expect(pay.getByText("1 free service visit used")).toHaveCount(0);
+  await expect(pay.getByText(appCopy.booking.pay.credit.used)).toHaveCount(0);
   await expect(pay.getByRole("button", { name: "Pay Rs. 2,000" })).toBeVisible();
 });
 
@@ -149,20 +150,20 @@ test("takes a discount code off the price at the pay step, says only that a wron
     });
   });
   await toPayment(page);
-  const pay = page.getByRole("dialog", { name: "Pay and confirm" });
-  await pay.getByRole("button", { name: "Have a discount code?" }).click();
+  const pay = page.getByRole("dialog", { name: appCopy.booking.pay.title });
+  await pay.getByRole("button", { name: appCopy.booking.pay.code.open }).click();
   await pay.getByLabel("Discount code").fill("wrong1");
-  await pay.getByRole("button", { name: "Apply" }).click();
+  await pay.getByRole("button", { name: appCopy.booking.pay.code.apply }).click();
   await expect(pay.getByRole("alert")).toHaveText("That code doesn’t apply to this visit.");
 
   applies = true;
   await pay.getByLabel("Discount code").fill("weddng25");
-  await pay.getByRole("button", { name: "Apply" }).click();
+  await pay.getByRole("button", { name: appCopy.booking.pay.code.apply }).click();
   await expect(pay.getByText("Code WEDDNG25: Rs. 200 off")).toBeVisible();
   await expect(pay.getByRole("button", { name: "Pay Rs. 1,800" })).toBeVisible();
   await scanOf(page);
 
-  await pay.getByRole("button", { name: "Remove code" }).click();
+  await pay.getByRole("button", { name: appCopy.booking.pay.code.remove }).click();
   await expect(pay.getByRole("button", { name: "Pay Rs. 2,000" })).toBeVisible();
 });
 
@@ -176,7 +177,7 @@ test("asks whether to remind the client on WhatsApp, and records it when they sa
     return route.fulfill({ json: { purpose: "whatsapp_visits", granted: true, since: new Date().toISOString() } });
   });
   await toPayment(page);
-  const pay = page.getByRole("dialog", { name: "Pay and confirm" });
+  const pay = page.getByRole("dialog", { name: appCopy.booking.pay.title });
   const remind = pay.getByRole("checkbox", { name: REMIND });
   await expect(remind).not.toBeChecked();
   await remind.check();
@@ -194,6 +195,6 @@ test("promises no reminder the client has not agreed to", async ({ page }) => {
   await toPayment(page);
   await page.getByRole("button", { name: "Pay Rs. 2,000" }).click();
   const confirmed = page.getByRole("dialog").getByRole("status");
-  await expect(confirmed.getByText("Confirmed")).toBeVisible();
+  await expect(confirmed.getByText(appCopy.booking.confirmed.label)).toBeVisible();
   await expect(confirmed.getByText(REMINDED)).toHaveCount(0);
 });

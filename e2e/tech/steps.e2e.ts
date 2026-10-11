@@ -9,6 +9,7 @@ import { JOB_ID, ONE_VISIT_CHECKLIST } from "./fixtures.ts";
 import { fakeTech } from "./fake-tech.ts";
 import { atTheDoor, heldOnPhone, pageScrolls, queuedOnPhone } from "./on-phone.ts";
 import { startedThrough, writesTo, checklistItems, gilded } from "./steps-fixtures.ts";
+import * as techCopy from "../../apps/tech/src/content.ts";
 
 /** A step's one action, in the foot below its body. */
 const footAction = (page: Page) => page.locator("main > div").last().getByRole("button");
@@ -17,9 +18,9 @@ test("a double tap on Start job starts the job once", async ({ page }) => {
   const fake = await fakeTech(page);
   await atTheDoor(page);
   await page.goto(`/jobs/${JOB_ID}`);
-  await page.getByRole("button", { name: "I have arrived" }).click();
+  await page.getByRole("button", { name: techCopy.notHome.arrived.action }).click();
 
-  await page.getByRole("button", { name: "Start job" }).dblclick();
+  await page.getByRole("button", { name: techCopy.job.start }).dblclick();
   await expect(page.getByRole("heading", { level: 1, name: "Before photos" })).toBeVisible();
   await expect.poll(() => writesTo(fake, "start").length).toBe(1);
   // And nothing else was queued behind it: the phone holds nothing more to send.
@@ -33,8 +34,8 @@ test("each screen names itself in the title and takes the focus to its heading",
   await page.goto(`/jobs/${JOB_ID}`);
   await expect(page).toHaveTitle("Rohit M. · Mane Man technician");
 
-  await page.getByRole("button", { name: "I have arrived" }).click();
-  await page.getByRole("button", { name: "Start job" }).click();
+  await page.getByRole("button", { name: techCopy.notHome.arrived.action }).click();
+  await page.getByRole("button", { name: techCopy.job.start }).click();
   await expect(page).toHaveTitle("Before photos · Mane Man technician");
   await expect(page.getByRole("heading", { level: 1, name: "Before photos" })).toBeFocused();
 });
@@ -46,7 +47,7 @@ test("a double tap on Next finishes one step, and never the step it opens", asyn
   await expect(page.getByRole("heading", { level: 1, name: "Service checklist" })).toBeVisible();
   for (const item of await checklistItems(page).all()) await item.click();
 
-  await page.getByRole("button", { name: "Next" }).dblclick();
+  await page.getByRole("button", { name: techCopy.steps.next }).dblclick();
 
   await expect(page.getByRole("heading", { level: 1, name: "Consumables used" })).toBeVisible();
   await expect.poll(async () => (await heldOnPhone(page)).outbox).toBe(0);
@@ -62,13 +63,13 @@ test("the outcome has nothing chosen for the technician, and Next waits for his 
 
   const done = page.getByRole("button", { name: "Done", exact: true });
   await expect(done).toHaveAttribute("aria-pressed", "false");
-  await expect(page.getByRole("button", { name: "Choose Done or Partial" })).toBeDisabled();
+  await expect(page.getByRole("button", { name: techCopy.steps.outcome.choose })).toBeDisabled();
 
   await done.click();
   await expect(done).toHaveAttribute("aria-pressed", "true");
   // The choice is outlined, and the one gold thing is still Next.
   expect(await done.evaluate((button) => getComputedStyle(button).backgroundColor)).not.toBe("rgb(201, 163, 99)");
-  await page.getByRole("button", { name: "Next" }).click();
+  await page.getByRole("button", { name: techCopy.steps.next }).click();
   await expect(page.getByText("Rohit M. · done")).toBeVisible();
   expect(writesTo(fake, "outcome").at(-1)?.body).toEqual({ outcome: "done" });
 });
@@ -82,13 +83,13 @@ test("draws nothing in gold but the one primary action", async ({ page }) => {
   const items = checklistItems(page);
   await expect(items).toHaveCount(3);
   for (const item of await items.all()) await item.click();
-  await expect(page.getByRole("button", { name: "Next" })).toBeEnabled();
+  await expect(page.getByRole("button", { name: techCopy.steps.next })).toBeEnabled();
   expect(await gilded(page)).toEqual(["Next"]);
   expect(await axeViolations(page)).toEqual([]);
 
   startedThrough(fake, "before_photos", "checklist", "consumables", "after_photos");
   await page.goto(`/jobs/${JOB_ID}/outcome`);
-  await page.getByRole("button", { name: "Partial · pick a reason" }).click();
+  await page.getByRole("button", { name: techCopy.steps.outcome.partial }).click();
   await page.getByRole("button", { name: "Client stopped it partway" }).click();
   expect(await gilded(page)).toEqual(["Next"]);
   expect(await axeViolations(page)).toEqual([]);
@@ -129,7 +130,7 @@ test.describe("the consumables step", () => {
     await expect(page.getByText("strip · 4 expected")).toBeVisible();
     await expect(page.getByRole("button", { name: "One more bonding glue" })).toHaveCount(0);
 
-    const another = page.getByRole("button", { name: "Add another" });
+    const another = page.getByRole("button", { name: techCopy.steps.consumables.add });
     await expect(another).toHaveAttribute("aria-expanded", "false");
     await another.click();
     await expect(page.getByRole("button", { name: "Add Shampoo sachet" })).toBeVisible();
@@ -147,9 +148,9 @@ test.describe("the consumables step", () => {
 
     await page.getByRole("button", { name: "One more tape strips" }).click();
     for (let count = 0; count < 10; count += 1) await page.getByRole("button", { name: "One fewer solvent" }).click();
-    await page.getByRole("button", { name: "Add another" }).click();
+    await page.getByRole("button", { name: techCopy.steps.consumables.add }).click();
     await page.getByRole("button", { name: "Add Shampoo sachet" }).click();
-    await page.getByRole("button", { name: "Next" }).click();
+    await page.getByRole("button", { name: techCopy.steps.next }).click();
 
     await expect(page.getByRole("heading", { level: 1, name: "After photos" })).toBeVisible();
     await expect.poll(() => writesTo(fake, "consumables").length).toBe(1);
@@ -207,7 +208,7 @@ test.describe("on a 360 × 640 phone", () => {
 
     const heading = page.getByRole("heading", { level: 1, name: "Consultation and fit checklist" });
     await expect(heading).toBeInViewport({ ratio: 1 });
-    await expect(footAction(page)).toHaveText("Finish the list to continue");
+    await expect(footAction(page)).toHaveText(techCopy.steps.checklist.unfinished);
     await expect(footAction(page)).toBeInViewport({ ratio: 1 });
     expect(await pageScrolls(page)).toBe(false);
 
@@ -216,7 +217,7 @@ test.describe("on a 360 × 640 phone", () => {
     await expect(items).toHaveCount(9);
     for (const item of await items.all()) await item.click();
 
-    await expect(footAction(page)).toHaveText("Next");
+    await expect(footAction(page)).toHaveText(techCopy.steps.next);
     await expect(footAction(page)).toBeInViewport({ ratio: 1 });
     await expect(heading).toBeInViewport({ ratio: 1 });
     expect(await pageScrolls(page)).toBe(false);
@@ -287,22 +288,22 @@ test("a step the API refused can be corrected where it stands in the queue, not 
 
   await page.goto("/waiting");
   await expect(page.getByText("The piece’s label wasn’t accepted.")).toBeVisible();
-  await page.getByRole("button", { name: "Correct it" }).click();
+  await page.getByRole("button", { name: techCopy.queue.correct }).click();
 
   // The step opens as it was sent, so only the label is typed again.
   await expect(page.getByRole("heading", { level: 1, name: "The piece" })).toBeVisible();
-  await expect(page.getByText("We couldn’t record the label you gave. Correct it and tap Next.")).toBeVisible();
-  const label = page.getByRole("textbox", { name: "The new piece’s label" });
+  await expect(page.getByText(techCopy.steps.corrected.piece)).toBeVisible();
+  const label = page.getByRole("textbox", { name: techCopy.steps.piece.label });
   await expect(label).toHaveValue("MM-STD-7193 C");
   await expect(page.getByRole("textbox", { name: "Supplier lot" })).toHaveValue("LOT-5120");
   await label.fill("MM-STD-7193-C");
-  await page.getByRole("button", { name: "Next" }).click();
+  await page.getByRole("button", { name: techCopy.steps.next }).click();
 
   // The corrected piece goes first, and the outcome that waited behind it follows.
   await expect.poll(() => fake.writes.map((write) => write.path.split("/").at(-1))).toEqual(["piece", "outcome"]);
   expect(writesTo(fake, "piece").at(-1)?.body).toMatchObject({ piece_code: "MM-STD-7193-C", supplier_lot: "LOT-5120" });
   await page.goto("/waiting");
-  await expect(page.getByText("Everything has reached us.")).toBeVisible();
+  await expect(page.getByText(techCopy.queue.nothing)).toBeVisible();
 });
 
 // A refused outcome opened with nothing chosen, and the technician chose it all again at the door.
@@ -323,13 +324,16 @@ test("a refused outcome opens as it was chosen", async ({ page }) => {
 
   await page.goto("/waiting");
   await expect(page.getByText("That reason wasn’t accepted.")).toBeVisible();
-  await page.getByRole("button", { name: "Correct it" }).click();
+  await page.getByRole("button", { name: techCopy.queue.correct }).click();
 
   await expect(page.getByRole("heading", { level: 1, name: "Outcome" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Partial · pick a reason" })).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByRole("button", { name: techCopy.steps.outcome.partial })).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
   await expect(page.getByRole("button", { name: "Client stopped it partway" })).toHaveAttribute("aria-pressed", "true");
   await page.getByRole("button", { name: "More time needed" }).click();
-  await page.getByRole("button", { name: "Next" }).click();
+  await page.getByRole("button", { name: techCopy.steps.next }).click();
 
   await expect
     .poll(() => writesTo(fake, "outcome").at(-1)?.body)

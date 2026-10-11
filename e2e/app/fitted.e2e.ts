@@ -4,6 +4,7 @@ import { axeViolations } from "../a11y.ts";
 import { fittedClient } from "./fitted.ts";
 import { logIn } from "./signed-in.ts";
 import { tab } from "./fitted-fixtures.ts";
+import * as appCopy from "../../apps/app/src/content.ts";
 
 test("Home shows a fitted client's next visit, with the technician, and Reschedule", async ({ page }) => {
   const client = fittedClient();
@@ -15,10 +16,10 @@ test("Home shows a fitted client's next visit, with the technician, and Reschedu
   await expect(page.getByText("Service visit · 1 hour 30 minutes")).toBeVisible();
   await expect(page.getByText("Gurgaon 122018")).toBeVisible();
   // Home's one prompt: this client has given no address, which comes before the replacement falling due.
-  await expect(page.getByText("Add your address, so your technician can find the door.")).toBeVisible();
-  await expect(page.getByRole("link", { name: "Add your address" })).toHaveAttribute("href", "/profile");
+  await expect(page.getByText(appCopy.home.prompt.address)).toBeVisible();
+  await expect(page.getByRole("link", { name: appCopy.home.prompt.addAddress })).toHaveAttribute("href", "/profile");
   // Self-serve booking is on locally, so Reschedule opens the move sheet (C7; e2e/app/changes.e2e.ts moves one).
-  await page.getByRole("button", { name: "Reschedule" }).click();
+  await page.getByRole("button", { name: appCopy.home.reschedule }).click();
   await expect(page.getByRole("dialog", { name: /^Move \w+day’s visit$/ })).toBeVisible();
 });
 
@@ -29,7 +30,7 @@ test("Visits lists what is coming and what is done, and a past visit opens with 
   await expect(page.getByRole("heading", { level: 1, name: "Visits" })).toBeVisible();
   await expect(page.getByText("Service visit · 12 to 4 pm · Imran")).toBeVisible();
   // Self-serve booking is on locally: the footer opens the booking sheet (e2e/app/booking.e2e.ts).
-  await expect(page.getByRole("button", { name: "Book your next visit" })).toBeVisible();
+  await expect(page.getByRole("button", { name: appCopy.home.next.book })).toBeVisible();
 
   // Every visit opens its own page: the one coming, then the three done.
   const visits = page.getByRole("main").getByRole("link");
@@ -44,32 +45,32 @@ test("Visits lists what is coming and what is done, and a past visit opens with 
   await expect(page.getByText("Imran Qureshi")).toBeVisible();
   await expect(page.getByText("1 h 25 m")).toBeVisible();
   // The visit's "What was done": the checklist the technician ticked, from their phone.
-  await expect(page.getByRole("term").filter({ hasText: "What was done" }).locator("+ dd")).toHaveText(
+  await expect(page.getByRole("term").filter({ hasText: appCopy.visits.detail.done }).locator("+ dd")).toHaveText(
     "Hair system removed, Scalp cleaned, Hair system cleaned.",
   );
   // The row shows the thumbnail the technician's phone made, not the whole photograph (ADR 0093).
   const front = page.getByRole("button", { name: `Front, after the visit, ${fullDate(client.service.date)}` });
   await expect.poll(() => front.locator("img").evaluate((image: HTMLImageElement) => image.naturalWidth)).toBe(300);
-  await page.getByRole("link", { name: "Back to visits" }).click();
+  await page.getByRole("link", { name: appCopy.visits.detail.back }).click();
   await expect(page.getByRole("heading", { level: 1, name: "Visits" })).toBeVisible();
 
   // The visit coming opens too, as Home's card, with the ways to change it.
   await visits.nth(0).click();
   await expect(page.getByRole("heading", { level: 1, name: fullDate(client.next.date) })).toBeVisible();
   await expect(page.getByText("Afternoon, 12 to 4 pm")).toBeVisible();
-  await expect(page.getByRole("button", { name: "Reschedule" })).toBeVisible();
+  await expect(page.getByRole("button", { name: appCopy.home.reschedule })).toBeVisible();
 
   // With self-serve booking on, the note is kept on the visit for the technician, not sent to WhatsApp.
-  await page.getByRole("button", { name: "Add a note" }).click();
+  await page.getByRole("button", { name: appCopy.home.note }).click();
   const sheet = page.getByRole("dialog");
-  await sheet.getByRole("textbox", { name: "What should they know at the door?" }).fill("The lift is out");
-  await sheet.getByRole("button", { name: "Save note" }).click();
+  await sheet.getByRole("textbox", { name: appCopy.note.label }).fill("The lift is out");
+  await sheet.getByRole("button", { name: appCopy.note.save }).click();
   await expect(sheet.getByRole("heading", { name: /^Saved\./ })).toBeVisible();
 
   // And shown back: on the card, and in the sheet when it opens again.
   await sheet.getByRole("button", { name: "Close" }).first().click();
   await expect(page.getByText("Your note: “The lift is out”")).toBeVisible();
-  await page.getByRole("button", { name: "Add a note" }).click();
+  await page.getByRole("button", { name: appCopy.home.note }).click();
   await expect(page.getByRole("dialog").getByRole("heading", { name: /^Your note for / })).toBeVisible();
   await expect(page.getByRole("dialog").getByRole("textbox")).toHaveValue("The lift is out");
 });
@@ -86,13 +87,13 @@ test("an open note sheet keeps its words through a dropped signal, and Back clos
   const visitPage = page.getByRole("heading", { level: 1, name: fullDate(client.next.date) });
   await expect(visitPage).toBeVisible();
 
-  await page.getByRole("button", { name: "Add a note" }).click();
+  await page.getByRole("button", { name: appCopy.home.note }).click();
   const sheet = page.getByRole("dialog");
-  const note = sheet.getByRole("textbox", { name: "What should they know at the door?" });
-  const save = sheet.getByRole("button", { name: "Save note" });
+  const note = sheet.getByRole("textbox", { name: appCopy.note.label });
+  const save = sheet.getByRole("button", { name: appCopy.note.save });
   await note.fill("The lift is out");
   await page.context().setOffline(true);
-  await expect(sheet.getByText("No connection. Your note is kept here until you’re back online.")).toBeVisible();
+  await expect(sheet.getByText(appCopy.note.offline)).toBeVisible();
   await expect(note).toHaveValue("The lift is out");
   await expect(save).toBeDisabled();
   await page.context().setOffline(false);
@@ -103,7 +104,7 @@ test("an open note sheet keeps its words through a dropped signal, and Back clos
   await expect(visitPage).toBeVisible();
 
   // Closed by its own button, the sheet leaves nothing behind in the history: Back goes to the list.
-  await page.getByRole("button", { name: "Add a note" }).click();
+  await page.getByRole("button", { name: appCopy.home.note }).click();
   await sheet.getByRole("button", { name: "Close" }).click();
   await expect(sheet).toBeHidden();
   await expect.poll(() => page.evaluate(() => window.history.state as unknown)).toBeNull();
@@ -117,12 +118,12 @@ test("a visit or a payment that is not the client's says it could not be found",
   await expect(page.getByRole("heading", { level: 1, name: "Your next visit" })).toBeVisible();
   const nobody = "00000000-0000-4000-8000-000000000000";
   await page.goto(`/visits/${nobody}`);
-  await expect(page.getByRole("alert")).toContainText("We couldn’t find this visit.");
+  await expect(page.getByRole("alert")).toContainText(appCopy.visits.notFound);
   await expect(page.getByRole("button", { name: "Try again" })).toHaveCount(0);
-  await page.getByRole("main").getByRole("link", { name: "Back to visits" }).click();
+  await page.getByRole("main").getByRole("link", { name: appCopy.visits.detail.back }).click();
   await expect(page.getByRole("heading", { level: 1, name: "Visits" })).toBeVisible();
   await page.goto(`/payments/${nobody}`);
-  await expect(page.getByRole("alert")).toContainText("We couldn’t find this payment.");
+  await expect(page.getByRole("alert")).toContainText(appCopy.payments.notFound);
 });
 
 // Home as the API gives it: a visit FSM has not closed stays, saying where it stands, and nothing is booked in its
@@ -154,29 +155,29 @@ test("Home keeps a visit done but not yet closed, and shows the credit tile and 
   const upcoming = (visits.upcoming as object[]).map((visit) => ({ ...visit, stage: "done" }));
   await page.route("**/api/visits", (route) => route.fulfill({ json: { ...visits, upcoming } }));
   await page.reload();
-  await expect(page.getByText("Done · notes on the way")).toBeVisible();
-  await expect(page.getByRole("button", { name: "Reschedule" })).toHaveCount(0);
-  await expect(page.getByRole("button", { name: "Add a note" })).toHaveCount(0);
+  await expect(page.getByText(appCopy.home.stages.done)).toBeVisible();
+  await expect(page.getByRole("button", { name: appCopy.home.reschedule })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: appCopy.home.note })).toHaveCount(0);
   await expect(page.getByText("2 free service visits")).toBeVisible();
   await expect(page.getByText("1 to use by 3 Jan 2028")).toBeVisible();
   const month = listMonth(client.piece.due.slice(0, 7), new Date().getFullYear());
   await expect(page.getByText(`Your replacement is due in ${month}.`)).toBeVisible();
   // The API prompts the replacement only once its month may be booked, so the prompt always offers it, beside the
   // app's own page on what a replacement involves.
-  await expect(page.getByRole("link", { name: "See what that involves" })).toHaveAttribute("href", "/replacement");
+  await expect(page.getByRole("link", { name: appCopy.home.prompt.involves })).toHaveAttribute("href", "/replacement");
   await expect(page.getByRole("button", { name: "Book the replacement" })).toBeVisible();
   expect(await axeViolations(page)).toEqual([]);
 
   await tab(page, "Visits").click();
   await expect(page.getByText("Service visit · Done · notes on the way · Imran")).toBeVisible();
-  await expect(page.getByRole("button", { name: "Book your next visit" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: appCopy.home.next.book })).toHaveCount(0);
 
   // An invoice just issued is a line of its own, beneath whichever prompt leads.
   prompt = { kind: "address" };
   invoice = { visit_id: client.service.id, date: client.service.date, type: "service" };
   await tab(page, "Home").click();
   await page.reload();
-  await expect(page.getByText("Add your address, so your technician can find the door.")).toBeVisible();
+  await expect(page.getByText(appCopy.home.prompt.address)).toBeVisible();
   await expect(
     page.getByText(`The invoice for your service visit on ${shortDate(client.service.date)} is ready.`),
   ).toBeVisible();
@@ -194,7 +195,7 @@ test("Visits heads the client's own record with the month their replacement fall
   await logIn(page, client.mobile);
   await tab(page, "Visits").click();
 
-  const record = page.getByRole("region", { name: "Your record" });
+  const record = page.getByRole("region", { name: appCopy.visits.record.label });
   const month = listMonth(client.piece.due.slice(0, 7), new Date().getFullYear());
   await expect(record.getByText(`Your replacement is due in ${month}.`)).toBeVisible();
   // Never the day, however the month is written.

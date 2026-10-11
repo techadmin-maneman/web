@@ -31,6 +31,7 @@ import {
   clientTab,
   invitedBy,
 } from "./clients-fixtures.ts";
+import * as opsCopy from "../../apps/ops/src/content.ts";
 
 const MOBILE = "+91 98100 04417";
 
@@ -76,7 +77,7 @@ const OPEN_FOR_ROHIT = {
   ],
 } satisfies OpsReply<"/api/tasks">;
 
-const openForClient = (page: Page) => page.getByRole("region", { name: "Open tasks" });
+const openForClient = (page: Page) => page.getByRole("region", { name: opsCopy.clients.openTasks.title });
 
 // A client could be found only by their whole number, typed exactly.
 test("finds clients by part of a name, and sends it in the body, never in the URL", async ({ page }) => {
@@ -119,8 +120,8 @@ test("finds a client from another page's header, keeps the words out of the URL,
     [READ_HAIR_PROFILE]: json(NO_HAIR_PROFILE),
   });
   await page.goto(`/clients/${CLIENT.id}/visits`);
-  await page.getByRole("searchbox", { name: "Find a client by name or number" }).fill("98100 0441");
-  await page.getByRole("button", { name: "Find client" }).click();
+  await page.getByRole("searchbox", { name: opsCopy.shell.find.label }).fill("98100 0441");
+  await page.getByRole("button", { name: opsCopy.shell.find.submit }).click();
 
   const found = page.getByRole("region", { name: "Clients" });
   await expect(found.getByRole("listitem")).toHaveText([`${CLIENT.name}${STANDING}${MOBILE}`]);
@@ -154,11 +155,11 @@ test("offers the clients opened this session, and forgets them on sign-out", asy
   await page.goto(`/clients/${CLIENT.id}/visits`);
   await expect(page.getByRole("heading", NAME)).toBeVisible();
   await page.goto("/clients");
-  const recent = page.getByRole("region", { name: "Recent" });
+  const recent = page.getByRole("region", { name: opsCopy.clients.find.recent });
   await expect(recent.getByRole("link", NAME)).toHaveAttribute("href", `/clients/${CLIENT.id}/visits`);
 
   await page.route("**/cdn-cgi/access/logout", (route) => route.fulfill({ contentType: "text/html", body: "" }));
-  await page.getByRole("link", { name: "Sign out" }).click();
+  await page.getByRole("link", { name: opsCopy.shell.account.signOut }).click();
   await page.waitForURL("**/cdn-cgi/access/logout");
   expect(await page.evaluate(() => sessionStorage.getItem("ops.recent-clients"))).toBeNull();
 });
@@ -235,7 +236,7 @@ test("says when nothing waits on Tasks for the client", async ({ page }) => {
   await openClient(page, `/clients/${CLIENT.id}`, {
     "GET /api/tasks": json({ overdue: 0, truncated: false, low_stock_places: 0, staff: [], groups: [] }),
   });
-  await expect(openForClient(page)).toContainText("Nothing open.");
+  await expect(openForClient(page)).toContainText(opsCopy.clients.openTasks.none);
 });
 
 // The design draws WhatsApp beside the name; the page once gave no way to reach the client.
@@ -288,5 +289,5 @@ test("writes a gap where a piece has no supplier lot, replacement date or failur
 
 test("says so when the client has no piece yet", async ({ page }) => {
   await openClient(page, `/clients/${CLIENT.id}/pieces`, { [READ_PIECES]: json({ pieces: [] }) });
-  await expect(page.getByText("No hair system fitted yet.")).toBeVisible();
+  await expect(page.getByText(opsCopy.clients.pieces.empty)).toBeVisible();
 });

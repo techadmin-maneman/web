@@ -5,6 +5,7 @@ import type { Page } from "@playwright/test";
 import { expect, test } from "../support.ts";
 import { fittedClient } from "./fitted.ts";
 import { logIn } from "./signed-in.ts";
+import * as appCopy from "../../apps/app/src/content.ts";
 
 /** Each signed-in page. */
 const PAGES = ["/", "/visits", "/photos", "/payments", "/refer", "/profile"] as const;
@@ -21,7 +22,7 @@ const ringDrawn = (page: Page) =>
 test("reflows every page into 320 px without scrolling sideways", async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 640 });
   await logIn(page, fittedClient().mobile);
-  await expect(page.getByRole("link", { name: "Your profile" })).toBeVisible();
+  await expect(page.getByRole("link", { name: appCopy.titles.profile })).toBeVisible();
   for (const path of PAGES) {
     await page.goto(path);
     await expect(page.locator("h1").first()).toBeVisible();
@@ -32,7 +33,7 @@ test("reflows every page into 320 px without scrolling sideways", async ({ page 
 
 test("draws where the keyboard is on every control of Home, in the order they come", async ({ page }) => {
   await logIn(page, fittedClient().mobile);
-  await expect(page.getByRole("link", { name: "Your profile" })).toBeVisible();
+  await expect(page.getByRole("link", { name: appCopy.titles.profile })).toBeVisible();
   let seen = 0;
   for (let press = 0; press < 12; press += 1) {
     await page.keyboard.press("Tab");

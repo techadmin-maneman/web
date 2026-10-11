@@ -13,6 +13,7 @@ import { expect, outsideContract, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
 import { fittedClient } from "./fitted.ts";
 import { logIn, signIn } from "./signed-in.ts";
+import * as appCopy from "../../apps/app/src/content.ts";
 
 test.use({ permissions: ["clipboard-read", "clipboard-write"] });
 
@@ -86,46 +87,47 @@ test("Refer: the invite, the house card, the preview, and the empty tracker", as
   // "No other discount applies", which is no longer so.
   await expect(page.getByText(/discount/i)).toHaveCount(0);
 
-  await page.getByRole("button", { name: "Share an invite" }).click();
-  const sheet = page.getByRole("dialog", { name: "Which card?" });
-  await expect(
-    sheet.getByText("Pick the picture your friend sees. Your name and message go with it, never on it."),
-  ).toBeVisible();
+  await page.getByRole("button", { name: appCopy.refer.share }).click();
+  const sheet = page.getByRole("dialog", { name: appCopy.refer.card.title });
+  await expect(sheet.getByText(appCopy.refer.card.what)).toBeVisible();
   await scan(page);
   await sheet.getByRole("radio", { name: /A Mane Man example/ }).click();
-  await sheet.getByRole("button", { name: "Continue to share" }).click();
+  await sheet.getByRole("button", { name: appCopy.refer.card.next }).click();
 
   // The preview: the chat's bubble, exactly as the friend will see it, with the house card itself in it.
-  const preview = page.getByRole("dialog", { name: "Preview · what your friend sees" });
+  const preview = page.getByRole("dialog", { name: appCopy.refer.preview.title });
   await expect(preview.getByText("You have a Mane Man invite")).toBeVisible();
   await expect(
     preview.getByText(/Got my hair system fitted at home by Mane Man\. Worth a look: .*\/r\/[A-Z0-9]{8}/),
   ).toBeVisible();
   await expect(preview.locator("img").first()).toHaveAttribute("src", /invite-house/);
-  await expect(preview.getByRole("link", { name: "WhatsApp" })).toHaveAttribute("href", /^https:\/\/wa\.me\/\?text=/);
-  await preview.getByRole("button", { name: "Copy link" }).click();
-  await expect(preview.getByRole("button", { name: "Link copied" })).toBeVisible();
+  await expect(preview.getByRole("link", { name: appCopy.refer.preview.whatsapp })).toHaveAttribute(
+    "href",
+    /^https:\/\/wa\.me\/\?text=/,
+  );
+  await preview.getByRole("button", { name: appCopy.refer.preview.copy }).click();
+  await expect(preview.getByRole("button", { name: appCopy.refer.preview.copied })).toBeVisible();
   const copied = await page.evaluate(() => navigator.clipboard.readText());
   expect(copied).toMatch(/\/r\/[A-Z0-9]{8}$/);
   await scan(page);
 
   await preview.getByRole("button", { name: "Close" }).click();
-  await page.getByRole("link", { name: "See who has been fitted" }).click();
+  await page.getByRole("link", { name: appCopy.refer.tracker }).click();
   await expect(page.getByRole("heading", { level: 1, name: "Who has been fitted" })).toBeVisible();
-  await expect(page.getByText("Nobody you have referred has been fitted yet.")).toBeVisible();
+  await expect(page.getByText(appCopy.refer.fitted.none)).toBeVisible();
   await scan(page);
 
   // The empty tracker is not a dead end.
-  await page.getByRole("button", { name: "Share an invite" }).click();
-  await expect(page.getByRole("dialog", { name: "Which card?" })).toBeVisible();
+  await page.getByRole("button", { name: appCopy.refer.share }).click();
+  await expect(page.getByRole("dialog", { name: appCopy.refer.card.title })).toBeVisible();
 });
 
 // The empty tracker's "Share failed": a way to share that fails, not one the client backs out of, says nothing was sent.
 test("says when the link could not be shared, and tries again", async ({ page }) => {
   await toRefer(page);
-  await page.getByRole("button", { name: "Share an invite" }).click();
+  await page.getByRole("button", { name: appCopy.refer.share }).click();
   await page.getByRole("radio", { name: /A Mane Man example/ }).click();
-  await page.getByRole("button", { name: "Continue to share" }).click();
+  await page.getByRole("button", { name: appCopy.refer.card.next }).click();
   await page.evaluate(() => {
     const writeText = navigator.clipboard.writeText.bind(navigator.clipboard);
     let refused = false;
@@ -135,20 +137,20 @@ test("says when the link could not be shared, and tries again", async ({ page })
       return Promise.reject(new DOMException("The page may not write to the clipboard.", "NotAllowedError"));
     };
   });
-  await page.getByRole("button", { name: "Copy link" }).click();
-  await expect(page.getByRole("alert")).toContainText("The link didn’t generate. Nothing was sent.");
+  await page.getByRole("button", { name: appCopy.refer.preview.copy }).click();
+  await expect(page.getByRole("alert")).toContainText(appCopy.refer.preview.failed.line);
   await page.getByRole("button", { name: "Try again" }).click();
-  await expect(page.getByRole("button", { name: "Link copied" })).toBeVisible();
+  await expect(page.getByRole("button", { name: appCopy.refer.preview.copied })).toBeVisible();
   await expect(page.getByRole("alert")).toHaveCount(0);
 });
 
 /** From Refer to the preview (F4) with the house example chosen. */
 async function toTheExample(page: Page) {
   await toRefer(page);
-  await page.getByRole("button", { name: "Share an invite" }).click();
+  await page.getByRole("button", { name: appCopy.refer.share }).click();
   await page.getByRole("radio", { name: /A Mane Man example/ }).click();
-  await page.getByRole("button", { name: "Continue to share" }).click();
-  return page.getByRole("dialog", { name: "Preview · what your friend sees" });
+  await page.getByRole("button", { name: appCopy.refer.card.next }).click();
+  return page.getByRole("dialog", { name: appCopy.refer.preview.title });
 }
 
 // Invites once reached WhatsApp with no image: the app sent only words and a link, and the chat's preview
@@ -157,12 +159,12 @@ test("sends the house card itself, captioned with the invite, where the phone sh
   await stubShareSheet(page, true);
   const preview = await toTheExample(page);
 
-  await preview.getByRole("link", { name: "WhatsApp" }).click();
+  await preview.getByRole("link", { name: appCopy.refer.preview.whatsapp }).click();
   await expect.poll(() => sharedSoFar(page)).toEqual([cardWithInvite(HOUSE_CARD.byteLength)]);
   // The share sheet took it: WhatsApp's link was not followed as well.
   expect(page.context().pages()).toHaveLength(1);
 
-  await preview.getByRole("button", { name: "Other apps" }).click();
+  await preview.getByRole("button", { name: appCopy.refer.preview.other }).click();
   await expect.poll(() => sharedSoFar(page)).toHaveLength(2);
   expect((await sharedSoFar(page))[1]).toEqual(cardWithInvite(HOUSE_CARD.byteLength));
   await expect(preview.getByRole("alert")).toHaveCount(0);
@@ -173,7 +175,7 @@ test("keeps WhatsApp's link, with the words alone, where the phone shares no fil
   await page.context().route("https://wa.me/**", (route) => route.fulfill({ contentType: "text/html", body: "" }));
   const preview = await toTheExample(page);
 
-  const whatsapp = preview.getByRole("link", { name: "WhatsApp" });
+  const whatsapp = preview.getByRole("link", { name: appCopy.refer.preview.whatsapp });
   await expect(whatsapp).toHaveAttribute("href", /^https:\/\/wa\.me\/\?text=/);
   // The link opens with no opener (rel="noopener"), so the context sees the new tab, not this page.
   const opening = page.context().waitForEvent("page");
@@ -182,7 +184,7 @@ test("keeps WhatsApp's link, with the words alone, where the phone shares no fil
   await opened.waitForLoadState();
   expect(opened.url()).toMatch(/^https:\/\/wa\.me\/\?text=Got%20my%20hair.*%2Fr%2F[A-Z0-9]{8}$/);
 
-  await preview.getByRole("button", { name: "Other apps" }).click();
+  await preview.getByRole("button", { name: appCopy.refer.preview.other }).click();
   await expect
     .poll(() => sharedSoFar(page))
     .toEqual([{ files: [], text: expect.stringMatching(/\/r\/[A-Z0-9]{8}$/) as unknown as string }]);
@@ -217,7 +219,7 @@ test("shows a client's stored card in the preview, and sends that card", async (
   await stubShareSheet(page, true);
 
   await toRefer(page);
-  await page.getByRole("button", { name: "Share an invite" }).click();
+  await page.getByRole("button", { name: appCopy.refer.share }).click();
   const theirOwn = page.getByRole("radio", { name: /My before and after/ });
   await expect(theirOwn).toBeChecked();
   // The two cards are native radio buttons, which the arrow keys move between.
@@ -226,13 +228,13 @@ test("shows a client's stored card in the preview, and sends that card", async (
   await expect(page.getByRole("radio", { name: /A Mane Man example/ })).toBeChecked();
   await page.keyboard.press("ArrowUp");
   await expect(theirOwn).toBeChecked();
-  await page.getByRole("button", { name: "Continue to share" }).click();
+  await page.getByRole("button", { name: appCopy.refer.card.next }).click();
 
-  const preview = page.getByRole("dialog", { name: "Preview · what your friend sees" });
+  const preview = page.getByRole("dialog", { name: appCopy.refer.preview.title });
   const image = preview.locator("img").first();
   await expect(image).toHaveAttribute("src", "/api/refer/card?v=7");
   await expect.poll(() => image.evaluate((element: HTMLImageElement) => element.naturalWidth)).toBe(1200);
-  await preview.getByRole("link", { name: "WhatsApp" }).click();
+  await preview.getByRole("link", { name: appCopy.refer.preview.whatsapp }).click();
   await expect.poll(() => sharedSoFar(page)).toEqual([cardWithInvite(card.byteLength)]);
   expect([...new Set(asked)]).toEqual(["GET ?v=7"]);
 });
@@ -241,13 +243,13 @@ test("shows a client's stored card in the preview, and sends that card", async (
 test("says when the phone refused the card's share, and nothing when the client backed out", async ({ page }) => {
   await stubShareSheet(page, true);
   const preview = await toTheExample(page);
-  const whatsapp = preview.getByRole("link", { name: "WhatsApp" });
+  const whatsapp = preview.getByRole("link", { name: appCopy.refer.preview.whatsapp });
 
   await refuseNext(page, "NotAllowedError");
   await whatsapp.click();
   const failed = preview.getByRole("alert");
-  await expect(failed).toContainText("Share failed");
-  await expect(failed).toContainText("The link didn’t generate. Nothing was sent.");
+  await expect(failed).toContainText(appCopy.refer.preview.failed.label);
+  await expect(failed).toContainText(appCopy.refer.preview.failed.line);
   await preview.getByRole("button", { name: "Try again" }).click();
   await expect(preview.getByRole("alert")).toHaveCount(0);
   await expect.poll(() => sharedSoFar(page)).toEqual([cardWithInvite(HOUSE_CARD.byteLength)]);
@@ -265,9 +267,9 @@ test("says when the phone refused the card's share, and nothing when the client 
 // of, and ended in an error. This client's first fit has an after photograph and no before (e2e/app/fitted.ts).
 test("offers their own card only once the first fit's photographs are in", async ({ page }) => {
   await toRefer(page);
-  await page.getByRole("button", { name: "Share an invite" }).click();
-  const sheet = page.getByRole("dialog", { name: "Which card?" });
-  await expect(sheet.getByText("Your own before and after appears once your first-fit photos are in.")).toBeVisible();
+  await page.getByRole("button", { name: appCopy.refer.share }).click();
+  const sheet = page.getByRole("dialog", { name: appCopy.refer.card.title });
+  await expect(sheet.getByText(appCopy.refer.card.mineNotYet)).toBeVisible();
   await expect(sheet.getByRole("radio")).toHaveCount(1);
   await expect(sheet.getByRole("radio", { name: /A Mane Man example/ })).toBeChecked();
   await scan(page);
@@ -316,7 +318,7 @@ test("asks for the consent before choosing their own card, and sends the example
     });
   });
   await toRefer(page);
-  await page.getByRole("button", { name: "Share an invite" }).click();
+  await page.getByRole("button", { name: appCopy.refer.share }).click();
   await page.getByRole("radio", { name: /My before and after/ }).click();
   await expect(page.getByRole("heading", { name: "Before you send your own photos" })).toBeVisible();
   await expect(page.getByText("Your first name appears on your invite.")).toBeVisible();
@@ -327,8 +329,8 @@ test("asks for the consent before choosing their own card, and sends the example
   await allow.click({ force: true });
   building.resolve(undefined);
 
-  await expect(page.getByRole("heading", { name: "Preview · what your friend sees" })).toBeVisible();
-  await expect(page.getByRole("alert")).toHaveText("We couldn’t make your card, so we’ve used our example instead.");
+  await expect(page.getByRole("heading", { name: appCopy.refer.preview.title })).toBeVisible();
+  await expect(page.getByRole("alert")).toHaveText(appCopy.refer.cardFailed);
   expect({ consents, builds }).toEqual({ consents: 1, builds: 1 });
 });
 
@@ -361,13 +363,13 @@ test("makes their own card, records one consent and asks for one card, when Allo
   await stubShareSheet(page, true);
 
   await toRefer(page);
-  await page.getByRole("button", { name: "Share an invite" }).click();
+  await page.getByRole("button", { name: appCopy.refer.share }).click();
   await page.getByRole("radio", { name: /My before and after/ }).click();
   const allow = page.getByRole("button", { name: "Allow for referral cards" });
   await allow.click();
   await allow.click({ force: true });
 
-  const preview = page.getByRole("dialog", { name: "Preview · what your friend sees" });
+  const preview = page.getByRole("dialog", { name: appCopy.refer.preview.title });
   await expect(preview).toBeVisible();
   await expect(preview.getByRole("alert")).toHaveCount(0);
   await expect(preview.locator("img").first()).toHaveAttribute("src", /^blob:/);
@@ -376,7 +378,7 @@ test("makes their own card, records one consent and asks for one card, when Allo
   expect(sent).toEqual([{ granted: true, source: "app_share_sheet" }]);
 
   // The card the API made is the one sent, as it read back: the page may not fetch its own blob: link.
-  await preview.getByRole("link", { name: "WhatsApp" }).click();
+  await preview.getByRole("link", { name: appCopy.refer.preview.whatsapp }).click();
   await expect.poll(() => sharedSoFar(page)).toEqual([cardWithInvite(card.byteLength)]);
 });
 
@@ -414,21 +416,21 @@ test("says what ops set each side gets, and beside each friend what the client e
     page.getByText("When a friend you refer is fitted, you get 2 free service visits, and your friend gets 4."),
   ).toBeVisible();
 
-  await page.getByRole("button", { name: "Share an invite" }).click();
-  const sheet = page.getByRole("dialog", { name: "Which card?" });
+  await page.getByRole("button", { name: appCopy.refer.share }).click();
+  const sheet = page.getByRole("dialog", { name: appCopy.refer.card.title });
   await sheet.getByRole("radio", { name: /A Mane Man example/ }).click();
-  await sheet.getByRole("button", { name: "Continue to share" }).click();
-  const preview = page.getByRole("dialog", { name: "Preview · what your friend sees" });
+  await sheet.getByRole("button", { name: appCopy.refer.card.next }).click();
+  const preview = page.getByRole("dialog", { name: appCopy.refer.preview.title });
   await expect(
     preview.getByText("Home-fitted hair systems across Delhi NCR. 4 service visits free when you’re fitted."),
   ).toBeVisible();
   await preview.getByRole("button", { name: "Close" }).click();
 
-  await page.getByRole("link", { name: "See who has been fitted" }).click();
+  await page.getByRole("link", { name: appCopy.refer.tracker }).click();
   const friends = page.getByRole("listitem");
   await expect(friends.filter({ hasText: "Karan" })).toContainText("2 visits earned");
   await expect(friends.filter({ hasText: "Vikram" })).not.toContainText("earned");
-  await expect(page.getByText("visits earned", { exact: true })).toBeVisible();
+  await expect(page.getByText(appCopy.refer.fitted.earned, { exact: true })).toBeVisible();
 });
 
 // The Home the service worker kept from before mm-api answered the reward, and an mm-api rolled back, carry none,
@@ -440,15 +442,15 @@ test("draws Refer, its preview and its tracker, with no count, where the answers
   await toRefer(page);
   await expect(page.getByText("When a friend you refer is fitted, we tell you.")).toBeVisible();
 
-  await page.getByRole("button", { name: "Share an invite" }).click();
-  const sheet = page.getByRole("dialog", { name: "Which card?" });
+  await page.getByRole("button", { name: appCopy.refer.share }).click();
+  const sheet = page.getByRole("dialog", { name: appCopy.refer.card.title });
   await sheet.getByRole("radio", { name: /A Mane Man example/ }).click();
-  await sheet.getByRole("button", { name: "Continue to share" }).click();
-  const preview = page.getByRole("dialog", { name: "Preview · what your friend sees" });
+  await sheet.getByRole("button", { name: appCopy.refer.card.next }).click();
+  const preview = page.getByRole("dialog", { name: appCopy.refer.preview.title });
   await expect(preview.getByText("Home-fitted hair systems across Delhi NCR.", { exact: true })).toBeVisible();
   await preview.getByRole("button", { name: "Close" }).click();
 
-  await page.getByRole("link", { name: "See who has been fitted" }).click();
+  await page.getByRole("link", { name: appCopy.refer.tracker }).click();
   const karan = page.getByRole("listitem").filter({ hasText: "Karan" });
   await expect(karan).toContainText("Fitted Sep 2026");
   await expect(karan).not.toContainText("earned");
@@ -472,7 +474,7 @@ test("a client not yet fitted sees Refer's empty state, with no invite to send",
   await page.getByRole("navigation").getByRole("link", { name: "Refer" }).click();
   await expect(page.getByText("Your invite opens after your first fit.")).toBeVisible();
   await expect(page.getByText("When a friend you refer is fitted, you both get 3 free service visits.")).toBeVisible();
-  await expect(page.getByRole("button", { name: "Share an invite" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: appCopy.refer.share })).toHaveCount(0);
   await scan(page);
 });
 

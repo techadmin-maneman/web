@@ -2,6 +2,7 @@ import type { Page } from "@playwright/test";
 import { expect, test } from "../support.ts";
 import { DISCOUNT_CODES, empty, fails, json } from "./fixtures.ts";
 import { open, posted } from "./settings-fixtures.ts";
+import * as opsCopy from "../../apps/ops/src/content.ts";
 
 // Discount codes (docs/decisions/0108-discount-codes.md), which no board draws.
 test.describe("the discount codes", () => {
@@ -10,8 +11,8 @@ test.describe("the discount codes", () => {
     page.getByRole("row").filter({ has: page.getByRole("rowheader", { name: code, exact: true }) });
   /** Make codes is shut until asked for. */
   const makeForm = async (page: Page) => {
-    await page.getByRole("button", { name: "Make codes" }).click();
-    return page.getByRole("form", { name: "Make codes" });
+    await page.getByRole("button", { name: opsCopy.settings.discountCodes.make }).click();
+    return page.getByRole("form", { name: opsCopy.settings.discountCodes.make });
   };
 
   test("heads the page with what every code has come to", async ({ page }) => {
@@ -89,12 +90,12 @@ test.describe("the discount codes", () => {
     const check = form.getByRole("button", { name: "Review" });
     await expect(check).toBeDisabled();
     await form.getByLabel("Code", { exact: true }).fill("diwali");
-    await form.getByLabel("Per cent").fill("10");
+    await form.getByLabel(opsCopy.settings.discountCodes.value).fill("10");
     await form.getByLabel("Cap, in rupees").fill("1500");
     await form.getByLabel("Service visits").check();
     await check.click();
 
-    const panel = page.getByRole("group", { name: "Make these codes?" });
+    const panel = page.getByRole("group", { name: opsCopy.settings.discountCodes.checkTitle });
     await expect(panel).toContainText("Code DIWALI");
     await expect(panel).toContainText("10% (max Rs. 1,500) off before GST");
     await expect(panel).toContainText("On Service visits");
@@ -115,15 +116,15 @@ test.describe("the discount codes", () => {
   test("generates a batch of single-use codes, an amount off each", async ({ page }) => {
     await open(page, "/discount-codes", { "POST /api/discount-codes": made(["A2B3C4D5", "E6F7G8H9"]) });
     const form = await makeForm(page);
-    await form.getByLabel("Method").selectOption({ label: "Generate" });
+    await form.getByLabel(opsCopy.settings.discountCodes.how).selectOption({ label: "Generate" });
     await form.getByLabel("How many").fill("2");
     await form.getByLabel("Discount").selectOption({ label: "Amount" });
-    await form.getByLabel("Rupees").fill("1000");
+    await form.getByLabel(opsCopy.settings.discountCodes.rupeesOff).fill("1000");
     await form.getByLabel("First fits, and consultation-and-fit visits").check();
     // A batch's codes are single-use: there is no total to set.
     await expect(form.getByLabel("Total uses")).toHaveCount(0);
     await form.getByRole("button", { name: "Review" }).click();
-    const panel = page.getByRole("group", { name: "Make these codes?" });
+    const panel = page.getByRole("group", { name: opsCopy.settings.discountCodes.checkTitle });
     await expect(panel).toContainText("2 single-use codes");
     await expect(panel).toContainText("Rs. 1,000 off before GST");
     const request = posted(page, "/api/discount-codes");
@@ -145,7 +146,7 @@ test.describe("the discount codes", () => {
     });
     const form = await makeForm(page);
     await form.getByLabel("Code", { exact: true }).fill("WELCOME");
-    await form.getByLabel("Per cent").fill("10");
+    await form.getByLabel(opsCopy.settings.discountCodes.value).fill("10");
     await form.getByLabel("Service visits").check();
     await form.getByRole("button", { name: "Review" }).click();
     await page.getByRole("button", { name: "Confirm" }).click();
@@ -158,7 +159,7 @@ test.describe("the discount codes", () => {
     const form = await makeForm(page);
     const code = form.getByLabel("Code", { exact: true });
     await code.fill("WEDDING-25");
-    await form.getByLabel("Per cent").fill("10");
+    await form.getByLabel(opsCopy.settings.discountCodes.value).fill("10");
     await form.getByLabel("Service visits").check();
     await expect(code).toHaveAttribute("aria-invalid", "true");
     await expect(code).toHaveAccessibleDescription("4–16 letters or digits, no spaces.");

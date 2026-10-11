@@ -7,6 +7,7 @@ import type { Locator, Page } from "@playwright/test";
 import { expect, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
 import { answer, json, TASKS, TASKS_READ_ON } from "./fixtures.ts";
+import * as opsCopy from "../../apps/ops/src/content.ts";
 
 /** Who is signed in when Access stands in front, with the routes their calls go ahead on. */
 const signedIn = (who: string, listed: boolean, mayCall: readonly string[]) =>
@@ -18,7 +19,7 @@ const signedIn = (who: string, listed: boolean, mayCall: readonly string[]) =>
 
 const ONLY_SIGNED_IN = ["GET /api/health", "GET /api/whoami"];
 
-const navigation = (page: Page) => page.getByRole("navigation", { name: "Console" });
+const navigation = (page: Page) => page.getByRole("navigation", { name: opsCopy.shell.title });
 
 async function expectNames(links: Locator, names: readonly string[]): Promise<void> {
   await expect(links).toHaveCount(names.length);
@@ -65,7 +66,7 @@ test("shows a person only the sections their access opens, and opens on the firs
 
   await page.goto("/areas");
   await expect(page.getByRole("heading", { level: 1, name: "Areas" })).toBeVisible();
-  await expect(page.getByText("You don't have access to this page. An admin can grant it on Staff.")).toBeVisible();
+  await expect(page.getByText(opsCopy.shell.closed)).toBeVisible();
 });
 
 // Launching an area had two homes, the waitlist and Settings › Service area.
@@ -93,7 +94,7 @@ test("moves the keyboard to a new page's heading, and offers a way past the navi
   await page.goto("/areas");
   await expect(page.getByRole("heading", { level: 1, name: "Areas" })).toBeVisible();
   await page.keyboard.press("Tab");
-  await expect(page.getByRole("link", { name: "Skip to content" })).toBeFocused();
+  await expect(page.getByRole("link", { name: opsCopy.shell.skip })).toBeFocused();
   await page.keyboard.press("Enter");
   await expect(page.getByRole("main")).toBeFocused();
 
@@ -118,7 +119,7 @@ test("says who is signed in, as the design draws them at the header's right", as
   const header = page.getByRole("banner");
   await expect(header).toContainText("Signed in as ops@localhost");
   // No Access stands in front of a laptop, so there is no session to leave.
-  await expect(header.getByRole("link", { name: "Sign out" })).toHaveCount(0);
+  await expect(header.getByRole("link", { name: opsCopy.shell.account.signOut })).toHaveCount(0);
 });
 
 test("signs out through Access, where Access stands in front", async ({ page }) => {
@@ -127,7 +128,10 @@ test("signs out through Access, where Access stands in front", async ({ page }) 
   const header = page.getByRole("banner");
   await expect(header).toContainText("Signed in as aditya.kumar@maneman.in");
   await expect(header).toContainText("AK");
-  await expect(header.getByRole("link", { name: "Sign out" })).toHaveAttribute("href", "/cdn-cgi/access/logout");
+  await expect(header.getByRole("link", { name: opsCopy.shell.account.signOut })).toHaveAttribute(
+    "href",
+    "/cdn-cgi/access/logout",
+  );
 });
 
 test("tells a person the enforced Staff list does not name that the console is closed to them", async ({ page }) => {
@@ -158,7 +162,7 @@ test("says the sign-in has run out when Access turns a call away, and offers the
   await page.goto("/areas");
   const lapsed = page.getByRole("alert").filter({ hasText: "Your session has expired" });
   await expect(lapsed).toBeVisible();
-  await expect(lapsed.getByRole("button", { name: "Reload" })).toBeVisible();
+  await expect(lapsed.getByRole("button", { name: opsCopy.shell.reload })).toBeVisible();
   await expect(page.getByText("You are offline")).toHaveCount(0);
 });
 
