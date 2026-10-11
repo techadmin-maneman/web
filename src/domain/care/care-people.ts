@@ -84,6 +84,45 @@ export async function setCareName(
   ]);
 }
 
+/**
+ * Moves every client of one member to another of the Care team, as a Customer Care manager does when someone leaves.
+ * How many moved; refused where the one they go to is not on the team.
+ */
+export async function moveAllClients(
+  db: D1Database,
+  move: {
+    readonly from: string;
+    readonly to: string;
+    readonly actor: AuditActor;
+    readonly requestId: string;
+    readonly now: Date;
+  },
+): Promise<number | "not_care"> {
+  const member = await db.prepare(`SELECT email FROM (${CARE_TEAM}) WHERE email = ?1`).bind(move.to).first();
+  if (member === null || move.from === move.to) return "not_care";
+  const [moved] = await db.batch([
+    db
+      .prepare("UPDATE care_owners SET email = ?2, since = ?3, assigned_by = ?4 WHERE email = ?1 RETURNING person_id")
+      .bind(move.from, move.to, move.now.toISOString(), move.actor.id),
+  ]);
+  const count = moved?.results.length ?? 0;
+  if (count > 0) {
+    await auditStatement(
+      db,
+      {
+        surface: "ops",
+        actor: move.actor,
+        action: "care_person.move_all",
+        subject: { kind: "staff", id: move.from },
+        requestId: move.requestId,
+        detail: { to: move.to, clients: count },
+      },
+      move.now,
+    ).run();
+  }
+  return count;
+}
+
 /** Moves a client to another member of the Care team, as a Customer Care manager does. */
 export async function moveCarePerson(
   db: D1Database,

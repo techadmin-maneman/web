@@ -3,7 +3,7 @@
 // name, the days off and the leave from the member's row.
 
 import { Button } from "@maneman/ui/Button";
-import { Checkbox, DateInput, Field, TextInput } from "@maneman/ui/Field";
+import { Checkbox, DateInput, Field, Select, TextInput } from "@maneman/ui/Field";
 import { Table } from "@maneman/ui/Table";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { classes } from "@maneman/ui/classes";
@@ -196,6 +196,7 @@ function LeaveList(props: { leave: readonly Leave[]; mayManage: boolean; onChang
 
 /** On shift, off it, or a day off; and who covers them while they are off. */
 function stateOf(member: CareMember): string {
+  if (!member.on_team) return copy.leftTeam;
   if (member.day_off) return copy.dayOff;
   return member.on_shift_since === null ? copy.offShift : copy.onShift(indiaClock(member.on_shift_since));
 }
@@ -224,9 +225,90 @@ function ShiftSwitch(props: { me: CareMember; onDone: () => void }) {
   );
 }
 
-type Acting = "name" | "days" | "leave" | null;
+/** Every client of one member, moved to another on the team. */
+function MoveAllForm(props: {
+  member: CareMember;
+  team: readonly CareMember[];
+  onDone: () => void;
+  onCancel: () => void;
+}) {
+  const others = props.team.filter((each) => each.on_team && each.email !== props.member.email);
+  const [to, setTo] = useState(others[0]?.email ?? "");
+  const { busy, failure, send } = useSend(props.onDone);
+  return (
+    <div className={own.teamForm}>
+      <div className={own.closing}>
+        <Field label={copy.moveAllTo}>
+          {(control) => (
+            <Select
+              {...control}
+              className={styles.choiceBox}
+              value={to}
+              onChange={(event) => {
+                setTo(event.target.value);
+              }}
+            >
+              {others.map((each) => (
+                <option key={each.email} value={each.email}>
+                  {each.email}
+                </option>
+              ))}
+            </Select>
+          )}
+        </Field>
+        <Button
+          variant="primary"
+          size="small"
+          disabled={busy || to === ""}
+          onClick={() => void send(() => careApi.moveAllClients(props.member.email, to))}
+        >
+          {copy.move}
+        </Button>
+        <Button variant="outline" size="small" className={styles.quiet} onClick={props.onCancel}>
+          {copy.cancel}
+        </Button>
+      </div>
+      <Refused failed={failure} errors={copy.errors} />
+    </div>
+  );
+}
 
-function MemberRows(props: { member: CareMember; mayManage: boolean; onChanged: () => void }) {
+type Acting = "name" | "days" | "leave" | "move" | null;
+
+/** A manager's ways to change a member: their name, days off and leave while on the team, and moving their clients. */
+function RowActions(props: { member: CareMember; acting: Acting; onActing: (acting: Acting) => void }) {
+  const { member } = props;
+  const actions: readonly (readonly [Exclude<Acting, null>, string, string])[] = [
+    ...(member.on_team
+      ? ([
+          ["name", copy.editName, copy.editNameLabel(member.email)],
+          ["days", copy.editDays, copy.editDaysLabel(member.email)],
+          ["leave", copy.addLeave, copy.addLeaveLabel(member.email)],
+        ] as const)
+      : []),
+    ...(member.clients > 0 ? ([["move", copy.moveAll, copy.moveAllLabel(member.email)]] as const) : []),
+  ];
+  return actions.map(([acting, label, aria]) => (
+    <button
+      key={acting}
+      className={styles.inline}
+      type="button"
+      aria-label={aria}
+      onClick={() => {
+        props.onActing(props.acting === acting ? null : acting);
+      }}
+    >
+      {label}
+    </button>
+  ));
+}
+
+function MemberRows(props: {
+  member: CareMember;
+  team: readonly CareMember[];
+  mayManage: boolean;
+  onChanged: () => void;
+}) {
   const { member, mayManage } = props;
   const [acting, setActing] = useState<Acting>(null);
   const done = () => {
@@ -251,40 +333,7 @@ function MemberRows(props: { member: CareMember; mayManage: boolean; onChanged: 
         </td>
         <td>{todayOf(member)}</td>
         <td className={own.actions}>
-          {mayManage && (
-            <>
-              <button
-                className={styles.inline}
-                type="button"
-                aria-label={copy.editNameLabel(member.email)}
-                onClick={() => {
-                  setActing(acting === "name" ? null : "name");
-                }}
-              >
-                {copy.editName}
-              </button>{" "}
-              <button
-                className={styles.inline}
-                type="button"
-                aria-label={copy.editDaysLabel(member.email)}
-                onClick={() => {
-                  setActing(acting === "days" ? null : "days");
-                }}
-              >
-                {copy.editDays}
-              </button>{" "}
-              <button
-                className={styles.inline}
-                type="button"
-                aria-label={copy.addLeaveLabel(member.email)}
-                onClick={() => {
-                  setActing(acting === "leave" ? null : "leave");
-                }}
-              >
-                {copy.addLeave}
-              </button>
-            </>
-          )}
+          {mayManage && <RowActions member={member} acting={acting} onActing={setActing} />}
         </td>
       </tr>
       {acting !== null && (
@@ -293,6 +342,7 @@ function MemberRows(props: { member: CareMember; mayManage: boolean; onChanged: 
             {acting === "name" && <NameForm member={member} onDone={done} onCancel={cancel} />}
             {acting === "days" && <DaysOffForm member={member} onDone={done} onCancel={cancel} />}
             {acting === "leave" && <LeaveForm member={member} onDone={done} onCancel={cancel} />}
+            {acting === "move" && <MoveAllForm member={member} team={props.team} onDone={done} onCancel={cancel} />}
           </td>
         </tr>
       )}
@@ -331,7 +381,7 @@ export function CareTeam() {
         </thead>
         <tbody>
           {team.map((member) => (
-            <MemberRows key={member.email} member={member} mayManage={mayManage} onChanged={retry} />
+            <MemberRows key={member.email} member={member} team={team} mayManage={mayManage} onChanged={retry} />
           ))}
         </tbody>
       </Table>

@@ -18,6 +18,7 @@ const ARJUN: Conversation = {
   state: "open",
   care_person: "asha@maneman.test",
   covered_by: null,
+  technician: null,
   last_message_at: "2026-09-21T05:12:00.000Z",
   last_line: "Can I move tomorrow's visit to the evening?",
   waiting_since: "2026-09-21T05:12:00.000Z",
@@ -86,6 +87,7 @@ beforeEach(() => {
           team: [
             {
               email: "ravi@maneman.test",
+              on_team: true,
               name: null,
               clients: 3,
               weekly_off: [0],
@@ -98,6 +100,7 @@ beforeEach(() => {
             },
             {
               email: "asha@maneman.test",
+              on_team: true,
               name: "Asha",
               clients: 12,
               weekly_off: [],
@@ -386,6 +389,24 @@ describe("the Messages page", () => {
     expect(team.textContent).toContain(copy.team.period(shortDate(LEAVE.from), shortDate(LEAVE.to)));
     expect(team.textContent).toContain(copy.team.offShift + copy.team.coveredBy("ravi@maneman.test"));
     expect(team.textContent).toContain(copy.team.you.on("9 am"));
+  });
+
+  it("moves every client of one member to another", async () => {
+    await show();
+    await act(async () => {
+      page
+        .querySelector<HTMLButtonElement>(`button[aria-label="${copy.team.moveAllLabel("ravi@maneman.test")}"]`)
+        ?.click();
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
+    await act(async () => {
+      [...page.querySelectorAll("button")].find((each) => each.textContent.trim() === copy.team.move)?.click();
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
+    expect(posted.at(-1)).toEqual({
+      path: "/api/care-team/move-all",
+      body: { from: "ravi@maneman.test", to: "asha@maneman.test" },
+    });
   });
 
   it("takes the signed-in member off shift", async () => {

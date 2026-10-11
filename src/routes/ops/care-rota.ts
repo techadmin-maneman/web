@@ -4,6 +4,7 @@
 //   POST /api/care-team/leave/:id/delete   leave taken back
 //   POST /api/care-team/name               the first name a member is known by to clients (docs/decisions/0136-care-names.md)
 //   POST /api/care-team/shift              the caller on shift or off it, as they mark it (docs/decisions/0139-care-shifts.md)
+//   POST /api/care-team/move-all           every client of one member moved to another (docs/decisions/0142-moving-every-client.md)
 // The team as it stands, with who covers whom today, is GET /api/care-team (./care-people.ts).
 
 import { createRoute, z } from "@hono/zod-openapi";
@@ -12,7 +13,7 @@ import type { App, AppEnv } from "../../http/context.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
 import { json } from "../../http/openapi.ts";
 import { actorOf, staffMemberOf } from "../../http/audit.ts";
-import { careTeam, setCareName } from "../../domain/care/care-people.ts";
+import { careTeam, moveAllClients, setCareName } from "../../domain/care/care-people.ts";
 import { addLeave, deleteLeave, setOnShift, setWeeklyOff } from "../../domain/care/cover.ts";
 import { indiaDate } from "../../lib/india-time.ts";
 
@@ -95,6 +96,23 @@ const shiftRoute = createRoute({
   },
 });
 
+const moveAllRoute = createRoute({
+  method: "post",
+  path: "/api/care-team/move-all",
+  summary: "Move every client of one member to another of the Care team, as when someone leaves",
+  request: {
+    body: {
+      required: true,
+      ...json(z.object({ from: z.email(), to: z.email() }).strict().openapi("CareMoveAll")),
+    },
+  },
+  responses: {
+    200: { description: "How many moved", ...json(z.object({ moved: z.number().int() }).strict()) },
+    400: errorResponse("invalid_request: fields names to when it is not one of the Care team, or the same as from"),
+    403: errorResponse("access_required"),
+  },
+});
+
 const changeOf = (c: Context<AppEnv>) => ({ actor: actorOf(c), requestId: c.var.requestId, now: c.var.deps.now() });
 
 const onTheTeam = async (c: Context<AppEnv>, email: string) =>
@@ -127,6 +145,12 @@ export function registerOpsCareRota(app: App): void {
     if (!(await onTheTeam(c, me))) return refuse(c, "invalid_request", ["on"]);
     await setOnShift(c.env.DB, me, c.req.valid("json").on, c.var.deps.now());
     return c.json({ ok: true as const }, 200);
+  });
+
+  app.openapi(moveAllRoute, async (c) => {
+    const { from, to } = c.req.valid("json");
+    const moved = await moveAllClients(c.env.DB, { ...changeOf(c), from, to });
+    return moved === "not_care" ? refuse(c, "invalid_request", ["to"]) : c.json({ moved }, 200);
   });
 
   app.openapi(deleteRoute, async (c) => {

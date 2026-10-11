@@ -69,6 +69,8 @@ export interface ConversationRow {
   readonly care_person: string | null;
   /** Who covers the Care person today, while they are off (src/domain/care/cover.ts); null while they are on. */
   readonly covered_by: string | null;
+  /** One of our technicians, by their number on record; Operations answer them. Null for anyone else. */
+  readonly technician: { readonly id: string; readonly name: string } | null;
   readonly last_message_at: string;
   /** The last thing said in the chat, ours or theirs; null where only our automatic messages went. */
   readonly last_line: string | null;
@@ -85,6 +87,8 @@ interface ListRow {
   readonly mobile_e164: string;
   readonly state: ConversationRow["state"];
   readonly care_person: string | null;
+  readonly technician_id: string | null;
+  readonly technician_name: string | null;
   readonly last_message_at: string;
   readonly last_inbound_at: string | null;
   readonly last_line: string | null;
@@ -112,6 +116,7 @@ function rowOf(row: ListRow, { hours, cover }: InboxContext): ConversationRow {
     state: row.state,
     care_person: row.care_person,
     covered_by: row.care_person === null ? null : (cover.get(row.care_person) ?? null),
+    technician: row.technician_id === null ? null : { id: row.technician_id, name: row.technician_name ?? "" },
     last_message_at: row.last_message_at,
     last_line: row.last_line,
     waiting_since: since,
@@ -132,13 +137,15 @@ export async function listConversations(
   const covered = [...context.cover].filter(([, by]) => by === me).map(([off]) => off);
   const { results } = await db
     .prepare(
-      `SELECT c.id, c.person_id, p.name, c.mobile_e164, c.state, o.email AS care_person, c.last_message_at,
+      `SELECT c.id, c.person_id, p.name, c.mobile_e164, c.state, o.email AS care_person, t.id AS technician_id,
+         t.name AS technician_name, c.last_message_at,
          c.last_inbound_at,
          (SELECT m.text FROM chat_messages m WHERE m.conversation_id = c.id AND m.direction <> 'note'
             AND m.author <> ?4 ORDER BY m.sent_at DESC LIMIT 1) AS last_line,
          (SELECT MAX(m.sent_at) FROM chat_messages m WHERE m.conversation_id = c.id AND m.direction = 'out'
             AND m.author <> ?4) AS last_reply_at
        FROM conversations c LEFT JOIN people p ON p.id = c.person_id LEFT JOIN care_owners o ON o.person_id = c.person_id
+         LEFT JOIN technicians t ON t.mobile_e164 = c.mobile_e164 AND t.active = 1
        WHERE ?1 = 'all' OR c.state = ?1 OR (?1 = 'mine' AND o.email IN (SELECT value FROM json_each(?3)) AND c.state <> 'closed')
        ORDER BY c.last_message_at DESC LIMIT ?2`,
     )
@@ -179,11 +186,13 @@ const THREAD_ITEMS = 300;
 export async function conversationThread(db: D1Database, id: string, context: InboxContext): Promise<Thread | null> {
   const row = await db
     .prepare(
-      `SELECT c.id, c.person_id, p.name, c.mobile_e164, c.state, o.email AS care_person, c.last_message_at,
+      `SELECT c.id, c.person_id, p.name, c.mobile_e164, c.state, o.email AS care_person, t.id AS technician_id,
+         t.name AS technician_name, c.last_message_at,
          c.last_inbound_at, NULL AS last_line,
          (SELECT MAX(m.sent_at) FROM chat_messages m WHERE m.conversation_id = c.id AND m.direction = 'out'
             AND m.author <> ?2) AS last_reply_at
        FROM conversations c LEFT JOIN people p ON p.id = c.person_id LEFT JOIN care_owners o ON o.person_id = c.person_id
+         LEFT JOIN technicians t ON t.mobile_e164 = c.mobile_e164 AND t.active = 1
        WHERE c.id = ?1`,
     )
     .bind(id, AUTO_REPLY)
