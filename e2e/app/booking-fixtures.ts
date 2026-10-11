@@ -104,6 +104,7 @@ export function profileOf({ reminders = false, undecided = [], address = true }:
   });
   const answer = { name: "Rohit Malhotra", mobile: "+91 98xxx x4417", consents };
   const rest = {
+    care_person: null,
     address_given_to_ops: null,
     number_change: null,
     number_change_decided: null,

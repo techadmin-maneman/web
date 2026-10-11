@@ -33,6 +33,7 @@ const ACTIONS: Readonly<Record<ActivityAction, string>> = {
   "care_leave.add": "Care leave added",
   "care_leave.delete": "Care leave taken back",
   "city_matter.raise": "City matter sent",
+  "care_name.set": "Care name set",
   "word.publish": "Site words published",
   "partner_payout.record": "Partner payment recorded",
   "partner_payout.delete": "Partner payment deleted",

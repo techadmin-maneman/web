@@ -16,6 +16,7 @@
 // (src/routes/ops/profile.ts).
 
 import { z } from "@hono/zod-openapi";
+import { careNameOf } from "../../domain/care/care-people.ts";
 import { lastDecidedChange, openNumberChange } from "../../domain/clients/number-change.ts";
 import { consentsOf, currentAddress, liveContact, maskedMobile } from "../../domain/clients/profile.ts";
 import { latestGrievances, type ShownGrievance } from "../../domain/ops/grievances.ts";
@@ -36,6 +37,9 @@ const ProfileSchema = z
   .object({
     name: z.string(),
     mobile: z.string().openapi({ description: "Masked: +91 98xxx x4417." }),
+    care_person: z.union([z.string(), z.null()]).openapi({
+      description: "The first name of the client's Care person (ADR 0136); null until they have one with a name.",
+    }),
     // A union, not .nullable(): that would make the Address component itself nullable, request bodies and all.
     address: z.union([AddressSchema, z.null()]),
     address_given_to_ops: z.union([z.iso.datetime(), z.null()]).openapi({
@@ -148,7 +152,7 @@ export function registerClientProfile(app: App): void {
     if (person === null) return refuse(c, "session_required");
 
     const now = c.var.deps.now();
-    const [address, consents, change, decided, deletion, deletionRejected, grievances] = await Promise.all([
+    const [address, consents, change, decided, deletion, deletionRejected, grievances, carePerson] = await Promise.all([
       currentAddress(db, personId),
       consentsOf(db, personId),
       openNumberChange(db, personId),
@@ -156,11 +160,13 @@ export function registerClientProfile(app: App): void {
       openDeletion(db, personId),
       lastRejectedDeletion(db, personId, now),
       latestGrievances(db, personId, now),
+      careNameOf(db, personId),
     ]);
     return c.json(
       {
         name: person.name,
         mobile: maskedMobile(person.mobileE164),
+        care_person: carePerson,
         address:
           address === null
             ? null

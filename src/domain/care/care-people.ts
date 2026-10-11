@@ -42,6 +42,48 @@ export async function giveCarePerson(db: D1Database, personId: string, now: Date
     .run();
 }
 
+/** The first name a client knows their Care person by; null until they have one with a name. */
+export async function careNameOf(db: D1Database, personId: string): Promise<string | null> {
+  const row = await db
+    .prepare("SELECT n.name FROM care_owners o JOIN care_names n ON n.email = o.email WHERE o.person_id = ?1")
+    .bind(personId)
+    .first<{ name: string }>();
+  return row?.name ?? null;
+}
+
+/** The first name a member of the Care team is known by to clients, as a Customer Care manager sets it. */
+export async function setCareName(
+  db: D1Database,
+  change: {
+    readonly email: string;
+    readonly name: string;
+    readonly actor: AuditActor;
+    readonly requestId: string;
+    readonly now: Date;
+  },
+): Promise<void> {
+  await db.batch([
+    db
+      .prepare(
+        `INSERT INTO care_names (email, name, set_by, set_at) VALUES (?1, ?2, ?3, ?4)
+         ON CONFLICT (email) DO UPDATE SET name = excluded.name, set_by = excluded.set_by, set_at = excluded.set_at`,
+      )
+      .bind(change.email, change.name, change.actor.id, change.now.toISOString()),
+    auditStatement(
+      db,
+      {
+        surface: "ops",
+        actor: change.actor,
+        action: "care_name.set",
+        subject: { kind: "staff", id: change.email },
+        requestId: change.requestId,
+        detail: { name: change.name },
+      },
+      change.now,
+    ),
+  ]);
+}
+
 /** Moves a client to another member of the Care team, as a Customer Care manager does. */
 export async function moveCarePerson(
   db: D1Database,

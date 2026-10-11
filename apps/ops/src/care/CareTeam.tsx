@@ -1,8 +1,9 @@
-// The Care team on the Messages page (docs/decisions/0134-care-cover.md): each member's clients, weekly days off and
-// leave, and who covers them today. A Customer Care manager sets the days off and the leave from the member's row.
+// The Care team on the Messages page (docs/decisions/0134-care-cover.md, 0136-care-names.md): each member's name as
+// clients know it, clients, weekly days off and leave, and who covers them today. A Customer Care manager sets the
+// name, the days off and the leave from the member's row.
 
 import { Button } from "@maneman/ui/Button";
-import { Checkbox, DateInput, Field } from "@maneman/ui/Field";
+import { Checkbox, DateInput, Field, TextInput } from "@maneman/ui/Field";
 import { Table } from "@maneman/ui/Table";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { classes } from "@maneman/ui/classes";
@@ -20,7 +21,7 @@ import styles from "../components/forms.module.css";
 import own from "./care.module.css";
 
 const copy = care.team;
-const COLUMNS = 6;
+const COLUMNS = 7;
 
 type Leave = CareMember["leave"][number];
 
@@ -128,6 +129,43 @@ function LeaveForm(props: { member: CareMember; onDone: () => void; onCancel: ()
   );
 }
 
+function NameForm(props: { member: CareMember; onDone: () => void; onCancel: () => void }) {
+  const [name, setName] = useState(props.member.name ?? "");
+  const { busy, failure, send } = useSend(props.onDone);
+  return (
+    <div className={own.teamForm}>
+      <div className={styles.fields}>
+        <Field label={copy.nameLabel}>
+          {(control) => (
+            <TextInput
+              {...control}
+              maxLength={40}
+              value={name}
+              onChange={(event) => {
+                setName(event.target.value);
+              }}
+            />
+          )}
+        </Field>
+      </div>
+      <div className={styles.actions}>
+        <Button
+          variant="primary"
+          size="small"
+          disabled={busy || name.trim() === ""}
+          onClick={() => void send(() => careApi.setCareName(props.member.email, name.trim()))}
+        >
+          {copy.save}
+        </Button>
+        <Button variant="outline" size="small" className={styles.quiet} onClick={props.onCancel}>
+          {copy.cancel}
+        </Button>
+      </div>
+      <Refused failed={failure} errors={copy.errors} />
+    </div>
+  );
+}
+
 function LeaveList(props: { leave: readonly Leave[]; mayManage: boolean; onChanged: () => void }) {
   const { busy, failure, send } = useSend(props.onChanged);
   if (props.leave.length === 0) return <>{copy.noLeave}</>;
@@ -156,7 +194,7 @@ function LeaveList(props: { leave: readonly Leave[]; mayManage: boolean; onChang
   );
 }
 
-type Acting = "days" | "leave" | null;
+type Acting = "name" | "days" | "leave" | null;
 
 function MemberRows(props: { member: CareMember; mayManage: boolean; onChanged: () => void }) {
   const { member, mayManage } = props;
@@ -165,6 +203,9 @@ function MemberRows(props: { member: CareMember; mayManage: boolean; onChanged: 
     setActing(null);
     props.onChanged();
   };
+  const cancel = () => {
+    setActing(null);
+  };
   const days = member.weekly_off.map((day) => copy.weekdays[day] ?? "").join(", ");
   return (
     <>
@@ -172,6 +213,7 @@ function MemberRows(props: { member: CareMember; mayManage: boolean; onChanged: 
         <th scope="row" className={own.who}>
           {member.email}
         </th>
+        <td>{member.name ?? copy.noName}</td>
         <td className={own.figure}>{member.clients}</td>
         <td>{days === "" ? copy.noDaysOff : days}</td>
         <td>
@@ -181,6 +223,16 @@ function MemberRows(props: { member: CareMember; mayManage: boolean; onChanged: 
         <td className={own.actions}>
           {mayManage && (
             <>
+              <button
+                className={styles.inline}
+                type="button"
+                aria-label={copy.editNameLabel(member.email)}
+                onClick={() => {
+                  setActing(acting === "name" ? null : "name");
+                }}
+              >
+                {copy.editName}
+              </button>{" "}
               <button
                 className={styles.inline}
                 type="button"
@@ -208,23 +260,9 @@ function MemberRows(props: { member: CareMember; mayManage: boolean; onChanged: 
       {acting !== null && (
         <tr className={own.acting}>
           <td colSpan={COLUMNS}>
-            {acting === "days" ? (
-              <DaysOffForm
-                member={member}
-                onDone={done}
-                onCancel={() => {
-                  setActing(null);
-                }}
-              />
-            ) : (
-              <LeaveForm
-                member={member}
-                onDone={done}
-                onCancel={() => {
-                  setActing(null);
-                }}
-              />
-            )}
+            {acting === "name" && <NameForm member={member} onDone={done} onCancel={cancel} />}
+            {acting === "days" && <DaysOffForm member={member} onDone={done} onCancel={cancel} />}
+            {acting === "leave" && <LeaveForm member={member} onDone={done} onCancel={cancel} />}
           </td>
         </tr>
       )}
@@ -247,6 +285,7 @@ export function CareTeam() {
         <thead>
           <tr>
             <th scope="col">{columns.member}</th>
+            <th scope="col">{columns.name}</th>
             <th scope="col" className={own.figure}>
               {columns.clients}
             </th>

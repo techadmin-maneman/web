@@ -14,6 +14,8 @@ interface Leave {
 
 export interface RotaMember {
   readonly email: string;
+  /** The first name clients know them by; null until a manager sets it. */
+  readonly name: string | null;
   readonly clients: number;
   /** 0 Sunday to 6 Saturday. */
   readonly weekly_off: number[];
@@ -30,13 +32,15 @@ export async function careRota(db: D1Database, today: string): Promise<RotaMembe
     careTeam(db),
     db.batch([
       db.prepare("SELECT email, weekday FROM care_weekly_off ORDER BY weekday"),
+      db.prepare("SELECT email, name FROM care_names"),
       db
         .prepare("SELECT id, email, from_date, to_date FROM care_leave WHERE to_date >= ?1 ORDER BY from_date")
         .bind(today),
     ]),
   ]);
   const weekly = (rows[0]?.results ?? []) as { email: string; weekday: number }[];
-  const leave = (rows[1]?.results ?? []) as { id: string; email: string; from_date: string; to_date: string }[];
+  const names = (rows[1]?.results ?? []) as { email: string; name: string }[];
+  const leave = (rows[2]?.results ?? []) as { id: string; email: string; from_date: string; to_date: string }[];
   const offOf = (email: string): OffDays => ({
     weekly: weekly.filter((row) => row.email === email).map((row) => row.weekday),
     leave: leave.filter((row) => row.email === email).map((row) => ({ from: row.from_date, to: row.to_date })),
@@ -45,6 +49,7 @@ export async function careRota(db: D1Database, today: string): Promise<RotaMembe
   const covers = coversOf(team, off);
   return team.map((member) => ({
     email: member.email,
+    name: names.find((row) => row.email === member.email)?.name ?? null,
     clients: member.clients,
     weekly_off: [...offOf(member.email).weekly],
     leave: leave

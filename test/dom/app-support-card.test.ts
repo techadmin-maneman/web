@@ -1,0 +1,44 @@
+// The client app's Support card (apps/app/src/profile/SupportCard.tsx; docs/decisions/0136-care-names.md): WhatsApp,
+// and the client's Care person by the name Customer Care gave them.
+
+import { act, createElement } from "react";
+import { createRoot, type Root } from "react-dom/client";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { profile } from "../../apps/app/src/content.ts";
+import { SupportCard } from "../../apps/app/src/profile/SupportCard.tsx";
+
+let page: HTMLElement;
+let root: Root;
+
+beforeEach(() => {
+  Reflect.set(globalThis, "IS_REACT_ACT_ENVIRONMENT", true);
+  page = document.createElement("div");
+  document.body.append(page);
+  root = createRoot(page);
+});
+
+afterEach(() => {
+  act(() => {
+    root.unmount();
+  });
+  page.remove();
+});
+
+const draw = (carePerson: string | null) => {
+  act(() => {
+    root.render(createElement(SupportCard, { carePerson }));
+  });
+};
+
+describe("the Support card", () => {
+  it("names the client's Care person", () => {
+    draw("Asha");
+    expect(page.textContent).toContain(profile.support.carePerson("Asha"));
+    expect(page.textContent).toContain(profile.support.message);
+  });
+
+  it("says nothing of one before they have a name", () => {
+    draw(null);
+    expect(page.textContent).not.toContain(profile.support.carePerson(""));
+  });
+});

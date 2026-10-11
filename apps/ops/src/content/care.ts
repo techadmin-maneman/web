@@ -91,7 +91,18 @@ export const care = {
   /** The Care team, their days off and who covers whom (docs/decisions/0134-care-cover.md). */
   team: {
     title: "Care team",
-    columns: { member: "Member", clients: "Clients", daysOff: "Days off", leave: "Leave", today: "Today" },
+    columns: {
+      member: "Member",
+      name: "Known to clients as",
+      clients: "Clients",
+      daysOff: "Days off",
+      leave: "Leave",
+      today: "Today",
+    },
+    noName: "Not set",
+    editName: "Name",
+    editNameLabel: (email: string) => `Set the name clients know ${email} by`,
+    nameLabel: "First name, as clients see it",
     weekdays: ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
     noDaysOff: "None",
     noLeave: "None",

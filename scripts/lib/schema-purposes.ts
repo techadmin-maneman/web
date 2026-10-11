@@ -34,6 +34,7 @@ export const PURPOSES: Readonly<Record<string, string>> = {
     "Every message in a Care inbox thread: what the client wrote, our replies, and notes only staff see (ADR 0129).",
   care_weekly_off: "Each Care team member's weekly days off, as a Customer Care manager sets them (ADR 0134).",
   care_leave: "Leave for a Care team member, from one date to another; their chats are covered meanwhile (ADR 0134).",
+  care_names: "The first name each Care team member is known by to clients, as their Support card shows it (ADR 0136).",
   city_matters:
     "A matter Customer Care sent from a chat to the client's city, on that city's Tasks until it is closed (ADR 0135).",
   care_owners:
