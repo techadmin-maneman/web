@@ -19,6 +19,7 @@ const DOCUMENTATION_CONFIG: StaticConfig = {
     PAYMENTS_PROVIDER: "stub",
     GEOCODE_PROVIDER: "stub",
     ROUTES_PROVIDER: "stub",
+    ANALYTICS_PROVIDER: "stub",
   },
   settings: {
     leadMobileDailyLimit: 5,
@@ -39,6 +40,7 @@ const DOCUMENTATION_CONFIG: StaticConfig = {
     razorpay: null,
     geocode: { apiKey: null, dailyCeiling: 0 },
     routes: { apiKey: null },
+    analytics: { clientKeySecret: null },
     access: null,
     login: {
       codePepper: "",

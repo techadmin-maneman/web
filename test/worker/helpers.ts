@@ -52,6 +52,7 @@ export const LOCAL_SETTINGS: Settings = {
   razorpay: null,
   geocode: { apiKey: null, dailyCeiling: 200 },
   routes: { apiKey: null },
+  analytics: { clientKeySecret: "a-local-analytics-key-of-thirty-two-chars" },
   access: null,
   login: {
     codePepper: "test-login-code-pepper-that-is-long-enough",
@@ -92,6 +93,7 @@ export const LOCAL_CONFIG: StaticConfig = {
     PAYMENTS_PROVIDER: "stub",
     GEOCODE_PROVIDER: "stub",
     ROUTES_PROVIDER: "stub",
+    ANALYTICS_PROVIDER: "stub",
   },
   settings: LOCAL_SETTINGS,
 };

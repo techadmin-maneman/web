@@ -8,6 +8,8 @@
   "name": "mm-api",
   "main": "src/index.ts",
   "compatibility_date": "2026-08-15",
+  // For the Postgres client that writes the nightly reporting copy through Hyperdrive (docs/decisions/0146-the-nightly-analytics-copy.md).
+  "compatibility_flags": ["nodejs_compat"],
   "workers_dev": false,
   "preview_urls": false,
   "upload_source_maps": true,
@@ -96,6 +98,7 @@
     // Razorpay (docs/decisions/0044-payments-mirror.md). The stub takes no money and reaches nothing.
     "PAYMENTS_PROVIDER": "stub",
     "GEOCODE_PROVIDER": "stub",
+    "ANALYTICS_PROVIDER": "stub",
     "ROUTES_PROVIDER": "stub",
     "SELF_SERVE_BOOKING": "true",
     "REFERRER_NAME_ON_INVITE": "true",
@@ -209,6 +212,7 @@
         "PAYMENTS_PROVIDER": "razorpay",
         // The owner's key is in place (docs/provisioning.md, step 13); production waits for the release.
         "GEOCODE_PROVIDER": "google",
+        "ANALYTICS_PROVIDER": "none",
         // Until the owner switches on the Routes and Maps Static APIs for the key (docs/provisioning.md, step 13).
         "ROUTES_PROVIDER": "none",
         "SELF_SERVE_BOOKING": "true",
@@ -315,6 +319,7 @@
         // Razorpay stays off until Phase 2's release (docs/open-points.md, item 6).
         "PAYMENTS_PROVIDER": "none",
         "GEOCODE_PROVIDER": "none",
+        "ANALYTICS_PROVIDER": "none",
         "ROUTES_PROVIDER": "none",
         "SELF_SERVE_BOOKING": "false",
         "REFERRER_NAME_ON_INVITE": "true",
