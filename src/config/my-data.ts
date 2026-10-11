@@ -6,7 +6,7 @@
  * `yesNo`: 1 or 0. `words`: a stored code, as words ("first_fit" reads "First fit"). `purpose`: a consent's purpose.
  * `purposes`: a JSON list of them. `notice`: a notice's version, as the words it showed.
  */
-export type FieldKind = "text" | "time" | "day" | "money" | "yesNo" | "words" | "purpose" | "purposes" | "notice";
+type FieldKind = "text" | "time" | "day" | "money" | "yesNo" | "words" | "purpose" | "purposes" | "notice";
 
 export interface Field {
   readonly label: string;

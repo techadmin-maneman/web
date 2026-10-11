@@ -1,7 +1,7 @@
 // Which environment this build is for. Set by MM_ENV at build time; each
 // environment gets its own build (site/astro.config.ts).
 
-export const SITE_ENVIRONMENTS = ["local", "staging", "production"] as const;
+const SITE_ENVIRONMENTS = ["local", "staging", "production"] as const;
 export type SiteEnvironment = (typeof SITE_ENVIRONMENTS)[number];
 
 export function siteEnvironment(value: string | undefined): SiteEnvironment {

@@ -9,7 +9,7 @@ import { settings } from "../content.ts";
 
 const copy = settings.discountCodes;
 
-export type Kind = DiscountCodesNew["kind"];
+type Kind = DiscountCodesNew["kind"];
 export type Covered = DiscountCodesNew["covers"][number];
 
 /** What a code may cover, in the order the form offers them. */

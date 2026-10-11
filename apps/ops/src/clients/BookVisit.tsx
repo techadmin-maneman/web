@@ -25,7 +25,7 @@ import styles from "../components/visit-dialog.module.css";
 const copy = clients.visits.book;
 
 /** What ops choose to book: a kind of visit, or a consultation and fit in one visit, which is a first fit. */
-export type Choice = keyof typeof copy.kinds;
+type Choice = keyof typeof copy.kinds;
 
 const CHOICES = Object.keys(copy.kinds) as Choice[];
 

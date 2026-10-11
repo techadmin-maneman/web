@@ -6,7 +6,7 @@
 import { TEMPLATES, type TemplateName } from "./message-templates.ts";
 
 /** How WhatsApp prices and polices a template: a login code, or a message about something the person has. */
-export type TemplateCategory = "authentication" | "utility";
+type TemplateCategory = "authentication" | "utility";
 
 /**
  * A button under the text. Its address is our site's origin and a suffix each message gives: the path of one of our

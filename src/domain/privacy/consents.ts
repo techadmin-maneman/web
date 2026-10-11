@@ -14,7 +14,7 @@ import type { ConsentSource } from "../../policy/consents.ts";
 export type ConsentRule = "always" | "if_changed" | "if_undecided" | "if_granted";
 
 /** Whose consent it is: by ID, or by number where the same batch writes the person. */
-export type ConsentPerson = { readonly id: string } | { readonly mobileE164: string };
+type ConsentPerson = { readonly id: string } | { readonly mobileE164: string };
 
 export interface ConsentAnswer {
   readonly person: ConsentPerson;

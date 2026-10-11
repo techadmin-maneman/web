@@ -64,7 +64,7 @@ const serviceOf = (wanted: Wanted, moving: string | undefined) => ({
 });
 
 /** The codes the API refuses with, as its document writes them. */
-export type ErrorCode = Schemas["ErrorResponse"]["error"]["code"];
+type ErrorCode = Schemas["ErrorResponse"]["error"]["code"];
 
 /**
  * A failed call carries the API's error code, or "offline" when it never reached

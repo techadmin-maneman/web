@@ -48,7 +48,7 @@ export interface JobRow {
   kept_look_key: string | null;
 }
 
-export type ColorRoute = "as_detected" | UnknownColorRoute;
+type ColorRoute = "as_detected" | UnknownColorRoute;
 
 /** What a render asks the provider for. */
 export interface RenderChoice {

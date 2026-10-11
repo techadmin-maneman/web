@@ -50,7 +50,7 @@ type InviteAttachment = Sent<paths["/api/clients/{id}/referral"]["post"]>;
 export type PhotoVisit = Body<paths["/api/clients/{id}/photos"]["get"]>["visits"][number];
 export type Photo = PhotoVisit["photos"][number];
 export type PhotoView = Body<paths["/api/clients/{id}/photos/view"]["post"]>;
-export type Consents = Body<paths["/api/clients/{id}/consents"]["get"]>;
+type Consents = Body<paths["/api/clients/{id}/consents"]["get"]>;
 export type Consent = Consents["consents"][number];
 export type Piece = Body<paths["/api/clients/{id}/pieces"]["get"]>["pieces"][number];
 /** The client's hair profile, and every version of it (ADR 0106). */
@@ -65,7 +65,7 @@ export type Task = TaskGroup["tasks"][number];
 /** The groups ops may close a task of without doing its thing (docs/decisions/0092-task-owners.md). */
 export type ClosableGroup = paths["/api/tasks/{group}/{id}/close"]["post"]["parameters"]["path"]["group"];
 /** The alerts on Tasks' "Needs a hand". */
-export type OpenAlerts = Body<paths["/api/alerts"]["get"]>;
+type OpenAlerts = Body<paths["/api/alerts"]["get"]>;
 export type OpenAlert = OpenAlerts["alerts"][number];
 /** An address a client gives ops on the phone, as the page sends it. */
 export type AddressGiven = Sent<paths["/api/clients/{id}/address"]["post"]>;
@@ -139,7 +139,7 @@ export type ChargePreview = Body<paths["/api/no-shows/{id}/charge"]["get"]>;
 export type DecidedNoShow = Body<paths["/api/no-shows/decided"]["get"]>["cases"][number];
 export type NoShowDispute = Body<paths["/api/no-shows/disputes"]["get"]>["disputes"][number];
 export type DisputeRuling = Sent<paths["/api/no-shows/disputes/{id}/ruling"]["post"]>["ruling"];
-export type DayMoney = Body<paths["/api/payments"]["get"]>;
+type DayMoney = Body<paths["/api/payments"]["get"]>;
 export type Charge = DayMoney["charges"][number];
 export type Roster = Body<paths["/api/technicians"]["get"]>;
 export type Technician = Roster["technicians"][number];
@@ -154,11 +154,11 @@ export type Leave = Technician["leave"][number];
 /** One technician's leave still to end, each period with the jobs still booked on its days. */
 export type StandingLeave = Body<paths["/api/technicians/{id}/leave"]["get"]>["leave"][number];
 export type JobOnLeave = StandingLeave["jobs"][number];
-export type TechniciansWork = Body<paths["/api/technicians/work"]["get"]>;
+type TechniciansWork = Body<paths["/api/technicians/work"]["get"]>;
 export type TechnicianWork = TechniciansWork["technicians"][number];
 export type Board = Body<paths["/api/dispatch"]["get"]>;
 export type BoardRow = Board["technicians"][number];
-export type BoardDay = BoardRow["days"][number];
+type BoardDay = BoardRow["days"][number];
 export type Block = BoardDay["blocks"][number];
 export type Unassigned = Board["unassigned"][number];
 export type BoardClient = NonNullable<Block["person"]>;
@@ -181,7 +181,7 @@ export type VisitType = NonNullable<Block["type"]>;
 export type Answer<T> = Answered<T, ErrorCode | "signed_out">;
 
 /** The codes the API refuses with, as its document writes them. */
-export type ErrorCode = components["schemas"]["ErrorResponse"]["error"]["code"];
+type ErrorCode = components["schemas"]["ErrorResponse"]["error"]["code"];
 
 /**
  * Whether Access, rather than mm-api, answered. Access redirects a call whose

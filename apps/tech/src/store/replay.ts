@@ -17,8 +17,6 @@
 import type { Moved } from "@maneman/web-kit/api";
 import type { EventKind } from "../routes.ts";
 
-export type { EventKind };
-
 export type EventState = "waiting" | "superseded" | "refused" | "early";
 
 /** The states that stop a job's queue until the technician deals with it. */

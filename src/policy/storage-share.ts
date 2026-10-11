@@ -20,7 +20,7 @@ export const SHARE_BYTES: Readonly<Record<EnvironmentName, number>> = {
 };
 
 /** Ops are told once as the figure reaches each, the last when the share is full. */
-export const TOLD_AT_PERCENT = [50, 80, 100] as const;
+const TOLD_AT_PERCENT = [50, 80, 100] as const;
 export type Mark = (typeof TOLD_AT_PERCENT)[number];
 
 /**

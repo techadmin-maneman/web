@@ -22,7 +22,7 @@ export interface NoShowRefund {
 }
 
 /** The credit a visit was paid with, where a ruling gives it back: whether it came back is read after the refund. */
-export type CreditGivenBack = Omit<NoShowRefund, "amount">;
+type CreditGivenBack = Omit<NoShowRefund, "amount">;
 
 /** What follows a ruling on a no-show or on its dispute, once the ruling has committed (afterRuling). */
 export interface Ruled {

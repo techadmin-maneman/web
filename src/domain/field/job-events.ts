@@ -28,7 +28,7 @@ import { earliestCheckIn, isOnVisitDay, tooEarlyToArrive, type PhoneClock } from
 import type { WorkableJob } from "./workable-job.ts";
 
 /** As job_events.fsm_write_state holds it: "written" once landed, "rejected" when superseded. */
-export type WriteState = "pending" | "written" | "rejected";
+type WriteState = "pending" | "written" | "rejected";
 
 const EVENT_COLUMNS = "id, appointment_id, event_id, kind, body, occurred_at, fsm_write_state, superseded";
 

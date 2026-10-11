@@ -15,7 +15,7 @@ import { auditStatementIfWritten, type AuditEntry } from "../ops/audit.ts";
 import { statusIn, VISIT_LIVE } from "../../config/statuses.ts";
 
 /** A change of times, from the day it applies. */
-export interface SlotTimesChange extends SlotTimes {
+interface SlotTimesChange extends SlotTimes {
   readonly appliesFrom: string;
   readonly setBy: string;
   readonly setAt: string;

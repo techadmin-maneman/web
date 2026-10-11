@@ -39,7 +39,7 @@ type AccessRefusal =
   | "not_yet_valid"
   | "no_identity";
 
-export type AccessResult =
+type AccessResult =
   | { readonly ok: true; readonly identity: AccessIdentity }
   | { readonly ok: false; readonly reason: AccessRefusal }
   | { readonly ok: false; readonly reason: "keys_unavailable"; readonly error: unknown };

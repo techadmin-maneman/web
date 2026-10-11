@@ -7,7 +7,7 @@
 // export they alone use counts as used: some exist for the tests, and a policy module's RULES for its test to read.
 // The `!` marks what ships, for knip --production, which this check does not run.
 {
-  "$schema": "https://unpkg.com/knip@5/schema.json",
+  "$schema": "https://unpkg.com/knip@6/schema.json",
   "workspaces": {
     ".": {
       "entry": [
@@ -24,8 +24,12 @@
       "project": ["src/**/*.ts!", "site/src/**/*.{ts,tsx,astro}!", "scripts/**/*.ts"],
       "ignore": ["site/src/lib/api-schema.ts"]
     },
-    "apps/{app,tech}": {
-      "entry": ["sw/sw.ts!"],
+    // Each app's service worker is an entry its Vite config names, which knip reads.
+    "apps/app": {
+      "project": ["src/**/*.{ts,tsx}!", "sw/**/*.ts!"],
+      "ignore": ["src/api-schema.ts"]
+    },
+    "apps/tech": {
       "project": ["src/**/*.{ts,tsx}!", "sw/**/*.ts!"],
       "ignore": ["src/api-schema.ts"]
     },
@@ -33,7 +37,10 @@
       "project": ["src/**/*.{ts,tsx}!"],
       "ignore": ["src/api-schema.ts"]
     },
-    "packages/{ui,brand}": {
+    "packages/ui": {
+      "project": ["**/*.{ts,tsx}!"]
+    },
+    "packages/brand": {
       "project": ["**/*.{ts,tsx}!"]
     },
     "packages/web-kit": {
@@ -44,5 +51,8 @@
     }
   },
   "include": ["exports", "types", "files"],
+  // The stub Books provider's types name what its tests drive; the file sits under a path that waits for review, so it
+  // keeps them exported.
+  "ignoreIssues": { "src/providers/books/stub.ts": ["types"] },
   "ignoreExportsUsedInFile": false
 }

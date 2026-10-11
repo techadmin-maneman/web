@@ -6,7 +6,7 @@ import { CONSENT_PURPOSES, type ConsentPurpose, type ConsentSource } from "../..
 import { STREET_MAX, zohoText } from "../../lib/zoho-text.ts";
 
 /** Where a coordinate came from; the licence and the trust differ by source (ADR 0054). */
-export type GeocodeSource = "google_geocoding" | "device" | "checkin";
+type GeocodeSource = "google_geocoding" | "device" | "checkin";
 
 /** The pin, and the record of where it came from that migration 0028 keeps beside it. */
 export interface AddressPin {

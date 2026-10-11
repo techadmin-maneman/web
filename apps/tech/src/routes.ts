@@ -73,19 +73,17 @@ export const TOO_EARLY_TO_CLOSE = "too_early_to_close";
 export const TOO_EARLY_TO_ARRIVE = "too_early_to_arrive";
 
 /** The kinds of write the phone queues, named as the API's job events are, and the client's hair profile. */
-export const EVENT_KINDS = [
-  "check_in",
-  "start",
-  "before_photos",
-  "checklist",
-  "consumables",
-  "piece",
-  "profile",
-  "after_photos",
-  "outcome",
-  "no_show",
-] as const;
-export type EventKind = (typeof EVENT_KINDS)[number];
+export type EventKind =
+  | "check_in"
+  | "start"
+  | "before_photos"
+  | "checklist"
+  | "consumables"
+  | "piece"
+  | "profile"
+  | "after_photos"
+  | "outcome"
+  | "no_show";
 
 /** The route one of the outbox's events is sent to. Both photograph sets go to the one route. */
 const ROUTE_OF = {
