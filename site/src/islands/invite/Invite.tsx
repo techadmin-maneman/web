@@ -49,6 +49,7 @@ import type { Step } from "./step.ts";
 import { usePincode } from "./usePincode.ts";
 import type { PersonFields } from "./useTurnstileForm.ts";
 import { useLandingData } from "./useLandingData.ts";
+import { useLatest } from "../useLatest.ts";
 import { Waitlist } from "./Waitlist.tsx";
 import { CARD_HEIGHT, CARD_WIDTH } from "../../../../src/config/referral-cards.ts";
 
@@ -99,6 +100,7 @@ export default function Invite(props: Props) {
   const [booked, setBooked] = useState<Booking | null>(null);
   const [listed, setListed] = useState<Listing | null>(null);
   const pincode = usePincode();
+  const showAnswer = useLatest(pincode.show);
   const heading = useRef<HTMLHeadingElement>(null);
   const [step, setStep] = useState<Step>("start");
   // On /book, the name and number its first step kept.
@@ -143,15 +145,15 @@ export default function Invite(props: Props) {
         }
         setState("arrival");
         setStep(entry.step === "done" ? "form" : entry.step);
-        pincode.show(entry.answer);
+        showAnswer.current(entry.answer);
       }),
-    [booked, listed],
+    [booked, listed, showAnswer],
   );
 
   // /book's pincode field takes focus as its step opens, from the name and number or back from the form.
   useEffect(() => {
     if (step === "pincode") pincode.field.current?.focus();
-  }, [step]);
+  }, [step, pincode.field]);
 
   useEffect(() => {
     if (state !== "arrival") {
