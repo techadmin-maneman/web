@@ -15,6 +15,7 @@ const ARJUN: Conversation = {
   state: "open",
   care_person: "asha@maneman.test",
   covered_by: null,
+  technician: null,
   last_message_at: "2026-09-21T05:12:00.000Z",
   last_line: "Can I move tomorrow's visit to the evening?",
   waiting_since: "2026-09-21T05:12:00.000Z",
@@ -28,6 +29,7 @@ test("lists the chats waiting on us, and opens one with our automatic messages i
       team: [
         {
           email: "asha@maneman.test",
+          on_team: true,
           name: "Asha",
           clients: 12,
           weekly_off: [0],

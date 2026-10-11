@@ -14,6 +14,8 @@ interface Leave {
 
 export interface RotaMember {
   readonly email: string;
+  /** False for someone no longer on the Care team who still has clients, to be moved. */
+  readonly on_team: boolean;
   /** The first name clients know them by; null until a manager sets it. */
   readonly name: string | null;
   readonly clients: number;
@@ -40,6 +42,7 @@ export async function careRota(db: D1Database, today: string): Promise<RotaMembe
     db.batch([
       db.prepare("SELECT email, weekday FROM care_weekly_off ORDER BY weekday"),
       db.prepare("SELECT email, name FROM care_names"),
+      db.prepare("SELECT email, COUNT(*) AS clients FROM care_owners GROUP BY email"),
       db.prepare("SELECT email, on_shift_since FROM staff WHERE on_shift_since IS NOT NULL"),
       db.prepare(
         `SELECT o.email, COUNT(*) AS n FROM conversations c JOIN care_owners o ON o.person_id = c.person_id
@@ -52,9 +55,10 @@ export async function careRota(db: D1Database, today: string): Promise<RotaMembe
   ]);
   const weekly = (rows[0]?.results ?? []) as { email: string; weekday: number }[];
   const names = (rows[1]?.results ?? []) as { email: string; name: string }[];
-  const shifts = (rows[2]?.results ?? []) as { email: string; on_shift_since: string }[];
-  const open = (rows[3]?.results ?? []) as { email: string; n: number }[];
-  const leave = (rows[4]?.results ?? []) as { id: string; email: string; from_date: string; to_date: string }[];
+  const owners = (rows[2]?.results ?? []) as { email: string; clients: number }[];
+  const shifts = (rows[3]?.results ?? []) as { email: string; on_shift_since: string }[];
+  const open = (rows[4]?.results ?? []) as { email: string; n: number }[];
+  const leave = (rows[5]?.results ?? []) as { id: string; email: string; from_date: string; to_date: string }[];
   const onShiftSince = (email: string) => shifts.find((row) => row.email === email)?.on_shift_since ?? null;
   const openChats = (email: string) => open.find((row) => row.email === email)?.n ?? 0;
   const offOf = (email: string): OffDays => ({
@@ -71,8 +75,10 @@ export async function careRota(db: D1Database, today: string): Promise<RotaMembe
     team.map((member) => ({ email: member.email, load: openChats(member.email) })),
     off,
   );
-  return team.map((member) => ({
+  const left = owners.filter((owner) => !team.some((member) => member.email === owner.email));
+  const members = team.map((member) => ({
     email: member.email,
+    on_team: true,
     name: names.find((row) => row.email === member.email)?.name ?? null,
     clients: member.clients,
     weekly_off: [...offOf(member.email).weekly],
@@ -85,6 +91,22 @@ export async function careRota(db: D1Database, today: string): Promise<RotaMembe
     day_off: dayOff.has(member.email),
     open_chats: openChats(member.email),
   }));
+  return [
+    ...members,
+    ...left.map((owner) => ({
+      email: owner.email,
+      on_team: false,
+      name: names.find((row) => row.email === owner.email)?.name ?? null,
+      clients: owner.clients,
+      weekly_off: [],
+      leave: [],
+      covered_by: null,
+      off_today: true,
+      on_shift_since: null,
+      day_off: false,
+      open_chats: openChats(owner.email),
+    })),
+  ];
 }
 
 /** On an India date, the member covering each one who is off. */

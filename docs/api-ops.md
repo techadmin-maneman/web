@@ -1856,6 +1856,51 @@ Request body:
 }
 ```
 
+### POST /api/care-team/move-all
+
+Move every client of one member to another of the Care team, as when someone leaves
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/CareMoveAll"
+}
+```
+
+**200**: How many moved
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "moved": {
+      "type": "integer"
+    }
+  },
+  "required": [
+    "moved"
+  ],
+  "additionalProperties": false
+}
+```
+
+**400**: invalid_request: fields names to when it is not one of the Care team, or the same as from
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ### POST /api/care-team/leave/{id}/delete
 
 Leave taken back
@@ -2058,6 +2103,106 @@ Request body:
 ```
 
 **409**: number_in_use: one of our people has this number already; link the chat to them
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### GET /api/quick-replies
+
+The saved answers on the list, by title
+
+**200**: The answers
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "replies": {
+      "type": "array",
+      "items": {
+        "$ref": "#/components/schemas/QuickReply"
+      }
+    }
+  },
+  "required": [
+    "replies"
+  ],
+  "additionalProperties": false
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/quick-replies
+
+Add a saved answer to the list
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/QuickReplyNew"
+}
+```
+
+**200**: Added
+
+```json
+{
+  "$ref": "#/components/schemas/QuickReply"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/quick-replies/{id}/retire
+
+Take a saved answer off the list
+
+**200**: Taken off
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "ok": {
+      "type": "boolean",
+      "enum": [
+        true
+      ]
+    }
+  },
+  "required": [
+    "ok"
+  ],
+  "additionalProperties": false
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no such answer on the list
 
 ```json
 {
@@ -11311,6 +11456,30 @@ Request body:
       ],
       "description": "The client's Care person, by e-mail; null for a number we do not know, or a client not given one."
     },
+    "technician": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "name": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "id",
+            "name"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "One of our technicians, by their number on record; Operations answer them."
+    },
     "covered_by": {
       "anyOf": [
         {
@@ -11367,6 +11536,7 @@ Request body:
     "mobile",
     "state",
     "care_person",
+    "technician",
     "covered_by",
     "last_message_at",
     "last_line",
@@ -11618,6 +11788,10 @@ Request body:
     "email": {
       "type": "string"
     },
+    "on_team": {
+      "type": "boolean",
+      "description": "False for someone no longer on the team who still has clients."
+    },
     "name": {
       "anyOf": [
         {
@@ -11701,6 +11875,7 @@ Request body:
   },
   "required": [
     "email",
+    "on_team",
     "name",
     "clients",
     "weekly_off",
@@ -11847,6 +12022,29 @@ Request body:
 }
 ```
 
+### CareMoveAll
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "from": {
+      "type": "string",
+      "format": "email"
+    },
+    "to": {
+      "type": "string",
+      "format": "email"
+    }
+  },
+  "required": [
+    "from",
+    "to"
+  ],
+  "additionalProperties": false
+}
+```
+
 ### CityMatter
 
 ```json
@@ -11899,6 +12097,58 @@ Request body:
   },
   "required": [
     "name"
+  ],
+  "additionalProperties": false
+}
+```
+
+### QuickReply
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "title": {
+      "type": "string"
+    },
+    "text": {
+      "type": "string",
+      "description": "{name} and {next_visit} are filled in with the client's when it is used."
+    }
+  },
+  "required": [
+    "id",
+    "title",
+    "text"
+  ],
+  "additionalProperties": false
+}
+```
+
+### QuickReplyNew
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 60
+    },
+    "text": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 1000
+    }
+  },
+  "required": [
+    "title",
+    "text"
   ],
   "additionalProperties": false
 }
@@ -12515,11 +12765,14 @@ Request body:
         "chat.link",
         "chat.save",
         "care_person.move",
+        "care_person.move_all",
         "care_rota.set",
         "care_leave.add",
         "care_leave.delete",
         "city_matter.raise",
         "care_name.set",
+        "quick_reply.add",
+        "quick_reply.retire",
         "word.publish",
         "partner_payout.record",
         "partner_payout.delete",

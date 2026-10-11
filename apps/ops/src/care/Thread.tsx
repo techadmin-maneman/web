@@ -8,7 +8,7 @@ import { useCallback, useState } from "react";
 import { careApi, type ChatThread, type Conversation, type ThreadItem } from "./care-api.ts";
 import { care as copy } from "../content/care.ts";
 import { useAccess } from "../lib/access.ts";
-import { clientPath } from "../route.ts";
+import { clientPath, technicianPath } from "../route.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import { CarePerson } from "./CarePerson.tsx";
 import { CityMatter } from "./CityMatter.tsx";
@@ -64,6 +64,33 @@ function Item({ item }: { item: ThreadItem }) {
   );
 }
 
+/** Who the chat is with: one of our technicians, or the client, beside their page and their Care person. */
+function About({ conversation }: { conversation: Conversation }) {
+  const { person, technician } = conversation;
+  if (technician !== null) {
+    return (
+      <p className={styles.note}>
+        {thread.technician}{" "}
+        <a className={own.link} href={technicianPath(technician.id)}>
+          {thread.technicianPage}
+        </a>
+      </p>
+    );
+  }
+  if (person === null) return null;
+  return (
+    <>
+      <p className={styles.note}>
+        <a className={own.link} href={clientPath(person.id, "visits")}>
+          {thread.page}
+        </a>
+      </p>
+      <ClientPanel personId={person.id} />
+      <CarePerson personId={person.id} email={conversation.care_person} coveredBy={conversation.covered_by} />
+    </>
+  );
+}
+
 export function Thread({
   conversation,
   onClose,
@@ -86,21 +113,7 @@ export function Thread({
   return (
     <section className={styles.group} aria-label={thread.title(whoOf(conversation))}>
       <h3 className={styles.ruleTitle}>{thread.title(whoOf(conversation))}</h3>
-      {conversation.person !== null && (
-        <p className={styles.note}>
-          <a className={own.link} href={clientPath(conversation.person.id, "visits")}>
-            {thread.page}
-          </a>
-        </p>
-      )}
-      {conversation.person !== null && <ClientPanel personId={conversation.person.id} />}
-      {conversation.person !== null && (
-        <CarePerson
-          personId={conversation.person.id}
-          email={conversation.care_person}
-          coveredBy={conversation.covered_by}
-        />
-      )}
+      <About conversation={conversation} />
       {items.length === 0 ? (
         <p className={styles.note}>{thread.empty}</p>
       ) : (
@@ -118,11 +131,14 @@ export function Thread({
           {said}
         </p>
       )}
-      {mayAct && conversation.person === null && <Stranger conversationId={conversation.id} onDone={onChanged} />}
+      {mayAct && conversation.person === null && conversation.technician === null && (
+        <Stranger conversationId={conversation.id} onDone={onChanged} />
+      )}
       {mayAct && conversation.person !== null && <CityMatter conversationId={conversation.id} />}
       {mayAct && (
         <Composer
           conversationId={conversation.id}
+          client={{ name: conversation.person?.name ?? null, personId: conversation.person?.id ?? null }}
           onThread={(next, words) => {
             setChanged(next);
             setSaid(words);

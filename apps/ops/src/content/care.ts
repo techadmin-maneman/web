@@ -18,6 +18,8 @@ export const care = {
     open: "Open",
   },
   unknown: "Number we don't know",
+  /** "Imran Khan · Technician": one of ours writing to our number. */
+  technicianName: (name: string) => `${name} · Technician`,
   /** When our reply is due, "21 Sep, 11:42 am"; past it, overdue. */
   replyBy: (when: string) => when,
   overdue: (when: string) => `Overdue · ${when}`,
@@ -38,6 +40,8 @@ export const care = {
     close: "Close",
     page: "Client's page",
     notSent: "Not sent",
+    technician: "One of our technicians. Operations answer technicians.",
+    technicianPage: "Technician's page",
     /** The after-hours answer, kept in the chat under our number. */
     autoReply: "Automatic reply",
   },
@@ -73,6 +77,20 @@ export const care = {
   },
   /** "asha@maneman.in · covered by ravi@maneman.in", while the Care person is off. */
   coveredBy: (person: string, cover: string) => `${person} · covered by ${cover}`,
+  /** Saved answers (docs/decisions/0141-quick-replies.md). */
+  quick: {
+    panel: "Quick replies",
+    pick: "Quick reply",
+    choose: "Choose one",
+    none: "No quick replies yet.",
+    title: "Title",
+    text: "Answer",
+    holes: "{name} becomes the client's first name, and {next_visit} their next visit.",
+    add: "Add",
+    retire: "Retire",
+    retireLabel: (title: string) => `Retire the quick reply ${title}`,
+    errors: { not_permitted: NOT_PERMITTED, offline: OFFLINE, unknown: FAILED },
+  },
   /** The client beside their chat (docs/decisions/0140-the-client-panel.md). */
   panel: {
     title: "The client",
@@ -151,6 +169,11 @@ export const care = {
     /** "On shift since 9:02 am" */
     onShift: (since: string) => `On shift since ${since}`,
     offShift: "Off shift",
+    leftTeam: "No longer on the team",
+    moveAll: "Move all clients",
+    moveAllLabel: (email: string) => `Move every client of ${email}`,
+    moveAllTo: "Move every client to",
+    move: "Move",
     dayOff: "Day off",
     /** Beside who is off: "covered by ravi@maneman.in". */
     coveredBy: (cover: string) => ` · covered by ${cover}`,
