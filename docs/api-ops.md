@@ -2065,6 +2065,106 @@ Request body:
 }
 ```
 
+### GET /api/quick-replies
+
+The saved answers on the list, by title
+
+**200**: The answers
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "replies": {
+      "type": "array",
+      "items": {
+        "$ref": "#/components/schemas/QuickReply"
+      }
+    }
+  },
+  "required": [
+    "replies"
+  ],
+  "additionalProperties": false
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/quick-replies
+
+Add a saved answer to the list
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/QuickReplyNew"
+}
+```
+
+**200**: Added
+
+```json
+{
+  "$ref": "#/components/schemas/QuickReply"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/quick-replies/{id}/retire
+
+Take a saved answer off the list
+
+**200**: Taken off
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "ok": {
+      "type": "boolean",
+      "enum": [
+        true
+      ]
+    }
+  },
+  "required": [
+    "ok"
+  ],
+  "additionalProperties": false
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no such answer on the list
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ### GET /api/referral-channels
 
 Every partner, with what has come through each
@@ -11904,6 +12004,58 @@ Request body:
 }
 ```
 
+### QuickReply
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "title": {
+      "type": "string"
+    },
+    "text": {
+      "type": "string",
+      "description": "{name} and {next_visit} are filled in with the client's when it is used."
+    }
+  },
+  "required": [
+    "id",
+    "title",
+    "text"
+  ],
+  "additionalProperties": false
+}
+```
+
+### QuickReplyNew
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 60
+    },
+    "text": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 1000
+    }
+  },
+  "required": [
+    "title",
+    "text"
+  ],
+  "additionalProperties": false
+}
+```
+
 ### ReferralChannels
 
 ```json
@@ -12520,6 +12672,8 @@ Request body:
         "care_leave.delete",
         "city_matter.raise",
         "care_name.set",
+        "quick_reply.add",
+        "quick_reply.retire",
         "word.publish",
         "partner_payout.record",
         "partner_payout.delete",

@@ -5352,6 +5352,48 @@
         ],
         "additionalProperties": false
       },
+      "QuickReply": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "title": {
+            "type": "string"
+          },
+          "text": {
+            "type": "string",
+            "description": "{name} and {next_visit} are filled in with the client's when it is used."
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "text"
+        ],
+        "additionalProperties": false
+      },
+      "QuickReplyNew": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 60
+          },
+          "text": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1000
+          }
+        },
+        "required": [
+          "title",
+          "text"
+        ],
+        "additionalProperties": false
+      },
       "ReferralChannels": {
         "type": "object",
         "properties": {
@@ -5905,6 +5947,8 @@
               "care_leave.delete",
               "city_matter.raise",
               "care_name.set",
+              "quick_reply.add",
+              "quick_reply.retire",
               "word.publish",
               "partner_payout.record",
               "partner_payout.delete",
@@ -15293,6 +15337,140 @@
         }
       }
     },
+    "/api/quick-replies": {
+      "get": {
+        "summary": "The saved answers on the list, by title",
+        "responses": {
+          "200": {
+            "description": "The answers",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "replies": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/QuickReply"
+                      }
+                    }
+                  },
+                  "required": [
+                    "replies"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "access_required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Add a saved answer to the list",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/QuickReplyNew"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Added",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QuickReply"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "access_required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/quick-replies/{id}/retire": {
+      "post": {
+        "summary": "Take a saved answer off the list",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Taken off",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    }
+                  },
+                  "required": [
+                    "ok"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "access_required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found: no such answer on the list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/referral-channels": {
       "get": {
         "summary": "Every partner, with what has come through each",
@@ -15856,6 +16034,8 @@
                 "care_leave.delete",
                 "city_matter.raise",
                 "care_name.set",
+                "quick_reply.add",
+                "quick_reply.retire",
                 "word.publish",
                 "partner_payout.record",
                 "partner_payout.delete",

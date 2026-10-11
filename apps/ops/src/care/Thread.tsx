@@ -123,6 +123,7 @@ export function Thread({
       {mayAct && (
         <Composer
           conversationId={conversation.id}
+          client={{ name: conversation.person?.name ?? null, personId: conversation.person?.id ?? null }}
           onThread={(next, words) => {
             setChanged(next);
             setSaid(words);
