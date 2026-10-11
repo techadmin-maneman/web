@@ -2,7 +2,7 @@
 
 Every decision this repository was built on, oldest first. A record says what was decided and why, and is not rewritten to say something else: a later record changes it, and says so in its own header (ADR 0001). **Changed by** gathers those later records, from either side, so an old record's reader knows to read on.
 
-This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. A record names its topic in its header, `- Topic:` and one of the headings below, and the test fails on one that does not. The next free number is 0119.
+This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. A record names its topic in its header, `- Topic:` and one of the headings below, and the test fails on one that does not. The next free number is 0121.
 
 ## By topic
 
@@ -55,6 +55,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 - [0116](0116-book-asks-for-the-name-and-number-first.md) /book asks for the name and number first
 - [0117](0117-a-technician-takes-visits-in-their-own-city.md) A technician takes visits in their own city
 - [0118](0118-booking-never-dead-ends.md) Booking never dead-ends
+- [0119](0119-blackouts-by-city-and-trained-fitters.md) Blackouts by city, and trained fitters
 
 ### Field work
 
@@ -151,6 +152,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 - [0088](0088-every-policy-in-the-console.md) Every policy in the console
 - [0092](0092-task-owners.md) Whose each task is, a visit ops close without a follow-up, and an address given to ops
 - [0109](0109-console-departments-and-access.md) The console by departments, and who may do what in it
+- [0120](0120-the-board-sees-the-road.md) The board sees the road
 
 ## Every decision, oldest first
 
@@ -243,7 +245,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0085](0085-services-ops-can-edit.md) | Services ops can edit | 2026-09-27 | accepted, on the owner's rulings of 27 September 2026 |  |
 | [0086](0086-the-next-visit-is-offered.md) | The next visit is offered, and the client books it | 2026-09-27 | accepted | [0085](0085-services-ops-can-edit.md), [0105](0105-a-consultation-and-fit-in-one-visit.md) |
 | [0087](0087-consumables-and-stock.md) | Consumables and their stock, and the job sheet, set in the console | 2026-09-27 | accepted, on the owner's rulings of 27 September 2026 | [0085](0085-services-ops-can-edit.md) |
-| [0088](0088-every-policy-in-the-console.md) | Every policy in the console | 2026-09-28 | accepted, on the owner's standing rule of 27 September 2026 | [0095](0095-a-booking-fsm-refuses-is-held.md), [0096](0096-a-no-shows-charge-and-its-dispute.md) |
+| [0088](0088-every-policy-in-the-console.md) | Every policy in the console | 2026-09-28 | accepted, on the owner's standing rule of 27 September 2026 | [0095](0095-a-booking-fsm-refuses-is-held.md), [0096](0096-a-no-shows-charge-and-its-dispute.md), [0119](0119-blackouts-by-city-and-trained-fitters.md) |
 | [0089](0089-an-invite-is-not-lost.md) | An invite is not lost when the friend books away from its page | 2026-09-28 | accepted |  |
 | [0092](0092-task-owners.md) | Whose each task is, a visit ops close without a follow-up, and an address given to ops | 2026-09-28 | accepted |  |
 | [0093](0093-the-storage-meter.md) | The storage meter, the photograph upload limit, and thumbnails made on the phone | 2026-09-28 | accepted, on the owner's rulings of 27 September 2026 |  |
@@ -272,3 +274,5 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0116](0116-book-asks-for-the-name-and-number-first.md) | /book asks for the name and number first | 2026-10-11 | accepted |  |
 | [0117](0117-a-technician-takes-visits-in-their-own-city.md) | A technician takes visits in their own city | 2026-10-11 | accepted | [0118](0118-booking-never-dead-ends.md) |
 | [0118](0118-booking-never-dead-ends.md) | Booking never dead-ends | 2026-10-11 | accepted |  |
+| [0119](0119-blackouts-by-city-and-trained-fitters.md) | Blackouts by city, and trained fitters | 2026-10-11 | accepted |  |
+| [0120](0120-the-board-sees-the-road.md) | The board sees the road | 2026-10-11 | accepted |  |

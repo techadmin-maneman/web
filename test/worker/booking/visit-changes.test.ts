@@ -21,7 +21,7 @@ beforeEach(async () => {
     ["t2", "Vikram Sethi", "VS"],
   ]) {
     await env.DB.prepare(
-      "INSERT INTO technicians (id, fsm_id, name, initials, active, updated_at, city) VALUES (?1, ?1, ?2, ?3, 1, ?4, 'Gurgaon')",
+      "INSERT INTO technicians (id, fsm_id, name, initials, active, updated_at, city, fits_trained) VALUES (?1, ?1, ?2, ?3, 1, ?4, 'Gurgaon', 1)",
     )
       .bind(id, name, initials, NOW.toISOString())
       .run();

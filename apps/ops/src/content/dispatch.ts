@@ -329,6 +329,8 @@ export const dispatch = {
     beingMoved: (job: string) => `Someone else is moving ${job} right now.`,
     /** A visit goes only to a technician in its own city; one with no city yet takes none (ADR 0117). */
     otherCity: (technician: string) => `${technician} doesn't work in this visit's city.`,
+    /** A first fit goes only to a technician trained to fit (ADR 0119). */
+    notTrained: (technician: string) => `${technician} isn't trained to fit.`,
     errors: {
       not_permitted: NOT_PERMITTED,
       invalid_request: "That move isn't possible.",

@@ -69,6 +69,7 @@ test("adds a technician, whose number signs in at once", async ({ page }) => {
     mobile: "9810000007",
     zone: "Sec 66–80",
     city: "Noida",
+    fits_trained: false,
   });
   await expect(form).toBeHidden();
   await expect(page.getByRole("status")).toContainText("Naveen Rao added. They can sign in now.");
@@ -152,7 +153,16 @@ test("switches a technician off only once asked, and lists the visits he no long
   roster.current = {
     ...TECHNICIANS,
     technicians: TECHNICIANS.technicians.filter((each) => each.id !== IMRAN),
-    switched_off: [{ id: IMRAN, name: "Imran Qureshi", zone: "Sec 40–65", city: "Gurgaon", mobile: "+919810000001" }],
+    switched_off: [
+      {
+        id: IMRAN,
+        name: "Imran Qureshi",
+        zone: "Sec 40–65",
+        city: "Gurgaon",
+        mobile: "+919810000001",
+        fits_trained: true,
+      },
+    ],
   };
   await main.getByRole("button", { name: "Switch off" }).click();
 

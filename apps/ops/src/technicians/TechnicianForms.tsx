@@ -28,6 +28,7 @@ interface Typed {
   readonly mobile: string;
   readonly zone: string;
   readonly city: string;
+  readonly fitsTrained: boolean;
 }
 
 const zoneOf = (typed: string): string | null => (typed.trim() === "" ? null : typed.trim());
@@ -112,6 +113,16 @@ function Fields({
           </select>
         )}
       </Field>
+      <label className={styles.check}>
+        <input
+          type="checkbox"
+          checked={typed.fitsTrained}
+          onChange={(event) => {
+            onType({ ...typed, fitsTrained: event.target.checked });
+          }}
+        />
+        {copy.fitsTrained}
+      </label>
     </>
   );
 }
@@ -129,7 +140,7 @@ export function AddTechnician({
   const copy = technicians.add;
   // Staff kept to their cities give them one of theirs; national staff may leave them with none.
   const firstCity = useAccess().reaches(GIVING_NO_CITY) ? "" : (cities[0] ?? "");
-  const [typed, setTyped] = useState<Typed>({ name: "", mobile: "", zone: "", city: firstCity });
+  const [typed, setTyped] = useState<Typed>({ name: "", mobile: "", zone: "", city: firstCity, fitsTrained: false });
   const [sending, setSending] = useState(false);
   const [failed, setFailed] = useState<string | null>(null);
 
@@ -142,7 +153,13 @@ export function AddTechnician({
     setSending(true);
     setFailed(null);
     const name = typed.name.trim();
-    const answer = await api.addTechnician({ name, mobile, zone: zoneOf(typed.zone), city: cityOf(typed.city) });
+    const answer = await api.addTechnician({
+      name,
+      mobile,
+      zone: zoneOf(typed.zone),
+      city: cityOf(typed.city),
+      fits_trained: typed.fitsTrained,
+    });
     if (!answer.ok) {
       setSending(false);
       setFailed(refusal(answer.code));
@@ -189,13 +206,20 @@ const typedOf = (technician: TechnicianSummary): Typed => ({
   mobile: technician.mobile === null ? "" : phoneWords(technician.mobile),
   zone: technician.zone ?? "",
   city: technician.city ?? "",
+  fitsTrained: technician.fits_trained,
 });
 
 /** What ops changed, field by field: a field left as it was is not sent. */
 function changeOf(technician: TechnicianSummary, typed: Typed): TechnicianChange | "unreadable_mobile" {
   const mobile = mobileDigits(typed.mobile);
   if (mobile === null) return "unreadable_mobile";
-  const change: { name?: string; mobile?: string; zone?: string | null; city?: string | null } = {};
+  const change: {
+    name?: string;
+    mobile?: string;
+    zone?: string | null;
+    city?: string | null;
+    fits_trained?: boolean;
+  } = {};
   const name = typed.name.trim();
   if (name !== technician.name) change.name = name;
   if (technician.mobile === null || mobile !== mobileDigits(technician.mobile)) change.mobile = mobile;
@@ -203,6 +227,7 @@ function changeOf(technician: TechnicianSummary, typed: Typed): TechnicianChange
   if (zone !== technician.zone) change.zone = zone;
   const city = cityOf(typed.city);
   if (city !== technician.city) change.city = city;
+  if (typed.fitsTrained !== technician.fits_trained) change.fits_trained = typed.fitsTrained;
   return change;
 }
 
@@ -287,6 +312,10 @@ function Facts({ technician }: { technician: TechnicianSummary }) {
       <div className={styles.fact}>
         <dt className={styles.label}>{copy.city}</dt>
         <dd className={styles.factValue}>{technician.city ?? technicians.noCity}</dd>
+      </div>
+      <div className={styles.fact}>
+        <dt className={styles.label}>{copy.fitting}</dt>
+        <dd className={styles.factValue}>{technician.fits_trained ? copy.trained : copy.notTrained}</dd>
       </div>
     </dl>
   );

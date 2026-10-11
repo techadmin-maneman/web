@@ -32,7 +32,7 @@ import {
 } from "../../policy/dispatch.ts";
 import { unitsFor } from "../../policy/visit-length.ts";
 import { auditStatement, type AuditEntry } from "../ops/audit.ts";
-import { bookedMinutes, claimsOf, loadBlackouts, occupancy, visitCity, type Technician } from "../booking/occupancy.ts";
+import { bookedMinutes, claimsOf, loadBlackouts, occupancy } from "../booking/occupancy.ts";
 import { breaksRotation, visitsOfClient } from "../booking/technician-rotation.ts";
 import { releaseDeadHolds } from "../booking/hold-slot.ts";
 import { begunPastArrival, visitBegun } from "../visits/visit-begun.ts";
@@ -52,6 +52,7 @@ import {
   timesAt,
   landingOf,
 } from "./dispatch-landing.ts";
+import { roomTechnicians, whyNotThem } from "./technician-fit.ts";
 
 export interface MoveInput {
   readonly appointmentId: string;
@@ -179,14 +180,14 @@ export async function planMove(db: D1Database, input: MoveInput, now: Date): Pro
 
   // The check runs before anything is written. The job's own time does not
   // count against its own move.
-  const [held, ontoBlackout, clientVisits, inTheCity, cityTechnicians] = await Promise.all([
+  const [held, ontoBlackout, clientVisits, notThem, cityTechnicians] = await Promise.all([
     occupancy({ db, from: date, to: date, now, exceptVisitId: job.id }),
     movesOntoBlackout(db, job, date),
     visitsOfClient(db, job.person_id, job.id),
-    worksWhereTheVisitIs(db, job, technicianId),
+    whyNotThem(db, job, technicianId),
     roomTechnicians(db, job),
   ]);
-  if (!inTheCity) return { kind: "refused", reason: "other_city" };
+  if (notThem !== null) return { kind: "refused", reason: notThem };
   const blackoutReason = ontoBlackout ? (input.blackoutReason ?? null) : null;
   const placing = { minutes: bookedMinutes(job), start: wasStart };
   const from = { technicianId: job.technician_id, date: indiaDate(wasStart) };
@@ -231,35 +232,6 @@ export async function planMove(db: D1Database, input: MoveInput, now: Date): Pro
     blackoutReason,
   };
   return { kind: "planned", move };
-}
-
-/**
- * Whether a technician may take the visit where it is (docs/decisions/0117-a-technician-takes-visits-in-their-own-city.md):
- * its own technician always; another only where they work in the visit's city, or where that city is not known.
- */
-async function worksWhereTheVisitIs(db: D1Database, job: LiveJob, technicianId: string): Promise<boolean> {
-  if (technicianId === job.technician_id) return true;
-  const row = await db
-    .prepare(
-      `SELECT ${visitCity("?2", "?3")} AS visit_city, (SELECT city FROM technicians WHERE id = ?1) AS technician_city`,
-    )
-    .bind(technicianId, job.service_pincode, job.person_id)
-    .first<{ visit_city: string | null; technician_city: string | null }>();
-  const where = row?.visit_city ?? null;
-  return where === null || row?.technician_city === where;
-}
-
-/** Who the board offers a job to: its own technician, and the others who work in its city, or all where it is unknown. */
-function roomTechnicians(db: D1Database, job: LiveJob): Promise<Technician[]> {
-  return db
-    .prepare(
-      `SELECT t.id, t.name, t.initials FROM technicians t
-       WHERE t.active = 1 AND (t.id = ?1 OR ${visitCity("?2", "?3")} IS NULL OR t.city = ${visitCity("?2", "?3")})
-       ORDER BY t.name`,
-    )
-    .bind(job.technician_id, job.service_pincode, job.person_id)
-    .all<Technician>()
-    .then((all) => all.results);
 }
 
 /**
@@ -460,7 +432,7 @@ export async function dispatchRoomFor(
     roomTechnicians(db, job),
     occupancy({ db, from: input.from, to, now, exceptVisitId: job.id }),
     loadSlotSchedule(db),
-    loadBlackouts(db, input.from, to),
+    loadBlackouts(db, input.from, to, { pincode: job.service_pincode, personId: job.person_id }),
     visitsOfClient(db, job.person_id, job.id),
   ]);
   const visit = { minutes: bookedMinutes(job), start: new Date(job.window_start) };

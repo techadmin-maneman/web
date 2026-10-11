@@ -2,6 +2,7 @@
 // directly, with the design's own pincodes and number, for the fidelity screenshots and the browser tests.
 
 import { useEffect } from "preact/hooks";
+import { useLatest } from "../useLatest.ts";
 import type { PincodeAnswer, ReferralConsultation } from "../../lib/api.ts";
 import { indiaTomorrow } from "../../lib/dates.ts";
 import type { Booking, Listing } from "./Done.tsx";
@@ -58,9 +59,10 @@ function previewOf(state: PreviewState | undefined): Preview | null {
 
 /** The preview the address asks for, opened once, only where previews are allowed (never in production). */
 export function usePreview(allowed: boolean, open: (preview: Preview) => void): void {
+  const opening = useLatest(open);
   useEffect(() => {
     if (!allowed) return;
     const preview = previewOf(previewNamed(new URLSearchParams(location.search).get("state")));
-    if (preview !== null) open(preview);
-  }, [allowed]);
+    if (preview !== null) opening.current(preview);
+  }, [allowed, opening]);
 }

@@ -124,8 +124,19 @@ const CitySchema = z.union([z.string().min(1).max(60), z.null()]).openapi({
     "a grant of that city or its zone see him; with none, only a national grant does.",
 });
 
+const FitsTrainedSchema = z
+  .boolean()
+  .optional()
+  .openapi({ description: "Trained to fit: only such a technician is offered or given a first fit (ADR 0119)." });
+
 const NewTechnicianSchema = z
-  .object({ name: NameSchema, mobile: MobileSchema, zone: ZoneSchema.optional(), city: CitySchema.optional() })
+  .object({
+    name: NameSchema,
+    mobile: MobileSchema,
+    zone: ZoneSchema.optional(),
+    city: CitySchema.optional(),
+    fits_trained: FitsTrainedSchema,
+  })
   .strict()
   .openapi("NewTechnician");
 
@@ -135,6 +146,7 @@ const TechnicianChangeSchema = z
     mobile: MobileSchema.optional(),
     zone: ZoneSchema.optional(),
     city: CitySchema.optional(),
+    fits_trained: FitsTrainedSchema,
   })
   .strict()
   .refine((change) => Object.keys(change).length > 0, { message: "nothing to change" })
@@ -258,7 +270,7 @@ async function technicianToChange(c: Context<AppEnv>, id: string): Promise<Roste
 }
 
 /** The fields a change names, in a fixed order, for its audit entry: never their values. */
-const CHANGEABLE = ["name", "mobile", "zone", "city"] as const;
+const CHANGEABLE = ["name", "mobile", "zone", "city", "fits_trained"] as const;
 
 /**
  * Whether the caller may give a technician this city: one of ours that their grants reach, or none (GIVING_NO_CITY).
@@ -283,7 +295,7 @@ async function workInReach(c: Context<AppEnv>, period: { from: string; to: strin
 export function registerOpsTechnicians(app: App): void {
   registerTechnicianDelete(app);
   app.openapi(addRoute, async (c) => {
-    const { name, mobile, zone, city } = c.req.valid("json");
+    const { name, mobile, zone, city, fits_trained: fitsTrained } = c.req.valid("json");
     const mobileE164 = toE164(mobile);
     if (mobileE164 === null) return refuse(c, "invalid_request", ["mobile"]);
     if (!(await mayGiveCity(c, city ?? null))) {
@@ -291,8 +303,11 @@ export function registerOpsTechnicians(app: App): void {
     }
 
     const id = crypto.randomUUID();
-    const testRecord = testRecordAtCreation(c.var.config.environment, name);
-    const technician = { id, name, mobileE164, zone: zone ?? null, city: city ?? null, testRecord };
+    const marks = {
+      fitsTrained: fitsTrained ?? false,
+      testRecord: testRecordAtCreation(c.var.config.environment, name),
+    };
+    const technician = { id, name, mobileE164, zone: zone ?? null, city: city ?? null, ...marks };
     const added = await addTechnician(c.env.DB, technician, auditOf(c, "technician.add", id), c.var.deps.now());
     if (added === "number_in_use") return refuse(c, "number_in_use");
     return c.json({ id }, 201);
@@ -313,7 +328,7 @@ export function registerOpsTechnicians(app: App): void {
     const changed = await changeTechnician({
       db: c.env.DB,
       current: technician,
-      change: { name: change.name, mobileE164, zone: change.zone, city: change.city },
+      change: { name: change.name, mobileE164, zone: change.zone, city: change.city, fitsTrained: change.fits_trained },
       audit: auditOf(c, "technician.change", id, { fields }),
       now: c.var.deps.now(),
     });

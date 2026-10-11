@@ -127,8 +127,8 @@ async function candidatesFor({
   const moving = moves?.kind === "move" ? moves.visit : null;
   const ties = tieRange(date);
   const [blackouts, technicians, held, visits] = await Promise.all([
-    loadBlackouts(db, date, date),
-    techniciansFor(db, moving, { pincode: input.pincode ?? null, personId }),
+    loadBlackouts(db, date, date, { pincode: input.pincode ?? null, personId }),
+    techniciansFor(db, moving, { pincode: input.pincode ?? null, personId }, service.type === "first_fit"),
     occupancy({
       db,
       from: ties.from,

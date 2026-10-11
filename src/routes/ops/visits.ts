@@ -270,7 +270,7 @@ async function windowsOffered({
   reached: ReadonlySet<string> | null;
   now: Date;
 }) {
-  const visit = { minutes: service.minutes, until: service.retired_date };
+  const visit = { minutes: service.minutes, until: service.retired_date, fitting: service.kind === "first_fit" };
   const [free, schedule] = await Promise.all([
     freeTechnicians({ db, personId: clientId, visit, from: days.start, days: BOOKING_DAYS, now }),
     loadSlotSchedule(db),

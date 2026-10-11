@@ -50,7 +50,7 @@ beforeEach(async () => {
   await markDatabase();
   captureLogs();
   await env.DB.prepare(
-    "INSERT INTO technicians (id, fsm_id, name, initials, active, updated_at, city) VALUES ('t1', 't1', 'Imran Qureshi', 'IQ', 1, ?1, 'Gurgaon')",
+    "INSERT INTO technicians (id, fsm_id, name, initials, active, updated_at, city, fits_trained) VALUES ('t1', 't1', 'Imran Qureshi', 'IQ', 1, ?1, 'Gurgaon', 1)",
   )
     .bind(NOW.toISOString())
     .run();

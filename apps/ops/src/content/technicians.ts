@@ -136,6 +136,8 @@ export const technicians = {
     zone: "Zone (optional)",
     city: "City",
     noCity: "No city (no bookings)",
+    /** A first fit goes only to a technician trained to fit (ADR 0119). */
+    fitsTrained: "Trained to fit",
   },
   /**
    * A technician with no city takes no client bookings until ops set one: a visit goes only to a technician in its
@@ -155,6 +157,9 @@ export const technicians = {
     mobile: "Mobile",
     zone: "Zone",
     city: "City",
+    fitting: "Fitting",
+    trained: "Trained",
+    notTrained: "Not trained, so no first fits",
     change: "Edit details",
     changeLabel: (name: string) => `Edit ${name}'s details`,
     save: "Save",

@@ -190,10 +190,25 @@ export const SETTINGS = {
 export const BLACKOUTS = {
   today: "2027-09-21",
   max_days: 31,
+  cities: ["Gurgaon", "Delhi", "Noida", "Faridabad", "Ghaziabad", "Mumbai", "Bengaluru"],
   blackouts: [
-    { date: "2027-10-29", reason: "Diwali", set_by: "ops@maneman.in", set_at: "2027-09-20T06:00:00.000Z", booked: 2 },
-    { date: "2027-10-30", reason: "Diwali", set_by: "ops@maneman.in", set_at: "2027-09-20T06:00:00.000Z", booked: 1 },
-    { date: "2027-11-15", reason: "Staff training", set_by: null, set_at: null, booked: 0 },
+    {
+      date: "2027-10-29",
+      city: null,
+      reason: "Diwali",
+      set_by: "ops@maneman.in",
+      set_at: "2027-09-20T06:00:00.000Z",
+      booked: 2,
+    },
+    {
+      date: "2027-10-30",
+      city: null,
+      reason: "Diwali",
+      set_by: "ops@maneman.in",
+      set_at: "2027-09-20T06:00:00.000Z",
+      booked: 1,
+    },
+    { date: "2027-11-15", city: null, reason: "Staff training", set_by: null, set_at: null, booked: 0 },
   ],
 } satisfies OpsReply<"/api/blackouts">;
 

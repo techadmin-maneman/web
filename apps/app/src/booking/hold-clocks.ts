@@ -1,7 +1,7 @@
 // The two clocks a hold runs on in the booking sheet: its countdown, which ends in a lapse, and the minute the sheet
 // waits for a paid one to be booked.
 
-import { useEffect } from "react";
+import { useEffect, useEffectEvent } from "react";
 import { api, type Hold } from "../api.ts";
 import { apiNow } from "../lib/clock.ts";
 import type { BookingEvent } from "./flow.ts";
@@ -13,11 +13,13 @@ const POLL_FOR_MS = 60_000;
 
 /** Calls `lapse` when the hold's countdown ends, by the API's clock (lib/clock.ts); nothing while there is no hold. */
 export function useHoldLapse(hold: Hold | null, lapse: (hold: Hold) => void): void {
+  // The newest lapse the sheet drew, without starting the clock again each time it draws one.
+  const onLapse = useEffectEvent(lapse);
   useEffect(() => {
     if (hold === null) return;
     const timer = window.setTimeout(
       () => {
-        lapse(hold);
+        onLapse(hold);
       },
       Math.max(0, Date.parse(hold.expires_at) - apiNow()),
     );

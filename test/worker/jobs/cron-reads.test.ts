@@ -141,6 +141,8 @@ const HISTORY = [
      expected_start, created_at, expires_at, answered_at, answer, move_id)
    SELECT 'mp-' || i, 'a-' || i, 't-history', date('${AGO}'), 'morning', 'zone_rebalance', 'ops@localhost', '${AGO}',
      '${AGO}', '${AGO}', '${AGO}', 'accepted', 'mv-' || i FROM n`,
+  `INSERT INTO city_blackouts (date, city, reason)
+   SELECT date('${AGO}', '-' || i || ' days'), 'Gurgaon', 'Local holiday' FROM n`,
   `INSERT INTO slot_claims (technician_id, date, claim, hold_id)
    SELECT 't-history', date('${AGO}'), 'claim-' || i, 'h-' || i FROM n WHERE i % 10 <> 0`,
   `INSERT INTO visit_changes (id, appointment_id, person_id, kind, notice, was_start, now_start, created_at)

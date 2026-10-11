@@ -28,6 +28,8 @@ const copy = settings.blackouts;
 interface Period {
   readonly from: string;
   readonly to: string;
+  /** The one city it is closed in; null for every city. */
+  readonly city: string | null;
   readonly reason: string;
   readonly setBy: string | null;
   readonly setAt: string | null;
@@ -37,6 +39,7 @@ interface Period {
 /** Whether a day carries on a run: the next day, for the same reason, added by the same press. */
 const carriesOn = (period: Period, day: Blackout): boolean =>
   addDays(period.to, 1) === day.date &&
+  period.city === day.city &&
   period.reason === day.reason &&
   period.setBy === day.set_by &&
   period.setAt === day.set_at;
@@ -52,6 +55,7 @@ function periodsOf(days: readonly Blackout[]): Period[] {
       periods.push({
         from: day.date,
         to: day.date,
+        city: day.city,
         reason: day.reason,
         setBy: day.set_by,
         setAt: day.set_at,
@@ -70,11 +74,13 @@ function setLine(period: Period): string {
   return copy.setBy(whoWords(period.setBy), longDate(period.setAt));
 }
 
-type Draft = { readonly from: string; readonly to: string; readonly reason: string };
+/** A city of "" is every city. */
+type Draft = { readonly from: string; readonly to: string; readonly city: string; readonly reason: string };
 
-const EMPTY: Draft = { from: "", to: "", reason: "" };
+const EMPTY: Draft = { from: "", to: "", city: "", reason: "" };
 
-function AddForm({ today, onAdded }: { today: string; onAdded: (days: readonly Blackout[]) => void }) {
+function AddForm(props: { today: string; cities: readonly string[]; onAdded: (days: readonly Blackout[]) => void }) {
+  const { today, onAdded } = props;
   const [draft, setDraft] = useState<Draft>(EMPTY);
   const [sending, setSending] = useState(false);
   const [outcome, setOutcome] = useState<"added" | Failure | null>(null);
@@ -82,7 +88,12 @@ function AddForm({ today, onAdded }: { today: string; onAdded: (days: readonly B
 
   const send = async () => {
     setSending(true);
-    const answer = await api.addBlackouts({ from: draft.from, to: draft.to, reason: draft.reason.trim() });
+    const answer = await api.addBlackouts({
+      from: draft.from,
+      to: draft.to,
+      reason: draft.reason.trim(),
+      ...(draft.city === "" ? {} : { city: draft.city }),
+    });
     setSending(false);
     if (!answer.ok) {
       setOutcome({ code: answer.code, fields: answer.fields });
@@ -137,6 +148,26 @@ function AddForm({ today, onAdded }: { today: string; onAdded: (days: readonly B
           />
         </div>
         <div className={styles.field}>
+          <label className={styles.fieldLabel} htmlFor="blackout-city">
+            {copy.city}
+          </label>
+          <select
+            className={styles.date}
+            id="blackout-city"
+            value={draft.city}
+            onChange={(event) => {
+              edit("city", event.target.value);
+            }}
+          >
+            <option value="">{copy.everyCity}</option>
+            {props.cities.map((city) => (
+              <option key={city} value={city}>
+                {city}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className={styles.field}>
           <label className={styles.fieldLabel} htmlFor="blackout-reason">
             {copy.reason}
           </label>
@@ -187,7 +218,11 @@ function PeriodRow({ period, mayRemove, mayShow, onRemoved }: PeriodRowProps) {
 
   const remove = async () => {
     setSending(true);
-    const answer = await api.removeBlackouts({ from: period.from, to: period.to });
+    const answer = await api.removeBlackouts({
+      from: period.from,
+      to: period.to,
+      ...(period.city === null ? {} : { city: period.city }),
+    });
     setSending(false);
     if (!answer.ok) {
       setFailure({ code: answer.code, fields: answer.fields });
@@ -199,7 +234,7 @@ function PeriodRow({ period, mayRemove, mayShow, onRemoved }: PeriodRowProps) {
   return (
     <li className={styles.rule}>
       <p className={styles.period}>
-        {words} · {period.reason}
+        {words} · {period.city ?? copy.everyCity} · {period.reason}
       </p>
       <p className={styles.set}>{setLine(period)}</p>
       {period.booked > 0 && <p className={styles.checkWarning}>{copy.booked(period.booked)}</p>}
@@ -252,14 +287,14 @@ export function Blackouts() {
 
   return (
     <Panel titleId="blackouts" title={copy.title} className={styles.panel}>
-      {mayAdd && <AddForm today={loaded.value.today} onAdded={setChanged} />}
+      {mayAdd && <AddForm today={loaded.value.today} cities={loaded.value.cities} onAdded={setChanged} />}
       {periods.length === 0 ? (
         <p className={styles.note}>{copy.none}</p>
       ) : (
         <ul className={styles.rules}>
           {periods.map((period) => (
             <PeriodRow
-              key={period.from}
+              key={`${period.city ?? ""}/${period.from}`}
               period={period}
               mayRemove={mayRemove}
               mayShow={mayShow}
