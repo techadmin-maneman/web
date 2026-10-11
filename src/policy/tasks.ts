@@ -31,6 +31,9 @@
 // is counted down on this board as the other requests about their data are.
 //
 // So is a client's dispute of a no-show's charge: a claim for money back waits on this board until ops rule on it.
+//
+// So is a chat past its reply-by time (docs/decisions/0132-the-reply-clock.md): read from the Care inbox, it falls due
+// by the reply clock rather than an allowance of its own, and goes once Care reply.
 
 //
 // So is a job still booked on a day its technician is away: leave
@@ -69,6 +72,7 @@ import { DELETION_DECIDED_WITHIN_DAYS } from "./account-deletion.ts";
 export const TASK_GROUPS = [
   "untold_move",
   "move_unanswered",
+  "unanswered_chat",
   "leave_conflict",
   "address_to_confirm",
   "consultation_request",
@@ -102,6 +106,8 @@ export const TASK_SLA_HOURS: Slas = {
   untold_move: 4,
   // A move to another day the client has not answered keeps them waiting on a day: a call the same day too.
   move_unanswered: 4,
+  // Due by the reply clock (src/policy/care-hours.ts), which always comes first; a day bounds it.
+  unanswered_chat: 24,
   // These two are never later than the visit itself (src/domain/ops/tasks.ts).
   leave_conflict: 48,
   address_to_confirm: 48,

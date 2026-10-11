@@ -14381,6 +14381,7 @@ Request body:
             "enum": [
               "untold_move",
               "move_unanswered",
+              "unanswered_chat",
               "leave_conflict",
               "address_to_confirm",
               "consultation_request",

@@ -241,7 +241,10 @@ const closeRoute = createRoute({
  */
 async function readTheBoard(c: Context<AppEnv>, level: Level) {
   const [inputs, access] = await Promise.all([opsInputs(c), callerAccess(c)]);
-  const board = await outstandingTasks(c.env.DB, c.var.deps.now(), inputs.taskSlaHours, inputs.nextVisitDays);
+  const board = await outstandingTasks(c.env.DB, c.var.deps.now(), inputs.taskSlaHours, {
+    days: inputs.nextVisitDays,
+    hours: inputs.careHours,
+  });
   const reachOf = (group: TaskGroup) => placesReached(access, TASK_DEPARTMENTS[group], level);
   return { ...board, tasks: await tasksWithin(c.env.DB, board.tasks, reachOf) };
 }

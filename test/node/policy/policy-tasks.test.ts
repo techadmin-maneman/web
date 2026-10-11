@@ -59,6 +59,8 @@ describe("tasks", () => {
       untold_move: 4,
       // A move to another day the client has not answered (ADR 0115).
       move_unanswered: 4,
+      // A chat falls due by the reply clock, which comes first; a day bounds it (ADR 0132).
+      unanswered_chat: 24,
       // "The 30 days run from the client's request to ops' decision" (ADR 0049).
       erasure_request: 30 * 24,
       // The client's app: "within 30 days at the latest" (docs/open-points.md, item 51).
