@@ -34,8 +34,12 @@ test("lists the chats waiting on us, and opens one with our automatic messages i
           leave: [],
           off_today: false,
           covered_by: null,
+          on_shift_since: "2026-09-21T03:30:00.000Z",
+          day_off: false,
+          open_chats: 1,
         },
       ],
+      me: "asha@maneman.test",
     }),
     "GET /api/conversations/{id}": json({
       conversation: ARJUN,
