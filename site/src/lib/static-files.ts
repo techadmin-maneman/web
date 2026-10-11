@@ -1,9 +1,8 @@
 // Files the build writes beside the pages, different per environment: the
 // Workers static-assets `_headers` file, robots.txt and the sitemap.
 //
-// The content security policy allows only the site itself, Turnstile,
-// Cloudflare Web Analytics (injected at the edge) and the analytics tags in
-// use. Astro's inline scripts and styles are allowed by their hashes, which
+// The content security policy allows only the site itself, Turnstile and the
+// analytics tags in use. Astro's inline scripts and styles are allowed by their hashes, which
 // the build reads from the finished pages, so no 'unsafe-inline' is needed.
 // Staging and local are never indexed; the smoke check looks for it.
 
@@ -17,7 +16,6 @@ import { SITE_ORIGIN } from "./site-origin.ts";
 export const HEADER_LINE_LIMIT = 2000;
 
 const TURNSTILE = "https://challenges.cloudflare.com";
-const WEB_ANALYTICS = { script: "https://static.cloudflareinsights.com", connect: "https://cloudflareinsights.com" };
 
 /** The hash source for an inline script or style, as a policy writes it. */
 export function cspHash(content: string): string {
@@ -64,13 +62,13 @@ export function contentSecurityPolicy(inline: { scripts: string[]; styles: strin
   const hashes = (contents: string[]) => [...new Set(contents.map(cspHash))].sort();
   const directives: [string, string[]][] = [
     ["default-src", ["'self'"]],
-    ["script-src", ["'self'", ...hashes(inline.scripts), TURNSTILE, WEB_ANALYTICS.script, ...analytics.script]],
+    ["script-src", ["'self'", ...hashes(inline.scripts), TURNSTILE, ...analytics.script]],
     ["style-src", ["'self'", ...hashes(inline.styles)]],
     // blob: is the try-on's photograph and result, shown from memory.
     ["img-src", ["'self'", "blob:", ...analytics.image]],
     ["font-src", ["'self'"]],
     ["media-src", ["'self'"]],
-    ["connect-src", ["'self'", WEB_ANALYTICS.connect, ...analytics.connect]],
+    ["connect-src", ["'self'", ...analytics.connect]],
     ["frame-src", [TURNSTILE, ...analytics.frame]],
     ["object-src", ["'none'"]],
     ["base-uri", ["'self'"]],
