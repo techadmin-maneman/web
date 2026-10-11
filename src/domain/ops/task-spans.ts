@@ -6,7 +6,7 @@ import { clientCityOf } from "../clients/places.ts";
 import type { Task } from "./tasks.ts";
 
 /** New spans a night, in one statement; any more open the night after, each from its own start. */
-export const SPANS_PER_RUN = 500;
+const SPANS_PER_RUN = 500;
 
 /** A grievance is counted from its own table, which holds every one since the first. */
 const COUNTED_ELSEWHERE: ReadonlySet<string> = new Set(["grievance"]);
