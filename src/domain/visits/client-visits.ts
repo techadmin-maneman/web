@@ -6,6 +6,7 @@
 import { STANDARD_TIER, type VisitType } from "../../config/visit-types.ts";
 import { indiaDate } from "../../lib/india-time.ts";
 import { FITTED } from "../clients/fitted.ts";
+import { openProposalJson, openProposalOf } from "../dispatch/move-proposals.ts";
 import { signToken } from "../../lib/signed-token.ts";
 import type { OneVisitState } from "../../policy/one-visit.ts";
 import { namesMoreThanItsKind } from "../../policy/services.ts";
@@ -61,6 +62,14 @@ interface VisitSummary {
   readonly one_visit: OneVisitPrice | null;
   /** The client's note to the technician on this visit, as they last wrote it; null for none. */
   readonly client_note: string | null;
+  /** A move to another day ops asked the client to confirm, still open (ADR 0115); null for none. */
+  readonly proposed_move: {
+    readonly id: string;
+    readonly date: string;
+    readonly window: VisitWindowLabel;
+    readonly technician: { readonly name: string; readonly initials: string } | null;
+    readonly expires_at: string;
+  } | null;
 }
 
 interface AppointmentRow {
@@ -83,6 +92,8 @@ interface AppointmentRow {
   landed_outcome: VisitOutcome | null;
   client_note: string | null;
   not_home: number;
+  /** The open move proposal, as openProposalJson writes it; null for none. */
+  proposal: string | null;
 }
 
 /**
@@ -97,7 +108,8 @@ const APPOINTMENT_COLUMNS = `a.id, a.type, a.tier, a.one_visit, a.status, a.wind
   a.service_pincode, (SELECT s.name FROM services s WHERE s.kind = a.type AND s.tier = a.tier) AS service_name,
   t.name AS technician_name, t.initials AS technician_initials, ${PREPAID} AS prepaid,
   ${visitBegun("a")} AS begun, ${landedOutcome("a")} AS landed_outcome, a.client_note,
-  EXISTS (SELECT 1 FROM no_show_cases n WHERE n.appointment_id = a.id AND n.closed_at IS NOT NULL) AS not_home`;
+  EXISTS (SELECT 1 FROM no_show_cases n WHERE n.appointment_id = a.id AND n.closed_at IS NOT NULL) AS not_home,
+  ${openProposalJson("a")} AS proposal`;
 const LIVE = `a.person_id = ?1 AND a.deleted_at IS NULL AND a.window_start IS NOT NULL AND a.window_end IS NOT NULL`;
 /** The statuses of a visit not yet closed. */
 const NOT_CLOSED: readonly AppointmentStatus[] = ["scheduled", "dispatched", "in_progress"];
@@ -167,7 +179,15 @@ async function visitSummaryOf(
     place: context.place(row),
     one_visit: await oneVisitOf(db, row),
     client_note: row.client_note,
+    proposed_move: proposedMoveOf(row.proposal, now),
   };
+}
+
+/** The visit's open move proposal as the app shows it; null for none, or one run out. */
+function proposedMoveOf(json: string | null, now: Date): VisitSummary["proposed_move"] {
+  const open = openProposalOf(json, now);
+  if (open === null) return null;
+  return { id: open.id, date: open.date, window: open.window, technician: open.technician, expires_at: open.expiresAt };
 }
 
 /**

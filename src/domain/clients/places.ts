@@ -85,6 +85,7 @@ const RECORD_PLACES = {
       WHERE place_payment.id = ${row}.payment_id)`,
   },
   move: { table: "dispatch_moves", city: (row) => pincodeCity(visitPincode(`${row}.appointment_id`)) },
+  move_proposal: { table: "move_proposals", city: (row) => pincodeCity(visitPincode(`${row}.appointment_id`)) },
   payment_link: { table: "payment_links", city: (row) => pincodeCity(visitPincode(`${row}.appointment_id`)) },
   piece: { table: "pieces", city: (row) => clientCity(`${row}.person_id`) },
   no_show: { table: "no_show_cases", city: (row) => pincodeCity(visitPincode(`${row}.appointment_id`)) },

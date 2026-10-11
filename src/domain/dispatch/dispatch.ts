@@ -110,8 +110,9 @@ interface PlannedMove {
   readonly end: Date;
   /** Only the technician changes. */
   readonly keepsTime: boolean;
-  /** The India date of the technician's day the move claims, and its half-slots there. */
+  /** The India date of the technician's day the move claims, the window it goes to, and its half-slots there. */
   readonly date: string;
+  readonly window: BookingWindow;
   readonly claims: readonly string[];
   /** The audit entry for clearing the technician's check-in; null when they had not checked in. */
   readonly clearCheckIn: AuditEntry | null;
@@ -124,6 +125,19 @@ interface PlannedMove {
  * caller changes differs.
  */
 export async function moveJob(db: D1Database, deps: MoveDeps, input: MoveInput, now: Date): Promise<MoveOutcome> {
+  const planned = await planMove(db, input, now);
+  if (planned.kind !== "planned") return planned;
+  return writeMove(db, deps, planned.move, now);
+}
+
+/** What a move's checks come to: the move to write, or why there is none. */
+type Planned = { readonly kind: "planned"; readonly move: PlannedMove } | Exclude<MoveOutcome, { kind: "moved" }>;
+
+/**
+ * A move's checks, before anything is written: the job as the board showed it, not begun, and room for it where it
+ * goes. A move to another day ops ask the client to confirm runs them too, and again once the client accepts.
+ */
+export async function planMove(db: D1Database, input: MoveInput, now: Date): Promise<Planned> {
   const job = await liveJob(db, input.appointmentId);
   if (job === null) return { kind: "not_found" };
   const changed = changedSince(job, input.expected);
@@ -172,11 +186,12 @@ export async function moveJob(db: D1Database, deps: MoveDeps, input: MoveInput, 
     end: times.end,
     keepsTime: target.keepsTime,
     date,
+    window,
     claims: claimsOf(landing.start, unitsFor(placing.minutes), window),
     clearCheckIn: isUnderWay(job) ? clearCheckIn : null,
     blackoutReason,
   };
-  return writeMove(db, deps, move, now);
+  return { kind: "planned", move };
 }
 
 /**
@@ -320,7 +335,7 @@ function changedSince(job: LiveJob, expected: MoveInput["expected"]): Change[] {
 }
 
 /** Whether the latest word on WhatsApp about their visits from the client of this job is yes. */
-async function agreedToVisitMessages(db: D1Database, appointmentId: string): Promise<boolean> {
+export async function agreedToVisitMessages(db: D1Database, appointmentId: string): Promise<boolean> {
   const latest = await db
     .prepare(`SELECT ${LATEST_VISITS_CONSENT} AS granted FROM appointments a WHERE a.id = ?1`)
     .bind(appointmentId)

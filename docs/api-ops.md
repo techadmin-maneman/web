@@ -1755,6 +1755,80 @@ Where a job in hand can go in the board's week, before ops pick a reason. Writes
 }
 ```
 
+### POST /api/dispatch/propose
+
+Ask the client to confirm a move to another day: the move's checks run, and the visit stays where it is until the client accepts (ADR 0115)
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/DispatchMoveRequest"
+}
+```
+
+**200**: Asked
+
+```json
+{
+  "$ref": "#/components/schemas/DispatchProposed"
+}
+```
+
+**400**: invalid_request: the move keeps the visit's day (fields: date), names a technician not in the caller's cities, or the visit has no client
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no such live job in the caller's cities
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**409**: the move's checks, as POST /api/dispatch/move answers them: past_day; window_passed; clash; on_leave; back_to_back; does_not_fit; blackout; superseded, with what changed in fields; in_progress
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/dispatch/proposals/{id}/withdraw
+
+Take back a move to another day the client has not yet accepted
+
+**204**: Taken back
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no open proposal of a visit in the caller's cities
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ### POST /api/dispatch/assign
 
 Put a job on a technician, with a reason. The clash check runs before anything is written
@@ -4863,6 +4937,7 @@ Request body:
             "already_disputed",
             "not_disputable",
             "dispute_window_closed",
+            "move_gone",
             "code_not_applicable",
             "code_off",
             "already_discounted",
@@ -5612,6 +5687,17 @@ Request body:
       ],
       "description": "A consultation and fit in one visit not yet closed: the client pays only if they go ahead, once fitted, by a link Razorpay texts them. Null for any other visit."
     },
+    "proposed_move": {
+      "anyOf": [
+        {
+          "$ref": "#/components/schemas/ProposedMove"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "A move to another day ops asked the client to confirm, still open: the visit stays where it is until they accept it (POST /api/visits/{id}/proposed-move/accept) or pick another time. Null for none."
+    },
     "outcome": {
       "anyOf": [
         {
@@ -5740,6 +5826,7 @@ Request body:
     "place",
     "client_note",
     "one_visit",
+    "proposed_move",
     "outcome",
     "closed_without_follow_up",
     "discount_code",
@@ -5809,6 +5896,56 @@ Request body:
     "amount",
     "from",
     "code"
+  ],
+  "additionalProperties": false
+}
+```
+
+### ProposedMove
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "date": {
+      "type": "string",
+      "format": "date",
+      "description": "India's date the visit would move to."
+    },
+    "window": {
+      "type": "string",
+      "enum": [
+        "morning",
+        "afternoon",
+        "evening"
+      ]
+    },
+    "technician": {
+      "anyOf": [
+        {
+          "$ref": "#/components/schemas/Technician"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "expires_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "The last moment it may be accepted."
+    }
+  },
+  "required": [
+    "id",
+    "date",
+    "window",
+    "technician",
+    "expires_at"
   ],
   "additionalProperties": false
 }
@@ -5947,6 +6084,17 @@ Request body:
         }
       ],
       "description": "A consultation and fit in one visit not yet closed: the client pays only if they go ahead, once fitted, by a link Razorpay texts them. Null for any other visit."
+    },
+    "proposed_move": {
+      "anyOf": [
+        {
+          "$ref": "#/components/schemas/ProposedMove"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "A move to another day ops asked the client to confirm, still open: the visit stays where it is until they accept it (POST /api/visits/{id}/proposed-move/accept) or pick another time. Null for none."
     }
   },
   "required": [
@@ -5965,7 +6113,8 @@ Request body:
     "technician",
     "place",
     "client_note",
-    "one_visit"
+    "one_visit",
+    "proposed_move"
   ],
   "additionalProperties": false
 }
@@ -8116,6 +8265,7 @@ Request body:
             "already_disputed",
             "not_disputable",
             "dispute_window_closed",
+            "move_gone",
             "code_not_applicable",
             "code_off",
             "already_discounted",
@@ -9605,6 +9755,8 @@ Request body:
         "credit.adjust",
         "dispatch.client_told",
         "dispatch.check_in_cleared",
+        "dispatch.move_proposed",
+        "dispatch.proposal_withdrawn",
         "consumable.add",
         "consumable.change",
         "consumable.retire",
@@ -9627,6 +9779,7 @@ Request body:
         "visit.cancel",
         "visit.close",
         "visit.checkin_waive",
+        "visit.move_accepted",
         "hair_profile.correct",
         "discount_code.make",
         "discount_code.switch_off",
@@ -10433,6 +10586,111 @@ Request body:
 }
 ```
 
+### DispatchProposed
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "proposal_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "client_notice": {
+      "type": "string",
+      "enum": [
+        "messaged",
+        "call"
+      ],
+      "description": "messaged: the client was sent the proposal on WhatsApp; call: they have not agreed to WhatsApp about their visits, so ops call them, and they accept it in the app."
+    }
+  },
+  "required": [
+    "proposal_id",
+    "client_notice"
+  ],
+  "additionalProperties": false
+}
+```
+
+### DispatchMoveRequest
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "appointment_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "technician_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Left out keeps the technician it has."
+    },
+    "date": {
+      "type": "string",
+      "format": "date"
+    },
+    "window": {
+      "type": "string",
+      "enum": [
+        "morning",
+        "afternoon",
+        "evening"
+      ]
+    },
+    "reason": {
+      "type": "string",
+      "enum": [
+        "technician_unavailable",
+        "client_asked",
+        "zone_rebalance",
+        "skill_needed",
+        "running_over"
+      ]
+    },
+    "expected_technician_id": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "uuid"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The technician the board showed the job with; null for a job in the tray."
+    },
+    "expected_starts_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "The start the board showed the job with."
+    },
+    "blackout_reason": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 300,
+      "description": "Why the visit goes onto a day ops blacked out, as ops typed it: kept with the move, blanked if the client is erased. Without it, a move onto a blacked-out day answers 409 blackout. Ignored for any other day."
+    },
+    "clear_check_in": {
+      "type": "boolean",
+      "enum": [
+        true
+      ],
+      "description": "Ops were warned that the technician has checked in, and move the visit anyway: his check-in is cleared, and he checks in again at the new time. The audit log names who chose it. Without it, a visit he has checked in at answers 409 in_progress."
+    }
+  },
+  "required": [
+    "appointment_id",
+    "reason",
+    "expected_technician_id",
+    "expected_starts_at"
+  ],
+  "additionalProperties": false
+}
+```
+
 ### DispatchMoved
 
 ```json
@@ -10525,84 +10783,6 @@ Request body:
   "required": [
     "appointment_id",
     "technician_id",
-    "reason",
-    "expected_technician_id",
-    "expected_starts_at"
-  ],
-  "additionalProperties": false
-}
-```
-
-### DispatchMoveRequest
-
-```json
-{
-  "type": "object",
-  "properties": {
-    "appointment_id": {
-      "type": "string",
-      "format": "uuid"
-    },
-    "technician_id": {
-      "type": "string",
-      "format": "uuid",
-      "description": "Left out keeps the technician it has."
-    },
-    "date": {
-      "type": "string",
-      "format": "date"
-    },
-    "window": {
-      "type": "string",
-      "enum": [
-        "morning",
-        "afternoon",
-        "evening"
-      ]
-    },
-    "reason": {
-      "type": "string",
-      "enum": [
-        "technician_unavailable",
-        "client_asked",
-        "zone_rebalance",
-        "skill_needed",
-        "running_over"
-      ]
-    },
-    "expected_technician_id": {
-      "anyOf": [
-        {
-          "type": "string",
-          "format": "uuid"
-        },
-        {
-          "type": "null"
-        }
-      ],
-      "description": "The technician the board showed the job with; null for a job in the tray."
-    },
-    "expected_starts_at": {
-      "type": "string",
-      "format": "date-time",
-      "description": "The start the board showed the job with."
-    },
-    "blackout_reason": {
-      "type": "string",
-      "minLength": 1,
-      "maxLength": 300,
-      "description": "Why the visit goes onto a day ops blacked out, as ops typed it: kept with the move, blanked if the client is erased. Without it, a move onto a blacked-out day answers 409 blackout. Ignored for any other day."
-    },
-    "clear_check_in": {
-      "type": "boolean",
-      "enum": [
-        true
-      ],
-      "description": "Ops were warned that the technician has checked in, and move the visit anyway: his check-in is cleared, and he checks in again at the new time. The audit log names who chose it. Without it, a visit he has checked in at answers 409 in_progress."
-    }
-  },
-  "required": [
-    "appointment_id",
     "reason",
     "expected_technician_id",
     "expected_starts_at"
