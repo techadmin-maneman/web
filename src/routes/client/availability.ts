@@ -144,7 +144,14 @@ export function registerClientAvailability(app: App): void {
       atCheckout: move === null ? { type, tier: service.tier } : null,
     };
     const [days, schedule] = await Promise.all([
-      availability({ db, placing, visit: { minutes: service.minutes, until }, from: start, days: BOOKING_DAYS, now }),
+      availability({
+        db,
+        placing,
+        visit: { minutes: service.minutes, until, fitting: type === "first_fit" },
+        from: start,
+        days: BOOKING_DAYS,
+        now,
+      }),
       loadSlotSchedule(db),
     ]);
     // A free or late-fee move costs the same whichever day it goes to; a new visit costs that day's price.

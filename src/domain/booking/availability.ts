@@ -109,6 +109,8 @@ interface WindowTechnicians {
 interface VisitToPlace {
   readonly minutes: number;
   readonly until?: string | null;
+  /** A first fit, which only a technician trained to fit takes (ADR 0119). */
+  readonly fitting?: boolean;
 }
 
 /** Whose visit it is, and what it stands in for: a move in place keeps its technician, a replaced visit gives way. */
@@ -158,7 +160,7 @@ async function windowsOf({
   const units = unitsFor(visit.minutes);
   const to = addDays(range.from, range.days - 1);
   const [technicians, held, closed, visits] = await Promise.all([
-    techniciansFor(db, moving, { pincode, personId }),
+    techniciansFor(db, moving, { pincode, personId }, visit.fitting ?? false),
     occupancy({
       db,
       from: range.from,
@@ -169,7 +171,7 @@ async function windowsOf({
       ownUnpaidOf: ownUnpaid ? personId : null,
       ownCheckoutOf: atCheckout === null || personId === null ? null : { personId, ...atCheckout },
     }),
-    loadBlackouts(db, range.from, to),
+    loadBlackouts(db, range.from, to, { pincode, personId }),
     visitsOfClient(db, personId, moving?.visitId ?? replacing),
   ]);
   const retired = (date: string) => visit.until !== undefined && visit.until !== null && date >= visit.until;

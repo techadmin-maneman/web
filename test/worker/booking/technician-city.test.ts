@@ -56,10 +56,10 @@ beforeEach(async () => {
   await pincode(GURGAON, "Sector 65", "Gurgaon", true);
   await pincode(NOIDA, "Sector 18", "Noida", true);
   await env.DB.prepare(
-    `INSERT INTO technicians (id, fsm_id, name, initials, active, updated_at, city)
-     VALUES ('t1', 't1', 'Imran Qureshi', 'IQ', 1, ?1, 'Gurgaon'),
-            ('t2', 't2', 'Kabir Sood', 'KS', 1, ?1, 'Delhi'),
-            ('t3', 't3', 'Faizan Ali', 'FA', 1, ?1, NULL)`,
+    `INSERT INTO technicians (id, fsm_id, name, initials, active, updated_at, city, fits_trained)
+     VALUES ('t1', 't1', 'Imran Qureshi', 'IQ', 1, ?1, 'Gurgaon', 1),
+            ('t2', 't2', 'Kabir Sood', 'KS', 1, ?1, 'Delhi', 1),
+            ('t3', 't3', 'Faizan Ali', 'FA', 1, ?1, NULL, 1)`,
   )
     .bind(NOW.toISOString())
     .run();
@@ -96,5 +96,58 @@ describe("a visit and the technicians who may take it", () => {
       now: NOW,
     });
     expect(day?.windows.some((window) => window.open)).toBe(false);
+  });
+});
+
+// A day closed in one city closes no other, and a first fit goes only to a technician trained to fit (ADR 0119).
+describe("a city's own closed days, and first fits", () => {
+  const DELHI = "110048";
+
+  beforeEach(async () => {
+    await pincode(DELHI, "Greater Kailash II", "Delhi", true);
+  });
+
+  it("closes a day in Gurgaon alone, leaving Delhi open", async () => {
+    await env.DB.prepare(
+      "INSERT INTO city_blackouts (date, city, reason) VALUES ('2026-09-23', 'Gurgaon', 'Local holiday')",
+    ).run();
+    expect(await morningOpenAt(GURGAON)).toBe(false);
+    expect(await holdAt(GURGAON)).toBeNull();
+    expect(await morningOpenAt(DELHI)).toBe(true);
+  });
+
+  it("offers and holds a first fit only with a technician trained to fit", async () => {
+    const fitOpen = async () => {
+      const [day] = await availability({
+        db: env.DB,
+        placing: { personId: null, pincode: GURGAON },
+        visit: { minutes: 180, fitting: true },
+        from: "2026-09-23",
+        days: 1,
+        now: NOW,
+      });
+      return day?.windows.find((window) => window.window === "morning")?.open ?? false;
+    };
+    expect(await fitOpen()).toBe(true);
+
+    await env.DB.prepare("UPDATE technicians SET fits_trained = 0 WHERE id = 't1'").run();
+    expect(await fitOpen()).toBe(false);
+    const fit = await holdSlot({
+      db: env.DB,
+      input: {
+        personId: await person(),
+        service: { type: "first_fit", tier: "standard", minutes: 180 },
+        date: "2026-09-23",
+        window: "morning",
+        price: FREE,
+        from: "site",
+        pincode: GURGAON,
+      },
+      now: NOW,
+      holdSeconds: 600,
+    });
+    expect(fit).toBeNull();
+    // A consultation needs no fitter.
+    expect(await holdAt(GURGAON)).toBe("Imran Qureshi");
   });
 });

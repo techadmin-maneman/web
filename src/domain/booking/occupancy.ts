@@ -23,10 +23,19 @@ export interface Day {
 const emptyDay = (): Day => ({ units: new Set(), windows: new Set(), onLeave: false });
 
 /** The days ops black out between two dates: nobody is offered a visit on them. */
-export async function loadBlackouts(db: D1Database, from: string, to: string): Promise<Set<string>> {
+export async function loadBlackouts(
+  db: D1Database,
+  from: string,
+  to: string,
+  place: VisitPlace | null = null,
+): Promise<Set<string>> {
+  // Closed everywhere, and closed in the visit's own city (docs/decisions/0119-blackouts-by-city-and-trained-fitters.md).
   const { results } = await db
-    .prepare("SELECT date FROM visit_blackouts WHERE date BETWEEN ?1 AND ?2")
-    .bind(from, to)
+    .prepare(
+      `SELECT date FROM visit_blackouts WHERE date BETWEEN ?1 AND ?2
+       UNION SELECT date FROM city_blackouts WHERE date BETWEEN ?1 AND ?2 AND city = ${visitCity("?3", "?4")}`,
+    )
+    .bind(from, to, place?.pincode ?? null, place?.personId ?? null)
     .all<{ date: string }>();
   return new Set(results.map((row) => row.date));
 }
@@ -99,17 +108,22 @@ interface VisitPlace {
  * ops set one (docs/decisions/0117-a-technician-takes-visits-in-their-own-city.md).
  */
 const TECHNICIANS_IN_THE_CITY = `SELECT t.id, t.name, t.initials FROM technicians t
-  WHERE t.active = 1 AND (t.id = ?3 OR t.city = ${visitCity("?1", "?2")})
+  WHERE t.active = 1 AND (t.id = ?3 OR (t.city = ${visitCity("?1", "?2")} AND (?4 = 0 OR t.fits_trained = 1)))
   ORDER BY t.id = ?3 DESC, t.name`;
 
 /**
- * Who can take a booking: the active technicians in the visit's city. A client's move may go to any of them, its own
- * technician first, who keeps it wherever they work.
+ * Who can take a booking: the active technicians in the visit's city, and for a fit only those trained to fit (ADR
+ * 0119). A client's move may go to any of them, its own technician first, who keeps it wherever they work.
  */
-export async function techniciansFor(db: D1Database, moving: Moving | null, place: VisitPlace): Promise<Technician[]> {
+export async function techniciansFor(
+  db: D1Database,
+  moving: Moving | null,
+  place: VisitPlace,
+  fitting = false,
+): Promise<Technician[]> {
   const { results } = await db
     .prepare(TECHNICIANS_IN_THE_CITY)
-    .bind(place.pincode, place.personId, moving?.technicianId ?? null)
+    .bind(place.pincode, place.personId, moving?.technicianId ?? null, fitting ? 1 : 0)
     .all<Technician>();
   return results;
 }

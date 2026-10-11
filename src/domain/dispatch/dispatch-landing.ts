@@ -99,7 +99,7 @@ export function targetOf({
 /** Whether the move puts the job onto a day ops blacked out, from another day. */
 export async function movesOntoBlackout(db: D1Database, job: LiveJob, date: string): Promise<boolean> {
   if (date === indiaDate(new Date(job.window_start))) return false;
-  return (await loadBlackouts(db, date, date)).has(date);
+  return (await loadBlackouts(db, date, date, { pincode: job.service_pincode, personId: job.person_id })).has(date);
 }
 
 /** Where the job already is: no move at all. */

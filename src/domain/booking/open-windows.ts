@@ -29,11 +29,11 @@ async function dayBooking(db: D1Database, plan: Plan, date: string, selfServeBoo
 /** The windows someone is free in, for each length a slot is held for, keyed "minutes/date". */
 async function freeWindows(
   db: D1Database,
-  asked: { readonly bookings: readonly DayBooking[]; readonly pincode: string },
+  asked: { readonly bookings: readonly DayBooking[]; readonly pincode: string; readonly fitting: boolean },
   first: string,
   now: Date,
 ): Promise<Map<string, Set<BookingWindow>>> {
-  const { bookings, pincode } = asked;
+  const { bookings, pincode, fitting } = asked;
   const lengths = new Set(bookings.flatMap((booking) => (booking.by === "slot" ? [booking.minutes] : [])));
   const free = new Map<string, Set<BookingWindow>>();
   for (const minutes of lengths) {
@@ -41,7 +41,7 @@ async function freeWindows(
       db,
       // Only the technicians in the pincode's city can take it.
       placing: { personId: null, pincode },
-      visit: { minutes },
+      visit: { minutes, fitting },
       from: first,
       days: BOOKING_DAYS,
       now,
@@ -66,7 +66,9 @@ export async function openDays(
   const days = await Promise.all(
     dates.map(async (date) => ({ date, booking: await dayBooking(db, plan, date, selfServeBooking) })),
   );
-  const free = await freeWindows(db, { bookings: days.map((day) => day.booking), pincode }, first, now);
+  // The one visit fits a hair system, which only a technician trained to fit takes.
+  const asking = { bookings: days.map((day) => day.booking), pincode, fitting: plan === "one_visit" };
+  const free = await freeWindows(db, asking, first, now);
 
   return days.map(({ date, booking }) => {
     const isOpen = (window: BookingWindow): boolean => {

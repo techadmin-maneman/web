@@ -40,6 +40,10 @@ const CITY = z
   .union([z.string(), z.null()])
   .openapi({ description: "The city he works in, which staff access by place reads; null for none." });
 
+const FITS_TRAINED = z
+  .boolean()
+  .openapi({ description: "Trained to fit: only such a technician is offered or given a first fit (ADR 0119)." });
+
 const TechniciansSchema = z
   .object({
     technicians: z.array(
@@ -51,6 +55,7 @@ const TechniciansSchema = z
           zone: z.union([z.string(), z.null()]),
           city: CITY,
           mobile: MOBILE,
+          fits_trained: FITS_TRAINED,
           sign_in_stopped_at: z.union([z.iso.datetime(), z.null()]).openapi({
             description: "When revoking a phone of his stopped him signing in; null while he may. Ops let him again.",
           }),
@@ -83,6 +88,7 @@ const TechniciansSchema = z
             zone: z.union([z.string(), z.null()]),
             city: CITY,
             mobile: MOBILE,
+            fits_trained: FITS_TRAINED,
           })
           .strict(),
       )
@@ -127,6 +133,7 @@ export function registerOpsField(app: App): void {
       zone: technician.zone,
       city: technician.city,
       mobile: technician.mobile,
+      fits_trained: technician.fitsTrained,
     });
     const technicians = everyone
       .filter((technician) => technician.active)

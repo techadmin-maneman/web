@@ -29,6 +29,8 @@ export interface RosterTechnician {
   readonly active: boolean;
   /** When a revoked phone stopped them signing in; null while they may (src/domain/dispatch/technicians.ts). */
   readonly signInStoppedAt: string | null;
+  /** Trained to fit, which a first fit needs (docs/decisions/0119-blackouts-by-city-and-trained-fitters.md). */
+  readonly fitsTrained: boolean;
 }
 
 interface RosterRow {
@@ -40,6 +42,7 @@ interface RosterRow {
   mobile_e164: string | null;
   active: number;
   sign_in_stopped_at: string | null;
+  fits_trained: number;
 }
 
 const rosterTechnicianOf = (row: RosterRow): RosterTechnician => ({
@@ -51,9 +54,10 @@ const rosterTechnicianOf = (row: RosterRow): RosterTechnician => ({
   mobile: row.mobile_e164,
   active: row.active === 1,
   signInStoppedAt: row.sign_in_stopped_at,
+  fitsTrained: row.fits_trained === 1,
 });
 
-const ROSTER_COLUMNS = "id, name, initials, zone, city, mobile_e164, active, sign_in_stopped_at";
+const ROSTER_COLUMNS = "id, name, initials, zone, city, mobile_e164, active, sign_in_stopped_at, fits_trained";
 
 /** Every technician, active or switched off, by name. */
 export async function roster(db: D1Database): Promise<RosterTechnician[]> {
@@ -75,6 +79,7 @@ interface NewTechnician {
   readonly mobileE164: string;
   readonly zone: string | null;
   readonly city: string | null;
+  readonly fitsTrained: boolean;
 }
 
 /** Adds an active technician, unless another active technician has their number. */
@@ -87,8 +92,9 @@ export async function addTechnician(
   await db.batch([
     db
       .prepare(
-        `INSERT INTO technicians (id, fsm_id, name, initials, active, zone, city, mobile_e164, updated_at, hand_written)
-         SELECT ?1, ?1, ?3, ?4, 1, ?5, ?7, ?2, ?6, 1 WHERE NOT ${NUMBER_TAKEN}`,
+        `INSERT INTO technicians (id, fsm_id, name, initials, active, zone, city, mobile_e164, updated_at, hand_written,
+           fits_trained)
+         SELECT ?1, ?1, ?3, ?4, 1, ?5, ?7, ?2, ?6, 1, ?8 WHERE NOT ${NUMBER_TAKEN}`,
       )
       .bind(
         technician.id,
@@ -98,6 +104,7 @@ export async function addTechnician(
         technician.zone,
         now.toISOString(),
         technician.city,
+        technician.fitsTrained ? 1 : 0,
       ),
     auditStatementIfWritten(db, audit, now, { table: "technicians", id: technician.id }),
   ]);
@@ -111,6 +118,7 @@ interface TechnicianChange {
   readonly mobileE164?: string;
   readonly zone?: string | null;
   readonly city?: string | null;
+  readonly fitsTrained?: boolean;
 }
 
 /** Changes what was sent, unless the new number is another active technician's. */
@@ -131,14 +139,16 @@ export async function changeTechnician({
   const mobile = change.mobileE164 ?? current.mobile;
   const zone = change.zone === undefined ? current.zone : change.zone;
   const city = change.city === undefined ? current.city : change.city;
+  const fitsTrained = change.fitsTrained ?? current.fitsTrained;
   if (mobile !== null && (await numberTaken(db, current.id, mobile))) return "number_in_use";
   await db.batch([
     db
       .prepare(
-        `UPDATE technicians SET name = ?2, initials = ?3, mobile_e164 = ?4, zone = ?5, city = ?6, updated_at = ?7
+        `UPDATE technicians SET name = ?2, initials = ?3, mobile_e164 = ?4, zone = ?5, city = ?6, updated_at = ?7,
+           fits_trained = ?8
          WHERE id = ?1`,
       )
-      .bind(current.id, name, initialsOf(name), mobile, zone, city, now.toISOString()),
+      .bind(current.id, name, initialsOf(name), mobile, zone, city, now.toISOString(), fitsTrained ? 1 : 0),
     auditStatement(db, audit, now),
   ]);
   return "changed";

@@ -252,6 +252,9 @@ export const settings = {
     title: "Closed days",
     from: "From",
     to: "To",
+    /** A day closed in one city closes no other (docs/decisions/0119-blackouts-by-city-and-trained-fitters.md). */
+    city: "City",
+    everyCity: "Every city",
     reason: "Reason",
     add: "Close these days",
     adding: "Closing",
@@ -277,6 +280,7 @@ export const settings = {
       from: "The first day can't be in the past.",
       to: "The last day must follow the first, within a month.",
       reason: "Up to 60 letters or digits.",
+      city: "Choose one of our cities.",
       not_found: "Already reopened. Reload.",
       offline: OFFLINE,
       unknown: FAILED,

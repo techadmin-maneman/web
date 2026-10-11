@@ -17,7 +17,7 @@ beforeEach(async () => {
   await pincode("122018", "Sector 65", "Gurgaon", true);
   await env.DB.batch([
     env.DB.prepare(
-      "INSERT INTO technicians (id, fsm_id, name, initials, active, updated_at, city) VALUES ('t1', 't1', 'Imran Qureshi', 'IQ', 1, ?1, 'Gurgaon')",
+      "INSERT INTO technicians (id, fsm_id, name, initials, active, updated_at, city, fits_trained) VALUES ('t1', 't1', 'Imran Qureshi', 'IQ', 1, ?1, 'Gurgaon', 1)",
     ).bind(NOW.toISOString()),
     env.DB.prepare(
       "INSERT INTO people (id, created_at, mobile_e164, name) VALUES (?1, ?2, '+919810000001', 'Rohit Malhotra')",

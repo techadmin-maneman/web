@@ -33,9 +33,9 @@ beforeEach(async () => {
   ops = appFor("local", fakeDependencies(), {}, "ops");
 
   await env.DB.prepare(
-    `INSERT INTO technicians (id, fsm_id, name, initials, active, zone, updated_at)
-     VALUES (?1, ?1, 'Imran Qureshi', 'IQ', 1, 'Sec 40–65', ?3),
-            (?2, ?2, 'Sameer Bhatt', 'SB', 1, 'Sec 1–39', ?3)`,
+    `INSERT INTO technicians (id, fsm_id, name, initials, active, zone, updated_at, fits_trained)
+     VALUES (?1, ?1, 'Imran Qureshi', 'IQ', 1, 'Sec 40–65', ?3, 1),
+            (?2, ?2, 'Sameer Bhatt', 'SB', 1, 'Sec 1–39', ?3, 1)`,
   )
     .bind(IMRAN, SAMEER, NOW.toISOString())
     .run();
@@ -390,6 +390,16 @@ describe("a technician in another city, or in none", () => {
 
     const { rooms } = await (await roomFor(A, "2026-09-22")).json<RoomBody>();
     expect(rooms.some((room) => room.technician_id === IMRAN)).toBe(true);
+    expect(rooms.filter((room) => room.technician_id === SAMEER)).toEqual([]);
+  });
+
+  it("is refused a first fit when not trained to fit (ADR 0119)", async () => {
+    await env.DB.prepare("UPDATE technicians SET city = 'Gurgaon', fits_trained = 0 WHERE id = ?1").bind(SAMEER).run();
+    await insertJob(FIT, { type: "first_fit", start: TUESDAY["12:00"], technician: IMRAN });
+
+    const answer = await move({ appointment_id: FIT, technician_id: SAMEER, reason: "zone_rebalance" });
+    expect(await answer.json()).toMatchObject({ error: { code: "not_trained" } });
+    const { rooms } = await (await roomFor(FIT, "2026-09-22")).json<RoomBody>();
     expect(rooms.filter((room) => room.technician_id === SAMEER)).toEqual([]);
   });
 

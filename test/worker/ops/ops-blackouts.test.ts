@@ -54,8 +54,15 @@ describe("GET /api/blackouts", () => {
       env.DB.prepare("INSERT INTO visit_blackouts (date, reason) VALUES ('2026-09-21', 'Today')"),
     ]);
     expect(await listed()).toEqual([
-      { date: "2026-09-21", reason: "Today", set_by: null, set_at: null, booked: 0 },
-      { date: "2026-10-20", reason: "Diwali", set_by: "ops@maneman.in", set_at: NOW.toISOString(), booked: 0 },
+      { date: "2026-09-21", city: null, reason: "Today", set_by: null, set_at: null, booked: 0 },
+      {
+        date: "2026-10-20",
+        city: null,
+        reason: "Diwali",
+        set_by: "ops@maneman.in",
+        set_at: NOW.toISOString(),
+        booked: 0,
+      },
     ]);
   });
 
@@ -95,6 +102,31 @@ describe("POST /api/blackouts", () => {
     ]);
   });
 
+  // A local holiday closes one city, and no other (ADR 0119).
+  it("closes days in one city alone, which booking there then offers to nobody, and reopens them there", async () => {
+    const answer = await post("/api/blackouts", {
+      from: "2026-10-20",
+      to: "2026-10-20",
+      city: "Gurgaon",
+      reason: "Diwali",
+    });
+    expect(answer.status).toBe(200);
+    const body = await answer.json<{ blackouts: (Blackout & { city: string | null })[]; cities: string[] }>();
+    expect(body.blackouts.map((each) => [each.date, each.city])).toEqual([["2026-10-20", "Gurgaon"]]);
+    expect(body.cities).toContain("Gurgaon");
+    expect([...(await loadBlackouts(env.DB, "2026-10-19", "2026-10-21"))]).toEqual([]);
+
+    expect(
+      (await post("/api/blackouts", { from: "2026-10-21", to: "2026-10-21", city: "Atlantis", reason: "Diwali" }))
+        .status,
+    ).toBe(400);
+    expect((await post("/api/blackouts/remove", { from: "2026-10-20", to: "2026-10-20" })).status).toBe(404);
+    expect(
+      (await post("/api/blackouts/remove", { from: "2026-10-20", to: "2026-10-20", city: "Gurgaon" })).status,
+    ).toBe(200);
+    expect(await listed()).toEqual([]);
+  });
+
   // The reason is text ops type, and the audit log holds IDs, counts and codes only and is never blanked (ADR 0031),
   // so it lives in visit_blackouts alone.
   it("records who added them and which days, in the same batch, and never the reason", async () => {
@@ -104,7 +136,7 @@ describe("POST /api/blackouts", () => {
       {
         actor: "ops@localhost",
         subject_id: "2026-10-20",
-        detail: JSON.stringify({ from: "2026-10-20", to: "2026-10-22", days: 3, replaced: "[]" }),
+        detail: JSON.stringify({ from: "2026-10-20", to: "2026-10-22", city: null, days: 3, replaced: "[]" }),
       },
     ]);
     expect(results[0]?.detail).not.toContain("Diwali");
@@ -172,7 +204,7 @@ describe("POST /api/blackouts/remove", () => {
       {
         actor: "ops@localhost",
         subject_id: "2026-10-21",
-        detail: JSON.stringify({ from: "2026-10-21", to: "2026-10-22", days: 2, removed }),
+        detail: JSON.stringify({ from: "2026-10-21", to: "2026-10-22", city: null, days: 2, removed }),
       },
     ]);
   });

@@ -36,9 +36,9 @@ beforeEach(async () => {
   ops = appFor("local", fakeDependencies(), {}, "ops");
 
   await env.DB.prepare(
-    `INSERT INTO technicians (id, fsm_id, name, initials, active, zone, updated_at, city)
-     VALUES (?1, ?1, 'Imran Qureshi', 'IQ', 1, 'Sec 40–65', ?3, 'Gurgaon'),
-            (?2, ?2, 'Sameer Bhatt', 'SB', 1, 'Sec 1–39', ?3, 'Gurgaon')`,
+    `INSERT INTO technicians (id, fsm_id, name, initials, active, zone, updated_at, city, fits_trained)
+     VALUES (?1, ?1, 'Imran Qureshi', 'IQ', 1, 'Sec 40–65', ?3, 'Gurgaon', 1),
+            (?2, ?2, 'Sameer Bhatt', 'SB', 1, 'Sec 1–39', ?3, 'Gurgaon', 1)`,
   )
     .bind(IMRAN, SAMEER, NOW.toISOString())
     .run();

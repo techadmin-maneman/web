@@ -1338,6 +1338,7 @@ Razorpay's webhook: payments and refunds
             "window_passed",
             "blackout",
             "other_city",
+            "not_trained",
             "in_progress",
             "too_early_to_close",
             "too_early_to_arrive",

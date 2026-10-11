@@ -75,6 +75,14 @@
   color: var(--text-muted);
 }
 
+/* "Trained to fit", a box beside its words, in the form's run of fields. */
+.check {
+  display: flex;
+  gap: var(--sp-8);
+  align-items: center;
+  min-height: var(--tap);
+}
+
 /* A technician with no city takes no bookings until ops set one: said in words, in oxblood, beside the name. */
 .noCity {
   margin-left: var(--sp-8);
