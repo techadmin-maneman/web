@@ -7,6 +7,7 @@
 // (docs/decisions/0107-referral-rewards-in-the-console.md). Staging builds never run it.
 
 import { DESIGN_PLACEHOLDERS, type PlaceholderBlockName } from "../content/design-placeholders.ts";
+import * as guides from "../content/guides.ts";
 import { referral } from "../content/referral.ts";
 import * as site from "../content/site.ts";
 
@@ -78,7 +79,7 @@ function typedVisits(pages: readonly unknown[]): string[] {
 export function publishProblems(
   blocks: Readonly<Record<PlaceholderBlockName, Block>> = BLOCKS,
   notices: Readonly<Record<string, site.Notice>> = site.notices,
-  pages: readonly unknown[] = [site, referral],
+  pages: readonly unknown[] = [site, referral, guides],
   legalPages: Readonly<Record<string, { readonly approved: boolean }>> = site.legalPages,
 ): string[] {
   const problems: string[] = [];
