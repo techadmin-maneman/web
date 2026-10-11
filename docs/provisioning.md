@@ -513,6 +513,25 @@ The WhatsApp Business Platform, which sends from the business's own number with 
 4. **The switch.** A pull request sets `MESSAGING_PROVIDER` to `"msg91"` in that environment's vars. Once deployed, sign in with a code, and check one booking's confirmation arrives. A refused key alerts as the bridge being down; a refused template fails its message with MSG91's reason in `outbound_messages.last_error`.
 5. **Receipts and STOP replies.** Until MSG91's delivery-report webhook is built (open point 186), keep Evolution's webhook (step 12) on the old number for any replies still sent there.
 
+## 12b. Login codes by SMS (MSG91)
+
+The fallback for login codes (ADR 0030, amended 11 October 2026): a code WhatsApp fails to send goes again by SMS, and the client app offers "send by SMS" 30 seconds after the first code. Built, and off until DLT approves the template: each environment's `SMS_PROVIDER` stays `none` until step 5. India requires every business SMS to be registered on DLT first, which takes one to three weeks.
+
+1. **The entity.** Register the company as a Principal Entity on one operator's DLT portal (Jio TrueConnect, Airtel, Vi Vilpower or BSNL; one covers all). It takes the company's PAN, GST certificate and a letter of authorisation. Keep the Entity ID.
+2. **The header.** On the same portal, register a six-letter sender ID for service messages, such as `MANEMN`.
+3. **The template.** Register a content template, type _Service Implicit_, under that header, with exactly this text:
+
+   ```
+   {#var#} is your Mane Man code. It expires in 10 minutes. Don't share it with anyone.
+
+   @app.maneman.in #{#var#}
+   ```
+
+   The last line lets Chrome on Android fill the code in by itself; it must stay exactly as written. Keep the DLT template ID.
+
+4. **MSG91.** In MSG91 (SMS → DLT), add the Entity ID and the header. Then add the template (SMS → Templates) with its DLT template ID and the same text, each `{#var#}` written `##otp##`. Keep the template ID MSG91 gives it, and set it for the environment with `W secret put MSG91_SMS_TEMPLATE_ID --env <env>`. `MSG91_AUTH_KEY` is the same key as section 12a's: put it now if 12a isn't done.
+5. **The switch.** A pull request sets `SMS_PROVIDER` to `"msg91"` in that environment's vars. Once it is deployed, sign in to the client app and tap **Send by SMS instead** once it shows: the code arrives by SMS from the header. Workers Logs shows `login_code_sent` with `channel: "sms"`, or MSG91's reason under `login_code_failed`.
+
 ## 13. The address search (Google Maps Platform)
 
 The client app's address form searches for a building and keeps a coordinate for the check-in's geofence (docs/decisions/0054-address-capture.md). Until this is done, `GEOCODE_PROVIDER` stays `none`: the form takes a typed address, saves no coordinate, and nothing calls Google.

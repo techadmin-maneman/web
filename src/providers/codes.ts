@@ -1,10 +1,12 @@
 // Sends a one-time login code (docs/decisions/0030-one-time-codes.md). WhatsApp
 // goes through the messaging provider, like every other message. SMS needs a
-// DLT-registered provider; until one is chosen SMS_PROVIDER is "none" and the
-// app offers WhatsApp only. The code is never logged.
+// DLT-registered template: MSG91 sends it once SMS_PROVIDER is "msg91"; until
+// then it is "none" and the app offers WhatsApp only. The code is never logged.
 
-import type { Logger } from "../log.ts";
+import type { Msg91SmsSettings } from "../config/msg91.ts";
 import type { MessagingProvider, SendResult } from "./messaging/index.ts";
+import { sendSmsCode } from "./msg91-sms.ts";
+import type { VendorFetchDependencies } from "./vendor-fetch.ts";
 
 export type CodeChannel = "whatsapp" | "sms";
 
@@ -16,11 +18,16 @@ export interface CodeSender {
   send(channel: CodeChannel, to: string, code: string): Promise<SendResult>;
 }
 
-export function createCodeSender(smsProvider: string, deps: { messaging: MessagingProvider; log: Logger }): CodeSender {
+export function createCodeSender(
+  smsProvider: string,
+  sms: Msg91SmsSettings | null,
+  deps: VendorFetchDependencies & { messaging: MessagingProvider },
+): CodeSender {
   return {
     smsAvailable: smsProvider !== "none",
     send(channel, to, code) {
       if (channel === "whatsapp") return deps.messaging.send({ to, template: LOGIN_CODE_TEMPLATE, params: [code] });
+      if (sms !== null) return sendSmsCode(sms, deps, { to, code });
       if (smsProvider === "stub") {
         deps.log.info("sms_stub_send", { template: LOGIN_CODE_TEMPLATE });
         return Promise.resolve({ ok: true, providerMessageId: `stub-${crypto.randomUUID()}` });

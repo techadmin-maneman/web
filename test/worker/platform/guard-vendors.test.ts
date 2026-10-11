@@ -201,6 +201,24 @@ describe("the address search", () => {
   });
 });
 
+describe("validateStaticConfig: login codes by SMS", () => {
+  it("reads MSG91's key and the login code's template while MSG91 sends SMS, and nothing while SMS is off", () => {
+    const sms = { SMS_PROVIDER: "msg91", MSG91_AUTH_KEY: "msg91-key", MSG91_SMS_TEMPLATE_ID: "tmpl-login" };
+    expect(validateStaticConfig({ ...production, ...sms }).settings.login.sms).toEqual({
+      authKey: "msg91-key",
+      templateId: "tmpl-login",
+    });
+    expect(validateStaticConfig(production).settings.login.sms).toBeNull();
+  });
+
+  it("requires both while MSG91 sends SMS", () => {
+    expect(problemsOf({ ...production, SMS_PROVIDER: "msg91" })).toEqual([
+      "MSG91_AUTH_KEY is not set",
+      "MSG91_SMS_TEMPLATE_ID is not set",
+    ]);
+  });
+});
+
 describe("validateStaticConfig: MSG91", () => {
   const msg91 = {
     MESSAGING_PROVIDER: "msg91",

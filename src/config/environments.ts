@@ -130,9 +130,10 @@ export const PROVIDER_VARS = {
   MESSAGING_PROVIDER: ["evolution", "msg91", "stub"],
   // Verifies the Cloudflare Access token on the ops surface (docs/decisions/0031-access-and-audit.md).
   ACCESS_PROVIDER: ["cloudflare", "stub"],
-  // Login codes by SMS need a DLT-registered provider. Until one is chosen, "none": the app offers WhatsApp only
-  // (docs/decisions/0030-one-time-codes.md). "none" is not a stub, so production may hold it.
-  SMS_PROVIDER: ["none", "stub"],
+  // Login codes by SMS need a template DLT has approved. Until it is, "none": the app offers WhatsApp only, and a
+  // code WhatsApp fails to send goes nowhere else (docs/decisions/0030-one-time-codes.md). "none" is not a stub, so
+  // production may hold it.
+  SMS_PROVIDER: ["none", "stub", "msg91"],
   // Zoho Books, for customers, invoices and receipts. "none" until the client surface is switched on where it runs.
   BOOKS_PROVIDER: ["zoho", "stub", "none"],
   // Razorpay, for payments (docs/decisions/0044-payments-mirror.md): test keys on staging, none in production until

@@ -6,7 +6,7 @@
 
 import type { EvolutionSettings } from "./evolution.ts";
 import type { SentryDsn } from "../lib/sentry-dsn.ts";
-import type { Msg91Settings } from "./msg91.ts";
+import type { Msg91Settings, Msg91SmsSettings } from "./msg91.ts";
 import { ENABLED_SURFACES, type EnvironmentName } from "./environments.ts";
 import { type GstRegistration } from "./gst.ts";
 import { Reader, type Env } from "./env-reader.ts";
@@ -157,6 +157,8 @@ export interface LoginSettings {
    * login screens without reading a WhatsApp nobody owns. The guard refuses it anywhere else.
    */
   readonly testRecordCode: string | null;
+  /** Present when SMS_PROVIDER is "msg91". */
+  readonly sms: Msg91SmsSettings | null;
 }
 
 export interface Settings {
@@ -263,7 +265,7 @@ export function readSettings(
       'BOOKS_PROVIDER is "none" while the client surface is on: invoices and receipts come from Zoho Books',
     );
   }
-  const login = readLogin(read, environment, clientOn);
+  const login = readLogin(read, providers, { environment, clientOn });
 
   const devRoutes = read.optionalText("DEV_ROUTES");
   if (devRoutes !== null && environment !== "local") {

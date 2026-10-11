@@ -18,7 +18,7 @@ import type {
 import { type GstRegistration, GSTIN_FORMAT, STATE_CODE_FORMAT, SAC_FORMAT } from "./gst.ts";
 import type { EvolutionSettings } from "./evolution.ts";
 import { parseDsn } from "../lib/sentry-dsn.ts";
-import type { Msg91Settings } from "./msg91.ts";
+import type { Msg91Settings, Msg91SmsSettings } from "./msg91.ts";
 
 /**
  * The most GEOCODE_DAILY_CEILING may be set to. Google's India price list gives
@@ -219,8 +219,12 @@ export function readAccess(
   return { teamDomain, opsAudience: opsOn ? read.text("ACCESS_OPS_AUD") : read.optionalText("ACCESS_OPS_AUD") };
 }
 
-/** The login codes: their pepper, their limits, and locally a fixed code. */
-export function readLogin(read: Reader, environment: EnvironmentName | undefined, clientOn: boolean): LoginSettings {
+/** The login codes: their pepper, their limits, locally a fixed code, and who sends them by SMS. */
+export function readLogin(
+  read: Reader,
+  providers: ProvidersRead,
+  { environment, clientOn }: { environment: EnvironmentName | undefined; clientOn: boolean },
+): LoginSettings {
   const isLocal = environment === "local";
   const login: LoginSettings = {
     codePepper: clientOn ? read.key("OTP_PEPPER") : (read.optionalText("OTP_PEPPER") ?? ""),
@@ -230,6 +234,7 @@ export function readLogin(read: Reader, environment: EnvironmentName | undefined
     techCodeDailyCeiling: read.fixedLimit("OTP_TECH_DAILY_CEILING", isLocal),
     fixedCode: read.optionalText("OTP_FIXED_CODE"),
     testRecordCode: read.optionalText("STAGING_TEST_RECORD_CODE"),
+    sms: readSms(read, providers),
   };
   if (login.fixedCode !== null && !isLocal) {
     read.problems.push("OTP_FIXED_CODE is set outside local: every login code would be known");
@@ -283,6 +288,12 @@ function readEvolution(read: Reader, providers: ProvidersRead): EvolutionSetting
     read.problems.push("EVOLUTION_API_URL must be an https:// URL");
   }
   return evolution;
+}
+
+/** MSG91's SMS, when SMS_PROVIDER is msg91: the same key as its WhatsApp, and the template DLT approved. */
+function readSms(read: Reader, providers: ProvidersRead): Msg91SmsSettings | null {
+  if (providers.SMS_PROVIDER !== "msg91") return null;
+  return { authKey: read.text("MSG91_AUTH_KEY"), templateId: read.text("MSG91_SMS_TEMPLATE_ID") };
 }
 
 /** MSG91's WhatsApp Business Platform, when MESSAGING_PROVIDER is msg91. */

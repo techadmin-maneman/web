@@ -2,9 +2,10 @@
 // so a real send takes no longer to answer than a challenge that sends nothing. The answer
 // is the same either way, so a code that is not sent says why in the log, and only there.
 //
-// A code that does not go leaves nobody able to sign in, so failures are counted
-// by the hour, and the third in an hour tells ops; the next code that does go
-// closes the alert (docs/decisions/0067-alerts-and-silent-failures.md).
+// A code that does not go leaves nobody able to sign in. One WhatsApp fails to send goes again by SMS, the same
+// code, wherever SMS is on; one that goes neither way counts as failed. Failures are counted by the hour, and the
+// third in an hour tells ops; the next code that does go closes the alert
+// (docs/decisions/0067-alerts-and-silent-failures.md).
 //
 // Every code asked for, a first one or one sent again, counts against its number's day and its address's hour,
 // whoever holds the number. Only a code that is sent counts against the day's ceiling, so a number nobody here
@@ -157,19 +158,34 @@ export async function sendCodeAfterResponse({
       log.info("login_code_not_sent", { channel, reason: "number not on the allowlist" });
       return;
     }
-    const result = await deps.codes.send(channel, mobileE164, code);
-    if (result.ok) {
-      log.info("login_code_sent", { channel });
-      await deps.resolveAlert("login_codes_failing");
-      return;
+    const failed = await sendOne(c, { channel, to: mobileE164, code });
+    if (failed === null) return;
+    // A number not on WhatsApp, or the bridge down: the same code goes by SMS, where there is SMS.
+    if (channel === "whatsapp" && deps.codes.smsAvailable) {
+      if ((await sendOne(c, { channel: "sms", to: mobileE164, code, fallback: true })) === null) return;
     }
-    const detail = scrubString(result.detail).slice(0, 200);
-    log.warn("login_code_failed", { channel, detail });
-    await countFailure(c, detail);
+    await countFailure(c, failed);
   })().catch((error: unknown) => {
     log.error("login_code_error", { channel, error });
   });
   await afterResponse(c, work);
+}
+
+/** Sends the code one way: null once it has gone, else what the provider said, as it is logged. */
+async function sendOne(
+  c: Context<AppEnv>,
+  { channel, to, code, fallback = false }: { channel: CodeChannel; to: string; code: string; fallback?: boolean },
+): Promise<string | null> {
+  const { log, deps } = c.var;
+  const result = await deps.codes.send(channel, to, code);
+  if (result.ok) {
+    log.info("login_code_sent", fallback ? { channel, fallback } : { channel });
+    await deps.resolveAlert("login_codes_failing");
+    return null;
+  }
+  const detail = scrubString(result.detail).slice(0, 200);
+  log.warn("login_code_failed", { channel, detail });
+  return detail;
 }
 
 async function countFailure(c: Context<AppEnv>, detail: string): Promise<void> {

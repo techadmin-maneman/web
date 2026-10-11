@@ -3,6 +3,7 @@
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
+import type { CodeChannel } from "../../../src/providers/codes.ts";
 import {
   captureLogs,
   fakeDependencies,
@@ -85,6 +86,48 @@ describe("a login code that does not go", () => {
       "3 login codes failed to send in the last hour, the latest with HTTP 500 INTERNAL_SERVER_ERROR. Clients " +
         'and technicians cannot sign in. Check the WhatsApp bridge (runbook, "WhatsApp (Evolution) is down").',
     ]);
+  });
+
+  it("goes again by SMS, the same code, and counts as sent once SMS takes it", async () => {
+    const sent: { channel: CodeChannel; code: string }[] = [];
+    useDependencies(
+      fakeDependencies({
+        now: () => clock,
+        codes: {
+          smsAvailable: true,
+          send: (channel, _to, code) => {
+            sent.push({ channel, code });
+            if (channel === "sms") return Promise.resolve({ ok: true, providerMessageId: "sms-1" });
+            return Promise.resolve({ ok: false, transient: false, detail: "HTTP 400 not on WhatsApp" });
+          },
+        },
+      }),
+    );
+    await tries(3);
+    expect(sent.map((one) => one.channel)).toEqual(["whatsapp", "sms", "whatsapp", "sms", "whatsapp", "sms"]);
+    expect(sent[1]?.code).toBe(sent[0]?.code);
+    expect(deps.alerts).toEqual([]);
+    expect(logs.lines()).toContainEqual(
+      expect.objectContaining({ event: "login_code_sent", channel: "sms", fallback: true }),
+    );
+  });
+
+  it("goes nowhere else while SMS is off", async () => {
+    const channels: CodeChannel[] = [];
+    useDependencies(
+      fakeDependencies({
+        now: () => clock,
+        codes: {
+          smsAvailable: false,
+          send: (channel) => {
+            channels.push(channel);
+            return Promise.resolve({ ok: false, transient: true, detail: "HTTP 500" });
+          },
+        },
+      }),
+    );
+    await tries(1);
+    expect(channels).toEqual(["whatsapp"]);
   });
 
   it("is forgotten once a code goes through, so the next run of failures is told afresh", async () => {

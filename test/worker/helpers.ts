@@ -61,6 +61,7 @@ export const LOCAL_SETTINGS: Settings = {
     techCodeDailyCeiling: 100,
     fixedCode: null,
     testRecordCode: null,
+    sms: null,
   },
   tryon: {
     uploadIpHourlyLimit: 5,
