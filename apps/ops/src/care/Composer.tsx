@@ -9,6 +9,7 @@ import type { Answer } from "../api.ts";
 import { careApi, type ChatThread, type CloseReason } from "./care-api.ts";
 import { care as copy } from "../content/care.ts";
 import { Refused } from "../settings/index.ts";
+import { QuickReplyPick } from "./QuickReplies.tsx";
 import styles from "../components/forms.module.css";
 import own from "./care.module.css";
 
@@ -80,6 +81,8 @@ function ReasonChoice({ reason, onReason }: { reason: CloseReason; onReason: (re
 
 export function Composer(props: {
   readonly conversationId: string;
+  /** Whose chat it is, for a quick reply's {name} and {next_visit}. */
+  readonly client: { readonly name: string | null; readonly personId: string | null };
   readonly onThread: (thread: ChatThread, said: string) => void;
 }) {
   const { conversationId } = props;
@@ -103,6 +106,7 @@ export function Composer(props: {
   return (
     <div className={own.compose}>
       <div className={styles.fields}>
+        <QuickReplyPick name={props.client.name} personId={props.client.personId} onPick={setText} />
         <ReplyBox text={text} onText={setText} />
       </div>
       <div className={styles.actions}>

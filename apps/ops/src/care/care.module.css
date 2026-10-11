@@ -155,6 +155,10 @@
   margin-left: var(--sp-16);
 }
 
+.quick {
+  padding: 0 var(--sp-20) var(--sp-16);
+}
+
 .stranger {
   margin-bottom: var(--sp-12);
 }

@@ -34,6 +34,12 @@ const STRANGER: Conversation = {
 
 const LEAVE = { id: "7b0c8e3a-4d59-4a6b-8c7d-2e3f4a5b6c7d", from: "2026-10-20", to: "2026-10-22" };
 
+const LATE = {
+  id: "5a6b7c8d-9e0f-4a1b-8c2d-3e4f5a6b7c8d",
+  title: "See you soon",
+  text: "Hi {name}, see you {next_visit}.",
+};
+
 let page: HTMLDivElement;
 let root: Root;
 let asked: string[];
@@ -58,6 +64,7 @@ beforeEach(() => {
         };
         return Promise.resolve(Response.json({ clients: [found], more: false }));
       }
+      if (address.pathname === "/api/quick-replies") return Promise.resolve(Response.json(LATE));
       if (address.pathname.endsWith("/link") || address.pathname.endsWith("/save")) {
         return Promise.resolve(Response.json({ person_id: ARJUN.person?.id }));
       }
@@ -110,6 +117,7 @@ beforeEach(() => {
       const view = address.searchParams.get("view");
       return Promise.resolve(Response.json({ conversations: view === "closed" ? [] : [ARJUN, STRANGER] }));
     }
+    if (address.pathname === "/api/quick-replies") return Promise.resolve(Response.json({ replies: [LATE] }));
     if (address.pathname === `/api/clients/${ARJUN.person?.id ?? ""}`) {
       const visit = {
         id: "v1",
@@ -250,6 +258,53 @@ describe("the Messages page", () => {
     ]);
     expect(page.textContent).toContain(copy.carePerson.moved("ravi@maneman.test"));
     expect(page.textContent).toContain(`${copy.carePerson.label}: ravi@maneman.test`);
+  });
+
+  it("fills a quick reply in with the client's first name and next visit", async () => {
+    await show();
+    await act(async () => {
+      page.querySelector<HTMLButtonElement>(`button[aria-label="${copy.openLabel("Arjun Mehta")}"]`)?.click();
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
+    const pick = [...page.querySelectorAll("select")].find((each) =>
+      [...each.options].some((option) => option.value === LATE.id),
+    );
+    await act(async () => {
+      if (pick !== undefined) {
+        pick.value = LATE.id;
+        pick.dispatchEvent(new Event("change", { bubbles: true }));
+      }
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
+    const box = [...page.querySelectorAll("textarea")].find((each) => each.maxLength === 4096);
+    expect(box?.value).toBe("Hi Arjun, see you Thu 24 Sep, 12 pm.");
+  });
+
+  it("keeps the quick replies, adding one", async () => {
+    await show();
+    const list = page.querySelector('[aria-labelledby="quick-replies"]') ?? page;
+    expect(list.textContent).toContain(LATE.title);
+    const title = page.querySelector<HTMLInputElement>('input[maxlength="60"]');
+    const text = [...page.querySelectorAll("textarea")].find((each) => each.maxLength === 1000);
+    act(() => {
+      for (const [field, value] of [
+        [title, "Running late"],
+        [text, "Hi {name}, about 20 minutes away."],
+      ] as const) {
+        if (field === null || field === undefined) continue;
+        const proto = field instanceof HTMLTextAreaElement ? HTMLTextAreaElement.prototype : HTMLInputElement.prototype;
+        Object.getOwnPropertyDescriptor(proto, "value")?.set?.call(field, value);
+        field.dispatchEvent(new Event("input", { bubbles: true }));
+      }
+    });
+    await act(async () => {
+      [...page.querySelectorAll("button")].find((each) => each.textContent.trim() === copy.quick.add)?.click();
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
+    expect(posted.at(-1)).toEqual({
+      path: "/api/quick-replies",
+      body: { title: "Running late", text: "Hi {name}, about 20 minutes away." },
+    });
   });
 
   it("shows the client beside the chat, with the ways into their page", async () => {

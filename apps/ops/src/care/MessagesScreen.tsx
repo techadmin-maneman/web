@@ -15,6 +15,7 @@ import { care as copy } from "../content/care.ts";
 import { SECTION_NAMES } from "../route.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import { CareTeam } from "./CareTeam.tsx";
+import { QuickRepliesPanel } from "./QuickReplies.tsx";
 import { Thread, whenOf, whoOf } from "./Thread.tsx";
 import styles from "../components/forms.module.css";
 import own from "./care.module.css";
@@ -170,6 +171,9 @@ export function MessagesScreen() {
         </Panel>
         <Panel titleId="care-team" title={copy.team.title} className={styles.panel}>
           <CareTeam />
+        </Panel>
+        <Panel titleId="quick-replies" title={copy.quick.panel} className={styles.panel}>
+          <QuickRepliesPanel />
         </Panel>
       </div>
     </Shell>

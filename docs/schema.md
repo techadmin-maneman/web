@@ -23,7 +23,7 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 | Discount codes | `discount_codes`, `discount_code_uses` | A code made or switched off since goes back, and a use since is forgotten, so a single-use code works again | Making or switching off the code again in the console. `discount_code_uses` is only ever added to |
 | Bookings and moves | `appointments`, `slot_holds`, `slot_claims`, `dispatch_moves`, `move_proposals`, `visit_changes`, `consultation_requests`, `first_fit_requests` | A visit booked, moved or cancelled since is lost, and its time can be booked again. Where FSM still holds visits, the cron books them there a second time | The rows since `<T>`, before the switch is turned off |
 | Messages | `outbound_messages` | The sweeper sends again what was sent since | The rows since `<T>`, before the switch is turned off |
-| The Care inbox | `conversations`, `chat_messages`, `care_owners`, `care_weekly_off`, `care_leave`, `care_names`, `city_matters` | A message written since, the client's or ours, is gone from its thread | The rows since `<T>`; WhatsApp's own copy shows what was said |
+| The Care inbox | `conversations`, `chat_messages`, `care_owners`, `care_weekly_off`, `care_leave`, `care_names`, `city_matters`, `quick_replies` | A message written since, the client's or ours, is gone from its thread | The rows since `<T>`; WhatsApp's own copy shows what was said |
 | Technicians' steps, pieces and photographs | `job_events`, `checkins`, `visits`, `consumables_used`, `no_show_cases`, `no_show_disputes`, `pieces`, `photos`, `photo_sets` | Steps, check-ins, outcomes, pieces fitted, no-shows and disputes since are lost; a photograph's file is kept with no row | The rows since `<T>` |
 | Hair profiles | `hair_profiles` | A profile recorded since is lost, and one an erasure blanked since is whole again | Adding the rows since `<T>`: they are only ever added. Erasing again blanks the rest |
 | Stock | `stock_movements` | A delivery, transfer, count or loss recorded since, or a job's use, is lost, so what each kit and the store hold is wrong | Adding the rows since `<T>` |
@@ -102,6 +102,7 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 - [photos](#photos): One photograph of a set, by its angle, and where it and its thumbnail are kept in R2 (ADR 0028, ADR 0093).
 - [pieces](#pieces): Each piece fitted, its base and lot, the day it was fitted and the day it falls due, and a failure with its reason. `fsm_id` is FSM's ID for a piece mirrored from FSM, otherwise the row's own (ADR 0032, ADR 0110).
 - [price_book](#price_book): Every price from its date, and the only source of prices; an old row stays for what was sold under it (ADR 0045, ADR 0061).
+- [quick_replies](#quick_replies): Saved answers Customer Care pick in a chat, kept by a Customer Care manager (ADR 0141).
 - [razorpay_events](#razorpay_events): Each Razorpay webhook event, once, by its event ID (ADR 0044).
 - [referral_attributions](#referral_attributions): A person who came through an invite, to the first invite they used, what became of its grant, and who attached it and why where ops did (ADR 0048, ADR 0089).
 - [referral_channels](#referral_channels): Partners who send us clients on their own code: the friend's reward and the partner's commission (ADR 0123).
@@ -1602,6 +1603,21 @@ Made by `0016_booking.sql`.
 | `amount_ex_gst` | INTEGER | no |  |  |
 | `gst_percent` | INTEGER | no |  |  |
 | `valid_from` | TEXT | no |  | primary key |
+
+## quick_replies
+
+Saved answers Customer Care pick in a chat, kept by a Customer Care manager (ADR 0141).
+
+Made by `0122_quick_replies.sql`.
+
+| Column | Type | May be empty | Default | Key |
+| --- | --- | --- | --- | --- |
+| `id` | TEXT | no |  | primary key |
+| `title` | TEXT | no |  |  |
+| `text` | TEXT | no |  |  |
+| `created_by` | TEXT | no |  |  |
+| `created_at` | TEXT | no |  |  |
+| `retired_at` | TEXT | yes |  |  |
 
 ## razorpay_events
 
