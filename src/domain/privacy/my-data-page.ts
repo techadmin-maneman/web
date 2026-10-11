@@ -3,7 +3,8 @@
 
 import { fullDate, indiaClock, longDate } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";
-import { MY_DATA, type Field, type Part } from "../../config/my-data.ts";
+import { MY_DATA } from "../../config/my-data.ts";
+import type { Field, Part } from "../../config/my-data-fields.ts";
 import { NOTICES } from "../../config/notices.ts";
 
 /**

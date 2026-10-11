@@ -72,6 +72,9 @@ export const ROWS_AT_T: readonly string[] = [
   // A matter sent to their city (docs/decisions/0135-city-matters.md).
   `INSERT INTO city_matters (id, person_id, conversation_id, city, note, raised_by, raised_at)
      VALUES ('cm-city-1', 'p1', 'cv1', 'Gurgaon', 'Needs a re-fit.', 'care@maneman.in', '${AT}')`,
+  // A free visit Care gave them (docs/decisions/0143-remedies.md).
+  `INSERT INTO remedies (id, person_id, visits, reason, note, given_by, given_at, state)
+     VALUES ('rm1', 'p1', 1, 'fit_problem', 'Edge lifting.', 'care@maneman.in', '${AT}', 'given')`,
   // A saved answer (docs/decisions/0141-quick-replies.md).
   `INSERT INTO quick_replies (id, title, text, created_by, created_at)
      VALUES ('qr1', 'Booked', 'You are booked for {next_visit}.', 'lead@maneman.in', '${AT}')`,

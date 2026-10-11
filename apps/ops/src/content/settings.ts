@@ -215,6 +215,8 @@ export const settings = {
         friend_visits: "Friend",
         valid_days: "Free visits valid for",
       },
+      // Remedies (docs/decisions/0143-remedies.md).
+      remedy_limit: { visits: "Free visits", days: "Over" },
       // The reply clock (docs/decisions/0132-the-reply-clock.md).
       care_hours: {
         opens: "Care opens",
