@@ -228,7 +228,7 @@ function grantStatements({
 }
 
 /** A first fit that counts: any but a one visit, and a one visit once it is paid or owes nothing. */
-const PAID = `(a.one_visit IS NULL OR a.nothing_owed_at IS NOT NULL OR EXISTS (SELECT 1 FROM payments p
+export const FIRST_FIT_COUNTS = `(a.one_visit IS NULL OR a.nothing_owed_at IS NOT NULL OR EXISTS (SELECT 1 FROM payments p
       WHERE p.appointment_id = a.id AND p.kind = 'visit' AND ${statusIn("p.status", PAYMENT_HELD)}))`;
 
 // Each referral with its friend's first fit done.
@@ -236,7 +236,7 @@ const PAID = `(a.one_visit IS NULL OR a.nothing_owed_at IS NOT NULL OR EXISTS (S
 // save sorting the few pending referrals, and the five-minute cron would read them all on each run.
 const ATTRIBUTION = `SELECT r.id, r.code, rc.person_id AS referrer_id, rp.erased_at AS referrer_erased,
     r.referred_person_id, fp.name AS friend_name, fp.erased_at AS friend_erased, a.id AS first_fit_id,
-    a.window_start, r.via, pin.launched_at, r.referrer_visits, r.friend_visits, r.credit_valid_days, ${PAID} AS paid
+    a.window_start, r.via, pin.launched_at, r.referrer_visits, r.friend_visits, r.credit_valid_days, ${FIRST_FIT_COUNTS} AS paid
   FROM referral_attributions r
   JOIN referral_codes rc ON rc.code = r.code JOIN people rp ON rp.id = rc.person_id
   JOIN people fp ON fp.id = r.referred_person_id
@@ -247,7 +247,7 @@ const FIT_DONE = `JOIN visits v ON v.appointment_id = a.id AND v.outcome = 'done
   LEFT JOIN serviceable_pincodes pin ON pin.pincode = r.pincode`;
 
 /** The pending referrals one pass settles, the earliest first fit that counts first. */
-const PENDING_SETTLEMENTS = `${ATTRIBUTION} AND ${PAID} ${FIT_DONE}
+const PENDING_SETTLEMENTS = `${ATTRIBUTION} AND ${FIRST_FIT_COUNTS} ${FIT_DONE}
   WHERE r.grant_state = 'pending' AND fp.erased_at IS NULL ORDER BY a.window_start LIMIT ?1`;
 
 /**
@@ -271,7 +271,7 @@ interface AttributionRow {
   referrer_visits: number | null;
   friend_visits: number | null;
   credit_valid_days: number | null;
-  /** 1 once the first fit counts (PAID). */
+  /** 1 once the first fit counts (FIRST_FIT_COUNTS). */
   paid: number;
 }
 

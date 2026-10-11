@@ -30,6 +30,11 @@ export const AUDIT_ACTIONS = [
   // from its page (docs/decisions/0089-an-invite-is-not-lost.md).
   "referral.decide",
   "referral.attach",
+  // Partners who send us clients on their own code (docs/decisions/0123-partner-referral-channels.md).
+  "channel.add",
+  "channel.change",
+  "channel.pause",
+  "channel.resume",
   // Ops opening one of a client's photographs (docs/decisions/0031-access-and-audit.md).
   "photo.view",
   // A client's rights over their data (docs/decisions/0049-dpdp.md).

@@ -172,6 +172,21 @@ type AttributionOutcome =
     };
 
 /**
+ * The partner's code a person came through first, if any: they then stay the partner's
+ * (docs/decisions/0123-partner-referral-channels.md).
+ */
+async function partnerCodeOf(db: D1Database, personId: string): Promise<string | null> {
+  const row = await db
+    .prepare(
+      `SELECT c.code FROM channel_attributions a JOIN referral_channels c ON c.id = a.channel_id
+       WHERE a.referred_person_id = ?1`,
+    )
+    .bind(personId)
+    .first<{ code: string }>();
+  return row?.code ?? null;
+}
+
+/**
  * Attributes a person to an invite, if they are new to referrals: not the referrer, not already attributed,
  * and, on their own link, not already fitted. Says whether they now carry the invite's credits, and whether the
  * invite they were held under has lapsed, which it is marked as, so it promises nothing more. It records the line
@@ -192,6 +207,8 @@ export async function attribute(
   },
 ): Promise<AttributionOutcome> {
   if (input.personId === input.invite.referrerId) return { outcome: "own_invite" };
+  const partner = await partnerCodeOf(db, input.personId);
+  if (partner !== null) return { outcome: "already_attributed", code: partner, credits: false, lapsed: false };
   const fitted = await db
     .prepare(
       `SELECT id FROM appointments WHERE person_id = ?1 AND type = 'first_fit' AND status = 'completed'

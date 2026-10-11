@@ -17,5 +17,9 @@ export async function countInviteMiss(db: D1Database, ipHash: string, at: Counte
 export async function countInviteOpen(db: D1Database, code: string, ipHash: string, at: CountedAt): Promise<void> {
   const firstToday = await takeOne(db, "invite_open", `${code}:${ipHash}`, at);
   if (!firstToday) return;
-  await db.prepare("UPDATE referral_codes SET opens = opens + 1 WHERE code = ?1").bind(code).run();
+  // A client's code or a partner's: no code is both (src/domain/referrals/channels.ts).
+  await db.batch([
+    db.prepare("UPDATE referral_codes SET opens = opens + 1 WHERE code = ?1").bind(code),
+    db.prepare("UPDATE referral_channels SET opens = opens + 1 WHERE code = ?1").bind(code),
+  ]);
 }

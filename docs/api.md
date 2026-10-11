@@ -2193,6 +2193,28 @@ Razorpay's webhook: payments and refunds
       ],
       "description": "Only if the referrer agreed to be named, and naming is on (REFERRER_NAME_ON_INVITE)."
     },
+    "partner": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "A partner's name, where the code is a partner's rather than a client's (docs/decisions/0123-partner-referral-channels.md); null otherwise."
+    },
+    "friend_visits": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "A partner's own service visits for the friend; null for a client's invite, which gives the reward in force."
+    },
     "card": {
       "type": "object",
       "properties": {
@@ -2218,6 +2240,8 @@ Razorpay's webhook: payments and refunds
   "required": [
     "state",
     "referrer_first_name",
+    "partner",
+    "friend_visits",
     "card"
   ],
   "additionalProperties": false

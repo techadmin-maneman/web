@@ -8,7 +8,8 @@ import { testRecordAtCreation } from "../../policy/staging-test-records.ts";
 import { pincodeOf } from "../clients/service-area.ts";
 import type { LeadAttribution } from "../leads/leads.ts";
 import { type ConsentRule, recordConsent } from "../privacy/consents.ts";
-import { type Invite, type InviteState, hasAskedForAVisit } from "../referrals/referrals.ts";
+import { type InviteState, hasAskedForAVisit } from "../referrals/referrals.ts";
+import { clientCodeOf, type AnyInvite } from "../referrals/channels.ts";
 import { personWithMobile, formPerson } from "./form-person.ts";
 import {
   type FormRequest,
@@ -28,7 +29,7 @@ export interface WaitlistRequest {
   readonly launchAlert: boolean;
   readonly turnstileToken: string;
   readonly attribution: LeadAttribution;
-  readonly invite: Invite | null;
+  readonly invite: AnyInvite | null;
   /** The line beside the invite that told the friend their referrer hears of the fit; null where the page showed none. */
   readonly toldNotice: ToldNotice | null;
   /**
@@ -51,7 +52,11 @@ interface Listed {
  * join a list with a number, so the list never attributes a client already in the funnel; ops may attach their invite
  * on the client's page instead.
  */
-async function waitlistInvite(db: D1Database, knownId: string | null, invite: Invite | null): Promise<Invite | null> {
+async function waitlistInvite(
+  db: D1Database,
+  knownId: string | null,
+  invite: AnyInvite | null,
+): Promise<AnyInvite | null> {
   if (invite === null || knownId === null) return invite;
   if (await hasAskedForAVisit(db, knownId)) return null;
   return invite;
@@ -117,7 +122,7 @@ export async function joinTheWaitlist(
            created_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?5)
          ON CONFLICT (pincode, person_id) DO UPDATE SET launch_alert = MAX(launch_alert, excluded.launch_alert)`,
       )
-      .bind(crypto.randomUUID(), request.pincode, personId, invite?.code ?? null, at, request.launchAlert ? 1 : 0),
+      .bind(crypto.randomUUID(), request.pincode, personId, clientCodeOf(invite), at, request.launchAlert ? 1 : 0),
     waitlistConfirmation(db, { personId, pincode: request.pincode, now }),
   ]);
   const confirmation = written.at(-1)?.results[0]?.id;

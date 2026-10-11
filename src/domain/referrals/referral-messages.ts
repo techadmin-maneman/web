@@ -64,7 +64,8 @@ export async function composeFriendFitted(
 }
 
 /**
- * The friend's message: the invite's credits are theirs, and until when. It does not name the referrer, whose
+ * The friend's message: the invite's credits are theirs, and until when, a client's invite or a partner's
+ * (docs/decisions/0123-partner-referral-channels.md). It does not name the referrer, whose
  * name the invite itself shows only with their consent (ADR 0048). Sent with the friend's consent to WhatsApp
  * about visits, which the landing's consultation line records; the credits are service visits.
  */
@@ -76,11 +77,14 @@ export async function composeFriendCredited(
   if (!(await consentGiven(db, friendId, "whatsapp_visits"))) return { skip: NO_VISITS_CONSENT };
   const row = await db
     .prepare(
-      `SELECT fp.name, g.visits, g.expires_at FROM referral_attributions r
+      `SELECT fp.name, g.visits, g.expires_at FROM (
+         SELECT id, referred_person_id FROM referral_attributions WHERE grant_state IN ('granted', 'approved')
+         UNION ALL
+         SELECT id, referred_person_id FROM channel_attributions WHERE grant_state = 'granted') r
        JOIN people fp ON fp.id = r.referred_person_id
        JOIN credit_ledger g ON g.kind = 'grant' AND g.source_kind = 'referral' AND g.source_id = r.id
          AND g.person_id = r.referred_person_id AND g.expires_at IS NOT NULL
-       WHERE r.id = ?1 AND r.referred_person_id = ?2 AND r.grant_state IN ('granted', 'approved')`,
+       WHERE r.id = ?1 AND r.referred_person_id = ?2`,
     )
     .bind(attributionId, friendId)
     .first<{ name: string; visits: number; expires_at: string }>();
