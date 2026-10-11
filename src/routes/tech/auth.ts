@@ -38,7 +38,6 @@ import { clearTechnicianCookie, setTechnicianCookie, technicianOf } from "../../
 import { visitorOf } from "../../http/visitor.ts";
 import { INDIAN_MOBILE_PATTERN, toE164 } from "../../lib/mobile.ts";
 import { CODE_TEXT, newLoginCode } from "../../policy/one-time-code.ts";
-import { isStagingTestName } from "../../lib/test-names.ts";
 
 /** Why an active technician was refused a code, and what they can do, in ops' words. */
 function refusalReason(refusal: Exclude<CodeGate, "open">, login: LoginSettings): string {
@@ -198,8 +197,8 @@ export function registerTechAuth(app: App): void {
 
     const visitor = await visitorOf(c);
     const technician = await findFieldTechnician(db, mobileE164);
-    // A technician ops named as a test is one: ops alone name technicians (src/policy/staging-test-records.ts).
-    const testRecord = technician !== null && isStagingTestName(technician.name);
+    // Marked when they were added, never read from a name a rename could give (src/policy/staging-test-records.ts).
+    const testRecord = technician?.testRecord ?? false;
     const mobileHash = await mobileHashOf(ipHashSalt, mobileE164);
     const asked = await mayAskForCode(c, { surface: "tech", mobileHash, ipHash: visitor.ipHash, now, testRecord });
     if (technician !== null) await keepRefusalAlert(c, technician.id, asked);

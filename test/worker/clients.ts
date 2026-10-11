@@ -18,6 +18,16 @@ export async function technician(id = IMRAN, name = "Imran Qureshi", initials = 
     .run();
 }
 
+/** An active technician in every city we hold, so a pincode anywhere may begin serving (ADR 0117). */
+export async function aTechnicianInEveryCity(): Promise<void> {
+  await env.DB.prepare(
+    `INSERT INTO technicians (id, fsm_id, name, initials, active, updated_at, city)
+     SELECT 'city-' || name, 'city-' || name, 'Kabir Sood', 'KS', 1, ?1, name FROM cities`,
+  )
+    .bind(NOW.toISOString())
+    .run();
+}
+
 /** A client with a saved address in Gurgaon, as booking asks for one before anything is held. */
 export async function client(id: string, mobile = "+919810000001", name = "Rohit Malhotra"): Promise<void> {
   await env.DB.prepare("INSERT INTO people (id, created_at, mobile_e164, name) VALUES (?1, ?2, ?3, ?4)")

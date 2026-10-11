@@ -66,17 +66,18 @@ describe("POST /api/holds", () => {
     expect(d1TripsOf(answer)).toBeLessThanOrEqual(HOLD_TRIPS);
   });
 
-  it("never holds a client's visit with the technician of the visit before it, nor the one after", async () => {
+  // Never the same technician twice in a row, unless nobody else in the city is free (ADR 0117).
+  it("holds a client's visit with neither the technician before it nor after it, unless nobody else is free", async () => {
     const rohit = await client(false, { lastWith: IMRAN });
     expect(await (await hold(rohit, TUESDAY_AFTERNOON)).json()).toMatchObject({
       technician: { name: "Sandeep Rawat" },
     });
 
+    // Imran took Vikram's last visit and Sandeep takes his next, and nobody else works: one of them takes it.
     const vikram = await client(false, { lastWith: IMRAN });
     await visit(vikram.id, "service", "scheduled", "2026-09-28T06:30:00.000Z", SANDEEP);
     const between = await hold(vikram, { ...TUESDAY_AFTERNOON, date: "2026-09-24" });
-    expect(between.status).toBe(409);
-    expect((await between.json<{ error: { code: string } }>()).error.code).toBe("taken");
+    expect(between.status).toBe(201);
   });
 
   it("gives the next client another technician, and the one after that nobody", async () => {

@@ -1638,6 +1638,14 @@ Request body:
 }
 ```
 
+**409**: no_technician: no active technician works in the pincode's city yet
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ### GET /api/referrers
 
 The figures of the referrers in the caller's cities, the busiest first, 50 at a time
@@ -3315,6 +3323,14 @@ Request body:
 }
 ```
 
+**409**: no_technician: fields names a pincode it would begin serving in a city no active technician works in
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ### POST /api/pincodes
 
 Add a pincode the service area does not hold, unserved, in one of our cities
@@ -4947,6 +4963,7 @@ Request body:
             "already_closed",
             "no_service_area",
             "launch_in_future",
+            "no_technician",
             "pincode_held",
             "service_exists",
             "last_of_kind",
@@ -8361,6 +8378,7 @@ Request body:
             "already_closed",
             "no_service_area",
             "launch_in_future",
+            "no_technician",
             "pincode_held",
             "service_exists",
             "last_of_kind",

@@ -203,6 +203,7 @@ describe("a visit ops moved", () => {
     window: "morning" | "afternoon" | "evening",
     date: string,
     reason: MoveReason = "zone_rebalance",
+    at: Date = NOW,
   ) {
     const now = await visitRow();
     const moved = await moveJob(
@@ -216,7 +217,7 @@ describe("a visit ops moved", () => {
         actor: "ops@localhost",
         expected: { technicianId: "t1", startsAt: now?.window_start ?? "" },
       },
-      NOW,
+      at,
     );
     expect(moved.kind).toBe("moved");
   }
@@ -267,7 +268,8 @@ describe("a visit ops moved", () => {
 
   it("counts from the new time once the client moves it themselves", async () => {
     await booked("service", THURSDAY_NOON, 200000);
-    await opsMove("morning", "2026-09-22");
+    // A minute before the client chooses their time, so their move is not one ops overtook.
+    await opsMove("morning", "2026-09-22", "zone_rebalance", new Date(NOW.getTime() - 60_000));
     const app = client();
     const held = await (
       await post(app, "/api/holds", { type: "service", date: "2026-09-22", window: "afternoon", moving: VISIT })

@@ -142,14 +142,17 @@ async function candidatesFor({
   ]);
   if (blackouts.has(date)) return null;
   const beside = techniciansBarredOn(visits, date);
-  const chosen = technicians.filter(
-    (technician) =>
-      !beside.has(technician.id) && (input.technicianId === undefined || technician.id === input.technicianId),
-  );
-  return chosen
+  const fitting = technicians
     .map((technician) => ({ technician, start: placement(held(technician.id, date), window, units) }))
-    .filter((candidate): candidate is { technician: Technician; start: number } => candidate.start !== null)
-    .sort(compareTechniciansForHold(held, date));
+    .filter((candidate): candidate is { technician: Technician; start: number } => candidate.start !== null);
+  // Never the technician of the client's visit before or after, unless nobody else is free (ADR 0117).
+  const others = fitting.filter((candidate) => !beside.has(candidate.technician.id));
+  const byLoad = compareTechniciansForHold(held, date);
+  // A client's move stays with its own technician where they are free.
+  const ownFirst = (candidate: { technician: Technician }) => Number(candidate.technician.id === moving?.technicianId);
+  return (others.length > 0 ? others : fitting)
+    .filter((candidate) => input.technicianId === undefined || candidate.technician.id === input.technicianId)
+    .sort((a, b) => ownFirst(b) - ownFirst(a) || byLoad(a, b));
 }
 
 /** The hold's row: the service, the day, the technician and its start, the price, and the terms it is sold under. */

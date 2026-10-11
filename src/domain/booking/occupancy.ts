@@ -99,23 +99,17 @@ interface VisitPlace {
  * ops set one (docs/decisions/0117-a-technician-takes-visits-in-their-own-city.md).
  */
 const TECHNICIANS_IN_THE_CITY = `SELECT t.id, t.name, t.initials FROM technicians t
-  WHERE t.active = 1 AND t.city = ${visitCity("?1", "?2")}
-  ORDER BY t.name`;
+  WHERE t.active = 1 AND (t.id = ?3 OR t.city = ${visitCity("?1", "?2")})
+  ORDER BY t.id = ?3 DESC, t.name`;
 
-/** Who can take a booking: for a move in place, the visit's own technician; else those in the visit's city. */
+/**
+ * Who can take a booking: the active technicians in the visit's city. A client's move may go to any of them, its own
+ * technician first, who keeps it wherever they work.
+ */
 export async function techniciansFor(db: D1Database, moving: Moving | null, place: VisitPlace): Promise<Technician[]> {
-  if (moving !== null) {
-    const technicians = await activeTechnicians(db);
-    return technicians.filter((technician) => technician.id === moving.technicianId);
-  }
-  const { results } = await db.prepare(TECHNICIANS_IN_THE_CITY).bind(place.pincode, place.personId).all<Technician>();
-  return results;
-}
-
-/** Technicians switched on. Whether one is away on a given day is `occupancy`'s answer, not this one's. */
-async function activeTechnicians(db: D1Database): Promise<Technician[]> {
   const { results } = await db
-    .prepare("SELECT id, name, initials FROM technicians WHERE active = 1 ORDER BY name")
+    .prepare(TECHNICIANS_IN_THE_CITY)
+    .bind(place.pincode, place.personId, moving?.technicianId ?? null)
     .all<Technician>();
   return results;
 }

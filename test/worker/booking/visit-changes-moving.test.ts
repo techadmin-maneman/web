@@ -95,7 +95,7 @@ describe("moving a visit", () => {
     }>();
   }
 
-  it("offers only the visit's technician, leaving its own time out", async () => {
+  it("offers the visit's own technician first, leaving its own time out", async () => {
     await booked("service", THURSDAY_NOON, 200000);
     // Imran's own visit that Thursday afternoon does not count against its move.
     const answer = await get(client(), `/api/availability?type=service&from=2026-09-24&moving=${VISIT}`);
@@ -109,6 +109,27 @@ describe("moving a visit", () => {
       { window: "afternoon", open: true },
       { window: "evening", open: true },
     ]);
+  });
+
+  // A client's free move may go to anyone in their city, their own technician first (ADR 0117).
+  it("moves a visit to another technician in the city where its own is busy at the time chosen", async () => {
+    await booked("service", THURSDAY_NOON, 200000);
+    // Another client's visit fills Imran's Friday evening.
+    await env.DB.prepare(
+      `INSERT INTO appointments (id, fsm_id, type, status, window_start, window_end, technician_id, synced_at)
+       VALUES ('other', 'other', 'service', 'scheduled', '2026-09-25T10:30:00.000Z', '2026-09-25T12:00:00.000Z', 't1', ?1)`,
+    )
+      .bind(NOW.toISOString())
+      .run();
+    const app = client();
+    const held = await hold(app, "service", "2026-09-25", "evening");
+    expect(held).toMatchObject({ price: { amount: 0 }, technician: { name: "Vikram Sethi" } });
+
+    await post(app, `/api/appointments/${VISIT}/reschedule`, { hold_id: held.id });
+    const moved = await env.DB.prepare("SELECT technician_id, window_start FROM appointments WHERE id = ?1")
+      .bind(VISIT)
+      .first();
+    expect(moved).toEqual({ technician_id: "t2", window_start: "2026-09-25T10:30:00.000Z" });
   });
 
   it("moves a visit for free in place, in the request, and its payment carries over", async () => {
@@ -310,7 +331,14 @@ describe("moving a visit", () => {
     const held = await hold(app, "first_fit", "2026-09-28", "morning");
     await post(app, `/api/appointments/${VISIT}/reschedule`, { hold_id: held.id });
     await paidFor(held.id, "pay_fee");
-    await env.DB.prepare("UPDATE appointments SET technician_id = 't2' WHERE id = ?1").bind(VISIT).run();
+    // Ops give it to Sandeep on the board a minute after the client chose the time.
+    await env.DB.batch([
+      env.DB.prepare("UPDATE appointments SET technician_id = 't2' WHERE id = ?1").bind(VISIT),
+      env.DB.prepare(
+        `INSERT INTO dispatch_moves (id, appointment_id, reason, actor, fsm_write_state, created_at, updated_at)
+         VALUES ('m1', ?1, 'zone_rebalance', 'ops@example.com', 'written', ?2, ?2)`,
+      ).bind(VISIT, new Date(NOW.getTime() + 60_000).toISOString()),
+    ]);
 
     expect(await confirmBooking({ db: env.DB, payments: payments, now: NOW, log: createLogger() }, held.id)).toBe(
       "refunded",

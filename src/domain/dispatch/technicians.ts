@@ -17,6 +17,8 @@ interface FieldTechnician {
   readonly id: string;
   readonly name: string;
   readonly mobileE164: string;
+  /** Made by one of our own scripts for staging, as marked when they were added (technicians.test_record). */
+  readonly testRecord: boolean;
 }
 
 /**
@@ -26,11 +28,12 @@ interface FieldTechnician {
 export async function findFieldTechnician(db: D1Database, mobileE164: string): Promise<FieldTechnician | null> {
   const row = await db
     .prepare(
-      "SELECT id, name FROM technicians WHERE mobile_e164 = ?1 AND active = 1 ORDER BY hand_written, rowid LIMIT 1",
+      `SELECT id, name, test_record FROM technicians WHERE mobile_e164 = ?1 AND active = 1
+       ORDER BY hand_written, rowid LIMIT 1`,
     )
     .bind(mobileE164)
-    .first<{ id: string; name: string }>();
-  return row === null ? null : { id: row.id, name: row.name, mobileE164 };
+    .first<{ id: string; name: string; test_record: number }>();
+  return row === null ? null : { id: row.id, name: row.name, mobileE164, testRecord: row.test_record === 1 };
 }
 
 type TechnicianVerification =
