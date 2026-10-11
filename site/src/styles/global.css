@@ -1,9 +1,11 @@
 /*
  * The design's base rules and the few patterns every page shares. Section
- * layout lives in each component's own <style>. Values come from tokens.css.
+ * layout lives in each component's own <style>. Values come from the brand's tokens.css and the site's own
+ * tokens-site.css.
  */
 
 @import "@maneman/brand/tokens.css";
+@import "./tokens-site.css";
 @import "@maneman/brand/fonts.css";
 
 *,

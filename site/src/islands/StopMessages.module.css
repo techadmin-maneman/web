@@ -14,7 +14,7 @@
 }
 
 .note {
-  font-size: var(--fs-reading);
+  font-size: var(--fs-lead);
   line-height: var(--lh-175);
   text-wrap: pretty;
 }
