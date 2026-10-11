@@ -40,6 +40,8 @@ export const ROUTE_NEEDS: Readonly<Record<string, RouteNeed | typeof SIGNED_IN>>
   // Operations: dispatch, today's tasks, visits, technicians, leave and stock, each kept to the caller's cities.
   "GET /api/dispatch": inOwnPlaces("operations", "view"),
   "GET /api/dispatch/version": readFromAnyPlace("operations"),
+  "GET /api/dispatch/day": inOwnPlaces("operations", "view"),
+  "GET /api/dispatch/day/map": inOwnPlaces("operations", "view"),
   "GET /api/dispatch/room": inOwnPlaces("operations", "view"),
   "POST /api/dispatch/assign": inOwnPlaces("operations", "act"),
   "POST /api/dispatch/propose": inOwnPlaces("operations", "act"),

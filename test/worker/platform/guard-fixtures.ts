@@ -12,6 +12,7 @@ export const REAL = {
   BOOKS_PROVIDER: "none",
   PAYMENTS_PROVIDER: "none",
   GEOCODE_PROVIDER: "none",
+  ROUTES_PROVIDER: "none",
 };
 
 export const STUBS = {
@@ -23,6 +24,7 @@ export const STUBS = {
   BOOKS_PROVIDER: "stub",
   PAYMENTS_PROVIDER: "stub",
   GEOCODE_PROVIDER: "stub",
+  ROUTES_PROVIDER: "stub",
 };
 
 /** Vars and secrets every environment needs, with valid values. */

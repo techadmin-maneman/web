@@ -2339,6 +2339,121 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/dispatch/day": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** A day's routes: each technician's visits in order, the drive between each two, and whether it fits */
+        get: {
+            parameters: {
+                query?: {
+                    date?: string;
+                    city?: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The day */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["DispatchDay"];
+                    };
+                };
+                /** @description access_required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/dispatch/day/map": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The picture of a day's routes, each technician's in their colour, their visits numbered in order */
+        get: {
+            parameters: {
+                query?: {
+                    date?: string;
+                    city?: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The map */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "image/png": string;
+                        "image/svg+xml": string;
+                    };
+                };
+                /** @description access_required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description not_found: no visit that day has a pin, so there is nothing to draw */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description unavailable: the map is not switched on here, Google failed, or the day's ceiling is spent */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/dispatch/propose": {
         parameters: {
             query?: never;
@@ -8500,9 +8615,60 @@ export interface components {
                     /** Format: date-time */
                     starts_at: string;
                 }[];
+                /** @description As the crow flies, from the job to the nearest of the technician's other visits that day, to one decimal; null where the job or none of those visits has a pin. The picker lists the nearest first. */
+                km: number | null;
             }[];
             /** @description The days of the week ops blacked out, other than the job's own. A move onto one needs a blackout_reason. */
             blackouts: string[];
+        };
+        /** @description Only technicians with a visit that day, each in board order. */
+        DispatchDay: {
+            /** Format: date */
+            date: string;
+            city: string | null;
+            /**
+             * @description shown: every drive between two visits next to each other with a pin each is in legs. off: drive times are not switched on here. unavailable: Google failed, or the day's ceiling is spent; some legs may be missing.
+             * @enum {string}
+             */
+            drive_times: "shown" | "off" | "unavailable";
+            technicians: {
+                /** Format: uuid */
+                technician_id: string;
+                name: string;
+                initials: string;
+                /** @description Their route's colour on the map. */
+                colour: string;
+                stops: {
+                    /** Format: uuid */
+                    appointment_id: string;
+                    /** Format: date-time */
+                    starts_at: string;
+                    /**
+                     * Format: date-time
+                     * @description When the visit's time on the board ends.
+                     */
+                    ends_at: string;
+                    /** @enum {string} */
+                    window: "morning" | "afternoon" | "evening";
+                    type: ("consultation" | "first_fit" | "service" | "replacement") | null;
+                    sector: string | null;
+                    client: string | null;
+                    /** @description Whether the client's address has a pin. A visit without one has no drive to or from it. */
+                    located: boolean;
+                }[];
+                legs: {
+                    /** Format: uuid */
+                    from: string;
+                    /** Format: uuid */
+                    to: string;
+                    minutes: number;
+                    km: number;
+                    /** @description From the end of one visit's time on the board to the start of the next's. */
+                    gap_minutes: number;
+                    /** @description Whether the drive fits that gap. */
+                    fits: boolean;
+                }[];
+            }[];
         };
         DispatchProposed: {
             /** Format: uuid */

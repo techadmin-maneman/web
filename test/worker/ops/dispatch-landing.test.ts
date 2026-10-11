@@ -245,6 +245,7 @@ describe("a move lands only at a start still ahead", () => {
         { window: "afternoon", starts_at: TODAY["13:00"] },
         { window: "evening", starts_at: TODAY["16:00"] },
       ],
+      km: null,
     });
     // Imran's Tuesday morning is where it already is.
     expect(roomOf(IMRAN, "2026-09-22")?.starts).toEqual([

@@ -165,6 +165,7 @@ export type BoardClient = NonNullable<Block["person"]>;
 export type Moved = Body<paths["/api/dispatch/move"]["post"]>;
 export type Proposed = Body<paths["/api/dispatch/propose"]["post"]>;
 export type Room = Body<paths["/api/dispatch/room"]["get"]>["rooms"][number];
+export type DispatchDay = Body<paths["/api/dispatch/day"]["get"]>;
 
 type MoveRequest = Sent<paths["/api/dispatch/move"]["post"]>;
 export type MoveReason = MoveRequest["reason"];
@@ -254,6 +255,14 @@ export const api = {
   /** A number that moves whenever something the board draws changes; one row, where the board is hundreds. */
   boardVersion: () => client.get("/api/dispatch/version"),
   /** Where a job in hand would land in the week from `from`, by the check a move runs. Writes nothing. */
+  /** A day's routes: each technician's visits in order, and the drive between each two. */
+  dispatchDay: (date: string, city: string | null) =>
+    client.get("/api/dispatch/day", { query: setOnly({ date, city }) }),
+  /** The picture of that day's routes. */
+  dayMap: (date: string, city: string | null) =>
+    client.request<Blob>("GET", `/api/dispatch/day/map?${new URLSearchParams(setOnly({ date, city })).toString()}`, {
+      file: true,
+    }),
   room: (appointmentId: string, from: string) =>
     client.get("/api/dispatch/room", { query: { appointment_id: appointmentId, from } }),
   /**

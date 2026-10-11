@@ -210,7 +210,7 @@ function roomOn(technicianId: string, date: string, taken: Window | null) {
   const allWindows: Window[] = ["morning", "afternoon", "evening"];
   const windows = allWindows.filter((window) => window !== taken);
   const starts = windows.map((window) => ({ window, starts_at: `${date}T${STARTS[window]}:00.000Z` }));
-  return { technician_id: technicianId, date, windows, starts };
+  return { technician_id: technicianId, date, windows, starts, km: null };
 }
 
 export const MOVED = {

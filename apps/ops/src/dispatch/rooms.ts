@@ -48,6 +48,13 @@ export function windowsFrom(rooms: Rooms): InHand["windowsAt"] {
     rooms.rooms.find((room) => room.technician_id === technicianId && room.date === date)?.windows ?? [];
 }
 
+/** How near each day's other visits are, as the server answered; null where it could not say. */
+export function kmFrom(rooms: Rooms): InHand["kmAt"] {
+  if (rooms.state !== "known") return () => null;
+  return (technicianId, date) =>
+    rooms.rooms.find((room) => room.technician_id === technicianId && room.date === date)?.km ?? null;
+}
+
 /** The start a move to this target takes, as the server answered; null where it could not say. */
 export function landsAtFrom(rooms: Rooms, to: Target): string | null {
   if (rooms.state !== "known") return null;

@@ -203,6 +203,8 @@ export interface Settings {
   readonly access: AccessSettings | null;
   /** The address search: its key when there is one, and its daily ceiling always. */
   readonly geocode: GeocodeSettings;
+  /** The dispatch board's drive times and day map: Google's key, or null unless ROUTES_PROVIDER is "google". */
+  readonly routes: { readonly apiKey: string | null };
   readonly login: LoginSettings;
   readonly tryon: TryonSettings;
   readonly messaging: MessagingSettings;
@@ -289,6 +291,7 @@ export function readSettings(
     razorpay,
     access,
     geocode,
+    routes: { apiKey: providers.ROUTES_PROVIDER === "google" ? read.text("GOOGLE_MAPS_API_KEY") : null },
     login,
     tryon,
     messaging,

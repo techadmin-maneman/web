@@ -2,7 +2,7 @@
 
 Every decision this repository was built on, oldest first. A record says what was decided and why, and is not rewritten to say something else: a later record changes it, and says so in its own header (ADR 0001). **Changed by** gathers those later records, from either side, so an old record's reader knows to read on.
 
-This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. A record names its topic in its header, `- Topic:` and one of the headings below, and the test fails on one that does not. The next free number is 0120.
+This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. A record names its topic in its header, `- Topic:` and one of the headings below, and the test fails on one that does not. The next free number is 0121.
 
 ## By topic
 
@@ -152,6 +152,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 - [0088](0088-every-policy-in-the-console.md) Every policy in the console
 - [0092](0092-task-owners.md) Whose each task is, a visit ops close without a follow-up, and an address given to ops
 - [0109](0109-console-departments-and-access.md) The console by departments, and who may do what in it
+- [0120](0120-the-board-sees-the-road.md) The board sees the road
 
 ## Every decision, oldest first
 
@@ -274,3 +275,4 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0117](0117-a-technician-takes-visits-in-their-own-city.md) | A technician takes visits in their own city | 2026-10-11 | accepted | [0118](0118-booking-never-dead-ends.md) |
 | [0118](0118-booking-never-dead-ends.md) | Booking never dead-ends | 2026-10-11 | accepted |  |
 | [0119](0119-blackouts-by-city-and-trained-fitters.md) | Blackouts by city, and trained fitters | 2026-10-11 | accepted |  |
+| [0120](0120-the-board-sees-the-road.md) | The board sees the road | 2026-10-11 | accepted |  |
