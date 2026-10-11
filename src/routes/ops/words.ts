@@ -1,14 +1,16 @@
-// The Words page, behind Access (Growth; docs/decisions/0126-the-words-page.md):
+// The Words page, behind Access (Growth; docs/decisions/0126-the-words-page.md, 0127-publishing-the-words.md):
 //   GET  /api/words                every line of the site and every WhatsApp message to a client, with its wording
 //   GET  /api/words/history?key=   every wording one line has had
 //   POST /api/words                a line given new words, or put back to the code's
+//   POST /api/words/publish        the site's changed words published, for its next build
 
 import { createRoute, z } from "@hono/zod-openapi";
 import { actorOf } from "../../http/audit.ts";
 import type { App } from "../../http/context.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
 import { json } from "../../http/openapi.ts";
-import { listWords, setWord, wordHistory } from "../../domain/words/words.ts";
+import { latestPublish, publishSite, type SitePublish } from "../../domain/words/publish.ts";
+import { listWords, setWord, wordHistory, type Word } from "../../domain/words/words.ts";
 
 const WordSchema = z
   .object({
@@ -20,9 +22,29 @@ const WordSchema = z
     now: z.string().openapi({ description: "The wording in force: the one set here, else the code's." }),
     changed: z.union([z.object({ by: z.string(), at: z.iso.datetime() }).strict(), z.null()]),
     longest: z.number().int().openapi({ description: "The longest the line may grow, in characters." }),
+    on_site: z.union([z.boolean(), z.null()]).openapi({
+      description: "For a line of the site, whether its last publish has the wording in force; null for a message.",
+    }),
   })
   .strict()
   .openapi("Word");
+
+const PublishSchema = z
+  .object({ at: z.iso.datetime(), by: z.string(), lines: z.number().int() })
+  .strict()
+  .openapi("WordsPublish");
+
+const publishedOf = (publish: SitePublish) => ({
+  at: publish.published_at,
+  by: publish.published_by,
+  lines: publish.lines,
+});
+
+/** A line, with whether the site's last publish has its wording in force. */
+const withSite = (word: Word, publish: SitePublish | null) => ({
+  ...word,
+  on_site: word.surface === "message" ? null : (publish?.words[word.key] ?? word.text) === word.now,
+});
 
 const listRoute = createRoute({
   method: "get",
@@ -30,10 +52,10 @@ const listRoute = createRoute({
   summary: "Every line of the site and every WhatsApp message to a client, with the wording in force",
   responses: {
     200: {
-      description: "The lines",
+      description: "The lines, and when the site's words were last published",
       ...json(
         z
-          .object({ words: z.array(WordSchema) })
+          .object({ words: z.array(WordSchema), published: z.union([PublishSchema, z.null()]) })
           .strict()
           .openapi("Words"),
       ),
@@ -89,7 +111,10 @@ const setRoute = createRoute({
     },
   },
   responses: {
-    200: { description: "The line as it now stands", ...json(z.object({ word: WordSchema }).strict()) },
+    200: {
+      description: "The line as it now stands",
+      ...json(z.object({ word: WordSchema }).strict().openapi("WordAnswer")),
+    },
     400: errorResponse(
       "invalid_request: fields names text.empty, text.holes (one the page fills taken out or added), text.price, " +
         "text.visits, text.placeholder, text.length, text.first_line or text.ends_on_detail",
@@ -99,8 +124,25 @@ const setRoute = createRoute({
   },
 });
 
+const publishRoute = createRoute({
+  method: "post",
+  path: "/api/words/publish",
+  summary: "Publish the site's changed words, which each build of this environment's site lays over its copy",
+  responses: {
+    200: {
+      description: "The publish",
+      ...json(z.object({ published: PublishSchema }).strict().openapi("WordsPublished")),
+    },
+    403: errorResponse("access_required"),
+  },
+});
+
 export function registerOpsWords(app: App): void {
-  app.openapi(listRoute, async (c) => c.json({ words: await listWords(c.env.DB) }, 200));
+  app.openapi(listRoute, async (c) => {
+    const [words, publish] = await Promise.all([listWords(c.env.DB), latestPublish(c.env.DB)]);
+    const published = publish === null ? null : publishedOf(publish);
+    return c.json({ words: words.map((word) => withSite(word, publish)), published }, 200);
+  });
 
   app.openapi(historyRoute, async (c) => {
     const versions = await wordHistory(c.env.DB, c.req.valid("query").key);
@@ -119,6 +161,15 @@ export function registerOpsWords(app: App): void {
     });
     if (set.outcome === "not_found") return refuse(c, "not_found");
     if (set.outcome !== "set") return refuse(c, "invalid_request", [`text.${set.outcome}`]);
-    return c.json({ word: set.word }, 200);
+    return c.json({ word: withSite(set.word, await latestPublish(c.env.DB)) }, 200);
+  });
+
+  app.openapi(publishRoute, async (c) => {
+    const publish = await publishSite(c.env.DB, {
+      actor: actorOf(c),
+      requestId: c.var.requestId,
+      now: c.var.deps.now(),
+    });
+    return c.json({ published: publishedOf(publish) }, 200);
   });
 }

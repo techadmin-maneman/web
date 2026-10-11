@@ -25,6 +25,7 @@ const ACTIONS: Readonly<Record<ActivityAction, string>> = {
   "channel.pause": "Partner paused",
   "channel.resume": "Partner resumed",
   "word.set": "Words changed",
+  "word.publish": "Site words published",
   "partner_payout.record": "Partner payment recorded",
   "partner_payout.delete": "Partner payment deleted",
   "photo.view": "Photographs opened",

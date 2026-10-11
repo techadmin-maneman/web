@@ -27,7 +27,7 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 | Hair profiles | `hair_profiles` | A profile recorded since is lost, and one an erasure blanked since is whole again | Adding the rows since `<T>`: they are only ever added. Erasing again blanks the rest |
 | Stock | `stock_movements` | A delivery, transfer, count or loss recorded since, or a job's use, is lost, so what each kit and the store hold is wrong | Adding the rows since `<T>` |
 | Referrals and credits | `referral_codes`, `referral_attributions`, `credit_ledger`, `waitlist_entries`, `referral_channels`, `channel_attributions`, `partner_payouts` | A credit, a grant, a partner, a partner's payment or a place on a waitlist disappears | The rows since `<T>`. `credit_ledger` is only ever added to |
-| Ops' settings and what we sell | `ops_settings`, `price_book`, `services`, `slot_times`, `serviceable_pincodes`, `technician_leave`, `visit_blackouts`, `city_blackouts`, `cities`, `zones`, `consumables`, `consumable_usage`, `checklist_items`, `partial_reasons`, `pay_grades`, `visit_pay_rates`, `word_versions` | A price, service, rule, area, day's times, day off, consumable, job-sheet list, pay rate or wording set since goes back | Setting it again in the console, which audits it |
+| Ops' settings and what we sell | `ops_settings`, `price_book`, `services`, `slot_times`, `serviceable_pincodes`, `technician_leave`, `visit_blackouts`, `city_blackouts`, `cities`, `zones`, `consumables`, `consumable_usage`, `checklist_items`, `partial_reasons`, `pay_grades`, `visit_pay_rates`, `word_versions`, `site_word_publishes` | A price, service, rule, area, day's times, day off, consumable, job-sheet list, pay rate or wording set since goes back | Setting it again in the console, which audits it |
 | Staff and access | `staff`, `staff_grants`, `staff_service_tokens`, `staff_access_mode` | Someone taken off the Staff list since, or a grant taken back, is let in again | Setting it again on the Staff page, before anything else |
 | Tasks | `task_owners`, `task_closures` | A task closed since opens again, and one given to someone since is nobody's | Closing or giving it again on the Tasks board |
 | The audit log | `audit_log` | Who did what since `<T>` | Adding the rows since `<T>`: they are only ever added |
@@ -102,6 +102,7 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 - [serviceable_pincodes](#serviceable_pincodes): Every NCR pincode, its area and city, and whether and since when we serve it (ADR 0048, ADR 0061).
 - [services](#services): What clients may book: each kind of visit's services, their names, the line clients read under each, lengths and order, when each is retired, and its item in FSM's catalogue and in Books; the price book prices each by its kind and tier (ADR 0085, ADR 0110).
 - [sessions](#sessions): The client app's and the technician app's sessions: whose, from which device, and when each ends or was revoked (ADR 0029, ADR 0052).
+- [site_word_publishes](#site_word_publishes): Each publish of the site's words from the Words page: the changed lines as they stood, which each build of the site lays over its copy (ADR 0127).
 - [slot_claims](#slot_claims): What a hold or a visit takes of a technician's day, a row per half-slot and window, so no time is taken twice (ADR 0034, ADR 0069).
 - [slot_holds](#slot_holds): A slot held while a client pays, at Checkout or by a payment link ops sent, and what became of it (ADR 0045, ADR 0068).
 - [slot_times](#slot_times): Each change of the day's half-slot times ops set, from the day it applies; never changed (ADR 0102).
@@ -1649,6 +1650,24 @@ Indexes:
 - `sessions_by_expiry`: on (`expires_at`)
 - `sessions_by_revoked`: on (`revoked_at`), where `revoked_at IS NOT NULL`
 - `sessions_by_subject`: on (`subject_kind`, `subject_id`)
+
+## site_word_publishes
+
+Each publish of the site's words from the Words page: the changed lines as they stood, which each build of the site lays over its copy (ADR 0127).
+
+Made by `0113_site_word_publishes.sql`.
+
+| Column | Type | May be empty | Default | Key |
+| --- | --- | --- | --- | --- |
+| `id` | TEXT | no |  | primary key |
+| `words` | TEXT | no |  |  |
+| `lines` | INTEGER | no |  |  |
+| `published_by` | TEXT | no |  |  |
+| `published_at` | TEXT | no |  |  |
+
+Indexes:
+
+- `site_word_publishes_by_time`: on (`published_at`)
 
 ## slot_claims
 

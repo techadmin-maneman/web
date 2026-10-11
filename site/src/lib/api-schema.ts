@@ -94,6 +94,42 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/site-words": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The site's words as last published, which each build of the site lays over its copy */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The latest publish */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["SiteWords"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/number-code": {
         parameters: {
             query?: never;
@@ -1938,6 +1974,15 @@ export interface components {
             name: string;
             minutes: number;
             price: components["schemas"]["Price"];
+        };
+        SiteWords: {
+            /** @description The publish; null before any. */
+            id: string | null;
+            published_at: string | null;
+            /** @description Each changed line's key, as src/config/words.json names it, and its words. */
+            words: {
+                [key: string]: string;
+            };
         };
         /** @description The code is on its way to the number on WhatsApp. */
         NumberCode: {

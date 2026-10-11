@@ -57,6 +57,18 @@ The prices the site publishes, from the price book, in force today. Cacheable fo
 }
 ```
 
+### GET /api/site-words
+
+The site's words as last published, which each build of the site lays over its copy
+
+**200**: The latest publish
+
+```json
+{
+  "$ref": "#/components/schemas/SiteWords"
+}
+```
+
 ### POST /api/number-code
 
 Send a code on WhatsApp to prove a number typed into the site
@@ -1740,6 +1752,52 @@ Razorpay's webhook: payments and refunds
     "name",
     "minutes",
     "price"
+  ],
+  "additionalProperties": false
+}
+```
+
+### SiteWords
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "id": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "uuid"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The publish; null before any."
+    },
+    "published_at": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date-time"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "words": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string"
+      },
+      "description": "Each changed line's key, as src/config/words.json names it, and its words."
+    }
+  },
+  "required": [
+    "id",
+    "published_at",
+    "words"
   ],
   "additionalProperties": false
 }

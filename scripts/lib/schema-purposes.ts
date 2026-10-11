@@ -133,6 +133,8 @@ export const PURPOSES: Readonly<Record<string, string>> = {
   tryon_sessions:
     "The try-on gate's session, which showed a visitor their result (ADR 0014); written no more since the look goes to WhatsApp only (ADR 0104).",
   visit_blackouts: "Days on which no visit is offered.",
+  site_word_publishes:
+    "Each publish of the site's words from the Words page: the changed lines as they stood, which each build of the site lays over its copy (ADR 0127).",
   word_versions:
     "Every wording a line of the site or a WhatsApp message has had on the Words page; the newest is in force (ADR 0126).",
   referral_channels:

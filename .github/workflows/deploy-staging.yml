@@ -88,8 +88,12 @@ jobs:
           VERSION: ${{ steps.api.outputs.version }}
         run: node scripts/release/release.ts deploy --worker mm-api --env staging --split "$VERSION@100" --message "staging $SHA"
 
+      # With the words the Words page published for staging, read past Access (docs/decisions/0127-publishing-the-words.md).
       - name: Build the site (staging)
-        run: npm run build:site -- --env staging
+        env:
+          CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
+          CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
+        run: npm run build:site -- --env staging --words
       - name: Deploy mm-site
         run: node scripts/release/release.ts ship --worker mm-site --env staging --tag "$SHA" --message "staging $SHA"
 

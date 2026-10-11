@@ -193,10 +193,12 @@ this map, or when the map names something that no longer exists.
 
 ### The Words page
 
-- **Database work** (`src/domain/words/`): `catalogue`, `words`
+- **Database work** (`src/domain/words/`): `catalogue`, `words`, `publish`
 - **Rules** (`src/policy/`): `word-checks`
 - **Data** (`src/config/`): `words.json`, which npm run words writes from the site's copy and the message texts
-- **Routes** (`src/routes/`): `ops/words`
+- **Routes** (`src/routes/`): `ops/words`, `public/site-words`
+- **Build:** `scripts/lib/site-words.ts` reads the published words for a site build; `site/src/lib/published-words.ts`
+  lays them over the copy; `.github/workflows/site-words.yml` rebuilds staging's site after a publish
 - **Tests:** `test/worker/ops/words.test.ts`, `test/node/words/`, `test/node/policy/word-checks.test.ts`
 
 ### Ops' own work

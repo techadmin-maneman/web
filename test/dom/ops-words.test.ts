@@ -17,6 +17,7 @@ const REMINDER: Word = {
   now: "Hi {{1}}, see you tomorrow.\nYour {{2}} is {{3}}, {{4}}, with {{5}}.",
   changed: null,
   longest: 94,
+  on_site: null,
 };
 const HERO: Word = {
   key: "site:home/hero.title",
@@ -27,6 +28,7 @@ const HERO: Word = {
   now: "Hair, fitted at home.",
   changed: { by: "growth@maneman.test", at: "2026-10-05T06:30:00.000Z" },
   longest: 50,
+  on_site: false,
 };
 
 let page: HTMLDivElement;
@@ -35,7 +37,7 @@ let answers: Map<string, (init?: RequestInit) => Response>;
 let sent: unknown[];
 
 beforeEach(() => {
-  answers = new Map([["GET /api/words", () => Response.json({ words: [REMINDER, HERO] })]]);
+  answers = new Map([["GET /api/words", () => Response.json({ words: [REMINDER, HERO], published: null })]]);
   sent = [];
   vi.stubGlobal("fetch", (url: string, init?: RequestInit) => {
     const path = new URL(url, "https://ops.maneman.test").pathname;
@@ -142,7 +144,9 @@ describe("the Words page", () => {
         ],
       }),
     );
-    answers.set("POST /api/words", () => Response.json({ word: { ...HERO, now: HERO.text, changed: null } }));
+    answers.set("POST /api/words", () =>
+      Response.json({ word: { ...HERO, now: HERO.text, changed: null, on_site: false } }),
+    );
     await show();
     await press(copy.historyLabel("hero.title"));
     expect(page.textContent).toContain(copy.versions.by("growth@maneman.test", "Mon 5 Oct"));
@@ -151,5 +155,18 @@ describe("the Words page", () => {
     await press(copy.form.next);
     await press(copy.check.send);
     expect(sent).toEqual([{ key: HERO.key, text: null }]);
+  });
+
+  it("publishes the site's changed words once confirmed", async () => {
+    answers.set("POST /api/words/publish", () =>
+      Response.json({ published: { at: "2026-10-11T06:30:00.000Z", by: "growth@maneman.test", lines: 1 } }),
+    );
+    await show();
+    expect(page.textContent).toContain(copy.publish.never);
+    expect(page.textContent).toContain(copy.notOnSite);
+    await press(copy.publish.open);
+    expect(page.textContent).toContain(copy.publish.changed(1));
+    await press(copy.publish.send);
+    expect(page.querySelector('[role="status"]')?.textContent).toBe(copy.publish.done);
   });
 });

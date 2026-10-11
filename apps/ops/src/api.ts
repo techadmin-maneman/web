@@ -100,6 +100,7 @@ export type PartnerStatement = PartnerStatements["statements"][number];
 type PartnerPayout = Sent<paths["/api/partner-statements/{id}/payouts"]["post"]>;
 /** The site's words and the WhatsApp messages, as the Words page changes them (docs/decisions/0126-the-words-page.md). */
 export type Word = Body<paths["/api/words"]["get"]>["words"][number];
+export type WordsPublish = NonNullable<Body<paths["/api/words"]["get"]>["published"]>;
 /** Discount codes, and a code on a client's visit (docs/decisions/0108-discount-codes.md). */
 export type DiscountCodes = Body<paths["/api/discount-codes"]["get"]>;
 export type DiscountCode = Body<paths["/api/discount-codes"]["get"]>["codes"][number];
@@ -505,6 +506,7 @@ export const api = {
   words: () => client.get("/api/words"),
   wordHistory: (key: string) => client.get("/api/words/history", { query: { key } }),
   setWord: (key: string, text: string | null) => client.post("/api/words", { body: { key, text } }),
+  publishWords: () => client.post("/api/words/publish"),
   technicianPay: () => client.get("/api/technician-pay"),
   addPayGrade: (name: string) => client.post("/api/technician-pay/grades", { body: { name } }),
   renamePayGrade: (id: string, name: string) =>

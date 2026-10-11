@@ -61,6 +61,8 @@ export const ROWS_AT_T: readonly string[] = [
   // A line of the site given new words on the Words page (docs/decisions/0126-the-words-page.md).
   `INSERT INTO word_versions (id, key, text, set_by, set_at)
      VALUES ('wv1', 'site:home/hero.title', 'Hair, fitted at home.', 'growth@maneman.in', '${AT}')`,
+  `INSERT INTO site_word_publishes (id, words, lines, published_by, published_at)
+     VALUES ('sp1', '{}', 0, 'growth@maneman.in', '${AT}')`,
   // Their first fit, done: last_visits follows it.
   `INSERT INTO appointments (id, fsm_id, person_id, type, window_start, window_end, technician_id, status, synced_at)
      VALUES ('ap1', 'ap1', 'p1', 'first_fit', '2026-09-22T03:30:00.000Z', '2026-09-22T06:30:00.000Z', 't1',

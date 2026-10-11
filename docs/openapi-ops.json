@@ -4999,10 +4999,21 @@
             "items": {
               "$ref": "#/components/schemas/Word"
             }
+          },
+          "published": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/WordsPublish"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "required": [
-          "words"
+          "words",
+          "published"
         ],
         "additionalProperties": false
       },
@@ -5063,6 +5074,17 @@
           "longest": {
             "type": "integer",
             "description": "The longest the line may grow, in characters."
+          },
+          "on_site": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "For a line of the site, whether its last publish has the wording in force; null for a message."
           }
         },
         "required": [
@@ -5073,7 +5095,29 @@
           "text",
           "now",
           "changed",
-          "longest"
+          "longest",
+          "on_site"
+        ],
+        "additionalProperties": false
+      },
+      "WordsPublish": {
+        "type": "object",
+        "properties": {
+          "at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "by": {
+            "type": "string"
+          },
+          "lines": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "at",
+          "by",
+          "lines"
         ],
         "additionalProperties": false
       },
@@ -5122,6 +5166,18 @@
         ],
         "additionalProperties": false
       },
+      "WordAnswer": {
+        "type": "object",
+        "properties": {
+          "word": {
+            "$ref": "#/components/schemas/Word"
+          }
+        },
+        "required": [
+          "word"
+        ],
+        "additionalProperties": false
+      },
       "WordSet": {
         "type": "object",
         "properties": {
@@ -5145,6 +5201,18 @@
         "required": [
           "key",
           "text"
+        ],
+        "additionalProperties": false
+      },
+      "WordsPublished": {
+        "type": "object",
+        "properties": {
+          "published": {
+            "$ref": "#/components/schemas/WordsPublish"
+          }
+        },
+        "required": [
+          "published"
         ],
         "additionalProperties": false
       },
@@ -5233,6 +5301,7 @@
               "channel.pause",
               "channel.resume",
               "word.set",
+              "word.publish",
               "partner_payout.record",
               "partner_payout.delete",
               "photo.view",
@@ -13930,7 +13999,7 @@
         "summary": "Every line of the site and every WhatsApp message to a client, with the wording in force",
         "responses": {
           "200": {
-            "description": "The lines",
+            "description": "The lines, and when the site's words were last published",
             "content": {
               "application/json": {
                 "schema": {
@@ -13969,16 +14038,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "word": {
-                      "$ref": "#/components/schemas/Word"
-                    }
-                  },
-                  "required": [
-                    "word"
-                  ],
-                  "additionalProperties": false
+                  "$ref": "#/components/schemas/WordAnswer"
                 }
               }
             }
@@ -14054,6 +14114,33 @@
           },
           "404": {
             "description": "not_found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/words/publish": {
+      "post": {
+        "summary": "Publish the site's changed words, which each build of this environment's site lays over its copy",
+        "responses": {
+          "200": {
+            "description": "The publish",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WordsPublished"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "access_required",
             "content": {
               "application/json": {
                 "schema": {
@@ -14241,6 +14328,7 @@
                 "channel.pause",
                 "channel.resume",
                 "word.set",
+                "word.publish",
                 "partner_payout.record",
                 "partner_payout.delete",
                 "photo.view",

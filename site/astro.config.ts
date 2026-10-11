@@ -9,12 +9,14 @@
 // built asset no page names, so the placeholders staging shows never ship.
 
 import { mkdir, readdir, readFile, rm, writeFile } from "node:fs/promises";
+import { fileURLToPath } from "node:url";
 import preact from "@astrojs/preact";
 import { defineConfig } from "astro/config";
 import { RULES_ALIAS } from "../scripts/build/rules-alias.ts";
 import { ANALYTICS_IDS } from "./src/lib/analytics-ids.ts";
 import { siteEnvironment } from "./src/lib/environment.ts";
 import { assertPublishable } from "./src/lib/publish-gate.ts";
+import { publishedWordsPlugin, readPublishedWords } from "./src/lib/published-words.ts";
 import { CONTENT_FILES, contentProblems } from "../scripts/lib/content-gate.ts";
 import {
   contentSecurityPolicy,
@@ -76,6 +78,13 @@ export default defineConfig({
     },
   ],
   vite: {
+    // The words the Words page published for this environment, which the build fetched (site/src/lib/published-words.ts).
+    plugins: [
+      publishedWordsPlugin(
+        fileURLToPath(new URL(".", import.meta.url)),
+        readPublishedWords(fileURLToPath(new URL(".words.json", import.meta.url))),
+      ),
+    ],
     define: { __MM_ENV__: JSON.stringify(environment) },
     resolve: { alias: RULES_ALIAS },
     // Every asset is a file of its own: the content security policy allows no data: URLs.
