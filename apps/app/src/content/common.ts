@@ -65,7 +65,7 @@ export const calendar = {
   fileName: "mane-man-visit.ics",
   title: (visit: string) => `Mane Man: ${visit}`,
   details: (hours: string, technician: string | null) =>
-    `${technician ?? "Your technician"} arrives in the window, ${hours}.`,
+    technician === null ? `Arriving ${hours}.` : `Arriving ${hours}, with ${technician}.`,
 };
 
 /** Each kind of visit, as the design names it. */
@@ -120,7 +120,7 @@ export const empty = {
     title: "Photos",
     lines: ["Your photos begin at your first visit.", "Five angles at every visit, for your record."],
     // Not drawn: a way on while there is nothing to show.
-    tryOn: "Try a look on yourself",
+    tryOn: "Try on a look",
   },
   payments: {
     title: "Payments",

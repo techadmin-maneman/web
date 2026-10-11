@@ -49,7 +49,7 @@ test("Home asks the client to confirm a move ops proposed, beside another time o
   await logIn(page, fittedClient().mobile);
 
   const when = `${shortDate(PROPOSED)}, 9 am to 12 pm`;
-  await expect(page.getByText(`We need to move this visit. Could you do ${when}, with Sameer, instead?`)).toBeVisible();
+  await expect(page.getByText(`We need to move this visit. Could you do ${when} with Sameer instead?`)).toBeVisible();
   await expect(page.getByRole("button", { name: appCopy.home.proposal.pick })).toBeVisible();
   await expect(page.getByRole("button", { name: appCopy.home.reschedule })).toHaveCount(0);
   expect(await axeViolations(page)).toEqual([]);

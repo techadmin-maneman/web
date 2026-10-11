@@ -43,7 +43,7 @@ export const home = {
     ask: (when: string, technician: string | null) =>
       technician === null
         ? `We need to move this visit. Could you do ${when} instead?`
-        : `We need to move this visit. Could you do ${when}, with ${technician}, instead?`,
+        : `We need to move this visit. Could you do ${when} with ${technician} instead?`,
     accept: (date: string) => `Accept ${date}`,
     pick: "Pick another time",
     gone: "That time has just gone. Pick another.",

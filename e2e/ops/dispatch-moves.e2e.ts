@@ -99,10 +99,10 @@ test("asks the client to confirm a move to another day, sending it as a proposal
   await press(page, TO_SANDEEP);
   await reason(page, "Zone rebalance");
   const picker = page.getByRole("dialog", { name: "Move Rohit M. to Sandeep Yadav" });
-  await expect(picker).toContainText("Rohit M. is asked on WhatsApp to confirm. The visit stays put until they do.");
+  await expect(picker).toContainText("We'll ask Rohit M. on WhatsApp. It moves when they accept.");
   await press(page, "Ask Rohit M. to confirm");
 
-  await expect(page.getByRole("status")).toHaveText("Rohit M. is asked to confirm Sat 20 Sep, morning on WhatsApp.");
+  await expect(page.getByRole("status")).toHaveText("Asked Rohit M. on WhatsApp to confirm Sat 20 Sep, morning.");
   expect(sent).toEqual([expect.objectContaining({ date: "2025-09-20", window: "morning", reason: "zone_rebalance" })]);
   expect(moved).toEqual([]);
 });
@@ -127,7 +127,7 @@ test("shows a proposal waiting on the client in the visit's drawer, and takes it
   await expect(drawer).toContainText("Waiting for Rohit to confirm Sat 20 Sep, morning.");
   await press(page, "Withdraw");
 
-  await expect(page.getByRole("status")).toHaveText("Withdrawn. Rohit M. stays where it is.");
+  await expect(page.getByRole("status")).toHaveText("Withdrawn. Rohit M. stays as booked.");
   expect(withdrawn).toHaveLength(1);
 });
 

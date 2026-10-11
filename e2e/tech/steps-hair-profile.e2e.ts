@@ -34,7 +34,7 @@ test.describe("the client's hair profile", () => {
     await page.getByRole("textbox", { name: techCopy.profile.measurements.base_width_in }).fill("8");
     await page.getByRole("textbox", { name: techCopy.profile.measurements.base_length_in }).fill("10");
     // The base in centimetres too, as the head above it is measured.
-    await expect(page.getByText("That is 20.3 × 25.4 cm.")).toBeVisible();
+    await expect(page.getByText("20.3 × 25.4 cm")).toBeVisible();
     // Each field's choices are one group named by its title, so "Straight" says whether it is the wave or the hairline.
     for (const field of ["Wave", "Hairline"]) {
       await expect(page.getByRole("radiogroup", { name: field }).getByRole("radio", { name: "Straight" })).toHaveCount(

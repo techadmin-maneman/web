@@ -583,7 +583,7 @@ test("a booking sends the details to WhatsApp, and opens the app with the number
   await bookThrough(page);
   await expect(page.getByRole("heading", { level: 1, name: "Friday 25 September, 9 am to 12 pm" })).toBeVisible();
   await expect(
-    page.getByText("Your technician arrives in that window. Details on WhatsApp, at +91 98100 00000."),
+    page.getByText("Your technician arrives in that window. Details are on WhatsApp at +91 98100 00000."),
   ).toBeVisible();
   await expect(page.getByText(referralCopy.referral.booked.appHint)).toBeVisible();
   await expect(page.getByRole("button", { name: "Add to calendar" })).toHaveCount(0);
