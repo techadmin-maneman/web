@@ -14,7 +14,8 @@ Partners earn a commission for each friend fitted (ADR 0123), recorded but not p
 2. **Payments are recorded, not made.** Finance pays from the payout tool and records the payment against its month: amount, day and the tool's reference, once a month has ended and once per month. One recorded by mistake can be deleted, and the month is owed again. Both are audited with the month and the amount.
 3. **Owed** is everything earned to date, less everything taken back and everything paid. It shows on Finance's Partner commission page and in Growth's Partners panel.
 4. **The statement** a partner is sent is a CSV of days and amounts: each fit, each taking back, what the month came to and what was paid. It never names a client. The month's file, a row per partner, goes to the payout tool.
-5. **Finance's own page.** Partner commission sits under Finance, national grants only: View reads it, Manage records and deletes payments.
+5. **A QR code for the counter.** Each partner's row on Referrals downloads its link as a QR code, an SVG to print, made in the browser (`uqr`).
+6. **Finance's own page.** Partner commission sits under Finance, national grants only: View reads it, Manage records and deletes payments.
 
 ## Consequences
 

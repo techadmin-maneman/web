@@ -1,6 +1,7 @@
 // Partners on Referrals (docs/decisions/0123-partner-referral-channels.md), which no board draws. Every name and
 // figure is made up.
 
+import { readFileSync } from "node:fs";
 import type { Page, Route } from "@playwright/test";
 import { expect, test } from "../support.ts";
 import { answer, json, type OpsReply } from "./answer.ts";
@@ -57,7 +58,7 @@ test("lists each partner with its link, what its friend gets, its commission and
     "2",
     "Rs. 3,000",
     "Rs. 1,500",
-    "EditPause",
+    "QR codeEditPause",
   ]);
 });
 
@@ -118,4 +119,15 @@ test("pauses a partner once it is confirmed", async ({ page }) => {
   await page.getByRole("button", { name: copy.check.send }).click();
   await expect(page.getByRole("status")).toHaveText(copy.done.paused);
   expect(sent).toEqual({ paused: true });
+});
+
+test("downloads a partner's link as a QR code to print", async ({ page }) => {
+  await open(page);
+  const saved = page.waitForEvent("download");
+  await row(page)
+    .getByRole("button", { name: copy.qrLabel("Looks Salon, Sector 29") })
+    .click();
+  const download = await saved;
+  expect(download.suggestedFilename()).toBe("maneman-LSK7P2QX.svg");
+  expect(readFileSync(await download.path(), "utf8")).toMatch(/^<svg xmlns="http:\/\/www\.w3\.org\/2000\/svg"/);
 });

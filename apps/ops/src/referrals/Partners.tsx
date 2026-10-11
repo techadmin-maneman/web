@@ -16,8 +16,10 @@ import { CheckPanel } from "../components/CheckPanel.tsx";
 import { BOOKING_URL } from "../content/common.ts";
 import { partners as copy } from "../content/partners.ts";
 import { useAccess } from "../lib/access.ts";
+import { saveFile } from "../lib/save-file.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import { PartnerForm } from "./PartnerForm.tsx";
+import { partnerQr } from "./partner-qr.ts";
 import styles from "../components/forms.module.css";
 import own from "./partners.module.css";
 
@@ -68,6 +70,22 @@ function PauseCheck({ partner, onDone, onBack }: { partner: Partner; onDone: Row
         </p>
       )}
     </>
+  );
+}
+
+/** The partner's link as a QR code, to print for their counter. */
+function QrButton({ partner }: { partner: Partner }) {
+  return (
+    <button
+      className={styles.inline}
+      type="button"
+      aria-label={copy.qrLabel(partner.name)}
+      onClick={() => {
+        saveFile(copy.qrName(partner.code), partnerQr(`${SITE.origin}/r/${partner.code}`), "image/svg+xml");
+      }}
+    >
+      {copy.qr}
+    </button>
   );
 }
 
@@ -141,7 +159,10 @@ function PartnerRows({ partner, ...row }: { partner: Partner } & RowProps) {
         <td className={own.figure}>{partner.fitted}</td>
         <td className={own.figure}>{rupees(partner.earned)}</td>
         <td className={own.figure}>{rupees(partner.owed)}</td>
-        <td className={own.actions}>{row.mayChange && <RowActions partner={partner} {...row} />}</td>
+        <td className={own.actions}>
+          <QrButton partner={partner} />
+          {row.mayChange && <RowActions partner={partner} {...row} />}
+        </td>
       </tr>
       <ActingRow partner={partner} {...row} />
     </>

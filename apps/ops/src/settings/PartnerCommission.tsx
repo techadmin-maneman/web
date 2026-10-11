@@ -18,7 +18,7 @@ import { api, type PartnerStatement, type PartnerStatements } from "../api.ts";
 import { DeleteAction } from "../components/DeleteAction.tsx";
 import { partnerCommission } from "../content/partner-commission.ts";
 import { useAccess } from "../lib/access.ts";
-import { saveCsv } from "../lib/save-csv.ts";
+import { saveFile } from "../lib/save-file.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import { monthCsv, statementCsv } from "./partner-commission-csv.ts";
 import { PayoutForm } from "./PayoutForm.tsx";
@@ -84,7 +84,11 @@ function RowActions({ statement, book, mayPay, acting, onAct }: { statement: Par
         type="button"
         aria-label={copy.statementLabel(statement.name)}
         onClick={() => {
-          saveCsv(copy.statementName(statement.code, book.month), statementCsv(statement, fullMonth(book.month)));
+          saveFile(
+            copy.statementName(statement.code, book.month),
+            statementCsv(statement, fullMonth(book.month)),
+            "text/csv",
+          );
         }}
       >
         {copy.statement}
@@ -260,7 +264,7 @@ export function PartnerCommission() {
             size="small"
             className={styles.quiet}
             onClick={() => {
-              saveCsv(copy.downloadName(book.month), monthCsv(book.statements));
+              saveFile(copy.downloadName(book.month), monthCsv(book.statements), "text/csv");
             }}
           >
             {copy.download}

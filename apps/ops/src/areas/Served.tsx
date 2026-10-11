@@ -22,7 +22,7 @@ import { useState } from "react";
 import { api, type ServedPincode } from "../api.ts";
 import { areas } from "../content.ts";
 import { useAccess } from "../lib/access.ts";
-import { saveCsv } from "../lib/save-csv.ts";
+import { saveFile } from "../lib/save-file.ts";
 import styles from "../components/forms.module.css";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import { Narrowing, SortHeads, TableEnd } from "../components/TableTools.tsx";
@@ -116,7 +116,7 @@ function Area({ pincodes: loadedPincodes, cities }: { pincodes: readonly ServedP
   };
 
   const download = () => {
-    saveCsv(copy.downloadName, serviceAreaCsv(pincodes));
+    saveFile(copy.downloadName, serviceAreaCsv(pincodes), "text/csv");
   };
 
   const pressSave = () => {

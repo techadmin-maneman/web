@@ -1,4 +1,4 @@
-// The console's CSV files, each cell written so a spreadsheet shows it as the text it is. ./save-csv.ts hands one
+// The console's CSV files, each cell written so a spreadsheet shows it as the text it is. ./save-file.ts hands one
 // to the browser.
 
 /**

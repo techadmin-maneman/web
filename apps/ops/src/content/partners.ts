@@ -24,6 +24,10 @@ export const partners = {
   friendGets: (visits: number, days: number) =>
     visits === 0 ? "Nothing" : `${String(visits)} ${visits === 1 ? "visit" : "visits"} · ${String(days)} days`,
   paused: "Paused",
+  qr: "QR code",
+  qrLabel: (name: string) => `Download the QR code for ${name}`,
+  /** The file the QR code saves as: "maneman-LSK7P2QX.svg". */
+  qrName: (code: string) => `maneman-${code}.svg`,
   edit: "Edit",
   editLabel: (name: string) => `Edit ${name}`,
   pause: "Pause",
