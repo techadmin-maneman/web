@@ -4,6 +4,7 @@
 import type { Page } from "@playwright/test";
 import { expect, test } from "../support.ts";
 import { answer, json, TASKS, TASKS_READ_ON } from "./fixtures.ts";
+import { open } from "./settings-fixtures.ts";
 
 /** Whether the element the keyboard is on draws a ring: an outline wider than nothing. Null on nothing. */
 const ringDrawn = (page: Page) =>
@@ -29,4 +30,17 @@ test("draws where the keyboard is on the navigation and the Tasks board, in the 
     expect(drawn, `"${name}" takes the keyboard without a ring`).toBe(true);
   }
   expect(seen).toBeGreaterThan(20);
+});
+
+// Only the section scrolls: a long page, its rules' legends hidden for a screen reader, never scrolls the console's
+// frame, so the navigation stays where it is.
+test("keeps the navigation in place while a long section scrolls", async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 700 });
+  await open(page, "/settings");
+  const scrollsPastTheWindow = () => page.evaluate(() => document.documentElement.scrollHeight > window.innerHeight);
+  expect(await scrollsPastTheWindow()).toBe(false);
+  await page.getByRole("main").evaluate((main) => {
+    main.scrollTop = main.scrollHeight;
+  });
+  await expect(page.getByRole("navigation", { name: "Console" })).toBeInViewport();
 });
