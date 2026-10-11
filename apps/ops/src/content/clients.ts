@@ -43,7 +43,7 @@ export const clients = {
     noCity: "Not known",
     nextVisit: "Next visit",
     noVisit: "None booked",
-    none: "No client stands so here.",
+    none: "No clients match.",
     previous: "Previous",
     next: "Next",
     page: (page: number) => `Page ${String(page)}`,

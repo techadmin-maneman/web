@@ -63,7 +63,7 @@ describe("the reminder that free service visits are running out", () => {
     await grant({ visits: 3, expiresAt: LAST_DAY_EXPIRY });
     const [month] = await queueCreditReminders(env.DB, evening("2026-09-21"));
     expect(await told(month ?? "", evening("2026-09-21"))).toBe(
-      "Hi Rohit, you have 3 service visits free to book by 21 Oct 2026. A visit booked by then is covered, even on a later date. Book in the Mane Man app.",
+      "Hi Rohit, you have 3 service visits free to book by 21 Oct 2026.\nA visit booked by then is covered, even on a later date. Book in the Mane Man app.",
     );
     expect(await queueCreditReminders(env.DB, evening("2026-09-21"))).toEqual([]);
     expect(await queueCreditReminders(env.DB, evening("2026-10-13"))).toEqual([]);
