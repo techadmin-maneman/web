@@ -1,6 +1,7 @@
 ---
 // The footer, on the home page only (as v2). The wordmark here is 132 px wide,
 // so it is the display cut (design/brand/README.md); v2 drew the small cut.
+import { areasPage, guides, guidesPage } from "../content/guides.ts";
 import { business, footer, whatsapp } from "../content/site.ts";
 import { isShown } from "../lib/build.ts";
 import { whatsappChat } from "@maneman/web-kit/whatsapp";
@@ -8,6 +9,11 @@ import { whatsappChat } from "@maneman/web-kit/whatsapp";
 const { service, reach, legal } = footer.columns;
 // The number is given as WhatsApp alone: the footer offers no line to call.
 const showWhatsapp = isShown(whatsapp);
+// The guides and the cities, once their wording is published.
+const more = [
+  ...(guides.some(isShown) ? [{ label: guidesPage.title, href: "/guides" }] : []),
+  ...(isShown(areasPage) ? [{ label: areasPage.title, href: "/areas" }] : []),
+];
 ---
 
 <footer class="footer on-ink">
@@ -24,7 +30,7 @@ const showWhatsapp = isShown(whatsapp);
       <div class="columns">
         <div class="column">
           <span class="title caps">{service.title}</span>
-          {service.links.map((link) => (
+          {[...service.links, ...more].map((link) => (
             <a class="item" href={link.href}>
               {link.label}
             </a>
