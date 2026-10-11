@@ -325,6 +325,8 @@ Asked on the same day about a separate consent to the history, **the owner ruled
      - Client, technician or ops enter it: the client where they pay or book, the technician before sending the pay-at-visit link, ops on a booking in the console; always before the invoice is made.
      - Ops set limits per code: an expiry date, total uses (one, many or unlimited), once per client; one code per booking; never on a visit a referral credit pays for; ops can switch a code off at any time, and its uses stay on record.
 
+101. **Departures taken from the audit of 11 October 2026, with the owner's go to fix what it found.** No board draws them: a sheet rises over the screen it came from with that screen still in view, under ink at 72% (`--sheet-scrim`), where solid ink hid it; the consultation card on Home names its technician, as every other visit's card does, once one has it; and the code screen sends the code at its sixth digit.
+
 ## Inputs still owed
 
 The inputs each milestone needs are listed in the Phase 2 plan and in the provisioning table of `docs/prompts/phase2-backend.md`; what is still owed before production is `docs/open-points.md`. The FSM trial's findings are written up in `docs/archive/fsm-trial.md`. The licence for our own apps was ruled by the owner on 23 September 2026, so P2-M4 went ahead (`docs/archive/fsm-licensing.md`); Zoho's written answer is still wanted for the file (`docs/open-points.md`, item 30). (Corrected 27 September 2026: this said both were pending. Migration 0026's header still says P2-M4 waits on the licence; an applied migration is never edited, so `docs/migrations.md` records the correction.)

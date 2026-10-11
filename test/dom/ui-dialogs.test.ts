@@ -32,9 +32,9 @@ describe("a sheet", () => {
     expect(css("base.css")).toMatch(/prefers-reduced-motion: reduce[\s\S]*animation: none !important/);
   });
 
-  it("sits at the foot of the column, over the ink the boards draw behind a sheet", () => {
+  it("sits at the foot of the column, over the boards' ink let thin enough to keep the page in sight", () => {
     expect(css("sheet.module.css")).toMatch(/justify-content: flex-end/);
-    expect(css("sheet.module.css")).toMatch(/::backdrop \{\s*background: var\(--ink-night\)/);
+    expect(css("sheet.module.css")).toMatch(/::backdrop \{\s*background: var\(--sheet-scrim\)/);
   });
 });
 

@@ -115,7 +115,7 @@ export const profile = {
   support: {
     label: "Support",
     message: "Message us on WhatsApp",
-    hint: "Replies within a working day. Everything in writing.",
+    hint: "Replies the same day. Everything in writing.",
   },
   // The design has no card for the client's rights over their data (docs/decisions/0049-dpdp.md).
   data: {
@@ -126,8 +126,8 @@ export const profile = {
     field: "Your concern",
     send: "Send",
     cancel: "Not now",
-    // Beside support's "Replies within a working day": the 30 days is the most a concern can take, not the usual.
-    sent: "Received. We’ll reply here and on WhatsApp, usually within a working day and always within 30 days.",
+    // Beside support's "Replies the same day": the 30 days is the most a concern can take, not the usual.
+    sent: "Received. We’ll reply here and on WhatsApp, usually the same day and always within 30 days.",
     failed: "That didn’t go through. Try again.",
     limited: "You’ve reached today’s limit. Send it tomorrow, or message us on WhatsApp.",
     // The client's latest concerns, each with our answer once given.
