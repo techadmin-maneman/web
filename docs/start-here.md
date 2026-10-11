@@ -202,7 +202,7 @@ this map, or when the map names something that no longer exists.
 - **Database work** (`src/domain/analytics/`): `nightly` (the copy Zoho Analytics reads, once a night), `rows`
   (what each of its tables holds), `client-key` (a client as the copy knows them)
 - **Vendor** (`src/providers/`): `warehouse/` (Supabase's Postgres, or the stub)
-- **Jobs:** `src/scheduled/cron.ts` (analytics_nightly)
+- **Jobs:** `src/scheduled/analytics.ts`
 - **Tests:** `test/worker/jobs/analytics-nightly.test.ts`, `test/node/api/warehouse-sql.test.ts`
 
 ### The Words page
