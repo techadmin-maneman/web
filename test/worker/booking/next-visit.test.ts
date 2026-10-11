@@ -94,6 +94,7 @@ async function consent(granted: boolean) {
 interface Me {
   booking: { types: string[]; next: { type: string; due_on: string; date: string; window: string | null } | null };
   prompt: Record<string, unknown> | null;
+  consulted: Record<string, unknown> | null;
 }
 
 const me = async (): Promise<Me> => (await request(client, "/api/me", { headers: { Cookie: cookie } })).json<Me>();
@@ -296,6 +297,48 @@ describe("what the app offers next (GET /api/me)", () => {
     // 6 pm in India.
     await visit("consultation", "2026-09-18T12:30:00.000Z");
     expect((await me()).booking.next).toMatchObject({ type: "first_fit", window: null });
+  });
+
+  // The hair profile taken at the consultation names the hair system recommended (ADR 0106).
+  it("offers it as the hair system recommended at the consultation, and recaps the consultation", async () => {
+    await env.DB.batch([
+      env.DB.prepare(
+        `INSERT INTO services (kind, tier, name, minutes, sort, updated_by, updated_at)
+         VALUES ('first_fit', 'premium', 'Premium hair system', 180, 1, 'ops@maneman.in', ?1)`,
+      ).bind(NOW.toISOString()),
+      env.DB.prepare(
+        "INSERT INTO price_book (item, tier, amount_ex_gst, gst_percent, valid_from) VALUES ('first_fit', 'premium', 3000000, 18, '2026-01-01')",
+      ),
+    ]);
+    const consultation = await visit("consultation", "2026-09-18T04:30:00.000Z");
+    await env.DB.prepare(
+      `INSERT INTO hair_profiles (id, person_id, appointment_id, event_id, technician_id, created_at, product)
+       VALUES (?1, ?2, ?3, 'event-1', 't1', ?4, 'premium')`,
+    )
+      .bind(crypto.randomUUID(), PERSON, consultation, NOW.toISOString())
+      .run();
+    const home = await me();
+    expect(home.booking.next).toMatchObject({ type: "first_fit", tier: "premium" });
+    expect(home.consulted).toEqual({
+      date: "2026-09-18",
+      technician: { name: "Imran Qureshi", initials: "IQ" },
+      recommended: "premium",
+    });
+
+    // Retired by the day it would be offered on, the first fit is offered as the kind's first; the recap still says
+    // what was recommended.
+    await env.DB.prepare(
+      "UPDATE services SET retired_date = '2026-09-20' WHERE kind = 'first_fit' AND tier = 'premium'",
+    ).run();
+    const later = await me();
+    expect(later.booking.next).toMatchObject({ type: "first_fit", tier: "standard" });
+    expect(later.consulted).toMatchObject({ recommended: "premium" });
+  });
+
+  it("recaps no consultation once the client is fitted", async () => {
+    await visit("consultation", "2026-08-01T04:30:00.000Z");
+    await visit("first_fit", "2026-08-11T04:30:00.000Z");
+    expect((await me()).consulted).toBeNull();
   });
 });
 

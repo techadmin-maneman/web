@@ -5,7 +5,8 @@
 //   due:          fitted, their last service done 25 days ago in the morning, so the next falls due in five days;
 //   replacement:  fitted, their last service done 25 days ago in the evening, and their piece falls due in three
 //                 days, before the next service would, so a replacement is offered on that day, in no window;
-//   firstFit:     their consultation done two days ago in the afternoon, so the first fit is offered then too.
+//   firstFit:     their consultation done two days ago in the afternoon, so the first fit is offered then too, as the
+//                 hair system the hair profile taken there recommends.
 //
 // e2e/global-setup.ts seeds them once, after the fitted client, whose technician their visits name.
 
@@ -26,7 +27,10 @@ export interface NextVisitClients {
   readonly due: NextVisitClient;
   readonly replacement: NextVisitClient;
   /** Offered from tomorrow, which firstFitDay reads when asked: a run can cross India's midnight after the seed. */
-  readonly firstFit: Pick<NextVisitClient, "mobile">;
+  readonly firstFit: Pick<NextVisitClient, "mobile"> & {
+    /** India's day of the consultation done, which Home recaps. */
+    readonly consulted: string;
+  };
 }
 
 const HANDOVER = "MM_E2E_NEXT_VISIT";
@@ -51,7 +55,7 @@ export async function seedNextVisit(): Promise<void> {
   const sql: string[] = [];
 
   /** A client with an address saved, both photograph consents given, and one visit done at `start` (UTC). */
-  const client = (type: string, start: string, end: string): { person: string; mobile: string } => {
+  const client = (type: string, start: string, end: string): { person: string; mobile: string; visit: string } => {
     const [person, visit] = [crypto.randomUUID(), crypto.randomUUID()];
     const mobile = randomMobile();
     sql.push(
@@ -65,7 +69,7 @@ export async function seedNextVisit(): Promise<void> {
          ${sqlRow(crypto.randomUUID(), person, "photos_own_record", "photos-own-record-v1", 1, now)},
          ${sqlRow(crypto.randomUUID(), person, "photos_referral_cards", "photos-referral-cards-v2", 1, now)};`,
     );
-    return { person, mobile };
+    return { person, mobile, visit };
   };
 
   const done = indiaDay(-25);
@@ -86,12 +90,14 @@ export async function seedNextVisit(): Promise<void> {
        ${sqlRow("first_fit", "essential", "Mane Man Essential", 180, 1, "e2e", now)};`,
     `INSERT OR IGNORE INTO price_book (item, tier, amount_ex_gst, gst_percent, valid_from) VALUES
        ${sqlRow("first_fit", "essential", 2_500_000, 0, "2026-01-01")};`,
+    `INSERT INTO hair_profiles (id, person_id, appointment_id, event_id, technician_id, created_at, product) VALUES
+       ${sqlRow(crypto.randomUUID(), firstFit.person, firstFit.visit, "e2e-profile", technician, now, "essential")};`,
   );
 
   await wrangler("d1", "execute", "DB", "--local", "--command", sql.join("\n"));
   process.env[HANDOVER] = JSON.stringify({
     due: { mobile: due.mobile, date: indiaDay(5) },
     replacement: { mobile: replacement.mobile, date: indiaDay(3) },
-    firstFit: { mobile: firstFit.mobile },
+    firstFit: { mobile: firstFit.mobile, consulted },
   } satisfies NextVisitClients);
 }

@@ -130,7 +130,7 @@ async function replacementPrompt(
   // Offered from the month it falls due, or from tomorrow once that month has begun.
   const firstDay = `${month}-01`;
   const from = firstDay > tomorrow ? firstDay : tomorrow;
-  const tier = await serviceToOffer(db, personId, "replacement", from);
+  const tier = await serviceToOffer(db, personId, { kind: "replacement", on: from });
   return { kind: "replacement_due", month, tier };
 }
 

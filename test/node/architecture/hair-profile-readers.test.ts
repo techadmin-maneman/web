@@ -24,14 +24,17 @@ describe("the hair profile's table", () => {
     );
   });
 
-  it("is reached through it by the routes, the card, the erasure and the export, and by no queue or provider", () => {
-    // Imported from beside it or from any folder: "./hair-profiles.ts", "../clients/hair-profiles.ts".
+  it("is reached through it by the routes, the card, the erasure, the export and Home, and by no queue or provider", () => {
+    // Imported from beside it or from any folder: "./hair-profiles.ts", "../clients/hair-profiles.ts". Home's first
+    // fit offer and its recap of the consultation read the hair system recommended alone (recommendedProduct).
     const users = naming(/from "(?:\.\.?\/)+(?:domain\/)?(?:[a-z-]+\/)?hair-profiles\.ts"/).sort();
     expect(users).toEqual(
       [
         "src/domain/privacy/data-export.ts",
         "src/domain/privacy/erasure-statements.ts",
         "src/domain/field/job-card.ts",
+        "src/domain/visits/consultation-recap.ts",
+        "src/domain/visits/next-visit.ts",
         "src/routes/ops/hair-profile.ts",
         "src/routes/tech/jobs.steps.ts",
       ].sort(),
