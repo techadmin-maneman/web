@@ -15,7 +15,7 @@ import { paysNothing } from "./steps/shared.tsx";
 /** Whether the hold's countdown has run out, by the API's clock. */
 const hasRunOut = (hold: Hold) => apiNow() >= Date.parse(hold.expires_at);
 
-export interface Paying {
+interface Paying {
   readonly dialog: RefObject<HTMLDialogElement | null>;
   readonly dispatch: Dispatch<BookingEvent>;
   /** The visit being moved; undefined for a new one. */

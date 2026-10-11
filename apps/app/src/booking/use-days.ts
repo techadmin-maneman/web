@@ -11,7 +11,7 @@ import type { BookingEvent } from "./flow.ts";
 /** Asking for the days after those shown: not yet, under way, or failed. */
 type LaterAsk = "idle" | "busy" | "failed";
 
-export interface DaysAsked {
+interface DaysAsked {
   readonly dispatch: Dispatch<BookingEvent>;
   /** The visit being moved; undefined for a new one. */
   readonly movingId: string | undefined;
