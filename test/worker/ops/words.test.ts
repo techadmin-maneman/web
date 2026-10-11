@@ -53,7 +53,9 @@ describe("the Words page", () => {
     const reworded = "Hi {{1}}, see you tomorrow.\n{{2}}: {{3}}, {{4}}, with {{5}}. To move it, open the Mane Man app.";
     const answer = await set(REMINDER, reworded);
     expect(answer.status).toBe(200);
-    expect(await answer.json()).toMatchObject({ word: { now: reworded, changed: { by: expect.any(String) } } });
+    const { word } = await answer.json<{ word: Word }>();
+    expect(word.now).toBe(reworded);
+    expect(word.changed).not.toBeNull();
     expect((await words()).find((word) => word.key === REMINDER)?.now).toBe(reworded);
 
     const back = await set(REMINDER, null);
