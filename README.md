@@ -32,7 +32,7 @@ What to know before changing anything:
 - **D1 first, the vendors after.** A request writes D1 and answers; the queues and the cron carry the work to Zoho, WhatsApp and AILabTools; and the cron's sweeper puts back on a queue whatever went quiet. D1 is where every retry starts from.
 - **D1 is the record of bookings, visits, technicians and pieces; Razorpay is the record of money.** D1 keeps a mirror of Razorpay's payments, read afresh from Razorpay and never written as the truth (ADR 0044). Zoho Books is written from D1: a customer by the five-minute Books pass, and an invoice from our own figures (ADR 0110).
 - **Every vendor is behind an adapter** in `src/providers/`, with a stub. Locally every one is a stub, and nothing leaves the machine. Production refuses to start with a stub.
-- **The free plan is a rule, not a hope** (ADR 0009). Daily ceilings keep R2 from billing, a test proves them, and a Worker may hold 64 vars and secrets at most.
+- **Spending has ceilings** (ADR 0009, ADR 0112). The account is on Workers Paid, which bills past its allowances rather than refusing work; daily ceilings still keep R2 and the paid vendors from billing past what the business expects, a test proves them, and a budget alert emails the owner.
 - **Business rules live once, in `src/policy/`,** each test titled by the rule it checks; the data they read is `src/config/`. What may import what is `docs/architecture.md`, and a test holds src/ to it.
 - **zod is the contract.** Each route declares its request and answer in zod; `npm run openapi` writes the OpenAPI documents, the API reference and each front end's types from them.
 
