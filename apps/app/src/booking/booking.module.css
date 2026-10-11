@@ -713,6 +713,10 @@
   cursor: pointer;
 }
 
+.confirmedCalendar {
+  margin-top: var(--sp-22);
+}
+
 .note {
   margin-top: var(--sp-22);
 }

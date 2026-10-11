@@ -280,10 +280,24 @@ export const referral = {
    * go to the number on WhatsApp, and the app shows them once its owner signs in with a code. Not drawn as worded
    * here.
    */
+  // Not drawn, beyond the label and the WhatsApp line: the day and window picked, what the visit asks of the client,
+  // and the calendar. They restate what was typed, so they tell whoever typed it nothing about the number.
   booked: {
-    label: "Booking received",
-    title: "Check WhatsApp",
-    body: "Your booking details are on their way to +91 {mobile}.",
+    label: "Booked",
+    when: (day: string, hours: string) => `${day}, ${hours}`,
+    body: "Your technician arrives in that window. Details on WhatsApp, at +91 {mobile}.",
+    ready: {
+      consultation: `${capitalised(visitLength.consultation)} at home, and free. Nothing is fitted.`,
+      oneVisit: `${capitalised(visitLength.firstFit)} at home. You pay once fitted, by a link to your phone.`,
+    },
+    calendar: {
+      label: "Add to your calendar",
+      google: "Google Calendar",
+      file: "Apple or Outlook",
+      fileName: "mane-man-visit.ics",
+      title: { consultation: "Mane Man consultation", oneVisit: "Mane Man consultation and fit" },
+      details: (hours: string, ready: string) => `Your technician arrives in the window, ${hours}. ${ready}`,
+    },
     credits: visitsLand,
     // Not drawn: the discount code given with the one visit, as it stands on the booking, or not, when another
     // booking took its last use a moment before (ADR 0108). What it takes off is before GST.

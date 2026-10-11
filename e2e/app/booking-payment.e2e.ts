@@ -18,6 +18,7 @@ import {
   refundedAfterPaying,
 } from "./checkout-fakes.ts";
 import { PORTS } from "../../scripts/lib/local-stack.ts";
+import { windowSpan, type BookingWindow } from "../../src/config/scheduling.ts";
 import { continueToPayment, TAKEN } from "./picking.ts";
 import { toPayment, toWindows, holdAs } from "./booking-fixtures.ts";
 
@@ -165,6 +166,29 @@ test("starts one payment, and one order, when the failed step is tapped twice", 
     distinctOrders: 1,
     liveWhileBusy: false,
   });
+});
+
+/** "20261013T063000Z", as a calendar link writes an instant. */
+const stamp = (instant: Date): string => instant.toISOString().replace(/[-:]|\.\d{3}/g, "");
+
+test("offers the visit just booked to the client's calendar, at the window held", async ({ page }) => {
+  await fakeCheckout(page, "paid");
+  await confirmedByRazorpay(page);
+  const held = page.waitForResponse(
+    (response) =>
+      response.request().method() === "POST" && new URL(response.url()).pathname === "/api/holds" && response.ok(),
+  );
+  await toPayment(page);
+  const hold = (await (await held).json()) as { date: string; window: BookingWindow };
+  await page.getByRole("button", { name: "Pay Rs. 2,000" }).click();
+  const confirmed = page.getByRole("dialog", { name: "Confirmed" });
+  await expect(confirmed).toBeVisible({ timeout: 15_000 });
+
+  const { start, end } = windowSpan(hold.date, hold.window);
+  const google = new URL((await confirmed.getByRole("link", { name: "Google Calendar" }).getAttribute("href")) ?? "");
+  expect(google.searchParams.get("dates")).toBe(`${stamp(start)}/${stamp(end)}`);
+  const file = confirmed.getByRole("link", { name: "Apple or Outlook" });
+  await expect(file).toHaveAttribute("download", "mane-man-visit.ics");
 });
 
 test("picks another window when one has just gone, and pays for that one", async ({ page }) => {
