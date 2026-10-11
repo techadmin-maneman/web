@@ -14,12 +14,13 @@
 //   CLOUDFLARE_API_TOKEN                            for wrangler, which writes the client and its session
 
 import { execFile } from "node:child_process";
-import { createHash, randomBytes } from "node:crypto";
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { promisify } from "node:util";
 import { sqlLiteral, sqlRow } from "../lib/sql-literal.ts";
+import { toBase64Url } from "../../src/lib/base64url.ts";
+import { sha256Hex } from "../../src/lib/hash.ts";
 
 const run = promisify(execFile);
 const WRANGLER = resolve("node_modules/wrangler/bin/wrangler.js");
@@ -51,8 +52,9 @@ async function execute(statements: readonly string[]): Promise<void> {
 async function signedIn(): Promise<{ token: string; sessionId: string }> {
   const now = new Date().toISOString();
   const fitted = new Date(Date.now() - 30 * DAY_MS).toISOString().slice(0, 10);
-  const token = randomBytes(32).toString("base64url");
-  const sessionId = createHash("sha256").update(token).digest("hex");
+  // The cookie's token, and the SHA-256 the sessions table holds of it (src/domain/sign-in/sessions.ts).
+  const token = toBase64Url(crypto.getRandomValues(new Uint8Array(32)));
+  const sessionId = await sha256Hex(token);
   await execute([
     `INSERT OR IGNORE INTO people (id, created_at, mobile_e164, name, contactable, test_record)
        VALUES ${sqlRow(CLIENT.person, now, CLIENT.mobile, CLIENT.name, 1, 1)};`,
