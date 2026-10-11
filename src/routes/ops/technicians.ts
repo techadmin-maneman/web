@@ -303,16 +303,11 @@ export function registerOpsTechnicians(app: App): void {
     }
 
     const id = crypto.randomUUID();
-    const testRecord = testRecordAtCreation(c.var.config.environment, name);
-    const technician = {
-      id,
-      name,
-      mobileE164,
-      zone: zone ?? null,
-      city: city ?? null,
+    const marks = {
       fitsTrained: fitsTrained ?? false,
-      testRecord,
+      testRecord: testRecordAtCreation(c.var.config.environment, name),
     };
+    const technician = { id, name, mobileE164, zone: zone ?? null, city: city ?? null, ...marks };
     const added = await addTechnician(c.env.DB, technician, auditOf(c, "technician.add", id), c.var.deps.now());
     if (added === "number_in_use") return refuse(c, "number_in_use");
     return c.json({ id }, 201);
