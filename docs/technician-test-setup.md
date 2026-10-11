@@ -1,8 +1,6 @@
 # The technician app: signing in on your own phone
 
-Nobody has ever signed in to the technician app with a real code. The staging proof of 23 September drove every other part of it against the real API, but it could not read a code — staging hashes each one under a secret — so it wrote the session by hand instead and said so (`docs/verification.md`, "P2-F4: the technician app against the real mm-api"). The one leg of sign-in that has never run is the one that matters most: a code arriving on a phone, and the six digits opening a session.
-
-This page sets that up for you. Staging now holds a technician who signs in with **your own mobile number**, and three jobs for him to work. You sign in yourself, on your own phone, and walk a job from the door to the outcome.
+This page signs you in to the technician app on staging with your own mobile number, on your own phone, and walks a job from the door to the outcome: the code arriving on a phone, the six digits opening a session, and each step of a job landing.
 
 It takes about twenty minutes and you can do it anywhere — at your desk, at home, in the car. You do not need a client, a technician or a van.
 
@@ -10,42 +8,30 @@ It takes about twenty minutes and you can do it anywhere — at your desk, at ho
 
 ---
 
-## What is already set up on staging
+## What the fixture lays
 
-Laid on 24 September 2026. Staging only: nothing was set up in production, and nothing was written to Zoho.
+A developer lays it on staging with one command (`scripts/staging/seed-technician-tester.ts`, "When you are finished", below), and nothing is written to production or to Zoho:
 
-- **A technician called "Test Technician"**, active, zone Gurgaon. He signs in with your own mobile number. The name is invented on purpose: your name is nowhere in staging, and your number is nowhere in the code, the fixtures or the git history — it sits in one column of one row of staging's database, and nowhere else.
-- **A client called "Staging test"**, with an invented `9…` number nobody answers, at an invented Gurgaon address in Sector 45. No message is ever sent to that number: staging messages only the handsets on its allowlist.
-- **Three service visits** for that technician, each at 10:00 in the morning: **Thursday 24**, **Friday 25** and **Sunday 27 September**.
-- **No phone.** Nothing is enrolled in advance. Your phone enrols itself the first time you sign in, so there is nothing for ops to do beforehand.
+- **A technician called "Test Technician"**, active, zone Gurgaon, who signs in with your own mobile number. The name is invented on purpose: your number sits in one column of one row of staging's database, and nowhere in the code, the fixtures or the git history.
+- **A client called "Staging test"**, with an invented `9…` number nobody answers, at an invented Gurgaon address in Sector 45. A "Staging test" record is never messaged unless its number is on staging's allowlist.
+- **Three service visits** for that technician, each at 10:00 in the morning: **today**, **tomorrow** and **three days out**, counted from the day the fixture is laid. The command prints each job's ID.
+- **No phone.** Nothing is enrolled in advance. Your phone enrols itself the first time you sign in.
 
-Two of those three jobs are there for a reason. Today's and tomorrow's carry the address and the client's card; **Sunday's does not**, because a job's address, access notes and client card open only the day before the visit, and the API enforces that rather than the screen. Sunday's job is what lets you see the locked card for yourself.
-
-**The dates go stale.** The jobs are pinned to 24, 25 and 27 September. Once those days pass the list will be empty and the fixture has to be laid again; "When you are finished", below, says how.
+Two of those three jobs are there for a reason. Today's and tomorrow's carry the address and the client's card; **the one three days out does not**, because a job's address, access notes and client card open only the day before the visit, and the API enforces that rather than the screen.
 
 **The check-in will pass wherever you are standing.** The test address deliberately has no coordinates on it, and an address with no coordinates cannot be measured against, so "I have arrived" is accepted from anywhere. That is on purpose: you should not have to drive to Sector 45 to see the rest of the app. Measuring the real 200 m geofence is what the field test does, at real addresses.
 
 ---
 
-## Does this need a Zoho FSM user? Not for this test.
+## How a real technician is added
 
-You have been told that open point 27 — every technician needs an FSM user **with his mobile number on it** — blocks the technician app, and that only you can create one in Zoho. For production that is still true. **For this test it is not.**
-
-The sign-in reads one table in our own database, `technicians`, and nothing else. Its query is `WHERE mobile_e164 = ? AND active = 1` (`src/domain/dispatch/technicians.ts`). FSM is asked only when that comes back empty, and then only as a refresh, so that a technician you added to FSM this morning does not have to wait for tonight's reconciliation (`src/routes/tech/auth.ts`). With a row already there, **no call to Zoho is made at all**.
-
-That is not a reading of the code; it was done. The technician above was written straight into staging's database with no Zoho record behind him, and the code request answered `202` and the code went out on WhatsApp.
-
-**From 25 September 2026 FSM's list did decide whether that row stayed active.** Each read of FSM's technician list — the nightly reconciliation, or anybody's sign-in with a number the mirror did not know — made inactive every technician the list leaves out (ADR 0065). FSM lists only your own user, so the first such read would switch the test technician off. From then on the sign-in finds nobody on your number, answers as it always does, and sends nothing, while the screen still says a code is on its way: the likely reason your code stopped arriving. **Since 27 September 2026 a technician written by hand is marked so** (`hand_written`, migration 0046), and the list leaves him alone. A test technician switched off before then stays off: have it cleared and laid again ("When you are finished", below).
-
-What the FSM user is really for is **how the row gets there in the ordinary way**. The mirror copies each technician's name, whether he is active, his territory and his mobile number out of FSM's user records, and in production that is the only thing that writes them. **It is also the supported way for you from now on:** put your own mobile number on your own FSM user (open point 27), and the mirror lists you as it will list every real technician.
-
-One thing to watch: once your own FSM user carries your number, the mirror writes a **second** technician row with the same number. The sign-in takes the row FSM lists before one written by hand (since 27 September 2026), so you sign in as your FSM user either way; still clear the test technician once you have moved to your FSM user, so that its jobs and its row do not linger on the dispatch board.
+In the console: Technicians → Add, with their name, mobile number and zone (ADR 0110). The sign-in reads that table, `technicians`, and nothing else. The fixture writes its technician straight into staging's copy of it instead, so it needs nothing from ops.
 
 ---
 
 ## Before you start
 
-1. **Your own number works, without being added anywhere first.** A login code answers whoever asked for it, so staging sends it to any number since 30 September 2026 (ADR 0097, "logins open, reminders fenced"); only reminders and other automatic messages still need a number on staging's allowlist, and none of those are part of this page.
+1. **Your own number works, without being added anywhere first.** A login code answers whoever asked for it, so staging sends it to any number (ADR 0097, "logins open, reminders fenced"); only reminders and other automatic messages still need a number on staging's allowlist, and none of those are part of this page.
 2. **Use Chrome on an Android phone.** The app is built for Android and the field test is run on one.
 3. **You will have to sign in to Cloudflare Access first.** `tech-staging.maneman.in` sits behind it, so the first thing the phone shows is Cloudflare's sign-in, not ours. Use your founders' login. This is staging's protection only; the real technician app will not have it.
 
@@ -74,7 +60,7 @@ Work through this on **today's** job. It is a service visit, so it has five step
 1. Tap the job. You should see the client's name, **10 am · service · 1 slot**, a **Prepaid** badge, the address in Sector 45, the access note, a **Navigate** button, and **Call** and **WhatsApp** buttons for the client. There is no price anywhere, and there should not be: the app never shows a technician an amount.
 2. Under the card you should see **1 · Arrived** and the line "Tap at the door. We record the time and check you are within 200 m."
 3. Tap **I have arrived**. Android will ask to use your location — allow it.
-4. The screen changes. You should now see **2 · Waiting** with a countdown running down from 15:00, and **Close as no-show** greyed out until the countdown reaches zero; once it opens it asks before it closes anything, because ops may charge the client. Below that, **He appears** and "Staging is at the door", and at the foot of the screen the one gold button, **Start job**.
+4. The screen changes. You should now see **2 · Waiting** with a countdown running down from 15:00, and **Close as no-show** greyed out until the countdown reaches zero; once it opens it asks before it closes anything, because ops may charge the client. Below that, **Client’s here** and "Staging is at the door", and at the foot of the screen the one gold button, **Start job**.
 
    > The check-in passed because the test address has no coordinates, as explained above. At a real address it would have measured the distance and refused if you were more than 200 m away.
 
@@ -90,9 +76,9 @@ Work through this on **today's** job. It is a service visit, so it has five step
 ### The three things worth checking while you are there
 
 - **Tomorrow's job.** At the foot of the day's list, tap the line that says **Tomorrow · 1 job**. It opens out; tap the job inside it. It should carry the address and the client's name, because a job opens the day before, and **Tomorrow** before its time. It offers no **I have arrived**: a job is arrived at on its own day.
-- **Sunday's job, which is still locked.** The day's list only ever shows today and tomorrow, so there is no way to tap through to a job further out — that is by design. Open it by its own address instead:
+- **The job three days out, which is still locked.** The day's list only ever shows today and tomorrow, so there is no way to tap through to a job further out; that is by design. Open it by its own address, with the ID the fixture printed for it as `later`:
 
-  **`https://tech-staging.maneman.in/jobs/ce586246-3666-4371-aef8-4badd4375fc2`**
+  **`https://tech-staging.maneman.in/jobs/<the later job's ID>`**
 
   Instead of the client's name the card says **Service**, and where the address would be it says **Not yet** and when it opens, such as **Opens at 6 pm on Sat 26 Sep.**, with **Sector 45** underneath. There is no address on that screen because the API did not send one, not because the screen is hiding it.
 
@@ -119,19 +105,15 @@ Work down this list. Most of it you can check yourself.
 
    - `login_code_sent` — the code went out, and the problem is between the provider and the handset.
    - `login_code_failed` — the WhatsApp provider refused it, and the line says why.
-   - `login_code_not_sent`, reason "no account holds the number" — no active technician in staging has your number: the test technician is not there, or was switched off before 27 September 2026 (above). The sign-in deliberately answers the same whether it knows a number or not, so the screen will never tell you this; the log is the only place it shows. A read of FSM's list that switches technicians off logs `technicians_deactivated`, with the FSM ID of each.
-
-   Before 27 September 2026 "no account holds the number" was `login_code_skipped`, and the last wrote nothing at all. Before 30 September 2026 a third reason was possible here, "number not on the allowlist": a code no longer checks it at all (ADR 0097).
+   - `login_code_not_sent`, reason "no account holds the number" — no active technician in staging has your number: the fixture is not laid, or was cleared. The sign-in deliberately answers the same whether it knows a number or not, so the screen will never tell you this; the log is the only place it shows.
 
 **Do not ask anyone to read the code out of the database.** It is not stored — only a hash of it is, and that is the point.
 
 ---
 
-## What ops will see, and can ignore
+## What ops will see
 
-The three jobs are rows in our own database with no Zoho record behind them, so **every step you take will fail to reach FSM**. That is expected and nothing is lost: the step is recorded in `job_events` and the app carries on as if nothing happened.
-
-What it does mean is that a job's steps reach FSM in order, each waiting for the one before it (ADR 0065), and the first never gets there. About seven minutes after the check-in, ops get an alert reading **"A technician's `check_in` did not reach FSM after 5 attempts: … Enter it in FSM by hand, with what came after it and was held back: …"**, naming the steps already waiting behind it; each step you take after that alerts as it arrives, **"A technician's `checklist` was not sent to FSM, because the `check_in` before it did not reach FSM."** — roughly six over a job. **Ignore them for this test**, and tell whoever watches the alert channel that you are running it. They stop as soon as you stop tapping.
+Each step you take lands in our own database, as a real job's does (ADR 0110), and nothing goes to Zoho. The jobs show on the dispatch board and, once closed, in the client's record; nothing needs ops to act. Tell whoever watches the console that you are running it.
 
 ---
 
@@ -147,7 +129,7 @@ Then have a developer take the fixture out of staging, which removes the technic
 TECH_TESTER_MOBILE=<your ten digits> node scripts/staging/seed-technician-tester.ts --clear
 ```
 
-The same script lays it again, without `--clear`, once the old one is cleared: when you want another run, when the dates have gone stale, or when the test technician was switched off before 27 September 2026. It refuses while any technician holds your number. It takes the number from the environment and never writes it down, which is why it is not in the command above.
+The same script lays it again, without `--clear`, once the old one is cleared: when you want another run, or when its days have passed. It refuses while any technician holds your number. It takes the number from the environment and never writes it down, which is why it is not in the command above.
 
 ---
 
@@ -157,4 +139,3 @@ The same script lays it again, without `--clear`, once the old one is cleared: w
 - **The camera in real conditions** — bright sun, a basement, gloves on. `docs/tech-field-test.md`, Part 2.
 - **A whole job in a dead spot**, and whether anything is lost or doubled when signal returns. Part 3.
 - **The phone locked mid-job**, and battery and heat over a working day. Parts 4 and 5.
-- **The FSM leg.** Nothing you do here reaches Zoho, for the reason above. A technician's work reaching FSM is proven with a real FSM appointment, which is P2-M2's ground and the field test's.
