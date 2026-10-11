@@ -32,7 +32,7 @@ import { DAY_MS, MINUTE_MS } from "../lib/durations.ts";
 import { type MessagingMessage } from "../config/pipeline.ts";
 import { DONE, runConsumer, type Settle } from "./consumer.ts";
 
-export const RenderMessageSchema = z.object({ job_id: z.uuid(), request_id: z.string() });
+const RenderMessageSchema = z.object({ job_id: z.uuid(), request_id: z.string() });
 export type RenderMessage = z.infer<typeof RenderMessageSchema>;
 
 const SUBMIT_RETRY_DELAY_SECONDS = 10;

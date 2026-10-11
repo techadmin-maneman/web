@@ -15,8 +15,7 @@ export const HAIR_COLORS = ["black", "brown", "lightBrown", "grey", "silver", "w
 export type HairColor = (typeof HAIR_COLORS)[number];
 
 /** How a job with hair_color `unknown` is rendered. */
-export const UNKNOWN_COLOR_ROUTES = ["premium_original", "pro_black"] as const;
-export type UnknownColorRoute = (typeof UNKNOWN_COLOR_ROUTES)[number];
+export type UnknownColorRoute = "premium_original" | "pro_black";
 
 /** Pro only, in every environment (docs/decisions/0018-one-look-pro-only-lead-notices.md). */
 export const UNKNOWN_COLOR_ROUTE: UnknownColorRoute = "pro_black";

@@ -4,7 +4,7 @@
 /** Razorpay sent the link, has still to, refused it, or it closed unpaid. */
 import { isOneOf } from "@rules/lib/one-of.ts";
 
-export const LINK_STATES = ["sent", "unsent", "refused", "closed"] as const;
+const LINK_STATES = ["sent", "unsent", "refused", "closed"] as const;
 export type LinkState = (typeof LINK_STATES)[number];
 
 interface OwedLink {

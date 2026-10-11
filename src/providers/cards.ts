@@ -7,7 +7,7 @@
 import { CARD_OVERLAY_PNG } from "../config/card-overlay.ts";
 import { CARD_HEIGHT, HALF_WIDTH, RULE_WIDTH } from "../config/referral-cards.ts";
 
-export interface CardPhotos {
+interface CardPhotos {
   readonly before: Uint8Array;
   readonly after: Uint8Array;
 }

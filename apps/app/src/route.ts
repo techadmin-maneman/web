@@ -25,8 +25,7 @@ export type Route =
   | { readonly page: "profile" }
   | { readonly page: "replacement" };
 
-export const TABS = ["/", "/visits", "/photos", "/payments", "/refer"] as const;
-export type Tab = (typeof TABS)[number];
+export type Tab = "/" | "/visits" | "/photos" | "/payments" | "/refer";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 const HOME: Route = { page: "home" };

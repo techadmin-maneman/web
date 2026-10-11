@@ -44,11 +44,11 @@ export type LookupFailure =
   /** Google knows no such place, or the Place ID has gone stale. */
   | "not_found";
 
-export type SuggestResult =
+type SuggestResult =
   | { readonly ok: true; readonly suggestions: readonly Suggestion[] }
   | { readonly ok: false; readonly reason: LookupFailure; readonly detail: string };
 
-export type ResolveResult =
+type ResolveResult =
   | { readonly ok: true; readonly place: ResolvedPlace }
   | { readonly ok: false; readonly reason: LookupFailure; readonly detail: string };
 

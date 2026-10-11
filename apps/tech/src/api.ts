@@ -59,7 +59,7 @@ export type Angle = Schema["TechnicianPhotoUrlRequest"]["angle"];
 export type Phase = Schema["TechnicianPhotoUrlRequest"]["phase"];
 
 /** The codes the API refuses with, as its document writes them. */
-export type ErrorCode = Schema["ErrorResponse"]["error"]["code"];
+type ErrorCode = Schema["ErrorResponse"]["error"]["code"];
 
 /**
  * A failed call carries the API's error code, or "offline" when it never

@@ -129,7 +129,7 @@ export const retellAfterHours = (kind: string): number => (RETOLD_EVERY_6_HOURS.
 export const markDoneLevel = (kind: string): Level => (kind === "crm_erasure" ? "manage" : "act");
 
 /** The kinds whose work can be sent again: the message, the lead to the CRM, or the erasure there. */
-export const SENT_AGAIN_KINDS = ["message_failed", "crm_lead", "crm_erasure"] as const;
+const SENT_AGAIN_KINDS = ["message_failed", "crm_lead", "crm_erasure"] as const;
 export type SentAgainKind = (typeof SENT_AGAIN_KINDS)[number];
 
 export const maySendAgain = (kind: string): kind is SentAgainKind => isOneOf(SENT_AGAIN_KINDS, kind);

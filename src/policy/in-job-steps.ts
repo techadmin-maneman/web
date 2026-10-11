@@ -20,7 +20,7 @@ const JOB_STEPS = ["before_photos", "checklist", "consumables", "piece", "after_
 type JobStep = (typeof JOB_STEPS)[number];
 
 /** Every kind of event the phone's outbox can carry, in the order they happen. */
-export const JOB_EVENT_KINDS = ["check_in", "start", ...JOB_STEPS] as const;
+const JOB_EVENT_KINDS = ["check_in", "start", ...JOB_STEPS] as const;
 export type JobEventKind = (typeof JOB_EVENT_KINDS)[number];
 
 /**
