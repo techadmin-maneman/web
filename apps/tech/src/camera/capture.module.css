@@ -76,7 +76,7 @@
 .unavailableLine {
   margin: 0;
   font-size: var(--fs-17);
-  line-height: var(--lh-155);
+  line-height: var(--lh-160);
   text-align: center;
   color: var(--paper);
 }

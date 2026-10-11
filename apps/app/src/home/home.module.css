@@ -27,7 +27,7 @@
 .date {
   font-family: var(--font-serif);
   font-size: var(--fs-app-title);
-  line-height: var(--lh-108);
+  line-height: var(--lh-115);
   color: var(--paper);
 }
 
@@ -40,7 +40,7 @@
 .card .place {
   margin-top: var(--sp-18);
   font-size: var(--fs-15);
-  line-height: var(--lh-155);
+  line-height: var(--lh-160);
   color: var(--ink-soft);
 }
 
@@ -155,7 +155,7 @@
   padding: 0;
   list-style: none;
   font-size: var(--fs-16);
-  line-height: var(--lh-155);
+  line-height: var(--lh-160);
 }
 
 .step {
@@ -189,13 +189,13 @@
   font-family: var(--font-serif);
   font-size: var(--fs-app-title);
   font-weight: var(--weight-regular);
-  line-height: var(--lh-110);
+  line-height: var(--lh-115);
 }
 
 .nothing .consultedWhen {
   font-family: var(--font-serif);
   font-size: var(--fs-app-title);
-  line-height: var(--lh-110);
+  line-height: var(--lh-115);
   color: var(--text);
 }
 
@@ -230,7 +230,7 @@
 .owedLine {
   margin-top: var(--sp-8);
   font-size: var(--fs-17);
-  line-height: var(--lh-150);
+  line-height: var(--lh-145);
 }
 
 .owedWait {
@@ -242,7 +242,7 @@
 /* Home's one prompt: a line, and a quiet way on, underlined in brass. */
 .promptLine {
   font-size: var(--fs-17);
-  line-height: var(--lh-150);
+  line-height: var(--lh-145);
 }
 
 .promptLink {

@@ -178,7 +178,7 @@
   margin: 0;
   font-family: var(--font-serif);
   font-size: var(--fs-24);
-  line-height: var(--lh-120);
+  line-height: var(--lh-115);
 }
 
 .figures {
@@ -210,7 +210,7 @@
   padding: var(--sp-12) var(--sp-14);
   background: var(--wa-dark);
   font-size: var(--fs-14);
-  line-height: var(--lh-150);
+  line-height: var(--lh-145);
   color: var(--wa-dark-text);
 }
 

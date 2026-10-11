@@ -24,7 +24,7 @@
 .promise {
   font-family: var(--font-serif);
   font-size: var(--fs-30);
-  line-height: var(--lh-118);
+  line-height: var(--lh-115);
 }
 
 /* Refer's credit tile, ruled above and below. */
@@ -47,7 +47,7 @@
 /* Where the credits of the invite the client came with stand, while they are not in the balance. */
 .inviteCredits {
   font-size: var(--fs-16);
-  line-height: var(--lh-165);
+  line-height: var(--lh-160);
 }
 
 /* The two ways on, at the foot of the screen. */
@@ -144,7 +144,7 @@
 .tracker .only {
   margin-top: var(--sp-24);
   font-size: var(--fs-15);
-  line-height: var(--lh-165);
+  line-height: var(--lh-160);
   color: var(--text-muted);
 }
 
@@ -158,7 +158,7 @@
 .nobodyTitle {
   font-family: var(--font-serif);
   font-size: var(--fs-25);
-  line-height: var(--lh-120);
+  line-height: var(--lh-115);
 }
 
 .nobodyLine {
@@ -203,7 +203,7 @@
   margin: 0;
   font-family: var(--font-serif);
   font-size: var(--fs-24);
-  line-height: var(--lh-120);
+  line-height: var(--lh-115);
 }
 
 .panel .panelBody {
@@ -228,7 +228,7 @@
 
 .problem {
   font-size: var(--fs-15);
-  line-height: var(--lh-155);
+  line-height: var(--lh-160);
   color: var(--error-on-paper);
 }
 
@@ -472,7 +472,7 @@ img.card {
   margin: 0;
   font-family: var(--font-serif);
   font-size: var(--fs-26);
-  line-height: var(--lh-118);
+  line-height: var(--lh-115);
 }
 
 .lines {
@@ -489,7 +489,7 @@ img.card {
   padding: var(--sp-15) 0;
   border-bottom: var(--hairline) solid var(--paper-line);
   font-size: var(--fs-16);
-  line-height: var(--lh-155);
+  line-height: var(--lh-160);
 }
 
 .bullet {
@@ -567,7 +567,7 @@ img.card {
 
 .bubbleTitle {
   font-size: var(--fs-14);
-  line-height: var(--lh-135);
+  line-height: var(--lh-130);
 }
 
 .bubble .bubbleLine,
@@ -578,7 +578,7 @@ img.card {
 
 .bubble .bubbleLine {
   margin-top: var(--sp-4);
-  line-height: var(--lh-140);
+  line-height: var(--lh-145);
 }
 
 .bubble .bubbleDomain {
@@ -588,13 +588,13 @@ img.card {
 .bubble .bubbleMessage {
   padding: var(--sp-8) var(--sp-4) var(--sp-2);
   font-size: var(--fs-15);
-  line-height: var(--lh-150);
+  line-height: var(--lh-145);
   overflow-wrap: anywhere;
 }
 
 .inkProblem {
   font-size: var(--fs-15);
-  line-height: var(--lh-155);
+  line-height: var(--lh-160);
   color: var(--error-on-ink);
 }
 

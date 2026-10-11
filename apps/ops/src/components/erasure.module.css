@@ -54,7 +54,7 @@
 .warning {
   margin: 0;
   font-size: var(--fs-15);
-  line-height: var(--lh-150);
+  line-height: var(--lh-145);
   color: var(--error-on-paper);
 }
 
@@ -76,7 +76,7 @@
 
 .whatItem {
   font-size: var(--fs-14);
-  line-height: var(--lh-150);
+  line-height: var(--lh-145);
 }
 
 .checkLine {

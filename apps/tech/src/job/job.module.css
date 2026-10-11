@@ -55,14 +55,14 @@
 .line {
   margin: 0;
   font-size: var(--fs-18);
-  line-height: var(--lh-150);
+  line-height: var(--lh-145);
   color: var(--paper);
 }
 
 .access {
   margin: var(--sp-10) 0 0;
   font-size: var(--fs-16);
-  line-height: var(--lh-155);
+  line-height: var(--lh-160);
   color: var(--ink-soft);
 }
 
@@ -118,7 +118,7 @@
 .lockedBody {
   margin: var(--sp-10) 0 0;
   font-size: var(--fs-17);
-  line-height: var(--lh-155);
+  line-height: var(--lh-160);
   color: var(--ink-soft);
 }
 
@@ -150,7 +150,7 @@
 .pieceWarn {
   margin: var(--sp-10) 0 0;
   font-size: var(--fs-16);
-  line-height: var(--lh-155);
+  line-height: var(--lh-160);
   color: var(--error-on-ink);
 }
 
@@ -197,7 +197,7 @@
 .lastVisitLine {
   margin: 0;
   font-size: var(--fs-15);
-  line-height: var(--lh-155);
+  line-height: var(--lh-160);
   color: var(--ink-soft);
 }
 
@@ -208,7 +208,7 @@
   padding: var(--sp-16) var(--sp-20);
   border-bottom: var(--hairline) solid var(--ink-rule);
   font-size: var(--fs-17);
-  line-height: var(--lh-150);
+  line-height: var(--lh-145);
   color: var(--paper);
 }
 
@@ -259,7 +259,7 @@
 .stageBody {
   margin: 0;
   font-size: var(--fs-18);
-  line-height: var(--lh-150);
+  line-height: var(--lh-145);
   color: var(--paper);
 }
 
@@ -267,7 +267,7 @@
 .stageNote {
   margin: 0;
   font-size: var(--fs-17);
-  line-height: var(--lh-155);
+  line-height: var(--lh-160);
   color: var(--ink-soft);
 }
 
@@ -282,14 +282,14 @@
 .stageOpens {
   margin: var(--sp-12) 0 0;
   font-size: var(--fs-17);
-  line-height: var(--lh-155);
+  line-height: var(--lh-160);
   color: var(--ink-soft);
 }
 
 .stageWarn {
   margin: var(--sp-12) 0 0;
   font-size: var(--fs-17);
-  line-height: var(--lh-155);
+  line-height: var(--lh-160);
   color: var(--error-on-ink);
 }
 
@@ -311,7 +311,7 @@
   padding-top: var(--sp-16);
   border-top: var(--hairline) solid var(--ink-rule);
   font-size: var(--fs-17);
-  line-height: var(--lh-150);
+  line-height: var(--lh-145);
   color: var(--ink-soft);
 }
 
