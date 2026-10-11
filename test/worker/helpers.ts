@@ -44,6 +44,7 @@ export const LOCAL_SETTINGS: Settings = {
   urgentWebhookUrl: null,
   leadWebhookUrl: null,
   heartbeatUrl: null,
+  sentryDsn: null,
   zohoCrm: null,
   zohoBooks: null,
   razorpay: null,
