@@ -121,3 +121,38 @@ describe("the site's forms on staging", () => {
     expect(statuses).toEqual([201, 201, 201, 429]);
   });
 });
+
+// A technician is a test record by the mark set when they were added, never by a name a rename could give.
+describe("a technician signing in on staging", () => {
+  const DEVICE = "phone-abc-123";
+
+  function techApp() {
+    deps = fakeDependencies({ now: () => NOW });
+    return appFor("staging", deps, { login: { ...LOCAL_SETTINGS.login, testRecordCode: KNOWN } }, "tech");
+  }
+
+  async function technician(id: string, mobile: string, name: string, testRecord: 0 | 1) {
+    await env.DB.prepare(
+      `INSERT INTO technicians (id, fsm_id, name, initials, active, mobile_e164, updated_at, test_record)
+       VALUES (?1, ?1, ?2, 'ST', 1, ?3, ?4, ?5)`,
+    )
+      .bind(id, name, mobile, NOW.toISOString(), testRecord)
+      .run();
+  }
+
+  async function signsInWithTheKnownCode(app: ReturnType<typeof appFor>, mobile: string): Promise<boolean> {
+    const asked = await post(app, "/api/tech/auth/otp", { mobile, device_id: DEVICE });
+    const { challenge_id: challengeId } = await asked.json<{ challenge_id: string }>();
+    const res = await post(app, "/api/tech/auth/verify", { challenge_id: challengeId, code: KNOWN, device_id: DEVICE });
+    return (await res.json<{ verified?: boolean }>()).verified === true;
+  }
+
+  it("takes the known code from one marked a test record, and not from one only named like one", async () => {
+    await technician("t-marked", "+919810000070", "Staging test technician", 1);
+    await technician("t-renamed", "+919810000071", "Staging test Imran", 0);
+    const app = techApp();
+
+    expect(await signsInWithTheKnownCode(app, "98100 00070")).toBe(true);
+    expect(await signsInWithTheKnownCode(app, "98100 00071")).toBe(false);
+  });
+});
