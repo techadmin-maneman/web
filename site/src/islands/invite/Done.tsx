@@ -6,8 +6,8 @@
 
 import { ICONS } from "@maneman/brand/icons";
 import { rupees } from "@maneman/web-kit/money";
-import { googleCalendarLink, icsHref, type CalendarEntry } from "../../../../src/lib/calendar.ts";
-import { windowSpan } from "../../../../src/config/scheduling.ts";
+import { googleCalendarLink, icsHref, type CalendarEntry } from "@rules/lib/calendar.ts";
+import { windowSpan } from "@rules/config/scheduling.ts";
 import { referral } from "../../content/referral.ts";
 import type { Consultation, ReferralConsultation, ReferralReward, ReferralWaitlist } from "../../lib/api.ts";
 import { clientAppOrigin, signInLink } from "../../lib/app-link.ts";

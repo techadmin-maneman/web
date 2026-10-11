@@ -25,7 +25,7 @@
 
 import { useSecondsLeft } from "@maneman/ui/useSecondsLeft";
 import { CodeField } from "@maneman/ui/CodeField";
-import { ONE_TIME_CODE } from "../../../../src/policy/one-time-code.ts";
+import { ONE_TIME_CODE } from "@rules/policy/one-time-code.ts";
 import { Button } from "@maneman/ui/Button";
 import { Mark } from "@maneman/ui/Mark";
 import { fieldDigits, mobileDigits } from "@maneman/web-kit/mobile";

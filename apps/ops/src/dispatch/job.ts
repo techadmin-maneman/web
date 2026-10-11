@@ -4,7 +4,7 @@
 
 import type { Block, Board, BoardClient, BookingWindow, BoardRow, MoveReason, Shown, Unassigned } from "../api.ts";
 import { indiaDate } from "@maneman/web-kit/dates";
-import { asksTheClient } from "../../../../src/policy/dispatch.ts";
+import { asksTheClient } from "@rules/policy/dispatch.ts";
 import { dispatch } from "../content.ts";
 
 /** The three windows a day is booked in, in their order (src/config/scheduling.ts). */

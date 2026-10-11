@@ -19,7 +19,7 @@ import { whatsappWith } from "../lib/whatsapp.ts";
 import { useSession } from "../session.ts";
 import { BookingSheet, type Offered } from "./BookingSheet.tsx";
 import type { Recommended } from "./steps/ServiceStep.tsx";
-import { firstNameOf } from "../../../../src/lib/names.ts";
+import { firstNameOf } from "@rules/lib/names.ts";
 
 /** The hair system the client's consultation recommended, and who recommended it; none before one is recorded. */
 function recommendationOf(me: Me): Recommended | undefined {

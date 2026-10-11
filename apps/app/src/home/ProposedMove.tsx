@@ -9,7 +9,7 @@ import { api, type VisitSummary } from "../api.ts";
 import { home, WINDOW_HOURS } from "../content.ts";
 import { useSession } from "../session.ts";
 import styles from "./home.module.css";
-import { firstNameOf } from "../../../../src/lib/names.ts";
+import { firstNameOf } from "@rules/lib/names.ts";
 
 type Proposal = NonNullable<VisitSummary["proposed_move"]>;
 

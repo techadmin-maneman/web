@@ -5,7 +5,7 @@ import { useEffect, useRef } from "preact/hooks";
 import { ICONS } from "@maneman/brand/icons";
 import { formatMobileField } from "@maneman/web-kit/mobile";
 import { MOST_NAME_LENGTH } from "@maneman/web-kit/names";
-import type { LossExtent } from "../../../../src/config/booking.ts";
+import type { LossExtent } from "@rules/config/booking.ts";
 import { referral } from "../../content/referral.ts";
 import { booking, stageOptions } from "../../content/site.ts";
 import type { PincodeAnswer, ReferralReward } from "../../lib/api.ts";

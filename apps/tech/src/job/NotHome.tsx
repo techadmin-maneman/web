@@ -37,7 +37,7 @@ import { CardFrame } from "./CardFrame.tsx";
 import { receiptLine, type ReceiptLine } from "./receipt.ts";
 import frame from "../components/frame.module.css";
 import styles from "./job.module.css";
-import { firstNameOf } from "../../../../src/lib/names.ts";
+import { firstNameOf } from "@rules/lib/names.ts";
 
 /** The phone's own fix, which the API measures against the address (src/policy/check-in.ts). */
 function position(): Promise<GeolocationPosition> {

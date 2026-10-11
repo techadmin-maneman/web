@@ -2,7 +2,7 @@
 // far from its door (src/routes/ops/visit-changes.ts). Ops say why; the reason stays with the visit and is shown with a
 // no-show's evidence. No board draws it.
 
-import { REASON_MAX_CHARS } from "../../../../src/policy/decision-reasons.ts";
+import { REASON_MAX_CHARS } from "@rules/policy/decision-reasons.ts";
 import { errorText } from "@maneman/web-kit/refusal";
 import { Button } from "@maneman/ui/Button";
 import { Dialog } from "@maneman/ui/Dialog";

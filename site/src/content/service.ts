@@ -4,8 +4,8 @@
 // as the home page has always said, until its wording is settled (open point 14): the served pincodes decide where we
 // actually go.
 
-import { VISIT_BLOCKS } from "../../../src/config/scheduling.ts";
-import type { VisitType } from "../../../src/config/visit-types.ts";
+import { VISIT_BLOCKS } from "@rules/config/scheduling.ts";
+import type { VisitType } from "@rules/config/visit-types.ts";
 
 export const serviceArea = "Delhi NCR";
 

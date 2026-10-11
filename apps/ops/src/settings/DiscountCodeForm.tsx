@@ -12,7 +12,7 @@ import { Button } from "@maneman/ui/Button";
 import { classes } from "@maneman/ui/classes";
 import { DateInput, Field, NumberInput, Select, TextInput } from "@maneman/ui/Field";
 import { useState } from "react";
-import { CODE_LENGTH } from "../../../../src/policy/discount-codes.ts";
+import { CODE_LENGTH } from "@rules/policy/discount-codes.ts";
 import { api, type DiscountCodesNew } from "../api.ts";
 import { settings } from "../content.ts";
 import { CheckPanel } from "../components/CheckPanel.tsx";

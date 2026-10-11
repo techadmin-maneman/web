@@ -142,6 +142,30 @@ export default defineConfig(
     rules: { "no-nested-ternary": "error" },
   },
   {
+    // The front ends reach the backend only through its shared rules, "@rules/config/…", "@rules/policy/…" and
+    // "@rules/lib/…" (scripts/build/rules-alias.ts): never by a relative path, and never into its database work,
+    // routes or vendors. An app's Vite config runs in Node, before any alias, so it reaches src/ as Node does.
+    files: ["apps/**/*.{ts,tsx}", "packages/**/*.{ts,tsx}", "site/src/**/*.{ts,tsx}"],
+    ignores: ["apps/*/vite.config.ts"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              regex: "^(\\.\\./)+src/",
+              message: "Import the backend's shared rules as @rules/config/…, @rules/policy/… or @rules/lib/….",
+            },
+            {
+              regex: "^@rules/(?!(config|policy|lib)/)",
+              message: "Only the backend's config, policy and lib are shared with the front ends.",
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
     // A function takes four parameters at most; past that it takes one object, so a call names what it passes.
     files: ["src/**/*.ts", "apps/**/*.{ts,tsx}", "packages/**/*.{ts,tsx}", "site/src/**/*.{ts,tsx}", "scripts/**/*.ts"],
     rules: { "max-params": ["error", 4] },

@@ -4,8 +4,8 @@
 
 import { ButtonLink } from "@maneman/ui/Button";
 import { capsLook } from "@maneman/ui/Caps";
-import { windowSpan, type BookingWindow } from "../../../../src/config/scheduling.ts";
-import { googleCalendarLink, icsHref, type CalendarEntry } from "../../../../src/lib/calendar.ts";
+import { windowSpan, type BookingWindow } from "@rules/config/scheduling.ts";
+import { googleCalendarLink, icsHref, type CalendarEntry } from "@rules/lib/calendar.ts";
 import { calendar, WINDOW_HOURS } from "../content.ts";
 import styles from "./add-to-calendar.module.css";
 

@@ -3,7 +3,7 @@
 // sheet, so the sheet is ours, in the change sheet's frame, with placeholder words (docs/fidelity-method.md).
 // Should the app be told booking is with ops after all, the note goes to them on WhatsApp, as it did before.
 
-import { CLIENT_NOTE_MAX_CHARS } from "../../../../src/policy/client-notes.ts";
+import { CLIENT_NOTE_MAX_CHARS } from "@rules/policy/client-notes.ts";
 import { Button, ButtonLink } from "@maneman/ui/Button";
 import { Sheet, SheetPanel } from "@maneman/ui/Sheet";
 import { useEffect, useRef, useState } from "react";

@@ -22,7 +22,7 @@ import {
   type NorwoodStage,
   type Remedy,
   type Wave,
-} from "../../src/policy/hair-profile.ts";
+} from "@rules/policy/hair-profile.ts";
 
 export { COLOURS, DENSITIES, FIRST_TRANSPLANT_YEAR, GREY_PERCENT, MEASUREMENTS, REMEDIES };
 export type { Measurement, Remedy };

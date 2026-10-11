@@ -1,7 +1,7 @@
 // The console's words every screen may use: a refusal of access, an erased client, the loading and failure lines,
 // and the site's booking page a launch sends people to.
 
-import type { EnvironmentName } from "../../../../src/config/environments.ts";
+import type { EnvironmentName } from "@rules/config/environments.ts";
 
 /** The public site's booking page, which a launch alert sends people to, as apps/app/src/content.ts has it. */
 export const BOOKING_URL: Readonly<Record<EnvironmentName, string>> = {

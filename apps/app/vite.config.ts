@@ -5,6 +5,7 @@
 
 import react from "@vitejs/plugin-react";
 import { defineConfig, type Plugin } from "vite";
+import { RULES_ALIAS } from "../../scripts/build/rules-alias.ts";
 import { ENVIRONMENTS, isEnvironmentName } from "../../src/config/environments.ts";
 import { pwa, themeColor } from "../../packages/web-kit/pwa.ts";
 import { CLIENT_APP } from "./pwa.ts";
@@ -33,7 +34,7 @@ export default defineConfig({
   root: import.meta.dirname,
   plugins: [react(), identify, themeColor(), pwa(CLIENT_APP)],
   // packages/ui imports React too, and from there would find the repository root's React 18; this bundles the app's.
-  resolve: { dedupe: ["react", "react-dom"] },
+  resolve: { dedupe: ["react", "react-dom"], alias: RULES_ALIAS },
   define: { "import.meta.env.MM_ENV": JSON.stringify(environment) },
   build: {
     outDir: `dist/${environment}`,

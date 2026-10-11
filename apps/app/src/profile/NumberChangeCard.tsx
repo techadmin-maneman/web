@@ -2,7 +2,7 @@
 // draws the card's first state; the ones after it are written in the same card, with placeholder words.
 
 import { capsLook } from "@maneman/ui/Caps";
-import { ONE_TIME_CODE } from "../../../../src/policy/one-time-code.ts";
+import { ONE_TIME_CODE } from "@rules/policy/one-time-code.ts";
 import { Button } from "@maneman/ui/Button";
 import { codeDigits } from "@maneman/ui/CodeField";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";

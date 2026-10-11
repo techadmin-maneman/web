@@ -12,7 +12,7 @@ import { paiseFromRupees, rupees } from "@maneman/web-kit/money";
 import { useState, type ReactNode } from "react";
 import { api, type Kind, type OpsService, type Price, type ServiceBook } from "../api.ts";
 import { settings } from "../content.ts";
-import { PRICE_TIER, tierCodeOf } from "../../../../src/policy/services.ts";
+import { PRICE_TIER, tierCodeOf } from "@rules/policy/services.ts";
 import styles from "../components/forms.module.css";
 
 const copy = settings.services;

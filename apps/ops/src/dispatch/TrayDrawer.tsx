@@ -16,7 +16,7 @@ import { clientPath } from "../route.ts";
 import styles from "./dispatch.module.css";
 import { nameOf } from "./job.ts";
 import { askedWord, offeredWord } from "./Tray.tsx";
-import { firstNameOf } from "../../../../src/lib/names.ts";
+import { firstNameOf } from "@rules/lib/names.ts";
 
 interface Props {
   readonly each: Unassigned;

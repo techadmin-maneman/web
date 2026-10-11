@@ -2,7 +2,7 @@
 // why a no-show's charge is wrong, once a charge, and ops refund or uphold it. No board draws it, so the sheet is
 // ours, in the note sheet's frame, with placeholder words (docs/fidelity-method.md).
 
-import { DISPUTE_REASON_MAX_CHARS } from "../../../../src/policy/no-show.ts";
+import { DISPUTE_REASON_MAX_CHARS } from "@rules/policy/no-show.ts";
 import { Button } from "@maneman/ui/Button";
 import { Sheet, SheetPanel } from "@maneman/ui/Sheet";
 import { useEffect, useRef, useState } from "react";

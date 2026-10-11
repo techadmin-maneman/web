@@ -1,7 +1,7 @@
 // The client app's words every screen may use: its name and titles, WhatsApp and the site's booking page, a
 // visit's windows, kinds and length, the messages it opens WhatsApp with, and the loading and failure lines.
 
-import type { EnvironmentName } from "../../../../src/config/environments.ts";
+import type { EnvironmentName } from "@rules/config/environments.ts";
 import { WHATSAPP_NUMBER } from "@maneman/web-kit/whatsapp";
 import { notYetFittedLines } from "./refer.ts";
 

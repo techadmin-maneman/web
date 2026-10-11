@@ -1,11 +1,13 @@
 import { cloudflareTest, readD1Migrations } from "@cloudflare/vitest-pool-workers";
 import { defineConfig } from "vitest/config";
+import { RULES_ALIAS } from "./scripts/build/rules-alias.ts";
 import { StalledFiles } from "./test/stalled-files.ts";
 
 const migrations = await readD1Migrations("./migrations");
 
 /** The tests that run in Node: mm-api's pure code, the scripts' libraries, and the apps' logic. */
 export const NODE_PROJECT = {
+  resolve: { alias: RULES_ALIAS },
   test: {
     name: "node",
     environment: "node",
@@ -22,6 +24,7 @@ export const DOM_PROJECT = {
   define: { "import.meta.env.MM_ENV": JSON.stringify("local") },
   resolve: {
     alias: {
+      ...RULES_ALIAS,
       react: `${import.meta.dirname}/apps/app/node_modules/react`,
       "react-dom": `${import.meta.dirname}/apps/app/node_modules/react-dom`,
     },
@@ -114,6 +117,8 @@ export default defineConfig({
             },
           }),
         ],
+        // Some tests read the site's own modules, which reach the backend's shared rules as the front ends do.
+        resolve: { alias: RULES_ALIAS },
         test: {
           name: "worker",
           include: ["test/worker/**/*.test.ts"],

@@ -2,7 +2,7 @@
 
 import { IconButton } from "@maneman/ui/IconButton";
 import { apiNow } from "../lib/clock.ts";
-import { ONE_TIME_CODE } from "../../../../src/policy/one-time-code.ts";
+import { ONE_TIME_CODE } from "@rules/policy/one-time-code.ts";
 import { classes } from "@maneman/ui/classes";
 import { ICONS } from "@maneman/brand/icons";
 import { Button } from "@maneman/ui/Button";

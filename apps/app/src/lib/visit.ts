@@ -2,7 +2,7 @@
 
 import type { Me, OneVisitPrice, VisitDetail, VisitSummary } from "../api.ts";
 import { ONE_VISIT, OTHER_VISIT, VISIT_TYPES } from "../content.ts";
-import { firstNameOf } from "../../../../src/lib/names.ts";
+import { firstNameOf } from "@rules/lib/names.ts";
 
 export const visitName = (type: VisitSummary["type"]) => (type === null ? OTHER_VISIT : VISIT_TYPES[type]);
 

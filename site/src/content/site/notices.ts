@@ -1,7 +1,7 @@
 // The notices a consent is given under, as the backend records them, and which are approved.
 
-import { CURRENT_NOTICE, findNotice, LANDING_NOTICES } from "../../../../src/config/notices.ts";
-import { KEEPING_NOTICES } from "../../../../src/policy/kept-try-ons.ts";
+import { CURRENT_NOTICE, findNotice, LANDING_NOTICES } from "@rules/config/notices.ts";
+import { KEEPING_NOTICES } from "@rules/policy/kept-try-ons.ts";
 
 export interface Notice {
   readonly version: string;

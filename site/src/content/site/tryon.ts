@@ -1,7 +1,7 @@
 // The try-on: the stages, the looks, the consent and the gate, and every screen of /try.
 
-import { LOSS_EXTENTS, type LossExtent } from "../../../../src/config/booking.ts";
-import { PRESETS, type PresetId } from "../../../../src/config/presets.ts";
+import { LOSS_EXTENTS, type LossExtent } from "@rules/config/booking.ts";
+import { PRESETS, type PresetId } from "@rules/config/presets.ts";
 import type { ErrorKind } from "../../lib/tryon-errors.ts";
 import type { Notice } from "./notices.ts";
 

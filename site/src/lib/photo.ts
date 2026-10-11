@@ -12,7 +12,7 @@ import {
   MAX_UPLOAD_BYTES,
   MIN_SIDE_PX,
   type HairColor,
-} from "../../../src/config/tryon.ts";
+} from "@rules/config/tryon.ts";
 import { DETECTOR_SIDE, detectHairColour } from "./hair-colour.ts";
 
 const QUALITY = 0.92;

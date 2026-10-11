@@ -2,9 +2,9 @@
 // landing's island, which reads it back. Neither trusts an answer it cannot read: an invite that fails the check is
 // treated as one that did not arrive, and the island asks for it again.
 
-import { HOUSE_CARD, HOUSE_CARD_VERSION } from "../../../src/config/house-card.ts";
+import { HOUSE_CARD, HOUSE_CARD_VERSION } from "@rules/config/house-card.ts";
 import type { Invite } from "./api.ts";
-import { INVITE_CODE } from "../../../src/config/invite-codes.ts";
+import { INVITE_CODE } from "@rules/config/invite-codes.ts";
 
 /** An invite's landing, the code captured: "/r/MM4417" or "/r/MM4417/". */
 export const INVITE_PATH = new RegExp(`^/r/(${INVITE_CODE})/?$`);

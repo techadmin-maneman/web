@@ -1,7 +1,7 @@
 // The Tasks board in sections, one per department, in the navigation's order: each department's groups, as the
 // policy orders them, under its name and the count of everything waiting in it.
 
-import { TASK_DEPARTMENTS } from "../../../../src/policy/console-routes.ts";
+import { TASK_DEPARTMENTS } from "@rules/policy/console-routes.ts";
 import type { TaskGroup } from "../api.ts";
 import { daysUntil } from "../lib/due.ts";
 import { DEPARTMENTS, type Department } from "../lib/grants.ts";
