@@ -61,7 +61,8 @@ import type { Logger } from "../../log.ts";
 import { enqueue } from "../platform/enqueue.ts";
 import { testRecordAtCreation } from "../../policy/staging-test-records.ts";
 import type { EnvironmentName } from "../../config/environments.ts";
-import { attribute, type Invite, type InviteState, type Via } from "../referrals/referrals.ts";
+import { attribute, type InviteState, type Via } from "../referrals/referrals.ts";
+import { attributeToPartner, isPartnerInvite, type AnyInvite } from "../referrals/channels.ts";
 import { saveBookingLead, type LeadAttribution } from "../leads/leads.ts";
 import { type Pincode } from "../clients/service-area.ts";
 import { inviteLapsed } from "../../policy/invites.ts";
@@ -114,11 +115,11 @@ export interface FormRequest {
   readonly bookHold: (holdId: string) => Promise<void>;
 }
 
-/** Attributes the person to the invite they came with, after what the form booked stands. */
+/** Attributes the person to the invite they came with, a client's or a partner's, after what the form booked stands. */
 export async function applyInvite(
   db: D1Database,
   input: {
-    invite: Invite | null;
+    invite: AnyInvite | null;
     personId: string;
     via: Via;
     pincode: string;
@@ -127,6 +128,11 @@ export async function applyInvite(
   },
 ): Promise<{ readonly credits: boolean; readonly invite: InviteState }> {
   if (input.invite === null) return { credits: false, invite: "unknown" };
+  if (isPartnerInvite(input.invite)) {
+    const partner = await attributeToPartner(db, { ...input, invite: input.invite });
+    if (partner.outcome === "fitted") return { credits: false, invite: "valid" };
+    return { credits: partner.credits, invite: partner.lapsed ? "expired" : "valid" };
+  }
   const attribution = await attribute(db, { ...input, invite: input.invite });
   if (attribution.outcome === "own_invite" || attribution.outcome === "fitted") {
     return { credits: false, invite: "valid" };
@@ -140,7 +146,7 @@ export async function applyInvite(
  * same, whatever stands for it, so the page never says that a number is known.
  */
 export function inviteAsForANewNumber(
-  invite: Invite | null,
+  invite: AnyInvite | null,
   waitlistLaunchedAt: string | null,
   now: Date,
 ): { readonly credits: boolean; readonly invite: InviteState } {
@@ -148,7 +154,8 @@ export function inviteAsForANewNumber(
   if (waitlistLaunchedAt !== null && inviteLapsed(new Date(waitlistLaunchedAt), now)) {
     return { credits: false, invite: "expired" };
   }
-  return { credits: true, invite: "valid" };
+  // A partner may give the friend no visits of their own.
+  return { credits: !isPartnerInvite(invite) || invite.friendVisits > 0, invite: "valid" };
 }
 
 /** The city a lead may name: the pincode's, where we have it as a city of ours. */

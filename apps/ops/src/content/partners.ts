@@ -1,0 +1,72 @@
+// The Partners panel's words, on Referrals (Growth; docs/decisions/0123-partner-referral-channels.md). The panel
+// imports them itself, so they stay out of the console's first load.
+
+import { FAILED, NOT_PERMITTED, OFFLINE } from "./common.ts";
+
+export const partners = {
+  title: "Partners",
+  none: "No partners yet.",
+  add: "Add partner",
+  columns: {
+    name: "Partner",
+    link: "Link",
+    friend: "Friend gets",
+    commission: "Commission",
+    opens: "Opens",
+    referred: "Came",
+    fitted: "Fitted",
+    earned: "Earned",
+    change: "Change",
+  },
+  /** "maneman.in/r/LSK7P2QX", as the partner's counter card prints it. */
+  link: (host: string, code: string) => `${host}/r/${code}`,
+  friendGets: (visits: number, days: number) =>
+    visits === 0 ? "Nothing" : `${String(visits)} ${visits === 1 ? "visit" : "visits"} · ${String(days)} days`,
+  paused: "Paused",
+  edit: "Edit",
+  editLabel: (name: string) => `Edit ${name}`,
+  pause: "Pause",
+  pauseLabel: (name: string) => `Pause ${name}`,
+  resume: "Resume",
+  resumeLabel: (name: string) => `Resume ${name}`,
+  form: {
+    addTitle: "New partner",
+    editTitle: (name: string) => `Edit ${name}`,
+    name: "Partner",
+    friendVisits: "Free visits for the friend",
+    validDays: "Days to use them",
+    commission: "Commission per fit, in rupees",
+    next: "Review",
+    cancel: "Cancel",
+  },
+  /** The check before anything is sent: what it is now, and what it will be. */
+  check: {
+    title: "Review the change",
+    add: (name: string) => `Add ${name}.`,
+    name: (was: string, now: string) => `Name: ${was} → ${now}.`,
+    friend: (was: string, now: string) => `Friend gets: ${was} → ${now}.`,
+    friendNew: (now: string) => `Friend gets: ${now}.`,
+    commission: (was: string, now: string) => `Commission per fit: ${was} → ${now}.`,
+    commissionNew: (now: string) => `Commission per fit: ${now}.`,
+    nothing: "Nothing changes.",
+    pauseTitle: (name: string) => `Pause ${name}`,
+    pauseLine: "Their link stops working until resumed.",
+    resumeTitle: (name: string) => `Resume ${name}`,
+    resumeLine: "Their link works again.",
+    send: "Confirm",
+    saving: "Saving",
+    back: "Back",
+  },
+  done: { added: "Partner added.", saved: "Saved.", paused: "Paused.", resumed: "Resumed." },
+  errors: {
+    name: "Up to 60 letters or digits.",
+    friend_visits: "Between 0 and 12.",
+    valid_days: "Between 30 and 1,095 days.",
+    commission: "A whole amount, within the most a fit may earn.",
+    taken: "A partner has that name.",
+    not_found: "Not found. Reload.",
+    not_permitted: NOT_PERMITTED,
+    offline: OFFLINE,
+    unknown: FAILED,
+  },
+};

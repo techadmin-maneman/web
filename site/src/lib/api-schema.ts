@@ -2043,6 +2043,10 @@ export interface components {
             state: "valid" | "unknown";
             /** @description Only if the referrer agreed to be named, and naming is on (REFERRER_NAME_ON_INVITE). */
             referrer_first_name: string | null;
+            /** @description A partner's name, where the code is a partner's rather than a client's (docs/decisions/0123-partner-referral-channels.md); null otherwise. */
+            partner: string | null;
+            /** @description A partner's own service visits for the friend; null for a client's invite, which gives the reward in force. */
+            friend_visits: number | null;
             /** @description Which card the invite shows, and its version for the preview's URL. */
             card: {
                 /** @enum {string} */

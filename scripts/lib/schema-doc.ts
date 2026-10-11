@@ -154,8 +154,15 @@ export const RESTORE_GROUPS: readonly RestoreGroup[] = [
   },
   {
     what: "Referrals and credits",
-    tables: ["referral_codes", "referral_attributions", "credit_ledger", "waitlist_entries"],
-    leftAtT: "A credit, a grant or a place on a waitlist disappears",
+    tables: [
+      "referral_codes",
+      "referral_attributions",
+      "credit_ledger",
+      "waitlist_entries",
+      "referral_channels",
+      "channel_attributions",
+    ],
+    leftAtT: "A credit, a grant, a partner or a place on a waitlist disappears",
     putBackBy: "The rows since `<T>`. `credit_ledger` is only ever added to",
   },
   {

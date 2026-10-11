@@ -15,7 +15,8 @@ import { pincodeOf, type Pincode } from "../clients/service-area.ts";
 import { siteNotice, type SiteNoticeKind } from "../ops/site-notices.ts";
 import { type OneVisitCode, useOnNewHold, codeOnHold, checkForOneVisit } from "../money/discount-code-holds.ts";
 import type { LeadAttribution } from "../leads/leads.ts";
-import type { Invite, InviteState } from "../referrals/referrals.ts";
+import type { InviteState } from "../referrals/referrals.ts";
+import { clientCodeOf, type AnyInvite } from "../referrals/channels.ts";
 import { liveVisitOf, bookableTypes, availability } from "./availability.ts";
 import { siteVisit, type SiteVisit } from "./site-visit.ts";
 import { offeredProducts } from "./services.ts";
@@ -68,7 +69,7 @@ function requestStatement(
     date: string;
     window: BookingWindow;
     oneVisit: boolean;
-    invite: Invite | null;
+    invite: AnyInvite | null;
     /** The discount code given for the one visit, which ops enter on the visit they book (ADR 0108). */
     discountCode: string | null;
     now: Date;
@@ -88,7 +89,7 @@ function requestStatement(
       input.pincode,
       input.date,
       input.window,
-      input.invite?.code ?? null,
+      clientCodeOf(input.invite),
       input.now.toISOString(),
       input.oneVisit ? 1 : 0,
       input.discountCode,
@@ -107,7 +108,7 @@ export interface ConsultationRequest {
   readonly turnstileToken: string;
   readonly attribution: LeadAttribution;
   /** The invite the friend arrived with, where there is one. */
-  readonly invite: Invite | null;
+  readonly invite: AnyInvite | null;
   /** The line beside the invite that told the friend their referrer hears of the fit; null where the page showed none. */
   readonly toldNotice: ToldNotice | null;
   /**

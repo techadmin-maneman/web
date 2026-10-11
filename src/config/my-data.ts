@@ -1,6 +1,8 @@
 // The readable copy of a client's data export (GET /api/me/export.html; src/domain/privacy/my-data-page.ts): each part's
 // heading, in the order the page shows them, and each field's label and how its value reads.
 
+import { CODE_WORDS, PURPOSE_WORDS } from "./my-data-words.ts";
+
 /**
  * How a value reads. `time`: an instant, as India's date and clock. `day`: a date. `money`: paise, as rupees.
  * `yesNo`: 1 or 0. `words`: a stored code, as words ("first_fit" reads "First fit"). `purpose`: a consent's purpose.
@@ -31,36 +33,8 @@ export const MY_DATA = {
   downloaded: (when: string) => `Downloaded ${when}, India time.`,
   photos: "Your visit photographs are not in this file. See them in the app, under Photos.",
   none: "Nothing held.",
-  /** A consent's purpose, as the app's profile names it. */
-  purposes: {
-    contact: "Contact about your booking",
-    tryon_photo: "Your photograph, for a try-on",
-    result_delivery: "Your try-on, sent on WhatsApp",
-    photos_own_record: "Photographs taken for your visit record",
-    photos_referral_cards: "Photographs on referral cards",
-    photos_marketing: "Photographs in our marketing",
-    whatsapp_visits: "WhatsApp about your visits",
-    whatsapp_launches: "WhatsApp about launches",
-  } satisfies Readonly<Record<string, string>>,
-  /** Stored codes that read badly spaced out; every other code reads as its words. */
-  codes: {
-    client: "You",
-    ops: "Our team",
-    system: "Automatically",
-    whatsapp_stop: "A STOP reply on WhatsApp",
-    message_link: "The link in a message",
-    app_share_sheet: "Sharing from the app",
-    referral_landing: "An invite's page",
-    site_waitlist: "The site's waitlist",
-    try_on: "Try-on",
-    lapsed: "Paid after the slot's hold ran out",
-    not_movable: "The visit had begun, or its technician or time had changed, so it could not be moved",
-    // A visit's status, as the client knew it.
-    scheduled: "Booked",
-    dispatched: "Booked",
-    in_progress: "Under way",
-    terminated: "Closed without a visit",
-  } satisfies Readonly<Record<string, string>>,
+  purposes: PURPOSE_WORDS,
+  codes: CODE_WORDS,
   parts: {
     person: {
       title: "Your details",
@@ -273,6 +247,20 @@ export const MY_DATA = {
         grant_state: words("Reward"),
         friend_visits: text("Free visits for you"),
         credit_valid_days: text("Days they last"),
+        created_at: time("When"),
+      },
+    },
+    recommended_by: {
+      title: "The partner who recommended us",
+      fields: {
+        partner: text("Partner"),
+        via: words("Through"),
+        first_touch_at: time("First opened"),
+        pincode: text("Pincode"),
+        grant_state: words("Reward"),
+        friend_visits: text("Free visits for you"),
+        valid_days: text("Days they last"),
+        granted_at: time("Given"),
         created_at: time("When"),
       },
     },

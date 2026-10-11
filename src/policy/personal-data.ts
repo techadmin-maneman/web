@@ -136,6 +136,11 @@ export const PERSONAL_COLUMNS: Readonly<Record<string, PersonalTable>> = {
       "Who opened the photographs, and when, is given.",
     erasure: { why: "Kept two years and never changed, as the record of who did what." },
   },
+  channel_attributions: {
+    leftOut: ["id", "channel_id", "referred_person_id", "first_fit_appointment_id", "commission", "updated_at"],
+    whyLeftOut: "Our keys, and what the partner who recommended us earns for it.",
+    erasure: { why: "Kept, as the record of the partner's commission; it holds nothing of theirs but a pincode." },
+  },
   consents: {
     leftOut: ["id", "person_id", "ip_hash"],
     whyLeftOut: "Our key, and a one-way hash of the network address it was given from, which reads as nothing.",

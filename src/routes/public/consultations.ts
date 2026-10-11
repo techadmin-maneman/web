@@ -46,7 +46,7 @@ import { isServed } from "../../domain/clients/service-area.ts";
 import { DISCOUNT_KINDS } from "../../policy/discount-codes.ts";
 import { PLANS, type Plan } from "../../policy/one-visit.ts";
 import { CODE_PATTERN } from "../../config/invite-codes.ts";
-import { inviteOf, type Invite } from "../../domain/referrals/referrals.ts";
+import { anyInviteOf, type AnyInvite } from "../../domain/referrals/channels.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
 import { IdempotencyKeyHeaderSchema } from "../../http/idempotency.ts";
 import { PersonNameSchema } from "../../http/openapi.ts";
@@ -320,10 +320,10 @@ const waitlistRoute = createRoute({
 function rememberedInvite(
   c: Context<AppEnv>,
   sent: { invite_code?: string | undefined; invite_told?: true | undefined },
-): Promise<Invite | null> {
+): Promise<AnyInvite | null> {
   const code = sent.invite_code;
   if (sent.invite_told !== true || code === undefined || !CODE_PATTERN.test(code)) return Promise.resolve(null);
-  return inviteOf({ db: c.env.DB, code, nameOnInvite: c.var.config.settings.referrerNameOnInvite });
+  return anyInviteOf(c.env.DB, code, c.var.config.settings.referrerNameOnInvite);
 }
 
 export function registerConsultations(app: App): void {

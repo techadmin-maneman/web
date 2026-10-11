@@ -21,7 +21,13 @@ import {
   readPriced,
 } from "./site-worker-fixtures.ts";
 
-const UNKNOWN = { state: "unknown", referrer_first_name: null, card: { state: "house", version: 1 } };
+const UNKNOWN = {
+  state: "unknown",
+  referrer_first_name: null,
+  partner: null,
+  friend_visits: null,
+  card: { state: "house", version: 1 },
+};
 
 async function open(api: Api, headers: HeadersInit = {}, origin = "https://maneman.in", worker = createSiteWorker()) {
   const { env, asked } = siteEnv(api);

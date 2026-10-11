@@ -26,7 +26,7 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 | Technicians' steps, pieces and photographs | `job_events`, `checkins`, `visits`, `consumables_used`, `no_show_cases`, `no_show_disputes`, `pieces`, `photos`, `photo_sets` | Steps, check-ins, outcomes, pieces fitted, no-shows and disputes since are lost; a photograph's file is kept with no row | The rows since `<T>` |
 | Hair profiles | `hair_profiles` | A profile recorded since is lost, and one an erasure blanked since is whole again | Adding the rows since `<T>`: they are only ever added. Erasing again blanks the rest |
 | Stock | `stock_movements` | A delivery, transfer, count or loss recorded since, or a job's use, is lost, so what each kit and the store hold is wrong | Adding the rows since `<T>` |
-| Referrals and credits | `referral_codes`, `referral_attributions`, `credit_ledger`, `waitlist_entries` | A credit, a grant or a place on a waitlist disappears | The rows since `<T>`. `credit_ledger` is only ever added to |
+| Referrals and credits | `referral_codes`, `referral_attributions`, `credit_ledger`, `waitlist_entries`, `referral_channels`, `channel_attributions` | A credit, a grant, a partner or a place on a waitlist disappears | The rows since `<T>`. `credit_ledger` is only ever added to |
 | Ops' settings and what we sell | `ops_settings`, `price_book`, `services`, `slot_times`, `serviceable_pincodes`, `technician_leave`, `visit_blackouts`, `city_blackouts`, `cities`, `zones`, `consumables`, `consumable_usage`, `checklist_items`, `partial_reasons`, `pay_grades`, `visit_pay_rates` | A price, service, rule, area, day's times, day off, consumable, job-sheet list or pay rate set since goes back | Setting it again in the console, which audits it |
 | Staff and access | `staff`, `staff_grants`, `staff_service_tokens`, `staff_access_mode` | Someone taken off the Staff list since, or a grant taken back, is let in again | Setting it again on the Staff page, before anything else |
 | Tasks | `task_owners`, `task_closures` | A task closed since opens again, and one given to someone since is nobody's | Closing or giving it again on the Tasks board |
@@ -45,6 +45,7 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 - [appointments](#appointments): Each visit, mirrored from FSM or booked without it: when, with whom, of what type and in what state, and what we have learnt of each since, such as the window asked for and its invoice. `fsm_id` is FSM's ID for a visit FSM holds, otherwise the row's own (ADR 0032, ADR 0110).
 - [audit_log](#audit_log): Every ops action that reads or changes a client's data, and who took it. An entry is never changed (ADR 0031).
 - [board_version](#board_version): One row: a number that triggers raise whenever a visit, a move, leave, a technician or the day's slot times change, so the open dispatch board reads itself again only then (ADR 0069).
+- [channel_attributions](#channel_attributions): A person who came through a partner's code, and what the friend and the partner earned once fitted (ADR 0123).
 - [checkins](#checkins): Each "I have arrived", passed or not, with the distance measured and the radius in force (ADR 0065); an erasure blanks where the phone was (ADR 0094).
 - [checklist_items](#checklist_items): Each kind of visit's checklist as ops set it, an item they took off kept as retired; a kind with no rows takes the committed list (ADR 0087).
 - [cities](#cities): The cities the site's first booking form offered. The leads it left name one, a booking's lead names its pincode's, the dispatch board filters by them, and a zone groups them for staff access (ADR 0109).
@@ -94,6 +95,7 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 - [price_book](#price_book): Every price from its date, and the only source of prices; an old row stays for what was sold under it (ADR 0045, ADR 0061).
 - [razorpay_events](#razorpay_events): Each Razorpay webhook event, once, by its event ID (ADR 0044).
 - [referral_attributions](#referral_attributions): A person who came through an invite, to the first invite they used, what became of its grant, and who attached it and why where ops did (ADR 0048, ADR 0089).
+- [referral_channels](#referral_channels): Partners who send us clients on their own code: the friend's reward and the partner's commission (ADR 0123).
 - [referral_codes](#referral_codes): A client's invite code, the version of their card, and how often the invite was opened (ADR 0048).
 - [refunds](#refunds): The mirror of Razorpay's refunds, and where each stands in Books (ADR 0044).
 - [serviceable_pincodes](#serviceable_pincodes): Every NCR pincode, its area and city, and whether and since when we serve it (ADR 0048, ADR 0061).
@@ -282,6 +284,36 @@ Made by `0090_board_version.sql`.
 | --- | --- | --- | --- | --- |
 | `id` | INTEGER | no |  | primary key |
 | `version` | INTEGER | no |  |  |
+
+## channel_attributions
+
+A person who came through a partner's code, and what the friend and the partner earned once fitted (ADR 0123).
+
+Made by `0109_referral_channels.sql`.
+
+| Column | Type | May be empty | Default | Key |
+| --- | --- | --- | --- | --- |
+| `id` | TEXT | no |  | primary key |
+| `channel_id` | TEXT | no |  | → `referral_channels.id` |
+| `referred_person_id` | TEXT | no |  | → `people.id` |
+| `first_touch_at` | TEXT | no |  |  |
+| `via` | TEXT | no |  |  |
+| `pincode` | TEXT | yes |  |  |
+| `first_fit_appointment_id` | TEXT | yes |  | → `appointments.id` |
+| `grant_state` | TEXT | no | `'pending'` |  |
+| `friend_visits` | INTEGER | yes |  |  |
+| `valid_days` | INTEGER | yes |  |  |
+| `commission` | INTEGER | yes |  |  |
+| `granted_at` | TEXT | yes |  |  |
+| `created_at` | TEXT | no |  |  |
+| `updated_at` | TEXT | no |  |  |
+
+Indexes:
+
+- `channel_attributions_by_channel`: on (`channel_id`, `grant_state`)
+- `channel_attributions_by_first_fit`: on (`first_fit_appointment_id`), where `first_fit_appointment_id IS NOT NULL`
+- `channel_attributions_pending`: on (`referred_person_id`), where `grant_state = 'pending'`
+- A `UNIQUE` constraint: unique on (`referred_person_id`)
 
 ## checkins
 
@@ -1453,6 +1485,32 @@ Indexes:
 - `referral_attributions_held`: on (`code`), where `grant_state = 'held'`
 - `referral_attributions_pending`: on (`referred_person_id`), where `grant_state = 'pending'`
 - A `UNIQUE` constraint: unique on (`referred_person_id`)
+
+## referral_channels
+
+Partners who send us clients on their own code: the friend's reward and the partner's commission (ADR 0123).
+
+Made by `0109_referral_channels.sql`.
+
+| Column | Type | May be empty | Default | Key |
+| --- | --- | --- | --- | --- |
+| `id` | TEXT | no |  | primary key |
+| `name` | TEXT | no |  |  |
+| `code` | TEXT | no |  |  |
+| `friend_visits` | INTEGER | no |  |  |
+| `valid_days` | INTEGER | no |  |  |
+| `commission` | INTEGER | no |  |  |
+| `paused_at` | TEXT | yes |  |  |
+| `opens` | INTEGER | no | `0` |  |
+| `created_by` | TEXT | no |  |  |
+| `created_at` | TEXT | no |  |  |
+| `changed_by` | TEXT | yes |  |  |
+| `changed_at` | TEXT | yes |  |  |
+
+Indexes:
+
+- A `UNIQUE` constraint: unique on (`name`)
+- A `UNIQUE` constraint: unique on (`code`)
 
 ## referral_codes
 

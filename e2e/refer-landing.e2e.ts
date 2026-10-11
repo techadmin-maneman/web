@@ -23,12 +23,15 @@ import {
 } from "./support.ts";
 import * as siteCopy from "../site/src/content/site.ts";
 import * as referralCopy from "../site/src/content/referral.ts";
+import type { Invite } from "../site/src/lib/api.ts";
 
 const CODE = "RM4K7P";
 
 const INVITE = {
   state: "valid" as const,
   referrer_first_name: "Rohit",
+  partner: null,
+  friend_visits: null,
   card: { state: "personal" as const, version: 2 },
 };
 
@@ -36,7 +39,7 @@ const SERVED = { pincode: "122018", served: true, area: "Sector 65", city: "Gurg
 const UNSERVED = { pincode: "400050", served: false, area: "Bandra", city: "Mumbai" };
 
 interface Answers {
-  invite?: typeof INVITE | { state: "unknown"; referrer_first_name: null; card: { state: "house"; version: number } };
+  invite?: Invite;
   consultation?: { status: number; body: unknown };
   waitlist?: { status: number; body: unknown };
 }
@@ -245,7 +248,13 @@ test("an unserved pincode takes the number instead, and the launch alert is the 
 
 test("a code we do not know still books, without the invite's visits", async ({ page }) => {
   await mockApi(page, {
-    invite: { state: "unknown", referrer_first_name: null, card: { state: "house", version: 1 } },
+    invite: {
+      state: "unknown",
+      referrer_first_name: null,
+      partner: null,
+      friend_visits: null,
+      card: { state: "house", version: 1 },
+    },
     consultation: {
       status: 201,
       body: {
@@ -284,7 +293,13 @@ test("a code we do not know still books, without the invite's visits", async ({ 
 
 test("a code we do not know promises nothing to hold on the waitlist either", async ({ page }) => {
   await mockApi(page, {
-    invite: { state: "unknown", referrer_first_name: null, card: { state: "house", version: 1 } },
+    invite: {
+      state: "unknown",
+      referrer_first_name: null,
+      partner: null,
+      friend_visits: null,
+      card: { state: "house", version: 1 },
+    },
   });
   await visit(page, `/r/${CODE}`);
   await page.getByLabel("Pincode").fill(UNSERVED.pincode);
@@ -705,4 +720,21 @@ test("the form fits a 320 px screen", async ({ page }) => {
   }
   const lastDay = await page.locator("label:has(input[name='date'])").last().boundingBox();
   expect((lastDay?.x ?? 0) + (lastDay?.width ?? 0)).toBeLessThanOrEqual(320);
+});
+
+// A partner's code (docs/decisions/0123-partner-referral-channels.md): the page names the partner, and offers the
+// friend the partner's own visits, never the reward clients' invites give.
+test("names a partner whose code it is, and offers the partner's own visits to the friend", async ({ page }) => {
+  await mockApi(page, {
+    invite: {
+      state: "valid",
+      referrer_first_name: null,
+      partner: "Looks Salon",
+      friend_visits: 2,
+      card: { state: "house", version: 1 },
+    },
+  });
+  await visit(page, `/r/${CODE}`);
+  await expect(page.getByText("Recommended by Looks Salon")).toBeVisible();
+  await expect(page.getByText("Get fitted and you get 2 service visits free.")).toBeVisible();
 });

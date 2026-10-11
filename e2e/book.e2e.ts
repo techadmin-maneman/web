@@ -37,7 +37,13 @@ const BOOKED = {
 };
 
 const CODE = "RM4K7P";
-const INVITE = { state: "valid", referrer_first_name: "Rohit", card: { state: "house", version: 1 } };
+const INVITE = {
+  state: "valid",
+  referrer_first_name: "Rohit",
+  partner: null,
+  friend_visits: null,
+  card: { state: "house", version: 1 },
+};
 
 type Answer = { status: number; body: unknown };
 
@@ -682,7 +688,15 @@ test("a friend who opened an invite joins a waitlist here with it, and is told t
 test("an invite opened more than 30 days ago, or one we do not know, is not sent", async ({ page }) => {
   const requests = await mockApi(page);
   await page.route(`**/api/r/ZZ9999`, (route) =>
-    route.fulfill({ json: { state: "unknown", referrer_first_name: null, card: { state: "house", version: 1 } } }),
+    route.fulfill({
+      json: {
+        state: "unknown",
+        referrer_first_name: null,
+        partner: null,
+        friend_visits: null,
+        card: { state: "house", version: 1 },
+      },
+    }),
   );
   await visit(page, "/r/ZZ9999");
   await expect(page.getByText("We do not recognise this invite")).toBeVisible();

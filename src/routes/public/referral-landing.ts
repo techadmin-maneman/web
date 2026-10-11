@@ -29,7 +29,7 @@ import { countInviteMiss, countInviteOpen, inviteMissesSpent } from "../../domai
 import { pincodeOf } from "../../domain/clients/service-area.ts";
 import { liveCard } from "../../domain/referrals/referral-cards.ts";
 import { CODE_PATTERN } from "../../config/invite-codes.ts";
-import { inviteOf, type Invite } from "../../domain/referrals/referrals.ts";
+import { anyInviteOf, isPartnerInvite, partnerInviteOf, type AnyInvite } from "../../domain/referrals/channels.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
 import { IdempotencyKeyHeaderSchema } from "../../http/idempotency.ts";
 import { PersonNameSchema } from "../../http/openapi.ts";
@@ -63,6 +63,15 @@ const InviteSchema = z
     referrer_first_name: z
       .union([z.string(), z.null()])
       .openapi({ description: "Only if the referrer agreed to be named, and naming is on (REFERRER_NAME_ON_INVITE)." }),
+    partner: z.union([z.string(), z.null()]).openapi({
+      description:
+        "A partner's name, where the code is a partner's rather than a client's " +
+        "(docs/decisions/0123-partner-referral-channels.md); null otherwise.",
+    }),
+    friend_visits: z.union([z.number().int(), z.null()]).openapi({
+      description:
+        "A partner's own service visits for the friend; null for a client's invite, which gives the reward in force.",
+    }),
     card: z
       .object({ state: z.enum(["house", "personal"]), version: z.number().int() })
       .strict()
@@ -142,6 +151,8 @@ const ogRoute = createRoute({
 const UNKNOWN_INVITE = {
   state: "unknown" as const,
   referrer_first_name: null,
+  partner: null,
+  friend_visits: null,
   card: { state: "house" as const, version: 1 },
 };
 
@@ -253,9 +264,30 @@ const waitlistRoute = createRoute({
   },
 });
 
-/** The invite behind a code, as the landing and its forms read it. */
-const invite = (c: Context<AppEnv>, code: string): Promise<Invite | null> =>
-  inviteOf({ db: c.env.DB, code, nameOnInvite: c.var.config.settings.referrerNameOnInvite });
+/** The invite behind a code, a client's or a partner's, as the landing and its forms read it. */
+const invite = (c: Context<AppEnv>, code: string): Promise<AnyInvite | null> =>
+  anyInviteOf(c.env.DB, code, c.var.config.settings.referrerNameOnInvite);
+
+/** The landing's answer for an invite: a partner's carries its name and its friend's reward, and the house card. */
+function inviteBody(found: AnyInvite) {
+  if (isPartnerInvite(found)) {
+    const card = { state: "house" as const, version: 1 };
+    return {
+      state: "valid" as const,
+      referrer_first_name: null,
+      partner: found.partnerName,
+      friend_visits: found.friendVisits,
+      card,
+    };
+  }
+  return {
+    state: "valid" as const,
+    referrer_first_name: found.referrerFirstName,
+    partner: null,
+    friend_visits: null,
+    card: found.card,
+  };
+}
 
 export function registerReferralLanding(app: App): void {
   app.openapi(inviteRoute, async (c) => {
@@ -272,7 +304,7 @@ export function registerReferralLanding(app: App): void {
     // Ops' funnel counts opens; the referrer never sees them (the tracker shows fits only). A chat app fetching the
     // link for its preview is not an open: the site's Worker passes the visitor's user agent on.
     if (!LINK_PREVIEW.test(c.req.header("User-Agent") ?? "")) await countInviteOpen(db, found.code, ipHash, at);
-    return c.json({ state: "valid" as const, referrer_first_name: found.referrerFirstName, card: found.card }, 200);
+    return c.json(inviteBody(found), 200);
   });
 
   app.openapi(ogRoute, async (c) => {
@@ -287,7 +319,8 @@ export function registerReferralLanding(app: App): void {
       .toUpperCase();
     const card = await liveCard(db, c.env.REFERRAL_CARDS, code);
     if (card === null) {
-      await countInviteMiss(db, ipHash, at);
+      // A partner's code shows the house card, and is no miss.
+      if ((await partnerInviteOf(db, code)) === null) await countInviteMiss(db, ipHash, at);
       return c.redirect(HOUSE_CARD, 302);
     }
     // A version's card never changes: a new one gets a new link. The length tells a chat's crawler the card's size

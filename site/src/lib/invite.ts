@@ -26,10 +26,13 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 export function isInvite(value: unknown): value is Invite {
   if (!isRecord(value) || !isRecord(value.card)) return false;
   const name = value.referrer_first_name;
+  const visits = value.friend_visits;
   return (
     typeof value.state === "string" &&
     Object.hasOwn(STATES, value.state) &&
     (name === null || typeof name === "string") &&
+    (value.partner === null || typeof value.partner === "string") &&
+    (visits === null || Number.isInteger(visits)) &&
     typeof value.card.state === "string" &&
     Object.hasOwn(CARD_STATES, value.card.state) &&
     Number.isInteger(value.card.version)
