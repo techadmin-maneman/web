@@ -147,14 +147,15 @@ export default defineConfig(
     rules: { "max-params": ["error", 4] },
   },
   {
-    // A hook called conditionally breaks React at runtime, so that one is an error; an effect's missing dependency
-    // is a warning to read, since adding it blindly can loop (the 2 Oct audit, CQ-13).
+    // A hook called conditionally breaks React at runtime, and an effect's missing dependency reads stale values, so
+    // both are errors (FE-02). Adding a dependency blindly can loop: read the newest value without restarting the
+    // effect with useEffectEvent in the apps, or useLatest (site/src/islands/useLatest.ts) on the site.
     files: ["apps/**/*.{ts,tsx}", "packages/**/*.{ts,tsx}", "site/src/**/*.{ts,tsx}"],
     // Its rules alone: the plugin's legacy configs do not fit flat config's types.
     plugins: { "react-hooks": { rules: reactHooks.rules } },
     rules: {
       "react-hooks/rules-of-hooks": "error",
-      "react-hooks/exhaustive-deps": "warn",
+      "react-hooks/exhaustive-deps": "error",
     },
   },
   {

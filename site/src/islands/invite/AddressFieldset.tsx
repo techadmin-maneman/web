@@ -91,8 +91,8 @@ export function AddressFieldset(props: {
   useEffect(() => {
     if (!focusFolded.current) return;
     focusFolded.current = false;
-    document.getElementById(idOf("floor"))?.focus();
-  }, [unfolded]);
+    document.getElementById(`${idPrefix}-address-floor`)?.focus();
+  }, [unfolded, idPrefix]);
 
   const change = (part: Part) => (value: string) => {
     props.onChange({ ...address, [part]: value });

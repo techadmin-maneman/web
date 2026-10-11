@@ -28,7 +28,7 @@
 
 import { Sheet, SheetPanel } from "@maneman/ui/Sheet";
 import { addDays } from "@maneman/web-kit/dates";
-import { useCallback, useEffect, useReducer, useRef, useState } from "react";
+import { useEffect, useEffectEvent, useReducer, useRef, useState } from "react";
 import {
   api,
   type Address,
@@ -186,33 +186,34 @@ export function BookingSheet({
    * Reads the profile, and the days of the visit wanted once there is one, and goes to the first step still to take:
    * picking the visit, the address, or the date.
    */
-  const load = useCallback(
-    async (visit: Wanted | null) => {
-      dispatch({ kind: "asking" });
-      const [answer, profile] = await Promise.all([
-        visit === null ? null : api.availability(visit, movingId, firstDay),
-        api.profile(),
-      ]);
-      setReminders(profile.ok ? remindersOn(profile.body) : null);
-      setUndecided(profile.ok ? undecidedOf(profile.body) : []);
-      savedAddress.current = profile.ok ? profile.body.address : null;
-      if (answer !== null && !answer.ok) {
-        if (answer.code === "not_served") showNotServed();
-        else dispatch({ kind: "failed" });
-        return;
-      }
-      addressMissing.current = profile.ok && profile.body.address === null;
-      // Known now, so the step that picks the visit counts the address among the steps to come.
-      if (addressMissing.current) setAddressFirst(true);
-      if (answer === null) dispatch({ kind: "answered", picking: true, addressMissing: addressMissing.current });
-      else showDays(answer.body);
-    },
-    [movingId, firstDay, offeredDate, offeredWindow],
-  );
+  const load = async (visit: Wanted | null) => {
+    dispatch({ kind: "asking" });
+    const [answer, profile] = await Promise.all([
+      visit === null ? null : api.availability(visit, movingId, firstDay),
+      api.profile(),
+    ]);
+    setReminders(profile.ok ? remindersOn(profile.body) : null);
+    setUndecided(profile.ok ? undecidedOf(profile.body) : []);
+    savedAddress.current = profile.ok ? profile.body.address : null;
+    if (answer !== null && !answer.ok) {
+      if (answer.code === "not_served") showNotServed();
+      else dispatch({ kind: "failed" });
+      return;
+    }
+    addressMissing.current = profile.ok && profile.body.address === null;
+    // Known now, so the step that picks the visit counts the address among the steps to come.
+    if (addressMissing.current) setAddressFirst(true);
+    if (answer === null) dispatch({ kind: "answered", picking: true, addressMissing: addressMissing.current });
+    else showDays(answer.body);
+  };
 
-  useEffect(() => {
+  // Read as the sheet opens, and again should what it opened on change; the step's own buttons read it again too.
+  const loadNow = useEffectEvent(() => {
     void load(wanted);
-  }, [load]);
+  });
+  useEffect(() => {
+    loadNow();
+  }, [movingId, firstDay, offeredDate, offeredWindow]);
 
   /** The client has picked their visit: its days, the profile already read. */
   const pick = async (service: OfferedService) => {

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "preact/hooks";
+import { useCallback, useEffect, useState } from "preact/hooks";
 import { fetchOpenWindows, type OpenWindows } from "../../lib/api.ts";
 import type { OpenDays } from "../../lib/open-windows.ts";
 
@@ -11,16 +11,19 @@ type Plan = OpenWindows["plan"];
 export function useOpenWindows(pincode: string, plan: Plan) {
   const [answers, setAnswers] = useState<Partial<Record<Plan, OpenDays>>>({});
 
-  async function load(fresh: boolean) {
-    const answer = await fetchOpenWindows(pincode, plan, fresh);
-    if (!answer.ok) return;
-    const { body } = answer;
-    setAnswers((known) => ({ ...known, [body.plan]: body.days }));
-  }
+  const load = useCallback(
+    async (fresh: boolean) => {
+      const answer = await fetchOpenWindows(pincode, plan, fresh);
+      if (!answer.ok) return;
+      const { body } = answer;
+      setAnswers((known) => ({ ...known, [body.plan]: body.days }));
+    },
+    [pincode, plan],
+  );
 
   useEffect(() => {
     void load(false);
-  }, [pincode, plan]);
+  }, [load]);
 
   return { days: answers[plan] ?? null, refresh: () => load(true) };
 }
