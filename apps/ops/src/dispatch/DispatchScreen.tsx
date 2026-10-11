@@ -42,7 +42,8 @@ import { ChangePanel, changedNotice, type Changing } from "./ChangePanel.tsx";
 import { askedNotice, doneNotice, moveRefusal, STALE, staleWords, type Notice } from "./landing.ts";
 import { NoticeLine } from "./NoticeLine.tsx";
 import { OpenedDrawer } from "./OpenedDrawer.tsx";
-import { isBlackout, landsAtFrom, useRooms, windowsFrom } from "./rooms.ts";
+import { DayRoutes } from "./DayRoutes.tsx";
+import { isBlackout, kmFrom, landsAtFrom, useRooms, windowsFrom } from "./rooms.ts";
 
 /**
  * A move in hand: the job, the window chosen for it, whether it is being sent, and whether ops chose, after the
@@ -63,6 +64,7 @@ export function DispatchScreen() {
   const [move, setMove] = useState<Move | null>(null);
   const [changing, setChanging] = useState<Changing | null>(null);
   const [notice, setNotice] = useState<Notice | null>(null);
+  const [routesOn, setRoutesOn] = useState<string | null>(null);
   const { loaded, last, refresh, retry } = useBoard(query, move !== null || opened !== null || changing !== null);
   const board = loaded.state === "loaded" ? loaded.value : null;
   const access = useAccess();
@@ -277,7 +279,7 @@ export function DispatchScreen() {
   );
   const found = useMemo(() => foundBy(board, find), [board, find]);
   const inHand = useMemo(
-    (): InHand | null => (choosing ? { job: move.job, windowsAt: windowsFrom(rooms) } : null),
+    (): InHand | null => (choosing ? { job: move.job, windowsAt: windowsFrom(rooms), kmAt: kmFrom(rooms) } : null),
     [choosing, move, rooms],
   );
   const chosen = move?.to ?? null;
@@ -318,6 +320,7 @@ export function DispatchScreen() {
                     onOpen={open}
                     onTake={mayMove ? take : null}
                     onLand={land}
+                    onRoutes={access.mayCall("GET /api/dispatch/day") ? setRoutesOn : null}
                   />
                 )}
               </div>
@@ -347,6 +350,15 @@ export function DispatchScreen() {
             setOpened(null);
             setNotice(null);
             setChanging(next);
+          }}
+        />
+      )}
+      {routesOn !== null && (
+        <DayRoutes
+          date={routesOn}
+          city={query.city}
+          onClose={() => {
+            setRoutesOn(null);
           }}
         />
       )}

@@ -2,7 +2,7 @@
 // of a day it takes (the brief's "a hint shows its slot size", A2), and the
 // keyboard's way to a destination: "choose a destination from a list, then the
 // same sheet". The list holds the windows the job would land in, on the rows
-// ops have narrowed the board to, so it is as short as the search makes it.
+// ops have narrowed the board to, so it is as short as the search makes it, the nearest first (OPS-03).
 
 import { Button } from "@maneman/ui/Button";
 import { shortDate } from "@maneman/web-kit/dates";
@@ -26,19 +26,27 @@ interface Destination {
   readonly key: string;
   readonly target: Target;
   readonly label: string;
+  readonly km: number | null;
 }
 
-/** Every window the job would land in, on the rows shown, technician by technician and day by day. */
+/** The nearest first; a day with no distance after every one with, in the board's order. */
+const nearestFirst = (a: Destination, b: Destination) => (a.km ?? Infinity) - (b.km ?? Infinity);
+
+/** Every window the job would land in, on the rows shown, the nearest technician's day first. */
 function destinationsOf(inHand: InHand, rows: readonly BoardRow[], dates: readonly string[]): Destination[] {
-  return rows.flatMap((technician) =>
-    dates.flatMap((date) =>
-      (inHand.windowsAt(technician.technician_id, date) ?? []).map((window: BookingWindow) => ({
-        key: `${technician.technician_id}/${date}/${window}`,
-        target: { technician, date, window },
-        label: dispatch.landing.listOption(technician.name, shortDate(date), windowWord(window)),
-      })),
-    ),
-  );
+  return rows
+    .flatMap((technician) =>
+      dates.flatMap((date) => {
+        const km = inHand.kmAt(technician.technician_id, date);
+        return (inHand.windowsAt(technician.technician_id, date) ?? []).map((window: BookingWindow) => ({
+          key: `${technician.technician_id}/${date}/${window}`,
+          target: { technician, date, window },
+          label: dispatch.landing.listOption(technician.name, shortDate(date), windowWord(window), km),
+          km,
+        }));
+      }),
+    )
+    .sort(nearestFirst);
 }
 
 interface Props {

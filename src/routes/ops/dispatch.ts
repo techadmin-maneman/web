@@ -3,7 +3,7 @@
 // ./dispatch-moves.ts.
 //   GET  /api/dispatch?from=&city=   the grid, blocks, unassigned tray, leave and utilisation
 //   GET  /api/dispatch/version       whether anything the board draws has changed since it was read
-//   GET  /api/dispatch/room?appointment_id=&from=   where a job in hand would land this week
+//   GET  /api/dispatch/room?appointment_id=&from=   where a job in hand would land this week, and how near
 //   POST /api/dispatch/assign        put an unassigned job on a technician
 //   POST /api/dispatch/move          move a job, with a reason from the design's list
 //   POST /api/dispatch/moves/:id/told   ops called a client who had not heard of a move
@@ -17,6 +17,7 @@ import { VISIT_TYPES } from "../../config/visit-types.ts";
 import { isWithin, techniciansWithin } from "../../domain/clients/places.ts";
 import { BOARD_DAYS, boardVersion, dispatchBoard } from "../../domain/dispatch/dispatch-board.ts";
 import { dispatchRoomFor } from "../../domain/dispatch/dispatch.ts";
+import { nearestKm } from "../../domain/dispatch/nearest.ts";
 import type { App } from "../../http/context.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
 import { json } from "../../http/openapi.ts";
@@ -202,6 +203,11 @@ const RoomSchema = z
             .array(z.object({ window: z.enum(BOOKING_WINDOWS), starts_at: z.iso.datetime() }).strict())
             .min(1)
             .openapi({ description: "When the job would start in each of those windows, as the move would place it." }),
+          km: z.union([z.number(), z.null()]).openapi({
+            description:
+              "As the crow flies, from the job to the nearest of the technician's other visits that day, to one " +
+              "decimal; null where the job or none of those visits has a pin. The picker lists the nearest first.",
+          }),
         })
         .strict(),
     ),
@@ -252,6 +258,8 @@ export function registerOpsDispatch(app: App): void {
     if (room === null) return refuse(c, "not_found");
     const technicians = await techniciansWithin(c.env.DB, await routeReach(c));
     const reached = room.rooms.filter((each) => isWithin(technicians, each.technician_id));
-    return c.json({ appointment_id: appointmentId, rooms: reached, blackouts: room.blackouts }, 200);
+    const km = await nearestKm(c.env.DB, appointmentId, reached);
+    const rooms = reached.map((each, index) => ({ ...each, km: km[index] ?? null }));
+    return c.json({ appointment_id: appointmentId, rooms, blackouts: room.blackouts }, 200);
   });
 }

@@ -16,6 +16,7 @@ import { createMessagingProvider, type MessagingProvider } from "./providers/mes
 import { createPaymentsProvider, type PaymentsProvider } from "./providers/payments/index.ts";
 import { BACKGROUND_TIMEOUT_MS, WAITED_TIMEOUT_MS } from "./providers/zoho-http.ts";
 import { createGeocodeProvider, type GeocodeProvider } from "./providers/geocode/index.ts";
+import { createRoutesProvider, type RoutesProvider } from "./providers/routes/index.ts";
 
 export interface Dependencies {
   readonly fetch: typeof fetch;
@@ -40,6 +41,8 @@ export interface Dependencies {
   readonly payments: PaymentsProvider;
   /** The address search, and the coordinate the geofence measures against. */
   readonly geocode: GeocodeProvider;
+  /** The dispatch board's drive times and day map; null where ROUTES_PROVIDER is "none". */
+  readonly routes: RoutesProvider | null;
   /** Draws a client's referral card from their first fit's photographs. */
   readonly cards: CardComposer;
 }
@@ -109,6 +112,9 @@ export function productionDependencies(config: StaticConfig): DependencyFactory 
     const geocode = lazily(() =>
       createGeocodeProvider(providers.GEOCODE_PROVIDER, settings.geocode.apiKey, { fetch: httpFetch, log }),
     );
+    const routes = lazily(() =>
+      createRoutesProvider(providers.ROUTES_PROVIDER, settings.routes.apiKey, { fetch: httpFetch, log }),
+    );
     return {
       fetch: httpFetch,
       now,
@@ -145,6 +151,9 @@ export function productionDependencies(config: StaticConfig): DependencyFactory 
       },
       get geocode() {
         return geocode();
+      },
+      get routes() {
+        return routes();
       },
       get cards() {
         return cards();

@@ -28,6 +28,7 @@ import { createImageProvider } from "../../src/providers/image/index.ts";
 import type { CodeChannel } from "../../src/providers/codes.ts";
 import { createStubBooks } from "../../src/providers/books/stub.ts";
 import { createGeocodeProvider } from "../../src/providers/geocode/index.ts";
+import { createStubRoutes } from "../../src/providers/routes/stub.ts";
 import { createStubMessaging } from "../../src/providers/messaging/stub.ts";
 
 export const TURNSTILE_TEST_SECRET = "1x0000000000000000000000000000000AA";
@@ -50,6 +51,7 @@ export const LOCAL_SETTINGS: Settings = {
   zohoBooks: null,
   razorpay: null,
   geocode: { apiKey: null, dailyCeiling: 200 },
+  routes: { apiKey: null },
   access: null,
   login: {
     codePepper: "test-login-code-pepper-that-is-long-enough",
@@ -88,6 +90,7 @@ export const LOCAL_CONFIG: StaticConfig = {
     BOOKS_PROVIDER: "stub",
     PAYMENTS_PROVIDER: "stub",
     GEOCODE_PROVIDER: "stub",
+    ROUTES_PROVIDER: "stub",
   },
   settings: LOCAL_SETTINGS,
 };
@@ -281,6 +284,7 @@ export function fakeDependencies(overrides: Partial<Dependencies> = {}): TestDep
     crm: createStubCrm(createLogger()),
     image: createImageProvider(null, { fetch, now, log: createLogger() }),
     geocode: createGeocodeProvider("stub", null, { fetch, log: createLogger() }),
+    routes: createStubRoutes(),
     messaging: createStubMessaging(createLogger()),
     alert,
     alertOnce: createAlertOnce({ db: env.DB, alert, now, environment: "local", log: createLogger() }),

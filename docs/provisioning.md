@@ -527,7 +527,7 @@ Everything below is at <https://console.cloud.google.com>, signed in as the acco
    - **Places API (New)** — the search box.
    - **Geocoding API** — the coordinate we keep.
 
-   Do not enable Maps JavaScript API, Maps SDK, Static Maps, Routes, Distance Matrix or anything else. Nothing draws a map, so nothing else is called, and an API that is not enabled cannot be billed.
+   Do not enable Maps JavaScript API, Maps SDK, Distance Matrix or anything else here. Section 13a adds Routes and Maps Static for the dispatch board; nothing else is called, and an API that is not enabled cannot be billed.
 
 3. **Make the key and restrict it.** **APIs & Services** → **Credentials** → **Create credentials** → **API key**. Then **Edit API key** on the one just made:
    - **Name:** `mm-api address search`.
@@ -574,6 +574,24 @@ Everything below is at <https://console.cloud.google.com>, signed in as the acco
 - **"busy" instead of suggestions.** A ceiling is reached. `geocode` is the ceiling's name in the alert. Either a client is hammering the form — the per-client limit is 120 a day — or `GEOCODE_DAILY_CEILING` is too low for real use. Raise it in `wrangler.jsonc` and deploy; the guard refuses anything above 1,800.
 - **To stop all spending at once.** Set `"GEOCODE_DAILY_CEILING": "0"` in `wrangler.jsonc` and deploy, or set `"GEOCODE_PROVIDER": "none"`. Either way the form keeps working, typed.
 - **A charge appears at all.** Something is wrong, because the quotas in step 4 cannot reach the free allowance. Disable the key in **Credentials**, set `GEOCODE_PROVIDER` to `none`, and find out how before re-enabling it.
+
+## 13a. The dispatch board's drive times and day map (Routes and Maps Static)
+
+The board's Routes, from each column's head: a map of each technician's day and the drive between their visits (ADR 0120). Until this is done, `ROUTES_PROVIDER` stays `none`: the board lists the day's visits with no drive times and no map. It uses section 13's project and key, so do that first.
+
+1. **Switch on two more APIs**, in the `mane-man-maps` project: **APIs & Services** → **Library** → **Routes API** → **Enable**, then **Maps Static API** → **Enable**.
+2. **Let the key call them.** **Credentials** → the `mm-api address search` key → **API restrictions**: tick **Routes API** and **Maps Static API** as well as the two already ticked. **Save.**
+3. **Cap their quotas**, as in section 13 step 4:
+
+   | API             | Quota to edit               | Set it to |
+   | --------------- | --------------------------- | --------- |
+   | Routes API      | Compute Routes requests/day | **1200**  |
+   | Maps Static API | Requests per day            | **400**   |
+
+   Each sits just above our own daily ceiling (1,000 drives, 300 maps), so our code refuses first. A month at either quota stays under the 70,000 Google gives free on the India price list.
+
+4. **Switch it on.** A pull request sets `"ROUTES_PROVIDER": "google"` under `env.staging.vars` in `wrangler.jsonc`. Leave production as `none` until its release.
+5. **Check it.** Open Dispatch, then **Routes** under a day with visits whose clients' addresses are pinned. The map shows each technician's day in their colour, and the list shows the drive between each two visits. If it says the drive times are unavailable, look for `vendor_call` lines with `vendor: "google"` in Workers Logs: a 403 is step 2's restriction.
 
 ## 14. Cloudflare's edge scripts: Web Analytics and JavaScript detections
 

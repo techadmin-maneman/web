@@ -9,7 +9,8 @@ import type { Alert } from "../../providers/alerts.ts";
 import { limitOf } from "../../policy/rate-limits.ts";
 import { isSpent, takeOne, type CountedAt } from "../sign-in/rate-limit.ts";
 
-export type Ceiling = "upload" | "render" | "result_read" | "login_code" | "tech_code" | "form_code" | "geocode";
+export type Ceiling =
+  "upload" | "render" | "result_read" | "login_code" | "tech_code" | "form_code" | "geocode" | "route" | "route_map";
 
 /** What stops while a ceiling is reached, for its alert. */
 const STOPPED: Readonly<Record<Ceiling, string>> = {
@@ -22,6 +23,8 @@ const STOPPED: Readonly<Record<Ceiling, string>> = {
   // The site's codes go to whatever number is typed, so they have a ceiling of their own and never stop a login.
   form_code: "the site's WhatsApp codes for the one visit and the try-on",
   geocode: "address suggestions",
+  route: "the dispatch board's drive times",
+  route_map: "the dispatch board's day map",
 };
 
 /** Counts one use against today's ceiling; false once the ceiling is reached. */
