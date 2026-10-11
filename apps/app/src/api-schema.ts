@@ -3041,6 +3041,8 @@ export interface components {
             } | null;
             /** @description The next visit that has not happened: a consultation for a lead. */
             next_visit: components["schemas"]["VisitSummary"] | null;
+            /** @description The latest consultation done, while the client is not yet fitted. Null before one, and once fitted. */
+            consulted: components["schemas"]["Consulted"] | null;
             /** @description The soonest visit paid for, or booked free, that is not booked yet: neither booked nor refunded. It is on its way, and becomes a visit once it is booked (ADR 0068). */
             being_booked: {
                 /** @enum {string} */
@@ -3185,6 +3187,17 @@ export interface components {
         Technician: {
             name: string;
             initials: string;
+        };
+        /** @description A consultation done: its day, who came, and the hair system recommended there. */
+        Consulted: {
+            /**
+             * Format: date
+             * @description India's date of the consultation.
+             */
+            date: string;
+            technician: components["schemas"]["Technician"] | null;
+            /** @description The tier of the first-fit service the technician recommended, as the hair profile records it; null for none. booking.next offers the first fit as it, while it is offered. */
+            recommended: string | null;
         };
         OwedPayment: {
             /** Format: uuid */

@@ -648,6 +648,14 @@
   margin-top: 0;
 }
 
+/* The hair system the consultation recommended, named beneath its name in the chooser. */
+.recommended {
+  display: block;
+  margin-top: var(--sp-4);
+  font-size: var(--fs-13);
+  color: var(--brass-text);
+}
+
 .confirmed {
   margin: calc(-1 * var(--sp-22)) calc(-1 * var(--sp-20)) calc(-1 * var(--sp-24));
   padding: var(--sp-26) var(--sp-20);

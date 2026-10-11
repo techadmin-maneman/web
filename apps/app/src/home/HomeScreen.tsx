@@ -88,6 +88,9 @@ function HomeBody({ me, offline }: { me: Me; offline: boolean }) {
     const { date, window } = me.being_booked;
     return <Consultation date={date} when={windowText(window)} place="" changing={null} noting={null} price={price} />;
   }
+  if (me.state !== "fitted" && me.consulted !== null && me.booking.types.includes("first_fit")) {
+    return <Consulted consulted={me.consulted} services={me.booking.services} />;
+  }
   if (me.state === "fitted" || me.booking.types.includes("first_fit")) {
     return <NothingNext promptBooks={me.prompt?.kind === "next_visit"} />;
   }
@@ -380,6 +383,32 @@ function NothingNext({ promptBooks }: { promptBooks: boolean }) {
       </h1>
       <p>{home.next.none}</p>
       {!promptBooks && <BookNext className={styles.book} offerOther={false} />}
+    </section>
+  );
+}
+
+/**
+ * The consultation done and the first fit not yet booked: its day, who came, the hair system they recommended where
+ * it is offered, and the first fit to book, which the sheet opens on that hair system.
+ */
+function Consulted({
+  consulted,
+  services,
+}: {
+  consulted: NonNullable<Me["consulted"]>;
+  services: Me["booking"]["services"];
+}) {
+  const copy = home.consulted;
+  const technician = consulted.technician === null ? null : firstNameOf(consulted.technician.name);
+  const product = services.find((service) => service.type === "first_fit" && service.tier === consulted.recommended);
+  return (
+    <section className={styles.nothing} aria-labelledby="consulted">
+      <h1 className={capsLook(styles.label)} id="consulted">
+        {copy.label}
+      </h1>
+      <p className={styles.consultedWhen}>{copy.when(shortDate(consulted.date), technician)}</p>
+      {product !== undefined && <p>{copy.recommends(technician, product.name)}</p>}
+      <BookNext className={styles.book} offerOther={false} />
     </section>
   );
 }

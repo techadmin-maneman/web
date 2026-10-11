@@ -166,11 +166,15 @@ test("Home offers the replacement where the piece falls due first, and a page sa
   await expect(page.getByRole("heading", { level: 1, name: "Your next visit" })).toBeVisible();
 });
 
-test("Home offers the first fit once the consultation is done, in the consultation's window", async ({ page }) => {
+test("Home recaps the consultation, and offers the first fit as the hair system recommended, in its window", async ({
+  page,
+}) => {
   const { firstFit } = nextVisitClients();
   const asked = await everyWindowOpen(page);
   await logIn(page, firstFit.mobile);
-  await expect(page.getByRole("heading", { level: 1, name: "Your next visit" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "Your consultation" })).toBeVisible();
+  await expect(page.getByText(`${shortDate(firstFit.consulted)} · Imran`)).toBeVisible();
+  await expect(page.getByText("Imran recommends Mane Man Essential.")).toBeVisible();
   // The first fit is Home's card, and never a prompt beneath it.
   await expect(page.getByText(/^Your next .* is due on/)).toHaveCount(0);
   await accessible(page);
@@ -179,6 +183,7 @@ test("Home offers the first fit once the consultation is done, in the consultati
   const dates = page.getByRole("dialog", { name: "Pick a date" });
   await expect(dates.getByRole("radio", { checked: true })).toHaveAccessibleName(weekdayDate(firstFitDay()));
   expect(asked[0]?.searchParams.get("type")).toBe("first_fit");
+  expect(asked[0]?.searchParams.get("tier")).toBe("essential");
   await dates.getByRole("button", { name: "Continue" }).click();
   const windows = page.getByRole("dialog", { name: "Pick a time" });
   await expect(windows.locator("label").filter({ has: page.getByRole("radio", { checked: true }) })).toContainText(

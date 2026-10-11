@@ -172,6 +172,13 @@
   line-height: var(--lh-110);
 }
 
+.nothing .consultedWhen {
+  font-family: var(--font-serif);
+  font-size: var(--fs-app-title);
+  line-height: var(--lh-110);
+  color: var(--text);
+}
+
 /* Home's way to book (packages/ui/Button.tsx), the width of the page. */
 .book {
   width: 100%;
