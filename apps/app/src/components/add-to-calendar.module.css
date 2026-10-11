@@ -1,0 +1,26 @@
+/* Add to your calendar: its label over Google and the .ics file, side by side. */
+
+.calendar {
+  display: grid;
+  gap: var(--sp-12);
+}
+
+.label,
+.labelOnInk {
+  margin: 0;
+  font-size: var(--fs-14);
+  color: var(--text-muted);
+}
+
+.labelOnInk {
+  color: var(--ink-muted);
+}
+
+.links {
+  display: flex;
+  gap: var(--sp-10);
+}
+
+.link {
+  flex: 1;
+}

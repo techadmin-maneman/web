@@ -1,15 +1,18 @@
 // The landing's confirmations: the consultation booked (or asked for, while self-serve booking is off),
 // the number on a waitlist, and the invite that has expired for this friend. The booked one says the same to every
-// number, since whoever typed it may not be its owner (src/policy/site-booking.ts): the details go to the number on
-// WhatsApp, and the client app shows them once its owner signs in with a code. It also says whether the discount code
-// sent with it stands (ADR 0108).
+// number, since whoever typed it may not be its owner (src/policy/site-booking.ts): it restates only the day and window
+// picked, the details go to the number on WhatsApp, and the client app shows them once its owner signs in with a code.
+// It also says whether the discount code sent with it stands (ADR 0108).
 
 import { ICONS } from "@maneman/brand/icons";
 import { rupees } from "@maneman/web-kit/money";
+import { googleCalendarLink, icsHref, type CalendarEntry } from "../../../../src/lib/calendar.ts";
+import { windowSpan } from "../../../../src/config/scheduling.ts";
 import { referral } from "../../content/referral.ts";
 import type { Consultation, ReferralConsultation, ReferralReward, ReferralWaitlist } from "../../lib/api.ts";
 import { clientAppOrigin, signInLink } from "../../lib/app-link.ts";
 import { ENVIRONMENT } from "../../lib/build.ts";
+import { longDay } from "../../lib/dates.ts";
 import { fill } from "../../lib/text.ts";
 import { Icon } from "../Drawings.tsx";
 import styles from "./Invite.module.css";
@@ -76,9 +79,47 @@ function codeNote(booking: Booking): string | null {
   return referral.booked.code.applied(standing.code, offOf(standing));
 }
 
+/** The window's hours as the form offered them: "12 to 4 pm". */
+const hoursOf = (window: Booking["result"]["window"]): string =>
+  referral.consultation.windows.find((option) => option.id === window)?.hours ?? "";
+
+/** Google's link, and the .ics file for every other calendar, holding the window booked. */
+function AddToCalendar(props: { result: Booking["result"]; ready: string }) {
+  const { calendar } = referral.booked;
+  const { result } = props;
+  const entry: CalendarEntry = {
+    title: result.one_visit ? calendar.title.oneVisit : calendar.title.consultation,
+    ...windowSpan(result.date, result.window),
+    details: calendar.details(hoursOf(result.window), props.ready),
+    uid: `${result.date}-${result.window}@maneman.in`,
+  };
+  return (
+    <div class={styles.calendar}>
+      <p class={`caps ${styles.calendarLabel}`}>{calendar.label}</p>
+      <div class={styles.doneActions}>
+        <a class="btn btn--sm btn--line-on-paper" href={googleCalendarLink(entry)} target="_blank" rel="noopener">
+          {calendar.google}
+        </a>
+        <a class="btn btn--sm btn--line-on-paper" href={icsHref(entry, new Date())} download={calendar.fileName}>
+          {calendar.file}
+        </a>
+      </div>
+    </div>
+  );
+}
+
+/** What the confirmation's ink block says: the day and window once booked, or that we will fix the hour. */
+function headlineOf(result: Booking["result"]): { label: string; title: string; body: string } {
+  if (result.state === "requested") return referral.requested;
+  const { booked } = referral;
+  return { label: booked.label, title: booked.when(longDay(result.date), hoursOf(result.window)), body: booked.body };
+}
+
 export function Booked(props: { booking: Booking; reward: ReferralReward | null; heading: HeadingRef }) {
   const { result, mobile } = props.booking;
-  const copy = result.state === "requested" ? referral.requested : referral.booked;
+  const copy = headlineOf(result);
+  const booked = result.state === "booked";
+  const ready = result.one_visit ? referral.booked.ready.oneVisit : referral.booked.ready.consultation;
   const credits = result.credits ? referral.booked.credits(props.reward) : null;
   const code = codeNote(props.booking);
   const app = clientAppOrigin(ENVIRONMENT);
@@ -93,9 +134,11 @@ export function Booked(props: { booking: Booking; reward: ReferralReward | null;
         <p class={styles.doneBlockBody}>{fill(copy.body, { mobile })}</p>
       </div>
       <div class={styles.doneAfter}>
+        {booked && <p class={styles.doneNote}>{ready}</p>}
         {code !== null && <p class={styles.doneNote}>{code}</p>}
         {credits !== null && <p class={styles.doneNote}>{credits}</p>}
         {result.invite === "expired" && <Expired reward={props.reward} />}
+        {booked && <AddToCalendar result={result} ready={ready} />}
         {app !== null && <p class={styles.doneNote}>{referral.booked.appHint}</p>}
         <div class={styles.doneActions}>
           {app !== null && (

@@ -114,7 +114,7 @@ test("the invite names the referrer, and a served pincode opens the consultation
   await page.getByText("You may contact me on WhatsApp about this consultation.").click();
   await page.getByRole("button", { name: "Book the consultation" }).click();
 
-  await expect(page.getByText("Booking received")).toBeVisible();
+  await expect(page.getByText("Booked", { exact: true })).toBeVisible();
   await expect(page.getByText("The 3 service visits land when you are fitted.")).toBeVisible();
   const sent = requests[0]?.postDataJSON() as Record<string, unknown>;
   expect(sent).toMatchObject({ pincode: SERVED.pincode, window: "afternoon", consent: true, mobile: "9810000000" });
@@ -135,7 +135,7 @@ test("a booking through the invite is counted, with nothing personal and no code
   await page.getByText("Afternoon", { exact: true }).click();
   await page.getByText("You may contact me on WhatsApp about this consultation.").click();
   await page.getByRole("button", { name: "Book the consultation" }).click();
-  await expect(page.getByText("Booking received")).toBeVisible();
+  await expect(page.getByText("Booked", { exact: true })).toBeVisible();
 
   expect(await analyticsEvents(page)).toEqual([
     ["lead_submitted", { page: "invite", served: true, area: "Sector 65", window: "afternoon", loss_extent: null }],
@@ -166,7 +166,7 @@ test("a valid invite is remembered in this browser, and forgotten once its own b
   await fillForm(page);
   await page.getByText("You may contact me on WhatsApp about this consultation.").click();
   await page.getByRole("button", { name: "Book the consultation" }).click();
-  await expect(page.getByText("Booking received")).toBeVisible();
+  await expect(page.getByText("Booked", { exact: true })).toBeVisible();
   // The landing books with its own invite, and sends no other.
   expect(requests[0]?.postDataJSON()).not.toHaveProperty("invite_code");
   expect(await remembered()).toBeNull();
@@ -201,7 +201,7 @@ test("says what ops set each side gets, and promises the friend nothing ops do n
   await fillForm(page);
   await page.getByText("You may contact me on WhatsApp about this consultation.").click();
   await page.getByRole("button", { name: "Book the consultation" }).click();
-  await expect(page.getByText("Booking received")).toBeVisible();
+  await expect(page.getByText("Booked", { exact: true })).toBeVisible();
   await expect(page.getByText(/land when you are fitted/)).toHaveCount(0);
 });
 
@@ -276,7 +276,7 @@ test("a code we do not know still books, without the invite's visits", async ({ 
   await fillForm(page);
   await page.getByText("You may contact me on WhatsApp about this consultation.").click();
   await page.getByRole("button", { name: "Book the consultation" }).click();
-  await expect(page.getByText("Booking received")).toBeVisible();
+  await expect(page.getByText("Booked", { exact: true })).toBeVisible();
   await expect(page.getByText("The 3 service visits land when you are fitted.")).toBeHidden();
 });
 
@@ -358,7 +358,7 @@ test("a consultation nobody can book outright is confirmed as a request", async 
   await expect(page.getByText("On WhatsApp, at +91 98100 00000, to fix the hour.")).toBeVisible();
   // The invite still stands, and nothing says the visit is booked.
   await expect(page.getByText("The 3 service visits land when you are fitted.")).toBeVisible();
-  await expect(page.getByText("Booking received")).toBeHidden();
+  await expect(page.getByText("Booked", { exact: true })).toBeHidden();
 });
 
 test("a pincode that is not six digits is refused before the API is asked", async ({ page }) => {
@@ -528,7 +528,7 @@ test("pressing again after a lost answer sends the same request key", async ({ p
   await page.getByRole("button", { name: "Book the consultation" }).click();
   await expect(page.getByText("Something went wrong on our side. Try again.")).toBeVisible();
   await page.getByRole("button", { name: "Book the consultation" }).click();
-  await expect(page.getByText("Booking received")).toBeVisible();
+  await expect(page.getByText("Booked", { exact: true })).toBeVisible();
 
   expect(keys).toHaveLength(2);
   expect(keys[0]).toBeTruthy();
@@ -546,7 +546,7 @@ test("Turnstile that failed to load is tried again when the form is sent", async
   });
   await visit(page, `/r/${CODE}`);
   await bookThrough(page);
-  await expect(page.getByText("Booking received")).toBeVisible();
+  await expect(page.getByText("Booked", { exact: true })).toBeVisible();
   expect(failed).toBe(true);
   expect(requests).toHaveLength(1);
 });
@@ -565,7 +565,7 @@ test("an invite that has expired for this friend says so once the booking is mad
   await mockApi(page, { consultation: { status: 201, body: { ...expired, invite: "expired", one_visit: false } } });
   await visit(page, `/r/${CODE}`);
   await bookThrough(page);
-  await expect(page.getByText("Booking received")).toBeVisible();
+  await expect(page.getByText("Booked", { exact: true })).toBeVisible();
   await expect(page.getByText("Code expired")).toBeVisible();
   await expect(page.getByRole("heading", { name: "This invite has expired" })).toBeVisible();
   await expect(page.getByText("The 3 service visits land when you are fitted.")).toBeHidden();
@@ -577,8 +577,10 @@ test("a booking sends the details to WhatsApp, and opens the app with the number
   await mockApi(page);
   await visit(page, `/r/${CODE}`);
   await bookThrough(page);
-  await expect(page.getByRole("heading", { level: 1, name: "Check WhatsApp" })).toBeVisible();
-  await expect(page.getByText("Your booking details are on their way to +91 98100 00000.")).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "Friday 25 September, 9 am to 12 pm" })).toBeVisible();
+  await expect(
+    page.getByText("Your technician arrives in that window. Details on WhatsApp, at +91 98100 00000."),
+  ).toBeVisible();
   await expect(page.getByText("See it in the app too: sign in with this number.")).toBeVisible();
   await expect(page.getByRole("button", { name: "Add to calendar" })).toHaveCount(0);
   await expect(page.getByRole("link", { name: "Back to the site" })).toHaveAttribute("href", "/");
@@ -645,7 +647,7 @@ test("a consultation asked for, not booked, still offers the app, where the requ
   await visit(page, `/r/${CODE}`);
   await bookThrough(page);
   await expect(page.getByText("Request received")).toBeVisible();
-  await expect(page.getByText("Booking received")).toHaveCount(0);
+  await expect(page.getByText("Booked", { exact: true })).toHaveCount(0);
   await expect(page.getByRole("link", { name: "Open the app" })).toBeVisible();
 });
 
