@@ -46,3 +46,8 @@ CREATE TABLE channel_attributions (
 );
 
 CREATE INDEX channel_attributions_by_channel ON channel_attributions (channel_id, grant_state);
+
+-- The referral pass: partners' friends still pending, and the one a refunded first fit belongs to.
+CREATE INDEX channel_attributions_pending ON channel_attributions (referred_person_id) WHERE grant_state = 'pending';
+CREATE INDEX channel_attributions_by_first_fit ON channel_attributions (first_fit_appointment_id)
+  WHERE first_fit_appointment_id IS NOT NULL;

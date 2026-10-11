@@ -117,9 +117,10 @@ export async function settlePartnerReferrals(
 export async function clawBackPartnerRefunded(db: D1Database, now: Date): Promise<number> {
   const { results } = await db
     .prepare(
-      `SELECT r.id FROM channel_attributions r
-       JOIN payments p ON p.appointment_id = r.first_fit_appointment_id AND p.kind = 'visit'
-       WHERE r.grant_state = 'granted' AND p.status = 'refunded' LIMIT ?1`,
+      // From the refunded payments, which are few, to the friend each belongs to; never along every friend fitted.
+      `SELECT r.id FROM payments p
+       CROSS JOIN channel_attributions r ON r.first_fit_appointment_id = p.appointment_id
+       WHERE p.kind = 'visit' AND p.status = 'refunded' AND r.grant_state = 'granted' LIMIT ?1`,
     )
     .bind(PER_PASS)
     .all<{ id: string }>();

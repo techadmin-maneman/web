@@ -311,6 +311,8 @@ Made by `0109_referral_channels.sql`.
 Indexes:
 
 - `channel_attributions_by_channel`: on (`channel_id`, `grant_state`)
+- `channel_attributions_by_first_fit`: on (`first_fit_appointment_id`), where `first_fit_appointment_id IS NOT NULL`
+- `channel_attributions_pending`: on (`referred_person_id`), where `grant_state = 'pending'`
 - A `UNIQUE` constraint: unique on (`referred_person_id`)
 
 ## checkins

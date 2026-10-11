@@ -98,6 +98,12 @@ const HISTORY = [
      grant_state, created_at, updated_at)
    SELECT 'ra-' || i, 'CODE' || (i - 1), 'p-' || i, '${AGO}', 'consultation', 'a-' || i, 'granted', '${AGO}', '${AGO}'
    FROM n WHERE i > 1`,
+  `INSERT INTO referral_channels (id, name, code, friend_visits, valid_days, commission, created_by, created_at)
+   SELECT 'rc-' || i, 'Partner ' || i, 'PART' || i, 2, 365, 150000, 'growth@maneman.in', '${AGO}' FROM n WHERE i <= 20`,
+  `INSERT INTO channel_attributions (id, channel_id, referred_person_id, first_touch_at, via, first_fit_appointment_id,
+     grant_state, created_at, updated_at)
+   SELECT 'ca-' || i, 'rc-' || (1 + i % 20), 'p-' || i, '${AGO}', 'consultation', 'a-' || i, 'granted', '${AGO}',
+     '${AGO}' FROM n`,
   `INSERT INTO credit_ledger (id, person_id, kind, visits, source_kind, source_id, expires_at, created_at)
    SELECT 'g-' || i, 'p-' || i, 'grant', 3, 'referral', 'ra-' || i, '${AGO}', '${AGO}' FROM n`,
   `INSERT INTO credit_ledger (id, person_id, kind, visits, grant_id, source_kind, source_id, created_at)

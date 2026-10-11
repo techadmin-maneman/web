@@ -276,6 +276,20 @@ export const MY_DATA = {
         created_at: time("When"),
       },
     },
+    recommended_by: {
+      title: "The partner who recommended us",
+      fields: {
+        partner: text("Partner"),
+        via: words("Through"),
+        first_touch_at: time("First opened"),
+        pincode: text("Pincode"),
+        grant_state: words("Reward"),
+        friend_visits: text("Free visits for you"),
+        valid_days: text("Days they last"),
+        granted_at: time("Given"),
+        created_at: time("When"),
+      },
+    },
     consultation_requests: {
       title: "Consultations you asked for",
       fields: {
