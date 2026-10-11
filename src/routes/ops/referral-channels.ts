@@ -39,6 +39,9 @@ const ChannelSchema = z
       .openapi({ description: "Of those, fitted: the friend's visits given, the commission earned." }),
     earned: z.number().int().openapi({ description: "Paise earned, at the commission in force when each was fitted." }),
     owed: z.number().int().openapi({ description: "Of that, paise not yet paid (GET /api/partner-statements)." }),
+    discount_code: z.union([z.string(), z.null()]).openapi({
+      description: "The partner's discount code, off the friend's first paid visit by itself; null for none.",
+    }),
   })
   .strict();
 
@@ -63,12 +66,17 @@ const TermsSchema = z
     friend_visits: z.number().int().min(0).max(MAX_REWARD_VISITS),
     valid_days: z.number().int().min(VALID_DAYS.min).max(VALID_DAYS.max),
     commission: z.number().int().min(0).max(MAX_COMMISSION),
+    discount_code: z.union([z.string().trim().min(1).max(40), z.null()]).openapi({
+      description: "One of Finance's codes, switched on, any case; null for none.",
+    }),
   })
   .strict();
 
 const ok = { description: "The partners as they now stand", ...json(ListSchema) };
 const Id = z.object({ id: z.uuid() });
-const invalid = errorResponse("invalid_request: fields names name, friend_visits, valid_days or commission");
+const invalid = errorResponse(
+  "invalid_request: fields names name, friend_visits, valid_days, commission or discount_code (none switched on)",
+);
 
 const listRoute = createRoute({
   method: "get",
@@ -134,6 +142,7 @@ export function registerOpsReferralChannels(app: App): void {
     friendVisits: body.friend_visits,
     validDays: body.valid_days,
     commission: body.commission,
+    discountCode: body.discount_code,
   });
 
   app.openapi(listRoute, async (c) => c.json(await list(c), 200));
@@ -141,6 +150,7 @@ export function registerOpsReferralChannels(app: App): void {
   app.openapi(addRoute, async (c) => {
     const added = await addChannel(c.env.DB, { ...change(c), ...termsOf(c.req.valid("json")) });
     if (added.outcome === "taken") return refuse(c, "taken");
+    if (added.outcome === "no_code") return refuse(c, "invalid_request", ["discount_code"]);
     return c.json(await list(c), 200);
   });
 
@@ -152,6 +162,7 @@ export function registerOpsReferralChannels(app: App): void {
     });
     if (changed === "not_found") return refuse(c, "not_found");
     if (changed === "taken") return refuse(c, "taken");
+    if (changed === "no_code") return refuse(c, "invalid_request", ["discount_code"]);
     return c.json(await list(c), 200);
   });
 
