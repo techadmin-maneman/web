@@ -28,6 +28,7 @@ const DOCUMENTATION_CONFIG: StaticConfig = {
     referrerNameOnInvite: false,
     ipHashSalt: "",
     alertWebhookUrl: null,
+    urgentWebhookUrl: null,
     leadWebhookUrl: null,
     heartbeatUrl: null,
     zohoCrm: null,
