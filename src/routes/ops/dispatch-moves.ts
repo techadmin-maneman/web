@@ -11,7 +11,7 @@ import { createRoute, z } from "@hono/zod-openapi";
 import { json } from "../../http/openapi.ts";
 import type { Context } from "hono";
 import { BOOKING_WINDOWS } from "../../config/scheduling.ts";
-import { type MoveInput, moveJob, recordToldByPhone } from "../../domain/dispatch/dispatch.ts";
+import { type MoveInput, moveFromTheBoard, moveJob, recordToldByPhone } from "../../domain/dispatch/dispatch.ts";
 import { proposeMove, withdrawProposal } from "../../domain/dispatch/move-proposals.ts";
 import { auditStatement } from "../../domain/ops/audit.ts";
 import type { AuditEntry } from "../../domain/ops/audit.ts";
@@ -109,7 +109,7 @@ const moveRoute = createRoute({
     403: errorResponse("access_required"),
     404: errorResponse("not_found: no such live job in the caller's cities"),
     409: errorResponse(
-      "past_day; window_passed; clash; on_leave; back_to_back; does_not_fit; blackout; superseded, with what changed in fields; in_progress: the technician has begun the visit. One he has only checked in at moves with clear_check_in; one he has started or closed stays where it is",
+      "past_day; window_passed; clash; on_leave; back_to_back; does_not_fit; blackout; superseded, with what changed in fields; in_progress: the technician has begun the visit. One he has only checked in at moves with clear_check_in; one he has started or closed stays where it is. ask_the_client: a client's visit to another day they did not ask for, which POST /api/dispatch/propose asks of them",
     ),
   },
 });
@@ -298,15 +298,10 @@ async function write(c: Context<AppEnv>, request: MoveRequest) {
   if (!(await mayGoTo(c, request))) return refuse(c, "invalid_request", ["technician_id"]);
 
   const input = inputOf(c, request);
-  const outcome = await moveJob(
-    c.env.DB,
-    {
-      notify: (messageId) => queueMessage(c, messageId),
-    },
-    input,
-    deps.now(),
-  );
+  const notify = (messageId: string) => queueMessage(c, messageId);
+  const outcome = await moveFromTheBoard(c.env.DB, { notify }, input, deps.now());
 
+  if (outcome.kind === "ask_the_client") return refuse(c, "ask_the_client");
   if (outcome.kind !== "moved") return refusedMove(c, outcome);
   log.info("dispatch_moved", { appointment_id: input.appointmentId, move_id: outcome.moveId, reason: input.reason });
   return c.json({ move_id: outcome.moveId, client_notice: outcome.clientNotice }, 200);

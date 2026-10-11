@@ -69,6 +69,9 @@ export const toSameerWednesdayMorning = (id: string) => ({
   reason: "zone_rebalance",
 });
 
+/** The same move, as the client asked for it: a client's visit goes to another day at once only then (ADR 0115). */
+export const askedForWednesdayMorning = (id: string) => ({ ...toSameerWednesdayMorning(id), reason: "client_asked" });
+
 export interface BoardBody {
   from: string;
   technicians: {
