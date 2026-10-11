@@ -29,6 +29,7 @@ import { closedIfSentBy } from "../../policy/one-visit.ts";
 import { dueAt, type Slas, type TaskGroup } from "../../policy/tasks.ts";
 import { CARE_HOURS, type CareHours } from "../../policy/care-hours.ts";
 import { CHATS_WAITING, overdueChats } from "../care/chat-tasks.ts";
+import { CITY_MATTERS_OPEN } from "../care/city-matters.ts";
 import { paidNotBooked } from "../booking/hold-stages.ts";
 import { statusIn, statusNotIn, VISIT_CALLED_OFF, VISIT_LIVE, VISIT_NOT_BEGUN } from "../../config/statuses.ts";
 import type { SqlValue } from "../../lib/sql.ts";
@@ -149,6 +150,8 @@ interface Queue {
 const QUEUES: readonly Queue[] = [
   // A chat waiting on us, kept once its reply-by time has passed (../care/chat-tasks.ts).
   { sql: CHATS_WAITING },
+  // A matter Care sent to the client's city, until the city closes it (../care/city-matters.ts).
+  { sql: CITY_MATTERS_OPEN },
   // A move is still to be told of while its visit is today or later.
   {
     sql: `SELECT 'untold_move' AS "group", m.id AS id, a.person_id AS person_id, pe.name AS person_name,
@@ -514,6 +517,7 @@ const TASK_RECORDS: Readonly<Record<TaskGroup, PlacedRecord>> = {
   untold_move: "move",
   move_unanswered: "visit",
   unanswered_chat: "conversation",
+  city_matter: "city_matter",
   leave_conflict: "visit",
   address_to_confirm: "visit",
   consultation_request: "consultation_request",

@@ -11,6 +11,7 @@ import { useAccess } from "../lib/access.ts";
 import { clientPath } from "../route.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import { CarePerson } from "./CarePerson.tsx";
+import { CityMatter } from "./CityMatter.tsx";
 import { Composer } from "./Composer.tsx";
 import styles from "../components/forms.module.css";
 import own from "./care.module.css";
@@ -105,6 +106,7 @@ export function Thread({ conversation, onClose }: { conversation: Conversation; 
           {said}
         </p>
       )}
+      {mayAct && conversation.person !== null && <CityMatter conversationId={conversation.id} />}
       {mayAct && (
         <Composer
           conversationId={conversation.id}

@@ -5233,6 +5233,21 @@
         ],
         "additionalProperties": false
       },
+      "CityMatter": {
+        "type": "object",
+        "properties": {
+          "note": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 300,
+            "description": "What the city team need to know, in Care's words; blanked if the client is erased."
+          }
+        },
+        "required": [
+          "note"
+        ],
+        "additionalProperties": false
+      },
       "ReferralChannels": {
         "type": "object",
         "properties": {
@@ -5782,6 +5797,7 @@
               "care_rota.set",
               "care_leave.add",
               "care_leave.delete",
+              "city_matter.raise",
               "word.publish",
               "partner_payout.record",
               "partner_payout.delete",
@@ -8186,6 +8202,7 @@
                     "untold_move",
                     "move_unanswered",
                     "unanswered_chat",
+                    "city_matter",
                     "leave_conflict",
                     "address_to_confirm",
                     "consultation_request",
@@ -14808,6 +14825,83 @@
         }
       }
     },
+    "/api/conversations/{id}/city-matter": {
+      "post": {
+        "summary": "Send a matter from a chat to its client's city, as a City matter on their Tasks",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CityMatter"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Sent, and to which city",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "city": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "city"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid_request: fields names city when we know no city for the client",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "access_required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found: no such chat, a number we don't know, or an erased client",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/referral-channels": {
       "get": {
         "summary": "Every partner, with what has come through each",
@@ -15367,6 +15461,7 @@
                 "care_rota.set",
                 "care_leave.add",
                 "care_leave.delete",
+                "city_matter.raise",
                 "word.publish",
                 "partner_payout.record",
                 "partner_payout.delete",
@@ -17239,6 +17334,7 @@
                 "untold_move",
                 "move_unanswered",
                 "unanswered_chat",
+                "city_matter",
                 "leave_conflict",
                 "address_to_confirm",
                 "consultation_request",
@@ -17333,7 +17429,8 @@
             "schema": {
               "type": "string",
               "enum": [
-                "partial_visit"
+                "partial_visit",
+                "city_matter"
               ]
             },
             "required": true,

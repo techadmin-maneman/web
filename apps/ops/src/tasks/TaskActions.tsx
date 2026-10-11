@@ -16,8 +16,12 @@ import styles from "./tasks.module.css";
 
 type Group = TaskGroup["group"];
 
-/** The group as the close route names it, for the one group whose tasks ops may close; null for any other. */
-const closableAs = (group: Group): ClosableGroup | null => (group === "partial_visit" ? group : null);
+/** The group as the close route names it, for the groups whose tasks ops may close; null for any other. */
+const closableAs = (group: Group): ClosableGroup | null =>
+  group === "partial_visit" || group === "city_matter" ? group : null;
+
+/** The close button's words and the reason's label, which a City matter says its own way. */
+const closeWords = (group: ClosableGroup) => (group === "city_matter" ? tasks.close.cityMatter : tasks.close);
 
 /** A label every row repeats, with whose it is said to a screen reader. */
 const Named = ({ label, subject }: { label: string; subject: string }) => (
@@ -94,11 +98,13 @@ function GiveForm({
 }
 
 function CloseForm({
+  group,
   subject,
   busy,
   onClose,
   onCancel,
 }: {
+  group: ClosableGroup;
   subject: string;
   busy: boolean;
   onClose: (reason: string) => void;
@@ -108,7 +114,7 @@ function CloseForm({
   const copy = tasks.close;
   return (
     <div className={styles.form}>
-      <Field label={<Named label={copy.label} subject={subject} />}>
+      <Field label={<Named label={closeWords(group).label} subject={subject} />}>
         {(control) => (
           <TextArea
             {...control}
@@ -219,11 +225,10 @@ export function TaskActions({
       backTo(back);
     });
 
-  const close = (reason: string) =>
+  const close = (as: ClosableGroup, reason: string) =>
     once(async () => {
-      if (closing === null) return;
       setFailed(null);
-      const answer = await api.closeTask(closing, task.id, reason);
+      const answer = await api.closeTask(as, task.id, reason);
       if (answer.ok) onClosed();
       else setFailed({ code: answer.code, closing: true });
     });
@@ -261,7 +266,7 @@ export function TaskActions({
         )}
         {closing !== null && (
           <Act
-            label={tasks.close.open}
+            label={closeWords(closing).open}
             subject={subject}
             actRef={closeButton}
             expanded={open === "close"}
@@ -284,11 +289,12 @@ export function TaskActions({
           }}
         />
       )}
-      {open === "close" && (
+      {open === "close" && closing !== null && (
         <CloseForm
+          group={closing}
           subject={subject}
           busy={busy}
-          onClose={(reason) => void close(reason)}
+          onClose={(reason) => void close(closing, reason)}
           onCancel={() => {
             backTo(closeButton);
           }}

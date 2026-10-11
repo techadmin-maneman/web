@@ -1,6 +1,7 @@
 // Customer Care · Messages in the console (apps/ops/src/care/; docs/decisions/0129-the-care-inbox.md,
 // 0131-care-people.md, 0134-care-cover.md): the chats a view at a time, a chat opened with our automatic messages in
-// it, its client moved to another Care person, and the Care team's days off. Every name, number and address is made up.
+// it, its client moved to another Care person or a matter sent to their city, and the Care team's days off. Every name,
+// number and address is made up.
 
 import { act, createElement } from "react";
 import { createRoot, type Root } from "react-dom/client";
@@ -46,6 +47,7 @@ beforeEach(() => {
     asked.push(`${address.pathname}${address.search}`);
     if (init?.method === "POST" && typeof init.body === "string") {
       posted.push({ path: address.pathname, body: JSON.parse(init.body) as unknown });
+      if (address.pathname.endsWith("/city-matter")) return Promise.resolve(Response.json({ city: "Gurgaon" }));
       if (address.pathname.endsWith("/care-person")) {
         return Promise.resolve(Response.json({ care_person: "ravi@maneman.test" }));
       }
@@ -200,6 +202,34 @@ describe("the Messages page", () => {
     ]);
     expect(page.textContent).toContain(copy.carePerson.moved("ravi@maneman.test"));
     expect(page.textContent).toContain(`${copy.carePerson.label}: ravi@maneman.test`);
+  });
+
+  it("sends a matter from the chat to the client's city", async () => {
+    await show();
+    await act(async () => {
+      page.querySelector<HTMLButtonElement>(`button[aria-label="${copy.openLabel("Arjun Mehta")}"]`)?.click();
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
+    const press = async (label: string) => {
+      await act(async () => {
+        [...page.querySelectorAll("button")].find((each) => each.textContent.trim() === label)?.click();
+        await new Promise((resolve) => setTimeout(resolve, 0));
+      });
+    };
+    await press(copy.cityMatter.open);
+    const box = [...page.querySelectorAll("textarea")].find((each) => each.maxLength === 300);
+    act(() => {
+      if (box !== undefined) {
+        Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, "value")?.set?.call(box, "Needs a re-fit.");
+        box.dispatchEvent(new Event("input", { bubbles: true }));
+      }
+    });
+    await press(copy.cityMatter.send);
+    expect(posted.at(-1)).toEqual({
+      path: `/api/conversations/${ARJUN.id}/city-matter`,
+      body: { note: "Needs a re-fit." },
+    });
+    expect(page.textContent).toContain(copy.cityMatter.sent("Gurgaon"));
   });
 
   it("lists the Care team with their days off and leave", async () => {

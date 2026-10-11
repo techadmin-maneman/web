@@ -73,6 +73,21 @@ export const care = {
   },
   /** "asha@maneman.in · covered by ravi@maneman.in", while the Care person is off. */
   coveredBy: (person: string, cover: string) => `${person} · covered by ${cover}`,
+  /** A matter sent to the client's city team (docs/decisions/0135-city-matters.md). */
+  cityMatter: {
+    open: "Send to city",
+    label: "What the city team need to know",
+    send: "Send",
+    sent: (city: string) => `Sent to ${city}. It's on their Tasks.`,
+    errors: {
+      city: "We don't know this client's city yet. Add their address first.",
+      note: "Write what they need to know.",
+      not_found: "Not found. Reload.",
+      not_permitted: NOT_PERMITTED,
+      offline: OFFLINE,
+      unknown: FAILED,
+    },
+  },
   /** The Care team, their days off and who covers whom (docs/decisions/0134-care-cover.md). */
   team: {
     title: "Care team",

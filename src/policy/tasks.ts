@@ -34,6 +34,9 @@
 //
 // So is a chat past its reply-by time (docs/decisions/0132-the-reply-clock.md): read from the Care inbox, it falls due
 // by the reply clock rather than an allowance of its own, and goes once Care reply.
+//
+// So is a City matter (docs/decisions/0135-city-matters.md): one central Customer Care team answers every chat, and
+// sends what needs the client's city to the city's operations team, who close it with what was done.
 
 //
 // So is a job still booked on a day its technician is away: leave
@@ -73,6 +76,7 @@ export const TASK_GROUPS = [
   "untold_move",
   "move_unanswered",
   "unanswered_chat",
+  "city_matter",
   "leave_conflict",
   "address_to_confirm",
   "consultation_request",
@@ -108,6 +112,8 @@ export const TASK_SLA_HOURS: Slas = {
   move_unanswered: 4,
   // Due by the reply clock (src/policy/care-hours.ts), which always comes first; a day bounds it.
   unanswered_chat: 24,
+  // A client waiting on their city: within the day.
+  city_matter: 24,
   // These two are never later than the visit itself (src/domain/ops/tasks.ts).
   leave_conflict: 48,
   address_to_confirm: 48,
@@ -139,10 +145,10 @@ export const dueAt = (since: Date, group: TaskGroup, sla: Slas = TASK_SLA_HOURS)
   new Date(since.getTime() + sla[group] * HOUR_MS);
 
 /**
- * The groups ops may close without doing the thing, with a reason: a visit left partly done, whose follow-up the
- * client may never want. Every other group leaves the board only when its thing is done.
+ * The groups ops close with a reason: a visit left partly done, whose follow-up the client may never want; and a City
+ * matter, closed with what was done. Every other group leaves the board only when its thing is done.
  */
-export const CLOSABLE_TASK_GROUPS = ["partial_visit"] as const satisfies readonly TaskGroup[];
+export const CLOSABLE_TASK_GROUPS = ["partial_visit", "city_matter"] as const satisfies readonly TaskGroup[];
 
 export const isClosable = (group: TaskGroup): boolean => (CLOSABLE_TASK_GROUPS as readonly TaskGroup[]).includes(group);
 

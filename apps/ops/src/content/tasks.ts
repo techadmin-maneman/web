@@ -58,6 +58,8 @@ export const tasks = {
     move_unanswered: "Move not answered",
     // Not drawn: a chat past its reply-by time (docs/decisions/0132-the-reply-clock.md).
     unanswered_chat: "Unanswered chat",
+    // Not drawn: a matter Care sent to the city (docs/decisions/0135-city-matters.md).
+    city_matter: "City matter",
     // Two groups the board does not draw (docs/decisions/0074-hand-offs-and-messages.md).
     leave_conflict: "Job on a day off",
     address_to_confirm: "Address to confirm",
@@ -184,6 +186,8 @@ export const tasks = {
     disputedCredit: "a free service visit",
     /** "Waiting since 21 Sep, 9:12 pm": the client's last message, unanswered past its reply-by time. */
     unanswered_chat: (since: string) => `Waiting since ${since}`,
+    /** Care's note to the city team, as they wrote it. */
+    city_matter: (note: string) => note,
     number_change: "Both numbers verified",
     erasure_request: "Requested in the app",
     // A concern about their data, which the app promises an answer to within 30 days.
@@ -235,6 +239,8 @@ export const tasks = {
   close: {
     open: "Close without follow-up",
     label: "Why no follow-up is needed",
+    /** A City matter closes once the city has dealt with it. */
+    cityMatter: { open: "Mark done", label: "What was done" },
     confirm: "Close task",
     closing: "Closing…",
     cancel: "Cancel",

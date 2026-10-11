@@ -266,6 +266,7 @@ export const MY_DATA = {
       title: "Your Care person",
       fields: { care_person: text("Who"), since: time("Since") },
     },
+    city_matters: { title: "Passed to your city team", fields: { city: text("City"), raised_at: time("When") } },
     recommended_by: {
       title: "The partner who recommended us",
       fields: {
