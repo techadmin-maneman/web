@@ -1,0 +1,50 @@
+/* Partners: each partner a row with its link, its terms and what came through it, the actions at the row's end. */
+
+/* This panel's own size, which nothing else draws (ADR 0077, as amended). */
+:root {
+  --local-partners-table: 960px; /* the narrowest the table goes before it scrolls */
+}
+
+.scroll {
+  overflow-x: auto;
+}
+
+.table {
+  min-width: var(--local-partners-table);
+}
+
+.name {
+  font-weight: var(--weight-medium);
+}
+
+.paused {
+  font-weight: var(--weight-regular);
+  color: var(--text-muted);
+}
+
+.link {
+  color: var(--text);
+  text-decoration: underline;
+  text-decoration-color: var(--paper-line);
+  text-underline-offset: var(--sp-4);
+}
+
+.figure {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  text-align: right;
+}
+
+.actions {
+  white-space: nowrap;
+  text-align: right;
+}
+
+.actions button:first-child {
+  margin-left: 0;
+}
+
+.table .acting > td {
+  padding: 0 0 var(--sp-16);
+  background: var(--paper-light);
+}

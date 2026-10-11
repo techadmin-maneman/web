@@ -59,23 +59,61 @@ test("lists each partner with its link, what its friend gets, its commission and
   ]);
 });
 
-test("adds a partner in rupees, and pauses one", async ({ page }) => {
-  const sent: unknown[] = [];
-  const keep = (route: Route) => {
-    sent.push(route.request().postDataJSON());
-    return json(PARTNERS)(route);
-  };
-  await open(page, { "POST /api/referral-channels": keep, "POST /api/referral-channels/{id}/pause": keep });
-  const form = page.getByRole("form", { name: copy.add });
-  await form.getByLabel(copy.form.name).fill("Northside Gym");
-  await form.getByLabel(copy.form.friendVisits).fill("1");
-  await form.getByLabel(copy.form.validDays).fill("90");
-  await form.getByLabel(copy.form.commission).fill("1000");
-  await form.getByRole("button", { name: copy.add }).click();
+test("adds a partner in rupees once it is reviewed", async ({ page }) => {
+  let sent: unknown = null;
+  await open(page, {
+    "POST /api/referral-channels": (route: Route) => {
+      sent = route.request().postDataJSON();
+      return json(PARTNERS)(route);
+    },
+  });
+  await page.getByRole("button", { name: copy.add }).click();
+  await page.getByRole("textbox", { name: copy.form.name, exact: true }).fill("Northside Gym");
+  await page.getByLabel(copy.form.friendVisits).fill("1");
+  await page.getByLabel(copy.form.validDays).fill("90");
+  await page.getByLabel(copy.form.commission).fill("1000");
+  await page.getByRole("button", { name: copy.form.next }).click();
+  await expect(page.getByText(copy.check.friendNew("1 visit · 90 days"))).toBeVisible();
+  await expect(page.getByText(copy.check.commissionNew("Rs. 1,000"))).toBeVisible();
+  expect(sent).toBeNull();
+  await page.getByRole("button", { name: copy.check.send }).click();
+  await expect(page.getByRole("status")).toHaveText(copy.done.added);
+  expect(sent).toEqual({ name: "Northside Gym", friend_visits: 1, valid_days: 90, commission: 100000 });
+});
+
+test("changes a partner's commission, and shows only what changes", async ({ page }) => {
+  let sent: unknown = null;
+  await open(page, {
+    "PATCH /api/referral-channels/{id}": (route: Route) => {
+      sent = route.request().postDataJSON();
+      return json(PARTNERS)(route);
+    },
+  });
+  await row(page)
+    .getByRole("button", { name: copy.editLabel("Looks Salon, Sector 29") })
+    .click();
+  await page.getByLabel(copy.form.commission).fill("2000");
+  await page.getByRole("button", { name: copy.form.next }).click();
+  await expect(page.getByText(copy.check.commission("Rs. 1,500", "Rs. 2,000"))).toBeVisible();
+  await expect(page.getByText(/^Friend gets: /)).toHaveCount(0);
+  await page.getByRole("button", { name: copy.check.send }).click();
+  await expect(page.getByRole("status")).toHaveText(copy.done.saved);
+  expect(sent).toEqual({ name: "Looks Salon, Sector 29", friend_visits: 2, valid_days: 180, commission: 200000 });
+});
+
+test("pauses a partner once it is confirmed", async ({ page }) => {
+  let sent: unknown = null;
+  await open(page, {
+    "POST /api/referral-channels/{id}/pause": (route: Route) => {
+      sent = route.request().postDataJSON();
+      return json(PARTNERS)(route);
+    },
+  });
   await row(page)
     .getByRole("button", { name: copy.pauseLabel("Looks Salon, Sector 29") })
     .click();
-  await expect
-    .poll(() => sent)
-    .toEqual([{ name: "Northside Gym", friend_visits: 1, valid_days: 90, commission: 100000 }, { paused: true }]);
+  await expect(page.getByText(copy.check.pauseLine)).toBeVisible();
+  await page.getByRole("button", { name: copy.check.send }).click();
+  await expect(page.getByRole("status")).toHaveText(copy.done.paused);
+  expect(sent).toEqual({ paused: true });
 });
