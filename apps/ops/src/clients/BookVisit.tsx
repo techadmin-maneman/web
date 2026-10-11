@@ -88,12 +88,127 @@ function Booked({ booked }: { booked: VisitBooked }) {
   );
 }
 
+/** The availability could not be read; ops try again. */
+function Unreadable({ onRetry }: { onRetry: () => void }) {
+  return (
+    <div>
+      <p className={styles.error} role="alert">
+        {copy.unreadable}
+      </p>
+      <Button variant="outline" size="small" className={styles.quiet} onClick={onRetry}>
+        {copy.retry}
+      </Button>
+    </div>
+  );
+}
+
+/** The visit as the API books it: the technician only where ops chose one, and a code only where the kind takes one. */
+function visitOf(chosen: {
+  clientId: string;
+  choice: Choice;
+  tier: string;
+  date: string;
+  window: BookingWindow;
+  technician: string;
+  code: string;
+}): VisitToBook {
+  const takesCode = kindOf(chosen.choice) !== "consultation";
+  return {
+    client: chosen.clientId,
+    kind: kindOf(chosen.choice),
+    tier: chosen.tier,
+    date: chosen.date,
+    window: chosen.window,
+    ...(chosen.technician === "" ? {} : { technician: chosen.technician }),
+    ...(chosen.choice === "one_visit" ? { one_visit: true } : {}),
+    ...(takesCode && chosen.code.trim() !== "" ? { code: chosen.code.trim() } : {}),
+  };
+}
+
+/** A labelled list to choose from, as each of the form's choices is. */
+function Choose(props: {
+  readonly label: string;
+  readonly value: string;
+  readonly options: readonly { readonly value: string; readonly label: string }[];
+  readonly busy: boolean;
+  readonly onChoose: (value: string) => void;
+}) {
+  return (
+    <Field className={styles.field} label={props.label}>
+      {(control) => (
+        <select
+          {...control}
+          className={styles.select}
+          value={props.value}
+          disabled={props.busy}
+          onChange={(event) => {
+            props.onChoose(event.currentTarget.value);
+          }}
+        >
+          {props.options.map((each) => (
+            <option key={each.value} value={each.value}>
+              {each.label}
+            </option>
+          ))}
+        </select>
+      )}
+    </Field>
+  );
+}
+
+/** The fortnight before the one shown, and the one after. */
+function StripButtons(props: {
+  readonly busy: boolean;
+  readonly from: string | undefined;
+  readonly firstDay: string | undefined;
+  readonly onFrom: (from: string | undefined) => void;
+}) {
+  const { busy, firstDay, onFrom } = props;
+  return (
+    <div className={styles.days}>
+      <Button
+        variant="outline"
+        size="small"
+        className={styles.quiet}
+        disabled={busy || props.from === undefined}
+        onClick={() => {
+          onFrom(firstDay === undefined ? undefined : addDays(firstDay, -STRIP_DAYS));
+        }}
+      >
+        {copy.earlier}
+      </Button>
+      <Button
+        variant="outline"
+        size="small"
+        className={styles.quiet}
+        disabled={busy || firstDay === undefined}
+        onClick={() => {
+          onFrom(firstDay === undefined ? undefined : addDays(firstDay, STRIP_DAYS));
+        }}
+      >
+        {copy.later}
+      </Button>
+    </div>
+  );
+}
+
 /** The choices that depend on what the API offered: the service, the day, the window and the technician. */
 interface Picked {
   readonly tier: string | undefined;
   readonly date: string | undefined;
   readonly window: string | undefined;
   readonly technician: string;
+}
+
+/** What the client may be booked into, from what the API offered and what ops have picked: the first of each where a pick is no longer open. */
+function slotOf(offered: VisitAvailability, choice: Choice, picked: Picked) {
+  const days = offered.days.filter((day) => openWindows(day, choice).length > 0);
+  const day = days.find((each) => each.date === picked.date) ?? days[0];
+  const windows = day === undefined ? [] : openWindows(day, choice);
+  const window = windows.find((each) => each.window === picked.window) ?? windows[0];
+  const technicians = window?.technicians ?? [];
+  const technician = technicians.some((each) => each.id === picked.technician) ? picked.technician : "";
+  return { days, day, windows, window, technicians, technician };
 }
 
 function Form({
@@ -134,26 +249,10 @@ function Form({
   };
 
   if (loaded.state === "loading") return <p className={styles.note}>{copy.loading}</p>;
-  if (loaded.state === "failed") {
-    return (
-      <div>
-        <p className={styles.error} role="alert">
-          {copy.unreadable}
-        </p>
-        <Button variant="outline" size="small" className={styles.quiet} onClick={retry}>
-          {copy.retry}
-        </Button>
-      </div>
-    );
-  }
+  if (loaded.state === "failed") return <Unreadable onRetry={retry} />;
 
   const offered = loaded.value;
-  const days = offered.days.filter((day) => openWindows(day, choice).length > 0);
-  const day = days.find((each) => each.date === picked.date) ?? days[0];
-  const windows = day === undefined ? [] : openWindows(day, choice);
-  const window = windows.find((each) => each.window === picked.window) ?? windows[0];
-  const technicians = window?.technicians ?? [];
-  const technician = technicians.some((each) => each.id === picked.technician) ? picked.technician : "";
+  const { days, day, windows, window, technicians, technician } = slotOf(offered, choice, picked);
   const firstDay = offered.days[0]?.date;
   const takesCode = kindOf(choice) !== "consultation";
 
@@ -161,17 +260,17 @@ function Form({
     once(async () => {
       if (day === undefined || window === undefined) return;
       setFailed(null);
-      const visit: VisitToBook = {
-        client: clientId,
-        kind: kindOf(choice),
-        tier: offered.service.tier,
-        date: day.date,
-        window: window.window,
-        ...(technician === "" ? {} : { technician }),
-        ...(choice === "one_visit" ? { one_visit: true } : {}),
-        ...(takesCode && code.trim() !== "" ? { code: code.trim() } : {}),
-      };
-      const answer = await api.bookVisit(visit);
+      const answer = await api.bookVisit(
+        visitOf({
+          clientId,
+          choice,
+          tier: offered.service.tier,
+          date: day.date,
+          window: window.window,
+          technician,
+          code,
+        }),
+      );
       if (answer.ok) onBooked(answer.body);
       else setFailed(answer.code);
     });
@@ -183,135 +282,67 @@ function Form({
         void book();
       }}
     >
-      <Field className={styles.field} label={copy.kind}>
-        {(control) => (
-          <select
-            {...control}
-            className={styles.select}
-            value={choice}
-            disabled={busy}
-            onChange={(event) => {
-              setChoice(event.currentTarget.value as Choice);
-              choose({ tier: undefined });
-            }}
-          >
-            {CHOICES.map((each) => (
-              <option key={each} value={each}>
-                {copy.kinds[each]}
-              </option>
-            ))}
-          </select>
-        )}
-      </Field>
+      <Choose
+        label={copy.kind}
+        value={choice}
+        options={CHOICES.map((each) => ({ value: each, label: copy.kinds[each] }))}
+        busy={busy}
+        onChoose={(next) => {
+          setChoice(next as Choice);
+          choose({ tier: undefined });
+        }}
+      />
       {offered.services.length > 1 && (
-        <Field className={styles.field} label={kindOf(choice) === "first_fit" ? copy.hairSystem : copy.service}>
-          {(control) => (
-            <select
-              {...control}
-              className={styles.select}
-              value={offered.service.tier}
-              disabled={busy}
-              onChange={(event) => {
-                choose({ tier: event.currentTarget.value });
-              }}
-            >
-              {offered.services.map((service) => (
-                <option key={service.tier} value={service.tier}>
-                  {service.name}
-                </option>
-              ))}
-            </select>
-          )}
-        </Field>
+        <Choose
+          label={kindOf(choice) === "first_fit" ? copy.hairSystem : copy.service}
+          value={offered.service.tier}
+          options={offered.services.map((service) => ({ value: service.tier, label: service.name }))}
+          busy={busy}
+          onChoose={(tier) => {
+            choose({ tier });
+          }}
+        />
       )}
       {day === undefined ? (
         <p className={styles.note}>{copy.noDays}</p>
       ) : (
         <>
-          <Field className={styles.field} label={copy.day}>
-            {(control) => (
-              <select
-                {...control}
-                className={styles.select}
-                value={day.date}
-                disabled={busy}
-                onChange={(event) => {
-                  choose({ date: event.currentTarget.value });
-                }}
-              >
-                {days.map((each) => (
-                  <option key={each.date} value={each.date}>
-                    {shortDate(each.date)}
-                  </option>
-                ))}
-              </select>
-            )}
-          </Field>
-          <Field className={styles.field} label={copy.window}>
-            {(control) => (
-              <select
-                {...control}
-                className={styles.select}
-                value={window?.window ?? ""}
-                disabled={busy}
-                onChange={(event) => {
-                  choose({ window: event.currentTarget.value });
-                }}
-              >
-                {windows.map((each) => (
-                  <option key={each.window} value={each.window}>
-                    {`${dispatch.windows[each.window] ?? each.window}, ${each.start} to ${each.end}`}
-                  </option>
-                ))}
-              </select>
-            )}
-          </Field>
-          <Field className={styles.field} label={copy.technician}>
-            {(control) => (
-              <select
-                {...control}
-                className={styles.select}
-                value={technician}
-                disabled={busy}
-                onChange={(event) => {
-                  choose({ technician: event.currentTarget.value });
-                }}
-              >
-                <option value="">{copy.anyone}</option>
-                {technicians.map((each) => (
-                  <option key={each.id} value={each.id}>
-                    {each.name}
-                  </option>
-                ))}
-              </select>
-            )}
-          </Field>
+          <Choose
+            label={copy.day}
+            value={day.date}
+            options={days.map((each) => ({ value: each.date, label: shortDate(each.date) }))}
+            busy={busy}
+            onChoose={(date) => {
+              choose({ date });
+            }}
+          />
+          <Choose
+            label={copy.window}
+            value={window?.window ?? ""}
+            options={windows.map((each) => ({
+              value: each.window,
+              label: `${dispatch.windows[each.window] ?? each.window}, ${each.start} to ${each.end}`,
+            }))}
+            busy={busy}
+            onChoose={(next) => {
+              choose({ window: next });
+            }}
+          />
+          <Choose
+            label={copy.technician}
+            value={technician}
+            options={[
+              { value: "", label: copy.anyone },
+              ...technicians.map((each) => ({ value: each.id, label: each.name })),
+            ]}
+            busy={busy}
+            onChoose={(next) => {
+              choose({ technician: next });
+            }}
+          />
         </>
       )}
-      <div className={styles.days}>
-        <Button
-          variant="outline"
-          size="small"
-          className={styles.quiet}
-          disabled={busy || from === undefined}
-          onClick={() => {
-            setFrom(firstDay === undefined ? undefined : addDays(firstDay, -STRIP_DAYS));
-          }}
-        >
-          {copy.earlier}
-        </Button>
-        <Button
-          variant="outline"
-          size="small"
-          className={styles.quiet}
-          disabled={busy || firstDay === undefined}
-          onClick={() => {
-            setFrom(firstDay === undefined ? undefined : addDays(firstDay, STRIP_DAYS));
-          }}
-        >
-          {copy.later}
-        </Button>
-      </div>
+      <StripButtons busy={busy} from={from} firstDay={firstDay} onFrom={setFrom} />
       {takesCode && (
         <Field className={styles.field} label={copy.code}>
           {(control) => (
