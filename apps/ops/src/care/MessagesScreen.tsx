@@ -62,7 +62,12 @@ function ReplyBy({ at }: { at: string | null }) {
   return Date.parse(at) < Date.now() ? <span className={own.overdue}>{copy.overdue(when)}</span> : copy.replyBy(when);
 }
 
-function ConversationRows(props: { conversation: Conversation; open: boolean; onOpen: (id: string | null) => void }) {
+function ConversationRows(props: {
+  conversation: Conversation;
+  open: boolean;
+  onOpen: (id: string | null) => void;
+  onChanged: () => void;
+}) {
   const { conversation } = props;
   const who = whoOf(conversation);
   return (
@@ -100,6 +105,7 @@ function ConversationRows(props: { conversation: Conversation; open: boolean; on
               onClose={() => {
                 props.onOpen(null);
               }}
+              onChanged={props.onChanged}
             />
           </td>
         </tr>
@@ -144,6 +150,7 @@ function Conversations({ view }: { view: ConversationView }) {
               conversation={conversation}
               open={opened === conversation.id}
               onOpen={setOpened}
+              onChanged={retry}
             />
           ))}
         </tbody>

@@ -144,6 +144,16 @@ describe("crm-sync: syncing a lead", () => {
     expect(crm.calls[1]?.knownId).toBe("zoho-1");
   });
 
+  // Zoho refuses the WhatsApp source and status until the org has them (ADR 0138), so the lead waits, pending.
+  it("holds a WhatsApp lead, unsent and pending, until the org has its source and status", async () => {
+    const leadId = await phaseOneLead();
+    await env.DB.prepare("UPDATE leads SET source = 'whatsapp' WHERE id = ?1").bind(leadId).run();
+    const crm = recordingCrm();
+    expect(await syncLead(env.DB, fakeDependencies({ crm }), log, leadId)).toEqual({ retrySoon: false });
+    expect(crm.calls).toEqual([]);
+    expect(await leadRow(leadId)).toMatchObject({ sync_state: "pending", sync_attempts: 0 });
+  });
+
   it("ignores a duplicate message for a lead already synced", async () => {
     const leadId = await phaseOneLead();
     const crm = recordingCrm();

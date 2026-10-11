@@ -248,7 +248,7 @@ Zoho names a new field from its label, so the script reads each one back: the sy
 
    The last two fields and `Referral` came with ADR 0074, for an invited friend and the window a booking asked for. Zoho refuses a lead carrying a pick-list value it does not have, so the sync writes none of the three until `CRM_ORG_HAS_REFERRAL_FIELDS` in `src/config/crm.ts` is turned on: run `scripts/ops/setup-crm.ts`, then `scripts/ops/check-zoho-setup.ts` to prove them, then turn it on in a release. Until then a record the CRM already has gets the invite and the window in its note.
 
-   The last-contact fields came with ADR 0137, for a client's last closed chat with Care. They wait the same way, on `CRM_ORG_HAS_CARE_FIELDS`: until it is on, nothing of the last contact is written.
+   The last-contact fields came with ADR 0137, for a client's last closed chat with Care, and the Lead_Source `WhatsApp` and Lead_Status `WhatsApp — answer in chat` with ADR 0138, for a stranger Care save from a chat. They wait the same way, on `CRM_ORG_HAS_CARE_FIELDS`: until it is on, nothing of the last contact is written, and a WhatsApp lead waits unsent.
 
 3. **Assignment rule.** Setup → Automation → Assignment Rules → Leads: create the rule that gives each new booking an owner. Its ID becomes `ZOHO_LAR_ID`; `scripts/ops/check-zoho-setup.ts` (step 6) lists it. An org may have none: leave `ZOHO_LAR_ID` unset and Zoho leaves each record with the API user.
 4. **Workflows.** Setup → Automation → Workflow Rules → Leads:

@@ -9,10 +9,11 @@ import { createZohoCrm } from "./zoho.ts";
 import type { ZohoRequesterDependencies } from "../zoho-http.ts";
 import { createStubCrm } from "./stub.ts";
 
-export type LeadSource = "form" | "waitlist" | "tryon";
+export type LeadSource = "form" | "waitlist" | "tryon" | "whatsapp";
 
 /** Statuses the sync sets. Ops move leads on from these by hand. */
-export const LEAD_STATUSES = ["New", "Waitlist", "Try-on — delivery only"] as const;
+/** The last is a stranger Care saved from a chat (ADR 0138), written only once CRM_ORG_HAS_CARE_FIELDS is on. */
+export const LEAD_STATUSES = ["New", "Waitlist", "Try-on — delivery only", "WhatsApp — answer in chat"] as const;
 export type LeadStatus = (typeof LEAD_STATUSES)[number];
 
 /** Everything a CRM record is built from; read from D1 at sync time. */

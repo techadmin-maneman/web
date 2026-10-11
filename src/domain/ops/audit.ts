@@ -42,6 +42,8 @@ export const AUDIT_ACTIONS = [
   "chat.reply",
   "chat.note",
   "chat.close",
+  "chat.link",
+  "chat.save",
   "care_person.move",
   "care_rota.set",
   "care_leave.add",

@@ -1901,6 +1901,122 @@ Request body:
 }
 ```
 
+### POST /api/conversations/{id}/link
+
+Link a chat from a number we don't know to the client it turns out to be
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/ChatLink"
+}
+```
+
+**200**: Linked
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "person_id": {
+      "type": "string",
+      "format": "uuid"
+    }
+  },
+  "required": [
+    "person_id"
+  ],
+  "additionalProperties": false
+}
+```
+
+**400**: invalid_request: fields names conversation when the chat is a client's already
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no such chat, or no such client
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/conversations/{id}/save
+
+Save the person behind a chat from a number we don't know as someone new, and their WhatsApp lead
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/ChatSave"
+}
+```
+
+**200**: Saved
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "person_id": {
+      "type": "string",
+      "format": "uuid"
+    }
+  },
+  "required": [
+    "person_id"
+  ],
+  "additionalProperties": false
+}
+```
+
+**400**: invalid_request: fields names conversation when the chat is a client's already
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no such chat
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**409**: number_in_use: one of our people has this number already; link the chat to them
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ### GET /api/referral-channels
 
 Every partner, with what has come through each
@@ -11652,6 +11768,43 @@ Request body:
 }
 ```
 
+### ChatLink
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "person_id": {
+      "type": "string",
+      "format": "uuid"
+    }
+  },
+  "required": [
+    "person_id"
+  ],
+  "additionalProperties": false
+}
+```
+
+### ChatSave
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 80
+    }
+  },
+  "required": [
+    "name"
+  ],
+  "additionalProperties": false
+}
+```
+
 ### ReferralChannels
 
 ```json
@@ -12260,6 +12413,8 @@ Request body:
         "chat.reply",
         "chat.note",
         "chat.close",
+        "chat.link",
+        "chat.save",
         "care_person.move",
         "care_rota.set",
         "care_leave.add",

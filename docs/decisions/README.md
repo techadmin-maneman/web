@@ -2,7 +2,7 @@
 
 Every decision this repository was built on, oldest first. A record says what was decided and why, and is not rewritten to say something else: a later record changes it, and says so in its own header (ADR 0001). **Changed by** gathers those later records, from either side, so an old record's reader knows to read on.
 
-This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. A record names its topic in its header, `- Topic:` and one of the headings below, and the test fails on one that does not. The next free number is 0138.
+This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. A record names its topic in its header, `- Topic:` and one of the headings below, and the test fails on one that does not. The next free number is 0139.
 
 ## By topic
 
@@ -127,6 +127,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 - [0135](0135-city-matters.md) City matters
 - [0136](0136-care-names.md) The name a client knows their Care person by
 - [0137](0137-last-contact-in-the-crm.md) A client's last contact in the CRM
+- [0138](0138-strangers-in-the-inbox.md) Chats from numbers we don't know
 
 ### Referrals
 
@@ -310,3 +311,4 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0135](0135-city-matters.md) | City matters | 2026-10-12 | accepted |  |
 | [0136](0136-care-names.md) | The name a client knows their Care person by | 2026-10-12 | accepted |  |
 | [0137](0137-last-contact-in-the-crm.md) | A client's last contact in the CRM | 2026-10-12 | accepted |  |
+| [0138](0138-strangers-in-the-inbox.md) | Chats from numbers we don't know | 2026-10-12 | accepted |  |

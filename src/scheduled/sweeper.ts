@@ -16,6 +16,7 @@
 //   cleanup     idempotency keys after a day, login codes a day past expiry, rate counters after 3 days,
 //               try-on sessions once expired, app sessions 30 days after they ended, and holds nobody is paying for
 
+import { CRM_ORG_HAS_CARE_FIELDS } from "../config/crm.ts";
 import { releaseDeadHolds } from "../domain/booking/hold-slot.ts";
 import { DOWNLOAD_QUEUE_RETRIES, RENDER_GIVE_UP_MS } from "../config/pipeline.ts";
 import { PHOTO_RETENTION_MS } from "../config/tryon.ts";
@@ -146,10 +147,11 @@ export async function requeueLeads(context: SweepContext): Promise<string[]> {
     db
       .prepare(
         `SELECT id FROM leads
-       WHERE (sync_state = 'pending' AND created_at < ?1) OR (sync_state = 'failed' AND sync_attempts < ?2)
+       WHERE ((sync_state = 'pending' AND created_at < ?1) OR (sync_state = 'failed' AND sync_attempts < ?2))
+         AND (?4 = 1 OR source <> 'whatsapp')
        ORDER BY created_at LIMIT ?3`,
       )
-      .bind(before(PENDING_GRACE_MS), MAX_SYNC_ATTEMPTS, BATCH_LIMIT),
+      .bind(before(PENDING_GRACE_MS), MAX_SYNC_ATTEMPTS, BATCH_LIMIT, CRM_ORG_HAS_CARE_FIELDS ? 1 : 0),
   );
   await sendAll(
     env.CRM_QUEUE,
