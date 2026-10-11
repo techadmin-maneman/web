@@ -41,6 +41,7 @@ export const LOCAL_SETTINGS: Settings = {
   referrerNameOnInvite: true,
   ipHashSalt: "test-salt-that-is-long-enough-000000",
   alertWebhookUrl: null,
+  urgentWebhookUrl: null,
   leadWebhookUrl: null,
   heartbeatUrl: null,
   sentryDsn: null,

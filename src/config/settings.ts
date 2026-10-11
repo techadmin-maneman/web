@@ -180,6 +180,8 @@ export interface Settings {
   readonly alertWebhookUrl: string | null;
   /** Where new-lead notices are posted: LEAD_WEBHOOK_URL, or else the alert webhook. */
   readonly leadWebhookUrl: string | null;
+  /** URGENT_WEBHOOK_URL: a second space the urgent alerts are posted to as well, its phones set to ring. Optional. */
+  readonly urgentWebhookUrl: string | null;
   /** HEARTBEAT_URL: the outside monitor the cron pings after each run (src/providers/heartbeat.ts). Optional. */
   readonly heartbeatUrl: string | null;
   /** SENTRY_DSN: where each error line is reported (src/providers/error-tracking.ts). Optional: unset, none is. */
@@ -240,6 +242,10 @@ export function readSettings(
   if (leadWebhookUrl !== null && !leadWebhookUrl.startsWith("https://")) {
     read.problems.push("LEAD_WEBHOOK_URL must be an https:// URL");
   }
+  const urgentWebhookUrl = read.optionalText("URGENT_WEBHOOK_URL");
+  if (urgentWebhookUrl !== null && !urgentWebhookUrl.startsWith("https://")) {
+    read.problems.push("URGENT_WEBHOOK_URL must be an https:// URL");
+  }
   const watchers = readWatchers(read);
 
   const zohoClients = readZohoClients(read, providers);
@@ -273,6 +279,7 @@ export function readSettings(
     ipHashSalt,
     alertWebhookUrl: alertWebhookUrl === "" ? null : alertWebhookUrl,
     leadWebhookUrl: leadWebhookUrl ?? (alertWebhookUrl === "" ? null : alertWebhookUrl),
+    urgentWebhookUrl,
     ...watchers,
     ...zohoClients,
     razorpay,
