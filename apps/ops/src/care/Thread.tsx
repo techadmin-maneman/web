@@ -82,7 +82,11 @@ export function Thread({ conversation, onClose }: { conversation: Conversation; 
         </p>
       )}
       {conversation.person !== null && (
-        <CarePerson personId={conversation.person.id} email={conversation.care_person} />
+        <CarePerson
+          personId={conversation.person.id}
+          email={conversation.care_person}
+          coveredBy={conversation.covered_by}
+        />
       )}
       {items.length === 0 ? (
         <p className={styles.note}>{thread.empty}</p>

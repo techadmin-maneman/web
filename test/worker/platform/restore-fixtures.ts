@@ -69,6 +69,10 @@ export const ROWS_AT_T: readonly string[] = [
      VALUES ('cm1', 'cv1', 'in', 'client', 'Hello', '${AT}', '${AT}')`,
   // Their Care person (docs/decisions/0131-care-people.md).
   `INSERT INTO care_owners (person_id, email, since, assigned_by) VALUES ('p1', 'care@maneman.in', '${AT}', 'system')`,
+  // Their days off (docs/decisions/0134-care-cover.md).
+  `INSERT INTO care_weekly_off (email, weekday, set_by, set_at) VALUES ('care@maneman.in', 0, 'lead@maneman.in', '${AT}')`,
+  `INSERT INTO care_leave (id, email, from_date, to_date, set_by, set_at)
+     VALUES ('cl1', 'care@maneman.in', '2026-10-20', '2026-10-22', 'lead@maneman.in', '${AT}')`,
   `INSERT INTO site_word_publishes (id, words, lines, published_by, published_at)
      VALUES ('sp1', '{}', 0, 'growth@maneman.in', '${AT}')`,
   // Their first fit, done: last_visits follows it.

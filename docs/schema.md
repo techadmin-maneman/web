@@ -23,7 +23,7 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 | Discount codes | `discount_codes`, `discount_code_uses` | A code made or switched off since goes back, and a use since is forgotten, so a single-use code works again | Making or switching off the code again in the console. `discount_code_uses` is only ever added to |
 | Bookings and moves | `appointments`, `slot_holds`, `slot_claims`, `dispatch_moves`, `move_proposals`, `visit_changes`, `consultation_requests`, `first_fit_requests` | A visit booked, moved or cancelled since is lost, and its time can be booked again. Where FSM still holds visits, the cron books them there a second time | The rows since `<T>`, before the switch is turned off |
 | Messages | `outbound_messages` | The sweeper sends again what was sent since | The rows since `<T>`, before the switch is turned off |
-| The Care inbox | `conversations`, `chat_messages`, `care_owners` | A message written since, the client's or ours, is gone from its thread | The rows since `<T>`; WhatsApp's own copy shows what was said |
+| The Care inbox | `conversations`, `chat_messages`, `care_owners`, `care_weekly_off`, `care_leave` | A message written since, the client's or ours, is gone from its thread | The rows since `<T>`; WhatsApp's own copy shows what was said |
 | Technicians' steps, pieces and photographs | `job_events`, `checkins`, `visits`, `consumables_used`, `no_show_cases`, `no_show_disputes`, `pieces`, `photos`, `photo_sets` | Steps, check-ins, outcomes, pieces fitted, no-shows and disputes since are lost; a photograph's file is kept with no row | The rows since `<T>` |
 | Hair profiles | `hair_profiles` | A profile recorded since is lost, and one an erasure blanked since is whole again | Adding the rows since `<T>`: they are only ever added. Erasing again blanks the rest |
 | Stock | `stock_movements` | A delivery, transfer, count or loss recorded since, or a job's use, is lost, so what each kit and the store hold is wrong | Adding the rows since `<T>` |
@@ -46,7 +46,9 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 - [appointments](#appointments): Each visit, mirrored from FSM or booked without it: when, with whom, of what type and in what state, and what we have learnt of each since, such as the window asked for and its invoice. `fsm_id` is FSM's ID for a visit FSM holds, otherwise the row's own (ADR 0032, ADR 0110).
 - [audit_log](#audit_log): Every ops action that reads or changes a client's data, and who took it. An entry is never changed (ADR 0031).
 - [board_version](#board_version): One row: a number that triggers raise whenever a visit, a move, leave, a technician or the day's slot times change, so the open dispatch board reads itself again only then (ADR 0069).
+- [care_leave](#care_leave): Leave for a Care team member, from one date to another; their chats are covered meanwhile (ADR 0134).
 - [care_owners](#care_owners): Each client's named Care person, given at their first chat and moved by a Customer Care manager (ADR 0131).
+- [care_weekly_off](#care_weekly_off): Each Care team member's weekly days off, as a Customer Care manager sets them (ADR 0134).
 - [channel_attributions](#channel_attributions): A person who came through a partner's code, and what the friend and the partner earned once fitted (ADR 0123).
 - [chat_messages](#chat_messages): Every message in a Care inbox thread: what the client wrote, our replies, and notes only staff see (ADR 0129).
 - [checkins](#checkins): Each "I have arrived", passed or not, with the distance measured and the radius in force (ADR 0065); an erasure blanks where the phone was (ADR 0094).
@@ -292,6 +294,25 @@ Made by `0090_board_version.sql`.
 | `id` | INTEGER | no |  | primary key |
 | `version` | INTEGER | no |  |  |
 
+## care_leave
+
+Leave for a Care team member, from one date to another; their chats are covered meanwhile (ADR 0134).
+
+Made by `0117_care_days_off.sql`.
+
+| Column | Type | May be empty | Default | Key |
+| --- | --- | --- | --- | --- |
+| `id` | TEXT | no |  | primary key |
+| `email` | TEXT | no |  |  |
+| `from_date` | TEXT | no |  |  |
+| `to_date` | TEXT | no |  |  |
+| `set_by` | TEXT | no |  |  |
+| `set_at` | TEXT | no |  |  |
+
+Indexes:
+
+- `care_leave_by_end`: on (`to_date`)
+
 ## care_owners
 
 Each client's named Care person, given at their first chat and moved by a Customer Care manager (ADR 0131).
@@ -308,6 +329,19 @@ Made by `0116_care_owners.sql`.
 Indexes:
 
 - `care_owners_by_email`: on (`email`)
+
+## care_weekly_off
+
+Each Care team member's weekly days off, as a Customer Care manager sets them (ADR 0134).
+
+Made by `0117_care_days_off.sql`.
+
+| Column | Type | May be empty | Default | Key |
+| --- | --- | --- | --- | --- |
+| `email` | TEXT | no |  | primary key |
+| `weekday` | INTEGER | no |  | primary key |
+| `set_by` | TEXT | no |  |  |
+| `set_at` | TEXT | no |  |  |
 
 ## channel_attributions
 

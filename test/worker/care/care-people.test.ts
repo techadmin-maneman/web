@@ -98,7 +98,7 @@ describe("a client's Care person", () => {
     // Between equals, the first by address: Asha.
     await written("919810000001");
     const answer = await request(opsAs(person(ASHA)), "/api/care-team");
-    expect(await answer.json()).toEqual({
+    expect(await answer.json()).toMatchObject({
       team: [
         { email: LEAD, clients: 0 },
         { email: RAVI, clients: 0 },

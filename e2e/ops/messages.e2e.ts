@@ -14,6 +14,7 @@ const ARJUN: Conversation = {
   mobile: "+919810000001",
   state: "open",
   care_person: "asha@maneman.test",
+  covered_by: null,
   last_message_at: "2026-09-21T05:12:00.000Z",
   last_line: "Can I move tomorrow's visit to the evening?",
   waiting_since: "2026-09-21T05:12:00.000Z",
@@ -23,7 +24,11 @@ const ARJUN: Conversation = {
 test("lists the chats waiting on us, and opens one with our automatic messages in it", async ({ page }) => {
   await answer(page, {
     "GET /api/conversations": json({ conversations: [ARJUN] }),
-    "GET /api/care-team": json({ team: [{ email: "asha@maneman.test", clients: 12 }] }),
+    "GET /api/care-team": json({
+      team: [
+        { email: "asha@maneman.test", clients: 12, weekly_off: [0], leave: [], off_today: false, covered_by: null },
+      ],
+    }),
     "GET /api/conversations/{id}": json({
       conversation: ARJUN,
       items: [

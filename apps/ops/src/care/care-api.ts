@@ -27,4 +27,9 @@ export const careApi = {
   careTeam: () => client.get("/api/care-team"),
   moveCarePerson: (personId: string, email: string) =>
     client.post("/api/clients/{id}/care-person", { path: { id: personId }, body: { email } }),
+  setDaysOff: (email: string, weekdays: readonly number[]) =>
+    client.post("/api/care-team/days-off", { body: { email, weekdays: [...weekdays] } }),
+  addLeave: (email: string, from: string, to: string) =>
+    client.post("/api/care-team/leave", { body: { email, from, to } }),
+  deleteLeave: (id: string) => client.post("/api/care-team/leave/{id}/delete", { path: { id } }),
 };

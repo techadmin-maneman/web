@@ -1,6 +1,6 @@
 // Customer Care · Messages in the console (apps/ops/src/care/; docs/decisions/0129-the-care-inbox.md,
-// 0131-care-people.md): the chats a view at a time, a chat opened with our automatic messages in it, and its client
-// moved to another Care person. Every name, number and address is made up.
+// 0131-care-people.md, 0134-care-cover.md): the chats a view at a time, a chat opened with our automatic messages in
+// it, its client moved to another Care person, and the Care team's days off. Every name, number and address is made up.
 
 import { act, createElement } from "react";
 import { createRoot, type Root } from "react-dom/client";
@@ -8,6 +8,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Conversation } from "../../apps/ops/src/care/care-api.ts";
 import { MessagesScreen } from "../../apps/ops/src/care/MessagesScreen.tsx";
 import { care as copy } from "../../apps/ops/src/content/care.ts";
+import { shortDate } from "../../packages/web-kit/dates.ts";
 
 const ARJUN: Conversation = {
   id: "8c1d9f4b-5e6a-4b7c-9d8e-3f4a5b6c7d8e",
@@ -15,6 +16,7 @@ const ARJUN: Conversation = {
   mobile: "+919810000001",
   state: "open",
   care_person: "asha@maneman.test",
+  covered_by: null,
   last_message_at: "2026-09-21T05:12:00.000Z",
   last_line: "Can I move tomorrow's visit to the evening?",
   waiting_since: "2026-09-21T05:12:00.000Z",
@@ -28,6 +30,8 @@ const STRANGER: Conversation = {
   mobile: "+919811112222",
   last_line: "Do you come to Noida?",
 };
+
+const LEAVE = { id: "7b0c8e3a-4d59-4a6b-8c7d-2e3f4a5b6c7d", from: "2026-10-20", to: "2026-10-22" };
 
 let page: HTMLDivElement;
 let root: Root;
@@ -58,8 +62,15 @@ beforeEach(() => {
       return Promise.resolve(
         Response.json({
           team: [
-            { email: "ravi@maneman.test", clients: 3 },
-            { email: "asha@maneman.test", clients: 12 },
+            { email: "ravi@maneman.test", clients: 3, weekly_off: [0], leave: [], off_today: false, covered_by: null },
+            {
+              email: "asha@maneman.test",
+              clients: 12,
+              weekly_off: [],
+              leave: [LEAVE],
+              off_today: false,
+              covered_by: null,
+            },
           ],
         }),
       );
@@ -189,6 +200,54 @@ describe("the Messages page", () => {
     ]);
     expect(page.textContent).toContain(copy.carePerson.moved("ravi@maneman.test"));
     expect(page.textContent).toContain(`${copy.carePerson.label}: ravi@maneman.test`);
+  });
+
+  it("lists the Care team with their days off and leave", async () => {
+    await show();
+    const team = page.querySelector('[aria-labelledby="care-team"]') ?? page;
+    expect(team.textContent).toContain("ravi@maneman.test");
+    expect(team.textContent).toContain(copy.team.weekdays[0]);
+    expect(team.textContent).toContain(copy.team.period(shortDate(LEAVE.from), shortDate(LEAVE.to)));
+  });
+
+  it("sets a member's days off, adds leave and takes it back", async () => {
+    await show();
+    const click = async (element: Element | null | undefined) => {
+      await act(async () => {
+        (element as HTMLElement | null | undefined)?.click();
+        await new Promise((resolve) => setTimeout(resolve, 0));
+      });
+    };
+    const button = (label: string) => page.querySelector(`button[aria-label="${label}"]`);
+    const named = (text: string) =>
+      [...page.querySelectorAll("button")].find((each) => each.textContent.trim() === text);
+    await click(button(copy.team.editDaysLabel("ravi@maneman.test")));
+    const monday = [...page.querySelectorAll('input[type="checkbox"]')][1];
+    await click(monday);
+    await click(named(copy.team.save));
+    expect(posted.at(-1)).toEqual({
+      path: "/api/care-team/days-off",
+      body: { email: "ravi@maneman.test", weekdays: [0, 1] },
+    });
+    await click(button(copy.team.addLeaveLabel("asha@maneman.test")));
+    const dates = [...page.querySelectorAll<HTMLInputElement>('input[type="date"]')];
+    act(() => {
+      for (const [input, value] of [
+        [dates[0], "2026-11-02"],
+        [dates[1], "2026-11-03"],
+      ] as const) {
+        if (input === undefined) continue;
+        Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")?.set?.call(input, value);
+        input.dispatchEvent(new Event("input", { bubbles: true }));
+      }
+    });
+    await click(named(copy.team.add));
+    expect(posted.at(-1)).toEqual({
+      path: "/api/care-team/leave",
+      body: { email: "asha@maneman.test", from: "2026-11-02", to: "2026-11-03" },
+    });
+    await click(button(copy.team.takeBackLabel(copy.team.period(shortDate(LEAVE.from), shortDate(LEAVE.to)))));
+    expect(asked).toContain(`/api/care-team/leave/${LEAVE.id}/delete`);
   });
 
   it("replies from our number, adds a note, and closes the chat with what it was about", async () => {

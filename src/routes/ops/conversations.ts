@@ -13,7 +13,9 @@ import type { Context } from "hono";
 import { actorOf, staffMemberOf } from "../../http/audit.ts";
 import { opsInputs } from "../../http/ops-inputs.ts";
 import type { AppEnv } from "../../http/context.ts";
-import { conversationThread, INBOX_VIEWS, listConversations } from "../../domain/care/inbox.ts";
+import { conversationThread, INBOX_VIEWS, listConversations, type InboxContext } from "../../domain/care/inbox.ts";
+import { coverOn } from "../../domain/care/cover.ts";
+import { indiaDate } from "../../lib/india-time.ts";
 import { addNote, CLOSE_REASONS, closeConversation, replyTo } from "../../domain/care/replies.ts";
 
 const ConversationSchema = z
@@ -26,6 +28,9 @@ const ConversationSchema = z
     state: z.enum(["open", "waiting", "closed"]),
     care_person: z.union([z.string(), z.null()]).openapi({
       description: "The client's Care person, by e-mail; null for a number we do not know, or a client not given one.",
+    }),
+    covered_by: z.union([z.string(), z.null()]).openapi({
+      description: "Who covers the Care person today, while they are off; null while they are on.",
     }),
     last_message_at: z.iso.datetime(),
     last_line: z.union([z.string(), z.null()]),
@@ -146,6 +151,12 @@ const closeRoute = createRoute({
   responses: { 200: answered, 403: errorResponse("access_required"), 404: errorResponse("not_found") },
 });
 
+/** The Care hours ops set, and who covers whom today. */
+async function inboxContext(c: Context<AppEnv>): Promise<InboxContext> {
+  const [{ careHours }, cover] = await Promise.all([opsInputs(c), coverOn(c.env.DB, indiaDate(c.var.deps.now()))]);
+  return { hours: careHours, cover };
+}
+
 /** Who acts, and when, as each change records it. */
 const changeOf = (c: Context<AppEnv>, conversationId: string) => ({
   conversationId,
@@ -163,7 +174,7 @@ function registerAnswers(app: App): void {
     });
     if (replied === "not_found" || replied === "erased") return refuse(c, "not_found");
     if (replied === "unavailable") return refuse(c, "unavailable");
-    const thread = await conversationThread(c.env.DB, id, (await opsInputs(c)).careHours);
+    const thread = await conversationThread(c.env.DB, id, await inboxContext(c));
     return thread === null ? refuse(c, "not_found") : c.json(thread, 200);
   });
 
@@ -172,7 +183,7 @@ function registerAnswers(app: App): void {
     if ((await addNote(c.env.DB, { ...changeOf(c, id), text: c.req.valid("json").text })) === "not_found") {
       return refuse(c, "not_found");
     }
-    const thread = await conversationThread(c.env.DB, id, (await opsInputs(c)).careHours);
+    const thread = await conversationThread(c.env.DB, id, await inboxContext(c));
     return thread === null ? refuse(c, "not_found") : c.json(thread, 200);
   });
 
@@ -180,7 +191,7 @@ function registerAnswers(app: App): void {
     const { id } = c.req.valid("param");
     const closed = await closeConversation(c.env.DB, { ...changeOf(c, id), reason: c.req.valid("json").reason });
     if (closed === "not_found") return refuse(c, "not_found");
-    const thread = await conversationThread(c.env.DB, id, (await opsInputs(c)).careHours);
+    const thread = await conversationThread(c.env.DB, id, await inboxContext(c));
     return thread === null ? refuse(c, "not_found") : c.json(thread, 200);
   });
 }
@@ -189,13 +200,12 @@ export function registerOpsConversations(app: App): void {
   registerAnswers(app);
   app.openapi(listRoute, async (c) => {
     const me = staffMemberOf(c)?.id ?? "";
-    const { careHours } = await opsInputs(c);
-    const conversations = await listConversations(c.env.DB, c.req.valid("query").view, me, careHours);
+    const conversations = await listConversations(c.env.DB, c.req.valid("query").view, me, await inboxContext(c));
     return c.json({ conversations }, 200);
   });
 
   app.openapi(threadRoute, async (c) => {
-    const thread = await conversationThread(c.env.DB, c.req.valid("param").id, (await opsInputs(c)).careHours);
+    const thread = await conversationThread(c.env.DB, c.req.valid("param").id, await inboxContext(c));
     if (thread === null) return refuse(c, "not_found");
     return c.json(thread, 200);
   });

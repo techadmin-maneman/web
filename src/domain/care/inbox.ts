@@ -67,6 +67,8 @@ export interface ConversationRow {
   readonly state: "open" | "waiting" | "closed";
   /** The client's Care person, by e-mail; null for a number we don't know, or a client not given one. */
   readonly care_person: string | null;
+  /** Who covers the Care person today, while they are off (src/domain/care/cover.ts); null while they are on. */
+  readonly covered_by: string | null;
   readonly last_message_at: string;
   /** The last thing said in the chat, ours or theirs; null where only our automatic messages went. */
   readonly last_line: string | null;
@@ -95,7 +97,13 @@ const waitingSince = (row: ListRow): string | null =>
     ? row.last_inbound_at
     : null;
 
-function rowOf(row: ListRow, hours: CareHours): ConversationRow {
+/** What the inbox reads each chat against: the Care hours, and who covers whom today. */
+export interface InboxContext {
+  readonly hours: CareHours;
+  readonly cover: ReadonlyMap<string, string>;
+}
+
+function rowOf(row: ListRow, { hours, cover }: InboxContext): ConversationRow {
   const since = waitingSince(row);
   return {
     id: row.id,
@@ -103,6 +111,7 @@ function rowOf(row: ListRow, hours: CareHours): ConversationRow {
     mobile: row.mobile_e164,
     state: row.state,
     care_person: row.care_person,
+    covered_by: row.care_person === null ? null : (cover.get(row.care_person) ?? null),
     last_message_at: row.last_message_at,
     last_line: row.last_line,
     waiting_since: since,
@@ -110,13 +119,17 @@ function rowOf(row: ListRow, hours: CareHours): ConversationRow {
   };
 }
 
-/** The threads of a view, the latest first; "mine" is the open and waiting threads of `me`'s clients. */
+/**
+ * The threads of a view, the latest first; "mine" is the open and waiting threads of `me`'s clients, and of the clients
+ * of whoever `me` covers today.
+ */
 export async function listConversations(
   db: D1Database,
   view: InboxView,
   me: string,
-  hours: CareHours,
+  context: InboxContext,
 ): Promise<ConversationRow[]> {
+  const covered = [...context.cover].filter(([, by]) => by === me).map(([off]) => off);
   const { results } = await db
     .prepare(
       `SELECT c.id, c.person_id, p.name, c.mobile_e164, c.state, o.email AS care_person, c.last_message_at,
@@ -126,12 +139,12 @@ export async function listConversations(
          (SELECT MAX(m.sent_at) FROM chat_messages m WHERE m.conversation_id = c.id AND m.direction = 'out'
             AND m.author <> ?4) AS last_reply_at
        FROM conversations c LEFT JOIN people p ON p.id = c.person_id LEFT JOIN care_owners o ON o.person_id = c.person_id
-       WHERE ?1 = 'all' OR c.state = ?1 OR (?1 = 'mine' AND o.email = ?3 AND c.state <> 'closed')
+       WHERE ?1 = 'all' OR c.state = ?1 OR (?1 = 'mine' AND o.email IN (SELECT value FROM json_each(?3)) AND c.state <> 'closed')
        ORDER BY c.last_message_at DESC LIMIT ?2`,
     )
-    .bind(view, LISTED, me, AUTO_REPLY)
+    .bind(view, LISTED, JSON.stringify([me, ...covered]), AUTO_REPLY)
     .all<ListRow>();
-  return results.map((row) => rowOf(row, hours));
+  return results.map((row) => rowOf(row, context));
 }
 
 /** One entry of a thread: a chat message, or one of our automatic messages to the client. */
@@ -163,7 +176,7 @@ export interface Thread {
 const THREAD_ITEMS = 300;
 
 /** A thread with its chat and our automatic messages to the client, in order; null for one we do not have. */
-export async function conversationThread(db: D1Database, id: string, hours: CareHours): Promise<Thread | null> {
+export async function conversationThread(db: D1Database, id: string, context: InboxContext): Promise<Thread | null> {
   const row = await db
     .prepare(
       `SELECT c.id, c.person_id, p.name, c.mobile_e164, c.state, o.email AS care_person, c.last_message_at,
@@ -194,5 +207,5 @@ export async function conversationThread(db: D1Database, id: string, hours: Care
   const items = [...((chat?.results ?? []) as ThreadItem[]), ...((auto?.results ?? []) as ThreadItem[])]
     .sort((one, other) => one.at.localeCompare(other.at))
     .slice(-THREAD_ITEMS);
-  return { conversation: rowOf({ ...row, last_line: null }, hours), items };
+  return { conversation: rowOf({ ...row, last_line: null }, context), items };
 }
