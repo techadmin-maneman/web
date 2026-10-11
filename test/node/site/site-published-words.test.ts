@@ -1,7 +1,7 @@
 // The words the Words page published, laid over the site's copy as it is built (site/src/lib/published-words.ts,
 // site/src/lib/published-words-apply.ts; docs/decisions/0127-publishing-the-words.md).
 
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { applyWords } from "../../../site/src/lib/published-words-apply.ts";
@@ -27,7 +27,7 @@ describe("a copy module's published lines", () => {
 });
 
 describe("the build's plugin", () => {
-  const site = fileURLToPath(new URL("../../../site/", import.meta.url));
+  const site = join(dirname(fileURLToPath(import.meta.url)), "../../../site");
   const plugin = publishedWordsPlugin(site, { "site:home/hero.title": "Hair, fitted at home." });
   const transform = (code: string, id: string) =>
     (plugin.transform as (code: string, id: string) => string | null)(code, id);

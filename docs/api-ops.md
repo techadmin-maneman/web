@@ -1594,7 +1594,7 @@ Request body:
 
 Every line of the site and every WhatsApp message to a client, with the wording in force
 
-**200**: The lines
+**200**: The lines, and when the site's words were last published
 
 ```json
 {
@@ -1626,16 +1626,7 @@ Request body:
 
 ```json
 {
-  "type": "object",
-  "properties": {
-    "word": {
-      "$ref": "#/components/schemas/Word"
-    }
-  },
-  "required": [
-    "word"
-  ],
-  "additionalProperties": false
+  "$ref": "#/components/schemas/WordAnswer"
 }
 ```
 
@@ -1684,6 +1675,26 @@ Every wording one line has had, newest first
 ```
 
 **404**: not_found
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/words/publish
+
+Publish the site's changed words, which each build of this environment's site lays over its copy
+
+**200**: The publish
+
+```json
+{
+  "$ref": "#/components/schemas/WordsPublished"
+}
+```
+
+**403**: access_required
 
 ```json
 {
@@ -10846,10 +10857,21 @@ Request body:
       "items": {
         "$ref": "#/components/schemas/Word"
       }
+    },
+    "published": {
+      "anyOf": [
+        {
+          "$ref": "#/components/schemas/WordsPublish"
+        },
+        {
+          "type": "null"
+        }
+      ]
     }
   },
   "required": [
-    "words"
+    "words",
+    "published"
   ],
   "additionalProperties": false
 }
@@ -10915,6 +10937,17 @@ Request body:
     "longest": {
       "type": "integer",
       "description": "The longest the line may grow, in characters."
+    },
+    "on_site": {
+      "anyOf": [
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "For a line of the site, whether its last publish has the wording in force; null for a message."
     }
   },
   "required": [
@@ -10925,7 +10958,34 @@ Request body:
     "text",
     "now",
     "changed",
-    "longest"
+    "longest",
+    "on_site"
+  ],
+  "additionalProperties": false
+}
+```
+
+### WordsPublish
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "by": {
+      "type": "string"
+    },
+    "lines": {
+      "type": "integer"
+    }
+  },
+  "required": [
+    "at",
+    "by",
+    "lines"
   ],
   "additionalProperties": false
 }
@@ -10981,6 +11041,23 @@ Request body:
 }
 ```
 
+### WordAnswer
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "word": {
+      "$ref": "#/components/schemas/Word"
+    }
+  },
+  "required": [
+    "word"
+  ],
+  "additionalProperties": false
+}
+```
+
 ### WordSet
 
 ```json
@@ -11007,6 +11084,23 @@ Request body:
   "required": [
     "key",
     "text"
+  ],
+  "additionalProperties": false
+}
+```
+
+### WordsPublished
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "published": {
+      "$ref": "#/components/schemas/WordsPublish"
+    }
+  },
+  "required": [
+    "published"
   ],
   "additionalProperties": false
 }
@@ -11105,6 +11199,7 @@ Request body:
         "channel.pause",
         "channel.resume",
         "word.set",
+        "word.publish",
         "partner_payout.record",
         "partner_payout.delete",
         "photo.view",

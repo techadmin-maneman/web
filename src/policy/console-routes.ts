@@ -149,6 +149,7 @@ export const ROUTE_NEEDS: Readonly<Record<string, RouteNeed | typeof SIGNED_IN>>
   "GET /api/words": need("growth", "view"),
   "GET /api/words/history": need("growth", "view"),
   "POST /api/words": need("growth", "manage"),
+  "POST /api/words/publish": need("growth", "manage"),
   "POST /api/referral-channels": need("growth", "manage"),
   "PATCH /api/referral-channels/{id}": need("growth", "manage"),
   "POST /api/referral-channels/{id}/pause": need("growth", "manage"),

@@ -331,6 +331,47 @@
         ],
         "additionalProperties": false
       },
+      "SiteWords": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The publish; null before any."
+          },
+          "published_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "words": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "description": "Each changed line's key, as src/config/words.json names it, and its words."
+          }
+        },
+        "required": [
+          "id",
+          "published_at",
+          "words"
+        ],
+        "additionalProperties": false
+      },
       "NumberCode": {
         "type": "object",
         "properties": {
@@ -1339,6 +1380,23 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/site-words": {
+      "get": {
+        "summary": "The site's words as last published, which each build of the site lays over its copy",
+        "responses": {
+          "200": {
+            "description": "The latest publish",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SiteWords"
                 }
               }
             }

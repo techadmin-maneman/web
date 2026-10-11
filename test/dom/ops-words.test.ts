@@ -156,4 +156,17 @@ describe("the Words page", () => {
     await press(copy.check.send);
     expect(sent).toEqual([{ key: HERO.key, text: null }]);
   });
+
+  it("publishes the site's changed words once confirmed", async () => {
+    answers.set("POST /api/words/publish", () =>
+      Response.json({ published: { at: "2026-10-11T06:30:00.000Z", by: "growth@maneman.test", lines: 1 } }),
+    );
+    await show();
+    expect(page.textContent).toContain(copy.publish.never);
+    expect(page.textContent).toContain(copy.notOnSite);
+    await press(copy.publish.open);
+    expect(page.textContent).toContain(copy.publish.changed(1));
+    await press(copy.publish.send);
+    expect(page.querySelector('[role="status"]')?.textContent).toBe(copy.publish.done);
+  });
 });

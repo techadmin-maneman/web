@@ -4,7 +4,7 @@
 // lines on its own exports (./published-words-apply.ts). The site stays static: nothing is fetched at visit time.
 
 import { existsSync, readFileSync } from "node:fs";
-import { dirname, relative } from "node:path";
+import { dirname, join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { Plugin } from "vite";
 import type { PublishedWords } from "./published-words-apply.ts";
@@ -20,7 +20,7 @@ const MODULES: Readonly<Record<string, string>> = {
   "src/content/service.ts": "service",
 };
 
-const APPLIER = fileURLToPath(new URL("./published-words-apply.ts", import.meta.url));
+const APPLIER = join(dirname(fileURLToPath(import.meta.url)), "published-words-apply.ts");
 
 /** The published words the build fetched, or none: a local build, or one before any were published. */
 export function readPublishedWords(file: string): PublishedWords {

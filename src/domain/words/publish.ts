@@ -6,7 +6,7 @@ import { auditStatement, type AuditActor } from "../ops/audit.ts";
 import { listWords } from "./words.ts";
 
 /** What the site's builds lay over the copy: each changed line's key and words. */
-export type SiteWords = Readonly<Record<string, string>>;
+type SiteWords = Readonly<Record<string, string>>;
 
 export interface SitePublish {
   readonly id: string;

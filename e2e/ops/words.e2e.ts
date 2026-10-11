@@ -16,6 +16,7 @@ const REMINDER: Word = {
   now: "Hi {{1}}, see you tomorrow.\nYour {{2}} is {{3}}, {{4}}, with {{5}}.",
   changed: null,
   longest: 94,
+  on_site: null,
 };
 const HERO: Word = {
   key: "site:home/hero.title",
@@ -26,6 +27,7 @@ const HERO: Word = {
   now: "Hair, fitted at home.",
   changed: { by: "growth@maneman.test", at: "2026-10-05T06:30:00.000Z" },
   longest: 50,
+  on_site: false,
 };
 const FAQ: Word = {
   ...HERO,
@@ -35,10 +37,11 @@ const FAQ: Word = {
   now: "Questions",
   changed: null,
   longest: 29,
+  on_site: true,
 };
 
 async function open(page: Page, extra: Parameters<typeof answer>[1] = {}) {
-  await answer(page, { "GET /api/words": json({ words: [REMINDER, HERO, FAQ] }), ...extra });
+  await answer(page, { "GET /api/words": json({ words: [REMINDER, HERO, FAQ], published: null }), ...extra });
   await page.goto("/words");
   await expect(page.getByRole("heading", { level: 1, name: copy.title })).toBeVisible();
 }
@@ -46,11 +49,12 @@ async function open(page: Page, extra: Parameters<typeof answer>[1] = {}) {
 const row = (page: Page, place: string) =>
   page.getByRole("row").filter({ has: page.getByRole("rowheader", { name: place, exact: true }) });
 
-test("lists every line with the wording in force, and who changed it", async ({ page }) => {
+test("lists every line with the wording in force, who changed it, and whether the site has it", async ({ page }) => {
   await open(page);
   await expect(row(page, "hero.title").getByRole("cell").nth(1)).toHaveText(
-    "Hair, fitted at home.Changed by growth@maneman.test, Mon 5 Oct",
+    `Hair, fitted at home.Changed by growth@maneman.test, Mon 5 Oct${copy.notOnSite}`,
   );
+  await expect(page.getByText(copy.publish.never)).toBeVisible();
   await expect(row(page, "visit_reminder_v1")).toBeVisible();
 });
 
@@ -123,4 +127,20 @@ test("puts a line back to the code's wording from its history", async ({ page })
   await page.getByRole("button", { name: copy.form.next }).click();
   await page.getByRole("button", { name: copy.check.send }).click();
   expect(sent).toEqual({ key: HERO.key, text: null });
+});
+
+test("publishes the site's changed words once confirmed", async ({ page }) => {
+  let published = false;
+  await open(page, {
+    "POST /api/words/publish": (route: Route) => {
+      published = true;
+      return json({ published: { at: "2026-10-11T06:30:00.000Z", by: "growth@maneman.test", lines: 1 } })(route);
+    },
+  });
+  await page.getByRole("button", { name: copy.publish.open }).click();
+  await expect(page.getByText(copy.publish.changed(1))).toBeVisible();
+  expect(published).toBe(false);
+  await page.getByRole("button", { name: copy.publish.send, exact: true }).click();
+  await expect(page.getByRole("status")).toHaveText(copy.publish.done);
+  expect(published).toBe(true);
 });

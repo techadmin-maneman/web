@@ -186,6 +186,7 @@ export const RESTORE_GROUPS: readonly RestoreGroup[] = [
       "pay_grades",
       "visit_pay_rates",
       "word_versions",
+      "site_word_publishes",
     ],
     leftAtT:
       "A price, service, rule, area, day's times, day off, consumable, job-sheet list, pay rate or wording set since goes back",

@@ -1,6 +1,7 @@
 // Growth · Words (docs/decisions/0126-the-words-page.md): every line of the site and every WhatsApp message to a
 // client, found by page or by what it says, each changed in its row, with its history beneath it.
 
+import { Button } from "@maneman/ui/Button";
 import { Panel } from "@maneman/ui/Panel";
 import { Table } from "@maneman/ui/Table";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
@@ -11,13 +12,14 @@ import { useState } from "react";
 import { api, type Word } from "../api.ts";
 import { Shell } from "../components/Shell.tsx";
 import { Narrowing, SortHeads, TableEnd } from "../components/TableTools.tsx";
-import { useTableView, type Column } from "../components/useTableView.ts";
+import { useTableView, type Column, type TableView } from "../components/useTableView.ts";
 import { words as copy } from "../content/words.ts";
 import { useAccess } from "../lib/access.ts";
 import { SECTION_NAMES } from "../route.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import { placeOf, WordForm } from "./WordForm.tsx";
 import { WordHistory } from "./WordHistory.tsx";
+import { LastPublished, PublishCheck } from "./WordsPublish.tsx";
 import styles from "../components/forms.module.css";
 import own from "./words.module.css";
 
@@ -107,6 +109,7 @@ function WordRows({ word, ...row }: { word: Word } & RowProps) {
           {word.changed !== null && (
             <span className={own.changed}>{copy.changed(word.changed.by, shortDate(indiaDate(word.changed.at)))}</span>
           )}
+          {word.on_site === false && <span className={own.changed}>{copy.notOnSite}</span>}
         </td>
         <RowActions word={word} {...row} />
       </tr>
@@ -121,38 +124,11 @@ const TABLE_COLUMNS: readonly Column<Word>[] = [
   { label: copy.columns.wording },
 ];
 
-function Words() {
-  const [loaded, retry] = useLoad(api.words);
-  /** Each line as its last change left it, so the table follows a change without reading the list again. */
-  const [changed, setChanged] = useState<ReadonlyMap<string, Word>>(new Map());
-  const [acting, setActing] = useState<Acting>(null);
-  const [said, setSaid] = useState(false);
-  const mayChange = useAccess().mayCall("POST /api/words");
-  const rows = loaded.state === "loaded" ? loaded.value.words.map((word) => changed.get(word.key) ?? word) : [];
-  const view = useTableView(rows, TABLE_COLUMNS, { search: (word) => `${placeOf(word)} ${word.now} ${word.text}` });
-  if (loaded.state === "loading") return <Loading />;
-  if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
-  const row: RowProps = {
-    mayChange,
-    acting,
-    onAct: (next) => {
-      setSaid(false);
-      setActing(next);
-    },
-    onDone: (word) => {
-      setChanged(new Map([...changed, [word.key, word]]));
-      setActing(null);
-      setSaid(true);
-    },
-  };
+/** The table of lines, found by page or by what they say, a page at a time. */
+function WordsTable({ view, row }: { view: TableView<Word>; row: RowProps }) {
   return (
-    <Panel titleId="words" title={copy.title} className={styles.panel}>
+    <>
       <Narrowing view={view} label={copy.narrow} className={own.narrow} />
-      {said && (
-        <p className={styles.saved} role="status">
-          {copy.done}
-        </p>
-      )}
       <div className={own.scroll}>
         <Table className={classes(styles.table, own.table)}>
           <thead>
@@ -171,6 +147,79 @@ function Words() {
         </Table>
       </div>
       <TableEnd view={view} />
+    </>
+  );
+}
+
+function Words() {
+  const [loaded, retry] = useLoad(api.words);
+  /** Each line as its last change left it, so the table follows a change without reading the list again. */
+  const [changed, setChanged] = useState<ReadonlyMap<string, Word>>(new Map());
+  const [acting, setActing] = useState<Acting>(null);
+  const [publishing, setPublishing] = useState(false);
+  const [said, setSaid] = useState<string | null>(null);
+  const access = useAccess();
+  const rows = loaded.state === "loaded" ? loaded.value.words.map((word) => changed.get(word.key) ?? word) : [];
+  const view = useTableView(rows, TABLE_COLUMNS, { search: (word) => `${placeOf(word)} ${word.now} ${word.text}` });
+  if (loaded.state === "loading") return <Loading />;
+  if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
+  const row: RowProps = {
+    mayChange: access.mayCall("POST /api/words"),
+    acting,
+    onAct: (next) => {
+      setSaid(null);
+      setActing(next);
+    },
+    onDone: (word) => {
+      setChanged(new Map([...changed, [word.key, word]]));
+      setActing(null);
+      setSaid(copy.done);
+    },
+  };
+  const mayPublish = access.mayCall("POST /api/words/publish");
+  return (
+    <Panel
+      titleId="words"
+      title={copy.title}
+      className={styles.panel}
+      actions={
+        mayPublish &&
+        !publishing && (
+          <Button
+            variant="outline"
+            size="small"
+            className={styles.quiet}
+            onClick={() => {
+              setSaid(null);
+              setPublishing(true);
+            }}
+          >
+            {copy.publish.open}
+          </Button>
+        )
+      }
+    >
+      <LastPublished published={loaded.value.published} />
+      {publishing && (
+        <PublishCheck
+          unpublished={rows.filter((word) => word.on_site === false).length}
+          onDone={() => {
+            setPublishing(false);
+            setChanged(new Map());
+            setSaid(copy.publish.done);
+            retry();
+          }}
+          onBack={() => {
+            setPublishing(false);
+          }}
+        />
+      )}
+      {said !== null && (
+        <p className={styles.saved} role="status">
+          {said}
+        </p>
+      )}
+      <WordsTable view={view} row={row} />
     </Panel>
   );
 }
