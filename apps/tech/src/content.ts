@@ -384,6 +384,8 @@ export const capture = {
   before: "Before photos",
   after: "After photos",
   retake: "Retake",
+  /** Not drawn: what a screen reader calls a tile, a tap on which takes that angle again. */
+  retakeAngle: (angle: string) => `Take ${angle} again`,
   take: "Capture",
   angles: { front: "Front", top: "Top", left: "Left", right: "Right", hair: "Hair" },
   // The board writes Top's guide alone; the other four are ours.
