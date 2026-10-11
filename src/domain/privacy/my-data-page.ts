@@ -6,15 +6,27 @@ import { rupees } from "@maneman/web-kit/money";
 import { MY_DATA, type Field, type Part } from "../../config/my-data.ts";
 import { NOTICES } from "../../config/notices.ts";
 
+/**
+ * The brand's colours (packages/brand/tokens.css), written out since a page the client downloads carries no stylesheet
+ * of ours; test/node/api/my-data-page.test.ts holds them to the tokens.
+ */
+export const PAGE_COLOURS = {
+  "--paper": "#e9e4d8",
+  "--text": "#1a1714",
+  "--text-muted": "#5f5851",
+  "--paper-line": "#cec6b4",
+};
+
 const STYLE = `
-  body { margin: 0 auto; max-width: 42rem; padding: 2rem 1rem 4rem; background: #fff; color: #1c1c1c;
-    font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  body { margin: 0 auto; max-width: 42rem; padding: 2rem 1rem 4rem; background: ${PAGE_COLOURS["--paper"]};
+    color: ${PAGE_COLOURS["--text"]}; font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
   h1 { font-size: 1.5rem; margin: 0 0 0.25rem; }
-  h2 { font-size: 1.125rem; margin: 2.5rem 0 0.75rem; padding-bottom: 0.25rem; border-bottom: 1px solid #d9d9d9; }
+  h2 { font-size: 1.125rem; margin: 2.5rem 0 0.75rem; padding-bottom: 0.25rem;
+    border-bottom: 1px solid ${PAGE_COLOURS["--paper-line"]}; }
   dl { display: grid; grid-template-columns: minmax(8rem, 40%) 1fr; gap: 0.25rem 1rem; margin: 0 0 1rem; }
-  dl + dl { padding-top: 1rem; border-top: 1px dashed #d9d9d9; }
+  dl + dl { padding-top: 1rem; border-top: 1px dashed ${PAGE_COLOURS["--paper-line"]}; }
   dl div { display: contents; }
-  dt, .quiet { color: #5c5c5c; }
+  dt, .quiet { color: ${PAGE_COLOURS["--text-muted"]}; }
   dd { margin: 0; overflow-wrap: anywhere; }
 `;
 

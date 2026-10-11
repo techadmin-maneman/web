@@ -1,8 +1,10 @@
 // The readable copy of a client's data export (src/domain/privacy/my-data-page.ts): labelled, in India's time, and safe to
 // open whatever a client or ops typed.
 
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { myDataPage } from "../../../src/domain/privacy/my-data-page.ts";
+import { colourOf } from "../../../packages/brand/colours.ts";
+import { myDataPage, PAGE_COLOURS } from "../../../src/domain/privacy/my-data-page.ts";
 
 const EXPORTED = new Date("2026-10-04T12:00:00.000Z");
 
@@ -13,6 +15,12 @@ const read = (page: string) =>
     .replace(/<\/(dt|h1|h2|p)>/g, "\n")
     .replace(/<[^>]+>/g, " ")
     .replace(/[ \t]+/g, " ");
+
+// DS-04: the page drew its own greys.
+it("is drawn in the brand's colours", () => {
+  const tokens = readFileSync("packages/brand/tokens.css", "utf8");
+  for (const [name, value] of Object.entries(PAGE_COLOURS)) expect(value, name).toBe(colourOf(name, tokens));
+});
 
 describe("the readable copy of a client's data", () => {
   const held = {
