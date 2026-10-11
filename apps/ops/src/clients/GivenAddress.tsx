@@ -1,7 +1,7 @@
 // An address a client gives ops on the phone, recorded on their page and saved
 // as theirs, marked as given to ops (docs/decisions/0092-task-owners.md; open
 // point 62). The form follows the client app's own (apps/app/src/profile/AddressForm.tsx):
-// the same fields and checks, and the same building search, whose one session
+// the same fields (@maneman/web-kit/address) and checks, and the same building search, whose one session
 // token covers every keystroke and the save, so Google bills the search once
 // (docs/decisions/0054-address-capture.md). The search is an addition, never a
 // gate: an address typed without it saves, with no pin. No board draws any of it.
@@ -12,7 +12,7 @@ import { Field, TextInput } from "@maneman/ui/Field";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { AddressSearch, type AddressSearchClasses, type AddressSuggestion } from "@maneman/ui/AddressSearch";
 import { useId, useRef, useState } from "react";
-import { given, missingParts } from "@maneman/web-kit/address";
+import { ADDRESS_FIELDS, given, missingParts, type AddressField, type AddressPart } from "@maneman/web-kit/address";
 import { api, type AddressGiven, type ClientRecord } from "../api.ts";
 import { clients, NOT_PERMITTED } from "../content.ts";
 import styles from "./address.module.css";
@@ -20,7 +20,8 @@ import styles from "./address.module.css";
 const copy = clients.visits.given;
 
 type Draft = Omit<AddressGiven, "session_token">;
-type Part = Exclude<keyof Draft, "place_id" | "building">;
+
+const LABELS: Readonly<Record<AddressPart, string>> = { ...copy, access_notes: copy.accessNotes };
 
 const EMPTY: Draft = {
   line1: "",
@@ -99,7 +100,7 @@ export function GivenAddressForm({
   onCancel: () => void;
 }) {
   const [draft, setDraft] = useState<Draft>(EMPTY);
-  const [invalid, setInvalid] = useState<readonly Part[]>([]);
+  const [invalid, setInvalid] = useState<readonly AddressPart[]>([]);
   const [problem, setProblem] = useState<string | null>(null);
   // One token for the whole search, made when the form opens (docs/decisions/0054-address-capture.md).
   const [sessionToken] = useState(() => crypto.randomUUID());
@@ -137,27 +138,27 @@ export function GivenAddressForm({
       onSaved(answer.body);
     });
 
-  const field = (key: Part, label: string, options: { inputMode?: "numeric"; required?: boolean } = {}) => {
-    const wrong = invalid.includes(key);
-    return (
-      <Field label={label} error={wrong ? copy.invalid : null}>
-        {(control) => (
-          <TextInput
-            {...control}
-            className={styles.input}
-            inputMode={options.inputMode}
-            required={options.required}
-            value={draft[key] ?? ""}
-            disabled={busy}
-            onChange={(event) => {
-              const value = event.target.value;
-              setDraft((was) => ({ ...was, [key]: value }));
-            }}
-          />
-        )}
-      </Field>
-    );
-  };
+  const field = ({ part, maxLength, required, inputMode }: AddressField) => (
+    <Field key={part} label={LABELS[part]} error={invalid.includes(part) ? copy.invalid : null}>
+      {(control) => (
+        <TextInput
+          {...control}
+          className={styles.input}
+          inputMode={inputMode}
+          maxLength={maxLength}
+          required={required}
+          // A client's address, typed for them: never the browser's own saved one.
+          autoComplete="off"
+          value={draft[part] ?? ""}
+          disabled={busy}
+          onChange={(event) => {
+            const value = event.target.value;
+            setDraft((was) => ({ ...was, [part]: value }));
+          }}
+        />
+      )}
+    </Field>
+  );
 
   return (
     <form
@@ -185,17 +186,8 @@ export function GivenAddressForm({
           setDraft((was) => ({ ...was, building: chosen.primary, place_id: chosen.place_id }));
         }}
       />
-      {field("flat", copy.flat, { required: true })}
-      {field("floor", copy.floor)}
-      {field("tower", copy.tower)}
-      {/* Only for an address nobody searched for: otherwise the building is line one. */}
-      {!given(draft.building) && field("line1", copy.line1, { required: true })}
-      {field("line2", copy.line2)}
-      {field("landmark", copy.landmark)}
-      {field("locality", copy.locality, { required: true })}
-      {field("city", copy.city, { required: true })}
-      {field("pincode", copy.pincode, { inputMode: "numeric", required: true })}
-      {field("access_notes", copy.accessNotes)}
+      {/* A building chosen from the search is line one, so line one is asked only where none was. */}
+      {ADDRESS_FIELDS.filter(({ part }) => part !== "line1" || !given(draft.building)).map(field)}
       {problem !== null && (
         <p className={styles.error} role="alert">
           {problem}
