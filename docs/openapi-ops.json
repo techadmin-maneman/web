@@ -4841,6 +4841,30 @@
             ],
             "description": "The client's Care person, by e-mail; null for a number we do not know, or a client not given one."
           },
+          "technician": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "id",
+                  "name"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "One of our technicians, by their number on record; Operations answer them."
+          },
           "covered_by": {
             "anyOf": [
               {
@@ -4897,6 +4921,7 @@
           "mobile",
           "state",
           "care_person",
+          "technician",
           "covered_by",
           "last_message_at",
           "last_line",
@@ -5113,6 +5138,10 @@
           "email": {
             "type": "string"
           },
+          "on_team": {
+            "type": "boolean",
+            "description": "False for someone no longer on the team who still has clients."
+          },
           "name": {
             "anyOf": [
               {
@@ -5196,6 +5225,7 @@
         },
         "required": [
           "email",
+          "on_team",
           "name",
           "clients",
           "weekly_off",
@@ -5307,6 +5337,24 @@
         },
         "required": [
           "on"
+        ],
+        "additionalProperties": false
+      },
+      "CareMoveAll": {
+        "type": "object",
+        "properties": {
+          "from": {
+            "type": "string",
+            "format": "email"
+          },
+          "to": {
+            "type": "string",
+            "format": "email"
+          }
+        },
+        "required": [
+          "from",
+          "to"
         ],
         "additionalProperties": false
       },
@@ -5942,6 +5990,7 @@
               "chat.link",
               "chat.save",
               "care_person.move",
+              "care_person.move_all",
               "care_rota.set",
               "care_leave.add",
               "care_leave.delete",
@@ -15034,6 +15083,62 @@
         }
       }
     },
+    "/api/care-team/move-all": {
+      "post": {
+        "summary": "Move every client of one member to another of the Care team, as when someone leaves",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CareMoveAll"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "How many moved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "moved": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "moved"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid_request: fields names to when it is not one of the Care team, or the same as from",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "access_required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/care-team/leave/{id}/delete": {
       "post": {
         "summary": "Leave taken back",
@@ -16029,6 +16134,7 @@
                 "chat.link",
                 "chat.save",
                 "care_person.move",
+                "care_person.move_all",
                 "care_rota.set",
                 "care_leave.add",
                 "care_leave.delete",

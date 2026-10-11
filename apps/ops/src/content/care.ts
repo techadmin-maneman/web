@@ -18,6 +18,8 @@ export const care = {
     open: "Open",
   },
   unknown: "Number we don't know",
+  /** "Imran Khan · Technician": one of ours writing to our number. */
+  technicianName: (name: string) => `${name} · Technician`,
   /** When our reply is due, "21 Sep, 11:42 am"; past it, overdue. */
   replyBy: (when: string) => when,
   overdue: (when: string) => `Overdue · ${when}`,
@@ -38,6 +40,8 @@ export const care = {
     close: "Close",
     page: "Client's page",
     notSent: "Not sent",
+    technician: "One of our technicians. Operations answer technicians.",
+    technicianPage: "Technician's page",
     /** The after-hours answer, kept in the chat under our number. */
     autoReply: "Automatic reply",
   },
@@ -165,6 +169,11 @@ export const care = {
     /** "On shift since 9:02 am" */
     onShift: (since: string) => `On shift since ${since}`,
     offShift: "Off shift",
+    leftTeam: "No longer on the team",
+    moveAll: "Move all clients",
+    moveAllLabel: (email: string) => `Move every client of ${email}`,
+    moveAllTo: "Move every client to",
+    move: "Move",
     dayOff: "Day off",
     /** Beside who is off: "covered by ravi@maneman.in". */
     coveredBy: (cover: string) => ` · covered by ${cover}`,

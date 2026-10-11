@@ -34,6 +34,7 @@ export const careApi = {
   deleteLeave: (id: string) => client.post("/api/care-team/leave/{id}/delete", { path: { id } }),
   setCareName: (email: string, name: string) => client.post("/api/care-team/name", { body: { email, name } }),
   setOnShift: (on: boolean) => client.post("/api/care-team/shift", { body: { on } }),
+  moveAllClients: (from: string, to: string) => client.post("/api/care-team/move-all", { body: { from, to } }),
   quickReplies: () => client.get("/api/quick-replies"),
   addQuickReply: (title: string, text: string) => client.post("/api/quick-replies", { body: { title, text } }),
   retireQuickReply: (id: string) => client.post("/api/quick-replies/{id}/retire", { path: { id } }),

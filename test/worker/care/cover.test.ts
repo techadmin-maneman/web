@@ -7,6 +7,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import type { App } from "../../../src/http/context.ts";
 import { markDatabase, captureLogs, NOW, request } from "../helpers.ts";
 import { insertPerson } from "../tryon-fixtures.ts";
+import { technician } from "../clients.ts";
 import { enforce, listStaff, opsAs, person } from "../ops/staff-fixtures.ts";
 
 const ASHA = "asha@maneman.test";
@@ -138,6 +139,49 @@ describe("the name clients see", () => {
     expect(await refused.json()).toMatchObject({ error: { code: "invalid_request", fields: ["email"] } });
     const { results } = await env.DB.prepare("SELECT detail FROM audit_log WHERE action = 'care_name.set'").all();
     expect(results).toEqual([{ detail: JSON.stringify({ name: "Asha" }) }]);
+  });
+});
+
+describe("moving every client", () => {
+  it("moves all of one member's clients to another on the team, audited with how many", async () => {
+    const answer = await post(opsAs(person(LEAD)), "/api/care-team/move-all", { from: ASHA, to: RAVI });
+    expect(await answer.json()).toEqual({ moved: 1 });
+    expect(await env.DB.prepare("SELECT email FROM care_owners WHERE person_id = 'p1'").first()).toEqual({
+      email: RAVI,
+    });
+    const { results } = await env.DB.prepare(
+      "SELECT subject_id, detail FROM audit_log WHERE action = 'care_person.move_all'",
+    ).all();
+    expect(results).toEqual([{ subject_id: ASHA, detail: JSON.stringify({ to: RAVI, clients: 1 }) }]);
+  });
+
+  it("lists someone off the team who still has clients, to move them, and refuses moving to anyone off it", async () => {
+    await env.DB.prepare("UPDATE staff SET active = 0 WHERE email = ?1").bind(ASHA).run();
+    expect(await memberOf(ASHA)).toMatchObject({ on_team: false, clients: 1 });
+    const refused = await post(opsAs(person(LEAD)), "/api/care-team/move-all", { from: RAVI, to: ASHA });
+    expect(await refused.json()).toMatchObject({ error: { code: "invalid_request", fields: ["to"] } });
+  });
+});
+
+describe("a technician writing to our number", () => {
+  it("is labelled as one of ours", async () => {
+    await technician();
+    await env.DB.prepare("UPDATE technicians SET mobile_e164 = '+919810000099'").run();
+    await env.DB.prepare(
+      `INSERT INTO conversations (id, person_id, mobile_e164, state, opened_at, last_message_at, last_inbound_at,
+         created_at, updated_at)
+       VALUES ('9d2e0a5c-6f7b-4c8d-8e9f-4a5b6c7d8e9f', NULL, '+919810000099', 'open', ?1, ?1, ?1, ?1, ?1)`,
+    )
+      .bind(NOW.toISOString())
+      .run();
+    const listed = await (
+      await request(opsAs(person(ASHA)), "/api/conversations?view=all")
+    ).json<{
+      conversations: { mobile: string; technician: { name: string } | null }[];
+    }>();
+    expect(listed.conversations.find((chat) => chat.mobile === "+919810000099")?.technician).toMatchObject({
+      name: "Imran Qureshi",
+    });
   });
 });
 

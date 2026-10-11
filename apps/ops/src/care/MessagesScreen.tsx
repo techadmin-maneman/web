@@ -75,7 +75,9 @@ function ConversationRows(props: {
     <>
       <tr>
         <th scope="row" className={own.who}>
-          {conversation.person?.name ?? copy.unknown}
+          {conversation.technician === null
+            ? (conversation.person?.name ?? copy.unknown)
+            : copy.technicianName(conversation.technician.name)}
         </th>
         <td className={own.number}>{conversation.mobile}</td>
         <td>{carePersonOf(conversation)}</td>

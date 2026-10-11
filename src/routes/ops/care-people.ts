@@ -14,6 +14,7 @@ import { indiaDate } from "../../lib/india-time.ts";
 const MemberSchema = z
   .object({
     email: z.string(),
+    on_team: z.boolean().openapi({ description: "False for someone no longer on the team who still has clients." }),
     name: z.union([z.string(), z.null()]).openapi({ description: "The first name clients know them by." }),
     clients: z.number().int(),
     weekly_off: z.array(z.number().int()).openapi({ description: "Weekly days off, 0 Sunday to 6 Saturday." }),
