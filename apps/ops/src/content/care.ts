@@ -77,6 +77,33 @@ export const care = {
   },
   /** "asha@maneman.in · covered by ravi@maneman.in", while the Care person is off. */
   coveredBy: (person: string, cover: string) => `${person} · covered by ${cover}`,
+  /** The Care numbers (docs/decisions/0144-care-numbers.md). */
+  numbers: {
+    title: "Care numbers",
+    period: "Over",
+    periods: { "7": "The last week", "30": "The last 30 days", "90": "The last 90 days" },
+    /** "Mon 5 Oct to Mon 12 Oct" */
+    span: (from: string, to: string) => `${from} to ${to}`,
+    chats: "Chats",
+    firstReply: "First reply, middle",
+    withinTarget: "Answered on time",
+    sameDay: "Closed the same day",
+    waitingOnUs: "Waiting on us now",
+    overdue: "Overdue now",
+    waitingOnClient: "Waiting on the client now",
+    /** "42 min", in Care hours. */
+    minutes: (value: number) => `${String(value)} min`,
+    nothing: "–",
+    reasons: "What chats were about",
+    remedies: "Remedies given",
+    /** "Fit problem · 4" */
+    counted: (label: string, count: number) => `${label} · ${String(count)}`,
+    /** "Fit problem · 2 remedies, 3 free visits" */
+    remedied: (label: string, remedies: number, visits: number) =>
+      `${label} · ${String(remedies)} ${remedies === 1 ? "remedy" : "remedies"}, ${String(visits)} free ${visits === 1 ? "visit" : "visits"}`,
+    columns: { person: "Care person" },
+    noPeople: "No chats with a Care person yet.",
+  },
   /** Free visits Care give (docs/decisions/0143-remedies.md). */
   remedy: {
     panel: "Remedies",

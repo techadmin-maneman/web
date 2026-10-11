@@ -165,6 +165,7 @@ export const ROUTE_NEEDS: Readonly<Record<string, RouteNeed | typeof SIGNED_IN>>
   "GET /api/quick-replies": need("customer_care", "view"),
   "POST /api/clients/{id}/remedies": need("customer_care", "act"),
   "GET /api/remedies": need("customer_care", "view"),
+  "GET /api/care-numbers": need("customer_care", "view"),
   "POST /api/remedies/{id}/approve": need("customer_care", "manage"),
   "POST /api/remedies/{id}/decline": need("customer_care", "manage"),
   "POST /api/quick-replies": need("customer_care", "manage"),

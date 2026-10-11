@@ -155,6 +155,10 @@
   margin-left: var(--sp-16);
 }
 
+.figureRow {
+  display: contents;
+}
+
 .quick {
   padding: 0 var(--sp-20) var(--sp-16);
 }

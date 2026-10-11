@@ -15,5 +15,6 @@ export * from "./content/no-shows.ts";
 export * from "./content/tasks.ts";
 export * from "./content/technicians.ts";
 export * from "./content/decisions.ts";
-export * from "./content/settings.ts";
+// Settings' screens import their words from ./content/settings.ts; the every-page part is here.
+export * from "./content/settings-shell.ts";
 export * from "./content/stock.ts";
