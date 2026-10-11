@@ -73,9 +73,28 @@ export const PARTIAL_REASONS: readonly JobSheetItem[] = [
 ];
 
 /**
+ * Why a client is not going ahead with a fit after their consultation, picked in the technician app at the
+ * consultation's close or in the console as its First fit to book task closes (docs/decisions/0149-lost-reasons.md).
+ * Ops keep the list; these stand until they save their own.
+ */
+export const LOST_REASONS: readonly JobSheetItem[] = [
+  { id: "price", label: "The price" },
+  { id: "not_ready", label: "Not ready yet" },
+  { id: "thinking_it_over", label: "Thinking it over" },
+  { id: "chose_another_option", label: "Chose another option" },
+  { id: "not_suited", label: "Not suited to a hair system" },
+  { id: "other", label: "Other" },
+];
+
+/**
  * What ops may set a list to. A checklist the technician cannot finish, or a
  * Partial with no reason to pick, would strand a job, so a list is never
  * empty; the checklist route takes twenty ticked at most; and a label is read
  * at arm's length, one to a row.
  */
-export const JOB_SHEET_BOUNDS = { maxChecklistItems: 20, maxPartialReasons: 12, maxLabel: 80 } as const;
+export const JOB_SHEET_BOUNDS = {
+  maxChecklistItems: 20,
+  maxPartialReasons: 12,
+  maxLostReasons: 12,
+  maxLabel: 80,
+} as const;
