@@ -28,12 +28,20 @@ test.describe("the client's hair profile", () => {
   test("takes the fit spec, then the history, and sends them as one", async ({ page }) => {
     const fake = await atTheProfile(page);
     expect(await axeViolations(page)).toEqual([]);
-    await page.getByRole("button", { name: "IV", exact: true }).click();
+    await page.getByRole("radio", { name: "IV", exact: true }).click();
     await page.getByRole("textbox", { name: "Circumference" }).fill("57.5");
     await page.getByRole("textbox", { name: "Width" }).fill("8");
     await page.getByRole("textbox", { name: "Length" }).fill("10");
+    // The base in centimetres too, as the head above it is measured.
+    await expect(page.getByText("That is 20.3 × 25.4 cm.")).toBeVisible();
+    // Each field's choices are one group named by its title, so "Straight" says whether it is the wave or the hairline.
+    for (const field of ["Wave", "Hairline"]) {
+      await expect(page.getByRole("radiogroup", { name: field }).getByRole("radio", { name: "Straight" })).toHaveCount(
+        1,
+      );
+    }
     // The suppliers' order, not #1 … #8 then #1B.
-    await expect(page.getByRole("region", { name: "Colour", exact: true }).getByRole("button")).toHaveText([
+    await expect(page.getByRole("radiogroup", { name: "Colour", exact: true }).getByRole("radio")).toHaveText([
       "#1",
       "#1B",
       "#2",
@@ -44,10 +52,10 @@ test.describe("the client's hair profile", () => {
       "#7",
       "#8",
     ]);
-    await page.getByRole("button", { name: "#1B" }).click();
-    await page.getByRole("button", { name: "120%" }).click();
-    await page.getByRole("button", { name: "Mane Man Natural" }).click();
-    await page.getByRole("button", { name: "Tape", exact: true }).click();
+    await page.getByRole("radio", { name: "#1B" }).click();
+    await page.getByRole("radio", { name: "120%" }).click();
+    await page.getByRole("radio", { name: "Mane Man Natural" }).click();
+    await page.getByRole("radio", { name: "Tape", exact: true }).click();
     expect(await gilded(page)).toEqual(["Next"]);
     await next(page).click();
 
@@ -87,12 +95,12 @@ test.describe("the client's hair profile", () => {
 
   test("keeps what was typed when the app closes part-way, and lets it go once sent", async ({ page }) => {
     const fake = await atTheProfile(page);
-    await page.getByRole("button", { name: "IV", exact: true }).click();
+    await page.getByRole("radio", { name: "IV", exact: true }).click();
     await page.getByRole("textbox", { name: "Circumference" }).fill("57.5");
     await page.getByRole("textbox", { name: "Width" }).fill("8");
     await page.getByRole("textbox", { name: "Length" }).fill("10");
-    await page.getByRole("button", { name: "Mane Man Natural" }).click();
-    await page.getByRole("button", { name: "Tape", exact: true }).click();
+    await page.getByRole("radio", { name: "Mane Man Natural" }).click();
+    await page.getByRole("radio", { name: "Tape", exact: true }).click();
     await next(page).click();
     await page.getByRole("textbox", { name: "Skin conditions and allergies" }).fill("Dry at the crown");
     // The draft is written as it is typed; a slow phone may still be writing the last of it.
@@ -103,7 +111,7 @@ test.describe("the client's hair profile", () => {
     await expect(page.getByRole("textbox", { name: "Skin conditions and allergies" })).toHaveValue("Dry at the crown");
     await page.getByRole("button", { name: "Back" }).click();
     await expect(page.getByRole("textbox", { name: "Circumference" })).toHaveValue("57.5");
-    await expect(page.getByRole("button", { name: "IV", exact: true })).toHaveAttribute("aria-pressed", "true");
+    await expect(page.getByRole("radio", { name: "IV", exact: true })).toBeChecked();
 
     await next(page).click();
     await next(page).click();
@@ -124,7 +132,7 @@ test.describe("the client's hair profile", () => {
 
   test("starts from the profile as it stands, names it, and sends no history where none was said", async ({ page }) => {
     const fake = await atTheProfile(page, { ...ROHITS_PROFILE, history: null });
-    await expect(page.getByRole("button", { name: "IV", exact: true })).toHaveAttribute("aria-pressed", "true");
+    await expect(page.getByRole("radio", { name: "IV", exact: true })).toBeChecked();
     await expect(page.getByRole("textbox", { name: "Circumference" })).toHaveValue("57.5");
     await next(page).click();
     await next(page).click();

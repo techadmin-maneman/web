@@ -142,6 +142,7 @@ test("wipes everything the phone holds when the technician signs out", async ({ 
   expect(before).toContain("mm-tech");
 
   await page.getByRole("button", { name: "Sign out" }).click();
+  await page.getByRole("alert").getByRole("button", { name: "Sign out" }).click();
   await expect(page.getByRole("heading", { level: 1, name: "Technician sign in" })).toBeVisible();
   const after = await page.evaluate(() => indexedDB.databases().then((each) => each.map((one) => one.name)));
   expect(after).not.toContain("mm-tech");

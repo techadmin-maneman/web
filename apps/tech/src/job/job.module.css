@@ -278,6 +278,14 @@
   color: var(--paper);
 }
 
+/* When check-in opens: a time to wait for, not a fault. */
+.stageOpens {
+  margin: var(--sp-12) 0 0;
+  font-size: var(--fs-17);
+  line-height: var(--lh-155);
+  color: var(--ink-soft);
+}
+
 .stageWarn {
   margin: var(--sp-12) 0 0;
   font-size: var(--fs-17);
