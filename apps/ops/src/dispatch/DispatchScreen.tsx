@@ -21,8 +21,8 @@
 // technician's leave and blackout days do; the visit's drawer opens. The address
 // keeps all four as ops change them (./address.ts).
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { api, type Board, type BoardQuery, type Landing, type MoveReason } from "../api.ts";
+import { useCallback, useMemo, useRef, useState } from "react";
+import type { BoardQuery } from "../api.ts";
 import { Shell } from "../components/Shell.tsx";
 import { dispatch } from "../content.ts";
 import { useAccess } from "../lib/access.ts";
@@ -31,7 +31,7 @@ import { useAddressKeeps } from "./address.ts";
 import styles from "./dispatch.module.css";
 import { Grid, type InHand } from "./Grid.tsx";
 import { dispatchAsked } from "../route.ts";
-import { blockOn, idOf, shownOf, type Job, type Target } from "./job.ts";
+import { idOf, type Job } from "./job.ts";
 import { MoveBar } from "./MoveBar.tsx";
 import { MovePicker } from "./MovePicker.tsx";
 import { Toolbar } from "./Toolbar.tsx";
@@ -39,74 +39,34 @@ import { Tray } from "./Tray.tsx";
 import { useBoard } from "./useBoard.ts";
 import { answersTo, foundBy, weekOf } from "./board-view.ts";
 import { ChangePanel, changedNotice, type Changing } from "./ChangePanel.tsx";
-import { askedNotice, doneNotice, moveRefusal, STALE, staleWords, type Notice } from "./landing.ts";
+import type { Notice } from "./landing.ts";
 import { NoticeLine } from "./NoticeLine.tsx";
 import { OpenedDrawer } from "./OpenedDrawer.tsx";
 import { DayRoutes } from "./DayRoutes.tsx";
-import { isBlackout, kmFrom, landsAtFrom, useRooms, windowsFrom } from "./rooms.ts";
-
-/**
- * A move in hand: the job, the window chosen for it, whether it is being sent, and whether ops chose, after the
- * drawer's warning, to clear the technician's check-in.
- */
-interface Move {
-  readonly job: Job;
-  readonly to: Target | null;
-  readonly sending: boolean;
-  readonly clearingCheckIn: boolean;
-}
+import { isBlackout, kmFrom, landsAtFrom, windowsFrom } from "./rooms.ts";
+import { useAskedVisit, useClientCalls } from "./use-board-calls.ts";
+import { useMove, type Move } from "./use-move.ts";
 
 export function DispatchScreen() {
   const [asked] = useState(() => dispatchAsked(window.location.search));
   const [query, setQuery] = useState<BoardQuery>({ from: asked.from, city: asked.city });
   const [find, setFind] = useState(asked.find);
   const [opened, setOpened] = useState<Job | null>(null);
-  const [move, setMove] = useState<Move | null>(null);
   const [changing, setChanging] = useState<Changing | null>(null);
   const [notice, setNotice] = useState<Notice | null>(null);
   const [routesOn, setRoutesOn] = useState<string | null>(null);
+  const [move, setMove] = useState<Move | null>(null);
   const { loaded, last, refresh, retry } = useBoard(query, move !== null || opened !== null || changing !== null);
   const board = loaded.state === "loaded" ? loaded.value : null;
   const access = useAccess();
-  const mayMove = access.mayCall("POST /api/dispatch/move");
-  const mayAssign = access.mayCall("POST /api/dispatch/assign");
 
   /** What the drawer or the move was opened from, so the keyboard comes back to it. */
   const opener = useRef<HTMLElement | null>(null);
   const area = useRef<HTMLDivElement>(null);
-  const bar = useRef<HTMLDivElement>(null);
-  /** The visit a link asked for, until the first board read shows it. */
-  const askedVisit = useRef(asked.visit);
 
   useAddressKeeps(query, find, opened === null ? null : idOf(opened));
-
-  /** Brings a visit into view: its block, with its drawer open, or its place in the tray; else says it is not here. */
-  const showVisit = useCallback((on: Board, visit: string) => {
-    const element = area.current?.querySelector<HTMLElement>(`[data-appointment="${visit}"]`) ?? null;
-    element?.scrollIntoView({ block: "center", inline: "nearest" });
-    // The keyboard goes to the visit first, so the browser gives it back there when the drawer closes.
-    element?.focus();
-    const job = blockOn(on, visit);
-    if (job !== null) {
-      opener.current = element;
-      setOpened(job);
-      return;
-    }
-    const inTray = on.unassigned.find((each) => each.appointment_id === visit);
-    if (inTray === undefined) {
-      setNotice({ tone: "refusal", text: dispatch.landing.notOnBoard, call: null });
-      return;
-    }
-    opener.current = element;
-    setOpened({ kind: "unassigned", job: inTray });
-  }, []);
-
-  useEffect(() => {
-    const visit = askedVisit.current;
-    if (board === null || visit === null) return;
-    askedVisit.current = null;
-    showVisit(board, visit);
-  }, [board, showVisit]);
+  useAskedVisit({ board, visit: asked.visit, area, opener, setOpened, setNotice });
+  const { told, withdraw } = useClientCalls(refresh, setNotice);
 
   const restore = useCallback(() => {
     const from = opener.current;
@@ -115,15 +75,16 @@ export function DispatchScreen() {
     else area.current?.focus();
   }, []);
 
-  /** After the board is read again, the keyboard goes to the block that moved, wherever it now is. */
-  const focusBlock = useCallback((appointmentId: string) => {
-    const moved = area.current?.querySelector<HTMLElement>(`[data-appointment="${appointmentId}"]`) ?? null;
-    if (moved === null) area.current?.focus();
-    else moved.focus();
-  }, []);
-
-  // Where the job in hand would land in the week on screen, so the board offers only those windows.
-  const [rooms, askRooms] = useRooms(move === null ? null : idOf(move.job), board?.from ?? null);
+  const { rooms, choosing, bar, take, land, unpick, stop, send } = useMove([move, setMove], {
+    weekFrom: board?.from ?? null,
+    opened,
+    refresh,
+    setNotice,
+    setOpened,
+    opener,
+    area,
+    restore,
+  });
 
   const open = useCallback((job: Job, from: HTMLElement) => {
     opener.current = from;
@@ -131,147 +92,24 @@ export function DispatchScreen() {
     setOpened(job);
   }, []);
 
-  const take = useCallback(
-    (job: Job, from: HTMLElement | null, clearingCheckIn = false) => {
-      opener.current = from;
-      setOpened(null);
-      setNotice(null);
-      setMove({ job, to: null, sending: false, clearingCheckIn });
-      askRooms();
-    },
-    [askRooms],
-  );
-
-  /** A job taken up, with no window chosen for it yet. */
-  const choosing = move?.to === null;
-  // The keyboard follows a job taken up: to the bar that says what is moving and holds the list.
-  const taken = choosing && !move.sending;
-  useEffect(() => {
-    if (taken) bar.current?.focus();
-  }, [taken]);
-
-  const land = useCallback((to: Target) => {
-    setMove((held) => (held === null || held.sending ? held : { ...held, to }));
-  }, []);
-
-  /** Back to the board with the job still in hand. Not while it is being sent: it could be sent twice. */
-  const unpick = useCallback(() => {
-    setMove((held) => (held === null || held.sending ? held : { ...held, to: null }));
-  }, []);
-
-  const stop = useCallback(() => {
-    if (move?.sending === true) return;
-    setMove(null);
-    restore();
-  }, [move, restore]);
-
   const closeDrawer = useCallback(() => {
     setOpened(null);
     restore();
   }, [restore]);
 
   /** The panel closed: a visit cancelled or closed leaves the board as it was read, so it is read again. */
-  const changed = useCallback(
-    async (done: boolean) => {
-      const was = changing;
-      setChanging(null);
-      if (!done || was === null) {
-        restore();
-        return;
-      }
-      opener.current = null;
-      setNotice(changedNotice(was));
-      await refresh();
-      area.current?.focus();
-    },
-    [changing, refresh, restore],
-  );
-
-  /** Ops called a client who had not heard of a move: its task leaves the Tasks board. */
-  const told = useCallback(
-    async (moveId: string, name: string) => {
-      const answer = await api.toldByPhone(moveId);
-      if (!answer.ok) {
-        setNotice({ tone: "refusal", text: dispatch.landing.toldFailed, call: { moveId, name } });
-        return;
-      }
-      setNotice({ tone: "done", text: dispatch.landing.toldDone(name), call: null });
-      await refresh();
-    },
-    [refresh],
-  );
-
-  /** Ops take back a move to another day the client was asked to confirm; the visit stays where it is. */
-  const withdraw = useCallback(
-    async (proposalId: string, name: string) => {
-      const answer = await api.withdrawProposal(proposalId);
-      setNotice(
-        answer.ok
-          ? { tone: "done", text: dispatch.landing.withdrawn(name), call: null }
-          : { tone: "refusal", text: dispatch.landing.withdrawFailed, call: null },
-      );
-      await refresh();
-    },
-    [refresh],
-  );
-
-  const send = useCallback(
-    async (reason: MoveReason, blackoutReason: string | null, asking: boolean) => {
-      const to = move?.to ?? null;
-      if (move === null || to === null || move.sending) return;
-      const { job } = move;
-      setMove({ ...move, sending: true });
-
-      const landing: Landing = {
-        technicianId: to.technician.technician_id,
-        date: to.date,
-        window: to.window,
-        reason,
-        blackoutReason,
-      };
-      const shown = shownOf(job);
-      // A client's visit to another day, for a reason not theirs, is asked of them; anything else is moved.
-      const moved = () =>
-        job.kind === "block"
-          ? api.move(idOf(job), landing, shown, move.clearingCheckIn)
-          : api.assign(idOf(job), landing, shown);
-      const answer = asking ? await api.propose(idOf(job), landing, shown) : await moved();
-
-      if (answer.ok) {
-        setMove(null);
-        setNotice("proposal_id" in answer.body ? askedNotice(job, to, answer.body) : doneNotice(job, to, answer.body));
-        opener.current = null;
-        await refresh();
-        focusBlock(idOf(job));
-        return;
-      }
-      if (STALE.has(answer.code)) {
-        // Someone else moved it, or is moving it: the board is read again, and says where it now is.
-        setMove(null);
-        const now = await refresh();
-        setNotice({ tone: "refusal", text: staleWords(job, answer.code, now), call: null });
-        area.current?.focus();
-        return;
-      }
-      // Nothing was written: the job stays in hand, and the board asks again where it fits.
-      setMove({ ...move, to: null, sending: false });
-      setNotice({ tone: "refusal", text: moveRefusal(job, to, answer.code), call: null });
-      askRooms();
-    },
-    [move, refresh, focusBlock, askRooms],
-  );
-
-  // Escape lets go of the move in hand when no panel is open; an open panel closes itself.
-  useEffect(() => {
-    if (!choosing || opened !== null) return undefined;
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") stop();
-    };
-    window.addEventListener("keydown", onKey);
-    return () => {
-      window.removeEventListener("keydown", onKey);
-    };
-  }, [choosing, opened, stop]);
+  const changed = async (done: boolean) => {
+    const was = changing;
+    setChanging(null);
+    if (!done || was === null) {
+      restore();
+      return;
+    }
+    opener.current = null;
+    setNotice(changedNotice(was));
+    await refresh();
+    area.current?.focus();
+  };
 
   const rows = useMemo(
     () => (board === null ? [] : board.technicians.filter((row) => answersTo(row, find))),
@@ -279,7 +117,8 @@ export function DispatchScreen() {
   );
   const found = useMemo(() => foundBy(board, find), [board, find]);
   const inHand = useMemo(
-    (): InHand | null => (choosing ? { job: move.job, windowsAt: windowsFrom(rooms), kmAt: kmFrom(rooms) } : null),
+    (): InHand | null =>
+      choosing && move !== null ? { job: move.job, windowsAt: windowsFrom(rooms), kmAt: kmFrom(rooms) } : null,
     [choosing, move, rooms],
   );
   const chosen = move?.to ?? null;
@@ -318,7 +157,7 @@ export function DispatchScreen() {
                     inHand={inHand}
                     found={found}
                     onOpen={open}
-                    onTake={mayMove ? take : null}
+                    onTake={access.mayCall("POST /api/dispatch/move") ? take : null}
                     onLand={land}
                     onRoutes={access.mayCall("GET /api/dispatch/day") ? setRoutesOn : null}
                   />
@@ -327,7 +166,13 @@ export function DispatchScreen() {
             </>
           )}
         </div>
-        {board !== null && <Tray unassigned={board.unassigned} onOpen={open} onTake={mayAssign ? take : null} />}
+        {board !== null && (
+          <Tray
+            unassigned={board.unassigned}
+            onOpen={open}
+            onTake={access.mayCall("POST /api/dispatch/assign") ? take : null}
+          />
+        )}
       </div>
 
       {opened !== null && (
@@ -367,7 +212,9 @@ export function DispatchScreen() {
         <MovePicker
           job={picking.job}
           onCancel={unpick}
-          onSend={(reason, blackoutReason, asking) => void send(reason, blackoutReason, asking)}
+          onSend={(reason, blackoutReason, asking) => {
+            send({ reason, blackoutReason, asking });
+          }}
           sending={picking.sending}
           clearingCheckIn={picking.clearingCheckIn}
           to={picking.to}

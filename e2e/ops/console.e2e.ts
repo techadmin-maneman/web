@@ -176,8 +176,9 @@ test("leaves a click that asks for a new tab to the browser", async ({ page, con
     await page.getByRole("link", { name: "Areas" }).click({ modifiers: ["ControlOrMeta"] });
     tab = await opened;
   }).toPass();
-  // The tab opens on about:blank before it loads the link.
-  await tab?.waitForURL(/\/areas$/);
+  // The tab opens on about:blank before it loads the link. Its address is what the browser was asked for; waiting for
+  // its whole page to load as well timed out on a busy runner with the address already right.
+  await tab?.waitForURL(/\/areas$/, { waitUntil: "commit" });
   await expect(page.getByRole("heading", { level: 1, name: "Tasks" })).toBeVisible();
   await expect(page).toHaveURL(/\/tasks$/);
 });

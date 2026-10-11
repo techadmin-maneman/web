@@ -13,7 +13,7 @@ import { Icon } from "@maneman/ui/Icon";
 import { Mark } from "@maneman/ui/Mark";
 import { Link } from "@maneman/ui/router";
 import { useAsync, valueOr } from "@maneman/ui/useAsync";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type Ref } from "react";
 import type { JobState, JobSummary } from "../api.ts";
 import { Offline } from "../components/Banners.tsx";
 import {
@@ -64,12 +64,149 @@ const NOTHING_HEARD: ReadonlyMap<string, JobState> = new Map();
 const useHeard = (watch: unknown): ReadonlyMap<string, JobState> =>
   valueOr(useAsync(keptStates, watch)[0], NOTHING_HEARD);
 
+/** Each day's cards kept on the phone as they come fresh from the API, so a basement opens them; the names they hold. */
+function useKeptCards(...days: readonly ReturnType<typeof useDay>[0][]): ReadonlyMap<string, string> {
+  const [cards, setCards] = useState(0);
+  const names = useNames(cards);
+  const [today, tomorrow] = days;
+  useEffect(() => {
+    if (today?.state === "loaded" && !today.fromPhone) {
+      void keepCards(today.value).then(() => {
+        setCards((round) => round + 1);
+      });
+    }
+  }, [today]);
+  useEffect(() => {
+    if (tomorrow?.state === "loaded" && !tomorrow.fromPhone) {
+      void keepCards(tomorrow.value).then(() => {
+        setCards((round) => round + 1);
+      });
+    }
+  }, [tomorrow]);
+  return names;
+}
+
+/** The mark and the way to sign out; then, with jobs today, how many and where the first is. */
+function Head(props: {
+  readonly initials: string;
+  readonly leaving: boolean;
+  readonly onSignOut: () => void;
+  readonly jobs: readonly JobSummary[];
+  readonly heading: Ref<HTMLHeadingElement>;
+}) {
+  const [first] = props.jobs;
+  return (
+    <header className={styles.head}>
+      <div className={styles.top}>
+        <Mark className={styles.mark} />
+        <Button
+          variant="outlineOnInk"
+          size="small"
+          className={styles.account}
+          disabled={props.leaving}
+          onClick={props.onSignOut}
+        >
+          <span className={styles.initials}>{props.initials}</span>
+          <span className={styles.signOut}>{copy.signOut}</span>
+        </Button>
+      </div>
+      {first !== undefined && (
+        <>
+          <h1 className={styles.count} ref={props.heading} tabIndex={-1}>
+            {copy.jobs(props.jobs.length)}
+          </h1>
+          <p className={styles.first}>{copy.first(clock(first.starts_at), where(first.sector))}</p>
+        </>
+      )}
+    </header>
+  );
+}
+
+/** The question before a sign-out wipes the phone: with unsent work it offers to send it first. */
+function LeavePrompt(props: {
+  readonly unsentSets: number;
+  readonly unsentActions: number;
+  readonly onStay: () => void;
+  readonly onSend: () => void;
+  readonly onLeave: () => void;
+}) {
+  const unsent = props.unsentSets + props.unsentActions > 0;
+  return (
+    <div className={styles.leave} role="alert">
+      <p className={styles.leaveTitle}>
+        {unsent ? leavingCopy.unsent(props.unsentSets, props.unsentActions) : leavingCopy.confirm}
+      </p>
+      <p className={styles.leaveBody}>{unsent ? leavingCopy.body : leavingCopy.confirmBody}</p>
+      <div className={styles.leaveActions}>
+        <Button variant="outlineOnInk" size="small" onClick={unsent ? props.onSend : props.onStay}>
+          {unsent ? leavingCopy.send : leavingCopy.stay}
+        </Button>
+        <Button variant="outlineOnInk" size="small" onClick={props.onLeave}>
+          {unsent ? leavingCopy.anyway : copy.signOut}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+/** Nothing booked today: when tomorrow starts, where it has jobs. */
+function EmptyDay({ tomorrowJobs }: { readonly tomorrowJobs: readonly JobSummary[] }) {
+  const [next] = tomorrowJobs;
+  return (
+    <div className={styles.empty}>
+      <p className={capsLook(styles.emptyLabel)}>{copy.empty.label}</p>
+      <p className={styles.emptyTitle}>{copy.empty.title}</p>
+      <p className={styles.emptyBody}>
+        {next === undefined ? copy.empty.none : copy.empty.tomorrow(tomorrowJobs.length, clock(next.starts_at))}
+      </p>
+    </div>
+  );
+}
+
+/** The day's jobs, each with how far it has got. */
+function Jobs(props: {
+  readonly jobs: readonly JobSummary[];
+  readonly names: ReadonlyMap<string, string>;
+  readonly queued: readonly Queued[];
+  readonly heard: ReadonlyMap<string, JobState>;
+}) {
+  return (
+    <ul className={styles.list}>
+      {props.jobs.map((job) => (
+        <li key={job.id}>
+          <JobRow job={job} client={clientOf(job, props.names)} state={stateOf(job, props.queued, props.heard)} />
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+/** Tomorrow's jobs, collapsed below today's until opened. */
+function Tomorrow(props: Omit<Parameters<typeof Jobs>[0], "jobs"> & { readonly jobs: readonly JobSummary[] }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <button
+        className={styles.tomorrow}
+        type="button"
+        aria-expanded={open}
+        onClick={() => {
+          setOpen((was) => !was);
+        }}
+      >
+        <span>{copy.tomorrow(props.jobs.length)}</span>
+        <Icon className={styles.tomorrowIcon} d={ICONS.selectArrow} size={19} stroke={STROKE} />
+      </button>
+      {open && <Jobs {...props} />}
+    </>
+  );
+}
+
 export function TodayScreen() {
   const { me, offline, atRisk, signOut } = useSession();
   const date = todayInIndia();
   const [day, retry] = useDay(date);
   const [tomorrow] = useDay(dayAfter(date));
-  const [tomorrowOpen, setTomorrowOpen] = useState(false);
   const waiting = useOutbox();
   const [leaving, setLeaving] = useState<Leaving>(null);
 
@@ -86,97 +223,34 @@ export function TodayScreen() {
   }
 
   const jobs = day.state === "loaded" ? day.value : [];
-  const first = jobs[0];
   const tomorrowJobs = tomorrow.state === "loaded" ? tomorrow.value : [];
-  const [cards, setCards] = useState(0);
-  const names = useNames(cards);
-
-  // Fresh from the API: keep each card too, so a basement opens them.
-  useEffect(() => {
-    if (day.state === "loaded" && !day.fromPhone) {
-      void keepCards(day.value).then(() => {
-        setCards((round) => round + 1);
-      });
-    }
-  }, [day]);
-  useEffect(() => {
-    if (tomorrow.state === "loaded" && !tomorrow.fromPhone) {
-      void keepCards(tomorrow.value).then(() => {
-        setCards((round) => round + 1);
-      });
-    }
-  }, [tomorrow]);
+  const names = useKeptCards(day, tomorrow);
 
   return (
     <main className={styles.screen}>
-      <header className={styles.head}>
-        <div className={styles.top}>
-          <Mark className={styles.mark} />
-          <Button
-            variant="outlineOnInk"
-            size="small"
-            className={styles.account}
-            disabled={leaving === "going"}
-            onClick={() => {
-              setLeaving("asking");
-            }}
-          >
-            <span className={styles.initials}>{me.initials}</span>
-            <span className={styles.signOut}>{copy.signOut}</span>
-          </Button>
-        </div>
-        {day.state === "loaded" && jobs.length > 0 && (
-          <>
-            <h1 className={styles.count} ref={heading} tabIndex={-1}>
-              {copy.jobs(jobs.length)}
-            </h1>
-            {first !== undefined && (
-              <p className={styles.first}>{copy.first(clock(first.starts_at), where(first.sector))}</p>
-            )}
-          </>
-        )}
-      </header>
+      <Head
+        initials={me.initials}
+        leaving={leaving === "going"}
+        onSignOut={() => {
+          setLeaving("asking");
+        }}
+        jobs={day.state === "loaded" ? jobs : []}
+        heading={heading}
+      />
 
-      {leaving === "asking" && unsentSets + unsentActions > 0 && (
-        <div className={styles.leave} role="alert">
-          <p className={styles.leaveTitle}>{leavingCopy.unsent(unsentSets, unsentActions)}</p>
-          <p className={styles.leaveBody}>{leavingCopy.body}</p>
-          <div className={styles.leaveActions}>
-            <Button
-              variant="outlineOnInk"
-              size="small"
-              onClick={() => {
-                setLeaving(null);
-                void replay();
-              }}
-            >
-              {leavingCopy.send}
-            </Button>
-            <Button variant="outlineOnInk" size="small" onClick={() => void leave()}>
-              {leavingCopy.anyway}
-            </Button>
-          </div>
-        </div>
-      )}
-      {leaving === "asking" && unsentSets + unsentActions === 0 && (
-        <div className={styles.leave} role="alert">
-          <p className={styles.leaveTitle}>{leavingCopy.confirm}</p>
-          <p className={styles.leaveBody}>{leavingCopy.confirmBody}</p>
-          <div className={styles.leaveActions}>
-            <Button
-              variant="outlineOnInk"
-              size="small"
-              onClick={() => {
-                setLeaving(null);
-              }}
-            >
-              {leavingCopy.stay}
-            </Button>
-            <Button variant="outlineOnInk" size="small" onClick={() => void leave()}>
-              {copy.signOut}
-            </Button>
-          </div>
-        </div>
+      {leaving === "asking" && (
+        <LeavePrompt
+          unsentSets={unsentSets}
+          unsentActions={unsentActions}
+          onStay={() => {
+            setLeaving(null);
+          }}
+          onSend={() => {
+            setLeaving(null);
+            void replay();
+          }}
+          onLeave={() => void leave()}
+        />
       )}
       {leaving === "stayed" && (
         <p className={styles.stayed} role="status">
@@ -212,52 +286,9 @@ export function TodayScreen() {
         <Failed message={copy.failed} retry={copy.retry} onRetry={retry} requestId={day.requestId} />
       )}
 
-      {day.state === "loaded" && jobs.length === 0 && (
-        <div className={styles.empty}>
-          <p className={capsLook(styles.emptyLabel)}>{copy.empty.label}</p>
-          <p className={styles.emptyTitle}>{copy.empty.title}</p>
-          <p className={styles.emptyBody}>
-            {tomorrowJobs.length === 0 || tomorrowJobs[0] === undefined
-              ? copy.empty.none
-              : copy.empty.tomorrow(tomorrowJobs.length, clock(tomorrowJobs[0].starts_at))}
-          </p>
-        </div>
-      )}
-
-      {jobs.length > 0 && (
-        <ul className={styles.list}>
-          {jobs.map((job) => (
-            <li key={job.id}>
-              <JobRow job={job} client={clientOf(job, names)} state={stateOf(job, waiting.events, heard)} />
-            </li>
-          ))}
-        </ul>
-      )}
-
-      {tomorrowJobs.length > 0 && (
-        <>
-          <button
-            className={styles.tomorrow}
-            type="button"
-            aria-expanded={tomorrowOpen}
-            onClick={() => {
-              setTomorrowOpen((open) => !open);
-            }}
-          >
-            <span>{copy.tomorrow(tomorrowJobs.length)}</span>
-            <Icon className={styles.tomorrowIcon} d={ICONS.selectArrow} size={19} stroke={STROKE} />
-          </button>
-          {tomorrowOpen && (
-            <ul className={styles.list}>
-              {tomorrowJobs.map((job) => (
-                <li key={job.id}>
-                  <JobRow job={job} client={clientOf(job, names)} state={stateOf(job, waiting.events, heard)} />
-                </li>
-              ))}
-            </ul>
-          )}
-        </>
-      )}
+      {day.state === "loaded" && jobs.length === 0 && <EmptyDay tomorrowJobs={tomorrowJobs} />}
+      {jobs.length > 0 && <Jobs jobs={jobs} names={names} queued={waiting.events} heard={heard} />}
+      {tomorrowJobs.length > 0 && <Tomorrow jobs={tomorrowJobs} names={names} queued={waiting.events} heard={heard} />}
     </main>
   );
 }
