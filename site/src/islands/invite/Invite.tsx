@@ -51,7 +51,7 @@ import type { PersonFields } from "./useTurnstileForm.ts";
 import { useLandingData } from "./useLandingData.ts";
 import { useLatest } from "../useLatest.ts";
 import { Waitlist } from "./Waitlist.tsx";
-import { CARD_HEIGHT, CARD_WIDTH } from "../../../../src/config/referral-cards.ts";
+import { CARD_HEIGHT, CARD_WIDTH } from "@rules/config/referral-cards.ts";
 
 interface Props {
   turnstileSiteKey: string;

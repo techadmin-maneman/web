@@ -12,7 +12,7 @@ import { CodeBox } from "../CodeBox.tsx";
 import { consentLines } from "../consents.ts";
 import { atStake, insideNotice, type AtStake } from "../late-change.ts";
 import styles from "../booking.module.css";
-import { firstNameOf } from "../../../../../src/lib/names.ts";
+import { firstNameOf } from "@rules/lib/names.ts";
 import { minutesAndSeconds, useHoldLeft, paysNothing, Heading, LastMinute, LateFee } from "./shared.tsx";
 
 /** What the pay step names: the service booked, or, for a move, the visit moved or its late fee. */

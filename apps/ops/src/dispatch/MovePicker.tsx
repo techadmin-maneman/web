@@ -16,7 +16,7 @@
 // them, with their number; and a change of technician alone, which leaves their
 // window as it was, tells them nothing (docs/decisions/0069-dispatch-under-concurrency.md).
 
-import { REASON_MAX_CHARS } from "../../../../src/policy/decision-reasons.ts";
+import { REASON_MAX_CHARS } from "@rules/policy/decision-reasons.ts";
 import { classes } from "@maneman/ui/classes";
 import { Button } from "@maneman/ui/Button";
 import { Dialog } from "@maneman/ui/Dialog";

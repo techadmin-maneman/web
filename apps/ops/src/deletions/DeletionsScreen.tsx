@@ -17,7 +17,7 @@
 // The API refuses while the client has a visit booked or a payment held, and
 // the refusal's copy says which, with a link to the client's tab that settles it.
 
-import { REASON_MAX_CHARS } from "../../../../src/policy/decision-reasons.ts";
+import { REASON_MAX_CHARS } from "@rules/policy/decision-reasons.ts";
 import { useFocusOnMount } from "@maneman/ui/useFocusOnMount";
 import { errorText } from "@maneman/web-kit/refusal";
 import { Button } from "@maneman/ui/Button";

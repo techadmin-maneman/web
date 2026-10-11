@@ -3,7 +3,7 @@
 // does not answer.
 
 import { mobileDigits } from "@maneman/web-kit/mobile";
-import { ENABLED_SURFACES, SURFACE_HOSTS } from "../../../src/config/environments.ts";
+import { ENABLED_SURFACES, SURFACE_HOSTS } from "@rules/config/environments.ts";
 import type { SiteEnvironment } from "./environment.ts";
 
 /** Locally the browser tests serve the app here (playwright.config.ts). */

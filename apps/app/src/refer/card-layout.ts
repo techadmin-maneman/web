@@ -5,7 +5,7 @@
 // words. The house card's script (scripts/build/make-house-card.ts) draws from
 // these figures, and so the overlay the API lays over a client's photographs.
 
-import { CARD_HEIGHT, CARD_WIDTH, HALF_WIDTH, RULE_WIDTH } from "../../../../src/config/referral-cards.ts";
+import { CARD_HEIGHT, CARD_WIDTH, HALF_WIDTH, RULE_WIDTH } from "@rules/config/referral-cards.ts";
 
 export { CARD_HEIGHT, CARD_WIDTH, HALF_WIDTH, RULE_WIDTH };
 

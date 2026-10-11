@@ -19,7 +19,7 @@ import { clients } from "../content.ts";
 import { whoWords } from "../lib/who.ts";
 import { Loading } from "../states/States.tsx";
 import styles from "./clients.module.css";
-import { firstNameOf } from "../../../../src/lib/names.ts";
+import { firstNameOf } from "@rules/lib/names.ts";
 
 const copy = clients.photos;
 const PHASES = ["before", "after"] as const;

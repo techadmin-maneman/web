@@ -10,8 +10,8 @@
 // it: Google's tags are given the address without the code, and the Meta Pixel,
 // which reports the address as it stands, is not loaded there.
 
-import type { LossExtent } from "../../../src/config/booking.ts";
-import type { BookingWindow } from "../../../src/config/scheduling.ts";
+import type { LossExtent } from "@rules/config/booking.ts";
+import type { BookingWindow } from "@rules/config/scheduling.ts";
 import { ANALYTICS_IDS } from "./analytics-ids.ts";
 import { ENVIRONMENT } from "./build.ts";
 import { INVITE_PATH_IN_URL } from "./invite.ts";

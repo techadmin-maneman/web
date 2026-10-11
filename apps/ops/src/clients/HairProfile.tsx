@@ -31,7 +31,7 @@ import { clients, dispatch, NOT_PERMITTED } from "../content.ts";
 import { useAccess } from "../lib/access.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import styles from "./profile.module.css";
-import { isOneOf } from "../../../../src/lib/one-of.ts";
+import { isOneOf } from "@rules/lib/one-of.ts";
 
 const copy = clients.profile;
 

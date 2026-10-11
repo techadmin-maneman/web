@@ -21,7 +21,7 @@ import { useSession } from "../session.ts";
 import { oneVisitLines } from "./one-visit-words.ts";
 import { ProposedMove } from "./ProposedMove.tsx";
 import styles from "./home.module.css";
-import { firstNameOf } from "../../../../src/lib/names.ts";
+import { firstNameOf } from "@rules/lib/names.ts";
 
 /** A visit the client may move or cancel in the app, while self-serve booking is on. */
 export function changingOf(visit: VisitSummary, what: string): ChangingVisit | null {

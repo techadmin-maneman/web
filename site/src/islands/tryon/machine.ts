@@ -9,7 +9,7 @@
 
 import { tryOn } from "../../content/site.ts";
 import { ERROR_KINDS, type ErrorKind } from "../../lib/tryon-errors.ts";
-import { isOneOf } from "../../../../src/lib/one-of.ts";
+import { isOneOf } from "@rules/lib/one-of.ts";
 
 const SCREENS = ["upload", "consent", "stage", "looks", "gate", "sent", "error"] as const;
 export type Screen = (typeof SCREENS)[number];

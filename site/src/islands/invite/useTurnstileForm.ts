@@ -6,7 +6,7 @@ import { referral } from "../../content/referral.ts";
 import type { Answer, ErrorCode } from "../../lib/api.ts";
 import { keyPerRequest } from "../../lib/idempotency.ts";
 import { useInvalidFocus } from "../useInvalidFocus.ts";
-import { isOneOf } from "../../../../src/lib/one-of.ts";
+import { isOneOf } from "@rules/lib/one-of.ts";
 
 /** What both forms hold: the name, the number and the agreement. */
 export interface PersonFields {

@@ -18,8 +18,10 @@ Within a layer, modules import each other freely, as long as no cycle forms.
 
 ## Where a thing goes
 
-- **A rule** that needs no database goes in `policy/`, and the data it reads in `config/`. The front ends import both
-  directly (`apps/*`, `site/`), so neither may import the Worker's types.
+- **A rule** that needs no database goes in `policy/`, and the data it reads in `config/`. The front ends (`apps/*`,
+  `packages/*`, `site/`) import both, and `lib/`, as `@rules/policy/…`, `@rules/config/…` and `@rules/lib/…`
+  (`scripts/build/rules-alias.ts`), and lint refuses any other way into `src/`. So none of the three may import the
+  Worker's types.
 - **A queue's message and its retry ceiling** go in `config/pipeline.ts`, so whoever sends to the queue and the
   consumer that reads it share the contract without importing each other.
 - **Sending to a queue** is `domain/enqueue.ts`, which the domain, the routes and the jobs all use.

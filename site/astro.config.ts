@@ -11,6 +11,7 @@
 import { mkdir, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import preact from "@astrojs/preact";
 import { defineConfig } from "astro/config";
+import { RULES_ALIAS } from "../scripts/build/rules-alias.ts";
 import { ANALYTICS_IDS } from "./src/lib/analytics-ids.ts";
 import { siteEnvironment } from "./src/lib/environment.ts";
 import { assertPublishable } from "./src/lib/publish-gate.ts";
@@ -76,6 +77,7 @@ export default defineConfig({
   ],
   vite: {
     define: { __MM_ENV__: JSON.stringify(environment) },
+    resolve: { alias: RULES_ALIAS },
     // Every asset is a file of its own: the content security policy allows no data: URLs.
     build: { assetsInlineLimit: 0 },
     // The design export and the backend's config live outside site/.

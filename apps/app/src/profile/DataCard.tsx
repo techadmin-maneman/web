@@ -2,7 +2,7 @@
 // (docs/decisions/0049-dpdp.md).
 
 import { capsLook } from "@maneman/ui/Caps";
-import { GRIEVANCE_MAX_CHARS } from "../../../../src/policy/grievances.ts";
+import { GRIEVANCE_MAX_CHARS } from "@rules/policy/grievances.ts";
 import { Button, ButtonLink } from "@maneman/ui/Button";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { longDate } from "@maneman/web-kit/dates";

@@ -3,8 +3,8 @@
 
 import { useLoad } from "@maneman/ui/useLoad";
 import { useMemo } from "react";
-import { NATIONAL, type Caller, type Grant, type Place } from "../../../../src/policy/access.ts";
-import { callerMeetsNeed, type RouteNeed } from "../../../../src/policy/console-routes.ts";
+import { NATIONAL, type Caller, type Grant, type Place } from "@rules/policy/access.ts";
+import { callerMeetsNeed, type RouteNeed } from "@rules/policy/console-routes.ts";
 import { api, type Answer, type StaffGrant, type Whoami } from "../api.ts";
 import type { paths } from "../api-schema.ts";
 import type { MayCall } from "../route.ts";
@@ -17,7 +17,7 @@ export {
   REFUNDING_A_DISPUTE,
   taskNeed,
   WAIVING_A_NO_SHOW,
-} from "../../../../src/policy/console-routes.ts";
+} from "@rules/policy/console-routes.ts";
 
 let asked: Promise<Answer<Whoami>> | null = null;
 let answered: Whoami | null = null;

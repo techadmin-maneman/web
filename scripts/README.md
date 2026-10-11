@@ -38,6 +38,7 @@ checkout: a database, an org, Cloudflare or GitHub. A script that reads a secret
 | `generate-openapi.ts`                           | each surface's OpenAPI document and its Markdown twin              | `npm run openapi`      | `docs/openapi*.json`, `docs/api-*.md` |
 | `generate-schema-doc.ts`                        | `docs/schema.md`, from the migrations                              | `npm run schema`       | `docs/schema.md`                      |
 | `make-house-card.ts`                            | the house referral card                                            | by hand                | the image                             |
+| `rules-alias.ts`                                | `@rules/`, the front ends' way into the backend's shared rules     | each bundler's config  | no                                    |
 | `subset-fonts.ts`                               | the rupee sign cut out of EB Garamond                              | `npm run fonts`        | the font file                         |
 
 ## ci/
