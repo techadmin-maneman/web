@@ -16,7 +16,6 @@ export type Me = Schemas["Me"];
 export type Profile = Schemas["Profile"];
 export type Address = Schemas["Address"];
 type AddressSave = Schemas["AddressSave"];
-export type Suggestion = Schemas["AddressSuggestions"]["suggestions"][number];
 export type NumberChange = Schemas["NumberChange"];
 export type SignedIn = Schemas["SignedIn"];
 export type ConsentPurpose = Profile["consents"][number]["purpose"];
