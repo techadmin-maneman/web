@@ -2,7 +2,7 @@
 
 Every decision this repository was built on, oldest first. A record says what was decided and why, and is not rewritten to say something else: a later record changes it, and says so in its own header (ADR 0001). **Changed by** gathers those later records, from either side, so an old record's reader knows to read on.
 
-This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. A record names its topic in its header, `- Topic:` and one of the headings below, and the test fails on one that does not. The next free number is 0133.
+This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. A record names its topic in its header, `- Topic:` and one of the headings below, and the test fails on one that does not. The next free number is 0134.
 
 ## By topic
 
@@ -122,6 +122,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 - [0130](0130-replies-from-the-care-inbox.md) Replies from the Care inbox
 - [0131](0131-care-people.md) Each client's Care person
 - [0132](0132-the-reply-clock.md) The reply clock
+- [0133](0133-the-after-hours-reply.md) The after-hours reply
 
 ### Referrals
 
@@ -300,3 +301,4 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0130](0130-replies-from-the-care-inbox.md) | Replies from the Care inbox | 2026-10-12 | accepted |  |
 | [0131](0131-care-people.md) | Each client's Care person | 2026-10-12 | accepted |  |
 | [0132](0132-the-reply-clock.md) | The reply clock | 2026-10-12 | accepted |  |
+| [0133](0133-the-after-hours-reply.md) | The after-hours reply | 2026-10-12 | accepted |  |

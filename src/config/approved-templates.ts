@@ -50,8 +50,15 @@ const DIFFERS: Partial<Record<TemplateName, { readonly text?: string; readonly b
     credits_expiring_v1: { buttons: [STOP] },
   };
 
-/** Never submitted: the stop line is a button, and the answer to STOP goes as a reply while the chat is open. */
-const NOT_SUBMITTED: ReadonlySet<TemplateName> = new Set(["stop_link_v1", "messages_stopped_v1"]);
+/**
+ * Never submitted: the stop line is a button, and the answer to STOP and the after-hours answer go as replies while
+ * the chat is open.
+ */
+const NOT_SUBMITTED: ReadonlySet<TemplateName> = new Set([
+  "stop_link_v1",
+  "messages_stopped_v1",
+  "care_after_hours_v1",
+]);
 
 const PARAM = /\{\{(\d+)\}\}/g;
 

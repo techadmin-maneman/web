@@ -28,6 +28,13 @@ export function careIsOn(instant: Date, hours: CareHours = CARE_HOURS): boolean 
   return instant >= onTheHour(date, hours.opens) && instant < onTheHour(date, hours.closes);
 }
 
+/** When Care last closed, at or before `instant`. */
+export function lastClosed(instant: Date, hours: CareHours = CARE_HOURS): Date {
+  const date = indiaDate(instant);
+  const today = onTheHour(date, hours.closes);
+  return instant >= today ? today : onTheHour(addDays(date, -1), hours.closes);
+}
+
 /**
  * When a message written at `written` is answered by: within the first-reply minutes while Care are on, where that
  * still falls before they close; otherwise by the answered-by hour of the next morning.
