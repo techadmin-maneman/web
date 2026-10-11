@@ -48,8 +48,28 @@ export async function loadDay(date: string): Promise<Loaded<readonly JobSummary[
   return kept === null ? failed(answer.requestId) : { state: "loaded", value: kept, fromPhone: true };
 }
 
+/** How long a card just fetched counts as fresh to keep: going back to Today does not fetch every card again. */
+const CARD_FRESH_MS = 60_000;
+
+/** When each card was last fetched, and each fetch under way, by job: Today and the job's own screen share them. */
+const cardFetchedAt = new Map<string, number>();
+const cardsFetching = new Map<string, ReturnType<typeof api.job>>();
+
+/** A card from the API, joining the fetch of it already under way. */
+function fetchCard(id: string): ReturnType<typeof api.job> {
+  const under = cardsFetching.get(id);
+  if (under !== undefined) return under;
+  const fetching = api.job(id).then((answer) => {
+    cardsFetching.delete(id);
+    if (answer.ok) cardFetchedAt.set(id, Date.now());
+    return answer;
+  });
+  cardsFetching.set(id, fetching);
+  return fetching;
+}
+
 export async function loadJob(id: string): Promise<Loaded<Job>> {
-  const answer = await api.job(id);
+  const answer = await fetchCard(id);
   if (answer.ok) {
     await keepJob(answer.body).catch(() => undefined);
     return { state: "loaded", value: answer.body, fromPhone: false };
@@ -78,7 +98,8 @@ export function useDay(date: string): readonly [Loaded<readonly JobSummary[]>, (
  * Once the day's list has arrived, each card it names is fetched and kept, so
  * the phone opens them in a basement: "today's and tomorrow's jobs and client
  * cards are cached" (docs/prompts/phase2-frontend.md). The cards are fetched
- * side by side, not one after another. A locked job has no card to keep, and a
+ * side by side, not one after another, and a card fetched in the last minute is
+ * not fetched again. A locked job has no card to keep, and a
  * card that cannot be fetched or kept is let go: there is no signal, or no room.
  */
 export async function keepCards(jobs: readonly JobSummary[]): Promise<void> {
@@ -87,7 +108,10 @@ export async function keepCards(jobs: readonly JobSummary[]): Promise<void> {
 }
 
 async function keepCard(id: string): Promise<void> {
-  const answer = await api.job(id);
+  // Fresh, and still on the phone: a sign-out since wipes the phone and keeps it all again.
+  const fresh = Date.now() - (cardFetchedAt.get(id) ?? 0) < CARD_FRESH_MS;
+  if (fresh && (await keptJob(id).catch(() => null)) !== null) return;
+  const answer = await fetchCard(id);
   if (!answer.ok) return;
   await keepJob(answer.body).catch(() => undefined);
 }
