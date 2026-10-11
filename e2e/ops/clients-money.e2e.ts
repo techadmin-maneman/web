@@ -2,6 +2,7 @@ import { expect, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
 import { CLIENT, empty, fails, json, NEW_RECORD, RECORD, type Call, type OpsReply } from "./fixtures.ts";
 import { RECORD_PATH, READ_RECORD, openClient, meta } from "./clients-fixtures.ts";
+import * as opsCopy from "../../apps/ops/src/content.ts";
 
 const ADD_CREDITS: Call = `POST ${RECORD_PATH}/credits`;
 
@@ -27,19 +28,19 @@ test("enters a discount code on a visit not yet paid for, says when one does not
     },
     [removed]: empty(),
   });
-  const row = page.getByRole("region", { name: "To come" }).getByRole("row").nth(1);
+  const row = page.getByRole("region", { name: opsCopy.clients.visits.upcoming }).getByRole("row").nth(1);
   await row.getByRole("button", { name: "Enter a discount code on the visit of 25 Sep 2027" }).click();
-  await row.getByLabel("Discount code").fill("wrong1");
-  await row.getByRole("button", { name: "Apply" }).click();
+  await row.getByLabel(opsCopy.clients.visits.code.label).fill("wrong1");
+  await row.getByRole("button", { name: opsCopy.clients.visits.code.apply }).click();
   await expect(row.getByRole("alert")).toHaveText("That code doesn't apply to this visit.");
   // One ops switched off said only that it did not apply.
-  await row.getByLabel("Discount code").fill("RPLC2K");
-  await row.getByRole("button", { name: "Apply" }).click();
+  await row.getByLabel(opsCopy.clients.visits.code.label).fill("RPLC2K");
+  await row.getByRole("button", { name: opsCopy.clients.visits.code.apply }).click();
   await expect(row.getByRole("alert")).toHaveText("That code is switched off.");
 
   applies = true;
-  await row.getByLabel("Discount code").fill("weddng25");
-  await row.getByRole("button", { name: "Apply" }).click();
+  await row.getByLabel(opsCopy.clients.visits.code.label).fill("weddng25");
+  await row.getByRole("button", { name: opsCopy.clients.visits.code.apply }).click();
   await expect(row).toContainText("WEDDNG25, Rs. 500 off");
   await expect(row).toContainText("by ops");
   expect(await axeViolations(page)).toEqual([]);
@@ -60,15 +61,15 @@ test("shows the code the client gave when booking, and starts the box from it", 
     },
   } satisfies OpsReply<"/api/clients/{id}">;
   await openClient(page, `/clients/${CLIENT.id}/visits`, { [READ_RECORD]: json(asked) });
-  const row = page.getByRole("region", { name: "To come" }).getByRole("row").nth(1);
+  const row = page.getByRole("region", { name: opsCopy.clients.visits.upcoming }).getByRole("row").nth(1);
   await expect(row).toContainText("Client entered TENPC when booking");
   await row.getByRole("button", { name: "Enter a discount code on the visit of 25 Sep 2027" }).click();
-  await expect(row.getByLabel("Discount code")).toHaveValue("TENPC");
+  await expect(row.getByLabel(opsCopy.clients.visits.code.label)).toHaveValue("TENPC");
 });
 
 test("offers no code on a visit already paid for", async ({ page }) => {
   await openClient(page, `/clients/${CLIENT.id}/visits`, { [READ_RECORD]: json(RECORD) });
-  const row = page.getByRole("region", { name: "To come" }).getByRole("row").nth(1);
+  const row = page.getByRole("region", { name: opsCopy.clients.visits.upcoming }).getByRole("row").nth(1);
   await expect(row).toContainText("None");
   await expect(row.getByRole("button", { name: /discount code/ })).toHaveCount(0);
 });
@@ -102,7 +103,7 @@ test("says who closed a visit left partly done without a follow-up, when and why
 
 test("lists what the client has paid, and what for", async ({ page }) => {
   await openClient(page, `/clients/${CLIENT.id}/payments`);
-  const payment = page.getByRole("region", { name: "Payments and refunds" }).getByRole("row").nth(1);
+  const payment = page.getByRole("region", { name: opsCopy.clients.payments.title }).getByRole("row").nth(1);
   await expect(payment).toContainText("20 Aug 2027");
   await expect(payment).toContainText("Service visit of 22 Aug 2027");
   await expect(payment).toContainText("Rs. 2,360");
@@ -116,7 +117,7 @@ test("names the discount code a payment was made with, and what it took off", as
     payments: paid === undefined ? [] : [{ ...paid, discount_code: { code: "AUDTEST", amount_off: 100_000 } }],
   } satisfies OpsReply<"/api/clients/{id}">;
   await openClient(page, `/clients/${CLIENT.id}/payments`, { [READ_RECORD]: json(withCode) });
-  const payment = page.getByRole("region", { name: "Payments and refunds" }).getByRole("row").nth(1);
+  const payment = page.getByRole("region", { name: opsCopy.clients.payments.title }).getByRole("row").nth(1);
   await expect(payment).toContainText("Code AUDTEST, Rs. 1,000 off");
 });
 
@@ -131,7 +132,7 @@ test("names a payment for a booking not yet a visit by what is being booked", as
         : [{ ...paid, visit: null, booking: { type: "first_fit", date: "2027-10-04", under_way: true } }],
   } satisfies OpsReply<"/api/clients/{id}">;
   await openClient(page, `/clients/${CLIENT.id}/payments`, { [READ_RECORD]: json(forBooking) });
-  const payment = page.getByRole("region", { name: "Payments and refunds" }).getByRole("row").nth(1);
+  const payment = page.getByRole("region", { name: opsCopy.clients.payments.title }).getByRole("row").nth(1);
   await expect(payment).toContainText("First fit of 4 Oct 2027");
 });
 
@@ -139,7 +140,7 @@ test("names a payment for a booking not yet a visit by what is being booked", as
 test("lists the payment links sent, and copies an open one's address to send again", async ({ page, context }) => {
   await context.grantPermissions(["clipboard-read", "clipboard-write"]);
   await openClient(page, `/clients/${CLIENT.id}/payments`);
-  const links = page.getByRole("region", { name: "Payment links" });
+  const links = page.getByRole("region", { name: opsCopy.clients.links.title });
   const open = links.getByRole("row").nth(1);
   await expect(open).toContainText("21 Sep 2027");
   await expect(open).toContainText("Service visit, visit of 2 Oct 2027");
@@ -173,17 +174,21 @@ test("says where each finished visit's invoice stands in Books", async ({ page }
     ],
   } satisfies OpsReply<"/api/clients/{id}">;
   await openClient(page, `/clients/${CLIENT.id}/payments`, { [READ_RECORD]: json(withDraft) });
-  const invoices = page.getByRole("region", { name: "Invoices" }).getByRole("row");
+  const invoices = page.getByRole("region", { name: opsCopy.clients.invoices.title }).getByRole("row");
   await expect(invoices.nth(1)).toContainText("Replacement of 1 Sep 2027");
-  await expect(invoices.nth(1)).toContainText("Draft in Books");
+  await expect(invoices.nth(1)).toContainText(opsCopy.clients.invoices.states.draft);
   await expect(invoices.nth(2)).toContainText("Service visit of 22 Aug 2027");
   await expect(invoices.nth(2)).toContainText("Sent 22 Aug 2027");
 });
 
 test("says so when nothing was linked or invoiced yet", async ({ page }) => {
   await openClient(page, `/clients/${CLIENT.id}/payments`, { [READ_RECORD]: json(NEW_RECORD) });
-  await expect(page.getByRole("region", { name: "Payment links" })).toContainText("No payment links yet.");
-  await expect(page.getByRole("region", { name: "Invoices" })).toContainText("No invoices yet.");
+  await expect(page.getByRole("region", { name: opsCopy.clients.links.title })).toContainText(
+    opsCopy.clients.links.none,
+  );
+  await expect(page.getByRole("region", { name: opsCopy.clients.invoices.title })).toContainText(
+    opsCopy.clients.invoices.none,
+  );
 });
 
 // A credit given or taken in error once needed SQL to put right.
@@ -193,10 +198,10 @@ test("puts a client's credits right, with the reason, and shows the balance it a
   });
   const credits = page.getByRole("region", { name: "Free service visits" });
   await expect(credits).toContainText("2 visits · use by 3 Jan 2028");
-  const save = credits.getByRole("button", { name: "Update credits" });
+  const save = credits.getByRole("button", { name: opsCopy.clients.credits.save });
   await expect(save).toBeDisabled();
 
-  await credits.getByLabel("Add, or remove with a minus").fill("-1");
+  await credits.getByLabel(opsCopy.clients.credits.change).fill("-1");
   await credits.getByRole("radio", { name: "Correction" }).check();
   const sent = page.waitForRequest((request) => request.url().endsWith("/credits") && request.method() === "POST");
   await save.click();
@@ -211,8 +216,8 @@ test("offers no change of nought, or of more than twelve visits either way", asy
   await openClient(page, `/clients/${CLIENT.id}/payments`);
   const credits = page.getByRole("region", { name: "Free service visits" });
   await credits.getByRole("radio", { name: "Goodwill" }).check();
-  const field = credits.getByLabel("Add, or remove with a minus");
-  const save = credits.getByRole("button", { name: "Update credits" });
+  const field = credits.getByLabel(opsCopy.clients.credits.change);
+  const save = credits.getByRole("button", { name: opsCopy.clients.credits.save });
   for (const typed of ["0", "13", "-13", "two"]) {
     await field.fill(typed);
     await expect(save, typed).toBeDisabled();
@@ -226,8 +231,8 @@ test("says so when the API would take away more than the client holds", async ({
     [ADD_CREDITS]: fails(400, "invalid_request"),
   });
   const credits = page.getByRole("region", { name: "Free service visits" });
-  await credits.getByLabel("Add, or remove with a minus").fill("-5");
+  await credits.getByLabel(opsCopy.clients.credits.change).fill("-5");
   await credits.getByRole("radio", { name: "Correction" }).check();
-  await credits.getByRole("button", { name: "Update credits" }).click();
+  await credits.getByRole("button", { name: opsCopy.clients.credits.save }).click();
   await expect(credits.getByRole("alert")).toContainText("-12 to 12, and no more than they hold.");
 });

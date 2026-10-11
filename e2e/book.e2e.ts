@@ -19,6 +19,8 @@ import {
   test,
   visit,
 } from "./support.ts";
+import * as siteCopy from "../site/src/content/site.ts";
+import * as referralCopy from "../site/src/content/referral.ts";
 
 const SERVED = { pincode: "122018", served: true, area: "Sector 65", city: "Gurgaon" };
 const UNSERVED = { pincode: "400050", served: false, area: "Bandra", city: "Mumbai" };
@@ -111,8 +113,8 @@ const CONSULTATION_CONSENT = "You may contact me on WhatsApp about this consulta
 
 /** /book's first step: the name, the number and the agreement, kept before anything else (ADR 0116). */
 async function leaveDetails(page: Page, mobile = "9810000000"): Promise<void> {
-  await page.getByLabel("Name").fill("Test Visitor");
-  await page.getByLabel("Mobile").fill(mobile);
+  await page.getByLabel(siteCopy.tryOn.gate.name).fill("Test Visitor");
+  await page.getByLabel(siteCopy.tryOn.gate.mobile).fill(mobile);
   await page.getByText(CONSULTATION_CONSENT).click();
   await page.getByRole("button", { name: "Continue" }).click();
   await expect(page.getByLabel("Pincode")).toBeFocused();
@@ -121,7 +123,7 @@ async function leaveDetails(page: Page, mobile = "9810000000"): Promise<void> {
 /** A pincode checked. */
 async function checkPincode(page: Page, pincode: string): Promise<void> {
   await page.getByLabel("Pincode").fill(pincode);
-  await page.getByRole("button", { name: "Check" }).click();
+  await page.getByRole("button", { name: referralCopy.referral.pincode.check }).click();
 }
 
 /** /book, at the pincode, its first step done. */
@@ -151,7 +153,7 @@ async function toAddress(page: Page): Promise<void> {
 /** The address filled in and the booking sent. */
 async function fillAndBook(page: Page): Promise<void> {
   await fillAddress(page);
-  await page.getByRole("button", { name: "Book the consultation" }).click();
+  await page.getByRole("button", { name: referralCopy.referral.consultation.submit }).click();
 }
 
 /** From the visit: on to the address, and booked. */
@@ -211,14 +213,14 @@ test("keeps the name and number first, then asks for the area, the visit and the
 
   await checkPincode(page, SERVED.pincode);
   await expect(page.getByText("Step 3 of 4 · Your visit")).toBeVisible();
-  await expect(page.getByLabel("Name", { exact: true })).toHaveCount(0);
+  await expect(page.getByLabel(siteCopy.tryOn.gate.name, { exact: true })).toHaveCount(0);
   await toAddress(page);
-  await expect(page.getByLabel("Name", { exact: true })).toHaveCount(0);
-  await expect(page.getByLabel("Mobile", { exact: true })).toHaveCount(0);
+  await expect(page.getByLabel(siteCopy.tryOn.gate.name, { exact: true })).toHaveCount(0);
+  await expect(page.getByLabel(siteCopy.tryOn.gate.mobile, { exact: true })).toHaveCount(0);
   expect(await axeViolations(page)).toEqual([]);
   await fillAndBook(page);
 
-  await expect(page.getByText("Booked", { exact: true })).toBeVisible();
+  await expect(page.getByText(referralCopy.referral.booked.label, { exact: true })).toBeVisible();
   expect(requests[0]?.postDataJSON()).toMatchObject({ name: "Test Visitor", mobile: "9810000000", consent: true });
 });
 
@@ -227,16 +229,16 @@ test("Change returns to the name and number as typed, and the same again is not 
   const leads = await leadCalls(page);
   await openForm(page);
 
-  await page.getByRole("button", { name: "Change your name or number" }).click();
+  await page.getByRole("button", { name: siteCopy.booking.changeYouLabel }).click();
   await expect(page.getByText("Step 1 of 4 · You")).toBeFocused();
-  await expect(page.getByLabel("Name")).toHaveValue("Test Visitor");
-  await expect(page.getByLabel("Mobile")).toHaveValue("98100 00000");
+  await expect(page.getByLabel(siteCopy.tryOn.gate.name)).toHaveValue("Test Visitor");
+  await expect(page.getByLabel(siteCopy.tryOn.gate.mobile)).toHaveValue("98100 00000");
   await page.getByRole("button", { name: "Continue" }).click();
   await expect(page.getByLabel("Pincode")).toBeFocused();
   expect(leads).toHaveLength(1);
 
-  await page.getByRole("button", { name: "Change your name or number" }).click();
-  await page.getByLabel("Mobile").fill("9810000001");
+  await page.getByRole("button", { name: siteCopy.booking.changeYouLabel }).click();
+  await page.getByLabel(siteCopy.tryOn.gate.mobile).fill("9810000001");
   await page.getByRole("button", { name: "Continue" }).click();
   await expect(page.getByText("For Test Visitor, +91 98100 00001")).toBeVisible();
   expect(leads).toHaveLength(2);
@@ -247,9 +249,9 @@ test("a number with +91, 91, 0 or 0091 in front books its own ten digits, pasted
   const requests = await mockApi(page);
   const leads = await leadCalls(page);
   await visit(page, "/book");
-  await page.getByLabel("Name").fill("Test Visitor");
+  await page.getByLabel(siteCopy.tryOn.gate.name).fill("Test Visitor");
 
-  const mobile = page.getByLabel("Mobile");
+  const mobile = page.getByLabel(siteCopy.tryOn.gate.mobile);
   for (const typed of ["+91 98765 43210", "+919876543210", "919876543210", "09876543210", "0091 98765 43210"]) {
     await mobile.fill(typed);
     await expect(mobile).toHaveValue("98765 43210");
@@ -276,11 +278,13 @@ test("restates the day and window booked, says what the visit asks, and offers i
   await bookHere(page);
 
   await expect(page.getByRole("heading", { level: 1, name: "Friday 25 September, 9 am to 12 pm" })).toBeVisible();
-  await expect(page.getByText("An hour at home, and free. Nothing is fitted.")).toBeVisible();
-  const google = new URL((await page.getByRole("link", { name: "Google Calendar" }).getAttribute("href")) ?? "");
+  await expect(page.getByText(referralCopy.referral.booked.ready.consultation)).toBeVisible();
+  const google = new URL(
+    (await page.getByRole("link", { name: referralCopy.referral.booked.calendar.google }).getAttribute("href")) ?? "",
+  );
   expect(google.searchParams.get("dates")).toBe("20260925T033000Z/20260925T063000Z");
   expect(google.searchParams.get("text")).toBe("Mane Man consultation");
-  const file = page.getByRole("link", { name: "Apple or Outlook" });
+  const file = page.getByRole("link", { name: referralCopy.referral.booked.calendar.file });
   await expect(file).toHaveAttribute("download", "mane-man-visit.ics");
   const ics = decodeURIComponent((await file.getAttribute("href"))?.split(",")[1] ?? "");
   expect(ics).toContain("DTSTART:20260925T033000Z\r\nDTEND:20260925T063000Z");
@@ -291,7 +295,7 @@ test("a request waiting for ops to fix the hour offers no calendar", async ({ pa
   await bookHere(page);
 
   await expect(page.getByRole("heading", { level: 1, name: "We will message you" })).toBeVisible();
-  await expect(page.getByRole("link", { name: "Google Calendar" })).toHaveCount(0);
+  await expect(page.getByRole("link", { name: referralCopy.referral.booked.calendar.google })).toHaveCount(0);
 });
 
 test("a served pincode books, and sends where the hair loss is", async ({ page }) => {
@@ -303,9 +307,9 @@ test("a served pincode books, and sends where the hair loss is", async ({ page }
   await toAddress(page);
   await fillAddress(page);
   await page.getByText("Receding front", { exact: true }).click();
-  await page.getByRole("button", { name: "Book the consultation" }).click();
+  await page.getByRole("button", { name: referralCopy.referral.consultation.submit }).click();
 
-  await expect(page.getByText("Booked", { exact: true })).toBeVisible();
+  await expect(page.getByText(referralCopy.referral.booked.label, { exact: true })).toBeVisible();
   const sent = requests[0]?.postDataJSON() as Record<string, unknown>;
   expect(sent).toMatchObject({ pincode: SERVED.pincode, window: "morning", consent: true, loss_extent: "receding" });
   expect(sent.turnstile_token).toBeTruthy();
@@ -330,27 +334,27 @@ test("offers the consultation and fit in one visit, and says what it holds", asy
   const requests = await mockApi(page, { consultation: { status: 201, body: { ...BOOKED, one_visit: true } } });
   await openForm(page);
 
-  const plan = page.getByRole("group", { name: "What to book" });
+  const plan = page.getByRole("group", { name: referralCopy.referral.consultation.plan.legend });
   await expect(plan.getByRole("radio")).toHaveCount(2);
   await plan.getByText("Consultation and fit · three hours").click();
   await expect(plan.getByRole("radio", { name: "Consultation and fit · three hours" })).toBeChecked();
   await expect(page.getByText(/^Starts in the morning or the afternoon\./)).toBeVisible();
   // The page's heading follows what it books.
-  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Book a consultation and fit");
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText(siteCopy.booking.titleOneVisit);
   expect(await axeViolations(page)).toEqual([]);
 
   await toAddress(page);
   await fillAddress(page);
-  await page.getByRole("button", { name: "Book the consultation and fit" }).click();
+  await page.getByRole("button", { name: referralCopy.referral.consultation.submitOneVisit }).click();
 
   // Nothing is booked for the number until the WhatsApp code sent to it is entered.
   await expect(page.getByText("Sent on WhatsApp to +91 98100 00000.", { exact: false })).toBeVisible();
-  await expect(page.getByLabel("WhatsApp code")).toBeFocused();
+  await expect(page.getByLabel(siteCopy.numberCode.label)).toBeFocused();
   expect(requests).toHaveLength(0);
   expect(await axeViolations(page)).toEqual([]);
   await enterNumberCode(page, "Confirm and book");
 
-  await expect(page.getByText("Booked", { exact: true })).toBeVisible();
+  await expect(page.getByText(referralCopy.referral.booked.label, { exact: true })).toBeVisible();
   const sent = requests[0]?.postDataJSON() as Record<string, unknown>;
   expect(sent).toMatchObject({ one_visit: true, window: "morning", consent: true, number_code_id: NUMBER_CODE_ID });
   // Where the hair loss is was skipped, so nothing is said of it.
@@ -366,19 +370,22 @@ test("books the one visit only with the right WhatsApp code", async ({ page }) =
     return route.fulfill({ json: right ? { verified: true } : { verified: false, attempts_left: 4 } });
   });
   await openForm(page);
-  await page.getByRole("group", { name: "What to book" }).getByText("Consultation and fit · three hours").click();
+  await page
+    .getByRole("group", { name: referralCopy.referral.consultation.plan.legend })
+    .getByText("Consultation and fit · three hours")
+    .click();
   await toAddress(page);
   await fillAddress(page);
-  await page.getByRole("button", { name: "Book the consultation and fit" }).click();
+  await page.getByRole("button", { name: referralCopy.referral.consultation.submitOneVisit }).click();
 
-  await page.getByLabel("WhatsApp code").fill("111111");
-  await page.getByRole("button", { name: "Confirm and book" }).click();
+  await page.getByLabel(siteCopy.numberCode.label).fill("111111");
+  await page.getByRole("button", { name: referralCopy.referral.consultation.confirmOneVisit }).click();
   await expect(page.getByText("That code is not right. 4 tries left.")).toBeVisible();
   expect(requests).toHaveLength(0);
 
-  await page.getByLabel("WhatsApp code").fill(NUMBER_CODE);
-  await page.getByRole("button", { name: "Confirm and book" }).click();
-  await expect(page.getByText("Booked", { exact: true })).toBeVisible();
+  await page.getByLabel(siteCopy.numberCode.label).fill(NUMBER_CODE);
+  await page.getByRole("button", { name: referralCopy.referral.consultation.confirmOneVisit }).click();
+  await expect(page.getByText(referralCopy.referral.booked.label, { exact: true })).toBeVisible();
   expect(verified).toEqual([
     { code_id: NUMBER_CODE_ID, code: "111111" },
     { code_id: NUMBER_CODE_ID, code: NUMBER_CODE },
@@ -389,11 +396,14 @@ test("books the one visit only with the right WhatsApp code", async ({ page }) =
 /** Books the one visit on /book with the code typed. */
 async function bookOneVisitWithCode(page: Page, code: string): Promise<void> {
   await openForm(page);
-  await page.getByRole("group", { name: "What to book" }).getByText("Consultation and fit · three hours").click();
+  await page
+    .getByRole("group", { name: referralCopy.referral.consultation.plan.legend })
+    .getByText("Consultation and fit · three hours")
+    .click();
   await toAddress(page);
-  await page.getByLabel("Discount code (optional)").fill(code);
+  await page.getByLabel(referralCopy.referral.consultation.code.label).fill(code);
   await fillAddress(page);
-  await page.getByRole("button", { name: "Book the consultation and fit" }).click();
+  await page.getByRole("button", { name: referralCopy.referral.consultation.submitOneVisit }).click();
   await enterNumberCode(page, "Confirm and book");
 }
 
@@ -412,7 +422,7 @@ test("says a wrong code under its box, and what a right one takes off once booke
     return route.fulfill({ status: 422, json: refused });
   });
   await bookOneVisitWithCode(page, "wrong1");
-  const box = page.getByLabel("Discount code (optional)");
+  const box = page.getByLabel(referralCopy.referral.consultation.code.label);
   const refusal = "That discount code doesn’t apply. Check it, or leave it out to book without it.";
   await expect(box).toHaveAttribute("aria-invalid", "true");
   await expect(box).toBeFocused();
@@ -422,8 +432,8 @@ test("says a wrong code under its box, and what a right one takes off once booke
 
   applies = true;
   await box.fill(" WEDDNG25 ");
-  await page.getByRole("button", { name: "Book the consultation and fit" }).click();
-  await expect(page.getByText("Booked", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: referralCopy.referral.consultation.submitOneVisit }).click();
+  await expect(page.getByText(referralCopy.referral.booked.label, { exact: true })).toBeVisible();
   await expect(page.getByText("Code WEDDNG25: Rs. 1,000 off, taken when you pay.")).toBeVisible();
   const sent = requests.at(-1)?.postDataJSON() as Record<string, unknown>;
   expect(sent).toMatchObject({ one_visit: true, discount_code: "WEDDNG25" });
@@ -433,14 +443,14 @@ test("asks for a discount code only for the one visit", async ({ page }) => {
   await mockApi(page);
   await openForm(page);
   await toAddress(page);
-  await expect(page.getByLabel("Discount code (optional)")).toHaveCount(0);
+  await expect(page.getByLabel(referralCopy.referral.consultation.code.label)).toHaveCount(0);
 });
 
 // Another booking may take a code's last use between its check and the hold, and the booking stands without it.
 test("says when the code sent could not be applied, and that the booking stands without it", async ({ page }) => {
   await mockApi(page, { consultation: { status: 201, body: { ...BOOKED, one_visit: true, discount_code: null } } });
   await bookOneVisitWithCode(page, "weddng25");
-  await expect(page.getByText("Booked", { exact: true })).toBeVisible();
+  await expect(page.getByText(referralCopy.referral.booked.label, { exact: true })).toBeVisible();
   await expect(page.getByText("We couldn’t apply code WEDDNG25. Your booking stands without it.")).toBeVisible();
 });
 
@@ -456,8 +466,8 @@ test("offers the one visit the morning and the afternoon, never the evening, and
 }) => {
   const requests = await mockApi(page);
   await openForm(page);
-  const plan = page.getByRole("group", { name: "What to book" });
-  const windows = page.getByRole("group", { name: "Window" });
+  const plan = page.getByRole("group", { name: referralCopy.referral.consultation.plan.legend });
+  const windows = page.getByRole("group", { name: referralCopy.referral.consultation.window });
   await windows.getByText("Evening").click();
 
   await plan.getByText("Consultation and fit · three hours").click();
@@ -470,7 +480,7 @@ test("offers the one visit the morning and the afternoon, never the evening, and
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("Book a free consultation");
 
   await continueAndBook(page);
-  await expect(page.getByText("Booked", { exact: true })).toBeVisible();
+  await expect(page.getByText(referralCopy.referral.booked.label, { exact: true })).toBeVisible();
   expect(requests[0]?.postDataJSON() as Record<string, unknown>).not.toHaveProperty("one_visit");
 });
 
@@ -481,25 +491,25 @@ test("a booking without the address is stopped at the form, each part it needs m
   await toAddress(page);
 
   // The city is the pincode's to begin with, and the pincode is the one checked, not asked again.
-  await expect(page.getByLabel("City")).toHaveValue(SERVED.city);
+  await expect(page.getByLabel(referralCopy.referral.address.labels.city)).toHaveValue(SERVED.city);
   await expect(page.getByText(SERVED.pincode, { exact: true })).toBeVisible();
-  await page.getByLabel("City").fill("");
-  await page.getByRole("button", { name: "Book the consultation" }).click();
+  await page.getByLabel(referralCopy.referral.address.labels.city).fill("");
+  await page.getByRole("button", { name: referralCopy.referral.consultation.submit }).click();
 
-  await expect(page.getByText("Enter the flat or house number.")).toBeVisible();
-  await expect(page.getByText("Enter the building or society.")).toBeVisible();
-  await expect(page.getByText("Enter the sector or area.")).toBeVisible();
-  await expect(page.getByText("Enter the city.")).toBeVisible();
-  await expect(page.getByLabel("Flat or house number")).toHaveAttribute("aria-invalid", "true");
-  await expect(page.getByLabel("Building or society")).toHaveAttribute("aria-invalid", "true");
-  await expect(page.getByLabel("Street (optional)")).toHaveAttribute("aria-invalid", "false");
+  await expect(page.getByText(referralCopy.referral.address.errors.flat)).toBeVisible();
+  await expect(page.getByText(referralCopy.referral.address.errors.line1)).toBeVisible();
+  await expect(page.getByText(referralCopy.referral.address.errors.locality)).toBeVisible();
+  await expect(page.getByText(referralCopy.referral.address.errors.city)).toBeVisible();
+  await expect(page.getByLabel(referralCopy.referral.address.labels.flat)).toHaveAttribute("aria-invalid", "true");
+  await expect(page.getByLabel(referralCopy.referral.address.labels.line1)).toHaveAttribute("aria-invalid", "true");
+  await expect(page.getByLabel(referralCopy.referral.address.labels.line2)).toHaveAttribute("aria-invalid", "false");
   expect(requests).toHaveLength(0);
 
   await fillAddress(page);
-  await page.getByLabel("City").fill("Gurugram");
-  await page.getByLabel("Access notes (optional)").fill("Gate 2, visitor parking");
-  await page.getByRole("button", { name: "Book the consultation" }).click();
-  await expect(page.getByText("Booked", { exact: true })).toBeVisible();
+  await page.getByLabel(referralCopy.referral.address.labels.city).fill("Gurugram");
+  await page.getByLabel(referralCopy.referral.address.labels.accessNotes).fill("Gate 2, visitor parking");
+  await page.getByRole("button", { name: referralCopy.referral.consultation.submit }).click();
+  await expect(page.getByText(referralCopy.referral.booked.label, { exact: true })).toBeVisible();
   expect((requests[0]?.postDataJSON() as Record<string, unknown>).address).toEqual({
     flat: "Flat 402",
     floor: null,
@@ -524,7 +534,7 @@ test("every number is sent to WhatsApp, and offered the app with the number fill
   await expect(
     page.getByText("Your technician arrives in that window. Details on WhatsApp, at +91 98100 00000."),
   ).toBeVisible();
-  const app = page.getByRole("link", { name: "Open the app" });
+  const app = page.getByRole("link", { name: referralCopy.referral.booked.app });
   // The link carries no number until it is followed, so no tag that reads the page's links sees it.
   await expect(app).toHaveAttribute("href", "http://app.localhost:4322");
   await page.route(/^http:\/\/app\.localhost:4322\//, (route) =>
@@ -544,13 +554,13 @@ test("says nothing about an invite to someone who came here directly", async ({ 
   // The page is headed and introduced once: the form beneath it repeats neither.
   await expect(page.getByRole("heading", { name: "Book a free consultation" })).toHaveCount(1);
   await expect(page.getByText(/^Your technician measures your scalp and matches your colour/)).toBeVisible();
-  await expect(page.getByText("An hour, and free. Or have your fit in the same visit.")).toHaveCount(0);
+  await expect(page.getByText(referralCopy.referral.consultation.body)).toHaveCount(0);
   for (const words of invited) await expect(page.getByText(words)).toHaveCount(0);
 
   await openWaitlist(page);
-  await expect(page.getByRole("button", { name: "Add me to the list" })).toBeVisible();
+  await expect(page.getByRole("button", { name: referralCopy.referral.waitlist.submit })).toBeVisible();
   // Where we do not come yet, the page no longer offers to book.
-  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Not in your area yet");
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText(siteCopy.booking.titleWaitlist);
   for (const words of invited) await expect(page.getByText(words)).toHaveCount(0);
 });
 
@@ -559,11 +569,11 @@ test("a pincode we do not serve lists the number kept, with the launch alert off
   await openWaitlist(page);
   await expect(page.getByText("We are not in Bandra yet")).toBeVisible();
   await expect(page.getByText("Step 3 of 3 · The list")).toBeVisible();
-  await expect(page.getByLabel("Name", { exact: true })).toHaveCount(0);
+  await expect(page.getByLabel(siteCopy.tryOn.gate.name, { exact: true })).toHaveCount(0);
 
   await page.getByText("You may contact me about this request.").click();
-  await page.getByText("Tell me when you launch in my area.").click();
-  await page.getByRole("button", { name: "Add me to the list" }).click();
+  await page.getByText(referralCopy.referral.waitlist.launchAlert).click();
+  await page.getByRole("button", { name: referralCopy.referral.waitlist.submit }).click();
 
   await expect(page.getByRole("heading", { name: "You are on the Bandra list" })).toBeVisible();
   expect(requests[0]?.postDataJSON()).toMatchObject({
@@ -581,8 +591,8 @@ test("a booking and a waitlist are both counted, with nothing personal", async (
   await toAddress(page);
   await fillAddress(page);
   await page.getByText("Receding front", { exact: true }).click();
-  await page.getByRole("button", { name: "Book the consultation" }).click();
-  await expect(page.getByText("Booked", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: referralCopy.referral.consultation.submit }).click();
+  await expect(page.getByText(referralCopy.referral.booked.label, { exact: true })).toBeVisible();
   expect(await analyticsEvents(page)).toEqual([
     ["lead_submitted", { page: "book", served: true, area: "Sector 65", window: "morning", loss_extent: "receding" }],
     ["booking_confirmed", { page: "book", area: "Sector 65", window: "morning", state: "booked" }],
@@ -591,7 +601,7 @@ test("a booking and a waitlist are both counted, with nothing personal", async (
 
   await openWaitlist(page);
   await page.getByText("You may contact me about this request.").click();
-  await page.getByRole("button", { name: "Add me to the list" }).click();
+  await page.getByRole("button", { name: referralCopy.referral.waitlist.submit }).click();
   await expect(page.getByRole("heading", { name: "You are on the Bandra list" })).toBeVisible();
   expect(await analyticsEvents(page)).toEqual([
     ["lead_submitted", { page: "book", served: false, area: "Bandra", window: null, loss_extent: null }],
@@ -619,10 +629,10 @@ test("a friend who opened an invite books here with it, and is told the invite's
   await toAddress(page);
   // The form says who is told of the fit before it sends the invite.
   await expect(page.getByText(TOLD)).toBeVisible();
-  await expect(page.getByRole("button", { name: "Book without the invite" })).toBeVisible();
+  await expect(page.getByRole("button", { name: referralCopy.referral.remembered.bookWithout })).toBeVisible();
   await fillAndBook(page);
 
-  await expect(page.getByText("Booked", { exact: true })).toBeVisible();
+  await expect(page.getByText(referralCopy.referral.booked.label, { exact: true })).toBeVisible();
   expect(requests[0]?.postDataJSON()).toMatchObject({ invite_code: CODE, invite_told: true });
   await expect(page.getByText("The 3 service visits land when you are fitted.")).toBeVisible();
   expect(await axeViolations(page)).toEqual([]);
@@ -636,12 +646,12 @@ test("a friend who opened an invite may book here without it, and the browser fo
   await openInvite(page);
   await openForm(page);
   await toAddress(page);
-  await page.getByRole("button", { name: "Book without the invite" }).click();
+  await page.getByRole("button", { name: referralCopy.referral.remembered.bookWithout }).click();
 
   await expect(page.getByText(TOLD)).toBeHidden();
   expect(await remembered(page)).toBeNull();
   await fillAndBook(page);
-  await expect(page.getByText("Booked", { exact: true })).toBeVisible();
+  await expect(page.getByText(referralCopy.referral.booked.label, { exact: true })).toBeVisible();
   expect(requests[0]?.postDataJSON()).not.toHaveProperty("invite_code");
   expect(requests[0]?.postDataJSON()).not.toHaveProperty("invite_told");
 });
@@ -657,9 +667,9 @@ test("a friend who opened an invite joins a waitlist here with it, and is told t
       "You have an invite. It stays valid for 12 months after we launch there. Whoever invited you is told when you are fitted.",
     ),
   ).toBeVisible();
-  await expect(page.getByRole("button", { name: "Join without the invite" })).toBeVisible();
+  await expect(page.getByRole("button", { name: referralCopy.referral.remembered.joinWithout })).toBeVisible();
   await page.getByText("You may contact me about this request.").click();
-  await page.getByRole("button", { name: "Add me to the list" }).click();
+  await page.getByRole("button", { name: referralCopy.referral.waitlist.submit }).click();
 
   await expect(page.getByRole("heading", { name: "You are on the Bandra list" })).toBeVisible();
   expect(requests[0]?.postDataJSON()).toMatchObject({ invite_code: CODE, invite_told: true });
@@ -683,7 +693,7 @@ test("an invite opened more than 30 days ago, or one we do not know, is not sent
     localStorage.setItem("mm_invite", JSON.stringify({ code: "RM4K7P", saved_at: savedAt }));
   }, opened);
   await bookHere(page);
-  await expect(page.getByText("Booked", { exact: true })).toBeVisible();
+  await expect(page.getByText(referralCopy.referral.booked.label, { exact: true })).toBeVisible();
   expect(requests[0]?.postDataJSON()).not.toHaveProperty("invite_code");
   await expect(page.getByText("The 3 service visits land when you are fitted.")).toBeHidden();
   // Past its thirty days it is not kept either, as the privacy page says.
@@ -712,16 +722,16 @@ test("a browser that blocks storage books on the invite's page and here, and sen
   // The invite's page asks for everything in one form, the name and number with it.
   await checkPincode(page, SERVED.pincode);
   await fillAddress(page);
-  await page.getByLabel("Name").fill("Test Visitor");
-  await page.getByLabel("Mobile").fill("9810000000");
+  await page.getByLabel(siteCopy.tryOn.gate.name).fill("Test Visitor");
+  await page.getByLabel(siteCopy.tryOn.gate.mobile).fill("9810000000");
   await page.getByText(CONSULTATION_CONSENT).click();
-  await page.getByRole("button", { name: "Book the consultation" }).click();
-  await expect(page.getByText("Booked", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: referralCopy.referral.consultation.submit }).click();
+  await expect(page.getByText(referralCopy.referral.booked.label, { exact: true })).toBeVisible();
   await expect(page.getByText("The 3 service visits land when you are fitted.")).toBeVisible();
   expect(new URL(requests[0]?.url() ?? "").pathname).toBe(`/api/r/${CODE}/consultation`);
 
   await bookHere(page);
-  await expect(page.getByText("Booked", { exact: true })).toBeVisible();
+  await expect(page.getByText(referralCopy.referral.booked.label, { exact: true })).toBeVisible();
   expect(new URL(requests[1]?.url() ?? "").pathname).toBe("/api/consultation");
   expect(requests[1]?.postDataJSON()).not.toHaveProperty("invite_code");
 });
@@ -737,9 +747,9 @@ test("booking through WhatsApp for now is confirmed as a request, not refused", 
   });
   await bookHere(page);
 
-  await expect(page.getByText("Request received")).toBeVisible();
+  await expect(page.getByText(referralCopy.referral.requested.label)).toBeVisible();
   await expect(page.getByText("On WhatsApp, at +91 98100 00000, to fix the hour.")).toBeVisible();
-  await expect(page.getByRole("button", { name: "Book the consultation" })).toBeHidden();
+  await expect(page.getByRole("button", { name: referralCopy.referral.consultation.submit })).toBeHidden();
 });
 
 // An empty submit left focus on the button, with the first errors two or three screens above it.
@@ -751,10 +761,10 @@ test("an empty first step marks the name, the number and the agreement, focuses 
   await visit(page, "/book");
   await page.getByRole("button", { name: "Continue" }).click();
 
-  await expect(page.getByText("Enter your name in letters.")).toBeVisible();
-  await expect(page.getByText("Enter a valid 10-digit mobile number.")).toBeVisible();
+  await expect(page.getByText(referralCopy.referral.form.nameError)).toBeVisible();
+  await expect(page.getByText(siteCopy.tryOn.gate.mobileError)).toBeVisible();
   await expect(page.getByText("We need this to contact you.")).toBeVisible();
-  await expect(page.getByLabel("Name")).toBeFocused();
+  await expect(page.getByLabel(siteCopy.tryOn.gate.name)).toBeFocused();
   await expect(page.getByText("Check the 3 fields marked above.")).toBeVisible();
   expect(await axeViolations(page)).toEqual([]);
   expect(leads).toHaveLength(0);
@@ -766,11 +776,11 @@ test("an empty address shows each error, announced, brings the first into view, 
   const requests = await mockApi(page);
   await openForm(page);
   await toAddress(page);
-  await page.getByRole("button", { name: "Book the consultation" }).click();
+  await page.getByRole("button", { name: referralCopy.referral.consultation.submit }).click();
 
-  await expect(page.getByText("Enter the building or society.")).toBeVisible();
-  await expect(page.getByText("Enter the sector or area.")).toBeVisible();
-  const flat = page.getByLabel("Flat or house number");
+  await expect(page.getByText(referralCopy.referral.address.errors.line1)).toBeVisible();
+  await expect(page.getByText(referralCopy.referral.address.errors.locality)).toBeVisible();
+  const flat = page.getByLabel(referralCopy.referral.address.labels.flat);
   await expect(flat).toBeFocused();
   await expect(flat).toBeInViewport();
   // The city is the pincode's, so three parts of the address are marked.
@@ -783,12 +793,12 @@ test("a number that is not a mobile is marked at its field, focused, and not sen
   await mockApi(page);
   const leads = await leadCalls(page);
   await visit(page, "/book");
-  await page.getByLabel("Name").fill("Test Visitor");
-  await page.getByLabel("Mobile").fill("5876543210");
+  await page.getByLabel(siteCopy.tryOn.gate.name).fill("Test Visitor");
+  await page.getByLabel(siteCopy.tryOn.gate.mobile).fill("5876543210");
   await page.getByText(CONSULTATION_CONSENT).click();
   await page.getByRole("button", { name: "Continue" }).click();
 
-  const mobile = page.getByLabel("Mobile");
+  const mobile = page.getByLabel(siteCopy.tryOn.gate.mobile);
   await expect(mobile).toHaveAttribute("aria-invalid", "true");
   await expect(mobile).toHaveAccessibleDescription("Enter a valid 10-digit mobile number.");
   await expect(mobile).toBeFocused();
@@ -801,12 +811,12 @@ test("a name that is not letters is marked at its field, focused, and not sent",
   await mockApi(page);
   const leads = await leadCalls(page);
   await visit(page, "/book");
-  await page.getByLabel("Name").fill("Win at example.com");
-  await page.getByLabel("Mobile").fill("9810000000");
+  await page.getByLabel(siteCopy.tryOn.gate.name).fill("Win at example.com");
+  await page.getByLabel(siteCopy.tryOn.gate.mobile).fill("9810000000");
   await page.getByText(CONSULTATION_CONSENT).click();
   await page.getByRole("button", { name: "Continue" }).click();
 
-  const name = page.getByLabel("Name");
+  const name = page.getByLabel(siteCopy.tryOn.gate.name);
   await expect(name).toHaveAttribute("aria-invalid", "true");
   await expect(name).toHaveAccessibleDescription("Enter your name in letters.");
   await expect(name).toBeFocused();
@@ -822,12 +832,12 @@ test("the fields the API refuses are marked where they are, the first focused, a
     route.fulfill({ status: 400, json: { error: { code: "invalid_request", request_id: "r", fields: ["mobile"] } } }),
   );
   await visit(page, "/book");
-  await page.getByLabel("Name").fill("Test Visitor");
-  await page.getByLabel("Mobile").fill("9810000000");
+  await page.getByLabel(siteCopy.tryOn.gate.name).fill("Test Visitor");
+  await page.getByLabel(siteCopy.tryOn.gate.mobile).fill("9810000000");
   await page.getByText(CONSULTATION_CONSENT).click();
   await page.getByRole("button", { name: "Continue" }).click();
 
-  const mobile = page.getByLabel("Mobile");
+  const mobile = page.getByLabel(siteCopy.tryOn.gate.mobile);
   await expect(mobile).toHaveAttribute("aria-invalid", "true");
   await expect(mobile).toHaveAccessibleDescription("Enter a valid 10-digit mobile number.");
   await expect(mobile).toBeFocused();
@@ -842,7 +852,7 @@ test("the address the API refuses is marked where it is, focused, and not blamed
   const requests = await mockApi(page, { consultation: { status: 400, body: refused } });
   await bookHere(page);
 
-  const flat = page.getByLabel("Flat or house number");
+  const flat = page.getByLabel(referralCopy.referral.address.labels.flat);
   await expect(flat).toHaveAttribute("aria-invalid", "true");
   await expect(flat).toBeFocused();
   await expect(flat).toBeInViewport();
@@ -853,7 +863,7 @@ test("the address the API refuses is marked where it is, focused, and not blamed
 test("an empty waitlist submit marks the agreement, and sends nothing", async ({ page }) => {
   const requests = await mockApi(page);
   await openWaitlist(page);
-  await page.getByRole("button", { name: "Add me to the list" }).click();
+  await page.getByRole("button", { name: referralCopy.referral.waitlist.submit }).click();
 
   await expect(page.getByText("We need this to contact you.")).toBeVisible();
   await expect(page.getByRole("checkbox", { name: /You may contact me about this request\./ })).toHaveAttribute(
@@ -873,18 +883,18 @@ test("draws full days and windows closed, and starts on the first open one", asy
   );
   await openForm(page);
 
-  const days = page.getByRole("group", { name: "Pick a date" }).getByRole("radio");
+  const days = page.getByRole("group", { name: referralCopy.referral.consultation.date }).getByRole("radio");
   await expect(days.nth(0)).toBeDisabled();
   await expect(days.nth(1)).toBeChecked();
-  const windows = page.getByRole("group", { name: "Window" });
+  const windows = page.getByRole("group", { name: referralCopy.referral.consultation.window });
   await expect(windows.getByRole("radio", { name: /^Morning/ })).toBeDisabled();
-  await expect(windows.getByText("Full", { exact: true })).toBeVisible();
+  await expect(windows.getByText(referralCopy.referral.consultation.full, { exact: true })).toBeVisible();
   await expect(windows.getByRole("radio", { name: /^Afternoon/ })).toBeChecked();
   expect(asked[0]?.searchParams.toString()).toBe("pincode=122018&plan=consultation");
   expect(await axeViolations(page)).toEqual([]);
 
   await continueAndBook(page);
-  await expect(page.getByText("Booked", { exact: true })).toBeVisible();
+  await expect(page.getByText(referralCopy.referral.booked.label, { exact: true })).toBeVisible();
   expect(requests[0]?.postDataJSON()).toMatchObject({ date: "2026-10-04", window: "afternoon" });
 });
 
@@ -895,10 +905,13 @@ test("asks again for one visit, whose three hours may not fit where a consultati
     plan === "one_visit" ? openDays({ "2026-10-03": FULL }) : openDays(),
   );
   await openForm(page);
-  const days = page.getByRole("group", { name: "Pick a date" }).getByRole("radio");
+  const days = page.getByRole("group", { name: referralCopy.referral.consultation.date }).getByRole("radio");
   await expect(days.nth(0)).toBeChecked();
 
-  await page.getByRole("group", { name: "What to book" }).getByText("Consultation and fit · three hours").click();
+  await page
+    .getByRole("group", { name: referralCopy.referral.consultation.plan.legend })
+    .getByText("Consultation and fit · three hours")
+    .click();
 
   await expect(days.nth(0)).toBeDisabled();
   await expect(days.nth(1)).toBeChecked();
@@ -915,20 +928,20 @@ test("a window found full on booking says so back at the visit, and the strip is
     return calls === 1 ? openDays() : openDays({ "2026-10-03": { morning: false, afternoon: true, evening: true } });
   });
   await openForm(page);
-  const windows = page.getByRole("group", { name: "Window" });
+  const windows = page.getByRole("group", { name: referralCopy.referral.consultation.window });
   await expect(windows.getByRole("radio", { name: /^Morning/ })).toBeChecked();
 
   await continueAndBook(page);
 
-  await expect(page.getByText("That time isn’t available. Pick another.")).toBeVisible();
+  await expect(page.getByText(referralCopy.referral.errors.taken)).toBeVisible();
   await expect(windows.getByRole("radio", { name: /^Morning/ })).toBeDisabled();
   await expect(windows.getByRole("radio", { name: /^Afternoon/ })).toBeChecked();
   expect(calls).toBe(2);
 
   // On again, the address typed is still there, and what was said of the window is not.
   await page.getByRole("button", { name: "Continue" }).click();
-  await expect(page.getByLabel("Flat or house number")).toHaveValue("Flat 402");
-  await expect(page.getByText("That time isn’t available. Pick another.")).toHaveCount(0);
+  await expect(page.getByLabel(referralCopy.referral.address.labels.flat)).toHaveValue("Flat 402");
+  await expect(page.getByText(referralCopy.referral.errors.taken)).toHaveCount(0);
 });
 
 test("a fortnight with nothing open says so, and offers WhatsApp", async ({ page }) => {
@@ -937,14 +950,16 @@ test("a fortnight with nothing open says so, and offers WhatsApp", async ({ page
   await answerOpen(page, () => openDays({}, FULL));
   await openForm(page);
 
-  await expect(page.getByText("Fully booked for the next two weeks.")).toBeVisible();
-  await expect(page.getByRole("link", { name: "Message us on WhatsApp for the next opening" })).toHaveAttribute(
+  await expect(page.getByText(referralCopy.referral.consultation.noneOpen)).toBeVisible();
+  await expect(page.getByRole("link", { name: referralCopy.referral.consultation.noneOpenAction })).toHaveAttribute(
     "href",
     /^https:\/\/wa\.me\/91\d{10}$/,
   );
-  const days = page.getByRole("group", { name: "Pick a date" }).getByRole("radio");
+  const days = page.getByRole("group", { name: referralCopy.referral.consultation.date }).getByRole("radio");
   await expect(days).toHaveCount(14);
-  await expect(page.getByRole("group", { name: "Pick a date" }).getByRole("radio", { disabled: false })).toHaveCount(0);
+  await expect(
+    page.getByRole("group", { name: referralCopy.referral.consultation.date }).getByRole("radio", { disabled: false }),
+  ).toHaveCount(0);
   // There is no visit to go on from.
   await expect(page.getByRole("button", { name: "Continue" })).toHaveCount(0);
 });
@@ -960,24 +975,28 @@ test("Back steps back through the page, and Forward returns to the confirmation"
   await expect(page.getByLabel("Pincode")).toHaveValue(SERVED.pincode);
   await expect(page.getByLabel("Pincode")).toBeFocused();
   await page.goBack();
-  await expect(page.getByLabel("Name")).toHaveValue("Test Visitor");
+  await expect(page.getByLabel(siteCopy.tryOn.gate.name)).toHaveValue("Test Visitor");
   await page.goForward();
   await expect(page.getByLabel("Pincode")).toBeFocused();
   await page.goForward();
   await expect(page.getByRole("heading", { name: "We come to Sector 65" })).toBeFocused();
 
-  await page.getByRole("group", { name: "Window" }).getByText("Afternoon").click();
+  await page.getByRole("group", { name: referralCopy.referral.consultation.window }).getByText("Afternoon").click();
   await toAddress(page);
   await page.goBack();
-  await expect(page.getByRole("group", { name: "Window" }).getByRole("radio", { name: /^Afternoon/ })).toBeChecked();
+  await expect(
+    page
+      .getByRole("group", { name: referralCopy.referral.consultation.window })
+      .getByRole("radio", { name: /^Afternoon/ }),
+  ).toBeChecked();
   await page.goForward();
   await fillAndBook(page);
-  await expect(page.getByText("Booked", { exact: true })).toBeVisible();
+  await expect(page.getByText(referralCopy.referral.booked.label, { exact: true })).toBeVisible();
   await page.goBack();
   await expect(page.getByRole("heading", { name: "We come to Sector 65" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Book the consultation" })).toBeVisible();
+  await expect(page.getByRole("button", { name: referralCopy.referral.consultation.submit })).toBeVisible();
   await page.goForward();
-  await expect(page.getByText("Booked", { exact: true })).toBeVisible();
+  await expect(page.getByText(referralCopy.referral.booked.label, { exact: true })).toBeVisible();
 });
 
 // Fourteen tiles read "Sat 31 … Fri 6" with no month, and a screen reader heard "Sat 31".
@@ -986,7 +1005,7 @@ test("the date strip names its months, and each day in full to a screen reader",
   await mockApi(page);
   await openForm(page);
 
-  const dates = page.getByRole("group", { name: "Pick a date" });
+  const dates = page.getByRole("group", { name: referralCopy.referral.consultation.date });
   await expect(dates.getByText("October – November")).toBeVisible();
   const days = dates.getByRole("radio");
   await expect(days.first()).toHaveAccessibleName("Saturday 24 October");
@@ -1001,19 +1020,19 @@ test("the address asks for the street once, and folds the floor, tower and landm
   await openForm(page);
   await toAddress(page);
 
-  const address = page.getByRole("group", { name: "Your address" });
-  await expect(address.getByLabel("Building or society")).toBeVisible();
-  await expect(address.getByLabel("Street (optional)")).toBeVisible();
+  const address = page.getByRole("group", { name: siteCopy.booking.steps.address });
+  await expect(address.getByLabel(referralCopy.referral.address.labels.line1)).toBeVisible();
+  await expect(address.getByLabel(referralCopy.referral.address.labels.line2)).toBeVisible();
   for (const folded of ["Floor (optional)", "Tower or block (optional)", "Landmark (optional)"]) {
     await expect(address.getByLabel(folded)).toHaveCount(0);
   }
-  await address.getByRole("button", { name: "Add floor, tower or landmark" }).click();
-  await expect(address.getByLabel("Floor (optional)")).toBeFocused();
-  await expect(address.getByRole("button", { name: "Add floor, tower or landmark" })).toHaveCount(0);
-  await address.getByLabel("Tower or block (optional)").fill("Tower C");
+  await address.getByRole("button", { name: referralCopy.referral.address.more }).click();
+  await expect(address.getByLabel(referralCopy.referral.address.labels.floor)).toBeFocused();
+  await expect(address.getByRole("button", { name: referralCopy.referral.address.more })).toHaveCount(0);
+  await address.getByLabel(referralCopy.referral.address.labels.tower).fill("Tower C");
 
   await fillAndBook(page);
-  await expect(page.getByText("Booked", { exact: true })).toBeVisible();
+  await expect(page.getByText(referralCopy.referral.booked.label, { exact: true })).toBeVisible();
   expect((requests[0]?.postDataJSON() as { address: Record<string, unknown> }).address).toMatchObject({
     tower: "Tower C",
     line1: "Palm Grove Society",
@@ -1025,7 +1044,7 @@ test("chooses nothing for the visitor where the hair loss is", async ({ page }) 
   await mockApi(page);
   await openForm(page);
   await toAddress(page);
-  const extent = page.getByRole("group", { name: "Extent of hair loss (optional)" });
+  const extent = page.getByRole("group", { name: siteCopy.booking.extent });
   await expect(extent.getByRole("radio")).toHaveCount(3);
   for (const choice of await extent.getByRole("radio").all()) await expect(choice).not.toBeChecked();
 });
@@ -1034,11 +1053,11 @@ test("chooses nothing for the visitor where the hair loss is", async ({ page }) 
 test("an empty pincode is asked for, and Change is a full-size target", async ({ page }) => {
   await mockApi(page);
   await openAtPincode(page);
-  await page.getByRole("button", { name: "Check" }).click();
-  await expect(page.getByText("Enter your pincode.")).toBeVisible();
+  await page.getByRole("button", { name: referralCopy.referral.pincode.check }).click();
+  await expect(page.getByText(referralCopy.referral.pincode.empty)).toBeVisible();
 
   await checkPincode(page, SERVED.pincode);
-  const change = page.getByRole("button", { name: "Change the pincode" });
+  const change = page.getByRole("button", { name: referralCopy.referral.pincode.changeLabel });
   const box = await change.boundingBox();
   expect(box?.height ?? 0).toBeGreaterThanOrEqual(44);
   expect(box?.width ?? 0).toBeGreaterThanOrEqual(44);

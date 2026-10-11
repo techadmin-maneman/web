@@ -9,6 +9,7 @@ import { expect, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
 import { fittedClient } from "./fitted.ts";
 import { logIn } from "./signed-in.ts";
+import * as appCopy from "../../apps/app/src/content.ts";
 
 type Dispute = "open" | "refunded" | "upheld" | null;
 
@@ -57,7 +58,7 @@ test("sends the dispute with the client's words, and says it is with us", async 
   await page.getByRole("button", { name: "Dispute this charge" }).click();
   const sheet = page.getByRole("dialog", { name: "Dispute this charge" });
   await expect(sheet.getByRole("button", { name: "Send" })).toBeDisabled();
-  await sheet.getByLabel("Why is the charge wrong?").fill("I was home all morning. Nobody rang the bell.");
+  await sheet.getByLabel(appCopy.dispute.label).fill("I was home all morning. Nobody rang the bell.");
   const sent = page.waitForRequest((request) => request.url().endsWith(disputed) && request.method() === "POST");
   await sheet.getByRole("button", { name: "Send" }).click();
   expect((await sent).postDataJSON()).toEqual({ reason: "I was home all morning. Nobody rang the bell." });
@@ -74,7 +75,7 @@ test("says the days to dispute have passed, when they pass while the sheet is op
   await page.route(`**${disputed}`, (route) => route.fulfill({ status: 409, json: closed }));
   await page.getByRole("button", { name: "Dispute this charge" }).click();
   const sheet = page.getByRole("dialog", { name: "Dispute this charge" });
-  await sheet.getByLabel("Why is the charge wrong?").fill("I was home all morning.");
+  await sheet.getByLabel(appCopy.dispute.label).fill("I was home all morning.");
   await sheet.getByRole("button", { name: "Send" }).click();
   await expect(page.getByRole("dialog").getByRole("status")).toContainText(
     "The time to dispute this charge has passed.",
@@ -90,20 +91,20 @@ test("says when the days to dispute the charge ended, and offers no dispute", as
 
 test("says a dispute is being looked at, and offers no second one", async ({ page }) => {
   await charged(page, "open");
-  await expect(page.getByText("You disputed this charge. We are looking at it.")).toBeVisible();
+  await expect(page.getByText(appCopy.visits.detail.noShow.disputed.open)).toBeVisible();
   await expect(page.getByRole("button", { name: "Dispute this charge" })).toHaveCount(0);
 });
 
 test("says how ops ruled on the dispute", async ({ page }) => {
   await charged(page, "upheld");
   await expect(page.getByText("Charged: we kept Rs. 4,000 of what you paid.")).toBeVisible();
-  await expect(page.getByText("We looked at your dispute. The charge stands.")).toBeVisible();
+  await expect(page.getByText(appCopy.visits.detail.noShow.disputed.upheld)).toBeVisible();
 });
 
 // A refund undoes the charge, so the page says only the outcome, never "we kept" above "refunded".
 test("says only that the charge was refunded, once ops refund it", async ({ page }) => {
   await charged(page, "refunded");
-  await expect(page.getByText("We looked at your dispute and refunded the charge.")).toBeVisible();
+  await expect(page.getByText(appCopy.visits.detail.noShow.disputed.refunded)).toBeVisible();
   await expect(page.getByText("Charged: we kept Rs. 4,000 of what you paid.")).toHaveCount(0);
 });
 

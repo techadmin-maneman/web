@@ -9,20 +9,21 @@ import { axeViolations } from "../a11y.ts";
 import { CODE } from "./signed-in.ts";
 import { bookedNumber } from "./booked-numbers.ts";
 import { holdOpen } from "./one-tap.ts";
+import * as appCopy from "../../apps/app/src/content.ts";
 
 const WRONG = "135791";
 
 async function sendCode(page: Page, mobile: string): Promise<void> {
   await page.goto("/");
-  await page.getByRole("textbox", { name: "Mobile number" }).fill(mobile);
-  await page.getByRole("button", { name: "Send code on WhatsApp" }).click();
+  await page.getByRole("textbox", { name: appCopy.login.mobile.label }).fill(mobile);
+  await page.getByRole("button", { name: appCopy.login.mobile.send }).click();
   await expect(page.getByRole("heading", { level: 1, name: "Enter the code" })).toBeVisible();
 }
 
 /** The sixth digit sends the code. After a wrong one the client waits for its answer, clears it and types again. */
 async function enter(page: Page, code: string): Promise<void> {
   await expect(page.getByRole("button", { name: "Continue" })).not.toHaveAttribute("aria-busy", "true");
-  const field = page.getByRole("textbox", { name: "The six-digit code" });
+  const field = page.getByRole("textbox", { name: appCopy.login.code.label });
   await field.clear();
   await field.fill(code);
 }
@@ -38,9 +39,9 @@ test("a booked number logs in with its code and lands on its consultation", asyn
   await expect(page.getByText("Gurgaon", { exact: true })).toBeVisible();
   await expect(page.getByText("Free", { exact: true })).toBeVisible();
   // The site's first form booked nothing: ops confirm the time.
-  await expect(page.getByText("Requested · we confirm the time on WhatsApp")).toBeVisible();
-  await expect(page.getByRole("link", { name: "Your profile" })).toHaveText("RM");
-  await expect(page.getByRole("link", { name: "Reschedule" })).toHaveAttribute(
+  await expect(page.getByText(appCopy.home.consultation.requested)).toBeVisible();
+  await expect(page.getByRole("link", { name: appCopy.titles.profile })).toHaveText("RM");
+  await expect(page.getByRole("link", { name: appCopy.home.reschedule })).toHaveAttribute(
     "href",
     /^https:\/\/wa\.me\/919007973247\?text=/,
   );
@@ -53,7 +54,7 @@ test("the session survives a reload, and logging out ends it", async ({ page }) 
 
   await page.reload();
   await expect(page.getByRole("heading", { name: "Your consultation" })).toBeVisible();
-  await page.getByRole("link", { name: "Your profile" }).click();
+  await page.getByRole("link", { name: appCopy.titles.profile }).click();
   await page.getByRole("button", { name: "Sign out" }).click();
   await expect(page.getByRole("heading", { level: 1, name: "Your mobile number" })).toBeVisible();
   await page.reload();
@@ -74,12 +75,12 @@ test("a session that ends mid-use goes back to the login, says why, and returns 
   await page.context().clearCookies();
   await page.getByRole("navigation").getByRole("link", { name: "Payments" }).click();
   await expect(page.getByRole("heading", { level: 1, name: "Your mobile number" })).toBeVisible();
-  await expect(page.getByText("You’ve been signed out. Sign in to continue.")).toBeVisible();
+  await expect(page.getByText(appCopy.login.mobile.ended)).toBeVisible();
   expect(await page.evaluate(() => caches.has("mm-app-home"))).toBe(false);
   await expect(page).toHaveURL(/\/payments$/);
 
-  await page.getByRole("textbox", { name: "Mobile number" }).fill(mobile);
-  await page.getByRole("button", { name: "Send code on WhatsApp" }).click();
+  await page.getByRole("textbox", { name: appCopy.login.mobile.label }).fill(mobile);
+  await page.getByRole("button", { name: appCopy.login.mobile.send }).click();
   await enter(page, CODE);
   await expect(page.getByText("Nothing to pay yet.")).toBeVisible();
 });
@@ -89,8 +90,8 @@ test("logging out takes the API's word for it: offline it waits, and a refusal k
 }) => {
   await sendCode(page, bookedNumber());
   await enter(page, CODE);
-  await page.getByRole("link", { name: "Your profile" }).click();
-  await expect(page.getByRole("heading", { name: "Where we come" })).toBeVisible();
+  await page.getByRole("link", { name: appCopy.titles.profile }).click();
+  await expect(page.getByRole("heading", { name: appCopy.profile.where })).toBeVisible();
   const logOut = page.getByRole("button", { name: "Sign out" });
 
   await page.context().setOffline(true);
@@ -105,7 +106,7 @@ test("logging out takes the API's word for it: offline it waits, and a refusal k
   await expect(page.getByRole("alert")).toHaveText(
     "That didn’t go through, so you’re still signed in here. Try again.",
   );
-  await expect(page.getByRole("heading", { name: "Where we come" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: appCopy.profile.where })).toBeVisible();
 });
 
 test("the tabs reach Visits and the empty Photos, Payments and Refer", async ({ page }) => {
@@ -119,7 +120,7 @@ test("the tabs reach Visits and the empty Photos, Payments and Refer", async ({ 
   await tabs.getByRole("link", { name: "Photos" }).click();
   await expect(page.getByText("Your photos begin at your first visit.")).toBeVisible();
   // Nothing to show yet, so the site's try-on, whose look comes back here.
-  await expect(page.getByRole("link", { name: "Try a look on yourself" })).toHaveAttribute(
+  await expect(page.getByRole("link", { name: appCopy.empty.photos.tryOn })).toHaveAttribute(
     "href",
     "http://127.0.0.1:4321/try",
   );
@@ -134,7 +135,7 @@ test("the tabs reach Visits and the empty Photos, Payments and Refer", async ({ 
 
 test("a wrong code says so, in the design's words, and the fifth voids it", async ({ page }) => {
   await sendCode(page, bookedNumber());
-  const field = page.getByRole("textbox", { name: "The six-digit code" });
+  const field = page.getByRole("textbox", { name: appCopy.login.code.label });
   for (const left of ["Four attempts left.", "Three attempts left.", "Two attempts left.", "One attempt left."]) {
     await enter(page, WRONG);
     await expect(page.getByRole("alert")).toHaveText(`That code didn’t match. ${left}`);
@@ -150,7 +151,7 @@ test("a wrong code says so, in the design's words, and the fifth voids it", asyn
   await field.fill("2");
   await expect(page.getByRole("alert")).toHaveText("That code didn’t match, and it no longer works.");
 
-  await page.getByRole("button", { name: "Send a new code" }).click();
+  await page.getByRole("button", { name: appCopy.login.code.fresh }).click();
   await expect(page.getByRole("alert")).toHaveCount(0);
   await enter(page, CODE);
   await expect(page.getByRole("heading", { name: "Your consultation" })).toBeVisible();
@@ -164,7 +165,7 @@ test("asks for one fresh code when the client taps for one twice", async ({ page
   // A second code bills a second send, voids the first, and takes another from the day's
   // ceiling for this number: two taps can leave a client unable to log in at all.
   const held = await holdOpen(page, "**/api/auth/otp");
-  const fresh = page.getByRole("button", { name: "Send a new code" });
+  const fresh = page.getByRole("button", { name: appCopy.login.code.fresh });
   await fresh.click();
   const liveWhileBusy = await fresh.isEnabled();
   // Forced, because the tap this guards against is one the client makes whether it is taken or not.
@@ -190,7 +191,7 @@ test("says to use the last code when no other can be sent just now", async ({ pa
   await page.route("**/api/auth/otp/resend", (route) =>
     route.fulfill({ status: 429, json: { error: { code: "rate_limited", request_id: "e2e" } } }),
   );
-  await page.getByRole("button", { name: "Resend on WhatsApp" }).click();
+  await page.getByRole("button", { name: appCopy.login.code.resend }).click();
   await expect(page.getByRole("alert")).toHaveText(
     "We can’t send another code right now. Use the last one we sent, or message us.",
   );
@@ -205,8 +206,8 @@ test("a number out of codes for the day is told so, with WhatsApp under the line
     route.fulfill({ status: 429, json: { error: { code: "rate_limited", request_id: "e2e" } } }),
   );
   await page.goto("/");
-  await page.getByRole("textbox", { name: "Mobile number" }).fill(randomMobile());
-  await page.getByRole("button", { name: "Send code on WhatsApp" }).click();
+  await page.getByRole("textbox", { name: appCopy.login.mobile.label }).fill(randomMobile());
+  await page.getByRole("button", { name: appCopy.login.mobile.send }).click();
   await expect(page.getByRole("alert")).toHaveText(
     "Too many codes for this number today. Try again tomorrow, or message us.",
   );
@@ -227,10 +228,10 @@ test("a number with no booking sees the same screen, and no code opens it", asyn
 test("a link from the site's booking fills in its number, and the code is still asked for", async ({ page }) => {
   const mobile = randomMobile();
   await page.goto(`/#mobile=${mobile}`);
-  await expect(page.getByRole("textbox", { name: "Mobile number" })).toHaveValue(mobile);
+  await expect(page.getByRole("textbox", { name: appCopy.login.mobile.label })).toHaveValue(mobile);
   // The number is taken off the address at once, so it is not left in the browser's history.
   await expect(page).not.toHaveURL(/mobile=/);
-  await page.getByRole("button", { name: "Send code on WhatsApp" }).click();
+  await page.getByRole("button", { name: appCopy.login.mobile.send }).click();
   await expect(page.getByRole("heading", { level: 1, name: "Enter the code" })).toBeVisible();
 });
 
@@ -264,10 +265,10 @@ test("a phone's Back steps back through the login, as its back arrows do, and ne
   // Signed in, the login's steps are behind the client: Back from Home leaves the app, as it did before them.
   const mobile = bookedNumber();
   await page.getByRole("button", { name: "Back" }).click();
-  await page.getByRole("textbox", { name: "Mobile number" }).fill(mobile);
-  await page.getByRole("button", { name: "Send code on WhatsApp" }).click();
+  await page.getByRole("textbox", { name: appCopy.login.mobile.label }).fill(mobile);
+  await page.getByRole("button", { name: appCopy.login.mobile.send }).click();
   await enter(page, CODE);
-  await expect(page.getByRole("link", { name: "Your profile" })).toBeVisible();
+  await expect(page.getByRole("link", { name: appCopy.titles.profile })).toBeVisible();
   await expect.poll(() => page.evaluate(() => window.history.state as unknown)).toBeNull();
 });
 
@@ -275,15 +276,15 @@ test("the WhatsApp resend counts down from 30 seconds, and SMS is offered after 
   await page.clock.install();
   await sendCode(page, randomMobile());
   await expect(page.getByText(/^Resend on WhatsApp in 30s$/)).toBeVisible();
-  await expect(page.getByRole("button", { name: "Send by SMS instead" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: appCopy.login.code.sms })).toHaveCount(0);
   await page.clock.runFor(12_000);
   await expect(page.getByText(/^Resend on WhatsApp in 18s$/)).toBeVisible();
   await page.clock.runFor(18_000);
-  await expect(page.getByRole("button", { name: "Resend on WhatsApp" })).toBeVisible();
+  await expect(page.getByRole("button", { name: appCopy.login.code.resend })).toBeVisible();
   // The local API has the stub SMS provider, so SMS is available here.
-  await expect(page.getByRole("button", { name: "Send by SMS instead" })).toBeVisible();
+  await expect(page.getByRole("button", { name: appCopy.login.code.sms })).toBeVisible();
   // The count is shown and not spoken; that it has run out is said once.
-  await expect(page.getByRole("status")).toHaveText("You can ask for a new code now.");
+  await expect(page.getByRole("status")).toHaveText(appCopy.login.code.canResend);
 });
 
 test("the resend's count runs from when the code was sent, across the help screen and back", async ({ page }) => {
@@ -298,7 +299,7 @@ test("the resend's count runs from when the code was sent, across the help scree
 test("says the code is read automatically only when it comes by SMS, the one a phone can read", async ({ page }) => {
   await page.clock.install();
   await sendCode(page, bookedNumber());
-  await expect(page.getByText("Read automatically where your phone allows")).toHaveCount(0);
+  await expect(page.getByText(appCopy.login.code.automatic)).toHaveCount(0);
   await page.clock.runFor(31_000);
   // The API counts its 30 seconds on its own clock, which the page's has run ahead of, so it answers here.
   await page.route("**/api/auth/otp/sms", (route) =>
@@ -313,9 +314,9 @@ test("says the code is read automatically only when it comes by SMS, the one a p
       },
     }),
   );
-  await page.getByRole("button", { name: "Send by SMS instead" }).click();
+  await page.getByRole("button", { name: appCopy.login.code.sms }).click();
   await expect(page.getByText("a code is on its way by SMS.")).toBeVisible();
-  await expect(page.getByText("Read automatically where your phone allows")).toBeVisible();
+  await expect(page.getByText(appCopy.login.code.automatic)).toBeVisible();
 });
 
 test("names each login screen in the browser's title, and puts focus where the client carries on", async ({ page }) => {
@@ -323,7 +324,7 @@ test("names each login screen in the browser's title, and puts focus where the c
   await expect(page).toHaveTitle("Your mobile number · Mane Man");
   await sendCode(page, bookedNumber());
   await expect(page).toHaveTitle("Enter the code · Mane Man");
-  const field = page.getByRole("textbox", { name: "The six-digit code" });
+  const field = page.getByRole("textbox", { name: appCopy.login.code.label });
   await expect(field).toBeFocused();
 
   await enter(page, WRONG);
@@ -355,15 +356,15 @@ test("offers no SMS where the API has no SMS provider", async ({ page }) => {
   );
   await sendCode(page, randomMobile());
   await page.clock.runFor(31_000);
-  await expect(page.getByRole("button", { name: "Resend on WhatsApp" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Send by SMS instead" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: appCopy.login.code.resend })).toBeVisible();
+  await expect(page.getByRole("button", { name: appCopy.login.code.sms })).toHaveCount(0);
 });
 
 test("an invalid number is caught before it is sent", async ({ page }) => {
   await page.goto("/");
-  await page.getByRole("textbox", { name: "Mobile number" }).fill("12345");
-  await page.getByRole("button", { name: "Send code on WhatsApp" }).click();
-  await expect(page.getByRole("alert")).toHaveText("Enter the ten-digit mobile number you booked with.");
+  await page.getByRole("textbox", { name: appCopy.login.mobile.label }).fill("12345");
+  await page.getByRole("button", { name: appCopy.login.mobile.send }).click();
+  await expect(page.getByRole("alert")).toHaveText(appCopy.login.mobile.errors.invalid);
 });
 
 test("each login screen, and Home, meets WCAG 2.2 AA", async ({ page }) => {

@@ -12,6 +12,7 @@ import type { Page } from "@playwright/test";
 import { expect, test } from "../support.ts";
 import { fails, json, PRICE_ROWS, SERVICES } from "./fixtures.ts";
 import { open, posted } from "./settings-fixtures.ts";
+import * as opsCopy from "../../apps/ops/src/content.ts";
 
 // The services clients book, a table a kind (docs/decisions/0085-services-ops-can-edit.md). A price is still a row
 // from its day: the one in force and the next show in the row, and a row's Edit opens the rest; a service is added,
@@ -72,7 +73,7 @@ test.describe("the services and their prices", () => {
     await open(page, "/prices");
     await edit(page, "Service visit");
     await page.getByRole("button", { name: "Change the price of Service visit" }).click();
-    await expect(page.getByLabel("Price before GST, in rupees")).toHaveValue("2000");
+    await expect(page.getByLabel(opsCopy.settings.services.form.amount)).toHaveValue("2000");
     await expect(page.getByLabel("GST", { exact: true })).toHaveValue("18");
   });
 
@@ -81,7 +82,7 @@ test.describe("the services and their prices", () => {
     await open(page, "/prices");
     await edit(page, "Service visit");
     await page.getByRole("button", { name: "Change the price of Service visit" }).click();
-    const from = page.getByLabel("Starts");
+    const from = page.getByLabel(opsCopy.settings.services.form.from);
     await expect(from).toHaveValue("2027-09-22");
     await expect(from).toHaveAttribute("min", "2027-09-22");
   });
@@ -96,9 +97,9 @@ test.describe("the services and their prices", () => {
     });
     await edit(page, "Service visit");
     await page.getByRole("button", { name: "Change the price of Service visit" }).click();
-    await page.getByLabel("Price before GST, in rupees").fill("2500");
+    await page.getByLabel(opsCopy.settings.services.form.amount).fill("2500");
     await page.getByLabel("GST", { exact: true }).fill("0");
-    await page.getByLabel("Starts").fill("2027-11-01");
+    await page.getByLabel(opsCopy.settings.services.form.from).fill("2027-11-01");
     await page.getByRole("button", { name: "Review" }).click();
 
     const check = page.getByRole("group", { name: "Review the change" });
@@ -108,7 +109,7 @@ test.describe("the services and their prices", () => {
     expect(sent).toBe(0);
 
     const request = posted(page, "/api/prices");
-    await check.getByRole("button", { name: "Set price" }).click();
+    await check.getByRole("button", { name: opsCopy.settings.services.form.setPrice }).click();
     expect((await request).postDataJSON()).toEqual({
       item: "service",
       tier: "standard",
@@ -116,7 +117,7 @@ test.describe("the services and their prices", () => {
       gst_percent: 0,
       valid_from: "2027-11-01",
     });
-    await expect(page.getByRole("status").filter({ hasText: "Price set." })).toBeVisible();
+    await expect(page.getByRole("status").filter({ hasText: opsCopy.settings.services.done.price })).toBeVisible();
   });
 
   test("goes back to the form without sending when the change is not the one meant", async ({ page }) => {
@@ -134,7 +135,7 @@ test.describe("the services and their prices", () => {
     await open(page, "/prices");
     await edit(page, "Service visit");
     await page.getByRole("button", { name: "Change the price of Service visit" }).click();
-    const from = page.getByLabel("Starts");
+    const from = page.getByLabel(opsCopy.settings.services.form.from);
     await from.fill("2027-09-21");
     await expect(from).toHaveAttribute("aria-invalid", "true");
     await expect(from).toHaveAccessibleDescription("Choose tomorrow or later.");
@@ -148,7 +149,10 @@ test.describe("the services and their prices", () => {
     await edit(page, "Service visit");
     await page.getByRole("button", { name: "Change the price of Service visit" }).click();
     await page.getByRole("button", { name: "Review" }).click();
-    await page.getByRole("group", { name: "Review the change" }).getByRole("button", { name: "Set price" }).click();
+    await page
+      .getByRole("group", { name: "Review the change" })
+      .getByRole("button", { name: opsCopy.settings.services.form.setPrice })
+      .click();
     await expect(page.getByRole("alert")).toContainText("starts tomorrow at the earliest");
   });
 
@@ -157,7 +161,7 @@ test.describe("the services and their prices", () => {
     await edit(page, "Premium");
     await page.getByRole("button", { name: "Change the price of Premium" }).click();
     await page.getByRole("button", { name: "Review" }).click();
-    await page.getByRole("button", { name: "Set price" }).click();
+    await page.getByRole("button", { name: opsCopy.settings.services.form.setPrice }).click();
     await expect(page.getByRole("alert")).toContainText("It's retired by then");
   });
 
@@ -170,26 +174,26 @@ test.describe("the services and their prices", () => {
     await expect(asked).toBeFocused();
 
     const request = posted(page, "/api/prices/withdraw");
-    await asked.getByRole("button", { name: "Confirm withdrawal" }).click();
+    await asked.getByRole("button", { name: opsCopy.settings.services.check.takeBackConfirm }).click();
     expect((await request).postDataJSON()).toEqual({ item: "service", tier: "standard", valid_from: "2027-10-01" });
     await expect(row(page, "Service visit")).not.toContainText("Rs. 2,500");
-    await expect(page.getByRole("status").filter({ hasText: "Price withdrawn." })).toBeVisible();
+    await expect(page.getByRole("status").filter({ hasText: opsCopy.settings.services.done.takenBack })).toBeVisible();
   });
 
   test("corrects a price still to come in one go, from the day it had or another", async ({ page }) => {
     await open(page, "/prices", { "POST /api/prices/correct": json({ prices: PRICE_ROWS }) });
     await edit(page, "Service visit");
     await page.getByRole("button", { name: "Correct the Service visit price from 1 Oct 2027" }).click();
-    await expect(page.getByLabel("Price before GST, in rupees")).toHaveValue("2500");
-    await expect(page.getByLabel("Starts")).toHaveValue("2027-10-01");
-    await page.getByLabel("Starts").fill("2027-10-05");
+    await expect(page.getByLabel(opsCopy.settings.services.form.amount)).toHaveValue("2500");
+    await expect(page.getByLabel(opsCopy.settings.services.form.from)).toHaveValue("2027-10-01");
+    await page.getByLabel(opsCopy.settings.services.form.from).fill("2027-10-05");
     await page.getByRole("button", { name: "Review" }).click();
     await expect(page.getByRole("group", { name: "Review the change" })).toContainText(
       "Service visit: Rs. 2,500 + 18% GST from 1 Oct 2027 → Rs. 2,500 + 18% GST from 5 Oct 2027.",
     );
 
     const request = posted(page, "/api/prices/correct");
-    await page.getByRole("button", { name: "Set price" }).click();
+    await page.getByRole("button", { name: opsCopy.settings.services.form.setPrice }).click();
     expect((await request).postDataJSON()).toEqual({
       item: "service",
       tier: "standard",
@@ -211,10 +215,10 @@ test.describe("the services and their prices", () => {
     page,
   }) => {
     await open(page, "/prices", { "POST /api/services": json(SERVICES, 201) });
-    await page.getByRole("button", { name: "Add a hair system" }).click();
+    await page.getByRole("button", { name: opsCopy.settings.services.actions.addHairSystem }).click();
     await page.getByLabel("Name", { exact: true }).fill("Thin skin");
     await expect(page.getByLabel("Code")).toHaveValue("thin_skin");
-    await expect(page.getByLabel("Length, in minutes")).toHaveValue("180");
+    await expect(page.getByLabel(opsCopy.settings.services.form.minutes)).toHaveValue("180");
     await page.getByRole("button", { name: "Review" }).click();
     await expect(page.getByRole("group", { name: "Review the change" })).toContainText(
       "Add Thin skin to First fit: 180 minutes. Hidden until priced.",
@@ -265,8 +269,8 @@ test.describe("the services and their prices", () => {
     await open(page, "/prices", { "POST /api/services/first_fit/premium/length": json(SERVICES) });
     await edit(page, "Premium");
     await page.getByRole("button", { name: "Change the length of Premium" }).click();
-    await expect(page.getByLabel("Length, in minutes")).toHaveAttribute("max", "360");
-    await page.getByLabel("Length, in minutes").fill("300");
+    await expect(page.getByLabel(opsCopy.settings.services.form.minutes)).toHaveAttribute("max", "360");
+    await page.getByLabel(opsCopy.settings.services.form.minutes).fill("300");
     await page.getByRole("button", { name: "Review" }).click();
     await expect(page.getByRole("group", { name: "Review the change" })).toContainText("Premium: 240 → 300 minutes.");
     const request = posted(page, "/api/services/first_fit/premium/length");
@@ -280,7 +284,7 @@ test.describe("the services and their prices", () => {
     });
     await edit(page, "Replacement");
     await page.getByRole("button", { name: "Retire Replacement" }).click();
-    await page.getByLabel("Hidden from").fill("2027-10-01");
+    await page.getByLabel(opsCopy.settings.services.form.retireFrom).fill("2027-10-01");
     await page.getByRole("button", { name: "Review" }).click();
     await expect(page.getByRole("group", { name: "Review the change" })).toContainText(
       "Replacement is hidden from 1 Oct 2027.",
@@ -321,6 +325,6 @@ test.describe("the services and their prices", () => {
     await expect(row(page, "Late fee", "First fit").getByRole("cell")).toHaveText(["", "Rs. 4,000", "0%", "", "Edit"]);
     await edit(page, "Late fee on a first fit");
     await page.getByRole("button", { name: "Change the price of Late fee on a first fit" }).click();
-    await expect(page.getByLabel("Price before GST, in rupees")).toHaveValue("4000");
+    await expect(page.getByLabel(opsCopy.settings.services.form.amount)).toHaveValue("4000");
   });
 });

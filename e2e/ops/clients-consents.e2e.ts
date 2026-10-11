@@ -2,6 +2,7 @@ import { expect, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
 import { answer, CLIENT, CONSENTS, ERASURE_REQUESTED, json, type Call, type OpsReply } from "./fixtures.ts";
 import { RECORD_PATH, READ_CONSENTS, NAME, openClient } from "./clients-fixtures.ts";
+import * as opsCopy from "../../apps/ops/src/content.ts";
 
 const ERASE: Call = `POST ${RECORD_PATH}/erasure`;
 
@@ -64,8 +65,8 @@ test("names a consent given by booking, and says where a place was not recorded"
   await openClient(page, `/clients/${CLIENT.id}/consents`, { [READ_CONSENTS]: json({ ...CONSENTS, consents }) });
   const row = (purpose: string) => page.getByRole("row").filter({ hasText: purpose });
   await expect(row("Photos for the visit record")).toContainText("Booking");
-  await expect(row("Photos on referral cards")).toContainText("Not recorded");
-  await expect(row("WhatsApp about visits")).toContainText("Invite");
+  await expect(row("Photos on referral cards")).toContainText(opsCopy.clients.profile.notRecorded);
+  await expect(row("WhatsApp about visits")).toContainText(opsCopy.clients.invite.title);
   expect(await axeViolations(page)).toEqual([]);
 });
 
@@ -80,40 +81,40 @@ test("says when the client has asked to be erased, and leaves it to Deletion req
 // The operators' erasure was a script with a shared secret, on the public host, that left no audit entry.
 test("erases a client from their page, once ops confirm the request came from their own number", async ({ page }) => {
   await openClient(page, `/clients/${CLIENT.id}/consents`, { [ERASE]: json(ERASED) });
-  const erasing = page.getByRole("region", { name: "Erase client" });
+  const erasing = page.getByRole("region", { name: opsCopy.clients.erasure.title });
   await erasing.getByRole("button", { name: `Erase ${CLIENT.name}` }).click();
 
   const confirm = page.getByRole("group", { name: `Erasing ${CLIENT.name}` });
   await expect(confirm).toBeFocused();
   await expect(confirm).toContainText("Invoices in Books, for eight years, by law");
-  const now = confirm.getByRole("button", { name: "Erase now" });
+  const now = confirm.getByRole("button", { name: opsCopy.clients.erasure.confirm });
   await expect(now).toBeDisabled();
-  await confirm.getByRole("checkbox", { name: "I've confirmed this with them, on their own number." }).check();
+  await confirm.getByRole("checkbox", { name: opsCopy.clients.erasure.checked }).check();
 
   const sent = page.waitForRequest((request) => request.url().endsWith("/erasure") && request.method() === "POST");
   await now.click();
   expect((await sent).postDataJSON()).toEqual({});
-  await expect(page.getByRole("heading", { name: "Erased" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: opsCopy.clients.erasure.done.title })).toBeVisible();
   await expect(page.getByRole("heading", NAME)).toHaveCount(0);
-  await expect(page.getByRole("link", { name: "Find a client" })).toBeVisible();
+  await expect(page.getByRole("link", { name: opsCopy.clients.erasure.done.back })).toBeVisible();
 });
 
 test("erases anyway when a visit is booked, once ops say they will settle it by hand today", async ({ page }) => {
   await openClient(page, `/clients/${CLIENT.id}/consents`, { [ERASE]: json(VISIT_BOOKED, 409) });
-  const erasing = page.getByRole("region", { name: "Erase client" });
+  const erasing = page.getByRole("region", { name: opsCopy.clients.erasure.title });
   await erasing.getByRole("button", { name: `Erase ${CLIENT.name}` }).click();
-  await erasing.getByRole("checkbox", { name: "I've confirmed this with them, on their own number." }).check();
-  await erasing.getByRole("button", { name: "Erase now" }).click();
+  await erasing.getByRole("checkbox", { name: opsCopy.clients.erasure.checked }).check();
+  await erasing.getByRole("button", { name: opsCopy.clients.erasure.confirm }).click();
 
   await expect(erasing).toContainText("They have a visit booked. Cancel it on Visits");
   await expect(erasing).toContainText("Cancel it on Visits, which refunds them, then erase.");
   await answer(page, { [ERASE]: json(ERASED) });
-  const anyway = erasing.getByRole("button", { name: "Erase anyway" });
+  const anyway = erasing.getByRole("button", { name: opsCopy.clients.erasure.anyway });
   await expect(anyway).toBeDisabled();
-  await erasing.getByRole("checkbox", { name: "I'll cancel and refund it by hand today." }).check();
+  await erasing.getByRole("checkbox", { name: opsCopy.clients.erasure.settle.visit_booked }).check();
 
   const sent = page.waitForRequest((request) => request.url().endsWith("/erasure") && request.method() === "POST");
   await anyway.click();
   expect((await sent).postDataJSON()).toEqual({ override_open_bookings: true });
-  await expect(page.getByRole("heading", { name: "Erased" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: opsCopy.clients.erasure.done.title })).toBeVisible();
 });

@@ -2,6 +2,7 @@ import { expect, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
 import { answer, empty, fails, json, TASKS, TASKS_READ_ON, type OpsReply } from "./fixtures.ts";
 import { NO_ALERTS, open, list, row } from "./tasks-fixtures.ts";
+import * as opsCopy from "../../apps/ops/src/content.ts";
 
 // The counts were cut at 200 tasks across every group, and said nothing of it.
 test("counts a group whole when it lists only its longest waits, and says when it could not count", async ({
@@ -17,7 +18,7 @@ test("counts a group whole when it lists only its longest waits, and says when i
   // The group's whole count, and so its department's.
   await expect(list(page).getByText("73", { exact: true })).toHaveCount(2);
   await expect(page.getByText("Longest 2 of 73.")).toBeVisible();
-  await expect(page.getByText("Counts may be incomplete.")).toBeVisible();
+  await expect(page.getByText(opsCopy.tasks.truncated)).toBeVisible();
 });
 
 test("offers no close on the board's own groups: only a visit left partly done closes here", async ({ page }) => {
@@ -68,7 +69,7 @@ test("gives a task to another member of staff who has signed in, and says so whe
   await expect(whom).toBeFocused();
   await whom.selectOption("anil@maneman.in");
   expect(await axeViolations(page)).toEqual([]);
-  await deepak.getByRole("button", { name: "Assign", exact: true }).click();
+  await deepak.getByRole("button", { name: opsCopy.tasks.owner.save, exact: true }).click();
   await expect(deepak).toContainText("Anil");
   await expect(deepak.getByRole("button", { name: "Assign… · Deepak Rao" })).toBeFocused();
 
@@ -122,7 +123,7 @@ test("closes a visit left partly done with a reason, and it leaves the list", as
   await manish.getByRole("button", { name: "Close without follow-up · Manish Tandon" }).click();
   const why = manish.getByLabel("Why no follow-up is needed · Manish Tandon");
   await expect(why).toBeFocused();
-  const closeIt = manish.getByRole("button", { name: "Close task" });
+  const closeIt = manish.getByRole("button", { name: opsCopy.tasks.close.confirm });
   await expect(closeIt).toBeDisabled();
   expect(await axeViolations(page)).toEqual([]);
 
@@ -214,7 +215,7 @@ test("records a call about a move from its row, and opens each of the board's ta
 
 test("says so when no queue holds anything", async ({ page }) => {
   await open(page, { overdue: 0, truncated: false, low_stock_places: 0, staff: [], groups: [] });
-  await expect(page.getByText("All clear.")).toBeVisible();
+  await expect(page.getByText(opsCopy.tasks.empty)).toBeVisible();
   await expect(page.getByText("0 overdue")).toBeVisible();
 });
 
@@ -222,7 +223,7 @@ test("says so when the list cannot be loaded, and loads it on Try again", async 
   await page.clock.setFixedTime(TASKS_READ_ON);
   await answer(page, { "GET /api/tasks": fails(503, "unavailable"), "GET /api/alerts": json(NO_ALERTS) });
   await page.goto("/tasks");
-  await expect(page.getByRole("alert")).toContainText("Couldn't load this.");
+  await expect(page.getByRole("alert")).toContainText(opsCopy.states.failed);
 
   await answer(page, { "GET /api/tasks": json(TASKS) });
   await page.getByRole("button", { name: "Try again" }).click();
@@ -265,7 +266,7 @@ test("heads the board with the alerts that need a hand, and sends a failed messa
     },
   });
 
-  const needsAHand = page.getByRole("region", { name: "Needs a hand" });
+  const needsAHand = page.getByRole("region", { name: opsCopy.needsAHand.title });
   await expect(needsAHand.getByRole("listitem")).toHaveCount(2);
   await expect(needsAHand.getByRole("listitem").first()).toContainText("WhatsApp message failed");
   await expect(needsAHand.getByRole("listitem").nth(1)).toContainText("3 times since Tue 21 Sep");

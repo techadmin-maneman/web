@@ -13,6 +13,7 @@ import { expect, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
 import { fails, json, SETTINGS } from "./fixtures.ts";
 import { open, posted } from "./settings-fixtures.ts";
+import * as opsCopy from "../../apps/ops/src/content.ts";
 
 const PANELS = ["/settings", "/prices", "/discount-codes", "/areas/served", "/settings/blackouts"];
 
@@ -39,7 +40,7 @@ test("says what photos and referral cards hold, and the database, under The cons
     database_limit_bytes: 10e9,
   });
   await open(page, "/settings", { "GET /api/storage": storage });
-  const theConsole = page.getByRole("region", { name: "The console", exact: true });
+  const theConsole = page.getByRole("region", { name: opsCopy.settings.rules.groups.console, exact: true });
   await expect(theConsole.getByText("Photos and referral cards: 1.24 GB of 4 GB", { exact: true })).toBeVisible();
   await expect(theConsole.getByText("Database: 212 MB of 10 GB", { exact: true })).toBeVisible();
 
@@ -191,7 +192,7 @@ test.describe("the rules", () => {
   // Seventeen rules on one page, each with its own Save, in no order.
   test("groups the rules by subject, each section a link away", async ({ page }) => {
     await open(page);
-    const jump = page.getByRole("navigation", { name: "Jump to" });
+    const jump = page.getByRole("navigation", { name: opsCopy.settings.rules.jump });
     await expect(jump.getByRole("link")).toHaveText([
       "Moves, cancels and no-shows",
       "Booking and payment",
@@ -269,11 +270,14 @@ test.describe("the rules", () => {
     const charges = page
       .getByRole("listitem")
       .filter({ has: page.getByRole("group", { name: "Late move or cancel" }) });
-    await expect(charges.getByRole("link", { name: "Late fees are set in Prices" })).toHaveAttribute("href", "/prices");
+    await expect(charges.getByRole("link", { name: opsCopy.settings.rules.lateFees })).toHaveAttribute(
+      "href",
+      "/prices",
+    );
 
     await open(page, "/prices");
     await page.getByRole("button", { name: "Edit Late fee on a first fit", exact: true }).click();
-    await page.getByRole("link", { name: "When it's charged" }).click();
+    await page.getByRole("link", { name: opsCopy.settings.services.lateFeeRule }).click();
     await expect(page).toHaveURL(/\/settings#late_change_charge$/);
     const rule = page.getByRole("listitem").filter({ has: page.getByRole("group", { name: "Late move or cancel" }) });
     await expect(rule).toBeFocused();
@@ -406,9 +410,9 @@ test.describe("the rules", () => {
     await open(page);
     const cycle = page.getByRole("group", { name: "Replacement cycle" });
     await cycle.getByText(/^Show all/).click();
-    await expect(cycle.getByLabel("Base, as the technician records it")).toBeVisible();
+    await expect(cycle.getByLabel(opsCopy.settings.rules.keyName)).toBeVisible();
     await expect(
-      page.getByRole("group", { name: "No-show wait" }).getByLabel("Base, as the technician records it"),
+      page.getByRole("group", { name: "No-show wait" }).getByLabel(opsCopy.settings.rules.keyName),
     ).toHaveCount(0);
   });
 });

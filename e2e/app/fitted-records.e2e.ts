@@ -6,6 +6,7 @@ import { axeViolations } from "../a11y.ts";
 import { fittedClient } from "./fitted.ts";
 import { logIn } from "./signed-in.ts";
 import { tab } from "./fitted-fixtures.ts";
+import * as appCopy from "../../apps/app/src/content.ts";
 
 // The invoice appears beside the visit, and a free visit says so
 // rather than promising a document that will never come (ADR 0056).
@@ -29,9 +30,7 @@ test("a past visit carries its own invoice, or says why there is none", async ({
   // The first fit is billed, and its invoice has not been raised in the sixty days since: "within the hour" is
   // no longer true of it, so the client is told it is late and how to ask for it.
   await page.goto(`/visits/${client.firstFit.id}`);
-  await expect(
-    page.getByText("The invoice is taking longer than it should. Message us and we’ll send it."),
-  ).toBeVisible();
+  await expect(page.getByText(appCopy.visits.detail.invoice.late)).toBeVisible();
   await expect(page.getByRole("link", { name: "Message us" })).toHaveAttribute(
     "href",
     new RegExp(encodeURIComponent("Please send me the invoice for my first fit on")),
@@ -40,7 +39,7 @@ test("a past visit carries its own invoice, or says why there is none", async ({
 
   // The consultation was free, so no invoice will ever exist.
   await page.goto(`/visits/${client.consultation.id}`);
-  await expect(page.getByText("No charge for this visit, so there is no invoice.")).toBeVisible();
+  await expect(page.getByText(appCopy.visits.detail.invoice.free)).toBeVisible();
 });
 
 test("a visit to come offers itself to the client's calendar, at its window; one done does not", async ({ page }) => {
@@ -48,7 +47,7 @@ test("a visit to come offers itself to the client's calendar, at its window; one
   await logIn(page, client.mobile);
   await expect(page.getByRole("heading", { level: 1, name: "Your next visit" })).toBeVisible();
   await page.goto(`/visits/${client.next.id}`);
-  const google = new URL((await page.getByRole("link", { name: "Google Calendar" }).getAttribute("href")) ?? "");
+  const google = new URL((await page.getByRole("link", { name: appCopy.calendar.google }).getAttribute("href")) ?? "");
   const { start, end } = windowSpan(client.next.date, "afternoon");
   const stamp = (instant: Date) => instant.toISOString().replace(/[-:]|\.\d{3}/g, "");
   expect(Object.fromEntries(google.searchParams)).toMatchObject({
@@ -56,20 +55,20 @@ test("a visit to come offers itself to the client's calendar, at its window; one
     dates: `${stamp(start)}/${stamp(end)}`,
     details: "Imran arrives in the window, 12 to 4 pm.",
   });
-  const file = page.getByRole("link", { name: "Apple or Outlook" });
+  const file = page.getByRole("link", { name: appCopy.calendar.file });
   const ics = decodeURIComponent((await file.getAttribute("href"))?.split(",")[1] ?? "");
   expect(ics).toContain(`UID:${client.next.id}@maneman.in`);
 
   await page.goto(`/visits/${client.service.id}`);
   await expect(page.getByRole("link", { name: "Tax invoice" })).toBeVisible();
-  await expect(page.getByRole("link", { name: "Google Calendar" })).toHaveCount(0);
+  await expect(page.getByRole("link", { name: appCopy.calendar.google })).toHaveCount(0);
 });
 
 test("Photos: the timeline, a photograph saved to the phone, and the compare", async ({ page }) => {
   const client = fittedClient();
   await logIn(page, client.mobile);
   await tab(page, "Photos").click();
-  await expect(page.getByText("Taken for your visit record.", { exact: true })).toBeVisible();
+  await expect(page.getByText(appCopy.photos.basis, { exact: true })).toBeVisible();
   await expect(page.getByRole("heading", { level: 2, name: fullDate(client.service.date) })).toBeVisible();
   await expect(page.getByRole("heading", { level: 2, name: fullDate(client.firstFit.date) })).toBeVisible();
 
@@ -85,9 +84,9 @@ test("Photos: the timeline, a photograph saved to the phone, and the compare", a
   // Opened, it is the whole photograph.
   await expect(sheet.locator("img")).toHaveAttribute("src", /\/api\/photos\/file\//);
   await expect.poll(() => sheet.locator("img").evaluate((image: HTMLImageElement) => image.naturalWidth)).toBe(600);
-  await expect(sheet.getByText("Downloaded photos sit in your gallery, outside the app.")).toBeVisible();
+  await expect(sheet.getByText(appCopy.photos.downloaded)).toBeVisible();
   const download = page.waitForEvent("download");
-  await sheet.getByRole("link", { name: "Download" }).click();
+  await sheet.getByRole("link", { name: appCopy.photos.download }).click();
   expect((await download).suggestedFilename()).toBe(`mane-man-${client.service.date}-after-front.jpg`);
   await sheet.getByRole("button", { name: "Close" }).click();
   await expect(sheet).toBeHidden();
@@ -95,10 +94,10 @@ test("Photos: the timeline, a photograph saved to the phone, and the compare", a
   await page.getByRole("link", { name: "Compare" }).click();
   await expect(page.getByRole("heading", { level: 1, name: "Compare" })).toBeVisible();
   await expect(page.getByRole("navigation")).toHaveCount(0);
-  await expect(page.getByLabel("From", { exact: true })).toHaveValue(client.firstFit.id);
+  await expect(page.getByLabel(appCopy.photos.from, { exact: true })).toHaveValue(client.firstFit.id);
   await expect(page.getByLabel("To", { exact: true })).toHaveValue(client.service.id);
 
-  const divider = page.getByRole("slider", { name: "Divider between the two photos" });
+  const divider = page.getByRole("slider", { name: appCopy.photos.divider });
   await expect(divider).toHaveAttribute("aria-valuenow", "50");
   await divider.press("ArrowLeft");
   await expect(divider).toHaveAttribute("aria-valuenow", "48");
@@ -115,8 +114,11 @@ test("Photos: the timeline, a photograph saved to the phone, and the compare", a
   await expect(divider).toHaveAttribute("aria-valuenow", "25");
 
   // The first fit has no hairline photograph: its side stays empty.
-  await page.getByRole("button", { name: "Hairline" }).click();
-  await expect(page.getByRole("button", { name: "Hairline" })).toHaveAttribute("aria-pressed", "true");
+  await page.getByRole("button", { name: appCopy.photos.compareAngles.hair }).click();
+  await expect(page.getByRole("button", { name: appCopy.photos.compareAngles.hair })).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
   await expect(page.getByAltText(`Hairline, after the visit, ${fullDate(client.service.date)}`)).toBeVisible();
   await expect(page.getByAltText(`Hairline, after the visit, ${fullDate(client.firstFit.date)}`)).toHaveCount(0);
 });
@@ -128,12 +130,12 @@ test("Payments: one list of payments and refunds, an entry's documents, and a do
   const entries = page.getByRole("main").getByRole("link");
   await expect(entries).toHaveCount(3);
   // A refund is titled a refund and reads as money coming back, never as a second charge.
-  await expect(entries.nth(0)).toContainText("Refund");
-  await expect(entries.nth(0)).toContainText("Service visit");
+  await expect(entries.nth(0)).toContainText(appCopy.payments.refund);
+  await expect(entries.nth(0)).toContainText(appCopy.VISIT_TYPES.service);
   await expect(entries.nth(0)).toContainText("+ Rs. 1,000");
   await expect(entries.nth(0)).toContainText("back to your UPI");
-  await expect(entries.nth(0)).toContainText("Refund processing");
-  await expect(entries.nth(1)).toContainText("Service visit");
+  await expect(entries.nth(0)).toContainText(appCopy.payments.status.created);
+  await expect(entries.nth(1)).toContainText(appCopy.VISIT_TYPES.service);
   await expect(entries.nth(1)).toContainText("Rs. 2,000");
   await expect(entries.nth(1)).not.toContainText("incl.");
   await expect(entries.nth(1)).toContainText("Paid");
@@ -157,25 +159,25 @@ test("Payments: one list of payments and refunds, an entry's documents, and a do
     expect(served).toBe("application/pdf");
   }
 
-  await page.getByRole("link", { name: "Back to payments" }).click();
+  await page.getByRole("link", { name: appCopy.payments.back }).click();
   await entries.nth(2).click();
   await expect(page.getByRole("heading", { level: 1, name: "First fit" })).toBeVisible();
   // Sixty days after the fit, its invoice is late rather than "usually ready within the hour".
   await page.getByRole("button", { name: "Tax invoice" }).click();
-  await expect(page.getByText("The invoice is taking longer than it should.")).toBeVisible();
-  await page.getByRole("button", { name: "Receipt" }).click();
-  const receipt = page.getByRole("status").filter({ hasText: "The receipt isn’t ready yet." });
+  await expect(page.getByText(appCopy.payments.unavailable.invoiceLate)).toBeVisible();
+  await page.getByRole("button", { name: appCopy.payments.receipt }).click();
+  const receipt = page.getByRole("status").filter({ hasText: appCopy.payments.unavailable.receipt });
   await expect(receipt).toBeVisible();
-  await expect(receipt.getByRole("link", { name: "Ask us for it" })).toHaveAttribute(
+  await expect(receipt.getByRole("link", { name: appCopy.payments.unavailable.notify })).toHaveAttribute(
     "href",
     new RegExp(encodeURIComponent(`Please send me the receipt for first fit on ${fullDate(client.firstFit.date)}.`)),
   );
 
-  await page.getByRole("link", { name: "Back to payments" }).click();
+  await page.getByRole("link", { name: appCopy.payments.back }).click();
   await entries.nth(0).click();
   await expect(page.getByRole("heading", { level: 1, name: "Refund", exact: true })).toBeVisible();
   // Begun eighteen days ago, it is past Razorpay's 5 to 7 working days, and the client is told so.
-  await expect(page.getByText("Refund processing · taking longer than it should")).toBeVisible();
+  await expect(page.getByText(appCopy.payments.lateRefund)).toBeVisible();
   await expect(page.getByRole("link", { name: "Message us" })).toHaveAttribute(
     "href",
     new RegExp(encodeURIComponent("My refund for service visit from")),
@@ -206,7 +208,7 @@ test("each read surface meets WCAG 2.2 AA", async ({ page }) => {
     expect(await axeViolations(page)).toEqual([]);
   };
   await logIn(page, client.mobile);
-  await expect(page.getByRole("heading", { name: "Your next visit" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: appCopy.home.next.label })).toBeVisible();
   await scan();
   await tab(page, "Visits").click();
   await expect(page.getByText("Service visit · 12 to 4 pm · Imran")).toBeVisible();
@@ -216,11 +218,11 @@ test("each read surface meets WCAG 2.2 AA", async ({ page }) => {
   await scan();
   // The same screen with no invoice to open, which reads as a line rather than a link.
   await page.goto(`/visits/${client.consultation.id}`);
-  await expect(page.getByText("No charge for this visit, so there is no invoice.")).toBeVisible();
+  await expect(page.getByText(appCopy.visits.detail.invoice.free)).toBeVisible();
   await scan();
   // The visit still to come, drawn as Home's card.
   await page.goto(`/visits/${client.next.id}`);
-  await expect(page.getByRole("button", { name: "Reschedule" })).toBeVisible();
+  await expect(page.getByRole("button", { name: appCopy.home.reschedule })).toBeVisible();
   await scan();
   await tab(page, "Photos").click();
   await page.getByRole("button", { name: `Front, after the visit, ${fullDate(client.service.date)}` }).click();
@@ -234,7 +236,7 @@ test("each read surface meets WCAG 2.2 AA", async ({ page }) => {
   await scan();
   // The first fit's payment, whose receipt Books has not issued yet.
   await page.getByRole("main").getByRole("link").nth(2).click();
-  await page.getByRole("button", { name: "Receipt" }).click();
-  await expect(page.getByText("Ask us for it")).toBeVisible();
+  await page.getByRole("button", { name: appCopy.payments.receipt }).click();
+  await expect(page.getByText(appCopy.payments.unavailable.notify)).toBeVisible();
   await scan();
 });

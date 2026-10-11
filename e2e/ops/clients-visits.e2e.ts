@@ -9,6 +9,7 @@ import { expect, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
 import { CLIENT, fails, HAIR_PROFILE, json, NEW_RECORD, type Call, type OpsReply } from "./fixtures.ts";
 import { RECORD_PATH, READ_RECORD, READ_HAIR_PROFILE, openClient } from "./clients-fixtures.ts";
+import * as opsCopy from "../../apps/ops/src/content.ts";
 
 const CORRECT_HAIR_PROFILE: Call = `POST ${RECORD_PATH}/hair-profile`;
 
@@ -18,7 +19,7 @@ const SAVE_ADDRESS: Call = `POST ${RECORD_PATH}/address`;
 
 // The client's hair profile, which no board draws, above the pieces (docs/decisions/0106-a-clients-hair-profile.md).
 test.describe("the client's hair profile", () => {
-  const section = (page: Page) => page.getByRole("region", { name: "Hair profile" });
+  const section = (page: Page) => page.getByRole("region", { name: opsCopy.clients.profile.title });
 
   test("stands above the pieces: the latest, its history, and every version with who recorded it", async ({ page }) => {
     await openClient(page, `/clients/${CLIENT.id}/pieces`, { [READ_HAIR_PROFILE]: json(HAIR_PROFILE) });
@@ -43,8 +44,8 @@ test.describe("the client's hair profile", () => {
       [READ_HAIR_PROFILE]: json(HAIR_PROFILE),
       [CORRECT_HAIR_PROFILE]: json(corrected),
     });
-    await section(page).getByRole("button", { name: "Correct profile" }).click();
-    const colour = page.getByRole("combobox", { name: "Colour" });
+    await section(page).getByRole("button", { name: opsCopy.clients.profile.correct }).click();
+    const colour = page.getByRole("combobox", { name: opsCopy.clients.profile.rows.colour });
     await expect(colour).toHaveValue("2");
     expect(await axeViolations(page)).toEqual([]);
 
@@ -52,7 +53,7 @@ test.describe("the client's hair profile", () => {
     const sent = page.waitForRequest(
       (request) => request.method() === "POST" && request.url().endsWith("/hair-profile"),
     );
-    await page.getByRole("button", { name: "Save new version" }).click();
+    await page.getByRole("button", { name: opsCopy.clients.profile.save }).click();
     const body = (await sent).postDataJSON() as { fit: Record<string, unknown>; history: unknown; based_on: unknown };
     expect(body.fit).toEqual({ ...HAIR_PROFILE.latest.fit, colour: "3", product_name: undefined });
     expect(body.history).toEqual(HAIR_PROFILE.latest.history);
@@ -80,8 +81,8 @@ test.describe("the client's hair profile", () => {
       },
       [CORRECT_HAIR_PROFILE]: fails(409, "superseded"),
     });
-    await section(page).getByRole("button", { name: "Correct profile" }).click();
-    await page.getByRole("button", { name: "Save new version" }).click();
+    await section(page).getByRole("button", { name: opsCopy.clients.profile.correct }).click();
+    await page.getByRole("button", { name: opsCopy.clients.profile.save }).click();
 
     await expect(section(page).getByRole("alert")).toContainText("The profile changed while you were editing.");
     await expect(section(page).locator("dl").first()).toContainText("Colour#4");
@@ -93,11 +94,14 @@ test.describe("the client's hair profile", () => {
       if (request.method() === "POST" && request.url().endsWith("/hair-profile")) sent += 1;
     });
     await openClient(page, `/clients/${CLIENT.id}/pieces`, { [READ_HAIR_PROFILE]: json(HAIR_PROFILE) });
-    await section(page).getByRole("button", { name: "Correct profile" }).click();
-    await page.getByRole("textbox", { name: "Grey, %" }).fill("twenty");
-    await page.getByRole("button", { name: "Save new version" }).click();
-    await expect(page.getByRole("textbox", { name: "Grey, %" })).toHaveAttribute("aria-invalid", "true");
-    await expect(page.getByRole("alert")).toHaveText("Check the marked fields.");
+    await section(page).getByRole("button", { name: opsCopy.clients.profile.correct }).click();
+    await page.getByRole("textbox", { name: opsCopy.clients.profile.rows.grey_percent }).fill("twenty");
+    await page.getByRole("button", { name: opsCopy.clients.profile.save }).click();
+    await expect(page.getByRole("textbox", { name: opsCopy.clients.profile.rows.grey_percent })).toHaveAttribute(
+      "aria-invalid",
+      "true",
+    );
+    await expect(page.getByRole("alert")).toHaveText(opsCopy.clients.profile.refused);
     expect(sent).toBe(0);
   });
 
@@ -106,11 +110,14 @@ test.describe("the client's hair profile", () => {
       [READ_HAIR_PROFILE]: json(HAIR_PROFILE),
       [CORRECT_HAIR_PROFILE]: fails(400, "invalid_request", ["fit.base_width_in"]),
     });
-    await section(page).getByRole("button", { name: "Correct profile" }).click();
-    await page.getByRole("textbox", { name: "Base width, in" }).fill("80");
-    await page.getByRole("button", { name: "Save new version" }).click();
-    await expect(page.getByRole("alert")).toHaveText("Check the marked fields.");
-    await expect(page.getByRole("textbox", { name: "Base width, in" })).toHaveAttribute("aria-invalid", "true");
+    await section(page).getByRole("button", { name: opsCopy.clients.profile.correct }).click();
+    await page.getByRole("textbox", { name: opsCopy.clients.profile.rows.base_width_in }).fill("80");
+    await page.getByRole("button", { name: opsCopy.clients.profile.save }).click();
+    await expect(page.getByRole("alert")).toHaveText(opsCopy.clients.profile.refused);
+    await expect(page.getByRole("textbox", { name: opsCopy.clients.profile.rows.base_width_in })).toHaveAttribute(
+      "aria-invalid",
+      "true",
+    );
   });
 });
 
@@ -120,7 +127,7 @@ test("lists where visits go, and every visit to come and done", async ({ page })
   await expect(page.getByText("House 1204, Sector 65, Gurgaon 122018")).toBeVisible();
   await expect(page.getByText("Gate 4417, bay B")).toBeVisible();
 
-  const coming = page.getByRole("region", { name: "To come" }).getByRole("row").nth(1);
+  const coming = page.getByRole("region", { name: opsCopy.clients.visits.upcoming }).getByRole("row").nth(1);
   await expect(coming).toContainText("25 Sep 2027");
   await expect(coming).toContainText("9 am to 10:30 am");
   await expect(coming).toContainText("Service visit");
@@ -137,9 +144,9 @@ test("lists where visits go, and every visit to come and done", async ({ page })
 
 test("says so when there is no address and no visit either way", async ({ page }) => {
   await openClient(page, `/clients/${CLIENT.id}/visits`, { [READ_RECORD]: json(NEW_RECORD) });
-  await expect(page.getByText("No address yet.")).toBeVisible();
-  await expect(page.getByText("Nothing booked.")).toBeVisible();
-  await expect(page.getByText("No past visits.")).toBeVisible();
+  await expect(page.getByText(opsCopy.clients.visits.noAddress)).toBeVisible();
+  await expect(page.getByText(opsCopy.clients.visits.noUpcoming)).toBeVisible();
+  await expect(page.getByText(opsCopy.clients.visits.noPast)).toBeVisible();
 });
 
 // An address a client gives ops on the phone, saved as theirs and marked as given to ops (ADR 0092; open point 62).
@@ -172,21 +179,21 @@ test("records an address the client gives on the phone, with the building found,
       await json(GIVEN)(route);
     },
   });
-  await page.getByRole("button", { name: "Add an address" }).click();
-  const form = page.getByRole("form", { name: "Address given by phone" });
-  await form.getByRole("combobox", { name: "Building" }).fill("Sunrise");
+  await page.getByRole("button", { name: opsCopy.clients.visits.given.open }).click();
+  const form = page.getByRole("form", { name: opsCopy.clients.visits.given.title });
+  await form.getByRole("combobox", { name: opsCopy.clients.visits.given.building.label }).fill("Sunrise");
   await form.getByRole("option", { name: /Sunrise Greens/ }).click();
-  await form.getByLabel("Flat or house number").fill("Flat 1203");
-  await form.getByLabel("Tower or block (optional)").fill("Tower C");
-  await form.getByLabel("Sector or area").fill("Sector 65");
+  await form.getByLabel(opsCopy.clients.visits.given.flat).fill("Flat 1203");
+  await form.getByLabel(opsCopy.clients.visits.given.tower).fill("Tower C");
+  await form.getByLabel(opsCopy.clients.visits.given.locality).fill("Sector 65");
   await form.getByLabel("City").fill("Gurgaon");
   await form.getByLabel("Pincode").fill("122018");
   expect(await axeViolations(page)).toEqual([]);
-  await form.getByRole("button", { name: "Save address" }).click();
+  await form.getByRole("button", { name: opsCopy.clients.visits.given.save }).click();
 
   await expect(page.getByText("Flat 1203, Tower C, Sunrise Greens, Sector 65, Gurgaon 122018")).toBeVisible();
   await expect(page.getByText("To ops@localhost, 22 Sep 2027")).toBeVisible();
-  await expect(page.getByRole("status")).toContainText("Address saved.");
+  await expect(page.getByRole("status")).toContainText(opsCopy.clients.visits.given.saved);
   expect(saved).toEqual([
     expect.objectContaining({
       line1: "Sunrise Greens",
@@ -208,13 +215,13 @@ test("asks for what an address cannot do without before it sends one", async ({ 
       await fails(400, "invalid_request")(route);
     },
   });
-  await page.getByRole("button", { name: "Add an address" }).click();
-  const form = page.getByRole("form", { name: "Address given by phone" });
-  await form.getByRole("button", { name: "Save address" }).click();
+  await page.getByRole("button", { name: opsCopy.clients.visits.given.open }).click();
+  const form = page.getByRole("form", { name: opsCopy.clients.visits.given.title });
+  await form.getByRole("button", { name: opsCopy.clients.visits.given.save }).click();
   await expect(form.getByRole("alert")).toContainText("Add the flat, building or street");
-  await expect(form.getByLabel("Flat or house number")).toBeFocused();
-  await expect(form.getByLabel("Flat or house number")).toHaveAttribute("required", "");
+  await expect(form.getByLabel(opsCopy.clients.visits.given.flat)).toBeFocused();
+  await expect(form.getByLabel(opsCopy.clients.visits.given.flat)).toHaveAttribute("required", "");
   expect(sent).toBe(0);
   await form.getByRole("button", { name: "Cancel" }).click();
-  await expect(page.getByRole("button", { name: "Add an address" })).toBeFocused();
+  await expect(page.getByRole("button", { name: opsCopy.clients.visits.given.open })).toBeFocused();
 });

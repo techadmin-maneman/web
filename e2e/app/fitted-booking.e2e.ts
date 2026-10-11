@@ -4,6 +4,7 @@ import { axeViolations } from "../a11y.ts";
 import { fittedClient } from "./fitted.ts";
 import { logIn } from "./signed-in.ts";
 import { tab } from "./fitted-fixtures.ts";
+import * as appCopy from "../../apps/app/src/content.ts";
 
 // A visit paid for that FSM has not taken yet, as while FSM refuses it and it waits for ops
 // (docs/decisions/0095-a-booking-fsm-refuses-is-held.md): Home neither says it is booked nor that the money is gone,
@@ -19,14 +20,14 @@ test("Home says a paid visit FSM has not taken yet is being booked, with the pay
   );
   await page.reload();
 
-  const card = page.getByRole("region", { name: "Your next visit" });
+  const card = page.getByRole("region", { name: appCopy.home.next.label });
   await expect(card).toContainText(shortDate("2027-09-25"));
   await expect(card).toContainText("Morning, 9 am to 12 pm");
-  await expect(card).toContainText("Service visit");
+  await expect(card).toContainText(appCopy.VISIT_TYPES.service);
   await expect(card).toContainText("Your payment is in. We are booking your visit.");
   await expect(card).toContainText("We’ll message you on WhatsApp when it’s booked.");
-  await expect(page.getByRole("button", { name: "Reschedule" })).toHaveCount(0);
-  await expect(page.getByRole("button", { name: "Book your next visit" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: appCopy.home.reschedule })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: appCopy.home.next.book })).toHaveCount(0);
   expect(await axeViolations(page)).toEqual([]);
 });
 
@@ -58,7 +59,7 @@ test("Visits lists a visit FSM has not taken yet as Home says it, a consultation
   const home = page.getByRole("region", { name: "Your consultation and fit" });
   await expect(home).toContainText(shortDate("2027-09-25"));
   await expect(home).toContainText("Rs. 30,000, only if you go ahead");
-  await expect(home).not.toContainText("We are booking your visit.");
+  await expect(home).not.toContainText(appCopy.home.beingBooked.free);
   // Nothing paid and no consent to visit messages, so no WhatsApp is promised.
   await expect(home).not.toContainText("We will message you on WhatsApp");
 
@@ -66,7 +67,7 @@ test("Visits lists a visit FSM has not taken yet as Home says it, a consultation
   const card = page.getByRole("main").getByRole("listitem").first();
   await expect(card).toContainText(shortDate("2027-09-25"));
   await expect(card).toContainText("Consultation and fit · 9 am to 12 pm");
-  await expect(card).not.toContainText("We are booking your visit.");
+  await expect(card).not.toContainText(appCopy.home.beingBooked.free);
   await expect(page.getByText("Nothing booked yet.")).toHaveCount(0);
   expect(await axeViolations(page)).toEqual([]);
 });
@@ -93,8 +94,8 @@ test("Home and Visits name a consultation and fit, what it costs once fitted, an
   await expect(card).toContainText("Consultation and fit · 3 hours");
   await expect(card).toContainText("Rs. 27,000, only if you go ahead");
   await expect(card).toContainText("Code TENPC applied");
-  await expect(card).toContainText("Paid once fitted, by a link we text you");
-  await expect(page.getByRole("region", { name: "What to expect" })).toContainText(
+  await expect(card).toContainText(appCopy.home.oneVisit.paidBy);
+  await expect(page.getByRole("region", { name: appCopy.home.expect.label })).toContainText(
     "Choose your hair system, fitted there and then.",
   );
   expect(await axeViolations(page)).toEqual([]);

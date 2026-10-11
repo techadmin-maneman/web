@@ -8,6 +8,7 @@ import type { Page } from "@playwright/test";
 import { expect, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
 import { answer, fails, GRIEVANCES, json, TASKS_READ_ON, type Call } from "./fixtures.ts";
+import * as opsCopy from "../../apps/ops/src/content.ts";
 
 const FIRST = GRIEVANCES.grievances[0];
 const RESOLVE = `/api/grievances/${FIRST?.id ?? ""}/resolve` as const;
@@ -20,7 +21,7 @@ async function open(page: Page, resolve = json({ state: "resolved" })): Promise<
   await expect(page.getByRole("heading", { level: 1, name: "Concerns" })).toBeVisible();
 }
 
-const queue = (page: Page) => page.getByRole("region", { name: "Open concerns" });
+const queue = (page: Page) => page.getByRole("region", { name: opsCopy.grievances.queue.title });
 const row = (page: Page, name: string) => queue(page).getByRole("listitem").filter({ hasText: name });
 
 test("lists every open grievance with the client's own words, number and day", async ({ page }) => {
@@ -66,14 +67,14 @@ test("will not close a grievance with no answer written", async ({ page }) => {
 test("records the answer, and the grievance leaves the queue", async ({ page }) => {
   await open(page);
   const first = row(page, "Rohit Malhotra");
-  await first.getByRole("textbox", { name: "Your answer" }).fill("Taken off the launch list today.");
+  await first.getByRole("textbox", { name: opsCopy.grievances.queue.label }).fill("Taken off the launch list today.");
 
   const sent = page.waitForRequest((request) => request.url().endsWith(RESOLVE) && request.method() === "POST");
-  await first.getByRole("button", { name: "Record and close" }).click();
+  await first.getByRole("button", { name: opsCopy.grievances.queue.send }).click();
   expect((await sent).postDataJSON()).toEqual({ response: "Taken off the launch list today." });
   await expect(page.getByText("Rohit Malhotra")).toBeHidden();
   // The row is gone, so the keyboard goes to the queue's heading and not to the top of the page.
-  await expect(page.getByRole("heading", { name: "Open concerns" })).toBeFocused();
+  await expect(page.getByRole("heading", { name: opsCopy.grievances.queue.title })).toBeFocused();
 });
 
 // Grievances are a group on the Tasks board now, which links each to its row here.
@@ -87,21 +88,21 @@ test("brings the grievance a task named into view, and gives it the keyboard", a
 test("says so when someone has answered it already", async ({ page }) => {
   await open(page, fails(404, "not_found"));
   const first = row(page, "Rohit Malhotra");
-  await first.getByRole("textbox", { name: "Your answer" }).fill("Answered on WhatsApp.");
-  await first.getByRole("button", { name: "Record and close" }).click();
+  await first.getByRole("textbox", { name: opsCopy.grievances.queue.label }).fill("Answered on WhatsApp.");
+  await first.getByRole("button", { name: opsCopy.grievances.queue.send }).click();
   await expect(page.getByRole("alert")).toContainText("Already answered. Reload.");
 });
 
 test("says so when no grievance is open", async ({ page }) => {
   await answer(page, { "GET /api/grievances": json({ grievances: [] }) });
   await page.goto("/grievances");
-  await expect(page.getByText("No open concerns.")).toBeVisible();
+  await expect(page.getByText(opsCopy.grievances.queue.empty)).toBeVisible();
 });
 
 test("says so when the queue cannot be loaded, and loads it on Try again", async ({ page }) => {
   await answer(page, { "GET /api/grievances": fails(503, "unavailable") });
   await page.goto("/grievances");
-  await expect(page.getByRole("alert")).toContainText("Couldn't load this.");
+  await expect(page.getByRole("alert")).toContainText(opsCopy.states.failed);
 
   await answer(page, { "GET /api/grievances": json(GRIEVANCES) });
   await page.getByRole("button", { name: "Try again" }).click();

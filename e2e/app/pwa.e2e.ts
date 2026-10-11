@@ -6,6 +6,7 @@ import type { Page } from "@playwright/test";
 import { expect, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
 import { signIn } from "./signed-in.ts";
+import * as appCopy from "../../apps/app/src/content.ts";
 
 test.use({ serviceWorkers: "allow" });
 
@@ -65,13 +66,13 @@ test("opens offline on the last Home, with the offline banner, and Reschedule wa
   await page.reload();
   await expect(page.getByRole("status").filter({ hasText: OFFLINE })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Your consultation" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Reschedule" })).toBeDisabled();
-  await expect(page.getByRole("link", { name: "Add a note" })).toBeVisible();
+  await expect(page.getByRole("button", { name: appCopy.home.reschedule })).toBeDisabled();
+  await expect(page.getByRole("link", { name: appCopy.home.note })).toBeVisible();
   expect(await axeViolations(page)).toEqual([]);
 
   await page.context().setOffline(false);
   await expect(page.getByText(OFFLINE)).toBeHidden();
-  await expect(page.getByRole("link", { name: "Reschedule" })).toBeVisible();
+  await expect(page.getByRole("link", { name: appCopy.home.reschedule })).toBeVisible();
 });
 
 test("opens in seconds on a signal that never answers, on the last Home", async ({ page }) => {
@@ -95,7 +96,7 @@ test("says the visit is still booked when the API fails and the phone kept Home"
     );
   await page.reload();
   await expect(page.getByRole("heading", { level: 1, name: "We couldn’t load your visit." })).toBeVisible();
-  await expect(page.getByText("Your visit is still booked.")).toBeVisible();
+  await expect(page.getByText(appCopy.states.error.booked)).toBeVisible();
 });
 
 test("shows the banner when the connection drops while the app is open", async ({ page }) => {
@@ -113,23 +114,23 @@ test("offline on Visits, which the phone does not keep, says the visits load onc
   await page.context().setOffline(true);
   await expect(page.getByRole("status").filter({ hasText: OFFLINE })).toBeVisible();
   await page.getByRole("navigation").getByRole("link", { name: "Visits" }).click();
-  await expect(page.getByRole("status").filter({ hasText: "No connection." })).toBeVisible();
+  await expect(page.getByRole("status").filter({ hasText: appCopy.states.offlineOnly })).toBeVisible();
   await expect(page.getByText(OFFLINE)).toHaveCount(0);
-  const waiting = page.getByText("Your visits will load when you are back online.");
+  const waiting = page.getByText(appCopy.visits.offline);
   await expect(waiting).toBeVisible();
-  await expect(page.getByText("We couldn’t load this. Try again.")).toHaveCount(0);
+  await expect(page.getByText(appCopy.errors.load)).toHaveCount(0);
 
   await page.context().setOffline(false);
   await expect(page.getByText("Consultation · 9 am to 12 pm")).toBeVisible();
   await expect(waiting).toBeHidden();
-  await expect(page.getByText("No connection.")).toBeHidden();
+  await expect(page.getByText(appCopy.states.offlineOnly)).toBeHidden();
 });
 
 test("keeps no API answer but Home, and forgets Home at logout", async ({ page }) => {
   await signIn(page);
   await keepHome(page);
-  await page.getByRole("link", { name: "Your profile" }).click();
-  await expect(page.getByRole("heading", { name: "Where we come" })).toBeVisible();
+  await page.getByRole("link", { name: appCopy.titles.profile }).click();
+  await expect(page.getByRole("heading", { name: appCopy.profile.where })).toBeVisible();
   expect((await keptPaths(page)).filter((path) => path.startsWith("/api/"))).toEqual(["/api/me"]);
 
   await page.getByRole("button", { name: "Sign out" }).click();

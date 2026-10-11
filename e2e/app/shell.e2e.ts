@@ -8,6 +8,7 @@ import { expect, outsideContract, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
 import { fittedClient } from "./fitted.ts";
 import { logIn } from "./signed-in.ts";
+import * as appCopy from "../../apps/app/src/content.ts";
 
 type Rgb = readonly [number, number, number];
 
@@ -35,16 +36,16 @@ const style = (locator: Locator, property: string) =>
 
 async function home(page: Page): Promise<void> {
   await logIn(page, fittedClient().mobile);
-  await expect(page.getByRole("link", { name: "Your profile" })).toBeVisible();
+  await expect(page.getByRole("link", { name: appCopy.titles.profile })).toBeVisible();
 }
 
 test("opens on the mobile number, as the design draws it", async ({ page }) => {
   await page.goto("/");
   await expect(page).toHaveTitle("Your mobile number · Mane Man");
   await expect(page.getByRole("heading", { level: 1, name: "Your mobile number" })).toBeVisible();
-  await expect(page.getByRole("textbox", { name: "Mobile number" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Send code on WhatsApp" })).toBeVisible();
-  await expect(page.getByText("A six-digit code, no password.")).toBeVisible();
+  await expect(page.getByRole("textbox", { name: appCopy.login.mobile.label })).toBeVisible();
+  await expect(page.getByRole("button", { name: appCopy.login.mobile.send })).toBeVisible();
+  await expect(page.getByText(appCopy.login.mobile.hint)).toBeVisible();
 });
 
 test("serves its policy: its own origin only, WebOTP, and noindex", async ({ page }) => {
@@ -99,7 +100,7 @@ test("shows the loading shape on paper while it asks whether there is a session,
     await route.continue();
   });
   await page.goto("/");
-  await expect(page.getByRole("status").filter({ hasText: "Loading" })).toBeAttached();
+  await expect(page.getByRole("status").filter({ hasText: appCopy.states.loading })).toBeAttached();
   expect(await page.evaluate(() => document.body.dataset.ground)).toBe("paper");
   answer();
   await expect(page.getByRole("heading", { level: 1, name: "Your mobile number" })).toBeVisible();
@@ -133,7 +134,7 @@ test("names each page in the browser's title, and takes focus to its heading", a
 test("opens Home, not a blank page, at a path every JavaScript object answers to", async ({ page }) => {
   await home(page);
   await page.goto("/constructor");
-  await expect(page.getByRole("link", { name: "Your profile" })).toBeVisible();
+  await expect(page.getByRole("link", { name: appCopy.titles.profile })).toBeVisible();
 });
 
 test("offers a way on, not a blank page, when a page fails to draw", async ({ page }) => {
@@ -142,8 +143,8 @@ test("offers a way on, not a blank page, when a page fails to draw", async ({ pa
   outsideContract("GET /api/payments 200");
   await page.route("**/api/payments", (route) => route.fulfill({ json: { entries: null } }));
   await page.getByRole("navigation").getByRole("link", { name: "Payments" }).click();
-  await expect(page.getByRole("alert")).toContainText("This page didn’t open.");
-  await expect(page.getByRole("button", { name: "Reload" })).toBeVisible();
+  await expect(page.getByRole("alert")).toContainText(appCopy.broken.message);
+  await expect(page.getByRole("button", { name: appCopy.broken.reload })).toBeVisible();
 });
 
 test("makes each tab a full 64 px target", async ({ page }) => {
@@ -211,17 +212,17 @@ test("never cuts a focus ring at the page's scrolling edges", async ({ page }) =
 
 test("edges fields and switches at 3:1 or more against the ground (WCAG 1.4.11)", async ({ page }) => {
   await page.goto("/");
-  const mobile = page.getByRole("textbox", { name: "Mobile number" }).locator("..");
+  const mobile = page.getByRole("textbox", { name: appCopy.login.mobile.label }).locator("..");
   const ink = rgbOf(await style(page.locator("body"), "background-color"));
   expect(contrast(rgbOf(await style(mobile, "border-top-color")), ink)).toBeGreaterThanOrEqual(3);
 
   await home(page);
-  await page.getByRole("link", { name: "Your profile" }).click();
+  await page.getByRole("link", { name: appCopy.titles.profile }).click();
   const paper = rgbOf(await style(page.locator("body"), "background-color"));
   const off = page.getByRole("switch", { checked: false }).first();
   await expect(off).toBeVisible();
   expect(contrast(rgbOf(await style(off, "border-top-color")), paper)).toBeGreaterThanOrEqual(3);
-  const field = page.getByRole("textbox", { name: "New number" }).locator("..");
+  const field = page.getByRole("textbox", { name: appCopy.profile.change.placeholder }).locator("..");
   expect(contrast(rgbOf(await style(field, "border-top-color")), paper)).toBeGreaterThanOrEqual(3);
   expect(contrast(rgbOf(await style(field, "border-top-color")), rgbOf("rgb(255, 255, 255)"))).toBeGreaterThanOrEqual(
     3,
@@ -240,7 +241,7 @@ test("edges fields and switches at 3:1 or more against the ground (WCAG 1.4.11)"
 test("moves nothing under reduced motion, the share sheet included", async ({ page }) => {
   await home(page);
   await page.getByRole("navigation").getByRole("link", { name: "Refer" }).click();
-  await page.getByRole("button", { name: "Share an invite" }).click();
+  await page.getByRole("button", { name: appCopy.refer.share }).click();
   const sheet = page.getByRole("dialog");
   await expect(sheet).toBeVisible();
   expect(await style(sheet, "animation-name")).toBe("none");

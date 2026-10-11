@@ -8,6 +8,7 @@ import { axeViolations } from "../a11y.ts";
 import { JOB_ID, ONE_VISIT_CHECKLIST, ROHITS_PIECE, ROHITS_PROFILE } from "./fixtures.ts";
 import { fakeTech, type Fake } from "./fake-tech.ts";
 import { startedThrough, writesTo, checklistItems } from "./steps-fixtures.ts";
+import * as techCopy from "../../apps/tech/src/content.ts";
 
 test.describe("the piece (board B3, step 4)", () => {
   async function onThePiece(page: Page): Promise<Fake> {
@@ -24,15 +25,15 @@ test.describe("the piece (board B3, step 4)", () => {
     page,
   }) => {
     await onThePiece(page);
-    const label = page.getByRole("textbox", { name: "The new piece’s label" });
+    const label = page.getByRole("textbox", { name: techCopy.steps.piece.label });
 
     await label.fill("mm-std-7193 c");
     await expect(label).toHaveValue("MM-STD-7193-C");
-    await expect(page.getByRole("button", { name: "Next" })).toBeEnabled();
+    await expect(page.getByRole("button", { name: techCopy.steps.next })).toBeEnabled();
 
     await label.fill("MM-STD-71");
-    await expect(page.getByRole("button", { name: "Check the label to continue" })).toBeDisabled();
-    await expect(page.getByText("Type it as on the tag, like MM-STD-4417-B.")).toBeVisible();
+    await expect(page.getByRole("button", { name: techCopy.steps.piece.checkFirst })).toBeDisabled();
+    await expect(page.getByText(techCopy.steps.piece.malformed)).toBeVisible();
   });
 
   test("says what a first fit was paid for, and warns when the hair profile names another product", async ({
@@ -45,7 +46,7 @@ test.describe("the piece (board B3, step 4)", () => {
     startedThrough(fake, "before_photos", "checklist", "consumables");
     await page.goto(`/jobs/${JOB_ID}/piece`);
 
-    await expect(page.getByRole("region", { name: "Paid for" })).toContainText("Mane Man Natural");
+    await expect(page.getByRole("region", { name: techCopy.job.piece.rows.paidFor })).toContainText("Mane Man Natural");
     await expect(
       page.getByRole("alert").filter({
         hasText: "The hair profile says Mane Man Essential. Check with ops before you fit.",
@@ -55,28 +56,28 @@ test.describe("the piece (board B3, step 4)", () => {
 
   test("the label field is the whole of its 64 px box, so a gloved tap lands in it", async ({ page }) => {
     await onThePiece(page);
-    const box = await page.getByRole("textbox", { name: "The new piece’s label" }).boundingBox();
+    const box = await page.getByRole("textbox", { name: techCopy.steps.piece.label }).boundingBox();
     expect(box?.height ?? 0).toBeGreaterThanOrEqual(60);
   });
 
   test("with no signal says the label is not checked, rather than unknown", async ({ page }) => {
     const fake = await onThePiece(page);
-    await page.getByRole("textbox", { name: "The new piece’s label" }).fill("MM-STD-7193-C");
+    await page.getByRole("textbox", { name: techCopy.steps.piece.label }).fill("MM-STD-7193-C");
     fake.online = false;
-    await page.getByRole("button", { name: "Check the label" }).click();
+    await page.getByRole("button", { name: techCopy.steps.piece.look }).click();
 
-    await expect(page.getByText("No signal, so it isn’t checked. It’s saved as you typed it.")).toBeVisible();
+    await expect(page.getByText(techCopy.steps.piece.offline)).toBeVisible();
     await expect(page.getByText(/We do not know that label/)).toHaveCount(0);
-    await expect(page.getByRole("button", { name: "Next" })).toBeEnabled();
+    await expect(page.getByRole("button", { name: techCopy.steps.next })).toBeEnabled();
   });
 
   test("will not record another client's piece", async ({ page }) => {
     await onThePiece(page);
-    await page.getByRole("textbox", { name: "The new piece’s label" }).fill("MM-STD-9999-Z");
-    await page.getByRole("button", { name: "Check the label" }).click();
+    await page.getByRole("textbox", { name: techCopy.steps.piece.label }).fill("MM-STD-9999-Z");
+    await page.getByRole("button", { name: techCopy.steps.piece.look }).click();
 
-    await expect(page.getByRole("alert").filter({ hasText: "That piece isn’t this client’s." })).toBeVisible();
-    await expect(page.getByRole("button", { name: "That piece isn’t this client’s" })).toBeDisabled();
+    await expect(page.getByRole("alert").filter({ hasText: techCopy.steps.piece.notThisClient })).toBeVisible();
+    await expect(page.getByRole("button", { name: techCopy.steps.piece.notThisClientAction })).toBeDisabled();
     // The other piece's base and lot stay off this job.
     await expect(page.locator("#piece-base")).toHaveValue("");
     await expect(page.locator("#piece-lot")).toHaveValue("");
@@ -88,21 +89,19 @@ test.describe("the piece (board B3, step 4)", () => {
     const fake = await onThePiece(page);
 
     // The new piece: typed, with its base and lot, which the pieces tab reads.
-    await page.getByRole("textbox", { name: "The new piece’s label" }).fill("MM-STD-5120-A");
+    await page.getByRole("textbox", { name: techCopy.steps.piece.label }).fill("MM-STD-5120-A");
     await page.getByRole("textbox", { name: "Base" }).fill("PLACEHOLDER_STANDARD");
     await page.getByRole("textbox", { name: "Supplier lot" }).fill("LOT-5120");
 
     // The one that came off, picked from the client's pieces rather than typed.
-    await page.getByRole("button", { name: "Pick from the list" }).click();
+    await page.getByRole("button", { name: techCopy.steps.piece.pick }).click();
     await page.getByRole("button", { name: /MM-STD-4417-B/ }).click();
-    await expect(page.getByRole("textbox", { name: "The label of the piece that came off" })).toHaveValue(
-      "MM-STD-4417-B",
-    );
-    await expect(page.getByRole("button", { name: "Say why it failed to continue" })).toBeDisabled();
-    await page.getByRole("textbox", { name: "Why it failed" }).fill("Lifted at the front");
+    await expect(page.getByRole("textbox", { name: techCopy.steps.piece.old.label })).toHaveValue("MM-STD-4417-B");
+    await expect(page.getByRole("button", { name: techCopy.steps.piece.old.needsReason })).toBeDisabled();
+    await page.getByRole("textbox", { name: techCopy.steps.piece.old.reason }).fill("Lifted at the front");
     expect(await axeViolations(page)).toEqual([]);
 
-    await page.getByRole("button", { name: "Next" }).click();
+    await page.getByRole("button", { name: techCopy.steps.next }).click();
     await expect(page.getByRole("heading", { level: 1, name: "After photos" })).toBeVisible();
     await expect.poll(() => writesTo(fake, "piece").length).toBe(1);
     expect(writesTo(fake, "piece")[0]?.body).toEqual({
@@ -147,13 +146,13 @@ test.describe("the piece of a consultation and fit in one visit", () => {
 
   test("asks the client's choice first, by name, and sends the product with the piece fitted", async ({ page }) => {
     const fake = await onTheChoice(page);
-    await expect(page.getByRole("button", { name: "Choose the hair system, or mark it declined" })).toBeDisabled();
+    await expect(page.getByRole("button", { name: techCopy.oneVisit.chooseFirst })).toBeDisabled();
     expect(await axeViolations(page)).toEqual([]);
 
     await page.getByRole("button", { name: "Mane Man Natural" }).click();
     await expect(page.getByRole("button", { name: "Mane Man Natural" })).toHaveAttribute("aria-pressed", "true");
-    await page.getByRole("textbox", { name: "The new piece’s label" }).fill("MM-NAT-5120-A");
-    await page.getByRole("button", { name: "Next" }).click();
+    await page.getByRole("textbox", { name: techCopy.steps.piece.label }).fill("MM-NAT-5120-A");
+    await page.getByRole("button", { name: techCopy.steps.next }).click();
 
     await expect.poll(() => writesTo(fake, "piece").length).toBe(1);
     expect(writesTo(fake, "piece")[0]?.body).toEqual({ piece_code: "MM-NAT-5120-A", product: "natural" });
@@ -161,11 +160,11 @@ test.describe("the piece of a consultation and fit in one visit", () => {
 
   test("records that the client decided against it, and asks for no label", async ({ page }) => {
     const fake = await onTheChoice(page);
-    await page.getByRole("button", { name: "Decided against it", exact: true }).click();
-    await expect(page.getByText("Nothing is fitted. The visit ends as a free consultation.")).toBeVisible();
-    await expect(page.getByRole("textbox", { name: "The new piece’s label" })).toHaveCount(0);
+    await page.getByRole("button", { name: techCopy.oneVisit.declined, exact: true }).click();
+    await expect(page.getByText(techCopy.oneVisit.declinedNote)).toBeVisible();
+    await expect(page.getByRole("textbox", { name: techCopy.steps.piece.label })).toHaveCount(0);
     expect(await axeViolations(page)).toEqual([]);
-    await page.getByRole("button", { name: "Next" }).click();
+    await page.getByRole("button", { name: techCopy.steps.next }).click();
 
     await expect.poll(() => writesTo(fake, "piece").length).toBe(1);
     expect(writesTo(fake, "piece")[0]?.body).toEqual({ declined: true });
@@ -174,15 +173,15 @@ test.describe("the piece of a consultation and fit in one visit", () => {
   // The fit's items are never asked of a technician who fitted nothing.
   test("runs the consultation's checklist alone once the client decided against the fit", async ({ page }) => {
     const fake = await onTheChoice(page);
-    await page.getByRole("button", { name: "Decided against it", exact: true }).click();
-    await page.getByRole("button", { name: "Next" }).click();
+    await page.getByRole("button", { name: techCopy.oneVisit.declined, exact: true }).click();
+    await page.getByRole("button", { name: techCopy.steps.next }).click();
 
     await expect(page.getByRole("heading", { level: 1, name: "Consultation checklist" })).toBeVisible();
     const items = checklistItems(page);
     await expect(items).toHaveCount(3);
     await expect(page.getByRole("button", { name: /Adhesive applied/ })).toHaveCount(0);
     for (const item of await items.all()) await item.click();
-    await page.getByRole("button", { name: "Next" }).click();
+    await page.getByRole("button", { name: techCopy.steps.next }).click();
 
     await expect.poll(() => writesTo(fake, "checklist").length).toBe(1);
     expect(writesTo(fake, "checklist")[0]?.body).toEqual({
@@ -193,8 +192,8 @@ test.describe("the piece of a consultation and fit in one visit", () => {
   test("runs the consultation's checklist and the fit's for a client being fitted", async ({ page }) => {
     await onTheChoice(page);
     await page.getByRole("button", { name: "Mane Man Natural" }).click();
-    await page.getByRole("textbox", { name: "The new piece’s label" }).fill("MM-NAT-5120-A");
-    await page.getByRole("button", { name: "Next" }).click();
+    await page.getByRole("textbox", { name: techCopy.steps.piece.label }).fill("MM-NAT-5120-A");
+    await page.getByRole("button", { name: techCopy.steps.next }).click();
 
     await expect(page.getByRole("heading", { level: 1, name: "Consultation and fit checklist" })).toBeVisible();
     await expect(checklistItems(page)).toHaveCount(9);
@@ -205,13 +204,13 @@ test.describe("the piece of a consultation and fit in one visit", () => {
     const fake = await atTheOutcome(page, { declined: true }, { code: "AUDTEST", given_by: "client" });
     await page.getByRole("button", { name: "Done", exact: true }).click();
 
-    await expect(page.getByText("Ends as a free consultation. Nothing to pay.")).toBeVisible();
+    await expect(page.getByText(techCopy.oneVisit.endsAsConsultation)).toBeVisible();
     await expect(page.getByText(/payment link/)).toHaveCount(0);
     await expect(page.getByText(/AUDTEST/)).toHaveCount(0);
-    await expect(page.getByLabel("Discount code, if the client has one")).toHaveCount(0);
+    await expect(page.getByLabel(techCopy.oneVisit.code.label)).toHaveCount(0);
     expect(await axeViolations(page)).toEqual([]);
 
-    await page.getByRole("button", { name: "Next" }).click();
+    await page.getByRole("button", { name: techCopy.steps.next }).click();
     await expect(page.getByText("Rohit M. · free consultation")).toBeVisible();
     expect(writesTo(fake, "outcome").at(-1)?.body).toEqual({ outcome: "done" });
   });
@@ -220,7 +219,7 @@ test.describe("the piece of a consultation and fit in one visit", () => {
     await atTheOutcome(page, { product: "natural" });
     await page.getByRole("button", { name: "Done", exact: true }).click();
     await expect(page.getByText("Closing texts the client a payment link for Mane Man Natural.")).toBeVisible();
-    await expect(page.getByLabel("Discount code, if the client has one")).toBeVisible();
+    await expect(page.getByLabel(techCopy.oneVisit.code.label)).toBeVisible();
   });
 
   // A discount code the client gives, before the link goes (docs/decisions/0108-discount-codes.md).
@@ -236,15 +235,15 @@ test.describe("the piece of a consultation and fit in one visit", () => {
       if (body.code === "WEDDNG25") return route.fulfill({ json: { code: "WEDDNG25" } });
       return route.fulfill({ status: 422, json: { error: { code: "code_not_applicable", request_id: "test" } } });
     });
-    const box = page.getByLabel("Discount code, if the client has one");
+    const box = page.getByLabel(techCopy.oneVisit.code.label);
     await expect(box).toHaveCount(0);
     await page.getByRole("button", { name: "Done", exact: true }).click();
     await box.fill("wrong1");
-    await page.getByRole("button", { name: "Apply code" }).click();
+    await page.getByRole("button", { name: techCopy.oneVisit.code.apply }).click();
     await expect(page.getByRole("alert")).toHaveText("That code doesn’t apply to this visit.");
 
     await box.fill("WEDDNG25");
-    await page.getByRole("button", { name: "Apply code" }).click();
+    await page.getByRole("button", { name: techCopy.oneVisit.code.apply }).click();
     await expect(page.getByText("Code WEDDNG25 applied. The payment link will take it off.")).toBeVisible();
     expect(await axeViolations(page)).toEqual([]);
     expect(asked).toEqual([{ code: "wrong1" }, { code: "WEDDNG25" }]);
@@ -256,7 +255,7 @@ test.describe("the piece of a consultation and fit in one visit", () => {
     await atTheOutcome(page, { product: "natural" }, { code: "AUDTEST", given_by: "client" });
     await page.getByRole("button", { name: "Done", exact: true }).click();
     await expect(page.getByText("Code AUDTEST applied at booking. The payment link will take it off.")).toBeVisible();
-    await expect(page.getByLabel("Discount code, if the client has one")).toHaveCount(0);
+    await expect(page.getByLabel(techCopy.oneVisit.code.label)).toHaveCount(0);
     expect(await axeViolations(page)).toEqual([]);
   });
 
@@ -266,6 +265,6 @@ test.describe("the piece of a consultation and fit in one visit", () => {
     fake.oneVisit = true;
     await page.goto(`/jobs/${JOB_ID}`);
     await expect(page.getByText(/consultation and fit/)).toBeVisible();
-    await expect(page.getByText("Pays once fitted")).toBeVisible();
+    await expect(page.getByText(techCopy.badges.at_visit)).toBeVisible();
   });
 });

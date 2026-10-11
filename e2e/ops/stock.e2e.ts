@@ -7,6 +7,7 @@ import type { Page } from "@playwright/test";
 import { expect, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
 import { answer, fails, IMRAN, json, STOCK, type Answers } from "./fixtures.ts";
+import * as opsCopy from "../../apps/ops/src/content.ts";
 
 async function open(page: Page, extra: Answers = {}): Promise<void> {
   await answer(page, { "GET /api/stock": json(STOCK), ...extra });
@@ -17,8 +18,8 @@ async function open(page: Page, extra: Answers = {}): Promise<void> {
 const posted = (page: Page, path: string) =>
   page.waitForRequest((request) => request.url().endsWith(path) && request.method() === "POST");
 
-const onHand = (page: Page) => page.getByRole("region", { name: "On hand" });
-const recording = (page: Page) => page.getByRole("region", { name: "Record a movement" });
+const onHand = (page: Page) => page.getByRole("region", { name: opsCopy.stock.onHand });
+const recording = (page: Page) => page.getByRole("region", { name: opsCopy.stock.record.title });
 
 test("is a section of its own beside the technicians, titled by what it is", async ({ page }) => {
   await open(page);
@@ -34,7 +35,7 @@ test("shows what each place holds, a low kit in words, a store below nothing, an
 }) => {
   await open(page);
   const table = onHand(page);
-  await expect(table.getByRole("columnheader", { name: "Central store" })).toBeVisible();
+  await expect(table.getByRole("columnheader", { name: opsCopy.stock.central })).toBeVisible();
   await expect(table.getByRole("columnheader", { name: "Sameer Bhatt (left)" })).toBeVisible();
 
   const tape = table.getByRole("row").filter({ has: page.getByRole("rowheader", { name: "Tape strips" }) });
@@ -84,10 +85,10 @@ test("records a delivery into the store, showing what it holds before and after"
   const form = recording(page);
   await form.getByLabel("Consumable").selectOption({ label: "Tape strips" });
   await form.getByLabel("How many").fill("100");
-  await form.getByLabel("Note").fill("Supplier's note 4418");
+  await form.getByLabel(opsCopy.stock.record.note).fill("Supplier's note 4418");
   await form.getByRole("button", { name: "Review" }).click();
 
-  const check = form.getByRole("group", { name: "Review the movement" });
+  const check = form.getByRole("group", { name: opsCopy.stock.confirm.title });
   await expect(check).toBeFocused();
   await expect(check).toContainText("Central store: 120 strip → 220 strip");
   const sent = posted(page, "/api/stock/deliveries");
@@ -97,7 +98,7 @@ test("records a delivery into the store, showing what it holds before and after"
     quantity: 100,
     note: "Supplier's note 4418",
   });
-  await expect(form.getByRole("status")).toHaveText("Recorded.");
+  await expect(form.getByRole("status")).toHaveText(opsCopy.stock.recorded);
 });
 
 test("a transfer shows both places, and says when the store would hold less than nothing", async ({ page }) => {
@@ -110,7 +111,7 @@ test("a transfer shows both places, and says when the store would hold less than
   await form.getByLabel("How many").fill("10");
   await form.getByRole("button", { name: "Review" }).click();
 
-  const check = form.getByRole("group", { name: "Review the movement" });
+  const check = form.getByRole("group", { name: opsCopy.stock.confirm.title });
   await expect(check).toContainText("Central store: -20 ml → -30 ml");
   await expect(check).toContainText("Imran Qureshi: 150 ml → 160 ml");
   await expect(check).toContainText("Central store would go below zero");
@@ -135,16 +136,16 @@ test("a count shows the figure it finds, and one that agrees says it records onl
   await form.getByLabel("Count").check();
   await form.getByLabel("Consumable").selectOption({ label: "Tape strips" });
   await form.getByLabel("Where").selectOption({ label: "Imran Qureshi" });
-  await form.getByLabel("Counted").fill("3");
+  await form.getByLabel(opsCopy.stock.record.counted).fill("3");
   await form.getByRole("button", { name: "Review" }).click();
-  await expect(form.getByRole("group", { name: "Review the movement" })).toContainText(
+  await expect(form.getByRole("group", { name: opsCopy.stock.confirm.title })).toContainText(
     "Matches what's held. Records the count only.",
   );
 
   await form.getByRole("button", { name: "Edit" }).click();
-  await form.getByLabel("Counted").fill("2");
+  await form.getByLabel(opsCopy.stock.record.counted).fill("2");
   await form.getByRole("button", { name: "Review" }).click();
-  await expect(form.getByRole("group", { name: "Review the movement" })).toContainText(
+  await expect(form.getByRole("group", { name: opsCopy.stock.confirm.title })).toContainText(
     "Imran Qureshi: 3 strip → 2 strip",
   );
   const sent = posted(page, "/api/stock/counts");
@@ -164,7 +165,7 @@ test("a loss needs its words, and a refusal names what was wrong", async ({ page
   await form.getByLabel("How many").fill("2");
   await expect(form.getByRole("button", { name: "Review" })).toBeDisabled();
 
-  await form.getByLabel("What was lost, and how").fill("Two burst in the heat");
+  await form.getByLabel(opsCopy.stock.record.lossNote).fill("Two burst in the heat");
   await form.getByRole("button", { name: "Review" }).click();
   await form.getByRole("button", { name: "Record" }).click();
   await expect(form.getByRole("alert")).toHaveText("Unknown kit. Reload.");
@@ -172,17 +173,19 @@ test("a loss needs its words, and a refusal names what was wrong", async ({ page
 
 test("lists the latest movements, a job's use under the technician who recorded it", async ({ page }) => {
   await open(page);
-  const movements = page.getByRole("region", { name: "Latest movements" });
-  const used = movements.getByRole("row").filter({ hasText: "Used on a job" });
+  const movements = page.getByRole("region", { name: opsCopy.stock.movements.title });
+  const used = movements.getByRole("row").filter({ hasText: opsCopy.stock.movements.reasons.used });
   await expect(used).toContainText("Tape strips");
   await expect(used).toContainText("-4");
   await expect(used.getByRole("cell").last()).toHaveText("Imran Qureshi");
-  await expect(movements.getByRole("row").filter({ hasText: "Delivered" })).toContainText("+100");
+  await expect(movements.getByRole("row").filter({ hasText: opsCopy.stock.movements.reasons.received })).toContainText(
+    "+100",
+  );
 });
 
 test("sorts the movements by a column, and narrows them by a list or a search", async ({ page }) => {
   await open(page);
-  const movements = page.getByRole("region", { name: "Latest movements" });
+  const movements = page.getByRole("region", { name: opsCopy.stock.movements.title });
   const rows = movements.getByRole("row");
   await expect(movements.getByRole("columnheader", { name: "When" })).toHaveAttribute("aria-sort", "descending");
   await expect(rows.nth(1)).toContainText("Used on a job");
@@ -196,14 +199,14 @@ test("sorts the movements by a column, and narrows them by a list or a search", 
   await movements.getByLabel("Why").selectOption("Delivered");
   await expect(rows).toHaveCount(2);
   await expect(movements).toContainText("1 of 2");
-  await movements.getByRole("button", { name: "Clear", exact: true }).click();
+  await movements.getByRole("button", { name: opsCopy.tables.clear, exact: true }).click();
   await expect(rows).toHaveCount(3);
 
-  await movements.getByLabel("Search").fill("imran");
+  await movements.getByLabel(opsCopy.tables.search).fill("imran");
   await expect(rows).toHaveCount(2);
   await expect(rows.nth(1)).toContainText("Used on a job");
-  await movements.getByLabel("Search").fill("nothing like it");
-  await expect(movements.getByText("Nothing matches.")).toBeVisible();
+  await movements.getByLabel(opsCopy.tables.search).fill("nothing like it");
+  await expect(movements.getByText(opsCopy.tables.none)).toBeVisible();
 });
 
 test("meets WCAG 2.2 AA, with a movement being checked as well", async ({ page }) => {
@@ -212,6 +215,6 @@ test("meets WCAG 2.2 AA, with a movement being checked as well", async ({ page }
 
   await recording(page).getByLabel("How many").fill("5");
   await recording(page).getByRole("button", { name: "Review" }).click();
-  await expect(recording(page).getByRole("group", { name: "Review the movement" })).toBeVisible();
+  await expect(recording(page).getByRole("group", { name: opsCopy.stock.confirm.title })).toBeVisible();
   expect(await axeViolations(page)).toEqual([]);
 });

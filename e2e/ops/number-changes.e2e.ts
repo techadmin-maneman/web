@@ -8,6 +8,7 @@ import type { Page } from "@playwright/test";
 import { expect, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
 import { answer, fails, json, NUMBER_CHANGES, TASKS_READ_ON, type Call } from "./fixtures.ts";
+import * as opsCopy from "../../apps/ops/src/content.ts";
 
 const CHANGE = NUMBER_CHANGES.changes[0]?.id ?? "";
 const DECISION = `/api/number-changes/${CHANGE}/decision` as const;
@@ -28,7 +29,7 @@ test("shows both numbers, the day it was asked for, and that each was proven", a
   await expect(only).toHaveCount(1);
   await expect(only).toContainText("+91 98100 04417 → +91 98100 04421");
   await expect(only).toContainText("Requested 21 Sep 2027");
-  await expect(only).toContainText("Both numbers verified by code.");
+  await expect(only).toContainText(opsCopy.numberChanges.queue.proven);
 });
 
 // The change is confirmed with the client on the new number, which had to be copied by hand.
@@ -68,7 +69,7 @@ test("confirms the change, and it leaves the queue", async ({ page }) => {
 test("rejects with a reason, which it will not send without", async ({ page }) => {
   await open(page, json({ state: "rejected" }));
   await page.getByRole("button", { name: "Reject", exact: true }).click();
-  const send = page.getByRole("button", { name: "Reject change" });
+  const send = page.getByRole("button", { name: opsCopy.numberChanges.queue.reason.confirm });
   await expect(send).toBeDisabled();
 
   await page.getByRole("textbox", { name: "Reason" }).fill("The client says they did not ask.");
@@ -93,7 +94,7 @@ test("moves the keyboard into the reason as it opens, and to the heading once de
   const reason = page.getByRole("textbox", { name: "Reason" });
   await expect(reason).toBeFocused();
   await reason.fill("The client says they did not ask.");
-  await page.getByRole("button", { name: "Reject change" }).click();
+  await page.getByRole("button", { name: opsCopy.numberChanges.queue.reason.confirm }).click();
   await expect(page.getByRole("heading", { name: "Waiting for a decision" })).toBeFocused();
 });
 
@@ -120,13 +121,13 @@ test("says so when someone has decided it already", async ({ page }) => {
 test("says so when nothing is waiting", async ({ page }) => {
   await answer(page, { "GET /api/number-changes": json({ changes: [] }) });
   await page.goto("/number-changes");
-  await expect(page.getByText("No number changes.")).toBeVisible();
+  await expect(page.getByText(opsCopy.numberChanges.queue.empty)).toBeVisible();
 });
 
 test("says so when the queue cannot be loaded, and loads it on Try again", async ({ page }) => {
   await answer(page, { "GET /api/number-changes": fails(503, "unavailable") });
   await page.goto("/number-changes");
-  await expect(page.getByRole("alert")).toContainText("Couldn't load this.");
+  await expect(page.getByRole("alert")).toContainText(opsCopy.states.failed);
 
   await answer(page, { "GET /api/number-changes": json(NUMBER_CHANGES) });
   await page.getByRole("button", { name: "Try again" }).click();

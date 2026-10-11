@@ -1,6 +1,7 @@
 import { expect, test } from "../support.ts";
 import { TASKS } from "./fixtures.ts";
 import { open, list, row, groupNames } from "./tasks-fixtures.ts";
+import * as opsCopy from "../../apps/ops/src/content.ts";
 
 // The groups were one 484 px column on a 1440 px screen, money between a call about a move and a job on a day off.
 test("stands each group under its department, in the navigation's order, side by side", async ({ page }) => {
@@ -38,7 +39,7 @@ test("writes how long each has left in words, and marks what has run over", asyn
   await open(page);
   await expect(row(page, "Kunal Mehta")).toContainText("3 days overdue");
   await expect(row(page, "Rohit Malhotra")).toContainText("2 days left");
-  await expect(row(page, "Karan Bose")).toContainText("Due today");
+  await expect(row(page, "Karan Bose")).toContainText(opsCopy.waiting.today);
   await expect(row(page, "Ashish Gill")).toContainText("1 day left");
 });
 
@@ -78,7 +79,7 @@ test("names the one fact each group turns on", async ({ page }) => {
   // The piece's label, the day its order goes in, and the day it is to be replaced.
   await expect(row(page, "Kunal Mehta")).toContainText("MM-STD-4417-K · order by 19 Sep 2027, replace by 17 Oct 2027");
   // The fraud rule, lettered as the referral queue letters it.
-  await expect(row(page, "Karan Bose")).toContainText("Monthly cap exceeded");
-  await expect(row(page, "Vikram Sethi")).toContainText("Both numbers verified");
-  await expect(row(page, "Ashish Gill")).toContainText("Requested in the app");
+  await expect(row(page, "Karan Bose")).toContainText(opsCopy.referrals.queue.signals.monthly_cap);
+  await expect(row(page, "Vikram Sethi")).toContainText(opsCopy.tasks.subs.number_change);
+  await expect(row(page, "Ashish Gill")).toContainText(opsCopy.tasks.subs.erasure_request);
 });

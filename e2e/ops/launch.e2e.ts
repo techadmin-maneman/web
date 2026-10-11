@@ -18,6 +18,7 @@ import {
   type Call,
   type OpsReply,
 } from "./fixtures.ts";
+import * as opsCopy from "../../apps/ops/src/content.ts";
 
 const BANDRA = "/api/pincodes/400050/launch";
 const SECTOR_65 = "/api/pincodes/122018/launch";
@@ -64,7 +65,7 @@ test("takes the day a technician started coming, and sends it only when ops chos
   await open(page, { [LAUNCH_BANDRA]: launchRoute(PREVIEW, LAUNCHED) });
   await page.getByRole("button", { name: "Mark 400050 live, Bandra W" }).click();
   const panel = page.getByRole("region", { name: "Mark 400050 live" });
-  await panel.getByLabel("Launch date").fill("2027-02-01");
+  await panel.getByLabel(opsCopy.waitlist.date).fill("2027-02-01");
 
   // The preview was the first call; the next is the launch.
   const sent = page.waitForRequest((request) => request.url().endsWith(BANDRA) && request.method() === "POST");
@@ -78,7 +79,7 @@ test("sends no launch dated to a day still to come", async ({ page }) => {
   await open(page, { [LAUNCH_BANDRA]: launchRoute(PREVIEW, LAUNCHED) });
   await page.getByRole("button", { name: "Mark 400050 live, Bandra W" }).click();
   const panel = page.getByRole("region", { name: "Mark 400050 live" });
-  await panel.getByLabel("Launch date").fill("2027-02-20");
+  await panel.getByLabel(opsCopy.waitlist.date).fill("2027-02-20");
   await expect(panel.getByRole("button", { name: "Send to 84" })).toBeDisabled();
 });
 
@@ -101,7 +102,7 @@ test("tells those still waiting in a pincode already live", async ({ page }) => 
   await page.getByRole("button", { name: "Tell those waiting in 122018, Sector 65" }).click();
   const panel = page.getByRole("region", { name: "Tell those waiting in 122018" });
   await expect(panel).toContainText("Messages 2 people");
-  await expect(panel.getByLabel("Launch date")).toHaveCount(0);
+  await expect(panel.getByLabel(opsCopy.waitlist.date)).toHaveCount(0);
   await panel.getByRole("button", { name: "Send to 2" }).click();
   await expect(panel.getByRole("status")).toHaveText("Live. 2 messages sent.");
 });
@@ -155,12 +156,12 @@ test("adds a pincode the service area does not hold, then marks it live in the s
     { ...AREAS, areas: [...AREAS.areas, UNHELD] },
   );
   const row = page.getByRole("row").filter({ hasText: "560001" });
-  await expect(row).toContainText("Not in service area");
+  await expect(row).toContainText(opsCopy.waitlist.notHeld);
   await row.getByRole("button", { name: "Add 560001, then mark live" }).click();
 
   const adding = page.getByRole("region", { name: "Add 560001" });
   await expect(adding).toBeFocused();
-  await adding.getByLabel("Area name").fill("MG Road");
+  await adding.getByLabel(opsCopy.areas.add.area).fill("MG Road");
   await adding.getByLabel("City").selectOption("Bengaluru");
   const sent = page.waitForRequest((request) => request.url().endsWith("/api/pincodes") && request.method() === "POST");
   await adding.getByRole("button", { name: "Add" }).click();
@@ -177,7 +178,7 @@ test("says so when the pincode is held already, and adds nothing", async ({ page
   await open(page, { "POST /api/pincodes": fails(409, "pincode_held") }, { ...AREAS, areas: [...AREAS.areas, UNHELD] });
   await page.getByRole("button", { name: "Add 560001, then mark live" }).click();
   const adding = page.getByRole("region", { name: "Add 560001" });
-  await adding.getByLabel("Area name").fill("MG Road");
+  await adding.getByLabel(opsCopy.areas.add.area).fill("MG Road");
   await adding.getByLabel("City").selectOption("Bengaluru");
   await adding.getByRole("button", { name: "Add" }).click();
   await expect(adding.getByRole("alert")).toHaveText("Already added.");
@@ -199,6 +200,6 @@ test("offers no way to add a pincode to one whose access does not reach it, and 
   });
   await open(page, { "GET /api/whoami": viewer }, { ...AREAS, areas: [...AREAS.areas, UNHELD] });
   const row = page.getByRole("row").filter({ hasText: "560001" });
-  await expect(row).toContainText("Not in service area");
+  await expect(row).toContainText(opsCopy.waitlist.notHeld);
   await expect(row.getByRole("button")).toHaveCount(0);
 });

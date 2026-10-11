@@ -12,6 +12,7 @@ import {
   pageOf,
   backToRoster,
 } from "./technicians-fixtures.ts";
+import * as opsCopy from "../../apps/ops/src/content.ts";
 
 test("lists every active technician with the zone the board draws", async ({ page }) => {
   await open(page);
@@ -24,18 +25,21 @@ test("lists every active technician with the zone the board draws", async ({ pag
 test("sorts the roster by a column, and narrows it by zone or a search", async ({ page }) => {
   await open(page);
   const rows = page.getByRole("table").getByRole("row");
-  const byName = page.getByRole("button", { name: "Technician", exact: true });
+  const byName = page.getByRole("button", { name: opsCopy.clients.visits.book.technician, exact: true });
   await byName.click();
-  await expect(page.getByRole("columnheader", { name: "Technician" })).toHaveAttribute("aria-sort", "ascending");
+  await expect(page.getByRole("columnheader", { name: opsCopy.clients.visits.book.technician })).toHaveAttribute(
+    "aria-sort",
+    "ascending",
+  );
   await expect(rows.nth(1)).toContainText("Faizan Ali");
   await byName.click();
   await expect(rows.nth(1)).toContainText("Sandeep Yadav");
 
-  await page.getByLabel("Zone").selectOption("Sec 40–65");
+  await page.getByLabel(opsCopy.technicians.details.zone).selectOption("Sec 40–65");
   await expect(rows).toHaveCount(2);
   await expect(rows.nth(1)).toContainText("Imran Qureshi");
-  await page.getByRole("button", { name: "Clear", exact: true }).click();
-  await page.getByLabel("Search").fill("sandeep");
+  await page.getByRole("button", { name: opsCopy.tables.clear, exact: true }).click();
+  await page.getByLabel(opsCopy.tables.search).fill("sandeep");
   await expect(rows).toHaveCount(2);
 });
 
@@ -114,7 +118,7 @@ test("reads as a gap, never as a nought, when the phone timed none of the jobs",
 test("puts Leave where the board draws Skill, with no design note beneath the table", async ({ page }) => {
   await open(page);
   await expect(page.getByRole("columnheader", { name: "Skill" })).toBeHidden();
-  await expect(page.getByRole("columnheader", { name: "Leave" })).toBeVisible();
+  await expect(page.getByRole("columnheader", { name: opsCopy.technicians.tabs.leave })).toBeVisible();
   await expect(page.getByText("Nothing records what a technician is trained for")).toBeHidden();
   await expect(page.getByText("Jobs finished 24 Jun 2027 to 22 Sep 2027.")).toBeVisible();
 });
@@ -144,12 +148,12 @@ test("opens a technician's own page from his name, a tab at a time, each at an a
   const tabs = main.getByRole("navigation", { name: "Imran Qureshi: week, leave, phones and kit" });
   await expect(tabs.getByRole("link")).toHaveText(["This week", "Leave", "Phones", "Kit"]);
   await expect(tabs.getByRole("link", { name: "This week" })).toHaveAttribute("aria-current", "page");
-  await expect(main.getByRole("link", { name: "Open on the board" })).toHaveAttribute(
+  await expect(main.getByRole("link", { name: opsCopy.technicians.week.open })).toHaveAttribute(
     "href",
     "/dispatch?find=Imran+Qureshi",
   );
 
-  await tabs.getByRole("link", { name: "Phones" }).click();
+  await tabs.getByRole("link", { name: opsCopy.technicians.tabs.phones }).click();
   await expect(page).toHaveURL(new RegExp(`/technicians/${IMRAN}/phones$`));
   await expect(main.getByText("Chrome on Android · 7f3b")).toBeVisible();
 
@@ -165,8 +169,8 @@ test("opens a technician's own page from his name, a tab at a time, each at an a
 test("says so when the technician is not on the roster any more", async ({ page }) => {
   await open(page);
   await page.goto("/technicians/88000000-0000-4000-8000-000000000009");
-  await expect(page.getByText("No longer on the roster.")).toBeVisible();
-  await expect(page.getByRole("link", { name: "All technicians" })).toBeVisible();
+  await expect(page.getByText(opsCopy.technicians.page.notFound)).toBeVisible();
+  await expect(page.getByRole("link", { name: opsCopy.technicians.page.back })).toBeVisible();
 });
 
 // Every phone read "last used 2 Oct 2026": no time, and nothing said whether it was still signed in.
@@ -177,7 +181,7 @@ test("names each phone, says when it was last used, and whether it is signed in,
   const imran = await pageOf(page, "Imran Qureshi", "Phones");
   const android = imran.getByRole("listitem").filter({ hasText: "Chrome on Android · 7f3b" });
   await expect(android).toContainText("Last used 22 Sep 2027, 10:30 am");
-  await expect(android).toContainText("Signed in");
+  await expect(android).toContainText(opsCopy.technicians.phones.signedIn);
   const iphone = imran.getByRole("listitem").filter({ hasText: "Safari on iPhone" });
   await expect(iphone).toContainText("Revoked 5 Aug 2027");
   await expect(iphone).not.toContainText("Signed");
@@ -185,10 +189,12 @@ test("names each phone, says when it was last used, and whether it is signed in,
 
   // A phone whose browser gave no label at login, signed out on its own, and a technician who has logged in on none.
   const sandeep = await pageOf(page, "Sandeep Yadav", "Phones");
-  await expect(sandeep.getByRole("listitem").filter({ hasText: "Phone · 902d" })).toContainText("Signed out");
+  await expect(sandeep.getByRole("listitem").filter({ hasText: "Phone · 902d" })).toContainText(
+    opsCopy.technicians.phones.signedOut,
+  );
   await backToRoster(page);
   const faizan = await pageOf(page, "Faizan Ali", "Phones");
-  await expect(faizan.getByText("No phones signed in.")).toBeVisible();
+  await expect(faizan.getByText(opsCopy.technicians.phones.none)).toBeVisible();
 });
 
 // A revoke stops them signing in on any phone, since their code reaches the lost phone too; ops let them back.
@@ -206,9 +212,9 @@ test("says when a revoke stopped him signing in, and lets him in again", async (
   await expect(main.getByText("Sign-in blocked since 5 Aug 2027, when a phone was revoked.")).toBeVisible();
 
   const sent = page.waitForRequest((request) => request.url().endsWith(`/api/technicians/${IMRAN}/allow-sign-in`));
-  await main.getByRole("button", { name: "Allow sign-in" }).click();
+  await main.getByRole("button", { name: opsCopy.technicians.phones.allow }).click();
   await sent;
-  await expect(main.getByRole("status")).toHaveText("They can sign in again.");
+  await expect(main.getByRole("status")).toHaveText(opsCopy.technicians.phones.allowed);
 });
 
 test("offers no revoke on a phone that is revoked already", async ({ page }) => {
@@ -224,7 +230,7 @@ test("asks before it revokes a phone, and says what a revoke does", async ({ pag
   await expect(main.getByText("Signs the phone out.")).toBeVisible();
 
   const sent = page.waitForRequest((request) => request.url().endsWith(REVOKE) && request.method() === "POST");
-  await main.getByRole("button", { name: "Revoke this phone" }).click();
+  await main.getByRole("button", { name: opsCopy.technicians.phones.confirm }).click();
   await sent;
   await expect(main.getByText("Revoked 22 Sep 2027")).toBeVisible();
 });
@@ -242,14 +248,14 @@ test("says so when the phone is no longer that technician's", async ({ page }) =
   await open(page, { [REVOKE_IT]: fails(404, "not_found") });
   const main = await pageOf(page, "Imran Qureshi", "Phones");
   await main.getByRole("button", { name: PHONE }).click();
-  await main.getByRole("button", { name: "Revoke this phone" }).click();
+  await main.getByRole("button", { name: opsCopy.technicians.phones.confirm }).click();
   await expect(main.getByRole("alert")).toContainText("That phone is no longer theirs.");
 });
 
 test("says so when the roster cannot be loaded, and loads it on Try again", async ({ page }) => {
   await answer(page, { [READ_ROSTER]: fails(503, "unavailable"), [READ_WORK]: json(TECHNICIAN_WORK) });
   await page.goto("/technicians");
-  await expect(page.getByRole("alert")).toContainText("Couldn't load this.");
+  await expect(page.getByRole("alert")).toContainText(opsCopy.states.failed);
 
   await answer(page, { [READ_ROSTER]: json(TECHNICIANS), [READ_WORK]: json(TECHNICIAN_WORK) });
   await page.getByRole("button", { name: "Try again" }).click();
@@ -261,7 +267,7 @@ test("says so when the roster cannot be loaded, and loads it on Try again", asyn
 test("says so when the figures cannot be loaded, and loads them on Try again", async ({ page }) => {
   await answer(page, { [READ_ROSTER]: json(TECHNICIANS), [READ_WORK]: fails(503, "unavailable") });
   await page.goto("/technicians");
-  await expect(page.getByRole("alert")).toContainText("Couldn't load this.");
+  await expect(page.getByRole("alert")).toContainText(opsCopy.states.failed);
 
   await answer(page, { [READ_ROSTER]: json(TECHNICIANS), [READ_WORK]: json(TECHNICIAN_WORK) });
   await page.getByRole("button", { name: "Try again" }).click();
@@ -274,5 +280,5 @@ test("says so when no technician is active", async ({ page }) => {
     [READ_WORK]: json({ ...TECHNICIAN_WORK, technicians: [] }),
   });
   await page.goto("/technicians");
-  await expect(page.getByText("No active technicians.")).toBeVisible();
+  await expect(page.getByText(opsCopy.technicians.empty)).toBeVisible();
 });

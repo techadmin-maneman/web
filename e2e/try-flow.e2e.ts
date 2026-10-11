@@ -18,6 +18,7 @@ import {
   throughToGate,
   visit,
 } from "./support.ts";
+import * as siteCopy from "../site/src/content/site.ts";
 
 const JOB = "11111111-1111-4111-8111-111111111111";
 const LEAD = "22222222-2222-4222-8222-222222222222";
@@ -146,7 +147,7 @@ test("the whole try-on: uploaded during the choices, the number given before the
 
   await sendFromGate(page, MOBILE);
   await screenIs(page, "sent");
-  await expect(page.getByRole("heading", { name: "Your new look is on its way." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: siteCopy.tryOn.sent.title })).toBeVisible();
   await expect(page.getByText("It'll reach WhatsApp on +91 98100 00000", { exact: false })).toBeVisible();
 
   // A WhatsApp code to the number first, with a fresh Turnstile token; the claim carries the code that proved it.
@@ -207,19 +208,19 @@ test("the gate claims nothing until the WhatsApp code sent to the number is ente
   });
   await visit(page, "/try");
   await throughToGate(page);
-  await page.getByLabel("Name").fill("Test Visitor");
-  await page.getByLabel("Mobile").fill(MOBILE);
-  await page.getByRole("button", { name: "Send my look" }).click();
+  await page.getByLabel(siteCopy.tryOn.gate.name).fill("Test Visitor");
+  await page.getByLabel(siteCopy.tryOn.gate.mobile).fill(MOBILE);
+  await page.getByRole("button", { name: siteCopy.tryOn.gate.submit }).click();
 
   await expect(page.getByText("Sent on WhatsApp to +91 98100 00000.", { exact: false })).toBeVisible();
-  await expect(page.getByLabel("WhatsApp code")).toBeFocused();
-  await page.getByLabel("WhatsApp code").fill("111111");
-  await page.getByRole("button", { name: "Confirm and send my look" }).click();
+  await expect(page.getByLabel(siteCopy.numberCode.label)).toBeFocused();
+  await page.getByLabel(siteCopy.numberCode.label).fill("111111");
+  await page.getByRole("button", { name: siteCopy.tryOn.gate.confirm }).click();
   await expect(page.getByText("That code is not right. 4 tries left.")).toBeVisible();
   expect(named(seen, "claim")).toHaveLength(0);
 
-  await page.getByLabel("WhatsApp code").fill(NUMBER_CODE);
-  await page.getByRole("button", { name: "Confirm and send my look" }).click();
+  await page.getByLabel(siteCopy.numberCode.label).fill(NUMBER_CODE);
+  await page.getByRole("button", { name: siteCopy.tryOn.gate.confirm }).click();
   await screenIs(page, "sent");
   expect(named(seen, "code")).toHaveLength(1);
   expect(named(seen, "claim")).toHaveLength(1);
@@ -229,11 +230,11 @@ test("the gate says when a number has had its codes for today, and claims nothin
   const seen = await mockApi(page, { code: refusal(429, "rate_limited") });
   await visit(page, "/try");
   await throughToGate(page);
-  await page.getByLabel("Name").fill("Test Visitor");
-  await page.getByLabel("Mobile").fill(MOBILE);
-  await page.getByRole("button", { name: "Send my look" }).click();
+  await page.getByLabel(siteCopy.tryOn.gate.name).fill("Test Visitor");
+  await page.getByLabel(siteCopy.tryOn.gate.mobile).fill(MOBILE);
+  await page.getByRole("button", { name: siteCopy.tryOn.gate.submit }).click();
   await expect(page.getByText("That’s too many codes for this number today.", { exact: false })).toBeVisible();
-  await expect(page.getByLabel("WhatsApp code")).toHaveCount(0);
+  await expect(page.getByLabel(siteCopy.numberCode.label)).toHaveCount(0);
   expect(named(seen, "claim")).toHaveLength(0);
 });
 
@@ -248,8 +249,8 @@ test("a render that fails once the look is on its way shows the render's error, 
   await sendFromGate(page, MOBILE);
   await screenIs(page, "sent");
   await page.clock.runFor(3_000);
-  await expect(page.getByRole("heading", { name: "The simulation did not work this time." })).toBeVisible();
-  await page.getByRole("button", { name: "Choose another" }).click();
+  await expect(page.getByRole("heading", { name: siteCopy.tryOn.error.kinds.renderFailed.title })).toBeVisible();
+  await page.getByRole("button", { name: siteCopy.tryOn.error.another }).click();
   await screenIs(page, "upload");
 });
 
@@ -261,7 +262,7 @@ test("a face the renderer cannot read, found once the look is on its way, blames
   await throughToGate(page);
   await sendFromGate(page, MOBILE);
   await page.clock.runFor(3_000);
-  await expect(page.getByRole("heading", { name: "We cannot use this photograph." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: siteCopy.tryOn.error.kinds.photo.title })).toBeVisible();
   const failed = (await analyticsEvents(page)).find(([name]) => name === "try_on_failed");
   expect(failed?.[1]).toEqual({ failure_code: "photo_unreadable" });
 });
@@ -272,7 +273,7 @@ const OWN_LOOK: Answer = { status: 200, json: { job_id: JOB, state: "ready" } };
 test("a visitor who has had their look is told on arrival that it was sent, and shown no look", async ({ page }) => {
   const seen = await mockApi(page, { look: OWN_LOOK });
   await visit(page, "/try");
-  await expect(page.getByRole("heading", { name: "Your look has already been sent." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: siteCopy.tryOn.sent.returning.title })).toBeVisible();
   await expect(page.locator("[data-screen] img")).toHaveCount(0);
   expect(named(seen, "uploadUrl")).toHaveLength(0);
   expect(named(seen, "result")).toHaveLength(0);
@@ -289,7 +290,7 @@ test("a visitor whose upload is refused for having had their look is told it was
     .setInputFiles(await drawnHeadPhoto());
   await page.getByText("I understand, and I agree to my photograph being used this way.").click();
   await page.getByRole("button", { name: "Continue" }).click();
-  await expect(page.getByRole("heading", { name: "Your look has already been sent." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: siteCopy.tryOn.sent.returning.title })).toBeVisible();
   expect((await analyticsEvents(page)).map(([name]) => name)).not.toContain("try_on_failed");
 });
 
@@ -299,7 +300,7 @@ test("a number that had its look in the last thirty days is told at the gate tha
   await visit(page, "/try");
   await throughToGate(page);
   await sendFromGate(page, MOBILE);
-  await expect(page.getByRole("heading", { name: "Your look has already been sent." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: siteCopy.tryOn.sent.returning.title })).toBeVisible();
   expect(named(seen, "generate")).toHaveLength(0);
 });
 
@@ -307,9 +308,9 @@ test("a number that had its look in the last thirty days is told at the gate tha
 test("while WhatsApp cannot send a look, the visitor is told on arrival, and nothing is uploaded", async ({ page }) => {
   const seen = await mockApi(page, { availability: { status: 200, json: { available: false } } });
   await visit(page, "/try");
-  await expect(page.getByRole("heading", { name: "The try-on is paused." })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Choose another" })).toHaveCount(0);
-  await expect(page.getByRole("link", { name: "Book a consultation instead" })).toHaveAttribute("href", "/book");
+  await expect(page.getByRole("heading", { name: siteCopy.tryOn.error.kinds.unavailable.title })).toBeVisible();
+  await expect(page.getByRole("button", { name: siteCopy.tryOn.error.another })).toHaveCount(0);
+  await expect(page.getByRole("link", { name: siteCopy.tryOn.error.book })).toHaveAttribute("href", "/book");
   expect(named(seen, "uploadUrl")).toHaveLength(0);
 });
 
@@ -358,7 +359,7 @@ test("the gate says when a number is out of tries for today, and makes none", as
   await visit(page, "/try");
   await throughToGate(page);
   await sendFromGate(page, MOBILE);
-  await expect(page.getByText("This number is out of tries for today. Try again tomorrow.")).toBeVisible();
+  await expect(page.getByText(siteCopy.tryOn.gate.errors.rateLimited)).toBeVisible();
   await screenIs(page, "gate");
   expect(named(seen, "generate")).toHaveLength(0);
 });
@@ -371,7 +372,7 @@ test("the gate says when the try-on is already another number's", async ({ page 
   await visit(page, "/try");
   await throughToGate(page);
   await sendFromGate(page, MOBILE);
-  await expect(page.getByText("This look is already on its way to another number.")).toBeVisible();
+  await expect(page.getByText(siteCopy.tryOn.gate.errors.taken)).toBeVisible();
   await screenIs(page, "gate");
 });
 
@@ -383,7 +384,7 @@ test("the gate marks the field a claim's refusal names, and focuses it", async (
   await throughToGate(page);
   await sendFromGate(page, MOBILE);
 
-  const mobile = page.getByLabel("Mobile");
+  const mobile = page.getByLabel(siteCopy.tryOn.gate.mobile);
   await expect(mobile).toHaveAttribute("aria-invalid", "true");
   await expect(mobile).toHaveAccessibleDescription("Enter a valid 10-digit mobile number.");
   await expect(mobile).toBeFocused();
@@ -399,8 +400,8 @@ test("the gate pressed again after a lost answer sends the same request key", as
   await visit(page, "/try");
   await throughToGate(page);
   await sendFromGate(page, MOBILE);
-  await expect(page.getByText("That didn't go through. Try again in a minute.")).toBeVisible();
-  await page.getByRole("button", { name: "Send my look" }).click();
+  await expect(page.getByText(siteCopy.tryOn.gate.errors.other)).toBeVisible();
+  await page.getByRole("button", { name: siteCopy.tryOn.gate.submit }).click();
   await screenIs(page, "sent");
   const keys = await Promise.all(named(seen, "claim").map((claim) => claim.headerValue("idempotency-key")));
   expect(keys).toHaveLength(2);
@@ -418,8 +419,8 @@ test("a render request lost after the claim is asked again, with the same claim"
   await visit(page, "/try");
   await throughToGate(page);
   await sendFromGate(page, MOBILE);
-  await expect(page.getByText("That didn't go through. Try again in a minute.")).toBeVisible();
-  await page.getByRole("button", { name: "Send my look" }).click();
+  await expect(page.getByText(siteCopy.tryOn.gate.errors.other)).toBeVisible();
+  await page.getByRole("button", { name: siteCopy.tryOn.gate.submit }).click();
   await screenIs(page, "sent");
   const keys = await Promise.all(named(seen, "claim").map((claim) => claim.headerValue("idempotency-key")));
   expect(keys).toHaveLength(2);
@@ -435,7 +436,7 @@ test("Back from the gate offers every look again, and nothing has been made", as
   const seen = await mockApi(page);
   await visit(page, "/try");
   await throughToGate(page);
-  await page.getByRole("button", { name: "Back", exact: true }).click();
+  await page.getByRole("button", { name: siteCopy.tryOn.back, exact: true }).click();
 
   await screenIs(page, "looks");
   await expect(page.getByRole("radio", { name: /^Light density Natural/ })).toBeChecked();
@@ -458,7 +459,7 @@ test("a new photograph asks for the agreement again", async ({ page }) => {
   await reach("consent");
   await page.getByText("I understand, and I agree to my photograph being used this way.").click();
   await expect(page.getByRole("checkbox")).toBeChecked();
-  await page.getByRole("button", { name: "Back", exact: true }).click();
+  await page.getByRole("button", { name: siteCopy.tryOn.back, exact: true }).click();
   await reach("upload");
   await page
     .locator('input[type="file"]')

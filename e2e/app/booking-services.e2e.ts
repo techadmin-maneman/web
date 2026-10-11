@@ -21,6 +21,7 @@ import {
   FIRST_FIT,
   LATE_FEE_LINE,
 } from "./booking-fixtures.ts";
+import * as appCopy from "../../apps/app/src/content.ts";
 
 // One client, one hold at a time: a new hold lets the client's earlier one go, so these run one after another, in
 // order. One failing leaves the rest to run.
@@ -102,14 +103,14 @@ function holdsSent(page: Page): unknown[] {
 
 /** Picks a visit on the sheet's first step, where its kind offers more than one, and goes on. */
 async function pickVisit(page: Page, name: RegExp): Promise<void> {
-  const visits = page.getByRole("dialog", { name: "Pick a visit" });
+  const visits = page.getByRole("dialog", { name: appCopy.booking.service.title });
   await visits.getByRole("radio", { name }).check();
   await visits.getByRole("button", { name: "Continue" }).click();
 }
 
 /** From the date step, the first free day and a free window, as far as the pay step. */
 async function datesToPayment(page: Page): Promise<void> {
-  const dates = page.getByRole("dialog", { name: "Pick a date" });
+  const dates = page.getByRole("dialog", { name: appCopy.booking.date.title });
   await dates.getByRole("radio").and(page.locator(":enabled")).first().click();
   await dates.getByRole("button", { name: "Continue" }).click();
   await continueToPayment(page);
@@ -122,9 +123,9 @@ test("offers every service of the kind it books, the one offered chosen, with ho
 }) => {
   await premiumBeside(page, "standard");
   await openSheet(page);
-  const visits = page.getByRole("dialog", { name: "Pick a visit" });
+  const visits = page.getByRole("dialog", { name: appCopy.booking.service.title });
   await expect(visits.getByText("Step 1 of 4")).toBeVisible();
-  const kind = visits.getByRole("radiogroup", { name: "Service visit" });
+  const kind = visits.getByRole("radiogroup", { name: appCopy.VISIT_TYPES.service });
   await expect(kind.getByRole("radio")).toHaveCount(2);
   // The service the app offers the next visit as, which the client may keep or change.
   const standard = kind.getByRole("radio", { name: /^Service visit/ });
@@ -151,12 +152,12 @@ test("opens on the service offered, books it, and names it on the pay step", asy
   const held = holdsSent(page);
   await holdAs(page, { service: { tier: "premium", name: PREMIUM.name, minutes: 120 }, price: PREMIUM.price });
   await openSheet(page);
-  const visits = page.getByRole("dialog", { name: "Pick a visit" });
+  const visits = page.getByRole("dialog", { name: appCopy.booking.service.title });
   await expect(visits.getByRole("radio", { name: /^Premium service visit/ })).toBeChecked();
   await visits.getByRole("button", { name: "Continue" }).click();
   await datesToPayment(page);
 
-  const pay = page.getByRole("dialog", { name: "Pay and confirm" });
+  const pay = page.getByRole("dialog", { name: appCopy.booking.pay.title });
   await expect(pay.getByText("Premium service visit", { exact: true })).toBeVisible();
   await expect(pay.getByText("Rs. 3,540", { exact: true })).toBeVisible();
   await expect(pay.getByText("Rs. 3,000 + Rs. 540 GST", { exact: true })).toBeVisible();
@@ -171,7 +172,9 @@ test("books another service of the kind the client picks instead of the one offe
   await pickVisit(page, /^Service visit/);
   await datesToPayment(page);
   await expect(
-    page.getByRole("dialog", { name: "Pay and confirm" }).getByText("Service visit", { exact: true }),
+    page
+      .getByRole("dialog", { name: appCopy.booking.pay.title })
+      .getByText(appCopy.VISIT_TYPES.service, { exact: true }),
   ).toBeVisible();
   expect(held).toMatchObject([{ type: "service", tier: "standard" }]);
 });
@@ -180,9 +183,11 @@ test("books the one service of its kind without asking, and names it on the pay 
   const held = holdsSent(page);
   await holdAs(page, {});
   await toPayment(page);
-  await expect(page.getByRole("heading", { name: "Pick a visit" })).toHaveCount(0);
+  await expect(page.getByRole("heading", { name: appCopy.booking.service.title })).toHaveCount(0);
   await expect(
-    page.getByRole("dialog", { name: "Pay and confirm" }).getByText("Service visit", { exact: true }),
+    page
+      .getByRole("dialog", { name: appCopy.booking.pay.title })
+      .getByText(appCopy.VISIT_TYPES.service, { exact: true }),
   ).toBeVisible();
   expect(held).toMatchObject([{ type: "service", tier: "standard" }]);
 });
@@ -198,7 +203,7 @@ test("names a first fit's service and how long it takes, and sends no one to Wha
     late_change_charge: "late_fee",
   });
   await toPayment(page);
-  const pay = page.getByRole("dialog", { name: "Pay and confirm" });
+  const pay = page.getByRole("dialog", { name: appCopy.booking.pay.title });
   await expect(pay.getByText("First fit", { exact: true })).toBeVisible();
   await expect(pay.getByText("3 hours", { exact: true })).toBeVisible();
   await expect(pay.getByText("Premium? Message us")).toHaveCount(0);
@@ -208,7 +213,7 @@ test("names a first fit's service and how long it takes, and sends no one to Wha
 test("writes a first fit's late fee as charged, with its GST split beside it", async ({ page }) => {
   await holdAs(page, { type: "first_fit", price: FIRST_FIT, late_fee: LATE_FEE, late_change_charge: "late_fee" });
   await toPayment(page);
-  const pay = page.getByRole("dialog", { name: "Pay and confirm" });
+  const pay = page.getByRole("dialog", { name: appCopy.booking.pay.title });
   await expect(pay.getByText(LATE_FEE_LINE)).toBeVisible();
 });
 
@@ -216,7 +221,7 @@ test("writes a first fit's late fee as charged, with its GST split beside it", a
 test("says a late change keeps the payment, never a late fee, where the booking is sold so", async ({ page }) => {
   await holdAs(page, { type: "first_fit", price: FIRST_FIT, late_fee: null, late_change_charge: "visit" });
   await toPayment(page);
-  const pay = page.getByRole("dialog", { name: "Pay and confirm" });
+  const pay = page.getByRole("dialog", { name: appCopy.booking.pay.title });
   await expect(pay.getByText(FREE_UNTIL)).toBeVisible();
   await expect(pay.getByText(/Moving or cancelling inside/)).toHaveCount(0);
 });

@@ -5,6 +5,7 @@ import type { Request } from "@playwright/test";
 import { expect, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
 import { answer, json, type OpsReply } from "./fixtures.ts";
+import * as opsCopy from "../../apps/ops/src/content.ts";
 
 const ROHIT = {
   id: "11111111-1111-4111-8111-111111111111",
@@ -40,12 +41,12 @@ test("lists every client beneath the search, narrowed by status and city, the na
   await answer(page, { "GET /api/clients": json(LISTED) });
   await page.goto("/clients");
 
-  const list = page.getByRole("region", { name: "All clients" });
+  const list = page.getByRole("region", { name: opsCopy.clients.list.title });
   await expect(list.getByRole("row")).toHaveCount(3);
   await expect(list.getByRole("row").nth(1)).toContainText("Rohit Malhotra");
   await expect(list.getByRole("row").nth(1)).toContainText("Sat 25 Sep");
-  await expect(list.getByRole("row").nth(2)).toContainText("Not known");
-  await expect(list.getByRole("row").nth(2)).toContainText("None booked");
+  await expect(list.getByRole("row").nth(2)).toContainText(opsCopy.clients.list.noCity);
+  await expect(list.getByRole("row").nth(2)).toContainText(opsCopy.clients.list.noVisit);
   expect(await axeViolations(page)).toEqual([]);
 
   await list.getByLabel("Status").selectOption({ label: "Booked" });
@@ -54,7 +55,7 @@ test("lists every client beneath the search, narrowed by status and city, the na
   await expect.poll(() => asked.at(-1)).toBe("?state=lead&city=Noida");
   expect(new URL(page.url()).search).toBe("?state=lead&city=Noida");
 
-  await list.getByRole("button", { name: "Next" }).click();
+  await list.getByRole("button", { name: opsCopy.clients.list.next }).click();
   await expect.poll(() => asked.at(-1)).toBe("?state=lead&city=Noida&page=1");
   await expect(list.getByText("Page 2")).toBeVisible();
 

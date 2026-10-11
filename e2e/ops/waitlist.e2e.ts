@@ -6,6 +6,7 @@ import type { Page, Route } from "@playwright/test";
 import { expect, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
 import { answer, AREAS, fails, json, LAUNCHED, PREVIEW, type Call } from "./fixtures.ts";
+import * as opsCopy from "../../apps/ops/src/content.ts";
 
 const LAUNCH = "/api/pincodes/400050/launch";
 const LAUNCH_IT: Call = `POST ${LAUNCH}`;
@@ -33,7 +34,7 @@ test("lists the pincodes with their counts, and marks the ones we already come t
   await expect(bandra).toContainText("4 Feb 2027");
   // Sector 65 is served, so it offers no launch; it offers to tell whoever there is still untold (e2e/ops/launch.e2e.ts).
   const served = page.getByRole("row").filter({ hasText: "122018" });
-  await expect(served).toContainText("Live");
+  await expect(served).toContainText(opsCopy.waitlist.live);
   await expect(served.getByRole("button")).toHaveAccessibleName("Tell those waiting in 122018, Sector 65");
 });
 
@@ -55,7 +56,7 @@ test("gives the area the room the board does, and each figure the board's own wi
 test("says when more pincodes are waiting than the table lists", async ({ page }) => {
   await answer(page, { "GET /api/waitlist": json({ ...AREAS, more: true }) });
   await page.goto("/areas");
-  await expect(page.getByText("Showing the longest waits only.")).toBeVisible();
+  await expect(page.getByText(opsCopy.waitlist.more)).toBeVisible();
 });
 
 test("asks what a launch would send before anything goes out", async ({ page }) => {
@@ -67,8 +68,8 @@ test("asks what a launch would send before anything goes out", async ({ page }) 
   const panel = page.getByRole("region", { name: "Mark 400050 live" });
   await expect(panel.getByText("Messages 84 people")).toBeVisible();
   await expect(panel.getByText("Waiting")).toBeVisible();
-  await expect(panel.getByText("Opted in")).toBeVisible();
-  await expect(panel.getByText("Referred")).toBeVisible();
+  await expect(panel.getByText(opsCopy.areas.launch.rows.alerts)).toBeVisible();
+  await expect(panel.getByText(opsCopy.areas.launch.rows.referred)).toBeVisible();
   await expect(panel).toContainText("Mane Man now comes to Bandra W");
   await expect(panel).toContainText("33 didn't opt in and won't be messaged.");
 });
@@ -103,7 +104,7 @@ test("says so when the launch is refused, and keeps the panel open", async ({ pa
 test("says nobody is waiting when the list is empty", async ({ page }) => {
   await answer(page, { "GET /api/waitlist": json({ areas: [], more: false, cities: [] }) });
   await page.goto("/areas");
-  await expect(page.getByText("No one waiting.")).toBeVisible();
+  await expect(page.getByText(opsCopy.waitlist.empty)).toBeVisible();
 });
 
 test("meets WCAG 2.2 AA with the list, and with the launch panel open", async ({ page }) => {
@@ -124,7 +125,7 @@ test("sorts the waitlist by a column, and narrows it by a search", async ({ page
     "ascending",
   );
   await expect(rows.nth(1)).toContainText("122018");
-  await page.getByLabel("Search").fill("bandra");
+  await page.getByLabel(opsCopy.tables.search).fill("bandra");
   await expect(rows).toHaveCount(2);
   await expect(rows.nth(1)).toContainText("400050");
 });

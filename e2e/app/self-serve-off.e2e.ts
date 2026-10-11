@@ -11,6 +11,7 @@ import { expect, test } from "../support.ts";
 import { bookedNumber } from "./booked-numbers.ts";
 import { fittedClient } from "./fitted.ts";
 import { logIn } from "./signed-in.ts";
+import * as appCopy from "../../apps/app/src/content.ts";
 
 /**
  * Passes /api/me through with booking.self_serve false, and anything else `also` changes. Only the browser resolves
@@ -35,18 +36,18 @@ test("a fitted client reschedules and books through WhatsApp, and no booking she
   await logIn(page, fittedClient().mobile);
   await expect(page.getByRole("heading", { level: 1, name: "Your next visit" })).toBeVisible();
 
-  await expect(page.getByRole("link", { name: "Reschedule" })).toHaveAttribute(
+  await expect(page.getByRole("link", { name: appCopy.home.reschedule })).toHaveAttribute(
     "href",
     new RegExp(`${WHATSAPP}${encodeURIComponent("I’d like to move my service visit on")}`),
   );
-  await expect(page.getByRole("button", { name: "Reschedule" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: appCopy.home.reschedule })).toHaveCount(0);
 
   await page.getByRole("navigation").getByRole("link", { name: "Visits" }).click();
-  await expect(page.getByRole("link", { name: "Book your next visit" })).toHaveAttribute(
+  await expect(page.getByRole("link", { name: appCopy.home.next.book })).toHaveAttribute(
     "href",
     new RegExp(`${WHATSAPP}${encodeURIComponent("I’d like to book my next visit.")}`),
   );
-  await expect(page.getByRole("button", { name: "Book your next visit" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: appCopy.home.next.book })).toHaveCount(0);
   await expect(page.getByRole("dialog")).toHaveCount(0);
 });
 

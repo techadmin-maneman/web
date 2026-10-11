@@ -2,6 +2,7 @@ import { expect, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
 import { CLIENT, fails, json, NEW_RECORD, PHOTOS, RECORD, type Call, type OpsReply } from "./fixtures.ts";
 import { RECORD_PATH, READ_RECORD, READ_PHOTOS, VIEW_PHOTOS, openClient, invitedBy } from "./clients-fixtures.ts";
+import * as opsCopy from "../../apps/ops/src/content.ts";
 
 const ATTACH_INVITE: Call = `POST ${RECORD_PATH}/referral`;
 
@@ -10,11 +11,11 @@ const readPhoto = (id: string): Call => `GET ${RECORD_PATH}/photos/${id}`;
 // A friend who booked away from the invite's page earned their referrer nothing until ops could attach it (ADR 0089).
 test("says where the visits of the invite a client came with stand", async ({ page }) => {
   await openClient(page, `/clients/${CLIENT.id}/referrals`);
-  const invite = page.getByRole("region", { name: "Invite" });
+  const invite = page.getByRole("region", { name: opsCopy.clients.invite.title });
   await expect(invite).toContainText("RewardGiven");
   await expect(invite).toContainText("Since20 Oct 2026");
-  await expect(invite.getByText("Attached by")).toHaveCount(0);
-  await expect(invite.getByRole("button", { name: "Attach invite" })).toHaveCount(0);
+  await expect(invite.getByText(opsCopy.clients.invite.attachedBy)).toHaveCount(0);
+  await expect(invite.getByRole("button", { name: opsCopy.clients.invite.form.save })).toHaveCount(0);
 });
 
 test("attaches an invite to a client who came with none, with why, and shows it as the API answers", async ({
@@ -31,13 +32,13 @@ test("attaches an invite to a client who came with none, with why, and shows it 
     [READ_RECORD]: json(NEW_RECORD),
     [ATTACH_INVITE]: json(attached, 201),
   });
-  const invite = page.getByRole("region", { name: "Invite" });
+  const invite = page.getByRole("region", { name: opsCopy.clients.invite.title });
   await expect(invite).toContainText("No invite.");
   // The note forbade a fitted client, though one is allowed, held for review.
-  const attach = invite.getByRole("button", { name: "Attach invite" });
+  const attach = invite.getByRole("button", { name: opsCopy.clients.invite.form.save });
   await expect(attach).toBeDisabled();
 
-  await invite.getByLabel("Invite code").fill("rm4k7p");
+  await invite.getByLabel(opsCopy.clients.invite.form.code).fill("rm4k7p");
   await expect(attach).toBeDisabled();
   await invite.getByLabel("Reason").fill("Told us Rohit sent him");
   expect(await axeViolations(page)).toEqual([]);
@@ -45,7 +46,7 @@ test("attaches an invite to a client who came with none, with why, and shows it 
   await attach.click();
   expect((await sent).postDataJSON()).toEqual({ code: "rm4k7p", reason: "Told us Rohit sent him" });
 
-  await expect(invite.getByRole("status")).toHaveText("Invite attached.");
+  await expect(invite.getByRole("status")).toHaveText(opsCopy.clients.invite.news.attached);
   // The head names who sent it as the API answered, without the record being read again.
   await expect(invitedBy(page)).toHaveText("Rohit Malhotra (RM4K7P)");
   await expect(invite).toContainText("RewardGiven once this client is fitted");
@@ -63,12 +64,12 @@ test.describe("says why an invite was not attached", () => {
         [READ_RECORD]: json(NEW_RECORD),
         [ATTACH_INVITE]: fails(code === "unknown_invite" ? 422 : 409, code),
       });
-      const invite = page.getByRole("region", { name: "Invite" });
-      await invite.getByLabel("Invite code").fill("RM4K7P");
+      const invite = page.getByRole("region", { name: opsCopy.clients.invite.title });
+      await invite.getByLabel(opsCopy.clients.invite.form.code).fill("RM4K7P");
       await invite.getByLabel("Reason").fill("Told us Rohit sent him");
-      await invite.getByRole("button", { name: "Attach invite" }).click();
+      await invite.getByRole("button", { name: opsCopy.clients.invite.form.save }).click();
       await expect(invite.getByRole("alert")).toContainText(words);
-      await expect(invite.getByLabel("Invite code")).toHaveValue("RM4K7P");
+      await expect(invite.getByLabel(opsCopy.clients.invite.form.code)).toHaveValue("RM4K7P");
     });
   }
 
@@ -85,11 +86,11 @@ test.describe("says why an invite was not attached", () => {
         409,
       ),
     });
-    const invite = page.getByRole("region", { name: "Invite" });
-    await invite.getByLabel("Invite code").fill("RM4K7P");
+    const invite = page.getByRole("region", { name: opsCopy.clients.invite.title });
+    await invite.getByLabel(opsCopy.clients.invite.form.code).fill("RM4K7P");
     await invite.getByLabel("Reason").fill("Told us Rohit sent him");
-    await invite.getByRole("button", { name: "Attach invite" }).click();
-    await expect(invite.getByRole("status")).toHaveText("Already attached.");
+    await invite.getByRole("button", { name: opsCopy.clients.invite.form.save }).click();
+    await expect(invite.getByRole("status")).toHaveText(opsCopy.clients.invite.news.already_invited);
     await expect(invitedBy(page)).toHaveText("Vikram Sethi (VSAB23)");
   });
 });
@@ -102,7 +103,7 @@ test("keeps the photographs locked, and says what opening them records", async (
       return json(PHOTOS)(route);
     },
   });
-  await expect(page.getByText("Locked")).toBeVisible();
+  await expect(page.getByText(opsCopy.clients.photos.locked)).toBeVisible();
   await expect(page.getByRole("heading", { name: `Photos of ${CLIENT.name}` })).toBeVisible();
   await expect(page.getByText("Viewing is logged.")).toBeVisible();
   // Nothing is fetched while it is locked, so nothing is logged.
@@ -120,22 +121,22 @@ test("logs the opening once, before any photograph, and letters the time the API
   await openClient(page, `/clients/${CLIENT.id}/photos`);
   // The browser's clock says otherwise; the API's logged time is the one lettered.
   await page.clock.setFixedTime(new Date("2027-09-22T09:00:00.000Z"));
-  await page.getByRole("button", { name: "View photos" }).click();
+  await page.getByRole("button", { name: opsCopy.clients.photos.open }).click();
 
   await expect(page.getByText("Open · logged 10:42 am")).toBeVisible();
   await expect(page.getByRole("img")).toHaveCount(10);
   expect(asked[0]).toBe("view");
   expect(asked.filter((each) => each === "view")).toHaveLength(1);
-  await expect(page.getByText("Before", { exact: true })).toBeVisible();
-  await expect(page.getByText("After", { exact: true })).toBeVisible();
+  await expect(page.getByText(opsCopy.clients.photos.phases.before, { exact: true })).toBeVisible();
+  await expect(page.getByText(opsCopy.clients.photos.phases.after, { exact: true })).toBeVisible();
   await expect(page.getByText("22 Aug 2027 · service visit · Imran Qureshi")).toBeVisible();
 });
 
 // The locked state promises a log the city head can see; it is here, beside the photographs.
 test("says who opened the photographs before, and when", async ({ page }) => {
   await openClient(page, `/clients/${CLIENT.id}/photos`);
-  await page.getByRole("button", { name: "View photos" }).click();
-  const before = page.getByRole("region", { name: "Opened before" });
+  await page.getByRole("button", { name: opsCopy.clients.photos.open }).click();
+  const before = page.getByRole("region", { name: opsCopy.clients.photos.before });
   await expect(before.getByRole("listitem")).toHaveText(["ops@maneman.in · 19 Sep 2027, 10:10 am"]);
 });
 
@@ -147,7 +148,7 @@ test("shows nothing, and asks for no photograph, when the opening could not be l
   await openClient(page, `/clients/${CLIENT.id}/photos`, {
     [VIEW_PHOTOS]: fails(503, "unavailable"),
   });
-  await page.getByRole("button", { name: "View photos" }).click();
+  await page.getByRole("button", { name: opsCopy.clients.photos.open }).click();
   await expect(page.getByRole("alert")).toContainText("Couldn't log the view, so photos stay locked.");
   await expect(page.getByRole("img")).toHaveCount(0);
   expect(photos).toBe(0);
@@ -158,7 +159,7 @@ test("shows no photograph the API would not serve", async ({ page }) => {
   await openClient(page, `/clients/${CLIENT.id}/photos`, {
     [readPhoto(first)]: fails(503, "unavailable"),
   });
-  await page.getByRole("button", { name: "View photos" }).click();
+  await page.getByRole("button", { name: opsCopy.clients.photos.open }).click();
   await expect(page.getByRole("alert")).toContainText("Couldn't log the view");
   await expect(page.getByRole("img")).toHaveCount(9);
 });
@@ -174,7 +175,7 @@ test("fetches the newest visits' photographs first, and earlier ones when asked"
   });
   const three = { visits: [visit, earlier(1, "2027-06-27"), earlier(2, "2026-11-14")] };
   await openClient(page, `/clients/${CLIENT.id}/photos`, { [READ_PHOTOS]: json(three) });
-  await page.getByRole("button", { name: "View photos" }).click();
+  await page.getByRole("button", { name: opsCopy.clients.photos.open }).click();
 
   await expect(page.getByText("27 Jun 2027 · service visit · Imran Qureshi")).toBeVisible();
   await expect(page.getByText("14 Nov 2026 · service visit · Imran Qureshi")).toBeHidden();
