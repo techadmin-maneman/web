@@ -130,6 +130,7 @@ function RosterTable({
                 <OpsLink className={styles.choose} to={technicianPath(technician.id)}>
                   {technician.name}
                 </OpsLink>
+                {technician.city === null && <span className={styles.noCity}>{technicians.noCity}</span>}
               </th>
               <td className={styles.zone}>{technician.zone ?? technicians.unknown}</td>
               <td className={styles.jobs}>{figures.get(technician.id)?.jobs ?? technicians.unknown}</td>

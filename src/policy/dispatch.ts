@@ -93,7 +93,14 @@ export function targetTime(
  * it at a start still ahead. A blacked-out day comes last, since ops may still move a visit onto one with a reason.
  */
 export type MoveRefusal =
-  Exclude<TargetTime, "ahead"> | "on_leave" | "back_to_back" | "clash" | "does_not_fit" | "blackout";
+  | Exclude<TargetTime, "ahead">
+  | "on_leave"
+  | "back_to_back"
+  | "clash"
+  | "does_not_fit"
+  | "blackout"
+  /** Handed to a technician who works in another city than the visit's, or in none yet (ADR 0117). */
+  | "other_city";
 
 interface MoveCheck {
   readonly time: TargetTime;

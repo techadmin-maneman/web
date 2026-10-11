@@ -46,6 +46,7 @@ export function moveRefusal(job: Job, to: Target, code: string): string {
   if (code === "clash") return copy.clash(to.technician.name, shortDate(to.date), windowWord(to.window));
   if (code === "on_leave") return copy.onLeave(to.technician.name, shortDate(to.date));
   if (code === "back_to_back") return copy.backToBack(to.technician.name);
+  if (code === "other_city") return copy.otherCity(to.technician.name);
   if (code === "does_not_fit") {
     const type = typeOf(job);
     const typeName = type === null ? nameOf(job) : (dispatch.typeNames[type] ?? type);

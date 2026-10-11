@@ -135,8 +135,13 @@ export const technicians = {
     mobile: "Mobile",
     zone: "Zone (optional)",
     city: "City",
-    noCity: "No city",
+    noCity: "No city (no bookings)",
   },
+  /**
+   * A technician with no city takes no client bookings until ops set one: a visit goes only to a technician in its
+   * own city (docs/decisions/0117-a-technician-takes-visits-in-their-own-city.md).
+   */
+  noCity: "No city, so no bookings",
   add: {
     open: "Add a technician",
     title: "Add a technician",

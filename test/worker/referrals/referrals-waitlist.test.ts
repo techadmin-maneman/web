@@ -11,7 +11,7 @@ beforeEach(async () => {
   captureLogs();
   await person(REFERRER, "Rohit Malhotra", "+919810000001");
   await env.DB.prepare(
-    "INSERT INTO technicians (id, fsm_id, name, initials, active, updated_at) VALUES ('t1', 't1', 'Imran Qureshi', 'IQ', 1, ?1)",
+    "INSERT INTO technicians (id, fsm_id, name, initials, active, updated_at, city) VALUES ('t1', 't1', 'Imran Qureshi', 'IQ', 1, ?1, 'Gurgaon')",
   )
     .bind(NOW.toISOString())
     .run();

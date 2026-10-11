@@ -2,7 +2,7 @@
 
 Every decision this repository was built on, oldest first. A record says what was decided and why, and is not rewritten to say something else: a later record changes it, and says so in its own header (ADR 0001). **Changed by** gathers those later records, from either side, so an old record's reader knows to read on.
 
-This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. A record names its topic in its header, `- Topic:` and one of the headings below, and the test fails on one that does not. The next free number is 0116.
+This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. A record names its topic in its header, `- Topic:` and one of the headings below, and the test fails on one that does not. The next free number is 0118.
 
 ## By topic
 
@@ -52,6 +52,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 - [0105](0105-a-consultation-and-fit-in-one-visit.md) A consultation and fit in one visit
 - [0111](0111-a-technician-never-takes-two-visits-in-a-row.md) A technician never takes two visits in a row
 - [0115](0115-a-move-to-another-day-waits-for-the-client.md) A move to another day waits for the client
+- [0117](0117-a-technician-takes-visits-in-their-own-city.md) A technician takes visits in their own city
 
 ### Field work
 
@@ -186,7 +187,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0031](0031-access-and-audit.md) | Access on the ops surface, and the audit log | 2026-09-22 | accepted | [0072](0072-ops-clients-and-queues.md) |
 | [0032](0032-fsm-mirror.md) | The FSM mirror, and Books documents | 2026-09-22 | superseded by 0110 on 4 October 2026: FSM's mirror is gone with FSM | [0070](0070-vendor-correctness.md), [0075](0075-tests-held-to-the-contract-and-the-local-stack.md), [0101](0101-phase-1s-path-into-fsm-removed.md), [0110](0110-field-work-without-fsm.md) |
 | [0033](0033-credit-ledger.md) | The credit ledger | 2026-09-22 | accepted | [0068](0068-a-paid-hold-is-kept.md), [0107](0107-referral-rewards-in-the-console.md) |
-| [0034](0034-clash-check.md) | The clash check | 2026-09-22 | accepted | [0069](0069-dispatch-under-concurrency.md) |
+| [0034](0034-clash-check.md) | The clash check | 2026-09-22 | accepted | [0069](0069-dispatch-under-concurrency.md), [0117](0117-a-technician-takes-visits-in-their-own-city.md) |
 | [0035](0035-window-slot-map.md) | The window-to-slot map | 2026-09-22 | accepted, with placeholder times | [0102](0102-window-times.md) |
 | [0036](0036-geocoding.md) | Geocoding, for the check-in's geofence | 2026-09-23 | accepted | [0054](0054-address-capture.md) |
 | [0037](0037-shared-packages.md) | Shared packages: the brand first | 2026-09-22 | accepted | [0076](0076-one-ui-layer-and-one-api-client.md), [0077](0077-a-token-scale-written-once.md) |
@@ -266,3 +267,4 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0113](0113-fsms-columns-go.md) | FSM's columns go | 2026-10-06 | accepted |  |
 | [0114](0114-whatsapp-business-platform-through-msg91.md) | The WhatsApp Business Platform through MSG91 | 2026-10-11 | accepted |  |
 | [0115](0115-a-move-to-another-day-waits-for-the-client.md) | A move to another day waits for the client | 2026-10-11 | accepted |  |
+| [0117](0117-a-technician-takes-visits-in-their-own-city.md) | A technician takes visits in their own city | 2026-10-11 | accepted |  |

@@ -29,16 +29,18 @@ async function dayBooking(db: D1Database, plan: Plan, date: string, selfServeBoo
 /** The windows someone is free in, for each length a slot is held for, keyed "minutes/date". */
 async function freeWindows(
   db: D1Database,
-  bookings: readonly DayBooking[],
+  asked: { readonly bookings: readonly DayBooking[]; readonly pincode: string },
   first: string,
   now: Date,
 ): Promise<Map<string, Set<BookingWindow>>> {
+  const { bookings, pincode } = asked;
   const lengths = new Set(bookings.flatMap((booking) => (booking.by === "slot" ? [booking.minutes] : [])));
   const free = new Map<string, Set<BookingWindow>>();
   for (const minutes of lengths) {
     for (const day of await availability({
       db,
-      placing: { personId: null },
+      // Only the technicians in the pincode's city can take it.
+      placing: { personId: null, pincode },
       visit: { minutes },
       from: first,
       days: BOOKING_DAYS,
@@ -51,19 +53,20 @@ async function freeWindows(
   return free;
 }
 
-/** The days the form offers, from tomorrow in India, each window open where booking it would be taken. */
-export async function openDays(db: D1Database, plan: Plan, selfServeBooking: boolean, now: Date): Promise<OpenDay[]> {
+/** The days the form offers at a pincode, from tomorrow in India, each window open where booking it would be taken. */
+export async function openDays(
+  db: D1Database,
+  asked: { readonly plan: Plan; readonly pincode: string },
+  selfServeBooking: boolean,
+  now: Date,
+): Promise<OpenDay[]> {
+  const { plan, pincode } = asked;
   const first = addDays(indiaDate(now), 1);
   const dates = Array.from({ length: BOOKING_DAYS }, (_, index) => addDays(first, index));
   const days = await Promise.all(
     dates.map(async (date) => ({ date, booking: await dayBooking(db, plan, date, selfServeBooking) })),
   );
-  const free = await freeWindows(
-    db,
-    days.map((day) => day.booking),
-    first,
-    now,
-  );
+  const free = await freeWindows(db, { bookings: days.map((day) => day.booking), pincode }, first, now);
 
   return days.map(({ date, booking }) => {
     const isOpen = (window: BookingWindow): boolean => {
