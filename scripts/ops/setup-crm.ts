@@ -59,7 +59,7 @@ const CUSTOM_FIELDS: readonly NewField[] = [
     values: Object.values(BOOKED_WINDOW_NAMES),
   },
   // A client's last closed chat (docs/decisions/0137-last-contact-in-the-crm.md). The sync writes them only once
-  // CRM_ORG_HAS_CONTACT_FIELDS (src/config/crm.ts) is turned on after this has run.
+  // CRM_ORG_HAS_CARE_FIELDS (src/config/crm.ts) is turned on after this has run.
   { label: "Last Contact Date", apiName: "Last_Contact_Date", dataType: "date" },
   {
     label: "Last Contact Reason",

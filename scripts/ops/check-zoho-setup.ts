@@ -48,7 +48,7 @@ const EXPECTED_FIELDS: readonly ExpectedField[] = [
   // What CRM_ORG_HAS_REFERRAL_FIELDS (src/config/crm.ts) needs before it is turned on: scripts/ops/setup-crm.ts makes them.
   { apiName: "Referral_Code", type: "text" },
   { apiName: "Booked_Window", type: "picklist", values: Object.values(BOOKED_WINDOW_NAMES) },
-  // What CRM_ORG_HAS_CONTACT_FIELDS needs before it is turned on, made the same way.
+  // What CRM_ORG_HAS_CARE_FIELDS needs before it is turned on, made the same way.
   { apiName: "Last_Contact_Date", type: "date" },
   { apiName: "Last_Contact_Reason", type: "picklist", values: Object.values(LAST_CONTACT_REASONS) },
 ];

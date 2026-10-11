@@ -15,7 +15,7 @@ import { z } from "zod";
 import { LOSS_EXTENT_NAMES, WINDOW_NAMES } from "../../config/booking.ts";
 import {
   BOOKED_WINDOW_NAMES,
-  CRM_ORG_HAS_CONTACT_FIELDS,
+  CRM_ORG_HAS_CARE_FIELDS,
   CRM_ORG_HAS_REFERRAL_FIELDS,
   REFERRAL_LEAD_SOURCE,
 } from "../../config/crm.ts";
@@ -238,7 +238,7 @@ const INVITE_ATTACHED_NOTE = {
  */
 export function contactRecordFor(
   contact: CrmContact,
-  fields: OrgFields = { referral: CRM_ORG_HAS_REFERRAL_FIELDS, contact: CRM_ORG_HAS_CONTACT_FIELDS },
+  fields: OrgFields = { referral: CRM_ORG_HAS_REFERRAL_FIELDS, contact: CRM_ORG_HAS_CARE_FIELDS },
 ): Record<string, unknown> {
   const record: Record<string, unknown> = { Mobile: contact.mobileE164 };
   if (contact.city !== null) record.City = contact.city;
