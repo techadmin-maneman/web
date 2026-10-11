@@ -227,7 +227,7 @@ export async function reactivateTechnician(
 }
 
 /**
- * Whether anything records work of theirs: a visit, a hold, a step, a check-in, a move, a claim or stock. A hair profile
+ * Whether anything records work of theirs: a visit, a hold, a step, a check-in, a move or one asked, a claim or stock. A hair profile
  * names its technician too; it is never read here, and its foreign key refuses the delete instead.
  */
 const HAS_WORK = `(EXISTS (SELECT 1 FROM appointments WHERE technician_id = ?1)
@@ -235,6 +235,7 @@ const HAS_WORK = `(EXISTS (SELECT 1 FROM appointments WHERE technician_id = ?1)
   OR EXISTS (SELECT 1 FROM job_events WHERE technician_id = ?1)
   OR EXISTS (SELECT 1 FROM checkins WHERE technician_id = ?1)
   OR EXISTS (SELECT 1 FROM dispatch_moves WHERE was_technician_id = ?1 OR now_technician_id = ?1)
+  OR EXISTS (SELECT 1 FROM move_proposals WHERE technician_id = ?1)
   OR EXISTS (SELECT 1 FROM slot_claims WHERE technician_id = ?1)
   OR EXISTS (SELECT 1 FROM stock_movements WHERE technician_id = ?1))`;
 

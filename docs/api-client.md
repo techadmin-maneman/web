@@ -765,6 +765,42 @@ One of the client's visits, with its photographs
 }
 ```
 
+### POST /api/visits/{id}/proposed-move/accept
+
+Accept the move to another day ops asked of the client: the visit moves there
+
+**200**: Moved; the visit's new window goes to the client as any move's does
+
+```json
+{
+  "$ref": "#/components/schemas/ProposedMoveAccepted"
+}
+```
+
+**401**: session_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no proposal open on a visit of this client's, or it has run out
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**409**: move_gone: that time was taken since, or the visit cannot move now; the client picks again
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ### GET /api/photos
 
 The client's photographs, by visit, newest first, and their try-ons
@@ -1926,6 +1962,7 @@ Request body:
             "already_disputed",
             "not_disputable",
             "dispute_window_closed",
+            "move_gone",
             "code_not_applicable",
             "code_off",
             "already_discounted",
@@ -2967,6 +3004,17 @@ Request body:
         }
       ],
       "description": "A consultation and fit in one visit not yet closed: the client pays only if they go ahead, once fitted, by a link Razorpay texts them. Null for any other visit."
+    },
+    "proposed_move": {
+      "anyOf": [
+        {
+          "$ref": "#/components/schemas/ProposedMove"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "A move to another day ops asked the client to confirm, still open: the visit stays where it is until they accept it (POST /api/visits/{id}/proposed-move/accept) or pick another time. Null for none."
     }
   },
   "required": [
@@ -2985,7 +3033,8 @@ Request body:
     "technician",
     "place",
     "client_note",
-    "one_visit"
+    "one_visit",
+    "proposed_move"
   ],
   "additionalProperties": false
 }
@@ -3010,6 +3059,56 @@ Request body:
   ],
   "additionalProperties": false,
   "description": "Display name and initials only."
+}
+```
+
+### ProposedMove
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "date": {
+      "type": "string",
+      "format": "date",
+      "description": "India's date the visit would move to."
+    },
+    "window": {
+      "type": "string",
+      "enum": [
+        "morning",
+        "afternoon",
+        "evening"
+      ]
+    },
+    "technician": {
+      "anyOf": [
+        {
+          "$ref": "#/components/schemas/Technician"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "expires_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "The last moment it may be accepted."
+    }
+  },
+  "required": [
+    "id",
+    "date",
+    "window",
+    "technician",
+    "expires_at"
+  ],
+  "additionalProperties": false
 }
 ```
 
@@ -4197,6 +4296,17 @@ Request body:
       ],
       "description": "A consultation and fit in one visit not yet closed: the client pays only if they go ahead, once fitted, by a link Razorpay texts them. Null for any other visit."
     },
+    "proposed_move": {
+      "anyOf": [
+        {
+          "$ref": "#/components/schemas/ProposedMove"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "A move to another day ops asked the client to confirm, still open: the visit stays where it is until they accept it (POST /api/visits/{id}/proposed-move/accept) or pick another time. Null for none."
+    },
     "duration_minutes": {
       "anyOf": [
         {
@@ -4301,6 +4411,7 @@ Request body:
     "place",
     "client_note",
     "one_visit",
+    "proposed_move",
     "duration_minutes",
     "outcome",
     "what_was_done",
@@ -4490,6 +4601,26 @@ Request body:
     "dispute",
     "disputable",
     "dispute_closed_at"
+  ],
+  "additionalProperties": false
+}
+```
+
+### ProposedMoveAccepted
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "moved": {
+      "type": "boolean",
+      "enum": [
+        true
+      ]
+    }
+  },
+  "required": [
+    "moved"
   ],
   "additionalProperties": false
 }

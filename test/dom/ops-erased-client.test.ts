@@ -33,6 +33,7 @@ const visit = (changes: Partial<ClientVisit>): ClientVisit => ({
   discount_code: null,
   price_open: false,
   requested_code: null,
+  proposed_move: null,
   ...changes,
 });
 

@@ -62,7 +62,7 @@ this map, or when the map names something that no longer exists.
 
 ### Dispatch
 
-- **Database work** (`src/domain/dispatch/`): `dispatch`, `dispatch-board`, `dispatch-landing`, `dispatch-utilisation`, `technicians`, `technician-roster`,
+- **Database work** (`src/domain/dispatch/`): `dispatch`, `move-proposals`, `dispatch-board`, `dispatch-landing`, `dispatch-utilisation`, `technicians`, `technician-roster`,
   `technician-work`, `leave`, `blackouts`, `cities`
 - **Rules** (`src/policy/`): `dispatch`, `technician-work`
 - **Routes** (`src/routes/`): `ops/dispatch`, `ops/dispatch-moves`, `ops/blackouts`, `ops/technicians`,
@@ -172,7 +172,7 @@ this map, or when the map names something that no longer exists.
 
 ### Messages
 
-- **Database work** (`src/domain/messages/`): `queued-messages`, `visit-messages`, `visit-message-text`, `stop-messages`,
+- **Database work** (`src/domain/messages/`): `queued-messages`, `visit-messages`, `visit-message-text`, `move-proposal-text`, `stop-messages`,
   `paced-line`
 - **Rules** (`src/policy/`): `message-pacing`
 - **Data** (`src/config/`): `message-templates`, `message-kinds`

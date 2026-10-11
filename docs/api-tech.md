@@ -1052,6 +1052,7 @@ Request body:
             "already_disputed",
             "not_disputable",
             "dispute_window_closed",
+            "move_gone",
             "code_not_applicable",
             "code_off",
             "already_discounted",

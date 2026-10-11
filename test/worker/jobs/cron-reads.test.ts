@@ -137,6 +137,10 @@ const HISTORY = [
      created_at, updated_at)
    SELECT 'mv-' || i, 'a-' || i, '${AGO}', '${AGO}', 'client_asked', 'ops@localhost', 'written', '${AGO}', '${AGO}',
      '${AGO}' FROM n`,
+  `INSERT INTO move_proposals (id, appointment_id, technician_id, date, window_label, reason, proposed_by,
+     expected_start, created_at, expires_at, answered_at, answer, move_id)
+   SELECT 'mp-' || i, 'a-' || i, 't-history', date('${AGO}'), 'morning', 'zone_rebalance', 'ops@localhost', '${AGO}',
+     '${AGO}', '${AGO}', '${AGO}', 'accepted', 'mv-' || i FROM n`,
   `INSERT INTO slot_claims (technician_id, date, claim, hold_id)
    SELECT 't-history', date('${AGO}'), 'claim-' || i, 'h-' || i FROM n WHERE i % 10 <> 0`,
   `INSERT INTO visit_changes (id, appointment_id, person_id, kind, notice, was_start, now_start, created_at)

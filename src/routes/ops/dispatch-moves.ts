@@ -12,6 +12,8 @@ import { json } from "../../http/openapi.ts";
 import type { Context } from "hono";
 import { BOOKING_WINDOWS } from "../../config/scheduling.ts";
 import { type MoveInput, moveJob, recordToldByPhone } from "../../domain/dispatch/dispatch.ts";
+import { proposeMove, withdrawProposal } from "../../domain/dispatch/move-proposals.ts";
+import { auditStatement } from "../../domain/ops/audit.ts";
 import type { AuditEntry } from "../../domain/ops/audit.ts";
 import { actorOf } from "../../http/audit.ts";
 import type { App, AppEnv } from "../../http/context.ts";
@@ -124,7 +126,70 @@ const toldRoute = createRoute({
   },
 });
 
+const ProposedSchema = z
+  .object({
+    proposal_id: z.uuid(),
+    client_notice: z.enum(["messaged", "call"]).openapi({
+      description:
+        "messaged: the client was sent the proposal on WhatsApp; call: they have not agreed to WhatsApp about their " +
+        "visits, so ops call them, and they accept it in the app.",
+    }),
+  })
+  .strict()
+  .openapi("DispatchProposed");
+
+const proposeRoute = createRoute({
+  method: "post",
+  path: "/api/dispatch/propose",
+  summary:
+    "Ask the client to confirm a move to another day: the move's checks run, and the visit stays where it is until the client accepts (ADR 0115)",
+  request: { body: { required: true, ...json(MoveRequestSchema) } },
+  responses: {
+    200: { description: "Asked", ...json(ProposedSchema) },
+    400: errorResponse(
+      "invalid_request: the move keeps the visit's day (fields: date), names a technician not in the caller's cities, or the visit has no client",
+    ),
+    403: errorResponse("access_required"),
+    404: errorResponse("not_found: no such live job in the caller's cities"),
+    409: errorResponse(
+      "the move's checks, as POST /api/dispatch/move answers them: past_day; window_passed; clash; on_leave; back_to_back; does_not_fit; blackout; superseded, with what changed in fields; in_progress",
+    ),
+  },
+});
+
+const withdrawRoute = createRoute({
+  method: "post",
+  path: "/api/dispatch/proposals/{id}/withdraw",
+  summary: "Take back a move to another day the client has not yet accepted",
+  request: { params: z.object({ id: z.uuid() }) },
+  responses: {
+    204: { description: "Taken back" },
+    403: errorResponse("access_required"),
+    404: errorResponse("not_found: no open proposal of a visit in the caller's cities"),
+  },
+});
+
 export function registerOpsDispatchMoves(app: App): void {
+  app.openapi(proposeRoute, (c) => propose(c, c.req.valid("json")));
+
+  app.openapi(withdrawRoute, async (c) => {
+    const { id } = c.req.valid("param");
+    if (!(await withinRouteReach(c, "move_proposal", id))) return refuse(c, "not_found");
+    const withdrawn = await withdrawProposal(c.env.DB, {
+      proposalId: id,
+      audit: {
+        surface: "ops",
+        actor: actorOf(c),
+        action: "dispatch.proposal_withdrawn",
+        subject: { kind: "move_proposal", id },
+        requestId: c.var.requestId,
+      },
+      now: c.var.deps.now(),
+    });
+    if (!withdrawn) return refuse(c, "not_found");
+    return c.body(null, 204);
+  });
+
   app.openapi(assignRoute, (c) => write(c, c.req.valid("json")));
 
   app.openapi(moveRoute, (c) => write(c, c.req.valid("json")));
@@ -171,26 +236,68 @@ function checkInClearedBy(c: Context<AppEnv>, request: MoveRequest): AuditEntry 
   };
 }
 
-/** Assigning and moving are the same write; only what ops change differs. */
-async function write(c: Context<AppEnv>, request: MoveRequest) {
-  const { requestId, deps, log } = c.var;
-  const staff = actorOf(c);
-  if (!(await withinRouteReach(c, "visit", request.appointment_id))) {
-    return refuse(c, "not_found");
-  }
-  if (!(await mayGoTo(c, request))) return refuse(c, "invalid_request", ["technician_id"]);
-
-  const input: MoveInput = {
+/** A move as ops asked for it from the board. */
+function inputOf(c: Context<AppEnv>, request: MoveRequest): MoveInput {
+  return {
     appointmentId: request.appointment_id,
     technicianId: request.technician_id ?? null,
     date: request.date ?? null,
     window: request.window ?? null,
     reason: request.reason,
-    actor: staff.id,
+    actor: actorOf(c).id,
     expected: { technicianId: request.expected_technician_id, startsAt: request.expected_starts_at },
     clearCheckIn: checkInClearedBy(c, request),
     blackoutReason: request.blackout_reason ?? null,
   };
+}
+
+type Refused = Exclude<Awaited<ReturnType<typeof moveJob>>, { readonly kind: "moved" }>;
+
+/** A move's checks that did not pass, answered alike from moving and from proposing. */
+function refusedMove(c: Context<AppEnv>, outcome: Refused) {
+  if (outcome.kind === "not_found") return refuse(c, "not_found");
+  if (outcome.kind === "superseded") return refuse(c, "superseded", outcome.changed);
+  if (outcome.kind === "in_progress") return refuse(c, "in_progress");
+  if (outcome.kind === "nothing_to_move") return refuse(c, "invalid_request", ["technician_id", "date", "window"]);
+  if (outcome.kind === "no_technician") return refuse(c, "invalid_request", ["technician_id"]);
+  return c.json(errorBody(outcome.reason, c.var.requestId), 409);
+}
+
+/** A move to another day, asked of the client rather than made. */
+async function propose(c: Context<AppEnv>, request: MoveRequest) {
+  if (!(await withinRouteReach(c, "visit", request.appointment_id))) return refuse(c, "not_found");
+  if (!(await mayGoTo(c, request))) return refuse(c, "invalid_request", ["technician_id"]);
+  const input = inputOf(c, request);
+  const now = c.var.deps.now();
+  const outcome = await proposeMove(c.env.DB, { notify: (messageId) => queueMessage(c, messageId) }, input, now);
+  if (outcome.kind === "no_client") return refuse(c, "invalid_request", ["appointment_id"]);
+  if (outcome.kind === "same_day") return refuse(c, "invalid_request", ["date"]);
+  if (outcome.kind !== "proposed") return refusedMove(c, outcome);
+  await auditStatement(
+    c.env.DB,
+    {
+      surface: "ops",
+      actor: actorOf(c),
+      action: "dispatch.move_proposed",
+      subject: { kind: "appointment", id: input.appointmentId },
+      requestId: c.var.requestId,
+      detail: { proposal_id: outcome.proposalId, reason: input.reason },
+    },
+    now,
+  ).run();
+  c.var.log.info("dispatch_move_proposed", { appointment_id: input.appointmentId, proposal_id: outcome.proposalId });
+  return c.json({ proposal_id: outcome.proposalId, client_notice: outcome.clientNotice }, 200);
+}
+
+/** Assigning and moving are the same write; only what ops change differs. */
+async function write(c: Context<AppEnv>, request: MoveRequest) {
+  const { deps, log } = c.var;
+  if (!(await withinRouteReach(c, "visit", request.appointment_id))) {
+    return refuse(c, "not_found");
+  }
+  if (!(await mayGoTo(c, request))) return refuse(c, "invalid_request", ["technician_id"]);
+
+  const input = inputOf(c, request);
   const outcome = await moveJob(
     c.env.DB,
     {
@@ -200,14 +307,7 @@ async function write(c: Context<AppEnv>, request: MoveRequest) {
     deps.now(),
   );
 
-  if (outcome.kind === "not_found") return refuse(c, "not_found");
-  if (outcome.kind === "superseded") return refuse(c, "superseded", outcome.changed);
-  if (outcome.kind === "in_progress") return refuse(c, "in_progress");
-  if (outcome.kind === "nothing_to_move") {
-    return refuse(c, "invalid_request", ["technician_id", "date", "window"]);
-  }
-  if (outcome.kind === "no_technician") return refuse(c, "invalid_request", ["technician_id"]);
-  if (outcome.kind === "refused") return c.json(errorBody(outcome.reason, requestId), 409);
+  if (outcome.kind !== "moved") return refusedMove(c, outcome);
   log.info("dispatch_moved", { appointment_id: input.appointmentId, move_id: outcome.moveId, reason: input.reason });
   return c.json({ move_id: outcome.moveId, client_notice: outcome.clientNotice }, 200);
 }

@@ -1354,6 +1354,7 @@ Razorpay's webhook: payments and refunds
             "already_disputed",
             "not_disputable",
             "dispute_window_closed",
+            "move_gone",
             "code_not_applicable",
             "code_off",
             "already_discounted",

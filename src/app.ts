@@ -33,6 +33,7 @@ import { registerClientDiscountCodes } from "./routes/client/discount-codes.ts";
 import { registerOpsDiscountCodes } from "./routes/ops/discount-codes.ts";
 import { registerTechDiscountCodes } from "./routes/tech/discount-codes.ts";
 import { registerClientDisputes } from "./routes/client/disputes.ts";
+import { registerClientMoveProposals } from "./routes/client/move-proposals.ts";
 import { registerClientErrors } from "./routes/client-errors.ts";
 import { registerClientRefer } from "./routes/client/refer.ts";
 import { registerOpsBlackouts } from "./routes/ops/blackouts.ts";
@@ -138,6 +139,7 @@ const SURFACE_ROUTES: Readonly<Record<Surface, readonly ((app: App) => void)[]>>
     registerClientDeletionRequest,
     registerClientSessions,
     registerClientVisits,
+    registerClientMoveProposals,
     registerClientPhotos,
     registerClientDisputes,
     registerClientPayments,
