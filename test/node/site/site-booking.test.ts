@@ -130,12 +130,14 @@ describe("the page's steps in the browser's history", () => {
 
   it("reads back the step and the pincode's answer the page wrote", () => {
     expect(stepOf({ step: "form", answer })).toEqual({ step: "form", answer });
+    expect(stepOf({ step: "address", answer })).toEqual({ step: "address", answer });
     expect(stepOf({ step: "done", answer })).toEqual({ step: "done", answer });
+    expect(stepOf({ step: "pincode", answer })).toEqual({ step: "pincode", answer: null });
   });
 
-  it("reads anything else as the pincode field", () => {
+  it("reads anything else as where the page opens", () => {
     for (const state of [null, undefined, "form", { step: "form" }, { step: "elsewhere", answer }, { answer }]) {
-      expect(stepOf(state)).toEqual({ step: "pincode", answer: null });
+      expect(stepOf(state)).toEqual({ step: "start", answer: null });
     }
   });
 });

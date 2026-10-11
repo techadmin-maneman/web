@@ -52,6 +52,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 - [0105](0105-a-consultation-and-fit-in-one-visit.md) A consultation and fit in one visit
 - [0111](0111-a-technician-never-takes-two-visits-in-a-row.md) A technician never takes two visits in a row
 - [0115](0115-a-move-to-another-day-waits-for-the-client.md) A move to another day waits for the client
+- [0116](0116-book-asks-for-the-name-and-number-first.md) /book asks for the name and number first
 - [0117](0117-a-technician-takes-visits-in-their-own-city.md) A technician takes visits in their own city
 - [0118](0118-booking-never-dead-ends.md) Booking never dead-ends
 
@@ -205,7 +206,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0048](0048-referrals.md) | Referrals and the waitlist | 2026-09-22 | accepted | [0060](0060-an-invited-friend-reaches-ops-and-the-crm.md), [0071](0071-what-ops-see-before-a-setting-changes.md), [0074](0074-hand-offs-and-messages.md), [0080](0080-consents-given-by-booking.md), [0089](0089-an-invite-is-not-lost.md), [0107](0107-referral-rewards-in-the-console.md) |
 | [0049](0049-dpdp.md) | DPDP readiness | 2026-09-22 | accepted | [0066](0066-erasure-all-or-nothing.md), [0074](0074-hand-offs-and-messages.md), [0094](0094-where-a-consent-was-given.md) |
 | [0050](0050-crm-in-the-real-org.md) | The CRM moves to the real Zoho org | 2026-09-22 | accepted | [0059](0059-a-clients-history.md), [0070](0070-vendor-correctness.md) |
-| [0051](0051-booking-from-the-site.md) | Booking from the site is the landing's booking | 2026-09-23 | accepted | [0060](0060-an-invited-friend-reaches-ops-and-the-crm.md), [0081](0081-the-site-takes-the-address.md), [0086](0086-the-next-visit-is-offered.md), [0089](0089-an-invite-is-not-lost.md) |
+| [0051](0051-booking-from-the-site.md) | Booking from the site is the landing's booking | 2026-09-23 | accepted | [0060](0060-an-invited-friend-reaches-ops-and-the-crm.md), [0081](0081-the-site-takes-the-address.md), [0086](0086-the-next-visit-is-offered.md), [0089](0089-an-invite-is-not-lost.md), [0116](0116-book-asks-for-the-name-and-number-first.md) |
 | [0052](0052-technician-sessions.md) | Technician sessions, devices and the day-before unlock | 2026-09-23 | accepted |  |
 | [0053](0053-the-technician-app-offline.md) | The technician app offline: the outbox, the device and the camera | 2026-09-23 | accepted |  |
 | [0054](0054-address-capture.md) | Capturing an address: the fields, the pin, and the way to the door | 2026-09-23 | accepted | [0070](0070-vendor-correctness.md), [0098](0098-the-door-in-fsms-address.md) |
@@ -268,5 +269,6 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0113](0113-fsms-columns-go.md) | FSM's columns go | 2026-10-06 | accepted |  |
 | [0114](0114-whatsapp-business-platform-through-msg91.md) | The WhatsApp Business Platform through MSG91 | 2026-10-11 | accepted |  |
 | [0115](0115-a-move-to-another-day-waits-for-the-client.md) | A move to another day waits for the client | 2026-10-11 | accepted |  |
+| [0116](0116-book-asks-for-the-name-and-number-first.md) | /book asks for the name and number first | 2026-10-11 | accepted |  |
 | [0117](0117-a-technician-takes-visits-in-their-own-city.md) | A technician takes visits in their own city | 2026-10-11 | accepted | [0118](0118-booking-never-dead-ends.md) |
 | [0118](0118-booking-never-dead-ends.md) | Booking never dead-ends | 2026-10-11 | accepted |  |

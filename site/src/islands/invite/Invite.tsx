@@ -21,6 +21,11 @@
 //
 // A valid invite is remembered in this browser for 30 days, so /book carries it
 // if the friend leaves and books there later (site/src/lib/remembered-invite.ts).
+//
+// /book asks for the name and number first, and keeps them as a lead, then the
+// pincode, the visit and the address, a step at a time (AboutYou.tsx,
+// docs/decisions/0116-book-asks-for-the-name-and-number-first.md). The invite's
+// page, which the design draws, asks for everything in one form.
 
 import { useEffect, useRef, useState } from "preact/hooks";
 import { referral } from "../../content/referral.ts";
@@ -29,16 +34,20 @@ import { PRICES_SHOWN } from "../../lib/flags.ts";
 import { type Invite as InviteAnswer, type PincodeAnswer } from "../../lib/api.ts";
 import { cardPath, HOUSE_CARD } from "../../lib/invite.ts";
 import { fill } from "../../lib/text.ts";
+import { AboutYou, BOOK_STEPS } from "./AboutYou.tsx";
 import { Consultation, type Plan } from "./Consultation.tsx";
 import { Booked, Listed, type Booking, type Listing } from "./Done.tsx";
-import { onStepChange, pushStep, startAtPincode } from "./history.ts";
+import { BookingFor, StepLine } from "./fields.tsx";
+import { currentStep, onStepChange, pushStep, startAtTheStart } from "./history.ts";
 import { HowItWorks } from "./HowItWorks.tsx";
 import styles from "./Invite.module.css";
 import { codeInPath } from "./page.ts";
 import { PincodePanel } from "./PincodePanel.tsx";
 import { Prices } from "./Prices.tsx";
-import { usePreview } from "./preview.ts";
+import { PREVIEW_PERSON, usePreview } from "./preview.ts";
+import type { Step } from "./step.ts";
 import { usePincode } from "./usePincode.ts";
+import type { PersonFields } from "./useTurnstileForm.ts";
 import { useLandingData } from "./useLandingData.ts";
 import { Waitlist } from "./Waitlist.tsx";
 import { CARD_HEIGHT, CARD_WIDTH } from "../../../../src/config/referral-cards.ts";
@@ -58,6 +67,15 @@ interface Props {
 }
 
 type State = "arrival" | "booked" | "listed";
+
+/** The invite's page asks for everything at once; /book has the visit, then the address. */
+function formStage(invited: boolean, step: Step): "all" | "visit" | "address" {
+  if (invited) return "all";
+  return step === "address" ? "address" : "visit";
+}
+
+/** How far back /book's first step is from each step after it, in the browser's history. */
+const BACK_TO_START: Partial<Record<Step, number>> = { pincode: 1, form: 2, address: 3 };
 
 /** The site's own page is headed with what it books: the plan chosen, or the waitlist where we do not come yet. */
 function bookingTitle(answer: PincodeAnswer | null, plan: Plan): string {
@@ -82,6 +100,9 @@ export default function Invite(props: Props) {
   const [listed, setListed] = useState<Listing | null>(null);
   const pincode = usePincode();
   const heading = useRef<HTMLHeadingElement>(null);
+  const [step, setStep] = useState<Step>("start");
+  // On /book, the name and number its first step kept.
+  const [kept, setKept] = useState<PersonFields | null>(null);
 
   const name = invited ? (invite?.referrer_first_name ?? null) : null;
   // Only a valid invite carries its visits; the API books any other without them.
@@ -89,7 +110,11 @@ export default function Invite(props: Props) {
   const unknown = invited && invite?.state === "unknown";
 
   usePreview(props.allowStateSwitch, (preview) => {
-    if (preview.kind === "answer") pincode.setAnswer(preview.answer);
+    if (preview.kind === "answer") {
+      pincode.setAnswer(preview.answer);
+      setKept(PREVIEW_PERSON);
+      setStep("form");
+    }
     if (preview.kind === "booked") {
       setBooked(preview.booking);
       setState("booked");
@@ -101,7 +126,7 @@ export default function Invite(props: Props) {
   });
 
   useEffect(() => {
-    startAtPincode();
+    startAtTheStart();
   }, []);
 
   // Back and Forward move between the page's steps; a confirmation shows again only while this page holds it.
@@ -117,10 +142,16 @@ export default function Invite(props: Props) {
           return;
         }
         setState("arrival");
+        setStep(entry.step === "done" ? "form" : entry.step);
         pincode.show(entry.answer);
       }),
     [booked, listed],
   );
+
+  // /book's pincode field takes focus as its step opens, from the name and number or back from the form.
+  useEffect(() => {
+    if (step === "pincode") pincode.field.current?.focus();
+  }, [step]);
 
   useEffect(() => {
     if (state !== "arrival") {
@@ -139,11 +170,26 @@ export default function Invite(props: Props) {
   };
   const offer = credits && reward !== null ? referral.arrival.offer(reward) : null;
 
+  function keepPerson(fields: PersonFields) {
+    setKept(fields);
+    pushStep("pincode", null);
+    setStep("pincode");
+  }
+
+  /** Back to the name and number, as the browser's Back would go. */
+  function changePerson() {
+    // Read from the history, where the pincode's answer writes its own entry (usePincode.ts).
+    const back = BACK_TO_START[currentStep()];
+    if (back === undefined) setStep("start");
+    else history.go(-back);
+  }
+
   if (state === "booked" && booked !== null) return <Booked booking={booked} reward={reward} heading={heading} />;
   if (state === "listed" && listed !== null) {
     return <Listed listing={listed} name={name} reward={reward} heading={heading} />;
   }
   const { answer } = pincode;
+  const atStart = !invited && (step === "start" || kept === null);
   return (
     <section class={styles.arrival}>
       <div class={`${styles.inner} ${styles.grid}`}>
@@ -167,33 +213,53 @@ export default function Invite(props: Props) {
             )}
           </div>
           {PRICES_SHOWN && <Prices words={prices} />}
-          <PincodePanel check={pincode} />
+          {atStart ? (
+            <AboutYou turnstileSiteKey={props.turnstileSiteKey} kept={kept} onKept={keepPerson} />
+          ) : (
+            <>
+              {kept !== null && <BookingFor person={kept} onChange={changePerson} />}
+              {kept !== null && answer === null && (
+                <StepLine at={2} of={BOOK_STEPS} name={booking.steps.area} focus={false} />
+              )}
+              <PincodePanel check={pincode} />
 
-          {answer?.served === true && (
-            <Consultation
-              {...formProps}
-              answer={answer}
-              plan={plan}
-              onPlanChange={setPlan}
-              onBooked={(result) => {
-                setBooked(result);
-                setListed(null);
-                setState("booked");
-                pushStep("done", answer);
-              }}
-            />
-          )}
-          {answer?.served === false && (
-            <Waitlist
-              {...formProps}
-              answer={answer}
-              onListed={(result) => {
-                setListed(result);
-                setBooked(null);
-                setState("listed");
-                pushStep("done", answer);
-              }}
-            />
+              {answer?.served === true && (
+                <Consultation
+                  {...formProps}
+                  answer={answer}
+                  plan={plan}
+                  onPlanChange={setPlan}
+                  person={kept}
+                  stage={formStage(invited, step)}
+                  onNext={() => {
+                    pushStep("address", answer);
+                    setStep("address");
+                  }}
+                  onBackToVisit={() => {
+                    history.back();
+                  }}
+                  onBooked={(result) => {
+                    setBooked(result);
+                    setListed(null);
+                    setState("booked");
+                    pushStep("done", answer);
+                  }}
+                />
+              )}
+              {answer?.served === false && (
+                <Waitlist
+                  {...formProps}
+                  answer={answer}
+                  person={kept}
+                  onListed={(result) => {
+                    setListed(result);
+                    setBooked(null);
+                    setState("listed");
+                    pushStep("done", answer);
+                  }}
+                />
+              )}
+            </>
           )}
         </div>
 

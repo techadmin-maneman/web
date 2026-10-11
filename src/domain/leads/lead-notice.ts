@@ -15,6 +15,10 @@ interface NoticeLead {
 
 export function leadNotice(lead: NoticeLead): string {
   const reference = `Lead ${lead.lead_id.slice(0, 8)}.`;
+  // A booking's lead has its day; the name and number /book asks for first have neither day nor window yet.
+  if (lead.source === "form" && lead.proposed_visit_date === null && lead.first_choice_window === null) {
+    return `New name and number, at the first step of booking. ${reference}`;
+  }
   if (lead.source === "form") {
     const window = lead.first_choice_window === null ? "" : `, ${WINDOW_NAMES[lead.first_choice_window].toLowerCase()}`;
     const date = lead.proposed_visit_date === null ? "" : `, proposed ${shortDate(lead.proposed_visit_date)}`;

@@ -563,6 +563,122 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/lead": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Leave a name and number before choosing the visit */
+        post: {
+            parameters: {
+                query?: never;
+                header?: {
+                    "idempotency-key"?: string;
+                };
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        /** @description Letters, spaces, dots, apostrophes and hyphens, starting with a letter. */
+                        name: string;
+                        mobile: string;
+                        /**
+                         * @description "You may contact me on WhatsApp about this consultation."
+                         * @enum {boolean}
+                         */
+                        consent: true;
+                        turnstile_token: string;
+                        attribution?: {
+                            utm_source?: string;
+                            utm_medium?: string;
+                            utm_campaign?: string;
+                            utm_content?: string;
+                            gclid?: string;
+                            fbclid?: string;
+                            referrer?: string;
+                            landing_path?: string;
+                        };
+                    };
+                };
+            };
+            responses: {
+                /** @description Kept. Every number gets this answer, a client's too, for whom nothing is written. */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["LeadLeft"];
+                    };
+                };
+                /** @description invalid_request: fields names what was refused */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description turnstile_failed */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description idempotency_in_progress: the first request with this key is still running */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description idempotency_key_reused: the key was used with a different body */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description rate_limited */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description unavailable: Turnstile could not be reached */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/r/{code}": {
         parameters: {
             query?: never;
@@ -1921,6 +2037,7 @@ export interface components {
              */
             invite: "valid" | "expired" | "unknown";
         };
+        LeadLeft: Record<string, never>;
         Invite: {
             /** @enum {string} */
             state: "valid" | "unknown";

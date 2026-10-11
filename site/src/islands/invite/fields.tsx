@@ -1,6 +1,7 @@
 // The parts both forms are made of: the pincode they are for, where the hair loss is, the person's fields, the
-// invite /book remembers, and the button that sends them.
+// invite /book remembers, and the button that sends them; and /book's steps, with the name and number it kept first.
 
+import { useEffect, useRef } from "preact/hooks";
 import { ICONS } from "@maneman/brand/icons";
 import { formatMobileField } from "@maneman/web-kit/mobile";
 import { MOST_NAME_LENGTH } from "@maneman/web-kit/names";
@@ -82,7 +83,6 @@ export function PersonFieldset(props: {
   const { fields, idPrefix } = props;
   const nameBad = props.bad.includes("name");
   const mobileBad = props.bad.includes("mobile");
-  const consentBad = props.bad.includes("consent");
   return (
     <>
       <div class={styles.fields}>
@@ -144,34 +144,92 @@ export function PersonFieldset(props: {
         </div>
       </div>
 
+      <ConsentBox
+        checked={fields.consent}
+        bad={props.bad.includes("consent")}
+        idPrefix={idPrefix}
+        label={props.consentLabel}
+        note={props.consentNote}
+        onChange={(consent) => {
+          props.onChange({ ...fields, consent });
+        }}
+      />
+    </>
+  );
+}
+
+/** The agreement a form needs, required, with its error once the form is checked. */
+export function ConsentBox(props: {
+  checked: boolean;
+  bad: boolean;
+  idPrefix: string;
+  label: string;
+  note: string;
+  onChange: (checked: boolean) => void;
+}) {
+  const { bad, idPrefix } = props;
+  return (
+    <>
       <label class={styles.consent}>
         <input
           type="checkbox"
           class="visually-hidden"
-          checked={fields.consent}
+          checked={props.checked}
           aria-required="true"
-          aria-invalid={consentBad}
-          aria-describedby={consentBad ? `${idPrefix}-consent-error` : undefined}
+          aria-invalid={bad}
+          aria-describedby={bad ? `${idPrefix}-consent-error` : undefined}
           onChange={(event) => {
-            props.onChange({ ...fields, consent: event.currentTarget.checked });
+            props.onChange(event.currentTarget.checked);
           }}
         />
-        <span class={`${styles.box} ${styles.boxRequired} ${consentBad ? styles.bad : ""}`} aria-hidden="true">
-          {fields.consent && <Icon path={ICONS.tick} size={13} stroke={1.7} />}
+        <span class={`${styles.box} ${styles.boxRequired} ${bad ? styles.bad : ""}`} aria-hidden="true">
+          {props.checked && <Icon path={ICONS.tick} size={13} stroke={1.7} />}
         </span>
         <span class={styles.consentText}>
-          {props.consentLabel}
-          {props.consentNote !== "" && <span class={styles.consentNote}>{` ${props.consentNote}`}</span>}
+          {props.label}
+          {props.note !== "" && <span class={styles.consentNote}>{` ${props.note}`}</span>}
         </span>
       </label>
       <div aria-live="polite">
-        {consentBad && (
+        {bad && (
           <div id={`${idPrefix}-consent-error`} class={styles.error}>
             {referral.form.consentError}
           </div>
         )}
       </div>
     </>
+  );
+}
+
+/**
+ * /book's progress, "Step 2 of 4 · Your area" (not drawn). The address, once Continue opens it, and the name and
+ * number, once the visitor comes back to them, bring the line to the top and give it focus, so a screen reader hears
+ * where it is. Elsewhere the pincode's field or its answer takes focus instead.
+ */
+export function StepLine(props: { at: number; of: number; name: string; focus: boolean }) {
+  const line = useRef<HTMLParagraphElement>(null);
+  useEffect(() => {
+    if (!props.focus) return;
+    line.current?.focus({ preventScroll: true });
+    line.current?.scrollIntoView({ block: "start" });
+  }, [props.focus]);
+  return (
+    <p ref={line} tabIndex={-1} class={`caps ${styles.step}`}>
+      {fill(booking.step, { at: String(props.at), of: String(props.of), name: props.name })}
+    </p>
+  );
+}
+
+/** "For Karan Bhatia, +91 98100 00002 · Change": the name and number /book kept first, and the way back to them. */
+export function BookingFor(props: { person: PersonFields; onChange: () => void }) {
+  return (
+    <p class={styles.forPincode}>
+      {fill(booking.bookingFor, { name: props.person.name.trim(), mobile: props.person.mobile })}
+      {" · "}
+      <button type="button" class={styles.change} aria-label={booking.changeYouLabel} onClick={props.onChange}>
+        {booking.changeYou}
+      </button>
+    </p>
   );
 }
 

@@ -699,6 +699,11 @@
         ],
         "additionalProperties": false
       },
+      "LeadLeft": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      },
       "Invite": {
         "type": "object",
         "properties": {
@@ -1851,6 +1856,174 @@
           },
           "422": {
             "description": "not_bookable: that pincode is served; book instead; idempotency_key_reused: the key was used with a different body",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "rate_limited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "unavailable: Turnstile could not be reached",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/lead": {
+      "post": {
+        "summary": "Leave a name and number before choosing the visit",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 200
+            },
+            "required": false,
+            "name": "idempotency-key",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 60,
+                    "description": "Letters, spaces, dots, apostrophes and hyphens, starting with a letter."
+                  },
+                  "mobile": {
+                    "type": "string",
+                    "maxLength": 20
+                  },
+                  "consent": {
+                    "type": "boolean",
+                    "enum": [
+                      true
+                    ],
+                    "description": "\"You may contact me on WhatsApp about this consultation.\""
+                  },
+                  "turnstile_token": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 2048
+                  },
+                  "attribution": {
+                    "type": "object",
+                    "properties": {
+                      "utm_source": {
+                        "type": "string",
+                        "maxLength": 200
+                      },
+                      "utm_medium": {
+                        "type": "string",
+                        "maxLength": 200
+                      },
+                      "utm_campaign": {
+                        "type": "string",
+                        "maxLength": 200
+                      },
+                      "utm_content": {
+                        "type": "string",
+                        "maxLength": 200
+                      },
+                      "gclid": {
+                        "type": "string",
+                        "maxLength": 200
+                      },
+                      "fbclid": {
+                        "type": "string",
+                        "maxLength": 200
+                      },
+                      "referrer": {
+                        "type": "string",
+                        "maxLength": 500
+                      },
+                      "landing_path": {
+                        "type": "string",
+                        "maxLength": 500
+                      }
+                    },
+                    "additionalProperties": false
+                  }
+                },
+                "required": [
+                  "name",
+                  "mobile",
+                  "consent",
+                  "turnstile_token"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Kept. Every number gets this answer, a client's too, for whom nothing is written.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LeadLeft"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid_request: fields names what was refused",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "turnstile_failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "idempotency_in_progress: the first request with this key is still running",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "idempotency_key_reused: the key was used with a different body",
             "content": {
               "application/json": {
                 "schema": {

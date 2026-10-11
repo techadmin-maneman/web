@@ -5,6 +5,7 @@ import { useEffect } from "preact/hooks";
 import type { PincodeAnswer, ReferralConsultation } from "../../lib/api.ts";
 import { indiaTomorrow } from "../../lib/dates.ts";
 import type { Booking, Listing } from "./Done.tsx";
+import type { PersonFields } from "./useTurnstileForm.ts";
 
 const PREVIEW_STATES = ["arrival", "served", "unserved", "booked", "requested", "expired", "listed"] as const;
 type PreviewState = (typeof PREVIEW_STATES)[number];
@@ -14,6 +15,9 @@ const SAMPLE = {
   unserved: { pincode: "400050", served: false, area: "Bandra", city: "Mumbai" },
   mobile: "98100 04417",
 } satisfies Record<string, PincodeAnswer | string>;
+
+/** On /book, the name and number its first step would have kept, ahead of a pincode's answer. */
+export const PREVIEW_PERSON: PersonFields = { name: "Karan Bhatia", mobile: SAMPLE.mobile, consent: true };
 
 /** A state's name from the address, if it is one. */
 function previewNamed(name: string | null): PreviewState | undefined {

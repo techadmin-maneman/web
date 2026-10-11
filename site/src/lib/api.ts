@@ -36,6 +36,8 @@ export type NumberCodeVerify = Schemas["NumberCodeVerify"];
 export type StoppedMessages = Schemas["StoppedMessages"];
 type PublicConsultationRequest = Body<"/api/consultation">;
 type PublicWaitlistRequest = Body<"/api/waitlist">;
+type LeadRequest = Body<"/api/lead">;
+type LeadLeft = Schemas["LeadLeft"];
 type ConsultationRequest = Body<"/api/r/{code}/consultation">;
 type WaitlistRequest = Body<"/api/r/{code}/waitlist">;
 
@@ -184,6 +186,11 @@ export function bookPublicConsultation(
   idempotencyKey: string,
 ): Promise<Answer<Consultation>> {
   return post<Consultation>("/api/consultation", request, idempotencyKey);
+}
+
+/** /book's first step: the name and number, kept as a lead before the visit is chosen. */
+export function leaveLead(request: LeadRequest, idempotencyKey: string): Promise<Answer<LeadLeft>> {
+  return post<LeadLeft>("/api/lead", request, idempotencyKey);
 }
 
 export function joinPublicWaitlist(request: PublicWaitlistRequest, idempotencyKey: string): Promise<Answer<Waitlist>> {

@@ -53,10 +53,15 @@ function refusal(code: ErrorCode | "network"): string {
  * What the consultation and the waitlist forms share: the person's fields, whether they have been checked, and
  * sending them with a Turnstile token. The widget is made when the form appears: the box it renders into does not
  * exist until the pincode has decided which form the page shows. `marks` are the fields, by the API's names, that the
- * form marks itself when a refusal names them; a refusal that names none of them is said by the button.
+ * form marks itself when a refusal names them; a refusal that names none of them is said by the button. On /book the
+ * name and number are given first (./AboutYou.tsx), and the forms after it start from them.
  */
-export function useTurnstileForm(siteKey: string, marks: readonly string[] = PERSON_FIELDS) {
-  const [fields, setFields] = useState<PersonFields>({ name: "", mobile: "", consent: false });
+export function useTurnstileForm(
+  siteKey: string,
+  marks: readonly string[] = PERSON_FIELDS,
+  given: PersonFields = { name: "", mobile: "", consent: false },
+) {
+  const [fields, setFields] = useState<PersonFields>(given);
   const [touched, setTouched] = useState(false);
   const [sending, setSending] = useState(false);
   const [failure, setFailure] = useState<string | null>(null);
@@ -136,5 +141,22 @@ export function useTurnstileForm(siteKey: string, marks: readonly string[] = PER
     sent(result.body);
   }
 
-  return { fields, setFields: changeFields, touched, sending, failure, refusedFields, personBad, box, element, submit };
+  /** Moving on from a step: what it last said no longer stands. */
+  function clearFailure() {
+    setFailure(null);
+  }
+
+  return {
+    fields,
+    setFields: changeFields,
+    touched,
+    sending,
+    failure,
+    clearFailure,
+    refusedFields,
+    personBad,
+    box,
+    element,
+    submit,
+  };
 }
