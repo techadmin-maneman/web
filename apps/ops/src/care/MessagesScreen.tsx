@@ -14,6 +14,7 @@ import { Shell } from "../components/Shell.tsx";
 import { care as copy } from "../content/care.ts";
 import { SECTION_NAMES } from "../route.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
+import { CareTeam } from "./CareTeam.tsx";
 import { Thread, whenOf, whoOf } from "./Thread.tsx";
 import styles from "../components/forms.module.css";
 import own from "./care.module.css";
@@ -48,6 +49,12 @@ function ViewChoice({ view, onView }: { view: ConversationView; onView: (view: C
   );
 }
 
+/** The client's Care person, and who covers them while they are off. */
+const carePersonOf = ({ care_person: person, covered_by: cover }: Conversation): string => {
+  if (person === null) return "";
+  return cover === null ? person : copy.coveredBy(person, cover);
+};
+
 /** When our reply is due, in red once it has passed. */
 function ReplyBy({ at }: { at: string | null }) {
   if (at === null) return null;
@@ -65,7 +72,7 @@ function ConversationRows(props: { conversation: Conversation; open: boolean; on
           {conversation.person?.name ?? copy.unknown}
         </th>
         <td className={own.number}>{conversation.mobile}</td>
-        <td>{conversation.care_person ?? ""}</td>
+        <td>{carePersonOf(conversation)}</td>
         <td className={own.line}>{conversation.last_line ?? copy.noLine}</td>
         <td className={own.figure}>
           <ReplyBy at={conversation.reply_by} />
@@ -153,6 +160,9 @@ export function MessagesScreen() {
         <Panel titleId="messages" title={copy.title} className={styles.panel}>
           <ViewChoice view={view} onView={setView} />
           <Conversations key={view} view={view} />
+        </Panel>
+        <Panel titleId="care-team" title={copy.team.title} className={styles.panel}>
+          <CareTeam />
         </Panel>
       </div>
     </Shell>

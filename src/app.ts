@@ -65,6 +65,7 @@ import { registerOpsPayments } from "./routes/ops/payments.ts";
 import { registerOpsReferrals } from "./routes/ops/referrals.ts";
 import { registerOpsPartnerStatements } from "./routes/ops/partner-statements.ts";
 import { registerOpsCarePeople } from "./routes/ops/care-people.ts";
+import { registerOpsCareRota } from "./routes/ops/care-rota.ts";
 import { registerOpsConversations } from "./routes/ops/conversations.ts";
 import { registerOpsReferralChannels } from "./routes/ops/referral-channels.ts";
 import { registerOpsWords } from "./routes/ops/words.ts";
@@ -187,6 +188,7 @@ const SURFACE_ROUTES: Readonly<Record<Surface, readonly ((app: App) => void)[]>>
     registerOpsPartnerStatements,
     registerOpsConversations,
     registerOpsCarePeople,
+    registerOpsCareRota,
     registerOpsReferralChannels,
     registerOpsWords,
     registerOpsGrievances,

@@ -1604,7 +1604,7 @@ One thread: the chat and our automatic messages to the client, in order
 
 ### GET /api/care-team
 
-The Care team, each with how many clients are theirs, the fewest first
+The Care team, the fewest clients first, with each one's days off and who covers them today
 
 **200**: The team
 
@@ -1659,6 +1659,140 @@ Request body:
 ```
 
 **404**: not_found: no such client, or their record is erased
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/care-team/days-off
+
+A Care team member's weekly days off, replaced whole
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/CareDaysOff"
+}
+```
+
+**200**: Done
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "ok": {
+      "type": "boolean",
+      "enum": [
+        true
+      ]
+    }
+  },
+  "required": [
+    "ok"
+  ],
+  "additionalProperties": false
+}
+```
+
+**400**: invalid_request: fields names email when it is not one of the Care team
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/care-team/leave
+
+Leave for a Care team member, from one India date to another, both included
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/CareLeave"
+}
+```
+
+**200**: The leave
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string",
+      "format": "uuid"
+    }
+  },
+  "required": [
+    "id"
+  ],
+  "additionalProperties": false
+}
+```
+
+**400**: invalid_request: fields names email when it is not one of the Care team, and to when it is before from or today
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/care-team/leave/{id}/delete
+
+Leave taken back
+
+**200**: Done
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "ok": {
+      "type": "boolean",
+      "enum": [
+        true
+      ]
+    }
+  },
+  "required": [
+    "ok"
+  ],
+  "additionalProperties": false
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found
 
 ```json
 {
@@ -10912,6 +11046,17 @@ Request body:
       ],
       "description": "The client's Care person, by e-mail; null for a number we do not know, or a client not given one."
     },
+    "covered_by": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Who covers the Care person today, while they are off; null while they are on."
+    },
     "last_message_at": {
       "type": "string",
       "format": "date-time"
@@ -10957,6 +11102,7 @@ Request body:
     "mobile",
     "state",
     "care_person",
+    "covered_by",
     "last_message_at",
     "last_line",
     "waiting_since",
@@ -11175,25 +11321,84 @@ Request body:
     "team": {
       "type": "array",
       "items": {
-        "type": "object",
-        "properties": {
-          "email": {
-            "type": "string"
-          },
-          "clients": {
-            "type": "integer"
-          }
-        },
-        "required": [
-          "email",
-          "clients"
-        ],
-        "additionalProperties": false
+        "$ref": "#/components/schemas/CareMember"
       }
     }
   },
   "required": [
     "team"
+  ],
+  "additionalProperties": false
+}
+```
+
+### CareMember
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "email": {
+      "type": "string"
+    },
+    "clients": {
+      "type": "integer"
+    },
+    "weekly_off": {
+      "type": "array",
+      "items": {
+        "type": "integer"
+      },
+      "description": "Weekly days off, 0 Sunday to 6 Saturday."
+    },
+    "leave": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "from": {
+            "type": "string",
+            "format": "date"
+          },
+          "to": {
+            "type": "string",
+            "format": "date"
+          }
+        },
+        "required": [
+          "id",
+          "from",
+          "to"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "off_today": {
+      "type": "boolean"
+    },
+    "covered_by": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Who covers them today; null while they are on, or the whole team is off."
+    }
+  },
+  "required": [
+    "email",
+    "clients",
+    "weekly_off",
+    "leave",
+    "off_today",
+    "covered_by"
   ],
   "additionalProperties": false
 }
@@ -11229,6 +11434,62 @@ Request body:
   },
   "required": [
     "email"
+  ],
+  "additionalProperties": false
+}
+```
+
+### CareDaysOff
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "email": {
+      "type": "string",
+      "format": "email"
+    },
+    "weekdays": {
+      "type": "array",
+      "items": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 6
+      },
+      "maxItems": 6
+    }
+  },
+  "required": [
+    "email",
+    "weekdays"
+  ],
+  "additionalProperties": false
+}
+```
+
+### CareLeave
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "email": {
+      "type": "string",
+      "format": "email"
+    },
+    "from": {
+      "type": "string",
+      "format": "date"
+    },
+    "to": {
+      "type": "string",
+      "format": "date"
+    }
+  },
+  "required": [
+    "email",
+    "from",
+    "to"
   ],
   "additionalProperties": false
 }
@@ -11843,6 +12104,9 @@ Request body:
         "chat.note",
         "chat.close",
         "care_person.move",
+        "care_rota.set",
+        "care_leave.add",
+        "care_leave.delete",
         "word.publish",
         "partner_payout.record",
         "partner_payout.delete",

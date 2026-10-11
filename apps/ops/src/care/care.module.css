@@ -110,6 +110,27 @@
   color: var(--error-on-paper);
 }
 
+/* The Care team: a member's leave as a short list, and the forms that set their days off and add leave. */
+.leave {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.teamForm {
+  padding: var(--sp-12) var(--sp-16) 0;
+}
+
+.days {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-8) var(--sp-16);
+  margin-bottom: var(--sp-12);
+}
+
 .carePerson {
   margin-bottom: var(--sp-12);
 }

@@ -78,14 +78,23 @@ function Team(props: {
   return <MoveTo personId={props.personId} team={loaded.value.team} now={props.now} onMoved={props.onMoved} />;
 }
 
-export function CarePerson(props: { readonly personId: string; readonly email: string | null }) {
+/** The Care person, and who covers them while they are off, until a manager moves the client. */
+const coveredOf = (now: string, was: string | null, cover: string | null): string =>
+  cover !== null && now === was ? copy.coveredBy(now, cover) : now;
+
+export function CarePerson(props: {
+  readonly personId: string;
+  readonly email: string | null;
+  /** Who covers them today, while they are off. */
+  readonly coveredBy: string | null;
+}) {
   const [now, setNow] = useState(props.email);
   const [said, setSaid] = useState<string | null>(null);
   const mayMove = useAccess().mayCall("POST /api/clients/{id}/care-person");
   return (
     <div className={own.carePerson}>
       <p className={styles.note}>
-        {words.label}: {now ?? words.none}
+        {words.label}: {now === null ? words.none : coveredOf(now, props.email, props.coveredBy)}
       </p>
       {said !== null && (
         <p className={styles.saved} role="status">

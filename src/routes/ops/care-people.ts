@@ -1,5 +1,5 @@
 // Each client's Care person, behind Access (Customer Care; docs/decisions/0131-care-people.md):
-//   GET /api/care-team                  the Care team, each with how many clients are theirs
+//   GET /api/care-team                  the Care team: each one's clients, days off, and who covers them today
 //   POST /api/clients/:id/care-person   a client moved to another of the team, as a Customer Care manager does
 
 import { createRoute, z } from "@hono/zod-openapi";
@@ -7,18 +7,34 @@ import type { App } from "../../http/context.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
 import { json } from "../../http/openapi.ts";
 import { actorOf } from "../../http/audit.ts";
-import { careTeam, moveCarePerson } from "../../domain/care/care-people.ts";
+import { moveCarePerson } from "../../domain/care/care-people.ts";
+import { careRota } from "../../domain/care/cover.ts";
+import { indiaDate } from "../../lib/india-time.ts";
+
+const MemberSchema = z
+  .object({
+    email: z.string(),
+    clients: z.number().int(),
+    weekly_off: z.array(z.number().int()).openapi({ description: "Weekly days off, 0 Sunday to 6 Saturday." }),
+    leave: z.array(z.object({ id: z.uuid(), from: z.iso.date(), to: z.iso.date() }).strict()),
+    off_today: z.boolean(),
+    covered_by: z.union([z.string(), z.null()]).openapi({
+      description: "Who covers them today; null while they are on, or the whole team is off.",
+    }),
+  })
+  .strict()
+  .openapi("CareMember");
 
 const teamRoute = createRoute({
   method: "get",
   path: "/api/care-team",
-  summary: "The Care team, each with how many clients are theirs, the fewest first",
+  summary: "The Care team, the fewest clients first, with each one's days off and who covers them today",
   responses: {
     200: {
       description: "The team",
       ...json(
         z
-          .object({ team: z.array(z.object({ email: z.string(), clients: z.number().int() }).strict()) })
+          .object({ team: z.array(MemberSchema) })
           .strict()
           .openapi("CareTeam"),
       ),
@@ -50,7 +66,7 @@ const moveRoute = createRoute({
 });
 
 export function registerOpsCarePeople(app: App): void {
-  app.openapi(teamRoute, async (c) => c.json({ team: await careTeam(c.env.DB) }, 200));
+  app.openapi(teamRoute, async (c) => c.json({ team: await careRota(c.env.DB, indiaDate(c.var.deps.now())) }, 200));
 
   app.openapi(moveRoute, async (c) => {
     const { email } = c.req.valid("json");
