@@ -139,6 +139,7 @@ const ALLOWED = [
   { file: "src/domain/analytics/rows.ts", sql: "FROM payments y JOIN people p ON p.id = y.person_id" },
   { file: "src/domain/analytics/care-cases.ts", sql: "FROM grievances g JOIN people p ON p.id = g.person_id" },
   { file: "src/domain/analytics/care-cases.ts", sql: "FROM task_spans s" },
+  { file: "src/domain/analytics/leads.ts", sql: "FROM leads l JOIN people p ON p.id = l.person_id" },
   // The new tasks a night's look at the board found, handed over as a JSON list (docs/decisions/0147-task-spans.md).
   { file: "src/domain/ops/task-spans.ts", sql: "FROM json_each(?1) t WHERE NOT EXISTS" },
 ];
