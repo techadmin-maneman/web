@@ -22,6 +22,17 @@ export const REUSABLE_CHECKS = {
 
 export type ReusableCheck = keyof typeof REUSABLE_CHECKS;
 
+/**
+ * The jobs that do each check's work, by the start of their names. A check's own job passes when they were skipped,
+ * as where a run's base already held its files and they had nothing to do; so a pass counts only from a run where
+ * each of them ran and passed, never from one that skipped them.
+ */
+const WORK_JOBS: Readonly<Record<ReusableCheck, readonly string[]>> = {
+  static: ["static checks"],
+  tests: ["unit tests"],
+  suite: ["build", "browser tests", "smoke (local)"],
+};
+
 /** The job whose pass covers the build, the browser tests, Lighthouse and the smoke. */
 export const FULL_SUITE_JOB = REUSABLE_CHECKS.suite;
 
@@ -54,11 +65,19 @@ async function treeOf(get: GitHubGet, repository: string, commit: string): Promi
   return field(await get(`/repos/${repository}/git/commits/${commit}`), "tree", "sha");
 }
 
-function checkOfJob(name: unknown): ReusableCheck | undefined {
-  return (Object.keys(REUSABLE_CHECKS) as ReusableCheck[]).find((check) => REUSABLE_CHECKS[check] === name);
+/** Whether a run passed a check: its own job, and every job that does its work, ran and passed. */
+function runPassed(jobs: readonly unknown[], check: ReusableCheck): boolean {
+  const conclusionsOf = (start: string) =>
+    jobs.filter((job) => String(field(job, "name")).startsWith(start)).map((job) => field(job, "conclusion"));
+  const own = conclusionsOf(REUSABLE_CHECKS[check]);
+  if (!own.includes("success")) return false;
+  return WORK_JOBS[check].every((start) => {
+    const work = conclusionsOf(start);
+    return work.length > 0 && work.every((conclusion) => conclusion === "success");
+  });
 }
 
-/** Every reusable check a job of one of the head's ci runs passed, whatever became of the rest of its run. */
+/** Every reusable check one of the head's ci runs passed, whatever became of the rest of that run. */
 async function passedOnHead(get: GitHubGet, repository: string, head: string): Promise<ReusableCheck[]> {
   const query = `head_sha=${head}&event=pull_request&per_page=20`;
   const runs = field(await get(`/repos/${repository}/actions/workflows/ci.yml/runs?${query}`), "workflow_runs");
@@ -70,9 +89,8 @@ async function passedOnHead(get: GitHubGet, repository: string, head: string): P
       "jobs",
     );
     if (!Array.isArray(jobs)) continue;
-    for (const job of jobs as unknown[]) {
-      const check = checkOfJob(field(job, "name"));
-      if (check !== undefined && field(job, "conclusion") === "success") passed.add(check);
+    for (const check of Object.keys(REUSABLE_CHECKS) as ReusableCheck[]) {
+      if (runPassed(jobs as unknown[], check)) passed.add(check);
     }
   }
   return (Object.keys(REUSABLE_CHECKS) as ReusableCheck[]).filter((check) => passed.has(check));
