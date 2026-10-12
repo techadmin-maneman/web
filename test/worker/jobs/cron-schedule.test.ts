@@ -66,14 +66,14 @@ describe("the heartbeat after a run", () => {
     const { job } = recorder();
     const outside = fakeFetch({ [CHECK]: () => new Response("OK") });
     const run = { env, deps: fakeDependencies({ fetch: outside.fetch }), config: WITH_CHECK, log: createLogger() };
-    const aMinuteAgo = new Date(NOW.getTime() - MINUTE_MS).toISOString();
-    await startRun({ db: env.DB, alertOnce: fakeDependencies().alertOnce }, aMinuteAgo);
+    const fiveMinutesAgo = new Date(NOW.getTime() - 5 * MINUTE_MS).toISOString();
+    await startRun({ db: env.DB, alertOnce: fakeDependencies().alertOnce }, fiveMinutesAgo);
 
     await runCron([job("first", "nothing")], run);
     await runCron([job("first", "nothing")], run);
 
     expect(outside.calls.map((call) => [call.url, call.body])).toEqual([
-      [`${CHECK}/fail`, `the run started at ${aMinuteAgo} never finished`],
+      [`${CHECK}/fail`, `the run started at ${fiveMinutesAgo} never finished`],
       [CHECK, ""],
     ]);
   });
