@@ -155,6 +155,13 @@ export const AUDIT_ACTIONS = [
   "stock.send_back",
   "stock.label",
   "stock.hand_back",
+  // Suppliers and what each supplies (docs/decisions/0165-suppliers.md).
+  "supplier.add",
+  "supplier.change",
+  "supplier.retire",
+  "supplier.restore",
+  "supplier.item_set",
+  "supplier.item_remove",
   // Whose a task on the Tasks board is, a visit left partly done that ops closed without a follow-up, and an address
   // a client gave ops on the phone (docs/decisions/0092-task-owners.md).
   "task.assign",

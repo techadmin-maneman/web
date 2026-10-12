@@ -7,6 +7,7 @@ export const settingsTabs = {
   rules: "Policies",
   blackouts: "Closed days",
   consumables: "Consumables",
+  suppliers: "Suppliers",
   "job-sheet": "Job sheet",
 };
 

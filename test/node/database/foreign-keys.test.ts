@@ -69,6 +69,8 @@ const HANDLED: Readonly<Record<string, string>> = {
   "stock_balances.consumable_code -> consumables": "src/domain/field/consumables.ts refuses to delete one it names",
   "stock_transfers.consumable_code -> consumables":
     "src/domain/field/consumables.ts refuses to delete one a movement names, and a transfer comes only with one",
+  "supplier_items.consumable_code -> consumables":
+    "src/domain/field/consumables.ts refuses to delete one a supplier lists: the foreign key refuses its batch, answered in_use",
   "stock_units.consumable_code -> consumables":
     "src/domain/field/consumables.ts refuses to delete one a movement names, and a unit comes only with stock that moved",
   "stock_lots.consumable_code -> consumables":

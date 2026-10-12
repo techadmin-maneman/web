@@ -212,6 +212,8 @@ export const RESTORE_GROUPS: readonly RestoreGroup[] = [
       "consumables",
       "hair_systems",
       "consumable_usage",
+      "suppliers",
+      "supplier_items",
       "checklist_items",
       "partial_reasons",
       "lost_reasons",
@@ -221,7 +223,7 @@ export const RESTORE_GROUPS: readonly RestoreGroup[] = [
       "site_word_publishes",
     ],
     leftAtT:
-      "A price, service, rule, area, day's times, day off, consumable, job-sheet list, pay rate or wording set since goes back",
+      "A price, service, rule, area, day's times, day off, consumable, supplier, job-sheet list, pay rate or wording set since goes back",
     putBackBy: "Setting it again in the console, which audits it",
   },
   {
@@ -448,9 +450,8 @@ function tableSection(table: Table): string[] {
   ];
 }
 
-function restoreGroupRow(group: RestoreGroup): string {
-  return `| ${group.what} | ${group.tables.map(code).join(", ")} | ${group.leftAtT} | ${group.putBackBy} |`;
-}
+const restoreGroupRow = (group: RestoreGroup): string =>
+  `| ${group.what} | ${group.tables.map(code).join(", ")} | ${group.leftAtT} | ${group.putBackBy} |`;
 
 function restoreSection(): string[] {
   return [
