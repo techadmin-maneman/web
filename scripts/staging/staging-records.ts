@@ -13,6 +13,7 @@ import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { parseArgs } from "node:util";
 import type { z } from "zod";
 import {
+  BOOKS_BILL,
   BOOKS_CONTACT,
   BOOKS_INVOICE,
   BOOKS_PAYMENT,
@@ -58,6 +59,8 @@ async function booksRows<T>(path: string, key: string, row: z.ZodType<T>): Promi
   const rows: T[] = [];
   for (let number = 1; ; number += 1) {
     const answer = await books.call("GET", `${path}?page=${String(number)}&per_page=200`);
+    if (answer.status === 401)
+      throw new Error(`Books ${path}: the scripts' Books token lacks its scope (provisioning, step 11b)`);
     if (answer.status !== 200) throw new Error(`Books ${path} answered ${String(answer.status)}`);
     const page = booksPage(answer.json, key, row);
     rows.push(...page.rows);
@@ -139,6 +142,10 @@ async function readBooks(found: Found): Promise<void> {
     const name = `${row.invoice_number} for ${row.customer_name}`;
     judge({ found, kind: "books/invoices", id: row.invoice_id, name, marked: isStagingMarked(row.customer_name) });
   }
+  for (const row of await booksRows("/bills", "bills", BOOKS_BILL)) {
+    const name = `${row.bill_number} from ${row.vendor_name}`;
+    judge({ found, kind: "books/bills", id: row.bill_id, name, marked: isStagingMarked(row.vendor_name) });
+  }
   for (const row of await booksRows("/contacts", "contacts", BOOKS_CONTACT)) {
     judge({
       found,
@@ -180,6 +187,13 @@ const BOOKS_READS = {
     name: (json: unknown) => {
       const invoice = booksRecord(json, "invoice", BOOKS_INVOICE);
       return `${invoice.invoice_number} for ${invoice.customer_name}`;
+    },
+  },
+  "books/bills": {
+    path: "/bills",
+    name: (json: unknown) => {
+      const bill = booksRecord(json, "bill", BOOKS_BILL);
+      return `${bill.bill_number} from ${bill.vendor_name}`;
     },
   },
 } as const;
@@ -281,7 +295,7 @@ function printList(found: Found): void {
   if (found.gone.length > 0) {
     console.log(
       "\nStaging's database keeps these IDs of records the org no longer holds. The run below clears a client's " +
-        "customer and lead and a visit's invoice; a payment's ID stays:",
+        "customer and lead, a supplier's vendor and a visit's invoice; a payment's and a bill's IDs stay:",
     );
     for (const known of found.gone) console.log(`  ${known.kind} ${known.id}`);
   }
@@ -306,7 +320,7 @@ async function deleteReviewed(file: string, found: Found): Promise<void> {
   const statements = unlinkStatements(gone);
   if (statements.length === 0) return;
   d1Execute("staging", statements);
-  console.log("\nStaging's database no longer points at the customers, invoices and leads now gone.");
+  console.log("\nStaging's database no longer points at the customers, vendors, invoices and leads now gone.");
 }
 
 const found = await stagingRecords();

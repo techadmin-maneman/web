@@ -119,6 +119,47 @@ export interface BooksItemDetails {
   readonly sac: string | null;
 }
 
+/** A supplier as Books keeps it: a vendor, found again by its name (docs/decisions/0168-bills-in-books.md). */
+export interface NewBooksVendor {
+  readonly name: string;
+  /** India's GST number; null for a supplier abroad or not registered. */
+  readonly gstin: string | null;
+  /** ISO 4217: the currency its bills are in. */
+  readonly currency: string;
+  /** Whether it is in India, which decides its GST treatment. */
+  readonly inIndia: boolean;
+  readonly email: string | null;
+  readonly phone: string | null;
+  readonly paymentTermsDays: number;
+}
+
+/** A bill as Books holds it. */
+export interface BooksBill {
+  readonly id: string;
+  readonly reference: string | null;
+}
+
+/** A receipt's bill: the supplier's invoice, line by line, each on the account its stock code goes to. */
+export interface NewBooksBill {
+  readonly vendorId: string;
+  /** Our receipt's ID, which a bill is looked for by before another is made. */
+  readonly reference: string;
+  /** The supplier's invoice number, or our receipt's where they gave none. */
+  readonly billNumber: string;
+  /** India's date it was received, and the day it falls due by the supplier's terms. */
+  readonly date: string;
+  readonly dueDate: string;
+  /** Rupees to one unit of the bill's currency: 1 for rupees. */
+  readonly exchangeRate: number;
+  readonly lines: readonly {
+    readonly description: string;
+    readonly accountId: string;
+    /** One unit's price in the bill's currency, in its smallest unit. */
+    readonly unitPrice: number;
+    readonly quantity: number;
+  }[];
+}
+
 /** What erasing a customer left: nothing, or a blank, inactive customer a document or payment still names. */
 export type BooksErasure = "deleted" | "blanked";
 
@@ -167,6 +208,11 @@ export interface BooksProvider {
   /** Adds a service item; returns Books' ID for it. */
   createItem(item: BooksItemDetails): Promise<string>;
   updateItem(itemId: string, item: BooksItemDetails): Promise<void>;
+  /** The vendor of this name, found or added; Books' ID for it. */
+  upsertVendor(vendor: NewBooksVendor): Promise<string>;
+  /** The bill Books holds under our reference; null if it holds none. */
+  findBill(reference: string): Promise<BooksBill | null>;
+  createBill(bill: NewBooksBill): Promise<BooksBill>;
 }
 
 export function createBooksProvider(
@@ -196,5 +242,8 @@ export function createBooksProvider(
     items: off,
     createItem: off,
     updateItem: off,
+    upsertVendor: off,
+    findBill: off,
+    createBill: off,
   };
 }

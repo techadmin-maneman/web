@@ -1,5 +1,6 @@
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
+import { BOOKS_BILL_ACCOUNTS } from "../../../src/config/environments.ts";
 import { NO_GST } from "../../../src/config/gst.ts";
 import { CALLS_PER_VISIT as BOOKS_CALLS_PER_VISIT } from "../../../src/domain/books/books-invoices.ts";
 import { startRun } from "../../../src/domain/platform/cron-runs.ts";
@@ -290,14 +291,19 @@ describe("the Books pass's options", () => {
     gst: { gstin: "06AAACM1234A1Z5", stateCode: "HR", sac: "999721" },
   };
 
-  it("takes the refund account and GST from Books' own settings", () => {
+  it("takes the refund account and GST from Books' own settings, and the bill accounts from the environment's", () => {
     const config: StaticConfig = {
       ...LOCAL_CONFIG,
       environment: "staging",
       providers: { ...LOCAL_CONFIG.providers, BOOKS_PROVIDER: "zoho" },
       settings: { ...LOCAL_CONFIG.settings, zohoBooks },
     };
-    expect(booksSyncOptions(config)).toEqual({ refundAccountId: "bank-7", labelAsTest: true, gst: zohoBooks.gst });
+    expect(booksSyncOptions(config)).toEqual({
+      refundAccountId: "bank-7",
+      billAccounts: BOOKS_BILL_ACCOUNTS.staging,
+      labelAsTest: true,
+      gst: zohoBooks.gst,
+    });
   });
 
   it("has no refund account or GST without Books' settings, and labels nothing as a test in production", () => {

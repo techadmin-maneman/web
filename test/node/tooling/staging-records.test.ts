@@ -117,6 +117,22 @@ function stagingDatabase(): DatabaseSync {
   return db;
 }
 
+/** Staging's database with a supplier made a Books vendor, and a receipt against its order made a bill. */
+function purchasingDatabase(): DatabaseSync {
+  const db = migratedDatabase();
+  db.exec(`
+    INSERT INTO suppliers (id, name, country, currency, payment_terms_days, warranty_days, created_at, updated_at,
+        books_vendor_id) VALUES
+      ('lumina', 'Lumina Hair Co', 'CN', 'USD', 30, 90, '2026-10-01T00:00:00Z', '2026-10-01T00:00:00Z', 'vendor-1');
+    INSERT INTO purchase_orders (id, number, supplier_id, currency, state, drafted_by, drafted_at, updated_at) VALUES
+      ('order', 1, 'lumina', 'USD', 'received', 'ops@maneman.in', '2026-10-01T00:00:00Z', '2026-10-02T00:00:00Z');
+    INSERT INTO receipts (id, po_id, received_by, received_at, rupee_rate, freight_paise, duty_paise, clearing_paise,
+        books_bill_id) VALUES
+      ('receipt', 'order', 'ops@maneman.in', '2026-10-02T00:00:00Z', 8325, 0, 0, 0, 'bill-1');
+  `);
+  return db;
+}
+
 describe("the IDs staging's database keeps", () => {
   it("are every client's Books customer and CRM lead, erased clients' too, and each payment's and invoice's", () => {
     const known = stagingDatabase().prepare(KNOWN_IDS_SQL).all();
@@ -134,6 +150,15 @@ describe("the IDs staging's database keeps", () => {
       ]),
     );
     expect(known).toHaveLength(8);
+  });
+
+  it("are each supplier's vendor and each receipt's bill", () => {
+    const db = purchasingDatabase();
+
+    expect(db.prepare(KNOWN_IDS_SQL).all()).toEqual([
+      { kind: "books/bills", id: "bill-1" },
+      { kind: "books/contacts", id: "vendor-1" },
+    ]);
   });
 
   it("are read one by one only where the marks did not find their record", () => {
@@ -186,6 +211,20 @@ describe("clearing the links to records now gone", () => {
         { id: "refunded", books_payment_id: "payment-2" },
       ],
     });
+  });
+
+  it("lets go of a supplier's vendor, and keeps a receipt's bill so the pass never bills it again", () => {
+    const db = purchasingDatabase();
+
+    for (const statement of unlinkStatements([
+      { kind: "books/contacts", id: "vendor-1" },
+      { kind: "books/bills", id: "bill-1" },
+    ])) {
+      db.exec(statement);
+    }
+
+    expect(db.prepare("SELECT books_vendor_id FROM suppliers").all()).toEqual([{ books_vendor_id: null }]);
+    expect(db.prepare("SELECT books_bill_id FROM receipts").all()).toEqual([{ books_bill_id: "bill-1" }]);
   });
 
   it("keeps a payment's and a refund's IDs, so the Books pass never records staging's old payments again", () => {

@@ -15,7 +15,9 @@
 //     a late cancel or replacement kept, a no-show's charge, and a late fee
 //     (src/domain/books/books-kept.ts);
 //   - records each processed refund of a recorded payment, from the account
-//     Razorpay settles into, when that account is set.
+//     Razorpay settles into, when that account is set;
+//   - makes each receipt against a purchase order a bill of its supplier's
+//     vendor, once both bill accounts are set (./books-bills.ts).
 //
 // Each record is claimed before Books is asked, so a run that overlaps the one
 // before it leaves the records that one is on. A payment or a refund is also
@@ -34,6 +36,7 @@
 
 import type { CallBudget } from "../../lib/call-budget.ts";
 import { type Logger } from "../../log.ts";
+import { addVendor, billReceipt, receiptsToBill, vendorsToAdd, type BillAccounts } from "./books-bills.ts";
 import { keptMoney, keptSinceRefunded, alertKeptMoney } from "./books-kept.ts";
 import { RECHECK_AFTER_MS } from "./vendor-pass.ts";
 import type { BooksSyncDeps, BooksSyncOptions, Pass } from "./books-pass.ts";
@@ -58,7 +61,27 @@ export type BooksSyncSummary = {
   recorded: number;
   applied: number;
   refunded: number;
+  vendors: number;
+  bills: number;
 };
+
+/** Each supplier with a receipt to bill made a vendor, then each receipt a bill. False where the calls ran out. */
+async function bill(
+  pass: Pass,
+  accounts: BillAccounts,
+  budget: CallBudget,
+  summary: BooksSyncSummary,
+): Promise<boolean> {
+  for (const supplierId of await vendorsToAdd(pass)) {
+    if (!budget.spend(CALLS_PER_CUSTOMER)) return false;
+    if (await addVendor(pass, supplierId)) summary.vendors += 1;
+  }
+  for (const receiptId of await receiptsToBill(pass)) {
+    if (!budget.spend(CALLS_PER_RECORD)) return false;
+    if (await billReceipt(pass, receiptId, accounts)) summary.bills += 1;
+  }
+  return true;
+}
 
 export async function syncBooks({
   db,
@@ -84,7 +107,15 @@ export async function syncBooks({
     recheck: new Date(now.getTime() - RECHECK_AFTER_MS).toISOString(),
     label: options.labelAsTest ? "Staging test: " : "",
   };
-  const summary: BooksSyncSummary = { customers: 0, customersUpdated: 0, recorded: 0, applied: 0, refunded: 0 };
+  const summary: BooksSyncSummary = {
+    customers: 0,
+    customersUpdated: 0,
+    recorded: 0,
+    applied: 0,
+    refunded: 0,
+    vendors: 0,
+    bills: 0,
+  };
 
   for (const personId of await customersToAdd(pass)) {
     if (!budget.spend(CALLS_PER_CUSTOMER)) return summary;
@@ -107,6 +138,7 @@ export async function syncBooks({
     await alertKeptMoney(db, deps.alertOnce, pass.at, kept);
   }
   for (const paymentId of await keptSinceRefunded(db)) await deps.resolveAlert(`books_unapplied:${paymentId}`);
+  if (options.billAccounts !== null && !(await bill(pass, options.billAccounts, budget, summary))) return summary;
   if (options.refundAccountId === null) return summary;
   for (const refund of await refundsToRecord(pass)) {
     if (!budget.spend(CALLS_PER_RECORD)) return summary;

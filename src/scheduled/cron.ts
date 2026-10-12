@@ -11,7 +11,7 @@
 // the vendors' own limits. Their statements to D1 are kept by each job's batch sizes, well under the 1,000 an
 // invocation may send (docs/decisions/0112-workers-paid.md).
 
-import { BOOKS_ITEM_PUSH, OPS_ORIGIN } from "../config/environments.ts";
+import { BOOKS_BILL_ACCOUNTS, BOOKS_ITEM_PUSH, OPS_ORIGIN } from "../config/environments.ts";
 import { NO_GST, type GstRegistration } from "../config/gst.ts";
 import type { Dependencies } from "../dependencies.ts";
 import { bookUnbookedHolds } from "../domain/booking/unbooked-holds.ts";
@@ -291,6 +291,7 @@ async function booksItemsJob({ env, deps, config, log, budget }: CronContext): P
 export function booksSyncOptions(config: StaticConfig): BooksSyncOptions {
   return {
     refundAccountId: config.settings.zohoBooks?.refundAccountId ?? null,
+    billAccounts: BOOKS_BILL_ACCOUNTS[config.environment],
     labelAsTest: config.environment !== "production",
     gst: booksGst(config),
   };
@@ -303,7 +304,8 @@ function booksGst(config: StaticConfig): GstRegistration {
 
 async function booksJob({ env, deps, config, log, budget }: CronContext): Promise<void> {
   const done = await syncBooks({ db: env.DB, deps, options: booksSyncOptions(config), now: deps.now(), log, budget });
-  const written = done.customers + done.customersUpdated + done.recorded + done.applied + done.refunded;
+  const written =
+    done.customers + done.customersUpdated + done.recorded + done.applied + done.refunded + done.vendors + done.bills;
   if (written > 0) log.info("books_synced", done);
 }
 

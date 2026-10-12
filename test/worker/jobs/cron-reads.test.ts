@@ -225,6 +225,24 @@ const HISTORY = [
      sent_at, settled_by, settled_at, settlement_id)
    SELECT 'st-' || i, 'history_tape', 1, 'central', 'central', 'received', 1, 'ops@localhost', '${AGO}',
      'ops@localhost', '${AGO}', 'x-' || i FROM n`,
+  // Hair systems ordered from suppliers, received and billed in Books long ago: the Books pass reads only receipts
+  // still to bill.
+  `INSERT INTO consumables (code, name, unit, unit_cost, reorder_kit, created_at, updated_at)
+   SELECT 'hs-' || i, 'Hair system ' || i, 'piece', 1200000, 0, '${AGO}', '${AGO}' FROM n`,
+  `INSERT INTO hair_systems (code, product, base_width_in, base_length_in, colour, grey_percent, density_percent)
+   SELECT 'hs-' || i, 'essential', i, 10, '1B', 20, 100 FROM n`,
+  `INSERT INTO suppliers (id, name, country, currency, payment_terms_days, warranty_days, created_at, updated_at,
+     books_vendor_id, books_checked_at)
+   SELECT 'sup-' || i, 'Supplier ' || i, 'CN', 'USD', 30, 90, '${AGO}', '${AGO}', 'bv-' || i, '${AGO}' FROM n`,
+  `INSERT INTO purchase_orders (id, number, supplier_id, currency, state, drafted_by, drafted_at, updated_at)
+   SELECT 'po-' || i, i, 'sup-' || i, 'USD', 'received', 'ops@localhost', '${AGO}', '${AGO}' FROM n`,
+  `INSERT INTO po_lines (id, po_id, consumable_code, quantity, unit_price, received_quantity)
+   SELECT 'pol-' || i, 'po-' || i, 'hs-' || i, 1, 12000, 1 FROM n`,
+  `INSERT INTO receipts (id, po_id, received_by, received_at, rupee_rate, freight_paise, duty_paise, clearing_paise,
+     books_bill_id, books_checked_at)
+   SELECT 'rcp-' || i, 'po-' || i, 'ops@localhost', '${AGO}', 8325, 0, 0, 0, 'bb-' || i, '${AGO}' FROM n`,
+  `INSERT INTO receipt_lines (id, receipt_id, po_line_id, received, damaged, qc_failed, landed_unit_paise)
+   SELECT 'rl-' || i, 'rcp-' || i, 'pol-' || i, 1, 0, 0, 999000 FROM n`,
   // What the sweeper deletes once it has outlived its use, still in use: today's counts, the day's keys, a login code
   // and a site's number code proved, and a try-on session still open.
   `INSERT INTO counters (scope, key, window_start, count) SELECT 'login_code', 'k-' || i, '${TODAY}', 1 FROM n`,

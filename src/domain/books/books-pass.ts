@@ -5,10 +5,13 @@ import type { GstRegistration } from "../../config/gst.ts";
 import { failureReason, type Logger } from "../../log.ts";
 import type { BooksProvider } from "../../providers/books/index.ts";
 import { paymentsTab, type AlertOnce, type ResolveAlert } from "../ops/alerts.ts";
+import type { BillAccounts } from "./books-bills.ts";
 import { tellFailure as tellPassFailure, FAILURES_BEFORE_ALERT } from "./vendor-pass.ts";
 
 export interface BooksSyncOptions {
   readonly refundAccountId: string | null;
+  /** Where a receipt's bill posts; null until both accounts are set, when no bill is made. */
+  readonly billAccounts: BillAccounts | null;
   readonly labelAsTest: boolean;
   readonly gst: GstRegistration;
 }
@@ -37,9 +40,10 @@ export interface Pass {
 // ---------------------------------------------------------------------------
 /** A record Books failed on, in the words its alert uses. */
 interface FailedRecord {
-  readonly kind: "customer" | "customer_update" | "payment" | "apply" | "refund";
+  readonly kind: "customer" | "customer_update" | "payment" | "apply" | "refund" | "vendor" | "bill";
   readonly id: string;
-  readonly personId: string;
+  /** The client it is about; null for a supplier's vendor or a receipt's bill. */
+  readonly personId: string | null;
   /** "payment <id> (Razorpay <id>)", or what Books was asked to do with it. */
   readonly what: string;
   /** What happens next, or what ops must do. */
@@ -53,10 +57,17 @@ const ID_FIELDS: Readonly<Record<FailedRecord["kind"], string>> = {
   payment: "payment_id",
   apply: "payment_id",
   refund: "refund_id",
+  vendor: "supplier_id",
+  bill: "receipt_id",
 };
 
-/** Where ops act on it: the client's page for their customer in Books, their Payments tab for their money. */
+/**
+ * Where ops act on it: the client's page for their customer in Books, their Payments tab for their money; Settings,
+ * Suppliers for a vendor, and Purchasing for a bill.
+ */
 function linkOf(record: FailedRecord): string {
+  if (record.kind === "vendor") return "/settings/suppliers";
+  if (record.kind === "bill" || record.personId === null) return "/purchasing";
   const aboutTheCustomer = record.kind === "customer" || record.kind === "customer_update";
   return aboutTheCustomer ? `/clients/${record.personId}` : paymentsTab(record.personId);
 }
