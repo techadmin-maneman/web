@@ -47,6 +47,7 @@ async function open(page: Page, extra: Answers = {}): Promise<void> {
   await answer(page, {
     "GET /api/purchase-orders": json(BOOK),
     "GET /api/supplier-claims": json({ claims: [], returns: [] }),
+    "GET /api/supplier-scorecard": json({ suppliers: [] }),
     ...extra,
   });
   await page.goto("/purchasing");

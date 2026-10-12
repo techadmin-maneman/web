@@ -75,8 +75,8 @@ async function received(): Promise<void> {
     note: null,
   });
   const order = (await drafted.json<{ orders: { id: string; lines: { id: string }[] }[] }>()).orders[0];
-  await env.DB.prepare("UPDATE purchase_orders SET state = 'sent' WHERE id = ?1")
-    .bind(order?.id ?? "")
+  await env.DB.prepare("UPDATE purchase_orders SET state = 'sent', sent_at = ?2 WHERE id = ?1")
+    .bind(order?.id ?? "", new Date(NOW.getTime() - 10 * DAY_MS).toISOString())
     .run();
   const [hairLine, solventLine] = order?.lines ?? [];
   const line = (id: string | undefined, counts: { received: number; damaged?: number; qc_failed?: number }) => ({
@@ -292,5 +292,34 @@ describe("a photograph of stock", () => {
     const [, damaged] = (await claims()).claims;
     const sent = await job.opsPost(`/api/supplier-claims/${damaged?.id ?? ""}/send`, { note: null, photo_id: id });
     expect((await sent.json<Claims & { claims: { photo_id: string | null }[] }>()).claims[1]?.photo_id).toBe(id);
+  });
+});
+
+describe("the supplier scorecard", () => {
+  it("reads the year's orders, what arrived damaged or failed its check, and the claims credited", async () => {
+    const [, damaged] = (await claims()).claims;
+    await job.opsPost(`/api/supplier-claims/${damaged?.id ?? ""}/send`, { note: null, photo_id: null });
+    await job.opsPost(`/api/supplier-claims/${damaged?.id ?? ""}/decide`, {
+      outcome: "credit",
+      credit_amount: 250,
+      note: null,
+    });
+    const read = await request(job.ops, "/api/supplier-scorecard");
+    expect((await read.json<{ suppliers: unknown[] }>()).suppliers).toEqual([
+      {
+        supplier_id: expect.any(String) as string,
+        name: "Lumina Hair Co",
+        currency: "USD",
+        orders: 1,
+        on_time_in_full_percent: null,
+        lead_days: 10,
+        promised_days: 14,
+        failed_check_percent: 8,
+        damaged_percent: 8,
+        claims_settled: 1,
+        claims_accepted: 1,
+        credited: 250,
+      },
+    ]);
   });
 });

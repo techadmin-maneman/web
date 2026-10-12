@@ -14462,6 +14462,94 @@
           "photo_id"
         ]
       },
+      "SupplierScorecard": {
+        "type": "object",
+        "properties": {
+          "suppliers": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "supplier_id": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "currency": {
+                  "type": "string"
+                },
+                "orders": {
+                  "type": "integer"
+                },
+                "on_time_in_full_percent": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
+                  "minimum": 0,
+                  "maximum": 100
+                },
+                "lead_days": {
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                },
+                "promised_days": {
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                },
+                "failed_check_percent": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
+                  "minimum": 0,
+                  "maximum": 100
+                },
+                "damaged_percent": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
+                  "minimum": 0,
+                  "maximum": 100
+                },
+                "claims_settled": {
+                  "type": "integer"
+                },
+                "claims_accepted": {
+                  "type": "integer"
+                },
+                "credited": {
+                  "type": "integer",
+                  "description": "What was credited, in the supplier's currency's smallest unit."
+                }
+              },
+              "required": [
+                "supplier_id",
+                "name",
+                "currency",
+                "orders",
+                "on_time_in_full_percent",
+                "lead_days",
+                "promised_days",
+                "failed_check_percent",
+                "damaged_percent",
+                "claims_settled",
+                "claims_accepted",
+                "credited"
+              ]
+            }
+          }
+        },
+        "required": [
+          "suppliers"
+        ]
+      },
       "Storage": {
         "type": "object",
         "properties": {
@@ -26684,6 +26772,33 @@
           },
           "404": {
             "description": "not_found: no such photograph",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/supplier-scorecard": {
+      "get": {
+        "summary": "Each supplier's last year: on time in full, lead time, quality and claims",
+        "responses": {
+          "200": {
+            "description": "The scorecard",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupplierScorecard"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "access_required",
             "content": {
               "application/json": {
                 "schema": {

@@ -2,7 +2,7 @@
 
 Every decision this repository was built on, oldest first. A record says what was decided and why, and is not rewritten to say something else: a later record changes it, and says so in its own header (ADR 0001). **Changed by** gathers those later records, from either side, so an old record's reader knows to read on.
 
-This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. A record names its topic in its header, `- Topic:` and one of the headings below, and the test fails on one that does not. The next free number is 0172.
+This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. A record names its topic in its header, `- Topic:` and one of the headings below, and the test fails on one that does not. The next free number is 0173.
 
 ## By topic
 
@@ -100,6 +100,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 - [0167](0167-receipts-and-landed-cost.md) Receipts and landed cost
 - [0169](0169-supplier-claims.md) Supplier claims
 - [0170](0170-stock-photos.md) Photographs of stock
+- [0172](0172-supplier-scorecard.md) Supplier scorecard
 
 ### Money and Books
 
@@ -378,3 +379,4 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0169](0169-supplier-claims.md) | Supplier claims | 2026-10-12 | accepted |  |
 | [0170](0170-stock-photos.md) | Photographs of stock | 2026-10-12 | accepted |  |
 | [0171](0171-vendor-credits.md) | Vendor credits | 2026-10-12 | accepted |  |
+| [0172](0172-supplier-scorecard.md) | Supplier scorecard | 2026-10-12 | accepted |  |

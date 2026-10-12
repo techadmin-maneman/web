@@ -7597,6 +7597,26 @@ A photograph of stock, never cached
 }
 ```
 
+### GET /api/supplier-scorecard
+
+Each supplier's last year: on time in full, lead time, quality and claims
+
+**200**: The scorecard
+
+```json
+{
+  "$ref": "#/components/schemas/SupplierScorecard"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ### GET /api/storage
 
 What the photographs and referral cards hold in R2, against their share, and the database against its limit
@@ -23611,6 +23631,99 @@ Request body:
   },
   "required": [
     "photo_id"
+  ]
+}
+```
+
+### SupplierScorecard
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "suppliers": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "supplier_id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "currency": {
+            "type": "string"
+          },
+          "orders": {
+            "type": "integer"
+          },
+          "on_time_in_full_percent": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0,
+            "maximum": 100
+          },
+          "lead_days": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "promised_days": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "failed_check_percent": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0,
+            "maximum": 100
+          },
+          "damaged_percent": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0,
+            "maximum": 100
+          },
+          "claims_settled": {
+            "type": "integer"
+          },
+          "claims_accepted": {
+            "type": "integer"
+          },
+          "credited": {
+            "type": "integer",
+            "description": "What was credited, in the supplier's currency's smallest unit."
+          }
+        },
+        "required": [
+          "supplier_id",
+          "name",
+          "currency",
+          "orders",
+          "on_time_in_full_percent",
+          "lead_days",
+          "promised_days",
+          "failed_check_percent",
+          "damaged_percent",
+          "claims_settled",
+          "claims_accepted",
+          "credited"
+        ]
+      }
+    }
+  },
+  "required": [
+    "suppliers"
   ]
 }
 ```

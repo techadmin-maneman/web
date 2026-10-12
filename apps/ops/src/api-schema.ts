@@ -11447,6 +11447,51 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/supplier-scorecard": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Each supplier's last year: on time in full, lead time, quality and claims */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The scorecard */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["SupplierScorecard"];
+                    };
+                };
+                /** @description access_required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/storage": {
         parameters: {
             query?: never;
@@ -15589,6 +15634,23 @@ export interface components {
         StockPhotoStored: {
             /** Format: uuid */
             photo_id: string;
+        };
+        SupplierScorecard: {
+            suppliers: {
+                supplier_id: string;
+                name: string;
+                currency: string;
+                orders: number;
+                on_time_in_full_percent: number | null;
+                lead_days: number | null;
+                promised_days: number | null;
+                failed_check_percent: number | null;
+                damaged_percent: number | null;
+                claims_settled: number;
+                claims_accepted: number;
+                /** @description What was credited, in the supplier's currency's smallest unit. */
+                credited: number;
+            }[];
         };
         Storage: {
             /** @description What the client-photos and referral-cards buckets hold. */
