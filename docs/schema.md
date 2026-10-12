@@ -1000,7 +1000,7 @@ Triggers: `hair_profiles_no_delete`, `hair_profiles_only_blanked`.
 
 
 
-Made by `0133_hair_systems.sql`.
+Made by `0134_hair_systems.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |

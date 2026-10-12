@@ -20,6 +20,7 @@ export const CONSUMABLES = {
       reorder_central: 200,
       retired_from: null,
       offered: true,
+      hair_system: null,
     },
     {
       code: "shampoo_sachet",
@@ -30,6 +31,7 @@ export const CONSUMABLES = {
       reorder_central: null,
       retired_from: "2027-09-01",
       offered: false,
+      hair_system: null,
     },
     {
       code: "solvent",
@@ -40,6 +42,7 @@ export const CONSUMABLES = {
       reorder_central: null,
       retired_from: "2027-10-01",
       offered: true,
+      hair_system: null,
     },
     {
       code: "tape_strips",
@@ -50,6 +53,7 @@ export const CONSUMABLES = {
       reorder_central: 50,
       retired_from: null,
       offered: true,
+      hair_system: null,
     },
   ],
   // The services the console holds, by name, in its order (docs/decisions/0085-services-ops-can-edit.md): a premium

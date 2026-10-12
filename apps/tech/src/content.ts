@@ -500,6 +500,12 @@ export const steps = {
     },
     // The board draws no empty base; the piece may not be in the mirror yet.
     unnamed: "Not recorded",
+    // The board draws no kit: the hair system fitted comes out of it (docs/decisions/0156-hair-systems-in-stock.md).
+    kit: {
+      title: "From your kit",
+      held: (count: number) => `${String(count)} in kit`,
+      matches: "Matches the profile",
+    },
   },
   outcome: {
     // The board draws Done chosen already; nothing is chosen for the technician here.

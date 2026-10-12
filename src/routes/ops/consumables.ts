@@ -7,8 +7,6 @@
 //   POST /api/consumables/:code/restore     offered again
 //   POST /api/consumables/:code/delete      one added by mistake, while no stock of it has moved
 //   POST /api/service-usage                 what one service is expected to use, the whole list at once
-//   POST /api/hair-systems                  a hair system's stock code, counted in pieces
-//                                           (docs/decisions/0156-hair-systems-in-stock.md)
 //
 // A change here needs no release. Each records the Access identity behind it,
 // with what it changed, in the same batch as the change (ADR 0031). Every
@@ -31,7 +29,7 @@ import {
   setExpectedUse,
   type Consumable,
 } from "../../domain/field/consumables.ts";
-import { addHairSystem, hairSystemSpecs, type HairSystemSpec } from "../../domain/field/hair-systems.ts";
+import { hairSystemSpecs, type HairSystemSpec } from "../../domain/field/hair-systems.ts";
 import { closeStaleLowStock } from "../../domain/field/low-stock.ts";
 import { actorOf } from "../../http/audit.ts";
 import type { App, AppEnv } from "../../http/context.ts";
@@ -39,7 +37,7 @@ import { errorResponse, refuse } from "../../http/errors.ts";
 import { json } from "../../http/openapi.ts";
 import { indiaDate } from "../../lib/india-time.ts";
 import { PRICE_TIER } from "../../policy/services.ts";
-import { FitSpecSchema } from "../schemas/hair-profile.ts";
+import { Level, UnitCost } from "../schemas/consumables.ts";
 
 const Name = z.string().trim().regex(CONSUMABLE_NAME).openapi({
   description: "A letter or a digit first, then letters, digits, spaces and . , ' ( ) & / + % -; at most 60.",
@@ -49,10 +47,6 @@ const Unit = z
   .trim()
   .regex(CONSUMABLE_UNIT)
   .openapi({ description: "strip, ml, sachet: at most 20 letters." });
-const UnitCost = z.number().int().min(0).max(CONSUMABLE_BOUNDS.maxUnitCost).openapi({ description: "In paise." });
-const Level = z.union([z.number().int().min(0).max(CONSUMABLE_BOUNDS.maxReorderLevel), z.null()]);
-
-const fit = FitSpecSchema.shape;
 
 const HairSystemSpecSchema = z
   .object({
@@ -155,40 +149,6 @@ const addRoute = createRoute({
     },
   },
   responses: { 200: CONSUMABLES, 400: REFUSED, 403: errorResponse("access_required") },
-});
-
-const addHairSystemRoute = createRoute({
-  method: "post",
-  path: "/api/hair-systems",
-  summary: "Add a hair system's stock code, counted in pieces, for a spec no other has",
-  request: {
-    body: {
-      required: true,
-      ...json(
-        z
-          .object({
-            product: z.string().regex(PRICE_TIER).openapi({ description: "The tier of a first-fit service." }),
-            base_width_in: fit.base_width_in.unwrap(),
-            base_length_in: fit.base_length_in.unwrap(),
-            colour: fit.colour.unwrap(),
-            grey_percent: fit.grey_percent.unwrap(),
-            density_percent: fit.density_percent.unwrap(),
-            unit_cost: UnitCost,
-            reorder_kit: Level.optional(),
-            reorder_central: Level.optional(),
-          })
-          .strict()
-          .openapi("NewHairSystem"),
-      ),
-    },
-  },
-  responses: {
-    200: CONSUMABLES,
-    400: errorResponse(
-      "invalid_request: fields names product for one no first fit is sold as, or hair_system for a spec, or the name it makes, another has",
-    ),
-    403: errorResponse("access_required"),
-  },
 });
 
 const code = z.object({ code: z.string().min(1).max(64) });
@@ -365,27 +325,6 @@ export function registerOpsConsumables(app: App): void {
       {
         name: body.name,
         unit: body.unit,
-        unitCost: body.unit_cost,
-        reorderKit: body.reorder_kit ?? null,
-        reorderCentral: body.reorder_central ?? null,
-      },
-      written(c),
-    );
-    if (!saved.ok) return refuse(c, "invalid_request", saved.fields);
-    return c.json(await answer(c), 200);
-  });
-
-  app.openapi(addHairSystemRoute, async (c) => {
-    const body = c.req.valid("json");
-    const saved = await addHairSystem(
-      c.env.DB,
-      {
-        product: body.product,
-        baseWidthIn: body.base_width_in,
-        baseLengthIn: body.base_length_in,
-        colour: body.colour,
-        greyPercent: body.grey_percent,
-        densityPercent: body.density_percent,
         unitCost: body.unit_cost,
         reorderKit: body.reorder_kit ?? null,
         reorderCentral: body.reorder_central ?? null,

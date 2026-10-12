@@ -76,6 +76,7 @@ describe("the catalogue", () => {
         reorder_central: 100,
         retired_from: null,
         offered: true,
+        hair_system: null,
       },
     ]);
     const [entry] = (await auditFor("consumable.add")).results;

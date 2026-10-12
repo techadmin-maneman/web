@@ -5905,42 +5905,6 @@ Request body:
 }
 ```
 
-### POST /api/hair-systems
-
-Add a hair system's stock code, counted in pieces, for a spec no other has
-
-Request body:
-
-```json
-{
-  "$ref": "#/components/schemas/NewHairSystem"
-}
-```
-
-**200**: Every consumable and each service's expected use
-
-```json
-{
-  "$ref": "#/components/schemas/Consumables"
-}
-```
-
-**400**: invalid_request: fields names product for one no first fit is sold as, or hair_system for a spec, or the name it makes, another has
-
-```json
-{
-  "$ref": "#/components/schemas/ErrorResponse"
-}
-```
-
-**403**: access_required
-
-```json
-{
-  "$ref": "#/components/schemas/ErrorResponse"
-}
-```
-
 ### POST /api/consumables/{code}
 
 Rename a consumable, or change its unit, its cost or its reorder levels. Only the fields sent change
@@ -6114,6 +6078,51 @@ Request body:
 ```
 
 **400**: invalid_request: fields names tier for a service the console does not hold, or items.N.code for a consumable nobody added or one named twice
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/hair-systems
+
+Add a hair system's stock code, counted in pieces, for a spec no other has
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/NewHairSystem"
+}
+```
+
+**200**: Added
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "code": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "code"
+  ],
+  "additionalProperties": false
+}
+```
+
+**400**: invalid_request: fields names product for one no first fit is sold as, or hair_system for a spec, or the name it makes, another has
 
 ```json
 {
@@ -19617,118 +19626,6 @@ Request body:
 }
 ```
 
-### NewHairSystem
-
-```json
-{
-  "type": "object",
-  "properties": {
-    "product": {
-      "type": "string",
-      "pattern": "^[a-z][a-z0-9_]{0,31}$",
-      "description": "The tier of a first-fit service."
-    },
-    "base_width_in": {
-      "type": "number",
-      "minimum": 2,
-      "maximum": 12
-    },
-    "base_length_in": {
-      "type": "number",
-      "minimum": 2,
-      "maximum": 14
-    },
-    "colour": {
-      "type": "string",
-      "enum": [
-        "1",
-        "2",
-        "3",
-        "4",
-        "5",
-        "6",
-        "7",
-        "8",
-        "1B"
-      ]
-    },
-    "grey_percent": {
-      "type": "integer",
-      "minimum": 0,
-      "maximum": 100
-    },
-    "density_percent": {
-      "anyOf": [
-        {
-          "type": "number",
-          "enum": [
-            80
-          ]
-        },
-        {
-          "type": "number",
-          "enum": [
-            100
-          ]
-        },
-        {
-          "type": "number",
-          "enum": [
-            120
-          ]
-        },
-        {
-          "type": "number",
-          "enum": [
-            140
-          ]
-        }
-      ]
-    },
-    "unit_cost": {
-      "type": "integer",
-      "minimum": 0,
-      "maximum": 10000000,
-      "description": "In paise."
-    },
-    "reorder_kit": {
-      "anyOf": [
-        {
-          "type": "integer",
-          "minimum": 0,
-          "maximum": 100000
-        },
-        {
-          "type": "null"
-        }
-      ]
-    },
-    "reorder_central": {
-      "anyOf": [
-        {
-          "type": "integer",
-          "minimum": 0,
-          "maximum": 100000
-        },
-        {
-          "type": "null"
-        }
-      ]
-    }
-  },
-  "required": [
-    "product",
-    "base_width_in",
-    "base_length_in",
-    "colour",
-    "grey_percent",
-    "density_percent",
-    "unit_cost"
-  ],
-  "additionalProperties": false
-}
-```
-
 ### ConsumableChange
 
 ```json
@@ -19846,6 +19743,118 @@ Request body:
     "visit_type",
     "tier",
     "items"
+  ],
+  "additionalProperties": false
+}
+```
+
+### NewHairSystem
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "product": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]{0,31}$",
+      "description": "The tier of a first-fit service."
+    },
+    "base_width_in": {
+      "type": "number",
+      "minimum": 2,
+      "maximum": 12
+    },
+    "base_length_in": {
+      "type": "number",
+      "minimum": 2,
+      "maximum": 14
+    },
+    "colour": {
+      "type": "string",
+      "enum": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "1B"
+      ]
+    },
+    "grey_percent": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100
+    },
+    "density_percent": {
+      "anyOf": [
+        {
+          "type": "number",
+          "enum": [
+            80
+          ]
+        },
+        {
+          "type": "number",
+          "enum": [
+            100
+          ]
+        },
+        {
+          "type": "number",
+          "enum": [
+            120
+          ]
+        },
+        {
+          "type": "number",
+          "enum": [
+            140
+          ]
+        }
+      ]
+    },
+    "unit_cost": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 10000000,
+      "description": "In paise."
+    },
+    "reorder_kit": {
+      "anyOf": [
+        {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100000
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "reorder_central": {
+      "anyOf": [
+        {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100000
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  },
+  "required": [
+    "product",
+    "base_width_in",
+    "base_length_in",
+    "colour",
+    "grey_percent",
+    "density_percent",
+    "unit_cost"
   ],
   "additionalProperties": false
 }

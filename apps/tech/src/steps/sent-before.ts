@@ -29,6 +29,8 @@ export interface PieceSent {
   readonly code: string;
   readonly base: string;
   readonly lot: string;
+  /** The hair system from the kit, by its stock code; null where none was sent. */
+  readonly stock: string | null;
   readonly oldCode: string;
   readonly oldReason: string;
 }
@@ -44,6 +46,7 @@ export function pieceSent(refused: Queued | null): PieceSent | null {
     code: textOf(sent.piece_code),
     base: textOf(sent.base),
     lot: textOf(sent.supplier_lot),
+    stock: typeof sent.stock_code === "string" ? sent.stock_code : null,
     oldCode: textOf(old?.piece_code),
     oldReason: textOf(old?.failure_reason),
   };

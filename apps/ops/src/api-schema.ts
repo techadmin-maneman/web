@@ -8691,64 +8691,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/hair-systems": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Add a hair system's stock code, counted in pieces, for a spec no other has */
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody: {
-                content: {
-                    "application/json": components["schemas"]["NewHairSystem"];
-                };
-            };
-            responses: {
-                /** @description Every consumable and each service's expected use */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["Consumables"];
-                    };
-                };
-                /** @description invalid_request: fields names product for one no first fit is sold as, or hair_system for a spec, or the name it makes, another has */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-                /** @description access_required */
-                403: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-            };
-        };
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/consumables/{code}": {
         parameters: {
             query?: never;
@@ -9041,6 +8983,66 @@ export interface paths {
                     };
                 };
                 /** @description invalid_request: fields names tier for a service the console does not hold, or items.N.code for a consumable nobody added or one named twice */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description access_required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/hair-systems": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Add a hair system's stock code, counted in pieces, for a spec no other has */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["NewHairSystem"];
+                };
+            };
+            responses: {
+                /** @description Added */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            code: string;
+                        };
+                    };
+                };
+                /** @description invalid_request: fields names product for one no first fit is sold as, or hair_system for a spec, or the name it makes, another has */
                 400: {
                     headers: {
                         [name: string]: unknown;
@@ -13287,20 +13289,6 @@ export interface components {
             reorder_kit?: number | null;
             reorder_central?: number | null;
         };
-        NewHairSystem: {
-            /** @description The tier of a first-fit service. */
-            product: string;
-            base_width_in: number;
-            base_length_in: number;
-            /** @enum {string} */
-            colour: "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "1B";
-            grey_percent: number;
-            density_percent: 80 | 100 | 120 | 140;
-            /** @description In paise. */
-            unit_cost: number;
-            reorder_kit?: number | null;
-            reorder_central?: number | null;
-        };
         ConsumableChange: {
             /** @description A letter or a digit first, then letters, digits, spaces and . , ' ( ) & / + % -; at most 60. */
             name?: string;
@@ -13323,6 +13311,20 @@ export interface components {
                 code: string;
                 quantity: number;
             }[];
+        };
+        NewHairSystem: {
+            /** @description The tier of a first-fit service. */
+            product: string;
+            base_width_in: number;
+            base_length_in: number;
+            /** @enum {string} */
+            colour: "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "1B";
+            grey_percent: number;
+            density_percent: 80 | 100 | 120 | 140;
+            /** @description In paise. */
+            unit_cost: number;
+            reorder_kit?: number | null;
+            reorder_central?: number | null;
         };
         JobSheet: {
             checklists: components["schemas"]["JobSheetChecklist"][];
