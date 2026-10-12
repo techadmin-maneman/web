@@ -174,6 +174,17 @@ describe("booking a paid hold twice at once", () => {
     expect((await scheduledServiceVisits(PERSON)).results).toHaveLength(1);
   });
 
+  it("tells the client once when two tries find the hold booked at the same moment", async () => {
+    const { holdId } = await paidHold("pay_i6");
+    expect(await booking(holdId, 40)).toBe("booked");
+    await env.DB.prepare("DELETE FROM outbound_messages WHERE kind = 'payment_receipt'").run();
+    expect(await Promise.all([booking(holdId, 50), booking(holdId, 50)])).toEqual(["already_booked", "already_booked"]);
+    const told = await env.DB.prepare(
+      "SELECT COUNT(*) AS n FROM outbound_messages WHERE kind = 'payment_receipt'",
+    ).first();
+    expect(told).toEqual({ n: 1 });
+  });
+
   it("waits for a try still writing the hold, and never gives it up or refunds it for that", async () => {
     const { holdId } = await paidHold("pay_i5");
     await env.DB.prepare("UPDATE slot_holds SET booking_until = ?2 WHERE id = ?1")

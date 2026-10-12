@@ -10,7 +10,7 @@ import { graceEndOf } from "./hold-stages.ts";
 import { retakeSlot } from "./hold-slot.ts";
 import { heldVisitTimes } from "../visits/visit-times.ts";
 import { liveVisitOf } from "./availability.ts";
-import { visitMessage, type VisitMessageKind } from "../messages/visit-messages.ts";
+import { visitMessageOnce, type VisitMessageKind } from "../messages/visit-messages.ts";
 import { MINUTE_MS } from "../../lib/durations.ts";
 import {
   type ConfirmOptions,
@@ -379,20 +379,15 @@ function confirmationOf(hold: HoldRow): VisitMessageKind {
 async function afterBooked(db: D1Database, hold: HoldRow, now: Date, options: ConfirmOptions): Promise<void> {
   const visitId = hold.appointment_id;
   if (visitId === null || hold.move_kind === "move") return;
-  const kind = confirmationOf(hold);
-  const told = await db
-    .prepare("SELECT 1 FROM outbound_messages WHERE subject_id = ?1 AND kind = ?2")
-    .bind(visitId, kind)
-    .first();
   // Their Care person, at their first booking where no chat has given them one (docs/decisions/0131-care-people.md),
-  // in one batch with the confirmation.
-  const carePerson = carePersonStatement(db, hold.person_id, now);
-  if (told === null) {
-    const message = visitMessage(db, { personId: hold.person_id, appointmentId: visitId, kind, now });
-    await db.batch([carePerson, message.statement]);
-    await options.notify?.(message.id);
-  } else {
-    await carePerson.run();
-  }
+  // in one batch with the confirmation, which is written once however many tries book the hold at once.
+  const message = visitMessageOnce(db, {
+    personId: hold.person_id,
+    appointmentId: visitId,
+    kind: confirmationOf(hold),
+    now,
+  });
+  const [, written] = await db.batch([carePersonStatement(db, hold.person_id, now), message.statement]);
+  if ((written?.results.length ?? 0) > 0) await options.notify?.(message.id);
   if (hold.move_kind === "replace") await retireReplaced(db, hold, now, options);
 }
