@@ -56,3 +56,11 @@
   margin-top: var(--sp-16);
   font-weight: var(--weight-medium);
 }
+
+/* A photograph of stock, once stored: small enough to sit in a row's form. */
+.photo {
+  display: block;
+  max-width: 160px;
+  height: auto;
+  margin: var(--sp-8) 0;
+}

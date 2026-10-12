@@ -95,12 +95,13 @@ const sendRoute = createRoute({
     ...orderPath,
     body: {
       required: true,
-      ...json(
-        z.object({ note: Note.nullable(), photo_id: z.uuid().nullable() }).strict().openapi("SupplierClaimSend"),
-      ),
+      ...json(z.object({ note: Note.nullable(), photo_id: z.uuid().nullable() }).strict().openapi("SupplierClaimSend")),
     },
   },
-  responses: { ...CLAIM_ANSWERS, 400: errorResponse("invalid_request: fields names photo_id for no photograph stored") },
+  responses: {
+    ...CLAIM_ANSWERS,
+    400: errorResponse("invalid_request: fields names photo_id for no photograph stored"),
+  },
 });
 
 const withdrawRoute = createRoute({
@@ -173,7 +174,10 @@ const writeOffRoute = createRoute({
       ...json(z.object({ reason: Note, photo_id: z.uuid() }).strict().openapi("ReturnedPieceWriteOff")),
     },
   },
-  responses: { ...PIECE_ANSWERS, 400: errorResponse("invalid_request: fields names photo_id for no photograph stored") },
+  responses: {
+    ...PIECE_ANSWERS,
+    400: errorResponse("invalid_request: fields names photo_id for no photograph stored"),
+  },
 });
 
 async function claimsAnswer(c: Context<AppEnv>) {

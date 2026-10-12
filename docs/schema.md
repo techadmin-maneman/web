@@ -1625,7 +1625,7 @@ Indexes:
 
 Each piece that came off a client at a replacement, held in the technician's kit as returned until handed in (ADR 0163).
 
-Made by `0139_piece_returns.sql`; changed by `0144_supplier_claims.sql`.
+Made by `0139_piece_returns.sql`; changed by `0144_supplier_claims.sql`, `0145_stock_photos.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -1642,6 +1642,7 @@ Made by `0139_piece_returns.sql`; changed by `0144_supplier_claims.sql`.
 | `claim_id` | TEXT | yes |  | → `supplier_claims.id` |
 | `write_off_reason` | TEXT | yes |  |  |
 | `settlement_id` | TEXT | yes |  |  |
+| `photo_id` | TEXT | yes |  |  |
 
 Indexes:
 
@@ -2483,7 +2484,7 @@ Made by `0055_storage_meter.sql`.
 
 Each claim on a supplier: what arrived damaged or failed its check, or a returned piece in warranty, and whether it was sent, credited, replaced, rejected or withdrawn (ADR 0169).
 
-Made by `0144_supplier_claims.sql`.
+Made by `0144_supplier_claims.sql`; changed by `0145_stock_photos.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -2508,6 +2509,7 @@ Made by `0144_supplier_claims.sql`.
 | `decided_by` | TEXT | yes |  |  |
 | `decided_at` | TEXT | yes |  |  |
 | `change_id` | TEXT | yes |  |  |
+| `photo_id` | TEXT | yes |  |  |
 
 Indexes:
 

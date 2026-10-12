@@ -10993,6 +10993,15 @@ export interface paths {
                         "application/json": components["schemas"]["SupplierClaims"];
                     };
                 };
+                /** @description invalid_request: fields names photo_id for no photograph stored */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
                 /** @description access_required */
                 403: {
                     headers: {
@@ -11274,6 +11283,15 @@ export interface paths {
                         "application/json": components["schemas"]["SupplierClaims"];
                     };
                 };
+                /** @description invalid_request: fields names photo_id for no photograph stored */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
                 /** @description access_required */
                 403: {
                     headers: {
@@ -11303,6 +11321,126 @@ export interface paths {
                 };
             };
         };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/stock-photos": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** A photograph of stock: the body a JPEG or PNG of at most 2 MB */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Stored */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["StockPhotoStored"];
+                    };
+                };
+                /** @description access_required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description photo_invalid_file: not a JPEG or PNG, or over 2 MB */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description busy: the photographs' storage is past its runaway ceiling */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/stock-photos/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** A photograph of stock, never cached */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The image */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "image/jpeg": string;
+                        "image/png": string;
+                    };
+                };
+                /** @description access_required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description not_found: no such photograph */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -15412,6 +15550,8 @@ export interface components {
                 drafted_at: string;
                 sent_at: string | null;
                 decided_at: string | null;
+                /** @description The photograph sent with it: GET /api/stock-photos/{id}. */
+                photo_id: string | null;
             }[];
             returns: {
                 id: string;
@@ -15428,6 +15568,8 @@ export interface components {
         };
         SupplierClaimSend: {
             note: string | null;
+            /** Format: uuid */
+            photo_id: string | null;
         };
         SupplierClaimWithdraw: {
             note: string;
@@ -15441,6 +15583,12 @@ export interface components {
         };
         ReturnedPieceWriteOff: {
             reason: string;
+            /** Format: uuid */
+            photo_id: string;
+        };
+        StockPhotoStored: {
+            /** Format: uuid */
+            photo_id: string;
         };
         Storage: {
             /** @description What the client-photos and referral-cards buckets hold. */

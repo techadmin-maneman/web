@@ -14249,6 +14249,13 @@
                     "string",
                     "null"
                   ]
+                },
+                "photo_id": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "The photograph sent with it: GET /api/stock-photos/{id}."
                 }
               },
               "required": [
@@ -14269,7 +14276,8 @@
                 "note",
                 "drafted_at",
                 "sent_at",
-                "decided_at"
+                "decided_at",
+                "photo_id"
               ]
             }
           },
@@ -14355,10 +14363,18 @@
             "minLength": 1,
             "maxLength": 200,
             "pattern": "^[^\\p{Cc}]+$/u"
+          },
+          "photo_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
           }
         },
         "required": [
-          "note"
+          "note",
+          "photo_id"
         ],
         "additionalProperties": false
       },
@@ -14422,12 +14438,29 @@
             "minLength": 1,
             "maxLength": 200,
             "pattern": "^[^\\p{Cc}]+$/u"
+          },
+          "photo_id": {
+            "type": "string",
+            "format": "uuid"
           }
         },
         "required": [
-          "reason"
+          "reason",
+          "photo_id"
         ],
         "additionalProperties": false
+      },
+      "StockPhotoStored": {
+        "type": "object",
+        "properties": {
+          "photo_id": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "photo_id"
+        ]
       },
       "Storage": {
         "type": "object",
@@ -26233,6 +26266,16 @@
               }
             }
           },
+          "400": {
+            "description": "invalid_request: fields names photo_id for no photograph stored",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "403": {
             "description": "access_required",
             "content": {
@@ -26509,6 +26552,16 @@
               }
             }
           },
+          "400": {
+            "description": "invalid_request: fields names photo_id for no photograph stored",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "403": {
             "description": "access_required",
             "content": {
@@ -26531,6 +26584,106 @@
           },
           "409": {
             "description": "return_settled: the piece is settled already, or not handed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/stock-photos": {
+      "post": {
+        "summary": "A photograph of stock: the body a JPEG or PNG of at most 2 MB",
+        "responses": {
+          "201": {
+            "description": "Stored",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StockPhotoStored"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "access_required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "photo_invalid_file: not a JPEG or PNG, or over 2 MB",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "busy: the photographs' storage is past its runaway ceiling",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/stock-photos/{id}": {
+      "get": {
+        "summary": "A photograph of stock, never cached",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The image",
+            "content": {
+              "image/jpeg": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "image/png": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "access_required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found: no such photograph",
             "content": {
               "application/json": {
                 "schema": {

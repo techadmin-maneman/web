@@ -3,9 +3,9 @@
 // warranty, or written off with why.
 
 import type { Page } from "@playwright/test";
-import { expect, test } from "../support.ts";
+import { expect, test, TINY_JPEG } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
-import { answer, json, type Answers, type OpsReply } from "./fixtures.ts";
+import { answer, jpeg, json, type Answers, type OpsReply } from "./fixtures.ts";
 import { purchasing as copy } from "../../apps/ops/src/content/purchasing.ts";
 
 const ORDERS = {
@@ -34,7 +34,10 @@ const CLAIM = {
   drafted_at: "2026-09-21T06:30:00.000Z",
   sent_at: null,
   decided_at: null,
+  photo_id: null,
 };
+
+const PHOTO_ID = "5b0c7a8e-3f1d-4c2b-9a6e-1d2f3a4b5c6d";
 
 const PIECE = {
   id: "ret-1",
@@ -78,7 +81,7 @@ test("lists each claim with its reason and value, and marks a drafted one sent",
   await claims.getByLabel(copy.claims.note).fill("Photos emailed.");
   const request = posted(page, "/api/supplier-claims/cl-1/send");
   await claims.getByRole("button", { name: copy.claims.send }).click();
-  expect((await request).postDataJSON()).toEqual({ note: "Photos emailed." });
+  expect((await request).postDataJSON()).toEqual({ note: "Photos emailed.", photo_id: null });
   await expect(row).toContainText(copy.claims.states.sent ?? "");
   expect(await axeViolations(page)).toEqual([]);
 });
@@ -114,6 +117,8 @@ test("claims a returned piece inside its warranty, and writes off another with w
     "GET /api/supplier-claims": json({ ...CLAIMS, returns: [PIECE, late] }),
     "POST /api/returned-pieces/{id}/claim": json(claimed),
     "POST /api/returned-pieces/{id}/write-off": json({ ...claimed, returns: [] }),
+    "POST /api/stock-photos": json({ photo_id: PHOTO_ID }, 201),
+    "GET /api/stock-photos/{id}": jpeg(TINY_JPEG.buffer),
   });
   const pieces = page.getByRole("region", { name: copy.returns.title });
   await expect(pieces.getByRole("row").filter({ hasText: PIECE.piece_code })).toContainText(
@@ -133,8 +138,11 @@ test("claims a returned piece inside its warranty, and writes off another with w
 
   await lateRow.getByRole("button", { name: copy.returns.writeOff }).click();
   await lateRow.getByLabel(copy.returns.why).fill("Torn base");
+  await expect(lateRow.getByRole("button", { name: copy.returns.confirmWriteOff })).toBeDisabled();
+  await lateRow.getByLabel(copy.photo.writeOff).setInputFiles(TINY_JPEG);
+  await expect(lateRow.getByRole("img", { name: copy.photo.alt })).toBeVisible();
   const writeOff = posted(page, "/api/returned-pieces/ret-2/write-off");
   await lateRow.getByRole("button", { name: copy.returns.confirmWriteOff }).click();
-  expect((await writeOff).postDataJSON()).toEqual({ reason: "Torn base" });
+  expect((await writeOff).postDataJSON()).toEqual({ reason: "Torn base", photo_id: PHOTO_ID });
   await expect(pieces).toContainText(copy.returns.none);
 });
