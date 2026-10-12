@@ -26,7 +26,7 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 | The Care inbox | `conversations`, `chat_messages`, `care_owners`, `care_weekly_off`, `care_leave`, `care_names`, `city_matters`, `quick_replies`, `remedies`, `technician_updates` | A message written since, the client's or ours, is gone from its thread | The rows since `<T>`; WhatsApp's own copy shows what was said |
 | Technicians' steps, pieces and photographs | `job_events`, `checkins`, `visits`, `consumables_used`, `no_show_cases`, `no_show_disputes`, `pieces`, `photos`, `photo_sets` | Steps, check-ins, outcomes, pieces fitted, no-shows and disputes since are lost; a photograph's file is kept with no row | The rows since `<T>` |
 | Hair profiles | `hair_profiles` | A profile recorded since is lost, and one an erasure blanked since is whole again | Adding the rows since `<T>`: they are only ever added. Erasing again blanks the rest |
-| Purchase orders | `purchase_orders`, `po_lines`, `receipts`, `receipt_lines` | An order drafted since is gone, one approved, sent, received or cancelled since goes back to where it stood, and a receipt since is lost with the stock it brought | Adding the rows since `<T>`, and each order's state from the audit log |
+| Purchase orders | `purchase_orders`, `po_lines`, `receipts`, `receipt_lines`, `supplier_claims` | An order drafted since is gone, one approved, sent, received or cancelled since goes back to where it stood, a receipt since is lost with the stock it brought, and a claim since is gone or back at its earlier step | Adding the rows since `<T>`, and each order's and claim's state from the audit log |
 | Stock | `stock_movements`, `stock_places`, `stock_lots`, `stock_lot_moves`, `stock_transfers`, `stock_units`, `stock_unit_events`, `piece_returns` | A delivery, transfer, count or loss recorded since, or a job's use, is lost, so what each place holds is wrong; a hub or stockroom added or changed since goes back, and each piece is where it was | Adding the rows since `<T>`, and setting each unit where its latest line of history puts it |
 | Referrals and credits | `referral_codes`, `referral_attributions`, `credit_ledger`, `waitlist_entries`, `referral_channels`, `channel_attributions`, `partner_payouts`, `spend_entries` | A credit, a grant, a partner, a partner's payment, an entry of offline spend or a place on a waitlist disappears | The rows since `<T>`. `credit_ledger` is only ever added to |
 | Ops' settings and what we sell | `ops_settings`, `price_book`, `standard_costs`, `targets`, `services`, `slot_times`, `serviceable_pincodes`, `technician_leave`, `visit_blackouts`, `city_blackouts`, `cities`, `zones`, `consumables`, `hair_systems`, `consumable_usage`, `suppliers`, `supplier_items`, `checklist_items`, `partial_reasons`, `lost_reasons`, `pay_grades`, `visit_pay_rates`, `word_versions`, `site_word_publishes` | A price, service, rule, area, day's times, day off, consumable, supplier, job-sheet list, pay rate or wording set since goes back | Setting it again in the console, which audits it |
@@ -141,6 +141,7 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 - [stock_units](#stock_units): Each hair system piece labelled: its label, stock code and lot, and where it is now, held at a place, in transit, fitted or gone (ADR 0161).
 - [storage_meter](#storage_meter): What the apps' two buckets, client-photos and referral-cards, hold together: one row, the sum of `stored_objects` kept beside it, and the last mark of the share ops were told of (ADR 0093); and the last mark of the database's own size they were told of.
 - [stored_objects](#stored_objects): Each object client-photos and referral-cards hold, and its size, written as it is stored and deleted as it is, so the storage meter never counts one twice (ADR 0093).
+- [supplier_claims](#supplier_claims): Each claim on a supplier: what arrived damaged or failed its check, or a returned piece in warranty, and whether it was sent, credited, replaced, rejected or withdrawn (ADR 0169).
 - [supplier_items](#supplier_items): What each supplier supplies of a stock code: their code, price in their currency, pack, minimum order and lead time (ADR 0165).
 - [suppliers](#suppliers): Each supplier we buy stock from: its terms, currency and warranty, retired rather than deleted (ADR 0165).
 - [sync_cursors](#sync_cursors): Where each pass of the reconciliation with FSM has reached (ADR 0032).
@@ -1624,7 +1625,7 @@ Indexes:
 
 Each piece that came off a client at a replacement, held in the technician's kit as returned until handed in (ADR 0163).
 
-Made by `0139_piece_returns.sql`.
+Made by `0139_piece_returns.sql`; changed by `0144_supplier_claims.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -1636,10 +1637,16 @@ Made by `0139_piece_returns.sql`.
 | `returned_at` | TEXT | no |  |  |
 | `handed_in_at` | TEXT | yes |  |  |
 | `handed_in_to` | TEXT | yes |  |  |
+| `settled_at` | TEXT | yes |  |  |
+| `settled_by` | TEXT | yes |  |  |
+| `claim_id` | TEXT | yes |  | → `supplier_claims.id` |
+| `write_off_reason` | TEXT | yes |  |  |
+| `settlement_id` | TEXT | yes |  |  |
 
 Indexes:
 
 - `piece_returns_held`: on (`technician_id`, `returned_at`), where `handed_in_at IS NULL`
+- `piece_returns_to_settle`: on (`handed_in_at`), where `handed_in_at IS NOT NULL AND settled_at IS NULL`
 - A `UNIQUE` constraint: unique on (`appointment_id`, `piece_code`)
 
 ## pieces
@@ -1772,7 +1779,7 @@ Made by `0014_payments.sql`.
 
 What a receipt brought of each order line: accepted, damaged, failed its check, its lot, and what one cost landed (ADR 0167).
 
-Made by `0142_receipts.sql`.
+Made by `0142_receipts.sql`; changed by `0144_supplier_claims.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -1789,6 +1796,7 @@ Made by `0142_receipts.sql`.
 
 Indexes:
 
+- `receipt_lines_by_movement`: on (`movement_id`), where `movement_id IS NOT NULL`
 - `receipt_lines_by_receipt`: on (`receipt_id`)
 
 ## receipts
@@ -2470,6 +2478,44 @@ Made by `0055_storage_meter.sql`.
 | --- | --- | --- | --- | --- |
 | `key` | TEXT | no |  | primary key |
 | `bytes` | INTEGER | no |  |  |
+
+## supplier_claims
+
+Each claim on a supplier: what arrived damaged or failed its check, or a returned piece in warranty, and whether it was sent, credited, replaced, rejected or withdrawn (ADR 0169).
+
+Made by `0144_supplier_claims.sql`.
+
+| Column | Type | May be empty | Default | Key |
+| --- | --- | --- | --- | --- |
+| `id` | TEXT | no |  | primary key |
+| `number` | INTEGER | no |  |  |
+| `supplier_id` | TEXT | no |  | → `suppliers.id` |
+| `consumable_code` | TEXT | no |  | → `consumables.code` |
+| `quantity` | INTEGER | no |  |  |
+| `reason` | TEXT | no |  |  |
+| `receipt_line_id` | TEXT | no |  | → `receipt_lines.id` |
+| `unit_id` | TEXT | yes |  | → `stock_units.id` |
+| `unit_price` | INTEGER | no |  |  |
+| `currency` | TEXT | no |  |  |
+| `state` | TEXT | no |  |  |
+| `outcome` | TEXT | yes |  |  |
+| `credit_amount` | INTEGER | yes |  |  |
+| `note` | TEXT | yes |  |  |
+| `drafted_by` | TEXT | no |  |  |
+| `drafted_at` | TEXT | no |  |  |
+| `sent_by` | TEXT | yes |  |  |
+| `sent_at` | TEXT | yes |  |  |
+| `decided_by` | TEXT | yes |  |  |
+| `decided_at` | TEXT | yes |  |  |
+| `change_id` | TEXT | yes |  |  |
+
+Indexes:
+
+- A `UNIQUE` constraint: unique on (`number`)
+- `supplier_claims_by_receipt_line`: unique on (`receipt_line_id`, `reason`), where `unit_id IS NULL`
+- `supplier_claims_by_supplier`: on (`supplier_id`)
+- `supplier_claims_by_unit`: unique on (`unit_id`), where `unit_id IS NOT NULL`
+- `supplier_claims_open`: on (`number`), where `state IN ('drafted', 'sent')`
 
 ## supplier_items
 

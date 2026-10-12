@@ -38,7 +38,10 @@ const ClaimSchema = z.object({
   reason: z.enum(CLAIM_REASONS),
   order_number: z.number().int(),
   piece_code: z.string().nullable(),
-  unit_price: z.number().int().openapi({ description: "One unit's price on the order, in its currency's smallest unit." }),
+  unit_price: z
+    .number()
+    .int()
+    .openapi({ description: "One unit's price on the order, in its currency's smallest unit." }),
   currency: z.string(),
   state: z.enum(CLAIM_STATES),
   outcome: z.enum(CLAIM_OUTCOMES).nullable(),
@@ -64,11 +67,7 @@ const ReturnedPieceSchema = z.object({
 
 const CLAIMS = {
   description: "The claims on suppliers, and the returned pieces to settle",
-  ...json(
-    z
-      .object({ claims: z.array(ClaimSchema), returns: z.array(ReturnedPieceSchema) })
-      .openapi("SupplierClaims"),
-  ),
+  ...json(z.object({ claims: z.array(ClaimSchema), returns: z.array(ReturnedPieceSchema) }).openapi("SupplierClaims")),
 };
 const ACCESS = errorResponse("access_required");
 

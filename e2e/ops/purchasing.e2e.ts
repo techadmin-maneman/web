@@ -44,7 +44,11 @@ const BOOK = {
 const FIRST_APPROVED = { ...BOOK, orders: [{ ...ORDER, approved_by: "ops@maneman.in" }] };
 
 async function open(page: Page, extra: Answers = {}): Promise<void> {
-  await answer(page, { "GET /api/purchase-orders": json(BOOK), ...extra });
+  await answer(page, {
+    "GET /api/purchase-orders": json(BOOK),
+    "GET /api/supplier-claims": json({ claims: [], returns: [] }),
+    ...extra,
+  });
   await page.goto("/purchasing");
   await expect(page.getByRole("heading", { level: 1, name: copy.title })).toBeVisible();
 }
