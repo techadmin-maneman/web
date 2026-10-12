@@ -42,6 +42,9 @@ test("opens on Tasks, with the sections under their departments and what waits i
     "Dispatch",
     "Technicians",
     "Stock",
+    "Counts",
+    "Usage",
+    "Quality",
     "Purchasing",
     "Supply plan",
   ]);
