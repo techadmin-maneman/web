@@ -1788,7 +1788,7 @@ Made by `0027_pieces_and_zones.sql`; changed by `0060_flat_task_reads.sql`, `015
 Indexes:
 
 - `pieces_by_code`: on (`piece_code`)
-- `pieces_by_due`: on (`replacement_due_at`), where `replacement_due_at IS NOT NULL`
+- `pieces_by_due`: on (`null`)
 - `pieces_by_person`: on (`person_id`, `fitted_at`)
 - `pieces_to_replace`: on (`replacement_due_at`), where `replacement_booked = 0 AND deleted_at IS NULL AND failed_at IS NULL AND replacement_due_at IS NOT NULL`
 - A `UNIQUE` constraint: unique on (`fsm_id`)

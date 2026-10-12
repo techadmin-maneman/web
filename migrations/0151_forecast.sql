@@ -48,5 +48,7 @@ CREATE INDEX demand_events_by_end ON demand_events (ends_on) WHERE deleted_at IS
 -- The baseline's history: what each technician's kit used, read over its last periods.
 CREATE INDEX stock_movements_used_by_day ON stock_movements (created_at) WHERE reason = 'used';
 
--- The due layer's learned rate: every piece that fell due, booked or not.
-CREATE INDEX pieces_by_due ON pieces (replacement_due_at) WHERE replacement_due_at IS NOT NULL;
+-- The due layer's learned rate: every piece that fell due, booked or not. Keyed on the day, which only that read asks
+-- for, so no read of the due date itself (the Tasks board's replacement orders, in the code deployed before this) takes
+-- it in place of its own index.
+CREATE INDEX pieces_by_due ON pieces (date(replacement_due_at));
