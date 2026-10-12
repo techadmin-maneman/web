@@ -10,11 +10,12 @@ Every hair system piece now carries a QR label (ADR 0161), but a movement that n
 
 ## Decision
 
-1. **A label is read three ways**: typed, typed by a USB scanner (which ends with Enter), or read by the camera. The back camera opens only while reading; each frame is read for a QR code, by a decoder loaded only then, and the first found is taken.
-2. **The console grants itself the camera** (`camera=(self)`), as the tech app does.
-3. **Sending, handing over or writing off a hair system names its pieces** by their labels: the count is the number scanned, and a label the place does not hold is refused (`units`).
-4. **Receiving a hair system's transfer names the pieces that arrived**; those not scanned went missing on the way.
-5. **A label scanned on the Stock page shows its piece**: the stock code, lot and expiry, where it is, and its history.
+1. **A label is read three ways**: typed, typed by a USB scanner (which ends with Enter), or read by the camera. The back camera opens only while reading, and each frame is read for a QR code in a worker until one is found.
+2. **The decoder is qr-scanner's worker, copied** with its licence notices (`packages/ui/qr-decoder.worker.js`): a trimmed jsQR of about 10 KB gzipped, where jsQR itself is 45 KB and would take the technician app, whose service worker keeps every script, over its 150 KB. The package starts the worker from a blob, which our content security policy forbids; served from our own origin it needs nothing loosened.
+3. **The console grants itself the camera** (`camera=(self)`), as the tech app does.
+4. **Sending, handing over or writing off a hair system names its pieces** by their labels: the count is the number scanned, and a label the place does not hold is refused (`units`).
+5. **Receiving a hair system's transfer names the pieces that arrived**; those not scanned went missing on the way.
+6. **A label scanned on the Stock page shows its piece**: the stock code, lot and expiry, where it is, and its history.
 
 ## Consequences
 
