@@ -242,6 +242,13 @@ export const ROWS_AT_T: readonly string[] = [
      VALUES (1, 'ops@example.com', 'operations', 'act', 'national', 'owner@example.com', '${AT}')`,
   `INSERT INTO staff_service_tokens (client_id, label, added_by, added_at)
      VALUES ('ci.access', 'CI', 'owner@example.com', '${AT}')`,
+  `INSERT INTO stock_risks (appointment_id, consumable_code, city, found_at) VALUES ('ap1', 'hs1', 'Gurgaon', '${AT}')`,
+  `INSERT INTO forecast_runs (id, run_on, period_days, horizon_periods, due_rate, fit_rate, ran_at)
+     VALUES ('fr1', '2026-09-21', 7, 12, 0.8, 0.5, '${AT}')`,
+  `INSERT INTO forecast_lines (run_id, consumable_code, city, period, booked, due, pipeline, baseline, expected, high)
+     VALUES ('fr1', 'hs1', 'Gurgaon', 0, 1, 0, 0, 0, 1, 2.7)`,
+  `INSERT INTO demand_events (id, name, city, starts_on, ends_on, uplift_percent, created_by, created_at)
+     VALUES ('de1', 'Wedding season', 'Gurgaon', '2026-11-01', '2026-11-30', 20, 'ops@example.com', '${AT}')`,
 ];
 
 /** What was written between <T> and the export: rows added, changed and deleted, in tables of every kind. */
