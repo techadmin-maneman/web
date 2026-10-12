@@ -1,0 +1,39 @@
+// The Targets page's words (docs/decisions/0154-targets-and-reporting-access.md). No design draws it; every word here is
+// ours.
+
+import { FAILED, NOT_PERMITTED, OFFLINE } from "./common.ts";
+
+export const targets = {
+  title: "Targets",
+  intro: "Each month's plan, city by city, which every scorecard shows beside the actual.",
+  month: "Month",
+  city: "City",
+  measure: "Measure",
+  measures: {
+    leads: "Leads",
+    consultations: "Consultations done",
+    new_clients: "New clients",
+    active_clients: "Active clients",
+    revenue: "Revenue, Rs. before GST",
+    cac: "Acquisition cost, Rs.",
+    utilisation: "Utilisation, %",
+    on_time: "On time, %",
+  },
+  target: "Target",
+  set: "Set",
+  none: "No targets for this month.",
+  columns: { city: "City", measure: "Measure", target: "Target", by: "Set by" },
+  remove: "Take off",
+  /** "Take off: Gurgaon · New clients" */
+  removeLabel: (city: string, measure: string) => `Take off: ${city} · ${measure}`,
+  errors: {
+    month: "Pick a month from the list.",
+    city: "Pick a city from the list.",
+    target: "That is more than this measure takes.",
+    invalid_request: "Type a whole number.",
+    not_found: "Already taken off. Reload.",
+    not_permitted: NOT_PERMITTED,
+    offline: OFFLINE,
+    unknown: FAILED,
+  },
+};

@@ -9,6 +9,7 @@ import { NEXT_VISIT_DAYS } from "../../policy/next-visit.ts";
 import type { RunLog, TableRows, WarehouseProvider } from "../../providers/warehouse/index.ts";
 import { capacityRows, CAPACITY_DAYS_AHEAD } from "./capacity.ts";
 import { careCaseRows } from "./care-cases.ts";
+import { accessRows } from "./access.ts";
 import { clientKeys } from "./client-key.ts";
 import { clientMonthRows } from "./client-months.ts";
 import { creditRows } from "./credits.ts";
@@ -16,6 +17,7 @@ import { leadTables } from "./leads.ts";
 import { messageDayRows } from "./message-days.ts";
 import { spendRows } from "./spend.ts";
 import { stockTables } from "./stock.ts";
+import { targetRows } from "./targets.ts";
 import { cityRows, clientRows, dateRows, paymentRows, serviceRows, technicianRows, visitRows } from "./rows.ts";
 
 /** The free plan holds 500 MB of Postgres; told at 400, so there is time to trim or upgrade. */
@@ -103,6 +105,8 @@ export async function copyTonight(
     await clientMonthRows(db, { keys, firstTouch: leads.firstTouch, days: standing, today: date }),
     await creditRows(db, keys),
     ...(await stockTables(db, date)),
+    await accessRows(db),
+    await targetRows(db),
   ];
   let rowsWritten = 0;
   let rowsChanged = 0;

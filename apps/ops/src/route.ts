@@ -59,6 +59,7 @@ export const SECTIONS = [
   { page: "words", path: "/words", department: "growth", reads: "GET /api/words" },
   { page: "settings", path: "/settings", department: "admin", reads: "GET /api/settings" },
   { page: "staff", path: "/staff", department: "admin", reads: "GET /api/staff" },
+  { page: "targets", path: "/targets", department: "admin", reads: "GET /api/targets" },
   { page: "activity", path: "/activity", department: "admin", reads: "GET /api/activity" },
 ] as const satisfies readonly SectionShape[];
 

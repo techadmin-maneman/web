@@ -5768,6 +5768,173 @@
         ],
         "additionalProperties": false
       },
+      "Targets": {
+        "type": "object",
+        "properties": {
+          "month": {
+            "type": "string"
+          },
+          "targets": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Target"
+            }
+          },
+          "cities": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "measures": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "leads",
+                "consultations",
+                "new_clients",
+                "active_clients",
+                "revenue",
+                "cac",
+                "utilisation",
+                "on_time"
+              ]
+            }
+          },
+          "first_month": {
+            "type": "string"
+          },
+          "last_month": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "month",
+          "targets",
+          "cities",
+          "measures",
+          "first_month",
+          "last_month"
+        ],
+        "additionalProperties": false
+      },
+      "Target": {
+        "type": "object",
+        "properties": {
+          "month": {
+            "type": "string"
+          },
+          "city": {
+            "type": "string"
+          },
+          "measure": {
+            "type": "string",
+            "enum": [
+              "leads",
+              "consultations",
+              "new_clients",
+              "active_clients",
+              "revenue",
+              "cac",
+              "utilisation",
+              "on_time"
+            ]
+          },
+          "target": {
+            "type": "integer",
+            "description": "A count, whole rupees before GST, or a percentage."
+          },
+          "set_by": {
+            "type": "string"
+          },
+          "set_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "month",
+          "city",
+          "measure",
+          "target",
+          "set_by",
+          "set_at"
+        ],
+        "additionalProperties": false
+      },
+      "TargetChange": {
+        "type": "object",
+        "properties": {
+          "month": {
+            "type": "string",
+            "pattern": "^\\d{4}-(0[1-9]|1[0-2])$"
+          },
+          "city": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 60
+          },
+          "measure": {
+            "type": "string",
+            "enum": [
+              "leads",
+              "consultations",
+              "new_clients",
+              "active_clients",
+              "revenue",
+              "cac",
+              "utilisation",
+              "on_time"
+            ]
+          },
+          "target": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 10000000
+          }
+        },
+        "required": [
+          "month",
+          "city",
+          "measure",
+          "target"
+        ],
+        "additionalProperties": false
+      },
+      "TargetRemoval": {
+        "type": "object",
+        "properties": {
+          "month": {
+            "type": "string",
+            "pattern": "^\\d{4}-(0[1-9]|1[0-2])$"
+          },
+          "city": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 60
+          },
+          "measure": {
+            "type": "string",
+            "enum": [
+              "leads",
+              "consultations",
+              "new_clients",
+              "active_clients",
+              "revenue",
+              "cac",
+              "utilisation",
+              "on_time"
+            ]
+          }
+        },
+        "required": [
+          "month",
+          "city",
+          "measure"
+        ],
+        "additionalProperties": false
+      },
       "LostReasonChange": {
         "type": "object",
         "properties": {
@@ -6663,6 +6830,8 @@
               "price.set",
               "price.withdraw",
               "standard_cost.set",
+              "target.set",
+              "target.remove",
               "slot_times.set",
               "pincode.set",
               "pincode.rename",
@@ -16503,6 +16672,146 @@
         }
       }
     },
+    "/api/targets": {
+      "get": {
+        "summary": "A month's targets, city by city; this month's where none is asked for",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{4}-(0[1-9]|1[0-2])$"
+            },
+            "required": false,
+            "name": "month",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The month's targets",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Targets"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid_request: a month outside the year either side of this one",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "access_required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Set a month's target for a city, or set it again",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TargetChange"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Set; the month's targets",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Targets"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid_request: fields names month, city or target for one out of bounds",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "access_required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/targets/remove": {
+      "post": {
+        "summary": "Take a month's target for a city off",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TargetRemoval"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Taken off; the month's targets",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Targets"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "access_required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found: no such target set",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/visits/{id}/lost-reason": {
       "post": {
         "summary": "Set, or clear, why a client is not going ahead with a fit after this consultation",
@@ -17466,6 +17775,8 @@
                 "price.set",
                 "price.withdraw",
                 "standard_cost.set",
+                "target.set",
+                "target.remove",
                 "slot_times.set",
                 "pincode.set",
                 "pincode.rename",
