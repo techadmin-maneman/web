@@ -6,7 +6,7 @@ import { classes } from "@maneman/ui/classes";
 import { Button } from "@maneman/ui/Button";
 import { useState } from "react";
 import { api, type StaffBook, type StaffGrant, type StaffPerson, type StaffSave } from "../api.ts";
-import { settings } from "../content.ts";
+import { settings } from "../content/settings.ts";
 import { CheckPanel } from "../components/CheckPanel.tsx";
 import {
   alreadyListed,

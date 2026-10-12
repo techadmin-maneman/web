@@ -11,7 +11,7 @@ import { Button } from "@maneman/ui/Button";
 import { longDate } from "@maneman/web-kit/dates";
 import { useRef, useState } from "react";
 import type { Answer, JobSheet, JobSheetItemSent, JobSheetList } from "../api.ts";
-import { settings } from "../content.ts";
+import { settings } from "../content/settings.ts";
 import { whoWords } from "../lib/who.ts";
 import { CheckPanel } from "../components/CheckPanel.tsx";
 import own from "./consumables.module.css";

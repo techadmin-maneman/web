@@ -35,6 +35,7 @@ export const ROUTES: readonly TechRoute[] = [
   { method: "POST", path: "/tech/jobs/{id}/outcome" },
   { method: "POST", path: "/tech/jobs/{id}/no-show" },
   { method: "POST", path: "/tech/jobs/{id}/discount-code" },
+  { method: "POST", path: "/tech/jobs/{id}/updates" },
   { method: "GET", path: "/tech/pieces/lookup" },
 ];
 
@@ -83,7 +84,9 @@ export type EventKind =
   | "profile"
   | "after_photos"
   | "outcome"
-  | "no_show";
+  | "no_show"
+  // A word to the client from the card (docs/decisions/0145-technician-presets.md): no step of the job.
+  | "update";
 
 /** The route one of the outbox's events is sent to. Both photograph sets go to the one route. */
 const ROUTE_OF = {
@@ -97,6 +100,7 @@ const ROUTE_OF = {
   profile: "profile",
   outcome: "outcome",
   no_show: "no-show",
+  update: "updates",
 } as const satisfies Record<EventKind, string>;
 
 type EventRoute<K extends EventKind> = paths[`/api/tech/jobs/{id}/${(typeof ROUTE_OF)[K]}`]["post"];

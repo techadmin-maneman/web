@@ -108,6 +108,8 @@ export interface JobRow {
   client_note: string | null;
   client_name: string | null;
   client_mobile: string | null;
+  /** 1 while the client takes messages about their visits on WhatsApp (src/policy/consents.ts). */
+  client_whatsapp: number | null;
   line1: string | null;
   line2: string | null;
   building: string | null;
@@ -136,6 +138,8 @@ export const SELECT_JOB = `
     a.client_note,
     sp.area AS pincode_area,
     p.name AS client_name, p.mobile_e164 AS client_mobile,
+    (SELECT cs.granted FROM consents cs WHERE cs.person_id = p.id AND cs.purpose = 'whatsapp_visits'
+      ORDER BY cs.created_at DESC, cs.rowid DESC LIMIT 1) AS client_whatsapp,
     d.line1, d.line2, d.building, d.tower, d.floor, d.flat, d.landmark, d.locality, d.city, d.pincode,
     d.access_notes, d.lat, d.lng, ${creditSpentOn("a.id")} AS on_credit,
     COALESCE((SELECT b.amount_ex_gst = 0 FROM price_book b
