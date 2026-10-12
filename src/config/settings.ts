@@ -98,10 +98,6 @@ export interface ZohoBooksSettings {
    * in Books and their vouchers wait (docs/open-points.md).
    */
   readonly refundAccountId: string | null;
-  /**
-   * The expense accounts a receipt's bill posts to (docs/decisions/0168-bills-in-books.md): a hair system's lines to
-   * the cost of goods sold, a consumable's to raw materials and consumables. Without both, no bill is made.
-   */
   /** Empty while GST is off in Books; the CA's figures once it is on. */
   readonly gst: GstRegistration;
 }
