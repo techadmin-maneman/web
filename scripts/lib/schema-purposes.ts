@@ -88,6 +88,8 @@ export const PURPOSES: Readonly<Record<string, string>> = {
     "One row holding every `ops_settings` value, kept by that table's triggers: the one row a request reads (ADR 0088).",
   number_codes:
     "Each WhatsApp code sent to prove a number typed into the site, with the number and the code only as hashes (ADR 0081, ADR 0104).",
+  lost_reasons:
+    "Why a client is not going ahead with a fit after their consultation, as ops set them, one they took off kept as retired; none means the committed list (ADR 0149).",
   otp_challenges: "Each one-time code sent, as a hash, with its sends and attempts (ADR 0030, ADR 0052).",
   partial_reasons:
     "The reasons a job may be left partly done, as ops set them, one they took off kept as retired; none means the committed list (ADR 0087).",

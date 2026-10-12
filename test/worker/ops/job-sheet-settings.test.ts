@@ -24,6 +24,7 @@ interface List {
 interface Sheet {
   checklists: (List & { visit_type: string })[];
   partial_reasons: List;
+  lost_reasons: List;
 }
 
 let job: Working;
@@ -154,6 +155,48 @@ describe("a checklist ops save", () => {
 
     expect(answer.status).toBe(400);
     expect(await answer.json()).toMatchObject({ error: { code: "invalid_request", fields: ["done"] } });
+  });
+});
+
+describe("the lost reasons ops keep", () => {
+  it("reach a consultation's card, and the one picked as it closes is kept with the visit", async () => {
+    await env.DB.prepare("UPDATE appointments SET type = 'consultation' WHERE id = ?1").bind(JOB).run();
+    const saved = await job.opsPost("/api/job-sheet/lost-reasons", {
+      items: [{ code: "price", label: "The price" }, { label: "Moving abroad" }],
+    });
+    expect((await saved.json<Sheet>()).lost_reasons.items.map((reason) => reason.code)).toEqual([
+      "price",
+      "moving_abroad",
+    ]);
+    const card = await (await job.get(`/api/tech/jobs/${JOB}`)).json<{ lost_reasons: unknown }>();
+    expect(card.lost_reasons).toEqual([
+      { id: "price", label: "The price" },
+      { id: "moving_abroad", label: "Moving abroad" },
+    ]);
+
+    await job.workTo("consumables");
+    await job.post(`/api/tech/jobs/${JOB}/consumables`, { items: [] }, "event-consumables-01");
+    const never = await job.post(
+      `/api/tech/jobs/${JOB}/outcome`,
+      { outcome: "done", lost_reason: "stars" },
+      "event-outcome-01",
+    );
+    expect(never.status).toBe(400);
+    expect(await never.json()).toMatchObject({ error: { fields: ["lost_reason"] } });
+    const closed = await job.post(
+      `/api/tech/jobs/${JOB}/outcome`,
+      { outcome: "done", lost_reason: "moving_abroad" },
+      "event-outcome-02",
+    );
+    expect(closed.status).toBe(202);
+    expect(await env.DB.prepare("SELECT lost_reason FROM visits WHERE appointment_id = ?1").bind(JOB).first()).toEqual({
+      lost_reason: "moving_abroad",
+    });
+  });
+
+  it("are none on any visit but a consultation's", async () => {
+    const card = await (await job.get(`/api/tech/jobs/${JOB}`)).json<{ lost_reasons: unknown }>();
+    expect(card.lost_reasons).toEqual([]);
   });
 });
 

@@ -78,6 +78,7 @@ export function closeVisit({
   outcome,
   times,
   partialReason,
+  lostReason = null,
   at,
   byHand = null,
 }: {
@@ -86,14 +87,16 @@ export function closeVisit({
   outcome: VisitOutcome;
   times: VisitTimes;
   partialReason: string | null;
+  /** After a consultation, why the client is not going ahead with a fit (docs/decisions/0149-lost-reasons.md). */
+  lostReason?: string | null;
   at: string;
   byHand?: ClosedByHand | null;
 }): D1PreparedStatement {
   return db
     .prepare(
       `INSERT INTO visits (id, appointment_id, started_at, ended_at, duration_minutes, outcome, partial_reason,
-         updated_at, closed_by, close_reason)
-       SELECT ?1, id, ?3, ?4, ?5, ?6, ?7, ?8, ?10, ?11 FROM appointments
+         updated_at, closed_by, close_reason, lost_reason)
+       SELECT ?1, id, ?3, ?4, ?5, ?6, ?7, ?8, ?10, ?11, ?12 FROM appointments
        WHERE id = ?2 AND deleted_at IS NULL AND status = ?9
        ON CONFLICT (appointment_id) DO NOTHING`,
     )
@@ -109,6 +112,7 @@ export function closeVisit({
       CLOSED_AS[outcome],
       byHand?.by ?? null,
       byHand?.reason ?? null,
+      lostReason,
     );
 }
 

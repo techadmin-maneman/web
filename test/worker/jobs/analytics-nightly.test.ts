@@ -181,6 +181,11 @@ describe("the copy's leads", () => {
       type: "consultation",
       status: "completed",
     });
+    await env.DB.prepare(
+      "INSERT INTO visits (id, appointment_id, outcome, updated_at, lost_reason) VALUES ('vv1', 'c-rohit', 'done', ?1, 'price')",
+    )
+      .bind(NOW.toISOString())
+      .run();
     await visit("f-rohit", {
       person: "p-rohit",
       technician: IMRAN,
@@ -200,6 +205,7 @@ describe("the copy's leads", () => {
       channel: "Direct",
       consultation_done_date: "2026-09-05",
       first_fit_done_date: null,
+      lost_reason: "The price",
     });
     expect(leads?.get("l-rohit")?.consultation_booked_date).not.toBeNull();
   });
