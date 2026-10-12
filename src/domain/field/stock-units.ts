@@ -11,6 +11,7 @@
 import { soonestFirst, type LotTake } from "./stock-lots.ts";
 import type { Place } from "./stock-places.ts";
 
+/** Where a unit stands: held at a place, in transit to one, or gone from the stock. */
 export const UNIT_STATES = ["held", "in_transit", "fitted", "returned", "written_off", "missing"] as const;
 type UnitState = (typeof UNIT_STATES)[number];
 
