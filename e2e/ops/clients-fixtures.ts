@@ -32,6 +32,19 @@ export const READ_CONSENTS = `GET ${RECORD_PATH}/consents` as const satisfies Ca
 
 export const READ_HAIR_PROFILE = `GET ${RECORD_PATH}/hair-profile` as const satisfies Call;
 
+export const READ_STOCK_MATCH = `GET ${RECORD_PATH}/stock-match` as const satisfies Call;
+
+/** A client with no hair profile yet, so nothing to match to stock. */
+export const NO_STOCK_MATCH = {
+  kind: "no_profile" as const,
+  missing: [],
+  code: null,
+  name: null,
+  city: null,
+  held: [],
+  in_transit: 0,
+} satisfies OpsReply<"/api/clients/{id}/stock-match">;
+
 export const FIND = "POST /api/clients/find" as const satisfies Call;
 
 export const NAME = { name: CLIENT.name, exact: true };
@@ -54,6 +67,7 @@ export async function clientRoutes(page: Page, over: Answers = {}): Promise<void
     [VIEW_PHOTOS]: json(VIEW),
     [READ_CONSENTS]: json(CONSENTS),
     [READ_HAIR_PROFILE]: json(NO_HAIR_PROFILE),
+    [READ_STOCK_MATCH]: json(NO_STOCK_MATCH),
     "GET /api/clients/{id}/photos/{photo_id}": jpeg(await inkPhoto()),
     ...over,
   });

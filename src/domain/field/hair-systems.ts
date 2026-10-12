@@ -48,6 +48,36 @@ export async function hairSystemSpecs(db: D1Database): Promise<Map<string, HairS
   return new Map(results.map((row) => [row.code, specOf(row)]));
 }
 
+/** A fit as a stock code is matched to it, in the hair profile's names: the product, base, colour, grey and density. */
+interface Fit {
+  readonly product: string | null;
+  readonly base_width_in: number | null;
+  readonly base_length_in: number | null;
+  readonly colour: string | null;
+  readonly grey_percent: number | null;
+  readonly density_percent: number | null;
+}
+
+/**
+ * The stock code made exactly to this fit: its product, base size, colour, grey and density all the same, never a near
+ * one or one cut down (docs/decisions/0173-matching-a-client-to-stock.md). Null where none is.
+ */
+export function matchingCode(specs: ReadonlyMap<string, HairSystemSpec>, fit: Fit): string | null {
+  for (const [code, spec] of specs) {
+    if (
+      spec.product === fit.product &&
+      spec.baseWidthIn === fit.base_width_in &&
+      spec.baseLengthIn === fit.base_length_in &&
+      spec.colour === fit.colour &&
+      spec.greyPercent === fit.grey_percent &&
+      spec.densityPercent === fit.density_percent
+    ) {
+      return code;
+    }
+  }
+  return null;
+}
+
 /** Whether a stock code is a hair system's. */
 export async function isHairSystem(db: D1Database, code: string): Promise<boolean> {
   return (await db.prepare("SELECT 1 FROM hair_systems WHERE code = ?1").bind(code).first()) !== null;

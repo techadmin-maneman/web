@@ -8,8 +8,16 @@ import type { Page } from "@playwright/test";
 import { expect, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
 import { CLIENT, fails, HAIR_PROFILE, json, NEW_RECORD, type Call, type OpsReply } from "./fixtures.ts";
-import { RECORD_PATH, READ_RECORD, READ_HAIR_PROFILE, openClient } from "./clients-fixtures.ts";
+import {
+  NO_STOCK_MATCH,
+  RECORD_PATH,
+  READ_RECORD,
+  READ_HAIR_PROFILE,
+  READ_STOCK_MATCH,
+  openClient,
+} from "./clients-fixtures.ts";
 import * as opsCopy from "../../apps/ops/src/content.ts";
+import { stockMatch as matchCopy } from "../../apps/ops/src/content/stock-match.ts";
 
 const CORRECT_HAIR_PROFILE: Call = `POST ${RECORD_PATH}/hair-profile`;
 
@@ -224,4 +232,41 @@ test("asks for what an address cannot do without before it sends one", async ({ 
   expect(sent).toBe(0);
   await form.getByRole("button", { name: "Cancel" }).click();
   await expect(page.getByRole("button", { name: opsCopy.clients.visits.given.open })).toBeFocused();
+});
+
+// The stock the client's profile matches, beneath it (docs/decisions/0173-matching-a-client-to-stock.md).
+test.describe("the client's match to stock", () => {
+  const section = (page: Page) => page.getByRole("region", { name: matchCopy.title });
+
+  test("names the code made exactly to the profile and where its pieces are, their city first", async ({ page }) => {
+    const stocked = {
+      kind: "stocked" as const,
+      missing: [],
+      code: "hs_essential_8x10_1b_g20_d100",
+      name: "Mane Man Essential 8x10 1B, 20% grey, 100%",
+      city: "Gurgaon",
+      held: [
+        { place_id: "imran", name: "Imran Qureshi", kind: "kit", city: "Gurgaon", pieces: 1 },
+        { place_id: "central", name: "National warehouse", kind: "warehouse", city: null, pieces: 4 },
+      ],
+      in_transit: 2,
+    } satisfies OpsReply<"/api/clients/{id}/stock-match">;
+    await openClient(page, `/clients/${CLIENT.id}/pieces`, { [READ_STOCK_MATCH]: json(stocked) });
+    const match = section(page);
+    await expect(match).toContainText(matchCopy.matched(stocked.name));
+    await expect(match).toContainText(matchCopy.held(1, "Imran Qureshi", "Gurgaon"));
+    await expect(match).toContainText(matchCopy.held(4, "National warehouse", null));
+    await expect(match).toContainText(matchCopy.inTransit(2));
+    expect(await axeViolations(page)).toEqual([]);
+  });
+
+  test("says what the profile lacks, or that theirs is a custom order", async ({ page }) => {
+    const incomplete = {
+      ...NO_STOCK_MATCH,
+      kind: "incomplete" as const,
+      missing: ["grey_percent" as const, "density_percent" as const],
+    };
+    await openClient(page, `/clients/${CLIENT.id}/pieces`, { [READ_STOCK_MATCH]: json(incomplete) });
+    await expect(section(page)).toContainText("The profile needs grey and density to match stock.");
+  });
 });

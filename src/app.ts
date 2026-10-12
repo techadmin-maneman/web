@@ -60,6 +60,7 @@ import { registerOpsTechnicianPhones } from "./routes/ops/technician-phones.ts";
 import { registerOpsActivity } from "./routes/ops/activity.ts";
 import { registerOpsGrievances } from "./routes/ops/grievances.ts";
 import { registerOpsHairProfile } from "./routes/ops/hair-profile.ts";
+import { registerOpsStockMatch } from "./routes/ops/stock-match.ts";
 import { registerOpsJobSheet } from "./routes/ops/job-sheet.ts";
 import { registerOpsPaymentLinks } from "./routes/ops/payment-links.ts";
 import { registerOpsNoShowRulings } from "./routes/ops/no-show-rulings.ts";
@@ -201,6 +202,8 @@ const SURFACE_ROUTES: Readonly<Record<Surface, readonly ((app: App) => void)[]>>
     registerOpsClientAddress,
     // A client's hair profile (docs/decisions/0106-a-clients-hair-profile.md).
     registerOpsHairProfile,
+    // The stock code a client's profile matches, and where its pieces are (docs/decisions/0173-matching-a-client-to-stock.md).
+    registerOpsStockMatch,
     // Erasing a client from their page, the day they ask.
     registerOpsErasure,
     registerOpsProfile,
