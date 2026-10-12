@@ -67,6 +67,26 @@ export function visitMessage(
   return { id, statement };
 }
 
+/**
+ * visitMessage, written only while the visit has no message of its kind, in one statement, so two writers at once
+ * write it once. It answers its ID when it is written.
+ */
+export function visitMessageOnce(
+  db: D1Database,
+  input: { personId: string; appointmentId: string; kind: VisitMessageKind; now: Date },
+): { id: string; statement: D1PreparedStatement } {
+  const id = crypto.randomUUID();
+  const statement = db
+    .prepare(
+      `INSERT INTO outbound_messages (id, created_at, person_id, kind, subject_kind, subject_id, state, queued_at)
+       SELECT ?1, ?2, ?3, ?4, 'appointment', ?5, 'queued', ?2
+       WHERE NOT EXISTS (SELECT 1 FROM outbound_messages WHERE subject_id = ?5 AND kind = ?4)
+       RETURNING id`,
+    )
+    .bind(id, input.now.toISOString(), input.personId, input.kind, input.appointmentId);
+  return { id, statement };
+}
+
 /** visitMessage, written only if the visit change `changeId` is: for the batch whose first statement claims it. */
 export function visitMessageOnChange(
   db: D1Database,

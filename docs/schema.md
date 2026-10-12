@@ -696,7 +696,7 @@ Made by `0083_credit_expiry_cursor.sql`.
 
 Service-visit credits, entry by entry, each drawing on the grant it spends; a balance is summed, never kept (ADR 0033).
 
-Made by `0021_referrals.sql`; changed by `0037_cron_indexes.sql`.
+Made by `0021_referrals.sql`; changed by `0037_cron_indexes.sql`, `0132_credit_closed_once.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -716,6 +716,7 @@ Indexes:
 - `credit_ledger_by_person`: on (`person_id`, `created_at`)
 - `credit_ledger_by_source`: on (`source_id`, `kind`)
 - `credit_ledger_grants_by_expiry`: on (`expires_at`), where `kind = 'grant'`
+- `credit_ledger_one_close`: unique on (`grant_id`), where `kind IN ('expire', 'clawback')`
 - `credit_ledger_one_grant`: unique on (`person_id`, `source_kind`, `source_id`), where `kind = 'grant'`
 - `credit_ledger_one_use`: unique on (`source_id`, `kind`), where `kind IN ('redeem', 'restore')`
 

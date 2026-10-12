@@ -153,6 +153,17 @@ describe("the pass that closes expired credits", () => {
     expect((await expireEntries()).results).toEqual([{ grant_id: expect.any(String) as string, visits: -3 }]);
   });
 
+  it("closes a grant once when two passes run at the same moment", async () => {
+    await grant({ visits: 3, expiresAt: new Date(NOW.getTime() - 20 * DAY) });
+    await Promise.all([expireCredits(env.DB, NOW), expireCredits(env.DB, NOW)]);
+    await clawBack(env.DB, "ops", "o1", NOW);
+    expect((await expireEntries()).results).toEqual([{ grant_id: expect.any(String) as string, visits: -3 }]);
+    const closing = await env.DB.prepare(
+      "SELECT COUNT(*) AS n FROM credit_ledger WHERE kind IN ('expire', 'clawback')",
+    ).first();
+    expect(closing).toEqual({ n: 1 });
+  });
+
   it("works through a backlog in turns, each pass reading on from where the last left off", async () => {
     for (let day = 1; day <= 25; day += 1) {
       await grant({ visits: 1, expiresAt: new Date(NOW.getTime() - day * DAY), sourceId: `o${String(day)}` });
