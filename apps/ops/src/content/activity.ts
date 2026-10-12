@@ -73,6 +73,7 @@ const ACTIONS: Readonly<Record<ActivityAction, string>> = {
   "setting.change": "Setting changed",
   "price.set": "Price set",
   "price.withdraw": "Price withdrawn",
+  "standard_cost.set": "Hair system cost set",
   "slot_times.set": "Slot times set",
   "pincode.set": "Pincode served or paused",
   "pincode.rename": "Area renamed",

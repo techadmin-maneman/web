@@ -125,6 +125,8 @@ export const PURPOSES: Readonly<Record<string, string>> = {
   slot_times: "Each change of the day's half-slot times ops set, from the day it applies; never changed (ADR 0102).",
   spend_entries:
     "A month's offline spend to win clients, for a city or national, by channel, as typed on the console's Spend page; one taken off kept, with who and when (ADR 0150).",
+  standard_costs:
+    "What each first fit and replacement product costs us, from its date, for the margin figures until stock lots carry what was paid; an old row stays for the visits under it (ADR 0152).",
   staff:
     "Each member of staff on the console's Staff list, by their Access e-mail, and whether they are let in (ADR 0109).",
   staff_access_mode: "One row: whether the console enforces the Staff list yet, and who last switched it (ADR 0109).",

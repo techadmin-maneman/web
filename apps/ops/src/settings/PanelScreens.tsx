@@ -8,6 +8,7 @@ import { sectionOf, SECTION_NAMES, type Page } from "../route.ts";
 import { DiscountCodes } from "./DiscountCodes.tsx";
 import { PartnerCommission } from "./PartnerCommission.tsx";
 import { Services } from "./Services.tsx";
+import { StandardCosts } from "./StandardCosts.tsx";
 import { Staff } from "./Staff.tsx";
 import { TechnicianPay } from "./TechnicianPay.tsx";
 import styles from "../components/forms.module.css";
@@ -24,6 +25,7 @@ export function PricesScreen() {
   return (
     <PanelScreen page="prices">
       <Services />
+      <StandardCosts />
     </PanelScreen>
   );
 }

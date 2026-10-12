@@ -203,7 +203,8 @@ this map, or when the map names something that no longer exists.
   (what each of its tables holds), `capacity` (each technician's day, from the dispatch board), `message-days`,
   `care-cases` (grievances and tasks, opened and closed), `leads`, `spend` (offline spend, partner payments and
   invites' free visits), `client-months` (where each client stood each month), `client-key` (a client as the copy knows them)
-- **Database work** (`src/domain/money/`): `spend` (offline spend, as typed on the Spend page)
+- **Database work** (`src/domain/money/`): `spend` (offline spend, as typed on the Spend page), `standard-costs`
+  (what each hair system costs us)
 - **Rules** (`src/policy/`): `channels` (how a lead found us, and a campaign's city), `client-standing` (active,
   lapsed or lost)
 - **Routes** (`src/routes/`): `ops/spend`
