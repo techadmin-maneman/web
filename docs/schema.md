@@ -30,7 +30,7 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 | Referrals and credits | `referral_codes`, `referral_attributions`, `credit_ledger`, `waitlist_entries`, `referral_channels`, `channel_attributions`, `partner_payouts` | A credit, a grant, a partner, a partner's payment or a place on a waitlist disappears | The rows since `<T>`. `credit_ledger` is only ever added to |
 | Ops' settings and what we sell | `ops_settings`, `price_book`, `services`, `slot_times`, `serviceable_pincodes`, `technician_leave`, `visit_blackouts`, `city_blackouts`, `cities`, `zones`, `consumables`, `consumable_usage`, `checklist_items`, `partial_reasons`, `pay_grades`, `visit_pay_rates`, `word_versions`, `site_word_publishes` | A price, service, rule, area, day's times, day off, consumable, job-sheet list, pay rate or wording set since goes back | Setting it again in the console, which audits it |
 | Staff and access | `staff`, `staff_grants`, `staff_service_tokens`, `staff_access_mode` | Someone taken off the Staff list since, or a grant taken back, is let in again | Setting it again on the Staff page, before anything else |
-| Tasks | `task_owners`, `task_closures` | A task closed since opens again, and one given to someone since is nobody's | Closing or giving it again on the Tasks board |
+| Tasks | `task_owners`, `task_closures`, `task_spans` | A task closed since opens again, one given to someone since is nobody's, and a task's span closed since closes again the next night, dated then | Closing or giving it again on the Tasks board |
 | The audit log | `audit_log` | Who did what since `<T>` | Adding the rows since `<T>`: they are only ever added |
 | New people, leads, addresses and try-ons | `people`, `leads`, `addresses`, `tryon_jobs` | Bookings and leads made since are lost here; the CRM has the leads | The rows since `<T>` |
 | Technicians, and FSM's catalogue | `technicians`, `fsm_items` | A technician added or changed since goes back | Where FSM still holds them, the cron reads them again; otherwise the rows since `<T>` |
@@ -127,6 +127,7 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 - [sync_cursors](#sync_cursors): Where each pass of the reconciliation with FSM has reached (ADR 0032).
 - [task_closures](#task_closures): A task on the Tasks board ops closed without doing its thing, a visit left partly done alone, with why, who and when, by the task's group and its row's id (ADR 0092).
 - [task_owners](#task_owners): The member of staff a task on the Tasks board is theirs, by Access e-mail, by the task's group, its row's id and, where that row can be a new task again, its episode; a task with no row for it is nobody's (ADR 0092).
+- [task_spans](#task_spans): Each task the Tasks board has held, by its group, row and episode: the client's city, when it opened and the night it was first found gone, from which the reporting copy counts Care cases (ADR 0147).
 - [technician_devices](#technician_devices): The phones technicians work from, each bound to a session and revocable by ops (ADR 0052).
 - [technician_leave](#technician_leave): A technician's leave in whole days, which the clash check reads beside `slot_claims` (ADR 0062).
 - [technician_updates](#technician_updates): A technician's word to the client from the job card: on the way, at the gate, or running late, sent from our number (ADR 0145).
@@ -2143,6 +2144,27 @@ Made by `0056_task_owners.sql`.
 | `owner` | TEXT | no |  |  |
 | `assigned_by` | TEXT | no |  |  |
 | `assigned_at` | TEXT | no |  |  |
+
+## task_spans
+
+Each task the Tasks board has held, by its group, row and episode: the client's city, when it opened and the night it was first found gone, from which the reporting copy counts Care cases (ADR 0147).
+
+Made by `0126_task_spans.sql`.
+
+| Column | Type | May be empty | Default | Key |
+| --- | --- | --- | --- | --- |
+| `id` | TEXT | no |  | primary key |
+| `task_group` | TEXT | no |  |  |
+| `subject_id` | TEXT | no |  |  |
+| `episode` | TEXT | no |  |  |
+| `city` | TEXT | yes |  |  |
+| `opened_at` | TEXT | no |  |  |
+| `closed_at` | TEXT | yes |  |  |
+
+Indexes:
+
+- `task_spans_by_close`: on (`closed_at`)
+- `task_spans_open`: unique on (`task_group`, `subject_id`, `episode`), where `closed_at IS NULL`
 
 ## technician_devices
 

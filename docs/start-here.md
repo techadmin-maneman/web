@@ -201,7 +201,7 @@ this map, or when the map names something that no longer exists.
 
 - **Database work** (`src/domain/analytics/`): `nightly` (the copy Zoho Analytics reads, once a night), `rows`
   (what each of its tables holds), `capacity` (each technician's day, from the dispatch board), `message-days`,
-  `client-key` (a client as the copy knows them)
+  `care-cases` (grievances and tasks, opened and closed), `client-key` (a client as the copy knows them)
 - **Vendor** (`src/providers/`): `warehouse/` (Supabase's Postgres, or the stub)
 - **Jobs:** `src/scheduled/analytics.ts`
 - **Tests:** `test/worker/jobs/analytics-nightly.test.ts`, `test/node/api/warehouse-sql.test.ts`
@@ -219,7 +219,8 @@ this map, or when the map names something that no longer exists.
 ### Ops' own work
 
 - **Database work** (`src/domain/ops/`): `alerts`, `needs-a-hand`, `tasks`, `task-closures`, `task-owners`,
-  `grievances`, `ops-settings`, `site-notices`, `audit`, `activity`, `staff`
+  `grievances`, `ops-settings`, `site-notices`, `audit`, `activity`, `staff`, `task-spans` (when each task opened and
+  closed)
 - **Rules** (`src/policy/`): `tasks`, `alerts`, `grievances`, `ops-settings`, `console-routes`, `access`,
   `decision-reasons`
 - **Routes** (`src/routes/`): `ops/alerts`, `ops/tasks`, `ops/grievances`, `ops/settings`, `ops/staff`,

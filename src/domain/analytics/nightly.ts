@@ -6,6 +6,7 @@
 import { addDays, indiaDate, indiaHour } from "../../lib/india-time.ts";
 import type { RunLog, TableRows, WarehouseProvider } from "../../providers/warehouse/index.ts";
 import { capacityRows, CAPACITY_DAYS_AHEAD } from "./capacity.ts";
+import { careCaseRows } from "./care-cases.ts";
 import { clientKeys } from "./client-key.ts";
 import { messageDayRows } from "./message-days.ts";
 import { cityRows, clientRows, dateRows, paymentRows, serviceRows, technicianRows, visitRows } from "./rows.ts";
@@ -65,6 +66,7 @@ export async function copyTonight(
     payments,
     await capacityRows(db, cities, { from: since, to: addDays(date, CAPACITY_DAYS_AHEAD), now: startedAt }),
     await messageDayRows(db),
+    await careCaseRows(db),
   ];
   let rowsWritten = 0;
   let rowsChanged = 0;
