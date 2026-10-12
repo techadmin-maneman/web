@@ -79,10 +79,7 @@ const FREE_TIER_KEYS: ReadonlySet<string> = new Set([
   "hyperdrive",
 ]);
 
-/**
- * Bindings only an environment that uses them declares: the reporting copy runs against its stub locally, and staging
- * keeps none, so neither may reach the real copy.
- */
+/** Bindings only an environment that uses them declares: locally the copy runs on its stub, and staging keeps none. */
 const WHERE_USED_ONLY: ReadonlySet<string> = new Set(["hyperdrive"]);
 
 /** Config keys that only exist on paid plans, or that bypass wrangler's binding types. */
@@ -172,9 +169,7 @@ function namesUnder(block: JsonObject, bindingKey: BindingKey): string[] | undef
   if (value === undefined) return undefined;
   if (bindingKey.shape === "map") return isObject(value) ? Object.keys(value) : [];
 
-  let bindings: JsonObject[] = [];
-  if (bindingKey.shape === "list") bindings = objectsIn(value);
-  else if (isObject(value)) bindings = [value];
+  const bindings = objectsIn(bindingKey.shape === "list" ? value : [value]);
   return bindings.flatMap((binding) => stringField(binding, bindingKey.nameField) ?? []);
 }
 
