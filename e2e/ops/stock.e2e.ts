@@ -6,7 +6,7 @@
 import type { Page } from "@playwright/test";
 import { expect, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
-import { answer, fails, IMRAN, json, STOCK, type Answers } from "./fixtures.ts";
+import { answer, fails, IMRAN, json, STOCK, type Answers, type OpsReply } from "./fixtures.ts";
 import * as opsCopy from "../../apps/ops/src/content.ts";
 import { stockPlaces } from "../../apps/ops/src/content/stock-places.ts";
 
@@ -217,9 +217,17 @@ const withRoom = {
   ...STOCK,
   places: [
     ...STOCK.places,
-    { id: ROOM, kind: "stockroom", name: "Gurgaon stockroom", parent_id: "central", zone: "NCR", city: "Gurgaon", active: true },
+    {
+      id: ROOM,
+      kind: "stockroom",
+      name: "Gurgaon stockroom",
+      parent_id: "central",
+      zone: "NCR",
+      city: "Gurgaon",
+      active: true,
+    },
   ],
-} satisfies typeof STOCK;
+} satisfies OpsReply<"/api/stock">;
 
 test("adds a stockroom under the warehouse, and closes it again", async ({ page }) => {
   await open(page, { "POST /api/stock/places": json(withRoom), [`POST /api/stock/places/${ROOM}`]: json(STOCK) });

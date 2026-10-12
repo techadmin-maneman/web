@@ -27,9 +27,7 @@ const lowPlaces = async (): Promise<number> =>
 
 /** What a place holds of a consumable, as the Stock screen reads it. */
 async function held(code: string, place: string): Promise<{ quantity: number; low: boolean }> {
-  const holding = (await stock()).holdings.find(
-    (each) => each.consumable_code === code && each.place_id === place,
-  );
+  const holding = (await stock()).holdings.find((each) => each.consumable_code === code && each.place_id === place);
   return { quantity: holding?.quantity ?? 0, low: holding?.low ?? false };
 }
 
@@ -77,7 +75,12 @@ describe("the ledger", () => {
 
   it("moves stock from the store to a kit in two rows, and each place holds the sum of its own", async () => {
     await job.opsPost("/api/stock/deliveries", { consumable_code: "tape_strips", quantity: 100 });
-    await job.opsPost("/api/stock/transfers", { consumable_code: "tape_strips", quantity: 30, from: "central", to: IMRAN });
+    await job.opsPost("/api/stock/transfers", {
+      consumable_code: "tape_strips",
+      quantity: 30,
+      from: "central",
+      to: IMRAN,
+    });
     await job.opsPost("/api/stock/transfers", {
       consumable_code: "tape_strips",
       quantity: 10,
@@ -158,14 +161,27 @@ describe("the ledger", () => {
     const { places } = await stock();
     const kit = { kind: "kit", parent_id: "central", active: true };
     expect(places).toEqual([
-      { id: "central", kind: "warehouse", name: "National warehouse", parent_id: null, zone: null, city: null, active: true },
+      {
+        id: "central",
+        kind: "warehouse",
+        name: "National warehouse",
+        parent_id: null,
+        zone: null,
+        city: null,
+        active: true,
+      },
       expect.objectContaining({ ...kit, id: IMRAN, name: "Imran Qureshi" }),
       expect.objectContaining({ ...kit, id: SAMEER, name: "Sameer Bhatt" }),
     ]);
   });
 
   it("keeps a kit a technician who left still holds, and drops one that holds nothing", async () => {
-    await job.opsPost("/api/stock/transfers", { consumable_code: "tape_strips", quantity: 5, from: "central", to: IMRAN });
+    await job.opsPost("/api/stock/transfers", {
+      consumable_code: "tape_strips",
+      quantity: 5,
+      from: "central",
+      to: IMRAN,
+    });
     await env.DB.prepare("UPDATE technicians SET active = 0").run();
 
     const { places } = await stock();
@@ -173,7 +189,12 @@ describe("the ledger", () => {
     expect(places[1]?.active).toBe(false);
 
     // Emptied back into the store, their kit holds nothing, and its column goes.
-    await job.opsPost("/api/stock/transfers", { consumable_code: "tape_strips", quantity: 5, from: IMRAN, to: "central" });
+    await job.opsPost("/api/stock/transfers", {
+      consumable_code: "tape_strips",
+      quantity: 5,
+      from: IMRAN,
+      to: "central",
+    });
     expect((await stock()).places.map((place) => place.id)).toEqual(["central"]);
   });
 });
@@ -181,7 +202,12 @@ describe("the ledger", () => {
 describe("low stock", () => {
   it("raises one alert for a kit that falls to its level, and closes it once the kit is stocked again", async () => {
     await job.opsPost("/api/stock/deliveries", { consumable_code: "tape_strips", quantity: 100 });
-    await job.opsPost("/api/stock/transfers", { consumable_code: "tape_strips", quantity: 8, from: "central", to: IMRAN });
+    await job.opsPost("/api/stock/transfers", {
+      consumable_code: "tape_strips",
+      quantity: 8,
+      from: "central",
+      to: IMRAN,
+    });
     await job.workTo("consumables");
 
     await job.post(
@@ -212,7 +238,12 @@ describe("low stock", () => {
       .first<{ count: number }>();
     expect(open?.count).toBe(2);
 
-    await job.opsPost("/api/stock/transfers", { consumable_code: "tape_strips", quantity: 10, from: "central", to: IMRAN });
+    await job.opsPost("/api/stock/transfers", {
+      consumable_code: "tape_strips",
+      quantity: 10,
+      from: "central",
+      to: IMRAN,
+    });
     const closed = await env.DB.prepare("SELECT resolved_at FROM alerts WHERE key = ?1")
       .bind(`low_stock:kit:${IMRAN}`)
       .first<{ resolved_at: string | null }>();
@@ -225,7 +256,12 @@ describe("low stock", () => {
     expect(await held("tape_strips", "central")).toEqual({ quantity: 10, low: true });
     expect(job.deps.alerts).toEqual([]);
 
-    await job.opsPost("/api/stock/transfers", { consumable_code: "tape_strips", quantity: 2, from: "central", to: IMRAN });
+    await job.opsPost("/api/stock/transfers", {
+      consumable_code: "tape_strips",
+      quantity: 2,
+      from: "central",
+      to: IMRAN,
+    });
     expect(job.deps.alerts).toEqual([
       expect.stringContaining("Stock is low in National warehouse: Tape strips 8 strip (level 20)"),
     ]);
@@ -234,7 +270,12 @@ describe("low stock", () => {
   // A low-stock alert stayed open after its consumable was retired: no movement came to look again.
   it("closes a place's alert once what it was low on is retired", async () => {
     await job.opsPost("/api/stock/deliveries", { consumable_code: "tape_strips", quantity: 10 });
-    await job.opsPost("/api/stock/transfers", { consumable_code: "tape_strips", quantity: 2, from: "central", to: IMRAN });
+    await job.opsPost("/api/stock/transfers", {
+      consumable_code: "tape_strips",
+      quantity: 2,
+      from: "central",
+      to: IMRAN,
+    });
     expect(job.deps.alerts).toEqual([expect.stringContaining("Stock is low in National warehouse")]);
     expect(await lowPlaces()).toBe(1);
 
@@ -252,7 +293,12 @@ describe("low stock", () => {
     expect(await held("solvent", IMRAN)).toEqual({ quantity: 1, low: false });
 
     await job.opsPost("/api/consumables/tape_strips/retire", { from: "2026-09-21" });
-    await job.opsPost("/api/stock/transfers", { consumable_code: "tape_strips", quantity: 1, from: "central", to: IMRAN });
+    await job.opsPost("/api/stock/transfers", {
+      consumable_code: "tape_strips",
+      quantity: 1,
+      from: "central",
+      to: IMRAN,
+    });
     expect(await held("tape_strips", IMRAN)).toEqual({ quantity: 1, low: false });
   });
 });

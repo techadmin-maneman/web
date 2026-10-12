@@ -48,6 +48,10 @@ export function clearTester(technicianIds: readonly string[], personIds: readonl
     `DELETE FROM slot_claims WHERE technician_id IN (${ids});`,
     `DELETE FROM slot_holds WHERE technician_id IN (${ids});`,
     `UPDATE technicians SET active = 0 WHERE id IN (${ids});`,
+    // Their kit goes with them, as they do.
+    `DELETE FROM stock_places WHERE kind = 'kit' AND id IN (${ids})
+       AND id NOT IN (SELECT technician_id FROM hair_profiles WHERE technician_id IS NOT NULL)
+       AND id NOT IN (SELECT technician_id FROM appointments WHERE technician_id IS NOT NULL);`,
     `DELETE FROM technicians WHERE id IN (${ids})
        AND id NOT IN (SELECT technician_id FROM hair_profiles WHERE technician_id IS NOT NULL)
        AND id NOT IN (SELECT technician_id FROM appointments WHERE technician_id IS NOT NULL);`,

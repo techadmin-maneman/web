@@ -89,7 +89,7 @@ import { registerOpsServiceArea } from "./routes/ops/service-area.ts";
 import { registerOpsSlotTimes } from "./routes/ops/slot-times.ts";
 import { registerOpsStaff } from "./routes/ops/staff.ts";
 import { registerOpsStock } from "./routes/ops/stock.ts";
-import { registerOpsStockPlaces } from "./routes/ops/stock-places.ts";
+import { registerOpsStockPlaces } from "./routes/ops/stock.places.ts";
 import { registerOpsWaitlist } from "./routes/ops/waitlist.ts";
 import { registerConsultations } from "./routes/public/consultations.ts";
 import { registerLead } from "./routes/public/lead.ts";

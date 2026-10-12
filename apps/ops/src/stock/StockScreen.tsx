@@ -101,9 +101,7 @@ function OnHand({ book }: { book: Stock }) {
   const [picked, setPicked] = useState<string | null>(null);
   const many = book.places.length > PLACES_SIDE_BY_SIDE;
   const beside = picked ?? book.places.find((place) => place.kind !== "warehouse")?.id ?? "";
-  const places = many
-    ? book.places.filter((place) => place.kind === "warehouse" || place.id === beside)
-    : book.places;
+  const places = many ? book.places.filter((place) => place.kind === "warehouse" || place.id === beside) : book.places;
   if (book.consumables.length === 0) {
     return (
       <p className={form.note}>

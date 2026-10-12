@@ -25,9 +25,7 @@ const stock = async (): Promise<Stock> => (await request(job.ops, "/api/stock"))
 
 /** What a place holds of a consumable, as the Stock screen reads it. */
 async function held(code: string, place: string): Promise<{ quantity: number; low: boolean }> {
-  const holding = (await stock()).holdings.find(
-    (each) => each.consumable_code === code && each.place_id === place,
-  );
+  const holding = (await stock()).holdings.find((each) => each.consumable_code === code && each.place_id === place);
   return { quantity: holding?.quantity ?? 0, low: holding?.low ?? false };
 }
 
@@ -60,8 +58,18 @@ beforeEach(async () => {
 describe("a job's use", () => {
   /** Tape strips and solvent into Imran's kit, and the job worked to its consumables step. */
   async function readyToRecord(): Promise<void> {
-    await job.opsPost("/api/stock/transfers", { consumable_code: "tape_strips", quantity: 12, from: "central", to: IMRAN });
-    await job.opsPost("/api/stock/transfers", { consumable_code: "solvent", quantity: 100, from: "central", to: IMRAN });
+    await job.opsPost("/api/stock/transfers", {
+      consumable_code: "tape_strips",
+      quantity: 12,
+      from: "central",
+      to: IMRAN,
+    });
+    await job.opsPost("/api/stock/transfers", {
+      consumable_code: "solvent",
+      quantity: 100,
+      from: "central",
+      to: IMRAN,
+    });
     await job.workTo("consumables");
   }
 
@@ -279,7 +287,12 @@ describe("writes that land together", () => {
   const byOps = { actor: { kind: "staff" as const, id: "ops@localhost" }, requestId: "count-1", now: NOW };
 
   it("leaves a kit holding what ops counted when a job's use lands between the count's read and its write", async () => {
-    await job.opsPost("/api/stock/transfers", { consumable_code: "tape_strips", quantity: 12, from: "central", to: IMRAN });
+    await job.opsPost("/api/stock/transfers", {
+      consumable_code: "tape_strips",
+      quantity: 12,
+      from: "central",
+      to: IMRAN,
+    });
     await job.workTo("consumables");
 
     // Ops count 8 in the kit: 12 less the 4 the job used, whose step reaches us while the count is written.
@@ -327,7 +340,12 @@ describe("writes that land together", () => {
   });
 
   it("takes a job's use once when an older step is written after a newer one landed", async () => {
-    await job.opsPost("/api/stock/transfers", { consumable_code: "tape_strips", quantity: 12, from: "central", to: IMRAN });
+    await job.opsPost("/api/stock/transfers", {
+      consumable_code: "tape_strips",
+      quantity: 12,
+      from: "central",
+      to: IMRAN,
+    });
     await job.workTo("consumables");
     // The phone's first step, read and held before its write.
     await env.DB.prepare(

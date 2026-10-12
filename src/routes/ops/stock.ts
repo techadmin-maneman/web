@@ -5,7 +5,7 @@
 //   POST /api/stock/transfers       stock moved between any two places
 //   POST /api/stock/counts          what ops counted at a place: the ledger takes the difference
 //   POST /api/stock/write-offs      a loss somebody saw, with what happened
-// and the places themselves (src/routes/ops/stock-places.ts).
+// and the places themselves (src/routes/ops/stock.places.ts).
 //
 // Each movement is a row of the ledger, with the Access identity behind it,
 // written with its audit entry in one batch (ADR 0031); what a place holds is

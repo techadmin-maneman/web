@@ -120,7 +120,7 @@ describe("a look at the Tasks board or the Stock page", () => {
     request(ops, "/api/stock/counts", {
       method: "POST",
       headers: { Origin: "https://maneman.test", "Content-Type": "application/json" },
-      body: JSON.stringify({ consumable_code: "tape_strips", technician_id: FIRST_TECHNICIAN, counted: 40 }),
+      body: JSON.stringify({ consumable_code: "tape_strips", place_id: FIRST_TECHNICIAN, counted: 40 }),
     });
 
   it("reads no more for At-risk clients and First fits to book when every client has ten times the visits", async () => {

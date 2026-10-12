@@ -86,7 +86,9 @@ function movementValues(id: string, movement: Movement, written: Written) {
 
 function movementStatement(db: D1Database, movement: Movement, written: Written): D1PreparedStatement {
   return db
-    .prepare(`INSERT INTO stock_movements (${MOVEMENT_COLUMNS}) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12)`)
+    .prepare(
+      `INSERT INTO stock_movements (${MOVEMENT_COLUMNS}) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12)`,
+    )
     .bind(...movementValues(crypto.randomUUID(), movement, written));
 }
 
@@ -259,7 +261,14 @@ export async function writeOff(
     ),
     movementStatement(
       db,
-      { code: input.code, place: input.place, kind, quantity: -input.quantity, reason: "written_off", note: input.note },
+      {
+        code: input.code,
+        place: input.place,
+        kind,
+        quantity: -input.quantity,
+        reason: "written_off",
+        note: input.note,
+      },
       written,
     ),
   ]);

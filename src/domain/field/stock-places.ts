@@ -189,7 +189,11 @@ export async function addPlace(
         written.actor.id,
         at,
       ),
-    auditStatement(db, entry("stock.place_add", id, written, { kind: input.kind, parent_id: input.parentId, area: input.area }), written.now),
+    auditStatement(
+      db,
+      entry("stock.place_add", id, written, { kind: input.kind, parent_id: input.parentId, area: input.area }),
+      written.now,
+    ),
   ]);
   return { ok: true, id };
 }
@@ -250,7 +254,15 @@ export async function changePlace(
     db
       .prepare("UPDATE stock_places SET name = ?2, parent_id = ?3, active = ?4 WHERE id = ?1")
       .bind(id, name, parentId, active),
-    auditStatement(db, entry("stock.place_change", id, written, { renamed: name !== null && name !== place.name, parent_id: parentId, active }), written.now),
+    auditStatement(
+      db,
+      entry("stock.place_change", id, written, {
+        renamed: name !== null && name !== place.name,
+        parent_id: parentId,
+        active,
+      }),
+      written.now,
+    ),
   ]);
   return { ok: true, id };
 }

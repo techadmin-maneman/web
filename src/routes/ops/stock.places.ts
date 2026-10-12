@@ -34,7 +34,9 @@ const addRoute = createRoute({
         z
           .discriminatedUnion("kind", [
             z.object({ kind: z.literal("hub"), name: Name, parent_id: PlaceId, zone: z.string().min(1) }).strict(),
-            z.object({ kind: z.literal("stockroom"), name: Name, parent_id: PlaceId, city: z.string().min(1) }).strict(),
+            z
+              .object({ kind: z.literal("stockroom"), name: Name, parent_id: PlaceId, city: z.string().min(1) })
+              .strict(),
           ])
           .openapi("StockPlaceAdd"),
       ),
@@ -78,7 +80,6 @@ const changeRoute = createRoute({
 
 const written = (c: Context<AppEnv>) => ({ actor: actorOf(c), requestId: c.var.requestId, now: c.var.deps.now() });
 
-
 export function registerOpsStockPlaces(app: App): void {
   app.openapi(addRoute, async (c) => {
     const body = c.req.valid("json");
@@ -101,7 +102,8 @@ export function registerOpsStockPlaces(app: App): void {
       { name: body.name, parentId: body.parent_id, active: body.active },
       written(c),
     );
-    if (!changed.ok) return "missing" in changed ? refuse(c, "not_found") : refuse(c, "invalid_request", changed.fields);
+    if (!changed.ok)
+      return "missing" in changed ? refuse(c, "not_found") : refuse(c, "invalid_request", changed.fields);
     return c.json(await stockAnswer(c), 200);
   });
 }

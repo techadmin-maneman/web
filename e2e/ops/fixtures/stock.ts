@@ -128,13 +128,7 @@ export const JOB_SHEET = {
   max_label: 80,
 } satisfies OpsReply<"/api/job-sheet">;
 
-const holding = (
-  code: string,
-  place: string,
-  quantity: number,
-  low = false,
-  countedAt: string | null = null,
-) => ({
+const holding = (code: string, place: string, quantity: number, low = false, countedAt: string | null = null) => ({
   consumable_code: code,
   place_id: place,
   quantity,
@@ -151,7 +145,15 @@ export const STOCK = {
     { code: "tape_strips", name: "Tape strips", unit: "strip", retired: false, reorder_kit: 5, reorder_central: 50 },
   ],
   places: [
-    { id: "central", kind: "warehouse", name: "National warehouse", parent_id: null, zone: null, city: null, active: true },
+    {
+      id: "central",
+      kind: "warehouse",
+      name: "National warehouse",
+      parent_id: null,
+      zone: null,
+      city: null,
+      active: true,
+    },
     { ...KIT, id: IMRAN, name: "Imran Qureshi", active: true },
     { ...KIT, id: SAMEER, name: "Sameer Bhatt", active: false },
   ],
