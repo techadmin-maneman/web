@@ -413,3 +413,41 @@ describe("the copy's targets and access", () => {
     ]);
   });
 });
+
+describe("the copy's pieces and areas", () => {
+  it("holds each piece fitted without its failure's words, each area, and a lead's area by its address", async () => {
+    await env.DB.batch([
+      env.DB.prepare(
+        `INSERT INTO pieces (id, fsm_id, person_id, piece_code, base, supplier_lot, fitted_at, replacement_due_at,
+           appointment_id, failed_at, failure_reason, synced_at)
+         VALUES ('pc1', 'pc1', 'p-rohit', 'MM-STD-1', 'lace', 'LOT-9', '2026-09-20T04:30:00.000Z',
+           '2027-03-20T04:30:00.000Z', 'v-rohit', '2026-10-01T04:30:00.000Z', 'Lifted at the front', ?1)`,
+      ).bind(NOW.toISOString()),
+      env.DB.prepare(
+        "INSERT OR REPLACE INTO serviceable_pincodes (pincode, area, city, served) VALUES ('122018', 'Sector 65', 'Gurgaon', 1)",
+      ),
+      env.DB.prepare(
+        `INSERT INTO leads (id, person_id, created_at, source, loss_extent, request_id)
+         VALUES ('l-area', 'p-rohit', '2026-09-01T05:00:00.000Z', 'form', 'crown', 'ra')`,
+      ),
+    ]);
+    const warehouse = createStubWarehouse();
+
+    await copyTonight(env.DB, warehouse, night);
+
+    expect(warehouse.tables.get("fact_piece")?.get("pc1")).toMatchObject({
+      fitted_date: "2026-09-20",
+      due_date: "2027-03-20",
+      technician_key: IMRAN,
+      city: "Gurgaon",
+      lot: "LOT-9",
+      failed_date: "2026-10-01",
+      failure_reason: null,
+    });
+    expect(warehouse.tables.get("dim_area")?.get("gurgaon|sector_65")).toMatchObject({
+      area: "Sector 65",
+      served: true,
+    });
+    expect(warehouse.tables.get("fact_lead")?.get("l-area")).toMatchObject({ area_key: "gurgaon|sector_65" });
+  });
+});

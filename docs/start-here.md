@@ -203,7 +203,7 @@ this map, or when the map names something that no longer exists.
   (what each of its tables holds), `capacity` (each technician's day, from the dispatch board), `message-days`,
   `care-cases` (grievances and tasks, opened and closed), `leads`, `spend` (offline spend, partner payments and
   invites' free visits), `client-months` (where each client stood each month), `stock` (the stock ledger, and each week's position),
-  `credits` (free visits given, used and owed), `targets`, `access` (who may read what, from the Staff list),
+  `credits` (free visits given, used and owed), `pieces` (each hair system fitted, and the areas), `targets`, `access` (who may read what, from the Staff list),
   `client-key` (a client as the copy knows them)
 - **Database work** (`src/domain/money/`): `spend` (offline spend, as typed on the Spend page), `standard-costs`
   (what each hair system costs us)

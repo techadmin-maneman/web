@@ -144,7 +144,8 @@ const ALLOWED = [
   { file: "src/domain/analytics/rows.ts", sql: "FROM payments y JOIN people p ON p.id = y.person_id" },
   { file: "src/domain/analytics/care-cases.ts", sql: "FROM grievances g JOIN people p ON p.id = g.person_id" },
   { file: "src/domain/analytics/care-cases.ts", sql: "FROM task_spans s" },
-  { file: "src/domain/analytics/leads.ts", sql: "FROM leads l JOIN people p ON p.id = l.person_id" },
+  { file: "src/domain/analytics/leads.ts", sql: "FROM leads l LEFT JOIN addresses d ON d.person_id = l.person_id" },
+  { file: "src/domain/analytics/pieces.ts", sql: "FROM pieces c JOIN people p ON p.id = c.person_id" },
   { file: "src/domain/analytics/client-months.ts", sql: "FROM appointments a JOIN people p ON p.id = a.person_id" },
   { file: "src/domain/analytics/credits.ts", sql: "FROM credit_ledger c JOIN people p ON p.id = c.person_id" },
   {

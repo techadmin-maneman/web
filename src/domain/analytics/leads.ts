@@ -9,6 +9,7 @@ import { statusNotIn, VISIT_CALLED_OFF } from "../../config/statuses.ts";
 import { indiaDate } from "../../lib/india-time.ts";
 import { campaignCity, channelOf, CHANNELS, type Channel } from "../../policy/channels.ts";
 import type { Row, TableRows } from "../../providers/warehouse/index.ts";
+import { areaKeyOf } from "./pieces.ts";
 import { jobSheet } from "../field/job-sheet-settings.ts";
 
 interface LeadRow {
@@ -33,6 +34,8 @@ interface LeadRow {
   readonly fit_paid: string | null;
   readonly fit_done: string | null;
   readonly lost_reason: string | null;
+  readonly area_city: string | null;
+  readonly area: string | null;
 }
 
 /** A client's first lead, whose channel and campaign they keep for life. */
@@ -68,8 +71,11 @@ const LEADS = `SELECT l.id, l.person_id, p.erased_at IS NOT NULL AS erased, l.cr
      ${firstVisit("'first_fit'", true)} AS fit_done,
      (SELECT v.lost_reason FROM visits v JOIN appointments a ON a.id = v.appointment_id
        WHERE a.person_id = l.person_id AND v.lost_reason IS NOT NULL
-       ORDER BY a.window_start DESC LIMIT 1) AS lost_reason
-   FROM leads l JOIN people p ON p.id = l.person_id WHERE p.test_record = 0
+       ORDER BY a.window_start DESC LIMIT 1) AS lost_reason,
+     sp.city AS area_city, sp.area
+   FROM leads l
+   LEFT JOIN addresses d ON d.person_id = l.person_id AND d.replaced_at IS NULL
+   LEFT JOIN serviceable_pincodes sp ON sp.pincode = d.pincode JOIN people p ON p.id = l.person_id WHERE p.test_record = 0
    ORDER BY l.created_at`;
 
 /**
@@ -117,7 +123,7 @@ export async function leadTables(
       lead_date: indiaDate(new Date(row.created_at)),
       client_key: client,
       city: row.city,
-      area_key: null,
+      area_key: row.area_city === null || row.area === null ? null : areaKeyOf(row.area_city, row.area),
       channel,
       campaign_key: campaign,
       landing_page: row.landing_path,

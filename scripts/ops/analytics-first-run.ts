@@ -76,6 +76,10 @@ INSERT INTO staff_grants (email, department, level, geography, place, granted_by
 INSERT INTO grievances (id, person_id, text, state, created_at) VALUES ('gr1', 'p2', 'Call first.', 'open', '${days(-5)}');
 INSERT INTO task_spans (id, task_group, subject_id, episode, city, opened_at)
   VALUES ('ts1', 'first_fit_to_book', 'p2', '', 'Gurgaon', '${days(-28)}');
+INSERT INTO pieces (id, fsm_id, person_id, piece_code, base, supplier_lot, fitted_at, replacement_due_at, appointment_id,
+    synced_at)
+  VALUES ('pc1', 'pc1', 'p1', 'MM-STD-1', 'lace', 'LOT-9', '${days(-45)}', '${days(135)}', 'f1', '${at}');
+INSERT OR REPLACE INTO serviceable_pincodes (pincode, area, city, served) VALUES ('122018', 'Sector 65', 'Gurgaon', 1);
 INSERT INTO outbound_messages (id, created_at, person_id, kind, subject_id, state, sent_at, delivered_at)
   VALUES ('o1', '${days(-2)}', 'p1', 'visit_reminder', 's1', 'sent', '${days(-2)}', '${days(-2)}');
 `;
@@ -90,6 +94,7 @@ const TABLES = [
   "dim_campaign",
   "dim_item",
   "dim_stock_place",
+  "dim_area",
   "access",
   "fact_visit",
   "fact_payment",
@@ -103,6 +108,7 @@ const TABLES = [
   "fact_stock_movement",
   "fact_stock_week",
   "fact_target",
+  "fact_piece",
   "load_run",
 ];
 

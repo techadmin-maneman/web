@@ -23,5 +23,5 @@ The owner chose to report from Zoho Analytics, fed by a nightly copy of our figu
 
 - `npm run analytics:first-run` copies one of every record into the real schema twice, as the API's login, reads it back through Zoho's, and takes it out again. Its first run found that a list sent as an array, with the server's types off as a pooler needs, arrives as one string; tonight's keys go as JSON.
 - Zoho reads the `reporting` views, which point at the sample schema until the copy carries real activity, then at `analytics`.
-- Care cases follow once the Care numbers page has landed. Channels and campaigns follow ADR 0148. Until the rest of the growth figures are built, a lead's area and lost reason are empty, and so is a visit's booking window.
+- Channels and campaigns follow ADR 0148, and a lead's area is its client's address's. A piece's failure reason is the technician's own words, so it stays out, and a visit's booking window is left empty.
 - Tests: `test/worker/jobs/analytics-nightly.test.ts`, `test/node/api/warehouse-sql.test.ts`.
