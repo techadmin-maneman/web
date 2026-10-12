@@ -31,6 +31,8 @@ export const PURPOSES: Readonly<Record<string, string>> = {
     "Each receipt against a purchase order at the warehouse: who received it, the supplier's invoice, the rupee rate and the freight, duty and clearing (ADR 0167).",
   receipt_lines:
     "What a receipt brought of each order line: accepted, damaged, failed its check, its lot, and what one cost landed (ADR 0167).",
+  supplier_claims:
+    "Each claim on a supplier: what arrived damaged or failed its check, or a returned piece in warranty, and whether it was sent, credited, replaced, rejected or withdrawn (ADR 0169).",
   suppliers:
     "Each supplier we buy stock from: its terms, currency and warranty, retired rather than deleted (ADR 0165).",
   supplier_items:

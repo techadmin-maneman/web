@@ -1978,7 +1978,10 @@ Request body:
             "in_use",
             "figures_conflict",
             "transfer_settled",
-            "order_state"
+            "order_state",
+            "claim_state",
+            "return_settled",
+            "out_of_warranty"
           ]
         },
         "request_id": {
