@@ -4,10 +4,13 @@
 // changed. The copy's totals are then checked against what was sent, and the run logged in the copy itself.
 
 import { addDays, indiaDate, indiaHour } from "../../lib/india-time.ts";
+import { LOST_AFTER_DAYS, type StandingDays } from "../../policy/client-standing.ts";
+import { NEXT_VISIT_DAYS } from "../../policy/next-visit.ts";
 import type { RunLog, TableRows, WarehouseProvider } from "../../providers/warehouse/index.ts";
 import { capacityRows, CAPACITY_DAYS_AHEAD } from "./capacity.ts";
 import { careCaseRows } from "./care-cases.ts";
 import { clientKeys } from "./client-key.ts";
+import { clientMonthRows } from "./client-months.ts";
 import { leadTables } from "./leads.ts";
 import { messageDayRows } from "./message-days.ts";
 import { spendRows } from "./spend.ts";
@@ -15,6 +18,13 @@ import { cityRows, clientRows, dateRows, paymentRows, serviceRows, technicianRow
 
 /** The free plan holds 500 MB of Postgres; told at 400, so there is time to trim or upgrade. */
 export const WAREHOUSE_ALERT_BYTES = 400 * 1024 * 1024;
+
+/** The figures that stand until ops set others. */
+const COMMITTED_STANDING: StandingDays = {
+  cadence: NEXT_VISIT_DAYS.service_cadence,
+  grace: NEXT_VISIT_DAYS.at_risk_after_due,
+  lostAfter: LOST_AFTER_DAYS,
+};
 
 /** The calendar runs a year past tonight, so a visit booked months ahead has its week and quarter. */
 const DAYS_AHEAD = 365;
@@ -37,7 +47,18 @@ async function totalsMatch(warehouse: WarehouseProvider, visits: TableRows, paym
 export async function copyTonight(
   db: D1Database,
   warehouse: WarehouseProvider,
-  { secret, date, now }: { readonly secret: string; readonly date: string; readonly now: () => Date },
+  {
+    secret,
+    date,
+    now,
+    standing = COMMITTED_STANDING,
+  }: {
+    readonly secret: string;
+    readonly date: string;
+    readonly now: () => Date;
+    /** The service cadence, its grace and the days to lost, as ops set them. */
+    readonly standing?: StandingDays;
+  },
 ): Promise<RunLog> {
   const startedAt = now();
   const { results: people } = await db
@@ -77,6 +98,7 @@ export async function copyTonight(
     await careCaseRows(db),
     ...leads.tables,
     await spendRows(db),
+    await clientMonthRows(db, { keys, firstTouch: leads.firstTouch, days: standing, today: date }),
   ];
   let rowsWritten = 0;
   let rowsChanged = 0;

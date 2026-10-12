@@ -9995,7 +9995,8 @@
               "booking_days",
               "referral_reward",
               "care_hours",
-              "remedy_limit"
+              "remedy_limit",
+              "lost_after_days"
             ]
           },
           "title": {
@@ -10159,7 +10160,8 @@
               "booking_days",
               "referral_reward",
               "care_hours",
-              "remedy_limit"
+              "remedy_limit",
+              "lost_after_days"
             ]
           },
           "title": {
@@ -20263,7 +20265,8 @@
                 "booking_days",
                 "referral_reward",
                 "care_hours",
-                "remedy_limit"
+                "remedy_limit",
+                "lost_after_days"
               ]
             },
             "required": true,

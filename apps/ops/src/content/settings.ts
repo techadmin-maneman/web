@@ -140,6 +140,7 @@ export const settings = {
       reminders: "Reminders and replacements",
       referrals: "Referrals",
       care: "Customer Care",
+      reports: "Reports",
       console: "The console",
       other: "Other policies",
     },

@@ -17428,7 +17428,8 @@ Request body:
         "booking_days",
         "referral_reward",
         "care_hours",
-        "remedy_limit"
+        "remedy_limit",
+        "lost_after_days"
       ]
     },
     "title": {
@@ -17597,7 +17598,8 @@ Request body:
         "booking_days",
         "referral_reward",
         "care_hours",
-        "remedy_limit"
+        "remedy_limit",
+        "lost_after_days"
       ]
     },
     "title": {

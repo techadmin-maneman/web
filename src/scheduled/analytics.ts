@@ -6,14 +6,20 @@ import { copyTonight, nightlyDueOn, WAREHOUSE_ALERT_BYTES } from "../domain/anal
 import { hyperdriveOf, warehouseFor } from "../providers/warehouse/index.ts";
 import type { CronContext } from "./cron.ts";
 
-export async function analyticsJob({ env, deps, config, log }: CronContext): Promise<void> {
+export async function analyticsJob({ env, deps, config, log, inputs }: CronContext): Promise<void> {
   const date = nightlyDueOn(deps.now());
   const secret = config.settings.analytics.clientKeySecret;
   const warehouse = warehouseFor(config.providers.ANALYTICS_PROVIDER, hyperdriveOf(env));
   if (date === null || secret === null || warehouse === null) return;
   try {
     if (await warehouse.ranOn(date)) return;
-    const run = await copyTonight(env.DB, warehouse, { secret, date, now: deps.now });
+    const { nextVisitDays, lostAfterDays } = await inputs();
+    const standing = {
+      cadence: nextVisitDays.service_cadence,
+      grace: nextVisitDays.at_risk_after_due,
+      lostAfter: lostAfterDays,
+    };
+    const run = await copyTonight(env.DB, warehouse, { secret, date, now: deps.now, standing });
     log.info("analytics_copied", { written: run.rowsWritten, changed: run.rowsChanged, bytes: run.databaseBytes });
     if (run.totalsChecked) await deps.resolveAlert("analytics_totals");
     else {
