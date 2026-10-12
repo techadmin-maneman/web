@@ -13,8 +13,9 @@ import { accessRows } from "./access.ts";
 import { clientKeys } from "./client-key.ts";
 import { clientMonthRows } from "./client-months.ts";
 import { creditRows } from "./credits.ts";
-import { leadTables } from "./leads.ts";
+import { leadTables, type FirstTouch } from "./leads.ts";
 import { messageDayRows } from "./message-days.ts";
+import { areaRows, pieceRows } from "./pieces.ts";
 import { spendRows } from "./spend.ts";
 import { stockTables } from "./stock.ts";
 import { targetRows } from "./targets.ts";
@@ -46,6 +47,31 @@ async function totalsMatch(warehouse: WarehouseProvider, visits: TableRows, paym
   const held = await warehouse.count("fact_visit");
   const taken = Math.round((await warehouse.sum("fact_payment", "amount")) * 100);
   return held === visits.rows.length && taken === total(payments, "amount");
+}
+
+/** The tables that stand on their own: care, messages, money spent and owed, stock, pieces, plans and access. */
+async function theRest(
+  db: D1Database,
+  input: {
+    readonly keys: ReadonlyMap<string, string>;
+    readonly firstTouch: ReadonlyMap<string, FirstTouch>;
+    readonly standing: StandingDays;
+    readonly date: string;
+  },
+): Promise<TableRows[]> {
+  const { keys, firstTouch, standing, date } = input;
+  return [
+    await messageDayRows(db),
+    await careCaseRows(db),
+    await spendRows(db),
+    await clientMonthRows(db, { keys, firstTouch, days: standing, today: date }),
+    await creditRows(db, keys),
+    ...(await stockTables(db, date)),
+    await accessRows(db),
+    await targetRows(db),
+    await pieceRows(db, keys),
+    await areaRows(db),
+  ];
 }
 
 export async function copyTonight(
@@ -98,15 +124,8 @@ export async function copyTonight(
     visits,
     payments,
     await capacityRows(db, technicianCities, { from: since, to: addDays(date, CAPACITY_DAYS_AHEAD), now: startedAt }),
-    await messageDayRows(db),
-    await careCaseRows(db),
     ...leads.tables,
-    await spendRows(db),
-    await clientMonthRows(db, { keys, firstTouch: leads.firstTouch, days: standing, today: date }),
-    await creditRows(db, keys),
-    ...(await stockTables(db, date)),
-    await accessRows(db),
-    await targetRows(db),
+    ...(await theRest(db, { keys, firstTouch: leads.firstTouch, standing, date })),
   ];
   let rowsWritten = 0;
   let rowsChanged = 0;
