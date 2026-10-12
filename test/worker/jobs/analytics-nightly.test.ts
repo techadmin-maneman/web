@@ -325,3 +325,52 @@ describe("the copy's client months", () => {
     expect(await marginNow()).toBe(4000);
   });
 });
+
+describe("the copy's stock and credits", () => {
+  it("holds each week's stock per place, with use expected of the visits done, and a kit at its reorder level", async () => {
+    const move = (
+      id: string,
+      location: string,
+      technician: string | null,
+      quantity: number,
+      reason: string,
+      at: string,
+    ) =>
+      env.DB.prepare(
+        `INSERT INTO stock_movements (id, consumable_code, location, technician_id, quantity, reason, transfer_id,
+           actor_kind, actor, created_at)
+         VALUES (?1, 'test_strip', ?2, ?3, ?4, ?5, ?6, 'staff', 'ops@maneman.in', ?7)`,
+      ).bind(id, location, technician, quantity, reason, reason === "transferred" ? "tr1" : null, at);
+    await env.DB.batch([
+      env.DB.prepare(
+        `INSERT INTO consumables (code, name, unit, unit_cost, reorder_kit, created_at, updated_at)
+         VALUES ('test_strip', 'Test strip', 'strip', 4000, 5, ?1, ?1)`,
+      ).bind(NOW.toISOString()),
+      env.DB.prepare(
+        `INSERT INTO consumable_usage (visit_type, tier, consumable_code, quantity, set_by, set_at)
+         VALUES ('service', 'standard', 'test_strip', 2, 'ops@maneman.in', ?1)`,
+      ).bind(NOW.toISOString()),
+      move("m1", "central", null, 10, "received", "2026-09-14T05:00:00.000Z"),
+      move("m2", "central", null, -4, "transferred", "2026-09-15T05:00:00.000Z"),
+      move("m3", "kit", IMRAN, 4, "transferred", "2026-09-15T05:00:00.000Z"),
+      env.DB.prepare(
+        `INSERT INTO credit_ledger (id, person_id, kind, visits, source_kind, source_id, created_at)
+         VALUES ('g1', 'p-rohit', 'grant', 2, 'ops', 'remedy-1', ?1)`,
+      ).bind(NOW.toISOString()),
+    ]);
+    const warehouse = createStubWarehouse();
+
+    await copyTonight(env.DB, warehouse, night);
+
+    const weeks = warehouse.tables.get("fact_stock_week");
+    expect(weeks?.get("2026-09-14|central|test_strip")).toMatchObject({ on_hand: 6, value: 240, alerts: 0 });
+    expect(weeks?.get(`2026-09-14|kit:${IMRAN}|test_strip`)).toMatchObject({ on_hand: 4, expected: 2, alerts: 1 });
+    expect(weeks?.get("2026-09-21|central|test_strip")).toMatchObject({ on_hand: 6, used: 0 });
+    expect(warehouse.tables.get("dim_stock_place")?.get(`kit:${IMRAN}`)).toMatchObject({
+      kind: "kit",
+      city: "Gurgaon",
+    });
+    expect(warehouse.tables.get("fact_stock_movement")?.size).toBe(3);
+    expect(warehouse.tables.get("fact_credit")?.get("g1")).toMatchObject({ kind: "grant", visits: 2, city: "Gurgaon" });
+  });
+});
