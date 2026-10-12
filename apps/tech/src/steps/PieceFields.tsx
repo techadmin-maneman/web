@@ -1,5 +1,6 @@
-// The piece step's parts (./Piece.tsx): a one visit's choice, what the client paid for, the label with its lookup and
-// the client's pieces to pick from, the base and the lot, and on a replacement the piece that came off.
+// The piece step's parts (./Piece.tsx): a one visit's choice, what the client paid for, the hair system from the kit,
+// the label with its lookup and the client's pieces to pick from, the base and the lot, and on a replacement the piece
+// that came off.
 
 import { capsLook } from "@maneman/ui/Caps";
 import { Button } from "@maneman/ui/Button";
@@ -10,7 +11,7 @@ import { STROKE, TAG } from "../icons.ts";
 import { paidFor, profileNamesAnother } from "../lib/paid-for.ts";
 import { dayMonth } from "../lib/when.ts";
 import { asLabel, isLabel } from "./label.ts";
-import { DECLINED, given, type Choice, type ClientPiece } from "./piece-form.ts";
+import { DECLINED, given, type Choice, type ClientPiece, type KitHairSystem } from "./piece-form.ts";
 import styles from "./steps.module.css";
 
 export type Looked =
@@ -57,6 +58,45 @@ export function ChoiceList({
         ))}
       </div>
       {choice === DECLINED && <p className={styles.note}>{oneVisit.declinedNote}</p>}
+    </section>
+  );
+}
+
+/**
+ * The hair systems the kit holds, those made to the client's profile first and marked so: one tap picks the one fitted,
+ * which comes out of the kit, and a second tap leaves it for a piece from elsewhere. A kit holding none shows nothing.
+ */
+export function KitPieces({
+  choices,
+  stock,
+  onStock,
+}: {
+  choices: readonly { readonly hairSystem: KitHairSystem; readonly matches: boolean }[];
+  stock: string | null;
+  onStock: (stock: string | null) => void;
+}) {
+  if (choices.length === 0) return null;
+  return (
+    <section className={styles.field} aria-labelledby="kit-pieces-title">
+      <h2 className={capsLook(styles.fieldTitle)} id="kit-pieces-title">
+        {copy.piece.kit.title}
+      </h2>
+      <div className={styles.choiceList}>
+        {choices.map(({ hairSystem, matches }) => (
+          <button
+            key={hairSystem.code}
+            className={stock === hairSystem.code ? styles.choiceOn : styles.choice}
+            type="button"
+            aria-pressed={stock === hairSystem.code}
+            onClick={() => {
+              onStock(stock === hairSystem.code ? null : hairSystem.code);
+            }}
+          >
+            {hairSystem.name} · {copy.piece.kit.held(hairSystem.held)}
+            {matches && <span className={styles.note}> · {copy.piece.kit.matches}</span>}
+          </button>
+        ))}
+      </div>
     </section>
   );
 }

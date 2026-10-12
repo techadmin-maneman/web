@@ -11557,6 +11557,17 @@
           "offered": {
             "type": "boolean",
             "description": "Whether the technician app offers it today."
+          },
+          "hair_system": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/HairSystemSpec"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "A hair system's spec, counted in pieces and taken by the piece step; null for a consumable."
           }
         },
         "required": [
@@ -11567,9 +11578,44 @@
           "reorder_kit",
           "reorder_central",
           "retired_from",
-          "offered"
+          "offered",
+          "hair_system"
         ],
         "additionalProperties": false
+      },
+      "HairSystemSpec": {
+        "type": "object",
+        "properties": {
+          "product": {
+            "type": "string",
+            "description": "The tier of the first-fit service it is sold as."
+          },
+          "base_width_in": {
+            "type": "number"
+          },
+          "base_length_in": {
+            "type": "number"
+          },
+          "colour": {
+            "type": "string"
+          },
+          "grey_percent": {
+            "type": "integer"
+          },
+          "density_percent": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "product",
+          "base_width_in",
+          "base_length_in",
+          "colour",
+          "grey_percent",
+          "density_percent"
+        ],
+        "additionalProperties": false,
+        "description": "What a hair system's stock code is made to, matched exactly against a client's hair profile."
       },
       "ServiceUse": {
         "type": "object",
@@ -11788,6 +11834,113 @@
           "visit_type",
           "tier",
           "items"
+        ],
+        "additionalProperties": false
+      },
+      "NewHairSystem": {
+        "type": "object",
+        "properties": {
+          "product": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]{0,31}$",
+            "description": "The tier of a first-fit service."
+          },
+          "base_width_in": {
+            "type": "number",
+            "minimum": 2,
+            "maximum": 12
+          },
+          "base_length_in": {
+            "type": "number",
+            "minimum": 2,
+            "maximum": 14
+          },
+          "colour": {
+            "type": "string",
+            "enum": [
+              "1",
+              "2",
+              "3",
+              "4",
+              "5",
+              "6",
+              "7",
+              "8",
+              "1B"
+            ]
+          },
+          "grey_percent": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "density_percent": {
+            "anyOf": [
+              {
+                "type": "number",
+                "enum": [
+                  80
+                ]
+              },
+              {
+                "type": "number",
+                "enum": [
+                  100
+                ]
+              },
+              {
+                "type": "number",
+                "enum": [
+                  120
+                ]
+              },
+              {
+                "type": "number",
+                "enum": [
+                  140
+                ]
+              }
+            ]
+          },
+          "unit_cost": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 10000000,
+            "description": "In paise."
+          },
+          "reorder_kit": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100000
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "reorder_central": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100000
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "product",
+          "base_width_in",
+          "base_length_in",
+          "colour",
+          "grey_percent",
+          "density_percent",
+          "unit_cost"
         ],
         "additionalProperties": false
       },
@@ -22528,6 +22681,62 @@
           },
           "400": {
             "description": "invalid_request: fields names tier for a service the console does not hold, or items.N.code for a consumable nobody added or one named twice",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "access_required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/hair-systems": {
+      "post": {
+        "summary": "Add a hair system's stock code, counted in pieces, for a spec no other has",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NewHairSystem"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Added",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "code"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid_request: fields names product for one no first fit is sold as, or hair_system for a spec, or the name it makes, another has",
             "content": {
               "application/json": {
                 "schema": {

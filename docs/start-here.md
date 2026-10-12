@@ -82,15 +82,16 @@ this map, or when the map names something that no longer exists.
 
 ### The technician's work in the field
 
-- **Database work** (`src/domain/field/`): `tech-jobs`, `job-card`, `workable-job`, `job-events`, `job-event-bodies`, `job-record`, `job-use`,
+- **Database work** (`src/domain/field/`): `tech-jobs`, `job-card`, `workable-job`, `job-events`, `job-event-bodies`, `job-record`, `job-use`, `piece-use`,
   `job-sheet-settings`, `tech-photos`, `visit-photos`, `photo-views`, `pieces`, `stock`, `stock-places`, `low-stock`,
-  `consumables`
+  `consumables`, `hair-systems`
 - **Rules** (`src/policy/`): `in-job-steps`, `piece-step`, `job-visibility`, `phone-clock`, `stock`
 - **Data** (`src/config/`): `job-sheet`, `pieces`, `consumables`
 - **Routes** (`src/routes/`): `tech/`, `ops/field`, `ops/client-pieces`, `ops/stock`, `ops/stock.places`, `ops/consumables`,
-  `ops/job-sheet`
+  `ops/hair-systems`, `ops/job-sheet`
 - **Screens:** `apps/tech/src/`, `apps/ops/src/stock/`
-- **Tests:** `test/worker/field/`, `test/worker/ops/stock-places.test.ts`, `e2e/tech/`, `e2e/ops/stock.e2e.ts`,
+- **Tests:** `test/worker/field/`, `test/worker/ops/stock-places.test.ts`,
+  `test/worker/ops/hair-systems.test.ts`, `e2e/tech/`, `e2e/ops/stock.e2e.ts`,
   `e2e/ops/consumables.e2e.ts`,
   `e2e/ops/job-sheet.e2e.ts`
 

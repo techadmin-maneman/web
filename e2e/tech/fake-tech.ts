@@ -102,6 +102,8 @@ export interface Fake {
   clientChoice: Card["client_choice"];
   /** The client's pieces on the card. */
   pieces: Piece[];
+  /** The hair systems the technician's kit holds, on the card. */
+  kitHairSystems: Card["kit_hair_systems"];
   /** The client's hair profile on the card, or none recorded. */
   profile: HairProfile | null;
   /** The checklist on the card: three items unless a test gives a longer one. */
@@ -190,6 +192,7 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
     service: null,
     clientChoice: null,
     pieces: [],
+    kitHairSystems: [],
     profile: null,
     checklist: CHECKLIST,
     address: {},
@@ -218,6 +221,7 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
       discountCode: fake.discountCode,
       service: fake.service,
       clientChoice: fake.clientChoice,
+      kitHairSystems: fake.kitHairSystems,
     });
 
   await on.route("**/api/tech/**", async (route: Route) => {

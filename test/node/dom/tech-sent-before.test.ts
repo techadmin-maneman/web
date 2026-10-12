@@ -44,6 +44,7 @@ describe("a refused piece", () => {
       code: "MM-STD-7193 C",
       base: "Lace",
       lot: "LOT-5120",
+      stock: null,
       oldCode: "MM-STD-4417-B",
       oldReason: "Lifted at the front",
     });

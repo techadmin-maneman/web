@@ -9008,6 +9008,66 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/hair-systems": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Add a hair system's stock code, counted in pieces, for a spec no other has */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["NewHairSystem"];
+                };
+            };
+            responses: {
+                /** @description Added */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            code: string;
+                        };
+                    };
+                };
+                /** @description invalid_request: fields names product for one no first fit is sold as, or hair_system for a spec, or the name it makes, another has */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description access_required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/job-sheet": {
         parameters: {
             query?: never;
@@ -13191,6 +13251,18 @@ export interface components {
             retired_from: string | null;
             /** @description Whether the technician app offers it today. */
             offered: boolean;
+            /** @description A hair system's spec, counted in pieces and taken by the piece step; null for a consumable. */
+            hair_system: components["schemas"]["HairSystemSpec"] | null;
+        };
+        /** @description What a hair system's stock code is made to, matched exactly against a client's hair profile. */
+        HairSystemSpec: {
+            /** @description The tier of the first-fit service it is sold as. */
+            product: string;
+            base_width_in: number;
+            base_length_in: number;
+            colour: string;
+            grey_percent: number;
+            density_percent: number;
         };
         /** @description A service the console holds: a kind of visit at a tier (docs/decisions/0085-services-ops-can-edit.md). */
         ServiceUse: {
@@ -13239,6 +13311,20 @@ export interface components {
                 code: string;
                 quantity: number;
             }[];
+        };
+        NewHairSystem: {
+            /** @description The tier of a first-fit service. */
+            product: string;
+            base_width_in: number;
+            base_length_in: number;
+            /** @enum {string} */
+            colour: "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "1B";
+            grey_percent: number;
+            density_percent: 80 | 100 | 120 | 140;
+            /** @description In paise. */
+            unit_cost: number;
+            reorder_kit?: number | null;
+            reorder_central?: number | null;
         };
         JobSheet: {
             checklists: components["schemas"]["JobSheetChecklist"][];

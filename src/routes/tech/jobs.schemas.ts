@@ -134,6 +134,21 @@ const OfferedSchema = z
   .strict()
   .openapi("TechnicianConsumable");
 
+const KitHairSystemSchema = z
+  .object({
+    code: z.string().openapi({ description: "What the piece step sends back as stock_code." }),
+    name: z.string(),
+    held: z.number().int().openapi({ description: "How many pieces of it the kit holds." }),
+    product: z.string().openapi({ description: "The tier of the first-fit service it is sold as." }),
+    base_width_in: z.number(),
+    base_length_in: z.number(),
+    colour: z.string(),
+    grey_percent: z.number().int(),
+    density_percent: z.number().int(),
+  })
+  .strict()
+  .openapi("KitHairSystem");
+
 const ProductSchema = z
   .object({
     tier: z.string().openapi({ description: "What the piece step sends back as product." }),
@@ -234,6 +249,11 @@ export const JobDetailSchema = JobSummarySchema.extend({
     description:
       "Every consumable the technician may record, those this job's service is expected to use first, " +
       "each with the count its stepper starts at.",
+  }),
+  kit_hair_systems: z.array(KitHairSystemSchema).openapi({
+    description:
+      "On a visit that fits a piece, the hair systems the technician's kit holds, by name, with the spec each is " +
+      "matched to the client's hair profile by. Empty for any other visit.",
   }),
   products: z.array(ProductSchema).openapi({
     description:

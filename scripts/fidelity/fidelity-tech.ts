@@ -208,6 +208,7 @@ const cardFor = (id: string, progress: Progress = NOTHING_DONE): Schemas["Techni
     partial_reasons: PARTIAL_REASONS,
     lost_reasons: [],
     consumables: CONSUMABLES,
+    kit_hair_systems: [],
     products: [],
     payment_link: null,
     discount_code: null,

@@ -3,6 +3,7 @@
 import type { App } from "../../http/context.ts";
 import { type VisitType } from "../../config/visit-types.ts";
 import { offeredForJob, serviceOfJob } from "../../domain/field/consumables.ts";
+import { kitHairSystems } from "../../domain/field/hair-systems.ts";
 import { checklistOf, declinedChecklistOf, jobSheet } from "../../domain/field/job-sheet-settings.ts";
 import { jobsOn } from "../../domain/field/tech-jobs.ts";
 import { jobDetail, lastVisitPhoto } from "../../domain/field/job-card.ts";
@@ -13,6 +14,21 @@ import { listableDate } from "../../policy/job-visibility.ts";
 import { opsInputs } from "../../http/ops-inputs.ts";
 
 import { jobsRoute, jobRoute, lastVisitPhotoRoute } from "./jobs.routes.ts";
+
+/** The kit's hair systems in the job card's words, for the piece step to pick and match to the client's profile. */
+async function kitOf(db: D1Database, technicianId: string, date: string) {
+  return (await kitHairSystems(db, technicianId, date)).map((each) => ({
+    code: each.code,
+    name: each.name,
+    held: each.held,
+    product: each.product,
+    base_width_in: each.baseWidthIn,
+    base_length_in: each.baseLengthIn,
+    colour: each.colour,
+    grey_percent: each.greyPercent,
+    density_percent: each.densityPercent,
+  }));
+}
 
 export function registerTechJobReads(app: App): void {
   app.openapi(jobsRoute, async (c) => {
@@ -54,6 +70,7 @@ export function registerTechJobReads(app: App): void {
         partial_reasons: [...sheet.partialReasons.items],
         lost_reasons: type === "consultation" || job.one_visit ? [...sheet.lostReasons.items] : [],
         consumables: await offeredForJob(c.env.DB, await serviceOfJob(c.env.DB, { id: job.id, type }), job.date),
+        kit_hair_systems: job.steps.includes("piece") ? await kitOf(c.env.DB, technicianId, job.date) : [],
       },
       200,
     );

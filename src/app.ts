@@ -44,6 +44,7 @@ import { registerOpsClientRecord } from "./routes/ops/client-record.ts";
 import { registerOpsClientReferral } from "./routes/ops/client-referral.ts";
 import { registerOpsClients } from "./routes/ops/clients.ts";
 import { registerOpsConsumables } from "./routes/ops/consumables.ts";
+import { registerOpsHairSystems } from "./routes/ops/hair-systems.ts";
 import { registerOpsCredits } from "./routes/ops/credits.ts";
 import { registerOpsDispatch } from "./routes/ops/dispatch.ts";
 import { registerOpsDispatchDay } from "./routes/ops/dispatch-day.ts";
@@ -243,6 +244,8 @@ const SURFACE_ROUTES: Readonly<Record<Surface, readonly ((app: App) => void)[]>>
     registerOpsServices,
     // The consumables, the job sheet and the stock (docs/decisions/0087-consumables-and-stock.md).
     registerOpsConsumables,
+    // A hair system's stock code (docs/decisions/0156-hair-systems-in-stock.md).
+    registerOpsHairSystems,
     registerOpsJobSheet,
     registerOpsStock,
     // Where stock is kept, as a tree (docs/decisions/0155-the-stock-place-tree.md).

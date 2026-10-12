@@ -315,6 +315,8 @@ export interface CardOptions {
   readonly service?: Card["service"];
   /** What a one visit's client decided at the piece step that landed; none unless a test gives it. */
   readonly clientChoice?: Card["client_choice"];
+  /** The hair systems the technician's kit holds; none unless a test gives them. */
+  readonly kitHairSystems?: Card["kit_hair_systems"];
 }
 
 export function card(date: string, progress: Progress, options: CardOptions = {}): Card {
@@ -360,6 +362,7 @@ export function card(date: string, progress: Progress, options: CardOptions = {}
     partial_reasons: PARTIAL_REASONS,
     lost_reasons: oneVisit || type === "consultation" ? LOST_REASONS : [],
     consumables: CONSUMABLES,
+    kit_hair_systems: [...(options.kitHairSystems ?? [])],
     products: oneVisit || type === "consultation" ? PRODUCTS : [],
     payment_link: null,
     discount_code: options.discountCode ?? null,
@@ -388,6 +391,7 @@ export function lockedCard(date: string): Card {
     partial_reasons: PARTIAL_REASONS,
     lost_reasons: [],
     consumables: CONSUMABLES,
+    kit_hair_systems: [],
     products: [],
     payment_link: null,
     discount_code: null,

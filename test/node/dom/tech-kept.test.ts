@@ -102,6 +102,7 @@ const card = (id: string, date: string) =>
     partial_reasons: [],
     lost_reasons: [],
     consumables: [],
+    kit_hair_systems: [],
     products: [],
     payment_link: null,
     discount_code: null,

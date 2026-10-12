@@ -217,6 +217,7 @@ export const ROUTE_NEEDS: Readonly<Record<string, RouteNeed | typeof SIGNED_IN>>
   "POST /api/consumables/{code}/retire": need("admin", "manage"),
   "POST /api/consumables/{code}/delete": need("admin", "manage"),
   "POST /api/consumables/{code}/restore": need("admin", "manage"),
+  "POST /api/hair-systems": need("admin", "manage"),
   "POST /api/service-usage": need("admin", "manage"),
   "GET /api/job-sheet": need("admin", "view"),
   "POST /api/job-sheet/checklists/{visit_type}": need("admin", "manage"),

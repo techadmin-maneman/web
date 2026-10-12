@@ -19,7 +19,9 @@
 //
 // The pieces tab keeps each piece's base and supplier lot, and on a
 // replacement the piece that came off and why it failed, so the step asks for
-// them: a lookup fills the base and lot in when it knows them.
+// them: a lookup fills the base and lot in when it knows them. The hair system
+// picked from the kit comes out of it as the step lands, those made to the
+// client's profile listed first (docs/decisions/0156-hair-systems-in-stock.md).
 
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { useState } from "react";
@@ -31,6 +33,7 @@ import {
   choiceSent,
   declinedTheFit,
   given,
+  kitChoices,
   noticeFor,
   onTheHead,
   pieceBody,
@@ -40,7 +43,16 @@ import {
   type ClientPiece,
   type PieceForm,
 } from "./piece-form.ts";
-import { BaseAndLot, ChoiceList, LabelField, NOT_LOOKED, OldPiece, PaidFor, type Looked } from "./PieceFields.tsx";
+import {
+  BaseAndLot,
+  ChoiceList,
+  KitPieces,
+  LabelField,
+  NOT_LOOKED,
+  OldPiece,
+  PaidFor,
+  type Looked,
+} from "./PieceFields.tsx";
 import { pieceSent } from "./sent-before.ts";
 import { StepFrame } from "./StepFrame.tsx";
 import { useStep } from "./useStep.ts";
@@ -61,6 +73,7 @@ function Fitting({
   const [code, setCode] = useState(sent?.code ?? "");
   const [base, setBase] = useState(sent?.base ?? "");
   const [lot, setLot] = useState(sent?.lot ?? "");
+  const [stock, setStock] = useState<string | null>(sent?.stock ?? null);
   const [looked, setLooked] = useState<Looked>(NOT_LOOKED);
   const [looking, once] = useOneAtATime();
   const [oldCode, setOldCode] = useState(sent?.oldCode ?? "");
@@ -68,10 +81,8 @@ function Fitting({
   const [picking, setPicking] = useState<"new" | "old" | null>(null);
   const [choice, setChoice] = useState<Choice>(choiceSent(sent));
 
-  const pieces = job.pieces ?? [];
-  const form: PieceForm = { code, base, lot, oldCode, oldReason, choice };
-  const notThisClients = looked.state === "found" && !looked.found.belongs_to_this_job;
-  const missing = stillMissing(form, job, notThisClients);
+  const form: PieceForm = { code, base, lot, stock, oldCode, oldReason, choice };
+  const missing = stillMissing(form, job, looked.state === "found" && !looked.found.belongs_to_this_job);
 
   const look = () =>
     once(async () => {
@@ -117,11 +128,12 @@ function Fitting({
       )}
       {!declinedTheFit(form, job) && (
         <>
+          <KitPieces choices={kitChoices(job, choice)} stock={stock} onStock={setStock} />
           <LabelField
             code={code}
             looked={looked}
             looking={looking}
-            pieces={pieces.filter(toFit)}
+            pieces={(job.pieces ?? []).filter(toFit)}
             picking={picking === "new"}
             onCode={(typed) => {
               setCode(typed);
@@ -136,7 +148,7 @@ function Fitting({
             <OldPiece
               code={oldCode}
               reason={oldReason}
-              pieces={pieces.filter(onTheHead)}
+              pieces={(job.pieces ?? []).filter(onTheHead)}
               picking={picking === "old"}
               onCode={setOldCode}
               onReason={setOldReason}

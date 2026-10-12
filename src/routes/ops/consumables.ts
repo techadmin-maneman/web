@@ -29,6 +29,7 @@ import {
   setExpectedUse,
   type Consumable,
 } from "../../domain/field/consumables.ts";
+import { hairSystemSpecs, type HairSystemSpec } from "../../domain/field/hair-systems.ts";
 import { closeStaleLowStock } from "../../domain/field/low-stock.ts";
 import { actorOf } from "../../http/audit.ts";
 import type { App, AppEnv } from "../../http/context.ts";
@@ -36,6 +37,7 @@ import { errorResponse, refuse } from "../../http/errors.ts";
 import { json } from "../../http/openapi.ts";
 import { indiaDate } from "../../lib/india-time.ts";
 import { PRICE_TIER } from "../../policy/services.ts";
+import { Level, UnitCost } from "../schemas/consumables.ts";
 
 const Name = z.string().trim().regex(CONSUMABLE_NAME).openapi({
   description: "A letter or a digit first, then letters, digits, spaces and . , ' ( ) & / + % -; at most 60.",
@@ -45,8 +47,20 @@ const Unit = z
   .trim()
   .regex(CONSUMABLE_UNIT)
   .openapi({ description: "strip, ml, sachet: at most 20 letters." });
-const UnitCost = z.number().int().min(0).max(CONSUMABLE_BOUNDS.maxUnitCost).openapi({ description: "In paise." });
-const Level = z.union([z.number().int().min(0).max(CONSUMABLE_BOUNDS.maxReorderLevel), z.null()]);
+
+const HairSystemSpecSchema = z
+  .object({
+    product: z.string().openapi({ description: "The tier of the first-fit service it is sold as." }),
+    base_width_in: z.number(),
+    base_length_in: z.number(),
+    colour: z.string(),
+    grey_percent: z.number().int(),
+    density_percent: z.number().int(),
+  })
+  .strict()
+  .openapi("HairSystemSpec", {
+    description: "What a hair system's stock code is made to, matched exactly against a client's hair profile.",
+  });
 
 const ConsumableSchema = z
   .object({
@@ -64,6 +78,9 @@ const ConsumableSchema = z
       description: "The day in India it is no longer offered from; null while it is.",
     }),
     offered: z.boolean().openapi({ description: "Whether the technician app offers it today." }),
+    hair_system: z.union([HairSystemSpecSchema, z.null()]).openapi({
+      description: "A hair system's spec, counted in pieces and taken by the piece step; null for a consumable.",
+    }),
   })
   .strict()
   .openapi("Consumable");
@@ -245,7 +262,16 @@ const usageRoute = createRoute({
   },
 });
 
-function consumableBody(consumable: Consumable, today: string) {
+const specBody = (spec: HairSystemSpec) => ({
+  product: spec.product,
+  base_width_in: spec.baseWidthIn,
+  base_length_in: spec.baseLengthIn,
+  colour: spec.colour,
+  grey_percent: spec.greyPercent,
+  density_percent: spec.densityPercent,
+});
+
+function consumableBody(consumable: Consumable, today: string, spec: HairSystemSpec | undefined) {
   return {
     code: consumable.code,
     name: consumable.name,
@@ -255,6 +281,7 @@ function consumableBody(consumable: Consumable, today: string) {
     reorder_central: consumable.reorderCentral,
     retired_from: consumable.retiredDate,
     offered: isOffered(consumable, today),
+    hair_system: spec === undefined ? null : specBody(spec),
   };
 }
 
@@ -262,13 +289,14 @@ function consumableBody(consumable: Consumable, today: string) {
 async function answer(c: Context<AppEnv>) {
   const db = c.env.DB;
   const today = indiaDate(c.var.deps.now());
-  const [consumables, services, expected] = await Promise.all([
+  const [consumables, services, expected, specs] = await Promise.all([
     allConsumables(db),
     servicesForUse(db),
     expectedUse(db),
+    hairSystemSpecs(db),
   ]);
   return {
-    consumables: consumables.map((consumable) => consumableBody(consumable, today)),
+    consumables: consumables.map((consumable) => consumableBody(consumable, today, specs.get(consumable.code))),
     services: services.map((service) => ({
       visit_type: service.visitType,
       tier: service.tier,

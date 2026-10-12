@@ -5,7 +5,9 @@
 //
 // The list is ops', and a job's use is ours alone: no client's
 // invoice carries a consumable, so what one costs is only ever read here. Each
-// change shows its old figure beside the new before it is sent (ADR 0071).
+// change shows its old figure beside the new before it is sent (ADR 0071). Hair
+// systems are listed with them, counted in pieces, and added by spec beneath
+// (docs/decisions/0156-hair-systems-in-stock.md).
 
 import { Panel } from "@maneman/ui/Panel";
 import { Table } from "@maneman/ui/Table";
@@ -20,6 +22,7 @@ import { DeleteAction } from "../components/DeleteAction.tsx";
 import { useAccess } from "../lib/access.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import { ConsumableForm } from "./ConsumableForm.tsx";
+import { HairSystemForm } from "./HairSystemForm.tsx";
 import { Restoring, Retiring } from "./Retirement.tsx";
 import { ServiceUsage } from "./ServiceUsage.tsx";
 import own from "./consumables.module.css";
@@ -32,7 +35,7 @@ type Doing =
   { readonly kind: "add" } | { readonly kind: "change" | "retire" | "restore" | "delete"; readonly code: string };
 
 /** Which of those the person's access lets them do. */
-type MayDo = Readonly<Record<Doing["kind"], boolean>>;
+type MayDo = Readonly<Record<Doing["kind"] | "addHairSystem", boolean>>;
 
 function useMayDo(): MayDo {
   const access = useAccess();
@@ -42,6 +45,7 @@ function useMayDo(): MayDo {
     retire: access.mayCall("POST /api/consumables/{code}/retire"),
     restore: access.mayCall("POST /api/consumables/{code}/restore"),
     delete: access.mayCall("POST /api/consumables/{code}/delete"),
+    addHairSystem: access.mayCall("POST /api/hair-systems"),
   };
 }
 
@@ -242,6 +246,7 @@ export function Consumables() {
           }}
         />
       </Panel>
+      {may.addHairSystem && <HairSystemForm book={current} onSaved={saved} />}
       <ServiceUsage book={current} onSaved={setBook} />
     </>
   );

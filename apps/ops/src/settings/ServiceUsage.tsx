@@ -34,6 +34,13 @@ const draftOf = (service: ServiceUse | undefined): Draft =>
 
 type Step = { readonly step: "editing" | "checking" | "saving" | "saved" } | ({ readonly step: "failed" } & Failure);
 
+/**
+ * Every consumable offered, and any retired one this service still expects, so a save never drops it unseen. Never a
+ * hair system: it is fitted to the client, not used by a service.
+ */
+const listedFor = (consumable: Consumables["consumables"][number], expected: ReadonlySet<string>) =>
+  consumable.hair_system === null && (consumable.offered || expected.has(consumable.code));
+
 export function ServiceUsage({ book, onSaved }: { book: Consumables; onSaved: (book: Consumables) => void }) {
   const [chosen, setChosen] = useState(() => {
     const first = book.services[0];
@@ -44,9 +51,8 @@ export function ServiceUsage({ book, onSaved }: { book: Consumables; onSaved: (b
   const [step, setStep] = useState<Step>({ step: "editing" });
   const mayChange = useAccess().mayCall("POST /api/service-usage");
 
-  // Every consumable offered, and any retired one this service still expects, so a save never drops it unseen.
   const expectedCodes = new Set(service?.expected.map((each) => each.code) ?? []);
-  const listed = book.consumables.filter((each) => each.offered || expectedCodes.has(each.code));
+  const listed = book.consumables.filter((each) => listedFor(each, expectedCodes));
   const was = new Map(service?.expected.map((each) => [each.code, each.quantity]) ?? []);
   const figure = (code: string) => (draft[code] ?? "").trim();
   const valid = listed.every((each) => figure(each.code) === "" || /^\d{1,3}$/.test(figure(each.code)));

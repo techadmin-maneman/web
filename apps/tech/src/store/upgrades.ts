@@ -153,4 +153,17 @@ export const UPGRADES: readonly ((db: IDBDatabase, upgrade: IDBTransaction) => v
       at.continue();
     };
   },
+  // Version 5: a card carries the hair systems the technician's kit holds (docs/decisions/0156-hair-systems-in-stock.md).
+  // One kept before lists none, so its piece step takes nothing from the kit.
+  (_db, upgrade) => {
+    const cursor = upgrade.objectStore("cards").openCursor();
+    cursor.onsuccess = () => {
+      const at = cursor.result;
+      if (at === null) return;
+      // What an earlier build wrote, which may lack the field this step adds.
+      const card = at.value as Partial<Pick<Job, "kit_hair_systems">>;
+      if (card.kit_hair_systems === undefined) at.update({ ...card, kit_hair_systems: [] });
+      at.continue();
+    };
+  },
 ];
