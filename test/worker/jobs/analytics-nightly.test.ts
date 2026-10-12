@@ -92,8 +92,11 @@ describe("the nightly reporting copy", () => {
 
     const again = await copyTonight(env.DB, warehouse, night);
 
-    expect(again.rowsChanged).toBe(1);
+    // The payment, and what the client earned that month: before GST, so less the refund's own share of it.
+    expect(again.rowsChanged).toBe(2);
     expect(warehouse.tables.get("fact_payment")?.get("y-rohit")?.refunded).toBe(5000);
+    const [rohit] = (await clientKeys(SECRET, ["p-rohit"])).values();
+    expect(warehouse.tables.get("fact_client_month")?.get(`2026-09-01|${rohit ?? ""}`)?.revenue).toBe(5762.71);
   });
 
   it("makes the same key for a client every night, and another under another secret", async () => {
@@ -281,5 +284,26 @@ describe("the copy's spend", () => {
       amount: (price?.amount_ex_gst ?? 0) / 100,
     });
     expect(price?.amount_ex_gst).toBeGreaterThan(0);
+  });
+});
+
+describe("the copy's client months", () => {
+  it("gives a client a row a month from their first fitting: where they stood, their visits and what they earned", async () => {
+    const warehouse = createStubWarehouse();
+
+    await copyTonight(env.DB, warehouse, { ...night, date: "2027-01-31" });
+
+    const [rohit] = (await clientKeys(SECRET, ["p-rohit"])).values();
+    const months = [...(warehouse.tables.get("fact_client_month")?.values() ?? [])].filter(
+      (row) => row.client_key === rohit,
+    );
+    expect(months.map((row) => [row.month, row.state, row.visits, row.revenue])).toEqual([
+      ["2026-09-01", "active", 1, 10000],
+      ["2026-10-01", "lapsed", 0, 0],
+      ["2026-11-01", "lapsed", 0, 0],
+      ["2026-12-01", "lapsed", 0, 0],
+      ["2027-01-01", "lost", 0, 0],
+    ]);
+    expect(months[0]).toMatchObject({ cohort_month: "2026-09-01", city: "Gurgaon", channel: "Direct", margin: null });
   });
 });

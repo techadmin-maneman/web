@@ -62,6 +62,8 @@ export interface OpsInputs {
   readonly careHours: CareHours;
   /** Free visits Care give without approval (src/policy/remedies.ts). */
   readonly remedyLimit: RemedyLimit;
+  /** Days lapsed before the retention figures count a client lost (src/policy/client-standing.ts). */
+  readonly lostAfterDays: number;
   readonly referralReward: ReferralReward;
 }
 
@@ -104,6 +106,7 @@ function shape(values: OpsValues): OpsInputs {
     referralReward: values.referral_reward,
     careHours: values.care_hours,
     remedyLimit: values.remedy_limit,
+    lostAfterDays: values.lost_after_days,
   };
 }
 

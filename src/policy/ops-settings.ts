@@ -13,6 +13,7 @@
 
 import { CARE_HOURS, CARE_HOURS_KEYS, careHoursConflicts } from "./care-hours.ts";
 import { CHECKIN_RADIUS_M } from "./check-in.ts";
+import { LOST_AFTER_DAYS } from "./client-standing.ts";
 import { MOST_REMEDY_VISITS, REMEDY_LIMIT, REMEDY_LIMIT_KEYS } from "./remedies.ts";
 import { DAY_BEFORE_REMINDER_HOUR, UNLOCK_HOUR } from "./job-visibility.ts";
 import {
@@ -314,6 +315,17 @@ export const OPS_SETTINGS = [
       days: { min: 7, max: 365, unit: "days" },
     },
     fallback: REMEDY_LIMIT,
+  },
+  {
+    // The retention figures (docs/decisions/0151-retention-figures.md).
+    name: "lost_after_days",
+    title: "Lost after",
+    note: "Days a client may stay lapsed, past their next service and its grace with nothing done, before the figures count them lost.",
+    unit: "days",
+    min: 30,
+    max: 365,
+    keys: null,
+    fallback: LOST_AFTER_DAYS,
   },
 ] as const satisfies readonly OpsSetting[];
 

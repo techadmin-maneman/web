@@ -202,9 +202,10 @@ this map, or when the map names something that no longer exists.
 - **Database work** (`src/domain/analytics/`): `nightly` (the copy Zoho Analytics reads, once a night), `rows`
   (what each of its tables holds), `capacity` (each technician's day, from the dispatch board), `message-days`,
   `care-cases` (grievances and tasks, opened and closed), `leads`, `spend` (offline spend, partner payments and
-  invites' free visits), `client-key` (a client as the copy knows them)
+  invites' free visits), `client-months` (where each client stood each month), `client-key` (a client as the copy knows them)
 - **Database work** (`src/domain/money/`): `spend` (offline spend, as typed on the Spend page)
-- **Rules** (`src/policy/`): `channels` (how a lead found us, and a campaign's city)
+- **Rules** (`src/policy/`): `channels` (how a lead found us, and a campaign's city), `client-standing` (active,
+  lapsed or lost)
 - **Routes** (`src/routes/`): `ops/spend`
 - **Screens:** `apps/ops/src/spend/`
 - **Vendor** (`src/providers/`): `warehouse/` (Supabase's Postgres, or the stub)

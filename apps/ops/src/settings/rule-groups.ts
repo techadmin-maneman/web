@@ -19,6 +19,7 @@ export const RULE_GROUPS = [
   { id: "reminders", rules: ["reminder_hour", "piece_cycle_days"] },
   { id: "referrals", rules: ["referral_reward"] },
   { id: "care", rules: ["care_hours", "remedy_limit"] },
+  { id: "reports", rules: ["lost_after_days"] },
   { id: "console", rules: ["task_sla_hours", "technician_work"] },
 ] as const satisfies readonly RuleGroup[];
 
