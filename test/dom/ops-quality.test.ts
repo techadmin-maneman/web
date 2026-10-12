@@ -1,5 +1,6 @@
 // Operations · Quality in the console (apps/ops/src/quality/; docs/decisions/0187-recalls.md): a lot recalled with
-// why, a recall opened to where its stock is and who wears it, and one closed. Every name is made up.
+// why, a recall opened to where its stock is and who wears it, and one closed; failure rates grouped each way, and the
+// value at risk with what to do (docs/decisions/0188-failure-rates-and-value-at-risk.md). Every name is made up.
 
 import { act, createElement } from "react";
 import { createRoot, type Root } from "react-dom/client";
@@ -26,6 +27,32 @@ const DETAIL = {
 const BOOK = {
   recalls: [RECALL],
   lots: [{ id: "lot-2", lot_code: "OK-1", consumable_code: "hs-1", name: "Essential 8x10" }],
+};
+
+const GROUP = { name: "Essential 8x10", fitted: 8, failed: 1, rate_percent: 12.5 };
+const RATES = {
+  since: "2025-09-21",
+  by_code: [GROUP],
+  by_lot: [{ ...GROUP, name: "Essential 8x10 · BAD-0921" }],
+  by_supplier: [{ ...GROUP, name: "Lumina Hair Co" }],
+  by_technician: [{ ...GROUP, name: "Imran Qureshi" }],
+};
+const RISK = {
+  total_value: 335000,
+  lots: [
+    {
+      place_id: "central",
+      place: "Warehouse",
+      consumable_code: "solvent",
+      name: "Solvent",
+      lot_code: "SOON",
+      expires_on: "2026-10-01",
+      quantity: 62,
+      value: 310000,
+      suggestion: "move",
+      move_to: "Imran Qureshi",
+    },
+  ],
 };
 
 let page: HTMLDivElement;
@@ -64,6 +91,8 @@ beforeEach(() => {
     }
     if (address.pathname === "/api/recalls") return Promise.resolve(Response.json(BOOK));
     if (address.pathname === "/api/recalls/rc-1") return Promise.resolve(Response.json(DETAIL));
+    if (address.pathname === "/api/quality/failures") return Promise.resolve(Response.json(RATES));
+    if (address.pathname === "/api/stock/expiry-risk") return Promise.resolve(Response.json(RISK));
     return Promise.resolve(Response.json({ error: { code: "unavailable", request_id: "r-1" } }, { status: 503 }));
   });
   page = document.createElement("div");
@@ -112,5 +141,21 @@ describe("the Quality page", () => {
     ]);
     expect(page.textContent).toContain(copy.raisedSaid);
     expect(page.textContent).toContain(copy.lotLabel("Essential 8x10", "OK-1"));
+  });
+
+  it("groups failure rates each way, and says what will expire unused and what to do", async () => {
+    await show();
+    expect(page.textContent).toContain(copy.rate(12.5));
+    const select = [...page.querySelectorAll("select")].find((each) =>
+      [...each.options].some((option) => option.value === "technician"),
+    );
+    act(() => {
+      if (select === undefined) return;
+      Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, "value")?.set?.call(select, "technician");
+      select.dispatchEvent(new Event("change", { bubbles: true }));
+    });
+    expect(page.textContent).toContain("Imran Qureshi");
+    expect(page.textContent).toContain(copy.moveTo("Imran Qureshi"));
+    expect(page.textContent).toContain("Warehouse");
   });
 });

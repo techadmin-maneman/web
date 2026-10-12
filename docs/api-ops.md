@@ -1769,6 +1769,46 @@ A recall closed once its stock and pieces are dealt with; the lot stays blocked
 }
 ```
 
+### GET /api/quality/failures
+
+The labelled pieces fitted in the last year and how many failed, four ways
+
+**200**: Failure rates
+
+```json
+{
+  "$ref": "#/components/schemas/FailureRates"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### GET /api/stock/expiry-risk
+
+Each lot that will not all be used before it expires, valued at its landed cost
+
+**200**: Value at risk
+
+```json
+{
+  "$ref": "#/components/schemas/ExpiryRisk"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ### POST /api/clients/{id}/erasure
 
 Erase a client now: their photographs and details. The CRM and Books follow within minutes
@@ -15120,6 +15160,221 @@ Request body:
     "reason"
   ],
   "additionalProperties": false
+}
+```
+
+### FailureRates
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "since": {
+      "type": "string",
+      "format": "date"
+    },
+    "by_code": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "fitted": {
+            "type": "integer"
+          },
+          "failed": {
+            "type": "integer"
+          },
+          "rate_percent": {
+            "type": [
+              "number",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "name",
+          "fitted",
+          "failed",
+          "rate_percent"
+        ]
+      }
+    },
+    "by_lot": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "fitted": {
+            "type": "integer"
+          },
+          "failed": {
+            "type": "integer"
+          },
+          "rate_percent": {
+            "type": [
+              "number",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "name",
+          "fitted",
+          "failed",
+          "rate_percent"
+        ]
+      }
+    },
+    "by_supplier": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "fitted": {
+            "type": "integer"
+          },
+          "failed": {
+            "type": "integer"
+          },
+          "rate_percent": {
+            "type": [
+              "number",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "name",
+          "fitted",
+          "failed",
+          "rate_percent"
+        ]
+      }
+    },
+    "by_technician": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "fitted": {
+            "type": "integer"
+          },
+          "failed": {
+            "type": "integer"
+          },
+          "rate_percent": {
+            "type": [
+              "number",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "name",
+          "fitted",
+          "failed",
+          "rate_percent"
+        ]
+      }
+    }
+  },
+  "required": [
+    "since",
+    "by_code",
+    "by_lot",
+    "by_supplier",
+    "by_technician"
+  ]
+}
+```
+
+### ExpiryRisk
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "total_value": {
+      "type": "number",
+      "description": "In paise."
+    },
+    "lots": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "place_id": {
+            "type": "string"
+          },
+          "place": {
+            "type": "string"
+          },
+          "consumable_code": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "lot_code": {
+            "type": "string"
+          },
+          "expires_on": {
+            "type": "string",
+            "format": "date"
+          },
+          "quantity": {
+            "type": "number"
+          },
+          "value": {
+            "type": "number",
+            "description": "In paise, at the lot's landed cost."
+          },
+          "suggestion": {
+            "type": "string",
+            "enum": [
+              "write_off",
+              "move",
+              "use_first"
+            ]
+          },
+          "move_to": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "place_id",
+          "place",
+          "consumable_code",
+          "name",
+          "lot_code",
+          "expires_on",
+          "quantity",
+          "value",
+          "suggestion",
+          "move_to"
+        ]
+      }
+    }
+  },
+  "required": [
+    "total_value",
+    "lots"
+  ]
 }
 ```
 

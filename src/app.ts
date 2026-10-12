@@ -69,6 +69,7 @@ import { registerOpsDemandEvents } from "./routes/ops/demand-events.ts";
 import { registerOpsCountTasks } from "./routes/ops/count-tasks.ts";
 import { registerOpsStockUsage } from "./routes/ops/stock-usage.ts";
 import { registerOpsRecalls } from "./routes/ops/recalls.ts";
+import { registerOpsStockQuality } from "./routes/ops/stock-quality.ts";
 import { registerOpsJobSheet } from "./routes/ops/job-sheet.ts";
 import { registerOpsPaymentLinks } from "./routes/ops/payment-links.ts";
 import { registerOpsNoShowRulings } from "./routes/ops/no-show-rulings.ts";
@@ -228,6 +229,8 @@ const SURFACE_ROUTES: Readonly<Record<Surface, readonly ((app: App) => void)[]>>
     registerOpsStockUsage,
     // Recalls: a lot blocked everywhere, and who wears it (docs/decisions/0187-recalls.md).
     registerOpsRecalls,
+    // Failure rates and value at risk (docs/decisions/0188-failure-rates-and-value-at-risk.md).
+    registerOpsStockQuality,
     // Erasing a client from their page, the day they ask.
     registerOpsErasure,
     registerOpsProfile,

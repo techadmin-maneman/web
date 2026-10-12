@@ -2935,6 +2935,96 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/quality/failures": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The labelled pieces fitted in the last year and how many failed, four ways */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Failure rates */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["FailureRates"];
+                    };
+                };
+                /** @description access_required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/stock/expiry-risk": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Each lot that will not all be used before it expires, valued at its landed cost */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Value at risk */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ExpiryRisk"];
+                    };
+                };
+                /** @description access_required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/clients/{id}/erasure": {
         parameters: {
             query?: never;
@@ -15163,6 +15253,53 @@ export interface components {
         RecallRaise: {
             lot_id: string;
             reason: string;
+        };
+        FailureRates: {
+            /** Format: date */
+            since: string;
+            by_code: {
+                name: string;
+                fitted: number;
+                failed: number;
+                rate_percent: number | null;
+            }[];
+            by_lot: {
+                name: string;
+                fitted: number;
+                failed: number;
+                rate_percent: number | null;
+            }[];
+            by_supplier: {
+                name: string;
+                fitted: number;
+                failed: number;
+                rate_percent: number | null;
+            }[];
+            by_technician: {
+                name: string;
+                fitted: number;
+                failed: number;
+                rate_percent: number | null;
+            }[];
+        };
+        ExpiryRisk: {
+            /** @description In paise. */
+            total_value: number;
+            lots: {
+                place_id: string;
+                place: string;
+                consumable_code: string;
+                name: string;
+                lot_code: string;
+                /** Format: date */
+                expires_on: string;
+                quantity: number;
+                /** @description In paise, at the lot's landed cost. */
+                value: number;
+                /** @enum {string} */
+                suggestion: "write_off" | "move" | "use_first";
+                move_to: string | null;
+            }[];
         };
         Erased: {
             /** Format: date-time */
