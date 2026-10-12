@@ -47,6 +47,8 @@ jobs:
     outputs:
       code: ${{ steps.filter.outputs.code }}
       migrations: ${{ steps.filter.outputs.migrations }}
+      # What the migrations check compares with: the pull request's base branch, or a push's head before it.
+      base: ${{ steps.filter.outputs.base }}
       dependencies: ${{ steps.filter.outputs.dependencies }}
       static-passed: ${{ steps.passed.outputs.static }}
       tests-passed: ${{ steps.passed.outputs.tests }}
@@ -76,19 +78,27 @@ jobs:
             echo "::notice::The pull request does not hold all of main, so these files are new to CI: every check runs."
           fi
 
-      # Nothing outside a pull request is filtered: a staging deploy runs every check but the one
-      # comparing with the base, which its pull request ran.
+      # Nothing outside a pull request is filtered: a staging deploy runs every check. A push that a pull request
+      # merged was checked against its base there; one pushed straight to main is checked against main before it.
       - name: Anything a build, a Worker or a browser can see, and any migration
         id: filter
         env:
           BASE: ${{ github.event_name == 'pull_request' && format('origin/{0}', github.base_ref) || '' }}
+          BEFORE: ${{ github.event_name == 'push' && github.event.before || '' }}
         run: |
           if [ -z "$BASE" ]; then
             echo "Not a pull request: every job runs."
             # The pull request that changed a lockfile verified its signatures.
-            { echo "code=true"; echo "migrations=false"; echo "dependencies=false"; } >> "$GITHUB_OUTPUT"
+            { echo "code=true"; echo "dependencies=false"; } >> "$GITHUB_OUTPUT"
+            if [ -n "$BEFORE" ] && ! echo "$BEFORE" | grep -qE '^0+$' \
+              && git diff --name-only "$BEFORE" HEAD | grep -qE '^(migrations/|scripts/ci/old-code-on-new-schema\.ts$)'; then
+              { echo "migrations=true"; echo "base=$BEFORE"; } >> "$GITHUB_OUTPUT"
+            else
+              echo "migrations=false" >> "$GITHUB_OUTPUT"
+            fi
             exit 0
           fi
+          echo "base=$BASE" >> "$GITHUB_OUTPUT"
           git diff --name-only "$BASE...HEAD" | tee changed.txt
           # docs/ and design/ are read-only reference, and the notes at the root are read by people.
           # Everything else, src/ and the configs included, can change what a build or a browser sees.
@@ -265,7 +275,7 @@ jobs:
           cache: ${{ runner.environment == 'github-hosted' && 'npm' || '' }}
       - name: The base branch's Worker tests, on this branch's migrations
         env:
-          BASE: origin/${{ github.base_ref }}
+          BASE: ${{ needs.changes.outputs.base }}
         run: node scripts/ci/old-code-on-new-schema.ts --base "$BASE"
 
   build:
