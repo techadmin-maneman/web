@@ -1,6 +1,7 @@
 // A client matched to stock (docs/decisions/0173-matching-a-client-to-stock.md): their latest hair profile's product,
 // base size, colour, grey and density matched exactly to one stock code, never a near one or one cut down; then where
-// that code's pieces are held, the client's city first. With no stock code made to their spec, theirs is a custom order.
+// that code's free pieces are held, the client's city first, never one reserved to a custom order. With no stock code
+// made to their spec, theirs is a custom order.
 
 import { latestFits } from "../clients/hair-profiles.ts";
 import { cityOf } from "../clients/places.ts";
@@ -59,12 +60,14 @@ export async function stockMatch(db: D1Database, personId: string): Promise<Stoc
         `SELECT p.id AS place_id, COALESCE(p.name, t.name) AS name, p.kind, COALESCE(p.city, t.city) AS city,
            COUNT(*) AS pieces
          FROM stock_units u JOIN stock_places p ON p.id = u.place LEFT JOIN technicians t ON t.id = p.id
-         WHERE u.state = 'held' AND u.consumable_code = ?1
+         WHERE u.state = 'held' AND u.consumable_code = ?1 AND u.custom_order_id IS NULL
          GROUP BY p.id ORDER BY COALESCE(p.city, t.city) IS ?2 DESC, pieces DESC`,
       )
       .bind(code.code, city),
     db
-      .prepare("SELECT COUNT(*) AS pieces FROM stock_units WHERE state = 'in_transit' AND consumable_code = ?1")
+      .prepare(
+        "SELECT COUNT(*) AS pieces FROM stock_units WHERE state = 'in_transit' AND consumable_code = ?1 AND custom_order_id IS NULL",
+      )
       .bind(code.code),
   ]);
   return {

@@ -2455,7 +2455,7 @@ Indexes:
 
 Each unit's history, only ever added to: the state it moved into, where, and by which movement (ADR 0161).
 
-Made by `0138_stock_units.sql`.
+Made by `0138_stock_units.sql`; changed by `0148_custom_reservations.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -2470,13 +2470,14 @@ Made by `0138_stock_units.sql`.
 
 Indexes:
 
+- `stock_unit_events_by_movement`: on (`movement_id`), where `movement_id IS NOT NULL`
 - `stock_unit_events_by_unit`: on (`unit_id`, `at`)
 
 ## stock_units
 
 Each hair system piece labelled: its label, stock code and lot, and where it is now, held at a place, in transit, fitted or gone (ADR 0161).
 
-Made by `0138_stock_units.sql`.
+Made by `0138_stock_units.sql`; changed by `0148_custom_reservations.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -2491,6 +2492,7 @@ Made by `0138_stock_units.sql`.
 | `appointment_id` | TEXT | yes |  |  |
 | `labelled_at` | TEXT | no |  |  |
 | `moved_at` | TEXT | no |  |  |
+| `custom_order_id` | TEXT | yes |  | → `custom_orders.id` |
 
 Indexes:
 
@@ -2499,6 +2501,7 @@ Indexes:
 - `stock_units_by_transfer`: on (`transfer_id`), where `transfer_id IS NOT NULL`
 - `stock_units_by_visit`: on (`appointment_id`), where `appointment_id IS NOT NULL`
 - `stock_units_held`: on (`place`, `consumable_code`), where `state = 'held'`
+- `stock_units_reserved`: on (`custom_order_id`), where `custom_order_id IS NOT NULL`
 
 ## storage_meter
 

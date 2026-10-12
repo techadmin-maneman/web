@@ -1,6 +1,7 @@
 // The technician's reads (./jobs.ts): the day's jobs, one job's card, and the client's last visit.
 
 import type { App } from "../../http/context.ts";
+import { reservedForOthers } from "../../domain/field/custom-orders.ts";
 import { type VisitType } from "../../config/visit-types.ts";
 import { offeredForJob, serviceOfJob } from "../../domain/field/consumables.ts";
 import { kitHairSystems } from "../../domain/field/hair-systems.ts";
@@ -18,14 +19,17 @@ import { jobsRoute, jobRoute, lastVisitPhotoRoute } from "./jobs.routes.ts";
 
 /**
  * The kit's hair systems in the job card's words, for the piece step to pick and match to the client's profile, each
- * with the labels of its pieces, so a label scanned with no signal still names its hair system.
+ * with the labels of its pieces, so a label scanned with no signal still names its hair system. A piece reserved to
+ * another client's custom order is left out (docs/decisions/0175-custom-pieces-reserved.md).
  */
-async function kitOf(db: D1Database, technicianId: string, date: string) {
-  const units = await kitUnits(db, technicianId);
-  return (await kitHairSystems(db, technicianId, date)).map((each) => ({
+async function kitOf(db: D1Database, technicianId: string, job: { readonly id: string; readonly date: string }) {
+  const reserved = await reservedForOthers(db, technicianId, job.id);
+  const units = (await kitUnits(db, technicianId)).filter((unit) => !reserved.has(unit.code));
+  const kept = (code: string) => [...reserved.values()].filter((reservedCode) => reservedCode === code).length;
+  return (await kitHairSystems(db, technicianId, job.date)).map((each) => ({
     code: each.code,
     name: each.name,
-    held: each.held,
+    held: each.held - kept(each.code),
     product: each.product,
     base_width_in: each.baseWidthIn,
     base_length_in: each.baseLengthIn,
@@ -78,7 +82,7 @@ export function registerTechJobReads(app: App): void {
         partial_reasons: [...sheet.partialReasons.items],
         lost_reasons: type === "consultation" || job.one_visit ? [...sheet.lostReasons.items] : [],
         consumables: await offeredForJob(c.env.DB, await serviceOfJob(c.env.DB, { id: job.id, type }), job.date),
-        kit_hair_systems: job.steps.includes("piece") ? await kitOf(c.env.DB, technicianId, job.date) : [],
+        kit_hair_systems: job.steps.includes("piece") ? await kitOf(c.env.DB, technicianId, job) : [],
       },
       200,
     );
