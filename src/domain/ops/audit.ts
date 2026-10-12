@@ -162,6 +162,11 @@ export const AUDIT_ACTIONS = [
   "supplier.restore",
   "supplier.item_set",
   "supplier.item_remove",
+  // Purchase orders (docs/decisions/0166-purchase-orders.md).
+  "purchase_order.draft",
+  "purchase_order.approve",
+  "purchase_order.send",
+  "purchase_order.cancel",
   // Whose a task on the Tasks board is, a visit left partly done that ops closed without a follow-up, and an address
   // a client gave ops on the phone (docs/decisions/0092-task-owners.md).
   "task.assign",

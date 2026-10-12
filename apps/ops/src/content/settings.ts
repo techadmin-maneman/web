@@ -141,6 +141,7 @@ export const settings = {
       referrals: "Referrals",
       care: "Customer Care",
       reports: "Reports",
+      purchasing: "Purchasing",
       console: "The console",
       other: "Other policies",
     },
