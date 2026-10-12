@@ -1,5 +1,5 @@
-// Operations · Purchasing (docs/decisions/0166-purchase-orders.md). No design draws it; every word here is ours. Only the
-// Purchasing page reads it, loaded when it opens.
+// Operations · Purchasing (docs/decisions/0166-purchase-orders.md, 0169-supplier-claims.md). No design draws it;
+// every word here is ours. Only the Purchasing page reads it, loaded when it opens.
 
 import { FAILED, NOT_PERMITTED, OFFLINE } from "./common.ts";
 
@@ -87,11 +87,66 @@ export const purchasing = {
         .filter((part) => part !== null)
         .join(", ") + ` · ${line.landed} landed`,
   },
+  claims: {
+    title: "Claims",
+    columns: ["Claim", "Supplier", "Item", "Reason", "Status", "Value"],
+    none: "No claims.",
+    /** "CL-0007" */
+    number: (number: number) => `CL-${String(number).padStart(4, "0")}`,
+    open: (number: string) => `Open ${number}`,
+    reasons: { damaged: "Damaged", qc_failed: "Failed check", warranty: "Under warranty" } as Readonly<
+      Record<string, string>
+    >,
+    states: {
+      drafted: "Drafted",
+      sent: "Sent",
+      accepted: "Accepted",
+      rejected: "Rejected",
+      withdrawn: "Withdrawn",
+    } as Readonly<Record<string, string>>,
+    outcomes: { credit: "Credited", replacement: "Replaced" } as Readonly<Record<string, string>>,
+    /** "Solvent × 2", or "Mane Man Essential 8x10 · MM-ESS-0000001-B" */
+    item: (name: string, quantity: number, piece: string | null) =>
+      piece === null ? `${name} × ${String(quantity)}` : `${name} · ${piece}`,
+    from: (order: string) => `From ${order}`,
+    note: "Note (optional)",
+    send: "Mark sent",
+    withdraw: "Withdraw",
+    why: "Why it is withdrawn",
+    confirmWithdraw: "Withdraw the claim",
+    credit: (currency: string) => `Credit, ${currency}`,
+    credited: "Record credit",
+    replaced: "Replaced",
+    rejected: "Rejected",
+    keep: "Keep it",
+    sentSaid: "Marked sent.",
+    withdrawnSaid: "Withdrawn.",
+    settledSaid: "Settled.",
+  },
+  returns: {
+    title: "Returned pieces",
+    columns: ["Piece", "Item", "Returned", "Handed in at", "Warranty", ""],
+    none: "Nothing to settle.",
+    until: (date: string) => `Until ${date}`,
+    ended: (date: string) => `Ended ${date}`,
+    unknown: "No supplier on record",
+    claim: "Claim",
+    writeOff: "Write off",
+    why: "Why it is written off",
+    confirmWriteOff: "Write it off",
+    keep: "Keep it",
+    claimed: "Claimed. It is in Claims, drafted.",
+    writtenOff: "Written off.",
+  },
   errors: {
     supplier_id: "That supplier is retired or gone. Reload.",
     lines: "Each item once, at least its minimum.",
     rupee_rate: "Give the rupee rate for this currency.",
     order_state: "That order has moved on. Reload.",
+    claim_state: "That claim has moved on. Reload.",
+    return_settled: "That piece is settled already. Reload.",
+    out_of_warranty: "Its warranty has ended. Write it off instead.",
+    credit_amount: "Give the credit.",
     not_found: "That order is gone. Reload.",
     invalid_request: "Check the lines.",
     not_permitted: NOT_PERMITTED,

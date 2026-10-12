@@ -1,11 +1,13 @@
 // Receipts against purchase orders (docs/decisions/0167-receipts-and-landed-cost.md): what arrived at the warehouse of
 // each line, accepted into stock as a delivery is, in its lot and, of a hair system, each piece labelled
-// (src/domain/field/stock.ts); what was damaged or failed its check, which never enters stock; and what one cost landed
+// (src/domain/field/stock.ts); what was damaged or failed its check, which never enters stock and is claimed on the
+// supplier (./supplier-claims.ts); and what one cost landed
 // (src/policy/purchasing.ts), kept on the line and on its lot. The order moves on to part received or received.
 
 import { landedUnitCosts } from "../../policy/purchasing.ts";
 import { auditStatement, type AuditActor } from "../ops/audit.ts";
 import { deliveryStatements } from "./stock.ts";
+import { receiptClaimStatements } from "./supplier-claims.ts";
 
 export interface ReceiptLine {
   readonly poLineId: string;
@@ -118,7 +120,9 @@ export async function receiveOrder(
       if (!delivered.ok) return { ok: false, fields: [`lines.${String(index)}`] };
       lines.push(...delivered.statements);
     }
-    lines.push(...lineStatements(db, { receiptId: id, line, landedUnitPaise: landed[index] ?? 0, movementId }));
+    lines.push(
+      ...lineStatements(db, { receiptId: id, line, landedUnitPaise: landed[index] ?? 0, movementId }, written),
+    );
   }
   await db.batch([
     receivedAudit(db, { poId: receipt.poId, id, lines: receipt.lines.length }, written),
@@ -174,7 +178,10 @@ function receivedAudit(
   );
 }
 
-/** A receipt's line, what it adds to the order's line, and its landed cost on the lot it went into. */
+/**
+ * A receipt's line, what it adds to the order's line, its landed cost on the lot it went into, and its claims on the
+ * supplier for what arrived damaged or failed its check.
+ */
 function lineStatements(
   db: D1Database,
   row: {
@@ -183,8 +190,10 @@ function lineStatements(
     readonly landedUnitPaise: number;
     readonly movementId: string | null;
   },
+  written: Written,
 ): D1PreparedStatement[] {
   const { line } = row;
+  const lineId = crypto.randomUUID();
   return [
     db
       .prepare(
@@ -193,7 +202,7 @@ function lineStatements(
          VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)`,
       )
       .bind(
-        crypto.randomUUID(),
+        lineId,
         row.receiptId,
         line.poLineId,
         line.received,
@@ -216,6 +225,11 @@ function lineStatements(
             )
             .bind(row.movementId, row.landedUnitPaise),
         ]),
+    ...receiptClaimStatements(
+      db,
+      { id: lineId, poLineId: line.poLineId, damaged: line.damaged, qcFailed: line.qcFailed },
+      written,
+    ),
   ];
 }
 

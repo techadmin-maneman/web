@@ -1,5 +1,6 @@
 // Operations · Purchasing (docs/decisions/0166-purchase-orders.md): every open order and the latest settled, each
-// opened beneath the list to approve, mark sent, cancel or print; and a new order drafted from a supplier's list.
+// opened beneath the list to approve, mark sent, cancel or print; a new order drafted from a supplier's list; and the
+// claims on suppliers, with the returned pieces to settle (./Claims.tsx).
 
 import { Table } from "@maneman/ui/Table";
 import { useLoad } from "@maneman/ui/useLoad";
@@ -11,6 +12,7 @@ import { purchasing as copy } from "../content/purchasing.ts";
 import form from "../components/forms.module.css";
 import { useAccess } from "../lib/access.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
+import { Claims } from "./Claims.tsx";
 import { DraftOrder } from "./DraftOrder.tsx";
 import { OrderPanel } from "./OrderPanel.tsx";
 import type { Orders } from "./types.ts";
@@ -98,6 +100,7 @@ export function PurchasingScreen() {
               }}
             />
           )}
+          {access.mayCall("GET /api/supplier-claims") && <Claims orders={current} />}
         </div>
       )}
     </Shell>

@@ -157,6 +157,9 @@ export const ROWS_AT_T: readonly string[] = [
      VALUES ('rc1', 'po1', 'ops@example.com', '${AT}', 8325, 0, 0, 0)`,
   `INSERT INTO receipt_lines (id, receipt_id, po_line_id, received, damaged, qc_failed, landed_unit_paise)
      VALUES ('rl1', 'rc1', 'pl1', 0, 1, 0, 10406)`,
+  `INSERT INTO supplier_claims (id, number, supplier_id, consumable_code, quantity, reason, receipt_line_id, unit_price,
+     currency, state, drafted_by, drafted_at)
+     VALUES ('cl1', 1, 'sup1', 'strip', 1, 'damaged', 'rl1', 125, 'USD', 'drafted', 'ops@example.com', '${AT}')`,
   `INSERT INTO hair_systems (code, product, base_width_in, base_length_in, colour, grey_percent, density_percent)
      VALUES ('hs1', 'standard', 8, 10, '1B', 0, 100)`,
   `INSERT INTO targets (month, city, measure, target, set_by, set_at)

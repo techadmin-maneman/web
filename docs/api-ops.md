@@ -7283,6 +7283,246 @@ An order part received closed short
 }
 ```
 
+### GET /api/supplier-claims
+
+Open claims on suppliers and the latest settled, and the returned pieces handed in to settle
+
+**200**: The claims on suppliers, and the returned pieces to settle
+
+```json
+{
+  "$ref": "#/components/schemas/SupplierClaims"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/supplier-claims/{id}/send
+
+A drafted claim marked sent to its supplier
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/SupplierClaimSend"
+}
+```
+
+**200**: The claims on suppliers, and the returned pieces to settle
+
+```json
+{
+  "$ref": "#/components/schemas/SupplierClaims"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no such claim
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**409**: claim_state: the claim is past the step asked
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/supplier-claims/{id}/withdraw
+
+A drafted claim withdrawn, with why
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/SupplierClaimWithdraw"
+}
+```
+
+**200**: The claims on suppliers, and the returned pieces to settle
+
+```json
+{
+  "$ref": "#/components/schemas/SupplierClaims"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no such claim
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**409**: claim_state: the claim is past the step asked
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/supplier-claims/{id}/decide
+
+A sent claim settled by the supplier's answer
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/SupplierClaimDecision"
+}
+```
+
+**200**: The claims on suppliers, and the returned pieces to settle
+
+```json
+{
+  "$ref": "#/components/schemas/SupplierClaims"
+}
+```
+
+**400**: invalid_request: fields names credit_amount, missing on a credit or given on another answer
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no such claim
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**409**: claim_state: the claim is past the step asked
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/returned-pieces/{id}/claim
+
+A returned piece inside its supplier's warranty claimed on the supplier
+
+**200**: The claims on suppliers, and the returned pieces to settle
+
+```json
+{
+  "$ref": "#/components/schemas/SupplierClaims"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no such returned piece
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**409**: return_settled: the piece is settled already, or not handed in; out_of_warranty: it came in on no receipt, or its supplier's warranty has ended
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/returned-pieces/{id}/write-off
+
+A returned piece written off, with why
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/ReturnedPieceWriteOff"
+}
+```
+
+**200**: The claims on suppliers, and the returned pieces to settle
+
+```json
+{
+  "$ref": "#/components/schemas/SupplierClaims"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no such returned piece
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**409**: return_settled: the piece is settled already, or not handed in
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ### GET /api/storage
 
 What the photographs and referral cards hold in R2, against their share, and the database against its limit
@@ -7847,7 +8087,10 @@ Request body:
             "in_use",
             "figures_conflict",
             "transfer_settled",
-            "order_state"
+            "order_state",
+            "claim_state",
+            "return_settled",
+            "out_of_warranty"
           ]
         },
         "request_id": {
@@ -11311,7 +11554,10 @@ Request body:
             "in_use",
             "figures_conflict",
             "transfer_settled",
-            "order_state"
+            "order_state",
+            "claim_state",
+            "return_settled",
+            "out_of_warranty"
           ]
         },
         "request_id": {
@@ -15156,6 +15402,11 @@ Request body:
         "purchase_order.cancel",
         "purchase_order.receive",
         "purchase_order.close",
+        "supplier_claim.send",
+        "supplier_claim.withdraw",
+        "supplier_claim.decide",
+        "piece_return.claim",
+        "piece_return.write_off",
         "task.assign",
         "task.hand_back",
         "task.close",
@@ -22945,6 +23196,308 @@ Request body:
     "duty_paise",
     "clearing_paise",
     "note"
+  ],
+  "additionalProperties": false
+}
+```
+
+### SupplierClaims
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "claims": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "number": {
+            "type": "integer"
+          },
+          "supplier_id": {
+            "type": "string"
+          },
+          "consumable_code": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "quantity": {
+            "type": "integer"
+          },
+          "reason": {
+            "type": "string",
+            "enum": [
+              "damaged",
+              "qc_failed",
+              "warranty"
+            ]
+          },
+          "order_number": {
+            "type": "integer"
+          },
+          "piece_code": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "unit_price": {
+            "type": "integer",
+            "description": "One unit's price on the order, in its currency's smallest unit."
+          },
+          "currency": {
+            "type": "string"
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "drafted",
+              "sent",
+              "accepted",
+              "rejected",
+              "withdrawn"
+            ]
+          },
+          "outcome": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "credit",
+              "replacement",
+              null
+            ]
+          },
+          "credit_amount": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "note": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "drafted_at": {
+            "type": "string"
+          },
+          "sent_at": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "decided_at": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "number",
+          "supplier_id",
+          "consumable_code",
+          "name",
+          "quantity",
+          "reason",
+          "order_number",
+          "piece_code",
+          "unit_price",
+          "currency",
+          "state",
+          "outcome",
+          "credit_amount",
+          "note",
+          "drafted_at",
+          "sent_at",
+          "decided_at"
+        ]
+      }
+    },
+    "returns": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "piece_code": {
+            "type": "string"
+          },
+          "name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "reason": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "returned_at": {
+            "type": "string"
+          },
+          "handed_in_at": {
+            "type": "string"
+          },
+          "handed_in_to": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "supplier_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "warranty_ends_on": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "in_warranty": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "piece_code",
+          "name",
+          "reason",
+          "returned_at",
+          "handed_in_at",
+          "handed_in_to",
+          "supplier_id",
+          "warranty_ends_on",
+          "in_warranty"
+        ]
+      }
+    }
+  },
+  "required": [
+    "claims",
+    "returns"
+  ]
+}
+```
+
+### SupplierClaimSend
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "note": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "minLength": 1,
+      "maxLength": 200,
+      "pattern": "^[^\\p{Cc}]+$/u"
+    }
+  },
+  "required": [
+    "note"
+  ],
+  "additionalProperties": false
+}
+```
+
+### SupplierClaimWithdraw
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "note": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200,
+      "pattern": "^[^\\p{Cc}]+$/u"
+    }
+  },
+  "required": [
+    "note"
+  ],
+  "additionalProperties": false
+}
+```
+
+### SupplierClaimDecision
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "outcome": {
+      "type": "string",
+      "enum": [
+        "credit",
+        "replacement",
+        "rejected"
+      ]
+    },
+    "credit_amount": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 1,
+      "maximum": 10000000000,
+      "description": "The credit, in the claim's currency's smallest unit; given for a credit, and only then."
+    },
+    "note": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "minLength": 1,
+      "maxLength": 200,
+      "pattern": "^[^\\p{Cc}]+$/u"
+    }
+  },
+  "required": [
+    "outcome",
+    "credit_amount",
+    "note"
+  ],
+  "additionalProperties": false
+}
+```
+
+### ReturnedPieceWriteOff
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "reason": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200,
+      "pattern": "^[^\\p{Cc}]+$/u"
+    }
+  },
+  "required": [
+    "reason"
   ],
   "additionalProperties": false
 }

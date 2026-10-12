@@ -1,6 +1,8 @@
 // Purchase orders' rules (docs/decisions/0166-purchase-orders.md): when one needs a second approver, and the states it
 // moves through. No price is set here: every price is the supplier's, copied onto the order when it is drafted.
 
+import { addDays, indiaDate } from "../lib/india-time.ts";
+
 /**
  * A rupee order worth more than this needs a second approver until ops set their own amount in the console. Nought:
  * every order needs two, so nothing goes out on one person's word before ops decide otherwise.
@@ -47,4 +49,12 @@ export function landedUnitCosts(lines: readonly CostedLine[], rupeeRate: number,
     const share = totalValue > 0 ? (extras * (values[index] ?? 0)) / totalValue : (extras * line.received) / totalCount;
     return Math.round(unit + share / line.received);
   });
+}
+
+/**
+ * The last day, in India, of a supplier's warranty on what arrived in a receipt: the day it was received and the
+ * supplier's warranty days after. A piece returned on or before it may be claimed.
+ */
+export function warrantyEndsOn(receivedAt: string, warrantyDays: number): string {
+  return addDays(indiaDate(new Date(receivedAt)), warrantyDays);
 }

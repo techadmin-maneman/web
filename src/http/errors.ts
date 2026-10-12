@@ -162,6 +162,10 @@ export const ERROR_CODES = [
   "figures_conflict",
   "transfer_settled",
   "order_state",
+  // A claim on a supplier past the step asked; a returned piece settled already; one that may not be claimed.
+  "claim_state",
+  "return_settled",
+  "out_of_warranty",
 ] as const;
 export type ErrorCode = (typeof ERROR_CODES)[number];
 
@@ -300,6 +304,9 @@ export const ERROR_STATUS = {
   figures_conflict: 422,
   transfer_settled: 409,
   order_state: 409,
+  claim_state: 409,
+  return_settled: 409,
+  out_of_warranty: 409,
 } as const satisfies Record<ErrorCode, ContentfulStatusCode>;
 
 /** A refusal: the code, answered with its own status and the request's ID, and the fields it names. */
