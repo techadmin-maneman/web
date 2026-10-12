@@ -109,6 +109,7 @@ export const did = (counts: Partial<BooksSyncSummary>): BooksSyncSummary => ({
   customersUpdated: 0,
   vendors: 0,
   bills: 0,
+  credits: 0,
   recorded: 0,
   applied: 0,
   refunded: 0,

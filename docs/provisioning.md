@@ -454,6 +454,7 @@ Our own database is the record of visits (docs/decisions/0110-field-work-without
    - In Books: Accountant → Chart of Accounts, open each; its ID is the number at the end of the address.
    - Set them in `BOOKS_BILL_ACCOUNTS` in `src/config/environments.ts`; staging and production share them, as they share the org. Where none are set, no bill is made.
    - A token made before `ZohoBooks.bills.ALL` was in step 1 cannot make bills: Books refuses each, and ops are told. Make a new code with step 1's scopes, exchange it, and set `ZOHO_BOOKS_REFRESH_TOKEN` again (step 4).
+   - A claim settled as a credit becomes a vendor credit on the same account (docs/decisions/0171-vendor-credits.md).
    - Freight, duty and clearing are billed by the forwarder or broker, and entered in Books by hand.
 
 ## 11c. Razorpay

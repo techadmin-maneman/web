@@ -40,7 +40,7 @@ export interface Pass {
 // ---------------------------------------------------------------------------
 /** A record Books failed on, in the words its alert uses. */
 interface FailedRecord {
-  readonly kind: "customer" | "customer_update" | "payment" | "apply" | "refund" | "vendor" | "bill";
+  readonly kind: "customer" | "customer_update" | "payment" | "apply" | "refund" | "vendor" | "bill" | "credit";
   readonly id: string;
   /** The client it is about; null for a supplier's vendor or a receipt's bill. */
   readonly personId: string | null;
@@ -59,6 +59,7 @@ const ID_FIELDS: Readonly<Record<FailedRecord["kind"], string>> = {
   refund: "refund_id",
   vendor: "supplier_id",
   bill: "receipt_id",
+  credit: "claim_id",
 };
 
 /**
@@ -67,7 +68,7 @@ const ID_FIELDS: Readonly<Record<FailedRecord["kind"], string>> = {
  */
 function linkOf(record: FailedRecord): string {
   if (record.kind === "vendor") return "/settings/suppliers";
-  if (record.kind === "bill" || record.personId === null) return "/purchasing";
+  if (record.kind === "bill" || record.kind === "credit" || record.personId === null) return "/purchasing";
   const aboutTheCustomer = record.kind === "customer" || record.kind === "customer_update";
   return aboutTheCustomer ? `/clients/${record.personId}` : paymentsTab(record.personId);
 }

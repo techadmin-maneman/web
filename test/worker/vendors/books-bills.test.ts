@@ -189,4 +189,36 @@ describe("a receipt in Books", () => {
     await pass(books);
     expect(told).toEqual([expect.stringContaining("Books refused the bill of PO-0001's receipt")]);
   });
+
+  it("is followed by a vendor credit beside it for a claim the supplier credited, once", async () => {
+    const books = createStubBooks();
+    await pass(books);
+    const claim = await env.DB.prepare("SELECT id FROM supplier_claims WHERE reason = 'qc_failed'").first<string>("id");
+    await job.opsPost(`/api/supplier-claims/${claim ?? ""}/send`, { note: null, photo_id: null });
+    await job.opsPost(`/api/supplier-claims/${claim ?? ""}/decide`, {
+      outcome: "credit",
+      credit_amount: 12_000,
+      note: null,
+    });
+
+    const later = new Date(NOW.getTime() + RECHECK_AFTER_MS + 1000);
+    expect(await pass(books, later)).toMatchObject({ credits: 1 });
+    expect(books.made.credits).toEqual([
+      {
+        vendorId: expect.stringMatching(/^stub-vendor-/) as string,
+        reference: claim,
+        date: "2026-09-21",
+        exchangeRate: 83.25,
+        lines: [
+          {
+            description: "Staging test: Mane Man Essential 8x10 1B, 20% grey, 100% (CL-0001, PO-0001)",
+            accountId: "acc-cogs",
+            unitPrice: 12_000,
+            quantity: 1,
+          },
+        ],
+      },
+    ]);
+    expect(await pass(books, new Date(later.getTime() + RECHECK_AFTER_MS + 1000))).toMatchObject({ credits: 0 });
+  });
 });

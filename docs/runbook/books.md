@@ -30,6 +30,7 @@ The cron makes each finished visit's invoice in Books from our own figures: one 
 - **Nothing to set a payment against** (`books_unapplied`): it stays in Books as the client's credit. Settle it by hand in Books; how a kept charge is invoiced waits for the CA (open point 16).
 - Refunds are recorded in Books only while `BOOKS_REFUND_ACCOUNT_ID` is set (step 11b, point 6).
 - **Bills.** Each receipt against a purchase order becomes a bill of its supplier's Books vendor, a hair system's lines on the cost of goods sold and a consumable's on raw materials and consumables, only while both bill accounts are set (step 11b, point 9). Books refusing a vendor or a bill (`books_vendor_…_refused`, `books_bill_…_refused`) is put right as a payment is; a refusal for want of scope means the Worker's token needs step 11b's scopes. Freight, duty and clearing are billed by hand.
+- **Vendor credits.** Each claim a supplier settled as a credit becomes a vendor credit on its vendor once its receipt is billed, on the same account (`books_credit_…` if refused). Books applies it when ops next pay that supplier.
 
 The console's Tasks board lists every draft invoice. From SQL:
 

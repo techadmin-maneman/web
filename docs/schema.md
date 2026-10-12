@@ -2484,7 +2484,7 @@ Made by `0055_storage_meter.sql`.
 
 Each claim on a supplier: what arrived damaged or failed its check, or a returned piece in warranty, and whether it was sent, credited, replaced, rejected or withdrawn (ADR 0169).
 
-Made by `0144_supplier_claims.sql`; changed by `0145_stock_photos.sql`.
+Made by `0144_supplier_claims.sql`; changed by `0145_stock_photos.sql`, `0146_vendor_credits.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -2510,6 +2510,8 @@ Made by `0144_supplier_claims.sql`; changed by `0145_stock_photos.sql`.
 | `decided_at` | TEXT | yes |  |  |
 | `change_id` | TEXT | yes |  |  |
 | `photo_id` | TEXT | yes |  |  |
+| `books_credit_id` | TEXT | yes |  |  |
+| `books_checked_at` | TEXT | yes |  |  |
 
 Indexes:
 
@@ -2518,6 +2520,7 @@ Indexes:
 - `supplier_claims_by_supplier`: on (`supplier_id`)
 - `supplier_claims_by_unit`: unique on (`unit_id`), where `unit_id IS NOT NULL`
 - `supplier_claims_open`: on (`number`), where `state IN ('drafted', 'sent')`
+- `supplier_claims_to_credit`: on (`decided_at`), where `outcome = 'credit' AND books_credit_id IS NULL`
 
 ## supplier_items
 

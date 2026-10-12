@@ -14,6 +14,7 @@ import type {
   BooksProvider,
   NewBooksBill,
   NewBooksVendor,
+  NewBooksVendorCredit,
 } from "./index.ts";
 
 /** The smallest valid PDF: one blank page. The stub's every document. */
@@ -23,7 +24,14 @@ const BLANK_PDF =
 
 /** The records whose answer a test can lose: the record is made, and the call fails. */
 export type StubBooksCreate =
-  "recordPayment" | "recordRefund" | "upsertCustomer" | "createInvoice" | "createItem" | "upsertVendor" | "createBill";
+  | "recordPayment"
+  | "recordRefund"
+  | "upsertCustomer"
+  | "createInvoice"
+  | "createItem"
+  | "upsertVendor"
+  | "createBill"
+  | "createVendorCredit";
 
 /** The calls a test can make fail, or have refused, once. */
 export type StubBooksStep =
@@ -34,7 +42,8 @@ export type StubBooksStep =
   | "findInvoice"
   | "items"
   | "updateItem"
-  | "findBill";
+  | "findBill"
+  | "findVendorCredit";
 
 /** The stub, and what was written to it, for tests to read. */
 export interface StubBooks extends BooksProvider {
@@ -54,6 +63,7 @@ export interface StubBooks extends BooksProvider {
     /** Each vendor asked for by name, a second time as well. */
     readonly vendors: NewBooksVendor[];
     readonly bills: NewBooksBill[];
+    readonly credits: NewBooksVendorCredit[];
   };
   /** Makes the next call of this kind fail, as an outage does. */
   failNext(step: StubBooksStep, message?: string): void;
@@ -121,6 +131,7 @@ export function createStubBooks(world: StubBooksWorld = {}): StubBooks {
     itemUpdates: [] as ({ itemId: string } & BooksItemDetails)[],
     vendors: [] as NewBooksVendor[],
     bills: [] as NewBooksBill[],
+    credits: [] as NewBooksVendorCredit[],
   };
   const controls = createStubControls();
   return {
@@ -135,10 +146,11 @@ export function createStubBooks(world: StubBooksWorld = {}): StubBooks {
   };
 }
 
-/** Vendors found again by name, and bills by our reference, as Books has them. */
+/** Vendors found again by name, and bills and vendor credits by our reference, as Books has them. */
 function stubPurchases(made: StubMade, controls: StubControls): Pick<BooksProvider, PurchaseCalls> {
   const vendorIds = new Map<string, string>();
   const billIds = new Map<string, string>();
+  const creditIds = new Map<string, string>();
   return {
     async upsertVendor(vendor) {
       await controls.check("upsertVendor");
@@ -159,6 +171,18 @@ function stubPurchases(made: StubMade, controls: StubControls): Pick<BooksProvid
       billIds.set(bill.reference, id);
       return controls.answer("createBill", { id, reference: bill.reference }, id);
     },
+    async findVendorCredit(reference) {
+      await controls.check("findVendorCredit");
+      const id = creditIds.get(reference);
+      return id === undefined ? null : { id, reference };
+    },
+    async createVendorCredit(credit) {
+      await controls.check("createVendorCredit");
+      made.credits.push(credit);
+      const id = `stub-credit-${crypto.randomUUID()}`;
+      creditIds.set(credit.reference, id);
+      return controls.answer("createVendorCredit", { id, reference: credit.reference }, id);
+    },
   };
 }
 
@@ -166,7 +190,7 @@ type StubMade = StubBooks["made"];
 type StubControls = ReturnType<typeof createStubControls>;
 type CustomerCalls = "upsertCustomer" | "updateCustomer" | "crmContactOf" | "eraseCustomer";
 type ItemCalls = "items" | "createItem" | "updateItem";
-type PurchaseCalls = "upsertVendor" | "findBill" | "createBill";
+type PurchaseCalls = "upsertVendor" | "findBill" | "createBill" | "findVendorCredit" | "createVendorCredit";
 
 function stubDocumentsAndPayments(made: StubMade, world: StubBooksWorld, controls: StubControls) {
   // What the stub recorded, by the keys a retry looks it up by.

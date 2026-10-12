@@ -16,6 +16,7 @@ export const DELETE_ORDER = [
   "books/refunds",
   "books/customerpayments",
   "books/invoices",
+  "books/vendorcredits",
   "books/bills",
   "books/contacts",
   "crm/Contacts",
@@ -35,7 +36,13 @@ export interface StagingRecord {
 
 /** An ID staging's database keeps, and where its record is. */
 export interface KnownId {
-  readonly kind: "books/contacts" | "books/customerpayments" | "books/invoices" | "books/bills" | "crm/Leads";
+  readonly kind:
+    | "books/contacts"
+    | "books/customerpayments"
+    | "books/invoices"
+    | "books/bills"
+    | "books/vendorcredits"
+    | "crm/Leads";
   readonly id: string;
 }
 
@@ -93,12 +100,13 @@ export const KNOWN_IDS_SQL = [
   "UNION SELECT 'books/invoices', fsm_invoice_id FROM appointments WHERE fsm_invoice_id IS NOT NULL",
   "UNION SELECT 'books/contacts', books_vendor_id FROM suppliers WHERE books_vendor_id IS NOT NULL",
   "UNION SELECT 'books/bills', books_bill_id FROM receipts WHERE books_bill_id IS NOT NULL",
+  "UNION SELECT 'books/vendorcredits', books_credit_id FROM supplier_claims WHERE books_credit_id IS NOT NULL",
   "UNION SELECT 'crm/Leads', zoho_lead_id FROM people WHERE zoho_lead_id IS NOT NULL",
 ].join(" ");
 
 /**
  * Where staging's database keeps each kind of ID it may let go of. A payment's, a refund's and a bill's stay: cleared,
- * the Books pass would record staging's old payments again, without their refunds, and bill its old receipts again.
+ * the Books pass would record staging's old payments again, without their refunds, and bill or credit again.
  */
 const LINKS: readonly { readonly kind: RecordKind; readonly table: string; readonly column: string }[] = [
   { kind: "books/contacts", table: "people", column: "books_customer_id" },
@@ -184,6 +192,11 @@ export const BOOKS_INVOICE = z.looseObject({
 });
 export const BOOKS_CONTACT = z.looseObject({ contact_id: z.string().min(1), contact_name: TEXT });
 export const BOOKS_BILL = z.looseObject({ bill_id: z.string().min(1), bill_number: TEXT, vendor_name: TEXT });
+export const BOOKS_CREDIT = z.looseObject({
+  vendor_credit_id: z.string().min(1),
+  vendor_credit_number: TEXT,
+  vendor_name: TEXT,
+});
 export const BOOKS_REFUND = z.looseObject({ payment_refund_id: z.string().min(1) });
 export const CRM_RECORD = z.looseObject({ id: z.string().min(1), Full_Name: TEXT });
 
