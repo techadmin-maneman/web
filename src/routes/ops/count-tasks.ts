@@ -45,7 +45,7 @@ const Note = z
   .trim()
   .min(1)
   .max(MAX_NOTE)
-  .regex(/^[^p{Cc}]+$/u);
+  .regex(/^[^\p{Cc}]+$/u);
 const Class = z.enum(COUNT_CLASSES);
 const State = z.enum(["open", "recount", "sign_off", "done"]);
 

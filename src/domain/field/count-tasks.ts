@@ -8,7 +8,7 @@ import { auditStatement } from "../ops/audit.ts";
 import type { Place } from "./stock-places.ts";
 import { count, type Written } from "./stock.ts";
 
-export type TaskState = "open" | "recount" | "sign_off" | "done";
+type TaskState = "open" | "recount" | "sign_off" | "done";
 
 export interface CountTask {
   readonly id: string;
@@ -176,9 +176,9 @@ const auditOf = (
 });
 
 /** A line the ledger takes: the place set to what was counted. */
-async function settle(db: D1Database, task: CountTask, code: string, counted: number, written: Written) {
-  const moved = await count(db, { code, place: task.placeId, counted, note: null }, written);
-  if (!moved.ok) throw new Error(`a count task's line for ${code} was refused: ${moved.fields.join(", ")}`);
+async function settle(db: D1Database, task: CountTask, line: { code: string; counted: number }, written: Written) {
+  const moved = await count(db, { code: line.code, place: task.placeId, counted: line.counted, note: null }, written);
+  if (!moved.ok) throw new Error(`a count task's line for ${line.code} was refused: ${moved.fields.join(", ")}`);
 }
 
 /**
@@ -187,8 +187,7 @@ async function settle(db: D1Database, task: CountTask, code: string, counted: nu
  */
 async function claim(
   db: D1Database,
-  id: string,
-  state: TaskState,
+  { id, state }: { readonly id: string; readonly state: TaskState },
   written: Written,
   step: (task: CountTask) => Promise<Stepped>,
 ): Promise<Stepped> {
@@ -237,7 +236,7 @@ export async function submitCounts(
     )
       return { ok: false, fields: ["lines"] };
   }
-  return claim(db, id, "open", written, async (claimed) => {
+  return claim(db, { id, state: "open" }, written, async (claimed) => {
     const { held, pieces } = await heldNow(
       db,
       claimed.placeId,
@@ -247,7 +246,7 @@ export async function submitCounts(
     for (const line of lines) {
       const had = held.get(line.code) ?? 0;
       const again = needsRecount(line.counted, had, pieces.has(line.code));
-      if (!again) await settle(db, claimed, line.code, line.counted, written);
+      if (!again) await settle(db, claimed, line, written);
       rows.push({ code: line.code, held: had, counted: line.counted, state: again ? "recount" : "settled" });
     }
     const waiting = rows.filter((row) => row.state === "recount").length;
@@ -292,7 +291,7 @@ export async function submitRecounts(
     )
       return { ok: false, fields: ["lines"] };
   }
-  return claim(db, id, "recount", written, async (claimed) => {
+  return claim(db, { id, state: "recount" }, written, async (claimed) => {
     const { held, pieces } = await heldNow(
       db,
       claimed.placeId,
@@ -301,7 +300,7 @@ export async function submitRecounts(
     const rows: { code: string; recounted: number; state: "settled" | "sign_off" }[] = [];
     for (const line of lines) {
       const stands = needsRecount(line.counted, held.get(line.code) ?? 0, pieces.has(line.code));
-      if (!stands) await settle(db, claimed, line.code, line.counted, written);
+      if (!stands) await settle(db, claimed, line, written);
       rows.push({ code: line.code, recounted: line.counted, state: stands ? "sign_off" : "settled" });
     }
     const waiting = rows.filter((row) => row.state === "sign_off").length;
@@ -327,9 +326,10 @@ export async function submitRecounts(
 
 /** A manager's sign-off, with why: each line that still differed set to its recount, and the task done. */
 export async function signOff(db: D1Database, id: string, note: string, written: Written): Promise<Stepped> {
-  return claim(db, id, "sign_off", written, async (claimed) => {
+  return claim(db, { id, state: "sign_off" }, written, async (claimed) => {
     const lines = await differences(db, id);
-    for (const line of lines) await settle(db, claimed, line.code, line.recounted ?? line.counted, written);
+    for (const line of lines)
+      await settle(db, claimed, { code: line.code, counted: line.recounted ?? line.counted }, written);
     await db.batch([
       db.prepare("UPDATE count_lines SET state = 'settled' WHERE task_id = ?1 AND state = 'sign_off'").bind(id),
       db

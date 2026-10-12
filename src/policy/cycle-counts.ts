@@ -8,7 +8,7 @@ export type CountClass = (typeof COUNT_CLASSES)[number];
 export const CLASS_DAYS: Readonly<Record<CountClass, number>> = { weekly: 7, monthly: 30, quarterly: 90 };
 
 /** A consumable's difference past this share of what was held is counted again. */
-export const RECOUNT_ABOVE_PERCENT = 5;
+const RECOUNT_ABOVE_PERCENT = 5;
 
 /** An item's class: the one ops set, or its kind's own, a hair system weekly and the rest quarterly. */
 export function classOf(set: CountClass | null, hairSystem: boolean): CountClass {

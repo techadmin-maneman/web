@@ -20,6 +20,9 @@ interface Task {
   items: Record<string, unknown>[];
 }
 
+/** The name a hair system's stock code is given from its spec. */
+const NAME = "Mane Man Essential 8x10 1B, 20% grey, 100%";
+
 let job: Working;
 let code: string;
 
@@ -74,7 +77,7 @@ describe("cycle counts", () => {
     const quarterly = listed.tasks.find((task) => task.count_class === "quarterly")?.id ?? "";
 
     const shown = await (await request(job.ops, `/api/count-tasks/${weekly}`)).json<Task>();
-    expect(shown.items).toEqual([{ consumable_code: code, name: expect.any(String), state: "to_count" }]);
+    expect(shown.items).toEqual([{ consumable_code: code, name: NAME, state: "to_count" }]);
 
     const lines = (counted: number) => ({ lines: [{ consumable_code: code, counted }] });
     const counted = await job.opsPost(`/api/count-tasks/${weekly}/counts`, lines(1));
@@ -88,7 +91,7 @@ describe("cycle counts", () => {
     expect(alert).not.toBeNull();
     const differs = await request(job.ops, `/api/count-tasks/${weekly}/differences`);
     expect((await differs.json<{ lines: unknown[] }>()).lines).toEqual([
-      { consumable_code: code, name: expect.any(String), held: 2, counted: 1, recounted: 1 },
+      { consumable_code: code, name: NAME, held: 2, counted: 1, recounted: 1 },
     ]);
     const signed = await job.opsPost(`/api/count-tasks/${weekly}/sign-off`, { note: "One piece not found" });
     expect((await signed.json<Task>()).task.state).toBe("done");
