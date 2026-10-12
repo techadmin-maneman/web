@@ -138,6 +138,28 @@ export const purchasing = {
     claimed: "Claimed. It is in Claims, drafted.",
     writtenOff: "Written off.",
   },
+  scorecard: {
+    title: "Suppliers",
+    note: "The last twelve months.",
+    columns: [
+      "Supplier",
+      "Orders",
+      "On time, in full",
+      "Lead time",
+      "Failed check",
+      "Damaged",
+      "Claims won",
+      "Credited",
+    ],
+    none: "No suppliers yet.",
+    percent: (value: number | null) => (value === null ? "" : `${String(value)}%`),
+    /** "13.5 of 14 days", or "12 days" where nothing was promised. */
+    days: (actual: number | null, promised: number | null) => {
+      if (actual === null) return "";
+      return promised === null ? `${String(actual)} days` : `${String(actual)} of ${String(promised)} days`;
+    },
+    claims: (accepted: number, settled: number) => (settled === 0 ? "" : `${String(accepted)} of ${String(settled)}`),
+  },
   photo: {
     writeOff: "Photograph of the piece",
     claim: "Photograph for the supplier (optional)",

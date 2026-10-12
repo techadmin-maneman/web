@@ -99,6 +99,7 @@ import { registerOpsSuppliers } from "./routes/ops/suppliers.ts";
 import { registerOpsPurchasing } from "./routes/ops/purchasing.ts";
 import { registerOpsClaims } from "./routes/ops/purchasing.claims.ts";
 import { registerOpsStockPhotos } from "./routes/ops/purchasing.photos.ts";
+import { registerOpsScorecard } from "./routes/ops/purchasing.scorecard.ts";
 import { registerOpsReceipts } from "./routes/ops/purchasing.receipts.ts";
 import { registerOpsWaitlist } from "./routes/ops/waitlist.ts";
 import { registerConsultations } from "./routes/public/consultations.ts";
@@ -275,6 +276,8 @@ const SURFACE_ROUTES: Readonly<Record<Surface, readonly ((app: App) => void)[]>>
     registerOpsClaims,
     // Photographs of stock: a write-off's, and a claim's (docs/decisions/0170-stock-photos.md).
     registerOpsStockPhotos,
+    // Each supplier's scorecard (docs/decisions/0172-supplier-scorecard.md).
+    registerOpsScorecard,
     // What the photographs and cards hold in R2 (docs/decisions/0093-the-storage-meter.md).
     registerOpsStorage,
     registerOpsWhoami,

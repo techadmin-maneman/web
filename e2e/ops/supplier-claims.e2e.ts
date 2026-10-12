@@ -54,10 +54,30 @@ const PIECE = {
 
 const CLAIMS = { claims: [CLAIM], returns: [PIECE] } satisfies OpsReply<"/api/supplier-claims">;
 
+const SCORES = {
+  suppliers: [
+    {
+      supplier_id: "sup-1",
+      name: "Lumina Hair Co",
+      currency: "USD",
+      orders: 4,
+      on_time_in_full_percent: 75,
+      lead_days: 13.5,
+      promised_days: 14,
+      failed_check_percent: 6,
+      damaged_percent: 2,
+      claims_settled: 3,
+      claims_accepted: 2,
+      credited: 1250,
+    },
+  ],
+} satisfies OpsReply<"/api/supplier-scorecard">;
+
 async function open(page: Page, extra: Answers = {}): Promise<void> {
   await answer(page, {
     "GET /api/purchase-orders": json(ORDERS),
     "GET /api/supplier-claims": json(CLAIMS),
+    "GET /api/supplier-scorecard": json(SCORES),
     ...extra,
   });
   await page.goto("/purchasing");
@@ -145,4 +165,16 @@ test("claims a returned piece inside its warranty, and writes off another with w
   await lateRow.getByRole("button", { name: copy.returns.confirmWriteOff }).click();
   expect((await writeOff).postDataJSON()).toEqual({ reason: "Torn base", photo_id: PHOTO_ID });
   await expect(pieces).toContainText(copy.returns.none);
+});
+
+test("scores each supplier's year: on time in full, lead time against promised, quality and claims", async ({
+  page,
+}) => {
+  await open(page);
+  const scores = page.getByRole("region", { name: copy.scorecard.title });
+  const row = scores.getByRole("row").filter({ hasText: "Lumina Hair Co" });
+  for (const figure of ["75%", "13.5 of 14 days", "6%", "2%", "2 of 3", "USD 12.50"]) {
+    await expect(row).toContainText(figure);
+  }
+  expect(await axeViolations(page)).toEqual([]);
 });
