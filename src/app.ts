@@ -89,6 +89,7 @@ import { registerOpsServiceArea } from "./routes/ops/service-area.ts";
 import { registerOpsSlotTimes } from "./routes/ops/slot-times.ts";
 import { registerOpsStaff } from "./routes/ops/staff.ts";
 import { registerOpsStock } from "./routes/ops/stock.ts";
+import { registerOpsStockPlaces } from "./routes/ops/stock-places.ts";
 import { registerOpsWaitlist } from "./routes/ops/waitlist.ts";
 import { registerConsultations } from "./routes/public/consultations.ts";
 import { registerLead } from "./routes/public/lead.ts";
@@ -244,6 +245,8 @@ const SURFACE_ROUTES: Readonly<Record<Surface, readonly ((app: App) => void)[]>>
     registerOpsConsumables,
     registerOpsJobSheet,
     registerOpsStock,
+    // Where stock is kept, as a tree (docs/decisions/0155-the-stock-place-tree.md).
+    registerOpsStockPlaces,
     // What the photographs and cards hold in R2 (docs/decisions/0093-the-storage-meter.md).
     registerOpsStorage,
     registerOpsWhoami,

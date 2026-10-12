@@ -136,6 +136,8 @@ export const PURPOSES: Readonly<Record<string, string>> = {
     "The Access service tokens let in as every caller was before the Staff list, such as CI's (ADR 0109).",
   stock_balances:
     "What each place holds of each consumable, and when it last counted it: the sum of its rows in `stock_movements`, kept by triggers as each is written (ADR 0087).",
+  stock_places:
+    "Where stock is kept, as a tree: the national warehouse, zone hubs, city stockrooms and a kit for each technician, which a trigger adds with them (ADR 0155).",
   stock_movements:
     "Every movement of a consumable into or out of the central store or a technician's kit, never changed; what a place holds is the sum of its rows (ADR 0087).",
   stored_objects:

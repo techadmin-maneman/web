@@ -1,5 +1,5 @@
-// Stock: what each technician's kit and the central store hold, which is low,
-// and the movements ops record (docs/decisions/0087-consumables-and-stock.md).
+// Stock: what each place holds (the warehouse, hubs, stockrooms and technicians' kits), which is low, the movements
+// ops record, and the places themselves (docs/decisions/0087-consumables-and-stock.md, 0155-the-stock-place-tree.md).
 // Each movement shows what each place holds now beside what it will hold before
 // it is sent (docs/decisions/0071-what-ops-see-before-a-setting-changes.md).
 
@@ -8,6 +8,9 @@ import { expect, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
 import { answer, fails, IMRAN, json, STOCK, type Answers } from "./fixtures.ts";
 import * as opsCopy from "../../apps/ops/src/content.ts";
+import { stockPlaces } from "../../apps/ops/src/content/stock-places.ts";
+
+const WAREHOUSE = "National warehouse";
 
 async function open(page: Page, extra: Answers = {}): Promise<void> {
   await answer(page, { "GET /api/stock": json(STOCK), ...extra });
@@ -35,7 +38,7 @@ test("shows what each place holds, a low kit in words, a store below nothing, an
 }) => {
   await open(page);
   const table = onHand(page);
-  await expect(table.getByRole("columnheader", { name: opsCopy.stock.central })).toBeVisible();
+  await expect(table.getByRole("columnheader", { name: WAREHOUSE })).toBeVisible();
   await expect(table.getByRole("columnheader", { name: "Sameer Bhatt (left)" })).toBeVisible();
 
   const tape = table.getByRole("row").filter({ has: page.getByRole("rowheader", { name: "Tape strips" }) });
@@ -49,17 +52,17 @@ test("shows what each place holds, a low kit in words, a store below nothing, an
 });
 
 // A column a kit was unreadable past eight or ten.
-test("past six places, shows the central store and one kit, picked, marking each kit low on anything", async ({
+test("past six places, shows the warehouse and one place, picked, marking each place low on anything", async ({
   page,
 }) => {
   const kits = Array.from({ length: 6 }, (_, index) => ({
-    technician_id: `e2e00000-0000-4000-8000-00000000000${String(index + 1)}`,
+    ...STOCK.places[1],
+    id: `e2e00000-0000-4000-8000-00000000000${String(index + 1)}`,
     name: `Technician ${String(index + 1)}`,
-    active: true,
   }));
   const holdings = kits.map((kit, index) => ({
     consumable_code: "tape_strips",
-    technician_id: kit.technician_id,
+    place_id: kit.id,
     quantity: index + 1,
     low: index === 4,
     counted_at: null,
@@ -68,12 +71,12 @@ test("past six places, shows the central store and one kit, picked, marking each
   await answer(page, { "GET /api/stock": json(many) });
   await page.goto("/stock");
   const table = onHand(page);
-  await expect(table.getByRole("columnheader")).toHaveText(["Consumable", "Central store", "Technician 1"]);
+  await expect(table.getByRole("columnheader")).toHaveText(["Consumable", WAREHOUSE, "Technician 1"]);
 
-  const kit = table.getByLabel("Kit");
+  const kit = table.getByLabel("Place");
   await expect(kit.getByRole("option", { name: "Technician 5 · low" })).toHaveCount(1);
   await kit.selectOption({ label: "Technician 5 · low" });
-  await expect(table.getByRole("columnheader")).toHaveText(["Consumable", "Central store", "Technician 5"]);
+  await expect(table.getByRole("columnheader")).toHaveText(["Consumable", WAREHOUSE, "Technician 5"]);
   const tape = table.getByRole("row").filter({ has: page.getByRole("rowheader", { name: "Tape strips" }) });
   await expect(tape.getByRole("cell").nth(1)).toContainText("5 strip");
   await expect(tape.getByRole("cell").nth(1)).toContainText("Low");
@@ -90,7 +93,7 @@ test("records a delivery into the store, showing what it holds before and after"
 
   const check = form.getByRole("group", { name: opsCopy.stock.confirm.title });
   await expect(check).toBeFocused();
-  await expect(check).toContainText("Central store: 120 strip → 220 strip");
+  await expect(check).toContainText(`${WAREHOUSE}: 120 strip → 220 strip`);
   const sent = posted(page, "/api/stock/deliveries");
   await check.getByRole("button", { name: "Record" }).click();
   expect((await sent).postDataJSON()).toEqual({
@@ -106,18 +109,18 @@ test("a transfer shows both places, and says when the store would hold less than
   const form = recording(page);
   await form.getByLabel("Transfer").check();
   await form.getByLabel("Consumable").selectOption({ label: "Solvent" });
-  await form.getByLabel("From", { exact: true }).selectOption({ label: "Central store" });
+  await form.getByLabel("From", { exact: true }).selectOption({ label: WAREHOUSE });
   await form.getByLabel("To", { exact: true }).selectOption({ label: "Imran Qureshi" });
   await form.getByLabel("How many").fill("10");
   await form.getByRole("button", { name: "Review" }).click();
 
   const check = form.getByRole("group", { name: opsCopy.stock.confirm.title });
-  await expect(check).toContainText("Central store: -20 ml → -30 ml");
+  await expect(check).toContainText(`${WAREHOUSE}: -20 ml → -30 ml`);
   await expect(check).toContainText("Imran Qureshi: 150 ml → 160 ml");
-  await expect(check).toContainText("Central store would go below zero");
+  await expect(check).toContainText(`${WAREHOUSE} would go below zero`);
   const sent = posted(page, "/api/stock/transfers");
   await check.getByRole("button", { name: "Record" }).click();
-  expect((await sent).postDataJSON()).toEqual({ consumable_code: "solvent", quantity: 10, from: null, to: IMRAN });
+  expect((await sent).postDataJSON()).toEqual({ consumable_code: "solvent", quantity: 10, from: "central", to: IMRAN });
 });
 
 test("will not move stock to the place it is in", async ({ page }) => {
@@ -152,14 +155,14 @@ test("a count shows the figure it finds, and one that agrees says it records onl
   await form.getByRole("button", { name: "Record" }).click();
   expect((await sent).postDataJSON()).toEqual({
     consumable_code: "tape_strips",
-    technician_id: IMRAN,
+    place_id: IMRAN,
     counted: 2,
     note: null,
   });
 });
 
 test("a loss needs its words, and a refusal names what was wrong", async ({ page }) => {
-  await open(page, { "POST /api/stock/write-offs": fails(400, "invalid_request", ["technician_id"]) });
+  await open(page, { "POST /api/stock/write-offs": fails(400, "invalid_request", ["place_id"]) });
   const form = recording(page);
   await form.getByLabel("Loss").check();
   await form.getByLabel("How many").fill("2");
@@ -168,7 +171,7 @@ test("a loss needs its words, and a refusal names what was wrong", async ({ page
   await form.getByLabel(opsCopy.stock.record.lossNote).fill("Two burst in the heat");
   await form.getByRole("button", { name: "Review" }).click();
   await form.getByRole("button", { name: "Record" }).click();
-  await expect(form.getByRole("alert")).toHaveText("Unknown kit. Reload.");
+  await expect(form.getByRole("alert")).toHaveText("Unknown place. Reload.");
 });
 
 test("lists the latest movements, a job's use under the technician who recorded it", async ({ page }) => {
@@ -207,6 +210,38 @@ test("sorts the movements by a column, and narrows them by a list or a search", 
   await expect(rows.nth(1)).toContainText("Used on a job");
   await movements.getByLabel(opsCopy.tables.search).fill("nothing like it");
   await expect(movements.getByText(opsCopy.tables.none)).toBeVisible();
+});
+
+const ROOM = "e2e00000-0000-4000-8000-0000000000aa";
+const withRoom = {
+  ...STOCK,
+  places: [
+    ...STOCK.places,
+    { id: ROOM, kind: "stockroom", name: "Gurgaon stockroom", parent_id: "central", zone: "NCR", city: "Gurgaon", active: true },
+  ],
+} satisfies typeof STOCK;
+
+test("adds a stockroom under the warehouse, and closes it again", async ({ page }) => {
+  await open(page, { "POST /api/stock/places": json(withRoom), [`POST /api/stock/places/${ROOM}`]: json(STOCK) });
+  const places = page.getByRole("region", { name: stockPlaces.title });
+  await expect(places.getByRole("rowheader", { name: WAREHOUSE })).toBeVisible();
+  await places.getByLabel(stockPlaces.add.name).fill("Gurgaon stockroom");
+  await places.getByLabel(stockPlaces.add.city).selectOption("Gurgaon");
+  const added = posted(page, "/api/stock/places");
+  await places.getByRole("button", { name: stockPlaces.add.send }).click();
+  expect((await added).postDataJSON()).toEqual({
+    kind: "stockroom",
+    name: "Gurgaon stockroom",
+    parent_id: "central",
+    city: "Gurgaon",
+  });
+
+  await places.getByRole("button", { name: stockPlaces.editLabel("Gurgaon stockroom") }).click();
+  const closed = posted(page, `/api/stock/places/${ROOM}`);
+  await places.getByRole("button", { name: stockPlaces.change.close }).click();
+  expect((await closed).postDataJSON()).toEqual({ active: false });
+  await expect(places.getByRole("rowheader", { name: "Gurgaon stockroom" })).toHaveCount(0);
+  expect(await axeViolations(page)).toEqual([]);
 });
 
 test("meets WCAG 2.2 AA, with a movement being checked as well", async ({ page }) => {

@@ -130,17 +130,20 @@ export const JOB_SHEET = {
 
 const holding = (
   code: string,
-  place: string | null,
+  place: string,
   quantity: number,
   low = false,
   countedAt: string | null = null,
 ) => ({
   consumable_code: code,
-  technician_id: place,
+  place_id: place,
   quantity,
   low,
   counted_at: countedAt,
 });
+
+/** A kit, under the warehouse until ops move it, in its technician's city. */
+const KIT = { kind: "kit", parent_id: "central", zone: "NCR", city: "Gurgaon" } as const;
 
 export const STOCK = {
   consumables: [
@@ -148,15 +151,15 @@ export const STOCK = {
     { code: "tape_strips", name: "Tape strips", unit: "strip", retired: false, reorder_kit: 5, reorder_central: 50 },
   ],
   places: [
-    { technician_id: null, name: null, active: true },
-    { technician_id: IMRAN, name: "Imran Qureshi", active: true },
-    { technician_id: SAMEER, name: "Sameer Bhatt", active: false },
+    { id: "central", kind: "warehouse", name: "National warehouse", parent_id: null, zone: null, city: null, active: true },
+    { ...KIT, id: IMRAN, name: "Imran Qureshi", active: true },
+    { ...KIT, id: SAMEER, name: "Sameer Bhatt", active: false },
   ],
   holdings: [
-    holding("solvent", null, -20),
+    holding("solvent", "central", -20),
     holding("solvent", IMRAN, 150),
     holding("solvent", SAMEER, 0),
-    holding("tape_strips", null, 120, false, "2027-09-20T06:00:00.000Z"),
+    holding("tape_strips", "central", 120, false, "2027-09-20T06:00:00.000Z"),
     holding("tape_strips", IMRAN, 3, true),
     holding("tape_strips", SAMEER, 6),
   ],
@@ -164,7 +167,7 @@ export const STOCK = {
     {
       at: "2027-09-21T05:10:00.000Z",
       consumable_code: "tape_strips",
-      technician_id: IMRAN,
+      place_id: IMRAN,
       quantity: -4,
       reason: "used",
       by: IMRAN,
@@ -173,7 +176,7 @@ export const STOCK = {
     {
       at: "2027-09-20T06:00:00.000Z",
       consumable_code: "tape_strips",
-      technician_id: null,
+      place_id: "central",
       quantity: 100,
       reason: "received",
       by: "ops@maneman.in",
@@ -182,4 +185,6 @@ export const STOCK = {
   ],
   today: "2027-09-21",
   max_quantity: 100_000,
+  zones: ["NCR"],
+  cities: ["Gurgaon", "Delhi"],
 } satisfies OpsReply<"/api/stock">;

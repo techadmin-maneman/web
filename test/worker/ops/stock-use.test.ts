@@ -1,4 +1,4 @@
-// Stock of consumables in each technician's kit and the central store, and a job's
+// Stock of consumables in each technician's kit and the warehouse, and a job's
 // use of them (src/routes/ops/stock.ts, src/domain/field/job-use.ts;
 // docs/decisions/0087-consumables-and-stock.md). NOW is Monday 21 September 2026,
 // 12 noon in India.
@@ -24,9 +24,9 @@ let job: Working;
 const stock = async (): Promise<Stock> => (await request(job.ops, "/api/stock")).json<Stock>();
 
 /** What a place holds of a consumable, as the Stock screen reads it. */
-async function held(code: string, place: string | null): Promise<{ quantity: number; low: boolean }> {
+async function held(code: string, place: string): Promise<{ quantity: number; low: boolean }> {
   const holding = (await stock()).holdings.find(
-    (each) => each.consumable_code === code && each.technician_id === place,
+    (each) => each.consumable_code === code && each.place_id === place,
   );
   return { quantity: holding?.quantity ?? 0, low: holding?.low ?? false };
 }
@@ -60,8 +60,8 @@ beforeEach(async () => {
 describe("a job's use", () => {
   /** Tape strips and solvent into Imran's kit, and the job worked to its consumables step. */
   async function readyToRecord(): Promise<void> {
-    await job.opsPost("/api/stock/transfers", { consumable_code: "tape_strips", quantity: 12, from: null, to: IMRAN });
-    await job.opsPost("/api/stock/transfers", { consumable_code: "solvent", quantity: 100, from: null, to: IMRAN });
+    await job.opsPost("/api/stock/transfers", { consumable_code: "tape_strips", quantity: 12, from: "central", to: IMRAN });
+    await job.opsPost("/api/stock/transfers", { consumable_code: "solvent", quantity: 100, from: "central", to: IMRAN });
     await job.workTo("consumables");
   }
 
@@ -279,7 +279,7 @@ describe("writes that land together", () => {
   const byOps = { actor: { kind: "staff" as const, id: "ops@localhost" }, requestId: "count-1", now: NOW };
 
   it("leaves a kit holding what ops counted when a job's use lands between the count's read and its write", async () => {
-    await job.opsPost("/api/stock/transfers", { consumable_code: "tape_strips", quantity: 12, from: null, to: IMRAN });
+    await job.opsPost("/api/stock/transfers", { consumable_code: "tape_strips", quantity: 12, from: "central", to: IMRAN });
     await job.workTo("consumables");
 
     // Ops count 8 in the kit: 12 less the 4 the job used, whose step reaches us while the count is written.
@@ -317,17 +317,17 @@ describe("writes that land together", () => {
       return real.call(this, statements);
     });
 
-    await expect(count(env.DB, { code: "solvent", place: null, counted: 480, note: null }, byOps)).rejects.toThrow(
+    await expect(count(env.DB, { code: "solvent", place: "central", counted: 480, note: null }, byOps)).rejects.toThrow(
       "the stock of solvent moved each time it was counted",
     );
     vi.restoreAllMocks(); // the Stock screen's own read is a batch too
-    expect(await held("solvent", null)).toMatchObject({ quantity: 530 });
+    expect(await held("solvent", "central")).toMatchObject({ quantity: 530 });
     const audit = await env.DB.prepare("SELECT COUNT(*) AS n FROM audit_log WHERE action = 'stock.count'").first();
     expect(audit).toEqual({ n: 0 });
   });
 
   it("takes a job's use once when an older step is written after a newer one landed", async () => {
-    await job.opsPost("/api/stock/transfers", { consumable_code: "tape_strips", quantity: 12, from: null, to: IMRAN });
+    await job.opsPost("/api/stock/transfers", { consumable_code: "tape_strips", quantity: 12, from: "central", to: IMRAN });
     await job.workTo("consumables");
     // The phone's first step, read and held before its write.
     await env.DB.prepare(

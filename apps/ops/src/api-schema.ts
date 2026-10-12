@@ -4445,7 +4445,7 @@ export interface paths {
                 query?: {
                     actor_kind?: "staff" | "service" | "client" | "technician" | "system";
                     actor?: string;
-                    action?: "ops.call" | "client.call" | "tech.call" | "consent.switch" | "number_change.request" | "number_change.withdraw" | "number_change.decide" | "deletion.request" | "deletion.decide" | "person.erase" | "referral.decide" | "referral.attach" | "channel.add" | "channel.change" | "channel.pause" | "channel.resume" | "word.set" | "chat.reply" | "chat.note" | "chat.close" | "chat.link" | "chat.save" | "care_person.move" | "care_person.move_all" | "care_rota.set" | "care_leave.add" | "care_leave.delete" | "city_matter.raise" | "care_name.set" | "quick_reply.add" | "quick_reply.retire" | "remedy.give" | "remedy.ask" | "remedy.approve" | "remedy.decline" | "word.publish" | "partner_payout.record" | "partner_payout.delete" | "spend.add" | "spend.remove" | "photo.view" | "pincode.launch" | "data.export" | "grievance.raise" | "grievance.resolve" | "no_show.decide" | "technician_device.revoke" | "technician.allow_sign_in" | "no_show.dispute" | "no_show.dispute_rule" | "technician.leave" | "technician.leave_cancelled" | "technician.add" | "technician.change" | "technician.deactivate" | "technician.reactivate" | "technician.delete" | "technician.pay_grade" | "pay_grade.add" | "pay_grade.rename" | "pay_grade.delete" | "pay_rate.set" | "setting.change" | "price.set" | "price.withdraw" | "standard_cost.set" | "target.set" | "target.remove" | "slot_times.set" | "pincode.set" | "pincode.rename" | "pincode.add" | "blackout.add" | "blackout.remove" | "service.add" | "service.rename" | "service.describe" | "service.length" | "service.reorder" | "service.retire" | "service.restore" | "credit.adjust" | "dispatch.client_told" | "dispatch.check_in_cleared" | "dispatch.move_proposed" | "dispatch.proposal_withdrawn" | "consumable.add" | "consumable.change" | "consumable.retire" | "consumable.restore" | "consumable.delete" | "consumable.usage" | "job_sheet.set" | "stock.receive" | "stock.transfer" | "stock.count" | "stock.write_off" | "task.assign" | "task.hand_back" | "task.close" | "address.given_to_ops" | "alert.resolve" | "alert.send_again" | "booking.give_back" | "visit.book" | "visit.cancel" | "visit.close" | "visit.checkin_waive" | "visit.lost_reason" | "visit.move_accepted" | "hair_profile.correct" | "discount_code.make" | "discount_code.switch_off" | "discount_code.delete" | "discount_code.apply" | "discount_code.remove" | "staff.set" | "staff.enforce" | "staff.token_add" | "staff.token_remove" | "staff.delete";
+                    action?: "ops.call" | "client.call" | "tech.call" | "consent.switch" | "number_change.request" | "number_change.withdraw" | "number_change.decide" | "deletion.request" | "deletion.decide" | "person.erase" | "referral.decide" | "referral.attach" | "channel.add" | "channel.change" | "channel.pause" | "channel.resume" | "word.set" | "chat.reply" | "chat.note" | "chat.close" | "chat.link" | "chat.save" | "care_person.move" | "care_person.move_all" | "care_rota.set" | "care_leave.add" | "care_leave.delete" | "city_matter.raise" | "care_name.set" | "quick_reply.add" | "quick_reply.retire" | "remedy.give" | "remedy.ask" | "remedy.approve" | "remedy.decline" | "word.publish" | "partner_payout.record" | "partner_payout.delete" | "spend.add" | "spend.remove" | "photo.view" | "pincode.launch" | "data.export" | "grievance.raise" | "grievance.resolve" | "no_show.decide" | "technician_device.revoke" | "technician.allow_sign_in" | "no_show.dispute" | "no_show.dispute_rule" | "technician.leave" | "technician.leave_cancelled" | "technician.add" | "technician.change" | "technician.deactivate" | "technician.reactivate" | "technician.delete" | "technician.pay_grade" | "pay_grade.add" | "pay_grade.rename" | "pay_grade.delete" | "pay_rate.set" | "setting.change" | "price.set" | "price.withdraw" | "standard_cost.set" | "target.set" | "target.remove" | "slot_times.set" | "pincode.set" | "pincode.rename" | "pincode.add" | "blackout.add" | "blackout.remove" | "service.add" | "service.rename" | "service.describe" | "service.length" | "service.reorder" | "service.retire" | "service.restore" | "credit.adjust" | "dispatch.client_told" | "dispatch.check_in_cleared" | "dispatch.move_proposed" | "dispatch.proposal_withdrawn" | "consumable.add" | "consumable.change" | "consumable.retire" | "consumable.restore" | "consumable.delete" | "consumable.usage" | "job_sheet.set" | "stock.receive" | "stock.transfer" | "stock.count" | "stock.write_off" | "stock.place_add" | "stock.place_change" | "task.assign" | "task.hand_back" | "task.close" | "address.given_to_ops" | "alert.resolve" | "alert.send_again" | "booking.give_back" | "visit.book" | "visit.cancel" | "visit.close" | "visit.checkin_waive" | "visit.lost_reason" | "visit.move_accepted" | "hair_profile.correct" | "discount_code.make" | "discount_code.switch_off" | "discount_code.delete" | "discount_code.apply" | "discount_code.remove" | "staff.set" | "staff.enforce" | "staff.token_add" | "staff.token_remove" | "staff.delete";
                     /** @description A client's ID: what they did, and what was done to their record, visits, holds and requests. */
                     person?: string;
                     visit?: string;
@@ -9236,7 +9236,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** What each kit and the central store hold of each consumable, what is low, and the latest movements */
+        /** Every place, what each holds of each consumable, what is low, and the latest movements */
         get: {
             parameters: {
                 query?: never;
@@ -9283,7 +9283,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Stock received into the central store */
+        /** Stock received into the national warehouse */
         post: {
             parameters: {
                 query?: never;
@@ -9306,7 +9306,7 @@ export interface paths {
                         "application/json": components["schemas"]["Stock"];
                     };
                 };
-                /** @description invalid_request: fields names consumable_code for one nobody added, or the place no technician is or one not in the caller's cities */
+                /** @description invalid_request: fields names consumable_code for one nobody added, or place_id for no place or one not in the caller's cities */
                 400: {
                     headers: {
                         [name: string]: unknown;
@@ -9422,7 +9422,7 @@ export interface paths {
                         "application/json": components["schemas"]["Stock"];
                     };
                 };
-                /** @description invalid_request: fields names consumable_code for one nobody added, or the place no technician is or one not in the caller's cities */
+                /** @description invalid_request: fields names consumable_code for one nobody added, or place_id for no place or one not in the caller's cities */
                 400: {
                     headers: {
                         [name: string]: unknown;
@@ -9480,7 +9480,7 @@ export interface paths {
                         "application/json": components["schemas"]["Stock"];
                     };
                 };
-                /** @description invalid_request: fields names consumable_code for one nobody added, or the place no technician is or one not in the caller's cities */
+                /** @description invalid_request: fields names consumable_code for one nobody added, or place_id for no place or one not in the caller's cities */
                 400: {
                     headers: {
                         [name: string]: unknown;
@@ -9491,6 +9491,134 @@ export interface paths {
                 };
                 /** @description access_required */
                 403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/stock/places": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** A hub for a zone, or a stockroom in a city, under a place above it */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["StockPlaceAdd"];
+                };
+            };
+            responses: {
+                /** @description What every place holds */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Stock"];
+                    };
+                };
+                /** @description invalid_request: fields names name for one another place has, parent_id for no open place above it, or zone or city for none of ours */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description access_required, or not_permitted: changing a place asks Operations MANAGE everywhere */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/stock/places/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** A place renamed, moved under another, or closed or opened again; a kit only moved */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description A place by its ID: central for the warehouse, a kit by its technician's ID. */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["StockPlaceChange"];
+                };
+            };
+            responses: {
+                /** @description What every place holds */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Stock"];
+                    };
+                };
+                /** @description invalid_request: fields names name for a kit or one another place has, parent_id for the warehouse or no open place above it, or active for the warehouse, a kit, a place still holding stock or with an open place under it, or one under a closed place */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description access_required, or not_permitted: changing a place asks Operations MANAGE everywhere */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description not_found: no such place */
+                404: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -11855,7 +11983,7 @@ export interface components {
                 name: string | null;
             };
             /** @enum {string} */
-            action: "ops.call" | "client.call" | "tech.call" | "consent.switch" | "number_change.request" | "number_change.withdraw" | "number_change.decide" | "deletion.request" | "deletion.decide" | "person.erase" | "referral.decide" | "referral.attach" | "channel.add" | "channel.change" | "channel.pause" | "channel.resume" | "word.set" | "chat.reply" | "chat.note" | "chat.close" | "chat.link" | "chat.save" | "care_person.move" | "care_person.move_all" | "care_rota.set" | "care_leave.add" | "care_leave.delete" | "city_matter.raise" | "care_name.set" | "quick_reply.add" | "quick_reply.retire" | "remedy.give" | "remedy.ask" | "remedy.approve" | "remedy.decline" | "word.publish" | "partner_payout.record" | "partner_payout.delete" | "spend.add" | "spend.remove" | "photo.view" | "pincode.launch" | "data.export" | "grievance.raise" | "grievance.resolve" | "no_show.decide" | "technician_device.revoke" | "technician.allow_sign_in" | "no_show.dispute" | "no_show.dispute_rule" | "technician.leave" | "technician.leave_cancelled" | "technician.add" | "technician.change" | "technician.deactivate" | "technician.reactivate" | "technician.delete" | "technician.pay_grade" | "pay_grade.add" | "pay_grade.rename" | "pay_grade.delete" | "pay_rate.set" | "setting.change" | "price.set" | "price.withdraw" | "standard_cost.set" | "target.set" | "target.remove" | "slot_times.set" | "pincode.set" | "pincode.rename" | "pincode.add" | "blackout.add" | "blackout.remove" | "service.add" | "service.rename" | "service.describe" | "service.length" | "service.reorder" | "service.retire" | "service.restore" | "credit.adjust" | "dispatch.client_told" | "dispatch.check_in_cleared" | "dispatch.move_proposed" | "dispatch.proposal_withdrawn" | "consumable.add" | "consumable.change" | "consumable.retire" | "consumable.restore" | "consumable.delete" | "consumable.usage" | "job_sheet.set" | "stock.receive" | "stock.transfer" | "stock.count" | "stock.write_off" | "task.assign" | "task.hand_back" | "task.close" | "address.given_to_ops" | "alert.resolve" | "alert.send_again" | "booking.give_back" | "visit.book" | "visit.cancel" | "visit.close" | "visit.checkin_waive" | "visit.lost_reason" | "visit.move_accepted" | "hair_profile.correct" | "discount_code.make" | "discount_code.switch_off" | "discount_code.delete" | "discount_code.apply" | "discount_code.remove" | "staff.set" | "staff.enforce" | "staff.token_add" | "staff.token_remove" | "staff.delete";
+            action: "ops.call" | "client.call" | "tech.call" | "consent.switch" | "number_change.request" | "number_change.withdraw" | "number_change.decide" | "deletion.request" | "deletion.decide" | "person.erase" | "referral.decide" | "referral.attach" | "channel.add" | "channel.change" | "channel.pause" | "channel.resume" | "word.set" | "chat.reply" | "chat.note" | "chat.close" | "chat.link" | "chat.save" | "care_person.move" | "care_person.move_all" | "care_rota.set" | "care_leave.add" | "care_leave.delete" | "city_matter.raise" | "care_name.set" | "quick_reply.add" | "quick_reply.retire" | "remedy.give" | "remedy.ask" | "remedy.approve" | "remedy.decline" | "word.publish" | "partner_payout.record" | "partner_payout.delete" | "spend.add" | "spend.remove" | "photo.view" | "pincode.launch" | "data.export" | "grievance.raise" | "grievance.resolve" | "no_show.decide" | "technician_device.revoke" | "technician.allow_sign_in" | "no_show.dispute" | "no_show.dispute_rule" | "technician.leave" | "technician.leave_cancelled" | "technician.add" | "technician.change" | "technician.deactivate" | "technician.reactivate" | "technician.delete" | "technician.pay_grade" | "pay_grade.add" | "pay_grade.rename" | "pay_grade.delete" | "pay_rate.set" | "setting.change" | "price.set" | "price.withdraw" | "standard_cost.set" | "target.set" | "target.remove" | "slot_times.set" | "pincode.set" | "pincode.rename" | "pincode.add" | "blackout.add" | "blackout.remove" | "service.add" | "service.rename" | "service.describe" | "service.length" | "service.reorder" | "service.retire" | "service.restore" | "credit.adjust" | "dispatch.client_told" | "dispatch.check_in_cleared" | "dispatch.move_proposed" | "dispatch.proposal_withdrawn" | "consumable.add" | "consumable.change" | "consumable.retire" | "consumable.restore" | "consumable.delete" | "consumable.usage" | "job_sheet.set" | "stock.receive" | "stock.transfer" | "stock.count" | "stock.write_off" | "stock.place_add" | "stock.place_change" | "task.assign" | "task.hand_back" | "task.close" | "address.given_to_ops" | "alert.resolve" | "alert.send_again" | "booking.give_back" | "visit.book" | "visit.cancel" | "visit.close" | "visit.checkin_waive" | "visit.lost_reason" | "visit.move_accepted" | "hair_profile.correct" | "discount_code.make" | "discount_code.switch_off" | "discount_code.delete" | "discount_code.apply" | "discount_code.remove" | "staff.set" | "staff.enforce" | "staff.token_add" | "staff.token_remove" | "staff.delete";
             subject: {
                 kind: string;
                 id: string;
@@ -13186,18 +13314,25 @@ export interface components {
                 reorder_kit: number | null;
                 reorder_central: number | null;
             }[];
-            /** @description The central store first, then each active technician's kit, and any other still holding stock: those in the caller's cities, and the store only with a national grant. */
+            /** @description Every open place down the tree, the warehouse first, and any closed one still holding stock: those in the caller's cities, a hub with every city of its zone, and the warehouse only with a national grant. */
             places: {
-                /** @description A technician's kit, by the technician's ID; null for the central store. */
-                technician_id: string | null;
-                /** @description The technician's; null for the store. */
-                name: string | null;
+                /** @description A place by its ID: central for the warehouse, a kit by its technician's ID. */
+                id: string;
+                /** @enum {string} */
+                kind: "warehouse" | "hub" | "stockroom" | "kit";
+                /** @description A kit's is its technician's name. */
+                name: string;
+                /** @description The place it hangs from; null for the warehouse. */
+                parent_id: string | null;
+                zone: string | null;
+                city: string | null;
+                /** @description Open; a kit is open while its technician is. */
                 active: boolean;
             }[];
             holdings: {
                 consumable_code: string;
-                /** @description A technician's kit, by the technician's ID; null for the central store. */
-                technician_id: string | null;
+                /** @description A place by its ID: central for the warehouse, a kit by its technician's ID. */
+                place_id: string;
                 /** @description The sum of the place's rows; below nought is a gap. */
                 quantity: number;
                 /** @description At or below the level for its kind of place. */
@@ -13210,8 +13345,8 @@ export interface components {
                 /** Format: date-time */
                 at: string;
                 consumable_code: string;
-                /** @description A technician's kit, by the technician's ID; null for the central store. */
-                technician_id: string | null;
+                /** @description A place by its ID: central for the warehouse, a kit by its technician's ID. */
+                place_id: string;
                 /** @description Into the place, positive; out of it, negative. */
                 quantity: number;
                 /** @enum {string} */
@@ -13223,6 +13358,10 @@ export interface components {
             /** Format: date */
             today: string;
             max_quantity: number;
+            /** @description The zones a hub may be for. */
+            zones: string[];
+            /** @description The active cities a stockroom may be in. */
+            cities: string[];
         };
         StockDelivery: {
             consumable_code: string;
@@ -13232,24 +13371,45 @@ export interface components {
         StockTransfer: {
             consumable_code: string;
             quantity: number;
-            /** @description A technician's kit, by the technician's ID; null for the central store. */
-            from: string | null;
-            /** @description A technician's kit, by the technician's ID; null for the central store. */
-            to: string | null;
+            /** @description A place by its ID: central for the warehouse, a kit by its technician's ID. */
+            from: string;
+            /** @description A place by its ID: central for the warehouse, a kit by its technician's ID. */
+            to: string;
         };
         StockCount: {
             consumable_code: string;
-            /** @description A technician's kit, by the technician's ID; null for the central store. */
-            technician_id: string | null;
+            /** @description A place by its ID: central for the warehouse, a kit by its technician's ID. */
+            place_id: string;
             counted: number;
             note?: string | null;
         };
         StockWriteOff: {
             consumable_code: string;
-            /** @description A technician's kit, by the technician's ID; null for the central store. */
-            technician_id: string | null;
+            /** @description A place by its ID: central for the warehouse, a kit by its technician's ID. */
+            place_id: string;
             quantity: number;
             note: string;
+        };
+        StockPlaceAdd: {
+            /** @enum {string} */
+            kind: "hub";
+            name: string;
+            /** @description A place by its ID: central for the warehouse, a kit by its technician's ID. */
+            parent_id: string;
+            zone: string;
+        } | {
+            /** @enum {string} */
+            kind: "stockroom";
+            name: string;
+            /** @description A place by its ID: central for the warehouse, a kit by its technician's ID. */
+            parent_id: string;
+            city: string;
+        };
+        StockPlaceChange: {
+            name?: string;
+            /** @description A place by its ID: central for the warehouse, a kit by its technician's ID. */
+            parent_id?: string;
+            active?: boolean;
         };
         Storage: {
             /** @description What the client-photos and referral-cards buckets hold. */

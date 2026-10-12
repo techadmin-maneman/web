@@ -1,5 +1,5 @@
 // Recording a movement of stock (docs/decisions/0087-consumables-and-stock.md):
-// a delivery into the central store, a transfer between two places, a count,
+// a delivery into the warehouse, a transfer between two places, a count,
 // or a loss somebody saw. Before anything is sent, the check shows what each
 // place holds now beside what it will hold (ADR 0071); a count shows the
 // figure it finds, and the ledger takes the difference. A place that would
@@ -18,10 +18,6 @@ import styles from "./stock.module.css";
 export const KINDS = ["delivery", "transfer", "count", "write_off"] as const;
 export type Kind = (typeof KINDS)[number];
 
-/** A place in a select: the central store, or a technician's kit by their ID. */
-const CENTRAL = "central";
-const placeOf = (value: string): string | null => (value === CENTRAL ? null : value);
-
 interface Draft {
   readonly kind: Kind;
   readonly code: string;
@@ -37,12 +33,16 @@ type Step = { readonly step: "editing" | "checking" | "saving" | "recorded" } | 
 
 const WHOLE = /^\d{1,6}$/;
 
-export function placeName(book: Stock, technicianId: string | null): string {
-  if (technicianId === null) return copy.central;
-  const place = book.places.find((each) => each.technician_id === technicianId);
-  if (place?.name === null || place?.name === undefined) return technicianId;
-  return place.active ? place.name : copy.left(place.name);
+/** A place by name: a kit by its technician's, marked once they left, and a hub or a stockroom marked once closed. */
+export function placeName(book: Stock, id: string): string {
+  const place = book.places.find((each) => each.id === id);
+  if (place === undefined) return id;
+  if (place.active) return place.name;
+  return place.kind === "kit" ? copy.left(place.name) : copy.closed(place.name);
 }
+
+/** The warehouse a delivery goes into, which is "central" in the ledger. */
+const warehouseOf = (book: Stock) => book.places.find((each) => each.kind === "warehouse")?.id ?? "central";
 
 /** One of the consumables or the places, by name. */
 function Choice(props: {
@@ -98,16 +98,16 @@ function Quantity(props: { label: string; hint?: string; value: string; onChange
 function effectOf(book: Stock, draft: Draft): { lines: string[]; warnings: string[] } {
   const consumable = book.consumables.find((each) => each.code === draft.code);
   const unit = consumable?.unit ?? "";
-  const held = (place: string | null) =>
-    book.holdings.find((each) => each.consumable_code === draft.code && each.technician_id === place)?.quantity ?? 0;
+  const held = (place: string) =>
+    book.holdings.find((each) => each.consumable_code === draft.code && each.place_id === place)?.quantity ?? 0;
   const said = (quantity: number) => copy.held(quantity, unit);
   const moved = Number(draft.quantity);
-  const changes: [string | null, number][] = [];
-  if (draft.kind === "delivery") changes.push([null, moved]);
-  if (draft.kind === "transfer") changes.push([placeOf(draft.from), -moved], [placeOf(draft.to), moved]);
-  if (draft.kind === "write_off") changes.push([placeOf(draft.place), -moved]);
+  const changes: [string, number][] = [];
+  if (draft.kind === "delivery") changes.push([warehouseOf(book), moved]);
+  if (draft.kind === "transfer") changes.push([draft.from, -moved], [draft.to, moved]);
+  if (draft.kind === "write_off") changes.push([draft.place, -moved]);
   if (draft.kind === "count") {
-    const place = placeOf(draft.place);
+    const place = draft.place;
     const counted = Number(draft.counted);
     if (counted === held(place)) return { lines: [copy.confirm.same], warnings: [] };
     changes.push([place, counted - held(place)]);
@@ -143,20 +143,20 @@ async function sent(draft: Draft) {
       return api.recordTransfer({
         consumable_code: code,
         quantity: Number(draft.quantity),
-        from: placeOf(draft.from),
-        to: placeOf(draft.to),
+        from: draft.from,
+        to: draft.to,
       });
     case "count":
       return api.recordCount({
         consumable_code: code,
-        technician_id: placeOf(draft.place),
+        place_id: draft.place,
         counted: Number(draft.counted),
         note,
       });
     case "write_off":
       return api.recordWriteOff({
         consumable_code: code,
-        technician_id: placeOf(draft.place),
+        place_id: draft.place,
         quantity: Number(draft.quantity),
         note: draft.note.trim(),
       });
@@ -173,19 +173,17 @@ export function StockForm({
   kinds: readonly [Kind, ...Kind[]];
   onRecorded: (book: Stock) => void;
 }) {
-  const places = book.places.map(
-    (place) => [place.technician_id ?? CENTRAL, placeName(book, place.technician_id)] as const,
-  );
-  // The store first where the caller's grants reach it, else their first kit.
-  const [first, second] = places.map(([value]) => value);
+  const places = book.places.map((place) => [place.id, placeName(book, place.id)] as const);
+  // The warehouse first where the caller's grants reach it, else their first place.
+  const [first = "", second] = places.map(([value]) => value);
   const offered = book.consumables.filter((each) => !each.retired);
   const [draft, setDraft] = useState<Draft>({
     kind: kinds[0],
     code: offered[0]?.code ?? "",
     quantity: "",
-    from: first ?? CENTRAL,
-    to: second ?? first ?? CENTRAL,
-    place: first ?? CENTRAL,
+    from: first,
+    to: second ?? first,
+    place: first,
     counted: "",
     note: "",
   });

@@ -31,7 +31,14 @@ import {
   writeOff,
   type Moved,
 } from "../../domain/field/stock.ts";
-import { isPlaceWithin, PLACE_KINDS, placesWithin, WAREHOUSE, type Place } from "../../domain/field/stock-places.ts";
+import {
+  isPlaceWithin,
+  PLACE_KINDS,
+  placeAreas,
+  placesWithin,
+  WAREHOUSE,
+  type Place,
+} from "../../domain/field/stock-places.ts";
 import { actorOf } from "../../http/audit.ts";
 import type { App, AppEnv } from "../../http/context.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
@@ -112,6 +119,8 @@ const StockSchema = z
       .openapi({ description: "The latest movements, newest first." }),
     today: z.iso.date(),
     max_quantity: z.number().int(),
+    zones: z.array(z.string()).openapi({ description: "The zones a hub may be for." }),
+    cities: z.array(z.string()).openapi({ description: "The active cities a stockroom may be in." }),
   })
   .strict()
   .openapi("Stock");
@@ -226,6 +235,7 @@ export async function stockAnswer(c: Context<AppEnv>) {
   const now = c.var.deps.now();
   const within = await placesWithin(c.env.DB, await reachOf(c, "operations", "view"));
   const view = await stockView(c.env.DB, now, within);
+  const areas = await placeAreas(c.env.DB);
   const today = indiaDate(now);
   return {
     consumables: view.consumables.map((consumable) => ({
@@ -263,6 +273,7 @@ export async function stockAnswer(c: Context<AppEnv>) {
     })),
     today,
     max_quantity: CONSUMABLE_BOUNDS.maxQuantity,
+    ...areas,
   };
 }
 

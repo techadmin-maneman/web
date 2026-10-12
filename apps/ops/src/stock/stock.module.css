@@ -19,7 +19,7 @@
   overflow-x: auto;
 }
 
-/* The kit shown beside the central store, once there are too many for a column each. */
+/* The place shown beside the warehouse, once there are too many for a column each. */
 .kitPicker {
   max-width: var(--measure-form);
   margin-bottom: var(--sp-16);
@@ -88,4 +88,17 @@
   padding: 0;
   font-size: var(--fs-14);
   color: var(--text-muted);
+}
+
+/* A place under another, set in by how deep it sits in the tree. */
+.depth1 {
+  padding-left: var(--sp-16);
+}
+
+.depth2 {
+  padding-left: calc(var(--sp-16) * 2);
+}
+
+.depth3 {
+  padding-left: calc(var(--sp-16) * 3);
 }

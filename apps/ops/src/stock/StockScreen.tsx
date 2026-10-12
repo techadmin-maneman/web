@@ -1,6 +1,6 @@
-// Stock (docs/decisions/0087-consumables-and-stock.md): what each technician's
-// kit and the central store hold of each consumable, which is low, and the
-// latest movements. Stock is kept in our own ledger, so a free consultation or a credit visit deducts what it used
+// Stock (docs/decisions/0087-consumables-and-stock.md, 0155-the-stock-place-tree.md): what each place holds of
+// each consumable (the warehouse, hubs, stockrooms and technicians' kits), which is low, the latest movements,
+// and, for national managers, the places themselves. Stock is kept in our own ledger, so a free consultation or a credit visit deducts what it used
 // as any other job does.
 //
 // What a place holds is the sum of its movements. A job's use comes out of the
@@ -12,7 +12,7 @@ import { Field, Select } from "@maneman/ui/Field";
 import { Table } from "@maneman/ui/Table";
 import { useLoad } from "@maneman/ui/useLoad";
 import { indiaClock, indiaDate, shortDate } from "@maneman/web-kit/dates";
-import { useState } from "react";
+import { lazy, Suspense, useState } from "react";
 import { api, type Stock } from "../api.ts";
 import { OpsLink, Shell } from "../components/Shell.tsx";
 import { stock as copy } from "../content.ts";
@@ -26,7 +26,10 @@ import { useTableView, type Column } from "../components/useTableView.ts";
 import { KINDS, placeName, StockForm, type Kind } from "./StockForm.tsx";
 import styles from "./stock.module.css";
 
-/** The call that records each movement. A delivery goes into the central store, which only national staff reach. */
+/** The places, read only by national managers, so the panel loads only for them. */
+const PlacesPanel = lazy(() => import("./PlacesPanel.tsx").then((module) => ({ default: module.PlacesPanel })));
+
+/** The call that records each movement. A delivery goes into the warehouse, which only national staff reach. */
 const RECORDING: Readonly<Record<Kind, OpsCall>> = {
   delivery: "POST /api/stock/deliveries",
   transfer: "POST /api/stock/transfers",
@@ -35,8 +38,8 @@ const RECORDING: Readonly<Record<Kind, OpsCall>> = {
 };
 
 /** One place's figure: what it holds, marked Low at or below its level, and when it was last counted. */
-function Held({ book, code, technicianId }: { book: Stock; code: string; technicianId: string | null }) {
-  const holding = book.holdings.find((each) => each.consumable_code === code && each.technician_id === technicianId);
+function Held({ book, code, place }: { book: Stock; code: string; place: string }) {
+  const holding = book.holdings.find((each) => each.consumable_code === code && each.place_id === place);
   const unit = book.consumables.find((each) => each.code === code)?.unit ?? "";
   const quantity = holding?.quantity ?? 0;
   return (
@@ -62,30 +65,29 @@ function ToSettings() {
   );
 }
 
-/** Past this many places, a column each grows too wide to read: the table shows the central store and one kit. */
+/** Past this many places, a column each grows too wide to read: the table shows the warehouse and one place. */
 const PLACES_SIDE_BY_SIDE = 6;
 
-/** The kit the table shows beside the central store, past a handful: each named, and marked where any is low. */
-function KitPicker({ book, kit, onKit }: { book: Stock; kit: string | null; onKit: (kit: string) => void }) {
-  const lowIn = (technicianId: string) =>
-    book.holdings.some((holding) => holding.technician_id === technicianId && holding.low);
+/** The place the table shows beside the warehouse, past a handful: each named, and marked where any is low. */
+function PlacePicker({ book, place, onPlace }: { book: Stock; place: string; onPlace: (place: string) => void }) {
+  const lowIn = (id: string) => book.holdings.some((holding) => holding.place_id === id && holding.low);
   return (
-    <Field label={copy.kit} className={styles.kitPicker}>
+    <Field label={copy.place} className={styles.kitPicker}>
       {(control) => (
         <Select
           {...control}
-          value={kit ?? ""}
+          value={place}
           onChange={(event) => {
-            onKit(event.target.value);
+            onPlace(event.target.value);
           }}
         >
-          {book.places.flatMap((place) =>
-            place.technician_id === null
+          {book.places.flatMap((each) =>
+            each.kind === "warehouse"
               ? []
               : [
-                  <option key={place.technician_id} value={place.technician_id}>
-                    {placeName(book, place.technician_id)}
-                    {lowIn(place.technician_id) ? copy.kitLow : ""}
+                  <option key={each.id} value={each.id}>
+                    {placeName(book, each.id)}
+                    {lowIn(each.id) ? copy.placeLow : ""}
                   </option>,
                 ],
           )}
@@ -98,9 +100,9 @@ function KitPicker({ book, kit, onKit }: { book: Stock; kit: string | null; onKi
 function OnHand({ book }: { book: Stock }) {
   const [picked, setPicked] = useState<string | null>(null);
   const many = book.places.length > PLACES_SIDE_BY_SIDE;
-  const kit = picked ?? book.places.find((place) => place.technician_id !== null)?.technician_id ?? null;
+  const beside = picked ?? book.places.find((place) => place.kind !== "warehouse")?.id ?? "";
   const places = many
-    ? book.places.filter((place) => place.technician_id === null || place.technician_id === kit)
+    ? book.places.filter((place) => place.kind === "warehouse" || place.id === beside)
     : book.places;
   if (book.consumables.length === 0) {
     return (
@@ -111,14 +113,14 @@ function OnHand({ book }: { book: Stock }) {
   }
   return (
     <div className={styles.scroll}>
-      {many && <KitPicker book={book} kit={kit} onKit={setPicked} />}
+      {many && <PlacePicker book={book} place={beside} onPlace={setPicked} />}
       <Table className={form.table}>
         <thead>
           <tr>
             <th scope="col">{copy.consumable}</th>
             {places.map((place) => (
-              <th scope="col" key={place.technician_id ?? "central"}>
-                {placeName(book, place.technician_id)}
+              <th scope="col" key={place.id}>
+                {placeName(book, place.id)}
               </th>
             ))}
           </tr>
@@ -131,12 +133,7 @@ function OnHand({ book }: { book: Stock }) {
                 {consumable.retired && <span className={styles.retired}>{copy.retired}</span>}
               </th>
               {places.map((place) => (
-                <Held
-                  key={place.technician_id ?? "central"}
-                  book={book}
-                  code={consumable.code}
-                  technicianId={place.technician_id}
-                />
+                <Held key={place.id} book={book} code={consumable.code} place={place.id} />
               ))}
             </tr>
           ))}
@@ -153,7 +150,7 @@ function Movements({ book }: { book: Stock }) {
   const words = copy.movements;
   const consumable = (row: Movement) =>
     book.consumables.find((each) => each.code === row.consumable_code)?.name ?? row.consumable_code;
-  const place = (row: Movement) => placeName(book, row.technician_id);
+  const place = (row: Movement) => placeName(book, row.place_id);
   const why = (row: Movement) => words.reasons[row.reason] ?? row.reason;
   const who = (row: Movement) => (row.reason === "used" ? placeName(book, row.by) : recordedBy(row.by));
   const [when, what, where, change, reason, by] = words.columns;
@@ -236,6 +233,11 @@ export function StockScreen() {
             <StockForm book={book ?? loaded.value} kinds={[firstKind, ...otherKinds]} onRecorded={setBook} />
           )}
           <Movements book={book ?? loaded.value} />
+          {access.mayCall("POST /api/stock/places") && (
+            <Suspense fallback={<Loading />}>
+              <PlacesPanel book={book ?? loaded.value} onChanged={setBook} />
+            </Suspense>
+          )}
         </div>
       )}
     </Shell>

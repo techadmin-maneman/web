@@ -95,6 +95,18 @@ export async function placesWithin(db: D1Database, reached: PlacesReached): Prom
   return new Set(results.map((row) => row.id));
 }
 
+/** The zones a hub may be for, and the active cities a stockroom may be in, in their order. */
+export async function placeAreas(db: D1Database): Promise<{ zones: string[]; cities: string[] }> {
+  const [zones, cities] = await db.batch<{ name: string }>([
+    db.prepare("SELECT name FROM zones ORDER BY sort, name"),
+    db.prepare("SELECT name FROM cities WHERE active = 1 ORDER BY sort, name"),
+  ]);
+  return {
+    zones: (zones?.results ?? []).map((row) => row.name),
+    cities: (cities?.results ?? []).map((row) => row.name),
+  };
+}
+
 /** Whether a place is among those within reach, where null is every one. */
 export const isPlaceWithin = (within: ReadonlySet<Place> | null, place: Place): boolean =>
   within === null || within.has(place);
@@ -105,10 +117,9 @@ interface Written {
   readonly now: Date;
 }
 
-export type PlaceChanged =
-  | { readonly ok: true; readonly id: Place }
-  | { readonly ok: false; readonly fields: string[] }
-  | { readonly ok: false; readonly missing: true };
+type PlaceAdded = { readonly ok: true; readonly id: Place } | { readonly ok: false; readonly fields: string[] };
+
+export type PlaceChanged = PlaceAdded | { readonly ok: false; readonly missing: true };
 
 /** A place another may hang from: open, and higher up the tree than `kind`. */
 async function parentFor(db: D1Database, parentId: Place, kind: PlaceKind): Promise<StockPlace | null> {
@@ -150,12 +161,15 @@ export async function addPlace(
     readonly area: string;
   },
   written: Written,
-): Promise<PlaceChanged> {
+): Promise<PlaceAdded> {
   const fields: string[] = [];
   if (await nameTaken(db, input.name, null)) fields.push("name");
   if ((await parentFor(db, input.parentId, input.kind)) === null) fields.push("parent_id");
-  const areas = input.kind === "hub" ? "SELECT 1 FROM zones WHERE name = ?1" : "SELECT 1 FROM cities WHERE name = ?1";
-  if ((await db.prepare(areas).bind(input.area).first()) === null) fields.push(input.kind === "hub" ? "zone" : "city");
+  const area =
+    input.kind === "hub"
+      ? db.prepare("SELECT 1 FROM zones WHERE name = ?1")
+      : db.prepare("SELECT 1 FROM cities WHERE name = ?1 AND active = 1");
+  if ((await area.bind(input.area).first()) === null) fields.push(input.kind === "hub" ? "zone" : "city");
   if (fields.length > 0) return { ok: false, fields };
   const id = crypto.randomUUID();
   const at = written.now.toISOString();
@@ -208,7 +222,8 @@ async function mayClose(db: D1Database, place: StockPlace): Promise<boolean> {
   if (place.kind === "warehouse" || place.kind === "kit") return false;
   const busy = await db
     .prepare(
-      `SELECT 1 WHERE EXISTS (SELECT 1 FROM stock_balances WHERE place = ?1 AND quantity <> 0)
+      `SELECT 1 WHERE EXISTS (SELECT 1 FROM consumables c CROSS JOIN stock_balances b ON b.consumable_code = c.code
+                              WHERE b.place = ?1 AND b.quantity <> 0)
          OR EXISTS (SELECT 1 FROM stock_places p LEFT JOIN technicians t ON t.id = p.technician_id
                     WHERE p.parent_id = ?1 AND p.active = 1 AND COALESCE(t.active, 1) = 1)`,
     )
