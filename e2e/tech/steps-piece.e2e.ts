@@ -54,6 +54,40 @@ test.describe("the piece (board B3, step 4)", () => {
     ).toBeVisible();
   });
 
+  test("lists the kit's hair systems, the one made to the profile first, and sends the one picked", async ({
+    page,
+  }) => {
+    const fake = await fakeTech(page);
+    fake.type = "first_fit";
+    fake.service = { tier: "essential", name: "Mane Man Essential" };
+    fake.profile = ROHITS_PROFILE;
+    const spec = { product: "essential", base_width_in: 8, base_length_in: 10, colour: "1B", grey_percent: 20 };
+    fake.kitHairSystems = [
+      {
+        ...spec,
+        code: "hs_lighter",
+        name: "Mane Man Essential 8x10 1B, 20% grey, 100%",
+        held: 1,
+        density_percent: 100,
+      },
+      { ...spec, code: "hs_exact", name: "Mane Man Essential 8x10 1B, 20% grey, 120%", held: 2, density_percent: 120 },
+    ];
+    startedThrough(fake, "before_photos", "checklist", "consumables");
+    await page.goto(`/jobs/${JOB_ID}/piece`);
+
+    const kit = page.getByRole("region", { name: techCopy.steps.piece.kit.title });
+    const choices = kit.getByRole("button");
+    await expect(choices.first()).toContainText(`120% · 2 in kit · ${techCopy.steps.piece.kit.matches}`);
+    await choices.first().click();
+    await expect(choices.first()).toHaveAttribute("aria-pressed", "true");
+    expect(await axeViolations(page)).toEqual([]);
+    await page.getByRole("textbox", { name: techCopy.steps.piece.label }).fill("MM-STD-5120-A");
+    await page.getByRole("button", { name: techCopy.steps.next }).click();
+
+    await expect.poll(() => writesTo(fake, "piece").length).toBe(1);
+    expect(writesTo(fake, "piece")[0]?.body).toEqual({ piece_code: "MM-STD-5120-A", stock_code: "hs_exact" });
+  });
+
   test("the label field is the whole of its 64 px box, so a gloved tap lands in it", async ({ page }) => {
     await onThePiece(page);
     const box = await page.getByRole("textbox", { name: techCopy.steps.piece.label }).boundingBox();

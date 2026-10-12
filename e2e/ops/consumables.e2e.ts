@@ -47,7 +47,7 @@ test.describe("a consumable added or changed", () => {
     await add.getByLabel("Unit").fill("wipe");
     await add.getByLabel(settingsCopy.consumables.form.cost).fill("7.5");
     await add.getByLabel(settingsCopy.consumables.form.confirm.fields.kit).fill("10");
-    await page.getByRole("button", { name: "Add" }).click();
+    await page.getByRole("button", { name: "Add", exact: true }).click();
 
     const check = page.getByRole("group", { name: "Review the change" });
     await expect(check).toBeFocused();
@@ -100,7 +100,7 @@ test.describe("a consumable added or changed", () => {
     await add.getByLabel("Name").fill("tape strips");
     await add.getByLabel("Unit").fill("strip");
     await add.getByLabel(settingsCopy.consumables.form.cost).fill("12");
-    await page.getByRole("button", { name: "Add" }).click();
+    await page.getByRole("button", { name: "Add", exact: true }).click();
     await page.getByRole("button", { name: "Confirm" }).click();
 
     await expect(page.getByRole("alert")).toHaveText("That name is taken, or doesn't start with a letter or digit.");
@@ -189,6 +189,49 @@ test.describe("what each service uses", () => {
         { code: "tape_strips", quantity: 6 },
       ],
     });
+  });
+});
+
+test.describe("hair systems", () => {
+  const words = settingsCopy.consumables.hairSystems;
+  const panel = (page: Page) => page.getByRole("region", { name: words.title });
+
+  test("adds one by its spec, and reads the list again with it in", async ({ page }) => {
+    await open(page, { "POST /api/hair-systems": json({ code: "hs_standard_8x10_1b_g20_d100" }) });
+    const form = panel(page);
+    await form.getByLabel(words.product).selectOption({ label: "First fit" });
+    await form.getByLabel(words.width).fill("8");
+    await form.getByLabel(words.length).fill("10");
+    await form.getByLabel(words.colour).selectOption("1B");
+    await form.getByLabel(words.grey).fill("20");
+    await form.getByLabel(words.density).selectOption("100");
+    await form.getByLabel(words.cost).fill("12000");
+    const sent = posted(page, "/api/hair-systems");
+    const reread = page.waitForRequest((request) => request.url().endsWith("/api/consumables"));
+    await form.getByRole("button", { name: words.add }).click();
+    expect((await sent).postDataJSON()).toEqual({
+      product: "standard",
+      base_width_in: 8,
+      base_length_in: 10,
+      colour: "1B",
+      grey_percent: 20,
+      density_percent: 100,
+      unit_cost: 1_200_000,
+      reorder_kit: null,
+      reorder_central: null,
+    });
+    await reread;
+    await expect(page.getByRole("status")).toHaveText(words.added);
+  });
+
+  test("says when the spec is in stock already", async ({ page }) => {
+    await open(page, { "POST /api/hair-systems": fails(400, "invalid_request", ["hair_system"]) });
+    const form = panel(page);
+    await form.getByLabel(words.width).fill("8");
+    await form.getByLabel(words.length).fill("10");
+    await form.getByLabel(words.cost).fill("12000");
+    await form.getByRole("button", { name: words.add }).click();
+    await expect(form.getByRole("alert")).toHaveText(words.errors.hair_system ?? "");
   });
 });
 
