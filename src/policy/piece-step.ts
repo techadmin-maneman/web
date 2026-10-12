@@ -5,11 +5,15 @@ import { isPieceCode } from "../config/pieces.ts";
 
 type OldPiece = { readonly piece_code: string; readonly failure_reason: string };
 
-/** A piece step as the phone sends it: the piece, its base and lot, and on a replacement the one that came off. */
+/**
+ * A piece step as the phone sends it: the piece, its base and lot, the hair system it came out of the kit as, and on a
+ * replacement the one that came off.
+ */
 type PieceSent = {
   readonly piece_code: string;
   readonly base?: string | null;
   readonly supplier_lot?: string | null;
+  readonly stock_code?: string | null;
   readonly failure_reason?: string | null;
   readonly old_piece?: OldPiece | null;
 };
@@ -19,6 +23,7 @@ type PieceRecorded = {
   readonly piece_code: string;
   readonly base: string | null;
   readonly supplier_lot: string | null;
+  readonly stock_code: string | null;
   readonly failure_reason: string | null;
   readonly old_piece: OldPiece | null;
 };
@@ -32,6 +37,7 @@ export function pieceRecorded(sent: PieceSent): PieceRecorded | { readonly inval
     piece_code: sent.piece_code,
     base: sent.base ?? null,
     supplier_lot: sent.supplier_lot ?? null,
+    stock_code: sent.stock_code ?? null,
     failure_reason: sent.failure_reason ?? null,
     old_piece: oldPiece,
   };

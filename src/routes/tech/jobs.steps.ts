@@ -18,7 +18,9 @@ import {
 } from "../../domain/field/job-events.ts";
 import { pieceLabelTaken, pieceStepOf } from "../../domain/field/pieces.ts";
 import { checklistOf, jobSheet, knownCodes } from "../../domain/field/job-sheet-settings.ts";
+import { hairSystemSpecs } from "../../domain/field/hair-systems.ts";
 import { recordJobUse } from "../../domain/field/job-use.ts";
+import { recordPieceUse } from "../../domain/field/piece-use.ts";
 import { tellOfLowStock } from "../../domain/field/stock.ts";
 import { noShowReadiness, openNoShowCase } from "../../domain/no-shows/no-shows.ts";
 import { closeOneVisit } from "../../domain/visits/one-visit.ts";
@@ -204,14 +206,20 @@ function registerSteps(app: App): void {
   });
 
   // By code, or by name from a phone that queued the step before codes. A retired consumable is still taken:
-  // it was used. What was used comes out of the technician's kit as the step lands, once however often it does.
+  // it was used. What was used comes out of the technician's kit as the step lands, once however often it does. A
+  // hair system is the piece step's, never this one's.
   app.openapi(consumablesRoute, (c) => {
     const { items } = c.req.valid("json");
     return step(
       c,
       "consumables",
       async () => {
-        const codes = new Set((await allConsumables(c.env.DB)).map((consumable) => consumable.code));
+        const hairSystems = await hairSystemSpecs(c.env.DB);
+        const codes = new Set(
+          (await allConsumables(c.env.DB)).flatMap((consumable) =>
+            hairSystems.has(consumable.code) ? [] : [consumable.code],
+          ),
+        );
         return items.some((item) => "code" in item && !codes.has(item.code)) ? { invalid: ["items"] } : { items };
       },
       async (job) => {
@@ -226,16 +234,27 @@ function registerSteps(app: App): void {
     );
   });
 
+  // The hair system fitted comes out of the technician's kit as the step lands, once however often it does.
   app.openapi(pieceRoute, (c) => {
     const body = c.req.valid("json");
-    return step(c, "piece", async (job) => {
-      const built = await pieceBody(c, job, body);
-      if ("invalid" in built) return built;
-      // A step sent again is answered as it landed the first time, whatever has been recorded since.
-      if (await isReplay(c, job)) return built;
-      const taken = await pieceLabelTaken(c.env.DB, job, pieceStepOf(built));
-      return taken === null ? built : { labelTaken: taken };
-    });
+    return step(
+      c,
+      "piece",
+      async (job) => {
+        const built = await pieceBody(c, job, body);
+        if ("invalid" in built) return built;
+        // A step sent again is answered as it landed the first time, whatever has been recorded since.
+        if (await isReplay(c, job)) return built;
+        const taken = await pieceLabelTaken(c.env.DB, job, pieceStepOf(built));
+        return taken === null ? built : { labelTaken: taken };
+      },
+      async (job) => {
+        const { technicianId } = technicianOf(c);
+        const { deps } = c.var;
+        const fitted = await recordPieceUse(c.env.DB, { jobId: job.id, technicianId, now: deps.now() });
+        await tellOfLowStock(c.env.DB, deps, { touched: [technicianId], lowered: fitted.lowered ? [technicianId] : [] });
+      },
+    );
   });
 }
 

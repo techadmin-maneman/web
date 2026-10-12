@@ -264,6 +264,7 @@ export async function deleteConsumable(
   try {
     await db.batch([
       unmoved("DELETE FROM consumable_usage WHERE consumable_code = ?1"),
+      unmoved("DELETE FROM hair_systems WHERE code = ?1"),
       unmoved("DELETE FROM consumables WHERE code = ?1"),
       auditStatementIfDeleted(db, audit, written.now, { table: "consumables", column: "code", value: code }),
     ]);
@@ -355,7 +356,10 @@ export async function setExpectedUse(
 ): Promise<{ readonly ok: true } | { readonly ok: false; readonly fields: string[] }> {
   const { service, items } = input;
   if ((await serviceOf(db, service.visitType, service.tier)) === null) return { ok: false, fields: ["tier"] };
-  const { results } = await db.prepare("SELECT code FROM consumables").all<{ code: string }>();
+  // A hair system is fitted to the client, not used by the service: the piece step takes it (piece-use.ts).
+  const { results } = await db
+    .prepare("SELECT code FROM consumables WHERE code NOT IN (SELECT code FROM hair_systems)")
+    .all<{ code: string }>();
   const known = new Set(results.map((row) => row.code));
   const seen = new Set<string>();
   const fields = items.flatMap((item, index) => {
@@ -412,14 +416,14 @@ interface Offered {
 /**
  * Every consumable the technician may record on a job, those its service
  * expects first, each with the quantity its stepper starts at. Nothing
- * retired by the job's day is offered.
+ * retired by the job's day is offered, and no hair system: the piece step takes the one fitted.
  */
 export async function offeredForJob(db: D1Database, service: Service, today: string): Promise<Offered[]> {
   const { results } = await db
     .prepare(
       `SELECT c.code, c.name, c.unit, COALESCE(u.quantity, 0) AS expected FROM consumables c
        LEFT JOIN consumable_usage u ON u.consumable_code = c.code AND u.visit_type = ?1 AND u.tier = ?2
-       WHERE c.retired_date IS NULL OR c.retired_date > ?3
+       WHERE (c.retired_date IS NULL OR c.retired_date > ?3) AND c.code NOT IN (SELECT code FROM hair_systems)
        ORDER BY expected = 0, c.name COLLATE NOCASE`,
     )
     .bind(service.visitType, service.tier, today)

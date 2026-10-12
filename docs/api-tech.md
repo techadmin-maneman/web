@@ -2241,6 +2241,13 @@ Request body:
       },
       "description": "Every consumable the technician may record, those this job's service is expected to use first, each with the count its stepper starts at."
     },
+    "kit_hair_systems": {
+      "type": "array",
+      "items": {
+        "$ref": "#/components/schemas/KitHairSystem"
+      },
+      "description": "On a visit that fits a piece, the hair systems the technician's kit holds, by name, with the spec each is matched to the client's hair profile by. Empty for any other visit."
+    },
     "products": {
       "type": "array",
       "items": {
@@ -2392,6 +2399,7 @@ Request body:
     "partial_reasons",
     "lost_reasons",
     "consumables",
+    "kit_hair_systems",
     "products",
     "payment_link",
     "discount_code",
@@ -2628,6 +2636,58 @@ Request body:
     "name",
     "unit",
     "expected"
+  ],
+  "additionalProperties": false
+}
+```
+
+### KitHairSystem
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "code": {
+      "type": "string",
+      "description": "What the piece step sends back as stock_code."
+    },
+    "name": {
+      "type": "string"
+    },
+    "held": {
+      "type": "integer",
+      "description": "How many pieces of it the kit holds."
+    },
+    "product": {
+      "type": "string",
+      "description": "The tier of the first-fit service it is sold as."
+    },
+    "base_width_in": {
+      "type": "number"
+    },
+    "base_length_in": {
+      "type": "number"
+    },
+    "colour": {
+      "type": "string"
+    },
+    "grey_percent": {
+      "type": "integer"
+    },
+    "density_percent": {
+      "type": "integer"
+    }
+  },
+  "required": [
+    "code",
+    "name",
+    "held",
+    "product",
+    "base_width_in",
+    "base_length_in",
+    "colour",
+    "grey_percent",
+    "density_percent"
   ],
   "additionalProperties": false
 }
@@ -3574,6 +3634,15 @@ Request body:
       ],
       "minLength": 1,
       "maxLength": 60
+    },
+    "stock_code": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "minLength": 1,
+      "maxLength": 64,
+      "description": "The hair system fitted, by the stock code the card's kit list gives it, which comes out of the technician's kit; none for a piece from elsewhere."
     },
     "failure_reason": {
       "type": [

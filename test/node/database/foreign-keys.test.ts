@@ -61,6 +61,7 @@ const HANDLED: Readonly<Record<string, string>> = {
   // A consumable added by mistake goes with what services were set to use of it, and never once its stock has moved.
   "consumable_usage.consumable_code -> consumables":
     "src/domain/field/consumables.ts deletes each service's use of it first",
+  "hair_systems.code -> consumables": "src/domain/field/consumables.ts deletes a hair system's spec first",
   "stock_movements.consumable_code -> consumables": "src/domain/field/consumables.ts refuses to delete one it names",
   "stock_balances.consumable_code -> consumables": "src/domain/field/consumables.ts refuses to delete one it names",
   "consumables_used.consumable_code -> consumables": "src/domain/field/consumables.ts refuses to delete one it names",

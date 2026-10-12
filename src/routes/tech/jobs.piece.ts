@@ -1,9 +1,11 @@
 // The piece step's body (./jobs.steps.ts): on a one visit, the product the client chose or that they decided
-// against it; on any other job that takes one, the piece fitted or the one that failed.
+// against it; on any other job that takes one, the piece fitted or the one that failed. A hair system it names must be
+// one of ours, since it comes out of the technician's kit (src/domain/field/piece-use.ts).
 
 import { z } from "@hono/zod-openapi";
 import { PieceRequestSchema } from "../../domain/field/job-event-bodies.ts";
 import { offeredProducts } from "../../domain/booking/services.ts";
+import { isHairSystem } from "../../domain/field/hair-systems.ts";
 import { type WorkableJob } from "../../domain/field/workable-job.ts";
 import { indiaDate } from "../../lib/india-time.ts";
 import { takesStep } from "../../policy/in-job-steps.ts";
@@ -15,6 +17,8 @@ type PieceBody = z.infer<typeof PieceRequestSchema>;
 
 /** The piece step's body for this job: a one visit's choice, or a piece fitted or failed where the job takes one. */
 export async function pieceBody(c: Ctx, job: WorkableJob, body: PieceBody): Promise<StepBody> {
+  const stockCode = "declined" in body ? null : (body.stock_code ?? null);
+  if (stockCode !== null && !(await isHairSystem(c.env.DB, stockCode))) return { invalid: ["stock_code"] };
   if (job.oneVisit !== null) return oneVisitPiece(c, job, body);
   if ("declined" in body || body.product !== undefined) return { invalid: ["product"] };
   if (!takesStep("piece", job.type)) return { invalid: ["piece_code"] };

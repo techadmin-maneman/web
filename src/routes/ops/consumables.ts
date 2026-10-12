@@ -7,6 +7,8 @@
 //   POST /api/consumables/:code/restore     offered again
 //   POST /api/consumables/:code/delete      one added by mistake, while no stock of it has moved
 //   POST /api/service-usage                 what one service is expected to use, the whole list at once
+//   POST /api/hair-systems                  a hair system's stock code, counted in pieces
+//                                           (docs/decisions/0156-hair-systems-in-stock.md)
 //
 // A change here needs no release. Each records the Access identity behind it,
 // with what it changed, in the same batch as the change (ADR 0031). Every
@@ -29,6 +31,7 @@ import {
   setExpectedUse,
   type Consumable,
 } from "../../domain/field/consumables.ts";
+import { addHairSystem, hairSystemSpecs, type HairSystemSpec } from "../../domain/field/hair-systems.ts";
 import { closeStaleLowStock } from "../../domain/field/low-stock.ts";
 import { actorOf } from "../../http/audit.ts";
 import type { App, AppEnv } from "../../http/context.ts";
@@ -36,6 +39,7 @@ import { errorResponse, refuse } from "../../http/errors.ts";
 import { json } from "../../http/openapi.ts";
 import { indiaDate } from "../../lib/india-time.ts";
 import { PRICE_TIER } from "../../policy/services.ts";
+import { FitSpecSchema } from "../schemas/hair-profile.ts";
 
 const Name = z.string().trim().regex(CONSUMABLE_NAME).openapi({
   description: "A letter or a digit first, then letters, digits, spaces and . , ' ( ) & / + % -; at most 60.",
@@ -47,6 +51,22 @@ const Unit = z
   .openapi({ description: "strip, ml, sachet: at most 20 letters." });
 const UnitCost = z.number().int().min(0).max(CONSUMABLE_BOUNDS.maxUnitCost).openapi({ description: "In paise." });
 const Level = z.union([z.number().int().min(0).max(CONSUMABLE_BOUNDS.maxReorderLevel), z.null()]);
+
+const fit = FitSpecSchema.shape;
+
+const HairSystemSpecSchema = z
+  .object({
+    product: z.string().openapi({ description: "The tier of the first-fit service it is sold as." }),
+    base_width_in: z.number(),
+    base_length_in: z.number(),
+    colour: z.string(),
+    grey_percent: z.number().int(),
+    density_percent: z.number().int(),
+  })
+  .strict()
+  .openapi("HairSystemSpec", {
+    description: "What a hair system's stock code is made to, matched exactly against a client's hair profile.",
+  });
 
 const ConsumableSchema = z
   .object({
@@ -64,6 +84,9 @@ const ConsumableSchema = z
       description: "The day in India it is no longer offered from; null while it is.",
     }),
     offered: z.boolean().openapi({ description: "Whether the technician app offers it today." }),
+    hair_system: z.union([HairSystemSpecSchema, z.null()]).openapi({
+      description: "A hair system's spec, counted in pieces and taken by the piece step; null for a consumable.",
+    }),
   })
   .strict()
   .openapi("Consumable");
@@ -132,6 +155,40 @@ const addRoute = createRoute({
     },
   },
   responses: { 200: CONSUMABLES, 400: REFUSED, 403: errorResponse("access_required") },
+});
+
+const addHairSystemRoute = createRoute({
+  method: "post",
+  path: "/api/hair-systems",
+  summary: "Add a hair system's stock code, counted in pieces, for a spec no other has",
+  request: {
+    body: {
+      required: true,
+      ...json(
+        z
+          .object({
+            product: z.string().regex(PRICE_TIER).openapi({ description: "The tier of a first-fit service." }),
+            base_width_in: fit.base_width_in.unwrap(),
+            base_length_in: fit.base_length_in.unwrap(),
+            colour: fit.colour.unwrap(),
+            grey_percent: fit.grey_percent.unwrap(),
+            density_percent: fit.density_percent.unwrap(),
+            unit_cost: UnitCost,
+            reorder_kit: Level.optional(),
+            reorder_central: Level.optional(),
+          })
+          .strict()
+          .openapi("NewHairSystem"),
+      ),
+    },
+  },
+  responses: {
+    200: CONSUMABLES,
+    400: errorResponse(
+      "invalid_request: fields names product for one no first fit is sold as, or hair_system for a spec, or the name it makes, another has",
+    ),
+    403: errorResponse("access_required"),
+  },
 });
 
 const code = z.object({ code: z.string().min(1).max(64) });
@@ -245,7 +302,16 @@ const usageRoute = createRoute({
   },
 });
 
-function consumableBody(consumable: Consumable, today: string) {
+const specBody = (spec: HairSystemSpec) => ({
+  product: spec.product,
+  base_width_in: spec.baseWidthIn,
+  base_length_in: spec.baseLengthIn,
+  colour: spec.colour,
+  grey_percent: spec.greyPercent,
+  density_percent: spec.densityPercent,
+});
+
+function consumableBody(consumable: Consumable, today: string, spec: HairSystemSpec | undefined) {
   return {
     code: consumable.code,
     name: consumable.name,
@@ -255,6 +321,7 @@ function consumableBody(consumable: Consumable, today: string) {
     reorder_central: consumable.reorderCentral,
     retired_from: consumable.retiredDate,
     offered: isOffered(consumable, today),
+    hair_system: spec === undefined ? null : specBody(spec),
   };
 }
 
@@ -262,13 +329,14 @@ function consumableBody(consumable: Consumable, today: string) {
 async function answer(c: Context<AppEnv>) {
   const db = c.env.DB;
   const today = indiaDate(c.var.deps.now());
-  const [consumables, services, expected] = await Promise.all([
+  const [consumables, services, expected, specs] = await Promise.all([
     allConsumables(db),
     servicesForUse(db),
     expectedUse(db),
+    hairSystemSpecs(db),
   ]);
   return {
-    consumables: consumables.map((consumable) => consumableBody(consumable, today)),
+    consumables: consumables.map((consumable) => consumableBody(consumable, today, specs.get(consumable.code))),
     services: services.map((service) => ({
       visit_type: service.visitType,
       tier: service.tier,
@@ -297,6 +365,27 @@ export function registerOpsConsumables(app: App): void {
       {
         name: body.name,
         unit: body.unit,
+        unitCost: body.unit_cost,
+        reorderKit: body.reorder_kit ?? null,
+        reorderCentral: body.reorder_central ?? null,
+      },
+      written(c),
+    );
+    if (!saved.ok) return refuse(c, "invalid_request", saved.fields);
+    return c.json(await answer(c), 200);
+  });
+
+  app.openapi(addHairSystemRoute, async (c) => {
+    const body = c.req.valid("json");
+    const saved = await addHairSystem(
+      c.env.DB,
+      {
+        product: body.product,
+        baseWidthIn: body.base_width_in,
+        baseLengthIn: body.base_length_in,
+        colour: body.colour,
+        greyPercent: body.grey_percent,
+        densityPercent: body.density_percent,
         unitCost: body.unit_cost,
         reorderKit: body.reorder_kit ?? null,
         reorderCentral: body.reorder_central ?? null,

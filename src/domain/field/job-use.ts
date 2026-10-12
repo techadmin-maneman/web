@@ -8,6 +8,7 @@
 import type { VisitType } from "../../config/visit-types.ts";
 import { useStillToRecord } from "../../policy/stock.ts";
 import { allConsumables, serviceOfJob, type Consumable } from "./consumables.ts";
+import { hairSystemSpecs } from "./hair-systems.ts";
 import { usedLinesOf, type UsedLine } from "./job-event-bodies.ts";
 
 /**
@@ -53,24 +54,67 @@ async function expectedOf(
   return new Map(results.map((row) => [row.consumable_code, row.quantity]));
 }
 
-/** The job's latest consumables step from the technician, each named by the placeholder its statement binds it to. */
-function latestStep(placeholders: { readonly job: string; readonly technician: string }): string {
+/**
+ * The job's latest step of a kind from the technician, each named by the placeholder its statement binds it to: the
+ * consumables step here, the piece step for the hair system fitted (src/domain/field/piece-use.ts).
+ */
+export function latestStep(
+  placeholders: { readonly job: string; readonly technician: string },
+  kind: "consumables" | "piece" = "consumables",
+): string {
   return `SELECT id FROM job_events
     WHERE appointment_id = ${placeholders.job} AND technician_id = ${placeholders.technician}
-      AND kind = 'consumables' AND superseded = 0
+      AND kind = '${kind}' AND superseded = 0
     ORDER BY received_at DESC, rowid DESC LIMIT 1`;
 }
 
-/** What the technician's kit has already given the job, by consumable. */
-async function takenFor(db: D1Database, jobId: string, technicianId: string): Promise<Map<string, number>> {
+/**
+ * What the technician's kit has already given the job, by stock code: the consumables, or the hair systems, which the
+ * piece step takes and the consumables step must never give back.
+ */
+export async function takenFor(
+  db: D1Database,
+  input: { readonly jobId: string; readonly technicianId: string; readonly hairSystems: boolean },
+): Promise<Map<string, number>> {
   const { results } = await db
     .prepare(
       `SELECT consumable_code, SUM(quantity) AS taken FROM stock_movements
-       WHERE appointment_id = ?1 AND reason = 'used' AND technician_id = ?2 GROUP BY consumable_code`,
+       WHERE appointment_id = ?1 AND reason = 'used' AND technician_id = ?2
+         AND (consumable_code IN (SELECT code FROM hair_systems)) = ?3
+       GROUP BY consumable_code`,
     )
-    .bind(jobId, technicianId)
+    .bind(input.jobId, input.technicianId, input.hairSystems ? 1 : 0)
     .all<{ consumable_code: string; taken: number }>();
   return new Map(results.map((row) => [row.consumable_code, row.taken]));
+}
+
+/**
+ * The kit's rows for what a step still owes the job, each written only while the step is still the job's latest of
+ * its kind, and once for each step and stock code. Each answers its quantity when it is written.
+ */
+export function takenFromKit(
+  db: D1Database,
+  step: {
+    readonly jobId: string;
+    readonly technicianId: string;
+    readonly eventId: string;
+    readonly kind: "consumables" | "piece";
+    readonly at: string;
+  },
+  owed: ReadonlyMap<string, number>,
+): D1PreparedStatement[] {
+  return [...owed].map(([code, quantity]) =>
+    db
+      .prepare(
+        `INSERT INTO stock_movements (id, consumable_code, location, technician_id, quantity, reason,
+           appointment_id, job_event_id, actor_kind, actor, created_at)
+         SELECT ?1, ?2, 'kit', ?3, ?4, 'used', ?5, ?6, 'technician', ?3, ?7
+          WHERE ?6 = (${latestStep({ job: "?5", technician: "?3" }, step.kind)})
+         ON CONFLICT (job_event_id, consumable_code) WHERE reason = 'used' DO NOTHING
+         RETURNING quantity`,
+      )
+      .bind(crypto.randomUUID(), code, step.technicianId, quantity, step.jobId, step.eventId, step.at),
+  );
 }
 
 /**
@@ -106,25 +150,24 @@ export async function recordJobUse(
     .first<{ id: string; body: string }>();
   if (latest === null) return { lowered: false };
 
-  const used = usedIn(JSON.parse(latest.body), await allConsumables(db));
+  // A hair system is the piece step's to take (src/domain/field/piece-use.ts), never this step's.
+  const hairSystems = await hairSystemSpecs(db);
+  const consumables = (await allConsumables(db)).filter((consumable) => !hairSystems.has(consumable.code));
+  const used = usedIn(JSON.parse(latest.body), consumables);
   const expected = await expectedOf(db, job);
   const byCode = new Map(
     used.flatMap((line) => (line.consumable === null ? [] : [[line.consumable.code, line.quantity] as const])),
   );
-  const owed = useStillToRecord(byCode, await takenFor(db, job.id, technicianId));
+  const owed = useStillToRecord(
+    byCode,
+    await takenFor(db, { jobId: job.id, technicianId, hairSystems: false }),
+  );
 
   const at = now.toISOString();
-  const taken = [...owed].map(([code, quantity]) =>
-    db
-      .prepare(
-        `INSERT INTO stock_movements (id, consumable_code, location, technician_id, quantity, reason,
-           appointment_id, job_event_id, actor_kind, actor, created_at)
-         SELECT ?1, ?2, 'kit', ?3, ?4, 'used', ?5, ?6, 'technician', ?3, ?7
-          WHERE ?6 = (${latestStep({ job: "?5", technician: "?3" })})
-         ON CONFLICT (job_event_id, consumable_code) WHERE reason = 'used' DO NOTHING
-         RETURNING quantity`,
-      )
-      .bind(crypto.randomUUID(), code, technicianId, quantity, job.id, latest.id, at),
+  const taken = takenFromKit(
+    db,
+    { jobId: job.id, technicianId, eventId: latest.id, kind: "consumables", at },
+    owed,
   );
   const recorded = used.map((line) =>
     db

@@ -1969,6 +1969,8 @@ export interface components {
             lost_reasons: components["schemas"]["JobSheetItem"][];
             /** @description Every consumable the technician may record, those this job's service is expected to use first, each with the count its stepper starts at. */
             consumables: components["schemas"]["TechnicianConsumable"][];
+            /** @description On a visit that fits a piece, the hair systems the technician's kit holds, by name, with the spec each is matched to the client's hair profile by. Empty for any other visit. */
+            kit_hair_systems: components["schemas"]["KitHairSystem"][];
             /** @description On a one visit and a consultation, the products by name and never by price: the first fit's services offered on the visit's day, in ops' order, which a one visit's client chooses from and the profile names. Empty for any other visit. */
             products: components["schemas"]["TechnicianProduct"][];
             /** @description On a one visit closed as done with the client fitted, its payment link; else null. */
@@ -2029,6 +2031,20 @@ export interface components {
             unit: string;
             /** @description How many this job's service is expected to use; 0 for one it lists no use for. */
             expected: number;
+        };
+        KitHairSystem: {
+            /** @description What the piece step sends back as stock_code. */
+            code: string;
+            name: string;
+            /** @description How many pieces of it the kit holds. */
+            held: number;
+            /** @description The tier of the first-fit service it is sold as. */
+            product: string;
+            base_width_in: number;
+            base_length_in: number;
+            colour: string;
+            grey_percent: number;
+            density_percent: number;
         };
         TechnicianProduct: {
             /** @description What the piece step sends back as product. */
@@ -2212,6 +2228,8 @@ export interface components {
             piece_code: string;
             base?: string | null;
             supplier_lot?: string | null;
+            /** @description The hair system fitted, by the stock code the card's kit list gives it, which comes out of the technician's kit; none for a piece from elsewhere. */
+            stock_code?: string | null;
             failure_reason?: string | null;
             /** @description On a replacement: the piece that came off, and why it failed. */
             old_piece?: {

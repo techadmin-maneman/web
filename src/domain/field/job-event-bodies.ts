@@ -18,6 +18,10 @@ const PieceFittedSchema = z
     piece_code: z.string().min(3).max(40),
     base: z.string().min(1).max(60).nullable().optional(),
     supplier_lot: z.string().min(1).max(60).nullable().optional(),
+    stock_code: z.string().min(1).max(64).nullable().optional().openapi({
+      description:
+        "The hair system fitted, by the stock code the card's kit list gives it, which comes out of the technician's kit; none for a piece from elsewhere.",
+    }),
     failure_reason: z.string().min(1).max(200).nullable().optional(),
     old_piece: z
       .object({ piece_code: z.string().min(3).max(40), failure_reason: z.string().min(1).max(200) })
