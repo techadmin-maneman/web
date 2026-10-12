@@ -17,7 +17,8 @@
 //   - records each processed refund of a recorded payment, from the account
 //     Razorpay settles into, when that account is set;
 //   - makes each receipt against a purchase order a bill of its supplier's
-//     vendor, once both bill accounts are set (./books-bills.ts).
+//     vendor, once both bill accounts are set (./books-bills.ts), then each
+//     claim credited a vendor credit beside its bill (./books-credits.ts).
 //
 // Each record is claimed before Books is asked, so a run that overlaps the one
 // before it leaves the records that one is on. A payment or a refund is also
@@ -36,6 +37,7 @@
 
 import type { CallBudget } from "../../lib/call-budget.ts";
 import { type Logger } from "../../log.ts";
+import { claimsToCredit, creditClaim } from "./books-credits.ts";
 import { addVendor, billReceipt, receiptsToBill, vendorsToAdd, type BillAccounts } from "./books-bills.ts";
 import { keptMoney, keptSinceRefunded, alertKeptMoney } from "./books-kept.ts";
 import { RECHECK_AFTER_MS } from "./vendor-pass.ts";
@@ -63,9 +65,13 @@ export type BooksSyncSummary = {
   refunded: number;
   vendors: number;
   bills: number;
+  credits: number;
 };
 
-/** Each supplier with a receipt to bill made a vendor, then each receipt a bill. False where the calls ran out. */
+/**
+ * Each supplier with a receipt to bill made a vendor, then each receipt a bill, then each claim credited a vendor
+ * credit. False where the calls ran out.
+ */
 async function bill(
   pass: Pass,
   accounts: BillAccounts,
@@ -79,6 +85,10 @@ async function bill(
   for (const receiptId of await receiptsToBill(pass)) {
     if (!budget.spend(CALLS_PER_RECORD)) return false;
     if (await billReceipt(pass, receiptId, accounts)) summary.bills += 1;
+  }
+  for (const claimId of await claimsToCredit(pass)) {
+    if (!budget.spend(CALLS_PER_RECORD)) return false;
+    if (await creditClaim(pass, claimId, accounts)) summary.credits += 1;
   }
   return true;
 }
@@ -115,6 +125,7 @@ export async function syncBooks({
     refunded: 0,
     vendors: 0,
     bills: 0,
+    credits: 0,
   };
 
   for (const personId of await customersToAdd(pass)) {

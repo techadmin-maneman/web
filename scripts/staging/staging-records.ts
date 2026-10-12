@@ -14,6 +14,7 @@ import { parseArgs } from "node:util";
 import type { z } from "zod";
 import {
   BOOKS_BILL,
+  BOOKS_CREDIT,
   BOOKS_CONTACT,
   BOOKS_INVOICE,
   BOOKS_PAYMENT,
@@ -146,6 +147,16 @@ async function readBooks(found: Found): Promise<void> {
     const name = `${row.bill_number} from ${row.vendor_name}`;
     judge({ found, kind: "books/bills", id: row.bill_id, name, marked: isStagingMarked(row.vendor_name) });
   }
+  for (const row of await booksRows("/vendorcredits", "vendor_credits", BOOKS_CREDIT)) {
+    const name = `${row.vendor_credit_number} from ${row.vendor_name}`;
+    judge({
+      found,
+      kind: "books/vendorcredits",
+      id: row.vendor_credit_id,
+      name,
+      marked: isStagingMarked(row.vendor_name),
+    });
+  }
   for (const row of await booksRows("/contacts", "contacts", BOOKS_CONTACT)) {
     judge({
       found,
@@ -194,6 +205,13 @@ const BOOKS_READS = {
     name: (json: unknown) => {
       const bill = booksRecord(json, "bill", BOOKS_BILL);
       return `${bill.bill_number} from ${bill.vendor_name}`;
+    },
+  },
+  "books/vendorcredits": {
+    path: "/vendorcredits",
+    name: (json: unknown) => {
+      const credit = booksRecord(json, "vendor_credit", BOOKS_CREDIT);
+      return `${credit.vendor_credit_number} from ${credit.vendor_name}`;
     },
   },
 } as const;
@@ -295,7 +313,7 @@ function printList(found: Found): void {
   if (found.gone.length > 0) {
     console.log(
       "\nStaging's database keeps these IDs of records the org no longer holds. The run below clears a client's " +
-        "customer and lead, a supplier's vendor and a visit's invoice; a payment's and a bill's IDs stay:",
+        "customer and lead, a supplier's vendor and a visit's invoice; a payment's, a bill's and a credit's IDs stay:",
     );
     for (const known of found.gone) console.log(`  ${known.kind} ${known.id}`);
   }

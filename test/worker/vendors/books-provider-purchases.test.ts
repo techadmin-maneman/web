@@ -122,3 +122,40 @@ describe("Books: a receipt's bill", () => {
     });
   });
 });
+
+describe("Books: a claim's vendor credit", () => {
+  it("is found by our reference, and only by it", async () => {
+    const { books } = zohoBooks({
+      [ZOHO_TOKEN_URL]: () => tokenIssued(),
+      [`${BOOKS_API}/vendorcredits`]: (call) =>
+        new URL(call.url).searchParams.get("reference_number") === "claim-1"
+          ? json({ code: 0, vendor_credits: [{ vendor_credit_id: "vc-1", reference_number: "claim-1" }] })
+          : json({ code: 0, vendor_credits: [] }),
+    });
+    expect(await books.findVendorCredit("claim-1")).toEqual({ id: "vc-1", reference: "claim-1" });
+    expect(await books.findVendorCredit("claim-2")).toBeNull();
+  });
+
+  it("is made on its vendor, numbered by Books, its line's price in the currency's main unit", async () => {
+    const { books, calls } = zohoBooks({
+      [ZOHO_TOKEN_URL]: () => tokenIssued(),
+      [`${BOOKS_API}/vendorcredits`]: () =>
+        json({ code: 0, vendor_credit: { vendor_credit_id: "vc-2", reference_number: "claim-1" } }),
+    });
+    const credit = await books.createVendorCredit({
+      vendorId: "v-1",
+      reference: "claim-1",
+      date: "2026-10-01",
+      exchangeRate: 83.25,
+      lines: [{ description: "Solvent (CL-0001, PO-0001)", accountId: "acc-raw", unitPrice: 400, quantity: 1 }],
+    });
+    expect(credit).toEqual({ id: "vc-2", reference: "claim-1" });
+    expect(sent(booksCalls(calls)[0])).toEqual({
+      vendor_id: "v-1",
+      reference_number: "claim-1",
+      date: "2026-10-01",
+      exchange_rate: 83.25,
+      line_items: [{ description: "Solvent (CL-0001, PO-0001)", account_id: "acc-raw", rate: 4, quantity: 1 }],
+    });
+  });
+});

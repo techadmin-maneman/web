@@ -243,6 +243,11 @@ const HISTORY = [
    SELECT 'rcp-' || i, 'po-' || i, 'ops@localhost', '${AGO}', 8325, 0, 0, 0, 'bb-' || i, '${AGO}' FROM n`,
   `INSERT INTO receipt_lines (id, receipt_id, po_line_id, received, damaged, qc_failed, landed_unit_paise)
    SELECT 'rl-' || i, 'rcp-' || i, 'pol-' || i, 1, 0, 0, 999000 FROM n`,
+  `INSERT INTO supplier_claims (id, number, supplier_id, consumable_code, quantity, reason, receipt_line_id, unit_price,
+     currency, state, outcome, credit_amount, drafted_by, drafted_at, decided_by, decided_at, books_credit_id,
+     books_checked_at)
+   SELECT 'cl-' || i, i, 'sup-' || i, 'hs-' || i, 1, 'qc_failed', 'rl-' || i, 12000, 'USD', 'accepted', 'credit', 12000,
+     'ops@localhost', '${AGO}', 'ops@localhost', '${AGO}', 'vc-' || i, '${AGO}' FROM n`,
   // What the sweeper deletes once it has outlived its use, still in use: today's counts, the day's keys, a login code
   // and a site's number code proved, and a try-on session still open.
   `INSERT INTO counters (scope, key, window_start, count) SELECT 'login_code', 'k-' || i, '${TODAY}', 1 FROM n`,

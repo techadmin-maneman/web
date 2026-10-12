@@ -160,6 +160,12 @@ export interface NewBooksBill {
   }[];
 }
 
+/**
+ * A claim's credit from its supplier: a vendor credit on the receipt's accounts, found again by our claim's ID
+ * (docs/decisions/0171-vendor-credits.md). Books numbers it.
+ */
+export type NewBooksVendorCredit = Omit<NewBooksBill, "billNumber" | "dueDate">;
+
 /** What erasing a customer left: nothing, or a blank, inactive customer a document or payment still names. */
 export type BooksErasure = "deleted" | "blanked";
 
@@ -213,6 +219,9 @@ export interface BooksProvider {
   /** The bill Books holds under our reference; null if it holds none. */
   findBill(reference: string): Promise<BooksBill | null>;
   createBill(bill: NewBooksBill): Promise<BooksBill>;
+  /** The vendor credit Books holds under our reference; null if it holds none. */
+  findVendorCredit(reference: string): Promise<BooksBill | null>;
+  createVendorCredit(credit: NewBooksVendorCredit): Promise<BooksBill>;
 }
 
 export function createBooksProvider(
@@ -245,5 +254,7 @@ export function createBooksProvider(
     upsertVendor: off,
     findBill: off,
     createBill: off,
+    findVendorCredit: off,
+    createVendorCredit: off,
   };
 }

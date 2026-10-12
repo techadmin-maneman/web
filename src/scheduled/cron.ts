@@ -304,8 +304,7 @@ function booksGst(config: StaticConfig): GstRegistration {
 
 async function booksJob({ env, deps, config, log, budget }: CronContext): Promise<void> {
   const done = await syncBooks({ db: env.DB, deps, options: booksSyncOptions(config), now: deps.now(), log, budget });
-  const written =
-    done.customers + done.customersUpdated + done.recorded + done.applied + done.refunded + done.vendors + done.bills;
+  const written = Object.values(done).reduce((sum, count) => sum + count, 0);
   if (written > 0) log.info("books_synced", done);
 }
 
