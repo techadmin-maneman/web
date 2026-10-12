@@ -22,6 +22,7 @@ import { syncBooks } from "../domain/books/books-sync.ts";
 import type { BooksSyncOptions } from "../domain/books/books-pass.ts";
 import { closeStaleLowStock } from "../domain/field/low-stock.ts";
 import { settleOwedRefunds } from "../domain/money/cancel-refunds.ts";
+import { retellUndelivered } from "../domain/ops/alerts.ts";
 import { finishRun, startRun, type RunStart } from "../domain/platform/cron-runs.ts";
 import { alertAgedDeletions } from "../domain/privacy/deletion.ts";
 import { recordUtilisation } from "../domain/dispatch/dispatch-utilisation.ts";
@@ -151,6 +152,18 @@ async function erasedFilesJob({ env, deps, log }: CronContext): Promise<void> {
 async function booksErasuresJob({ env, deps, log, budget }: CronContext): Promise<void> {
   const erased = await eraseBooksCustomers(env.DB, { ...deps, log, budget }, deps.now());
   if (erased > 0) log.info("books_customers_erased", { count: erased });
+}
+
+/** An alert whose first telling the chat did not take, told again (src/domain/ops/alerts.ts). */
+async function alertsRetoldJob({ env, deps, config, log }: CronContext): Promise<void> {
+  const told = await retellUndelivered({
+    db: env.DB,
+    alert: deps.alert,
+    now: deps.now,
+    environment: config.environment,
+    log,
+  });
+  if (told > 0) log.info("alerts_retold", { told });
 }
 
 async function deletionAlertsJob({ env, deps }: CronContext): Promise<void> {
@@ -305,6 +318,7 @@ export const CRON_JOBS: readonly CronJob[] = [
   // A hold paid for and neither booked nor refunded half an hour on (docs/decisions/0068-a-paid-hold-is-kept.md).
   { name: "unbooked_holds", needs: "nothing", every: 5, at: 3, run: unbookedHoldsJob },
   { name: "requeue_messages", needs: "nothing", every: 5, at: 4, run: requeueMessages },
+  { name: "alerts_retold", needs: "nothing", every: 5, at: 4, run: alertsRetoldJob },
 
   // Every fifteen minutes.
   { name: "visit_reminders", needs: "messaging", every: 15, at: 1, run: remindersJob },
