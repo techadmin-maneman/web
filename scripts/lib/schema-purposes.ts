@@ -27,6 +27,10 @@ export const PURPOSES: Readonly<Record<string, string>> = {
     "Each purchase order to a supplier: its state from drafted to closed or cancelled, who approved, sent or cancelled it, and when (ADR 0166).",
   po_lines:
     "Each line of a purchase order: the stock code, how many, the price it was ordered at, and how many have arrived (ADR 0166).",
+  receipts:
+    "Each receipt against a purchase order at the warehouse: who received it, the supplier's invoice, the rupee rate and the freight, duty and clearing (ADR 0167).",
+  receipt_lines:
+    "What a receipt brought of each order line: accepted, damaged, failed its check, its lot, and what one cost landed (ADR 0167).",
   suppliers:
     "Each supplier we buy stock from: its terms, currency and warranty, retired rather than deleted (ADR 0165).",
   supplier_items:

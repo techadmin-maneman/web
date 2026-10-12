@@ -24,7 +24,7 @@ const BASELINE = [
 
 /** The module a file belongs to: tech/jobs.steps.ts is part of tech/jobs.ts. */
 const moduleOf = (file: string) =>
-  file.replace(/\.(photos|piece|places|read|record|routes|schemas|steps|transit|units|updates)\.ts$/, ".ts");
+  file.replace(/\.(photos|piece|places|read|receipts|record|routes|schemas|steps|transit|units|updates)\.ts$/, ".ts");
 
 /** The two public forms share public/forms.ts, which is theirs alone. */
 const SHARED_WITHIN = new Map([

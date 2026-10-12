@@ -7203,6 +7203,86 @@ Request body:
 }
 ```
 
+### POST /api/purchase-orders/{id}/receipts
+
+What arrived of an order at the warehouse, with its lots and landed cost
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/PurchaseOrderReceipt"
+}
+```
+
+**200**: The purchase orders
+
+```json
+{
+  "$ref": "#/components/schemas/PurchaseOrders"
+}
+```
+
+**400**: invalid_request: fields names lines.N for a line not of the order or more than 500 pieces of a hair system, lines for nothing received, rupee_rate for none on an order in another currency, or id for no such order
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**409**: order_state: the order is not sent or part received
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/purchase-orders/{id}/close
+
+An order part received closed short
+
+**200**: The purchase orders
+
+```json
+{
+  "$ref": "#/components/schemas/PurchaseOrders"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no such order
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**409**: order_state: the order is not part received
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ### GET /api/storage
 
 What the photographs and referral cards hold in R2, against their share, and the database against its limit
@@ -15074,6 +15154,8 @@ Request body:
         "purchase_order.approve",
         "purchase_order.send",
         "purchase_order.cancel",
+        "purchase_order.receive",
+        "purchase_order.close",
         "task.assign",
         "task.hand_back",
         "task.close",
@@ -22461,6 +22543,97 @@ Request body:
           },
           "needs_second_approval": {
             "type": "boolean"
+          },
+          "receipts": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "received_by": {
+                  "type": "string"
+                },
+                "received_at": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "supplier_invoice": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "lines": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "po_line_id": {
+                        "type": "string"
+                      },
+                      "received": {
+                        "type": "integer"
+                      },
+                      "damaged": {
+                        "type": "integer"
+                      },
+                      "qc_failed": {
+                        "type": "integer"
+                      },
+                      "lot_code": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "expires_on": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "format": "date"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "landed_unit_paise": {
+                        "type": "integer",
+                        "description": "What one cost landed, in paise."
+                      }
+                    },
+                    "required": [
+                      "po_line_id",
+                      "received",
+                      "damaged",
+                      "qc_failed",
+                      "lot_code",
+                      "expires_on",
+                      "landed_unit_paise"
+                    ],
+                    "additionalProperties": false
+                  }
+                }
+              },
+              "required": [
+                "id",
+                "received_by",
+                "received_at",
+                "supplier_invoice",
+                "lines"
+              ],
+              "additionalProperties": false
+            }
           }
         },
         "required": [
@@ -22479,7 +22652,8 @@ Request body:
           "second_approved_by",
           "sent_at",
           "cancel_reason",
-          "needs_second_approval"
+          "needs_second_approval",
+          "receipts"
         ],
         "additionalProperties": false
       }
@@ -22655,6 +22829,122 @@ Request body:
   },
   "required": [
     "reason"
+  ],
+  "additionalProperties": false
+}
+```
+
+### PurchaseOrderReceipt
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "lines": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "po_line_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "received": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1000000,
+            "description": "Accepted into stock; a hair system's at most MAX_LABELLED."
+          },
+          "damaged": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1000000
+          },
+          "qc_failed": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1000000
+          },
+          "lot_code": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1,
+            "maxLength": 40
+          },
+          "expires_on": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date"
+          }
+        },
+        "required": [
+          "po_line_id",
+          "received",
+          "damaged",
+          "qc_failed",
+          "lot_code",
+          "expires_on"
+        ],
+        "additionalProperties": false
+      },
+      "minItems": 1,
+      "maxItems": 100
+    },
+    "supplier_invoice": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "minLength": 1,
+      "maxLength": 60
+    },
+    "rupee_rate": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 1,
+      "maximum": 10000000,
+      "description": "Paise to one unit of the order's currency, as Rs. 83.25 to the dollar is 8325; null for rupees."
+    },
+    "freight_paise": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 10000000000
+    },
+    "duty_paise": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 10000000000
+    },
+    "clearing_paise": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 10000000000
+    },
+    "note": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "minLength": 1,
+      "maxLength": 200,
+      "pattern": "^[^\\p{Cc}]+$/u"
+    }
+  },
+  "required": [
+    "lines",
+    "supplier_invoice",
+    "rupee_rate",
+    "freight_paise",
+    "duty_paise",
+    "clearing_paise",
+    "note"
   ],
   "additionalProperties": false
 }

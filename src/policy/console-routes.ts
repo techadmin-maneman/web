@@ -223,6 +223,8 @@ export const ROUTE_NEEDS: Readonly<Record<string, RouteNeed | typeof SIGNED_IN>>
   "POST /api/purchase-orders/{id}/approve": need("operations", "manage"),
   "POST /api/purchase-orders/{id}/send": need("operations", "act"),
   "POST /api/purchase-orders/{id}/cancel": need("operations", "manage"),
+  "POST /api/purchase-orders/{id}/receipts": need("operations", "act"),
+  "POST /api/purchase-orders/{id}/close": need("operations", "manage"),
   "GET /api/suppliers": need("admin", "view"),
   "POST /api/suppliers": need("admin", "manage"),
   "POST /api/suppliers/{id}": need("admin", "manage"),

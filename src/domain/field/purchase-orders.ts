@@ -1,7 +1,7 @@
 // Purchase orders (docs/decisions/0166-purchase-orders.md): drafted from a supplier's list, each line at the price the
 // supplier lists it at; approved by an Operations manager, and by a second one above the amount ops set or in another
 // currency (src/policy/purchasing.ts); marked sent once ops have sent it; or cancelled before anything arrives.
-// Receipts move it on from sent (src/domain/field/receipts.ts, with phase 3's receipts).
+// Receipts move it on from sent (src/domain/field/receipts.ts), and one part received may be closed short.
 //
 // Each change is a conditional write with its audit entry, so two managers approving at once approve once.
 
@@ -250,6 +250,16 @@ export function markSent(db: D1Database, id: string, written: Written): Promise<
     binds: [id, written.actor.id, written.now.toISOString()],
   };
   return changed(db, { id, action: "purchase_order.send" }, update, written);
+}
+
+/** An order part received closed short: what has not arrived will not, and no more is received against it. */
+export function closeOrder(db: D1Database, id: string, written: Written): Promise<Changed> {
+  const update = {
+    sql: `UPDATE purchase_orders SET change_id = ?9, state = 'closed', updated_at = ?2
+          WHERE id = ?1 AND state = 'part_received'`,
+    binds: [id, written.now.toISOString()],
+  };
+  return changed(db, { id, action: "purchase_order.close" }, update, written);
 }
 
 /** An order cancelled, with why, before anything of it arrived. */
