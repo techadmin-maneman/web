@@ -106,7 +106,7 @@ async function dueRate(db: D1Database, horizon: Horizon): Promise<number> {
   const row = await db
     .prepare(
       `SELECT COUNT(*) AS due, COALESCE(SUM(replacement_booked), 0) AS booked FROM pieces INDEXED BY pieces_by_due
-       WHERE replacement_due_at >= ?1 AND replacement_due_at < ?2 AND deleted_at IS NULL`,
+       WHERE date(replacement_due_at) >= ?1 AND date(replacement_due_at) < ?2 AND deleted_at IS NULL`,
     )
     .bind(addDays(horizon.today, -LEARNING_DAYS), horizon.today)
     .first<{ due: number; booked: number }>();
