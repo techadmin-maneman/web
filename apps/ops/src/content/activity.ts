@@ -110,6 +110,7 @@ const ACTIONS: Readonly<Record<ActivityAction, string>> = {
   "stock.send": "Stock sent",
   "stock.receive_transfer": "Stock received from a transfer",
   "stock.send_back": "Stock sent back",
+  "stock.label": "Pieces labelled",
   "task.assign": "Task taken or given",
   "task.hand_back": "Task handed back",
   "task.close": "Task closed",

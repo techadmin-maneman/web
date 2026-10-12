@@ -15,31 +15,24 @@
 // It names each place by its ID: the warehouse WAREHOUSE, and a kit its technician's.
 //
 // Each movement is broken down by the lots it moved, soonest to expire first
-// (src/domain/field/stock-lots.ts, docs/decisions/0157-lots-and-expiry.md).
+// (src/domain/field/stock-lots.ts, docs/decisions/0157-lots-and-expiry.md), and
+// a hair system's by the pieces it moved (src/domain/field/stock-units.ts).
 //
 // A place that falls to a consumable's reorder level raises one alert, for
 // that place, listing everything low there, and the Stock screen marks it. A
 // kit has the kit's level and every other place the central one. The alert
-// closes when the place is stocked again.
+// closes when the place is stocked again. What the Stock screen reads is
+// src/domain/field/stock-view.ts.
 
-import { indiaDate } from "../../lib/india-time.ts";
-import { countDifference, isLow } from "../../policy/stock.ts";
+import { countDifference } from "../../policy/stock.ts";
 import { auditStatement, auditStatementIfWritten, type AuditActor } from "../ops/audit.ts";
-import { allConsumables, isOffered, type Consumable } from "./consumables.ts";
-import { heldLots, lotMoves, receivedLotMoves, soonestFirst, type HeldLot, type ReceivedLot } from "./stock-lots.ts";
-import {
-  allPlaces,
-  isPlaceWithin,
-  placeById,
-  WAREHOUSE,
-  type Place,
-  type PlaceKind,
-  type StockPlace,
-} from "./stock-places.ts";
+import { lotMoves, receivedLotMoves, type ReceivedLot } from "./stock-lots.ts";
+import { placeById, WAREHOUSE, type Place, type PlaceKind } from "./stock-places.ts";
+import { hairSystemProduct, MAX_LABELLED, newUnits, takenFrom, unitChanges } from "./stock-units.ts";
 
 /** Why a row moved stock: a delivery, a transfer, a job's use, a count's difference, or a loss. */
 export const MOVEMENT_REASONS = ["received", "transferred", "used", "counted", "written_off"] as const;
-type Reason = (typeof MOVEMENT_REASONS)[number];
+export type Reason = (typeof MOVEMENT_REASONS)[number];
 
 /** What ops write, with who and why, so every movement lands with its audit entry. */
 export interface Written {
@@ -167,23 +160,46 @@ async function heldOf(db: D1Database, code: string, place: Place): Promise<numbe
   return row?.quantity ?? 0;
 }
 
-/** Stock received into the warehouse, into the lot named, or of none (src/domain/field/stock-lots.ts). */
+/**
+ * Stock received into the warehouse, into the lot named, or of none (src/domain/field/stock-lots.ts). A hair system's
+ * pieces are each labelled as they arrive, so one delivery of them is at most MAX_LABELLED.
+ */
 export async function receiveStock(
   db: D1Database,
   input: { readonly code: string; readonly quantity: number; readonly note: string | null; readonly lot?: ReceivedLot },
   written: Written,
 ): Promise<Moved> {
   if (!(await consumableExists(db, input.code))) return { ok: false, fields: ["consumable_code"] };
+  const product = await hairSystemProduct(db, input.code);
+  if (product !== null && input.quantity > MAX_LABELLED) return { ok: false, fields: ["quantity"] };
   const id = crypto.randomUUID();
   const lot = input.lot ?? { lotCode: null, expiresOn: null };
   const movement = { code: input.code, quantity: input.quantity, note: input.note };
+  const received = await receivedLotMoves(
+    db,
+    { code: input.code, lot, movementId: id, quantity: input.quantity },
+    written.now,
+  );
+  const units = Array.from({ length: product === null ? 0 : input.quantity }, () => crypto.randomUUID());
   await db.batch([
     auditStatement(db, entry("stock.receive", input.code, written, { quantity: input.quantity }), written.now),
     movementStatement(db, { ...movement, place: WAREHOUSE, kind: "warehouse", reason: "received" }, written, id),
-    ...(await receivedLotMoves(db, { code: input.code, lot, movementId: id, quantity: input.quantity }, written.now)),
+    ...received.statements,
+    ...newUnits(db, {
+      ids: units,
+      code: input.code,
+      product: product ?? "",
+      place: WAREHOUSE,
+      lot: received.lotCode === null ? { lotId: null } : { lotCode: received.lotCode },
+      movementId: id,
+      ...unitWritten(written),
+    }),
   ]);
   return { ok: true, lowered: [] };
 }
+
+/** When and by whom a unit's change is written. */
+export const unitWritten = (written: Written) => ({ at: written.now.toISOString(), actor: written.actor.id });
 
 /** Stock moved from one place to another: two rows, out of the one and into the other. */
 export async function transferStock(
@@ -199,7 +215,8 @@ export async function transferStock(
   const transferId = crypto.randomUUID();
   const [out, into] = [crypto.randomUUID(), crypto.randomUUID()];
   const moved = { code: input.code, reason: "transferred", transferId, note: null } as const;
-  const takes = await soonestFirst(db, { code: input.code, place: input.from, quantity: input.quantity });
+  const taken = await takenFrom(db, { code: input.code, place: input.from, quantity: input.quantity });
+  const takes = taken?.takes ?? [];
   await db.batch([
     auditStatement(
       db,
@@ -210,6 +227,13 @@ export async function transferStock(
     movementStatement(db, { ...moved, place: input.to, kind: toKind, quantity: input.quantity }, written, into),
     ...lotMoves(db, { movementId: out, place: input.from, takes, sign: -1 }),
     ...lotMoves(db, { movementId: into, place: input.to, takes, sign: 1 }),
+    ...unitChanges(db, {
+      units: taken?.units ?? [],
+      state: "held",
+      place: input.to,
+      movementId: into,
+      ...unitWritten(written),
+    }),
   ]);
   return { ok: true, lowered: [input.from] };
 }
@@ -271,11 +295,18 @@ async function writeCount(
     note: input.note,
   };
   const detail = { place: input.place, counted: input.counted, ...found };
-  // Less counted than held leaves from the lots that expire soonest; more goes into the lot named, or none.
-  const takes =
+  // Less counted than held leaves from the lots that expire soonest, and of a hair system the pieces never labelled
+  // first, any unit taken gone missing; more goes into the lot named, or none, and unlabelled.
+  const taken =
     found.difference < 0
-      ? await soonestFirst(db, { code: input.code, place: input.place, quantity: -found.difference })
-      : [];
+      ? await takenFrom(db, {
+          code: input.code,
+          place: input.place,
+          quantity: -found.difference,
+          prefer: "unlabelled",
+        })
+      : null;
+  const takes = taken?.takes ?? [];
   const intoLot =
     found.difference > 0 && input.lot !== undefined
       ? await receivedLotMoves(
@@ -283,7 +314,7 @@ async function writeCount(
           { code: input.code, lot: input.lot, movementId: id, quantity: found.difference, place: input.place },
           written.now,
         )
-      : [];
+      : null;
   const [row] = await db.batch([
     countStatement({ db, id, movement, held: found.held, written }),
     auditStatementIfWritten(db, entry("stock.count", input.code, written, detail), written.now, {
@@ -291,7 +322,14 @@ async function writeCount(
       id,
     }),
     ...lotMoves(db, { movementId: id, place: input.place, takes, sign: -1 }),
-    ...intoLot,
+    ...(intoLot?.statements ?? []),
+    ...unitChanges(db, {
+      units: taken?.units ?? [],
+      state: "missing",
+      place: null,
+      movementId: id,
+      ...unitWritten(written),
+    }),
   ]);
   return row?.results.length === 1;
 }
@@ -315,7 +353,8 @@ export async function writeOff(
   const kind = await kindOf(db, input.place);
   if (kind === null) return { ok: false, fields: ["place_id"] };
   const id = crypto.randomUUID();
-  const takes = await soonestFirst(db, { ...input, lotId: input.lotId ?? null });
+  const taken = await takenFrom(db, { ...input, lotId: input.lotId ?? null });
+  const takes = taken?.takes ?? [];
   if (input.lotId !== undefined && input.lotId !== null && takes.length === 0) return { ok: false, fields: ["lot_id"] };
   await db.batch([
     auditStatement(
@@ -337,6 +376,13 @@ export async function writeOff(
       id,
     ),
     ...lotMoves(db, { movementId: id, place: input.place, takes, sign: -1 }),
+    ...unitChanges(db, {
+      units: taken?.units ?? [],
+      state: "written_off",
+      place: null,
+      movementId: id,
+      ...unitWritten(written),
+    }),
   ]);
   return { ok: true, lowered: [input.place] };
 }
@@ -358,126 +404,3 @@ function entry(
 }
 
 export { tellOfLowStock } from "./low-stock.ts";
-
-// ---------------------------------------------------------------------------
-// What the Stock screen reads
-// ---------------------------------------------------------------------------
-
-interface Holding {
-  readonly code: string;
-  readonly place: Place;
-  readonly quantity: number;
-  readonly low: boolean;
-  /** When this place last counted it; null if never. */
-  readonly countedAt: string | null;
-  /** The lots it holds some of, soonest to expire first. */
-  readonly lots: readonly HeldLot[];
-}
-
-interface StockMovement {
-  readonly at: string;
-  readonly code: string;
-  readonly place: Place;
-  readonly quantity: number;
-  readonly reason: Reason;
-  /** An e-mail for ops, the technician's ID for a job's use. */
-  readonly by: string;
-  readonly note: string | null;
-}
-
-interface StockView {
-  /** Every consumable offered, and any retired one a place still holds. */
-  readonly consumables: readonly Consumable[];
-  /** Every open place within reach down the tree, and any closed one still holding stock. */
-  readonly places: readonly StockPlace[];
-  readonly holdings: readonly Holding[];
-  /** The latest movements, newest first. */
-  readonly movements: readonly StockMovement[];
-}
-
-/** How many of the latest movements the screen holds beneath the table, to sort and narrow there. */
-const MOVEMENTS_SHOWN = 500;
-
-type BalanceRow = {
-  consumable_code: string;
-  place: string;
-  quantity: number;
-  counted_at: string | null;
-};
-type MovementRow = {
-  created_at: string;
-  consumable_code: string;
-  place: string;
-  quantity: number;
-  reason: Reason;
-  actor: string;
-  note: string | null;
-};
-
-/** A movement's place, as the balances name it. */
-const ROW_PLACE = `COALESCE(m.place_id, m.technician_id, '${WAREHOUSE}')`;
-
-/**
- * What the places hold. `within` are the places the caller's cities reach (src/domain/field/stock-places.ts); null
- * reaches every one. A kit of a technician who left, or a closed stockroom, keeps its column while it holds anything,
- * so it can be counted or emptied.
- */
-export async function stockView(
-  db: D1Database,
-  now: Date,
-  within: ReadonlySet<Place> | null = null,
-): Promise<StockView> {
-  const today = indiaDate(now);
-  const [balances, every, recent, lots] = await Promise.all([
-    db.prepare("SELECT consumable_code, place, quantity, counted_at FROM stock_balances").all<BalanceRow>(),
-    allPlaces(db),
-    db
-      .prepare(
-        // A service token by its label on the Staff list, as Activity names it.
-        `SELECT m.created_at, m.consumable_code, ${ROW_PLACE} AS place, m.quantity, m.reason, m.note,
-           COALESCE((SELECT label FROM staff_service_tokens WHERE client_id = m.actor), m.actor) AS actor
-         FROM stock_movements m
-         WHERE ?2 IS NULL OR ${ROW_PLACE} IN (SELECT value FROM json_each(?2))
-         ORDER BY m.created_at DESC, m.rowid DESC LIMIT ?1`,
-      )
-      .bind(MOVEMENTS_SHOWN, within === null ? null : JSON.stringify([...within]))
-      .all<MovementRow>(),
-    heldLots(db),
-  ]);
-  const held = balances.results.filter((row) => isPlaceWithin(within, row.place));
-  const holding = held.filter((row) => row.quantity !== 0);
-  const heldSomewhere = new Set(holding.map((row) => row.consumable_code));
-  const consumables = (await allConsumables(db)).filter(
-    (consumable) => isOffered(consumable, today) || heldSomewhere.has(consumable.code),
-  );
-  const places = every.filter(
-    (place) => isPlaceWithin(within, place.id) && (place.active || holding.some((each) => each.place === place.id)),
-  );
-
-  const holdings = consumables.flatMap((consumable) =>
-    places.map((place): Holding => {
-      const row = held.find((each) => each.consumable_code === consumable.code && each.place === place.id);
-      const quantity = row?.quantity ?? 0;
-      const level = place.kind === "kit" ? consumable.reorderKit : consumable.reorderCentral;
-      return {
-        code: consumable.code,
-        place: place.id,
-        quantity,
-        low: isOffered(consumable, today) && isLow(quantity, level),
-        countedAt: row?.counted_at ?? null,
-        lots: lots.filter((lot) => lot.code === consumable.code && lot.place === place.id),
-      };
-    }),
-  );
-
-  const movements = recent.results.map((row) => ({
-    at: row.created_at,
-    code: row.consumable_code,
-    place: row.place,
-    quantity: row.quantity,
-    reason: row.reason,
-    by: row.actor,
-    note: row.note,
-  }));
-  return { consumables, places, holdings, movements };
-}

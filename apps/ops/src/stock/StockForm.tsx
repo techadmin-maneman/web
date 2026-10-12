@@ -187,7 +187,7 @@ export function StockForm({
 }: {
   book: Stock;
   kinds: readonly [Kind, ...Kind[]];
-  onRecorded: (book: Stock) => void;
+  onRecorded: (book: Stock, recorded: { readonly kind: Kind; readonly code: string }) => void;
 }) {
   const places = book.places.map((place) => [place.id, placeName(book, place.id)] as const);
   // The warehouse first where the caller's grants reach it, else their first place.
@@ -217,7 +217,7 @@ export function StockForm({
       setStep({ step: "failed", code: answer.code, fields: answer.fields });
       return;
     }
-    onRecorded(answer.body);
+    onRecorded(answer.body, { kind: draft.kind, code: draft.code });
     setDraft({ ...draft, ...EMPTY });
     setStep({ step: "recorded" });
   };

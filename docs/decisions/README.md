@@ -2,7 +2,7 @@
 
 Every decision this repository was built on, oldest first. A record says what was decided and why, and is not rewritten to say something else: a later record changes it, and says so in its own header (ADR 0001). **Changed by** gathers those later records, from either side, so an old record's reader knows to read on.
 
-This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. A record names its topic in its header, `- Topic:` and one of the headings below, and the test fails on one that does not. The next free number is 0161.
+This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. A record names its topic in its header, `- Topic:` and one of the headings below, and the test fails on one that does not. The next free number is 0162.
 
 ## By topic
 
@@ -91,6 +91,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 - [0158](0158-transfers-in-transit.md) Transfers in transit
 - [0159](0159-stock-views-and-expiry.md) Stock views and expiry
 - [0160](0160-demand-and-opening-counts.md) Demand ahead and opening counts
+- [0161](0161-pieces-as-units.md) Pieces as units
 
 ### Money and Books
 
@@ -356,3 +357,4 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0158](0158-transfers-in-transit.md) | Transfers in transit | 2026-10-12 | accepted |  |
 | [0159](0159-stock-views-and-expiry.md) | Stock views and expiry | 2026-10-12 | accepted |  |
 | [0160](0160-demand-and-opening-counts.md) | Demand ahead and opening counts | 2026-10-12 | accepted |  |
+| [0161](0161-pieces-as-units.md) | Pieces as units | 2026-10-12 | accepted |  |

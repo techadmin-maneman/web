@@ -150,8 +150,24 @@ const KIT = { kind: "kit", parent_id: "central", zone: "NCR", city: "Gurgaon" } 
 
 export const STOCK = {
   consumables: [
-    { code: "solvent", name: "Solvent", unit: "ml", retired: false, reorder_kit: 50, reorder_central: null },
-    { code: "tape_strips", name: "Tape strips", unit: "strip", retired: false, reorder_kit: 5, reorder_central: 50 },
+    {
+      code: "solvent",
+      name: "Solvent",
+      unit: "ml",
+      retired: false,
+      hair_system: false,
+      reorder_kit: 50,
+      reorder_central: null,
+    },
+    {
+      code: "tape_strips",
+      name: "Tape strips",
+      unit: "strip",
+      retired: false,
+      hair_system: false,
+      reorder_kit: 5,
+      reorder_central: 50,
+    },
   ],
   places: [
     {

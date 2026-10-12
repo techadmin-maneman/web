@@ -26,7 +26,7 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 | The Care inbox | `conversations`, `chat_messages`, `care_owners`, `care_weekly_off`, `care_leave`, `care_names`, `city_matters`, `quick_replies`, `remedies`, `technician_updates` | A message written since, the client's or ours, is gone from its thread | The rows since `<T>`; WhatsApp's own copy shows what was said |
 | Technicians' steps, pieces and photographs | `job_events`, `checkins`, `visits`, `consumables_used`, `no_show_cases`, `no_show_disputes`, `pieces`, `photos`, `photo_sets` | Steps, check-ins, outcomes, pieces fitted, no-shows and disputes since are lost; a photograph's file is kept with no row | The rows since `<T>` |
 | Hair profiles | `hair_profiles` | A profile recorded since is lost, and one an erasure blanked since is whole again | Adding the rows since `<T>`: they are only ever added. Erasing again blanks the rest |
-| Stock | `stock_movements`, `stock_places`, `stock_lots`, `stock_lot_moves`, `stock_transfers` | A delivery, transfer, count or loss recorded since, or a job's use, is lost, so what each place holds is wrong; a hub or stockroom added or changed since goes back | Adding the rows since `<T>` |
+| Stock | `stock_movements`, `stock_places`, `stock_lots`, `stock_lot_moves`, `stock_transfers`, `stock_units`, `stock_unit_events` | A delivery, transfer, count or loss recorded since, or a job's use, is lost, so what each place holds is wrong; a hub or stockroom added or changed since goes back, and each piece is where it was | Adding the rows since `<T>`, and setting each unit where its latest line of history puts it |
 | Referrals and credits | `referral_codes`, `referral_attributions`, `credit_ledger`, `waitlist_entries`, `referral_channels`, `channel_attributions`, `partner_payouts`, `spend_entries` | A credit, a grant, a partner, a partner's payment, an entry of offline spend or a place on a waitlist disappears | The rows since `<T>`. `credit_ledger` is only ever added to |
 | Ops' settings and what we sell | `ops_settings`, `price_book`, `standard_costs`, `targets`, `services`, `slot_times`, `serviceable_pincodes`, `technician_leave`, `visit_blackouts`, `city_blackouts`, `cities`, `zones`, `consumables`, `hair_systems`, `consumable_usage`, `checklist_items`, `partial_reasons`, `lost_reasons`, `pay_grades`, `visit_pay_rates`, `word_versions`, `site_word_publishes` | A price, service, rule, area, day's times, day off, consumable, job-sheet list, pay rate or wording set since goes back | Setting it again in the console, which audits it |
 | Staff and access | `staff`, `staff_grants`, `staff_service_tokens`, `staff_access_mode` | Someone taken off the Staff list since, or a grant taken back, is let in again | Setting it again on the Staff page, before anything else |
@@ -131,6 +131,8 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 - [stock_movements](#stock_movements): Every movement of a consumable into or out of the central store or a technician's kit, never changed; what a place holds is the sum of its rows (ADR 0087).
 - [stock_places](#stock_places): Where stock is kept, as a tree: the national warehouse, zone hubs, city stockrooms and a kit for each technician, which a trigger adds with them (ADR 0155).
 - [stock_transfers](#stock_transfers): Each transfer sent to a warehouse, a hub or a stockroom: what left, from where, to where, and whether it arrived, in full or short, or was sent back (ADR 0158).
+- [stock_unit_events](#stock_unit_events): Each unit's history, only ever added to: the state it moved into, where, and by which movement (ADR 0161).
+- [stock_units](#stock_units): Each hair system piece labelled: its label, stock code and lot, and where it is now, held at a place, in transit, fitted or gone (ADR 0161).
 - [storage_meter](#storage_meter): What the apps' two buckets, client-photos and referral-cards, hold together: one row, the sum of `stored_objects` kept beside it, and the last mark of the share ops were told of (ADR 0093); and the last mark of the database's own size they were told of.
 - [stored_objects](#stored_objects): Each object client-photos and referral-cards hold, and its size, written as it is stored and deleted as it is, so the storage meter never counts one twice (ADR 0093).
 - [sync_cursors](#sync_cursors): Where each pass of the reconciliation with FSM has reached (ADR 0032).
@@ -2164,7 +2166,7 @@ Triggers: `stock_lot_moves_balance`, `stock_lot_moves_taken_out`.
 
 Each lot of a stock code a delivery brought: the supplier's lot, or the day it was received, and the day it expires (ADR 0157).
 
-Made by `0135_stock_lots.sql`.
+Made by `0135_stock_lots.sql`; changed by `0138_stock_units.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -2173,10 +2175,14 @@ Made by `0135_stock_lots.sql`.
 | `lot_code` | TEXT | no |  |  |
 | `expires_on` | TEXT | yes |  |  |
 | `received_at` | TEXT | no |  |  |
+| `label` | TEXT | yes |  |  |
+| `label_serial` | INTEGER | yes |  |  |
 
 Indexes:
 
 - A `UNIQUE` constraint: unique on (`consumable_code`, `lot_code`)
+- `stock_lots_by_label`: unique on (`label`)
+- `stock_lots_by_label_serial`: unique on (`label_serial`)
 
 ## stock_movements
 
@@ -2258,6 +2264,55 @@ Made by `0136_stock_transfers.sql`.
 Indexes:
 
 - `stock_transfers_in_transit`: on (`sent_at`), where `state = 'in_transit'`
+
+## stock_unit_events
+
+Each unit's history, only ever added to: the state it moved into, where, and by which movement (ADR 0161).
+
+Made by `0138_stock_units.sql`.
+
+| Column | Type | May be empty | Default | Key |
+| --- | --- | --- | --- | --- |
+| `unit_id` | TEXT | no |  | → `stock_units.id` |
+| `at` | TEXT | no |  |  |
+| `state` | TEXT | no |  |  |
+| `place` | TEXT | yes |  |  |
+| `movement_id` | TEXT | yes |  |  |
+| `transfer_id` | TEXT | yes |  |  |
+| `appointment_id` | TEXT | yes |  |  |
+| `actor` | TEXT | no |  |  |
+
+Indexes:
+
+- `stock_unit_events_by_unit`: on (`unit_id`, `at`)
+
+## stock_units
+
+Each hair system piece labelled: its label, stock code and lot, and where it is now, held at a place, in transit, fitted or gone (ADR 0161).
+
+Made by `0138_stock_units.sql`.
+
+| Column | Type | May be empty | Default | Key |
+| --- | --- | --- | --- | --- |
+| `id` | TEXT | no |  | primary key |
+| `code` | TEXT | no |  |  |
+| `serial` | INTEGER | no |  |  |
+| `consumable_code` | TEXT | no |  | → `consumables.code` |
+| `lot_id` | TEXT | yes |  | → `stock_lots.id` |
+| `state` | TEXT | no |  |  |
+| `place` | TEXT | yes |  |  |
+| `transfer_id` | TEXT | yes |  | → `stock_transfers.id` |
+| `appointment_id` | TEXT | yes |  |  |
+| `labelled_at` | TEXT | no |  |  |
+| `moved_at` | TEXT | no |  |  |
+
+Indexes:
+
+- A `UNIQUE` constraint: unique on (`code`)
+- A `UNIQUE` constraint: unique on (`serial`)
+- `stock_units_by_transfer`: on (`transfer_id`), where `transfer_id IS NOT NULL`
+- `stock_units_by_visit`: on (`appointment_id`), where `appointment_id IS NOT NULL`
+- `stock_units_held`: on (`place`, `consumable_code`), where `state = 'held'`
 
 ## storage_meter
 

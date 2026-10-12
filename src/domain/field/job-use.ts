@@ -9,7 +9,7 @@ import type { VisitType } from "../../config/visit-types.ts";
 import { useStillToRecord } from "../../policy/stock.ts";
 import { allConsumables, serviceOfJob, type Consumable } from "./consumables.ts";
 import { hairSystemSpecs } from "./hair-systems.ts";
-import { givenBackToLots, lotMoves, soonestFirst } from "./stock-lots.ts";
+import { givenBackToLots, lotMoves, soonestFirst, type LotTake } from "./stock-lots.ts";
 import { usedLinesOf, type UsedLine } from "./job-event-bodies.ts";
 
 /**
@@ -93,7 +93,8 @@ export async function takenFor(
  * The kit's rows for what a step still owes the job, each written only while the step is still the job's latest of
  * its kind, and once for each step and stock code; each answers its quantity when it is written. Then each row's
  * lots: what the kit gives leaves from the lots that expire soonest, and what a correction gives back goes to the lots
- * the job took from (src/domain/field/stock-lots.ts).
+ * the job took from (src/domain/field/stock-lots.ts), unless `lotsOf` says, as the pieces a piece step moved do. Each
+ * row's ID is answered by its stock code.
  */
 export async function takenFromKit(
   db: D1Database,
@@ -105,12 +106,19 @@ export async function takenFromKit(
     readonly at: string;
   },
   owed: ReadonlyMap<string, number>,
-): Promise<{ readonly movements: D1PreparedStatement[]; readonly lots: D1PreparedStatement[] }> {
+  lotsOf?: (code: string) => readonly LotTake[],
+): Promise<{
+  readonly movements: D1PreparedStatement[];
+  readonly lots: D1PreparedStatement[];
+  readonly ids: ReadonlyMap<string, string>;
+}> {
   const movements: D1PreparedStatement[] = [];
   const lots: D1PreparedStatement[] = [];
+  const ids = new Map<string, string>();
   const kit = step.technicianId;
   for (const [code, quantity] of owed) {
     const id = crypto.randomUUID();
+    ids.set(code, id);
     movements.push(
       db
         .prepare(
@@ -124,12 +132,13 @@ export async function takenFromKit(
         .bind(id, code, kit, quantity, step.jobId, step.eventId, step.at),
     );
     const takes =
-      quantity < 0
+      lotsOf?.(code) ??
+      (quantity < 0
         ? await soonestFirst(db, { code, place: kit, quantity: -quantity })
-        : await givenBackToLots(db, { jobId: step.jobId, kit, code, quantity });
+        : await givenBackToLots(db, { jobId: step.jobId, kit, code, quantity }));
     lots.push(...lotMoves(db, { movementId: id, place: kit, takes, sign: quantity < 0 ? -1 : 1 }));
   }
-  return { movements, lots };
+  return { movements, lots, ids };
 }
 
 /**

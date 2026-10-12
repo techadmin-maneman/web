@@ -111,7 +111,8 @@ export interface ReceivedLot {
  * A delivery's lot and its breakdown: the lot made where its stock code has none of that name, from its expiry, or
  * the day received plus the stock code's shelf life. A delivery with no lot named, of a stock code that expires, is a
  * lot named for its day; one of a stock code that does not, and with no lot named, is of none. A count that found more
- * than was held puts it in its place's lot the same way (an opening count); the warehouse is a delivery's.
+ * than was held puts it in its place's lot the same way (an opening count); the warehouse is a delivery's. Returns the
+ * lot's code with the statements, for the units a hair system's delivery makes in it.
  */
 export async function receivedLotMoves(
   db: D1Database,
@@ -123,7 +124,7 @@ export async function receivedLotMoves(
     readonly place?: Place;
   },
   now: Date,
-): Promise<D1PreparedStatement[]> {
+): Promise<{ readonly lotCode: string | null; readonly statements: D1PreparedStatement[] }> {
   const shelf = await db
     .prepare("SELECT shelf_life_days FROM consumables WHERE code = ?1")
     .bind(received.code)
@@ -131,8 +132,8 @@ export async function receivedLotMoves(
   const today = indiaDate(now);
   const expiresOn = received.lot.expiresOn ?? (shelf === null ? null : addDays(today, shelf));
   const lotCode = received.lot.lotCode ?? (expiresOn === null ? null : `R-${today.replaceAll("-", "")}`);
-  if (lotCode === null) return [];
-  return [
+  if (lotCode === null) return { lotCode, statements: [] };
+  const statements = [
     db
       .prepare(
         `INSERT INTO stock_lots (id, consumable_code, lot_code, expires_on, received_at) VALUES (?1, ?2, ?3, ?4, ?5)
@@ -147,6 +148,7 @@ export async function receivedLotMoves(
       )
       .bind(received.movementId, received.quantity, received.code, lotCode, received.place ?? WAREHOUSE),
   ];
+  return { lotCode, statements };
 }
 
 /**

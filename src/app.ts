@@ -93,6 +93,7 @@ import { registerOpsStock } from "./routes/ops/stock.ts";
 import { registerOpsStockPlaces } from "./routes/ops/stock.places.ts";
 import { registerOpsStockTransit } from "./routes/ops/stock.transit.ts";
 import { registerOpsStockDemand } from "./routes/ops/stock.read.ts";
+import { registerOpsStockUnits } from "./routes/ops/stock.units.ts";
 import { registerOpsWaitlist } from "./routes/ops/waitlist.ts";
 import { registerConsultations } from "./routes/public/consultations.ts";
 import { registerLead } from "./routes/public/lead.ts";
@@ -256,6 +257,8 @@ const SURFACE_ROUTES: Readonly<Record<Surface, readonly ((app: App) => void)[]>>
     registerOpsStockTransit,
     // What the weeks ahead will use (docs/decisions/0160-demand-and-opening-counts.md).
     registerOpsStockDemand,
+    // Pieces as units, and labels (docs/decisions/0161-pieces-as-units.md).
+    registerOpsStockUnits,
     // What the photographs and cards hold in R2 (docs/decisions/0093-the-storage-meter.md).
     registerOpsStorage,
     registerOpsWhoami,

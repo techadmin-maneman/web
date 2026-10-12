@@ -79,6 +79,9 @@ export const ROUTE_NEEDS: Readonly<Record<string, RouteNeed | typeof SIGNED_IN>>
   // The central store is in no city, so a delivery into it needs a national grant.
   "GET /api/stock": inOwnPlaces("operations", "view"),
   "GET /api/stock/demand": inOwnPlaces("operations", "view"),
+  "GET /api/stock/units": inOwnPlaces("operations", "view"),
+  "POST /api/stock/units": inOwnPlaces("operations", "act"),
+  "POST /api/stock/lots/{id}/label": need("operations", "act"),
   "POST /api/stock/deliveries": need("operations", "act"),
   "POST /api/stock/transfers": inOwnPlaces("operations", "act"),
   "POST /api/stock/counts": inOwnPlaces("operations", "act"),

@@ -25,6 +25,7 @@ import { Loading, PanelFailed } from "../states/States.tsx";
 import { Narrowing, SortHeads, TableEnd } from "../components/TableTools.tsx";
 import { useTableView, type Column } from "../components/useTableView.ts";
 import { KINDS, placeName, StockForm, type Kind } from "./StockForm.tsx";
+import type { LabelsFor } from "./Labels.tsx";
 import styles from "./stock.module.css";
 
 /** The places, read only by national managers, so the panel loads only for them. */
@@ -34,6 +35,9 @@ const PlacesPanel = lazy(() => import("./PlacesPanel.tsx").then((module) => ({ d
 const Totals = lazy(() => import("./Totals.tsx").then((module) => ({ default: module.Totals })));
 const Expiring = lazy(() => import("./Expiring.tsx").then((module) => ({ default: module.Expiring })));
 const Demand = lazy(() => import("./Demand.tsx").then((module) => ({ default: module.Demand })));
+
+/** The labels of pieces and lots, loaded for those who may print them. */
+const Labels = lazy(() => import("./Labels.tsx").then((module) => ({ default: module.Labels })));
 
 /** Whether any lot within reach expires within the warning, so the Expiring panel is worth loading. */
 function anyExpiring(book: Stock): boolean {
@@ -253,6 +257,8 @@ export function StockScreen() {
   /** The stock after a movement, so the table follows without reading it again. */
   const [book, setBook] = useState<Stock | null>(null);
   const [by, setBy] = useState<"place" | "zone" | "city">("place");
+  /** A hair system's delivery opens its labels at the warehouse, afresh each time. */
+  const [labelsFor, setLabelsFor] = useState<{ readonly at: LabelsFor; readonly time: number } | null>(null);
   const access = useAccess();
   const [firstKind, ...otherKinds] = KINDS.filter((kind) => access.mayCall(RECORDING[kind]));
 
@@ -283,7 +289,17 @@ export function StockScreen() {
             </Suspense>
           )}
           {firstKind !== undefined && (book ?? loaded.value).consumables.length > 0 && (
-            <StockForm book={book ?? loaded.value} kinds={[firstKind, ...otherKinds]} onRecorded={setBook} />
+            <StockForm
+              book={book ?? loaded.value}
+              kinds={[firstKind, ...otherKinds]}
+              onRecorded={(after, recorded) => {
+                setBook(after);
+                const hairSystem = after.consumables.some((each) => each.code === recorded.code && each.hair_system);
+                if (recorded.kind === "delivery" && hairSystem) {
+                  setLabelsFor({ at: { code: recorded.code, place: "central" }, time: (labelsFor?.time ?? 0) + 1 });
+                }
+              }}
+            />
           )}
           <Suspense fallback={<Loading />}>
             <Demand book={book ?? loaded.value} />
@@ -291,6 +307,11 @@ export function StockScreen() {
           {(book ?? loaded.value).in_transit.length > 0 && (
             <Suspense fallback={<Loading />}>
               <InTransit book={book ?? loaded.value} onChanged={setBook} />
+            </Suspense>
+          )}
+          {access.mayCall("GET /api/stock/units") && (
+            <Suspense fallback={<Loading />}>
+              <Labels key={String(labelsFor?.time ?? 0)} book={book ?? loaded.value} focus={labelsFor?.at ?? null} />
             </Suspense>
           )}
           <Movements book={book ?? loaded.value} />
