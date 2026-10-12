@@ -22,5 +22,5 @@ The owner chose to report from Zoho Analytics, fed by a nightly copy of our figu
 ## Consequences
 
 - Switching it on needs a writer role in Supabase for the API, a Hyperdrive config, the binding in wrangler.jsonc and the secret. Zoho's views then move from the sample schema to `analytics`.
-- Care cases follow once the Care numbers page has landed. Until the growth figures are built, every client's channel is "direct", and a visit's booking window is empty.
+- Care cases follow once the Care numbers page has landed. Until the growth figures are built, every client's and lead's channel is "direct", a lead's area, campaign and lost reason are empty, and so is a visit's booking window.
 - Tests: `test/worker/jobs/analytics-nightly.test.ts`, `test/node/api/warehouse-sql.test.ts`.

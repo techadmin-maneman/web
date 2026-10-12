@@ -8,6 +8,7 @@ import type { RunLog, TableRows, WarehouseProvider } from "../../providers/wareh
 import { capacityRows, CAPACITY_DAYS_AHEAD } from "./capacity.ts";
 import { careCaseRows } from "./care-cases.ts";
 import { clientKeys } from "./client-key.ts";
+import { leadRows } from "./leads.ts";
 import { messageDayRows } from "./message-days.ts";
 import { cityRows, clientRows, dateRows, paymentRows, serviceRows, technicianRows, visitRows } from "./rows.ts";
 
@@ -67,6 +68,7 @@ export async function copyTonight(
     await capacityRows(db, cities, { from: since, to: addDays(date, CAPACITY_DAYS_AHEAD), now: startedAt }),
     await messageDayRows(db),
     await careCaseRows(db),
+    await leadRows(db, keys),
   ];
   let rowsWritten = 0;
   let rowsChanged = 0;

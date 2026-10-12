@@ -165,3 +165,42 @@ describe("the copy's capacity and messages", () => {
     });
   });
 });
+
+describe("the copy's leads", () => {
+  it("holds each lead with how it came and the days its client moved on, leaving test records out", async () => {
+    const lead = (id: string, personId: string) =>
+      env.DB.prepare(
+        `INSERT INTO leads (id, person_id, created_at, source, landing_path, loss_extent, request_id)
+         VALUES (?1, ?2, '2026-09-01T05:00:00.000Z', 'form', '/book', 'crown', 'r')`,
+      ).bind(id, personId);
+    await env.DB.batch([lead("l-rohit", "p-rohit"), lead("l-test", "p-test")]);
+    await visit("c-rohit", {
+      person: "p-rohit",
+      technician: IMRAN,
+      start: "2026-09-05T04:30:00.000Z",
+      type: "consultation",
+      status: "completed",
+    });
+    await visit("f-rohit", {
+      person: "p-rohit",
+      technician: IMRAN,
+      start: "2026-09-12T04:30:00.000Z",
+      type: "first_fit",
+    });
+    const warehouse = createStubWarehouse();
+
+    await copyTonight(env.DB, warehouse, night);
+
+    const leads = warehouse.tables.get("fact_lead");
+    expect([...(leads?.keys() ?? [])]).toEqual(["l-rohit"]);
+    expect(leads?.get("l-rohit")).toMatchObject({
+      lead_date: "2026-09-01",
+      source: "form",
+      landing_page: "/book",
+      channel: "direct",
+      consultation_done_date: "2026-09-05",
+      first_fit_done_date: null,
+    });
+    expect(leads?.get("l-rohit")?.consultation_booked_date).not.toBeNull();
+  });
+});
