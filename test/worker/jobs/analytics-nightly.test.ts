@@ -241,3 +241,45 @@ describe("the copy's channels", () => {
     expect(warehouse.tables.get("dim_channel")?.size).toBe(7);
   });
 });
+
+describe("the copy's spend", () => {
+  it("holds offline spend by month, and a free visit an invite paid for at its service's price that day", async () => {
+    await env.DB.batch([
+      env.DB.prepare(
+        `INSERT INTO spend_entries (id, month, city, channel, campaign, amount, entered_by, entered_at)
+         VALUES ('s1', '2026-09', 'Gurgaon', 'partner', 'Gurgaon-Salons', 2500000, 'growth@maneman.in', ?1)`,
+      ).bind(NOW.toISOString()),
+      env.DB.prepare(
+        `INSERT INTO credit_ledger (id, person_id, kind, visits, source_kind, source_id, created_at)
+         VALUES ('g1', 'p-rohit', 'grant', 2, 'referral', 'ra1', ?1)`,
+      ).bind(NOW.toISOString()),
+      env.DB.prepare(
+        `INSERT INTO credit_ledger (id, person_id, kind, visits, grant_id, source_kind, source_id, created_at)
+         VALUES ('r1', 'p-rohit', 'redeem', -1, 'g1', 'appointment', 'v-rohit', ?1)`,
+      ).bind(NOW.toISOString()),
+    ]);
+    const warehouse = createStubWarehouse();
+
+    await copyTonight(env.DB, warehouse, night);
+
+    const spend = warehouse.tables.get("fact_spend");
+    expect(spend?.get("e:s1")).toEqual({
+      spend_key: "e:s1",
+      day: "2026-09-01",
+      city: "Gurgaon",
+      channel: "Offline and partners",
+      campaign_key: "gurgaon-salons",
+      amount: 25000,
+    });
+    const price = await env.DB.prepare(
+      `SELECT amount_ex_gst FROM price_book WHERE item = 'service' AND tier = 'standard' AND valid_from <= '2026-09-20'
+       ORDER BY valid_from DESC LIMIT 1`,
+    ).first<{ amount_ex_gst: number }>();
+    expect(spend?.get("c:r1")).toMatchObject({
+      day: "2026-09-20",
+      channel: "Referral",
+      amount: (price?.amount_ex_gst ?? 0) / 100,
+    });
+    expect(price?.amount_ex_gst).toBeGreaterThan(0);
+  });
+});

@@ -54,6 +54,9 @@ const AreasScreen = lazy(() =>
 const MessagesScreen = lazy(() =>
   loadOrReload(() => import("./care/MessagesScreen.tsx")).then((module) => ({ default: module.MessagesScreen })),
 );
+const SpendScreen = lazy(() =>
+  loadOrReload(() => import("./spend/SpendScreen.tsx")).then((module) => ({ default: module.SpendScreen })),
+);
 const CareNumbersScreen = lazy(() =>
   loadOrReload(() => import("./care/CareNumbersScreen.tsx")).then((module) => ({ default: module.CareNumbersScreen })),
 );
@@ -83,6 +86,7 @@ const SCREENS: Readonly<Record<PlainPage, ComponentType>> = {
   words: WordsScreen,
   messages: MessagesScreen,
   "care-numbers": CareNumbersScreen,
+  spend: SpendScreen,
   staff: StaffScreen,
   activity: ActivityScreen,
 };

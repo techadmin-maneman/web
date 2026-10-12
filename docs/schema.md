@@ -117,6 +117,7 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 - [slot_claims](#slot_claims): What a hold or a visit takes of a technician's day, a row per half-slot and window, so no time is taken twice (ADR 0034, ADR 0069).
 - [slot_holds](#slot_holds): A slot held while a client pays, at Checkout or by a payment link ops sent, and what became of it (ADR 0045, ADR 0068).
 - [slot_times](#slot_times): Each change of the day's half-slot times ops set, from the day it applies; never changed (ADR 0102).
+- [spend_entries](#spend_entries): 
 - [staff](#staff): Each member of staff on the console's Staff list, by their Access e-mail, and whether they are let in (ADR 0109).
 - [staff_access_mode](#staff_access_mode): One row: whether the console enforces the Staff list yet, and who last switched it (ADR 0109).
 - [staff_grants](#staff_grants): What each member of staff may do: a department, at a level, over a place, national, a zone or a city (ADR 0109).
@@ -1981,6 +1982,30 @@ Indexes:
 - A `UNIQUE` constraint: unique on (`applies_from`)
 
 Triggers: `slot_times_board_added`, `slot_times_no_delete`, `slot_times_no_update`.
+
+## spend_entries
+
+
+
+Made by `0129_spend_entries.sql`.
+
+| Column | Type | May be empty | Default | Key |
+| --- | --- | --- | --- | --- |
+| `id` | TEXT | no |  | primary key |
+| `month` | TEXT | no |  |  |
+| `city` | TEXT | yes |  | → `cities.name` |
+| `channel` | TEXT | no |  |  |
+| `campaign` | TEXT | yes |  |  |
+| `amount` | INTEGER | no |  |  |
+| `note` | TEXT | yes |  |  |
+| `entered_by` | TEXT | no |  |  |
+| `entered_at` | TEXT | no |  |  |
+| `removed_by` | TEXT | yes |  |  |
+| `removed_at` | TEXT | yes |  |  |
+
+Indexes:
+
+- `spend_entries_by_month`: on (`month`), where `removed_at IS NULL`
 
 ## staff
 

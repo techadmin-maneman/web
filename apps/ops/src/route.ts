@@ -55,6 +55,7 @@ export const SECTIONS = [
   },
   { page: "referrals", path: "/referrals", department: "growth", reads: "GET /api/referrals/held" },
   { page: "areas", path: "/areas", department: "growth", reads: "GET /api/waitlist" },
+  { page: "spend", path: "/spend", department: "growth", reads: "GET /api/spend" },
   { page: "words", path: "/words", department: "growth", reads: "GET /api/words" },
   { page: "settings", path: "/settings", department: "admin", reads: "GET /api/settings" },
   { page: "staff", path: "/staff", department: "admin", reads: "GET /api/staff" },

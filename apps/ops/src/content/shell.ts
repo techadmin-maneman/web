@@ -27,6 +27,7 @@ export const shell = {
     clients: "Clients",
     messages: "Messages",
     "care-numbers": "Care numbers",
+    spend: "Spend",
     grievances: "Concerns",
     "number-changes": "Number changes",
     "deletion-requests": "Deletion requests",

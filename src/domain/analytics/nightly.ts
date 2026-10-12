@@ -10,6 +10,7 @@ import { careCaseRows } from "./care-cases.ts";
 import { clientKeys } from "./client-key.ts";
 import { leadTables } from "./leads.ts";
 import { messageDayRows } from "./message-days.ts";
+import { spendRows } from "./spend.ts";
 import { cityRows, clientRows, dateRows, paymentRows, serviceRows, technicianRows, visitRows } from "./rows.ts";
 
 /** The free plan holds 500 MB of Postgres; told at 400, so there is time to trim or upgrade. */
@@ -75,6 +76,7 @@ export async function copyTonight(
     await messageDayRows(db),
     await careCaseRows(db),
     ...leads.tables,
+    await spendRows(db),
   ];
   let rowsWritten = 0;
   let rowsChanged = 0;
