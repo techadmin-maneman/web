@@ -62,6 +62,7 @@ test.describe("a consumable added or changed", () => {
       unit_cost: 750,
       reorder_kit: 10,
       reorder_central: null,
+      shelf_life_days: null,
     });
     await expect(page.getByRole("status").filter({ hasText: settingsCopy.consumables.form.added })).toBeVisible();
   });

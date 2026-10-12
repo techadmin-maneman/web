@@ -1,6 +1,6 @@
-// Adding a consumable, or changing one: its name, its unit, what one costs and
-// the levels a kit and the central store are low at
-// (docs/decisions/0087-consumables-and-stock.md). The boxes start from what the
+// Adding a consumable, or changing one: its name, its unit, what one costs,
+// the levels a kit and the central store are low at, and its shelf life
+// (docs/decisions/0087-consumables-and-stock.md, 0157-lots-and-expiry.md). The boxes start from what the
 // consumable is now; the check shows each field that changes, old beside new,
 // before anything is sent (ADR 0071). Every box holds text: an empty level is
 // no level, never a nought.
@@ -26,17 +26,19 @@ interface Draft {
   readonly cost: string;
   readonly kit: string;
   readonly central: string;
+  readonly shelf: string;
 }
 
 const draftOf = (consumable: Consumable | null): Draft =>
   consumable === null
-    ? { name: "", unit: "", cost: "", kit: "", central: "" }
+    ? { name: "", unit: "", cost: "", kit: "", central: "", shelf: "" }
     : {
         name: consumable.name,
         unit: consumable.unit,
         cost: String(consumable.unit_cost / 100),
         kit: consumable.reorder_kit === null ? "" : String(consumable.reorder_kit),
         central: consumable.reorder_central === null ? "" : String(consumable.reorder_central),
+        shelf: consumable.shelf_life_days === null ? "" : String(consumable.shelf_life_days),
       };
 
 const levelOf = (text: string) => (text.trim() === "" ? null : Number(text));
@@ -57,7 +59,30 @@ function changes(was: Consumable, draft: Draft): string[] {
   if (levelOf(draft.central) !== was.reorder_central) {
     lines.push(line(fields.central, levelWords(was.reorder_central), levelWords(levelOf(draft.central))));
   }
+  if (levelOf(draft.shelf) !== was.shelf_life_days) {
+    lines.push(line(fields.shelf, copy.shelfLife(was.shelf_life_days), copy.shelfLife(levelOf(draft.shelf))));
+  }
   return lines;
+}
+
+/** A whole figure, as typed; empty for none. */
+function Figure(props: { label: string; value: string; onChange: (text: string) => void }) {
+  return (
+    <Field label={props.label} className={styles.field}>
+      {(control) => (
+        <TextInput
+          {...control}
+          className={styles.figureBox}
+          inputMode="numeric"
+          maxLength={6}
+          value={props.value}
+          onChange={(event) => {
+            props.onChange(event.target.value);
+          }}
+        />
+      )}
+    </Field>
+  );
 }
 
 export function ConsumableForm({
@@ -78,7 +103,7 @@ export function ConsumableForm({
     draft.unit.trim() !== "" &&
     RUPEES.test(draft.cost.trim()) &&
     paiseFromRupees(draft.cost) <= maxUnitCost &&
-    [draft.kit, draft.central].every((level) => level.trim() === "" || WHOLE.test(level.trim()));
+    [draft.kit, draft.central, draft.shelf].every((level) => level.trim() === "" || WHOLE.test(level.trim()));
   const steps = useSteps(
     async () => {
       const fields = {
@@ -87,6 +112,7 @@ export function ConsumableForm({
         unit_cost: paiseFromRupees(draft.cost),
         reorder_kit: levelOf(draft.kit),
         reorder_central: levelOf(draft.central),
+        shelf_life_days: levelOf(draft.shelf),
       };
       const answer =
         consumable === null ? await api.addConsumable(fields) : await api.changeConsumable(consumable.code, fields);
@@ -106,6 +132,7 @@ export function ConsumableForm({
       ? [
           form.confirm.adding(draft.name.trim(), draft.unit.trim(), rupees(paiseFromRupees(draft.cost))),
           copy.levels(levelOf(draft.kit), levelOf(draft.central)),
+          copy.shelfLife(levelOf(draft.shelf)),
         ]
       : changes(consumable, draft);
 
@@ -174,34 +201,9 @@ export function ConsumableForm({
         </Field>
       </div>
       <div className={styles.fields}>
-        <Field label={form.kit} className={styles.field}>
-          {(control) => (
-            <TextInput
-              {...control}
-              className={styles.figureBox}
-              inputMode="numeric"
-              maxLength={6}
-              value={draft.kit}
-              onChange={(event) => {
-                edit("kit")(event.target.value);
-              }}
-            />
-          )}
-        </Field>
-        <Field label={form.central} className={styles.field}>
-          {(control) => (
-            <TextInput
-              {...control}
-              className={styles.figureBox}
-              inputMode="numeric"
-              maxLength={6}
-              value={draft.central}
-              onChange={(event) => {
-                edit("central")(event.target.value);
-              }}
-            />
-          )}
-        </Field>
+        <Figure label={form.kit} value={draft.kit} onChange={edit("kit")} />
+        <Figure label={form.central} value={draft.central} onChange={edit("central")} />
+        <Figure label={form.shelf} value={draft.shelf} onChange={edit("shelf")} />
       </div>
     </SettingForm>
   );

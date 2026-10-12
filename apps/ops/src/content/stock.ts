@@ -24,6 +24,8 @@ export const stock = {
   settings: "Settings, Consumables",
   retired: "retired",
   counted: (when: string) => `Counted ${when}`,
+  /** The soonest a lot held there expires. */
+  expires: (when: string) => `Expires ${when}`,
   record: {
     title: "Record a movement",
     what: "What happened",
@@ -43,6 +45,12 @@ export const stock = {
     counted: "Counted",
     note: "Note",
     lossNote: "What was lost, and how",
+    lot: "Supplier lot (optional)",
+    expires: "Expires (optional)",
+    lostLot: "Lot",
+    soonest: "Soonest to expire",
+    /** "SV-2611 · expires 30 Nov" */
+    lotLine: (lot: string, expires: string | null) => (expires === null ? lot : `${lot} · expires ${expires}`),
     check: "Review",
   },
   confirm: {
@@ -76,6 +84,7 @@ export const stock = {
     from: "Unknown place. Reload.",
     to: "From and to must be different places.",
     place_id: "Unknown place. Reload.",
+    lot_id: "That lot isn't held there. Reload.",
     note: "Say what happened, in up to 200 characters.",
     offline: OFFLINE,
     unknown: FAILED,

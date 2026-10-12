@@ -477,6 +477,8 @@ export const settings = {
     // The buttons in each row, named for the screen reader by the consumable.
     change: "Change",
     changeLabel: (name: string) => `Change ${name}`,
+    /** "Keeps 180 days", what a lot with no expiry of its own is given. */
+    shelfLife: (days: number | null) => (days === null ? "Does not expire" : `Keeps ${String(days)} days`),
     /** One added by mistake; one whose stock has moved is retired instead. */
     inUse: "Its stock has moved. Retire it instead.",
     deleted: "Deleted.",
@@ -517,6 +519,7 @@ export const settings = {
       cost: "Cost each, in rupees",
       kit: "Kit low at (optional)",
       central: "Store low at (optional)",
+      shelf: "Shelf life, days (optional)",
       add: "Add",
       save: "Save consumable",
       saving: "Saving",
@@ -528,7 +531,14 @@ export const settings = {
         title: "Review the change",
         adding: (name: string, unit: string, cost: string) => `${name}, by the ${unit}, at ${cost} each.`,
         line: (field: string, was: string, now: string) => `${field}: ${was} → ${now}`,
-        fields: { name: "Name", unit: "Unit", cost: "Cost each", kit: "Kit low at", central: "Store low at" },
+        fields: {
+          name: "Name",
+          unit: "Unit",
+          cost: "Cost each",
+          kit: "Kit low at",
+          central: "Store low at",
+          shelf: "Shelf life",
+        },
         noLevel: "none",
         send: "Confirm",
         back: "Edit",

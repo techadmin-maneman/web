@@ -101,8 +101,51 @@ test("records a delivery into the store, showing what it holds before and after"
     consumable_code: "tape_strips",
     quantity: 100,
     note: "Supplier's note 4418",
+    lot_code: null,
+    expires_on: null,
   });
   await expect(form.getByRole("status")).toHaveText(opsCopy.stock.recorded);
+});
+
+test("takes a delivery's supplier lot and its expiry", async ({ page }) => {
+  await open(page, { "POST /api/stock/deliveries": json(STOCK) });
+  const form = recording(page);
+  await form.getByLabel("Consumable").selectOption({ label: "Solvent" });
+  await form.getByLabel("How many").fill("500");
+  await form.getByLabel(opsCopy.stock.record.lot).fill("SV-2611");
+  await form.getByLabel(opsCopy.stock.record.expires).fill("2027-11-30");
+  await form.getByRole("button", { name: "Review" }).click();
+  const sent = posted(page, "/api/stock/deliveries");
+  await form.getByRole("button", { name: "Record" }).click();
+  expect((await sent).postDataJSON()).toMatchObject({ lot_code: "SV-2611", expires_on: "2027-11-30" });
+});
+
+const LOT = { id: "lot-1", lot_code: "TS-0901", expires_on: "2027-10-31", quantity: 120 };
+const withLot = {
+  ...STOCK,
+  holdings: STOCK.holdings.map((holding) =>
+    holding.consumable_code === "tape_strips" && holding.place_id === "central" ? { ...holding, lots: [LOT] } : holding,
+  ),
+};
+
+test("says when the soonest lot a place holds expires, and writes off the lot named", async ({ page }) => {
+  await answer(page, { "GET /api/stock": json(withLot), "POST /api/stock/write-offs": json(withLot) });
+  await page.goto("/stock");
+  const tape = onHand(page)
+    .getByRole("row")
+    .filter({ has: page.getByRole("rowheader", { name: "Tape strips" }) });
+  await expect(tape.getByRole("cell").nth(0)).toContainText("Expires Sun 31 Oct");
+
+  const form = recording(page);
+  await form.getByLabel("Loss").check();
+  await form.getByLabel("Consumable").selectOption({ label: "Tape strips" });
+  await form.getByLabel(opsCopy.stock.record.lostLot).selectOption({ label: "TS-0901 · expires Sun 31 Oct" });
+  await form.getByLabel("How many").fill("20");
+  await form.getByLabel(opsCopy.stock.record.lossNote).fill("Past its date");
+  await form.getByRole("button", { name: "Review" }).click();
+  const sent = posted(page, "/api/stock/write-offs");
+  await form.getByRole("button", { name: "Record" }).click();
+  expect((await sent).postDataJSON()).toMatchObject({ lot_id: "lot-1", quantity: 20 });
 });
 
 test("a transfer shows both places, and says when the store would hold less than nothing", async ({ page }) => {
