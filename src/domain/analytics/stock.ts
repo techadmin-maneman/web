@@ -1,5 +1,5 @@
 // Consumable stock in the reporting copy (docs/decisions/0153-supply-and-credits-in-the-copy.md), from today's ledger:
-// each consumable, each place stock is kept (the central store and each technician's kit), every movement, and each
+// each consumable, each place stock is kept (the warehouse, hubs, stockrooms and kits), every movement, and each
 // week's position per place and consumable: what was on hand at its end and its value, what visits used, what the
 // visits done were expected to use, and whether it ended at or below its reorder level. Value is at today's unit cost.
 // Kits of technicians marked as tests are left out.
@@ -19,7 +19,7 @@ interface Item {
 interface Movement {
   readonly id: string;
   readonly created_at: string;
-  readonly technician_id: string | null;
+  readonly place: string;
   readonly code: string;
   readonly reason: string;
   readonly quantity: number;
@@ -33,7 +33,19 @@ interface Expected {
   readonly quantity: number;
 }
 
-const placeOf = (technicianId: string | null) => (technicianId === null ? "central" : `kit:${technicianId}`);
+interface StockPlace {
+  readonly id: string;
+  readonly kind: string;
+  readonly city: string | null;
+  readonly technician_id: string | null;
+}
+
+/** A place's key in the copy: the warehouse keeps the central store's, a kit and any other place their kind and ID. */
+const keyOf = (place: { readonly id: string; readonly kind: string }) =>
+  place.kind === "warehouse" ? "central" : `${place.kind}:${place.id}`;
+
+/** The copy's word for each kind: the warehouse as the store the dashboards know. */
+const KIND_WORDS: Readonly<Record<string, string>> = { warehouse: "store" };
 
 /** The Monday a day's week starts on. */
 const weekOf = (day: string) => addDays(day, -((new Date(`${day}T00:00:00Z`).getUTCDay() + 6) % 7));
@@ -45,7 +57,11 @@ interface Week {
 }
 
 /** Each place and consumable's weeks, from the week of its first movement to tonight's. */
-function weeksOf(movements: readonly Movement[], expected: readonly Expected[], today: string) {
+function weeksOf(
+  movements: readonly Movement[],
+  expected: readonly Expected[],
+  { today, placeKey }: { readonly today: string; readonly placeKey: (id: string) => string },
+) {
   const changes = new Map<string, Map<string, Week>>();
   const touch = (pair: string, week: string) => {
     const weeks = changes.get(pair) ?? new Map<string, Week>();
@@ -55,12 +71,12 @@ function weeksOf(movements: readonly Movement[], expected: readonly Expected[], 
     return held;
   };
   for (const move of movements) {
-    const week = touch(`${placeOf(move.technician_id)}|${move.code}`, weekOf(indiaDate(new Date(move.created_at))));
+    const week = touch(`${placeKey(move.place)}|${move.code}`, weekOf(indiaDate(new Date(move.created_at))));
     week.on_hand += move.quantity;
     if (move.reason === "used") week.used -= move.quantity;
   }
   for (const visit of expected) {
-    touch(`${placeOf(visit.technician_id)}|${visit.code}`, weekOf(indiaDate(new Date(visit.window_start)))).expected +=
+    touch(`${placeKey(visit.technician_id)}|${visit.code}`, weekOf(indiaDate(new Date(visit.window_start)))).expected +=
       visit.quantity;
   }
   const rows: { place: string; code: string; week: string; on_hand: number; used: number; expected: number }[] = [];
@@ -78,14 +94,18 @@ function weeksOf(movements: readonly Movement[], expected: readonly Expected[], 
   return rows;
 }
 
-export async function stockTables(db: D1Database, today: string): Promise<readonly TableRows[]> {
-  const [items, technicians, movements, expected] = await db.batch<
-    Item | { id: string; city: string | null } | Movement | Expected
-  >([
+/** The catalogue, the places, the ledger and what each completed visit was expected to use. */
+async function readStock(db: D1Database) {
+  const [items, places, movements, expected] = await db.batch<Item | StockPlace | Movement | Expected>([
     db.prepare("SELECT code, name, unit, unit_cost, reorder_kit, reorder_central FROM consumables"),
-    db.prepare("SELECT id, city FROM technicians WHERE test_record = 0"),
     db.prepare(
-      `SELECT m.id, m.created_at, m.technician_id, m.consumable_code AS code, m.reason, m.quantity, m.appointment_id
+      `SELECT p.id, p.kind, COALESCE(p.city, t.city) AS city, p.technician_id
+       FROM stock_places p LEFT JOIN technicians t ON t.id = p.technician_id
+       WHERE p.technician_id IS NULL OR t.test_record = 0`,
+    ),
+    db.prepare(
+      `SELECT m.id, m.created_at, COALESCE(m.place_id, m.technician_id, 'central') AS place,
+         m.consumable_code AS code, m.reason, m.quantity, m.appointment_id
        FROM stock_movements m LEFT JOIN technicians t ON t.id = m.technician_id
        WHERE m.technician_id IS NULL OR t.test_record = 0`,
     ),
@@ -96,15 +116,24 @@ export async function stockTables(db: D1Database, today: string): Promise<readon
        WHERE a.status = 'completed' AND a.deleted_at IS NULL`,
     ),
   ]);
-  const catalogue = (items?.results ?? []) as Item[];
+  return {
+    catalogue: (items?.results ?? []) as Item[],
+    places: (places?.results ?? []) as StockPlace[],
+    moves: (movements?.results ?? []) as Movement[],
+    expected: (expected?.results ?? []) as Expected[],
+  };
+}
+
+export async function stockTables(db: D1Database, today: string): Promise<readonly TableRows[]> {
+  const { catalogue, places, moves, expected } = await readStock(db);
   const byCode = new Map(catalogue.map((item) => [item.code, item]));
-  const kits = (technicians?.results ?? []) as { id: string; city: string | null }[];
-  const moves = (movements?.results ?? []) as Movement[];
+  const keys = new Map(places.map((place) => [place.id, keyOf(place)]));
+  const placeKey = (id: string) => keys.get(id) ?? `kit:${id}`;
   const valueOf = (code: string, quantity: number) => Math.round(quantity * (byCode.get(code)?.unit_cost ?? 0)) / 100;
   const reorderAt = (place: string, code: string) =>
-    place === "central" ? byCode.get(code)?.reorder_central : byCode.get(code)?.reorder_kit;
+    place.startsWith("kit:") ? byCode.get(code)?.reorder_kit : byCode.get(code)?.reorder_central;
 
-  const weeks: Row[] = weeksOf(moves, (expected?.results ?? []) as Expected[], today).map((week) => {
+  const weeks: Row[] = weeksOf(moves, expected, { today, placeKey }).map((week) => {
     const level = reorderAt(week.place, week.code);
     return {
       week_start: week.week,
@@ -133,10 +162,12 @@ export async function stockTables(db: D1Database, today: string): Promise<readon
       table: "dim_stock_place",
       key: ["place_key"],
       stamped: false,
-      rows: [
-        { place_key: "central", kind: "store", city: null, technician_key: null },
-        ...kits.map((kit) => ({ place_key: placeOf(kit.id), kind: "kit", city: kit.city, technician_key: kit.id })),
-      ],
+      rows: places.map((place) => ({
+        place_key: keyOf(place),
+        kind: KIND_WORDS[place.kind] ?? place.kind,
+        city: place.city,
+        technician_key: place.technician_id,
+      })),
     },
     {
       table: "fact_stock_movement",
@@ -145,7 +176,7 @@ export async function stockTables(db: D1Database, today: string): Promise<readon
       rows: moves.map((move) => ({
         movement_key: move.id,
         movement_date: indiaDate(new Date(move.created_at)),
-        place_key: placeOf(move.technician_id),
+        place_key: placeKey(move.place),
         item_code: move.code,
         kind: move.reason,
         quantity: move.quantity,

@@ -140,6 +140,8 @@ type StockDelivery = Sent<paths["/api/stock/deliveries"]["post"]>;
 type StockTransfer = Sent<paths["/api/stock/transfers"]["post"]>;
 type StockCount = Sent<paths["/api/stock/counts"]["post"]>;
 type StockWriteOff = Sent<paths["/api/stock/write-offs"]["post"]>;
+export type StockPlaceAdd = Sent<paths["/api/stock/places"]["post"]>;
+export type StockPlaceChange = Sent<paths["/api/stock/places/{id}"]["post"]>;
 
 /** The Staff list: who may do what, and whether it is enforced. */
 export type StaffBook = Body<paths["/api/staff"]["get"]>;
@@ -587,4 +589,7 @@ export const api = {
   /** The ledger takes the difference from what it held. */
   recordCount: (counted: StockCount) => client.post("/api/stock/counts", { body: counted }),
   recordWriteOff: (lost: StockWriteOff) => client.post("/api/stock/write-offs", { body: lost }),
+  addStockPlace: (place: StockPlaceAdd) => client.post("/api/stock/places", { body: place }),
+  changeStockPlace: (id: string, change: StockPlaceChange) =>
+    client.post("/api/stock/places/{id}", { path: { id }, body: change }),
 };

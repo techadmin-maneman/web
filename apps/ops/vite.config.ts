@@ -42,15 +42,15 @@ export default defineConfig({
     assetsInlineLimit: 0,
     sourcemap: false,
     // The console's copy, one file a feature (src/content/), in one chunk: its words compress best together, and
-    // scattered over the shared chunks they cost the first load more than a kilobyte. Activity's, Technician pay's and
-    // the Partners panel's, each read only by its own page, which loads when opened, stay in that page's chunk.
+    // scattered over the shared chunks they cost the first load more than a kilobyte. Activity's, Technician pay's,
+    // the Partners panel's and the like, each read only by its own page or panel, which loads when opened, stay in its chunk.
     rolldownOptions: {
       output: {
         advancedChunks: {
           groups: [
             {
               name: "content",
-              test: /[\\/]src[\\/]content(?:[\\/](?!(?:activity|technician-pay|partners|partner-commission|words|care|settings|spend|targets)\.ts$)|\.ts$)/,
+              test: /[\\/]src[\\/]content(?:[\\/](?!(?:activity|technician-pay|partners|partner-commission|words|care|settings|spend|targets|stock-places)\.ts$)|\.ts$)/,
             },
           ],
         },

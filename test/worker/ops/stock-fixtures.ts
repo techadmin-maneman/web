@@ -2,13 +2,21 @@
 
 export interface Stock {
   consumables: { code: string; name: string; retired: boolean }[];
-  places: { technician_id: string | null; name: string | null; active: boolean }[];
+  places: {
+    id: string;
+    kind: string;
+    name: string;
+    parent_id: string | null;
+    zone: string | null;
+    city: string | null;
+    active: boolean;
+  }[];
   holdings: {
     consumable_code: string;
-    technician_id: string | null;
+    place_id: string;
     quantity: number;
     low: boolean;
     counted_at: string | null;
   }[];
-  movements: { consumable_code: string; technician_id: string | null; quantity: number; reason: string; by: string }[];
+  movements: { consumable_code: string; place_id: string; quantity: number; reason: string; by: string }[];
 }

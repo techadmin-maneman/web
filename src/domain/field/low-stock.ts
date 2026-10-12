@@ -5,7 +5,7 @@
 import { indiaDate } from "../../lib/india-time.ts";
 import { isLow } from "../../policy/stock.ts";
 import type { AlertOnce, ResolveAlert } from "../ops/alerts.ts";
-import type { Place } from "./stock.ts";
+import { WAREHOUSE, type Place } from "./stock-places.ts";
 
 /** One consumable a place holds at or below its level. */
 interface Low {
@@ -16,13 +16,17 @@ interface Low {
   readonly level: number;
 }
 
-/** What a place holds at or below its level, of every consumable still offered that has one. */
+/**
+ * What a place holds at or below its level, of every consumable still offered that has one: a kit by the kit's level,
+ * the warehouse, a hub and a stockroom by the central one.
+ */
 async function lowAt(db: D1Database, place: Place, today: string): Promise<Low[]> {
   const { results } = await db
     .prepare(
-      `SELECT c.code, c.name, c.unit, CASE WHEN ?1 IS NULL THEN c.reorder_central ELSE c.reorder_kit END AS level,
-         COALESCE((SELECT b.quantity FROM stock_balances b
-           WHERE b.consumable_code = c.code AND b.place = COALESCE(?1, 'central')), 0) AS held
+      `SELECT c.code, c.name, c.unit,
+         CASE WHEN (SELECT kind FROM stock_places WHERE id = ?1) = 'kit' THEN c.reorder_kit ELSE c.reorder_central END
+           AS level,
+         COALESCE((SELECT b.quantity FROM stock_balances b WHERE b.consumable_code = c.code AND b.place = ?1), 0) AS held
        FROM consumables c
        WHERE c.retired_date IS NULL OR c.retired_date > ?2
        ORDER BY c.name COLLATE NOCASE`,
@@ -34,12 +38,36 @@ async function lowAt(db: D1Database, place: Place, today: string): Promise<Low[]
   );
 }
 
+const CENTRAL_KEY = "low_stock:central";
 const KIT_KEY = "low_stock:kit:";
+const STORE_KEY = "low_stock:store:";
 
-const lowStockKey = (place: Place) => (place === null ? "low_stock:central" : `${KIT_KEY}${place}`);
+interface Where {
+  readonly kind: string;
+  readonly name: string | null;
+}
 
-/** Where stock is low, as the chat is told: a kit by its technician's ID alone. */
-const placeWords = (place: Place): string => (place === null ? "the central store" : `technician ${place}'s kit`);
+async function whereOf(db: D1Database, place: Place): Promise<Where | null> {
+  return db.prepare("SELECT kind, name FROM stock_places WHERE id = ?1").bind(place).first<Where>();
+}
+
+/** A place's alert: the warehouse keeps the central store's, a kit its technician's, a hub and a stockroom their own. */
+const lowStockKey = (place: Place, where: Where | null): string => {
+  if (place === WAREHOUSE) return CENTRAL_KEY;
+  return where?.kind === "kit" ? `${KIT_KEY}${place}` : `${STORE_KEY}${place}`;
+};
+
+/** Where stock is low, as the chat is told: a kit by its technician's ID alone, any other place by its name. */
+const placeWords = (place: Place, where: Where | null): string => {
+  if (where?.kind === "kit") return `technician ${place}'s kit`;
+  return where?.name ?? place;
+};
+
+/** The place an open alert is about, by its key. */
+const placeOfKey = (key: string): Place => {
+  if (key === CENTRAL_KEY) return WAREHOUSE;
+  return key.startsWith(KIT_KEY) ? key.slice(KIT_KEY.length) : key.slice(STORE_KEY.length);
+};
 
 /**
  * The open alerts as the console shows them: a low kit named by its technician, which the chat is never told. Every
@@ -61,7 +89,7 @@ export async function namedForTheConsole<A extends { readonly key: string; reado
     const kit = kitOf(alert);
     const name = kit === null ? undefined : names.get(kit);
     if (kit === null || name === undefined) return alert;
-    return { ...alert, message: alert.message.replace(placeWords(kit), `${name}'s kit`) };
+    return { ...alert, message: alert.message.replace(`technician ${kit}'s kit`, `${name}'s kit`) };
   });
 }
 
@@ -79,13 +107,14 @@ export async function tellOfLowStock(
   const today = indiaDate(deps.now());
   for (const place of new Set(places.touched)) {
     const low = await lowAt(db, place, today);
-    const key = lowStockKey(place);
+    const where = await whereOf(db, place);
+    const key = lowStockKey(place, where);
     if (low.length === 0) {
       await deps.resolveAlert(key);
       continue;
     }
     if (!places.lowered.includes(place)) continue;
-    const at = placeWords(place);
+    const at = placeWords(place, where);
     const items = low.map((each) => `${each.name} ${String(each.held)} ${each.unit} (level ${String(each.level)})`);
     await deps.alertOnce({
       key,
@@ -107,7 +136,7 @@ export async function closeStaleLowStock(
   const { results } = await db
     .prepare("SELECT key FROM alerts WHERE resolved_at IS NULL AND key >= 'low_stock:' AND key < 'low_stock;'")
     .all<{ key: string }>();
-  const places = results.map(({ key }) => (key === lowStockKey(null) ? null : key.slice(KIT_KEY.length)));
+  const places = results.map(({ key }) => placeOfKey(key));
   await tellOfLowStock(db, deps, { touched: places, lowered: [] });
 }
 

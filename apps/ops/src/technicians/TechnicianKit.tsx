@@ -39,7 +39,7 @@ export function Kit({ technician }: { technician: TechnicianSummary }) {
   if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={failedRequestId(loaded)} />;
 
   const book = loaded.value;
-  const held = book.holdings.filter((holding) => holding.technician_id === technician.id);
+  const held = book.holdings.filter((holding) => holding.place_id === technician.id);
   return (
     <>
       {held.length === 0 ? (

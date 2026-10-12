@@ -6223,7 +6223,7 @@ Request body:
 
 ### GET /api/stock
 
-What each kit and the central store hold of each consumable, what is low, and the latest movements
+Every place, what each holds of each consumable, what is low, and the latest movements
 
 **200**: What every place holds
 
@@ -6243,7 +6243,7 @@ What each kit and the central store hold of each consumable, what is low, and th
 
 ### POST /api/stock/deliveries
 
-Stock received into the central store
+Stock received into the national warehouse
 
 Request body:
 
@@ -6261,7 +6261,7 @@ Request body:
 }
 ```
 
-**400**: invalid_request: fields names consumable_code for one nobody added, or the place no technician is or one not in the caller's cities
+**400**: invalid_request: fields names consumable_code for one nobody added, or place_id for no place or one not in the caller's cities
 
 ```json
 {
@@ -6333,7 +6333,7 @@ Request body:
 }
 ```
 
-**400**: invalid_request: fields names consumable_code for one nobody added, or the place no technician is or one not in the caller's cities
+**400**: invalid_request: fields names consumable_code for one nobody added, or place_id for no place or one not in the caller's cities
 
 ```json
 {
@@ -6369,7 +6369,7 @@ Request body:
 }
 ```
 
-**400**: invalid_request: fields names consumable_code for one nobody added, or the place no technician is or one not in the caller's cities
+**400**: invalid_request: fields names consumable_code for one nobody added, or place_id for no place or one not in the caller's cities
 
 ```json
 {
@@ -6378,6 +6378,86 @@ Request body:
 ```
 
 **403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/stock/places
+
+A hub for a zone, or a stockroom in a city, under a place above it
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/StockPlaceAdd"
+}
+```
+
+**200**: What every place holds
+
+```json
+{
+  "$ref": "#/components/schemas/Stock"
+}
+```
+
+**400**: invalid_request: fields names name for one another place has, parent_id for no open place above it, or zone or city for none of ours
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**403**: access_required, or not_permitted: changing a place asks Operations MANAGE everywhere
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/stock/places/{id}
+
+A place renamed, moved under another, or closed or opened again; a kit only moved
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/StockPlaceChange"
+}
+```
+
+**200**: What every place holds
+
+```json
+{
+  "$ref": "#/components/schemas/Stock"
+}
+```
+
+**400**: invalid_request: fields names name for a kit or one another place has, parent_id for the warehouse or no open place above it, or active for the warehouse, a kit, a place still holding stock or with an open place under it, or one under a closed place
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**403**: access_required, or not_permitted: changing a place asks Operations MANAGE everywhere
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no such place
 
 ```json
 {
@@ -14235,6 +14315,8 @@ Request body:
         "stock.transfer",
         "stock.count",
         "stock.write_off",
+        "stock.place_add",
+        "stock.place_change",
         "task.assign",
         "task.hand_back",
         "task.close",
@@ -19956,19 +20038,40 @@ Request body:
       "items": {
         "type": "object",
         "properties": {
-          "technician_id": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "A place by its ID: central for the warehouse, a kit by its technician's ID."
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "warehouse",
+              "hub",
+              "stockroom",
+              "kit"
+            ]
+          },
+          "name": {
+            "type": "string",
+            "description": "A kit's is its technician's name."
+          },
+          "parent_id": {
             "anyOf": [
               {
                 "type": "string",
-                "format": "uuid"
+                "minLength": 1,
+                "maxLength": 64,
+                "description": "A place by its ID: central for the warehouse, a kit by its technician's ID."
               },
               {
                 "type": "null"
               }
             ],
-            "description": "A technician's kit, by the technician's ID; null for the central store."
+            "description": "The place it hangs from; null for the warehouse."
           },
-          "name": {
+          "zone": {
             "anyOf": [
               {
                 "type": "string"
@@ -19976,21 +20079,35 @@ Request body:
               {
                 "type": "null"
               }
-            ],
-            "description": "The technician's; null for the store."
+            ]
+          },
+          "city": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "active": {
-            "type": "boolean"
+            "type": "boolean",
+            "description": "Open; a kit is open while its technician is."
           }
         },
         "required": [
-          "technician_id",
+          "id",
+          "kind",
           "name",
+          "parent_id",
+          "zone",
+          "city",
           "active"
         ],
         "additionalProperties": false
       },
-      "description": "The central store first, then each active technician's kit, and any other still holding stock: those in the caller's cities, and the store only with a national grant."
+      "description": "Every open place down the tree, the warehouse first, and any closed one still holding stock: those in the caller's cities, a hub with every city of its zone, and the warehouse only with a national grant."
     },
     "holdings": {
       "type": "array",
@@ -20000,17 +20117,11 @@ Request body:
           "consumable_code": {
             "type": "string"
           },
-          "technician_id": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "uuid"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "A technician's kit, by the technician's ID; null for the central store."
+          "place_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "A place by its ID: central for the warehouse, a kit by its technician's ID."
           },
           "quantity": {
             "type": "integer",
@@ -20035,7 +20146,7 @@ Request body:
         },
         "required": [
           "consumable_code",
-          "technician_id",
+          "place_id",
           "quantity",
           "low",
           "counted_at"
@@ -20055,17 +20166,11 @@ Request body:
           "consumable_code": {
             "type": "string"
           },
-          "technician_id": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "uuid"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "A technician's kit, by the technician's ID; null for the central store."
+          "place_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "A place by its ID: central for the warehouse, a kit by its technician's ID."
           },
           "quantity": {
             "type": "integer",
@@ -20099,7 +20204,7 @@ Request body:
         "required": [
           "at",
           "consumable_code",
-          "technician_id",
+          "place_id",
           "quantity",
           "reason",
           "by",
@@ -20115,6 +20220,20 @@ Request body:
     },
     "max_quantity": {
       "type": "integer"
+    },
+    "zones": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "The zones a hub may be for."
+    },
+    "cities": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "The active cities a stockroom may be in."
     }
   },
   "required": [
@@ -20123,7 +20242,9 @@ Request body:
     "holdings",
     "movements",
     "today",
-    "max_quantity"
+    "max_quantity",
+    "zones",
+    "cities"
   ],
   "additionalProperties": false
 }
@@ -20180,28 +20301,16 @@ Request body:
       "maximum": 100000
     },
     "from": {
-      "anyOf": [
-        {
-          "type": "string",
-          "format": "uuid"
-        },
-        {
-          "type": "null"
-        }
-      ],
-      "description": "A technician's kit, by the technician's ID; null for the central store."
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "description": "A place by its ID: central for the warehouse, a kit by its technician's ID."
     },
     "to": {
-      "anyOf": [
-        {
-          "type": "string",
-          "format": "uuid"
-        },
-        {
-          "type": "null"
-        }
-      ],
-      "description": "A technician's kit, by the technician's ID; null for the central store."
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "description": "A place by its ID: central for the warehouse, a kit by its technician's ID."
     }
   },
   "required": [
@@ -20225,17 +20334,11 @@ Request body:
       "minLength": 1,
       "maxLength": 64
     },
-    "technician_id": {
-      "anyOf": [
-        {
-          "type": "string",
-          "format": "uuid"
-        },
-        {
-          "type": "null"
-        }
-      ],
-      "description": "A technician's kit, by the technician's ID; null for the central store."
+    "place_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "description": "A place by its ID: central for the warehouse, a kit by its technician's ID."
     },
     "counted": {
       "type": "integer",
@@ -20254,7 +20357,7 @@ Request body:
   },
   "required": [
     "consumable_code",
-    "technician_id",
+    "place_id",
     "counted"
   ],
   "additionalProperties": false
@@ -20272,17 +20375,11 @@ Request body:
       "minLength": 1,
       "maxLength": 64
     },
-    "technician_id": {
-      "anyOf": [
-        {
-          "type": "string",
-          "format": "uuid"
-        },
-        {
-          "type": "null"
-        }
-      ],
-      "description": "A technician's kit, by the technician's ID; null for the central store."
+    "place_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "description": "A place by its ID: central for the warehouse, a kit by its technician's ID."
     },
     "quantity": {
       "type": "integer",
@@ -20298,10 +20395,113 @@ Request body:
   },
   "required": [
     "consumable_code",
-    "technician_id",
+    "place_id",
     "quantity",
     "note"
   ],
+  "additionalProperties": false
+}
+```
+
+### StockPlaceAdd
+
+```json
+{
+  "oneOf": [
+    {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": [
+            "hub"
+          ]
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 60,
+          "pattern": "^[^\\p{Cc}]+$/u"
+        },
+        "parent_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64,
+          "description": "A place by its ID: central for the warehouse, a kit by its technician's ID."
+        },
+        "zone": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "kind",
+        "name",
+        "parent_id",
+        "zone"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": [
+            "stockroom"
+          ]
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 60,
+          "pattern": "^[^\\p{Cc}]+$/u"
+        },
+        "parent_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64,
+          "description": "A place by its ID: central for the warehouse, a kit by its technician's ID."
+        },
+        "city": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "kind",
+        "name",
+        "parent_id",
+        "city"
+      ],
+      "additionalProperties": false
+    }
+  ]
+}
+```
+
+### StockPlaceChange
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 60,
+      "pattern": "^[^\\p{Cc}]+$/u"
+    },
+    "parent_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "description": "A place by its ID: central for the warehouse, a kit by its technician's ID."
+    },
+    "active": {
+      "type": "boolean"
+    }
+  },
   "additionalProperties": false
 }
 ```

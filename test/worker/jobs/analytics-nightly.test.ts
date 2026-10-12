@@ -354,6 +354,15 @@ describe("the copy's stock and credits", () => {
       move("m2", "central", null, -4, "transferred", "2026-09-15T05:00:00.000Z"),
       move("m3", "kit", IMRAN, 4, "transferred", "2026-09-15T05:00:00.000Z"),
       env.DB.prepare(
+        `INSERT INTO stock_places (id, kind, name, parent_id, city, created_by, created_at)
+         VALUES ('room1', 'stockroom', 'Gurgaon stockroom', 'central', 'Gurgaon', 'test', ?1)`,
+      ).bind(NOW.toISOString()),
+      env.DB.prepare(
+        `INSERT INTO stock_movements (id, consumable_code, location, place_id, quantity, reason, actor_kind, actor,
+           created_at)
+         VALUES ('m4', 'test_strip', 'central', 'room1', 0, 'counted', 'staff', 'ops@maneman.in', ?1)`,
+      ).bind(NOW.toISOString()),
+      env.DB.prepare(
         `INSERT INTO credit_ledger (id, person_id, kind, visits, source_kind, source_id, created_at)
          VALUES ('g1', 'p-rohit', 'grant', 2, 'ops', 'remedy-1', ?1)`,
       ).bind(NOW.toISOString()),
@@ -376,7 +385,14 @@ describe("the copy's stock and credits", () => {
       kind: "kit",
       city: "Gurgaon",
     });
-    expect(warehouse.tables.get("fact_stock_movement")?.size).toBe(3);
+    // The warehouse as the store the dashboards know, and a stockroom by its kind.
+    expect(warehouse.tables.get("dim_stock_place")?.get("central")).toMatchObject({ kind: "store", city: null });
+    expect(warehouse.tables.get("dim_stock_place")?.get("stockroom:room1")).toMatchObject({
+      kind: "stockroom",
+      city: "Gurgaon",
+    });
+    expect(warehouse.tables.get("fact_stock_movement")?.get("m4")).toMatchObject({ place_key: "stockroom:room1" });
+    expect(warehouse.tables.get("fact_stock_movement")?.size).toBe(4);
     expect(warehouse.tables.get("fact_credit")?.get("g1")).toMatchObject({
       kind: "granted",
       visits: 2,

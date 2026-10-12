@@ -379,19 +379,19 @@ describe("stock, for a grant of Operations in one city", () => {
     delhi = await staffWith("operations:act:city:Delhi");
   });
 
-  const count = (app: App, place: string | null) =>
-    post(app, "/api/stock/counts", { consumable_code: "tape_strips", technician_id: place, counted: 10 });
+  const count = (app: App, place: string) =>
+    post(app, "/api/stock/counts", { consumable_code: "tape_strips", place_id: place, counted: 10 });
 
-  it("shows its city's kits, without the central store", async () => {
-    const stock = await (await get(delhi, "/api/stock")).json<{ places: { technician_id: string | null }[] }>();
-    expect(stock.places.map((place) => place.technician_id)).toEqual([DELHI_TECH]);
+  it("shows its city's kits, without the warehouse", async () => {
+    const stock = await (await get(delhi, "/api/stock")).json<{ places: { id: string }[] }>();
+    expect(stock.places.map((place) => place.id)).toEqual([DELHI_TECH]);
   });
 
   it("counts and moves stock only in its city's kits", async () => {
-    for (const place of [GURGAON_TECH, null]) {
+    for (const place of [GURGAON_TECH, "central"]) {
       const refused = await count(delhi, place);
       expect(refused.status).toBe(400);
-      expect((await errorOf(refused)).fields).toEqual(["technician_id"]);
+      expect((await errorOf(refused)).fields).toEqual(["place_id"]);
     }
     expect((await count(delhi, DELHI_TECH)).status).toBe(200);
 
@@ -404,7 +404,31 @@ describe("stock, for a grant of Operations in one city", () => {
     expect(rows.results).toEqual([{ technician_id: DELHI_TECH }]);
   });
 
-  it("leaves a delivery into the central store to a national grant", async () => {
+  it("shows its city's stockroom, and a hub only with every city of its zone", async () => {
+    await env.DB.prepare(
+      `INSERT INTO stock_places (id, kind, name, parent_id, zone, city, created_by, created_at) VALUES
+         ('hub', 'hub', 'North hub', 'central', 'NCR', NULL, 'test', ?1),
+         ('delhi-room', 'stockroom', 'Delhi stockroom', 'hub', NULL, 'Delhi', 'test', ?1),
+         ('gurgaon-room', 'stockroom', 'Gurgaon stockroom', 'hub', NULL, 'Gurgaon', 'test', ?1)`,
+    )
+      .bind(AT)
+      .run();
+    const placesOf = async (app: App) =>
+      (await (await get(app, "/api/stock")).json<{ places: { id: string }[] }>()).places.map((place) => place.id);
+    expect(await placesOf(delhi)).toEqual(["delhi-room", DELHI_TECH]);
+    await listStaff("ncr@maneman.in", ["operations:view:zone:NCR"]);
+    expect(await placesOf(opsAs("ncr@maneman.in"))).toEqual([
+      "hub",
+      "delhi-room",
+      "gurgaon-room",
+      DELHI_TECH,
+      GURGAON_TECH,
+    ]);
+    expect((await count(delhi, "gurgaon-room")).status).toBe(400);
+    expect((await count(delhi, "delhi-room")).status).toBe(200);
+  });
+
+  it("leaves a delivery into the warehouse to a national grant", async () => {
     const delivery = await post(delhi, "/api/stock/deliveries", { consumable_code: "tape_strips", quantity: 5 });
     expect(delivery.status).toBe(403);
     expect((await errorOf(delivery)).code).toBe("not_permitted");
@@ -417,11 +441,11 @@ describe("Operations' reach", () => {
     expect(rowsOf(await boardOf(ncr))).toEqual([DELHI_TECH, GURGAON_TECH].sort());
   });
 
-  it("is everywhere for a national grant, the central store with it", async () => {
+  it("is everywhere for a national grant, the warehouse with it", async () => {
     const national = await staffWith("operations:view:national");
     expect(rowsOf(await boardOf(national))).toEqual([DELHI_TECH, GURGAON_TECH, NO_CITY_TECH].sort());
-    const stock = await (await get(national, "/api/stock")).json<{ places: { technician_id: string | null }[] }>();
-    expect(stock.places[0]?.technician_id).toBeNull();
+    const stock = await (await get(national, "/api/stock")).json<{ places: { id: string }[] }>();
+    expect(stock.places[0]?.id).toBe("central");
   });
 
   it("narrows nothing while the Staff list is not enforced", async () => {

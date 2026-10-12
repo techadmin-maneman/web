@@ -3,19 +3,20 @@
 import { FAILED, NOT_PERMITTED, OFFLINE } from "./common.ts";
 
 /**
- * Every word of Stock. Stock is kept in our own ledger, per technician's
- * kit and a central store (docs/decisions/0087-consumables-and-stock.md).
+ * Every word of Stock. Stock is kept in our own ledger, per place: the warehouse, hubs, stockrooms and each
+ * technician's kit (docs/decisions/0087-consumables-and-stock.md, 0155-the-stock-place-tree.md).
  */
 export const stock = {
   title: "Stock",
   onHand: "On hand",
-  central: "Central store",
   /** A technician who has left, whose kit still holds stock. */
   left: (name: string) => `${name} (left)`,
+  /** A hub or a stockroom closed while it still holds stock. */
+  closed: (name: string) => `${name} (closed)`,
   consumable: "Consumable",
-  // Not drawn: past a handful of kits, the one shown beside the central store, and a kit low on anything.
-  kit: "Kit",
-  kitLow: " · low",
+  // Not drawn: past a handful of places, the one shown beside the warehouse, and a place low on anything.
+  place: "Place",
+  placeLow: " · low",
   /** "12 strip", and a mark for a place at or below its level. */
   held: (quantity: number, unit: string) => `${String(quantity)} ${unit}`,
   low: "Low",
@@ -27,7 +28,7 @@ export const stock = {
     title: "Record a movement",
     what: "What happened",
     kinds: {
-      delivery: "Delivery to the central store",
+      delivery: "Delivery to the warehouse",
       transfer: "Transfer",
       count: "Count",
       write_off: "Loss",
@@ -72,9 +73,9 @@ export const stock = {
   errors: {
     not_permitted: NOT_PERMITTED,
     consumable_code: "That consumable is no longer listed. Reload.",
-    from: "Unknown kit. Reload.",
+    from: "Unknown place. Reload.",
     to: "From and to must be different places.",
-    technician_id: "Unknown kit. Reload.",
+    place_id: "Unknown place. Reload.",
     note: "Say what happened, in up to 200 characters.",
     offline: OFFLINE,
     unknown: FAILED,

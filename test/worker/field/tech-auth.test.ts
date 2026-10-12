@@ -341,6 +341,7 @@ describe("two technicians on one number", () => {
   // row left behind on the same number must not take the sign-in, whichever was written first.
   it("prefers the technician's own row to one written by hand on the same number", async () => {
     await env.DB.batch([
+      env.DB.prepare("DELETE FROM stock_places WHERE id = ?1").bind(IMRAN),
       env.DB.prepare("DELETE FROM technicians WHERE id = ?1").bind(IMRAN),
       env.DB.prepare(
         `INSERT INTO technicians (id, fsm_id, name, initials, active, zone, mobile_e164, updated_at, hand_written)

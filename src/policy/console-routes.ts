@@ -82,6 +82,8 @@ export const ROUTE_NEEDS: Readonly<Record<string, RouteNeed | typeof SIGNED_IN>>
   "POST /api/stock/transfers": inOwnPlaces("operations", "act"),
   "POST /api/stock/counts": inOwnPlaces("operations", "act"),
   "POST /api/stock/write-offs": inOwnPlaces("operations", "act"),
+  "POST /api/stock/places": need("operations", "manage"),
+  "POST /api/stock/places/{id}": need("operations", "manage"),
 
   // Customer Care: clients, their requests, grievances, number changes and deletions, each kept to the caller's cities.
   "GET /api/clients": inOwnPlaces("customer_care", "view"),

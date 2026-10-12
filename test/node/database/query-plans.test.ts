@@ -74,6 +74,7 @@ const SMALL_TABLES = new Set([
   "technician_devices",
   "technician_leave",
   "cities",
+  "zones",
   "serviceable_pincodes",
   "ops_settings",
   "ops_settings_snapshot",
@@ -93,6 +94,8 @@ const SMALL_TABLES = new Set([
   "targets",
   "consumables",
   "consumable_usage",
+  // A row a place stock is kept: the warehouse, each hub and stockroom, and a kit a technician.
+  "stock_places",
   // What Growth sets on the Words page, a row an edit: it grows with ops' work, not with clients.
   "word_versions",
   // One row for each Zoho product.

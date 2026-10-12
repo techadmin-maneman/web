@@ -115,7 +115,10 @@ describe("the service area", () => {
   });
 
   it("refuses to begin serving a pincode in a city no technician works in, and changes nothing", async () => {
-    await env.DB.prepare("DELETE FROM technicians WHERE city = 'Gurgaon'").run();
+    await env.DB.batch([
+      env.DB.prepare("DELETE FROM stock_places WHERE id IN (SELECT id FROM technicians WHERE city = 'Gurgaon')"),
+      env.DB.prepare("DELETE FROM technicians WHERE city = 'Gurgaon'"),
+    ]);
     const answer = await post("/api/service-area", {
       changes: [
         { pincode: "122018", served: true, launch_on: null },
