@@ -131,7 +131,11 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 - [0138](0138-strangers-in-the-inbox.md) Chats from numbers we don't know
 - [0139](0139-care-shifts.md) Care on shift
 - [0140](0140-the-client-panel.md) The client beside their chat
+- [0141](0141-quick-replies.md) Quick replies
 - [0142](0142-moving-every-client.md) Moving every client, and technicians in the inbox
+- [0143](0143-remedies.md) Remedies
+- [0144](0144-care-numbers.md) The Care numbers
+- [0145](0145-technician-presets.md) A technician's word from the job card
 
 ### Referrals
 
@@ -318,5 +322,9 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0138](0138-strangers-in-the-inbox.md) | Chats from numbers we don't know | 2026-10-12 | accepted |  |
 | [0139](0139-care-shifts.md) | Care on shift | 2026-10-12 | accepted |  |
 | [0140](0140-the-client-panel.md) | The client beside their chat | 2026-10-12 | accepted |  |
+| [0141](0141-quick-replies.md) | Quick replies | 2026-10-12 | accepted |  |
 | [0142](0142-moving-every-client.md) | Moving every client, and technicians in the inbox | 2026-10-12 | accepted |  |
+| [0143](0143-remedies.md) | Remedies | 2026-10-12 | accepted |  |
+| [0144](0144-care-numbers.md) | The Care numbers | 2026-10-12 | accepted |  |
+| [0145](0145-technician-presets.md) | A technician's word from the job card | 2026-10-12 | accepted |  |
 | [0146](0146-the-nightly-analytics-copy.md) | The nightly analytics copy | 2026-10-12 | accepted |  |

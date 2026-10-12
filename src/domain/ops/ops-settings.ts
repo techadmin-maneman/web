@@ -14,6 +14,7 @@
 // somebody sets one, and it never runs on a nought.
 
 import type { CareHours } from "../../policy/care-hours.ts";
+import type { RemedyLimit } from "../../policy/remedies.ts";
 import {
   checkValue,
   OPS_SETTINGS,
@@ -59,6 +60,8 @@ export interface OpsInputs {
   readonly technicianWork: TechnicianWorkFigures;
   /** When Care are on and how soon they reply (src/policy/care-hours.ts). */
   readonly careHours: CareHours;
+  /** Free visits Care give without approval (src/policy/remedies.ts). */
+  readonly remedyLimit: RemedyLimit;
   readonly referralReward: ReferralReward;
 }
 
@@ -100,6 +103,7 @@ function shape(values: OpsValues): OpsInputs {
     technicianWork: values.technician_work,
     referralReward: values.referral_reward,
     careHours: values.care_hours,
+    remedyLimit: values.remedy_limit,
   };
 }
 

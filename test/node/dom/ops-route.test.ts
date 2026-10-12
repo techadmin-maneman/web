@@ -41,6 +41,7 @@ describe("the ops console's routes", () => {
     expect(namesIn("customer_care")).toEqual([
       "Clients",
       "Messages",
+      "Care numbers",
       "Concerns",
       "Number changes",
       "Deletion requests",
@@ -56,7 +57,7 @@ describe("the ops console's routes", () => {
     expect(namesIn("admin")).toEqual(["Settings", "Staff", "Activity"]);
     expect(SECTIONS.map((section) => section.department)).toEqual([
       ...Array<string>(4).fill("operations"),
-      ...Array<string>(5).fill("customer_care"),
+      ...Array<string>(6).fill("customer_care"),
       ...Array<string>(5).fill("finance"),
       ...Array<string>(3).fill("growth"),
       ...Array<string>(3).fill("admin"),

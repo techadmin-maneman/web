@@ -116,6 +116,10 @@ const HISTORY = [
    SELECT 'cm-' || i, 'cv-' || i, 'in', 'client', 'Hello', '${AGO}', '${AGO}' FROM n`,
   `INSERT INTO city_matters (id, person_id, conversation_id, city, note, raised_by, raised_at)
    SELECT 'cmt-' || i, 'p-' || i, 'cv-' || i, 'Gurgaon', 'Needs a re-fit.', 'care@maneman.in', '${AGO}' FROM n`,
+  `INSERT INTO technician_updates (id, appointment_id, technician_id, preset, minutes, written_at, created_at)
+   SELECT 'tu-' || i, 'a-' || i, 't-history', 'on_the_way', 20, '${AGO}', '${AGO}' FROM n`,
+  `INSERT INTO remedies (id, person_id, visits, reason, note, given_by, given_at, state)
+   SELECT 'rm-' || i, 'p-' || i, 1, 'fit_problem', 'Edge lifting.', 'care@maneman.in', '${AGO}', 'given' FROM n`,
   `INSERT INTO care_owners (person_id, email, since, assigned_by)
    SELECT 'p-' || i, 'care-' || (i % 5) || '@maneman.in', '${AGO}', 'system' FROM n`,
   `INSERT INTO sessions (id, subject_kind, subject_id, created_at, last_seen_at, expires_at)

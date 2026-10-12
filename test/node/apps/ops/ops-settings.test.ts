@@ -29,7 +29,7 @@ import { NEXT_VISIT_DAY_BOUNDS, NEXT_VISIT_DAYS } from "../../../../src/policy/n
 import { NO_SHOW_WAIT_MIN } from "../../../../src/policy/no-show.ts";
 import { TASK_SLA_HOURS } from "../../../../src/policy/tasks.ts";
 import { DEFAULT_PIECE_CYCLE_DAYS } from "../../../../src/config/pieces.ts";
-import { settings } from "../../../../apps/ops/src/content.ts";
+import { settings } from "../../../../apps/ops/src/content/settings.ts";
 
 const named = (name: string): OpsSetting => {
   const setting = settingNamed(name);

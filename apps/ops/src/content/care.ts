@@ -77,6 +77,62 @@ export const care = {
   },
   /** "asha@maneman.in · covered by ravi@maneman.in", while the Care person is off. */
   coveredBy: (person: string, cover: string) => `${person} · covered by ${cover}`,
+  /** The Care numbers (docs/decisions/0144-care-numbers.md). */
+  numbers: {
+    title: "Care numbers",
+    period: "Over",
+    periods: { "7": "The last week", "30": "The last 30 days", "90": "The last 90 days" },
+    /** "Mon 5 Oct to Mon 12 Oct" */
+    span: (from: string, to: string) => `${from} to ${to}`,
+    chats: "Chats",
+    firstReply: "First reply, middle",
+    withinTarget: "Answered on time",
+    sameDay: "Closed the same day",
+    waitingOnUs: "Waiting on us now",
+    overdue: "Overdue now",
+    waitingOnClient: "Waiting on the client now",
+    /** "42 min", in Care hours. */
+    minutes: (value: number) => `${String(value)} min`,
+    nothing: "–",
+    reasons: "What chats were about",
+    remedies: "Remedies given",
+    /** "Fit problem · 4" */
+    counted: (label: string, count: number) => `${label} · ${String(count)}`,
+    /** "Fit problem · 2 remedies, 3 free visits" */
+    remedied: (label: string, remedies: number, visits: number) =>
+      `${label} · ${String(remedies)} ${remedies === 1 ? "remedy" : "remedies"}, ${String(visits)} free ${visits === 1 ? "visit" : "visits"}`,
+    columns: { person: "Care person" },
+    noPeople: "No chats with a Care person yet.",
+  },
+  /** Free visits Care give (docs/decisions/0143-remedies.md). */
+  remedy: {
+    panel: "Remedies",
+    open: "Give free visits",
+    visits: "Free service visits",
+    reason: "Why",
+    note: "Note for the team",
+    give: "Give",
+    given: (visits: number) =>
+      `Given: ${String(visits)} free service ${visits === 1 ? "visit" : "visits"}, on their account now.`,
+    awaiting: "Above your limit, so a manager approves it first.",
+    none: "No remedies in the last 30 days.",
+    /** "2 free visits · Fit problem · Mon 21 Sep" */
+    line: (visits: number, reason: string, date: string) =>
+      `${String(visits)} free ${visits === 1 ? "visit" : "visits"} · ${reason} · ${date}`,
+    states: { given: "Given", awaiting: "Awaiting approval", declined: "Declined" },
+    reasons: {
+      fit_problem: "Fit problem",
+      technician_late: "Technician late",
+      visit_missed: "Visit missed by us",
+      product_fault: "Product fault",
+      other: "Other",
+    },
+    approve: "Approve",
+    decline: "Decline",
+    approveLabel: (name: string) => `Approve the remedy for ${name}`,
+    declineLabel: (name: string) => `Decline the remedy for ${name}`,
+    errors: { not_found: "Not found. Reload.", not_permitted: NOT_PERMITTED, offline: OFFLINE, unknown: FAILED },
+  },
   /** Saved answers (docs/decisions/0141-quick-replies.md). */
   quick: {
     panel: "Quick replies",

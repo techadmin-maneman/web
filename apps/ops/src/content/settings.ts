@@ -1,7 +1,7 @@
 // Settings: the rules, the services and their prices, discount codes, the consumables, the job sheet and staff.
 
 import { FAILED, NOT_PERMITTED, OFFLINE } from "./common.ts";
-import { DEPARTMENT_NAMES } from "./shell.ts";
+import { grantPhrasing, settingsTabs } from "./settings-shell.ts";
 import { dispatch } from "./dispatch.ts";
 import { tasks } from "./tasks.ts";
 
@@ -22,12 +22,7 @@ export const settings = {
     `Photos and referral cards: ${(held / 1e9).toFixed(2)} GB of ${String(share / 1e9)} GB`,
   /** Megabytes as Cloudflare counts them, a million bytes. */
   database: (held: number, limit: number) => `Database: ${(held / 1e6).toFixed(0)} MB of ${String(limit / 1e9)} GB`,
-  tabs: {
-    rules: "Policies",
-    blackouts: "Closed days",
-    consumables: "Consumables",
-    "job-sheet": "Job sheet",
-  },
+  tabs: settingsTabs,
   /** No board draws discount codes (docs/decisions/0108-discount-codes.md). */
   discountCodes: {
     title: "Discount codes",
@@ -215,6 +210,8 @@ export const settings = {
         friend_visits: "Friend",
         valid_days: "Free visits valid for",
       },
+      // Remedies (docs/decisions/0143-remedies.md).
+      remedy_limit: { visits: "Free visits", days: "Over" },
       // The reply clock (docs/decisions/0132-the-reply-clock.md).
       care_hours: {
         opens: "Care opens",
@@ -587,13 +584,9 @@ export const settings = {
   /** No board draws the Staff page. A change is shown before it is saved. */
   staff: {
     title: "Staff",
-    departments: DEPARTMENT_NAMES,
-    levels: { view: "View", act: "Act", manage: "Manage" },
-    national: "National",
-    zone: (name: string) => `${name} zone`,
+    ...grantPhrasing,
     zones: "Zones",
     cities: "Cities",
-    grant: (department: string, level: string, place: string) => `${department} · ${level} · ${place}`,
     columns: { person: "Person", access: "Access", state: "Status" },
     noAccess: "No access",
     active: "Active",

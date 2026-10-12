@@ -72,6 +72,9 @@ export const ROWS_AT_T: readonly string[] = [
   // A matter sent to their city (docs/decisions/0135-city-matters.md).
   `INSERT INTO city_matters (id, person_id, conversation_id, city, note, raised_by, raised_at)
      VALUES ('cm-city-1', 'p1', 'cv1', 'Gurgaon', 'Needs a re-fit.', 'care@maneman.in', '${AT}')`,
+  // A free visit Care gave them (docs/decisions/0143-remedies.md).
+  `INSERT INTO remedies (id, person_id, visits, reason, note, given_by, given_at, state)
+     VALUES ('rm1', 'p1', 1, 'fit_problem', 'Edge lifting.', 'care@maneman.in', '${AT}', 'given')`,
   // A saved answer (docs/decisions/0141-quick-replies.md).
   `INSERT INTO quick_replies (id, title, text, created_by, created_at)
      VALUES ('qr1', 'Booked', 'You are booked for {next_visit}.', 'lead@maneman.in', '${AT}')`,
@@ -87,6 +90,9 @@ export const ROWS_AT_T: readonly string[] = [
   `INSERT INTO appointments (id, fsm_id, person_id, type, window_start, window_end, technician_id, status, synced_at)
      VALUES ('ap1', 'ap1', 'p1', 'first_fit', '2026-09-22T03:30:00.000Z', '2026-09-22T06:30:00.000Z', 't1',
              'completed', '${AT}')`,
+  // Their technician's word from the job card (docs/decisions/0145-technician-presets.md).
+  `INSERT INTO technician_updates (id, appointment_id, technician_id, preset, minutes, written_at, created_at)
+     VALUES ('tu1', 'ap1', 't1', 'on_the_way', 20, '${AT}', '${AT}')`,
   // The friend's consultation: their request reads as booked.
   `INSERT INTO appointments (id, fsm_id, person_id, type, window_start, window_end, technician_id, status, synced_at)
      VALUES ('ap2', 'ap2', 'p2', 'consultation', '2026-10-05T03:30:00.000Z', '2026-10-05T04:30:00.000Z', 't1',

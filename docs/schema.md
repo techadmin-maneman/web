@@ -23,7 +23,7 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 | Discount codes | `discount_codes`, `discount_code_uses` | A code made or switched off since goes back, and a use since is forgotten, so a single-use code works again | Making or switching off the code again in the console. `discount_code_uses` is only ever added to |
 | Bookings and moves | `appointments`, `slot_holds`, `slot_claims`, `dispatch_moves`, `move_proposals`, `visit_changes`, `consultation_requests`, `first_fit_requests` | A visit booked, moved or cancelled since is lost, and its time can be booked again. Where FSM still holds visits, the cron books them there a second time | The rows since `<T>`, before the switch is turned off |
 | Messages | `outbound_messages` | The sweeper sends again what was sent since | The rows since `<T>`, before the switch is turned off |
-| The Care inbox | `conversations`, `chat_messages`, `care_owners`, `care_weekly_off`, `care_leave`, `care_names`, `city_matters`, `quick_replies` | A message written since, the client's or ours, is gone from its thread | The rows since `<T>`; WhatsApp's own copy shows what was said |
+| The Care inbox | `conversations`, `chat_messages`, `care_owners`, `care_weekly_off`, `care_leave`, `care_names`, `city_matters`, `quick_replies`, `remedies`, `technician_updates` | A message written since, the client's or ours, is gone from its thread | The rows since `<T>`; WhatsApp's own copy shows what was said |
 | Technicians' steps, pieces and photographs | `job_events`, `checkins`, `visits`, `consumables_used`, `no_show_cases`, `no_show_disputes`, `pieces`, `photos`, `photo_sets` | Steps, check-ins, outcomes, pieces fitted, no-shows and disputes since are lost; a photograph's file is kept with no row | The rows since `<T>` |
 | Hair profiles | `hair_profiles` | A profile recorded since is lost, and one an erasure blanked since is whole again | Adding the rows since `<T>`: they are only ever added. Erasing again blanks the rest |
 | Stock | `stock_movements` | A delivery, transfer, count or loss recorded since, or a job's use, is lost, so what each kit and the store hold is wrong | Adding the rows since `<T>` |
@@ -108,6 +108,7 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 - [referral_channels](#referral_channels): Partners who send us clients on their own code: the friend's reward and the partner's commission (ADR 0123).
 - [referral_codes](#referral_codes): A client's invite code, the version of their card, and how often the invite was opened (ADR 0048).
 - [refunds](#refunds): The mirror of Razorpay's refunds, and where each stands in Books (ADR 0044).
+- [remedies](#remedies): Free service visits Customer Care gave a client, with why: given within the limit, or awaiting a manager (ADR 0143).
 - [serviceable_pincodes](#serviceable_pincodes): Every NCR pincode, its area and city, and whether and since when we serve it (ADR 0048, ADR 0061).
 - [services](#services): What clients may book: each kind of visit's services, their names, the line clients read under each, lengths and order, when each is retired, and its item in FSM's catalogue and in Books; the price book prices each by its kind and tier (ADR 0085, ADR 0110).
 - [sessions](#sessions): The client app's and the technician app's sessions: whose, from which device, and when each ends or was revoked (ADR 0029, ADR 0052).
@@ -128,6 +129,7 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 - [task_owners](#task_owners): The member of staff a task on the Tasks board is theirs, by Access e-mail, by the task's group, its row's id and, where that row can be a new task again, its episode; a task with no row for it is nobody's (ADR 0092).
 - [technician_devices](#technician_devices): The phones technicians work from, each bound to a session and revocable by ops (ADR 0052).
 - [technician_leave](#technician_leave): A technician's leave in whole days, which the clash check reads beside `slot_claims` (ADR 0062).
+- [technician_updates](#technician_updates): A technician's word to the client from the job card: on the way, at the gate, or running late, sent from our number (ADR 0145).
 - [technicians](#technicians): The mirror of FSM's technicians: name, initials, mobile number and zone; and on staging the few written by hand for a test, which the sync leaves alone. `fsm_id` is FSM's ID for a technician FSM holds, otherwise one of ours. `city`, which ops set and the sync never writes, places him for staff access (ADR 0032, ADR 0052, ADR 0109, ADR 0110).
 - [tryon_jobs](#tryon_jobs): One try-on render: the photograph, the look, the provider's job and the result (ADR 0014, ADR 0015).
 - [tryon_sessions](#tryon_sessions): The try-on gate's session, which showed a visitor their result (ADR 0014); written no more since the look goes to WhatsApp only (ADR 0104).
@@ -631,7 +633,7 @@ Indexes:
 
 The Care inbox: one thread for each number that writes to our WhatsApp number, matched to its client where we know the number (ADR 0129).
 
-Made by `0114_conversations.sql`; changed by `0115_chat_replies.sql`.
+Made by `0114_conversations.sql`; changed by `0115_chat_replies.sql`, `0124_care_numbers_indexes.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -651,6 +653,7 @@ Made by `0114_conversations.sql`; changed by `0115_chat_replies.sql`.
 Indexes:
 
 - `conversations_by_number`: unique on (`mobile_e164`)
+- `conversations_by_opened`: on (`opened_at`)
 - `conversations_by_person`: on (`person_id`), where `person_id IS NOT NULL`
 - `conversations_by_state`: on (`state`, `last_message_at`)
 
@@ -1746,6 +1749,31 @@ Indexes:
 - `refunds_failed`: on (`payment_id`), where `status = 'failed'`
 - A `UNIQUE` constraint: unique on (`razorpay_refund_id`)
 
+## remedies
+
+Free service visits Customer Care gave a client, with why: given within the limit, or awaiting a manager (ADR 0143).
+
+Made by `0123_remedies.sql`; changed by `0124_care_numbers_indexes.sql`.
+
+| Column | Type | May be empty | Default | Key |
+| --- | --- | --- | --- | --- |
+| `id` | TEXT | no |  | primary key |
+| `person_id` | TEXT | no |  | → `people.id` |
+| `visits` | INTEGER | no |  |  |
+| `reason` | TEXT | no |  |  |
+| `note` | TEXT | yes |  |  |
+| `given_by` | TEXT | no |  |  |
+| `given_at` | TEXT | no |  |  |
+| `state` | TEXT | no |  |  |
+| `decided_by` | TEXT | yes |  |  |
+| `decided_at` | TEXT | yes |  |  |
+
+Indexes:
+
+- `remedies_awaiting`: on (`given_at`), where `state = 'awaiting'`
+- `remedies_by_given`: on (`given_at`)
+- `remedies_by_person`: on (`person_id`, `given_at`)
+
 ## serviceable_pincodes
 
 Every NCR pincode, its area and city, and whether and since when we serve it (ADR 0048, ADR 0061).
@@ -2163,6 +2191,26 @@ Indexes:
 - `technician_leave_by_technician`: on (`technician_id`, `from_date`)
 
 Triggers: `technician_leave_board_added`, `technician_leave_board_changed`.
+
+## technician_updates
+
+A technician's word to the client from the job card: on the way, at the gate, or running late, sent from our number (ADR 0145).
+
+Made by `0125_technician_updates.sql`.
+
+| Column | Type | May be empty | Default | Key |
+| --- | --- | --- | --- | --- |
+| `id` | TEXT | no |  | primary key |
+| `appointment_id` | TEXT | no |  | → `appointments.id` |
+| `technician_id` | TEXT | no |  |  |
+| `preset` | TEXT | no |  |  |
+| `minutes` | INTEGER | yes |  |  |
+| `written_at` | TEXT | no |  |  |
+| `created_at` | TEXT | no |  |  |
+
+Indexes:
+
+- `technician_updates_by_visit`: on (`appointment_id`, `written_at`)
 
 ## technicians
 

@@ -41,6 +41,17 @@ const LATE = {
   text: "Hi {name}, see you {next_visit}.",
 };
 
+const AWAITING = {
+  id: "6b7c8d9e-0f1a-4b2c-9d3e-4f5a6b7c8d9e",
+  person: { id: "11111111-1111-4111-8111-111111111111", name: "Arjun Mehta" },
+  visits: 2,
+  reason: "fit_problem",
+  note: "Edge lifting.",
+  given_by: "care@maneman.test",
+  given_at: "2026-09-21T05:30:00.000Z",
+  state: "awaiting",
+};
+
 let page: HTMLDivElement;
 let root: Root;
 let asked: string[];
@@ -66,6 +77,9 @@ beforeEach(() => {
         return Promise.resolve(Response.json({ clients: [found], more: false }));
       }
       if (address.pathname === "/api/quick-replies") return Promise.resolve(Response.json(LATE));
+      if (address.pathname.endsWith("/remedies"))
+        return Promise.resolve(Response.json({ id: AWAITING.id, state: "given" }));
+      if (address.pathname.startsWith("/api/remedies/")) return Promise.resolve(Response.json({ ok: true }));
       if (address.pathname.endsWith("/link") || address.pathname.endsWith("/save")) {
         return Promise.resolve(Response.json({ person_id: ARJUN.person?.id }));
       }
@@ -121,6 +135,7 @@ beforeEach(() => {
       return Promise.resolve(Response.json({ conversations: view === "closed" ? [] : [ARJUN, STRANGER] }));
     }
     if (address.pathname === "/api/quick-replies") return Promise.resolve(Response.json({ replies: [LATE] }));
+    if (address.pathname === "/api/remedies") return Promise.resolve(Response.json({ remedies: [AWAITING] }));
     if (address.pathname === `/api/clients/${ARJUN.person?.id ?? ""}`) {
       const visit = {
         id: "v1",
@@ -308,6 +323,45 @@ describe("the Messages page", () => {
       path: "/api/quick-replies",
       body: { title: "Running late", text: "Hi {name}, about 20 minutes away." },
     });
+  });
+
+  it("gives free visits from the chat, with why", async () => {
+    await show();
+    await act(async () => {
+      page.querySelector<HTMLButtonElement>(`button[aria-label="${copy.openLabel("Arjun Mehta")}"]`)?.click();
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
+    const press = async (label: string) => {
+      await act(async () => {
+        [...page.querySelectorAll("button")].find((each) => each.textContent.trim() === label)?.click();
+        await new Promise((resolve) => setTimeout(resolve, 0));
+      });
+    };
+    await press(copy.remedy.open);
+    const note = [...page.querySelectorAll("textarea")].find((each) => each.maxLength === 300);
+    act(() => {
+      if (note !== undefined) {
+        Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, "value")?.set?.call(note, "Edge lifting.");
+        note.dispatchEvent(new Event("input", { bubbles: true }));
+      }
+    });
+    await press(copy.remedy.give);
+    expect(posted.at(-1)).toEqual({
+      path: `/api/clients/${ARJUN.person?.id ?? ""}/remedies`,
+      body: { visits: 1, reason: "fit_problem", note: "Edge lifting." },
+    });
+    expect(page.textContent).toContain(copy.remedy.given(1));
+  });
+
+  it("lets a manager approve a remedy awaiting them", async () => {
+    await show();
+    const panel = page.querySelector('[aria-labelledby="remedies"]') ?? page;
+    expect(panel.textContent).toContain(copy.remedy.states.awaiting);
+    await act(async () => {
+      page.querySelector<HTMLButtonElement>(`button[aria-label="${copy.remedy.approveLabel("Arjun Mehta")}"]`)?.click();
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
+    expect(asked).toContain(`/api/remedies/${AWAITING.id}/approve`);
   });
 
   it("shows the client beside the chat, with the ways into their page", async () => {

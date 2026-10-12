@@ -13,6 +13,10 @@ export type ConversationView = NonNullable<
 export type ThreadItem = Success<paths["/api/conversations/{id}"]["get"]>["items"][number];
 export type ChatThread = Success<paths["/api/conversations/{id}"]["get"]>;
 export type CloseReason = Sent<paths["/api/conversations/{id}/close"]["post"]>["reason"];
+export type RemedyReason = Sent<paths["/api/clients/{id}/remedies"]["post"]>["reason"];
+type RemedyNew = Sent<paths["/api/clients/{id}/remedies"]["post"]>;
+export type CareNumbers = Success<paths["/api/care-numbers"]["get"]>;
+export type CarePeriod = NonNullable<NonNullable<paths["/api/care-numbers"]["get"]["parameters"]["query"]>["days"]>;
 export type CareMember = Success<paths["/api/care-team"]["get"]>["team"][number];
 
 export const careApi = {
@@ -36,6 +40,14 @@ export const careApi = {
   setOnShift: (on: boolean) => client.post("/api/care-team/shift", { body: { on } }),
   moveAllClients: (from: string, to: string) => client.post("/api/care-team/move-all", { body: { from, to } }),
   quickReplies: () => client.get("/api/quick-replies"),
+  giveRemedy: (personId: string, remedy: RemedyNew) =>
+    client.post("/api/clients/{id}/remedies", { path: { id: personId }, body: remedy }),
+  remedies: () => client.get("/api/remedies"),
+  careNumbers: (days: CarePeriod) => client.get("/api/care-numbers", { query: { days } }),
+  decideRemedy: (id: string, approve: boolean) =>
+    approve
+      ? client.post("/api/remedies/{id}/approve", { path: { id } })
+      : client.post("/api/remedies/{id}/decline", { path: { id } }),
   addQuickReply: (title: string, text: string) => client.post("/api/quick-replies", { body: { title, text } }),
   retireQuickReply: (id: string) => client.post("/api/quick-replies/{id}/retire", { path: { id } }),
   linkChat: (id: string, personId: string) =>

@@ -40,6 +40,11 @@ export const TEMPLATES = {
     "Hi {{1}}, we need to move a booking.\nYour {{2}} on {{3}}: could you do {{4}}, {{5}}, with {{6}} instead? Accept it, or pick another time, in the Mane Man app.",
   // At the technician's check-in, which is also the no-show's evidence.
   technician_arrived_v1: "Hi {{1}}, {{5}} is at your door for your visit.",
+  // The technician's word from the job card (src/domain/messages/technician-updates.ts), with a visit's params:
+  // {{5}} the technician, {{9}} the minutes.
+  technician_on_the_way_v1: "Hi {{1}}, {{5}} is on the way, about {{9}} minutes.",
+  technician_at_gate_v1: "Hi {{1}}, {{5}} is at your gate.",
+  technician_running_late_v1: "Hi {{1}}, {{5}} is running about {{9}} minutes late. Sorry for the wait.",
   // Ops' ruling on a visit the client was not home for: {{6}} what is kept, {{10}} what goes back. Never ops' reason.
   no_show_missed_v1:
     "Hi {{1}}, we missed you.\n{{5}} waited {{9}} minutes for your {{2}} on {{3}} but couldn't reach you. Book a new time in the Mane Man app.",
@@ -241,6 +246,7 @@ export const MESSAGE_CLASSES: Readonly<Record<MessageKind, MessageClass>> = {
   visit_moved: "automatic", // ops moved it, on the dispatch board
   move_proposed: "automatic", // ops ask, on the dispatch board
   arrival_notice: "automatic", // the technician's own action, not the client's
+  technician_update: "automatic", // the same, from the job card
   no_show_decided: "automatic", // ops ruled on it
   no_show_dispute_ruled: "automatic", // ops ruled on the client's dispute
   booking_refunded: "automatic", // a booking given back by itself

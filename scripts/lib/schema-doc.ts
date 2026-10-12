@@ -133,6 +133,8 @@ export const RESTORE_GROUPS: readonly RestoreGroup[] = [
       "care_names",
       "city_matters",
       "quick_replies",
+      "remedies",
+      "technician_updates",
     ],
     leftAtT: "A message written since, the client's or ours, is gone from its thread",
     putBackBy: "The rows since `<T>`; WhatsApp's own copy shows what was said",

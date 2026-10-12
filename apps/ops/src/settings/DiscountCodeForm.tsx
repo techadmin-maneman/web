@@ -14,7 +14,7 @@ import { DateInput, Field, NumberInput, Select, TextInput } from "@maneman/ui/Fi
 import { useState } from "react";
 import { CODE_LENGTH } from "@rules/policy/discount-codes.ts";
 import { api, type DiscountCodesNew } from "../api.ts";
-import { settings } from "../content.ts";
+import { settings } from "../content/settings.ts";
 import { CheckPanel } from "../components/CheckPanel.tsx";
 import {
   checkLines,

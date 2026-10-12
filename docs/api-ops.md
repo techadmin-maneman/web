@@ -2210,6 +2210,192 @@ Take a saved answer off the list
 }
 ```
 
+### POST /api/clients/{id}/remedies
+
+Give a client free service visits, with why: at once within the limit ops set, else for a manager
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/RemedyNew"
+}
+```
+
+**200**: Given, or awaiting a manager
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "state": {
+      "type": "string",
+      "enum": [
+        "given",
+        "awaiting"
+      ]
+    }
+  },
+  "required": [
+    "id",
+    "state"
+  ],
+  "additionalProperties": false
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no such client, or their record is erased
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### GET /api/remedies
+
+The remedies awaiting a manager, and those given or declined in the last 30 days
+
+**200**: The remedies
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "remedies": {
+      "type": "array",
+      "items": {
+        "$ref": "#/components/schemas/Remedy"
+      }
+    }
+  },
+  "required": [
+    "remedies"
+  ],
+  "additionalProperties": false
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/remedies/{id}/approve
+
+Approve a remedy: the visits are granted, and a note left in the client's chat
+
+**200**: Decided
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "ok": {
+      "type": "boolean",
+      "enum": [
+        true
+      ]
+    }
+  },
+  "required": [
+    "ok"
+  ],
+  "additionalProperties": false
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no such remedy awaiting a manager
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/remedies/{id}/decline
+
+Decline a remedy
+
+**200**: Decided
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "ok": {
+      "type": "boolean",
+      "enum": [
+        true
+      ]
+    }
+  },
+  "required": [
+    "ok"
+  ],
+  "additionalProperties": false
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no such remedy awaiting a manager
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### GET /api/care-numbers
+
+Whether the same-day promise holds: reply times, same-day closes, the backlog, reasons and remedies
+
+**200**: The numbers
+
+```json
+{
+  "$ref": "#/components/schemas/CareNumbers"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ### GET /api/referral-channels
 
 Every partner, with what has come through each
@@ -12154,6 +12340,303 @@ Request body:
 }
 ```
 
+### RemedyNew
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "visits": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 6
+    },
+    "reason": {
+      "type": "string",
+      "enum": [
+        "fit_problem",
+        "technician_late",
+        "visit_missed",
+        "product_fault",
+        "other"
+      ]
+    },
+    "note": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 300
+    }
+  },
+  "required": [
+    "visits",
+    "reason",
+    "note"
+  ],
+  "additionalProperties": false
+}
+```
+
+### Remedy
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "person": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "name": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "name"
+      ],
+      "additionalProperties": false
+    },
+    "visits": {
+      "type": "integer"
+    },
+    "reason": {
+      "type": "string",
+      "enum": [
+        "fit_problem",
+        "technician_late",
+        "visit_missed",
+        "product_fault",
+        "other"
+      ]
+    },
+    "note": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "given_by": {
+      "type": "string"
+    },
+    "given_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "state": {
+      "type": "string",
+      "enum": [
+        "given",
+        "awaiting",
+        "declined"
+      ]
+    }
+  },
+  "required": [
+    "id",
+    "person",
+    "visits",
+    "reason",
+    "note",
+    "given_by",
+    "given_at",
+    "state"
+  ],
+  "additionalProperties": false
+}
+```
+
+### CareNumbers
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "from": {
+      "type": "string",
+      "format": "date"
+    },
+    "to": {
+      "type": "string",
+      "format": "date"
+    },
+    "replies": {
+      "type": "object",
+      "properties": {
+        "chats": {
+          "type": "integer"
+        },
+        "median_minutes": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "The middle first reply, in minutes counted in Care hours; null with none answered."
+        },
+        "within_target": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "The share of chats answered by their reply-by time, 0 to 1; null with none."
+        }
+      },
+      "required": [
+        "chats",
+        "median_minutes",
+        "within_target"
+      ],
+      "additionalProperties": false
+    },
+    "same_day": {
+      "anyOf": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The share closed the day they opened."
+    },
+    "backlog": {
+      "type": "object",
+      "properties": {
+        "waiting_on_us": {
+          "type": "integer"
+        },
+        "overdue": {
+          "type": "integer"
+        },
+        "waiting_on_client": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "waiting_on_us",
+        "overdue",
+        "waiting_on_client"
+      ],
+      "additionalProperties": false
+    },
+    "reasons": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string"
+          },
+          "chats": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "reason",
+          "chats"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "remedies": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string"
+          },
+          "remedies": {
+            "type": "integer"
+          },
+          "visits": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "reason",
+          "remedies",
+          "visits"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "by_person": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string"
+          },
+          "chats": {
+            "type": "integer"
+          },
+          "median_minutes": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The middle first reply, in minutes counted in Care hours; null with none answered."
+          },
+          "within_target": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The share of chats answered by their reply-by time, 0 to 1; null with none."
+          }
+        },
+        "required": [
+          "email",
+          "chats",
+          "median_minutes",
+          "within_target"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "from",
+    "to",
+    "replies",
+    "same_day",
+    "backlog",
+    "reasons",
+    "remedies",
+    "by_person"
+  ],
+  "additionalProperties": false
+}
+```
+
 ### ReferralChannels
 
 ```json
@@ -12773,6 +13256,10 @@ Request body:
         "care_name.set",
         "quick_reply.add",
         "quick_reply.retire",
+        "remedy.give",
+        "remedy.ask",
+        "remedy.approve",
+        "remedy.decline",
         "word.publish",
         "partner_payout.record",
         "partner_payout.delete",
@@ -15313,6 +15800,7 @@ Request body:
               "move_unanswered",
               "unanswered_chat",
               "city_matter",
+              "remedy_approval",
               "leave_conflict",
               "address_to_confirm",
               "consultation_request",
@@ -16465,7 +16953,8 @@ Request body:
         "technician_work",
         "booking_days",
         "referral_reward",
-        "care_hours"
+        "care_hours",
+        "remedy_limit"
       ]
     },
     "title": {
@@ -16633,7 +17122,8 @@ Request body:
         "technician_work",
         "booking_days",
         "referral_reward",
-        "care_hours"
+        "care_hours",
+        "remedy_limit"
       ]
     },
     "title": {

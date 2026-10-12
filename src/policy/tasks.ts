@@ -37,6 +37,9 @@
 //
 // So is a City matter (docs/decisions/0135-city-matters.md): one central Customer Care team answers every chat, and
 // sends what needs the client's city to the city's operations team, who close it with what was done.
+//
+// So is a remedy above the limit ops set (docs/decisions/0143-remedies.md), until a Customer Care manager approves or
+// declines it.
 
 //
 // So is a job still booked on a day its technician is away: leave
@@ -77,6 +80,7 @@ export const TASK_GROUPS = [
   "move_unanswered",
   "unanswered_chat",
   "city_matter",
+  "remedy_approval",
   "leave_conflict",
   "address_to_confirm",
   "consultation_request",
@@ -114,6 +118,8 @@ export const TASK_SLA_HOURS: Slas = {
   unanswered_chat: 24,
   // A client waiting on their city: within the day.
   city_matter: 24,
+  // A client promised something waits on a manager: within the day.
+  remedy_approval: 24,
   // These two are never later than the visit itself (src/domain/ops/tasks.ts).
   leave_conflict: 48,
   address_to_confirm: 48,
