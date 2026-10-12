@@ -27,6 +27,47 @@ export const supplyPlan = {
   states: { approved: "Approved", rejected: "Rejected" } as Readonly<Record<string, string>>,
   /** "PO-0007" */
   order: (number: number) => `PO-${String(number).padStart(4, "0")}`,
+  forecast: {
+    title: "Forecast",
+    city: "City",
+    none: "No forecast yet. It runs once each planning period.",
+    empty: (city: string) => `Nothing expected in ${city}.`,
+    /** "Expected use in each 7-day period from 21 Sep 2026, the high case beneath." */
+    note: (days: number, from: string) =>
+      `Expected use in each ${String(days)}-day period from ${from}, the high case beneath.`,
+    item: "Item",
+    /** "up to 7" */
+    high: (figure: string) => `up to ${figure}`,
+  },
+  events: {
+    title: "Events",
+    note: "What will lift or drop demand. The next forecast reads them.",
+    none: "No events ahead.",
+    columns: ["Event", "City", "Days", "Change", ""],
+    /** "+20%", "−10%" */
+    change: (percent: number) => (percent < 0 ? `−${String(-percent)}%` : `+${String(percent)}%`),
+    /** "1 Nov – 15 Nov 2026" */
+    days: (from: string, to: string) => (from === to ? from : `${from} – ${to}`),
+    remove: (name: string) => `Take off ${name}`,
+    removeShort: "Take off",
+    removed: "Event taken off.",
+    add: "Add an event",
+    name: "Event",
+    city: "City",
+    startsOn: "Starts",
+    endsOn: "Ends",
+    percent: "Change in demand, %",
+    save: "Add event",
+    added: "Event added.",
+    errors: {
+      ends_on: "It ends before it starts.",
+      city: "We do not serve that city.",
+      not_found: "That event is gone. Reload.",
+      not_permitted: NOT_PERMITTED,
+      offline: OFFLINE,
+      unknown: FAILED,
+    } as Readonly<Record<string, string>>,
+  },
   errors: {
     order_state: "That line is decided already, or no forecast has run. Reload.",
     not_found: "That line is gone. Reload.",

@@ -1257,6 +1257,90 @@ Request body:
 }
 ```
 
+### GET /api/demand-events
+
+The events still to end, and the cities one may be set in
+
+**200**: The events calendar
+
+```json
+{
+  "$ref": "#/components/schemas/DemandEvents"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/demand-events
+
+An event added to the calendar
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/DemandEventAdd"
+}
+```
+
+**200**: The events calendar
+
+```json
+{
+  "$ref": "#/components/schemas/DemandEvents"
+}
+```
+
+**400**: invalid_request: fields names ends_on for an end before the start, or city for one not served
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/demand-events/{id}/remove
+
+An event taken off the calendar
+
+**200**: The events calendar
+
+```json
+{
+  "$ref": "#/components/schemas/DemandEvents"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no such event on the calendar
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ### POST /api/clients/{id}/erasure
 
 Erase a client now: their photographs and details. The CRM and Books follow within minutes
@@ -13478,6 +13562,9 @@ Request body:
           "consumable_code": {
             "type": "string"
           },
+          "name": {
+            "type": "string"
+          },
           "city": {
             "type": "string"
           },
@@ -13505,6 +13592,7 @@ Request body:
         },
         "required": [
           "consumable_code",
+          "name",
           "city",
           "period",
           "booked",
@@ -13674,6 +13762,109 @@ Request body:
   },
   "required": [
     "reason"
+  ],
+  "additionalProperties": false
+}
+```
+
+### DemandEvents
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "events": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "city": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "starts_on": {
+            "type": "string",
+            "format": "date"
+          },
+          "ends_on": {
+            "type": "string",
+            "format": "date"
+          },
+          "uplift_percent": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "city",
+          "starts_on",
+          "ends_on",
+          "uplift_percent"
+        ]
+      }
+    },
+    "cities": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "required": [
+    "events",
+    "cities"
+  ]
+}
+```
+
+### DemandEventAdd
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 80
+    },
+    "city": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "minLength": 1,
+      "maxLength": 80
+    },
+    "starts_on": {
+      "type": "string",
+      "format": "date"
+    },
+    "ends_on": {
+      "type": "string",
+      "format": "date"
+    },
+    "uplift_percent": {
+      "type": "integer",
+      "minimum": -90,
+      "maximum": 500
+    }
+  },
+  "required": [
+    "name",
+    "city",
+    "starts_on",
+    "ends_on",
+    "uplift_percent"
   ],
   "additionalProperties": false
 }
@@ -16510,6 +16701,8 @@ Request body:
         "custom_order.refund",
         "plan_line.approve",
         "plan_line.reject",
+        "demand_event.add",
+        "demand_event.remove",
         "task.assign",
         "task.hand_back",
         "task.close",

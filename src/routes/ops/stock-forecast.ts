@@ -27,6 +27,7 @@ const ForecastSchema = z
     lines: z.array(
       z.object({
         consumable_code: z.string(),
+        name: z.string(),
         city: z.string(),
         period: z.number().int(),
         booked: Figure,
@@ -65,6 +66,7 @@ export function registerOpsForecast(app: App): void {
               },
         lines: (forecast?.lines ?? []).map((line) => ({
           consumable_code: line.code,
+          name: line.name,
           city: line.city,
           period: line.period,
           booked: line.booked,

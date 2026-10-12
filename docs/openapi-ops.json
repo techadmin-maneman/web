@@ -4726,6 +4726,9 @@
                 "consumable_code": {
                   "type": "string"
                 },
+                "name": {
+                  "type": "string"
+                },
                 "city": {
                   "type": "string"
                 },
@@ -4753,6 +4756,7 @@
               },
               "required": [
                 "consumable_code",
+                "name",
                 "city",
                 "period",
                 "booked",
@@ -4907,6 +4911,99 @@
         },
         "required": [
           "reason"
+        ],
+        "additionalProperties": false
+      },
+      "DemandEvents": {
+        "type": "object",
+        "properties": {
+          "events": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "city": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "starts_on": {
+                  "type": "string",
+                  "format": "date"
+                },
+                "ends_on": {
+                  "type": "string",
+                  "format": "date"
+                },
+                "uplift_percent": {
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "id",
+                "name",
+                "city",
+                "starts_on",
+                "ends_on",
+                "uplift_percent"
+              ]
+            }
+          },
+          "cities": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "events",
+          "cities"
+        ]
+      },
+      "DemandEventAdd": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80
+          },
+          "city": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1,
+            "maxLength": 80
+          },
+          "starts_on": {
+            "type": "string",
+            "format": "date"
+          },
+          "ends_on": {
+            "type": "string",
+            "format": "date"
+          },
+          "uplift_percent": {
+            "type": "integer",
+            "minimum": -90,
+            "maximum": 500
+          }
+        },
+        "required": [
+          "name",
+          "city",
+          "starts_on",
+          "ends_on",
+          "uplift_percent"
         ],
         "additionalProperties": false
       },
@@ -7468,6 +7565,8 @@
               "custom_order.refund",
               "plan_line.approve",
               "plan_line.reject",
+              "demand_event.add",
+              "demand_event.remove",
               "task.assign",
               "task.hand_back",
               "task.close",
@@ -17872,6 +17971,127 @@
         }
       }
     },
+    "/api/demand-events": {
+      "get": {
+        "summary": "The events still to end, and the cities one may be set in",
+        "responses": {
+          "200": {
+            "description": "The events calendar",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DemandEvents"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "access_required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "An event added to the calendar",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DemandEventAdd"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The events calendar",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DemandEvents"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid_request: fields names ends_on for an end before the start, or city for one not served",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "access_required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/demand-events/{id}/remove": {
+      "post": {
+        "summary": "An event taken off the calendar",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The events calendar",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DemandEvents"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "access_required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found: no such event on the calendar",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/clients/{id}/erasure": {
       "post": {
         "summary": "Erase a client now: their photographs and details. The CRM and Books follow within minutes",
@@ -21105,6 +21325,8 @@
                 "custom_order.refund",
                 "plan_line.approve",
                 "plan_line.reject",
+                "demand_event.add",
+                "demand_event.remove",
                 "task.assign",
                 "task.hand_back",
                 "task.close",

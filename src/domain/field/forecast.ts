@@ -103,11 +103,12 @@ export interface Forecast {
   readonly horizonPeriods: number;
   readonly dueRate: number;
   readonly fitRate: number;
-  readonly lines: ForecastLine[];
+  readonly lines: (ForecastLine & { readonly name: string })[];
 }
 
 type LineRow = {
   consumable_code: string;
+  name: string;
   city: string;
   period: number;
   booked: number;
@@ -136,8 +137,10 @@ export async function latestForecast(db: D1Database, city: string | null): Promi
   if (run === null) return null;
   const { results } = await db
     .prepare(
-      `SELECT consumable_code, city, period, booked, due, pipeline, baseline, expected, high FROM forecast_lines
-       WHERE run_id = ?1 AND (?2 IS NULL OR city = ?2) ORDER BY city, consumable_code, period`,
+      `SELECT l.consumable_code, COALESCE(c.name, l.consumable_code) AS name, l.city, l.period, l.booked, l.due,
+         l.pipeline, l.baseline, l.expected, l.high
+       FROM forecast_lines l LEFT JOIN consumables c ON c.code = l.consumable_code
+       WHERE l.run_id = ?1 AND (?2 IS NULL OR l.city = ?2) ORDER BY l.city, l.consumable_code, l.period`,
     )
     .bind(run.id, city)
     .all<LineRow>();
@@ -149,6 +152,7 @@ export async function latestForecast(db: D1Database, city: string | null): Promi
     fitRate: run.fit_rate,
     lines: results.map((row) => ({
       code: row.consumable_code,
+      name: row.name,
       city: row.city,
       period: row.period,
       booked: row.booked,

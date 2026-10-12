@@ -1,6 +1,6 @@
 // Operations · Supply plan (docs/decisions/0180-supply-plan.md): the latest draft's transfers, by city, and orders, by
 // supplier, each with the figures behind it, approved at a quantity or rejected with why; and the plan drafted again
-// from the latest forecast.
+// from the latest forecast. Beneath, the forecast itself and the events calendar it reads.
 
 import { Button } from "@maneman/ui/Button";
 import { Table } from "@maneman/ui/Table";
@@ -14,6 +14,7 @@ import { supplyPlan as copy } from "../content/supply-plan.ts";
 import { useAccess } from "../lib/access.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import { PlanLineSteps, type Answer, type Line, type Plan } from "./PlanLine.tsx";
+import { Planning } from "./Planning.tsx";
 
 const loadPlan = () => client.get("/api/supply-plan");
 
@@ -122,6 +123,7 @@ export function SupplyPlanScreen() {
               </Button>
             </div>
           )}
+          <Planning />
         </div>
       )}
     </Shell>
