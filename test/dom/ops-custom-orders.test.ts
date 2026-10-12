@@ -32,6 +32,7 @@ const ORDER = {
   link_sent_at: null,
   paid_at: null,
   po_number: null,
+  refund_reason: null,
   raised_at: "2026-09-21T05:12:00.000Z",
 };
 
@@ -142,5 +143,31 @@ describe("the client's custom orders", () => {
       "/api/custom-orders/co-1/cancel",
     ]);
     expect(page.textContent).toContain(copy.statuses.cancelled);
+  });
+
+  it("refunds a paid order in full for the reason chosen, and says when that reason does not hold", async () => {
+    vi.stubGlobal("fetch", (url: string, init?: RequestInit) => {
+      const address = new URL(url, "https://ops.maneman.test");
+      const paid = { ...ORDER, status: "ordered", paid_at: "2026-09-21T06:00:00.000Z", po_number: 3 };
+      if (init?.method !== "POST") return Promise.resolve(Response.json({ ...BOOK, orders: [paid] }));
+      posted.push({ path: address.pathname, body: typeof init.body === "string" ? JSON.parse(init.body) : null });
+      if (posted.length === 1) {
+        return Promise.resolve(
+          Response.json({ error: { code: "refund_not_due", request_id: "r-1" } }, { status: 409 }),
+        );
+      }
+      const refunded = { ...paid, status: "refunded", refund_reason: "late" };
+      return Promise.resolve(Response.json({ ...BOOK, orders: [refunded] }));
+    });
+    await show();
+    await press(copy.refund);
+    expect(page.textContent).toContain(copy.errors.refund_not_due);
+    await press(copy.refund);
+    expect(posted).toEqual([
+      { path: "/api/custom-orders/co-1/refund", body: { reason: "late" } },
+      { path: "/api/custom-orders/co-1/refund", body: { reason: "late" } },
+    ]);
+    expect(page.textContent).toContain(copy.refunded);
+    expect(page.textContent).toContain(copy.statuses.refunded);
   });
 });
