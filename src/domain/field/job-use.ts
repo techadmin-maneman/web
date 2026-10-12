@@ -158,17 +158,10 @@ export async function recordJobUse(
   const byCode = new Map(
     used.flatMap((line) => (line.consumable === null ? [] : [[line.consumable.code, line.quantity] as const])),
   );
-  const owed = useStillToRecord(
-    byCode,
-    await takenFor(db, { jobId: job.id, technicianId, hairSystems: false }),
-  );
+  const owed = useStillToRecord(byCode, await takenFor(db, { jobId: job.id, technicianId, hairSystems: false }));
 
   const at = now.toISOString();
-  const taken = takenFromKit(
-    db,
-    { jobId: job.id, technicianId, eventId: latest.id, kind: "consumables", at },
-    owed,
-  );
+  const taken = takenFromKit(db, { jobId: job.id, technicianId, eventId: latest.id, kind: "consumables", at }, owed);
   const recorded = used.map((line) =>
     db
       .prepare(

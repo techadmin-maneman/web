@@ -30,7 +30,8 @@ interface SpecRow {
   readonly density_percent: number;
 }
 
-const SPEC_COLUMNS = "h.code, h.product, h.base_width_in, h.base_length_in, h.colour, h.grey_percent, h.density_percent";
+const SPEC_COLUMNS =
+  "h.code, h.product, h.base_width_in, h.base_length_in, h.colour, h.grey_percent, h.density_percent";
 
 const specOf = (row: SpecRow): HairSystemSpec => ({
   product: row.product,
@@ -89,7 +90,15 @@ export async function addHairSystem(
          OR EXISTS (SELECT 1 FROM hair_systems WHERE product = ?2 AND base_width_in = ?3 AND base_length_in = ?4
                       AND colour = ?5 AND grey_percent = ?6 AND density_percent = ?7)`,
     )
-    .bind(name, added.product, added.baseWidthIn, added.baseLengthIn, added.colour, added.greyPercent, added.densityPercent)
+    .bind(
+      name,
+      added.product,
+      added.baseWidthIn,
+      added.baseLengthIn,
+      added.colour,
+      added.greyPercent,
+      added.densityPercent,
+    )
     .first();
   if (taken !== null) return { ok: false, fields: ["hair_system"] };
 

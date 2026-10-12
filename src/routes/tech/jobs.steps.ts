@@ -252,7 +252,10 @@ function registerSteps(app: App): void {
         const { technicianId } = technicianOf(c);
         const { deps } = c.var;
         const fitted = await recordPieceUse(c.env.DB, { jobId: job.id, technicianId, now: deps.now() });
-        await tellOfLowStock(c.env.DB, deps, { touched: [technicianId], lowered: fitted.lowered ? [technicianId] : [] });
+        await tellOfLowStock(c.env.DB, deps, {
+          touched: [technicianId],
+          lowered: fitted.lowered ? [technicianId] : [],
+        });
       },
     );
   });
