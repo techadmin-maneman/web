@@ -63,6 +63,8 @@ const HANDLED: Readonly<Record<string, string>> = {
   "hair_systems.code -> consumables": "src/domain/field/consumables.ts deletes a hair system's spec first",
   "stock_movements.consumable_code -> consumables": "src/domain/field/consumables.ts refuses to delete one it names",
   "stock_balances.consumable_code -> consumables": "src/domain/field/consumables.ts refuses to delete one it names",
+  "stock_lots.consumable_code -> consumables":
+    "src/domain/field/consumables.ts refuses to delete one a movement names, and a lot comes only with a delivery",
   "consumables_used.consumable_code -> consumables": "src/domain/field/consumables.ts refuses to delete one it names",
   // A discount code made by mistake, and never once a booking has taken it.
   "discount_code_uses.code_id -> discount_codes":

@@ -26,15 +26,16 @@ test("lists what his kit holds, marking what is low, with the way to Stock", asy
   const kit = {
     ...STOCK,
     holdings: [
-      { consumable_code: "tape_strips", place_id: IMRAN, quantity: 3, low: true, counted_at: null },
+      { consumable_code: "tape_strips", place_id: IMRAN, quantity: 3, low: true, counted_at: null, lots: [] },
       {
         consumable_code: "solvent",
         place_id: IMRAN,
         quantity: 150,
         low: false,
         counted_at: "2027-09-20T06:00:00.000Z",
+        lots: [],
       },
-      { consumable_code: "solvent", place_id: SANDEEP, quantity: 40, low: false, counted_at: null },
+      { consumable_code: "solvent", place_id: SANDEEP, quantity: 40, low: false, counted_at: null, lots: [] },
     ],
   } satisfies OpsReply<"/api/stock">;
   await open(page, { [READ_STOCK]: json(kit) });

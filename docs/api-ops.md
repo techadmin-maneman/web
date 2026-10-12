@@ -5907,7 +5907,7 @@ Request body:
 
 ### POST /api/consumables/{code}
 
-Rename a consumable, or change its unit, its cost or its reorder levels. Only the fields sent change
+Rename a consumable, or change its unit, its cost, its reorder levels or its shelf life. Only the fields sent change
 
 Request body:
 
@@ -6306,7 +6306,7 @@ Request body:
 }
 ```
 
-**400**: invalid_request: fields names consumable_code for one nobody added, or place_id for no place or one not in the caller's cities
+**400**: invalid_request: fields names consumable_code for one nobody added, place_id for no place or one not in the caller's cities, or lot_id for a lot the place holds none of
 
 ```json
 {
@@ -6378,7 +6378,7 @@ Request body:
 }
 ```
 
-**400**: invalid_request: fields names consumable_code for one nobody added, or place_id for no place or one not in the caller's cities
+**400**: invalid_request: fields names consumable_code for one nobody added, place_id for no place or one not in the caller's cities, or lot_id for a lot the place holds none of
 
 ```json
 {
@@ -6414,7 +6414,7 @@ Request body:
 }
 ```
 
-**400**: invalid_request: fields names consumable_code for one nobody added, or place_id for no place or one not in the caller's cities
+**400**: invalid_request: fields names consumable_code for one nobody added, place_id for no place or one not in the caller's cities, or lot_id for a lot the place holds none of
 
 ```json
 {
@@ -19437,6 +19437,17 @@ Request body:
       "type": "boolean",
       "description": "Whether the technician app offers it today."
     },
+    "shelf_life_days": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Days from delivery to expiry, for a lot the supplier gives none; null for one that does not expire."
+    },
     "hair_system": {
       "anyOf": [
         {
@@ -19458,6 +19469,7 @@ Request body:
     "reorder_central",
     "retired_from",
     "offered",
+    "shelf_life_days",
     "hair_system"
   ],
   "additionalProperties": false
@@ -19615,6 +19627,18 @@ Request body:
           "type": "null"
         }
       ]
+    },
+    "shelf_life_days": {
+      "anyOf": [
+        {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1830
+        },
+        {
+          "type": "null"
+        }
+      ]
     }
   },
   "required": [
@@ -19666,6 +19690,18 @@ Request body:
           "type": "integer",
           "minimum": 0,
           "maximum": 100000
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "shelf_life_days": {
+      "anyOf": [
+        {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1830
         },
         {
           "type": "null"
@@ -20350,6 +20386,43 @@ Request body:
               }
             ],
             "description": "When it was last counted there."
+          },
+          "lots": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "lot_code": {
+                  "type": "string",
+                  "description": "The supplier's lot, or R- and the day it was received."
+                },
+                "expires_on": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "format": "date"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "quantity": {
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "id",
+                "lot_code",
+                "expires_on",
+                "quantity"
+              ],
+              "additionalProperties": false
+            },
+            "description": "The lots the place holds some of, soonest to expire first."
           }
         },
         "required": [
@@ -20357,7 +20430,8 @@ Request body:
           "place_id",
           "quantity",
           "low",
-          "counted_at"
+          "counted_at",
+          "lots"
         ],
         "additionalProperties": false
       }
@@ -20482,6 +20556,24 @@ Request body:
       "minLength": 1,
       "maxLength": 200,
       "pattern": "^[^\\p{Cc}]+$/u"
+    },
+    "lot_code": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "minLength": 1,
+      "maxLength": 40,
+      "pattern": "^[^\\p{Cc}]+$/u",
+      "description": "The supplier's lot, as printed on the stock."
+    },
+    "expires_on": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date",
+      "description": "India's date it expires on; by default the day received plus the stock code's shelf life."
     }
   },
   "required": [
@@ -20599,6 +20691,15 @@ Request body:
       "minLength": 1,
       "maxLength": 200,
       "pattern": "^[^\\p{Cc}]+$/u"
+    },
+    "lot_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "minLength": 1,
+      "maxLength": 64,
+      "description": "The lot lost, as one that expired; by default the lots that expire soonest."
     }
   },
   "required": [

@@ -147,8 +147,8 @@ export async function receivedLotMoves(
 }
 
 /**
- * What a job's correction gives back to the kit, by the lots the job took from: the latest taken first, so a step
- * that took too much puts back what it took last.
+ * What a job's correction gives back to the kit, by the lots the job took from: the latest taken first, and of one
+ * step's, the lot that expires last, so a step that took too much puts back what it took last.
  */
 export async function givenBackToLots(
   db: D1Database,
@@ -157,9 +157,10 @@ export async function givenBackToLots(
   const { results } = await db
     .prepare(
       `SELECT lm.lot_id, -SUM(lm.quantity) AS taken FROM stock_lot_moves lm
-       JOIN stock_movements m ON m.id = lm.movement_id
+       JOIN stock_movements m ON m.id = lm.movement_id JOIN stock_lots l ON l.id = lm.lot_id
        WHERE m.appointment_id = ?1 AND m.reason = 'used' AND m.consumable_code = ?2 AND lm.place = ?3
-       GROUP BY lm.lot_id HAVING taken > 0 ORDER BY MAX(m.created_at) DESC`,
+       GROUP BY lm.lot_id HAVING taken > 0
+       ORDER BY MAX(m.created_at) DESC, l.expires_on IS NULL DESC, l.expires_on DESC`,
     )
     .bind(giving.jobId, giving.code, giving.kit)
     .all<{ lot_id: string; taken: number }>();

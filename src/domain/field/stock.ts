@@ -26,7 +26,7 @@ import { indiaDate } from "../../lib/india-time.ts";
 import { countDifference, isLow } from "../../policy/stock.ts";
 import { auditStatement, auditStatementIfWritten, type AuditActor } from "../ops/audit.ts";
 import { allConsumables, isOffered, type Consumable } from "./consumables.ts";
-import { lotMoves, receivedLotMoves, soonestFirst, type ReceivedLot } from "./stock-lots.ts";
+import { heldLots, lotMoves, receivedLotMoves, soonestFirst, type HeldLot, type ReceivedLot } from "./stock-lots.ts";
 import {
   allPlaces,
   isPlaceWithin,
@@ -341,6 +341,8 @@ interface Holding {
   readonly low: boolean;
   /** When this place last counted it; null if never. */
   readonly countedAt: string | null;
+  /** The lots it holds some of, soonest to expire first. */
+  readonly lots: readonly HeldLot[];
 }
 
 interface StockMovement {
@@ -397,7 +399,7 @@ export async function stockView(
   within: ReadonlySet<Place> | null = null,
 ): Promise<StockView> {
   const today = indiaDate(now);
-  const [balances, every, recent] = await Promise.all([
+  const [balances, every, recent, lots] = await Promise.all([
     db.prepare("SELECT consumable_code, place, quantity, counted_at FROM stock_balances").all<BalanceRow>(),
     allPlaces(db),
     db
@@ -411,6 +413,7 @@ export async function stockView(
       )
       .bind(MOVEMENTS_SHOWN, within === null ? null : JSON.stringify([...within]))
       .all<MovementRow>(),
+    heldLots(db),
   ]);
   const held = balances.results.filter((row) => isPlaceWithin(within, row.place));
   const holding = held.filter((row) => row.quantity !== 0);
@@ -433,6 +436,7 @@ export async function stockView(
         quantity,
         low: isOffered(consumable, today) && isLow(quantity, level),
         countedAt: row?.counted_at ?? null,
+        lots: lots.filter((lot) => lot.code === consumable.code && lot.place === place.id),
       };
     }),
   );

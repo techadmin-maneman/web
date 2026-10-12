@@ -76,6 +76,7 @@ describe("the catalogue", () => {
         reorder_central: 100,
         retired_from: null,
         offered: true,
+        shelf_life_days: null,
         hair_system: null,
       },
     ]);

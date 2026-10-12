@@ -66,6 +66,7 @@ test("past six places, shows the warehouse and one place, picked, marking each p
     quantity: index + 1,
     low: index === 4,
     counted_at: null,
+    lots: [],
   }));
   const many = { ...STOCK, places: [STOCK.places[0], ...kits], holdings: [...STOCK.holdings, ...holdings] };
   await answer(page, { "GET /api/stock": json(many) });
