@@ -68,6 +68,7 @@ describe("the production gate on the apps' copy", () => {
         "apps/ops/src/content/care.ts",
         "apps/ops/src/content/clients.ts",
         "apps/ops/src/content/common.ts",
+        "apps/ops/src/content/counts.ts",
         "apps/ops/src/content/custom-orders.ts",
         "apps/ops/src/content/decisions.ts",
         "apps/ops/src/content/dispatch.ts",

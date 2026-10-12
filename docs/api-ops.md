@@ -14577,7 +14577,7 @@ Request body:
       "type": "string",
       "minLength": 1,
       "maxLength": 200,
-      "pattern": "^[^\\p{Cc}]+$/u"
+      "pattern": "^[^p{Cc}]+$/u"
     }
   },
   "required": [

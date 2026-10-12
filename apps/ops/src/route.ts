@@ -32,6 +32,7 @@ export const SECTIONS = [
   { page: "dispatch", path: "/dispatch", department: "operations", reads: "GET /api/dispatch" },
   { page: "technicians", path: "/technicians", department: "operations", reads: "GET /api/technicians" },
   { page: "stock", path: "/stock", department: "operations", reads: "GET /api/stock" },
+  { page: "counts", path: "/counts", department: "operations", reads: "GET /api/count-tasks" },
   { page: "purchasing", path: "/purchasing", department: "operations", reads: "GET /api/purchase-orders" },
   { page: "supply-plan", path: "/supply-plan", department: "operations", reads: "GET /api/supply-plan" },
   { page: "clients", path: "/clients", department: "customer_care", reads: "POST /api/clients/find" },

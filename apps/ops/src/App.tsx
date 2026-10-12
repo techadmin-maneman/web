@@ -64,6 +64,11 @@ const PurchasingScreen = lazy(() =>
     default: module.PurchasingScreen,
   })),
 );
+const CountsScreen = lazy(() =>
+  loadOrReload(() => import("./counts/CountsScreen.tsx")).then((module) => ({
+    default: module.CountsScreen,
+  })),
+);
 const SupplyPlanScreen = lazy(() =>
   loadOrReload(() => import("./supply-plan/SupplyPlanScreen.tsx")).then((module) => ({
     default: module.SupplyPlanScreen,
@@ -91,6 +96,7 @@ const SCREENS: Readonly<Record<PlainPage, ComponentType>> = {
   stock: StockScreen,
   purchasing: PurchasingScreen,
   "supply-plan": SupplyPlanScreen,
+  counts: CountsScreen,
   grievances: GrievancesScreen,
   "number-changes": NumberChangesScreen,
   "deletion-requests": DeletionsScreen,
