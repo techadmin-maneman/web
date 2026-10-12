@@ -277,6 +277,7 @@ export async function clearStaging(fixture: StagingFixture): Promise<void> {
     `DELETE FROM sessions WHERE subject_kind = 'technician' AND subject_id = ${sqlLiteral(fixture.technicianId)};`,
     `DELETE FROM slot_claims WHERE technician_id = ${sqlLiteral(fixture.technicianId)};`,
     `DELETE FROM slot_holds WHERE technician_id = ${sqlLiteral(fixture.technicianId)};`,
+    `DELETE FROM stock_places WHERE id = ${sqlLiteral(fixture.technicianId)} AND kind = 'kit';`,
     `DELETE FROM technicians WHERE id = ${sqlLiteral(fixture.technicianId)};`,
   ]);
 }
