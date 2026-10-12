@@ -51,6 +51,11 @@ const HANDLED: Readonly<Record<string, string>> = {
     "src/domain/dispatch/technician-roster.ts refuses to delete a technician it names",
   "stock_movements.technician_id -> technicians":
     "src/domain/dispatch/technician-roster.ts refuses to delete a technician it names",
+  "stock_places.technician_id -> technicians": "src/domain/dispatch/technician-roster.ts deletes their kit first",
+  "stock_places.parent_id -> stock_places":
+    "src/domain/dispatch/technician-roster.ts deletes only a kit, which no place hangs from",
+  "stock_movements.place_id -> stock_places":
+    "src/domain/dispatch/technician-roster.ts deletes only a kit, which no row names by place_id",
   "hair_profiles.technician_id -> technicians":
     "src/domain/dispatch/technician-roster.ts: the key itself refuses the batch, and nothing is deleted",
   // A consumable added by mistake goes with what services were set to use of it, and never once its stock has moved.
