@@ -200,6 +200,7 @@ export const RESTORE_GROUPS: readonly RestoreGroup[] = [
       "consumable_usage",
       "checklist_items",
       "partial_reasons",
+      "lost_reasons",
       "pay_grades",
       "visit_pay_rates",
       "word_versions",

@@ -225,6 +225,11 @@ export const JobDetailSchema = JobSummarySchema.extend({
   partial_reasons: z
     .array(JobSheetItemSchema)
     .openapi({ description: "The reasons a job may be left partly done, as ops set them, in their order." }),
+  lost_reasons: z.array(JobSheetItemSchema).openapi({
+    description:
+      "On a consultation and a one visit, why a client may not go ahead with a fit, as ops set them, in their " +
+      "order (ADR 0149). Empty for any other visit.",
+  }),
   consumables: z.array(OfferedSchema).openapi({
     description:
       "Every consumable the technician may record, those this job's service is expected to use first, " +

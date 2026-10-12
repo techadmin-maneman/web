@@ -5873,6 +5873,42 @@ Request body:
 }
 ```
 
+### POST /api/job-sheet/lost-reasons
+
+Why a client is not going ahead with a fit after their consultation, the whole list in its order
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/JobSheetListChange"
+}
+```
+
+**200**: The job sheet as it now stands
+
+```json
+{
+  "$ref": "#/components/schemas/JobSheet"
+}
+```
+
+**400**: invalid_request: fields names items for a list empty or too long, or items.N.label or items.N.code for one that is empty, too long, twice on the list, or a code the list never held
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ### GET /api/stock
 
 What each kit and the central store hold of each consumable, what is low, and the latest movements
@@ -18677,10 +18713,88 @@ Request body:
     "partial_reasons": {
       "$ref": "#/components/schemas/JobSheetList"
     },
+    "lost_reasons": {
+      "type": "object",
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "string"
+              },
+              "label": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "code",
+              "label"
+            ],
+            "additionalProperties": false
+          },
+          "description": "What the technician is offered, in order."
+        },
+        "retired": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "string"
+              },
+              "label": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "code",
+              "label"
+            ],
+            "additionalProperties": false
+          },
+          "description": "Taken off by ops, and still understood: a phone may have queued one before it knew."
+        },
+        "set_by": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Null while the committed list stands."
+        },
+        "set_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "items",
+        "retired",
+        "set_by",
+        "set_at"
+      ],
+      "additionalProperties": false,
+      "description": "Why a client is not going ahead with a fit after their consultation (ADR 0149)."
+    },
     "max_checklist_items": {
       "type": "integer"
     },
     "max_partial_reasons": {
+      "type": "integer"
+    },
+    "max_lost_reasons": {
       "type": "integer"
     },
     "max_label": {
@@ -18690,8 +18804,10 @@ Request body:
   "required": [
     "checklists",
     "partial_reasons",
+    "lost_reasons",
     "max_checklist_items",
     "max_partial_reasons",
+    "max_lost_reasons",
     "max_label"
   ],
   "additionalProperties": false

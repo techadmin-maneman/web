@@ -1965,6 +1965,8 @@ export interface components {
             checklist_if_declined: components["schemas"]["JobSheetItem"][];
             /** @description The reasons a job may be left partly done, as ops set them, in their order. */
             partial_reasons: components["schemas"]["JobSheetItem"][];
+            /** @description On a consultation and a one visit, why a client may not go ahead with a fit, as ops set them, in their order (ADR 0149). Empty for any other visit. */
+            lost_reasons: components["schemas"]["JobSheetItem"][];
             /** @description Every consumable the technician may record, those this job's service is expected to use first, each with the count its stepper starts at. */
             consumables: components["schemas"]["TechnicianConsumable"][];
             /** @description On a one visit and a consultation, the products by name and never by price: the first fit's services offered on the visit's day, in ops' order, which a one visit's client chooses from and the profile names. Empty for any other visit. */
@@ -2241,6 +2243,8 @@ export interface components {
         OutcomeRequest: {
             /** @enum {string} */
             outcome: "done";
+            /** @description On a consultation, why the client is not going ahead with a fit: one of the card's lost_reasons, by its id. Left out where they are going ahead, or the visit is no consultation (ADR 0149). */
+            lost_reason?: string;
         } | {
             /** @enum {string} */
             outcome: "partial";

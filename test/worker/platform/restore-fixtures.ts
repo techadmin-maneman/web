@@ -174,6 +174,8 @@ export const ROWS_AT_T: readonly string[] = [
      VALUES ('first_fit', 'shave', 'Shave the area', 1, 'ops@example.com', '${AT}')`,
   `INSERT INTO partial_reasons (code, label, position, set_by, set_at)
      VALUES ('client_left', 'The client had to leave', 1, 'ops@example.com', '${AT}')`,
+  `INSERT INTO lost_reasons (code, label, position, set_by, set_at)
+     VALUES ('moving_abroad', 'Moving abroad', 1, 'ops@example.com', '${AT}')`,
   `INSERT INTO stored_objects (key, bytes) VALUES ('visits/ap1/after-front.jpg', 1000)`,
   `UPDATE storage_meter SET bytes = 1000 WHERE id = 1`,
   `INSERT INTO task_owners (task_group, subject_id, episode, owner, assigned_by, assigned_at)

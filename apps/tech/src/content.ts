@@ -507,6 +507,12 @@ export const steps = {
     pickReason: "Pick a reason to continue",
     done: "Done",
     partial: "Partial · pick a reason",
+    // After a consultation: whether the client is going ahead with a fit, and why not (docs/decisions/0149-lost-reasons.md).
+    goingAhead: "Going ahead with a fit?",
+    yes: "Yes",
+    notNow: "Not now",
+    why: "Why not?",
+    pickWhy: "Pick why to continue",
   },
 } as const;
 

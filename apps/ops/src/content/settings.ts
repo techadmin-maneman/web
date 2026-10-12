@@ -541,6 +541,8 @@ export const settings = {
     kind: "Kind of visit",
     checklist: (type: string) => `${type} checklist`,
     reasons: "Partial reasons",
+    /** Why a client is not going ahead after a consultation (docs/decisions/0149-lost-reasons.md). */
+    lostReasons: "Reasons not going ahead",
     item: (position: number) => `Item ${String(position)}`,
     reason: (position: number) => `Reason ${String(position)}`,
     /** The buttons beside an item: each names the item after what it does, so a screen reader says which. */

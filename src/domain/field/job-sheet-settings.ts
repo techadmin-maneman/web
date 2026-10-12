@@ -1,6 +1,7 @@
 // The job sheet ops set in the console (docs/decisions/0087-consumables-and-stock.md;
-// docs/open-points.md, item 28): each kind of visit's checklist, and the reasons
-// a job may be left partly done. The technician app reads both with the job, and
+// docs/open-points.md, item 28): each kind of visit's checklist, the reasons
+// a job may be left partly done, and why a client is not going ahead after a
+// consultation (docs/decisions/0149-lost-reasons.md). The technician app reads both with the job, and
 // keeps them on the phone with it, so a job opened in a basement shows the list
 // it was given (ADR 0053).
 //
@@ -9,7 +10,13 @@
 // off is retired rather than deleted: a phone may have queued it offline before
 // the change reached it, and a job's summary still names it by its words.
 
-import { CHECKLIST, JOB_SHEET_BOUNDS, PARTIAL_REASONS, type JobSheetItem } from "../../config/job-sheet.ts";
+import {
+  CHECKLIST,
+  JOB_SHEET_BOUNDS,
+  LOST_REASONS,
+  PARTIAL_REASONS,
+  type JobSheetItem,
+} from "../../config/job-sheet.ts";
 import { VISIT_TYPES, type VisitType } from "../../config/visit-types.ts";
 import { auditStatement, type AuditActor } from "../ops/audit.ts";
 import { freshCode } from "../../lib/slug.ts";
@@ -28,6 +35,7 @@ export interface JobSheetList {
 export interface JobSheet {
   readonly checklists: Readonly<Record<VisitType, JobSheetList>>;
   readonly partialReasons: JobSheetList;
+  readonly lostReasons: JobSheetList;
 }
 
 interface Row {
@@ -59,15 +67,19 @@ function listOf(rows: readonly Row[], fallback: readonly JobSheetItem[]): JobShe
   };
 }
 
-/** Every list, as the technician app and the console read them. Two small reads. */
+/** Every list, as the technician app and the console read them. Three small reads. */
 export async function jobSheet(db: D1Database): Promise<JobSheet> {
-  const [checklists, reasons] = await db.batch<Row>([
+  const [checklists, reasons, lost] = await db.batch<Row>([
     db.prepare(
       `SELECT visit_type, code, label, retired_at, set_by, set_at FROM checklist_items
        ORDER BY visit_type, position, code`,
     ),
     db.prepare(
       `SELECT NULL AS visit_type, code, label, retired_at, set_by, set_at FROM partial_reasons
+       ORDER BY position, code`,
+    ),
+    db.prepare(
+      `SELECT NULL AS visit_type, code, label, retired_at, set_by, set_at FROM lost_reasons
        ORDER BY position, code`,
     ),
   ]);
@@ -78,6 +90,7 @@ export async function jobSheet(db: D1Database): Promise<JobSheet> {
       JobSheetList
     >,
     partialReasons: listOf(reasons?.results ?? [], PARTIAL_REASONS),
+    lostReasons: listOf(lost?.results ?? [], LOST_REASONS),
   };
 }
 
@@ -119,9 +132,23 @@ interface ItemSent {
   readonly label: string;
 }
 
-/** Which list: a kind of visit's checklist, or the partial reasons. */
+/** Which list: a kind of visit's checklist, the partial reasons, or the lost reasons. */
 export type ListName =
-  { readonly list: "checklist"; readonly visitType: VisitType } | { readonly list: "partial_reason" };
+  | { readonly list: "checklist"; readonly visitType: VisitType }
+  | { readonly list: "partial_reason" }
+  | { readonly list: "lost_reason" };
+
+/** Each list of reasons: where its rows are, what its audit entry names it, and the most it may hold. */
+const REASON_LISTS = {
+  partial_reason: { table: "partial_reasons", most: JOB_SHEET_BOUNDS.maxPartialReasons },
+  lost_reason: { table: "lost_reasons", most: JOB_SHEET_BOUNDS.maxLostReasons },
+} as const;
+
+/** The list as it stands in a sheet. */
+const listIn = (sheet: JobSheet, which: ListName): JobSheetList => {
+  if (which.list === "checklist") return sheet.checklists[which.visitType];
+  return which.list === "partial_reason" ? sheet.partialReasons : sheet.lostReasons;
+};
 
 type ListSaved = { readonly ok: true; readonly list: JobSheetList } | { readonly ok: false; readonly fields: string[] };
 
@@ -134,7 +161,7 @@ const codeFor = (label: string, taken: ReadonlySet<string>): string => freshCode
 
 /** What is wrong with a list ops sent, by the field a form can point at; none when it may be saved. */
 function refusalsOf(which: ListName, sent: readonly ItemSent[], known: ReadonlySet<string>): string[] {
-  const most = which.list === "checklist" ? JOB_SHEET_BOUNDS.maxChecklistItems : JOB_SHEET_BOUNDS.maxPartialReasons;
+  const most = which.list === "checklist" ? JOB_SHEET_BOUNDS.maxChecklistItems : REASON_LISTS[which.list].most;
   if (sent.length === 0 || sent.length > most) return ["items"];
   const fields: string[] = [];
   const codes = new Set<string>();
@@ -169,7 +196,7 @@ export async function saveList(
 ): Promise<ListSaved> {
   const { which, items, actor, requestId, now } = input;
   const sheet = await jobSheet(db);
-  const was = which.list === "checklist" ? sheet.checklists[which.visitType] : sheet.partialReasons;
+  const was = listIn(sheet, which);
   const known = knownCodes(was);
   const fields = refusalsOf(which, items, known);
   if (fields.length > 0) return { ok: false, fields };
@@ -203,7 +230,7 @@ export async function saveList(
         action: "job_sheet.set",
         subject: {
           kind: "job_sheet",
-          id: which.list === "checklist" ? `checklist/${which.visitType}` : "partial_reasons",
+          id: which.list === "checklist" ? `checklist/${which.visitType}` : REASON_LISTS[which.list].table,
         },
         requestId,
         detail: {
@@ -227,19 +254,20 @@ export async function saveList(
             .bind(which.visitType, row.id, row.label, row.position, row.retiredAt, actor.id, at)
         : db
             .prepare(
-              `INSERT INTO partial_reasons (code, label, position, retired_at, set_by, set_at)
+              `INSERT INTO ${REASON_LISTS[which.list].table} (code, label, position, retired_at, set_by, set_at)
                VALUES (?1, ?2, ?3, ?4, ?5, ?6)
                ON CONFLICT (code) DO UPDATE SET label = excluded.label, position = excluded.position,
-                 retired_at = ${RETIRED_AT("partial_reasons")}, set_by = excluded.set_by, set_at = excluded.set_at`,
+                 retired_at = ${RETIRED_AT(REASON_LISTS[which.list].table)}, set_by = excluded.set_by,
+                 set_at = excluded.set_at`,
             )
             .bind(row.id, row.label, row.position, row.retiredAt, actor.id, at),
     ),
   ]);
 
   const saved = await jobSheet(db);
-  return { ok: true, list: which.list === "checklist" ? saved.checklists[which.visitType] : saved.partialReasons };
+  return { ok: true, list: listIn(saved, which) };
 }
 
 /** Back on the list is not retired; still off it keeps the moment it first went. */
-const RETIRED_AT = (table: "checklist_items" | "partial_reasons") =>
+const RETIRED_AT = (table: "checklist_items" | "partial_reasons" | "lost_reasons") =>
   `CASE WHEN excluded.retired_at IS NULL THEN NULL ELSE COALESCE(${table}.retired_at, excluded.retired_at) END`;

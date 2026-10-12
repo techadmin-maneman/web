@@ -296,7 +296,7 @@ function registerProfileAndOutcome(app: App): void {
     return c.json(await profileRecorded(c, job, eventId, written.replayed), 202);
   });
 
-  // The reasons ops set; one they have taken off since the phone kept the job is still taken. A one visit closed as
+  // The reasons ops set, partial and lost alike; one they have taken off since the phone kept the job is still taken. A one visit closed as
   // done becomes a consultation or the product's visit, and asks Razorpay for its payment link once, however often
   // it lands: the close lands whatever Razorpay answers, and the cron asks again for a link it could not make.
   app.openapi(outcomeRoute, (c) => {
@@ -305,7 +305,13 @@ function registerProfileAndOutcome(app: App): void {
       c,
       "outcome",
       async () => {
-        if (body.outcome === "done") return { outcome: "done" };
+        if (body.outcome === "done") {
+          if (body.lost_reason === undefined) return { outcome: "done" };
+          const lost = knownCodes((await jobSheet(c.env.DB)).lostReasons);
+          return lost.has(body.lost_reason)
+            ? { outcome: "done", lost_reason: body.lost_reason }
+            : { invalid: ["lost_reason"] };
+        }
         const known = knownCodes((await jobSheet(c.env.DB)).partialReasons);
         return known.has(body.reason) ? { outcome: "partial", reason: body.reason } : { invalid: ["reason"] };
       },

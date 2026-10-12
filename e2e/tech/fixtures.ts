@@ -211,6 +211,16 @@ export const ONE_VISIT_CHECKLIST: Card["checklist"] = [
   { id: "aftercare_explained", label: "Aftercare explained" },
 ];
 
+/** Why a client may not go ahead after a consultation: the committed list, in src/config/job-sheet.ts's words. */
+const LOST_REASONS: Card["lost_reasons"] = [
+  { id: "price", label: "The price" },
+  { id: "not_ready", label: "Not ready yet" },
+  { id: "thinking_it_over", label: "Thinking it over" },
+  { id: "chose_another_option", label: "Chose another option" },
+  { id: "not_suited", label: "Not suited to a hair system" },
+  { id: "other", label: "Other" },
+];
+
 /** The reasons as the console set them: the committed four, in src/config/job-sheet.ts's words. */
 const PARTIAL_REASONS: Card["partial_reasons"] = [
   { id: "client_stopped_it", label: "Client stopped it partway" },
@@ -348,6 +358,7 @@ export function card(date: string, progress: Progress, options: CardOptions = {}
     checklist: options.checklist ?? CHECKLIST,
     checklist_if_declined: oneVisit ? CONSULTATION_CHECKLIST : [],
     partial_reasons: PARTIAL_REASONS,
+    lost_reasons: oneVisit || type === "consultation" ? LOST_REASONS : [],
     consumables: CONSUMABLES,
     products: oneVisit || type === "consultation" ? PRODUCTS : [],
     payment_link: null,
@@ -375,6 +386,7 @@ export function lockedCard(date: string): Card {
     checklist: CHECKLIST,
     checklist_if_declined: [],
     partial_reasons: PARTIAL_REASONS,
+    lost_reasons: [],
     consumables: CONSUMABLES,
     products: [],
     payment_link: null,

@@ -1,6 +1,7 @@
 // Settings, Job sheet (docs/decisions/0087-consumables-and-stock.md):
-// what the technician ticks on each kind of visit, and the reasons they may pick
-// when a job is left partly done. Both are set here, and the technician app reads them with each job; a phone
+// what the technician ticks on each kind of visit, the reasons they may pick
+// when a job is left partly done, and why a client is not going ahead after a
+// consultation (docs/decisions/0149-lost-reasons.md). All are set here, and the technician app reads them with each job; a phone
 // keeps the list it was given with the job, and an item taken off is kept, so
 // what a phone recorded before the change is still understood.
 //
@@ -22,6 +23,19 @@ const copy = settings.jobSheet;
 
 const typeName = (type: string) => dispatch.typeNames[type] ?? type;
 
+type EditorProps = Parameters<typeof ListEditor>[0];
+
+/** One of the sheet's lists of reasons: to read, or to change where the caller may. */
+function Reasons(
+  props: Pick<EditorProps, "id" | "title" | "list" | "most" | "longest" | "onSave" | "pick" | "onSaved"> & {
+    mayChange: boolean;
+  },
+) {
+  const { mayChange, ...list } = props;
+  if (!mayChange) return <ListRead title={list.title} list={list.list} />;
+  return <ListEditor {...list} itemLabel={copy.reason} addLabel={copy.addReason} />;
+}
+
 export function JobSheet() {
   const [loaded, retry] = useLoad(api.jobSheet);
   /** The sheet after a save, so "Set by" follows without reading it again. */
@@ -30,6 +44,7 @@ export function JobSheet() {
   const access = useAccess();
   const mayChangeChecklists = access.mayCall("POST /api/job-sheet/checklists/{visit_type}");
   const mayChangeReasons = access.mayCall("POST /api/job-sheet/partial-reasons");
+  const mayChangeLost = access.mayCall("POST /api/job-sheet/lost-reasons");
 
   if (loaded.state === "loading") return <Loading />;
   if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
@@ -78,21 +93,28 @@ export function JobSheet() {
           onSaved={setSheet}
         />
       )}
-      {!mayChangeReasons && <ListRead title={copy.reasons} list={current.partial_reasons} />}
-      {mayChangeReasons && (
-        <ListEditor
-          id="partial-reasons"
-          title={copy.reasons}
-          list={current.partial_reasons}
-          most={current.max_partial_reasons}
-          longest={current.max_label}
-          itemLabel={copy.reason}
-          addLabel={copy.addReason}
-          onSave={(items) => api.setPartialReasons(items)}
-          pick={(saved) => saved.partial_reasons}
-          onSaved={setSheet}
-        />
-      )}
+      <Reasons
+        id="partial-reasons"
+        title={copy.reasons}
+        list={current.partial_reasons}
+        most={current.max_partial_reasons}
+        mayChange={mayChangeReasons}
+        onSave={(items) => api.setPartialReasons(items)}
+        pick={(saved) => saved.partial_reasons}
+        onSaved={setSheet}
+        longest={current.max_label}
+      />
+      <Reasons
+        id="lost-reasons"
+        title={copy.lostReasons}
+        list={current.lost_reasons}
+        most={current.max_lost_reasons}
+        mayChange={mayChangeLost}
+        onSave={(items) => api.setLostReasons(items)}
+        pick={(saved) => saved.lost_reasons}
+        onSaved={setSheet}
+        longest={current.max_label}
+      />
     </Panel>
   );
 }

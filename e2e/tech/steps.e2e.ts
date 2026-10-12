@@ -74,6 +74,23 @@ test("the outcome has nothing chosen for the technician, and Next waits for his 
   expect(writesTo(fake, "outcome").at(-1)?.body).toEqual({ outcome: "done" });
 });
 
+// After a consultation, the outcome asks whether the client is going ahead, and why not (docs/decisions/0149-lost-reasons.md).
+test("a consultation's outcome asks whether the client is going ahead, and why not", async ({ page }) => {
+  const fake = await fakeTech(page);
+  fake.type = "consultation";
+  startedThrough(fake, "before_photos", "checklist", "consumables", "profile");
+  await page.goto(`/jobs/${JOB_ID}/outcome`);
+
+  await page.getByRole("button", { name: "Done", exact: true }).click();
+  await expect(page.getByText(techCopy.steps.outcome.goingAhead)).toBeVisible();
+  await page.getByRole("button", { name: techCopy.steps.outcome.notNow }).click();
+  await expect(page.getByRole("button", { name: techCopy.steps.outcome.pickWhy })).toBeDisabled();
+  await page.getByRole("button", { name: "The price" }).click();
+  await page.getByRole("button", { name: techCopy.steps.next }).click();
+
+  await expect.poll(() => writesTo(fake, "outcome").at(-1)?.body).toEqual({ outcome: "done", lost_reason: "price" });
+});
+
 // ADR 0025, item 59: "gold marks only the one primary action". The boards also gild a ticked
 // box, a step's count and a chosen outcome or reason.
 test("draws nothing in gold but the one primary action", async ({ page }) => {

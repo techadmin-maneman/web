@@ -77,7 +77,21 @@ export type UsedLine = z.infer<typeof ConsumablesRequestSchema>["items"][number]
 
 export const OutcomeRequestSchema = z
   .discriminatedUnion("outcome", [
-    z.object({ outcome: z.literal("done") }).strict(),
+    z
+      .object({
+        outcome: z.literal("done"),
+        lost_reason: z
+          .string()
+          .min(1)
+          .max(64)
+          .optional()
+          .openapi({
+            description:
+              "On a consultation, why the client is not going ahead with a fit: one of the card's lost_reasons, by its " +
+              "id. Left out where they are going ahead, or the visit is no consultation (ADR 0149).",
+          }),
+      })
+      .strict(),
     z
       .object({
         outcome: z.literal("partial"),

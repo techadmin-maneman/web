@@ -2,12 +2,14 @@
 // its channel and campaign (docs/decisions/0148-the-channel-rule.md), how it came (the site's form, the waitlist, the
 // try-on or WhatsApp) and the page it landed on, and the days its client first booked a consultation, had one, paid for
 // a first fit and was fitted. A first fit done counts as the consultation done too, since a fit can be booked as one
-// visit with it. Records marked as tests are left out.
+// visit with it. A client not yet fitted carries why they did not go ahead, from their latest consultation
+// (docs/decisions/0149-lost-reasons.md). Records marked as tests are left out.
 
 import { statusNotIn, VISIT_CALLED_OFF } from "../../config/statuses.ts";
 import { indiaDate } from "../../lib/india-time.ts";
 import { campaignCity, channelOf, CHANNELS, type Channel } from "../../policy/channels.ts";
 import type { Row, TableRows } from "../../providers/warehouse/index.ts";
+import { jobSheet } from "../field/job-sheet-settings.ts";
 
 interface LeadRow {
   readonly id: string;
@@ -30,6 +32,7 @@ interface LeadRow {
   readonly consultation_done: string | null;
   readonly fit_paid: string | null;
   readonly fit_done: string | null;
+  readonly lost_reason: string | null;
 }
 
 /** A client's first lead, whose channel and campaign they keep for life. */
@@ -51,6 +54,24 @@ const campaignKeyOf = (campaign: string | null) => {
   return key === "" ? null : key;
 };
 
+/** Every lead, the oldest first, with what the channel rule reads and the days its client moved on. */
+const LEADS = `SELECT l.id, l.person_id, p.erased_at IS NOT NULL AS erased, l.created_at, l.city, l.source, l.landing_path,
+     l.utm_source, l.utm_medium, l.utm_campaign, l.gclid, l.fbclid, l.referrer, l.found_us,
+     EXISTS (SELECT 1 FROM referral_attributions r WHERE r.referred_person_id = l.person_id
+       AND r.first_touch_at <= l.created_at) AS referred_before,
+     EXISTS (SELECT 1 FROM channel_attributions c WHERE c.referred_person_id = l.person_id
+       AND c.first_touch_at <= l.created_at) AS partner_before,
+     ${firstVisit("'consultation', 'first_fit'", false)} AS consultation_booked,
+     ${firstVisit("'consultation', 'first_fit'", true)} AS consultation_done,
+     (SELECT MIN(y.captured_at) FROM payments y JOIN appointments a ON a.id = y.appointment_id
+       WHERE y.person_id = l.person_id AND a.type = 'first_fit' AND y.captured_at IS NOT NULL) AS fit_paid,
+     ${firstVisit("'first_fit'", true)} AS fit_done,
+     (SELECT v.lost_reason FROM visits v JOIN appointments a ON a.id = v.appointment_id
+       WHERE a.person_id = l.person_id AND v.lost_reason IS NOT NULL
+       ORDER BY a.window_start DESC LIMIT 1) AS lost_reason
+   FROM leads l JOIN people p ON p.id = l.person_id WHERE p.test_record = 0
+   ORDER BY l.created_at`;
+
 /**
  * The leads, the oldest first; the channels; the campaigns their tags name, each with the channel of its first lead and
  * the city its name gives; and each client's first touch, by their key.
@@ -60,24 +81,10 @@ export async function leadTables(
   keys: ReadonlyMap<string, string>,
   cities: readonly string[],
 ): Promise<{ readonly tables: readonly TableRows[]; readonly firstTouch: ReadonlyMap<string, FirstTouch> }> {
-  const { results } = await db
-    .prepare(
-      `SELECT l.id, l.person_id, p.erased_at IS NOT NULL AS erased, l.created_at, l.city, l.source, l.landing_path,
-         l.utm_source, l.utm_medium, l.utm_campaign, l.gclid, l.fbclid, l.referrer, l.found_us,
-         EXISTS (SELECT 1 FROM referral_attributions r WHERE r.referred_person_id = l.person_id
-           AND r.first_touch_at <= l.created_at) AS referred_before,
-         EXISTS (SELECT 1 FROM channel_attributions c WHERE c.referred_person_id = l.person_id
-           AND c.first_touch_at <= l.created_at) AS partner_before,
-         ${firstVisit("'consultation', 'first_fit'", false)} AS consultation_booked,
-         ${firstVisit("'consultation', 'first_fit'", true)} AS consultation_done,
-         (SELECT MIN(y.captured_at) FROM payments y JOIN appointments a ON a.id = y.appointment_id
-           WHERE y.person_id = l.person_id AND a.type = 'first_fit' AND y.captured_at IS NOT NULL) AS fit_paid,
-         ${firstVisit("'first_fit'", true)} AS fit_done
-       FROM leads l JOIN people p ON p.id = l.person_id WHERE p.test_record = 0
-       ORDER BY l.created_at`,
-    )
-    .all<LeadRow>();
+  const { results } = await db.prepare(LEADS).all<LeadRow>();
 
+  const { lostReasons } = await jobSheet(db);
+  const lostWords = new Map([...lostReasons.retired, ...lostReasons.items].map((item) => [item.id, item.label]));
   const leads: Row[] = [];
   const campaigns = new Map<string, Row>();
   const firstTouch = new Map<string, FirstTouch>();
@@ -119,7 +126,8 @@ export async function leadTables(
       consultation_done_date: dayOf(row.consultation_done),
       first_fit_paid_date: dayOf(row.fit_paid),
       first_fit_done_date: dayOf(row.fit_done),
-      lost_reason: null,
+      lost_reason:
+        row.fit_done === null && row.lost_reason !== null ? (lostWords.get(row.lost_reason) ?? row.lost_reason) : null,
     });
   }
   const channels = CHANNELS.map((each, index) => ({

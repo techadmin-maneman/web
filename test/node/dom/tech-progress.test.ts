@@ -59,6 +59,7 @@ const job = (over: Partial<Job> = {}, progress: Partial<Job["progress"]> = {}): 
   checklist: [],
   checklist_if_declined: [],
   partial_reasons: [],
+  lost_reasons: [],
   consumables: [],
   products: [],
   payment_link: null,

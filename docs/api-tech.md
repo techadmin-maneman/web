@@ -2227,6 +2227,13 @@ Request body:
       },
       "description": "The reasons a job may be left partly done, as ops set them, in their order."
     },
+    "lost_reasons": {
+      "type": "array",
+      "items": {
+        "$ref": "#/components/schemas/JobSheetItem"
+      },
+      "description": "On a consultation and a one visit, why a client may not go ahead with a fit, as ops set them, in their order (ADR 0149). Empty for any other visit."
+    },
     "consumables": {
       "type": "array",
       "items": {
@@ -2383,6 +2390,7 @@ Request body:
     "checklist",
     "checklist_if_declined",
     "partial_reasons",
+    "lost_reasons",
     "consumables",
     "products",
     "payment_link",
@@ -3717,6 +3725,12 @@ Request body:
           "enum": [
             "done"
           ]
+        },
+        "lost_reason": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64,
+          "description": "On a consultation, why the client is not going ahead with a fit: one of the card's lost_reasons, by its id. Left out where they are going ahead, or the visit is no consultation (ADR 0149)."
         }
       },
       "required": [

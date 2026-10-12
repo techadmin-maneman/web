@@ -3,6 +3,7 @@
 //   GET  /api/job-sheet                              each kind of visit's checklist, and the partial reasons
 //   POST /api/job-sheet/checklists/:visit_type       one kind's checklist, the whole list in its order
 //   POST /api/job-sheet/partial-reasons              the partial reasons, the whole list in their order
+//   POST /api/job-sheet/lost-reasons                 why a client is not going ahead after a consultation
 //
 // A list nobody has saved is the committed one (src/config/job-sheet.ts). A
 // phone keeps the list it was given with the job, and an item ops take off is
@@ -46,8 +47,12 @@ const JobSheetSchema = z
         .openapi("JobSheetChecklist"),
     ),
     partial_reasons: z.object(LIST).strict().openapi("JobSheetList"),
+    lost_reasons: z.object(LIST).strict().openapi({
+      description: "Why a client is not going ahead with a fit after their consultation (ADR 0149).",
+    }),
     max_checklist_items: z.number().int(),
     max_partial_reasons: z.number().int(),
+    max_lost_reasons: z.number().int(),
     max_label: z.number().int(),
   })
   .strict()
@@ -75,7 +80,13 @@ const ListChangeSchema = z
           .strict(),
       )
       .min(1)
-      .max(Math.max(JOB_SHEET_BOUNDS.maxChecklistItems, JOB_SHEET_BOUNDS.maxPartialReasons)),
+      .max(
+        Math.max(
+          JOB_SHEET_BOUNDS.maxChecklistItems,
+          JOB_SHEET_BOUNDS.maxPartialReasons,
+          JOB_SHEET_BOUNDS.maxLostReasons,
+        ),
+      ),
   })
   .strict()
   .openapi("JobSheetListChange", { description: "The whole list, in its order. An item left out is retired." });
@@ -112,6 +123,14 @@ const reasonsRoute = createRoute({
   responses: { 200: SHEET, 400: REFUSED, 403: errorResponse("access_required") },
 });
 
+const lostReasonsRoute = createRoute({
+  method: "post",
+  path: "/api/job-sheet/lost-reasons",
+  summary: "Why a client is not going ahead with a fit after their consultation, the whole list in its order",
+  request: { body: { required: true, ...json(ListChangeSchema) } },
+  responses: { 200: SHEET, 400: REFUSED, 403: errorResponse("access_required") },
+});
+
 const listBody = (list: JobSheetList) => ({
   items: list.items.map((item) => ({ code: item.id, label: item.label })),
   retired: list.retired.map((item) => ({ code: item.id, label: item.label })),
@@ -122,8 +141,10 @@ const listBody = (list: JobSheetList) => ({
 const sheetBody = (sheet: JobSheet) => ({
   checklists: VISIT_TYPES.map((type) => ({ visit_type: type, ...listBody(sheet.checklists[type]) })),
   partial_reasons: listBody(sheet.partialReasons),
+  lost_reasons: listBody(sheet.lostReasons),
   max_checklist_items: JOB_SHEET_BOUNDS.maxChecklistItems,
   max_partial_reasons: JOB_SHEET_BOUNDS.maxPartialReasons,
+  max_lost_reasons: JOB_SHEET_BOUNDS.maxLostReasons,
   max_label: JOB_SHEET_BOUNDS.maxLabel,
 });
 
@@ -148,4 +169,6 @@ export function registerOpsJobSheet(app: App): void {
   );
 
   app.openapi(reasonsRoute, (c) => save(c, { list: "partial_reason" }, c.req.valid("json").items));
+
+  app.openapi(lostReasonsRoute, (c) => save(c, { list: "lost_reason" }, c.req.valid("json").items));
 }

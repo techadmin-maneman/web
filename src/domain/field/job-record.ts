@@ -48,10 +48,11 @@ async function closingStatements(db: D1Database, step: LandingStep): Promise<D1P
   const at = step.now.toISOString();
   const startedAt = outcome === "no_show" ? null : await startedAtOf(db, step.visit.id);
   const reason = stored?.outcome === "partial" ? stored.reason : null;
+  const lostReason = stored?.outcome === "done" ? (stored.lost_reason ?? null) : null;
   const times = { startedAt, endedAt: step.occurredAt.toISOString() };
   return [
     moveVisit(db, step.visit.id, outcome, at),
-    closeVisit({ db, appointmentId: step.visit.id, outcome, times, partialReason: reason, at }),
+    closeVisit({ db, appointmentId: step.visit.id, outcome, times, partialReason: reason, lostReason, at }),
   ];
 }
 

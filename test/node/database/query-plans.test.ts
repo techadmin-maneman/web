@@ -86,6 +86,7 @@ const SMALL_TABLES = new Set([
   "visit_blackouts",
   "checklist_items",
   "partial_reasons",
+  "lost_reasons",
   "consumables",
   "consumable_usage",
   // What Growth sets on the Words page, a row an edit: it grows with ops' work, not with clients.
@@ -185,6 +186,8 @@ const UNPLANNED = [
   // The Tasks board, read once a night by the task spans job, as the console reads it at each look
   // (docs/decisions/0147-task-spans.md).
   { file: "src/domain/ops/tasks.ts", source: "withOwners(queue.sql)" },
+  // One reason list's row, by its code (docs/decisions/0149-lost-reasons.md).
+  { file: "src/domain/field/job-sheet-settings.ts", source: "INSERT INTO ${REASON_LISTS[which.list].table}" },
   // One row inserted from an object's columns, its conflict clause at most reading the row's own key.
   { file: "src/lib/sql.ts", source: 'tail === "" ? sql : `${sql} ${tail}`' },
 ];

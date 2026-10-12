@@ -28,7 +28,7 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 | Hair profiles | `hair_profiles` | A profile recorded since is lost, and one an erasure blanked since is whole again | Adding the rows since `<T>`: they are only ever added. Erasing again blanks the rest |
 | Stock | `stock_movements` | A delivery, transfer, count or loss recorded since, or a job's use, is lost, so what each kit and the store hold is wrong | Adding the rows since `<T>` |
 | Referrals and credits | `referral_codes`, `referral_attributions`, `credit_ledger`, `waitlist_entries`, `referral_channels`, `channel_attributions`, `partner_payouts` | A credit, a grant, a partner, a partner's payment or a place on a waitlist disappears | The rows since `<T>`. `credit_ledger` is only ever added to |
-| Ops' settings and what we sell | `ops_settings`, `price_book`, `services`, `slot_times`, `serviceable_pincodes`, `technician_leave`, `visit_blackouts`, `city_blackouts`, `cities`, `zones`, `consumables`, `consumable_usage`, `checklist_items`, `partial_reasons`, `pay_grades`, `visit_pay_rates`, `word_versions`, `site_word_publishes` | A price, service, rule, area, day's times, day off, consumable, job-sheet list, pay rate or wording set since goes back | Setting it again in the console, which audits it |
+| Ops' settings and what we sell | `ops_settings`, `price_book`, `services`, `slot_times`, `serviceable_pincodes`, `technician_leave`, `visit_blackouts`, `city_blackouts`, `cities`, `zones`, `consumables`, `consumable_usage`, `checklist_items`, `partial_reasons`, `lost_reasons`, `pay_grades`, `visit_pay_rates`, `word_versions`, `site_word_publishes` | A price, service, rule, area, day's times, day off, consumable, job-sheet list, pay rate or wording set since goes back | Setting it again in the console, which audits it |
 | Staff and access | `staff`, `staff_grants`, `staff_service_tokens`, `staff_access_mode` | Someone taken off the Staff list since, or a grant taken back, is let in again | Setting it again on the Staff page, before anything else |
 | Tasks | `task_owners`, `task_closures`, `task_spans` | A task closed since opens again, one given to someone since is nobody's, and a task's span closed since closes again the next night, dated then | Closing or giving it again on the Tasks board |
 | The audit log | `audit_log` | Who did what since `<T>` | Adding the rows since `<T>`: they are only ever added |
@@ -82,6 +82,7 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 - [job_events](#job_events): The technician app's writes, each once by the ID the phone gave it, and whether it has reached FSM (ADR 0038, ADR 0065).
 - [last_visits](#last_visits): Each client's last first fit, service or replacement done, and last consultation done, kept by triggers from the view `last_visits_now` as their visits change; the Tasks board's At-risk client and First fit to book read it (ADR 0086), the second along `last_visits_unfitted`, the clients not fitted since their consultation.
 - [leads](#leads): Each booking, waitlist sign-up and try-on claim as the CRM receives it, and whether it has reached the CRM and FSM (ADR 0011, ADR 0012).
+- [lost_reasons](#lost_reasons): Why a client is not going ahead with a fit after their consultation, as ops set them, one they took off kept as retired; none means the committed list (ADR 0149).
 - [maintenance](#maintenance): One row while D1 is being restored: the cron and the queue consumers stand still until it is deleted (runbook, "Restoring D1").
 - [move_proposals](#move_proposals): A move to another day ops asked a client to confirm: where the visit would go, until when, and whether it was accepted, taken back or made moot (ADR 0115).
 - [no_show_cases](#no_show_cases): The evidence a no-show is ruled on, the ruling, and what a charge cost the client (ADR 0065, ADR 0072, ADR 0096).
@@ -1097,6 +1098,21 @@ Indexes:
 - `leads_by_person`: on (`person_id`)
 - `leads_by_sync_state`: on (`sync_state`, `created_at`)
 - `leads_fsm_unqueued`: on (`created_at`), where `fsm_queued_at IS NULL AND fsm_request_id IS NULL AND source = 'form' AND first_choice_window IS NOT NULL`
+
+## lost_reasons
+
+Why a client is not going ahead with a fit after their consultation, as ops set them, one they took off kept as retired; none means the committed list (ADR 0149).
+
+Made by `0128_lost_reasons.sql`.
+
+| Column | Type | May be empty | Default | Key |
+| --- | --- | --- | --- | --- |
+| `code` | TEXT | no |  | primary key |
+| `label` | TEXT | no |  |  |
+| `position` | INTEGER | no |  |  |
+| `retired_at` | TEXT | yes |  |  |
+| `set_by` | TEXT | no |  |  |
+| `set_at` | TEXT | no |  |  |
 
 ## maintenance
 
@@ -2410,7 +2426,7 @@ Indexes:
 
 What an appointment became once it closed, or ops closed it by hand: the outcome, its reason and its times (ADR 0032, ADR 0074).
 
-Made by `0011_fsm_mirror.sql`; changed by `0044_hand_offs_and_messages.sql`, `0060_flat_task_reads.sql`, `0082_ops_cancel_and_close.sql`.
+Made by `0011_fsm_mirror.sql`; changed by `0044_hand_offs_and_messages.sql`, `0060_flat_task_reads.sql`, `0082_ops_cancel_and_close.sql`, `0128_lost_reasons.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -2425,6 +2441,7 @@ Made by `0011_fsm_mirror.sql`; changed by `0044_hand_offs_and_messages.sql`, `00
 | `followed_up` | INTEGER | no | `0` |  |
 | `closed_by` | TEXT | yes |  |  |
 | `close_reason` | TEXT | yes |  |  |
+| `lost_reason` | TEXT | yes |  |  |
 
 Indexes:
 
