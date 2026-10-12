@@ -62,6 +62,7 @@ export const ROUTE_NEEDS: Readonly<Record<string, RouteNeed | typeof SIGNED_IN>>
   "POST /api/visits/{id}/cancel": inOwnPlaces("operations", "act"),
   "POST /api/visits/{id}/close": inOwnPlaces("operations", "act"),
   "POST /api/visits/{id}/let-in": inOwnPlaces("operations", "act"),
+  "POST /api/visits/{id}/lost-reason": inOwnPlaces("customer_care", "act"),
   "GET /api/technicians": inOwnPlaces("operations", "view"),
   "GET /api/technicians/work": inOwnPlaces("operations", "view"),
   // Who signs in to the technician app, and so sees clients' addresses: access, so MANAGE.

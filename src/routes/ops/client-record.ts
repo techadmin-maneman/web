@@ -10,6 +10,8 @@ import { paymentEntries } from "../../domain/money/client-payments.ts";
 import { creditBalance } from "../../domain/money/credits.ts";
 import { clientVisitCodes } from "../../domain/money/discount-code-uses.ts";
 import { partialVisitsClosed } from "../../domain/ops/task-closures.ts";
+import { jobSheet, type JobSheet } from "../../domain/field/job-sheet-settings.ts";
+import { lostReasonsOf } from "../../domain/visits/lost-reasons.ts";
 import { clientInviteOf } from "../../domain/referrals/referrals.ts";
 import { clientHistory } from "../../domain/visits/client-history.ts";
 import {
@@ -29,7 +31,12 @@ import { clientAddressOf, ClientAddressSchema, clientId } from "../schemas/clien
 import { HISTORY_FIGURES, VisitSummarySchema } from "../schemas/visits.ts";
 import { ClientInviteSchema } from "./client-referral.ts";
 
+const LostReasonSchema = z.object({ code: z.string(), label: z.string() }).strict();
+
 const ClientVisitSchema = VisitSummarySchema.extend({
+  lost_reason: z.union([LostReasonSchema, z.null()]).openapi({
+    description: "On a closed consultation, why the client is not going ahead, in ops' words; null where none is kept.",
+  }),
   outcome: z
     .union([z.enum(VISIT_OUTCOMES), z.null()])
     .openapi({ description: "What the visit was closed as, a no-show being its own; null until it is closed." }),
@@ -186,6 +193,9 @@ const ClientRecordSchema = z
     auto_refunds: z
       .array(AutoRefundSchema)
       .openapi({ description: "Bookings that refunded their payment by themselves; the latest refund first." }),
+    lost_reasons: z.array(LostReasonSchema).openapi({
+      description: "What a closed consultation's reason may be set to, as the job sheet lists them (ADR 0149).",
+    }),
   })
   .strict()
   .openapi("ClientRecord");
@@ -204,20 +214,31 @@ const ErasedClientRecordSchema = z
   .openapi("ErasedClientRecord", {
     description: "What is kept of a client once erased: their visits and their money. Nothing names them.",
   });
-/** The client's visits, each with how it closed, any closing of its task by hand, and its discount code. */
-async function recordVisits(db: D1Database, personId: string, now: Date) {
+/**
+ * The client's visits, each with how it closed, any closing of its task by hand, why a consultation's client is not
+ * going ahead, and its discount code.
+ */
+async function recordVisits(db: D1Database, personId: string, now: Date, sheet: Promise<JobSheet>) {
   const visits = await listVisits(db, personId, now);
   const visitIds = [...visits.upcoming, ...visits.past].map((visit) => visit.id);
-  const [outcomes, closings, codes] = await Promise.all([
+  const [outcomes, closings, codes, lost, { lostReasons }] = await Promise.all([
     visitOutcomes(db, visitIds),
     partialVisitsClosed(db, visitIds),
     clientVisitCodes(db, personId),
+    lostReasonsOf(db, visitIds),
+    sheet,
   ]);
+  const words = new Map([...lostReasons.retired, ...lostReasons.items].map((item) => [item.id, item.label]));
+  const lostReasonOf = (id: string) => {
+    const code = lost.get(id);
+    return code === undefined ? null : { code, label: words.get(code) ?? code };
+  };
   const withOutcome = (list: typeof visits.upcoming) =>
     list.map((visit) => ({
       ...visit,
       outcome: outcomes.get(visit.id) ?? null,
       closed_without_follow_up: closings.get(visit.id) ?? null,
+      lost_reason: lostReasonOf(visit.id),
       discount_code: codes.get(visit.id)?.code ?? null,
       price_open: codes.get(visit.id)?.open ?? false,
       requested_code: codes.get(visit.id)?.requested ?? null,
@@ -229,7 +250,7 @@ async function recordVisits(db: D1Database, personId: string, now: Date) {
 async function erasedRecord(db: D1Database, person: { id: string; erasedAt: string }, now: Date) {
   const personId = person.id;
   const [visits, payments, links, invoices] = await Promise.all([
-    recordVisits(db, personId, now),
+    recordVisits(db, personId, now, jobSheet(db)),
     paymentEntries(db, personId, now),
     paymentLinksOf(db, personId, now),
     visitInvoicesOf(db, personId),
@@ -270,10 +291,11 @@ export function registerOpsClientRecord(app: App): void {
       return c.json(await erasedRecord(db, { id, erasedAt: person.erased_at }, now), 200);
     }
 
+    const sheet = jobSheet(db);
     const [address, credits, visits, fitted, payments, links, invoices, history, invite, refunded] = await Promise.all([
       currentAddress(db, id),
       creditBalance(db, id, now),
-      recordVisits(db, id, now),
+      recordVisits(db, id, now, sheet),
       isFitted(db, id),
       paymentEntries(db, id, now),
       paymentLinksOf(db, id, now),
@@ -300,6 +322,7 @@ export function registerOpsClientRecord(app: App): void {
         history,
         invite,
         auto_refunds: refunded.map(autoRefundOf),
+        lost_reasons: (await sheet).lostReasons.items.map((item) => ({ code: item.id, label: item.label })),
       },
       200,
     );

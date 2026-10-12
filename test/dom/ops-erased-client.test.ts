@@ -30,6 +30,7 @@ const visit = (changes: Partial<ClientVisit>): ClientVisit => ({
   client_note: null,
   outcome: "done",
   closed_without_follow_up: null,
+  lost_reason: null,
   discount_code: null,
   price_open: false,
   requested_code: null,

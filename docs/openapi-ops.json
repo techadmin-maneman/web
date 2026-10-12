@@ -611,6 +611,26 @@
               "$ref": "#/components/schemas/AutoRefund"
             },
             "description": "Bookings that refunded their payment by themselves; the latest refund first."
+          },
+          "lost_reasons": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "code": {
+                  "type": "string"
+                },
+                "label": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "code",
+                "label"
+              ],
+              "additionalProperties": false
+            },
+            "description": "What a closed consultation's reason may be set to, as the job sheet lists them (ADR 0149)."
           }
         },
         "required": [
@@ -627,7 +647,8 @@
           "invoices",
           "history",
           "invite",
-          "auto_refunds"
+          "auto_refunds",
+          "lost_reasons"
         ],
         "additionalProperties": false
       },
@@ -903,6 +924,30 @@
             ],
             "description": "A move to another day ops asked the client to confirm, still open: the visit stays where it is until they accept it (POST /api/visits/{id}/proposed-move/accept) or pick another time. Null for none."
           },
+          "lost_reason": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "code": {
+                    "type": "string"
+                  },
+                  "label": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "code",
+                  "label"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "On a closed consultation, why the client is not going ahead, in ops' words; null where none is kept."
+          },
           "outcome": {
             "anyOf": [
               {
@@ -1032,6 +1077,7 @@
           "client_note",
           "one_visit",
           "proposed_move",
+          "lost_reason",
           "outcome",
           "closed_without_follow_up",
           "discount_code",
@@ -5633,6 +5679,28 @@
         ],
         "additionalProperties": false
       },
+      "LostReasonChange": {
+        "type": "object",
+        "properties": {
+          "lost_reason": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 64
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "One of the job sheet's lost_reasons, by its code; null where they are going ahead."
+          }
+        },
+        "required": [
+          "lost_reason"
+        ],
+        "additionalProperties": false
+      },
       "RemedyNew": {
         "type": "object",
         "properties": {
@@ -6545,6 +6613,7 @@
               "visit.cancel",
               "visit.close",
               "visit.checkin_waive",
+              "visit.lost_reason",
               "visit.move_accepted",
               "hair_profile.correct",
               "discount_code.make",
@@ -16270,6 +16339,90 @@
         }
       }
     },
+    "/api/visits/{id}/lost-reason": {
+      "post": {
+        "summary": "Set, or clear, why a client is not going ahead with a fit after this consultation",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LostReasonChange"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Kept",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "lost_reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  },
+                  "required": [
+                    "lost_reason"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid_request: fields names lost_reason for a code the job sheet never listed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "access_required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found: no closed consultation by this id in the caller's cities",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/clients/{id}/remedies": {
       "post": {
         "summary": "Give a client free service visits, with why: at once within the limit ops set, else for a manager",
@@ -17188,6 +17341,7 @@
                 "visit.cancel",
                 "visit.close",
                 "visit.checkin_waive",
+                "visit.lost_reason",
                 "visit.move_accepted",
                 "hair_profile.correct",
                 "discount_code.make",

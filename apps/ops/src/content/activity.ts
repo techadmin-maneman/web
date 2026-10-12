@@ -114,6 +114,7 @@ const ACTIONS: Readonly<Record<ActivityAction, string>> = {
   "visit.cancel": "Visit cancelled",
   "visit.close": "Visit closed by hand",
   "visit.checkin_waive": "Check-in waived",
+  "visit.lost_reason": "Reason not going ahead set",
   "hair_profile.correct": "Hair profile corrected",
   "discount_code.make": "Discount codes made",
   "discount_code.switch_off": "Discount code switched off",

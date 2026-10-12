@@ -2306,6 +2306,66 @@ Take an entry off the figures
 }
 ```
 
+### POST /api/visits/{id}/lost-reason
+
+Set, or clear, why a client is not going ahead with a fit after this consultation
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/LostReasonChange"
+}
+```
+
+**200**: Kept
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "lost_reason": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  },
+  "required": [
+    "lost_reason"
+  ],
+  "additionalProperties": false
+}
+```
+
+**400**: invalid_request: fields names lost_reason for a code the job sheet never listed
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no closed consultation by this id in the caller's cities
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ### POST /api/clients/{id}/remedies
 
 Give a client free service visits, with why: at once within the limit ops set, else for a manager
@@ -7264,6 +7324,26 @@ Request body:
         "$ref": "#/components/schemas/AutoRefund"
       },
       "description": "Bookings that refunded their payment by themselves; the latest refund first."
+    },
+    "lost_reasons": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "label"
+        ],
+        "additionalProperties": false
+      },
+      "description": "What a closed consultation's reason may be set to, as the job sheet lists them (ADR 0149)."
     }
   },
   "required": [
@@ -7280,7 +7360,8 @@ Request body:
     "invoices",
     "history",
     "invite",
-    "auto_refunds"
+    "auto_refunds",
+    "lost_reasons"
   ],
   "additionalProperties": false
 }
@@ -7566,6 +7647,30 @@ Request body:
       ],
       "description": "A move to another day ops asked the client to confirm, still open: the visit stays where it is until they accept it (POST /api/visits/{id}/proposed-move/accept) or pick another time. Null for none."
     },
+    "lost_reason": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string"
+            },
+            "label": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "code",
+            "label"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "On a closed consultation, why the client is not going ahead, in ops' words; null where none is kept."
+    },
     "outcome": {
       "anyOf": [
         {
@@ -7695,6 +7800,7 @@ Request body:
     "client_note",
     "one_visit",
     "proposed_move",
+    "lost_reason",
     "outcome",
     "closed_without_follow_up",
     "discount_code",
@@ -12678,6 +12784,33 @@ Request body:
 }
 ```
 
+### LostReasonChange
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "lost_reason": {
+      "anyOf": [
+        {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "One of the job sheet's lost_reasons, by its code; null where they are going ahead."
+    }
+  },
+  "required": [
+    "lost_reason"
+  ],
+  "additionalProperties": false
+}
+```
+
 ### RemedyNew
 
 ```json
@@ -13668,6 +13801,7 @@ Request body:
         "visit.cancel",
         "visit.close",
         "visit.checkin_waive",
+        "visit.lost_reason",
         "visit.move_accepted",
         "hair_profile.correct",
         "discount_code.make",

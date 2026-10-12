@@ -70,6 +70,7 @@ import { registerOpsCityMatters } from "./routes/ops/city-matters.ts";
 import { registerOpsStrangers } from "./routes/ops/strangers.ts";
 import { registerOpsQuickReplies } from "./routes/ops/quick-replies.ts";
 import { registerOpsSpend } from "./routes/ops/spend.ts";
+import { registerOpsVisitLostReason } from "./routes/ops/visit-lost-reason.ts";
 import { registerOpsRemedies } from "./routes/ops/remedies.ts";
 import { registerOpsCareNumbers } from "./routes/ops/care-numbers.ts";
 import { registerOpsConversations } from "./routes/ops/conversations.ts";
@@ -199,6 +200,7 @@ const SURFACE_ROUTES: Readonly<Record<Surface, readonly ((app: App) => void)[]>>
     registerOpsStrangers,
     registerOpsQuickReplies,
     registerOpsSpend,
+    registerOpsVisitLostReason,
     registerOpsRemedies,
     registerOpsCareNumbers,
     registerOpsReferralChannels,

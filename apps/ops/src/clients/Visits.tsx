@@ -25,6 +25,7 @@ import styles from "./clients.module.css";
 import { BookVisit } from "./BookVisit.tsx";
 import { CancelVisit } from "./CancelVisit.tsx";
 import { CloseVisit } from "./CloseVisit.tsx";
+import { LostReason } from "./LostReason.tsx";
 import { GivenAddressForm } from "./GivenAddress.tsx";
 import { VisitCode } from "./VisitCode.tsx";
 
@@ -213,11 +214,14 @@ function VisitTable({
   empty,
   changing = null,
   onBoard = false,
+  lost = null,
 }: {
   title: string;
   visits: readonly ClientVisit[];
   empty: string;
   changing?: Changing | null;
+  /** The reasons a closed consultation may be given, and what to do once one is; null where they are only shown. */
+  lost?: { readonly reasons: ClientRecord["lost_reasons"]; readonly onChanged: () => void } | null;
   /** Whether each visit links to its place on the dispatch board: the visits to come do. */
   onBoard?: boolean;
 }) {
@@ -253,6 +257,11 @@ function VisitTable({
                 <td className={styles.cell}>
                   {stateOf(visit)}
                   <ClosedWithoutFollowUp visit={visit} />
+                  <LostReason
+                    visit={visit}
+                    reasons={lost?.reasons ?? null}
+                    onChanged={lost?.onChanged ?? (() => undefined)}
+                  />
                   {changing !== null && (
                     <ChangeVisit visit={visit} name={changing.name} onChanged={changing.onChanged} />
                   )}
@@ -350,7 +359,7 @@ export function Visits({
     <div className={styles.visits}>
       <BookOne clientId={clientId} record={record} onBooked={onChanged} />
       <Address clientId={clientId} address={address} onAddress={onAddress} />
-      <VisitRecords visits={record.visits} name={record.name} onChanged={onChanged} />
+      <VisitRecords visits={record.visits} name={record.name} onChanged={onChanged} lostReasons={record.lost_reasons} />
       <AutoRefunds refunds={record.auto_refunds} />
     </div>
   );
@@ -361,11 +370,14 @@ export function VisitRecords({
   visits,
   name,
   onChanged,
+  lostReasons = null,
 }: {
   visits: ClientRecord["visits"];
   /** Whose visits they are, as the panels that change one name them. */
   name: string;
   onChanged: () => void;
+  /** What a closed consultation's reason may be set to; null on a page where it is only shown. */
+  lostReasons?: ClientRecord["lost_reasons"] | null;
 }) {
   return (
     <>
@@ -376,7 +388,12 @@ export function VisitRecords({
         changing={{ name, onChanged }}
         onBoard
       />
-      <VisitTable title={copy.past} visits={visits.past} empty={copy.noPast} />
+      <VisitTable
+        title={copy.past}
+        visits={visits.past}
+        empty={copy.noPast}
+        lost={lostReasons === null ? null : { reasons: lostReasons, onChanged }}
+      />
     </>
   );
 }
