@@ -4,12 +4,15 @@
 import { ScanField } from "@maneman/ui/ScanField";
 import { indiaClock, indiaDate, shortDate } from "@maneman/web-kit/dates";
 import { useState } from "react";
-import { client, type Stock, type StockUnitFound } from "../api.ts";
+import { client, type Stock } from "../api.ts";
+import type { paths } from "../api-schema.ts";
 import { stockLabels as copy } from "../content/stock-labels.ts";
 import form from "../components/forms.module.css";
 import { recordedBy } from "../lib/who.ts";
 import { placeName } from "./StockForm.tsx";
 import styles from "./labels.module.css";
+
+type StockUnitFound = paths["/api/stock/units/{code}"]["get"]["responses"][200]["content"]["application/json"];
 
 type Looked =
   | { readonly state: "none" }

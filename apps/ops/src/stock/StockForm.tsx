@@ -191,6 +191,32 @@ const scans = (book: Stock, draft: Draft) =>
   (draft.kind === "transfer" || draft.kind === "write_off") &&
   book.consumables.some((each) => each.code === draft.code && each.hair_system);
 
+/** How many: what a count found, or what moves; nothing to type where pieces were scanned, which count themselves. */
+function HowMany(props: {
+  draft: Draft;
+  unit: string;
+  onEdit: (field: "counted" | "quantity") => (text: string) => void;
+}) {
+  const { draft, unit, onEdit } = props;
+  if (draft.kind === "count") {
+    return (
+      <Quantity
+        label={copy.record.inUnit(copy.record.counted, unit)}
+        value={draft.counted}
+        onChange={onEdit("counted")}
+      />
+    );
+  }
+  if (draft.units.length > 0) return null;
+  return (
+    <Quantity
+      label={copy.record.inUnit(copy.record.quantity, unit)}
+      value={draft.quantity}
+      onChange={onEdit("quantity")}
+    />
+  );
+}
+
 /** What every box holds before anything is typed. */
 const EMPTY = { quantity: "", counted: "", note: "", lotCode: "", expiresOn: "", lotId: "", units: [] };
 
@@ -292,21 +318,7 @@ export function StockForm({
         <LotFields book={book} draft={draft} onEdit={edit} />
         {scans(book, draft) && <PieceScans units={draft.units} onUnits={scan} />}
         <div className={form.fields}>
-          {draft.kind === "count" ? (
-            <Quantity
-              label={copy.record.inUnit(copy.record.counted, unit)}
-
-              value={draft.counted}
-              onChange={edit("counted")}
-            />
-          ) : draft.units.length > 0 ? null : (
-            <Quantity
-              label={copy.record.inUnit(copy.record.quantity, unit)}
-
-              value={draft.quantity}
-              onChange={edit("quantity")}
-            />
-          )}
+          <HowMany draft={draft} unit={unit} onEdit={edit} />
           {draft.kind !== "transfer" && (
             <div className={form.field}>
               <label className={form.fieldLabel} htmlFor="stock-note">

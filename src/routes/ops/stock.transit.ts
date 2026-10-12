@@ -16,7 +16,8 @@ import { errorResponse, refuse } from "../../http/errors.ts";
 import { json } from "../../http/openapi.ts";
 import { routeReach } from "../../http/staff-access.ts";
 import { CONSUMABLE_BOUNDS, MAX_NOTE } from "../../config/consumables.ts";
-import { Labels, STOCK, stockAnswer } from "./stock.ts";
+import { Labels, STOCK } from "./stock.schemas.ts";
+import { stockAnswer } from "./stock.ts";
 
 const transferPath = { params: z.object({ id: z.string().min(1).max(64) }) };
 

@@ -26,7 +26,7 @@ import type { App, AppEnv } from "../../http/context.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
 import { json } from "../../http/openapi.ts";
 import { routeReach } from "../../http/staff-access.ts";
-import { PlaceId } from "./stock.ts";
+import { PlaceId } from "./stock.schemas.ts";
 
 const Code = z.string().min(1).max(64);
 
@@ -212,7 +212,8 @@ export function registerOpsStockUnits(app: App): void {
   app.openapi(unitRoute, async (c) => {
     const found = await unitFound(c.env.DB, c.req.valid("param").code.trim().toUpperCase());
     const within = await placesWithin(c.env.DB, await routeReach(c));
-    if (found === null || found.lastPlace === null || !isPlaceWithin(within, found.lastPlace)) {
+    const last = found?.lastPlace ?? null;
+    if (found === null || last === null || !isPlaceWithin(within, last)) {
       return refuse(c, "not_found");
     }
     return c.json(

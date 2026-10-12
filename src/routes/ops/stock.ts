@@ -22,169 +22,19 @@
 
 import { createRoute, z } from "@hono/zod-openapi";
 import type { Context } from "hono";
-import { CONSUMABLE_BOUNDS, MAX_NOTE } from "../../config/consumables.ts";
-import { isPieceCode } from "../../config/pieces.ts";
-import {
-  count,
-  MOVEMENT_REASONS,
-  receiveStock,
-  tellOfLowStock,
-  writeOff,
-  type Moved,
-} from "../../domain/field/stock.ts";
+import { CONSUMABLE_BOUNDS } from "../../config/consumables.ts";
+import { count, receiveStock, tellOfLowStock, writeOff, type Moved } from "../../domain/field/stock.ts";
 import { hairSystemSpecs } from "../../domain/field/hair-systems.ts";
 import { inTransit, sendStock } from "../../domain/field/stock-transit.ts";
-import { MAX_LABELLED } from "../../domain/field/stock-units.ts";
 import { stockView } from "../../domain/field/stock-view.ts";
-import {
-  isPlaceWithin,
-  PLACE_KINDS,
-  placeAreas,
-  placesWithin,
-  WAREHOUSE,
-  type Place,
-} from "../../domain/field/stock-places.ts";
+import { isPlaceWithin, placeAreas, placesWithin, WAREHOUSE, type Place } from "../../domain/field/stock-places.ts";
 import { actorOf } from "../../http/audit.ts";
 import type { App, AppEnv } from "../../http/context.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
 import { json } from "../../http/openapi.ts";
 import { reachOf, routeReach } from "../../http/staff-access.ts";
 import { indiaDate } from "../../lib/india-time.ts";
-
-/** A place, by its ID: "central" for the warehouse, a technician's ID for their kit. */
-export const PlaceId = z
-  .string()
-  .min(1)
-  .max(64)
-  .openapi({ description: "A place by its ID: central for the warehouse, a kit by its technician's ID." });
-
-const StockSchema = z
-  .object({
-    consumables: z.array(
-      z
-        .object({
-          code: z.string(),
-          name: z.string(),
-          unit: z.string(),
-          retired: z.boolean().openapi({ description: "No longer offered, and still held somewhere." }),
-          hair_system: z.boolean().openapi({ description: "A hair system, whose pieces are each labelled." }),
-          reorder_kit: z.union([z.number().int(), z.null()]),
-          reorder_central: z.union([z.number().int(), z.null()]),
-        })
-        .strict(),
-    ),
-    places: z
-      .array(
-        z
-          .object({
-            id: PlaceId,
-            kind: z.enum(PLACE_KINDS),
-            name: z.string().openapi({ description: "A kit's is its technician's name." }),
-            parent_id: z
-              .union([PlaceId, z.null()])
-              .openapi({ description: "The place it hangs from; null for the warehouse." }),
-            zone: z.union([z.string(), z.null()]),
-            city: z.union([z.string(), z.null()]),
-            active: z.boolean().openapi({ description: "Open; a kit is open while its technician is." }),
-          })
-          .strict(),
-      )
-      .openapi({
-        description:
-          "Every open place down the tree, the warehouse first, and any closed one still holding stock: those in the caller's cities, a hub with every city of its zone, and the warehouse only with a national grant.",
-      }),
-    holdings: z.array(
-      z
-        .object({
-          consumable_code: z.string(),
-          place_id: PlaceId,
-          quantity: z.number().int().openapi({ description: "The sum of the place's rows; below nought is a gap." }),
-          low: z.boolean().openapi({ description: "At or below the level for its kind of place." }),
-          counted_at: z.union([z.iso.datetime(), z.null()]).openapi({ description: "When it was last counted there." }),
-          lots: z
-            .array(
-              z
-                .object({
-                  id: z.string(),
-                  lot_code: z
-                    .string()
-                    .openapi({ description: "The supplier's lot, or R- and the day it was received." }),
-                  expires_on: z.union([z.iso.date(), z.null()]),
-                  quantity: z.number().int(),
-                })
-                .strict(),
-            )
-            .openapi({ description: "The lots the place holds some of, soonest to expire first." }),
-        })
-        .strict(),
-    ),
-    movements: z
-      .array(
-        z
-          .object({
-            at: z.iso.datetime(),
-            consumable_code: z.string(),
-            place_id: PlaceId,
-            quantity: z.number().int().openapi({ description: "Into the place, positive; out of it, negative." }),
-            reason: z.enum(MOVEMENT_REASONS),
-            by: z.string().openapi({
-              description:
-                "Who: ops' Access identity, a service token by its label on the Staff list, or the technician's ID " +
-                "for a job's use.",
-            }),
-            note: z.union([z.string(), z.null()]),
-          })
-          .strict(),
-      )
-      .openapi({ description: "The latest movements, newest first." }),
-    today: z.iso.date(),
-    max_quantity: z.number().int(),
-    in_transit: z
-      .array(
-        z
-          .object({
-            id: z.string(),
-            consumable_code: z.string(),
-            quantity: z.number().int(),
-            from: PlaceId,
-            to: PlaceId,
-            sent_at: z.iso.datetime(),
-            sent_by: z.string(),
-          })
-          .strict(),
-      )
-      .openapi({ description: "Transfers on their way, the oldest first: those either end of which is within reach." }),
-    zones: z.array(z.string()).openapi({ description: "The zones a hub may be for." }),
-    cities: z.array(z.string()).openapi({ description: "The active cities a stockroom may be in." }),
-  })
-  .strict()
-  .openapi("Stock");
-
-export const STOCK = { description: "What every place holds", ...json(StockSchema) };
-
-const Code = z.string().min(1).max(64);
-const Quantity = z.number().int().min(1).max(CONSUMABLE_BOUNDS.maxQuantity);
-const Note = z
-  .string()
-  .trim()
-  .min(1)
-  .max(MAX_NOTE)
-  .regex(/^[^\p{Cc}]+$/u);
-
-/** A hair system's pieces by their labels, as scanned: one movement takes as many as one delivery labels. */
-export const Labels = z
-  .array(z.string().max(32).refine(isPieceCode))
-  .min(1)
-  .max(MAX_LABELLED)
-  .openapi({ description: "A hair system's pieces by their labels, as scanned; as many as the quantity." });
-
-const LotCode = z
-  .string()
-  .trim()
-  .min(1)
-  .max(40)
-  .regex(/^[^\p{Cc}]+$/u)
-  .openapi({ description: "The supplier's lot, as printed on the stock." });
+import { Code, Labels, LotCode, Note, PlaceId, Quantity, STOCK } from "./stock.schemas.ts";
 
 const REFUSED = errorResponse(
   "invalid_request: fields names consumable_code for one nobody added, place_id for no place or one not in the caller's cities, lot_id for a lot the place holds none of, quantity for more pieces of a hair system than one delivery labels, or units for a label the place does not hold or a count other than the quantity",
