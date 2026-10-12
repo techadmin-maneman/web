@@ -217,6 +217,14 @@ const HISTORY = [
   `INSERT INTO stock_balances (consumable_code, place, quantity) SELECT 'history_tape', 't-' || i, 10 FROM n`,
   `INSERT INTO stock_movements (id, consumable_code, location, quantity, reason, actor_kind, actor, created_at)
    SELECT 'sm-' || i, 'history_tape', 'central', 10, 'received', 'staff', 'ops@localhost', '${AGO}' FROM n`,
+  // Lots used up long ago, and transfers received: the morning look at the stock reads only what is held or on its way.
+  `INSERT INTO stock_lots (id, consumable_code, lot_code, expires_on, received_at)
+   SELECT 'lot-' || i, 'history_tape', 'L-' || i, '2025-01-01', '${AGO}' FROM n`,
+  `INSERT INTO stock_lot_balances (lot_id, place, quantity) SELECT 'lot-' || i, 'central', 0 FROM n`,
+  `INSERT INTO stock_transfers (id, consumable_code, quantity, from_place, to_place, state, received_quantity, sent_by,
+     sent_at, settled_by, settled_at, settlement_id)
+   SELECT 'st-' || i, 'history_tape', 1, 'central', 'central', 'received', 1, 'ops@localhost', '${AGO}',
+     'ops@localhost', '${AGO}', 'x-' || i FROM n`,
   // What the sweeper deletes once it has outlived its use, still in use: today's counts, the day's keys, a login code
   // and a site's number code proved, and a try-on session still open.
   `INSERT INTO counters (scope, key, window_start, count) SELECT 'login_code', 'k-' || i, '${TODAY}', 1 FROM n`,

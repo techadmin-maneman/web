@@ -2132,7 +2132,7 @@ Made by `0053_balances_and_last_visits.sql`.
 
 What each place holds of each lot: the sum of its rows in `stock_lot_moves`, kept by triggers as each is written (ADR 0157).
 
-Made by `0135_stock_lots.sql`.
+Made by `0135_stock_lots.sql`; changed by `0137_held_lots.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -2143,6 +2143,7 @@ Made by `0135_stock_lots.sql`.
 Indexes:
 
 - `stock_lot_balances_by_place`: on (`place`, `lot_id`)
+- `stock_lot_balances_held`: on (`lot_id`, `place`), where `quantity > 0`
 
 ## stock_lot_moves
 

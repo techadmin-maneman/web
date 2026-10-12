@@ -90,6 +90,8 @@ const FINANCE_KINDS = [
 
 const OPERATIONS_KINDS = [
   "low_stock",
+  "stock_expiring",
+  "transfer_overdue",
   "technician_code_refused",
   "hair_profile_from_older",
   "unbooked_hold",

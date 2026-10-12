@@ -17,6 +17,10 @@ export const stock = {
   // Not drawn: past a handful of places, the one shown beside the warehouse, and a place low on anything.
   place: "Place",
   placeLow: " · low",
+  totalsBy: "Show",
+  byPlace: "Each place",
+  byZone: "Totals by zone",
+  byCity: "Totals by city",
   /** "12 strip", and a mark for a place at or below its level. */
   held: (quantity: number, unit: string) => `${String(quantity)} ${unit}`,
   low: "Low",

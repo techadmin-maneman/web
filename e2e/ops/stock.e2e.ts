@@ -10,6 +10,7 @@ import { answer, fails, IMRAN, json, STOCK, type Answers, type OpsReply } from "
 import * as opsCopy from "../../apps/ops/src/content.ts";
 import { stockPlaces } from "../../apps/ops/src/content/stock-places.ts";
 import { stockTransit } from "../../apps/ops/src/content/stock-transit.ts";
+import { stockViews } from "../../apps/ops/src/content/stock-views.ts";
 
 const WAREHOUSE = "National warehouse";
 
@@ -328,6 +329,33 @@ test("receives a transfer short, saying what was lost on the way", async ({ page
   const received = posted(page, "/api/stock/transfers/tr-1/receive");
   await panel.getByRole("button", { name: stockTransit.confirm }).click();
   expect((await received).postDataJSON()).toEqual({ received: 180 });
+});
+
+test("adds up every place, and each city, and lists the lots that expire soon", async ({ page }) => {
+  const soon = { id: "lot-2", lot_code: "SV-0930", expires_on: "2027-09-30", quantity: 150 };
+  const expiring = {
+    ...STOCK,
+    holdings: STOCK.holdings.map((holding) =>
+      holding.consumable_code === "solvent" && holding.place_id === IMRAN ? { ...holding, lots: [soon] } : holding,
+    ),
+  };
+  await answer(page, { "GET /api/stock": json(expiring) });
+  await page.goto("/stock");
+  const table = onHand(page);
+  await table.getByLabel(opsCopy.stock.totalsBy).selectOption({ label: opsCopy.stock.byCity });
+  await expect(table.getByRole("columnheader")).toHaveText([
+    "Consumable",
+    stockViews.totals.national,
+    "Gurgaon",
+    stockViews.totals.noCity,
+  ]);
+  const tape = table.getByRole("row").filter({ has: page.getByRole("rowheader", { name: "Tape strips" }) });
+  await expect(tape.getByRole("cell").nth(0)).toHaveText("129 strip");
+  await expect(tape.getByRole("cell").nth(1)).toHaveText("9 strip");
+
+  const panel = page.getByRole("region", { name: stockViews.expiring.title });
+  await expect(panel.getByRole("row").filter({ hasText: "SV-0930" })).toContainText("Imran Qureshi");
+  expect(await axeViolations(page)).toEqual([]);
 });
 
 test("meets WCAG 2.2 AA, with a movement being checked as well", async ({ page }) => {

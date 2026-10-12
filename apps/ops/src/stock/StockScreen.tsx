@@ -8,6 +8,7 @@
 // rest here. A place at or below its level is marked Low in words, and raises
 // one alert (src/domain/field/stock.ts), which is why there is no Tasks group for it.
 
+import { EXPIRY_WARNING_DAYS } from "@rules/policy/stock.ts";
 import { Field, Select } from "@maneman/ui/Field";
 import { Table } from "@maneman/ui/Table";
 import { useLoad } from "@maneman/ui/useLoad";
@@ -28,6 +29,40 @@ import styles from "./stock.module.css";
 
 /** The places, read only by national managers, so the panel loads only for them. */
 const PlacesPanel = lazy(() => import("./PlacesPanel.tsx").then((module) => ({ default: module.PlacesPanel })));
+
+/** The totals by zone or city, and the lots that expire soon, each loaded when shown. */
+const Totals = lazy(() => import("./Totals.tsx").then((module) => ({ default: module.Totals })));
+const Expiring = lazy(() => import("./Expiring.tsx").then((module) => ({ default: module.Expiring })));
+
+/** Whether any lot within reach expires within the warning, so the Expiring panel is worth loading. */
+function anyExpiring(book: Stock): boolean {
+  const until = new Date(Date.parse(`${book.today}T00:00:00Z`) + EXPIRY_WARNING_DAYS * 86_400_000).toISOString();
+  return book.holdings.some((holding) =>
+    holding.lots.some((lot) => lot.expires_on !== null && lot.expires_on <= until.slice(0, 10)),
+  );
+}
+
+/** How the table adds up the places: each its own, or by zone or city. */
+function Grouping({ by, onBy }: { by: string; onBy: (by: "place" | "zone" | "city") => void }) {
+  return (
+    <Field label={copy.totalsBy} className={styles.kitPicker}>
+      {(control) => (
+        <Select
+          {...control}
+          value={by}
+          onChange={(event) => {
+            const picked = event.target.value;
+            onBy(picked === "zone" || picked === "city" ? picked : "place");
+          }}
+        >
+          <option value="place">{copy.byPlace}</option>
+          <option value="zone">{copy.byZone}</option>
+          <option value="city">{copy.byCity}</option>
+        </Select>
+      )}
+    </Field>
+  );
+}
 
 /** What is on its way, which loads only while something is. */
 const InTransit = lazy(() => import("./InTransit.tsx").then((module) => ({ default: module.InTransit })));
@@ -216,6 +251,7 @@ export function StockScreen() {
   const [loaded, retry] = useLoad(api.stock);
   /** The stock after a movement, so the table follows without reading it again. */
   const [book, setBook] = useState<Stock | null>(null);
+  const [by, setBy] = useState<"place" | "zone" | "city">("place");
   const access = useAccess();
   const [firstKind, ...otherKinds] = KINDS.filter((kind) => access.mayCall(RECORDING[kind]));
 
@@ -231,8 +267,20 @@ export function StockScreen() {
                 {copy.onHand}
               </h2>
             </div>
-            <OnHand book={book ?? loaded.value} />
+            <Grouping by={by} onBy={setBy} />
+            {by === "place" ? (
+              <OnHand book={book ?? loaded.value} />
+            ) : (
+              <Suspense fallback={<Loading />}>
+                <Totals book={book ?? loaded.value} by={by} />
+              </Suspense>
+            )}
           </section>
+          {anyExpiring(book ?? loaded.value) && (
+            <Suspense fallback={<Loading />}>
+              <Expiring book={book ?? loaded.value} />
+            </Suspense>
+          )}
           {firstKind !== undefined && (book ?? loaded.value).consumables.length > 0 && (
             <StockForm book={book ?? loaded.value} kinds={[firstKind, ...otherKinds]} onRecorded={setBook} />
           )}
