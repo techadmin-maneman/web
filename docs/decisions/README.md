@@ -2,7 +2,7 @@
 
 Every decision this repository was built on, oldest first. A record says what was decided and why, and is not rewritten to say something else: a later record changes it, and says so in its own header (ADR 0001). **Changed by** gathers those later records, from either side, so an old record's reader knows to read on.
 
-This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. A record names its topic in its header, `- Topic:` and one of the headings below, and the test fails on one that does not. The next free number is 0184.
+This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. A record names its topic in its header, `- Topic:` and one of the headings below, and the test fails on one that does not. The next free number is 0185.
 
 ## By topic
 
@@ -111,6 +111,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 - [0181](0181-tomorrows-kits.md) Tomorrow's kits
 - [0182](0182-the-events-calendar.md) The events calendar and the forecast on the Supply plan
 - [0183](0183-forecast-accuracy.md) Forecast accuracy
+- [0184](0184-the-one-visit-range.md) The one-visit range
 
 ### Money and Books
 
@@ -402,3 +403,4 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0181](0181-tomorrows-kits.md) | Tomorrow's kits | 2026-10-12 | accepted |  |
 | [0182](0182-the-events-calendar.md) | The events calendar and the forecast on the Supply plan | 2026-10-12 | accepted |  |
 | [0183](0183-forecast-accuracy.md) | Forecast accuracy | 2026-10-12 | accepted |  |
+| [0184](0184-the-one-visit-range.md) | The one-visit range | 2026-10-12 | accepted |  |

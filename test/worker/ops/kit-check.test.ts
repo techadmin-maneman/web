@@ -3,8 +3,8 @@
 //
 // What these hold: from the evening, each kit is checked against its visits tomorrow, a service's consumables by its
 // expected use and a fit's hair system made to its client; what it is short of is proposed as a top-up from its
-// city's stockroom, ops are told once, and an approved top-up waits for the technician's scan; the supply plan's own
-// redraft leaves the evening's top-ups be.
+// city's stockroom, ops are told once, and an approved top-up waits for the technician's scan; a one visit whose client
+// is not yet known adds the city's one-visit range; the supply plan's own redraft leaves the evening's top-ups be.
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
@@ -97,6 +97,30 @@ describe("tomorrow's kits", () => {
       ].sort((a, b) => a.consumable_code.localeCompare(b.consumable_code)),
     );
     expect(told[0]).toContain("Imran Qureshi's kit is short for tomorrow: ");
+  });
+
+  it("carries the city's one-visit range for a one visit whose client is not yet known", async () => {
+    const at = NOW.toISOString();
+    await env.DB.batch([
+      env.DB.prepare(
+        `INSERT INTO forecast_runs (id, run_on, period_days, horizon_periods, due_rate, fit_rate, ran_at)
+         VALUES ('run-1', '2026-09-21', 7, 12, 0.8, 0.5, ?1)`,
+      ).bind(at),
+      env.DB.prepare(
+        `INSERT INTO forecast_lines (run_id, consumable_code, city, period, booked, due, pipeline, baseline, expected,
+           high) VALUES ('run-1', ?1, 'Gurgaon', 0, 0, 1, 1, 0, 2, 4.3), ('run-1', 'solvent', 'Gurgaon', 0, 9, 0, 0, 0, 9, 14)`,
+      ).bind(code),
+      env.DB.prepare(
+        `INSERT INTO appointments (id, fsm_id, person_id, type, tier, status, window_start, window_end, technician_id,
+           service_city, synced_at, one_visit)
+         VALUES ('one-visit', 'one-visit', NULL, 'first_fit', NULL, 'scheduled', ?1, ?1, ?2, 'Gurgaon', ?3, 'booked')`,
+      ).bind(TOMORROW, IMRAN, at),
+    ]);
+    await checkTomorrowsKits(env.DB, EVENING, alertOnce);
+    const pieces = await env.DB.prepare("SELECT proposed FROM plan_lines WHERE consumable_code = ?1")
+      .bind(code)
+      .first();
+    expect(pieces).toEqual({ proposed: 2 });
   });
 
   it("sends an approved top-up to wait for the technician's scan, and outlasts the plan's own redraft", async () => {

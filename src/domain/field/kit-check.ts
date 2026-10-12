@@ -2,6 +2,9 @@
 // tomorrow, each visit's consumables by its service's expected use and each fit's hair system made to its client. What
 // a kit is short of becomes a top-up on the supply plan, from its city's stockroom or else the warehouse, which arrives
 // once the technician scans it in; and ops are told, once a kit a day.
+//
+// A one visit's client is seldom known before the visit, so its kit carries the one-visit range
+// (docs/decisions/0184-the-one-visit-range.md): one of each of the hair systems its city's latest forecast expects most.
 
 import { addDays, indiaDate, indiaHour, indiaInstant } from "../../lib/india-time.ts";
 import { latestFits } from "../clients/hair-profiles.ts";
@@ -11,8 +14,18 @@ import { hairSystemSpecs, matchingCode } from "./hair-systems.ts";
 /** The hour, in India, from which the evening's check runs, each hour until the day ends. */
 const KIT_CHECK_HOUR = 17;
 
+/** How many hair systems a kit with a one visit tomorrow carries, one of each. */
+const ONE_VISIT_RANGE = 5;
+
 type UseRow = { technician_id: string; code: string; quantity: number };
-type FitRow = { technician_id: string; person_id: string | null; type: string; tier: string | null };
+type FitRow = {
+  technician_id: string;
+  person_id: string | null;
+  type: string;
+  tier: string | null;
+  one_visit: string | null;
+  city: string | null;
+};
 type HeldRow = { place: string; code: string; quantity: number };
 
 /** What each technician's visits tomorrow need, by kit and stock code. */
@@ -30,7 +43,8 @@ async function neededTomorrow(db: D1Database, tomorrow: string): Promise<Map<str
       .bind(from, to),
     db
       .prepare(
-        `SELECT a.technician_id, a.person_id, a.type, a.tier FROM appointments a
+        `SELECT a.technician_id, a.person_id, a.type, a.tier, a.one_visit, t.city
+         FROM appointments a JOIN technicians t ON t.id = a.technician_id
          WHERE a.window_start >= ?1 AND a.window_start < ?2 AND a.status IN ('scheduled', 'dispatched')
            AND a.deleted_at IS NULL AND a.technician_id IS NOT NULL AND a.type IN ('first_fit', 'replacement')`,
       )
@@ -50,14 +64,47 @@ async function neededTomorrow(db: D1Database, tomorrow: string): Promise<Map<str
     fitRows.flatMap((fit) => fit.person_id ?? []),
   );
   const specs = await hairSystemSpecs(db);
+  const unknown: FitRow[] = [];
   for (const fit of fitRows) {
     const profile = fit.person_id === null ? undefined : profiles.get(fit.person_id);
-    if (profile === undefined) continue;
+    if (profile === undefined) {
+      if (fit.one_visit === "booked") unknown.push(fit);
+      continue;
+    }
     const product = fit.type === "first_fit" ? (fit.tier ?? "standard") : profile.product;
     const code = matchingCode(specs, { ...profile, product });
     if (code !== null) add(fit.technician_id, code, 1);
   }
+  const ranges = await oneVisitRanges(
+    db,
+    unknown.flatMap((fit) => fit.city ?? []),
+  );
+  for (const kit of new Set(unknown.map((fit) => fit.technician_id))) {
+    const city = unknown.find((fit) => fit.technician_id === kit)?.city ?? "";
+    for (const code of ranges.get(city) ?? []) add(kit, code, 1);
+  }
   return needs;
+}
+
+/** Each city's one-visit range: the hair systems its latest forecast expects most over the horizon. */
+async function oneVisitRanges(db: D1Database, cities: readonly string[]): Promise<Map<string, string[]>> {
+  if (cities.length === 0) return new Map();
+  const { results } = await db
+    .prepare(
+      `SELECT l.city, l.consumable_code AS code, SUM(l.expected) AS expected
+       FROM forecast_lines l JOIN hair_systems h ON h.code = l.consumable_code
+       WHERE l.run_id = (SELECT id FROM forecast_runs INDEXED BY forecast_runs_by_day ORDER BY run_on DESC LIMIT 1)
+         AND l.city IN (SELECT value FROM json_each(?1))
+       GROUP BY 1, 2 ORDER BY 1, 3 DESC, 2`,
+    )
+    .bind(JSON.stringify([...new Set(cities)]))
+    .all<{ city: string; code: string }>();
+  const ranges = new Map<string, string[]>();
+  for (const row of results) {
+    const range = ranges.get(row.city) ?? [];
+    if (range.length < ONE_VISIT_RANGE) ranges.set(row.city, [...range, row.code]);
+  }
+  return ranges;
 }
 
 /**
