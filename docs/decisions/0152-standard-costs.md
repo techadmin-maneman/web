@@ -18,4 +18,4 @@ Lifetime value is margin, not revenue: what a client paid less what their hair s
 
 - When inventory lots carry landed cost, the hair system's cost comes from its lot instead, and this list stays for products bought before.
 - A technician's grade is read as it stands now; a visit before a change of grade is costed at the new grade's rate.
-- Tests: `test/worker/ops/standard-costs.test.ts`, `test/worker/jobs/analytics-nightly.test.ts`.
+- Tests: `test/worker/ops/standard-costs.test.ts`, `test/worker/jobs/analytics-nightly.test.ts`, `e2e/ops/settings-services.e2e.ts`.
