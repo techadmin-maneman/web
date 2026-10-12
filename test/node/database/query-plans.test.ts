@@ -144,6 +144,12 @@ const ALLOWED = [
   { file: "src/domain/analytics/care-cases.ts", sql: "FROM task_spans s" },
   { file: "src/domain/analytics/leads.ts", sql: "FROM leads l JOIN people p ON p.id = l.person_id" },
   { file: "src/domain/analytics/client-months.ts", sql: "FROM appointments a JOIN people p ON p.id = a.person_id" },
+  { file: "src/domain/analytics/credits.ts", sql: "FROM credit_ledger c JOIN people p ON p.id = c.person_id" },
+  {
+    file: "src/domain/analytics/stock.ts",
+    sql: "FROM stock_movements m LEFT JOIN technicians t ON t.id = m.technician_id",
+  },
+  { file: "src/domain/analytics/stock.ts", sql: "FROM appointments a JOIN technicians t ON t.id = a.technician_id" },
   { file: "src/domain/analytics/spend.ts", sql: "FROM partner_payouts WHERE amount > 0" },
   { file: "src/domain/analytics/spend.ts", sql: "FROM credit_ledger r JOIN credit_ledger g ON g.id = r.grant_id" },
   // The new tasks a night's look at the board found, handed over as a JSON list (docs/decisions/0147-task-spans.md).

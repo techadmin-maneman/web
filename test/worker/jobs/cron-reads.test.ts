@@ -215,6 +215,8 @@ const HISTORY = [
   `INSERT OR IGNORE INTO consumables (code, name, unit, unit_cost, reorder_kit, created_at, updated_at)
    VALUES ('history_tape', 'History tape', 'strip', 100, 5, '${AGO}', '${AGO}')`,
   `INSERT INTO stock_balances (consumable_code, place, quantity) SELECT 'history_tape', 't-' || i, 10 FROM n`,
+  `INSERT INTO stock_movements (id, consumable_code, location, quantity, reason, actor_kind, actor, created_at)
+   SELECT 'sm-' || i, 'history_tape', 'central', 10, 'received', 'staff', 'ops@localhost', '${AGO}' FROM n`,
   // What the sweeper deletes once it has outlived its use, still in use: today's counts, the day's keys, a login code
   // and a site's number code proved, and a try-on session still open.
   `INSERT INTO counters (scope, key, window_start, count) SELECT 'login_code', 'k-' || i, '${TODAY}', 1 FROM n`,

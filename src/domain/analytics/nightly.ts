@@ -11,9 +11,11 @@ import { capacityRows, CAPACITY_DAYS_AHEAD } from "./capacity.ts";
 import { careCaseRows } from "./care-cases.ts";
 import { clientKeys } from "./client-key.ts";
 import { clientMonthRows } from "./client-months.ts";
+import { creditRows } from "./credits.ts";
 import { leadTables } from "./leads.ts";
 import { messageDayRows } from "./message-days.ts";
 import { spendRows } from "./spend.ts";
+import { stockTables } from "./stock.ts";
 import { cityRows, clientRows, dateRows, paymentRows, serviceRows, technicianRows, visitRows } from "./rows.ts";
 
 /** The free plan holds 500 MB of Postgres; told at 400, so there is time to trim or upgrade. */
@@ -99,6 +101,8 @@ export async function copyTonight(
     ...leads.tables,
     await spendRows(db),
     await clientMonthRows(db, { keys, firstTouch: leads.firstTouch, days: standing, today: date }),
+    await creditRows(db, keys),
+    ...(await stockTables(db, date)),
   ];
   let rowsWritten = 0;
   let rowsChanged = 0;

@@ -2,7 +2,7 @@
 
 Every decision this repository was built on, oldest first. A record says what was decided and why, and is not rewritten to say something else: a later record changes it, and says so in its own header (ADR 0001). **Changed by** gathers those later records, from either side, so an old record's reader knows to read on.
 
-This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. A record names its topic in its header, `- Topic:` and one of the headings below, and the test fails on one that does not. The next free number is 0153.
+This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. A record names its topic in its header, `- Topic:` and one of the headings below, and the test fails on one that does not. The next free number is 0154.
 
 ## By topic
 
@@ -35,6 +35,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 - [0146](0146-the-nightly-analytics-copy.md) The nightly analytics copy
 - [0148](0148-the-channel-rule.md) The channel rule
 - [0151](0151-retention-figures.md) Retention figures
+- [0153](0153-supply-and-credits-in-the-copy.md) Supply and credits in the copy
 
 ### Booking and visits
 
@@ -340,3 +341,4 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0150](0150-spend.md) | Spend | 2026-10-12 | accepted |  |
 | [0151](0151-retention-figures.md) | Retention figures | 2026-10-12 | accepted |  |
 | [0152](0152-standard-costs.md) | Standard costs | 2026-10-12 | accepted |  |
+| [0153](0153-supply-and-credits-in-the-copy.md) | Supply and credits in the copy | 2026-10-12 | accepted |  |
