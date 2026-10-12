@@ -13,8 +13,8 @@
 // (apps/tech/src/store/jobs.ts).
 //
 // After a consultation, Done asks whether the client is going ahead with a fit, and
-// a Not now, or a one visit's fit declined, asks why, from ops' list
-// (docs/decisions/0149-lost-reasons.md). Not answering leaves it unsaid.
+// a Not now asks why, from ops' list; a one visit's fit declined offers the reasons,
+// to pick or leave (docs/decisions/0149-lost-reasons.md). Not answering leaves it unsaid.
 //
 // On a consultation and fit in one visit, Done says what closing it does, by
 // the client's choice at the piece step, which no board draws: a client who
@@ -173,9 +173,11 @@ function Choosing({
   const declined = clientChoice !== null && "declined" in clientChoice;
   const asksWhy = job.lost_reasons.length > 0 && choice === "done" && (!job.one_visit || declined);
   const notGoingAhead = asksWhy && (declined || goingAhead === false);
+  // Not now asks why; a fit the client declined offers the reasons, to pick or leave.
+  const mustSayWhy = notGoingAhead && !declined;
   // A code being checked would change the link closing the visit sends: Next waits for it.
   const ready =
-    !codeChecking && (choice === "done" ? !notGoingAhead || lost !== null : choice === "partial" && reason !== null);
+    !codeChecking && (choice === "done" ? !mustSayWhy || lost !== null : choice === "partial" && reason !== null);
 
   return (
     <StepFrame
