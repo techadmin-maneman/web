@@ -9,6 +9,7 @@ import { byHost } from "./http/surfaces.ts";
 import { meterDatabase, usageFields } from "./lib/d1-meter.ts";
 import { createLogger, type Logger } from "./log.ts";
 import { createErrorTracker } from "./providers/error-tracking.ts";
+import { pingHeartbeat } from "./providers/heartbeat.ts";
 import { handleCrmSyncBatch } from "./queues/crm-sync.ts";
 import { handleMessagingBatch } from "./queues/messaging.ts";
 import { handleRenderBatch } from "./queues/render.ts";
@@ -152,7 +153,16 @@ export default {
     const log = runLogger({ job: "cron" }, ctx);
     const meter = meterDatabase(workerEnv.DB);
     const meteredEnv = { ...workerEnv, DB: meter.db };
-    await assertOwnDatabase(meteredEnv.DB);
+    try {
+      await assertOwnDatabase(meteredEnv.DB);
+    } catch (error) {
+      // A database that is not this environment's is never written, so the outside monitor is told instead.
+      log.error("cron_database_not_ours", { error });
+      await pingHeartbeat({ url: config.settings.heartbeatUrl, fetch, log }, [
+        "the database is not this environment's",
+      ]);
+      throw error;
+    }
     if (await cronHeldForMaintenance(meteredEnv, log)) return;
     const deps = makeDependencies(meteredEnv, log, "background");
     const { cron, scheduledTime } = controller;

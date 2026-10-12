@@ -4,6 +4,7 @@
 import { env } from "cloudflare:workers";
 import { expect, it } from "vitest";
 import worker from "../../../src/index.ts";
+import { createScheduledController } from "cloudflare:test";
 import { fakeBatch } from "../batches.ts";
 import { captureLogs } from "../helpers.ts";
 
@@ -12,4 +13,12 @@ it("refuses to consume queue messages while the database is not this environment
   const batch = fakeBatch("mm-crm-sync-local", [{}]);
   await expect(worker.queue(batch, env)).rejects.toThrow("database identity check failed: unmarked");
   expect(batch.messages[0]?.ack).not.toHaveBeenCalled();
+});
+
+it("runs no cron job while the database is not this environment's, and says so", async () => {
+  const logs = captureLogs();
+  await expect(worker.scheduled(createScheduledController({ cron: "* * * * *" }), env)).rejects.toThrow(
+    "database identity check failed: unmarked",
+  );
+  expect(logs.lines().filter((line) => line.event === "cron_database_not_ours")).toHaveLength(1);
 });

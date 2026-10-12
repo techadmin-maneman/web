@@ -215,6 +215,23 @@ describe("the run record", () => {
     expect(told).toHaveLength(2);
   });
 
+  // Two runs at once could each queue the same reminder.
+  it("runs nothing while the run before is still running, and leaves the record and the alert to it", async () => {
+    await cutShortAt(0);
+    const { ran, job } = recorder();
+    const told: string[] = [];
+    await runAt(1, told, [job("first", "nothing")]);
+    await runAt(2, told, [job("first", "nothing")]);
+    expect(ran).toEqual([]);
+    expect(told).toEqual([]);
+    expect(await record()).toMatchObject({ started_at: at(0).toISOString(), completed_at: null });
+    expect(logs.lines().filter((line) => line.event === "cron_run_overlapping")).toHaveLength(2);
+
+    await runAt(3, told, [job("first", "nothing")]);
+    expect(ran).toEqual(["first"]);
+    expect(told).toHaveLength(1);
+  });
+
   it("leaves the record to a later run that started before this one finished", async () => {
     await cutShortAt(0);
     await cutShortAt(5);

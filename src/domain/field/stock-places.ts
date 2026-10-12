@@ -3,7 +3,7 @@
 // warehouse, a stockroom from the warehouse or a hub, and a kit from any of them, so the tree has no loops.
 //
 // The warehouse keeps the central store's ID and a kit its technician's, so the ledger's rows from before the tree
-// read as they did. A technician's kit comes with them (migration 0132) and is named by them; ops with a national
+// read as they did. A technician's kit comes with them (migration 0133) and is named by them; ops with a national
 // grant add hubs and stockrooms, rename them, move them or a kit under another place, and close one that is empty.
 
 import { reachBinding } from "../clients/places.ts";

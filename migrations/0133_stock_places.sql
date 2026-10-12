@@ -26,11 +26,11 @@ CREATE TABLE stock_places (
 CREATE INDEX stock_places_by_parent ON stock_places (parent_id);
 
 INSERT INTO stock_places (id, kind, name, created_by, created_at)
-VALUES ('central', 'warehouse', 'National warehouse', 'migrations/0132_stock_places.sql',
+VALUES ('central', 'warehouse', 'National warehouse', 'migrations/0133_stock_places.sql',
         strftime('%Y-%m-%dT%H:%M:%fZ', 'now'));
 
 INSERT INTO stock_places (id, kind, parent_id, technician_id, created_by, created_at)
-SELECT id, 'kit', 'central', id, 'migrations/0132_stock_places.sql', strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
+SELECT id, 'kit', 'central', id, 'migrations/0133_stock_places.sql', strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
 FROM technicians;
 
 -- Every technician has a kit from the day they are added, under the warehouse until ops move it.

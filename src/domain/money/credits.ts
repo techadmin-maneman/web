@@ -281,7 +281,8 @@ function expireEntry(db: D1Database, grant: ExpiredGrant, now: Date): D1Prepared
   return db
     .prepare(
       `INSERT INTO credit_ledger (id, person_id, kind, visits, grant_id, source_kind, source_id, created_at)
-       VALUES (?1, ?2, 'expire', ?3, ?4, ?5, ?6, ?7)`,
+       VALUES (?1, ?2, 'expire', ?3, ?4, ?5, ?6, ?7)
+       ON CONFLICT DO NOTHING`,
     )
     .bind(
       crypto.randomUUID(),
@@ -335,7 +336,8 @@ export async function clawBack(db: D1Database, source: CreditSource, sourceId: s
       db
         .prepare(
           `INSERT INTO credit_ledger (id, person_id, kind, visits, grant_id, source_kind, source_id, created_at)
-           VALUES (?1, ?2, 'clawback', ?3, ?4, ?5, ?6, ?7)`,
+           VALUES (?1, ?2, 'clawback', ?3, ?4, ?5, ?6, ?7)
+           ON CONFLICT DO NOTHING`,
         )
         .bind(crypto.randomUUID(), grant.person_id, -grant.remaining, grant.id, source, sourceId, now.toISOString()),
     ),

@@ -7,7 +7,8 @@
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import { createStubPayments, type StubPayments } from "../../../src/providers/payments/stub.ts";
-import { appFor, captureLogs, fakeDependencies, markDatabase, NOW, request } from "../helpers.ts";
+import { rupees } from "@maneman/web-kit/money";
+import { appFor, captureLogs, deliverRazorpay, fakeDependencies, markDatabase, NOW, request } from "../helpers.ts";
 import { technician } from "../clients.ts";
 import {
   PERSON,
@@ -165,6 +166,32 @@ describe("the client, at the app's pay step", () => {
       expect(second.amount).toBe(180_000);
       expect(second.order_id).not.toBe(first.order_id);
       expect(payments.made.orders.map((order) => order.amount)).toEqual([200_000, 180_000]);
+    });
+
+    // Checkout left open on the order a code replaced can still be paid; nothing books that payment, so ops are told.
+    it("tells ops of a payment made on the order a code replaced", async () => {
+      await make();
+      const hold = await heldService(PERSON);
+      const first = await pay(hold.id);
+      await withRazorpay(`/api/holds/${hold.id}/discount-code`, { method: "POST", body: { code: "TENPC" } });
+
+      const deps = fakeDependencies({ payments });
+      const stale = {
+        id: "pay_stale",
+        amount: 200_000,
+        currency: "INR",
+        status: "captured",
+        order_id: first.order_id,
+        method: "upi",
+        notes: { hold_id: hold.id, person_id: PERSON },
+        created_at: Math.floor(NOW.getTime() / 1000),
+      };
+      const event = { entity: "event", event: "payment.captured", payload: { payment: { entity: stale } } };
+      expect((await deliverRazorpay(event, { deps })).status).toBe(200);
+      expect(deps.alerts).toEqual([
+        expect.stringContaining(`Payment pay_stale of ${rupees(200_000)} was made on order ${first.order_id}`),
+      ]);
+      expect(await orderOf(hold.id)).toBeNull();
     });
 
     it("takes a code off after a payment on the order failed, and makes the order again at the full price", async () => {
