@@ -18,7 +18,7 @@ const BillsFound = z.object({ bills: z.array(Bill).default([]) });
 
 const billOf = (bill: z.infer<typeof Bill>): BooksBill => ({
   id: bill.bill_id,
-  reference: bill.reference_number === undefined || bill.reference_number === "" ? null : bill.reference_number,
+  reference: bill.reference_number === "" ? null : (bill.reference_number ?? null),
 });
 
 /** A vendor's GST treatment, as Books names it: registered, unregistered, or overseas. */
