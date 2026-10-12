@@ -52,6 +52,7 @@ export function registerTechJobReads(app: App): void {
         checklist: [...checklistOf(sheet, { type, oneVisit: job.one_visit }).items],
         checklist_if_declined: job.one_visit ? [...declinedChecklistOf(sheet).items] : [],
         partial_reasons: [...sheet.partialReasons.items],
+        lost_reasons: type === "consultation" || job.one_visit ? [...sheet.lostReasons.items] : [],
         consumables: await offeredForJob(c.env.DB, await serviceOfJob(c.env.DB, { id: job.id, type }), job.date),
       },
       200,

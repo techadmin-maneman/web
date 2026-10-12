@@ -12,6 +12,10 @@
 // time: the phone records the instant this screen's action was taken
 // (apps/tech/src/store/jobs.ts).
 //
+// After a consultation, Done asks whether the client is going ahead with a fit, and
+// a Not now, or a one visit's fit declined, asks why, from ops' list
+// (docs/decisions/0149-lost-reasons.md). Not answering leaves it unsaid.
+//
 // On a consultation and fit in one visit, Done says what closing it does, by
 // the client's choice at the piece step, which no board draws: a client who
 // decided against the fit ends with a free consultation and is asked for no
@@ -35,7 +39,8 @@ type Choice = "done" | "partial" | null;
 
 /** What the dim Next says: what is still to choose. */
 function stillToChoose(choice: Choice): string {
-  return choice === null ? copy.outcome.choose : copy.outcome.pickReason;
+  if (choice === null) return copy.outcome.choose;
+  return choice === "done" ? copy.outcome.pickWhy : copy.outcome.pickReason;
 }
 
 /** The code already on the one visit, in place of the box to type one in. */
@@ -76,6 +81,70 @@ function OneVisitClose({
   );
 }
 
+/** Two outlined buttons, one of which may be chosen. */
+function Pair<T extends string | boolean>(props: {
+  options: readonly [{ value: T; label: string }, { value: T; label: string }];
+  chosen: T | null;
+  onChoose: (value: T) => void;
+}) {
+  return (
+    <div className={styles.choices}>
+      {props.options.map((option) => (
+        <button
+          key={String(option.value)}
+          className={props.chosen === option.value ? styles.choiceOn : styles.choice}
+          type="button"
+          aria-pressed={props.chosen === option.value}
+          onClick={() => {
+            props.onChoose(option.value);
+          }}
+        >
+          {option.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+/** Ops' reasons, one to a row, one of which may be picked. */
+function ReasonList(props: { reasons: Job["partial_reasons"]; picked: string | null; onPick: (id: string) => void }) {
+  return (
+    <ul className={styles.reasons}>
+      {props.reasons.map((one) => (
+        <li key={one.id}>
+          <button
+            className={props.picked === one.id ? styles.reasonOn : styles.reason}
+            type="button"
+            aria-pressed={props.picked === one.id}
+            onClick={() => {
+              props.onPick(one.id);
+            }}
+          >
+            {one.label}
+          </button>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+/** After a consultation: whether the client is going ahead with a fit. */
+function GoingAhead(props: { answer: boolean | null; onAnswer: (value: boolean) => void }) {
+  return (
+    <>
+      <p className={styles.note}>{copy.outcome.goingAhead}</p>
+      <Pair<boolean>
+        options={[
+          { value: true, label: copy.outcome.yes },
+          { value: false, label: copy.outcome.notNow },
+        ]}
+        chosen={props.answer}
+        onChoose={props.onAnswer}
+      />
+    </>
+  );
+}
+
 /** The choice once the job is in hand: a refused outcome starts as it was chosen. */
 function Choosing({
   job,
@@ -90,16 +159,23 @@ function Choosing({
   onFinish: (body: EventBody<"outcome">) => void;
   onBack: () => void;
 }) {
-  const reasons = job.partial_reasons;
-  const offered = reasons.map((one) => one.id);
-  const sent = outcomeSent(refused, offered);
+  const sent = outcomeSent(
+    refused,
+    job.partial_reasons.map((one) => one.id),
+  );
   const [choice, setChoice] = useState<Choice>(sent?.choice ?? null);
   const [reason, setReason] = useState<PartialReason["id"] | null>(sent?.reason ?? null);
   const [codeChecking, setCodeChecking] = useState(false);
+  const [goingAhead, setGoingAhead] = useState<boolean | null>(null);
+  const [lost, setLost] = useState<string | null>(null);
 
   const closesOneVisit = job.one_visit && choice === "done";
+  const declined = clientChoice !== null && "declined" in clientChoice;
+  const asksWhy = job.lost_reasons.length > 0 && choice === "done" && (!job.one_visit || declined);
+  const notGoingAhead = asksWhy && (declined || goingAhead === false);
   // A code being checked would change the link closing the visit sends: Next waits for it.
-  const ready = !codeChecking && (choice === "done" || (choice === "partial" && reason !== null));
+  const ready =
+    !codeChecking && (choice === "done" ? !notGoingAhead || lost !== null : choice === "partial" && reason !== null);
 
   return (
     <StepFrame
@@ -110,53 +186,40 @@ function Choosing({
       notice={refused === null ? null : copy.corrected.other}
       onBack={onBack}
       onAction={() => {
-        onFinish(choice === "partial" && reason !== null ? { outcome: "partial", reason } : { outcome: "done" });
+        if (choice === "partial" && reason !== null) onFinish({ outcome: "partial", reason });
+        else onFinish(notGoingAhead && lost !== null ? { outcome: "done", lost_reason: lost } : { outcome: "done" });
       }}
     >
-      <div className={styles.choices}>
-        <button
-          className={choice === "done" ? styles.choiceOn : styles.choice}
-          type="button"
-          aria-pressed={choice === "done"}
-          onClick={() => {
-            setChoice("done");
-            setReason(null);
-          }}
-        >
-          {copy.outcome.done}
-        </button>
-        <button
-          className={choice === "partial" ? styles.choiceOn : styles.choice}
-          type="button"
-          aria-pressed={choice === "partial"}
-          onClick={() => {
-            setChoice("partial");
-          }}
-        >
-          {copy.outcome.partial}
-        </button>
-      </div>
-
+      <Pair<"done" | "partial">
+        options={[
+          { value: "done", label: copy.outcome.done },
+          { value: "partial", label: copy.outcome.partial },
+        ]}
+        chosen={choice}
+        onChoose={(value) => {
+          setChoice(value);
+          setReason(null);
+          setGoingAhead(null);
+          setLost(null);
+        }}
+      />
       {closesOneVisit && <OneVisitClose job={job} clientChoice={clientChoice} onChecking={setCodeChecking} />}
-
-      {choice === "partial" && (
-        <ul className={styles.reasons}>
-          {reasons.map((one) => (
-            <li key={one.id}>
-              <button
-                className={reason === one.id ? styles.reasonOn : styles.reason}
-                type="button"
-                aria-pressed={reason === one.id}
-                onClick={() => {
-                  setReason(one.id);
-                }}
-              >
-                {one.label}
-              </button>
-            </li>
-          ))}
-        </ul>
+      {asksWhy && !job.one_visit && (
+        <GoingAhead
+          answer={goingAhead}
+          onAnswer={(value) => {
+            setGoingAhead(value);
+            setLost(null);
+          }}
+        />
       )}
+      {notGoingAhead && (
+        <>
+          <p className={styles.note}>{copy.outcome.why}</p>
+          <ReasonList reasons={job.lost_reasons} picked={lost} onPick={setLost} />
+        </>
+      )}
+      {choice === "partial" && <ReasonList reasons={job.partial_reasons} picked={reason} onPick={setReason} />}
     </StepFrame>
   );
 }

@@ -41,7 +41,8 @@ const rowNow = (row: OldRow): JobSummary => ({
  * A card as an earlier build may have kept it: before the job sheet and the consumables were set in the console
  * (docs/decisions/0087-consumables-and-stock.md) its partial reasons were ids alone and it carried no consumables;
  * before the hair profile, a one visit's discount code, a one visit's choice, the visit's length and the check-in
- * radius were on the card, it carried none of them (docs/decisions/0106-a-clients-hair-profile.md).
+ * radius were on the card, it carried none of them (docs/decisions/0106-a-clients-hair-profile.md); nor, before
+ * them, the reasons a client may not go ahead after a consultation (docs/decisions/0149-lost-reasons.md).
  */
 type OldCard = Omit<
   Job,
@@ -53,6 +54,7 @@ type OldCard = Omit<
   | "client_choice"
   | "minutes"
   | "checkin_radius_m"
+  | "lost_reasons"
 > & {
   readonly partial_reasons: readonly (Job["partial_reasons"][number] | string)[];
   readonly consumables?: Job["consumables"];
@@ -62,6 +64,7 @@ type OldCard = Omit<
   readonly client_choice?: Job["client_choice"];
   readonly minutes?: Job["minutes"];
   readonly checkin_radius_m?: Job["checkin_radius_m"];
+  readonly lost_reasons?: Job["lost_reasons"];
 };
 
 /** "piece_not_ready" as "Piece not ready". */
@@ -72,8 +75,8 @@ const worded = (id: string): string => {
 
 /**
  * A card in today's shape, so a job opened with no signal after an update still closes: each reason worded from its
- * id, the consumables step with nothing to start from, the whole checklist run, and no profile, code, choice, length
- * or radius said.
+ * id, the consumables step with nothing to start from, the whole checklist run, and no profile, code, choice, length,
+ * radius or lost reasons said.
  */
 const cardNow = (card: OldCard): Job => ({
   ...card,
@@ -87,6 +90,7 @@ const cardNow = (card: OldCard): Job => ({
   client_choice: card.client_choice ?? null,
   minutes: card.minutes ?? null,
   checkin_radius_m: card.checkin_radius_m ?? null,
+  lost_reasons: card.lost_reasons ?? [],
 });
 
 /** Where one of the jobs store's records goes from version 3, in today's shape. */
@@ -133,6 +137,19 @@ export const UPGRADES: readonly ((db: IDBDatabase, upgrade: IDBTransaction) => v
       // What an earlier build wrote: its own shape, which this step is here to read.
       const [store, record] = moved(at.value as JobsRecord);
       upgrade.objectStore(store).put({ ...record, v: RECORD_VERSION });
+      at.continue();
+    };
+  },
+  // Version 4: a card carries why a client may not go ahead after a consultation (docs/decisions/0149-lost-reasons.md).
+  // One kept before has none to offer, so its consultation closes without asking why.
+  (_db, upgrade) => {
+    const cursor = upgrade.objectStore("cards").openCursor();
+    cursor.onsuccess = () => {
+      const at = cursor.result;
+      if (at === null) return;
+      // What an earlier build wrote, which may lack the field this step adds.
+      const card = at.value as Partial<Pick<Job, "lost_reasons">>;
+      if (card.lost_reasons === undefined) at.update({ ...card, lost_reasons: [] });
       at.continue();
     };
   },

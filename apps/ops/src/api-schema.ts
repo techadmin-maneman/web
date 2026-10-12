@@ -8664,6 +8664,64 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/job-sheet/lost-reasons": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Why a client is not going ahead with a fit after their consultation, the whole list in its order */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["JobSheetListChange"];
+                };
+            };
+            responses: {
+                /** @description The job sheet as it now stands */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["JobSheet"];
+                    };
+                };
+                /** @description invalid_request: fields names items for a list empty or too long, or items.N.label or items.N.code for one that is empty, too long, twice on the list, or a code the list never held */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description access_required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/stock": {
         parameters: {
             query?: never;
@@ -12411,8 +12469,25 @@ export interface components {
         JobSheet: {
             checklists: components["schemas"]["JobSheetChecklist"][];
             partial_reasons: components["schemas"]["JobSheetList"];
+            /** @description Why a client is not going ahead with a fit after their consultation (ADR 0149). */
+            lost_reasons: {
+                /** @description What the technician is offered, in order. */
+                items: {
+                    code: string;
+                    label: string;
+                }[];
+                /** @description Taken off by ops, and still understood: a phone may have queued one before it knew. */
+                retired: {
+                    code: string;
+                    label: string;
+                }[];
+                /** @description Null while the committed list stands. */
+                set_by: string | null;
+                set_at: string | null;
+            };
             max_checklist_items: number;
             max_partial_reasons: number;
+            max_lost_reasons: number;
             max_label: number;
         };
         JobSheetChecklist: {

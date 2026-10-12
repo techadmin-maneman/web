@@ -29,7 +29,7 @@ import {
 } from "../../../apps/tech/src/store/jobs.ts";
 import { queue } from "../../../apps/tech/src/store/outbox.ts";
 import { askToKeep } from "../../../apps/tech/src/store/persist.ts";
-import { firstRelease } from "./tech-first-release.ts";
+import { firstRelease, thirdRelease } from "./tech-first-release.ts";
 
 afterEach(async () => {
   vi.unstubAllGlobals();
@@ -100,6 +100,7 @@ const card = (id: string, date: string) =>
     checklist: [],
     checklist_if_declined: [],
     partial_reasons: [],
+    lost_reasons: [],
     consumables: [],
     products: [],
     payment_link: null,
@@ -386,6 +387,12 @@ describe("a job's card", () => {
     const kept = await keptJob("a");
     expect(kept?.minutes).toBeNull();
     expect(kept?.checkin_radius_m).toBeNull();
+  });
+
+  it("kept before the card carried why a client may not go ahead, has no reason to offer", async () => {
+    const { lost_reasons: _none, ...earlier } = card("a", TODAY);
+    await thirdRelease([{ ...earlier, v: 2 }]);
+    expect((await keptJob("a"))?.lost_reasons).toEqual([]);
   });
 });
 

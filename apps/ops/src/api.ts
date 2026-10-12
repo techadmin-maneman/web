@@ -567,6 +567,8 @@ export const api = {
     client.post("/api/job-sheet/checklists/{visit_type}", { path: { visit_type: type }, body: { items: [...items] } }),
   setPartialReasons: (items: readonly JobSheetItemSent[]) =>
     client.post("/api/job-sheet/partial-reasons", { body: { items: [...items] } }),
+  setLostReasons: (items: readonly JobSheetItemSent[]) =>
+    client.post("/api/job-sheet/lost-reasons", { body: { items: [...items] } }),
   /** The Staff list, narrowed to the places the caller may see. */
   staff: () => client.get("/api/staff"),
   /** A page of the audit log, newest first, as `asked` narrows it. */

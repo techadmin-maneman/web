@@ -104,35 +104,14 @@ const JOBS = [
   job({ id: 4, date: DAY, time: "12:00", minutes: 60, type: "consultation", badge: "free", sector: "Sector 57" }),
 ];
 
+/** A job on tomorrow's list. */
+const tomorrow = (fields: Omit<Parameters<typeof job>[0], "date">) => job({ ...fields, date: TOMORROW_DATE });
+
 /** The board's collapsed line reads "Tomorrow · 3 jobs". */
 const TOMORROW = [
-  job({
-    id: 5,
-    date: TOMORROW_DATE,
-    time: "04:30",
-    minutes: 90,
-    type: "service",
-    badge: "prepaid",
-    sector: "Sector 50",
-  }),
-  job({
-    id: 6,
-    date: TOMORROW_DATE,
-    time: "07:00",
-    minutes: 90,
-    type: "service",
-    badge: "credit",
-    sector: "Sector 56",
-  }),
-  job({
-    id: 7,
-    date: TOMORROW_DATE,
-    time: "10:30",
-    minutes: 135,
-    type: "replacement",
-    badge: "prepaid",
-    sector: "Sector 49",
-  }),
+  tomorrow({ id: 5, time: "04:30", minutes: 90, type: "service", badge: "prepaid", sector: "Sector 50" }),
+  tomorrow({ id: 6, time: "07:00", minutes: 90, type: "service", badge: "credit", sector: "Sector 56" }),
+  tomorrow({ id: 7, time: "10:30", minutes: 135, type: "replacement", badge: "prepaid", sector: "Sector 49" }),
 ];
 
 const CHECKLIST = [
@@ -227,6 +206,7 @@ const cardFor = (id: string, progress: Progress = NOTHING_DONE): Schemas["Techni
     checklist: CHECKLIST,
     checklist_if_declined: [],
     partial_reasons: PARTIAL_REASONS,
+    lost_reasons: [],
     consumables: CONSUMABLES,
     products: [],
     payment_link: null,

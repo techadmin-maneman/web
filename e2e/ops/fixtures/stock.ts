@@ -118,8 +118,13 @@ export const JOB_SHEET = {
     ["client_stopped_it", "Client stopped it partway"],
     ["piece_not_ready", "The piece was not ready"],
   ]),
+  lost_reasons: list([
+    ["price", "The price"],
+    ["not_ready", "Not ready yet"],
+  ]),
   max_checklist_items: 20,
   max_partial_reasons: 12,
+  max_lost_reasons: 12,
   max_label: 80,
 } satisfies OpsReply<"/api/job-sheet">;
 
