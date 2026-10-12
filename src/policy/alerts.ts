@@ -29,6 +29,7 @@ const URGENT_KINDS = [
   "razorpay_catch_up_not_booked",
   "unbooked_hold",
   "second_capture",
+  "paid_off_its_order",
   "refund_failed",
   "hold_refund_failed",
   "cancel_refund_failed",
@@ -84,6 +85,7 @@ const FINANCE_KINDS = [
   "hold_refund_failed",
   "refund_failed",
   "second_capture",
+  "paid_off_its_order",
 ];
 
 const OPERATIONS_KINDS = [

@@ -270,7 +270,8 @@ export function registerRazorpayHook(app: App): void {
       // hold that is still waiting (docs/decisions/0068-a-paid-hold-is-kept.md).
       const holdId = holdOfNotes(payment.notes);
       if (event === "payment.captured" && holdId !== null) await bookHold(c, holdId);
-      if (status === "captured" && holdId !== null) await tellIfPaidOffItsOrder(db, { payment, holdId }, deps.alertOnce);
+      if (status === "captured" && holdId !== null)
+        await tellIfPaidOffItsOrder(db, { payment, holdId }, deps.alertOnce);
       // Paid for, the booking gives the photograph consents its pay step showed.
       if (status === "captured" && holdId !== null) await recordBookingConsents(db, { holdId, requestId, now });
     } else if (payload?.refund !== undefined) {
