@@ -2,7 +2,7 @@
 // (docs/decisions/0154-targets-and-reporting-access.md): the figures every scorecard sets plan beside actual. Each is a
 // count, rupees before GST, or a percentage, as the dashboards read it.
 
-export const TARGET_MEASURES = [
+const TARGET_MEASURES = [
   { measure: "leads", unit: "count" },
   { measure: "consultations", unit: "count" },
   { measure: "new_clients", unit: "count" },
