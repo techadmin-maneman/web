@@ -11,12 +11,16 @@
 // the code that sees it put right or by ops there (src/domain/ops/needs-a-hand.ts).
 // Resolving it closes it; if it happens after that, it is new.
 //
+// A telling counts only once the chat takes it. One the chat missed is told again at the next sighting, and a first
+// telling it missed is tried again every five minutes (retellUndelivered), so an alert raised once still reaches the
+// chat. With D1 down nothing can be kept, so each key is told at most once in ten minutes from an isolate.
+//
 // A message carries IDs, never a name, number or address. The chat post also
 // scrubs numbers and e-mail addresses, as a last defence (src/providers/alerts.ts).
 
 import { indiaClock, indiaDate, shortDate } from "@maneman/web-kit/dates";
 import { OPS_ORIGIN, type EnvironmentName } from "../../config/environments.ts";
-import { HOUR_MS } from "../../lib/durations.ts";
+import { HOUR_MS, MINUTE_MS } from "../../lib/durations.ts";
 import type { Logger } from "../../log.ts";
 import { alertKind, isUrgent, retellAfterHours } from "../../policy/alerts.ts";
 import type { Alert } from "../../providers/alerts.ts";
@@ -41,6 +45,20 @@ export const paymentsTab = (personId: string): string => `/clients/${personId}/p
 /** The chat is told again as the count reaches each of these multiples of `after`, whatever the clock says. */
 const RETOLD_AT = [10, 100, 1000];
 
+/** How often a key is told from an isolate while nothing can be kept, so D1 down cannot flood the chat. */
+const UNSTORED_RETELL_MS = 10 * MINUTE_MS;
+
+/** The keys this isolate told while nothing could be kept, and when; cleared past a few hundred. */
+const toldUnstored = new Map<string, number>();
+
+function toldUnstoredLately(key: string, now: Date): boolean {
+  const last = toldUnstored.get(key);
+  if (last !== undefined && now.getTime() - last < UNSTORED_RETELL_MS) return true;
+  if (toldUnstored.size > 500) toldUnstored.clear();
+  toldUnstored.set(key, now.getTime());
+  return false;
+}
+
 /** An open alert as one more sighting of it left it. */
 interface Sighting {
   readonly id: string;
@@ -60,10 +78,11 @@ export function createAlertOnce(deps: {
   log: Logger;
 }): AlertOnce {
   const { db, now, environment, log, urgent = null } = deps;
-  /** Tells the alert space, and the urgent space too for an urgent alert. */
+  /** Tells the alert space, and the urgent space too for an urgent alert; whether the alert space took it. */
   const tell = (key: string) => async (text: string) => {
-    await deps.alert(text);
+    const told = (await deps.alert(text)) !== false;
     if (urgent !== null && isUrgent(key)) await urgent(text);
+    return told;
   };
 
   return async ({ key, message, link, after = 1 }) => {
@@ -76,14 +95,54 @@ export function createAlertOnce(deps: {
       if (!isTellingDue(sighting, after, retellAfterMs(key), at)) return;
       if (!(await markTold(db, sighting, at))) return;
     } catch (error) {
-      // With nothing kept there is no knowing whether ops were told already, so they are told.
+      // With nothing kept there is no knowing whether ops were told already, so they are told, once in a while.
       log.error("alert_not_stored", { key, error });
-      await alert(text);
+      if (!toldUnstoredLately(key, at)) await alert(text);
       return;
     }
 
-    await alert(sighting.lastToldAt === null ? text : `${stillOpen(sighting)}: ${text}`);
+    if (!(await alert(sighting.lastToldAt === null ? text : `${stillOpen(sighting)}: ${text}`))) {
+      await unmarkTold(db, sighting, at, log);
+    }
   };
+}
+
+/** How many first tellings the chat missed one pass tells again. */
+const RETOLD_PER_PASS = 10;
+
+/**
+ * Tells the chat of each open alert whose first telling it did not take, oldest first; a pass stops at the first the
+ * chat misses again. Run every five minutes by the cron. Answers how many it told.
+ */
+export async function retellUndelivered(deps: {
+  db: D1Database;
+  alert: Alert;
+  now: () => Date;
+  environment: EnvironmentName;
+  log: Logger;
+}): Promise<number> {
+  const { db, now, environment, log } = deps;
+  const { results } = await db
+    .prepare(
+      `SELECT id, message, link, count, first_seen_at FROM alerts
+       WHERE resolved_at IS NULL AND told_at IS NOT NULL AND last_told_at IS NULL
+       ORDER BY told_at LIMIT ?1`,
+    )
+    .bind(RETOLD_PER_PASS)
+    .all<{ id: string; message: string; link: string | null; count: number; first_seen_at: string }>();
+  let told = 0;
+  for (const row of results) {
+    const at = now();
+    const sighting: Sighting = { id: row.id, count: row.count, firstSeenAt: row.first_seen_at, lastToldAt: null };
+    if (!(await markTold(db, sighting, at))) continue;
+    const text = row.link === null ? row.message : `${row.message} ${OPS_ORIGIN[environment]}${row.link}`;
+    if ((await deps.alert(text)) === false) {
+      await unmarkTold(db, sighting, at, log);
+      break;
+    }
+    told += 1;
+  }
+  return told;
 }
 
 export function createResolveAlert(deps: { db: D1Database; now: () => Date }): ResolveAlert {
@@ -130,6 +189,21 @@ function isTellingDue(sighting: Sighting, after: number, retellAfter: number, no
  * Marks the alert told now: from its first telling it waits on the Tasks board's "Needs a hand". False where another
  * sighting told it first, so the chat hears of it once.
  */
+/**
+ * Takes back a telling the chat did not take, so the next sighting, or for a first telling the next retell pass, tells
+ * it again. The alert stays on the Tasks board's "Needs a hand" meanwhile. Only the telling this one marked is taken.
+ */
+async function unmarkTold(db: D1Database, sighting: Sighting, toldAt: Date, log: Logger): Promise<void> {
+  try {
+    await db
+      .prepare("UPDATE alerts SET last_told_at = ?3 WHERE id = ?1 AND last_told_at = ?2")
+      .bind(sighting.id, toldAt.toISOString(), sighting.lastToldAt)
+      .run();
+  } catch (error) {
+    log.error("alert_not_unmarked", { id: sighting.id, error });
+  }
+}
+
 async function markTold(db: D1Database, sighting: Sighting, now: Date): Promise<boolean> {
   const result = await db
     .prepare(

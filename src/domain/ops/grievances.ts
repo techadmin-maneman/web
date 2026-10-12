@@ -59,7 +59,7 @@ export async function openGrievanceInWords(db: D1Database, personId: string, tex
  */
 export async function tellOfNewGrievances(
   db: D1Database,
-  tell: (message: string) => Promise<void>,
+  tell: (message: string) => Promise<unknown>,
   queueLink: string,
   now: Date,
 ): Promise<number> {
