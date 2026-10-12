@@ -129,13 +129,20 @@ const health: Check = ({ options, api }) =>
   });
 
 /** Errors carry exactly a stable code and the request ID. */
+/**
+ * How mm-api refuses a route a host does not open: not found, or, on a console whose Staff list is on, not permitted,
+ * since the list refuses every route it does not name before any is looked for.
+ */
+const REFUSED: Readonly<Record<number, string>> = { 404: "not_found", 403: "not_permitted" };
+
 const errorShape: Check = async ({ api }) => {
   const response = await api("/api/__smoke/not-found");
-  assert(response.status === 404, `status ${String(response.status)}`);
+  const expected = REFUSED[response.status];
+  assert(expected !== undefined, `status ${String(response.status)}`);
 
   const body = await readJsonObject(response);
   const error = body.error as Record<string, unknown> | undefined;
-  assert(error?.code === "not_found", `error code is ${String(error?.code)}`);
+  assert(error?.code === expected, `error code is ${String(error?.code)}`);
   assert(error.request_id === response.headers.get("x-request-id"), "error request_id does not match the header");
   assert(Object.keys(body).length === 1 && Object.keys(error).length === 2, "error body carries extra fields");
   return "stable error code and request ID";
@@ -221,9 +228,13 @@ const siteSecurityHeaders: Check = async ({ options, site }) => {
 /** An app surface's host serves none of the public site's routes. */
 const publicRoutesAbsent: Check = async ({ api }) => {
   const response = await api(PINCODE_PATH);
-  assert(response.status === 404, `${PINCODE_PATH} answered ${String(response.status)}; it belongs to the public site`);
+  const expected = REFUSED[response.status];
+  assert(expected !== undefined, `${PINCODE_PATH} answered ${String(response.status)}; it belongs to the public site`);
   const body = await readJsonObject(response);
-  assert((body.error as Record<string, unknown> | undefined)?.code === "not_found", "the 404 is not ours");
+  assert(
+    (body.error as Record<string, unknown> | undefined)?.code === expected,
+    `the ${String(response.status)} is not ours`,
+  );
   return "the public site's routes are not here";
 };
 
