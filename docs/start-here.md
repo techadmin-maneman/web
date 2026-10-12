@@ -87,7 +87,7 @@ this map, or when the map names something that no longer exists.
   `consumables`, `hair-systems`
 - **Rules** (`src/policy/`): `in-job-steps`, `piece-step`, `job-visibility`, `phone-clock`, `stock`
 - **Data** (`src/config/`): `job-sheet`, `pieces`, `consumables`
-- **Routes** (`src/routes/`): `tech/`, `ops/field`, `ops/client-pieces`, `ops/stock`, `ops/stock.places`, `ops/stock.transit`, `ops/stock.read`, `ops/consumables`,
+- **Routes** (`src/routes/`): `tech/`, `ops/field`, `ops/client-pieces`, `ops/stock`, `ops/stock.places`, `ops/stock.transit`, `ops/stock.read`, `ops/stock.units`, `ops/stock.schemas`, `ops/consumables`,
   `ops/hair-systems`, `ops/job-sheet`
 - **Screens:** `apps/tech/src/`, `apps/ops/src/stock/`
 - **Tests:** `test/worker/field/`, `test/worker/ops/stock-places.test.ts`,

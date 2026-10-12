@@ -89,6 +89,8 @@ export const stock = {
     to: "From and to must be different places.",
     place_id: "Unknown place. Reload.",
     lot_id: "That lot isn't held there. Reload.",
+    units: "A label scanned isn't held there. Check the pieces.",
+    quantity: "One delivery labels at most 500 pieces.",
     note: "Say what happened, in up to 200 characters.",
     offline: OFFLINE,
     unknown: FAILED,

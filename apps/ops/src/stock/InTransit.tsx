@@ -1,6 +1,7 @@
 // Stock · In transit (docs/decisions/0158-transfers-in-transit.md): what was sent to a warehouse, a hub or a stockroom
 // and has not arrived. The place it went to receives it, in full or short, with a word on what was lost; the place it
-// left can send it back before it arrives.
+// left can send it back before it arrives. A hair system's pieces that arrived are scanned, and those not scanned
+// went missing on the way (docs/decisions/0162-scanning-labels.md).
 
 import { Button } from "@maneman/ui/Button";
 import { Field, NumberInput, TextInput } from "@maneman/ui/Field";
@@ -12,6 +13,7 @@ import { client, type Stock } from "../api.ts";
 import { stockTransit as copy } from "../content/stock-transit.ts";
 import form from "../components/forms.module.css";
 import { useAccess } from "../lib/access.ts";
+import { PieceScans } from "./PieceScans.tsx";
 import { placeName } from "./StockForm.tsx";
 import styles from "./stock.module.css";
 
@@ -20,20 +22,28 @@ type Transfer = Stock["in_transit"][number];
 /** What arrived of one transfer, and a word on it, before it is recorded. */
 function Receiving(props: { book: Stock; transfer: Transfer; onDone: (book: Stock | null) => void }) {
   const { book, transfer } = props;
-  const [arrived, setArrived] = useState(String(transfer.quantity));
+  const [typed, setArrived] = useState(String(transfer.quantity));
+  const [units, setUnits] = useState<readonly string[]>([]);
   const [note, setNote] = useState("");
   const [failure, setFailure] = useState<Failure | null>(null);
-  const unit = book.consumables.find((each) => each.code === transfer.consumable_code)?.unit ?? "";
+  const consumable = book.consumables.find((each) => each.code === transfer.consumable_code);
+  const unit = consumable?.unit ?? "";
+  const arrived = units.length > 0 ? String(units.length) : typed;
   const figure = Number(arrived);
   const ready = /^\d{1,6}$/.test(arrived.trim()) && figure <= transfer.quantity;
   const record = async () => {
-    const body = { received: figure, ...(note.trim() === "" ? {} : { note: note.trim() }) };
+    const body = {
+      received: figure,
+      ...(units.length === 0 ? {} : { units: [...units] }),
+      ...(note.trim() === "" ? {} : { note: note.trim() }),
+    };
     const answer = await client.post("/api/stock/transfers/{id}/receive", { path: { id: transfer.id }, body });
     if (answer.ok) props.onDone(answer.body);
     else setFailure({ code: answer.code, fields: answer.fields });
   };
   return (
     <div className={form.group}>
+      {consumable?.hair_system === true && <PieceScans units={units} onUnits={setUnits} />}
       <div className={form.fields}>
         <Field label={`${copy.arrived} (${unit})`} className={form.field}>
           {(control) => (
@@ -43,6 +53,7 @@ function Receiving(props: { book: Stock; transfer: Transfer; onDone: (book: Stoc
               type="text"
               inputMode="numeric"
               maxLength={6}
+              readOnly={units.length > 0}
               value={arrived}
               onChange={(event) => {
                 setArrived(event.target.value);

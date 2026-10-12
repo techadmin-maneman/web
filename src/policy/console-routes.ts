@@ -81,6 +81,7 @@ export const ROUTE_NEEDS: Readonly<Record<string, RouteNeed | typeof SIGNED_IN>>
   "GET /api/stock/demand": inOwnPlaces("operations", "view"),
   "GET /api/stock/units": inOwnPlaces("operations", "view"),
   "POST /api/stock/units": inOwnPlaces("operations", "act"),
+  "GET /api/stock/units/{code}": inOwnPlaces("operations", "view"),
   "POST /api/stock/lots/{id}/label": need("operations", "act"),
   "POST /api/stock/deliveries": need("operations", "act"),
   "POST /api/stock/transfers": inOwnPlaces("operations", "act"),

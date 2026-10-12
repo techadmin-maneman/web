@@ -48,6 +48,8 @@ export default defineConfig(
       "apps/app/src/api-schema.ts",
       "apps/ops/src/api-schema.ts",
       "apps/tech/src/api-schema.ts",
+      // The QR decoder, copied as published with its licence notices (docs/decisions/0162-scanning-labels.md).
+      "packages/ui/qr-decoder.worker.js",
     ],
   },
   eslint.configs.recommended,

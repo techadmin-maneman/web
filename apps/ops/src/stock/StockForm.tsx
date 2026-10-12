@@ -4,6 +4,8 @@
 // place holds now beside what it will hold (ADR 0071); a count shows the
 // figure it finds, and the ledger takes the difference. A place that would
 // hold less than nothing says so, since a delivery or a count is then missing.
+// A hair system's transfer or loss names its pieces by their labels, scanned
+// (docs/decisions/0162-scanning-labels.md), and counts them.
 
 import { errorText, type Failure } from "@maneman/web-kit/refusal";
 import { Field, NumberInput, Select } from "@maneman/ui/Field";
@@ -14,6 +16,7 @@ import { stock as copy } from "../content.ts";
 import { CheckPanel } from "../components/CheckPanel.tsx";
 import form from "../components/forms.module.css";
 import { LotFields } from "./LotFields.tsx";
+import { PieceScans } from "./PieceScans.tsx";
 import styles from "./stock.module.css";
 
 export const KINDS = ["delivery", "transfer", "count", "write_off"] as const;
@@ -31,6 +34,8 @@ interface Draft {
   readonly lotCode: string;
   readonly expiresOn: string;
   readonly lotId: string;
+  /** A hair system's pieces, by their labels as scanned; their count is the quantity. */
+  readonly units: readonly string[];
 }
 
 type Step = { readonly step: "editing" | "checking" | "saving" | "recorded" } | ({ readonly step: "failed" } & Failure);
@@ -155,6 +160,7 @@ async function sent(draft: Draft) {
         quantity: Number(draft.quantity),
         from: draft.from,
         to: draft.to,
+        ...scannedOf(draft),
       });
     case "count":
       return api.recordCount({
@@ -172,12 +178,47 @@ async function sent(draft: Draft) {
         quantity: Number(draft.quantity),
         note: draft.note.trim(),
         lot_id: draft.lotId === "" ? null : draft.lotId,
+        ...scannedOf(draft),
       });
   }
 }
 
+/** The pieces named, where any were scanned. */
+const scannedOf = (draft: Draft) => (draft.units.length === 0 ? {} : { units: [...draft.units] });
+
+/** Whether the movement names its pieces: a hair system's transfer or loss. */
+const scans = (book: Stock, draft: Draft) =>
+  (draft.kind === "transfer" || draft.kind === "write_off") &&
+  book.consumables.some((each) => each.code === draft.code && each.hair_system);
+
+/** How many: what a count found, or what moves; nothing to type where pieces were scanned, which count themselves. */
+function HowMany(props: {
+  draft: Draft;
+  unit: string;
+  onEdit: (field: "counted" | "quantity") => (text: string) => void;
+}) {
+  const { draft, unit, onEdit } = props;
+  if (draft.kind === "count") {
+    return (
+      <Quantity
+        label={copy.record.inUnit(copy.record.counted, unit)}
+        value={draft.counted}
+        onChange={onEdit("counted")}
+      />
+    );
+  }
+  if (draft.units.length > 0) return null;
+  return (
+    <Quantity
+      label={copy.record.inUnit(copy.record.quantity, unit)}
+      value={draft.quantity}
+      onChange={onEdit("quantity")}
+    />
+  );
+}
+
 /** What every box holds before anything is typed. */
-const EMPTY = { quantity: "", counted: "", note: "", lotCode: "", expiresOn: "", lotId: "" };
+const EMPTY = { quantity: "", counted: "", note: "", lotCode: "", expiresOn: "", lotId: "", units: [] };
 
 /** Records a movement of one of `kinds`: those the caller may record, in KINDS' order. */
 export function StockForm({
@@ -202,8 +243,17 @@ export function StockForm({
     place: first,
   }));
   const [step, setStep] = useState<Step>({ step: "editing" });
-  const edit = (field: keyof Draft) => (value: string) => {
-    setDraft({ ...draft, [field]: value });
+  const edit = (field: Exclude<keyof Draft, "units">) => (value: string) => {
+    // Pieces scanned belong to one stock code and one kind of movement.
+    setDraft({
+      ...draft,
+      [field]: value,
+      ...(field === "code" || field === "kind" ? { units: [], quantity: "" } : {}),
+    });
+    setStep({ step: "editing" });
+  };
+  const scan = (units: readonly string[]) => {
+    setDraft({ ...draft, units, quantity: units.length === 0 ? "" : String(units.length) });
     setStep({ step: "editing" });
   };
   const unit = book.consumables.find((each) => each.code === draft.code)?.unit ?? "";
@@ -266,22 +316,9 @@ export function StockForm({
           )}
         </div>
         <LotFields book={book} draft={draft} onEdit={edit} />
+        {scans(book, draft) && <PieceScans units={draft.units} onUnits={scan} />}
         <div className={form.fields}>
-          {draft.kind === "count" ? (
-            <Quantity
-              label={copy.record.inUnit(copy.record.counted, unit)}
-
-              value={draft.counted}
-              onChange={edit("counted")}
-            />
-          ) : (
-            <Quantity
-              label={copy.record.inUnit(copy.record.quantity, unit)}
-
-              value={draft.quantity}
-              onChange={edit("quantity")}
-            />
-          )}
+          <HowMany draft={draft} unit={unit} onEdit={edit} />
           {draft.kind !== "transfer" && (
             <div className={form.field}>
               <label className={form.fieldLabel} htmlFor="stock-note">

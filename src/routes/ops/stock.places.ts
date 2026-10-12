@@ -12,7 +12,8 @@ import { actorOf } from "../../http/audit.ts";
 import type { App, AppEnv } from "../../http/context.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
 import { json } from "../../http/openapi.ts";
-import { PlaceId, STOCK, stockAnswer } from "./stock.ts";
+import { PlaceId, STOCK } from "./stock.schemas.ts";
+import { stockAnswer } from "./stock.ts";
 
 const Name = z
   .string()

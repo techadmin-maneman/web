@@ -3,20 +3,30 @@
 //                                       pieces it holds that were never labelled
 //   POST /api/stock/units               labels for pieces a place held before labels
 //   POST /api/stock/lots/{id}/label     a lot's label, for its boxes, made the first time it is asked for
+//   GET  /api/stock/units/{code}        the piece a label names, where it is, and its history
+//                                       (docs/decisions/0162-scanning-labels.md)
 //
-// The units keep to the caller's cities, as the place does.
+// The units keep to the caller's cities, as the place does; a piece that has left the stock, by the last place it was.
 
 import { createRoute, z } from "@hono/zod-openapi";
 import type { Context } from "hono";
 import { auditStatement } from "../../domain/ops/audit.ts";
 import { isPlaceWithin, placesWithin } from "../../domain/field/stock-places.ts";
-import { hairSystemProduct, heldUnits, labelHeld, lotLabel, MAX_LABELLED } from "../../domain/field/stock-units.ts";
+import {
+  hairSystemProduct,
+  heldUnits,
+  labelHeld,
+  lotLabel,
+  MAX_LABELLED,
+  UNIT_STATES,
+  unitFound,
+} from "../../domain/field/stock-units.ts";
 import { actorOf } from "../../http/audit.ts";
 import type { App, AppEnv } from "../../http/context.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
 import { json } from "../../http/openapi.ts";
 import { routeReach } from "../../http/staff-access.ts";
-import { PlaceId } from "./stock.ts";
+import { PlaceId } from "./stock.schemas.ts";
 
 const Code = z.string().min(1).max(64);
 
@@ -98,6 +108,46 @@ const lotLabelRoute = createRoute({
   },
 });
 
+const UnitFoundSchema = z
+  .object({
+    code: z.string(),
+    consumable_code: z.string(),
+    lot_code: z.union([z.string(), z.null()]),
+    expires_on: z.union([z.iso.date(), z.null()]),
+    state: z.enum(UNIT_STATES),
+    place_id: z.union([PlaceId, z.null()]).openapi({
+      description: "Where it is now, or is going to in transit; null once it has left the stock.",
+    }),
+    history: z
+      .array(
+        z
+          .object({
+            at: z.iso.datetime(),
+            state: z.enum(UNIT_STATES),
+            place_id: z.union([PlaceId, z.null()]),
+            by: z
+              .string()
+              .openapi({ description: "Ops' Access identity, a service token's label, or a technician's ID." }),
+          })
+          .strict(),
+      )
+      .openapi({ description: "Every change, oldest first." }),
+  })
+  .strict()
+  .openapi("StockUnitFound");
+
+const unitRoute = createRoute({
+  method: "get",
+  path: "/api/stock/units/{code}",
+  summary: "The piece a label names: its stock code and lot, where it is, and its history",
+  request: { params: z.object({ code: z.string().min(1).max(32) }) },
+  responses: {
+    200: { description: "The piece", ...json(UnitFoundSchema) },
+    403: errorResponse("access_required"),
+    404: errorResponse("not_found: no piece has that label, or none in the caller's cities"),
+  },
+});
+
 /** The fields refused: a stock code that is not a hair system, or a place out of reach. Else the product. */
 async function hairSystemAt(
   c: Context<AppEnv>,
@@ -157,6 +207,32 @@ export function registerOpsStockUnits(app: App): void {
       audit,
     );
     return c.json(await unitsAnswer(c, body.consumable_code, body.place_id), 200);
+  });
+
+  app.openapi(unitRoute, async (c) => {
+    const found = await unitFound(c.env.DB, c.req.valid("param").code.trim().toUpperCase());
+    const within = await placesWithin(c.env.DB, await routeReach(c));
+    const last = found?.lastPlace ?? null;
+    if (found === null || last === null || !isPlaceWithin(within, last)) {
+      return refuse(c, "not_found");
+    }
+    return c.json(
+      {
+        code: found.code,
+        consumable_code: found.consumableCode,
+        lot_code: found.lotCode,
+        expires_on: found.expiresOn,
+        state: found.state,
+        place_id: found.place,
+        history: found.history.map((line) => ({
+          at: line.at,
+          state: line.state,
+          place_id: line.place,
+          by: line.actor,
+        })),
+      },
+      200,
+    );
   });
 
   app.openapi(lotLabelRoute, async (c) => {

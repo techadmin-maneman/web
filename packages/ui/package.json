@@ -25,6 +25,7 @@
     "./motion": "./motion.ts",
     "./Panel": "./Panel.tsx",
     "./router": "./router.tsx",
+    "./ScanField": "./ScanField.tsx",
     "./Sheet": "./Sheet.tsx",
     "./States": "./States.tsx",
     "./Table": "./Table.tsx",
