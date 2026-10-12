@@ -8,6 +8,7 @@ import { answer, BLACKOUTS, DISCOUNT_CODES, json, SERVICE_AREA, SERVICES, SETTIN
 export const ROUTES: Answers = {
   "GET /api/settings": json(SETTINGS),
   "GET /api/services": json(SERVICES),
+  "GET /api/standard-costs": json({ products: [] }),
   "GET /api/service-area": json(SERVICE_AREA),
   "GET /api/blackouts": json(BLACKOUTS),
   "GET /api/discount-codes": json(DISCOUNT_CODES),
