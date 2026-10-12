@@ -219,6 +219,8 @@ interface Counted {
   readonly place: Place;
   readonly counted: number;
   readonly note: string | null;
+  /** The lot any more found than was held is of, as at an opening count; none puts it in no known lot. */
+  readonly lot?: ReceivedLot;
 }
 
 /**
@@ -269,10 +271,18 @@ async function writeCount(
     note: input.note,
   };
   const detail = { place: input.place, counted: input.counted, ...found };
-  // Less counted than held leaves from the lots that expire soonest; more is of no known lot.
+  // Less counted than held leaves from the lots that expire soonest; more goes into the lot named, or none.
   const takes =
     found.difference < 0
       ? await soonestFirst(db, { code: input.code, place: input.place, quantity: -found.difference })
+      : [];
+  const intoLot =
+    found.difference > 0 && input.lot !== undefined
+      ? await receivedLotMoves(
+          db,
+          { code: input.code, lot: input.lot, movementId: id, quantity: found.difference, place: input.place },
+          written.now,
+        )
       : [];
   const [row] = await db.batch([
     countStatement({ db, id, movement, held: found.held, written }),
@@ -281,6 +291,7 @@ async function writeCount(
       id,
     }),
     ...lotMoves(db, { movementId: id, place: input.place, takes, sign: -1 }),
+    ...intoLot,
   ]);
   return row?.results.length === 1;
 }

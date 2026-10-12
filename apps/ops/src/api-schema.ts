@@ -9846,6 +9846,51 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/stock/demand": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** What the next four weeks' visits will use, by city, beside what each city holds */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The demand ahead */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["StockDemand"];
+                    };
+                };
+                /** @description access_required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/storage": {
         parameters: {
             query?: never;
@@ -13652,6 +13697,10 @@ export interface components {
             place_id: string;
             counted: number;
             note?: string | null;
+            /** @description The lot any more found than was held is of, as at an opening count. */
+            lot_code?: string | null;
+            /** Format: date */
+            expires_on?: string | null;
         };
         StockWriteOff: {
             consumable_code: string;
@@ -13687,6 +13736,27 @@ export interface components {
             /** @description What arrived; all of it unless said. Less is what was lost on the way. */
             received?: number;
             note?: string | null;
+        };
+        StockDemand: {
+            /** @description How far ahead the visits booked are read. */
+            days: number;
+            demand: {
+                consumable_code: string;
+                city: string | null;
+                /** @description What the visits booked are expected to use. */
+                expected: number;
+                /** @description What the city's places hold now, a kit in its city. */
+                held: number;
+            }[];
+            /** @description Fits booked whose hair system no place in their city holds enough of, soonest first. */
+            at_risk: {
+                appointment_id: string;
+                /** Format: date-time */
+                window_start: string;
+                city: string | null;
+                /** @description The hair system it needs; null where the client has no profile to match one by. */
+                consumable_code: string | null;
+            }[];
         };
         Storage: {
             /** @description What the client-photos and referral-cards buckets hold. */

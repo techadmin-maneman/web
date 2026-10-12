@@ -14,8 +14,11 @@ import { stockViews } from "../../apps/ops/src/content/stock-views.ts";
 
 const WAREHOUSE = "National warehouse";
 
+/** Nothing booked ahead uses stock. */
+const NO_DEMAND = { days: 28, demand: [], at_risk: [] };
+
 async function open(page: Page, extra: Answers = {}): Promise<void> {
-  await answer(page, { "GET /api/stock": json(STOCK), ...extra });
+  await answer(page, { "GET /api/stock": json(STOCK), "GET /api/stock/demand": json(NO_DEMAND), ...extra });
   await page.goto("/stock");
   await expect(page.getByRole("heading", { level: 1, name: "Stock" })).toBeVisible();
 }
@@ -71,7 +74,7 @@ test("past six places, shows the warehouse and one place, picked, marking each p
     lots: [],
   }));
   const many = { ...STOCK, places: [STOCK.places[0], ...kits], holdings: [...STOCK.holdings, ...holdings] };
-  await answer(page, { "GET /api/stock": json(many) });
+  await answer(page, { "GET /api/stock/demand": json(NO_DEMAND), "GET /api/stock": json(many) });
   await page.goto("/stock");
   const table = onHand(page);
   await expect(table.getByRole("columnheader")).toHaveText(["Consumable", WAREHOUSE, "Technician 1"]);
@@ -131,7 +134,11 @@ const withLot = {
 };
 
 test("says when the soonest lot a place holds expires, and writes off the lot named", async ({ page }) => {
-  await answer(page, { "GET /api/stock": json(withLot), "POST /api/stock/write-offs": json(withLot) });
+  await answer(page, {
+    "GET /api/stock/demand": json(NO_DEMAND),
+    "GET /api/stock": json(withLot),
+    "POST /api/stock/write-offs": json(withLot),
+  });
   await page.goto("/stock");
   const tape = onHand(page)
     .getByRole("row")
@@ -204,6 +211,8 @@ test("a count shows the figure it finds, and one that agrees says it records onl
     place_id: IMRAN,
     counted: 2,
     note: null,
+    lot_code: null,
+    expires_on: null,
   });
 });
 
@@ -339,7 +348,7 @@ test("adds up every place, and each city, and lists the lots that expire soon", 
       holding.consumable_code === "solvent" && holding.place_id === IMRAN ? { ...holding, lots: [soon] } : holding,
     ),
   };
-  await answer(page, { "GET /api/stock": json(expiring) });
+  await answer(page, { "GET /api/stock/demand": json(NO_DEMAND), "GET /api/stock": json(expiring) });
   await page.goto("/stock");
   const table = onHand(page);
   await table.getByLabel(opsCopy.stock.totalsBy).selectOption({ label: opsCopy.stock.byCity });
@@ -356,6 +365,20 @@ test("adds up every place, and each city, and lists the lots that expire soon", 
   const panel = page.getByRole("region", { name: stockViews.expiring.title });
   await expect(panel.getByRole("row").filter({ hasText: "SV-0930" })).toContainText("Imran Qureshi");
   expect(await axeViolations(page)).toEqual([]);
+});
+
+test("shows what the next four weeks will use beside what each city holds, and the fits at risk", async ({ page }) => {
+  const ahead = {
+    days: 28,
+    demand: [{ consumable_code: "solvent", city: "Gurgaon", expected: 156, held: 150 }],
+    at_risk: [
+      { appointment_id: "ap-9", window_start: "2027-09-24T05:30:00.000Z", city: "Gurgaon", consumable_code: null },
+    ],
+  } satisfies OpsReply<"/api/stock/demand">;
+  await open(page, { "GET /api/stock/demand": json(ahead) });
+  const panel = page.getByRole("region", { name: stockViews.demand.title });
+  await expect(panel.getByRole("row").filter({ hasText: "Solvent" })).toContainText(stockViews.demand.short(6));
+  await expect(panel).toContainText(stockViews.demand.fit("Fri 24 Sep", "Gurgaon", stockViews.demand.noProfile));
 });
 
 test("meets WCAG 2.2 AA, with a movement being checked as well", async ({ page }) => {

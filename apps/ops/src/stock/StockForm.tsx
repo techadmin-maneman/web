@@ -162,6 +162,8 @@ async function sent(draft: Draft) {
         place_id: draft.place,
         counted: Number(draft.counted),
         note,
+        lot_code: draft.lotCode.trim() === "" ? null : draft.lotCode.trim(),
+        expires_on: draft.expiresOn === "" ? null : draft.expiresOn,
       });
     case "write_off":
       return api.recordWriteOff({

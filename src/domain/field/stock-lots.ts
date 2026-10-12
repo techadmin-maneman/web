@@ -7,7 +7,7 @@
 // a conditional write leaves out leaves out its lots too.
 
 import { addDays, indiaDate } from "../../lib/india-time.ts";
-import type { Place } from "./stock-places.ts";
+import { WAREHOUSE, type Place } from "./stock-places.ts";
 
 /** What a movement takes of one lot, as a positive figure. */
 export interface LotTake {
@@ -110,7 +110,8 @@ export interface ReceivedLot {
 /**
  * A delivery's lot and its breakdown: the lot made where its stock code has none of that name, from its expiry, or
  * the day received plus the stock code's shelf life. A delivery with no lot named, of a stock code that expires, is a
- * lot named for its day; one of a stock code that does not, and with no lot named, is of none.
+ * lot named for its day; one of a stock code that does not, and with no lot named, is of none. A count that found more
+ * than was held puts it in its place's lot the same way (an opening count); the warehouse is a delivery's.
  */
 export async function receivedLotMoves(
   db: D1Database,
@@ -119,6 +120,7 @@ export async function receivedLotMoves(
     readonly lot: ReceivedLot;
     readonly movementId: string;
     readonly quantity: number;
+    readonly place?: Place;
   },
   now: Date,
 ): Promise<D1PreparedStatement[]> {
@@ -140,9 +142,10 @@ export async function receivedLotMoves(
     db
       .prepare(
         `INSERT INTO stock_lot_moves (movement_id, lot_id, place, quantity)
-         SELECT ?1, id, 'central', ?2 FROM stock_lots WHERE consumable_code = ?3 AND lot_code = ?4`,
+         SELECT ?1, id, ?5, ?2 FROM stock_lots WHERE consumable_code = ?3 AND lot_code = ?4
+           AND EXISTS (SELECT 1 FROM stock_movements WHERE id = ?1)`,
       )
-      .bind(received.movementId, received.quantity, received.code, lotCode),
+      .bind(received.movementId, received.quantity, received.code, lotCode, received.place ?? WAREHOUSE),
   ];
 }
 
