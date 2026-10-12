@@ -1366,6 +1366,62 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/clients/{id}/stock-match": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The stock code the client's hair profile matches exactly, and where its pieces are */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The match */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ClientStockMatch"];
+                    };
+                };
+                /** @description access_required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description not_found: no such client within the reader's places */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/clients/{id}/erasure": {
         parameters: {
             query?: never;
@@ -13278,6 +13334,23 @@ export interface components {
             history: components["schemas"]["HairHistory"] | null;
             /** @description The id of the version the form started from: the latest as it was read; null where there was none. */
             based_on: string | null;
+        };
+        ClientStockMatch: {
+            /** @enum {string} */
+            kind: "no_profile" | "incomplete" | "custom" | "stocked";
+            /** @description What the profile lacks; empty unless incomplete. */
+            missing: ("product" | "base_width_in" | "base_length_in" | "colour" | "grey_percent" | "density_percent")[];
+            code: string | null;
+            name: string | null;
+            city: string | null;
+            held: {
+                place_id: string;
+                name: string;
+                kind: string;
+                city: string | null;
+                pieces: number;
+            }[];
+            in_transit: number;
         };
         Erased: {
             /** Format: date-time */

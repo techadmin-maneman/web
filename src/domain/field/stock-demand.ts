@@ -6,7 +6,7 @@
 import { addDays, indiaInstant } from "../../lib/india-time.ts";
 import { DEMAND_DAYS } from "../../policy/stock.ts";
 import { latestFits, type FitToMatch } from "../clients/hair-profiles.ts";
-import { hairSystemSpecs, type HairSystemSpec } from "./hair-systems.ts";
+import { hairSystemSpecs, matchingCode, type HairSystemSpec } from "./hair-systems.ts";
 
 /** One stock code's expected use in one city over the weeks ahead, beside what the city holds. */
 export interface Demand {
@@ -51,19 +51,7 @@ function codeFor(
 ): string | null {
   if (profile === undefined) return null;
   const product = fit.type === "first_fit" ? (fit.tier ?? "standard") : profile.product;
-  for (const [code, spec] of specs) {
-    if (
-      spec.product === product &&
-      spec.baseWidthIn === profile.base_width_in &&
-      spec.baseLengthIn === profile.base_length_in &&
-      spec.colour === profile.colour &&
-      spec.greyPercent === profile.grey_percent &&
-      spec.densityPercent === profile.density_percent
-    ) {
-      return code;
-    }
-  }
-  return null;
+  return matchingCode(specs, { ...profile, product });
 }
 
 /** What each city's places hold of each stock code, a kit in its technician's city. */

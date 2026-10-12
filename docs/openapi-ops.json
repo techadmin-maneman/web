@@ -4342,6 +4342,98 @@
         "additionalProperties": false,
         "description": "The whole profile as it now stands, sent as a new version."
       },
+      "ClientStockMatch": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "no_profile",
+              "incomplete",
+              "custom",
+              "stocked"
+            ]
+          },
+          "missing": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "product",
+                "base_width_in",
+                "base_length_in",
+                "colour",
+                "grey_percent",
+                "density_percent"
+              ]
+            },
+            "description": "What the profile lacks; empty unless incomplete."
+          },
+          "code": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "city": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "held": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "place_id": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "kind": {
+                  "type": "string"
+                },
+                "city": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "pieces": {
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "place_id",
+                "name",
+                "kind",
+                "city",
+                "pieces"
+              ]
+            }
+          },
+          "in_transit": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "kind",
+          "missing",
+          "code",
+          "name",
+          "city",
+          "held",
+          "in_transit"
+        ]
+      },
       "Erased": {
         "type": "object",
         "properties": {
@@ -16661,6 +16753,54 @@
           },
           "409": {
             "description": "superseded: the latest version is no longer based_on; read the profile again",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/clients/{id}/stock-match": {
+      "get": {
+        "summary": "The stock code the client's hair profile matches exactly, and where its pieces are",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The match",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClientStockMatch"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "access_required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found: no such client within the reader's places",
             "content": {
               "application/json": {
                 "schema": {

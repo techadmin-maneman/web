@@ -861,6 +861,34 @@ Request body:
 }
 ```
 
+### GET /api/clients/{id}/stock-match
+
+The stock code the client's hair profile matches exactly, and where its pieces are
+
+**200**: The match
+
+```json
+{
+  "$ref": "#/components/schemas/ClientStockMatch"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no such client within the reader's places
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ### POST /api/clients/{id}/erasure
 
 Erase a client now: their photographs and details. The CRM and Books follow within minutes
@@ -12672,6 +12700,103 @@ Request body:
   ],
   "additionalProperties": false,
   "description": "The whole profile as it now stands, sent as a new version."
+}
+```
+
+### ClientStockMatch
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "kind": {
+      "type": "string",
+      "enum": [
+        "no_profile",
+        "incomplete",
+        "custom",
+        "stocked"
+      ]
+    },
+    "missing": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "product",
+          "base_width_in",
+          "base_length_in",
+          "colour",
+          "grey_percent",
+          "density_percent"
+        ]
+      },
+      "description": "What the profile lacks; empty unless incomplete."
+    },
+    "code": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "name": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "city": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "held": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "place_id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "city": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "pieces": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "place_id",
+          "name",
+          "kind",
+          "city",
+          "pieces"
+        ]
+      }
+    },
+    "in_transit": {
+      "type": "integer"
+    }
+  },
+  "required": [
+    "kind",
+    "missing",
+    "code",
+    "name",
+    "city",
+    "held",
+    "in_transit"
+  ]
 }
 ```
 
