@@ -11,8 +11,8 @@
 import { soonestFirst, type LotTake } from "./stock-lots.ts";
 import type { Place } from "./stock-places.ts";
 
-const UNIT_STATES = ["held", "in_transit", "fitted", "returned", "written_off", "missing"] as const;
-type UnitState = (typeof UNIT_STATES)[number];
+/** Where a unit stands: held at a place, in transit to one, or gone from the stock. */
+type UnitState = "held" | "in_transit" | "fitted" | "returned" | "written_off" | "missing";
 
 /** The most pieces one delivery, or one labelling, labels. */
 export const MAX_LABELLED = 500;
