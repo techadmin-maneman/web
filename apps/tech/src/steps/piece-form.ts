@@ -77,7 +77,7 @@ export function noticeFor(refusedFields: readonly string[]): string {
 }
 
 /** The piece of the kit a label names, with the hair system it is; null for a label no piece in the kit carries. */
-export function kitPieceOf(
+function kitPieceOf(
   job: Pick<Job, "kit_hair_systems">,
   label: string,
 ): { readonly stock: string; readonly lot_code: string | null; readonly expires_on: string | null } | null {
