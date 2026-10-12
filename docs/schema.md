@@ -11,7 +11,7 @@ A column ending `_at` holds an instant, as ISO 8601 in UTC (`2026-09-27T06:30:00
 
 ## What a restore undoes
 
-What each group of tables means if it is left as it was at `<T>`, and how it is put back (`docs/runbook.md`, "Restoring D1"). A table may be in more than one group. Every table is in one: the test fails on a table that is not, until it is added to `RESTORE_GROUPS` (`scripts/lib/schema-doc.ts`).
+What each group of tables means if it is left as it was at `<T>`, and how it is put back (`docs/runbook.md`, "Restoring D1"). A table may be in more than one group. Every table is in one: the test fails on a table that is not, until it is added to `RESTORE_GROUPS` (`scripts/lib/restore-groups.ts`).
 
 | What | Tables | Left at `<T>` | Put back by |
 | --- | --- | --- | --- |
@@ -26,6 +26,7 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 | The Care inbox | `conversations`, `chat_messages`, `care_owners`, `care_weekly_off`, `care_leave`, `care_names`, `city_matters`, `quick_replies`, `remedies`, `technician_updates` | A message written since, the client's or ours, is gone from its thread | The rows since `<T>`; WhatsApp's own copy shows what was said |
 | Technicians' steps, pieces and photographs | `job_events`, `checkins`, `visits`, `consumables_used`, `no_show_cases`, `no_show_disputes`, `pieces`, `photos`, `photo_sets` | Steps, check-ins, outcomes, pieces fitted, no-shows and disputes since are lost; a photograph's file is kept with no row | The rows since `<T>` |
 | Hair profiles | `hair_profiles` | A profile recorded since is lost, and one an erasure blanked since is whole again | Adding the rows since `<T>`: they are only ever added. Erasing again blanks the rest |
+| Purchase orders | `purchase_orders`, `po_lines` | An order drafted since is gone, and one approved, sent or cancelled since goes back to where it stood | Adding the rows since `<T>`, and each order's state from the audit log |
 | Stock | `stock_movements`, `stock_places`, `stock_lots`, `stock_lot_moves`, `stock_transfers`, `stock_units`, `stock_unit_events`, `piece_returns` | A delivery, transfer, count or loss recorded since, or a job's use, is lost, so what each place holds is wrong; a hub or stockroom added or changed since goes back, and each piece is where it was | Adding the rows since `<T>`, and setting each unit where its latest line of history puts it |
 | Referrals and credits | `referral_codes`, `referral_attributions`, `credit_ledger`, `waitlist_entries`, `referral_channels`, `channel_attributions`, `partner_payouts`, `spend_entries` | A credit, a grant, a partner, a partner's payment, an entry of offline spend or a place on a waitlist disappears | The rows since `<T>`. `credit_ledger` is only ever added to |
 | Ops' settings and what we sell | `ops_settings`, `price_book`, `standard_costs`, `targets`, `services`, `slot_times`, `serviceable_pincodes`, `technician_leave`, `visit_blackouts`, `city_blackouts`, `cities`, `zones`, `consumables`, `hair_systems`, `consumable_usage`, `suppliers`, `supplier_items`, `checklist_items`, `partial_reasons`, `lost_reasons`, `pay_grades`, `visit_pay_rates`, `word_versions`, `site_word_publishes` | A price, service, rule, area, day's times, day off, consumable, supplier, job-sheet list, pay rate or wording set since goes back | Setting it again in the console, which audits it |
@@ -104,7 +105,9 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 - [photos](#photos): One photograph of a set, by its angle, and where it and its thumbnail are kept in R2 (ADR 0028, ADR 0093).
 - [piece_returns](#piece_returns): Each piece that came off a client at a replacement, held in the technician's kit as returned until handed in (ADR 0163).
 - [pieces](#pieces): Each piece fitted, its base and lot, the day it was fitted and the day it falls due, and a failure with its reason. `fsm_id` is FSM's ID for a piece mirrored from FSM, otherwise the row's own (ADR 0032, ADR 0110).
+- [po_lines](#po_lines): Each line of a purchase order: the stock code, how many, the price it was ordered at, and how many have arrived (ADR 0166).
 - [price_book](#price_book): Every price from its date, and the only source of prices; an old row stays for what was sold under it (ADR 0045, ADR 0061).
+- [purchase_orders](#purchase_orders): Each purchase order to a supplier: its state from drafted to closed or cancelled, who approved, sent or cancelled it, and when (ADR 0166).
 - [quick_replies](#quick_replies): Saved answers Customer Care pick in a chat, kept by a Customer Care manager (ADR 0141).
 - [razorpay_events](#razorpay_events): Each Razorpay webhook event, once, by its event ID (ADR 0044).
 - [referral_attributions](#referral_attributions): A person who came through an invite, to the first invite they used, what became of its grant, and who attached it and why where ops did (ADR 0048, ADR 0089).
@@ -1669,6 +1672,25 @@ Indexes:
 
 Triggers: `pieces_replacement_booked_added`, `pieces_replacement_booked_changed`.
 
+## po_lines
+
+Each line of a purchase order: the stock code, how many, the price it was ordered at, and how many have arrived (ADR 0166).
+
+Made by `0141_purchase_orders.sql`.
+
+| Column | Type | May be empty | Default | Key |
+| --- | --- | --- | --- | --- |
+| `id` | TEXT | no |  | primary key |
+| `po_id` | TEXT | no |  | → `purchase_orders.id` |
+| `consumable_code` | TEXT | no |  | → `consumables.code` |
+| `quantity` | INTEGER | no |  |  |
+| `unit_price` | INTEGER | no |  |  |
+| `received_quantity` | INTEGER | no | `0` |  |
+
+Indexes:
+
+- `po_lines_by_order`: on (`po_id`)
+
 ## price_book
 
 Every price from its date, and the only source of prices; an old row stays for what was sold under it (ADR 0045, ADR 0061).
@@ -1682,6 +1704,40 @@ Made by `0016_booking.sql`.
 | `amount_ex_gst` | INTEGER | no |  |  |
 | `gst_percent` | INTEGER | no |  |  |
 | `valid_from` | TEXT | no |  | primary key |
+
+## purchase_orders
+
+Each purchase order to a supplier: its state from drafted to closed or cancelled, who approved, sent or cancelled it, and when (ADR 0166).
+
+Made by `0141_purchase_orders.sql`.
+
+| Column | Type | May be empty | Default | Key |
+| --- | --- | --- | --- | --- |
+| `id` | TEXT | no |  | primary key |
+| `number` | INTEGER | no |  |  |
+| `supplier_id` | TEXT | no |  | → `suppliers.id` |
+| `currency` | TEXT | no |  |  |
+| `state` | TEXT | no |  |  |
+| `expected_on` | TEXT | yes |  |  |
+| `note` | TEXT | yes |  |  |
+| `drafted_by` | TEXT | no |  |  |
+| `drafted_at` | TEXT | no |  |  |
+| `approved_by` | TEXT | yes |  |  |
+| `approved_at` | TEXT | yes |  |  |
+| `second_approved_by` | TEXT | yes |  |  |
+| `second_approved_at` | TEXT | yes |  |  |
+| `sent_by` | TEXT | yes |  |  |
+| `sent_at` | TEXT | yes |  |  |
+| `cancelled_by` | TEXT | yes |  |  |
+| `cancelled_at` | TEXT | yes |  |  |
+| `cancel_reason` | TEXT | yes |  |  |
+| `updated_at` | TEXT | no |  |  |
+| `change_id` | TEXT | yes |  |  |
+
+Indexes:
+
+- `purchase_orders_open`: on (`expected_on`), where `state IN ('approved', 'sent', 'part_received')`
+- A `UNIQUE` constraint: unique on (`number`)
 
 ## quick_replies
 

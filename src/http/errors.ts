@@ -161,6 +161,7 @@ export const ERROR_CODES = [
   // A rule's figures each within their bounds, but not together: fields names the box, then the one it must reach.
   "figures_conflict",
   "transfer_settled",
+  "order_state",
 ] as const;
 export type ErrorCode = (typeof ERROR_CODES)[number];
 
@@ -298,6 +299,7 @@ export const ERROR_STATUS = {
   in_use: 409,
   figures_conflict: 422,
   transfer_settled: 409,
+  order_state: 409,
 } as const satisfies Record<ErrorCode, ContentfulStatusCode>;
 
 /** A refusal: the code, answered with its own status and the request's ID, and the fields it names. */

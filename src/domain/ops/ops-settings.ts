@@ -64,6 +64,8 @@ export interface OpsInputs {
   readonly remedyLimit: RemedyLimit;
   /** Days lapsed before the retention figures count a client lost (src/policy/client-standing.ts). */
   readonly lostAfterDays: number;
+  /** A rupee order worth more than this needs a second approver (src/policy/purchasing.ts). */
+  readonly poSecondApprovalAboveRupees: number;
   readonly referralReward: ReferralReward;
 }
 
@@ -107,6 +109,7 @@ function shape(values: OpsValues): OpsInputs {
     careHours: values.care_hours,
     remedyLimit: values.remedy_limit,
     lostAfterDays: values.lost_after_days,
+    poSecondApprovalAboveRupees: values.po_second_approval_above_rupees,
   };
 }
 
