@@ -1,10 +1,11 @@
 // A label read in: typed, typed by a USB scanner (which ends with Enter), or read by the camera
-// (docs/decisions/0162-scanning-labels.md). The back camera opens only while the person reads with it; each frame is
-// read for a QR code until one is found, by a decoder loaded only then.
+// (docs/decisions/0162-scanning-labels.md). The back camera opens only while the person reads with it, and each frame
+// is read for a QR code, in a worker (./qr-decoder.ts), until one is found.
 
 import { useEffect, useRef, useState } from "react";
 import { Button } from "./Button.tsx";
 import { Field, TextInput } from "./Field.tsx";
+import { qrDecoder } from "./qr-decoder.ts";
 import { scanned } from "./scanned.ts";
 import styles from "./scan-field.module.css";
 
@@ -41,11 +42,9 @@ export function QrCamera({
     let live = true;
     let stream: MediaStream | null = null;
     let timer = 0;
+    const decoder = qrDecoder();
     const open = async () => {
-      const [media, decoder] = await Promise.all([
-        navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" }, audio: false }),
-        import("jsqr"),
-      ]);
+      const media = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" }, audio: false });
       stream = media;
       const element = video.current;
       if (!live || element === null) return;
@@ -54,23 +53,23 @@ export function QrCamera({
       setState("open");
       const canvas = document.createElement("canvas");
       const context = canvas.getContext("2d", { willReadFrequently: true });
-      const frame = () => {
+      const frame = async () => {
         if (!live || context === null) return;
         if (element.videoWidth > 0) {
           const scale = Math.min(1, READ_WIDTH / element.videoWidth);
           canvas.width = Math.round(element.videoWidth * scale);
           canvas.height = Math.round(element.videoHeight * scale);
           context.drawImage(element, 0, 0, canvas.width, canvas.height);
-          const image = context.getImageData(0, 0, canvas.width, canvas.height);
-          const found = decoder.default(image.data, image.width, image.height, { inversionAttempts: "dontInvert" });
-          if (found !== null && found.data !== "") {
-            read.current(found.data);
+          // A decoder closed with the camera answers no more, so nothing is read after it closes.
+          const found = await decoder.read(context.getImageData(0, 0, canvas.width, canvas.height));
+          if (found !== null && found !== "") {
+            read.current(found);
             return;
           }
         }
-        timer = window.setTimeout(frame, EVERY_MS);
+        timer = window.setTimeout(() => void frame(), EVERY_MS);
       };
-      frame();
+      await frame();
     };
     open().catch(() => {
       if (live) setState("refused");
@@ -78,6 +77,7 @@ export function QrCamera({
     return () => {
       live = false;
       window.clearTimeout(timer);
+      decoder.close();
       for (const track of stream?.getTracks() ?? []) track.stop();
     };
   }, []);

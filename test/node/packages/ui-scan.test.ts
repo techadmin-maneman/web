@@ -1,14 +1,30 @@
-// The scanner's decoder reads the QR code a label prints (packages/ui/ScanField.tsx, packages/ui/scanned.ts,
+// The scanner's decoder reads the QR code a label prints (packages/ui/qr-decoder.worker.js, packages/ui/scanned.ts,
 // apps/ops/src/stock/LabelSheet.tsx; docs/decisions/0162-scanning-labels.md): black on white, as the label printer
-// prints it, with the same settings.
+// prints it, asked as the camera asks it.
 
-import jsQR from "jsqr";
 import { encode } from "uqr";
-import { describe, expect, it } from "vitest";
+import { beforeAll, describe, expect, it } from "vitest";
 import { scanned } from "../../../packages/ui/scanned.ts";
 
+interface Answer {
+  readonly id: number;
+  readonly type: string;
+  readonly data: string | null;
+}
+
+const answers: Answer[] = [];
+let ask: (message: { data: unknown }) => void;
+
+beforeAll(async () => {
+  // The worker's own global, as a browser gives it one.
+  const worker = { postMessage: (answer: Answer) => answers.push(answer), onmessage: null };
+  Object.assign(globalThis, { self: worker });
+  await import("../../../packages/ui/qr-decoder.worker.js");
+  ask = worker.onmessage as unknown as typeof ask;
+});
+
 /** The QR code a label prints, as a camera frame: `scale` pixels to a module, black on white. */
-function frameOf(text: string, scale: number): { pixels: Uint8ClampedArray; width: number } {
+function frameOf(text: string, scale: number): { data: Uint8ClampedArray; width: number; height: number } {
   const { data, size } = encode(text, { ecc: "M", border: 2 });
   const width = size * scale;
   const pixels = new Uint8ClampedArray(width * width * 4);
@@ -18,15 +34,20 @@ function frameOf(text: string, scale: number): { pixels: Uint8ClampedArray; widt
       pixels.set([shade, shade, shade, 255], (y * width + x) * 4);
     }
   }
-  return { pixels, width };
+  return { data: pixels, width, height: width };
 }
 
 describe("a label's QR code", () => {
-  it("reads back as the label it holds", () => {
-    for (const label of ["MM-ESS-0000123-J", "MM-LT-0000001-B"]) {
-      const { pixels, width } = frameOf(label, 4);
-      expect(jsQR(pixels, width, width, { inversionAttempts: "dontInvert" })?.data).toBe(label);
-    }
+  it("reads back as the label it holds, and a blank frame as nothing", () => {
+    ask({ data: { id: 1, type: "decode", data: frameOf("MM-ESS-0000123-J", 4) } });
+    ask({ data: { id: 2, type: "decode", data: frameOf("MM-LT-0000001-B", 3) } });
+    const blank = new Uint8ClampedArray(120 * 120 * 4).fill(255);
+    ask({ data: { id: 3, type: "decode", data: { data: blank, width: 120, height: 120 } } });
+    expect(answers).toEqual([
+      { id: 1, type: "qrResult", data: "MM-ESS-0000123-J", cornerPoints: expect.any(Array) as unknown },
+      { id: 2, type: "qrResult", data: "MM-LT-0000001-B", cornerPoints: expect.any(Array) as unknown },
+      { id: 3, type: "qrResult", data: null },
+    ]);
   });
 
   it("is taken trimmed and in capitals, as a hand types it", () => {
