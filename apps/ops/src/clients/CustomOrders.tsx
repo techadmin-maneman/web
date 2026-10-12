@@ -3,6 +3,7 @@
 // one raised.
 
 import { Button } from "@maneman/ui/Button";
+import { Field, Select } from "@maneman/ui/Field";
 import { Table } from "@maneman/ui/Table";
 import { useLoad } from "@maneman/ui/useLoad";
 import { rupees } from "@maneman/web-kit/money";
@@ -16,11 +17,60 @@ import { Loading, PanelFailed } from "../states/States.tsx";
 import { RaiseCustomOrder, type CustomOrdersBook } from "./RaiseCustomOrder.tsx";
 
 type Order = CustomOrdersBook["orders"][number];
-type Answer = Awaited<ReturnType<typeof client.post<"/api/custom-orders/{id}/cancel">>>;
+/** What a step answered: the client's whole list, or the refusal. */
+type Answer =
+  | { readonly ok: true; readonly body: CustomOrdersBook }
+  | { readonly ok: false; readonly code: string; readonly fields: readonly string[] };
+
+const REFUND_REASONS = ["not_ordered", "late", "failed_check"] as const;
+
+/** A paid order refunded in full, for the reason chosen, which the API checks holds. */
+function Refund({ order, onAnswer }: { order: Order; onAnswer: (answer: Answer, said: string) => void }) {
+  const access = useAccess();
+  const [reason, setReason] = useState<(typeof REFUND_REASONS)[number]>(
+    order.status === "paid" ? "not_ordered" : "late",
+  );
+  if (order.status !== "paid" && order.status !== "ordered") return null;
+  if (!access.mayCall("POST /api/custom-orders/{id}/refund")) return null;
+  return (
+    <div className={form.actions}>
+      <Field label={copy.refundWhy} className={form.field}>
+        {(control) => (
+          <Select
+            {...control}
+            value={reason}
+            onChange={(event) => {
+              setReason(REFUND_REASONS.find((each) => each === event.target.value) ?? "late");
+            }}
+          >
+            {REFUND_REASONS.map((each) => (
+              <option key={each} value={each}>
+                {copy.reasons[each] ?? each}
+              </option>
+            ))}
+          </Select>
+        )}
+      </Field>
+      <Button
+        variant="destructive"
+        size="small"
+        onClick={() =>
+          void client
+            .post("/api/custom-orders/{id}/refund", { path: { id: order.id }, body: { reason } })
+            .then((answer) => {
+              onAnswer(answer, copy.refunded);
+            })
+        }
+      >
+        {copy.refund}
+      </Button>
+    </div>
+  );
+}
 
 function Steps({ order, onAnswer }: { order: Order; onAnswer: (answer: Answer, said: string) => void }) {
   const access = useAccess();
-  if (order.status !== "awaiting_payment") return null;
+  if (order.status !== "awaiting_payment") return <Refund order={order} onAnswer={onAnswer} />;
   const path = { path: { id: order.id } };
   return (
     <div className={form.actions}>

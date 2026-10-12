@@ -131,6 +131,7 @@ const ACTIONS: Readonly<Record<ActivityAction, string>> = {
   "piece_return.write_off": "Returned piece written off",
   "custom_order.raise": "Custom order raised",
   "custom_order.cancel": "Custom order cancelled",
+  "custom_order.refund": "Custom order refunded",
   "task.assign": "Task taken or given",
   "task.hand_back": "Task handed back",
   "task.close": "Task closed",

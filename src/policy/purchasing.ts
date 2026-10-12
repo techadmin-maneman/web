@@ -23,6 +23,12 @@ export function needsSecondApproval(
   return order.currency !== "INR" || order.total > aboveRupees * 100;
 }
 
+/**
+ * Days past its promised date before a custom order counts as late, and its client may have their money back in full,
+ * until ops set their own in the console (docs/decisions/0176-custom-order-refunds.md).
+ */
+export const CUSTOM_ORDER_GRACE_DAYS = 7;
+
 /** The states an order may be cancelled from: before anything of it arrived. */
 export const CANCELLABLE: ReadonlySet<PoState> = new Set(["drafted", "approved", "sent"]);
 

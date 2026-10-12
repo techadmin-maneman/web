@@ -771,7 +771,7 @@ Made by `0068_cron_runs.sql`.
 
 Each hair system made for one client to their exact spec: the spec, supplier and price, its payment link and payment, and the order it was bought on (ADR 0174).
 
-Made by `0147_custom_orders.sql`.
+Made by `0147_custom_orders.sql`; changed by `0149_custom_refunds.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -801,6 +801,9 @@ Made by `0147_custom_orders.sql`.
 | `raised_by` | TEXT | no |  |  |
 | `raised_at` | TEXT | no |  |  |
 | `updated_at` | TEXT | no |  |  |
+| `refund_reason` | TEXT | yes |  |  |
+| `razorpay_refund_id` | TEXT | yes |  |  |
+| `refunded_at` | TEXT | yes |  |  |
 
 Indexes:
 

@@ -3,9 +3,10 @@
 //   POST /api/clients/{id}/custom-orders       a custom order raised to their profile, and its payment link sent
 //   POST /api/custom-orders/{id}/send-link     the link sent again, where it could not be made
 //   POST /api/custom-orders/{id}/cancel        an order not yet paid, cancelled, and its link with it
+//   POST /api/custom-orders/{id}/refund        a paid order refunded in full, where its reason holds
 //
-// Within the reader's places, as the client's page is: reading with Customer care VIEW, the rest with ACT. Each write
-// answers the client's whole list.
+// Within the reader's places, as the client's page is: reading with Customer care VIEW, refunding with MANAGE, the rest
+// with ACT. Each write answers the client's whole list.
 
 import { createRoute, z } from "@hono/zod-openapi";
 import type { Context } from "hono";
@@ -17,6 +18,8 @@ import {
   type CustomOrder,
 } from "../../domain/field/custom-orders.ts";
 import { sendCustomOrderLink } from "../../domain/money/custom-order-links.ts";
+import { REFUND_REASONS, refundCustomOrder } from "../../domain/money/custom-order-refunds.ts";
+import { opsInputs } from "../../http/ops-inputs.ts";
 import type { App, AppEnv } from "../../http/context.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
 import { json } from "../../http/openapi.ts";
@@ -50,7 +53,8 @@ const OrderSchema = z.object({
   currency: z.string(),
   amount: z.number().int().openapi({ description: "What the client pays, in paise." }),
   promised_on: z.string().nullable(),
-  status: z.enum(["awaiting_payment", "paid", "ordered", "arrived", "cancelled"]),
+  status: z.enum(["awaiting_payment", "paid", "ordered", "arrived", "refunded", "cancelled"]),
+  refund_reason: z.enum(REFUND_REASONS).nullable(),
   short_url: z.string().nullable(),
   link_sent_at: z.string().nullable(),
   paid_at: z.string().nullable(),
@@ -157,6 +161,7 @@ const orderOut = (order: CustomOrder) => ({
   link_sent_at: order.linkSentAt,
   paid_at: order.paidAt,
   po_number: order.poNumber,
+  refund_reason: order.refundReason,
   raised_at: order.raisedAt,
 });
 
@@ -184,7 +189,48 @@ async function reachedOrder(c: Context<AppEnv>, id: string): Promise<CustomOrder
   return order;
 }
 
+const refundRoute = createRoute({
+  method: "post",
+  path: "/api/custom-orders/{id}/refund",
+  summary: "A paid custom order refunded in full: not yet ordered, late past the grace, or failed its check",
+  request: {
+    ...orderPath,
+    body: {
+      required: true,
+      ...json(
+        z
+          .object({ reason: z.enum(REFUND_REASONS) })
+          .strict()
+          .openapi("CustomOrderRefund"),
+      ),
+    },
+  },
+  responses: {
+    200: ORDERS,
+    403: ACCESS,
+    404: MISSING,
+    409: errorResponse("refund_not_due: the reason given does not hold, or the order is refunded already"),
+    503: errorResponse("unavailable: Razorpay did not make the refund; ops are told to make it by hand"),
+  },
+});
+
 export function registerOpsCustomOrders(app: App): void {
+  app.openapi(refundRoute, async (c) => {
+    const order = await reachedOrder(c, c.req.valid("param").id);
+    if (order === null) return refuse(c, "not_found");
+    const { customOrderGraceDays } = await opsInputs(c);
+    const refunded = await refundCustomOrder(
+      c.env.DB,
+      c.var.deps,
+      { orderId: order.id, reason: c.req.valid("json").reason, graceDays: customOrderGraceDays },
+      written(c),
+    );
+    if (refunded.kind === "missing") return refuse(c, "not_found");
+    if (refunded.kind === "not_due") return refuse(c, "refund_not_due");
+    if (refunded.kind === "left_to_ops") return refuse(c, "unavailable");
+    return c.json(await ordersAnswer(c, order.personId), 200);
+  });
+
   app.openapi(listRoute, async (c) => {
     const { id } = c.req.valid("param");
     if ((await clientInReach(c, id)) === null) return refuse(c, "not_found");

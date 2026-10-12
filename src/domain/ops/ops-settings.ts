@@ -66,6 +66,8 @@ export interface OpsInputs {
   readonly lostAfterDays: number;
   /** A rupee order worth more than this needs a second approver (src/policy/purchasing.ts). */
   readonly poSecondApprovalAboveRupees: number;
+  /** Days past its promised date before a custom order is late (src/policy/purchasing.ts). */
+  readonly customOrderGraceDays: number;
   readonly referralReward: ReferralReward;
 }
 
@@ -110,6 +112,7 @@ function shape(values: OpsValues): OpsInputs {
     remedyLimit: values.remedy_limit,
     lostAfterDays: values.lost_after_days,
     poSecondApprovalAboveRupees: values.po_second_approval_above_rupees,
+    customOrderGraceDays: values.custom_order_grace_days,
   };
 }
 

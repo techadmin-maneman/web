@@ -414,6 +414,7 @@ export const PERSONAL_COLUMNS: Readonly<Record<string, PersonalTable>> = {
       "supplier_price",
       "razorpay_link_id",
       "razorpay_payment_id",
+      "razorpay_refund_id",
       "consumable_code",
       "po_id",
       "raised_by",

@@ -300,6 +300,7 @@ test.describe("the client's custom orders", () => {
           link_sent_at: "2027-09-22T05:12:00.000Z",
           paid_at: null,
           po_number: null,
+          refund_reason: null,
           raised_at: "2027-09-22T05:12:00.000Z",
         },
       ],
