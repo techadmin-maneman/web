@@ -10,7 +10,9 @@
 // payment link a one visit's client paid by and so the visit it is for
 // (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md), or the link a
 // client paid for a visit ops booked, and so the hold it waits on
-// (src/domain/booking/visit-booking.ts). Any other is acknowledged and ignored.
+// (src/domain/booking/visit-booking.ts), or the link a client paid a custom
+// order by (src/domain/money/custom-order-links.ts). Any other is acknowledged
+// and ignored.
 
 import { createRoute, z } from "@hono/zod-openapi";
 import type { Context } from "hono";
@@ -31,6 +33,7 @@ import { bookHold } from "../../http/book-hold.ts";
 import { cappedBody } from "../../http/capped-body.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
 import { sha256Hex } from "../../lib/hash.ts";
+import { customOrderOfLink, customOrderPaid } from "../../domain/money/custom-order-links.ts";
 import { cancelLinkPaidElsewhere, linkPaid } from "../../domain/money/payment-links-paid.ts";
 import { holdOfLink, recordHoldLinkPaid, type LinkHold } from "../../domain/booking/visit-booking.ts";
 import {
@@ -251,7 +254,11 @@ export function registerRazorpayHook(app: App): void {
       const link = RazorpayPaymentLinkSchema.parse(payload.payment_link.entity);
       const payment = RazorpayPaymentSchema.parse(payload.payment.entity);
       const hold = await holdOfLink(db, { razorpayLinkId: link.id, reference: link.reference_id ?? null });
-      if (hold === null) {
+      const customOrder = hold === null ? await customOrderOfLink(db, link) : null;
+      if (customOrder !== null) {
+        await customOrderPaid(db, { orderId: customOrder, payment }, config.settings.ipHashSalt, now);
+        log.info("razorpay_hook_custom_order_paid", { custom_order_id: customOrder });
+      } else if (hold === null) {
         const visit = await linkPaid(db, { link, payment }, config.settings.ipHashSalt, now);
         log.info("razorpay_hook_link_paid", { ours: visit !== null });
         if (visit !== null) {

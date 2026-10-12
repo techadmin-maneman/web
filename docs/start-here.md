@@ -83,11 +83,11 @@ this map, or when the map names something that no longer exists.
 ### The technician's work in the field
 
 - **Database work** (`src/domain/field/`): `tech-jobs`, `job-card`, `workable-job`, `job-events`, `job-event-bodies`, `job-record`, `job-use`, `piece-use`,
-  `job-sheet-settings`, `tech-photos`, `visit-photos`, `photo-views`, `pieces`, `stock`, `stock-places`, `stock-lots`, `stock-transit`, `stock-units`, `stock-view`, `piece-returns`, `kit`, `suppliers`, `purchase-orders`, `receipts`, `supplier-claims`, `returned-pieces`, `stock-photos`, `supplier-scorecard`, `stock-match`, `stock-watch`, `stock-demand`, `low-stock`,
+  `job-sheet-settings`, `tech-photos`, `visit-photos`, `photo-views`, `pieces`, `stock`, `stock-places`, `stock-lots`, `stock-transit`, `stock-units`, `stock-view`, `piece-returns`, `kit`, `suppliers`, `purchase-orders`, `receipts`, `supplier-claims`, `returned-pieces`, `custom-orders`, `custom-order-po`, `stock-photos`, `supplier-scorecard`, `stock-match`, `stock-watch`, `stock-demand`, `low-stock`,
   `consumables`, `hair-systems`
 - **Rules** (`src/policy/`): `in-job-steps`, `piece-step`, `job-visibility`, `phone-clock`, `stock`
 - **Data** (`src/config/`): `job-sheet`, `pieces`, `consumables`
-- **Routes** (`src/routes/`): `tech/`, `ops/field`, `ops/client-pieces`, `ops/stock`, `ops/stock.places`, `ops/stock.transit`, `ops/stock.read`, `ops/stock.units`, `ops/stock.schemas`, `ops/suppliers`, `ops/purchasing`, `ops/purchasing.receipts`, `ops/purchasing.claims`, `ops/purchasing.photos`, `ops/purchasing.scorecard`, `ops/stock-match`, `ops/consumables`,
+- **Routes** (`src/routes/`): `tech/`, `ops/field`, `ops/client-pieces`, `ops/stock`, `ops/stock.places`, `ops/stock.transit`, `ops/stock.read`, `ops/stock.units`, `ops/stock.schemas`, `ops/suppliers`, `ops/purchasing`, `ops/purchasing.receipts`, `ops/purchasing.claims`, `ops/purchasing.photos`, `ops/purchasing.scorecard`, `ops/stock-match`, `ops/custom-orders`, `ops/consumables`,
   `ops/hair-systems`, `ops/job-sheet`
 - **Screens:** `apps/tech/src/`, `apps/ops/src/stock/`
 - **Tests:** `test/worker/field/`, `test/worker/ops/stock-places.test.ts`,
@@ -110,7 +110,7 @@ this map, or when the map names something that no longer exists.
 - **Database work** (`src/domain/money/`): `payments`, `payment-links`, `payment-links-paid`, `client-payments`,
   `client-billing`, `refunds`, `auto-refunds`, `cancel-refunds`, `credits`, `credit-reminders`, `discount-codes`,
   `discount-code-holds`, `discount-code-uses`, `discount-code-visits`, `discount-code-figures`, `requested-codes`,
-  `day-money`, `one-visit-money`, `price-book`, `razorpay-catch-up`
+  `day-money`, `one-visit-money`, `price-book`, `razorpay-catch-up`, `custom-order-links`
 - **Rules** (`src/policy/`): `prices`, `prepayment`, `pay-by-link`, `discount-codes`, `credit-reminders`,
   `fraud-holds`
 - **Data** (`src/config/`): `gst`

@@ -61,6 +61,7 @@ import { registerOpsActivity } from "./routes/ops/activity.ts";
 import { registerOpsGrievances } from "./routes/ops/grievances.ts";
 import { registerOpsHairProfile } from "./routes/ops/hair-profile.ts";
 import { registerOpsStockMatch } from "./routes/ops/stock-match.ts";
+import { registerOpsCustomOrders } from "./routes/ops/custom-orders.ts";
 import { registerOpsJobSheet } from "./routes/ops/job-sheet.ts";
 import { registerOpsPaymentLinks } from "./routes/ops/payment-links.ts";
 import { registerOpsNoShowRulings } from "./routes/ops/no-show-rulings.ts";
@@ -204,6 +205,8 @@ const SURFACE_ROUTES: Readonly<Record<Surface, readonly ((app: App) => void)[]>>
     registerOpsHairProfile,
     // The stock code a client's profile matches, and where its pieces are (docs/decisions/0173-matching-a-client-to-stock.md).
     registerOpsStockMatch,
+    // Custom orders, paid in full before they are ordered (docs/decisions/0174-custom-orders.md).
+    registerOpsCustomOrders,
     // Erasing a client from their page, the day they ask.
     registerOpsErasure,
     registerOpsProfile,

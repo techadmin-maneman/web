@@ -45,6 +45,14 @@ export const NO_STOCK_MATCH = {
   in_transit: 0,
 } satisfies OpsReply<"/api/clients/{id}/stock-match">;
 
+export const READ_CUSTOM_ORDERS = `GET ${RECORD_PATH}/custom-orders` as const satisfies Call;
+
+/** A client with no custom orders, and one supplier to raise one with. */
+export const NO_CUSTOM_ORDERS = {
+  orders: [],
+  suppliers: [{ id: "sup-1", name: "Lumina Hair Co", currency: "USD" }],
+} satisfies OpsReply<"/api/clients/{id}/custom-orders">;
+
 export const FIND = "POST /api/clients/find" as const satisfies Call;
 
 export const NAME = { name: CLIENT.name, exact: true };
@@ -68,6 +76,7 @@ export async function clientRoutes(page: Page, over: Answers = {}): Promise<void
     [READ_CONSENTS]: json(CONSENTS),
     [READ_HAIR_PROFILE]: json(NO_HAIR_PROFILE),
     [READ_STOCK_MATCH]: json(NO_STOCK_MATCH),
+    [READ_CUSTOM_ORDERS]: json(NO_CUSTOM_ORDERS),
     "GET /api/clients/{id}/photos/{photo_id}": jpeg(await inkPhoto()),
     ...over,
   });

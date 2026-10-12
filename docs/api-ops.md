@@ -889,6 +889,150 @@ The stock code the client's hair profile matches exactly, and where its pieces a
 }
 ```
 
+### GET /api/clients/{id}/custom-orders
+
+The client's custom orders, and the suppliers one may be raised with
+
+**200**: The client's custom orders, and the suppliers one may be raised with
+
+```json
+{
+  "$ref": "#/components/schemas/ClientCustomOrders"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no such client, or custom order, within the reader's places
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/clients/{id}/custom-orders
+
+A custom order raised to the client's profile, and its payment link sent
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/CustomOrderRaise"
+}
+```
+
+**200**: The client's custom orders, and the suppliers one may be raised with
+
+```json
+{
+  "$ref": "#/components/schemas/ClientCustomOrders"
+}
+```
+
+**400**: invalid_request: fields names profile for a hair profile missing part of the spec, or supplier_id for no active supplier
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no such client, or custom order, within the reader's places
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/custom-orders/{id}/send-link
+
+A custom order's payment link sent again, where it could not be made
+
+**200**: The client's custom orders, and the suppliers one may be raised with
+
+```json
+{
+  "$ref": "#/components/schemas/ClientCustomOrders"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no such client, or custom order, within the reader's places
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**409**: order_state: the order is paid or cancelled
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/custom-orders/{id}/cancel
+
+A custom order not yet paid, cancelled, and its link with it
+
+**200**: The client's custom orders, and the suppliers one may be raised with
+
+```json
+{
+  "$ref": "#/components/schemas/ClientCustomOrders"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no such client, or custom order, within the reader's places
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**409**: order_state: the order is paid or cancelled
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ### POST /api/clients/{id}/erasure
 
 Erase a client now: their photographs and details. The CRM and Books follow within minutes
@@ -12800,6 +12944,230 @@ Request body:
 }
 ```
 
+### ClientCustomOrders
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "orders": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "number": {
+            "type": "integer"
+          },
+          "product": {
+            "type": "string"
+          },
+          "base_width_in": {
+            "type": "number"
+          },
+          "base_length_in": {
+            "type": "number"
+          },
+          "colour": {
+            "type": "string"
+          },
+          "grey_percent": {
+            "type": "integer"
+          },
+          "density_percent": {
+            "type": "integer"
+          },
+          "wave": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "note": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "supplier_id": {
+            "type": "string"
+          },
+          "supplier_price": {
+            "type": "integer"
+          },
+          "currency": {
+            "type": "string"
+          },
+          "amount": {
+            "type": "integer",
+            "description": "What the client pays, in paise."
+          },
+          "promised_on": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "awaiting_payment",
+              "paid",
+              "ordered",
+              "arrived",
+              "cancelled"
+            ]
+          },
+          "short_url": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "link_sent_at": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "paid_at": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "po_number": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "raised_at": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "number",
+          "product",
+          "base_width_in",
+          "base_length_in",
+          "colour",
+          "grey_percent",
+          "density_percent",
+          "wave",
+          "note",
+          "supplier_id",
+          "supplier_price",
+          "currency",
+          "amount",
+          "promised_on",
+          "status",
+          "short_url",
+          "link_sent_at",
+          "paid_at",
+          "po_number",
+          "raised_at"
+        ]
+      }
+    },
+    "suppliers": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "currency": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "currency"
+        ]
+      }
+    }
+  },
+  "required": [
+    "orders",
+    "suppliers"
+  ]
+}
+```
+
+### CustomOrderRaise
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "supplier_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64
+    },
+    "supplier_price": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100000000,
+      "description": "One piece from the supplier, in its currency's smallest unit."
+    },
+    "amount": {
+      "type": "integer",
+      "minimum": 100,
+      "maximum": 100000000,
+      "description": "What the client pays, in paise."
+    },
+    "promised_on": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date"
+    },
+    "wave": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "enum": [
+        "straight",
+        "slight_wave",
+        "wavy",
+        "curly",
+        null
+      ]
+    },
+    "note": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "minLength": 1,
+      "maxLength": 200,
+      "pattern": "^[^\\p{Cc}]+$/u"
+    }
+  },
+  "required": [
+    "supplier_id",
+    "supplier_price",
+    "amount",
+    "promised_on",
+    "wave",
+    "note"
+  ],
+  "additionalProperties": false
+}
+```
+
 ### Erased
 
 ```json
@@ -15626,6 +15994,8 @@ Request body:
         "supplier_claim.decide",
         "piece_return.claim",
         "piece_return.write_off",
+        "custom_order.raise",
+        "custom_order.cancel",
         "task.assign",
         "task.hand_back",
         "task.close",
