@@ -9,6 +9,7 @@ import { EXPIRY_WARNING_DAYS, TRANSFER_OVERDUE_DAYS } from "../../policy/stock.t
 import type { AlertOnce, ResolveAlert } from "../ops/alerts.ts";
 import { readOpsInputs } from "../ops/ops-settings.ts";
 import { runForecastIfDue } from "./forecast.ts";
+import { checkTomorrowsKits } from "./kit-check.ts";
 import { draftPlan } from "./supply-plan.ts";
 import { refreshStockRisks } from "./stock-risks.ts";
 
@@ -135,6 +136,8 @@ export async function watchStock(
   const inputs = await readOpsInputs(db, now);
   const run = await runForecastIfDue(db, now, inputs);
   if (run !== null) await draftPlan(db, run, now, inputs.planningPeriodDays);
+  // Each evening hour: tomorrow's kits, and their top-ups (./kit-check.ts).
+  await checkTomorrowsKits(db, now, deps.alertOnce);
   const today = stockWatchDueOn(now);
   if (today === null) return;
   await tellOfExpiring(db, deps, today);

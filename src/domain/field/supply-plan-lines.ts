@@ -46,8 +46,11 @@ type LineRow = {
   po_number: number | null;
 };
 
-/** The open proposals, and the lines of the latest draft already decided. */
-export async function planLines(db: D1Database): Promise<PlanLine[]> {
+/** How long a decided line stays on the page. */
+const DECIDED_SHOWN_DAYS = 7;
+
+/** Every open proposal, the plan's and the evening's kit top-ups, and what was decided in the last week. */
+export async function planLines(db: D1Database, now: Date): Promise<PlanLine[]> {
   const { results } = await db
     .prepare(
       `SELECT l.id, l.kind, l.consumable_code, c.name, l.city, f.name AS from_name, t.name AS to_name, s.name AS supplier,
@@ -55,9 +58,10 @@ export async function planLines(db: D1Database): Promise<PlanLine[]> {
        FROM plan_lines l JOIN consumables c ON c.code = l.consumable_code
        LEFT JOIN stock_places f ON f.id = l.from_place LEFT JOIN stock_places t ON t.id = l.to_place
        LEFT JOIN suppliers s ON s.id = l.supplier_id LEFT JOIN purchase_orders o ON o.id = l.po_id
-       WHERE l.run_id = (SELECT run_id FROM plan_lines ORDER BY drafted_at DESC LIMIT 1)
+       WHERE l.state = 'proposed' OR l.decided_at >= ?1
        ORDER BY l.kind DESC, c.name COLLATE NOCASE, l.city`,
     )
+    .bind(new Date(now.getTime() - DECIDED_SHOWN_DAYS * 24 * 60 * 60 * 1000).toISOString())
     .all<LineRow>();
   return results.map((row) => ({
     id: row.id,
@@ -121,7 +125,7 @@ async function moveOf(db: D1Database, line: ClaimedRow, quantity: number, writte
   if (line.kind === "transfer") {
     const moved = await sendStock(
       db,
-      { code: line.consumable_code, quantity, from: line.from_place ?? "", to: line.to_place ?? "" },
+      { code: line.consumable_code, quantity, from: line.from_place ?? "", to: line.to_place ?? "", waitForScan: true },
       written,
     );
     return moved.ok ? { ok: true as const, poId: null } : { ok: false as const, fields: moved.fields };

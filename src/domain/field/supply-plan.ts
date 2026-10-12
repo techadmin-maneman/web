@@ -182,7 +182,7 @@ export async function draftPlan(db: D1Database, runId: string, now: Date, period
   const lines = codes.flatMap((code) => linesFor(code, read, periodDays));
   const at = now.toISOString();
   await db.batch([
-    db.prepare("DELETE FROM plan_lines WHERE state = 'proposed'"),
+    db.prepare("DELETE FROM plan_lines WHERE state = 'proposed' AND run_id NOT LIKE 'kit-check:%'"),
     ...lines.map((line) =>
       db
         .prepare(

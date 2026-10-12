@@ -106,7 +106,7 @@ const rejectRoute = createRoute({
 const written = (c: Context<AppEnv>) => ({ actor: actorOf(c), requestId: c.var.requestId, now: c.var.deps.now() });
 
 async function planAnswer(c: Context<AppEnv>) {
-  const lines = await planLines(c.env.DB);
+  const lines = await planLines(c.env.DB, c.var.deps.now());
   return {
     lines: lines.map((line) => ({
       id: line.id,
