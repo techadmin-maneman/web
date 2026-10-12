@@ -191,6 +191,7 @@ export const RESTORE_GROUPS: readonly RestoreGroup[] = [
       "ops_settings",
       "price_book",
       "standard_costs",
+      "targets",
       "services",
       "slot_times",
       "serviceable_pincodes",

@@ -71,6 +71,7 @@ import { registerOpsStrangers } from "./routes/ops/strangers.ts";
 import { registerOpsQuickReplies } from "./routes/ops/quick-replies.ts";
 import { registerOpsSpend } from "./routes/ops/spend.ts";
 import { registerOpsStandardCosts } from "./routes/ops/standard-costs.ts";
+import { registerOpsTargets } from "./routes/ops/targets.ts";
 import { registerOpsVisitLostReason } from "./routes/ops/visit-lost-reason.ts";
 import { registerOpsRemedies } from "./routes/ops/remedies.ts";
 import { registerOpsCareNumbers } from "./routes/ops/care-numbers.ts";
@@ -202,6 +203,7 @@ const SURFACE_ROUTES: Readonly<Record<Surface, readonly ((app: App) => void)[]>>
     registerOpsQuickReplies,
     registerOpsSpend,
     registerOpsStandardCosts,
+    registerOpsTargets,
     registerOpsVisitLostReason,
     registerOpsRemedies,
     registerOpsCareNumbers,

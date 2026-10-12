@@ -144,6 +144,8 @@ export const ROWS_AT_T: readonly string[] = [
      VALUES ('je1', 'ap1', 'e1', 't1', 'd1', 'outcome', '{"outcome":"partial"}', '${AT}', '${AT}', '${AT}')`,
   `INSERT INTO consumables (code, name, unit, unit_cost, created_at, updated_at)
      VALUES ('strip', 'Bond strip', 'strip', 4000, '${AT}', '${AT}')`,
+  `INSERT INTO targets (month, city, measure, target, set_by, set_at)
+     VALUES ('2026-10', 'Gurgaon', 'new_clients', 40, 'admin@maneman.in', '${AT}')`,
   `INSERT INTO standard_costs (item, tier, cost, valid_from, set_by, set_at)
      VALUES ('first_fit', 'standard', 600000, '2026-09-01', 'finance@maneman.in', '${AT}')`,
   `INSERT INTO consumables_used (id, appointment_id, job_event_id, name, quantity, created_at, consumable_code)

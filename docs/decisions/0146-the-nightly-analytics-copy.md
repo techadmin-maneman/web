@@ -17,10 +17,11 @@ The owner chose to report from Zoho Analytics, fed by a nightly copy of our figu
 5. **Money is in rupees before GST**, with the GST and any refund in columns of their own.
 6. **Each night's copy is checked**: the visits it holds and the payments' total, against what it was sent. A difference alerts (`analytics_totals`), as does a copy past 400 MB (`analytics_size`).
 7. **A technician's day is read from the dispatch board**, so the copy's utilisation is the board's: the half-slots open, none on a day of leave, and those taken. A day already worked keeps the figures it closed with; each night rewrites yesterday and the four weeks ahead, and the first night fills every day since the first visit.
-8. **Production stays on `none` until counsel answers on pseudonymous rows and the data agreements with Supabase and Zoho.** There is no staging copy; the owner kept one Supabase project.
+8. **Production copies; staging and local runs do not.** The API writes as `analytics_writer`, which may read and write the `analytics` schema and nothing else, through the Hyperdrive config `mm-analytics` with caching off, since the night reads back what it has just written. No data agreement is needed with Supabase or Zoho (the owner's ruling). There is no staging copy; the owner kept one Supabase project.
 
 ## Consequences
 
-- Switching it on needs a writer role in Supabase for the API, a Hyperdrive config, the binding in wrangler.jsonc and the secret. Zoho's views then move from the sample schema to `analytics`.
+- `npm run analytics:first-run` copies one of every record into the real schema twice, as the API's login, reads it back through Zoho's, and takes it out again. Its first run found that a list sent as an array, with the server's types off as a pooler needs, arrives as one string; tonight's keys go as JSON.
+- Zoho reads the `reporting` views, which point at the sample schema until the copy carries real activity, then at `analytics`.
 - Care cases follow once the Care numbers page has landed. Channels and campaigns follow ADR 0148. Until the rest of the growth figures are built, a lead's area and lost reason are empty, and so is a visit's booking window.
 - Tests: `test/worker/jobs/analytics-nightly.test.ts`, `test/node/api/warehouse-sql.test.ts`.

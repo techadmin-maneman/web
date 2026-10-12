@@ -74,7 +74,13 @@ const FREE_TIER_KEYS: ReadonlySet<string> = new Set([
   // Refused past 5,000 transformations a month on the Free plan, never billed: a client's referral card.
   "images",
   "version_metadata",
+  // Within the Free plan's daily queries, and part of Workers Paid (docs/decisions/0112-workers-paid.md): the nightly
+  // reporting copy's connection to Supabase (docs/decisions/0146-the-nightly-analytics-copy.md).
+  "hyperdrive",
 ]);
+
+/** Bindings only an environment that uses them declares: locally the copy runs on its stub, and staging keeps none. */
+const WHERE_USED_ONLY: ReadonlySet<string> = new Set(["hyperdrive"]);
 
 /** Config keys that only exist on paid plans, or that bypass wrangler's binding types. */
 const PAID_OR_UNCHECKED_KEYS = ["limits", "unsafe"] as const;
@@ -163,9 +169,7 @@ function namesUnder(block: JsonObject, bindingKey: BindingKey): string[] | undef
   if (value === undefined) return undefined;
   if (bindingKey.shape === "map") return isObject(value) ? Object.keys(value) : [];
 
-  let bindings: JsonObject[] = [];
-  if (bindingKey.shape === "list") bindings = objectsIn(value);
-  else if (isObject(value)) bindings = [value];
+  const bindings = objectsIn(bindingKey.shape === "list" ? value : [value]);
   return bindings.flatMap((binding) => stringField(binding, bindingKey.nameField) ?? []);
 }
 
@@ -224,7 +228,7 @@ function checkRedeclared(top: JsonObject, block: JsonObject, label: string): str
     if (envNames === undefined) {
       problems.push(`${label}: ${key} is not redeclared (the top level declares ${(topNames ?? []).join(", ")})`);
     } else if (topNames === undefined) {
-      problems.push(`${label}: declares ${key}, which the top level (local) does not`);
+      if (!WHERE_USED_ONLY.has(key)) problems.push(`${label}: declares ${key}, which the top level (local) does not`);
     } else if (!sameNames(topNames, envNames)) {
       problems.push(
         `${label}: ${key} declares [${envNames.join(", ")}] but the top level declares [${topNames.join(", ")}]`,

@@ -104,6 +104,8 @@ export const AUDIT_ACTIONS = [
   "price.set",
   "price.withdraw",
   "standard_cost.set",
+  "target.set",
+  "target.remove",
   // The day's half-slot times from a date (docs/decisions/0102-window-times.md).
   "slot_times.set",
   "pincode.set",

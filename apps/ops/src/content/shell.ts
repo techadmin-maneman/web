@@ -28,6 +28,7 @@ export const shell = {
     messages: "Messages",
     "care-numbers": "Care numbers",
     spend: "Spend",
+    targets: "Targets",
     grievances: "Concerns",
     "number-changes": "Number changes",
     "deletion-requests": "Deletion requests",

@@ -50,7 +50,7 @@ export default defineConfig({
           groups: [
             {
               name: "content",
-              test: /[\\/]src[\\/]content(?:[\\/](?!(?:activity|technician-pay|partners|partner-commission|words|care|settings|spend)\.ts$)|\.ts$)/,
+              test: /[\\/]src[\\/]content(?:[\\/](?!(?:activity|technician-pay|partners|partner-commission|words|care|settings|spend|targets)\.ts$)|\.ts$)/,
             },
           ],
         },

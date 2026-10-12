@@ -224,6 +224,10 @@ export const ROUTE_NEEDS: Readonly<Record<string, RouteNeed | typeof SIGNED_IN>>
   "GET /api/staff": inOwnPlaces("admin", "view"),
   // The audit log: what everyone did, everywhere, so a national grant (src/routes/ops/activity.ts).
   "GET /api/activity": need("admin", "view"),
+  // A month's targets, city by city (docs/decisions/0154-targets-and-reporting-access.md).
+  "GET /api/targets": need("admin", "view"),
+  "POST /api/targets": need("admin", "manage"),
+  "POST /api/targets/remove": need("admin", "manage"),
   "POST /api/staff": inOwnPlaces("admin", "manage"),
   "POST /api/staff/delete": inOwnPlaces("admin", "manage"),
   "POST /api/staff/enforcement": need("admin", "manage"),

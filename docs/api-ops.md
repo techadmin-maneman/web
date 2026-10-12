@@ -2362,6 +2362,106 @@ Request body:
 }
 ```
 
+### GET /api/targets
+
+A month's targets, city by city; this month's where none is asked for
+
+**200**: The month's targets
+
+```json
+{
+  "$ref": "#/components/schemas/Targets"
+}
+```
+
+**400**: invalid_request: a month outside the year either side of this one
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/targets
+
+Set a month's target for a city, or set it again
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/TargetChange"
+}
+```
+
+**200**: Set; the month's targets
+
+```json
+{
+  "$ref": "#/components/schemas/Targets"
+}
+```
+
+**400**: invalid_request: fields names month, city or target for one out of bounds
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/targets/remove
+
+Take a month's target for a city off
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/TargetRemoval"
+}
+```
+
+**200**: Taken off; the month's targets
+
+```json
+{
+  "$ref": "#/components/schemas/Targets"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no such target set
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ### POST /api/visits/{id}/lost-reason
 
 Set, or clear, why a client is not going ahead with a fit after this consultation
@@ -12939,6 +13039,193 @@ Request body:
 }
 ```
 
+### Targets
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "month": {
+      "type": "string"
+    },
+    "targets": {
+      "type": "array",
+      "items": {
+        "$ref": "#/components/schemas/Target"
+      }
+    },
+    "cities": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "measures": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "leads",
+          "consultations",
+          "new_clients",
+          "active_clients",
+          "revenue",
+          "cac",
+          "utilisation",
+          "on_time"
+        ]
+      }
+    },
+    "first_month": {
+      "type": "string"
+    },
+    "last_month": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "month",
+    "targets",
+    "cities",
+    "measures",
+    "first_month",
+    "last_month"
+  ],
+  "additionalProperties": false
+}
+```
+
+### Target
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "month": {
+      "type": "string"
+    },
+    "city": {
+      "type": "string"
+    },
+    "measure": {
+      "type": "string",
+      "enum": [
+        "leads",
+        "consultations",
+        "new_clients",
+        "active_clients",
+        "revenue",
+        "cac",
+        "utilisation",
+        "on_time"
+      ]
+    },
+    "target": {
+      "type": "integer",
+      "description": "A count, whole rupees before GST, or a percentage."
+    },
+    "set_by": {
+      "type": "string"
+    },
+    "set_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "month",
+    "city",
+    "measure",
+    "target",
+    "set_by",
+    "set_at"
+  ],
+  "additionalProperties": false
+}
+```
+
+### TargetChange
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "month": {
+      "type": "string",
+      "pattern": "^\\d{4}-(0[1-9]|1[0-2])$"
+    },
+    "city": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 60
+    },
+    "measure": {
+      "type": "string",
+      "enum": [
+        "leads",
+        "consultations",
+        "new_clients",
+        "active_clients",
+        "revenue",
+        "cac",
+        "utilisation",
+        "on_time"
+      ]
+    },
+    "target": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 10000000
+    }
+  },
+  "required": [
+    "month",
+    "city",
+    "measure",
+    "target"
+  ],
+  "additionalProperties": false
+}
+```
+
+### TargetRemoval
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "month": {
+      "type": "string",
+      "pattern": "^\\d{4}-(0[1-9]|1[0-2])$"
+    },
+    "city": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 60
+    },
+    "measure": {
+      "type": "string",
+      "enum": [
+        "leads",
+        "consultations",
+        "new_clients",
+        "active_clients",
+        "revenue",
+        "cac",
+        "utilisation",
+        "on_time"
+      ]
+    }
+  },
+  "required": [
+    "month",
+    "city",
+    "measure"
+  ],
+  "additionalProperties": false
+}
+```
+
 ### LostReasonChange
 
 ```json
@@ -13917,6 +14204,8 @@ Request body:
         "price.set",
         "price.withdraw",
         "standard_cost.set",
+        "target.set",
+        "target.remove",
         "slot_times.set",
         "pincode.set",
         "pincode.rename",

@@ -3,13 +3,13 @@
 // near the free plan's limit, alerts.
 
 import { copyTonight, nightlyDueOn, WAREHOUSE_ALERT_BYTES } from "../domain/analytics/nightly.ts";
-import { hyperdriveOf, warehouseFor } from "../providers/warehouse/index.ts";
+import { warehouseFor } from "../providers/warehouse/index.ts";
 import type { CronContext } from "./cron.ts";
 
 export async function analyticsJob({ env, deps, config, log, inputs }: CronContext): Promise<void> {
   const date = nightlyDueOn(deps.now());
   const secret = config.settings.analytics.clientKeySecret;
-  const warehouse = warehouseFor(config.providers.ANALYTICS_PROVIDER, hyperdriveOf(env));
+  const warehouse = warehouseFor(config.providers.ANALYTICS_PROVIDER, env.ANALYTICS_DB?.connectionString ?? null);
   if (date === null || secret === null || warehouse === null) return;
   try {
     if (await warehouse.ranOn(date)) return;

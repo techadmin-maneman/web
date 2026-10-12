@@ -1,5 +1,5 @@
 // A row per client per month in the reporting copy (docs/decisions/0151-retention-figures.md), from the month of their
-// first fitting: where they stood at its end (src/policy/client-standing.ts), the visits done in it and the revenue
+// first fitting, which is "new": where they stood at each later month's end (src/policy/client-standing.ts), the visits done in it and the revenue
 // they earned, in the city of their first fit and under their first lead's channel. Revenue is before GST and after
 // refunds, earned on the day of the visit. Margin is revenue less each visit's hair system at its standard cost
 // (docs/decisions/0152-standard-costs.md), the consumables used at their recorded cost, and the technician's rate for
@@ -83,7 +83,8 @@ function monthsOf(visits: readonly Visit[], firstCity: string | null, today: str
     const inMonth = visits.filter((visit) => monthOf(visit.day) === month);
     months.push({
       month,
-      state: standingOn(end, last.day, days),
+      // The month of the first fitting is the client's first, as the dashboards count new clients.
+      state: month === monthOf(first.day) ? "new" : standingOn(end, last.day, days),
       visits: inMonth.length,
       revenue: Math.round(inMonth.reduce((sum, visit) => sum + visit.earned, 0)) / 100,
       margin: marginOf(inMonth),

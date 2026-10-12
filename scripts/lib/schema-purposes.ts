@@ -143,6 +143,8 @@ export const PURPOSES: Readonly<Record<string, string>> = {
   storage_meter:
     "What the apps' two buckets, client-photos and referral-cards, hold together: one row, the sum of `stored_objects` kept beside it, and the last mark of the share ops were told of (ADR 0093); and the last mark of the database's own size they were told of.",
   sync_cursors: "Where each pass of the reconciliation with FSM has reached (ADR 0032).",
+  targets:
+    "Each month's target for a city, by measure, as set on the console's Targets page; set again, it is replaced (ADR 0154).",
   task_closures:
     "A task on the Tasks board ops closed without doing its thing, a visit left partly done alone, with why, who and when, by the task's group and its row's id (ADR 0092).",
   task_owners:
