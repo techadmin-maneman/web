@@ -50,7 +50,7 @@ export default defineConfig({
           groups: [
             {
               name: "content",
-              test: /[\\/]src[\\/]content(?:[\\/](?!(?:activity|technician-pay|partners|partner-commission|words|care|settings|spend|targets|stock-places|stock-transit|stock-views|stock-labels|purchasing|stock-match|custom-orders)\.ts$)|\.ts$)/,
+              test: /[\\/]src[\\/]content(?:[\\/](?!(?:activity|technician-pay|partners|partner-commission|words|care|settings|spend|targets|stock-places|stock-transit|stock-views|stock-labels|purchasing|stock-match|custom-orders|supply-plan)\.ts$)|\.ts$)/,
             },
           ],
         },

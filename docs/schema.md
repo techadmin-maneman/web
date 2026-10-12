@@ -35,7 +35,7 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 | The audit log | `audit_log` | Who did what since `<T>` | Adding the rows since `<T>`: they are only ever added |
 | New people, leads, addresses and try-ons | `people`, `leads`, `addresses`, `tryon_jobs` | Bookings and leads made since are lost here; the CRM has the leads | The rows since `<T>` |
 | Technicians, and FSM's catalogue | `technicians`, `fsm_items` | A technician added or changed since goes back | Where FSM still holds them, the cron reads them again; otherwise the rows since `<T>` |
-| The demand forecast | `forecast_runs`, `forecast_lines`, `demand_events` | A forecast run since is gone and the last before stands until the next is due, and an event ops added or took off since is gone or back | Adding the events again on the Supply plan page; the next run is due within the planning period |
+| The demand forecast | `forecast_runs`, `forecast_lines`, `demand_events`, `plan_lines` | A forecast run since is gone and the last before stands until the next is due, an event ops added or took off since is gone or back, and a plan line decided since is proposed again, though its transfer or order stands | Adding the events again on the Supply plan page; the next run is due within the planning period |
 | Worked out from other tables | `last_visits`, `ops_settings_snapshot`, `stock_balances`, `stock_lot_balances` | Nothing of their own: triggers keep each from the table it is worked out from | Putting back that table |
 | The storage meter | `stored_objects`, `storage_meter` | Objects stored or deleted since are counted wrongly, as R2 is not restored | The rows since `<T>` |
 | Housekeeping | `alerts`, `board_version`, `cron_jobs`, `cron_runs`, `credit_expiry_cursor`, `counters`, `idempotency`, `number_codes`, `otp_challenges`, `tryon_sessions`, `events`, `sync_cursors`, `webhook_inbox`, `zoho_access_tokens`, `zoho_token`, `zoho_tokens` | Nothing that lasts | Nothing |
@@ -110,6 +110,7 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 - [photos](#photos): One photograph of a set, by its angle, and where it and its thumbnail are kept in R2 (ADR 0028, ADR 0093).
 - [piece_returns](#piece_returns): Each piece that came off a client at a replacement, held in the technician's kit as returned until handed in (ADR 0163).
 - [pieces](#pieces): Each piece fitted, its base and lot, the day it was fitted and the day it falls due, and a failure with its reason. `fsm_id` is FSM's ID for a piece mirrored from FSM, otherwise the row's own (ADR 0032, ADR 0110).
+- [plan_lines](#plan_lines): Each move the supply plan proposes from a forecast run, a transfer or an order, with the figures behind it and what ops decided (ADR 0180).
 - [po_lines](#po_lines): Each line of a purchase order: the stock code, how many, the price it was ordered at, and how many have arrived (ADR 0166).
 - [price_book](#price_book): Every price from its date, and the only source of prices; an old row stays for what was sold under it (ADR 0045, ADR 0061).
 - [purchase_orders](#purchase_orders): Each purchase order to a supplier: its state from drafted to closed or cancelled, who approved, sent or cancelled it, and when (ADR 0166).
@@ -1794,6 +1795,39 @@ Indexes:
 - A `UNIQUE` constraint: unique on (`fsm_id`)
 
 Triggers: `pieces_replacement_booked_added`, `pieces_replacement_booked_changed`.
+
+## plan_lines
+
+Each move the supply plan proposes from a forecast run, a transfer or an order, with the figures behind it and what ops decided (ADR 0180).
+
+Made by `0152_supply_plan.sql`.
+
+| Column | Type | May be empty | Default | Key |
+| --- | --- | --- | --- | --- |
+| `id` | TEXT | no |  | primary key |
+| `run_id` | TEXT | no |  |  |
+| `kind` | TEXT | no |  |  |
+| `consumable_code` | TEXT | no |  | → `consumables.code` |
+| `city` | TEXT | yes |  |  |
+| `from_place` | TEXT | yes |  | → `stock_places.id` |
+| `to_place` | TEXT | yes |  | → `stock_places.id` |
+| `supplier_id` | TEXT | yes |  | → `suppliers.id` |
+| `proposed` | INTEGER | no |  |  |
+| `quantity` | INTEGER | yes |  |  |
+| `usable` | INTEGER | no |  |  |
+| `need` | REAL | no |  |  |
+| `safety` | REAL | no |  |  |
+| `state` | TEXT | no |  |  |
+| `reject_reason` | TEXT | yes |  |  |
+| `decided_by` | TEXT | yes |  |  |
+| `decided_at` | TEXT | yes |  |  |
+| `po_id` | TEXT | yes |  | → `purchase_orders.id` |
+| `drafted_at` | TEXT | no |  |  |
+
+Indexes:
+
+- `plan_lines_by_run`: on (`run_id`)
+- `plan_lines_open`: on (`drafted_at`), where `state = 'proposed'`
 
 ## po_lines
 

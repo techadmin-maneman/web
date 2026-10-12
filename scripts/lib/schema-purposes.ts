@@ -39,6 +39,8 @@ export const PURPOSES: Readonly<Record<string, string>> = {
     "Each forecast run's expected use of each stock code in each city and period, with what each of its four layers gave (ADR 0179).",
   forecast_runs:
     "Each demand forecast run, once a planning period: its period, horizon and the rates it learned (ADR 0179).",
+  plan_lines:
+    "Each move the supply plan proposes from a forecast run, a transfer or an order, with the figures behind it and what ops decided (ADR 0180).",
   stock_risks:
     "Each fit booked ahead found with no hair system in its city, or no profile to match one by, and when it was no longer at risk (ADR 0178).",
   supplier_claims:

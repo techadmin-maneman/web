@@ -235,6 +235,11 @@ const HISTORY = [
   `INSERT INTO suppliers (id, name, country, currency, payment_terms_days, warranty_days, created_at, updated_at,
      books_vendor_id, books_checked_at)
    SELECT 'sup-' || i, 'Supplier ' || i, 'CN', 'USD', 30, 90, '${AGO}', '${AGO}', 'bv-' || i, '${AGO}' FROM n`,
+  `INSERT INTO supplier_items (supplier_id, consumable_code, unit_price, pack_size, minimum_order, lead_time_days,
+     updated_at)
+   SELECT 'sup-' || i, 'hs-' || i, 12000, 1, 1, 21, '${AGO}' FROM n`,
+  `INSERT INTO stock_units (id, code, serial, consumable_code, state, appointment_id, labelled_at, moved_at)
+   SELECT 'su-' || i, 'MM-HIS-' || printf('%07d', i), i, 'hs-' || i, 'fitted', 'a-' || i, '${AGO}', '${AGO}' FROM n`,
   `INSERT INTO purchase_orders (id, number, supplier_id, currency, state, drafted_by, drafted_at, updated_at)
    SELECT 'po-' || i, i, 'sup-' || i, 'USD', 'received', 'ops@localhost', '${AGO}', '${AGO}' FROM n`,
   `INSERT INTO po_lines (id, po_id, consumable_code, quantity, unit_price, received_quantity)
@@ -249,6 +254,10 @@ const HISTORY = [
      0.8, 0.5, '${AGO}' FROM n`,
   `INSERT INTO forecast_lines (run_id, consumable_code, city, period, booked, due, pipeline, baseline, expected, high)
    SELECT 'fr-' || i, 'hs-' || i, 'Gurgaon', 0, 1, 0, 0, 0, 1, 2.7 FROM n`,
+  `INSERT INTO plan_lines (id, run_id, kind, consumable_code, city, supplier_id, proposed, quantity, usable, need, safety,
+     state, decided_by, decided_at, drafted_at)
+   SELECT 'pl-' || i, 'fr-' || i, 'order', 'hs-' || i, NULL, 'sup-' || i, 12, 12, 0, 6, 2, 'approved', 'ops@localhost',
+     '${AGO}', '${AGO}' FROM n`,
   `INSERT INTO demand_events (id, name, city, starts_on, ends_on, uplift_percent, created_by, created_at)
    SELECT 'de-' || i, 'Season ' || i, 'Gurgaon', date('${AGO}'), date('${AGO}', '+1 day'), 20, 'ops@localhost', '${AGO}'
    FROM n WHERE i <= 20`,

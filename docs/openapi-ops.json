@@ -4770,6 +4770,146 @@
           "lines"
         ]
       },
+      "SupplyPlan": {
+        "type": "object",
+        "properties": {
+          "lines": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "transfer",
+                    "order"
+                  ]
+                },
+                "consumable_code": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "city": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "from": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "to": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "supplier": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "proposed": {
+                  "type": "integer"
+                },
+                "quantity": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ]
+                },
+                "usable": {
+                  "type": "integer"
+                },
+                "need": {
+                  "type": "number"
+                },
+                "safety": {
+                  "type": "number"
+                },
+                "state": {
+                  "type": "string",
+                  "enum": [
+                    "proposed",
+                    "approved",
+                    "rejected"
+                  ]
+                },
+                "reject_reason": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "po_number": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ]
+                }
+              },
+              "required": [
+                "id",
+                "kind",
+                "consumable_code",
+                "name",
+                "city",
+                "from",
+                "to",
+                "supplier",
+                "proposed",
+                "quantity",
+                "usable",
+                "need",
+                "safety",
+                "state",
+                "reject_reason",
+                "po_number"
+              ]
+            }
+          }
+        },
+        "required": [
+          "lines"
+        ]
+      },
+      "PlanLineApproval": {
+        "type": "object",
+        "properties": {
+          "quantity": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1000000
+          }
+        },
+        "required": [
+          "quantity"
+        ],
+        "additionalProperties": false
+      },
+      "PlanLineRejection": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          }
+        },
+        "required": [
+          "reason"
+        ],
+        "additionalProperties": false
+      },
       "Erased": {
         "type": "object",
         "properties": {
@@ -7326,6 +7466,8 @@
               "custom_order.raise",
               "custom_order.cancel",
               "custom_order.refund",
+              "plan_line.approve",
+              "plan_line.reject",
               "task.assign",
               "task.hand_back",
               "task.close",
@@ -17508,6 +17650,228 @@
         }
       }
     },
+    "/api/supply-plan": {
+      "get": {
+        "summary": "The latest supply plan, each line with the figures behind it",
+        "responses": {
+          "200": {
+            "description": "The supply plan",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupplyPlan"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "access_required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/supply-plan/draft": {
+      "post": {
+        "summary": "The supply plan drafted again now, from the latest forecast",
+        "responses": {
+          "200": {
+            "description": "The supply plan",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupplyPlan"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "access_required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "order_state: no forecast has run yet",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/supply-plan/lines/{id}/approve": {
+      "post": {
+        "summary": "A proposal approved at a quantity: its transfer sent, or its order drafted",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PlanLineApproval"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The supply plan",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupplyPlan"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid_request: fields names what the move was refused for, as stock moved since",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "access_required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found: no such line",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "order_state: the line is decided already",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/supply-plan/lines/{id}/reject": {
+      "post": {
+        "summary": "A proposal rejected, with why",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PlanLineRejection"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The supply plan",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupplyPlan"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid_request: fields names what the move was refused for, as stock moved since",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "access_required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found: no such line",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "order_state: the line is decided already",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/clients/{id}/erasure": {
       "post": {
         "summary": "Erase a client now: their photographs and details. The CRM and Books follow within minutes",
@@ -20739,6 +21103,8 @@
                 "custom_order.raise",
                 "custom_order.cancel",
                 "custom_order.refund",
+                "plan_line.approve",
+                "plan_line.reject",
                 "task.assign",
                 "task.hand_back",
                 "task.close",

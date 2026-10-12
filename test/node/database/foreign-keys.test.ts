@@ -59,6 +59,10 @@ const HANDLED: Readonly<Record<string, string>> = {
     "src/domain/dispatch/technician-roster.ts deletes only a kit, which no place hangs from",
   "stock_movements.place_id -> stock_places":
     "src/domain/dispatch/technician-roster.ts deletes only a kit, which no row names by place_id",
+  "plan_lines.from_place -> stock_places":
+    "src/domain/dispatch/technician-roster.ts deletes only a kit, and a plan line moves stock only between stockrooms and the warehouse",
+  "plan_lines.to_place -> stock_places":
+    "src/domain/dispatch/technician-roster.ts deletes only a kit, and a plan line moves stock only between stockrooms and the warehouse",
   "hair_profiles.technician_id -> technicians":
     "src/domain/dispatch/technician-roster.ts: the key itself refuses the batch, and nothing is deleted",
   // A consumable added by mistake goes with what services were set to use of it, and never once its stock has moved.
@@ -71,6 +75,8 @@ const HANDLED: Readonly<Record<string, string>> = {
     "src/domain/field/consumables.ts refuses to delete one a movement names, and a transfer comes only with one",
   "po_lines.consumable_code -> consumables":
     "src/domain/field/consumables.ts refuses to delete one an order names: the foreign key refuses its batch, answered in_use",
+  "plan_lines.consumable_code -> consumables":
+    "src/domain/field/consumables.ts refuses to delete one a plan line names: the foreign key refuses its batch, answered in_use",
   "forecast_lines.run_id -> forecast_runs": "src/domain/field/forecast.ts deletes an old run's lines before the run",
   "custom_orders.consumable_code -> consumables":
     "src/domain/field/consumables.ts refuses to delete one an order names, and a custom order's code is named by its order's line",

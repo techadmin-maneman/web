@@ -64,6 +64,7 @@ import { registerOpsHairProfile } from "./routes/ops/hair-profile.ts";
 import { registerOpsStockMatch } from "./routes/ops/stock-match.ts";
 import { registerOpsCustomOrders } from "./routes/ops/custom-orders.ts";
 import { registerOpsForecast } from "./routes/ops/stock-forecast.ts";
+import { registerOpsSupplyPlan } from "./routes/ops/supply-plan.ts";
 import { registerOpsJobSheet } from "./routes/ops/job-sheet.ts";
 import { registerOpsPaymentLinks } from "./routes/ops/payment-links.ts";
 import { registerOpsNoShowRulings } from "./routes/ops/no-show-rulings.ts";
@@ -213,6 +214,8 @@ const SURFACE_ROUTES: Readonly<Record<Surface, readonly ((app: App) => void)[]>>
     registerOpsCustomOrders,
     // The demand forecast (docs/decisions/0179-demand-forecast.md).
     registerOpsForecast,
+    // The supply plan drafted from it (docs/decisions/0180-supply-plan.md).
+    registerOpsSupplyPlan,
     // Erasing a client from their page, the day they ask.
     registerOpsErasure,
     registerOpsProfile,

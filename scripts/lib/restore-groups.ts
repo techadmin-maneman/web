@@ -229,9 +229,9 @@ export const RESTORE_GROUPS: readonly RestoreGroup[] = [
   },
   {
     what: "The demand forecast",
-    tables: ["forecast_runs", "forecast_lines", "demand_events"],
+    tables: ["forecast_runs", "forecast_lines", "demand_events", "plan_lines"],
     leftAtT:
-      "A forecast run since is gone and the last before stands until the next is due, and an event ops added or took off since is gone or back",
+      "A forecast run since is gone and the last before stands until the next is due, an event ops added or took off since is gone or back, and a plan line decided since is proposed again, though its transfer or order stands",
     putBackBy: "Adding the events again on the Supply plan page; the next run is due within the planning period",
   },
   {

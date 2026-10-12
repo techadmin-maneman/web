@@ -25,6 +25,7 @@ export const shell = {
     technicians: "Technicians",
     stock: "Stock",
     purchasing: "Purchasing",
+    "supply-plan": "Supply plan",
     clients: "Clients",
     messages: "Messages",
     "care-numbers": "Care numbers",
