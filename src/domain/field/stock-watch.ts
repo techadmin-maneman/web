@@ -10,6 +10,7 @@ import type { AlertOnce, ResolveAlert } from "../ops/alerts.ts";
 import { readOpsInputs } from "../ops/ops-settings.ts";
 import { runForecastIfDue } from "./forecast.ts";
 import { measureLastForecast } from "./forecast-accuracy.ts";
+import { raiseCountTasks } from "./cycle-counts.ts";
 import { checkTomorrowsKits } from "./kit-check.ts";
 import { draftPlan } from "./supply-plan.ts";
 import { refreshStockRisks } from "./stock-risks.ts";
@@ -143,6 +144,8 @@ export async function watchStock(
   await checkTomorrowsKits(db, now, deps.alertOnce);
   const today = stockWatchDueOn(now);
   if (today === null) return;
+  // Each morning: the cycle counts come round (./cycle-counts.ts).
+  await raiseCountTasks(db, today, now);
   await tellOfExpiring(db, deps, today);
   await tellOfOverdue(db, deps, now);
 }

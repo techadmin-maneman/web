@@ -1361,6 +1361,274 @@ An event taken off the calendar
 }
 ```
 
+### GET /api/count-tasks
+
+The count tasks in the caller's places, and every item's class
+
+**200**: The count tasks, and every item's class
+
+```json
+{
+  "$ref": "#/components/schemas/CountTasks"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### GET /api/count-tasks/{id}
+
+A count task and its items, never a figure
+
+**200**: A count task and its items, never a figure
+
+```json
+{
+  "$ref": "#/components/schemas/CountTask"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no such task in the caller's places
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### GET /api/count-tasks/{id}/differences
+
+The lines waiting for a sign-off, with what was held and both counts
+
+**200**: The differences
+
+```json
+{
+  "$ref": "#/components/schemas/CountDifferences"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no such task in the caller's places
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/count-tasks/{id}/counts
+
+An open task counted, every item it lists
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/CountTaskCounts"
+}
+```
+
+**200**: A count task and its items, never a figure
+
+```json
+{
+  "$ref": "#/components/schemas/CountTask"
+}
+```
+
+**400**: invalid_request: fields names lines where they are not every item the step counts
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no such task in the caller's places
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**409**: order_state: the task has moved past this step
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/count-tasks/{id}/recounts
+
+The lines that differed counted again
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/CountTaskRecounts"
+}
+```
+
+**200**: A count task and its items, never a figure
+
+```json
+{
+  "$ref": "#/components/schemas/CountTask"
+}
+```
+
+**400**: invalid_request: fields names lines where they are not every item the step counts
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no such task in the caller's places
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**409**: order_state: the task has moved past this step
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/count-tasks/{id}/sign-off
+
+A recount that still differs signed off, with why
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/CountTaskSignOff"
+}
+```
+
+**200**: A count task and its items, never a figure
+
+```json
+{
+  "$ref": "#/components/schemas/CountTask"
+}
+```
+
+**400**: invalid_request: fields names lines where they are not every item the step counts
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no such task in the caller's places
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**409**: order_state: the task has moved past this step
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/consumables/{code}/count-class
+
+An item's count class set, or put back to its kind's own with null
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/CountClassChange"
+}
+```
+
+**200**: The count tasks, and every item's class
+
+```json
+{
+  "$ref": "#/components/schemas/CountTasks"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no such item, or it is retired
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ### POST /api/clients/{id}/erasure
 
 Erase a client now: their photographs and details. The CRM and Books follow within minutes
@@ -13996,6 +14264,355 @@ Request body:
 }
 ```
 
+### CountTasks
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "tasks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "place_id": {
+            "type": "string"
+          },
+          "place": {
+            "type": "string"
+          },
+          "count_class": {
+            "type": "string",
+            "enum": [
+              "weekly",
+              "monthly",
+              "quarterly"
+            ]
+          },
+          "due_on": {
+            "type": "string",
+            "format": "date"
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "open",
+              "recount",
+              "sign_off",
+              "done"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "place_id",
+          "place",
+          "count_class",
+          "due_on",
+          "state"
+        ]
+      }
+    },
+    "classes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "consumable_code": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "count_class": {
+            "type": "string",
+            "enum": [
+              "weekly",
+              "monthly",
+              "quarterly"
+            ]
+          },
+          "set": {
+            "type": "boolean",
+            "description": "Whether ops set it, rather than its kind's own."
+          },
+          "hair_system": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "consumable_code",
+          "name",
+          "count_class",
+          "set",
+          "hair_system"
+        ]
+      }
+    }
+  },
+  "required": [
+    "tasks",
+    "classes"
+  ]
+}
+```
+
+### CountTask
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "task": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "place_id": {
+          "type": "string"
+        },
+        "place": {
+          "type": "string"
+        },
+        "count_class": {
+          "type": "string",
+          "enum": [
+            "weekly",
+            "monthly",
+            "quarterly"
+          ]
+        },
+        "due_on": {
+          "type": "string",
+          "format": "date"
+        },
+        "state": {
+          "type": "string",
+          "enum": [
+            "open",
+            "recount",
+            "sign_off",
+            "done"
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "place_id",
+        "place",
+        "count_class",
+        "due_on",
+        "state"
+      ]
+    },
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "consumable_code": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "to_count",
+              "recount",
+              "sign_off",
+              "settled"
+            ]
+          }
+        },
+        "required": [
+          "consumable_code",
+          "name",
+          "state"
+        ]
+      }
+    }
+  },
+  "required": [
+    "task",
+    "items"
+  ]
+}
+```
+
+### CountDifferences
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "lines": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "consumable_code": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "held": {
+            "type": "integer"
+          },
+          "counted": {
+            "type": "integer"
+          },
+          "recounted": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "consumable_code",
+          "name",
+          "held",
+          "counted",
+          "recounted"
+        ]
+      }
+    }
+  },
+  "required": [
+    "lines"
+  ]
+}
+```
+
+### CountTaskCounts
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "lines": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "consumable_code": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "counted": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1000000
+          }
+        },
+        "required": [
+          "consumable_code",
+          "counted"
+        ],
+        "additionalProperties": false
+      },
+      "maxItems": 500
+    }
+  },
+  "required": [
+    "lines"
+  ],
+  "additionalProperties": false
+}
+```
+
+### CountTaskRecounts
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "lines": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "consumable_code": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "counted": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1000000
+          }
+        },
+        "required": [
+          "consumable_code",
+          "counted"
+        ],
+        "additionalProperties": false
+      },
+      "maxItems": 500
+    }
+  },
+  "required": [
+    "lines"
+  ],
+  "additionalProperties": false
+}
+```
+
+### CountTaskSignOff
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "note": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200,
+      "pattern": "^[^\\p{Cc}]+$/u"
+    }
+  },
+  "required": [
+    "note"
+  ],
+  "additionalProperties": false
+}
+```
+
+### CountClassChange
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "count_class": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "enum": [
+        "weekly",
+        "monthly",
+        "quarterly",
+        null
+      ]
+    }
+  },
+  "required": [
+    "count_class"
+  ],
+  "additionalProperties": false
+}
+```
+
 ### Erased
 
 ```json
@@ -16829,6 +17446,10 @@ Request body:
         "plan_line.reject",
         "demand_event.add",
         "demand_event.remove",
+        "count_task.count",
+        "count_task.recount",
+        "count_task.sign_off",
+        "consumable.count_class",
         "task.assign",
         "task.hand_back",
         "task.close",

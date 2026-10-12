@@ -262,6 +262,11 @@ const HISTORY = [
      measured_at)
    SELECT 'fr-' || (i % 20 + 1), 'hs-' || i, 'Gurgaon', date('${AGO}', '-' || (i % 20 + 1) || ' days'), 7, 1, 2.7, 1,
      '${AGO}' FROM n`,
+  `INSERT INTO count_tasks (id, place_id, count_class, due_on, state, raised_at, counted_by, counted_at, done_at)
+   SELECT 'ct-' || i, 'central', 'quarterly', date('${AGO}', '-' || i || ' days'), 'done', '${AGO}', 'ops@localhost',
+     '${AGO}', '${AGO}' FROM n`,
+  `INSERT INTO count_lines (task_id, consumable_code, held, counted, state)
+   SELECT 'ct-' || i, 'hs-' || i, 1, 1, 'settled' FROM n`,
   `INSERT INTO demand_events (id, name, city, starts_on, ends_on, uplift_percent, created_by, created_at)
    SELECT 'de-' || i, 'Season ' || i, 'Gurgaon', date('${AGO}'), date('${AGO}', '+1 day'), 20, 'ops@localhost', '${AGO}'
    FROM n WHERE i <= 20`,

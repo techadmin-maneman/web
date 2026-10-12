@@ -228,6 +228,13 @@ export const RESTORE_GROUPS: readonly RestoreGroup[] = [
     putBackBy: "Where FSM still holds them, the cron reads them again; otherwise the rows since `<T>`",
   },
   {
+    what: "Cycle counts",
+    tables: ["count_tasks", "count_lines"],
+    leftAtT:
+      "A count since is open again, though the ledger keeps what it took; a task raised since is raised again the next morning",
+    putBackBy: "Counting the task again on the Counts page: the ledger takes a count that agrees with it as nought",
+  },
+  {
     what: "The demand forecast",
     tables: ["forecast_runs", "forecast_lines", "demand_events", "plan_lines", "forecast_accuracy"],
     leftAtT:

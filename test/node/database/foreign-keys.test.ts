@@ -75,6 +75,8 @@ const HANDLED: Readonly<Record<string, string>> = {
     "src/domain/field/consumables.ts refuses to delete one a movement names, and a transfer comes only with one",
   "po_lines.consumable_code -> consumables":
     "src/domain/field/consumables.ts refuses to delete one an order names: the foreign key refuses its batch, answered in_use",
+  "count_lines.consumable_code -> consumables":
+    "src/domain/field/consumables.ts refuses to delete one a count line names: the foreign key refuses its batch, answered in_use",
   "plan_lines.consumable_code -> consumables":
     "src/domain/field/consumables.ts refuses to delete one a plan line names: the foreign key refuses its batch, answered in_use",
   "forecast_lines.run_id -> forecast_runs": "src/domain/field/forecast.ts deletes an old run's lines before the run",
