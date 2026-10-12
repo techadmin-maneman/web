@@ -65,6 +65,8 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 - [consumables](#consumables): The consumables ops keep: name, unit, what one costs, the reorder levels, the day it is retired from, and FSM's part for it (ADR 0087).
 - [consumables_used](#consumables_used): The consumables a technician recorded at a job's third step, with what its service expected and what one cost that day (ADR 0038, ADR 0087).
 - [conversations](#conversations): The Care inbox: one thread for each number that writes to our WhatsApp number, matched to its client where we know the number (ADR 0129).
+- [count_lines](#count_lines): 
+- [count_tasks](#count_tasks): 
 - [counters](#counters): Fixed-window counters for the rate limits and the daily ceilings (ADR 0011).
 - [credit_expiry_cursor](#credit_expiry_cursor): One row: how far the pass that closes expired credits has got, so it reads only the grants that expired since.
 - [credit_ledger](#credit_ledger): Service-visit credits, entry by entry, each drawing on the grant it spends; a balance is summed, never kept (ADR 0033).
@@ -613,7 +615,7 @@ Made by `0049_consumables_and_stock.sql`.
 
 The consumables ops keep: name, unit, what one costs, the reorder levels, the day it is retired from, and FSM's part for it (ADR 0087).
 
-Made by `0049_consumables_and_stock.sql`; changed by `0135_stock_lots.sql`.
+Made by `0049_consumables_and_stock.sql`; changed by `0135_stock_lots.sql`, `0154_cycle_counts.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -630,6 +632,7 @@ Made by `0049_consumables_and_stock.sql`; changed by `0135_stock_lots.sql`.
 | `created_at` | TEXT | no |  |  |
 | `updated_at` | TEXT | no |  |  |
 | `shelf_life_days` | INTEGER | yes |  |  |
+| `count_class` | TEXT | yes |  |  |
 
 Indexes:
 
@@ -687,6 +690,50 @@ Indexes:
 - `conversations_by_opened`: on (`opened_at`)
 - `conversations_by_person`: on (`person_id`), where `person_id IS NOT NULL`
 - `conversations_by_state`: on (`state`, `last_message_at`)
+
+## count_lines
+
+
+
+Made by `0154_cycle_counts.sql`.
+
+| Column | Type | May be empty | Default | Key |
+| --- | --- | --- | --- | --- |
+| `task_id` | TEXT | no |  | primary key; → `count_tasks.id` |
+| `consumable_code` | TEXT | no |  | primary key; → `consumables.code` |
+| `held` | INTEGER | no |  |  |
+| `counted` | INTEGER | no |  |  |
+| `recounted` | INTEGER | yes |  |  |
+| `state` | TEXT | no |  |  |
+
+## count_tasks
+
+
+
+Made by `0154_cycle_counts.sql`.
+
+| Column | Type | May be empty | Default | Key |
+| --- | --- | --- | --- | --- |
+| `id` | TEXT | no |  | primary key |
+| `place_id` | TEXT | no |  |  |
+| `count_class` | TEXT | no |  |  |
+| `due_on` | TEXT | no |  |  |
+| `state` | TEXT | no |  |  |
+| `raised_at` | TEXT | no |  |  |
+| `counted_by` | TEXT | yes |  |  |
+| `counted_at` | TEXT | yes |  |  |
+| `recounted_by` | TEXT | yes |  |  |
+| `recounted_at` | TEXT | yes |  |  |
+| `signed_off_by` | TEXT | yes |  |  |
+| `signed_off_at` | TEXT | yes |  |  |
+| `sign_off_note` | TEXT | yes |  |  |
+| `done_at` | TEXT | yes |  |  |
+
+Indexes:
+
+- `count_tasks_by_place`: on (`place_id`, `count_class`, `due_on`)
+- `count_tasks_done`: on (`done_at`), where `state = 'done'`
+- `count_tasks_open`: on (`place_id`, `count_class`), where `state <> 'done'`
 
 ## counters
 
@@ -2435,7 +2482,7 @@ Made by `0130_standard_costs.sql`.
 
 What each place holds of each consumable, and when it last counted it: the sum of its rows in `stock_movements`, kept by triggers as each is written (ADR 0087).
 
-Made by `0053_balances_and_last_visits.sql`.
+Made by `0053_balances_and_last_visits.sql`; changed by `0154_cycle_counts.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -2443,6 +2490,10 @@ Made by `0053_balances_and_last_visits.sql`.
 | `place` | TEXT | no |  | primary key |
 | `quantity` | INTEGER | no |  |  |
 | `counted_at` | TEXT | yes |  |  |
+
+Indexes:
+
+- `stock_balances_by_place`: on (`place`, `consumable_code`), where `quantity > 0`
 
 ## stock_lot_balances
 
