@@ -39,6 +39,20 @@ export const supplyPlan = {
     /** "up to 7" */
     high: (figure: string) => `up to ${figure}`,
   },
+  accuracy: {
+    title: "Accuracy",
+    none: "Measured once a forecast's first period has passed.",
+    note: "Off by: each miss over what was used. Bias above nought: the forecast ran high.",
+    periodColumns: ["Period from", "Expected", "Used", "Off by", "Bias", "Within high case"],
+    itemColumns: ["Item", "Expected", "Used", "Off by", "Bias"],
+    /** "18%", or a dash where nothing was used */
+    percent: (value: number | null) => (value === null ? "—" : `${String(value)}%`),
+    /** "+4%", "−7%" */
+    bias: (value: number | null) => {
+      if (value === null) return "—";
+      return value < 0 ? `−${String(-value)}%` : `+${String(value)}%`;
+    },
+  },
   events: {
     title: "Events",
     note: "What will lift or drop demand. The next forecast reads them.",

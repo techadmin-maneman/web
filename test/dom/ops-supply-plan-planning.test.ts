@@ -1,5 +1,6 @@
 // Beneath the Supply plan in the console (apps/ops/src/supply-plan/Planning.tsx; docs/decisions/0182-the-events-calendar.md):
-// the forecast one city at a time, and the events calendar, an event added and one taken off. Every name is made up.
+// the forecast one city at a time with how right it was (docs/decisions/0183-forecast-accuracy.md), and the events
+// calendar, an event added and one taken off. Every name is made up.
 
 import { act, createElement } from "react";
 import { createRoot, type Root } from "react-dom/client";
@@ -29,6 +30,21 @@ const line = (city: string, period: number, expected: number, high: number) => (
   expected,
   high,
 });
+
+const ACCURACY = {
+  periods: [
+    {
+      period_start: "2026-09-14",
+      period_days: 7,
+      expected: 13,
+      actual: 14,
+      error_percent: 50,
+      bias_percent: -7,
+      within_high_percent: 67,
+    },
+  ],
+  items: [{ consumable_code: "gel", name: "Gel", expected: 3, actual: 0, error_percent: null, bias_percent: null }],
+};
 
 let page: HTMLDivElement;
 let root: Root;
@@ -71,6 +87,10 @@ beforeEach(() => {
       );
     }
     if (address.pathname === "/api/demand-events") return Promise.resolve(Response.json(CALENDAR));
+    if (address.pathname === "/api/stock/forecast-accuracy") {
+      const measured = address.searchParams.get("city") === "Gurgaon" ? ACCURACY : { periods: [], items: [] };
+      return Promise.resolve(Response.json(measured));
+    }
     if (address.pathname === "/api/stock/forecast") {
       const city = address.searchParams.get("city") ?? "";
       asked.push(city);
@@ -108,10 +128,13 @@ describe("the forecast and the events calendar", () => {
     expect(forecast?.textContent).toContain("Solvent");
     expect(forecast?.textContent).toContain(copy.forecast.high("15"));
     expect(forecast?.textContent).toContain("4.3");
+    expect(forecast?.textContent).toContain(copy.accuracy.bias(-7));
+    expect(forecast?.textContent).toContain("Gel");
     type(page.querySelector("select"), "Delhi");
     await settle();
     expect(asked).toEqual(["Gurgaon", "Delhi"]);
     expect(page.textContent).toContain(copy.forecast.empty("Delhi"));
+    expect(page.textContent).toContain(copy.accuracy.none);
   });
 
   it("adds an event, refuses one that ends first, and takes one off", async () => {

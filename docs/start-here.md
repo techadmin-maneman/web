@@ -83,7 +83,7 @@ this map, or when the map names something that no longer exists.
 ### The technician's work in the field
 
 - **Database work** (`src/domain/field/`): `tech-jobs`, `job-card`, `workable-job`, `job-events`, `job-event-bodies`, `job-record`, `job-use`, `piece-use`,
-  `job-sheet-settings`, `tech-photos`, `visit-photos`, `photo-views`, `pieces`, `stock`, `stock-places`, `stock-lots`, `stock-transit`, `stock-units`, `stock-view`, `piece-returns`, `kit`, `suppliers`, `purchase-orders`, `receipts`, `supplier-claims`, `returned-pieces`, `custom-orders`, `custom-order-po`, `stock-photos`, `supplier-scorecard`, `stock-match`, `stock-risks`, `forecast`, `forecast-layers`, `supply-plan`, `supply-plan-lines`, `kit-check`, `demand-events`, `stock-watch`, `stock-demand`, `low-stock`,
+  `job-sheet-settings`, `tech-photos`, `visit-photos`, `photo-views`, `pieces`, `stock`, `stock-places`, `stock-lots`, `stock-transit`, `stock-units`, `stock-view`, `piece-returns`, `kit`, `suppliers`, `purchase-orders`, `receipts`, `supplier-claims`, `returned-pieces`, `custom-orders`, `custom-order-po`, `stock-photos`, `supplier-scorecard`, `stock-match`, `stock-risks`, `forecast`, `forecast-layers`, `forecast-accuracy`, `supply-plan`, `supply-plan-lines`, `kit-check`, `demand-events`, `stock-watch`, `stock-demand`, `low-stock`,
   `consumables`, `hair-systems`
 - **Rules** (`src/policy/`): `in-job-steps`, `piece-step`, `job-visibility`, `phone-clock`, `stock`
 - **Data** (`src/config/`): `job-sheet`, `pieces`, `consumables`

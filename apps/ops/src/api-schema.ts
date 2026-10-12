@@ -1739,6 +1739,53 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/stock/forecast-accuracy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** How right the forecast was in one city: its last measured periods, and each item across them */
+        get: {
+            parameters: {
+                query: {
+                    city: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The accuracy */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ForecastAccuracy"];
+                    };
+                };
+                /** @description access_required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/stock/forecast": {
         parameters: {
             query?: never;
@@ -14163,6 +14210,30 @@ export interface components {
             /** @enum {string|null} */
             wave: "straight" | "slight_wave" | "wavy" | "curly" | null;
             note: string | null;
+        };
+        ForecastAccuracy: {
+            periods: {
+                /** Format: date */
+                period_start: string;
+                period_days: number;
+                expected: number;
+                actual: number;
+                /** @description Null where nothing was used. */
+                error_percent: number | null;
+                /** @description Above nought where the forecast ran high. Null where nothing was used. */
+                bias_percent: number | null;
+                within_high_percent: number | null;
+            }[];
+            items: {
+                consumable_code: string;
+                name: string;
+                expected: number;
+                actual: number;
+                /** @description Null where nothing was used. */
+                error_percent: number | null;
+                /** @description Null where nothing was used. */
+                bias_percent: number | null;
+            }[];
         };
         DemandForecast: {
             /** @description Null before the first run. */

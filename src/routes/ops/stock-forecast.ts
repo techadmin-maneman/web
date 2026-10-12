@@ -1,11 +1,14 @@
 // The demand forecast, behind Access (docs/decisions/0179-demand-forecast.md):
 //   GET /api/stock/forecast?city=   the latest run: its period and horizon, the rates it learned, and each stock code's
 //                                   expected use in each city and period, with what each layer gave
+//   GET /api/stock/forecast-accuracy?city=   how right it was: the city's last measured periods, and each item across
+//                                   them (docs/decisions/0183-forecast-accuracy.md)
 //
 // Read with Operations VIEW.
 
 import { createRoute, z } from "@hono/zod-openapi";
 import { latestForecast } from "../../domain/field/forecast.ts";
+import { forecastAccuracy } from "../../domain/field/forecast-accuracy.ts";
 import type { App } from "../../http/context.ts";
 import { errorResponse } from "../../http/errors.ts";
 import { json } from "../../http/openapi.ts";
@@ -49,7 +52,71 @@ const forecastRoute = createRoute({
   responses: { 200: { description: "The forecast", ...json(ForecastSchema) }, 403: errorResponse("access_required") },
 });
 
+const Percent = z.number().int().nullable().openapi({ description: "Null where nothing was used." });
+
+const AccuracySchema = z
+  .object({
+    periods: z.array(
+      z.object({
+        period_start: z.iso.date(),
+        period_days: z.number().int(),
+        expected: Figure,
+        actual: Figure,
+        error_percent: Percent,
+        bias_percent: Percent.openapi({
+          description: "Above nought where the forecast ran high. Null where nothing was used.",
+        }),
+        within_high_percent: z.number().int().nullable(),
+      }),
+    ),
+    items: z.array(
+      z.object({
+        consumable_code: z.string(),
+        name: z.string(),
+        expected: Figure,
+        actual: Figure,
+        error_percent: Percent,
+        bias_percent: Percent,
+      }),
+    ),
+  })
+  .openapi("ForecastAccuracy");
+
+const accuracyRoute = createRoute({
+  method: "get",
+  path: "/api/stock/forecast-accuracy",
+  summary: "How right the forecast was in one city: its last measured periods, and each item across them",
+  request: { query: z.object({ city: z.string().max(80) }) },
+  responses: { 200: { description: "The accuracy", ...json(AccuracySchema) }, 403: errorResponse("access_required") },
+});
+
 export function registerOpsForecast(app: App): void {
+  app.openapi(accuracyRoute, async (c) => {
+    const { periods, items } = await forecastAccuracy(c.env.DB, c.req.valid("query").city);
+    return c.json(
+      {
+        periods: periods.map((period) => ({
+          period_start: period.periodStart,
+          period_days: period.periodDays,
+          expected: period.expected,
+          actual: period.actual,
+          error_percent: period.errorPercent,
+          bias_percent: period.biasPercent,
+          within_high_percent: period.withinHighPercent,
+        })),
+        items: items.map((item) => ({
+          consumable_code: item.code,
+          name: item.name,
+          expected: item.expected,
+          actual: item.actual,
+          error_percent: item.errorPercent,
+          bias_percent: item.biasPercent,
+        })),
+      },
+      200,
+    );
+  });
+
   app.openapi(forecastRoute, async (c) => {
     const forecast = await latestForecast(c.env.DB, c.req.valid("query").city ?? null);
     return c.json(

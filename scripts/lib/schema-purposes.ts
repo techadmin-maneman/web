@@ -35,6 +35,8 @@ export const PURPOSES: Readonly<Record<string, string>> = {
     "Each hair system made for one client to their exact spec: the spec, supplier and price, its payment link and payment, and the order it was bought on (ADR 0174).",
   demand_events:
     "The calendar of uplifts ops keep, each an event in a city or every city, which lifts the forecast's baseline (ADR 0179).",
+  forecast_accuracy:
+    "How right each forecast run was: its first period's expected use and high case of each stock code in each city beside what the kits used (ADR 0183).",
   forecast_lines:
     "Each forecast run's expected use of each stock code in each city and period, with what each of its four layers gave (ADR 0179).",
   forecast_runs:

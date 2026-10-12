@@ -1,6 +1,7 @@
 // Operations · Supply plan (docs/decisions/0180-supply-plan.md): the latest draft's transfers and orders, each with the
 // figures behind it, one approved at a changed quantity and one rejected with why; beneath, the forecast one city at a
-// time and the events calendar (docs/decisions/0182-the-events-calendar.md).
+// time with how right it was (docs/decisions/0183-forecast-accuracy.md), and the events calendar
+// (docs/decisions/0182-the-events-calendar.md).
 
 import type { Page } from "@playwright/test";
 import { expect, test } from "../support.ts";
@@ -66,11 +67,29 @@ const FORECAST = {
   })),
 } satisfies OpsReply<"/api/stock/forecast">;
 
+const ACCURACY = {
+  periods: [
+    {
+      period_start: "2026-09-14",
+      period_days: 7,
+      expected: 13,
+      actual: 14,
+      error_percent: 50,
+      bias_percent: -7,
+      within_high_percent: 67,
+    },
+  ],
+  items: [
+    { consumable_code: "solvent", name: "Solvent", expected: 10, actual: 12, error_percent: 17, bias_percent: -17 },
+  ],
+} satisfies OpsReply<"/api/stock/forecast-accuracy">;
+
 async function open(page: Page, extra: Answers = {}): Promise<void> {
   await answer(page, {
     "GET /api/supply-plan": json(PLAN),
     "GET /api/demand-events": json(CALENDAR),
     "GET /api/stock/forecast": json(FORECAST),
+    "GET /api/stock/forecast-accuracy": json(ACCURACY),
     ...extra,
   });
   await page.goto("/supply-plan");
@@ -120,7 +139,10 @@ test("shows a city's forecast, and adds an event to the calendar", async ({ page
   };
   await open(page, { "POST /api/demand-events": json({ ...CALENDAR, events: [WEDDINGS, diwali] }) });
   const forecast = page.getByRole("region", { name: copy.forecast.title });
-  await expect(forecast.getByRole("row").filter({ hasText: "Solvent" })).toContainText(copy.forecast.high("15"));
+  await expect(forecast.getByRole("row").filter({ hasText: "Solvent" }).first()).toContainText(
+    copy.forecast.high("15"),
+  );
+  await expect(forecast).toContainText(copy.accuracy.bias(-17));
 
   const events = page.getByRole("region", { name: copy.events.title });
   await expect(events).toContainText("Wedding season");

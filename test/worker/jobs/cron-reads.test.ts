@@ -249,15 +249,19 @@ const HISTORY = [
    SELECT 'rcp-' || i, 'po-' || i, 'ops@localhost', '${AGO}', 8325, 0, 0, 0, 'bb-' || i, '${AGO}' FROM n`,
   `INSERT INTO receipt_lines (id, receipt_id, po_line_id, received, damaged, qc_failed, landed_unit_paise)
    SELECT 'rl-' || i, 'rcp-' || i, 'pol-' || i, 1, 0, 0, 999000 FROM n`,
-  `INSERT INTO forecast_runs (id, run_on, period_days, horizon_periods, due_rate, fit_rate, ran_at)
+  `INSERT INTO forecast_runs (id, run_on, period_days, horizon_periods, due_rate, fit_rate, ran_at, measured_at)
    SELECT 'fr-' || i, CASE WHEN i = 1 THEN '${TODAY}' ELSE date('${AGO}', '-' || (i % 30) || ' days') END, 7, 12,
-     0.8, 0.5, '${AGO}' FROM n`,
+     0.8, 0.5, '${AGO}', CASE WHEN i = 2 THEN NULL ELSE '${AGO}' END FROM n`,
   `INSERT INTO forecast_lines (run_id, consumable_code, city, period, booked, due, pipeline, baseline, expected, high)
    SELECT 'fr-' || i, 'hs-' || i, 'Gurgaon', 0, 1, 0, 0, 0, 1, 2.7 FROM n`,
   `INSERT INTO plan_lines (id, run_id, kind, consumable_code, city, supplier_id, proposed, quantity, usable, need, safety,
      state, decided_by, decided_at, drafted_at)
    SELECT 'pl-' || i, 'fr-' || i, 'order', 'hs-' || i, NULL, 'sup-' || i, 12, 12, 0, 6, 2, 'approved', 'ops@localhost',
      '${AGO}', '${AGO}' FROM n`,
+  `INSERT INTO forecast_accuracy (run_id, consumable_code, city, period_start, period_days, expected, high, actual,
+     measured_at)
+   SELECT 'fr-' || (i % 20 + 1), 'hs-' || i, 'Gurgaon', date('${AGO}', '-' || (i % 20 + 1) || ' days'), 7, 1, 2.7, 1,
+     '${AGO}' FROM n`,
   `INSERT INTO demand_events (id, name, city, starts_on, ends_on, uplift_percent, created_by, created_at)
    SELECT 'de-' || i, 'Season ' || i, 'Gurgaon', date('${AGO}'), date('${AGO}', '+1 day'), 20, 'ops@localhost', '${AGO}'
    FROM n WHERE i <= 20`,

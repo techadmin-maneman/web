@@ -1085,6 +1085,26 @@ A custom order not yet paid, cancelled, and its link with it
 }
 ```
 
+### GET /api/stock/forecast-accuracy
+
+How right the forecast was in one city: its last measured periods, and each item across them
+
+**200**: The accuracy
+
+```json
+{
+  "$ref": "#/components/schemas/ForecastAccuracy"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ### GET /api/stock/forecast
 
 The latest demand forecast, for one city or every city
@@ -13511,6 +13531,112 @@ Request body:
     "note"
   ],
   "additionalProperties": false
+}
+```
+
+### ForecastAccuracy
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "periods": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "period_start": {
+            "type": "string",
+            "format": "date"
+          },
+          "period_days": {
+            "type": "integer"
+          },
+          "expected": {
+            "type": "number"
+          },
+          "actual": {
+            "type": "number"
+          },
+          "error_percent": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "Null where nothing was used."
+          },
+          "bias_percent": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "Above nought where the forecast ran high. Null where nothing was used."
+          },
+          "within_high_percent": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "period_start",
+          "period_days",
+          "expected",
+          "actual",
+          "error_percent",
+          "bias_percent",
+          "within_high_percent"
+        ]
+      }
+    },
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "consumable_code": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "expected": {
+            "type": "number"
+          },
+          "actual": {
+            "type": "number"
+          },
+          "error_percent": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "Null where nothing was used."
+          },
+          "bias_percent": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "Null where nothing was used."
+          }
+        },
+        "required": [
+          "consumable_code",
+          "name",
+          "expected",
+          "actual",
+          "error_percent",
+          "bias_percent"
+        ]
+      }
+    }
+  },
+  "required": [
+    "periods",
+    "items"
+  ]
 }
 ```
 

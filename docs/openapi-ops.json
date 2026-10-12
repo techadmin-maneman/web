@@ -4681,6 +4681,107 @@
         ],
         "additionalProperties": false
       },
+      "ForecastAccuracy": {
+        "type": "object",
+        "properties": {
+          "periods": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "period_start": {
+                  "type": "string",
+                  "format": "date"
+                },
+                "period_days": {
+                  "type": "integer"
+                },
+                "expected": {
+                  "type": "number"
+                },
+                "actual": {
+                  "type": "number"
+                },
+                "error_percent": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
+                  "description": "Null where nothing was used."
+                },
+                "bias_percent": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
+                  "description": "Above nought where the forecast ran high. Null where nothing was used."
+                },
+                "within_high_percent": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ]
+                }
+              },
+              "required": [
+                "period_start",
+                "period_days",
+                "expected",
+                "actual",
+                "error_percent",
+                "bias_percent",
+                "within_high_percent"
+              ]
+            }
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "consumable_code": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "expected": {
+                  "type": "number"
+                },
+                "actual": {
+                  "type": "number"
+                },
+                "error_percent": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
+                  "description": "Null where nothing was used."
+                },
+                "bias_percent": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
+                  "description": "Null where nothing was used."
+                }
+              },
+              "required": [
+                "consumable_code",
+                "name",
+                "expected",
+                "actual",
+                "error_percent",
+                "bias_percent"
+              ]
+            }
+          }
+        },
+        "required": [
+          "periods",
+          "items"
+        ]
+      },
       "DemandForecast": {
         "type": "object",
         "properties": {
@@ -17699,6 +17800,44 @@
           },
           "409": {
             "description": "order_state: the order is paid or cancelled",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/stock/forecast-accuracy": {
+      "get": {
+        "summary": "How right the forecast was in one city: its last measured periods, and each item across them",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "maxLength": 80
+            },
+            "required": true,
+            "name": "city",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The accuracy",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ForecastAccuracy"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "access_required",
             "content": {
               "application/json": {
                 "schema": {

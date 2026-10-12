@@ -1,5 +1,5 @@
 // The forecast on the Supply plan (docs/decisions/0182-the-events-calendar.md): one city at a time, each item's expected
-// use in each period of the latest run, with its high case.
+// use in each period of the latest run, with its high case; and beneath, how right the forecasts before it were.
 
 import { Field, Select } from "@maneman/ui/Field";
 import { Table } from "@maneman/ui/Table";
@@ -10,6 +10,7 @@ import type { paths } from "../api-schema.ts";
 import form from "../components/forms.module.css";
 import { supplyPlan } from "../content/supply-plan.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
+import { AccuracyPart } from "./Accuracy.tsx";
 import own from "./supply-plan.module.css";
 
 type Forecast = paths["/api/stock/forecast"]["get"]["responses"][200]["content"]["application/json"];
@@ -113,6 +114,7 @@ export function ForecastPanel({ cities }: { cities: readonly string[] }) {
       {loaded.state === "loading" && <Loading />}
       {loaded.state === "failed" && <PanelFailed onRetry={retry} requestId={loaded.requestId} />}
       {loaded.state === "loaded" && <Periods forecast={loaded.value} city={city} />}
+      <AccuracyPart city={city} />
     </section>
   );
 }

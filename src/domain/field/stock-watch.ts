@@ -9,6 +9,7 @@ import { EXPIRY_WARNING_DAYS, TRANSFER_OVERDUE_DAYS } from "../../policy/stock.t
 import type { AlertOnce, ResolveAlert } from "../ops/alerts.ts";
 import { readOpsInputs } from "../ops/ops-settings.ts";
 import { runForecastIfDue } from "./forecast.ts";
+import { measureLastForecast } from "./forecast-accuracy.ts";
 import { checkTomorrowsKits } from "./kit-check.ts";
 import { draftPlan } from "./supply-plan.ts";
 import { refreshStockRisks } from "./stock-risks.ts";
@@ -132,6 +133,8 @@ export async function watchStock(
   const now = deps.now();
   // Each hour: the fits booked ahead with no hair system in reach, kept as tasks (./stock-risks.ts).
   await refreshStockRisks(db, indiaDate(now), now);
+  // Once a run's first period has passed: how right it was (./forecast-accuracy.ts).
+  await measureLastForecast(db, now, indiaDate(now));
   // Once each planning period: the demand forecast (./forecast.ts), and the supply plan drafted from it.
   const inputs = await readOpsInputs(db, now);
   const run = await runForecastIfDue(db, now, inputs);

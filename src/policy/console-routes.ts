@@ -241,6 +241,7 @@ export const ROUTE_NEEDS: Readonly<Record<string, RouteNeed | typeof SIGNED_IN>>
   "GET /api/stock-photos/{id}": need("operations", "view"),
   "GET /api/supplier-scorecard": need("operations", "view"),
   "GET /api/stock/forecast": need("operations", "view"),
+  "GET /api/stock/forecast-accuracy": need("operations", "view"),
   "GET /api/supply-plan": need("operations", "view"),
   "GET /api/demand-events": need("operations", "view"),
   "POST /api/demand-events": need("operations", "manage"),

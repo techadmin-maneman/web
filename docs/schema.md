@@ -35,7 +35,7 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 | The audit log | `audit_log` | Who did what since `<T>` | Adding the rows since `<T>`: they are only ever added |
 | New people, leads, addresses and try-ons | `people`, `leads`, `addresses`, `tryon_jobs` | Bookings and leads made since are lost here; the CRM has the leads | The rows since `<T>` |
 | Technicians, and FSM's catalogue | `technicians`, `fsm_items` | A technician added or changed since goes back | Where FSM still holds them, the cron reads them again; otherwise the rows since `<T>` |
-| The demand forecast | `forecast_runs`, `forecast_lines`, `demand_events`, `plan_lines` | A forecast run since is gone and the last before stands until the next is due, an event ops added or took off since is gone or back, and a plan line decided since is proposed again, though its transfer or order stands | Adding the events again on the Supply plan page; the next run is due within the planning period |
+| The demand forecast | `forecast_runs`, `forecast_lines`, `demand_events`, `plan_lines`, `forecast_accuracy` | A forecast run since is gone and the last before stands until the next is due, an event ops added or took off since is gone or back, a plan line decided since is proposed again, though its transfer or order stands, and a period measured since is measured again from the movements | Adding the events again on the Supply plan page; the next run is due within the planning period |
 | Worked out from other tables | `last_visits`, `ops_settings_snapshot`, `stock_balances`, `stock_lot_balances` | Nothing of their own: triggers keep each from the table it is worked out from | Putting back that table |
 | The storage meter | `stored_objects`, `storage_meter` | Objects stored or deleted since are counted wrongly, as R2 is not restored | The rows since `<T>` |
 | Housekeeping | `alerts`, `board_version`, `cron_jobs`, `cron_runs`, `credit_expiry_cursor`, `counters`, `idempotency`, `number_codes`, `otp_challenges`, `tryon_sessions`, `events`, `sync_cursors`, `webhook_inbox`, `zoho_access_tokens`, `zoho_token`, `zoho_tokens` | Nothing that lasts | Nothing |
@@ -79,6 +79,7 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 - [dispatch_moves](#dispatch_moves): Every move ops make on the dispatch board: from where to where, by whom, why, what FSM said, and whether the client was told (ADR 0069).
 - [events](#events): What happened, for analysis, with no personal data in its payload.
 - [first_fit_requests](#first_fit_requests): A first fit asked for on the site's form with the consultation; a person's latest stands (ADR 0086). The form no longer asks for one (ADR 0105), and only the data export, erasure and an old consultation request's line still read it.
+- [forecast_accuracy](#forecast_accuracy): How right each forecast run was: its first period's expected use and high case of each stock code in each city beside what the kits used (ADR 0183).
 - [forecast_lines](#forecast_lines): Each forecast run's expected use of each stock code in each city and period, with what each of its four layers gave (ADR 0179).
 - [forecast_runs](#forecast_runs): Each demand forecast run, once a planning period: its period, horizon and the rates it learned (ADR 0179).
 - [fsm_items](#fsm_items): FSM's catalogue, to read each appointment's visit type from its service item and to compare FSM's prices with the price book (ADR 0032, ADR 0073).
@@ -1011,6 +1012,28 @@ Indexes:
 
 Triggers: `first_fit_requests_fitted_asked`.
 
+## forecast_accuracy
+
+How right each forecast run was: its first period's expected use and high case of each stock code in each city beside what the kits used (ADR 0183).
+
+Made by `0153_forecast_accuracy.sql`.
+
+| Column | Type | May be empty | Default | Key |
+| --- | --- | --- | --- | --- |
+| `run_id` | TEXT | no |  | primary key |
+| `consumable_code` | TEXT | no |  | primary key |
+| `city` | TEXT | no |  | primary key |
+| `period_start` | TEXT | no |  |  |
+| `period_days` | INTEGER | no |  |  |
+| `expected` | REAL | no |  |  |
+| `high` | REAL | no |  |  |
+| `actual` | REAL | no |  |  |
+| `measured_at` | TEXT | no |  |  |
+
+Indexes:
+
+- `forecast_accuracy_by_city`: on (`city`, `period_start`)
+
 ## forecast_lines
 
 Each forecast run's expected use of each stock code in each city and period, with what each of its four layers gave (ADR 0179).
@@ -1034,7 +1057,7 @@ Made by `0151_forecast.sql`.
 
 Each demand forecast run, once a planning period: its period, horizon and the rates it learned (ADR 0179).
 
-Made by `0151_forecast.sql`.
+Made by `0151_forecast.sql`; changed by `0153_forecast_accuracy.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -1045,10 +1068,12 @@ Made by `0151_forecast.sql`.
 | `due_rate` | REAL | no |  |  |
 | `fit_rate` | REAL | no |  |  |
 | `ran_at` | TEXT | no |  |  |
+| `measured_at` | TEXT | yes |  |  |
 
 Indexes:
 
 - `forecast_runs_by_day`: on (`run_on`)
+- `forecast_runs_unmeasured`: on (`run_on`), where `measured_at IS NULL`
 
 ## fsm_items
 
