@@ -30,7 +30,6 @@ import {
   type Route,
 } from "./route.ts";
 import { loadOrReload } from "./lib/load-or-reload.ts";
-import { StockScreen } from "./stock/StockScreen.tsx";
 import { TasksScreen } from "./tasks/TasksScreen.tsx";
 import { TechniciansScreen } from "./technicians/TechniciansScreen.tsx";
 
@@ -56,6 +55,9 @@ const MessagesScreen = lazy(() =>
 );
 const TargetsScreen = lazy(() =>
   loadOrReload(() => import("./targets/TargetsScreen.tsx")).then((module) => ({ default: module.TargetsScreen })),
+);
+const StockScreen = lazy(() =>
+  loadOrReload(() => import("./stock/StockScreen.tsx")).then((module) => ({ default: module.StockScreen })),
 );
 const SpendScreen = lazy(() =>
   loadOrReload(() => import("./spend/SpendScreen.tsx")).then((module) => ({ default: module.SpendScreen })),

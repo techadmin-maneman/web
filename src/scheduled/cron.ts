@@ -23,6 +23,7 @@ import type { BooksSyncOptions } from "../domain/books/books-pass.ts";
 import { closeStaleLowStock } from "../domain/field/low-stock.ts";
 import { settleOwedRefunds } from "../domain/money/cancel-refunds.ts";
 import { retellUndelivered } from "../domain/ops/alerts.ts";
+import { watchStock } from "../domain/field/stock-watch.ts";
 import { finishRun, startRun, type RunStart } from "../domain/platform/cron-runs.ts";
 import { alertAgedDeletions } from "../domain/privacy/deletion.ts";
 import { recordUtilisation } from "../domain/dispatch/dispatch-utilisation.ts";
@@ -164,6 +165,11 @@ async function alertsRetoldJob({ env, deps, config, log }: CronContext): Promise
     log,
   });
   if (told > 0) log.info("alerts_retold", { told });
+}
+
+/** Stock that expires soon, and transfers long on their way, told each morning (src/domain/field/stock-watch.ts). */
+async function stockWatchJob({ env, deps }: CronContext): Promise<void> {
+  await watchStock(env.DB, deps);
 }
 
 async function deletionAlertsJob({ env, deps }: CronContext): Promise<void> {
@@ -341,6 +347,8 @@ export const CRON_JOBS: readonly CronJob[] = [
   { name: "ailab_credits", needs: "nothing", every: 60, at: 14, run: ailabCreditsJob },
   { name: "kept_looks", needs: "nothing", every: 60, at: 19, run: letKeptLooksGo },
   { name: "deletion_alerts", needs: "nothing", every: 60, at: 24, run: deletionAlertsJob },
+  // Stock that expires within a month, and transfers a week on their way, in the hour from 9 am in India.
+  { name: "stock_watch", needs: "nothing", every: 60, at: 44, run: stockWatchJob },
   // The grievances raised in the hour, in one message, so one client cannot flood the chat.
   { name: "grievance_alerts", needs: "nothing", every: 60, at: 24, run: grievanceAlertsJob },
   { name: "housekeeping", needs: "nothing", every: 60, at: 28, run: deleteExpiredRecords },

@@ -8,6 +8,12 @@
 // always explains the number. The database keeps that sum in stock_balances as
 // each row is written, so it is read without the rows (migration 0053).
 
+/** A lot held anywhere is told of this many days before it expires, and every day after while it is still held. */
+export const EXPIRY_WARNING_DAYS = 30;
+
+/** A transfer still on its way this many days after it was sent is told of (docs/decisions/0158). */
+export const TRANSFER_OVERDUE_DAYS = 7;
+
 /** A place is low at or below its reorder level; a place with no level set is never low. */
 export const isLow = (held: number, level: number | null): boolean => level !== null && held <= level;
 
