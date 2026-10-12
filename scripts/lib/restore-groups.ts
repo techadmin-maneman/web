@@ -228,6 +228,13 @@ export const RESTORE_GROUPS: readonly RestoreGroup[] = [
     putBackBy: "Where FSM still holds them, the cron reads them again; otherwise the rows since `<T>`",
   },
   {
+    what: "The demand forecast",
+    tables: ["forecast_runs", "forecast_lines", "demand_events"],
+    leftAtT:
+      "A forecast run since is gone and the last before stands until the next is due, and an event ops added or took off since is gone or back",
+    putBackBy: "Adding the events again on the Supply plan page; the next run is due within the planning period",
+  },
+  {
     what: "Worked out from other tables",
     tables: ["last_visits", "ops_settings_snapshot", "stock_balances", "stock_lot_balances"],
     leftAtT: "Nothing of their own: triggers keep each from the table it is worked out from",

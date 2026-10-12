@@ -35,6 +35,7 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 | The audit log | `audit_log` | Who did what since `<T>` | Adding the rows since `<T>`: they are only ever added |
 | New people, leads, addresses and try-ons | `people`, `leads`, `addresses`, `tryon_jobs` | Bookings and leads made since are lost here; the CRM has the leads | The rows since `<T>` |
 | Technicians, and FSM's catalogue | `technicians`, `fsm_items` | A technician added or changed since goes back | Where FSM still holds them, the cron reads them again; otherwise the rows since `<T>` |
+| The demand forecast | `forecast_runs`, `forecast_lines`, `demand_events` | A forecast run since is gone and the last before stands until the next is due, and an event ops added or took off since is gone or back | Adding the events again on the Supply plan page; the next run is due within the planning period |
 | Worked out from other tables | `last_visits`, `ops_settings_snapshot`, `stock_balances`, `stock_lot_balances` | Nothing of their own: triggers keep each from the table it is worked out from | Putting back that table |
 | The storage meter | `stored_objects`, `storage_meter` | Objects stored or deleted since are counted wrongly, as R2 is not restored | The rows since `<T>` |
 | Housekeeping | `alerts`, `board_version`, `cron_jobs`, `cron_runs`, `credit_expiry_cursor`, `counters`, `idempotency`, `number_codes`, `otp_challenges`, `tryon_sessions`, `events`, `sync_cursors`, `webhook_inbox`, `zoho_access_tokens`, `zoho_token`, `zoho_tokens` | Nothing that lasts | Nothing |
@@ -71,12 +72,15 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 - [cron_runs](#cron_runs): One row: when the cron's latest run started and its last finished run ended, so a run cut short is told by the next.
 - [custom_orders](#custom_orders): Each hair system made for one client to their exact spec: the spec, supplier and price, its payment link and payment, and the order it was bought on (ADR 0174).
 - [deletion_requests](#deletion_requests): A client's request to be erased, waiting for ops, and what ops decided (ADR 0042, ADR 0078).
+- [demand_events](#demand_events): The calendar of uplifts ops keep, each an event in a city or every city, which lifts the forecast's baseline (ADR 0179).
 - [deployment_identity](#deployment_identity): Which environment's database this is, so a Worker refuses to serve on another's (ADR 0003).
 - [discount_code_uses](#discount_code_uses): Each time a discount code was entered on a booking, its hold or its visit: by whom, and what it took off before GST once the price was known. Never deleted: one taken off is marked removed (ADR 0108).
 - [discount_codes](#discount_codes): The discount codes ops make: a percentage with an optional cap or an amount, the kinds of visit each covers, its last day and limits, and whether it is switched off (ADR 0108).
 - [dispatch_moves](#dispatch_moves): Every move ops make on the dispatch board: from where to where, by whom, why, what FSM said, and whether the client was told (ADR 0069).
 - [events](#events): What happened, for analysis, with no personal data in its payload.
 - [first_fit_requests](#first_fit_requests): A first fit asked for on the site's form with the consultation; a person's latest stands (ADR 0086). The form no longer asks for one (ADR 0105), and only the data export, erasure and an old consultation request's line still read it.
+- [forecast_lines](#forecast_lines): Each forecast run's expected use of each stock code in each city and period, with what each of its four layers gave (ADR 0179).
+- [forecast_runs](#forecast_runs): Each demand forecast run, once a planning period: its period, horizon and the rates it learned (ADR 0179).
 - [fsm_items](#fsm_items): FSM's catalogue, to read each appointment's visit type from its service item and to compare FSM's prices with the price book (ADR 0032, ADR 0073).
 - [grievances](#grievances): A client's grievance, and the answer ops recorded (ADR 0049, ADR 0078).
 - [hair_profiles](#hair_profiles): Every version of a client's hair profile, the fit spec and the history: the technician's at a visit, once for each of the phone's events, and ops' corrections. Never changed, only blanked (ADR 0106).
@@ -834,6 +838,28 @@ Indexes:
 
 - `deletion_requests_by_state`: on (`state`, `created_at`)
 
+## demand_events
+
+The calendar of uplifts ops keep, each an event in a city or every city, which lifts the forecast's baseline (ADR 0179).
+
+Made by `0151_forecast.sql`.
+
+| Column | Type | May be empty | Default | Key |
+| --- | --- | --- | --- | --- |
+| `id` | TEXT | no |  | primary key |
+| `name` | TEXT | no |  |  |
+| `city` | TEXT | yes |  |  |
+| `starts_on` | TEXT | no |  |  |
+| `ends_on` | TEXT | no |  |  |
+| `uplift_percent` | INTEGER | no |  |  |
+| `created_by` | TEXT | no |  |  |
+| `created_at` | TEXT | no |  |  |
+| `deleted_at` | TEXT | yes |  |  |
+
+Indexes:
+
+- `demand_events_by_end`: on (`ends_on`), where `deleted_at IS NULL`
+
 ## deployment_identity
 
 Which environment's database this is, so a Worker refuses to serve on another's (ADR 0003).
@@ -983,6 +1009,45 @@ Indexes:
 - `first_fit_requests_unfitted`: on (`person_id`), where `fitted_since = 0`
 
 Triggers: `first_fit_requests_fitted_asked`.
+
+## forecast_lines
+
+Each forecast run's expected use of each stock code in each city and period, with what each of its four layers gave (ADR 0179).
+
+Made by `0151_forecast.sql`.
+
+| Column | Type | May be empty | Default | Key |
+| --- | --- | --- | --- | --- |
+| `run_id` | TEXT | no |  | primary key; → `forecast_runs.id` |
+| `consumable_code` | TEXT | no |  | primary key |
+| `city` | TEXT | no |  | primary key |
+| `period` | INTEGER | no |  | primary key |
+| `booked` | REAL | no |  |  |
+| `due` | REAL | no |  |  |
+| `pipeline` | REAL | no |  |  |
+| `baseline` | REAL | no |  |  |
+| `expected` | REAL | no |  |  |
+| `high` | REAL | no |  |  |
+
+## forecast_runs
+
+Each demand forecast run, once a planning period: its period, horizon and the rates it learned (ADR 0179).
+
+Made by `0151_forecast.sql`.
+
+| Column | Type | May be empty | Default | Key |
+| --- | --- | --- | --- | --- |
+| `id` | TEXT | no |  | primary key |
+| `run_on` | TEXT | no |  |  |
+| `period_days` | INTEGER | no |  |  |
+| `horizon_periods` | INTEGER | no |  |  |
+| `due_rate` | REAL | no |  |  |
+| `fit_rate` | REAL | no |  |  |
+| `ran_at` | TEXT | no |  |  |
+
+Indexes:
+
+- `forecast_runs_by_day`: on (`run_on`)
 
 ## fsm_items
 
@@ -1701,7 +1766,7 @@ Indexes:
 
 Each piece fitted, its base and lot, the day it was fitted and the day it falls due, and a failure with its reason. `fsm_id` is FSM's ID for a piece mirrored from FSM, otherwise the row's own (ADR 0032, ADR 0110).
 
-Made by `0027_pieces_and_zones.sql`; changed by `0060_flat_task_reads.sql`.
+Made by `0027_pieces_and_zones.sql`; changed by `0060_flat_task_reads.sql`, `0151_forecast.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -1723,6 +1788,7 @@ Made by `0027_pieces_and_zones.sql`; changed by `0060_flat_task_reads.sql`.
 Indexes:
 
 - `pieces_by_code`: on (`piece_code`)
+- `pieces_by_due`: on (`null`)
 - `pieces_by_person`: on (`person_id`, `fitted_at`)
 - `pieces_to_replace`: on (`replacement_due_at`), where `replacement_booked = 0 AND deleted_at IS NULL AND failed_at IS NULL AND replacement_due_at IS NOT NULL`
 - A `UNIQUE` constraint: unique on (`fsm_id`)
@@ -2378,7 +2444,7 @@ Indexes:
 
 Every movement of a consumable into or out of the central store or a technician's kit, never changed; what a place holds is the sum of its rows (ADR 0087).
 
-Made by `0049_consumables_and_stock.sql`; changed by `0053_balances_and_last_visits.sql`, `0133_stock_places.sql`.
+Made by `0049_consumables_and_stock.sql`; changed by `0053_balances_and_last_visits.sql`, `0133_stock_places.sql`, `0151_forecast.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -2403,6 +2469,7 @@ Indexes:
 - `stock_movements_held`: on (`technician_id`, `consumable_code`)
 - `stock_movements_latest`: on (`created_at`)
 - `stock_movements_used`: unique on (`job_event_id`, `consumable_code`), where `reason = 'used'`
+- `stock_movements_used_by_day`: on (`created_at`), where `reason = 'used'`
 
 Triggers: `stock_movements_balance`, `stock_movements_no_update`, `stock_movements_taken_out`.
 

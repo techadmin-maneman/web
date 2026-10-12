@@ -68,6 +68,9 @@ export interface OpsInputs {
   readonly poSecondApprovalAboveRupees: number;
   /** Days past its promised date before a custom order is late (src/policy/purchasing.ts). */
   readonly customOrderGraceDays: number;
+  /** The forecast's period and horizon (src/policy/forecast.ts). */
+  readonly planningPeriodDays: number;
+  readonly planningHorizonPeriods: number;
   readonly referralReward: ReferralReward;
 }
 
@@ -113,6 +116,8 @@ function shape(values: OpsValues): OpsInputs {
     lostAfterDays: values.lost_after_days,
     poSecondApprovalAboveRupees: values.po_second_approval_above_rupees,
     customOrderGraceDays: values.custom_order_grace_days,
+    planningPeriodDays: values.planning_period_days,
+    planningHorizonPeriods: values.planning_horizon_periods,
   };
 }
 

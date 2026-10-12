@@ -1085,6 +1085,26 @@ A custom order not yet paid, cancelled, and its link with it
 }
 ```
 
+### GET /api/stock/forecast
+
+The latest demand forecast, for one city or every city
+
+**200**: The forecast
+
+```json
+{
+  "$ref": "#/components/schemas/DemandForecast"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ### POST /api/clients/{id}/erasure
 
 Erase a client now: their photographs and details. The CRM and Books follow within minutes
@@ -13258,6 +13278,100 @@ Request body:
 }
 ```
 
+### DemandForecast
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "run": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "properties": {
+        "run_on": {
+          "type": "string",
+          "format": "date"
+        },
+        "period_days": {
+          "type": "integer"
+        },
+        "horizon_periods": {
+          "type": "integer"
+        },
+        "due_rate": {
+          "type": "number",
+          "description": "The share of clients due taken to book their replacement."
+        },
+        "fit_rate": {
+          "type": "number",
+          "description": "The share of consultations taken to become a first fit."
+        }
+      },
+      "required": [
+        "run_on",
+        "period_days",
+        "horizon_periods",
+        "due_rate",
+        "fit_rate"
+      ],
+      "description": "Null before the first run."
+    },
+    "lines": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "consumable_code": {
+            "type": "string"
+          },
+          "city": {
+            "type": "string"
+          },
+          "period": {
+            "type": "integer"
+          },
+          "booked": {
+            "type": "number"
+          },
+          "due": {
+            "type": "number"
+          },
+          "pipeline": {
+            "type": "number"
+          },
+          "baseline": {
+            "type": "number"
+          },
+          "expected": {
+            "type": "number"
+          },
+          "high": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "consumable_code",
+          "city",
+          "period",
+          "booked",
+          "due",
+          "pipeline",
+          "baseline",
+          "expected",
+          "high"
+        ]
+      }
+    }
+  },
+  "required": [
+    "run",
+    "lines"
+  ]
+}
+```
+
 ### Erased
 
 ```json
@@ -19729,7 +19843,9 @@ Request body:
         "remedy_limit",
         "lost_after_days",
         "po_second_approval_above_rupees",
-        "custom_order_grace_days"
+        "custom_order_grace_days",
+        "planning_period_days",
+        "planning_horizon_periods"
       ]
     },
     "title": {
@@ -19901,7 +20017,9 @@ Request body:
         "remedy_limit",
         "lost_after_days",
         "po_second_approval_above_rupees",
-        "custom_order_grace_days"
+        "custom_order_grace_days",
+        "planning_period_days",
+        "planning_horizon_periods"
       ]
     },
     "title": {

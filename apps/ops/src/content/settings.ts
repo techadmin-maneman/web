@@ -142,6 +142,7 @@ export const settings = {
       care: "Customer Care",
       reports: "Reports",
       purchasing: "Purchasing",
+      supply_plan: "Supply plan",
       console: "The console",
       other: "Other policies",
     },

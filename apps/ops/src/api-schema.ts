@@ -1739,6 +1739,53 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/stock/forecast": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The latest demand forecast, for one city or every city */
+        get: {
+            parameters: {
+                query?: {
+                    city?: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The forecast */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["DemandForecast"];
+                    };
+                };
+                /** @description access_required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/clients/{id}/erasure": {
         parameters: {
             query?: never;
@@ -7691,7 +7738,7 @@ export interface paths {
                 query?: never;
                 header?: never;
                 path: {
-                    name: "checkin_radius_m" | "no_show_wait_min" | "change_notice_hours" | "late_change_charge" | "no_show_charge" | "no_show_waiver" | "address_unlock_hour" | "reminder_hour" | "phone_clock" | "task_sla_hours" | "piece_cycle_days" | "payment_hold" | "dispute_window_days" | "technician_work" | "booking_days" | "referral_reward" | "care_hours" | "remedy_limit" | "lost_after_days" | "po_second_approval_above_rupees" | "custom_order_grace_days";
+                    name: "checkin_radius_m" | "no_show_wait_min" | "change_notice_hours" | "late_change_charge" | "no_show_charge" | "no_show_waiver" | "address_unlock_hour" | "reminder_hour" | "phone_clock" | "task_sla_hours" | "piece_cycle_days" | "payment_hold" | "dispute_window_days" | "technician_work" | "booking_days" | "referral_reward" | "care_hours" | "remedy_limit" | "lost_after_days" | "po_second_approval_above_rupees" | "custom_order_grace_days" | "planning_period_days" | "planning_horizon_periods";
                 };
                 cookie?: never;
             };
@@ -13719,6 +13766,30 @@ export interface components {
             wave: "straight" | "slight_wave" | "wavy" | "curly" | null;
             note: string | null;
         };
+        DemandForecast: {
+            /** @description Null before the first run. */
+            run: {
+                /** Format: date */
+                run_on: string;
+                period_days: number;
+                horizon_periods: number;
+                /** @description The share of clients due taken to book their replacement. */
+                due_rate: number;
+                /** @description The share of consultations taken to become a first fit. */
+                fit_rate: number;
+            } | null;
+            lines: {
+                consumable_code: string;
+                city: string;
+                period: number;
+                booked: number;
+                due: number;
+                pipeline: number;
+                baseline: number;
+                expected: number;
+                high: number;
+            }[];
+        };
         Erased: {
             /** Format: date-time */
             erased_at: string;
@@ -15137,7 +15208,7 @@ export interface components {
         OpsSetting: components["schemas"]["NumberRule"] | components["schemas"]["ChoiceRule"];
         NumberRule: {
             /** @enum {string} */
-            name: "checkin_radius_m" | "no_show_wait_min" | "change_notice_hours" | "late_change_charge" | "no_show_charge" | "no_show_waiver" | "address_unlock_hour" | "reminder_hour" | "phone_clock" | "task_sla_hours" | "piece_cycle_days" | "payment_hold" | "dispute_window_days" | "technician_work" | "booking_days" | "referral_reward" | "care_hours" | "remedy_limit" | "lost_after_days" | "po_second_approval_above_rupees" | "custom_order_grace_days";
+            name: "checkin_radius_m" | "no_show_wait_min" | "change_notice_hours" | "late_change_charge" | "no_show_charge" | "no_show_waiver" | "address_unlock_hour" | "reminder_hour" | "phone_clock" | "task_sla_hours" | "piece_cycle_days" | "payment_hold" | "dispute_window_days" | "technician_work" | "booking_days" | "referral_reward" | "care_hours" | "remedy_limit" | "lost_after_days" | "po_second_approval_above_rupees" | "custom_order_grace_days" | "planning_period_days" | "planning_horizon_periods";
             title: string;
             note: string;
             set_by: string | null;
@@ -15170,7 +15241,7 @@ export interface components {
         };
         ChoiceRule: {
             /** @enum {string} */
-            name: "checkin_radius_m" | "no_show_wait_min" | "change_notice_hours" | "late_change_charge" | "no_show_charge" | "no_show_waiver" | "address_unlock_hour" | "reminder_hour" | "phone_clock" | "task_sla_hours" | "piece_cycle_days" | "payment_hold" | "dispute_window_days" | "technician_work" | "booking_days" | "referral_reward" | "care_hours" | "remedy_limit" | "lost_after_days" | "po_second_approval_above_rupees" | "custom_order_grace_days";
+            name: "checkin_radius_m" | "no_show_wait_min" | "change_notice_hours" | "late_change_charge" | "no_show_charge" | "no_show_waiver" | "address_unlock_hour" | "reminder_hour" | "phone_clock" | "task_sla_hours" | "piece_cycle_days" | "payment_hold" | "dispute_window_days" | "technician_work" | "booking_days" | "referral_reward" | "care_hours" | "remedy_limit" | "lost_after_days" | "po_second_approval_above_rupees" | "custom_order_grace_days" | "planning_period_days" | "planning_horizon_periods";
             title: string;
             note: string;
             set_by: string | null;

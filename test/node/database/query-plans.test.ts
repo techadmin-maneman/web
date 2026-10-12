@@ -96,6 +96,8 @@ const SMALL_TABLES = new Set([
   "consumable_usage",
   // A row a hair system stock code ops range, or a custom order's spec: the catalogue, as consumables is.
   "hair_systems",
+  // A row a planning period, let go after the learning days: a few dozen at most.
+  "forecast_runs",
   // A row a place stock is kept: the warehouse, each hub and stockroom, and a kit a technician.
   "stock_places",
   // What Growth sets on the Words page, a row an edit: it grows with ops' work, not with clients.
