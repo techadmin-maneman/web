@@ -28,27 +28,16 @@
 // (src/scheduled/unsent-messages.ts).
 
 import { PUBLIC_ORIGIN } from "../config/environments.ts";
-import {
-  messageClass,
-  RESULT_TEMPLATE,
-  stopLinkPurpose,
-  type TemplateName,
-  type Wording,
-} from "../config/message-templates.ts";
+import { messageClass, stopLinkPurpose, type TemplateName, type Wording } from "../config/message-templates.ts";
 import { messageWording } from "../domain/words/message-wording.ts";
-import { typeOfKey, type ImageType } from "../lib/image-bytes.ts";
+import type { ImageType } from "../lib/image-bytes.ts";
 import { MAX_SEND_ATTEMPTS } from "../config/pipeline.ts";
 import { type MessagingSettings } from "../config/settings.ts";
-import { RESULT_LINK_MESSAGE_TTL_MS } from "../config/tryon.ts";
 import type { Dependencies } from "../dependencies.ts";
 import type { StaticConfig } from "../guard.ts";
 import type { MessageKind } from "../config/message-kinds.ts";
-import { takeOne } from "../domain/sign-in/rate-limit.ts";
-import { mobileHashOf } from "../domain/clients/number-codes.ts";
 import { isMessageHeldBack } from "../policy/staging-test-records.ts";
 
-import { firstNameOf } from "../lib/names.ts";
-import { signToken } from "../lib/signed-token.ts";
 import { composeBookingRefunded } from "../domain/money/auto-refunds.ts";
 import { composeCreditsExpiring } from "../domain/money/credit-reminders.ts";
 import { composeDeletionRejected } from "../domain/privacy/deletion.ts";
@@ -65,6 +54,8 @@ import { composeMessagesStopped, stopLink } from "../domain/messages/stop-messag
 import { composeLaunchAlert, composeWaitlistConfirmation } from "../domain/booking/waitlist.ts";
 import { isMessageStale, VISIT_MESSAGE_KINDS, type VisitMessageKind } from "../domain/messages/visit-messages.ts";
 import { composeVisitMessage } from "../domain/messages/visit-message-text.ts";
+import { composeTechnicianUpdate } from "../domain/messages/technician-updates.ts";
+import { resultContent } from "./result-message.ts";
 import { composeMoveProposed } from "../domain/messages/move-proposal-text.ts";
 import { messageFailedKey } from "../policy/alerts.ts";
 import type { SendResult } from "../providers/messaging/index.ts";
@@ -174,7 +165,7 @@ interface MessageRow {
  * What to send: a template, its params, for the try-on result its image's link, made fresh for each try, and for a
  * reminder or alert the link that stops them.
  */
-interface Sendable {
+export interface Sendable {
   readonly template: TemplateName;
   readonly params: string[];
   readonly media?: { readonly url: () => Promise<string>; readonly type: ImageType };
@@ -201,41 +192,6 @@ export const messageHeldBack = (
     testRecord: row.test_record === 1,
     mobileE164: row.mobile_e164,
   });
-
-/** The try-on result: the person's result image, within the daily cap on result messages to one number. */
-async function resultContent(db: D1Database, config: StaticConfig, row: MessageRow, now: Date): Promise<Content> {
-  const { tryon } = config.settings;
-  const job = await db
-    .prepare("SELECT result_key, state FROM tryon_jobs WHERE id = ?1")
-    .bind(row.subject_id)
-    .first<{ result_key: string | null; state: string }>();
-  if (job?.state !== "ready" || job.result_key === null) return { skip: "no result to send" };
-  if (row.attempts === 0) {
-    // The daily cap on try-on results sent to one number, which the gate checks before a look is made (ADR 0104).
-    const key = await mobileHashOf(config.settings.ipHashSalt, row.mobile_e164);
-    const withinCap = await takeOne(db, "message:result:mobile", key, { now, settings: config.settings });
-    if (!withinCap) return { skip: "daily message limit reached" };
-  }
-  const resultKey = job.result_key;
-  return {
-    template: RESULT_TEMPLATE,
-    // Greeted by first name, and sent on to book the consultation that shows it for real.
-    params: [firstNameOf(row.name), `${PUBLIC_ORIGIN[config.environment]}/book`],
-    // The provider fetches the image when it sends, declared as what the render stored.
-    media: {
-      url: async () => {
-        const token = await signToken(
-          tryon.linkSigningKey,
-          "result",
-          resultKey,
-          new Date(now.getTime() + RESULT_LINK_MESSAGE_TTL_MS),
-        );
-        return `${PUBLIC_ORIGIN[config.environment]}/api/result/${token}`;
-      },
-      type: typeOfKey(resultKey),
-    },
-  };
-}
 
 /**
  * What a message of its kind says, as things stand now, or why it is not sent. Every kind is answered: one added to
@@ -285,6 +241,8 @@ async function contentOf(db: D1Database, config: StaticConfig, row: MessageRow, 
       return composeMessagesStopped(db, row.person_id);
     case "move_proposed":
       return composeMoveProposed(db, row.subject_id, row.person_id, now);
+    case "technician_update":
+      return composeTechnicianUpdate(db, row.subject_id, row.person_id, now);
   }
 }
 

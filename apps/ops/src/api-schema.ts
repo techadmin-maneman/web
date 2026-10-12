@@ -3388,6 +3388,53 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/care-numbers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Whether the same-day promise holds: reply times, same-day closes, the backlog, reasons and remedies */
+        get: {
+            parameters: {
+                query?: {
+                    days?: "7" | "30" | "90";
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The numbers */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["CareNumbers"];
+                    };
+                };
+                /** @description access_required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/referral-channels": {
         parameters: {
             query?: never;
@@ -11018,6 +11065,43 @@ export interface components {
             given_at: string;
             /** @enum {string} */
             state: "given" | "awaiting" | "declined";
+        };
+        CareNumbers: {
+            /** Format: date */
+            from: string;
+            /** Format: date */
+            to: string;
+            replies: {
+                chats: number;
+                /** @description The middle first reply, in minutes counted in Care hours; null with none answered. */
+                median_minutes: number | null;
+                /** @description The share of chats answered by their reply-by time, 0 to 1; null with none. */
+                within_target: number | null;
+            };
+            /** @description The share closed the day they opened. */
+            same_day: number | null;
+            backlog: {
+                waiting_on_us: number;
+                overdue: number;
+                waiting_on_client: number;
+            };
+            reasons: {
+                reason: string;
+                chats: number;
+            }[];
+            remedies: {
+                reason: string;
+                remedies: number;
+                visits: number;
+            }[];
+            by_person: {
+                email: string;
+                chats: number;
+                /** @description The middle first reply, in minutes counted in Care hours; null with none answered. */
+                median_minutes: number | null;
+                /** @description The share of chats answered by their reply-by time, 0 to 1; null with none. */
+                within_target: number | null;
+            }[];
         };
         ReferralChannels: {
             channels: {

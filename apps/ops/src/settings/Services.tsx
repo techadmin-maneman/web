@@ -17,7 +17,7 @@ import { rupees } from "@maneman/web-kit/money";
 import { useState, type ReactNode } from "react";
 import { api, type Kind, type LateFee, type OpsService, type Price, type ServiceBook } from "../api.ts";
 import { OpsLink } from "../components/Shell.tsx";
-import { settings } from "../content.ts";
+import { settings } from "../content/settings.ts";
 import { useAccess, type OpsCall } from "../lib/access.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import { rulePath } from "./rule-groups.ts";
