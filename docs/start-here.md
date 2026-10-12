@@ -203,7 +203,8 @@ this map, or when the map names something that no longer exists.
   (what each of its tables holds), `capacity` (each technician's day, from the dispatch board), `message-days`,
   `care-cases` (grievances and tasks, opened and closed), `leads`, `spend` (offline spend, partner payments and
   invites' free visits), `client-months` (where each client stood each month), `stock` (the stock ledger, and each week's position),
-  `credits` (free visits given, used and owed), `client-key` (a client as the copy knows them)
+  `credits` (free visits given, used and owed), `targets`, `access` (who may read what, from the Staff list),
+  `client-key` (a client as the copy knows them)
 - **Database work** (`src/domain/money/`): `spend` (offline spend, as typed on the Spend page), `standard-costs`
   (what each hair system costs us)
 - **Rules** (`src/policy/`): `channels` (how a lead found us, and a campaign's city), `client-standing` (active,
@@ -228,12 +229,13 @@ this map, or when the map names something that no longer exists.
 
 - **Database work** (`src/domain/ops/`): `alerts`, `needs-a-hand`, `tasks`, `task-closures`, `task-owners`,
   `grievances`, `ops-settings`, `site-notices`, `audit`, `activity`, `staff`, `task-spans` (when each task opened and
-  closed)
+  closed), `targets` (each month's plan, city by city)
 - **Rules** (`src/policy/`): `tasks`, `alerts`, `grievances`, `ops-settings`, `console-routes`, `access`,
   `decision-reasons`
 - **Routes** (`src/routes/`): `ops/alerts`, `ops/tasks`, `ops/grievances`, `ops/settings`, `ops/staff`,
-  `ops/whoami`, `ops/storage`, `ops/activity`
-- **Screens:** `apps/ops/src/tasks/`, `apps/ops/src/grievances/`, `apps/ops/src/settings/`, `apps/ops/src/activity/`
+  `ops/whoami`, `ops/storage`, `ops/activity`, `ops/targets`
+- **Screens:** `apps/ops/src/tasks/`, `apps/ops/src/grievances/`, `apps/ops/src/settings/`, `apps/ops/src/activity/`,
+  `apps/ops/src/targets/`
 - **Tests:** `test/worker/ops/`, `e2e/ops/tasks.e2e.ts`, `e2e/ops/grievances.e2e.ts`, `e2e/ops/settings.e2e.ts`,
   `e2e/ops/staff.e2e.ts`
 

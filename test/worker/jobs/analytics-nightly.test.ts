@@ -374,3 +374,32 @@ describe("the copy's stock and credits", () => {
     expect(warehouse.tables.get("fact_credit")?.get("g1")).toMatchObject({ kind: "grant", visits: 2, city: "Gurgaon" });
   });
 });
+
+describe("the copy's targets and access", () => {
+  it("holds each month's targets, and each grant of each member of staff let in", async () => {
+    await env.DB.batch([
+      env.DB.prepare(
+        `INSERT INTO targets (month, city, measure, target, set_by, set_at)
+         VALUES ('2026-10', 'Gurgaon', 'new_clients', 40, 'admin@maneman.in', ?1)`,
+      ).bind(NOW.toISOString()),
+      env.DB.prepare(
+        "INSERT INTO staff (email, active, added_by, added_at) VALUES ('rishabh@maneman.in', 1, 'admin@maneman.in', ?1), ('gone@maneman.in', 0, 'admin@maneman.in', ?1)",
+      ).bind(NOW.toISOString()),
+      env.DB.prepare(
+        `INSERT INTO staff_grants (email, department, level, geography, place, granted_by, granted_at)
+         VALUES ('rishabh@maneman.in', 'growth', 'view', 'city', 'Gurgaon', 'admin@maneman.in', ?1),
+                ('gone@maneman.in', 'finance', 'view', 'national', NULL, 'admin@maneman.in', ?1)`,
+      ).bind(NOW.toISOString()),
+    ]);
+    const warehouse = createStubWarehouse();
+
+    await copyTonight(env.DB, warehouse, night);
+
+    expect([...(warehouse.tables.get("fact_target")?.values() ?? [])]).toEqual([
+      { month: "2026-10-01", city: "Gurgaon", measure: "new_clients", target: 40 },
+    ]);
+    expect([...(warehouse.tables.get("access")?.values() ?? [])]).toEqual([
+      { email: "rishabh@maneman.in", department: "growth", level: "view", geography: "city", place: "Gurgaon" },
+    ]);
+  });
+});

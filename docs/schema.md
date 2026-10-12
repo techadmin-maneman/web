@@ -28,7 +28,7 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 | Hair profiles | `hair_profiles` | A profile recorded since is lost, and one an erasure blanked since is whole again | Adding the rows since `<T>`: they are only ever added. Erasing again blanks the rest |
 | Stock | `stock_movements` | A delivery, transfer, count or loss recorded since, or a job's use, is lost, so what each kit and the store hold is wrong | Adding the rows since `<T>` |
 | Referrals and credits | `referral_codes`, `referral_attributions`, `credit_ledger`, `waitlist_entries`, `referral_channels`, `channel_attributions`, `partner_payouts`, `spend_entries` | A credit, a grant, a partner, a partner's payment, an entry of offline spend or a place on a waitlist disappears | The rows since `<T>`. `credit_ledger` is only ever added to |
-| Ops' settings and what we sell | `ops_settings`, `price_book`, `standard_costs`, `services`, `slot_times`, `serviceable_pincodes`, `technician_leave`, `visit_blackouts`, `city_blackouts`, `cities`, `zones`, `consumables`, `consumable_usage`, `checklist_items`, `partial_reasons`, `lost_reasons`, `pay_grades`, `visit_pay_rates`, `word_versions`, `site_word_publishes` | A price, service, rule, area, day's times, day off, consumable, job-sheet list, pay rate or wording set since goes back | Setting it again in the console, which audits it |
+| Ops' settings and what we sell | `ops_settings`, `price_book`, `standard_costs`, `targets`, `services`, `slot_times`, `serviceable_pincodes`, `technician_leave`, `visit_blackouts`, `city_blackouts`, `cities`, `zones`, `consumables`, `consumable_usage`, `checklist_items`, `partial_reasons`, `lost_reasons`, `pay_grades`, `visit_pay_rates`, `word_versions`, `site_word_publishes` | A price, service, rule, area, day's times, day off, consumable, job-sheet list, pay rate or wording set since goes back | Setting it again in the console, which audits it |
 | Staff and access | `staff`, `staff_grants`, `staff_service_tokens`, `staff_access_mode` | Someone taken off the Staff list since, or a grant taken back, is let in again | Setting it again on the Staff page, before anything else |
 | Tasks | `task_owners`, `task_closures`, `task_spans` | A task closed since opens again, one given to someone since is nobody's, and a task's span closed since closes again the next night, dated then | Closing or giving it again on the Tasks board |
 | The audit log | `audit_log` | Who did what since `<T>` | Adding the rows since `<T>`: they are only ever added |
@@ -128,6 +128,7 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 - [storage_meter](#storage_meter): What the apps' two buckets, client-photos and referral-cards, hold together: one row, the sum of `stored_objects` kept beside it, and the last mark of the share ops were told of (ADR 0093); and the last mark of the database's own size they were told of.
 - [stored_objects](#stored_objects): Each object client-photos and referral-cards hold, and its size, written as it is stored and deleted as it is, so the storage meter never counts one twice (ADR 0093).
 - [sync_cursors](#sync_cursors): Where each pass of the reconciliation with FSM has reached (ADR 0032).
+- [targets](#targets): Each month's target for a city, by measure, as set on the console's Targets page; set again, it is replaced (ADR 0154).
 - [task_closures](#task_closures): A task on the Tasks board ops closed without doing its thing, a visit left partly done alone, with why, who and when, by the task's group and its row's id (ADR 0092).
 - [task_owners](#task_owners): The member of staff a task on the Tasks board is theirs, by Access e-mail, by the task's group, its row's id and, where that row can be a new task again, its episode; a task with no row for it is nobody's (ADR 0092).
 - [task_spans](#task_spans): Each task the Tasks board has held, by its group, row and episode: the client's city, when it opened and the night it was first found gone, from which the reporting copy counts Care cases (ADR 0147).
@@ -2168,6 +2169,21 @@ Made by `0012_fsm_reconciliation.sql`.
 | `pass_started_at` | TEXT | yes |  |  |
 | `repaired` | INTEGER | no | `0` |  |
 | `updated_at` | TEXT | no |  |  |
+
+## targets
+
+Each month's target for a city, by measure, as set on the console's Targets page; set again, it is replaced (ADR 0154).
+
+Made by `0131_targets.sql`.
+
+| Column | Type | May be empty | Default | Key |
+| --- | --- | --- | --- | --- |
+| `month` | TEXT | no |  | primary key |
+| `city` | TEXT | no |  | primary key; → `cities.name` |
+| `measure` | TEXT | no |  | primary key |
+| `target` | INTEGER | no |  |  |
+| `set_by` | TEXT | no |  |  |
+| `set_at` | TEXT | no |  |  |
 
 ## task_closures
 
