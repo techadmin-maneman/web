@@ -4445,7 +4445,7 @@ export interface paths {
                 query?: {
                     actor_kind?: "staff" | "service" | "client" | "technician" | "system";
                     actor?: string;
-                    action?: "ops.call" | "client.call" | "tech.call" | "consent.switch" | "number_change.request" | "number_change.withdraw" | "number_change.decide" | "deletion.request" | "deletion.decide" | "person.erase" | "referral.decide" | "referral.attach" | "channel.add" | "channel.change" | "channel.pause" | "channel.resume" | "word.set" | "chat.reply" | "chat.note" | "chat.close" | "chat.link" | "chat.save" | "care_person.move" | "care_person.move_all" | "care_rota.set" | "care_leave.add" | "care_leave.delete" | "city_matter.raise" | "care_name.set" | "quick_reply.add" | "quick_reply.retire" | "remedy.give" | "remedy.ask" | "remedy.approve" | "remedy.decline" | "word.publish" | "partner_payout.record" | "partner_payout.delete" | "spend.add" | "spend.remove" | "photo.view" | "pincode.launch" | "data.export" | "grievance.raise" | "grievance.resolve" | "no_show.decide" | "technician_device.revoke" | "technician.allow_sign_in" | "no_show.dispute" | "no_show.dispute_rule" | "technician.leave" | "technician.leave_cancelled" | "technician.add" | "technician.change" | "technician.deactivate" | "technician.reactivate" | "technician.delete" | "technician.pay_grade" | "pay_grade.add" | "pay_grade.rename" | "pay_grade.delete" | "pay_rate.set" | "setting.change" | "price.set" | "price.withdraw" | "standard_cost.set" | "target.set" | "target.remove" | "slot_times.set" | "pincode.set" | "pincode.rename" | "pincode.add" | "blackout.add" | "blackout.remove" | "service.add" | "service.rename" | "service.describe" | "service.length" | "service.reorder" | "service.retire" | "service.restore" | "credit.adjust" | "dispatch.client_told" | "dispatch.check_in_cleared" | "dispatch.move_proposed" | "dispatch.proposal_withdrawn" | "consumable.add" | "consumable.change" | "consumable.retire" | "consumable.restore" | "consumable.delete" | "consumable.usage" | "job_sheet.set" | "stock.receive" | "stock.transfer" | "stock.count" | "stock.write_off" | "stock.place_add" | "stock.place_change" | "stock.send" | "stock.receive_transfer" | "stock.send_back" | "task.assign" | "task.hand_back" | "task.close" | "address.given_to_ops" | "alert.resolve" | "alert.send_again" | "booking.give_back" | "visit.book" | "visit.cancel" | "visit.close" | "visit.checkin_waive" | "visit.lost_reason" | "visit.move_accepted" | "hair_profile.correct" | "discount_code.make" | "discount_code.switch_off" | "discount_code.delete" | "discount_code.apply" | "discount_code.remove" | "staff.set" | "staff.enforce" | "staff.token_add" | "staff.token_remove" | "staff.delete";
+                    action?: "ops.call" | "client.call" | "tech.call" | "consent.switch" | "number_change.request" | "number_change.withdraw" | "number_change.decide" | "deletion.request" | "deletion.decide" | "person.erase" | "referral.decide" | "referral.attach" | "channel.add" | "channel.change" | "channel.pause" | "channel.resume" | "word.set" | "chat.reply" | "chat.note" | "chat.close" | "chat.link" | "chat.save" | "care_person.move" | "care_person.move_all" | "care_rota.set" | "care_leave.add" | "care_leave.delete" | "city_matter.raise" | "care_name.set" | "quick_reply.add" | "quick_reply.retire" | "remedy.give" | "remedy.ask" | "remedy.approve" | "remedy.decline" | "word.publish" | "partner_payout.record" | "partner_payout.delete" | "spend.add" | "spend.remove" | "photo.view" | "pincode.launch" | "data.export" | "grievance.raise" | "grievance.resolve" | "no_show.decide" | "technician_device.revoke" | "technician.allow_sign_in" | "no_show.dispute" | "no_show.dispute_rule" | "technician.leave" | "technician.leave_cancelled" | "technician.add" | "technician.change" | "technician.deactivate" | "technician.reactivate" | "technician.delete" | "technician.pay_grade" | "pay_grade.add" | "pay_grade.rename" | "pay_grade.delete" | "pay_rate.set" | "setting.change" | "price.set" | "price.withdraw" | "standard_cost.set" | "target.set" | "target.remove" | "slot_times.set" | "pincode.set" | "pincode.rename" | "pincode.add" | "blackout.add" | "blackout.remove" | "service.add" | "service.rename" | "service.describe" | "service.length" | "service.reorder" | "service.retire" | "service.restore" | "credit.adjust" | "dispatch.client_told" | "dispatch.check_in_cleared" | "dispatch.move_proposed" | "dispatch.proposal_withdrawn" | "consumable.add" | "consumable.change" | "consumable.retire" | "consumable.restore" | "consumable.delete" | "consumable.usage" | "job_sheet.set" | "stock.receive" | "stock.transfer" | "stock.count" | "stock.write_off" | "stock.place_add" | "stock.place_change" | "stock.send" | "stock.receive_transfer" | "stock.send_back" | "stock.label" | "task.assign" | "task.hand_back" | "task.close" | "address.given_to_ops" | "alert.resolve" | "alert.send_again" | "booking.give_back" | "visit.book" | "visit.cancel" | "visit.close" | "visit.checkin_waive" | "visit.lost_reason" | "visit.move_accepted" | "hair_profile.correct" | "discount_code.make" | "discount_code.switch_off" | "discount_code.delete" | "discount_code.apply" | "discount_code.remove" | "staff.set" | "staff.enforce" | "staff.token_add" | "staff.token_remove" | "staff.delete";
                     /** @description A client's ID: what they did, and what was done to their record, visits, holds and requests. */
                     person?: string;
                     visit?: string;
@@ -9366,7 +9366,7 @@ export interface paths {
                         "application/json": components["schemas"]["Stock"];
                     };
                 };
-                /** @description invalid_request: fields names consumable_code for one nobody added, place_id for no place or one not in the caller's cities, or lot_id for a lot the place holds none of */
+                /** @description invalid_request: fields names consumable_code for one nobody added, place_id for no place or one not in the caller's cities, lot_id for a lot the place holds none of, or quantity for more pieces of a hair system than one delivery labels */
                 400: {
                     headers: {
                         [name: string]: unknown;
@@ -9482,7 +9482,7 @@ export interface paths {
                         "application/json": components["schemas"]["Stock"];
                     };
                 };
-                /** @description invalid_request: fields names consumable_code for one nobody added, place_id for no place or one not in the caller's cities, or lot_id for a lot the place holds none of */
+                /** @description invalid_request: fields names consumable_code for one nobody added, place_id for no place or one not in the caller's cities, lot_id for a lot the place holds none of, or quantity for more pieces of a hair system than one delivery labels */
                 400: {
                     headers: {
                         [name: string]: unknown;
@@ -9540,7 +9540,7 @@ export interface paths {
                         "application/json": components["schemas"]["Stock"];
                     };
                 };
-                /** @description invalid_request: fields names consumable_code for one nobody added, place_id for no place or one not in the caller's cities, or lot_id for a lot the place holds none of */
+                /** @description invalid_request: fields names consumable_code for one nobody added, place_id for no place or one not in the caller's cities, lot_id for a lot the place holds none of, or quantity for more pieces of a hair system than one delivery labels */
                 400: {
                     headers: {
                         [name: string]: unknown;
@@ -9885,6 +9885,162 @@ export interface paths {
         };
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/stock/units": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The units a place holds of a hair system, and how many pieces it holds unlabelled */
+        get: {
+            parameters: {
+                query: {
+                    consumable_code: string;
+                    /** @description A place by its ID: central for the warehouse, a kit by its technician's ID. */
+                    place_id: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The units a place holds of a hair system */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["StockUnits"];
+                    };
+                };
+                /** @description invalid_request: fields names consumable_code for a stock code that is not a hair system, or place_id for a place not in the caller's cities */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description access_required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        /** Labels for pieces a place held before labels, soonest to expire first */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["StockLabelling"];
+                };
+            };
+            responses: {
+                /** @description The units a place holds of a hair system */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["StockUnits"];
+                    };
+                };
+                /** @description invalid_request: fields names consumable_code for a stock code that is not a hair system, or place_id for a place not in the caller's cities */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description access_required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/stock/lots/{id}/label": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** A lot's label, for its boxes, made the first time it is asked for */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The lot's label */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["StockLotLabel"];
+                    };
+                };
+                /** @description access_required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description not_found: no such lot */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
         delete?: never;
         options?: never;
         head?: never;
@@ -12240,7 +12396,7 @@ export interface components {
                 name: string | null;
             };
             /** @enum {string} */
-            action: "ops.call" | "client.call" | "tech.call" | "consent.switch" | "number_change.request" | "number_change.withdraw" | "number_change.decide" | "deletion.request" | "deletion.decide" | "person.erase" | "referral.decide" | "referral.attach" | "channel.add" | "channel.change" | "channel.pause" | "channel.resume" | "word.set" | "chat.reply" | "chat.note" | "chat.close" | "chat.link" | "chat.save" | "care_person.move" | "care_person.move_all" | "care_rota.set" | "care_leave.add" | "care_leave.delete" | "city_matter.raise" | "care_name.set" | "quick_reply.add" | "quick_reply.retire" | "remedy.give" | "remedy.ask" | "remedy.approve" | "remedy.decline" | "word.publish" | "partner_payout.record" | "partner_payout.delete" | "spend.add" | "spend.remove" | "photo.view" | "pincode.launch" | "data.export" | "grievance.raise" | "grievance.resolve" | "no_show.decide" | "technician_device.revoke" | "technician.allow_sign_in" | "no_show.dispute" | "no_show.dispute_rule" | "technician.leave" | "technician.leave_cancelled" | "technician.add" | "technician.change" | "technician.deactivate" | "technician.reactivate" | "technician.delete" | "technician.pay_grade" | "pay_grade.add" | "pay_grade.rename" | "pay_grade.delete" | "pay_rate.set" | "setting.change" | "price.set" | "price.withdraw" | "standard_cost.set" | "target.set" | "target.remove" | "slot_times.set" | "pincode.set" | "pincode.rename" | "pincode.add" | "blackout.add" | "blackout.remove" | "service.add" | "service.rename" | "service.describe" | "service.length" | "service.reorder" | "service.retire" | "service.restore" | "credit.adjust" | "dispatch.client_told" | "dispatch.check_in_cleared" | "dispatch.move_proposed" | "dispatch.proposal_withdrawn" | "consumable.add" | "consumable.change" | "consumable.retire" | "consumable.restore" | "consumable.delete" | "consumable.usage" | "job_sheet.set" | "stock.receive" | "stock.transfer" | "stock.count" | "stock.write_off" | "stock.place_add" | "stock.place_change" | "stock.send" | "stock.receive_transfer" | "stock.send_back" | "task.assign" | "task.hand_back" | "task.close" | "address.given_to_ops" | "alert.resolve" | "alert.send_again" | "booking.give_back" | "visit.book" | "visit.cancel" | "visit.close" | "visit.checkin_waive" | "visit.lost_reason" | "visit.move_accepted" | "hair_profile.correct" | "discount_code.make" | "discount_code.switch_off" | "discount_code.delete" | "discount_code.apply" | "discount_code.remove" | "staff.set" | "staff.enforce" | "staff.token_add" | "staff.token_remove" | "staff.delete";
+            action: "ops.call" | "client.call" | "tech.call" | "consent.switch" | "number_change.request" | "number_change.withdraw" | "number_change.decide" | "deletion.request" | "deletion.decide" | "person.erase" | "referral.decide" | "referral.attach" | "channel.add" | "channel.change" | "channel.pause" | "channel.resume" | "word.set" | "chat.reply" | "chat.note" | "chat.close" | "chat.link" | "chat.save" | "care_person.move" | "care_person.move_all" | "care_rota.set" | "care_leave.add" | "care_leave.delete" | "city_matter.raise" | "care_name.set" | "quick_reply.add" | "quick_reply.retire" | "remedy.give" | "remedy.ask" | "remedy.approve" | "remedy.decline" | "word.publish" | "partner_payout.record" | "partner_payout.delete" | "spend.add" | "spend.remove" | "photo.view" | "pincode.launch" | "data.export" | "grievance.raise" | "grievance.resolve" | "no_show.decide" | "technician_device.revoke" | "technician.allow_sign_in" | "no_show.dispute" | "no_show.dispute_rule" | "technician.leave" | "technician.leave_cancelled" | "technician.add" | "technician.change" | "technician.deactivate" | "technician.reactivate" | "technician.delete" | "technician.pay_grade" | "pay_grade.add" | "pay_grade.rename" | "pay_grade.delete" | "pay_rate.set" | "setting.change" | "price.set" | "price.withdraw" | "standard_cost.set" | "target.set" | "target.remove" | "slot_times.set" | "pincode.set" | "pincode.rename" | "pincode.add" | "blackout.add" | "blackout.remove" | "service.add" | "service.rename" | "service.describe" | "service.length" | "service.reorder" | "service.retire" | "service.restore" | "credit.adjust" | "dispatch.client_told" | "dispatch.check_in_cleared" | "dispatch.move_proposed" | "dispatch.proposal_withdrawn" | "consumable.add" | "consumable.change" | "consumable.retire" | "consumable.restore" | "consumable.delete" | "consumable.usage" | "job_sheet.set" | "stock.receive" | "stock.transfer" | "stock.count" | "stock.write_off" | "stock.place_add" | "stock.place_change" | "stock.send" | "stock.receive_transfer" | "stock.send_back" | "stock.label" | "task.assign" | "task.hand_back" | "task.close" | "address.given_to_ops" | "alert.resolve" | "alert.send_again" | "booking.give_back" | "visit.book" | "visit.cancel" | "visit.close" | "visit.checkin_waive" | "visit.lost_reason" | "visit.move_accepted" | "hair_profile.correct" | "discount_code.make" | "discount_code.switch_off" | "discount_code.delete" | "discount_code.apply" | "discount_code.remove" | "staff.set" | "staff.enforce" | "staff.token_add" | "staff.token_remove" | "staff.delete";
             subject: {
                 kind: string;
                 id: string;
@@ -13598,6 +13754,8 @@ export interface components {
                 unit: string;
                 /** @description No longer offered, and still held somewhere. */
                 retired: boolean;
+                /** @description A hair system, whose pieces are each labelled. */
+                hair_system: boolean;
                 reorder_kit: number | null;
                 reorder_central: number | null;
             }[];
@@ -13757,6 +13915,34 @@ export interface components {
                 /** @description The hair system it needs; null where the client has no profile to match one by. */
                 consumable_code: string | null;
             }[];
+        };
+        StockUnits: {
+            consumable_code: string;
+            /** @description A place by its ID: central for the warehouse, a kit by its technician's ID. */
+            place_id: string;
+            /** @description The units the place holds, the latest labelled first. */
+            units: {
+                /** @description The label, as its QR code holds it. */
+                code: string;
+                lot_code: string | null;
+                expires_on: string | null;
+                /** Format: date-time */
+                labelled_at: string;
+            }[];
+            /** @description Pieces the place holds that were never labelled. */
+            unlabelled: number;
+            /** @description The most pieces one labelling labels. */
+            max_labelled: number;
+        };
+        StockLabelling: {
+            consumable_code: string;
+            /** @description A place by its ID: central for the warehouse, a kit by its technician's ID. */
+            place_id: string;
+            quantity: number;
+        };
+        StockLotLabel: {
+            /** @description As its QR code holds it. */
+            label: string;
         };
         Storage: {
             /** @description What the client-photos and referral-cards buckets hold. */

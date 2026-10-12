@@ -6868,6 +6868,7 @@
               "stock.send",
               "stock.receive_transfer",
               "stock.send_back",
+              "stock.label",
               "task.assign",
               "task.hand_back",
               "task.close",
@@ -12311,6 +12312,10 @@
                   "type": "boolean",
                   "description": "No longer offered, and still held somewhere."
                 },
+                "hair_system": {
+                  "type": "boolean",
+                  "description": "A hair system, whose pieces are each labelled."
+                },
                 "reorder_kit": {
                   "anyOf": [
                     {
@@ -12337,6 +12342,7 @@
                 "name",
                 "unit",
                 "retired",
+                "hair_system",
                 "reorder_kit",
                 "reorder_central"
               ],
@@ -13027,6 +13033,121 @@
           "days",
           "demand",
           "at_risk"
+        ],
+        "additionalProperties": false
+      },
+      "StockUnits": {
+        "type": "object",
+        "properties": {
+          "consumable_code": {
+            "type": "string"
+          },
+          "place_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "A place by its ID: central for the warehouse, a kit by its technician's ID."
+          },
+          "units": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "code": {
+                  "type": "string",
+                  "description": "The label, as its QR code holds it."
+                },
+                "lot_code": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "expires_on": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "format": "date"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "labelled_at": {
+                  "type": "string",
+                  "format": "date-time"
+                }
+              },
+              "required": [
+                "code",
+                "lot_code",
+                "expires_on",
+                "labelled_at"
+              ],
+              "additionalProperties": false
+            },
+            "description": "The units the place holds, the latest labelled first."
+          },
+          "unlabelled": {
+            "type": "integer",
+            "description": "Pieces the place holds that were never labelled."
+          },
+          "max_labelled": {
+            "type": "integer",
+            "description": "The most pieces one labelling labels."
+          }
+        },
+        "required": [
+          "consumable_code",
+          "place_id",
+          "units",
+          "unlabelled",
+          "max_labelled"
+        ],
+        "additionalProperties": false
+      },
+      "StockLabelling": {
+        "type": "object",
+        "properties": {
+          "consumable_code": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "place_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "A place by its ID: central for the warehouse, a kit by its technician's ID."
+          },
+          "quantity": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 500
+          }
+        },
+        "required": [
+          "consumable_code",
+          "place_id",
+          "quantity"
+        ],
+        "additionalProperties": false
+      },
+      "StockLotLabel": {
+        "type": "object",
+        "properties": {
+          "label": {
+            "type": "string",
+            "description": "As its QR code holds it."
+          }
+        },
+        "required": [
+          "label"
         ],
         "additionalProperties": false
       },
@@ -18361,6 +18482,7 @@
                 "stock.send",
                 "stock.receive_transfer",
                 "stock.send_back",
+                "stock.label",
                 "task.assign",
                 "task.hand_back",
                 "task.close",
@@ -23284,7 +23406,7 @@
             }
           },
           "400": {
-            "description": "invalid_request: fields names consumable_code for one nobody added, place_id for no place or one not in the caller's cities, or lot_id for a lot the place holds none of",
+            "description": "invalid_request: fields names consumable_code for one nobody added, place_id for no place or one not in the caller's cities, lot_id for a lot the place holds none of, or quantity for more pieces of a hair system than one delivery labels",
             "content": {
               "application/json": {
                 "schema": {
@@ -23378,7 +23500,7 @@
             }
           },
           "400": {
-            "description": "invalid_request: fields names consumable_code for one nobody added, place_id for no place or one not in the caller's cities, or lot_id for a lot the place holds none of",
+            "description": "invalid_request: fields names consumable_code for one nobody added, place_id for no place or one not in the caller's cities, lot_id for a lot the place holds none of, or quantity for more pieces of a hair system than one delivery labels",
             "content": {
               "application/json": {
                 "schema": {
@@ -23425,7 +23547,7 @@
             }
           },
           "400": {
-            "description": "invalid_request: fields names consumable_code for one nobody added, place_id for no place or one not in the caller's cities, or lot_id for a lot the place holds none of",
+            "description": "invalid_request: fields names consumable_code for one nobody added, place_id for no place or one not in the caller's cities, lot_id for a lot the place holds none of, or quantity for more pieces of a hair system than one delivery labels",
             "content": {
               "application/json": {
                 "schema": {
@@ -23729,6 +23851,161 @@
           },
           "403": {
             "description": "access_required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/stock/units": {
+      "get": {
+        "summary": "The units a place holds of a hair system, and how many pieces it holds unlabelled",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "required": true,
+            "name": "consumable_code",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "A place by its ID: central for the warehouse, a kit by its technician's ID."
+            },
+            "required": true,
+            "description": "A place by its ID: central for the warehouse, a kit by its technician's ID.",
+            "name": "place_id",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The units a place holds of a hair system",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StockUnits"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid_request: fields names consumable_code for a stock code that is not a hair system, or place_id for a place not in the caller's cities",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "access_required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Labels for pieces a place held before labels, soonest to expire first",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StockLabelling"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The units a place holds of a hair system",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StockUnits"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid_request: fields names consumable_code for a stock code that is not a hair system, or place_id for a place not in the caller's cities",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "access_required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/stock/lots/{id}/label": {
+      "post": {
+        "summary": "A lot's label, for its boxes, made the first time it is asked for",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The lot's label",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StockLotLabel"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "access_required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found: no such lot",
             "content": {
               "application/json": {
                 "schema": {

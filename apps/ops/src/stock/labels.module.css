@@ -1,0 +1,91 @@
+/*
+ * Labels for the warehouse's thermal printer, 50 by 25 mm, one to a page: the QR code beside the label, the item and
+ * its lot. The sheet never shows on screen; while it prints, nothing else on the page does.
+ */
+
+.sheet {
+  display: none;
+}
+
+@media print {
+  :global(body > :not(#label-sheet)) {
+    display: none;
+  }
+
+  .sheet {
+    display: block;
+  }
+}
+
+@page label {
+  size: 50mm 25mm;
+  margin: 0;
+}
+
+.label {
+  page: label;
+  break-after: page;
+  box-sizing: border-box;
+  inline-size: 50mm;
+  block-size: 25mm;
+  padding: 1.5mm;
+  display: grid;
+  grid-template-columns: 22mm 1fr;
+  gap: 1.5mm;
+  align-items: center;
+  overflow: hidden;
+  color: var(--ink);
+  background: var(--white);
+  font-family: var(--font-sans);
+}
+
+.qr {
+  inline-size: 22mm;
+  block-size: 22mm;
+  fill: currentColor;
+}
+
+.words {
+  display: grid;
+  gap: 0.5mm;
+  min-inline-size: 0;
+  font-size: 6.5pt;
+}
+
+.code {
+  font-size: 7.5pt;
+  font-weight: var(--weight-medium);
+  overflow-wrap: anywhere;
+}
+
+.name {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Each batch of pieces labelled together, ticked to print. */
+.batches {
+  display: grid;
+  gap: var(--sp-8);
+  margin: var(--sp-8) 0 0;
+  padding: 0;
+  border: 0;
+}
+
+.batch {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-8);
+  min-height: var(--tap);
+  font-size: var(--fs-15);
+  cursor: pointer;
+}
+
+.tick {
+  width: var(--ops-box);
+  height: var(--ops-box);
+  margin: 0;
+  accent-color: var(--ink);
+}

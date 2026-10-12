@@ -6306,7 +6306,7 @@ Request body:
 }
 ```
 
-**400**: invalid_request: fields names consumable_code for one nobody added, place_id for no place or one not in the caller's cities, or lot_id for a lot the place holds none of
+**400**: invalid_request: fields names consumable_code for one nobody added, place_id for no place or one not in the caller's cities, lot_id for a lot the place holds none of, or quantity for more pieces of a hair system than one delivery labels
 
 ```json
 {
@@ -6378,7 +6378,7 @@ Request body:
 }
 ```
 
-**400**: invalid_request: fields names consumable_code for one nobody added, place_id for no place or one not in the caller's cities, or lot_id for a lot the place holds none of
+**400**: invalid_request: fields names consumable_code for one nobody added, place_id for no place or one not in the caller's cities, lot_id for a lot the place holds none of, or quantity for more pieces of a hair system than one delivery labels
 
 ```json
 {
@@ -6414,7 +6414,7 @@ Request body:
 }
 ```
 
-**400**: invalid_request: fields names consumable_code for one nobody added, place_id for no place or one not in the caller's cities, or lot_id for a lot the place holds none of
+**400**: invalid_request: fields names consumable_code for one nobody added, place_id for no place or one not in the caller's cities, lot_id for a lot the place holds none of, or quantity for more pieces of a hair system than one delivery labels
 
 ```json
 {
@@ -6619,6 +6619,98 @@ What the next four weeks' visits will use, by city, beside what each city holds
 ```
 
 **403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### GET /api/stock/units
+
+The units a place holds of a hair system, and how many pieces it holds unlabelled
+
+**200**: The units a place holds of a hair system
+
+```json
+{
+  "$ref": "#/components/schemas/StockUnits"
+}
+```
+
+**400**: invalid_request: fields names consumable_code for a stock code that is not a hair system, or place_id for a place not in the caller's cities
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/stock/units
+
+Labels for pieces a place held before labels, soonest to expire first
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/StockLabelling"
+}
+```
+
+**200**: The units a place holds of a hair system
+
+```json
+{
+  "$ref": "#/components/schemas/StockUnits"
+}
+```
+
+**400**: invalid_request: fields names consumable_code for a stock code that is not a hair system, or place_id for a place not in the caller's cities
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/stock/lots/{id}/label
+
+A lot's label, for its boxes, made the first time it is asked for
+
+**200**: The lot's label
+
+```json
+{
+  "$ref": "#/components/schemas/StockLotLabel"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no such lot
 
 ```json
 {
@@ -14483,6 +14575,7 @@ Request body:
         "stock.send",
         "stock.receive_transfer",
         "stock.send_back",
+        "stock.label",
         "task.assign",
         "task.hand_back",
         "task.close",
@@ -20366,6 +20459,10 @@ Request body:
             "type": "boolean",
             "description": "No longer offered, and still held somewhere."
           },
+          "hair_system": {
+            "type": "boolean",
+            "description": "A hair system, whose pieces are each labelled."
+          },
           "reorder_kit": {
             "anyOf": [
               {
@@ -20392,6 +20489,7 @@ Request body:
           "name",
           "unit",
           "retired",
+          "hair_system",
           "reorder_kit",
           "reorder_central"
         ],
@@ -21122,6 +21220,136 @@ Request body:
     "days",
     "demand",
     "at_risk"
+  ],
+  "additionalProperties": false
+}
+```
+
+### StockUnits
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "consumable_code": {
+      "type": "string"
+    },
+    "place_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "description": "A place by its ID: central for the warehouse, a kit by its technician's ID."
+    },
+    "units": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "description": "The label, as its QR code holds it."
+          },
+          "lot_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "expires_on": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "labelled_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "code",
+          "lot_code",
+          "expires_on",
+          "labelled_at"
+        ],
+        "additionalProperties": false
+      },
+      "description": "The units the place holds, the latest labelled first."
+    },
+    "unlabelled": {
+      "type": "integer",
+      "description": "Pieces the place holds that were never labelled."
+    },
+    "max_labelled": {
+      "type": "integer",
+      "description": "The most pieces one labelling labels."
+    }
+  },
+  "required": [
+    "consumable_code",
+    "place_id",
+    "units",
+    "unlabelled",
+    "max_labelled"
+  ],
+  "additionalProperties": false
+}
+```
+
+### StockLabelling
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "consumable_code": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64
+    },
+    "place_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "description": "A place by its ID: central for the warehouse, a kit by its technician's ID."
+    },
+    "quantity": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 500
+    }
+  },
+  "required": [
+    "consumable_code",
+    "place_id",
+    "quantity"
+  ],
+  "additionalProperties": false
+}
+```
+
+### StockLotLabel
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "label": {
+      "type": "string",
+      "description": "As its QR code holds it."
+    }
+  },
+  "required": [
+    "label"
   ],
   "additionalProperties": false
 }

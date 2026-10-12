@@ -136,6 +136,7 @@ export type JobSheet = Body<paths["/api/job-sheet"]["get"]>;
 export type JobSheetList = JobSheet["partial_reasons"];
 export type JobSheetItemSent = Sent<paths["/api/job-sheet/partial-reasons"]["post"]>["items"][number];
 export type Stock = Body<paths["/api/stock"]["get"]>;
+export type StockUnits = Body<paths["/api/stock/units"]["get"]>;
 type StockDelivery = Sent<paths["/api/stock/deliveries"]["post"]>;
 type StockTransfer = Sent<paths["/api/stock/transfers"]["post"]>;
 type StockCount = Sent<paths["/api/stock/counts"]["post"]>;

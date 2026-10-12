@@ -10,6 +10,7 @@ import { answer, fails, IMRAN, json, STOCK, type Answers, type OpsReply } from "
 import * as opsCopy from "../../apps/ops/src/content.ts";
 import { stockPlaces } from "../../apps/ops/src/content/stock-places.ts";
 import { stockTransit } from "../../apps/ops/src/content/stock-transit.ts";
+import { stockLabels } from "../../apps/ops/src/content/stock-labels.ts";
 import { stockViews } from "../../apps/ops/src/content/stock-views.ts";
 
 const WAREHOUSE = "National warehouse";
@@ -379,6 +380,100 @@ test("shows what the next four weeks will use beside what each city holds, and t
   const panel = page.getByRole("region", { name: stockViews.demand.title });
   await expect(panel.getByRole("row").filter({ hasText: "Solvent" })).toContainText(stockViews.demand.short(6));
   await expect(panel).toContainText(stockViews.demand.fit("Fri 24 Sep", "Gurgaon", stockViews.demand.noProfile));
+});
+
+const HAIR = {
+  code: "hs_essential",
+  name: "Mane Man Essential 8x10 1B, 20% grey, 100%",
+  unit: "piece",
+  retired: false,
+  hair_system: true,
+  reorder_kit: 1,
+  reorder_central: null,
+};
+const withPieces = { ...STOCK, consumables: [...STOCK.consumables, HAIR] };
+const UNITS = {
+  consumable_code: HAIR.code,
+  place_id: "central",
+  units: [
+    { code: "MM-ESS-0000003-D", lot_code: "HS-1", expires_on: "2028-03-31", labelled_at: "2026-09-21T06:30:00.000Z" },
+    { code: "MM-ESS-0000002-C", lot_code: "HS-1", expires_on: "2028-03-31", labelled_at: "2026-09-21T06:30:00.000Z" },
+    { code: "MM-ESS-0000001-B", lot_code: null, expires_on: null, labelled_at: "2026-09-14T06:30:00.000Z" },
+  ],
+  unlabelled: 0,
+  max_labelled: 500,
+} satisfies OpsReply<"/api/stock/units">;
+
+/** Stands in for the print dialog: what the sheet held when it printed, after which the dialog closes. */
+async function catchPrints(page: Page): Promise<() => Promise<string[]>> {
+  await page.evaluate(() => {
+    const printed: string[] = [];
+    Object.assign(window, { printed });
+    window.print = () => {
+      for (const label of document.querySelectorAll("#label-sheet > div")) printed.push(label.textContent);
+      window.dispatchEvent(new Event("afterprint"));
+    };
+  });
+  return () => page.evaluate(() => (window as unknown as { printed: string[] }).printed);
+}
+
+test("opens a hair system's labels after its delivery, the latest batch ticked, and prints them", async ({ page }) => {
+  await open(page, {
+    "GET /api/stock": json(withPieces),
+    "POST /api/stock/deliveries": json(withPieces),
+    "GET /api/stock/units": json(UNITS),
+  });
+  const printed = await catchPrints(page);
+  const form = recording(page);
+  await form.getByLabel("Consumable").selectOption({ label: HAIR.name });
+  await form.getByLabel("How many").fill("2");
+  await form.getByRole("button", { name: "Review" }).click();
+  await form.getByRole("button", { name: "Record" }).click();
+
+  const labels = page.getByRole("region", { name: stockLabels.title });
+  await expect(labels.getByLabel(stockLabels.item)).toHaveValue(HAIR.code);
+  await expect(labels.getByLabel(stockLabels.place)).toHaveValue("central");
+  await expect(labels.getByRole("checkbox", { name: stockLabels.batch("Mon 21 Sep, 12 pm", 2) })).toBeChecked();
+  await expect(labels.getByRole("checkbox", { name: stockLabels.batch("Mon 14 Sep, 12 pm", 1) })).not.toBeChecked();
+  await labels.getByRole("button", { name: stockLabels.print(2) }).click();
+  await expect
+    .poll(printed)
+    .toEqual([
+      `MM-ESS-0000003-D${HAIR.name}HS-1 · Exp Fri 31 Mar`,
+      `MM-ESS-0000002-C${HAIR.name}HS-1 · Exp Fri 31 Mar`,
+    ]);
+  expect(await axeViolations(page)).toEqual([]);
+});
+
+test("labels the pieces a place held before labels", async ({ page }) => {
+  const before = { ...UNITS, units: [], unlabelled: 4 };
+  await open(page, {
+    "GET /api/stock": json(withPieces),
+    "GET /api/stock/units": json(before),
+    "POST /api/stock/units": json(UNITS),
+  });
+  const labels = page.getByRole("region", { name: stockLabels.title });
+  await labels.getByLabel(stockLabels.item).selectOption({ label: HAIR.name });
+  await expect(labels).toContainText(stockLabels.unlabelled(4));
+  const sent = posted(page, "/api/stock/units");
+  await labels.getByRole("button", { name: stockLabels.labelThem(4) }).click();
+  expect((await sent).postDataJSON()).toEqual({ consumable_code: HAIR.code, place_id: "central", quantity: 4 });
+  await expect(labels.getByRole("button", { name: stockLabels.print(2) })).toBeVisible();
+});
+
+test("prints a lot's label for each of its boxes", async ({ page }) => {
+  await open(page, {
+    "GET /api/stock": json(withLot),
+    "POST /api/stock/lots/{id}/label": json({ label: "MM-LT-0000001-B" }),
+  });
+  const printed = await catchPrints(page);
+  const labels = page.getByRole("region", { name: stockLabels.title });
+  await labels.getByLabel(stockLabels.item).selectOption({ label: "Tape strips" });
+  await labels.getByLabel(stockLabels.copies).fill("3");
+  await labels.getByRole("button", { name: stockLabels.print(3) }).click();
+  await expect
+    .poll(printed)
+    .toEqual(Array.from({ length: 3 }, () => "MM-LT-0000001-BTape stripsTS-0901 · Exp Sun 31 Oct"));
 });
 
 test("meets WCAG 2.2 AA, with a movement being checked as well", async ({ page }) => {

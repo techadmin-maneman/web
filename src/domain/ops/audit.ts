@@ -153,6 +153,7 @@ export const AUDIT_ACTIONS = [
   "stock.send",
   "stock.receive_transfer",
   "stock.send_back",
+  "stock.label",
   // Whose a task on the Tasks board is, a visit left partly done that ops closed without a follow-up, and an address
   // a client gave ops on the phone (docs/decisions/0092-task-owners.md).
   "task.assign",

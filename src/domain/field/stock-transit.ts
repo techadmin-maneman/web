@@ -7,14 +7,16 @@
 // is written only where that statement settled it, so two people settling one transfer at once settle it once.
 
 import { auditStatement, auditStatementWhen, type AuditEntry } from "../ops/audit.ts";
-import { lotMoves, soonestFirst, type LotTake } from "./stock-lots.ts";
+import { lotMoves, type LotTake } from "./stock-lots.ts";
 import { placeById, type Place } from "./stock-places.ts";
+import { hairSystemProduct, piecesArriving, takenFrom, unitChanges } from "./stock-units.ts";
 import {
   consumableExists,
   kindOf,
   movementStatement,
   movementStatementWhen,
   transferStock,
+  unitWritten,
   type Moved,
   type Written,
 } from "./stock.ts";
@@ -93,7 +95,8 @@ export async function sendStock(
   if (fromKind === null) return { ok: false, fields: ["from"] };
   const transferId = crypto.randomUUID();
   const out = crypto.randomUUID();
-  const takes = await soonestFirst(db, { code: input.code, place: input.from, quantity: input.quantity });
+  const taken = await takenFrom(db, { code: input.code, place: input.from, quantity: input.quantity });
+  const takes = taken?.takes ?? [];
   const detail = { quantity: input.quantity, from: input.from, to: input.to, transfer: transferId };
   const movement = { code: input.code, reason: "transferred", transferId, note: null } as const;
   await db.batch([
@@ -106,6 +109,14 @@ export async function sendStock(
     auditStatement(db, entry("stock.send", input.code, written, detail), written.now),
     movementStatement(db, { ...movement, place: input.from, kind: fromKind, quantity: -input.quantity }, written, out),
     ...lotMoves(db, { movementId: out, place: input.from, takes, sign: -1 }),
+    ...unitChanges(db, {
+      units: taken?.units ?? [],
+      state: "in_transit",
+      place: input.to,
+      movementId: out,
+      transferId,
+      ...unitWritten(written),
+    }),
   ]);
   return { ok: true, lowered: [input.from] };
 }
@@ -130,6 +141,33 @@ async function lotsSent(db: D1Database, transferId: string, quantity: number): P
     left -= taken;
   }
   return takes;
+}
+
+/**
+ * What a transfer brings of each lot, and its units' changes, each written only where this request settled it: a hair
+ * system's units arrive before its pieces never labelled, and any not arriving went missing on the way.
+ */
+async function arrivingAt(
+  db: D1Database,
+  { transfer, arrived }: { readonly transfer: TransferRow; readonly arrived: number },
+  settled: { readonly place: Place; readonly movementId: string | null; readonly settlement: string; written: Written },
+): Promise<{ readonly takes: readonly LotTake[]; readonly units: D1PreparedStatement[] }> {
+  if ((await hairSystemProduct(db, transfer.consumable_code)) === null) {
+    return { takes: await lotsSent(db, transfer.id, arrived), units: [] };
+  }
+  const arriving = await piecesArriving(db, transfer, arrived);
+  const when = {
+    sql: "EXISTS (SELECT 1 FROM stock_transfers WHERE id = ? AND settlement_id = ?)",
+    binds: [transfer.id, settled.settlement],
+  };
+  const moved = { movementId: settled.movementId, ...unitWritten(settled.written) };
+  return {
+    takes: arriving.takes,
+    units: [
+      ...unitChanges(db, { ...moved, units: arriving.units, state: "held", place: settled.place }, when),
+      ...unitChanges(db, { ...moved, units: arriving.lost, state: "missing", place: null }, when),
+    ],
+  };
 }
 
 /** A transfer received, or sent back; refused, or settled already by someone else. */
@@ -172,7 +210,9 @@ async function settle(
     sql: `EXISTS (SELECT 1 FROM stock_transfers WHERE id = ?${String(first)} AND settlement_id = ?${String(first + 1)})`,
     binds: [transfer.id, settlement],
   });
-  const takes = await lotsSent(db, transfer.id, arrived);
+  const movementId = arrived > 0 ? into : null;
+  const arriving = await arrivingAt(db, { transfer, arrived }, { place, movementId, settlement, written });
+  const takes = arriving.takes;
   const movement = movementStatementWhen(
     db,
     {
@@ -215,6 +255,7 @@ async function settle(
     ),
     ...(arrived > 0 ? [movement] : []),
     ...lotMoves(db, { movementId: into, place, takes, sign: 1 }),
+    ...arriving.units,
   ]);
   // Another request settled it between the read and this batch, which then wrote nothing.
   if (settled?.meta.changes !== 1) return { ok: false, settled: true };

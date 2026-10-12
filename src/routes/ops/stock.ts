@@ -6,7 +6,8 @@
 //   POST /api/stock/counts          what ops counted at a place: the ledger takes the difference
 //   POST /api/stock/write-offs      a loss somebody saw, with what happened
 // the places themselves (src/routes/ops/stock.places.ts), transfers received or sent back
-// (src/routes/ops/stock.transit.ts), and what the weeks ahead will use (src/routes/ops/stock.read.ts).
+// (src/routes/ops/stock.transit.ts), what the weeks ahead will use (src/routes/ops/stock.read.ts), and the units and
+// labels of pieces (src/routes/ops/stock.units.ts).
 //
 // Each movement is a row of the ledger, with the Access identity behind it,
 // written with its audit entry in one batch (ADR 0031); what a place holds is
@@ -26,12 +27,13 @@ import {
   count,
   MOVEMENT_REASONS,
   receiveStock,
-  stockView,
   tellOfLowStock,
   writeOff,
   type Moved,
 } from "../../domain/field/stock.ts";
+import { hairSystemSpecs } from "../../domain/field/hair-systems.ts";
 import { inTransit, sendStock } from "../../domain/field/stock-transit.ts";
+import { stockView } from "../../domain/field/stock-view.ts";
 import {
   isPlaceWithin,
   PLACE_KINDS,
@@ -63,6 +65,7 @@ const StockSchema = z
           name: z.string(),
           unit: z.string(),
           retired: z.boolean().openapi({ description: "No longer offered, and still held somewhere." }),
+          hair_system: z.boolean().openapi({ description: "A hair system, whose pieces are each labelled." }),
           reorder_kit: z.union([z.number().int(), z.null()]),
           reorder_central: z.union([z.number().int(), z.null()]),
         })
@@ -175,7 +178,7 @@ const LotCode = z
   .openapi({ description: "The supplier's lot, as printed on the stock." });
 
 const REFUSED = errorResponse(
-  "invalid_request: fields names consumable_code for one nobody added, place_id for no place or one not in the caller's cities, or lot_id for a lot the place holds none of",
+  "invalid_request: fields names consumable_code for one nobody added, place_id for no place or one not in the caller's cities, lot_id for a lot the place holds none of, or quantity for more pieces of a hair system than one delivery labels",
 );
 
 const stockRoute = createRoute({
@@ -294,6 +297,7 @@ export async function stockAnswer(c: Context<AppEnv>) {
   const within = await placesWithin(c.env.DB, await reachOf(c, "operations", "view"));
   const view = await stockView(c.env.DB, now, within);
   const areas = await placeAreas(c.env.DB);
+  const hairSystems = await hairSystemSpecs(c.env.DB);
   const today = indiaDate(now);
   return {
     consumables: view.consumables.map((consumable) => ({
@@ -301,6 +305,7 @@ export async function stockAnswer(c: Context<AppEnv>) {
       name: consumable.name,
       unit: consumable.unit,
       retired: consumable.retiredDate !== null && consumable.retiredDate <= today,
+      hair_system: hairSystems.has(consumable.code),
       reorder_kit: consumable.reorderKit,
       reorder_central: consumable.reorderCentral,
     })),
