@@ -265,6 +265,7 @@ export async function deleteTechnician(
       theirs("DELETE FROM technician_devices WHERE technician_id = ?1"),
       theirs("DELETE FROM otp_challenges WHERE technician_id = ?1"),
       theirs("DELETE FROM sessions WHERE subject_kind = 'technician' AND subject_id = ?1"),
+      theirs("DELETE FROM stock_places WHERE id = ?1 AND kind = 'kit'"),
       theirs("DELETE FROM technicians WHERE id = ?1"),
       auditStatementIfDeleted(db, audit, now, { table: "technicians", column: "id", value: technicianId }),
     ]);
