@@ -139,6 +139,34 @@ async function tellIfPaidTwice(db: D1Database, payment: RazorpayPayment, alertOn
   });
 }
 
+/**
+ * Tells ops of a payment made on an order its hold no longer names: Checkout left open on an order that a discount
+ * code then replaced (src/domain/money/discount-code-holds.ts). Nothing books it and nothing refunds it, so ops refund
+ * it, or book the visit, by hand.
+ */
+async function tellIfPaidOffItsOrder(
+  db: D1Database,
+  paid: { readonly payment: RazorpayPayment; readonly holdId: string },
+  alertOnce: AlertOnce,
+): Promise<void> {
+  const { payment, holdId } = paid;
+  if (typeof payment.order_id !== "string") return;
+  const hold = await db
+    // A hold ops sent a payment link for takes its order from the link's paid event, which may come after this one.
+    .prepare("SELECT person_id, razorpay_order_id FROM slot_holds WHERE id = ?1 AND pay_by_link = 0")
+    .bind(holdId)
+    .first<{ person_id: string; razorpay_order_id: string | null }>();
+  if (hold === null || hold.razorpay_order_id === payment.order_id) return;
+  await alertOnce({
+    key: `paid_off_its_order:${payment.id}`,
+    message:
+      `Payment ${payment.id} of ${rupees(payment.amount)} was made on order ${payment.order_id}, which booking ` +
+      `${holdId} no longer uses since a discount code changed its price, so nothing was booked for it. Refund it ` +
+      "from Razorpay's dashboard, or book the visit for the client.",
+    link: paymentsTab(hold.person_id),
+  });
+}
+
 /** The hold a payment was for, from the notes our order gave it. */
 function holdOfNotes(notes: RazorpayPayment["notes"]): string | null {
   if (notes === null || notes === undefined || Array.isArray(notes)) return null;
@@ -242,6 +270,7 @@ export function registerRazorpayHook(app: App): void {
       // hold that is still waiting (docs/decisions/0068-a-paid-hold-is-kept.md).
       const holdId = holdOfNotes(payment.notes);
       if (event === "payment.captured" && holdId !== null) await bookHold(c, holdId);
+      if (status === "captured" && holdId !== null) await tellIfPaidOffItsOrder(db, { payment, holdId }, deps.alertOnce);
       // Paid for, the booking gives the photograph consents its pay step showed.
       if (status === "captured" && holdId !== null) await recordBookingConsents(db, { holdId, requestId, now });
     } else if (payload?.refund !== undefined) {
