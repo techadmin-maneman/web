@@ -101,6 +101,30 @@ test("says who closed a visit left partly done without a follow-up, when and why
   );
 });
 
+// Why a client is not going ahead after their consultation, set as they tell Care (docs/decisions/0149-lost-reasons.md).
+test("sets why a client is not going ahead on a closed consultation, from the job sheet's list", async ({ page }) => {
+  const [done] = RECORD.visits.past;
+  if (done === undefined) throw new Error("the record has no visit done");
+  const consultation = {
+    ...RECORD,
+    visits: { ...RECORD.visits, past: [{ ...done, type: "consultation" as const, outcome: "done" as const }] },
+    lost_reasons: [
+      { code: "price", label: "The price" },
+      { code: "not_ready", label: "Not ready yet" },
+    ],
+  } satisfies OpsReply<"/api/clients/{id}">;
+  let sent: unknown = null;
+  await openClient(page, `/clients/${CLIENT.id}/visits`, {
+    [READ_RECORD]: json(consultation),
+    "POST /api/visits/{id}/lost-reason": (route) => {
+      sent = route.request().postDataJSON();
+      return json({ lost_reason: "price" })(route);
+    },
+  });
+  await page.getByLabel(opsCopy.clients.visits.lostReason.label).selectOption("price");
+  await expect.poll(() => sent).toEqual({ lost_reason: "price" });
+});
+
 test("lists what the client has paid, and what for", async ({ page }) => {
   await openClient(page, `/clients/${CLIENT.id}/payments`);
   const payment = page.getByRole("region", { name: opsCopy.clients.payments.title }).getByRole("row").nth(1);
