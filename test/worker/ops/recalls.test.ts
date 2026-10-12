@@ -119,4 +119,12 @@ describe("a recall", () => {
     expect(kit.map((unit) => unit.lot_code).sort()).toEqual(["BAD", "LATER", "SOON", "SOON"]);
     expect((await labelsAt("central")).map((unit) => unit.lot_code)).toEqual(["BAD"]);
   });
+
+  it("refuses a lot that is not there, and a recall that is not", async () => {
+    expect((await job.opsPost("/api/recalls", { lot_id: "nothing", reason: "Shedding" })).status).toBe(400);
+    expect((await request(job.ops, "/api/recalls/nothing")).status).toBe(404);
+    expect((await job.opsPost("/api/recalls/nothing/close", {})).status).toBe(404);
+    const book = await (await request(job.ops, "/api/recalls")).json<{ recalls: unknown[] }>();
+    expect(book.recalls).toEqual([]);
+  });
 });

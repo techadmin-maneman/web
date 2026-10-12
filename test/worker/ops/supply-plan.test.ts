@@ -115,4 +115,24 @@ describe("the supply plan", () => {
     expect(refused.status).toBe(400);
     expect((await plan()).lines.find((line) => line.id === order?.id)?.state).toBe("proposed");
   });
+
+  it("is drafted again on request from the latest forecast, and refused before any forecast has run", async () => {
+    const drafted = await job.opsPost("/api/supply-plan/draft");
+    expect((await drafted.json<Plan>()).lines).toHaveLength(3);
+    const forecast = await (
+      await request(job.ops, "/api/stock/forecast")
+    ).json<{
+      run: { run_on: string } | null;
+      lines: { city: string }[];
+    }>();
+    expect(forecast.run?.run_on).toBe("2026-09-21");
+    expect(forecast.lines.map((line) => line.city).sort()).toEqual(["Delhi", "Gurgaon"]);
+
+    await env.DB.batch([env.DB.prepare("DELETE FROM forecast_lines"), env.DB.prepare("DELETE FROM forecast_runs")]);
+    expect((await job.opsPost("/api/supply-plan/draft")).status).toBe(409);
+    const none = await (
+      await request(job.ops, "/api/stock/forecast?city=Gurgaon")
+    ).json<{ run: unknown; lines: unknown[] }>();
+    expect(none).toEqual({ run: null, lines: [] });
+  });
 });

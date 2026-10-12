@@ -123,4 +123,22 @@ describe("value at risk", () => {
     );
     expect(risk.total_value).toBeGreaterThanOrEqual(3350);
   });
+
+  it("has the place that holds a lot use it first where no other place lets it go", async () => {
+    await job.opsPost("/api/consumables", { name: "Tape", unit: "strip", unit_cost: 20 });
+    await job.opsPost("/api/stock/deliveries", {
+      consumable_code: "tape",
+      quantity: 10,
+      lot_code: "T1",
+      expires_on: "2026-10-31",
+    });
+    const risk = await (
+      await request(job.ops, "/api/stock/expiry-risk")
+    ).json<{
+      lots: { lot_code: string; quantity: number; value: number; suggestion: string; move_to: string | null }[];
+    }>();
+    expect(risk.lots).toEqual([
+      expect.objectContaining({ lot_code: "T1", quantity: 10, value: 200, suggestion: "use_first", move_to: null }),
+    ]);
+  });
 });

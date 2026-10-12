@@ -88,4 +88,23 @@ describe("usage and shrinkage", () => {
     expect(kit).toMatchObject({ lost_value: 1500, write_offs: 3, shrinkage_percent: 25, flagged: true });
     expect(usage.places.find((place) => place.place_id === SAMEER)).toMatchObject({ lost_value: 0, flagged: false });
   });
+
+  it("gives the share of a place's counted lines right the first time", async () => {
+    await env.DB.batch([
+      env.DB.prepare(
+        `INSERT INTO count_tasks (id, place_id, count_class, due_on, state, raised_at, counted_by, counted_at, done_at)
+         VALUES ('ct-1', ?1, 'quarterly', '2026-09-20', 'done', ?2, 'ops@localhost', ?2, ?2)`,
+      ).bind(IMRAN, NOW.toISOString()),
+      env.DB.prepare(
+        `INSERT INTO count_lines (task_id, consumable_code, held, counted, state)
+         VALUES ('ct-1', 'solvent', 500, 500, 'settled')`,
+      ),
+    ]);
+    const usage = await (
+      await request(job.ops, "/api/stock/usage")
+    ).json<{
+      places: { place_id: string; count_accuracy_percent: number | null }[];
+    }>();
+    expect(usage.places.find((place) => place.place_id === IMRAN)?.count_accuracy_percent).toBe(100);
+  });
 });

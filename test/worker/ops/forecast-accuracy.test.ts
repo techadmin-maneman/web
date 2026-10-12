@@ -92,4 +92,10 @@ describe("the forecast's accuracy", () => {
       ["Tape", 100],
     ]);
   });
+
+  it("reads back nothing for a city never measured", async () => {
+    await measureLastForecast(env.DB, NOW, "2026-09-21");
+    const answer = await (await request(job.ops, "/api/stock/forecast-accuracy?city=Delhi")).json();
+    expect(answer).toEqual({ periods: [], items: [] });
+  });
 });

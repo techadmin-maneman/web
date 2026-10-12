@@ -120,4 +120,26 @@ describe("cycle counts", () => {
     });
     expect((await job.opsPost("/api/consumables/nothing/count-class", { count_class: "weekly" })).status).toBe(404);
   });
+
+  it("refuse a task that is not there, a step out of turn, and a recount of other items; a recount that agrees settles", async () => {
+    expect((await request(job.ops, "/api/count-tasks/nothing")).status).toBe(404);
+    expect((await request(job.ops, "/api/count-tasks/nothing/differences")).status).toBe(404);
+    const lines = (counted: number) => ({ lines: [{ consumable_code: code, counted }] });
+    expect((await job.opsPost("/api/count-tasks/nothing/counts", lines(1))).status).toBe(404);
+    expect((await job.opsPost("/api/count-tasks/nothing/recounts", lines(1))).status).toBe(404);
+    expect((await job.opsPost("/api/count-tasks/nothing/sign-off", { note: "None" })).status).toBe(404);
+
+    await raiseCountTasks(env.DB, "2026-09-21", NOW);
+    const weekly = (await tasks()).tasks.find((task) => task.count_class === "weekly")?.id ?? "";
+    expect((await job.opsPost(`/api/count-tasks/${weekly}/recounts`, lines(2))).status).toBe(409);
+    expect((await job.opsPost(`/api/count-tasks/${weekly}/sign-off`, { note: "Too soon" })).status).toBe(409);
+
+    await job.opsPost(`/api/count-tasks/${weekly}/counts`, lines(1));
+    expect((await job.opsPost(`/api/count-tasks/${weekly}/recounts`, { lines: [] })).status).toBe(400);
+    const agreed = await job.opsPost(`/api/count-tasks/${weekly}/recounts`, lines(2));
+    expect((await agreed.json<Task>()).task.state).toBe("done");
+    expect(await held(code)).toBe(2);
+    const alert = await env.DB.prepare("SELECT key FROM alerts WHERE key = ?1").bind(`count_differs:${weekly}`).first();
+    expect(alert).toBeNull();
+  });
 });
