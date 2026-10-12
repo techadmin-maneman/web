@@ -101,6 +101,42 @@ function AddEvent({ cities, onAnswer }: { cities: readonly string[]; onAnswer: (
   );
 }
 
+/** One event, taken off with a press by those who may. */
+function EventRow({
+  event,
+  mayRemove,
+  onAnswer,
+}: {
+  event: Calendar["events"][number];
+  mayRemove: boolean;
+  onAnswer: (answer: Answer) => boolean;
+}) {
+  return (
+    <tr>
+      <th scope="row" className={form.rowHead}>
+        {event.name}
+      </th>
+      <td>{event.city ?? supplyPlan.everyCity}</td>
+      <td>{copy.days(dayAfter(event.starts_on, 0), dayAfter(event.ends_on, 0, true))}</td>
+      <td className={form.figure}>{copy.change(event.uplift_percent)}</td>
+      <td>
+        {mayRemove && (
+          <Button
+            variant="outline"
+            size="small"
+            aria-label={copy.remove(event.name)}
+            onClick={() =>
+              void client.post("/api/demand-events/{id}/remove", { path: { id: event.id } }).then(onAnswer)
+            }
+          >
+            {copy.removeShort}
+          </Button>
+        )}
+      </td>
+    </tr>
+  );
+}
+
 export function EventsPanel({ calendar }: { calendar: Calendar }) {
   const access = useAccess();
   const [book, setBook] = useState(calendar);
@@ -141,30 +177,7 @@ export function EventsPanel({ calendar }: { calendar: Calendar }) {
           </thead>
           <tbody>
             {book.events.map((event) => (
-              <tr key={event.id}>
-                <th scope="row" className={form.rowHead}>
-                  {event.name}
-                </th>
-                <td>{event.city ?? supplyPlan.everyCity}</td>
-                <td>{copy.days(dayAfter(event.starts_on, 0), dayAfter(event.ends_on, 0, true))}</td>
-                <td className={form.figure}>{copy.change(event.uplift_percent)}</td>
-                <td>
-                  {mayRemove && (
-                    <Button
-                      variant="outline"
-                      size="small"
-                      aria-label={copy.remove(event.name)}
-                      onClick={() =>
-                        void client
-                          .post("/api/demand-events/{id}/remove", { path: { id: event.id } })
-                          .then(answered(copy.removed))
-                      }
-                    >
-                      {copy.removeShort}
-                    </Button>
-                  )}
-                </td>
-              </tr>
+              <EventRow key={event.id} event={event} mayRemove={mayRemove} onAnswer={answered(copy.removed)} />
             ))}
           </tbody>
         </Table>
