@@ -69,7 +69,7 @@ describe("a transfer to a stockroom", () => {
         quantity: 200,
         from: "central",
         to: room,
-        sent_at: expect.any(String),
+        sent_at: expect.any(String) as string,
         sent_by: "ops@localhost",
       },
     ]);
