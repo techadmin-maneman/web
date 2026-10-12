@@ -2,10 +2,11 @@
 // (docs/decisions/0087-consumables-and-stock.md, 0155-the-stock-place-tree.md; src/policy/stock.ts):
 //   GET  /api/stock                 every place, what each holds of each consumable, what is low, the latest movements
 //   POST /api/stock/deliveries      stock received into the national warehouse
-//   POST /api/stock/transfers       stock moved between any two places
+//   POST /api/stock/transfers       stock handed to a kit, or sent to any other place to be received there
 //   POST /api/stock/counts          what ops counted at a place: the ledger takes the difference
 //   POST /api/stock/write-offs      a loss somebody saw, with what happened
-// and the places themselves (src/routes/ops/stock.places.ts).
+// the places themselves (src/routes/ops/stock.places.ts), and transfers received or sent back
+// (src/routes/ops/stock.transit.ts).
 //
 // Each movement is a row of the ledger, with the Access identity behind it,
 // written with its audit entry in one batch (ADR 0031); what a place holds is
@@ -27,10 +28,10 @@ import {
   receiveStock,
   stockView,
   tellOfLowStock,
-  transferStock,
   writeOff,
   type Moved,
 } from "../../domain/field/stock.ts";
+import { inTransit, sendStock } from "../../domain/field/stock-transit.ts";
 import {
   isPlaceWithin,
   PLACE_KINDS,
@@ -133,6 +134,21 @@ const StockSchema = z
       .openapi({ description: "The latest movements, newest first." }),
     today: z.iso.date(),
     max_quantity: z.number().int(),
+    in_transit: z
+      .array(
+        z
+          .object({
+            id: z.string(),
+            consumable_code: z.string(),
+            quantity: z.number().int(),
+            from: PlaceId,
+            to: PlaceId,
+            sent_at: z.iso.datetime(),
+            sent_by: z.string(),
+          })
+          .strict(),
+      )
+      .openapi({ description: "Transfers on their way, the oldest first: those either end of which is within reach." }),
     zones: z.array(z.string()).openapi({ description: "The zones a hub may be for." }),
     cities: z.array(z.string()).openapi({ description: "The active cities a stockroom may be in." }),
   })
@@ -317,6 +333,17 @@ export async function stockAnswer(c: Context<AppEnv>) {
     })),
     today,
     max_quantity: CONSUMABLE_BOUNDS.maxQuantity,
+    in_transit: (await inTransit(c.env.DB))
+      .filter((transfer) => isPlaceWithin(within, transfer.from) || isPlaceWithin(within, transfer.to))
+      .map((transfer) => ({
+        id: transfer.id,
+        consumable_code: transfer.code,
+        quantity: transfer.quantity,
+        from: transfer.from,
+        to: transfer.to,
+        sent_at: transfer.sentAt,
+        sent_by: transfer.sentBy,
+      })),
     ...areas,
   };
 }
@@ -362,7 +389,7 @@ export function registerOpsStock(app: App): void {
     const body = c.req.valid("json");
     const refused = await placesOutOfReach(c, { from: body.from, to: body.to });
     if (refused.length > 0) return outOfReach(c, refused);
-    const moved = await transferStock(
+    const moved = await sendStock(
       c.env.DB,
       { code: body.consumable_code, quantity: body.quantity, from: body.from, to: body.to },
       written(c),

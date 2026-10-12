@@ -6510,6 +6510,102 @@ Request body:
 }
 ```
 
+### POST /api/stock/transfers/{id}/receive
+
+A transfer received at the place it was sent to, in full or short
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/StockTransferReceived"
+}
+```
+
+**200**: What every place holds
+
+```json
+{
+  "$ref": "#/components/schemas/Stock"
+}
+```
+
+**400**: invalid_request: fields names received for more than was sent, or id for a place that is gone
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no such transfer, or one not in the caller's cities
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**409**: transfer_settled: the transfer was received or sent back already
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/stock/transfers/{id}/send-back
+
+A transfer sent back to where it left, before it arrived
+
+**200**: What every place holds
+
+```json
+{
+  "$ref": "#/components/schemas/Stock"
+}
+```
+
+**400**: invalid_request: fields names id for a transfer whose place is gone
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no such transfer, or one not in the caller's cities
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**409**: transfer_settled: the transfer was received or sent back already
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ### GET /api/storage
 
 What the photographs and referral cards hold in R2, against their share, and the database against its limit
@@ -7072,7 +7168,8 @@ Request body:
             "not_permitted",
             "last_admin",
             "in_use",
-            "figures_conflict"
+            "figures_conflict",
+            "transfer_settled"
           ]
         },
         "request_id": {
@@ -10534,7 +10631,8 @@ Request body:
             "not_permitted",
             "last_admin",
             "in_use",
-            "figures_conflict"
+            "figures_conflict",
+            "transfer_settled"
           ]
         },
         "request_id": {
@@ -14362,6 +14460,9 @@ Request body:
         "stock.write_off",
         "stock.place_add",
         "stock.place_change",
+        "stock.send",
+        "stock.receive_transfer",
+        "stock.send_back",
         "task.assign",
         "task.hand_back",
         "task.close",
@@ -20503,6 +20604,53 @@ Request body:
     "max_quantity": {
       "type": "integer"
     },
+    "in_transit": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "consumable_code": {
+            "type": "string"
+          },
+          "quantity": {
+            "type": "integer"
+          },
+          "from": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "A place by its ID: central for the warehouse, a kit by its technician's ID."
+          },
+          "to": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "A place by its ID: central for the warehouse, a kit by its technician's ID."
+          },
+          "sent_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "sent_by": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "consumable_code",
+          "quantity",
+          "from",
+          "to",
+          "sent_at",
+          "sent_by"
+        ],
+        "additionalProperties": false
+      },
+      "description": "Transfers on their way, the oldest first: those either end of which is within reach."
+    },
     "zones": {
       "type": "array",
       "items": {
@@ -20525,6 +20673,7 @@ Request body:
     "movements",
     "today",
     "max_quantity",
+    "in_transit",
     "zones",
     "cities"
   ],
@@ -20809,6 +20958,32 @@ Request body:
     },
     "active": {
       "type": "boolean"
+    }
+  },
+  "additionalProperties": false
+}
+```
+
+### StockTransferReceived
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "received": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100000,
+      "description": "What arrived; all of it unless said. Less is what was lost on the way."
+    },
+    "note": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "minLength": 1,
+      "maxLength": 200,
+      "pattern": "^[^\\p{Cc}]+$/u"
     }
   },
   "additionalProperties": false

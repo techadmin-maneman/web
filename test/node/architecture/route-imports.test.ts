@@ -1,5 +1,5 @@
 // What a route module may import of the other routes (docs/architecture.md): shared schemas from src/routes/schemas/,
-// and the parts of its own module (tech/jobs.ts and its jobs.*.ts, ops/stock.ts and its stock.places.ts, the public
+// and the parts of its own module (tech/jobs.ts and its jobs.*.ts, ops/stock.ts and its stock.places.ts and stock.transit.ts, the public
 // forms and public/forms.ts). One route reaching into another's file for a schema or a helper ties the two surfaces
 // together. The baseline is today's, and it only shrinks: a schema moves to schemas/, a helper to the domain or http/.
 
@@ -24,7 +24,7 @@ const BASELINE = [
 
 /** The module a file belongs to: tech/jobs.steps.ts is part of tech/jobs.ts. */
 const moduleOf = (file: string) =>
-  file.replace(/\.(photos|piece|places|read|record|routes|schemas|steps|updates)\.ts$/, ".ts");
+  file.replace(/\.(photos|piece|places|read|record|routes|schemas|steps|transit|updates)\.ts$/, ".ts");
 
 /** The two public forms share public/forms.ts, which is theirs alone. */
 const SHARED_WITHIN = new Map([

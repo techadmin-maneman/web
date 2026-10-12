@@ -42,7 +42,7 @@ export const MOVEMENT_REASONS = ["received", "transferred", "used", "counted", "
 type Reason = (typeof MOVEMENT_REASONS)[number];
 
 /** What ops write, with who and why, so every movement lands with its audit entry. */
-interface Written {
+export interface Written {
   readonly actor: AuditActor;
   readonly requestId: string;
   readonly now: Date;
@@ -53,7 +53,7 @@ export type Moved =
   { readonly ok: true; readonly lowered: readonly Place[] } | { readonly ok: false; readonly fields: string[] };
 
 /** One row of the ledger, ready to write. */
-interface Movement {
+export interface Movement {
   readonly code: string;
   readonly place: Place;
   readonly kind: PlaceKind;
@@ -88,7 +88,7 @@ function movementValues(id: string, movement: Movement, written: Written) {
   ];
 }
 
-function movementStatement(
+export function movementStatement(
   db: D1Database,
   movement: Movement,
   written: Written,
@@ -99,6 +99,24 @@ function movementStatement(
       `INSERT INTO stock_movements (${MOVEMENT_COLUMNS}) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12)`,
     )
     .bind(...movementValues(id, movement, written));
+}
+
+/**
+ * movementStatement, written only while `condition` holds: an SQL test whose placeholders start at ?13, after the
+ * row's own, as a transfer this request settled earlier in the same batch.
+ */
+export function movementStatementWhen(
+  db: D1Database,
+  row: { readonly movement: Movement; readonly id: string },
+  written: Written,
+  condition: { readonly sql: string; readonly binds: readonly (string | number | null)[] },
+): D1PreparedStatement {
+  return db
+    .prepare(
+      `INSERT INTO stock_movements (${MOVEMENT_COLUMNS})
+       SELECT ?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12 WHERE ${condition.sql}`,
+    )
+    .bind(...movementValues(row.id, row.movement, written), ...condition.binds);
 }
 
 /** What the place of a movement's row holds of its consumable, `?2`, as a statement about the row reads it. */
@@ -131,12 +149,12 @@ function countStatement({
     .bind(...movementValues(id, movement, written), held);
 }
 
-async function consumableExists(db: D1Database, code: string): Promise<boolean> {
+export async function consumableExists(db: D1Database, code: string): Promise<boolean> {
   return (await db.prepare("SELECT 1 FROM consumables WHERE code = ?1").bind(code).first()) !== null;
 }
 
 /** A place's kind, open or closed: a kit of a technician who left, or a closed stockroom, may still hold stock. */
-async function kindOf(db: D1Database, place: Place): Promise<PlaceKind | null> {
+export async function kindOf(db: D1Database, place: Place): Promise<PlaceKind | null> {
   return (await placeById(db, place))?.kind ?? null;
 }
 

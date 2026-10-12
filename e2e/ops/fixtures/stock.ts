@@ -196,6 +196,7 @@ export const STOCK = {
   ],
   today: "2027-09-21",
   max_quantity: 100_000,
+  in_transit: [],
   zones: ["NCR"],
   cities: ["Gurgaon", "Delhi"],
 } satisfies OpsReply<"/api/stock">;

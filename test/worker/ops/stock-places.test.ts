@@ -30,6 +30,13 @@ const room = () => added({ kind: "stockroom", name: "Gurgaon stockroom", parent_
 
 const change = (id: string, body: Record<string, unknown>) => job.opsPost(`/api/stock/places/${id}`, body);
 
+/** Sends stock from one place to another, and receives it there where it went in transit. */
+async function sendAndReceive(quantity: number, from: string, to: string): Promise<void> {
+  const answer = await job.opsPost("/api/stock/transfers", { consumable_code: "tape_strips", quantity, from, to });
+  const { in_transit } = await answer.json<{ in_transit: { id: string }[] }>();
+  for (const transfer of in_transit) await job.opsPost(`/api/stock/transfers/${transfer.id}/receive`, {});
+}
+
 const heldAt = async (place: string) =>
   (await stock()).holdings.find((each) => each.consumable_code === "tape_strips" && each.place_id === place);
 
@@ -54,12 +61,7 @@ describe("the tree", () => {
       active: true,
     });
 
-    await job.opsPost("/api/stock/transfers", {
-      consumable_code: "tape_strips",
-      quantity: 40,
-      from: "central",
-      to: id,
-    });
+    await sendAndReceive(40, "central", id);
     expect(await heldAt(id)).toMatchObject({ quantity: 40, low: false });
     expect(await heldAt("central")).toMatchObject({ quantity: 60 });
     const rows = await env.DB.prepare(
@@ -106,11 +108,11 @@ describe("the tree", () => {
 
   it("closes a stockroom only once it is empty and nothing open is under it, and opens it again", async () => {
     const id = await room();
-    await job.opsPost("/api/stock/transfers", { consumable_code: "tape_strips", quantity: 5, from: "central", to: id });
+    await sendAndReceive(5, "central", id);
     await change(SAMEER, { parent_id: id });
     expect((await errorOf(await change(id, { active: false }))).fields).toEqual(["active"]);
 
-    await job.opsPost("/api/stock/transfers", { consumable_code: "tape_strips", quantity: 5, from: id, to: "central" });
+    await sendAndReceive(5, id, "central");
     expect((await errorOf(await change(id, { active: false }))).fields).toEqual(["active"]);
     await change(SAMEER, { parent_id: "central" });
     expect((await change(id, { active: false })).status).toBe(200);
@@ -131,12 +133,7 @@ describe("the tree", () => {
 describe("a stockroom's stock", () => {
   it("raises its own alert at the central level, by its name, and closes it once stocked again", async () => {
     const id = await room();
-    await job.opsPost("/api/stock/transfers", {
-      consumable_code: "tape_strips",
-      quantity: 30,
-      from: "central",
-      to: id,
-    });
+    await sendAndReceive(30, "central", id);
     await job.opsPost("/api/stock/write-offs", {
       consumable_code: "tape_strips",
       place_id: id,
@@ -148,12 +145,7 @@ describe("a stockroom's stock", () => {
       expect.stringContaining("Stock is low in Gurgaon stockroom: Tape strips 15 strip (level 20)"),
     ]);
 
-    await job.opsPost("/api/stock/transfers", {
-      consumable_code: "tape_strips",
-      quantity: 10,
-      from: "central",
-      to: id,
-    });
+    await sendAndReceive(10, "central", id);
     const alert = await env.DB.prepare("SELECT resolved_at FROM alerts WHERE key = ?1")
       .bind(`low_stock:store:${id}`)
       .first<{ resolved_at: string | null }>();

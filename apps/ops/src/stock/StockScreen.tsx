@@ -29,6 +29,9 @@ import styles from "./stock.module.css";
 /** The places, read only by national managers, so the panel loads only for them. */
 const PlacesPanel = lazy(() => import("./PlacesPanel.tsx").then((module) => ({ default: module.PlacesPanel })));
 
+/** What is on its way, which loads only while something is. */
+const InTransit = lazy(() => import("./InTransit.tsx").then((module) => ({ default: module.InTransit })));
+
 /** The call that records each movement. A delivery goes into the warehouse, which only national staff reach. */
 const RECORDING: Readonly<Record<Kind, OpsCall>> = {
   delivery: "POST /api/stock/deliveries",
@@ -232,6 +235,11 @@ export function StockScreen() {
           </section>
           {firstKind !== undefined && (book ?? loaded.value).consumables.length > 0 && (
             <StockForm book={book ?? loaded.value} kinds={[firstKind, ...otherKinds]} onRecorded={setBook} />
+          )}
+          {(book ?? loaded.value).in_transit.length > 0 && (
+            <Suspense fallback={<Loading />}>
+              <InTransit book={book ?? loaded.value} onChanged={setBook} />
+            </Suspense>
           )}
           <Movements book={book ?? loaded.value} />
           {access.mayCall("POST /api/stock/places") && (

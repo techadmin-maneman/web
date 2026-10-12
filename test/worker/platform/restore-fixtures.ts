@@ -163,6 +163,8 @@ export const ROWS_AT_T: readonly string[] = [
   `INSERT INTO stock_lots (id, consumable_code, lot_code, expires_on, received_at)
      VALUES ('lot1', 'strip', 'BS-1', '2027-03-31', '${AT}')`,
   `INSERT INTO stock_lot_moves (movement_id, lot_id, place, quantity) VALUES ('sm1', 'lot1', 'central', 100)`,
+  `INSERT INTO stock_transfers (id, consumable_code, quantity, from_place, to_place, state, sent_by, sent_at)
+     VALUES ('tr1', 'strip', 10, 'central', 'central', 'in_transit', 'ops@example.com', '${AT}')`,
   `INSERT INTO dispatch_moves (id, appointment_id, was_technician_id, now_technician_id, reason, actor, created_at, updated_at)
      VALUES ('dm1', 'ap2', 't1', 't1', 'client_asked', 'ops@example.com', '${AT}', '${AT}')`,
   `INSERT INTO move_proposals (id, appointment_id, technician_id, date, window_label, reason, proposed_by, expected_start,

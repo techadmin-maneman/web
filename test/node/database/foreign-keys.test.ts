@@ -51,6 +51,10 @@ const HANDLED: Readonly<Record<string, string>> = {
     "src/domain/dispatch/technician-roster.ts refuses to delete a technician it names",
   "stock_movements.technician_id -> technicians":
     "src/domain/dispatch/technician-roster.ts refuses to delete a technician it names",
+  "stock_transfers.from_place -> stock_places":
+    "src/domain/dispatch/technician-roster.ts deletes only a kit nothing has moved, which no transfer names",
+  "stock_transfers.to_place -> stock_places":
+    "src/domain/dispatch/technician-roster.ts deletes only a kit nothing has moved, which no transfer names",
   "stock_places.parent_id -> stock_places":
     "src/domain/dispatch/technician-roster.ts deletes only a kit, which no place hangs from",
   "stock_movements.place_id -> stock_places":
@@ -63,6 +67,8 @@ const HANDLED: Readonly<Record<string, string>> = {
   "hair_systems.code -> consumables": "src/domain/field/consumables.ts deletes a hair system's spec first",
   "stock_movements.consumable_code -> consumables": "src/domain/field/consumables.ts refuses to delete one it names",
   "stock_balances.consumable_code -> consumables": "src/domain/field/consumables.ts refuses to delete one it names",
+  "stock_transfers.consumable_code -> consumables":
+    "src/domain/field/consumables.ts refuses to delete one a movement names, and a transfer comes only with one",
   "stock_lots.consumable_code -> consumables":
     "src/domain/field/consumables.ts refuses to delete one a movement names, and a lot comes only with a delivery",
   "consumables_used.consumable_code -> consumables": "src/domain/field/consumables.ts refuses to delete one it names",
