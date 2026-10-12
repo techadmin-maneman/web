@@ -130,6 +130,12 @@ const ALLOWED = [
   { file: "src/domain/money/discount-codes.ts", sql: "AS uses, (SELECT COALESCE(SUM(u.amount_off), 0)" },
   // The weekly backup's list of tables: SQLite's own catalogue, which holds a row a table.
   { file: "src/domain/platform/backups.ts", sql: "SELECT name, sql FROM sqlite_master" },
+  // The reporting copy reads every client, visit and payment, once a night in the hour from 3 am in India
+  // (docs/decisions/0146-the-nightly-analytics-copy.md).
+  { file: "src/domain/analytics/nightly.ts", sql: "SELECT id FROM people WHERE test_record = 0 AND erased_at IS NULL" },
+  { file: "src/domain/analytics/rows.ts", sql: "FROM people p WHERE p.test_record = 0 AND p.erased_at IS NULL" },
+  { file: "src/domain/analytics/rows.ts", sql: "FROM appointments a JOIN people p ON p.id = a.person_id" },
+  { file: "src/domain/analytics/rows.ts", sql: "FROM payments y JOIN people p ON p.id = y.person_id" },
 ];
 
 /**

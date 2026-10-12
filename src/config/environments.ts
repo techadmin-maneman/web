@@ -146,6 +146,10 @@ export const PROVIDER_VARS = {
   // Google's Routes and Maps Static APIs, for the dispatch board's drive times and day map (ADR 0120). "none" until the
   // owner switches them on for the key (docs/provisioning.md, step 13): the board then shows neither.
   ROUTES_PROVIDER: ["google", "stub", "none"],
+  // The nightly copy for reporting (docs/decisions/0146-the-nightly-analytics-copy.md): Supabase through Hyperdrive,
+  // whose binding is declared where it is switched on. "none" until then, and in production until counsel has ruled on
+  // the copy's pseudonymous rows.
+  ANALYTICS_PROVIDER: ["supabase", "stub", "none"],
 } as const;
 export type ProviderVar = keyof typeof PROVIDER_VARS;
 

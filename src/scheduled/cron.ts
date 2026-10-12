@@ -40,6 +40,7 @@ import { failureReason, scrubString, type Logger } from "../log.ts";
 import { backupDueOn, deleteOldBackups, writeBackup } from "../domain/platform/backups.ts";
 import { pingHeartbeat } from "../providers/heartbeat.ts";
 import { enqueue, enqueueBatch } from "../domain/platform/enqueue.ts";
+import { analyticsJob } from "./analytics.ts";
 import { razorpayCatchUpJob } from "./razorpay-catch-up.ts";
 import { referralPass } from "./referrals.ts";
 import { retentionJob } from "./retention.ts";
@@ -335,6 +336,8 @@ export const CRON_JOBS: readonly CronJob[] = [
   // the database against D1's limit, told at half, 80% and 95%.
   { name: "storage_meter", needs: "nothing", every: 60, at: 39, run: storageMeterJob },
   { name: "backup", needs: "nothing", every: 60, at: 33, run: backupJob },
+  // The nightly copy Zoho Analytics reports from (docs/decisions/0146-the-nightly-analytics-copy.md).
+  { name: "analytics_nightly", needs: "nothing", every: 60, at: 31, run: analyticsJob },
   // The operating figure behind the weekend-share assumption (src/policy/dispatch.ts): once a day, the day's board.
   { name: "dispatch_utilisation", needs: "nothing", every: 60, at: 43, run: utilisationJob },
   { name: "low_stock", needs: "nothing", every: 60, at: 50, run: lowStockJob },

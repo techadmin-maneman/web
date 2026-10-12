@@ -205,6 +205,11 @@ export interface Settings {
   readonly geocode: GeocodeSettings;
   /** The dispatch board's drive times and day map: Google's key, or null unless ROUTES_PROVIDER is "google". */
   readonly routes: { readonly apiKey: string | null };
+  /**
+   * The nightly reporting copy: the secret its client keys are made with, so a key stays the same from night to night
+   * and only the API can trace it back. Null unless ANALYTICS_PROVIDER is "supabase".
+   */
+  readonly analytics: { readonly clientKeySecret: string | null };
   readonly login: LoginSettings;
   readonly tryon: TryonSettings;
   readonly messaging: MessagingSettings;
@@ -292,10 +297,23 @@ export function readSettings(
     access,
     geocode,
     routes: { apiKey: providers.ROUTES_PROVIDER === "google" ? read.text("GOOGLE_MAPS_API_KEY") : null },
+    analytics: { clientKeySecret: readClientKeySecret(read, providers) },
     login,
     tryon,
     messaging,
     devRoutes: environment === "local" && devRoutes === "on",
   };
   return { settings, problems: read.problems };
+}
+
+/** The stub copy's key secret, for local runs and tests; a real copy never uses it. */
+const STUB_CLIENT_KEY = "the stub reporting copy, which no one reads";
+
+/** The reporting copy's key secret, long enough that a key cannot be guessed back to a person. */
+function readClientKeySecret(read: Reader, providers: ProvidersRead): string | null {
+  if (providers.ANALYTICS_PROVIDER === "stub") return STUB_CLIENT_KEY;
+  if (providers.ANALYTICS_PROVIDER !== "supabase") return null;
+  const secret = read.text("ANALYTICS_CLIENT_KEY");
+  if (secret.length < 32) read.problems.push("ANALYTICS_CLIENT_KEY must be at least 32 characters");
+  return secret;
 }
