@@ -11030,6 +11030,11 @@ export interface components {
         };
         ChatSave: {
             name: string;
+            /**
+             * @description How they told Care they found us; left out where they did not say.
+             * @enum {string}
+             */
+            found_us?: "google_ads" | "meta_ads" | "referral" | "organic_search" | "direct" | "partner" | "organic_social";
         };
         QuickReply: {
             /** Format: uuid */

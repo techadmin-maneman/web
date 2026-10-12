@@ -68,9 +68,16 @@ describe("a stranger's chat", () => {
     expect(
       await env.DB.prepare("SELECT name, mobile_e164, contactable FROM people WHERE id = ?1").bind(personId).first(),
     ).toEqual({ name: "Meera Iyer", mobile_e164: "+919811112222", contactable: 0 });
-    const lead = await env.DB.prepare("SELECT id, person_id, source FROM leads").first<{ id: string }>();
-    expect(lead).toMatchObject({ person_id: personId, source: "whatsapp" });
+    const lead = await env.DB.prepare("SELECT id, person_id, source, found_us FROM leads").first<{ id: string }>();
+    expect(lead).toMatchObject({ person_id: personId, source: "whatsapp", found_us: null });
     expect(crmQueue.sent).toMatchObject([{ lead_id: lead?.id }]);
+  });
+
+  it("keeps how the person told Care they found us, one of the channels", async () => {
+    await post(care(), `/api/conversations/${CHAT}/save`, { name: "Meera Iyer", found_us: "partner" });
+    expect(await env.DB.prepare("SELECT found_us FROM leads").first()).toEqual({ found_us: "partner" });
+    const refused = await post(care(), `/api/conversations/${CHAT}/save`, { name: "Meera Iyer", found_us: "a poster" });
+    expect(refused.status).toBe(400);
   });
 
   it("is a client's once, and never saves a number one of our people has", async () => {

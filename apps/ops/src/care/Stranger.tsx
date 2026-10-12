@@ -2,13 +2,13 @@
 // out to be and link it, or save the person as someone new by the name they gave. Either way the chat becomes theirs.
 
 import { Button } from "@maneman/ui/Button";
-import { Field, TextInput } from "@maneman/ui/Field";
+import { Field, Select, TextInput } from "@maneman/ui/Field";
 import type { Failure } from "@maneman/web-kit/refusal";
 import { useState } from "react";
 import { api, type ClientsFound } from "../api.ts";
 import { care } from "../content/care.ts";
 import { Refused } from "../settings/index.ts";
-import { careApi } from "./care-api.ts";
+import { careApi, type FoundUs } from "./care-api.ts";
 import styles from "../components/forms.module.css";
 import own from "./care.module.css";
 
@@ -80,10 +80,11 @@ function FindAndLink(props: { conversationId: string; onDone: () => void }) {
 
 function SaveAsNew(props: { conversationId: string; onDone: () => void }) {
   const [name, setName] = useState("");
+  const [foundUs, setFoundUs] = useState<FoundUs | "">("");
   const [failure, setFailure] = useState<Failure | null>(null);
   const save = async () => {
     setFailure(null);
-    const answer = await careApi.saveStranger(props.conversationId, name.trim());
+    const answer = await careApi.saveStranger(props.conversationId, name.trim(), foundUs === "" ? undefined : foundUs);
     if (answer.ok) props.onDone();
     else setFailure({ code: answer.code, fields: answer.fields });
   };
@@ -100,6 +101,24 @@ function SaveAsNew(props: { conversationId: string; onDone: () => void }) {
                 setName(event.target.value);
               }}
             />
+          )}
+        </Field>
+        <Field label={copy.foundUs}>
+          {(control) => (
+            <Select
+              {...control}
+              className={styles.choiceBox}
+              value={foundUs}
+              onChange={(event) => {
+                setFoundUs(event.target.value as FoundUs | "");
+              }}
+            >
+              {Object.entries(copy.foundUsChoices).map(([code, words]) => (
+                <option key={code} value={code}>
+                  {words}
+                </option>
+              ))}
+            </Select>
           )}
         </Field>
         <Button variant="outline" size="small" disabled={name.trim() === ""} onClick={() => void save()}>

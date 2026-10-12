@@ -176,6 +176,18 @@ export const care = {
     link: "Link",
     linkLabel: (name: string) => `Link this chat to ${name}`,
     name: "Their name",
+    foundUs: "How they found us",
+    /** Each channel a client may say, in the order offered; none chosen where they did not say. */
+    foundUsChoices: {
+      "": "Didn't say",
+      google_ads: "Google ad",
+      meta_ads: "Facebook or Instagram ad",
+      organic_search: "Searched online",
+      organic_social: "Social media",
+      referral: "A friend",
+      partner: "A salon or partner",
+      direct: "Already knew us",
+    },
     save: "Save as someone new",
     errors: {
       conversation: "This chat is a client's already. Reload.",

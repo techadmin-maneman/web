@@ -202,6 +202,7 @@ this map, or when the map names something that no longer exists.
 - **Database work** (`src/domain/analytics/`): `nightly` (the copy Zoho Analytics reads, once a night), `rows`
   (what each of its tables holds), `capacity` (each technician's day, from the dispatch board), `message-days`,
   `care-cases` (grievances and tasks, opened and closed), `leads`, `client-key` (a client as the copy knows them)
+- **Rules** (`src/policy/`): `channels` (how a lead found us, and a campaign's city)
 - **Vendor** (`src/providers/`): `warehouse/` (Supabase's Postgres, or the stub)
 - **Jobs:** `src/scheduled/analytics.ts`
 - **Tests:** `test/worker/jobs/analytics-nightly.test.ts`, `test/node/api/warehouse-sql.test.ts`

@@ -12279,6 +12279,19 @@ Request body:
       "type": "string",
       "minLength": 1,
       "maxLength": 80
+    },
+    "found_us": {
+      "type": "string",
+      "enum": [
+        "google_ads",
+        "meta_ads",
+        "referral",
+        "organic_search",
+        "direct",
+        "partner",
+        "organic_social"
+      ],
+      "description": "How they told Care they found us; left out where they did not say."
     }
   },
   "required": [

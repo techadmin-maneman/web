@@ -10,6 +10,7 @@ import { json } from "../../http/openapi.ts";
 import { actorOf } from "../../http/audit.ts";
 import { linkChat, saveStranger } from "../../domain/care/strangers.ts";
 import { testRecordAtCreation } from "../../policy/staging-test-records.ts";
+import { CHANNEL_CODES } from "../../policy/channels.ts";
 import { enqueue } from "../../domain/platform/enqueue.ts";
 
 const Id = z.object({ id: z.uuid() });
@@ -41,7 +42,13 @@ const saveRoute = createRoute({
       required: true,
       ...json(
         z
-          .object({ name: z.string().trim().min(1).max(80) })
+          .object({
+            name: z.string().trim().min(1).max(80),
+            found_us: z
+              .enum(CHANNEL_CODES)
+              .optional()
+              .openapi({ description: "How they told Care they found us; left out where they did not say." }),
+          })
           .strict()
           .openapi("ChatSave"),
       ),
@@ -69,11 +76,12 @@ export function registerOpsStrangers(app: App): void {
   });
 
   app.openapi(saveRoute, async (c) => {
-    const { name } = c.req.valid("json");
+    const { name, found_us: foundUs } = c.req.valid("json");
     const saved = await saveStranger(c.env.DB, {
       ...changeOf(c),
       conversationId: c.req.valid("param").id,
       name,
+      foundUs: foundUs ?? null,
       testRecord: testRecordAtCreation(c.var.config.environment, name),
     });
     if (saved === "not_found") return refuse(c, "not_found");

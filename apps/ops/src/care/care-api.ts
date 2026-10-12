@@ -14,6 +14,7 @@ export type ThreadItem = Success<paths["/api/conversations/{id}"]["get"]>["items
 export type ChatThread = Success<paths["/api/conversations/{id}"]["get"]>;
 export type CloseReason = Sent<paths["/api/conversations/{id}/close"]["post"]>["reason"];
 export type RemedyReason = Sent<paths["/api/clients/{id}/remedies"]["post"]>["reason"];
+export type FoundUs = NonNullable<Sent<paths["/api/conversations/{id}/save"]["post"]>["found_us"]>;
 type RemedyNew = Sent<paths["/api/clients/{id}/remedies"]["post"]>;
 export type CareNumbers = Success<paths["/api/care-numbers"]["get"]>;
 export type CarePeriod = NonNullable<NonNullable<paths["/api/care-numbers"]["get"]["parameters"]["query"]>["days"]>;
@@ -52,8 +53,8 @@ export const careApi = {
   retireQuickReply: (id: string) => client.post("/api/quick-replies/{id}/retire", { path: { id } }),
   linkChat: (id: string, personId: string) =>
     client.post("/api/conversations/{id}/link", { path: { id }, body: { person_id: personId } }),
-  saveStranger: (id: string, name: string) =>
-    client.post("/api/conversations/{id}/save", { path: { id }, body: { name } }),
+  saveStranger: (id: string, name: string, foundUs: FoundUs | undefined) =>
+    client.post("/api/conversations/{id}/save", { path: { id }, body: { name, found_us: foundUs } }),
   raiseCityMatter: (id: string, note: string) =>
     client.post("/api/conversations/{id}/city-matter", { path: { id }, body: { note } }),
 };

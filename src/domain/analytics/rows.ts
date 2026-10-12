@@ -6,6 +6,7 @@
 import { addDays, indiaDate } from "../../lib/india-time.ts";
 import { unitsFor } from "../../policy/visit-length.ts";
 import type { Row, TableRows } from "../../providers/warehouse/index.ts";
+import type { FirstTouch } from "./leads.ts";
 
 const rupees = (paise: number | null): number => Math.round(paise ?? 0) / 100;
 const dayOf = (at: string | null): string | null => (at === null ? null : indiaDate(new Date(at)));
@@ -103,10 +104,14 @@ interface ClientRow {
 }
 
 /**
- * Each client who has a lead or a visit on the books: their first lead's day, their first fit's day, month and city, and whether a
- * friend's invite brought them. The channel rule comes with the growth figures; until then every client is "direct".
+ * Each client who has a lead or a visit on the books: their first lead's day, channel and campaign, their first fit's
+ * day, month and city, and whether a friend's invite brought them. A client with no lead on the books came direct.
  */
-export async function clientRows(db: D1Database, keys: ReadonlyMap<string, string>): Promise<TableRows> {
+export async function clientRows(
+  db: D1Database,
+  keys: ReadonlyMap<string, string>,
+  firstTouch: ReadonlyMap<string, FirstTouch>,
+): Promise<TableRows> {
   const { results } = await db
     .prepare(
       `SELECT p.id,
@@ -132,8 +137,8 @@ export async function clientRows(db: D1Database, keys: ReadonlyMap<string, strin
         first_fit_date: fitDay,
         cohort_month: fitDay === null ? null : `${fitDay.slice(0, 7)}-01`,
         first_fit_city: row.first_fit_city,
-        channel: "direct",
-        campaign_key: null,
+        channel: firstTouch.get(key)?.channel ?? "Direct",
+        campaign_key: firstTouch.get(key)?.campaign_key ?? null,
         referred: row.referred === 1,
       },
     ];
