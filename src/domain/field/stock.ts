@@ -14,6 +14,9 @@
 // written (migration 0053), so what a place holds is read without its history.
 // It names each place by its ID: the warehouse WAREHOUSE, and a kit its technician's.
 //
+// Each movement is broken down by the lots it moved, soonest to expire first
+// (src/domain/field/stock-lots.ts, docs/decisions/0157-lots-and-expiry.md).
+//
 // A place that falls to a consumable's reorder level raises one alert, for
 // that place, listing everything low there, and the Stock screen marks it. A
 // kit has the kit's level and every other place the central one. The alert
@@ -23,6 +26,7 @@ import { indiaDate } from "../../lib/india-time.ts";
 import { countDifference, isLow } from "../../policy/stock.ts";
 import { auditStatement, auditStatementIfWritten, type AuditActor } from "../ops/audit.ts";
 import { allConsumables, isOffered, type Consumable } from "./consumables.ts";
+import { lotMoves, receivedLotMoves, soonestFirst, type ReceivedLot } from "./stock-lots.ts";
 import {
   allPlaces,
   isPlaceWithin,
@@ -84,12 +88,17 @@ function movementValues(id: string, movement: Movement, written: Written) {
   ];
 }
 
-function movementStatement(db: D1Database, movement: Movement, written: Written): D1PreparedStatement {
+function movementStatement(
+  db: D1Database,
+  movement: Movement,
+  written: Written,
+  id: string = crypto.randomUUID(),
+): D1PreparedStatement {
   return db
     .prepare(
       `INSERT INTO stock_movements (${MOVEMENT_COLUMNS}) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12)`,
     )
-    .bind(...movementValues(crypto.randomUUID(), movement, written));
+    .bind(...movementValues(id, movement, written));
 }
 
 /** What the place of a movement's row holds of its consumable, `?2`, as a statement about the row reads it. */
@@ -140,16 +149,20 @@ async function heldOf(db: D1Database, code: string, place: Place): Promise<numbe
   return row?.quantity ?? 0;
 }
 
-/** Stock received into the warehouse. */
+/** Stock received into the warehouse, into the lot named, or of none (src/domain/field/stock-lots.ts). */
 export async function receiveStock(
   db: D1Database,
-  input: { readonly code: string; readonly quantity: number; readonly note: string | null },
+  input: { readonly code: string; readonly quantity: number; readonly note: string | null; readonly lot?: ReceivedLot },
   written: Written,
 ): Promise<Moved> {
   if (!(await consumableExists(db, input.code))) return { ok: false, fields: ["consumable_code"] };
+  const id = crypto.randomUUID();
+  const lot = input.lot ?? { lotCode: null, expiresOn: null };
+  const movement = { code: input.code, quantity: input.quantity, note: input.note };
   await db.batch([
     auditStatement(db, entry("stock.receive", input.code, written, { quantity: input.quantity }), written.now),
-    movementStatement(db, { ...input, place: WAREHOUSE, kind: "warehouse", reason: "received" }, written),
+    movementStatement(db, { ...movement, place: WAREHOUSE, kind: "warehouse", reason: "received" }, written, id),
+    ...(await receivedLotMoves(db, { code: input.code, lot, movementId: id, quantity: input.quantity }, written.now)),
   ]);
   return { ok: true, lowered: [] };
 }
@@ -166,15 +179,19 @@ export async function transferStock(
   const toKind = input.from === input.to ? null : await kindOf(db, input.to);
   if (toKind === null) return { ok: false, fields: ["to"] };
   const transferId = crypto.randomUUID();
+  const [out, into] = [crypto.randomUUID(), crypto.randomUUID()];
   const moved = { code: input.code, reason: "transferred", transferId, note: null } as const;
+  const takes = await soonestFirst(db, { code: input.code, place: input.from, quantity: input.quantity });
   await db.batch([
     auditStatement(
       db,
       entry("stock.transfer", input.code, written, { quantity: input.quantity, from: input.from, to: input.to }),
       written.now,
     ),
-    movementStatement(db, { ...moved, place: input.from, kind: fromKind, quantity: -input.quantity }, written),
-    movementStatement(db, { ...moved, place: input.to, kind: toKind, quantity: input.quantity }, written),
+    movementStatement(db, { ...moved, place: input.from, kind: fromKind, quantity: -input.quantity }, written, out),
+    movementStatement(db, { ...moved, place: input.to, kind: toKind, quantity: input.quantity }, written, into),
+    ...lotMoves(db, { movementId: out, place: input.from, takes, sign: -1 }),
+    ...lotMoves(db, { movementId: into, place: input.to, takes, sign: 1 }),
   ]);
   return { ok: true, lowered: [input.from] };
 }
@@ -234,25 +251,43 @@ async function writeCount(
     note: input.note,
   };
   const detail = { place: input.place, counted: input.counted, ...found };
+  // Less counted than held leaves from the lots that expire soonest; more is of no known lot.
+  const takes =
+    found.difference < 0
+      ? await soonestFirst(db, { code: input.code, place: input.place, quantity: -found.difference })
+      : [];
   const [row] = await db.batch([
     countStatement({ db, id, movement, held: found.held, written }),
     auditStatementIfWritten(db, entry("stock.count", input.code, written, detail), written.now, {
       table: "stock_movements",
       id,
     }),
+    ...lotMoves(db, { movementId: id, place: input.place, takes, sign: -1 }),
   ]);
   return row?.results.length === 1;
 }
 
-/** A loss somebody saw at a place, with what happened: a tube dropped, a batch spoilt. */
+/**
+ * A loss somebody saw at a place, with what happened: a tube dropped, a batch spoilt. It leaves from the lot named, as
+ * one that expired, or from the lots that expire soonest.
+ */
 export async function writeOff(
   db: D1Database,
-  input: { readonly code: string; readonly place: Place; readonly quantity: number; readonly note: string },
+  input: {
+    readonly code: string;
+    readonly place: Place;
+    readonly quantity: number;
+    readonly note: string;
+    readonly lotId?: string | null;
+  },
   written: Written,
 ): Promise<Moved> {
   if (!(await consumableExists(db, input.code))) return { ok: false, fields: ["consumable_code"] };
   const kind = await kindOf(db, input.place);
   if (kind === null) return { ok: false, fields: ["place_id"] };
+  const id = crypto.randomUUID();
+  const takes = await soonestFirst(db, { ...input, lotId: input.lotId ?? null });
+  if (input.lotId !== undefined && input.lotId !== null && takes.length === 0) return { ok: false, fields: ["lot_id"] };
   await db.batch([
     auditStatement(
       db,
@@ -270,7 +305,9 @@ export async function writeOff(
         note: input.note,
       },
       written,
+      id,
     ),
+    ...lotMoves(db, { movementId: id, place: input.place, takes, sign: -1 }),
   ]);
   return { ok: true, lowered: [input.place] };
 }

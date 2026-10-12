@@ -29,6 +29,8 @@ export async function recordPieceUse(
   const owed = useStillToRecord(fitted, await takenFor(db, { jobId, technicianId, hairSystems: true }));
   if (owed.size === 0) return { lowered: false };
   const step = { jobId, technicianId, eventId: latest.id, kind: "piece", at: input.now.toISOString() } as const;
-  const results = await db.batch<{ quantity: number }>(takenFromKit(db, step, owed));
-  return { lowered: results.flatMap((result) => result.results).some((row) => row.quantity < 0) };
+  const taken = await takenFromKit(db, step, owed);
+  const results = await db.batch<{ quantity: number }>([...taken.movements, ...taken.lots]);
+  const moved = results.slice(0, taken.movements.length).flatMap((result) => result.results);
+  return { lowered: moved.some((row) => row.quantity < 0) };
 }

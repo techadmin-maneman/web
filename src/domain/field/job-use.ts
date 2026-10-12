@@ -9,6 +9,7 @@ import type { VisitType } from "../../config/visit-types.ts";
 import { useStillToRecord } from "../../policy/stock.ts";
 import { allConsumables, serviceOfJob, type Consumable } from "./consumables.ts";
 import { hairSystemSpecs } from "./hair-systems.ts";
+import { givenBackToLots, lotMoves, soonestFirst } from "./stock-lots.ts";
 import { usedLinesOf, type UsedLine } from "./job-event-bodies.ts";
 
 /**
@@ -90,9 +91,11 @@ export async function takenFor(
 
 /**
  * The kit's rows for what a step still owes the job, each written only while the step is still the job's latest of
- * its kind, and once for each step and stock code. Each answers its quantity when it is written.
+ * its kind, and once for each step and stock code; each answers its quantity when it is written. Then each row's
+ * lots: what the kit gives leaves from the lots that expire soonest, and what a correction gives back goes to the lots
+ * the job took from (src/domain/field/stock-lots.ts).
  */
-export function takenFromKit(
+export async function takenFromKit(
   db: D1Database,
   step: {
     readonly jobId: string;
@@ -102,19 +105,31 @@ export function takenFromKit(
     readonly at: string;
   },
   owed: ReadonlyMap<string, number>,
-): D1PreparedStatement[] {
-  return [...owed].map(([code, quantity]) =>
-    db
-      .prepare(
-        `INSERT INTO stock_movements (id, consumable_code, location, technician_id, quantity, reason,
-           appointment_id, job_event_id, actor_kind, actor, created_at)
-         SELECT ?1, ?2, 'kit', ?3, ?4, 'used', ?5, ?6, 'technician', ?3, ?7
-          WHERE ?6 = (${latestStep({ job: "?5", technician: "?3" }, step.kind)})
-         ON CONFLICT (job_event_id, consumable_code) WHERE reason = 'used' DO NOTHING
-         RETURNING quantity`,
-      )
-      .bind(crypto.randomUUID(), code, step.technicianId, quantity, step.jobId, step.eventId, step.at),
-  );
+): Promise<{ readonly movements: D1PreparedStatement[]; readonly lots: D1PreparedStatement[] }> {
+  const movements: D1PreparedStatement[] = [];
+  const lots: D1PreparedStatement[] = [];
+  const kit = step.technicianId;
+  for (const [code, quantity] of owed) {
+    const id = crypto.randomUUID();
+    movements.push(
+      db
+        .prepare(
+          `INSERT INTO stock_movements (id, consumable_code, location, technician_id, quantity, reason,
+             appointment_id, job_event_id, actor_kind, actor, created_at)
+           SELECT ?1, ?2, 'kit', ?3, ?4, 'used', ?5, ?6, 'technician', ?3, ?7
+            WHERE ?6 = (${latestStep({ job: "?5", technician: "?3" }, step.kind)})
+           ON CONFLICT (job_event_id, consumable_code) WHERE reason = 'used' DO NOTHING
+           RETURNING quantity`,
+        )
+        .bind(id, code, kit, quantity, step.jobId, step.eventId, step.at),
+    );
+    const takes =
+      quantity < 0
+        ? await soonestFirst(db, { code, place: kit, quantity: -quantity })
+        : await givenBackToLots(db, { jobId: step.jobId, kit, code, quantity });
+    lots.push(...lotMoves(db, { movementId: id, place: kit, takes, sign: quantity < 0 ? -1 : 1 }));
+  }
+  return { movements, lots };
 }
 
 /**
@@ -161,7 +176,11 @@ export async function recordJobUse(
   const owed = useStillToRecord(byCode, await takenFor(db, { jobId: job.id, technicianId, hairSystems: false }));
 
   const at = now.toISOString();
-  const taken = takenFromKit(db, { jobId: job.id, technicianId, eventId: latest.id, kind: "consumables", at }, owed);
+  const taken = await takenFromKit(
+    db,
+    { jobId: job.id, technicianId, eventId: latest.id, kind: "consumables", at },
+    owed,
+  );
   const recorded = used.map((line) =>
     db
       .prepare(
@@ -183,8 +202,8 @@ export async function recordJobUse(
       ),
   );
   // "None used" is a step too, and writes nothing.
-  if (taken.length + recorded.length === 0) return { lowered: false };
-  const results = await db.batch<{ quantity: number }>([...taken, ...recorded]);
-  const moved = results.slice(0, taken.length).flatMap((result) => result.results);
+  if (taken.movements.length + recorded.length === 0) return { lowered: false };
+  const results = await db.batch<{ quantity: number }>([...taken.movements, ...recorded, ...taken.lots]);
+  const moved = results.slice(0, taken.movements.length).flatMap((result) => result.results);
   return { lowered: moved.some((row) => row.quantity < 0) };
 }
