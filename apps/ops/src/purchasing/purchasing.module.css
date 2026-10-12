@@ -3,6 +3,11 @@
  * sheet never shows on screen.
  */
 
+/* This screen's own sizes, which nothing else draws (ADR 0077, as amended). */
+:root {
+  --local-purchasing-photo: 160px; /* a photograph of stock, small enough to sit in a row's form */
+}
+
 .lines {
   display: grid;
   gap: var(--sp-8);
@@ -55,4 +60,12 @@
 .sheetTotal {
   margin-top: var(--sp-16);
   font-weight: var(--weight-medium);
+}
+
+/* A photograph of stock, once stored. */
+.photo {
+  display: block;
+  max-width: var(--local-purchasing-photo);
+  height: auto;
+  margin: var(--sp-8) 0;
 }

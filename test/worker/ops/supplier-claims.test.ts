@@ -9,6 +9,7 @@
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
+import { jpegOf } from "../cards.ts";
 import { markDatabase, NOW, request } from "../helpers.ts";
 import { working, type Working } from "../job-fixtures.ts";
 
@@ -123,6 +124,17 @@ async function returned(days: number, label?: string): Promise<{ id: string; lab
   return { id, label: code };
 }
 
+/** A photograph stored as the console sends one; its ID. */
+async function photographed(): Promise<string> {
+  const stored = await request(job.ops, "/api/stock-photos", {
+    method: "POST",
+    headers: { Origin: "https://maneman.test", "Content-Type": "image/jpeg" },
+    body: jpegOf(64, 48),
+  });
+  expect(stored.status).toBe(201);
+  return (await stored.json<{ photo_id: string }>()).photo_id;
+}
+
 const unitState = (code: string) =>
   env.DB.prepare("SELECT state FROM stock_units WHERE code = ?1").bind(code).first<string>("state");
 
@@ -159,9 +171,12 @@ describe("a claim on a supplier", () => {
 
   it("is sent, then settled by the supplier's answer, or withdrawn before it is sent, each step once", async () => {
     const [failed, damaged] = (await claims()).claims;
-    const sent = await job.opsPost(`/api/supplier-claims/${damaged?.id ?? ""}/send`, { note: "Photos emailed." });
+    const sent = await job.opsPost(`/api/supplier-claims/${damaged?.id ?? ""}/send`, {
+      note: "Photos emailed.",
+      photo_id: null,
+    });
     expect(sent.status).toBe(200);
-    const again = await job.opsPost(`/api/supplier-claims/${damaged?.id ?? ""}/send`, { note: null });
+    const again = await job.opsPost(`/api/supplier-claims/${damaged?.id ?? ""}/send`, { note: null, photo_id: null });
     expect([again.status, (await codeOf(again)).code]).toEqual([409, "claim_state"]);
 
     const unpriced = await job.opsPost(`/api/supplier-claims/${damaged?.id ?? ""}/decide`, {
@@ -234,13 +249,48 @@ describe("a returned piece", () => {
 
     const refused = await job.opsPost(`/api/returned-pieces/${late.id}/claim`);
     expect([refused.status, (await codeOf(refused)).code]).toEqual([409, "out_of_warranty"]);
+    const unphotographed = await job.opsPost(`/api/returned-pieces/${late.id}/write-off`, {
+      reason: "Torn base.",
+      photo_id: crypto.randomUUID(),
+    });
+    expect((await codeOf(unphotographed)).fields).toEqual(["photo_id"]);
     for (const piece of [late, other]) {
-      const written = await job.opsPost(`/api/returned-pieces/${piece.id}/write-off`, { reason: "Torn base." });
+      const body = { reason: "Torn base.", photo_id: await photographed() };
+      const written = await job.opsPost(`/api/returned-pieces/${piece.id}/write-off`, body);
       expect(written.status).toBe(200);
     }
     expect((await claims()).returns).toEqual([]);
     expect(await unitState(late.label)).toBe("written_off");
-    const reasons = await env.DB.prepare("SELECT write_off_reason FROM piece_returns ORDER BY returned_at").all();
-    expect(reasons.results).toEqual([{ write_off_reason: "Torn base." }, { write_off_reason: "Torn base." }]);
+    const reasons = await env.DB.prepare(
+      "SELECT write_off_reason, photo_id IS NOT NULL AS photographed FROM piece_returns ORDER BY returned_at",
+    ).all();
+    expect(reasons.results).toEqual([
+      { write_off_reason: "Torn base.", photographed: 1 },
+      { write_off_reason: "Torn base.", photographed: 1 },
+    ]);
+  });
+});
+
+describe("a photograph of stock", () => {
+  it("is stored as a JPEG or PNG and read back, never cached, and goes with a claim when it is sent", async () => {
+    const id = await photographed();
+    const read = await request(job.ops, `/api/stock-photos/${id}`);
+    expect([read.status, read.headers.get("Content-Type"), read.headers.get("Cache-Control")]).toEqual([
+      200,
+      "image/jpeg",
+      "private, no-store",
+    ]);
+
+    const notAPicture = await request(job.ops, "/api/stock-photos", {
+      method: "POST",
+      headers: { Origin: "https://maneman.test", "Content-Type": "image/jpeg" },
+      body: "plain words",
+    });
+    expect([notAPicture.status, (await codeOf(notAPicture)).code]).toEqual([422, "photo_invalid_file"]);
+    expect((await request(job.ops, `/api/stock-photos/${crypto.randomUUID()}`)).status).toBe(404);
+
+    const [, damaged] = (await claims()).claims;
+    const sent = await job.opsPost(`/api/supplier-claims/${damaged?.id ?? ""}/send`, { note: null, photo_id: id });
+    expect((await sent.json<Claims & { claims: { photo_id: string | null }[] }>()).claims[1]?.photo_id).toBe(id);
   });
 });

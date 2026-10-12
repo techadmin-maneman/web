@@ -11,6 +11,7 @@
 
 import { createRoute, z } from "@hono/zod-openapi";
 import type { Context } from "hono";
+import { stockPhotoExists } from "../../domain/field/stock-photos.ts";
 import { returnedPieces, claimReturn, writeOffReturn, type Settled } from "../../domain/field/returned-pieces.ts";
 import {
   CLAIM_OUTCOMES,
@@ -50,6 +51,7 @@ const ClaimSchema = z.object({
   drafted_at: z.string(),
   sent_at: z.string().nullable(),
   decided_at: z.string().nullable(),
+  photo_id: z.string().nullable().openapi({ description: "The photograph sent with it: GET /api/stock-photos/{id}." }),
 });
 
 const ReturnedPieceSchema = z.object({
@@ -91,9 +93,15 @@ const sendRoute = createRoute({
   summary: "A drafted claim marked sent to its supplier",
   request: {
     ...orderPath,
-    body: { required: true, ...json(z.object({ note: Note.nullable() }).strict().openapi("SupplierClaimSend")) },
+    body: {
+      required: true,
+      ...json(z.object({ note: Note.nullable(), photo_id: z.uuid().nullable() }).strict().openapi("SupplierClaimSend")),
+    },
   },
-  responses: CLAIM_ANSWERS,
+  responses: {
+    ...CLAIM_ANSWERS,
+    400: errorResponse("invalid_request: fields names photo_id for no photograph stored"),
+  },
 });
 
 const withdrawRoute = createRoute({
@@ -161,9 +169,15 @@ const writeOffRoute = createRoute({
   summary: "A returned piece written off, with why",
   request: {
     ...orderPath,
-    body: { required: true, ...json(z.object({ reason: Note }).strict().openapi("ReturnedPieceWriteOff")) },
+    body: {
+      required: true,
+      ...json(z.object({ reason: Note, photo_id: z.uuid() }).strict().openapi("ReturnedPieceWriteOff")),
+    },
   },
-  responses: PIECE_ANSWERS,
+  responses: {
+    ...PIECE_ANSWERS,
+    400: errorResponse("invalid_request: fields names photo_id for no photograph stored"),
+  },
 });
 
 async function claimsAnswer(c: Context<AppEnv>) {
@@ -188,6 +202,7 @@ async function claimsAnswer(c: Context<AppEnv>) {
       drafted_at: claim.draftedAt,
       sent_at: claim.sentAt,
       decided_at: claim.decidedAt,
+      photo_id: claim.photoId,
     })),
     returns: returns.map((piece) => ({
       id: piece.id,
@@ -220,9 +235,13 @@ async function afterPiece(c: Context<AppEnv>, settled: Settled) {
 export function registerOpsClaims(app: App): void {
   app.openapi(listRoute, async (c) => c.json(await claimsAnswer(c), 200));
 
-  app.openapi(sendRoute, async (c) =>
-    afterClaim(c, await sendClaim(c.env.DB, c.req.valid("param").id, c.req.valid("json").note, written(c))),
-  );
+  app.openapi(sendRoute, async (c) => {
+    const { note, photo_id: photoId } = c.req.valid("json");
+    if (photoId !== null && !(await stockPhotoExists(c.env.DB, photoId))) {
+      return refuse(c, "invalid_request", ["photo_id"]);
+    }
+    return afterClaim(c, await sendClaim(c.env.DB, c.req.valid("param").id, { note, photoId }, written(c)));
+  });
 
   app.openapi(withdrawRoute, async (c) =>
     afterClaim(c, await withdrawClaim(c.env.DB, c.req.valid("param").id, c.req.valid("json").note, written(c))),
@@ -237,7 +256,9 @@ export function registerOpsClaims(app: App): void {
 
   app.openapi(claimRoute, async (c) => afterPiece(c, await claimReturn(c.env.DB, c.req.valid("param").id, written(c))));
 
-  app.openapi(writeOffRoute, async (c) =>
-    afterPiece(c, await writeOffReturn(c.env.DB, c.req.valid("param").id, c.req.valid("json").reason, written(c))),
-  );
+  app.openapi(writeOffRoute, async (c) => {
+    const { reason, photo_id: photoId } = c.req.valid("json");
+    if (!(await stockPhotoExists(c.env.DB, photoId))) return refuse(c, "invalid_request", ["photo_id"]);
+    return afterPiece(c, await writeOffReturn(c.env.DB, c.req.valid("param").id, { reason, photoId }, written(c)));
+  });
 }

@@ -28,6 +28,8 @@ export interface SupplierClaim {
   readonly draftedAt: string;
   readonly sentAt: string | null;
   readonly decidedAt: string | null;
+  /** The photograph sent with it, if any (./stock-photos.ts). */
+  readonly photoId: string | null;
 }
 
 /** How many settled claims the list shows after every open one. */
@@ -89,13 +91,14 @@ type ClaimRow = {
   drafted_at: string;
   sent_at: string | null;
   decided_at: string | null;
+  photo_id: string | null;
 };
 
 /** Every open claim, newest first, then the latest settled. */
 export async function supplierClaims(db: D1Database): Promise<SupplierClaim[]> {
   const columns = `k.id, k.number, k.supplier_id, k.consumable_code, c.name, k.quantity, k.reason, o.number AS order_number,
     u.code AS piece_code, k.unit_price, k.currency, k.state, k.outcome, k.credit_amount, k.note, k.drafted_at, k.sent_at,
-    k.decided_at`;
+    k.decided_at, k.photo_id`;
   const joins = `JOIN consumables c ON c.code = k.consumable_code JOIN receipt_lines l ON l.id = k.receipt_line_id
     JOIN receipts r ON r.id = l.receipt_id JOIN purchase_orders o ON o.id = r.po_id
     LEFT JOIN stock_units u ON u.id = k.unit_id`;
@@ -130,6 +133,7 @@ export async function supplierClaims(db: D1Database): Promise<SupplierClaim[]> {
     draftedAt: row.drafted_at,
     sentAt: row.sent_at,
     decidedAt: row.decided_at,
+    photoId: row.photo_id,
   }));
 }
 
@@ -168,12 +172,18 @@ async function changed(
   return exists === null ? { ok: false, missing: true } : { ok: false, state: true };
 }
 
-/** A drafted claim marked sent to its supplier, with what was said, if anything. */
-export function sendClaim(db: D1Database, id: string, note: string | null, written: Written): Promise<ClaimChanged> {
+/** A drafted claim marked sent to its supplier, with what was said and the photograph shown, if any. */
+export function sendClaim(
+  db: D1Database,
+  id: string,
+  sent: { readonly note: string | null; readonly photoId: string | null },
+  written: Written,
+): Promise<ClaimChanged> {
   const update = {
-    sql: `UPDATE supplier_claims SET change_id = ?9, state = 'sent', sent_by = ?2, sent_at = ?3, note = COALESCE(?4, note)
+    sql: `UPDATE supplier_claims SET change_id = ?9, state = 'sent', sent_by = ?2, sent_at = ?3, note = COALESCE(?4, note),
+            photo_id = COALESCE(?5, photo_id)
           WHERE id = ?1 AND state = 'drafted'`,
-    binds: [id, written.actor.id, written.now.toISOString(), note],
+    binds: [id, written.actor.id, written.now.toISOString(), sent.note, sent.photoId],
   };
   return changed(db, { id, action: "supplier_claim.send" }, update, written);
 }

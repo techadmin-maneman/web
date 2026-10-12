@@ -8,6 +8,7 @@ import { client } from "../api.ts";
 import { purchasing as copy } from "../content/purchasing.ts";
 import form from "../components/forms.module.css";
 import { useAccess } from "../lib/access.ts";
+import { StockPhoto } from "./StockPhoto.tsx";
 import type { Claim } from "./types.ts";
 
 export type ClaimAnswer = Awaited<ReturnType<typeof client.post<"/api/supplier-claims/{id}/send">>>;
@@ -15,9 +16,66 @@ export type ClaimAnswer = Awaited<ReturnType<typeof client.post<"/api/supplier-c
 /** The claim's whole value in its currency's main unit, as the credit box starts: "250.00" for 25,000 cents. */
 const wholeValue = (claim: Claim) => ((claim.unit_price * claim.quantity) / 100).toFixed(2);
 
+/** Withdrawing a drafted claim: asked first, then sent with why. */
+function Withdraw({
+  claim,
+  note,
+  withdrawing,
+  onWithdrawing,
+  onAnswer,
+}: {
+  claim: Claim;
+  note: string;
+  withdrawing: boolean;
+  onWithdrawing: (withdrawing: boolean) => void;
+  onAnswer: (answer: ClaimAnswer, said: string) => void;
+}) {
+  if (!withdrawing) {
+    return (
+      <Button
+        variant="outline"
+        size="small"
+        onClick={() => {
+          onWithdrawing(true);
+        }}
+      >
+        {copy.claims.withdraw}
+      </Button>
+    );
+  }
+  return (
+    <>
+      <Button
+        variant="destructive"
+        size="small"
+        disabled={note === ""}
+        onClick={() =>
+          void client
+            .post("/api/supplier-claims/{id}/withdraw", { path: { id: claim.id }, body: { note } })
+            .then((answer) => {
+              onAnswer(answer, copy.claims.withdrawnSaid);
+            })
+        }
+      >
+        {copy.claims.confirmWithdraw}
+      </Button>
+      <Button
+        variant="outline"
+        size="small"
+        onClick={() => {
+          onWithdrawing(false);
+        }}
+      >
+        {copy.claims.keep}
+      </Button>
+    </>
+  );
+}
+
 function Drafted({ claim, onAnswer }: { claim: Claim; onAnswer: (answer: ClaimAnswer, said: string) => void }) {
   const access = useAccess();
   const [note, setNote] = useState("");
+  const [photoId, setPhotoId] = useState<string | null>(null);
   const [withdrawing, setWithdrawing] = useState(false);
   const path = { path: { id: claim.id } };
   const said = note.trim();
@@ -35,6 +93,7 @@ function Drafted({ claim, onAnswer }: { claim: Claim; onAnswer: (answer: ClaimAn
           />
         )}
       </Field>
+      {!withdrawing && <StockPhoto label={copy.photo.claim} photoId={photoId} onPhoto={setPhotoId} />}
       <div className={form.actions}>
         {!withdrawing && access.mayCall("POST /api/supplier-claims/{id}/send") && (
           <Button
@@ -42,7 +101,10 @@ function Drafted({ claim, onAnswer }: { claim: Claim; onAnswer: (answer: ClaimAn
             size="small"
             onClick={() =>
               void client
-                .post("/api/supplier-claims/{id}/send", { ...path, body: { note: said === "" ? null : said } })
+                .post("/api/supplier-claims/{id}/send", {
+                  ...path,
+                  body: { note: said === "" ? null : said, photo_id: photoId },
+                })
                 .then((answer) => {
                   onAnswer(answer, copy.claims.sentSaid);
                 })
@@ -51,44 +113,15 @@ function Drafted({ claim, onAnswer }: { claim: Claim; onAnswer: (answer: ClaimAn
             {copy.claims.send}
           </Button>
         )}
-        {access.mayCall("POST /api/supplier-claims/{id}/withdraw") &&
-          (withdrawing ? (
-            <>
-              <Button
-                variant="destructive"
-                size="small"
-                disabled={said === ""}
-                onClick={() =>
-                  void client
-                    .post("/api/supplier-claims/{id}/withdraw", { ...path, body: { note: said } })
-                    .then((answer) => {
-                      onAnswer(answer, copy.claims.withdrawnSaid);
-                    })
-                }
-              >
-                {copy.claims.confirmWithdraw}
-              </Button>
-              <Button
-                variant="outline"
-                size="small"
-                onClick={() => {
-                  setWithdrawing(false);
-                }}
-              >
-                {copy.claims.keep}
-              </Button>
-            </>
-          ) : (
-            <Button
-              variant="outline"
-              size="small"
-              onClick={() => {
-                setWithdrawing(true);
-              }}
-            >
-              {copy.claims.withdraw}
-            </Button>
-          ))}
+        {access.mayCall("POST /api/supplier-claims/{id}/withdraw") && (
+          <Withdraw
+            claim={claim}
+            note={said}
+            withdrawing={withdrawing}
+            onWithdrawing={setWithdrawing}
+            onAnswer={onAnswer}
+          />
+        )}
       </div>
     </div>
   );

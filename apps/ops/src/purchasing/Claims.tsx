@@ -105,6 +105,13 @@ export function Claims({ orders }: { orders: Orders }) {
               {copy.claims.number(opened.number)} · {copy.claims.from(copy.number(opened.order_number))}
               {opened.note !== null && ` · ${opened.note}`}
             </p>
+            {opened.photo_id !== null && (
+              <p className={form.note}>
+                <a href={`/api/stock-photos/${opened.photo_id}`} target="_blank" rel="noreferrer">
+                  {copy.photo.view}
+                </a>
+              </p>
+            )}
             <ClaimSteps key={opened.id} claim={opened} onAnswer={answered} />
           </div>
         )}

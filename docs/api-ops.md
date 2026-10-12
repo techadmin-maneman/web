@@ -7323,6 +7323,14 @@ Request body:
 }
 ```
 
+**400**: invalid_request: fields names photo_id for no photograph stored
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 **403**: access_required
 
 ```json
@@ -7499,6 +7507,14 @@ Request body:
 }
 ```
 
+**400**: invalid_request: fields names photo_id for no photograph stored
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 **403**: access_required
 
 ```json
@@ -7516,6 +7532,64 @@ Request body:
 ```
 
 **409**: return_settled: the piece is settled already, or not handed in
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/stock-photos
+
+A photograph of stock: the body a JPEG or PNG of at most 2 MB
+
+**201**: Stored
+
+```json
+{
+  "$ref": "#/components/schemas/StockPhotoStored"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**422**: photo_invalid_file: not a JPEG or PNG, or over 2 MB
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**503**: busy: the photographs' storage is past its runaway ceiling
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### GET /api/stock-photos/{id}
+
+A photograph of stock, never cached
+
+**200**: The image
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no such photograph
 
 ```json
 {
@@ -23301,6 +23375,13 @@ Request body:
               "string",
               "null"
             ]
+          },
+          "photo_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The photograph sent with it: GET /api/stock-photos/{id}."
           }
         },
         "required": [
@@ -23321,7 +23402,8 @@ Request body:
           "note",
           "drafted_at",
           "sent_at",
-          "decided_at"
+          "decided_at",
+          "photo_id"
         ]
       }
     },
@@ -23412,10 +23494,18 @@ Request body:
       "minLength": 1,
       "maxLength": 200,
       "pattern": "^[^\\p{Cc}]+$/u"
+    },
+    "photo_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "uuid"
     }
   },
   "required": [
-    "note"
+    "note",
+    "photo_id"
   ],
   "additionalProperties": false
 }
@@ -23494,12 +23584,34 @@ Request body:
       "minLength": 1,
       "maxLength": 200,
       "pattern": "^[^\\p{Cc}]+$/u"
+    },
+    "photo_id": {
+      "type": "string",
+      "format": "uuid"
     }
   },
   "required": [
-    "reason"
+    "reason",
+    "photo_id"
   ],
   "additionalProperties": false
+}
+```
+
+### StockPhotoStored
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "photo_id": {
+      "type": "string",
+      "format": "uuid"
+    }
+  },
+  "required": [
+    "photo_id"
+  ]
 }
 ```
 

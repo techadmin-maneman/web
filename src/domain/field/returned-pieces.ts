@@ -98,7 +98,12 @@ export type Settled =
  */
 function settlement(
   db: D1Database,
-  piece: { readonly row: PieceRow; readonly claimId: string | null; readonly reason: string | null },
+  piece: {
+    readonly row: PieceRow;
+    readonly claimId: string | null;
+    readonly reason: string | null;
+    readonly photoId: string | null;
+  },
   settled: { readonly action: AuditAction; readonly token: string },
   written: Written,
 ): D1PreparedStatement[] {
@@ -116,11 +121,12 @@ function settlement(
   return [
     db
       .prepare(
-        `UPDATE piece_returns SET settled_at = ?2, settled_by = ?3, claim_id = ?4, write_off_reason = ?5, settlement_id = ?6
+        `UPDATE piece_returns SET settled_at = ?2, settled_by = ?3, claim_id = ?4, write_off_reason = ?5, settlement_id = ?6,
+           photo_id = ?7
          WHERE id = ?1 AND handed_in_at IS NOT NULL AND settled_at IS NULL
            AND (?4 IS NULL OR EXISTS (SELECT 1 FROM supplier_claims WHERE id = ?4))`,
       )
-      .bind(row.id, at, written.actor.id, claimId, piece.reason, settled.token),
+      .bind(row.id, at, written.actor.id, claimId, piece.reason, settled.token, piece.photoId),
     ...unitChanges(
       db,
       {
@@ -182,16 +188,22 @@ export async function claimReturn(db: D1Database, id: string, written: Written):
            AND EXISTS (SELECT 1 FROM piece_returns WHERE id = ?6 AND handed_in_at IS NOT NULL AND settled_at IS NULL)`,
       )
       .bind(claimId, row.receipt_line_id, row.unit_id, written.actor.id, written.now.toISOString(), id),
-    ...settlement(db, { row, claimId, reason: null }, { action: "piece_return.claim", token }, written),
+    ...settlement(db, { row, claimId, reason: null, photoId: null }, { action: "piece_return.claim", token }, written),
   ]);
   return outcome(db, id, token);
 }
 
-/** A returned piece written off, with why: out of warranty, or not worth claiming. */
-export async function writeOffReturn(db: D1Database, id: string, reason: string, written: Written): Promise<Settled> {
+/** A returned piece written off, with why and its photograph: out of warranty, or not worth claiming. */
+export async function writeOffReturn(
+  db: D1Database,
+  id: string,
+  writeOff: { readonly reason: string; readonly photoId: string },
+  written: Written,
+): Promise<Settled> {
   const row = await pieceRow(db, id);
   if (row === null) return { ok: false, missing: true };
   const token = crypto.randomUUID();
-  await db.batch(settlement(db, { row, claimId: null, reason }, { action: "piece_return.write_off", token }, written));
+  const piece = { row, claimId: null, reason: writeOff.reason, photoId: writeOff.photoId };
+  await db.batch(settlement(db, piece, { action: "piece_return.write_off", token }, written));
   return outcome(db, id, token);
 }

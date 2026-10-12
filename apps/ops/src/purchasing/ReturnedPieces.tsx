@@ -11,6 +11,7 @@ import { purchasing as copy } from "../content/purchasing.ts";
 import form from "../components/forms.module.css";
 import { useAccess } from "../lib/access.ts";
 import type { ClaimAnswer } from "./ClaimSteps.tsx";
+import { StockPhoto } from "./StockPhoto.tsx";
 import type { ReturnedPiece } from "./types.ts";
 
 function warrantyOf(piece: ReturnedPiece): string {
@@ -27,6 +28,7 @@ function WriteOff({
   onAnswer: (answer: ClaimAnswer, said: string) => void;
 }) {
   const [reason, setReason] = useState("");
+  const [photoId, setPhotoId] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
   if (!open) {
     return (
@@ -55,14 +57,18 @@ function WriteOff({
           />
         )}
       </Field>
+      <StockPhoto label={copy.photo.writeOff} photoId={photoId} onPhoto={setPhotoId} />
       <div className={form.actions}>
         <Button
           variant="destructive"
           size="small"
-          disabled={reason.trim() === ""}
+          disabled={reason.trim() === "" || photoId === null}
           onClick={() =>
             void client
-              .post("/api/returned-pieces/{id}/write-off", { path: { id: piece.id }, body: { reason: reason.trim() } })
+              .post("/api/returned-pieces/{id}/write-off", {
+                path: { id: piece.id },
+                body: { reason: reason.trim(), photo_id: photoId ?? "" },
+              })
               .then((answer) => {
                 onAnswer(answer, copy.returns.writtenOff);
               })
