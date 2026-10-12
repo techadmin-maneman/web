@@ -11,7 +11,7 @@
 // the vendors' own limits. Their statements to D1 are kept by each job's batch sizes, well under the 1,000 an
 // invocation may send (docs/decisions/0112-workers-paid.md).
 
-import { BOOKS_ITEM_PUSH, OPS_ORIGIN } from "../config/environments.ts";
+import { BOOKS_BILL_ACCOUNTS, BOOKS_ITEM_PUSH, OPS_ORIGIN } from "../config/environments.ts";
 import { NO_GST, type GstRegistration } from "../config/gst.ts";
 import type { Dependencies } from "../dependencies.ts";
 import { bookUnbookedHolds } from "../domain/booking/unbooked-holds.ts";
@@ -291,7 +291,7 @@ async function booksItemsJob({ env, deps, config, log, budget }: CronContext): P
 export function booksSyncOptions(config: StaticConfig): BooksSyncOptions {
   return {
     refundAccountId: config.settings.zohoBooks?.refundAccountId ?? null,
-    billAccounts: config.settings.zohoBooks?.billAccounts ?? null,
+    billAccounts: BOOKS_BILL_ACCOUNTS[config.environment],
     labelAsTest: config.environment !== "production",
     gst: booksGst(config),
   };

@@ -134,7 +134,7 @@ const isNotAuthorised = (answer: BooksAnswer): boolean =>
     answer.json.code === NOT_AUTHORISED);
 
 const ChartAccount = z.object({
-  account: z.object({ account_name: z.string(), account_type: z.string(), is_active: z.boolean() }),
+  chart_of_account: z.object({ account_name: z.string(), account_type: z.string(), is_active: z.boolean() }),
 });
 
 /** The account types a bill's line may post to: an expense, or the cost of goods sold. */
@@ -145,12 +145,12 @@ const BILL_ACCOUNT_TYPES: ReadonlySet<string> = new Set(["expense", "cost_of_goo
  * expense or the cost of goods sold. Without it, no bill is made.
  */
 export function billAccount(
-  which: { readonly variable: string; readonly accountId: string | null },
+  which: { readonly linesOf: string; readonly accountId: string | null },
   answer: BooksAnswer | null,
 ): CheckLine {
-  const check = `bill account ${which.variable}`;
+  const check = `bill account for ${which.linesOf}`;
   if (which.accountId === null || answer === null) {
-    return { outcome: "fail", check, detail: `${which.variable} is empty, so no receipt becomes a bill` };
+    return { outcome: "fail", check, detail: "src/config/environments.ts names none, so no receipt becomes a bill" };
   }
   if (isNotAuthorised(answer)) {
     return {
@@ -161,7 +161,7 @@ export function billAccount(
   }
   const read = ChartAccount.safeParse(answer.json);
   if (!read.success) return { outcome: "fail", check, detail: `Books holds no account ${which.accountId}` };
-  const { account } = read.data;
+  const account = read.data.chart_of_account;
   if (!account.is_active) return { outcome: "fail", check, detail: `${account.account_name} is inactive` };
   if (!BILL_ACCOUNT_TYPES.has(account.account_type)) {
     return { outcome: "fail", check, detail: `${account.account_name} is ${account.account_type}, not an expense` };

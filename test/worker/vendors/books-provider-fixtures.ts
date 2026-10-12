@@ -17,7 +17,6 @@ export const SETTINGS: ZohoBooksSettings = {
   apiHost: "www.zohoapis.in",
   orgId: "60088931635",
   refundAccountId: null,
-  billAccounts: null,
   gst: NO_GST,
 };
 

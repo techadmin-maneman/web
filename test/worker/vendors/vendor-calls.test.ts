@@ -280,7 +280,6 @@ describe("Zoho Books", () => {
     apiHost: "www.zohoapis.in",
     orgId: "60088931635",
     refundAccountId: null,
-    billAccounts: null,
     gst: NO_GST,
   };
   const BOOKS_API = "https://www.zohoapis.in/books/v3";

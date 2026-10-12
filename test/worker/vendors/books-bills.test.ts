@@ -138,7 +138,7 @@ describe("a receipt in Books", () => {
     expect(await pass(books)).toMatchObject({ vendors: 1, bills: 1 });
     expect(books.made.vendors).toEqual([
       {
-        name: "Lumina Hair Co",
+        name: "Staging test: Lumina Hair Co",
         gstin: null,
         currency: "USD",
         inIndia: false,

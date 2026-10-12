@@ -1,7 +1,13 @@
 // What the read-only Books check makes of the org's answers (scripts/lib/books-org-check.ts). Every ID is made up.
 
 import { describe, expect, it } from "vitest";
-import { discountPreference, gstIdentity, organisation, refundAccount } from "../../../scripts/lib/books-org-check.ts";
+import {
+  billAccount,
+  discountPreference,
+  gstIdentity,
+  organisation,
+  refundAccount,
+} from "../../../scripts/lib/books-org-check.ts";
 
 describe("the invoice discount preference", () => {
   it("passes at line item level, before tax, which the invoice pass writes", () => {
@@ -99,5 +105,40 @@ describe("the refund account", () => {
     const line = refundAccount("4242", { status: 401, json: { code: 57, message: "You are not authorized" } });
     expect(line.outcome).toBe("skip");
     expect(line.detail).toContain("ZohoBooks.banking.READ");
+  });
+});
+
+describe("a bill account", () => {
+  const account = (fields: { account_type: string; is_active: boolean }) => ({
+    status: 200,
+    json: { code: 0, message: "success", chart_of_account: { account_name: "Cost of Goods Sold", ...fields } },
+  });
+
+  it("passes an active expense or cost of goods sold, by its name and type", () => {
+    const which = { linesOf: "hair systems", accountId: "4242" };
+    expect(billAccount(which, account({ account_type: "cost_of_goods_sold", is_active: true }))).toEqual({
+      outcome: "pass",
+      check: "bill account for hair systems",
+      detail: "Cost of Goods Sold (cost_of_goods_sold)",
+    });
+    expect(billAccount(which, account({ account_type: "expense", is_active: true })).outcome).toBe("pass");
+  });
+
+  it("fails while none is named, and an inactive account, one of another type, or one Books does not hold", () => {
+    const which = { linesOf: "consumables", accountId: "4242" };
+    expect(billAccount({ linesOf: "consumables", accountId: null }, null).outcome).toBe("fail");
+    expect(billAccount(which, account({ account_type: "expense", is_active: false })).outcome).toBe("fail");
+    expect(billAccount(which, account({ account_type: "income", is_active: true })).outcome).toBe("fail");
+    const missing = { status: 404, json: { code: 1002, message: "Account does not exist" } };
+    expect(billAccount(which, missing).outcome).toBe("fail");
+  });
+
+  it("is skipped when the scripts' token may not read accounts, and says which scope reads them", () => {
+    const line = billAccount(
+      { linesOf: "consumables", accountId: "4242" },
+      { status: 401, json: { code: 57, message: "You are not authorized" } },
+    );
+    expect(line.outcome).toBe("skip");
+    expect(line.detail).toContain("ZohoBooks.accountants.READ");
   });
 });

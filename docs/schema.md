@@ -1795,7 +1795,7 @@ Indexes:
 
 Each receipt against a purchase order at the warehouse: who received it, the supplier's invoice, the rupee rate and the freight, duty and clearing (ADR 0167).
 
-Made by `0142_receipts.sql`.
+Made by `0142_receipts.sql`; changed by `0143_books_bills.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -1809,10 +1809,13 @@ Made by `0142_receipts.sql`.
 | `duty_paise` | INTEGER | no |  |  |
 | `clearing_paise` | INTEGER | no |  |  |
 | `note` | TEXT | yes |  |  |
+| `books_bill_id` | TEXT | yes |  |  |
+| `books_checked_at` | TEXT | yes |  |  |
 
 Indexes:
 
 - `receipts_by_order`: on (`po_id`)
+- `receipts_to_bill`: on (`received_at`), where `books_bill_id IS NULL`
 
 ## referral_attributions
 
@@ -2493,7 +2496,7 @@ Indexes:
 
 Each supplier we buy stock from: its terms, currency and warranty, retired rather than deleted (ADR 0165).
 
-Made by `0140_suppliers.sql`.
+Made by `0140_suppliers.sql`; changed by `0143_books_bills.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -2510,6 +2513,8 @@ Made by `0140_suppliers.sql`.
 | `retired_at` | TEXT | yes |  |  |
 | `created_at` | TEXT | no |  |  |
 | `updated_at` | TEXT | no |  |  |
+| `books_vendor_id` | TEXT | yes |  |  |
+| `books_checked_at` | TEXT | yes |  |  |
 
 Indexes:
 

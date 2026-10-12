@@ -402,13 +402,13 @@ Changing it later voids every code in flight; sessions are unaffected. SMS stays
 
 Our own database is the record of visits (docs/decisions/0110-field-work-without-fsm.md). Zoho Books holds each client's customer, each visit's invoice and the money against it, in the real org (ADR 0025, item 26), on a refresh token of its own. Books' own CRM integration carries customers into CRM Contacts.
 
-1. **The refresh token.** Zoho allows one Self Client per account, so Books uses the CRM's (step 8.5): the same client ID and secret, and a code of its own. In `https://api-console.zoho.in`, as an administrator of the org, open that Self Client. On **Generate Code**, use `ZohoBooks.contacts.ALL`, `ZohoBooks.invoices.ALL`, `ZohoBooks.customerpayments.ALL`, `ZohoBooks.creditnotes.ALL`, `ZohoBooks.settings.READ`, `ZohoBooks.settings.CREATE` and `ZohoBooks.settings.UPDATE`. Exchange the code for a refresh token within its 10 minutes:
+1. **The refresh token.** Zoho allows one Self Client per account, so Books uses the CRM's (step 8.5): the same client ID and secret, and a code of its own. In `https://api-console.zoho.in`, as an administrator of the org, open that Self Client. On **Generate Code**, use `ZohoBooks.contacts.ALL`, `ZohoBooks.invoices.ALL`, `ZohoBooks.customerpayments.ALL`, `ZohoBooks.creditnotes.ALL`, `ZohoBooks.bills.ALL`, `ZohoBooks.debitnotes.ALL`, `ZohoBooks.accountants.READ`, `ZohoBooks.banking.READ`, `ZohoBooks.settings.READ`, `ZohoBooks.settings.CREATE` and `ZohoBooks.settings.UPDATE`. Bills and debit notes are for suppliers' bills and credits (step 9); the two reads let `scripts/release/check-books-setup.ts` check the accounts in steps 6 and 9. Exchange the code for a refresh token within its 10 minutes:
 
    ```sh
    curl -X POST "https://accounts.zoho.in/oauth/v2/token?grant_type=authorization_code&client_id=<id>&client_secret=<secret>&code=<code>"
    ```
 
-   The scripts take a second code, exchanged the same way, for a refresh token of their own (step 8.7).
+   The scripts take a second code, exchanged the same way, for a refresh token of their own (step 8.7). Theirs is made with `ZohoBooks.fullaccess.all`: they are run by hand, and the staging clean-up deletes what the narrower scopes cannot.
 
 2. **The file.** Put Books' values in `.env.books-<env>`. Git ignores it.
 
@@ -449,6 +449,12 @@ Our own database is the record of visits (docs/decisions/0110-field-work-without
    - An invoice carries its own name and price, so an item that differs never changes what a client is billed.
 
 8. **Discounts at line-item level.** A discount code on a visit is written onto its draft invoice as the visit line's discount, before tax (docs/decisions/0108-discount-codes.md). In Books: Settings → Preferences → Invoices (or General, "Do you give discounts?"), choose discounts at line-item level, before tax. Until it is set, and until the first discounted visit is invoiced on staging, a draft Books will not discount is held and ops told (`docs/open-points.md`, item 181).
+
+9. **The bill accounts.** Each receipt against a purchase order becomes a bill of its supplier, made a Books vendor first (docs/decisions/0168-bills-in-books.md). A hair system's lines post to **Cost of Goods Sold**, a consumable's to **Raw Materials and Consumables**.
+   - In Books: Accountant → Chart of Accounts, open each; its ID is the number at the end of the address.
+   - Set them in `BOOKS_BILL_ACCOUNTS` in `src/config/environments.ts`; staging and production share them, as they share the org. Where none are set, no bill is made.
+   - A token made before `ZohoBooks.bills.ALL` was in step 1 cannot make bills: Books refuses each, and ops are told. Make a new code with step 1's scopes, exchange it, and set `ZOHO_BOOKS_REFRESH_TOKEN` again (step 4).
+   - Freight, duty and clearing are billed by the forwarder or broker, and entered in Books by hand.
 
 ## 11c. Razorpay
 

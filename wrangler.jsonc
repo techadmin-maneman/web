@@ -91,8 +91,6 @@
     "ZOHO_BOOKS_API_HOST": "",
     "ZOHO_BOOKS_ORG_ID": "",
     "BOOKS_REFUND_ACCOUNT_ID": "",
-    "BOOKS_COGS_ACCOUNT_ID": "",
-    "BOOKS_CONSUMABLES_ACCOUNT_ID": "",
     // GST in Books, empty until the CA gives the GSTIN, the state it is registered in and the SAC code.
     "BOOKS_GSTIN": "",
     "BOOKS_GST_STATE": "",
@@ -206,8 +204,6 @@
         "ZOHO_BOOKS_API_HOST": "www.zohoapis.in",
         "ZOHO_BOOKS_ORG_ID": "60088931635",
         "BOOKS_REFUND_ACCOUNT_ID": "4242595000000352005",
-        "BOOKS_COGS_ACCOUNT_ID": "4242595000000000567",
-        "BOOKS_CONSUMABLES_ACCOUNT_ID": "4242595000000034057",
         // GST in Books, empty until the CA gives the GSTIN, the state it is registered in and the SAC code.
         "BOOKS_GSTIN": "",
         "BOOKS_GST_STATE": "",
@@ -319,8 +315,6 @@
         "ZOHO_BOOKS_API_HOST": "",
         "ZOHO_BOOKS_ORG_ID": "",
         "BOOKS_REFUND_ACCOUNT_ID": "",
-        "BOOKS_COGS_ACCOUNT_ID": "4242595000000000567",
-        "BOOKS_CONSUMABLES_ACCOUNT_ID": "4242595000000034057",
         // GST in Books, empty until the CA gives the GSTIN, the state it is registered in and the SAC code.
         "BOOKS_GSTIN": "",
         "BOOKS_GST_STATE": "",

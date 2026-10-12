@@ -2,7 +2,7 @@
 // reviewed list of them is deleted in, and the links staging's database keeps to them. scripts/staging/staging-records.ts
 // reads the org and deletes; this decides, and reaches nothing.
 //
-// Staging marks what it writes in two ways. A note or a description starts with "Staging test: "
+// Staging marks what it writes in two ways. A note, a description or a supplier's vendor starts with "Staging test: "
 // (src/domain/books/books-sync.ts). A person our scripts invent is named "Staging test" or "Load test"
 // (src/policy/staging-test-records.ts), and their Books customer and CRM lead carry that name.
 // Every ID staging's database keeps is staging's too, whatever the record is named now: an erased client's, say.
@@ -16,6 +16,7 @@ export const DELETE_ORDER = [
   "books/refunds",
   "books/customerpayments",
   "books/invoices",
+  "books/bills",
   "books/contacts",
   "crm/Contacts",
   "crm/Leads",
@@ -34,7 +35,7 @@ export interface StagingRecord {
 
 /** An ID staging's database keeps, and where its record is. */
 export interface KnownId {
-  readonly kind: "books/contacts" | "books/customerpayments" | "books/invoices" | "crm/Leads";
+  readonly kind: "books/contacts" | "books/customerpayments" | "books/invoices" | "books/bills" | "crm/Leads";
   readonly id: string;
 }
 
@@ -90,22 +91,25 @@ export const KNOWN_IDS_SQL = [
   "SELECT 'books/contacts' AS kind, books_customer_id AS id FROM people WHERE books_customer_id IS NOT NULL",
   "UNION SELECT 'books/customerpayments', books_payment_id FROM payments WHERE books_payment_id IS NOT NULL",
   "UNION SELECT 'books/invoices', fsm_invoice_id FROM appointments WHERE fsm_invoice_id IS NOT NULL",
+  "UNION SELECT 'books/contacts', books_vendor_id FROM suppliers WHERE books_vendor_id IS NOT NULL",
+  "UNION SELECT 'books/bills', books_bill_id FROM receipts WHERE books_bill_id IS NOT NULL",
   "UNION SELECT 'crm/Leads', zoho_lead_id FROM people WHERE zoho_lead_id IS NOT NULL",
 ].join(" ");
 
 /**
- * Where staging's database keeps each kind of ID it may let go of. A payment's and a refund's stay: cleared, the Books
- * pass would record staging's old payments again, without their refunds.
+ * Where staging's database keeps each kind of ID it may let go of. A payment's, a refund's and a bill's stay: cleared,
+ * the Books pass would record staging's old payments again, without their refunds, and bill its old receipts again.
  */
 const LINKS: readonly { readonly kind: RecordKind; readonly table: string; readonly column: string }[] = [
   { kind: "books/contacts", table: "people", column: "books_customer_id" },
+  { kind: "books/contacts", table: "suppliers", column: "books_vendor_id" },
   { kind: "books/invoices", table: "appointments", column: "fsm_invoice_id" },
   { kind: "crm/Leads", table: "people", column: "zoho_lead_id" },
 ];
 
 /**
  * The statements that clear staging's database's links to records the org no longer holds, so that nothing follows
- * one to a customer, invoice or lead that is gone: the Books pass makes a new customer when the client next needs one.
+ * one to a customer, vendor, invoice or lead that is gone: the Books pass makes a new one when it is next needed.
  */
 export function unlinkStatements(gone: readonly { kind: RecordKind; id: string }[]): string[] {
   const statements: string[] = [];
@@ -179,6 +183,7 @@ export const BOOKS_INVOICE = z.looseObject({
   customer_name: TEXT,
 });
 export const BOOKS_CONTACT = z.looseObject({ contact_id: z.string().min(1), contact_name: TEXT });
+export const BOOKS_BILL = z.looseObject({ bill_id: z.string().min(1), bill_number: TEXT, vendor_name: TEXT });
 export const BOOKS_REFUND = z.looseObject({ payment_refund_id: z.string().min(1) });
 export const CRM_RECORD = z.looseObject({ id: z.string().min(1), Full_Name: TEXT });
 

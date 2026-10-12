@@ -2,7 +2,8 @@
 // each supplier with a receipt to bill becomes a Books vendor, once; then each receipt becomes a bill of what the
 // supplier invoiced, line by line at the price ordered, a hair system's lines on the cost of goods sold and a
 // consumable's on raw materials and consumables. A bill is looked for by our receipt's reference before one is made,
-// so a try whose answer never came makes no second.
+// so a try whose answer never came makes no second. Staging shares the org with production, so its vendors carry
+// staging's label, and none of its bills reaches a real supplier's.
 //
 // The freight, duty and clearing are in the landed cost, not on the supplier's bill: they come from the forwarder or
 // the customs broker on bills of their own. GST on the bill waits on the CA (INV-2).
@@ -61,7 +62,7 @@ export async function addVendor(pass: Pass, supplierId: string): Promise<boolean
   } as const;
   try {
     const vendorId = await pass.deps.books.upsertVendor({
-      name: supplier.name,
+      name: `${pass.label}${supplier.name}`,
       gstin: supplier.gstin,
       currency: supplier.currency,
       inIndia: supplier.country === "IN",
