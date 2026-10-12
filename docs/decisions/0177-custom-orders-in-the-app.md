@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Date: 2026-10-12
-- Topic: Client app
+- Topic: Field work
 
 ## Context
 

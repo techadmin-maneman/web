@@ -104,6 +104,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 - [0173](0173-matching-a-client-to-stock.md) Matching a client to stock
 - [0174](0174-custom-orders.md) Custom orders
 - [0175](0175-custom-pieces-reserved.md) Custom pieces reserved
+- [0177](0177-custom-orders-in-the-app.md) Custom orders in the app
 
 ### Money and Books
 
