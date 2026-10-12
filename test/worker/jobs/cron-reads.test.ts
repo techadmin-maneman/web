@@ -243,6 +243,8 @@ const HISTORY = [
    SELECT 'rcp-' || i, 'po-' || i, 'ops@localhost', '${AGO}', 8325, 0, 0, 0, 'bb-' || i, '${AGO}' FROM n`,
   `INSERT INTO receipt_lines (id, receipt_id, po_line_id, received, damaged, qc_failed, landed_unit_paise)
    SELECT 'rl-' || i, 'rcp-' || i, 'pol-' || i, 1, 0, 0, 999000 FROM n`,
+  `INSERT INTO stock_risks (appointment_id, consumable_code, city, found_at, cleared_at)
+   SELECT 'a-' || i, 'hs-' || i, 'Gurgaon', '${AGO}', '${AGO}' FROM n`,
   `INSERT INTO custom_orders (id, number, person_id, product, base_width_in, base_length_in, colour, grey_percent,
      density_percent, supplier_id, supplier_price, amount, state, razorpay_payment_id, paid_at, consumable_code, po_id,
      raised_by, raised_at, updated_at)

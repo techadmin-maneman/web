@@ -293,6 +293,7 @@ export const TASK_DEPARTMENTS: Readonly<Record<TaskGroup, Department>> = {
   consultation_request: "customer_care",
   first_fit_to_book: "customer_care",
   replacement_order: "operations",
+  stock_at_risk: "operations",
   at_risk_client: "customer_care",
   partial_visit: "operations",
   referral_review: "growth",

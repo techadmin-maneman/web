@@ -7,6 +7,7 @@
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
+import { refreshStockRisks } from "../../../src/domain/field/stock-risks.ts";
 import { NOW, markDatabase, request } from "../helpers.ts";
 import { IMRAN, working, type Working } from "../job-fixtures.ts";
 
@@ -93,6 +94,42 @@ describe("the weeks ahead", () => {
     await job.opsPost("/api/stock/deliveries", { consumable_code: code, quantity: 2 });
     await job.opsPost("/api/stock/transfers", { consumable_code: code, quantity: 1, from: "central", to: IMRAN });
     expect((await demand()).at_risk.map((fit) => fit.appointment_id)).toEqual(["fit-2"]);
+  });
+});
+
+describe("stock at risk", () => {
+  const tasks = async () => {
+    const board = await (
+      await request(job.ops, "/api/tasks")
+    ).json<{
+      groups: { group: string; tasks: { id: string; detail: string | null }[] }[];
+    }>();
+    return board.groups.find((each) => each.group === "stock_at_risk")?.tasks ?? [];
+  };
+
+  it("puts each fit with no hair system in its city on the board, once, and takes it off once there is one", async () => {
+    const added = await job.opsPost("/api/hair-systems", { ...SPEC, unit_cost: 1_200_000 });
+    const code = (await added.json<{ code: string }>()).code;
+    await fitBooked("fit-1", "44444444-4444-4444-8444-444444444441");
+    await env.DB.prepare(
+      `INSERT INTO hair_profiles (id, person_id, staff, created_at, product, base_width_in, base_length_in, colour,
+         grey_percent, density_percent)
+       VALUES ('hp-1', ?1, 'ops@localhost', ?2, 'essential', 8, 10, '1B', 20, 100)`,
+    )
+      .bind("44444444-4444-4444-8444-444444444441", NOW.toISOString())
+      .run();
+    await fitBooked("fit-2", "44444444-4444-4444-8444-444444444442");
+
+    for (let run = 0; run < 2; run += 1) await refreshStockRisks(env.DB, "2026-09-21", NOW);
+    expect(await tasks()).toEqual([
+      expect.objectContaining({ id: "fit-1", detail: code }),
+      expect.objectContaining({ id: "fit-2", detail: "" }),
+    ]);
+
+    await job.opsPost("/api/stock/deliveries", { consumable_code: code, quantity: 1 });
+    await job.opsPost("/api/stock/transfers", { consumable_code: code, quantity: 1, from: "central", to: IMRAN });
+    await refreshStockRisks(env.DB, "2026-09-21", NOW);
+    expect((await tasks()).map((task) => task.id)).toEqual(["fit-2"]);
   });
 });
 

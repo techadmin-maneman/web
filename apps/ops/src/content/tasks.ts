@@ -70,6 +70,7 @@ export const tasks = {
     // A group the board does not draw (docs/decisions/0086-the-next-visit-is-offered.md).
     first_fit_to_book: "First fit to book",
     replacement_order: "Replacement order",
+    stock_at_risk: "Stock at risk",
     at_risk_client: "At-risk client",
     // A group the board does not draw (docs/decisions/0074-hand-offs-and-messages.md).
     partial_visit: "Partly done visit",
@@ -168,6 +169,9 @@ export const tasks = {
      * "9 weeks since the last visit · due Sat 19 Sep", as the Tasks design writes "9 weeks since service": the day the next
      * service fell due, from the cadence ops set. The task goes when the client books.
      */
+    /** "hs_essential_8x10_1b_g20_d100 · none in their city", or the profile that matches no stock code yet. */
+    stock_at_risk: (code: string) =>
+      code === "" ? "No hair system matched to their profile" : `${code} · none in their city`,
     at_risk_client: (weeks: number, due: string) =>
       `${String(weeks)} ${weeks === 1 ? "week" : "weeks"} since last visit · due ${due}`,
     /**

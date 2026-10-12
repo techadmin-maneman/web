@@ -18577,6 +18577,7 @@ Request body:
               "consultation_request",
               "first_fit_to_book",
               "replacement_order",
+              "stock_at_risk",
               "at_risk_client",
               "partial_visit",
               "referral_review",

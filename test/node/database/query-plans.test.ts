@@ -94,6 +94,8 @@ const SMALL_TABLES = new Set([
   "targets",
   "consumables",
   "consumable_usage",
+  // A row a hair system stock code ops range, or a custom order's spec: the catalogue, as consumables is.
+  "hair_systems",
   // A row a place stock is kept: the warehouse, each hub and stockroom, and a kit a technician.
   "stock_places",
   // What Growth sets on the Words page, a row an edit: it grows with ops' work, not with clients.
@@ -129,6 +131,8 @@ const ALLOWED = [
     sql: "WHERE EXISTS (SELECT 1 FROM slot_holds WHERE id = ?12 AND state = 'held')",
   },
   // The console's own lists, in modules the cron imports for something else; the cron never runs them.
+  // The Stock page's demand, every code's stock by city; the hourly risks read only the codes they need.
+  { file: "src/domain/field/stock-demand.ts", sql: "WHERE b.quantity > 0 GROUP BY 1, 2" },
   { file: "src/domain/booking/waitlist.ts", sql: "FROM waitlist_entries w LEFT JOIN serviceable_pincodes p" },
   {
     file: "src/domain/booking/waitlist.ts",

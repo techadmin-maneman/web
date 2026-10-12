@@ -120,6 +120,7 @@ function subOf(group: Group, task: Task, now: Date): string {
     if (consulted === "") return tasks.unknown;
     return copy.first_fit_to_book(shortDate(indiaDate(consulted)), fitWindow(fitIn));
   }
+  if (group === "stock_at_risk") return copy.stock_at_risk(task.detail ?? "");
   if (group === "at_risk_client") {
     // The last visit's start, and the day its next service fell due.
     const [last = "", due = ""] = task.detail?.split(" ") ?? [];

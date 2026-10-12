@@ -30,6 +30,7 @@ import { dueAt, type Slas, type TaskGroup } from "../../policy/tasks.ts";
 import { CARE_HOURS, type CareHours } from "../../policy/care-hours.ts";
 import { CARE_QUEUES, overdueChats } from "../care/chat-tasks.ts";
 import { paidNotBooked } from "../booking/hold-stages.ts";
+import { STOCK_RISKS_OPEN } from "../field/stock-risks.ts";
 import { statusIn, statusNotIn, VISIT_CALLED_OFF, VISIT_LIVE, VISIT_NOT_BEGUN } from "../../config/statuses.ts";
 import type { SqlValue } from "../../lib/sql.ts";
 
@@ -206,6 +207,8 @@ const QUEUES: readonly Queue[] = [
       daysOn(at.days.replacement_order_lead),
     ],
   },
+  // A fit booked ahead whose hair system its city does not hold, found each hour (../field/stock-risks.ts).
+  { sql: STOCK_RISKS_OPEN },
   // A grant is read only while it is held.
   {
     sql: `SELECT 'referral_review' AS "group", r.id AS id, c.person_id AS person_id, pe.name AS person_name,
@@ -521,6 +524,7 @@ const TASK_RECORDS: Readonly<Record<TaskGroup, PlacedRecord>> = {
   consultation_request: "consultation_request",
   first_fit_to_book: "client",
   replacement_order: "piece",
+  stock_at_risk: "visit",
   at_risk_client: "visit",
   partial_visit: "visit",
   referral_review: "referral",

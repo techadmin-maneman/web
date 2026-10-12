@@ -7,6 +7,7 @@ import { MINUTE_MS } from "../../lib/durations.ts";
 import { addDays, indiaDate, indiaHour } from "../../lib/india-time.ts";
 import { EXPIRY_WARNING_DAYS, TRANSFER_OVERDUE_DAYS } from "../../policy/stock.ts";
 import type { AlertOnce, ResolveAlert } from "../ops/alerts.ts";
+import { refreshStockRisks } from "./stock-risks.ts";
 
 const EXPIRING_KEY = "stock_expiring:";
 const OVERDUE_KEY = "transfer_overdue:";
@@ -125,6 +126,8 @@ export async function watchStock(
   deps: { readonly alertOnce: AlertOnce; readonly resolveAlert: ResolveAlert; readonly now: () => Date },
 ): Promise<void> {
   const now = deps.now();
+  // Each hour: the fits booked ahead with no hair system in reach, kept as tasks (./stock-risks.ts).
+  await refreshStockRisks(db, indiaDate(now), now);
   const today = stockWatchDueOn(now);
   if (today === null) return;
   await tellOfExpiring(db, deps, today);
