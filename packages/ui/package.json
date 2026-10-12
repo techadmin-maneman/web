@@ -25,6 +25,7 @@
     "./motion": "./motion.ts",
     "./Panel": "./Panel.tsx",
     "./router": "./router.tsx",
+    "./ScanField": "./ScanField.tsx",
     "./Sheet": "./Sheet.tsx",
     "./States": "./States.tsx",
     "./Table": "./Table.tsx",
@@ -39,6 +40,7 @@
   },
   "dependencies": {
     "@maneman/brand": "0.0.0",
-    "@maneman/web-kit": "0.0.0"
+    "@maneman/web-kit": "0.0.0",
+    "jsqr": "1.4.0"
   }
 }

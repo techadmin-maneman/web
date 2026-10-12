@@ -1,0 +1,35 @@
+/*
+ * A label read in (./ScanField.tsx): the box, then Add and the camera beside each other, and the camera's picture
+ * beneath them while it reads.
+ */
+
+@layer base, ui;
+
+@layer ui {
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-8);
+    margin-top: var(--sp-8);
+  }
+
+  .camera {
+    display: grid;
+    gap: var(--sp-8);
+    margin-top: var(--sp-8);
+  }
+
+  .video {
+    display: block;
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    object-fit: cover;
+    background: var(--ink);
+  }
+
+  .note {
+    margin: 0;
+    font-size: var(--fs-14);
+    color: var(--text-muted);
+  }
+}

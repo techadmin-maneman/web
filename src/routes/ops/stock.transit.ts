@@ -16,7 +16,7 @@ import { errorResponse, refuse } from "../../http/errors.ts";
 import { json } from "../../http/openapi.ts";
 import { routeReach } from "../../http/staff-access.ts";
 import { CONSUMABLE_BOUNDS, MAX_NOTE } from "../../config/consumables.ts";
-import { STOCK, stockAnswer } from "./stock.ts";
+import { Labels, STOCK, stockAnswer } from "./stock.ts";
 
 const transferPath = { params: z.object({ id: z.string().min(1).max(64) }) };
 
@@ -45,6 +45,9 @@ const receiveRoute = createRoute({
               .regex(/^[^\p{Cc}]+$/u)
               .nullable()
               .optional(),
+            units: Labels.optional().openapi({
+              description: "A hair system's pieces that arrived, by their labels; those not named went missing.",
+            }),
           })
           .strict()
           .openapi("StockTransferReceived"),
@@ -53,7 +56,9 @@ const receiveRoute = createRoute({
   },
   responses: {
     200: STOCK,
-    400: errorResponse("invalid_request: fields names received for more than was sent, or id for a place that is gone"),
+    400: errorResponse(
+      "invalid_request: fields names received for more than was sent, id for a place that is gone, or units for a label the transfer does not carry or a count other than received",
+    ),
     403: errorResponse("access_required"),
     404: MISSING,
     409: SETTLED,
@@ -99,10 +104,12 @@ export function registerOpsStockTransit(app: App): void {
     const { id } = c.req.valid("param");
     if (!(await endWithin(c, id, "to_place"))) return refuse(c, "not_found");
     const body = c.req.valid("json");
-    return after(
-      c,
-      await receiveTransfer(c.env.DB, id, { received: body.received ?? null, note: body.note ?? null }, written(c)),
-    );
+    const units = body.units ?? null;
+    if (units !== null && body.received !== undefined && body.received !== units.length) {
+      return refuse(c, "invalid_request", ["units"]);
+    }
+    const received = { received: body.received ?? null, note: body.note ?? null, units };
+    return after(c, await receiveTransfer(c.env.DB, id, received, written(c)));
   });
 
   app.openapi(sendBackRoute, async (c) => {

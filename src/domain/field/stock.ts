@@ -201,12 +201,17 @@ export async function receiveStock(
 /** When and by whom a unit's change is written. */
 export const unitWritten = (written: Written) => ({ at: written.now.toISOString(), actor: written.actor.id });
 
+/** What a movement out of a place moves: `quantity` of a stock code, or of a hair system the units named. */
+export interface Moving {
+  readonly code: string;
+  readonly quantity: number;
+  readonly from: Place;
+  readonly to: Place;
+  readonly units?: readonly string[] | null;
+}
+
 /** Stock moved from one place to another: two rows, out of the one and into the other. */
-export async function transferStock(
-  db: D1Database,
-  input: { readonly code: string; readonly quantity: number; readonly from: Place; readonly to: Place },
-  written: Written,
-): Promise<Moved> {
+export async function transferStock(db: D1Database, input: Moving, written: Written): Promise<Moved> {
   if (!(await consumableExists(db, input.code))) return { ok: false, fields: ["consumable_code"] };
   const fromKind = await kindOf(db, input.from);
   if (fromKind === null) return { ok: false, fields: ["from"] };
@@ -215,8 +220,9 @@ export async function transferStock(
   const transferId = crypto.randomUUID();
   const [out, into] = [crypto.randomUUID(), crypto.randomUUID()];
   const moved = { code: input.code, reason: "transferred", transferId, note: null } as const;
-  const taken = await takenFrom(db, { code: input.code, place: input.from, quantity: input.quantity });
-  const takes = taken?.takes ?? [];
+  const taken = await takenFrom(db, { ...input, place: input.from, named: input.units ?? null });
+  if (taken === null) return { ok: false, fields: ["units"] };
+  const takes = taken.takes;
   await db.batch([
     auditStatement(
       db,
@@ -228,7 +234,7 @@ export async function transferStock(
     ...lotMoves(db, { movementId: out, place: input.from, takes, sign: -1 }),
     ...lotMoves(db, { movementId: into, place: input.to, takes, sign: 1 }),
     ...unitChanges(db, {
-      units: taken?.units ?? [],
+      units: taken.units,
       state: "held",
       place: input.to,
       movementId: into,
@@ -346,6 +352,7 @@ export async function writeOff(
     readonly quantity: number;
     readonly note: string;
     readonly lotId?: string | null;
+    readonly units?: readonly string[] | null;
   },
   written: Written,
 ): Promise<Moved> {
@@ -353,8 +360,9 @@ export async function writeOff(
   const kind = await kindOf(db, input.place);
   if (kind === null) return { ok: false, fields: ["place_id"] };
   const id = crypto.randomUUID();
-  const taken = await takenFrom(db, { ...input, lotId: input.lotId ?? null });
-  const takes = taken?.takes ?? [];
+  const taken = await takenFrom(db, { ...input, lotId: input.lotId ?? null, named: input.units ?? null });
+  if (taken === null) return { ok: false, fields: ["units"] };
+  const takes = taken.takes;
   if (input.lotId !== undefined && input.lotId !== null && takes.length === 0) return { ok: false, fields: ["lot_id"] };
   await db.batch([
     auditStatement(
@@ -377,7 +385,7 @@ export async function writeOff(
     ),
     ...lotMoves(db, { movementId: id, place: input.place, takes, sign: -1 }),
     ...unitChanges(db, {
-      units: taken?.units ?? [],
+      units: taken.units,
       state: "written_off",
       place: null,
       movementId: id,

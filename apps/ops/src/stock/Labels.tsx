@@ -1,6 +1,7 @@
 // Stock · Labels (docs/decisions/0161-pieces-as-units.md): the labels of the hair system pieces a place holds, by each
 // batch labelled together, the latest ticked to print; the pieces a place held before labels, labelled here; and a
-// consumable lot's label, for its boxes, in as many copies as there are boxes.
+// consumable lot's label, for its boxes, in as many copies as there are boxes. Any label scanned here finds its piece
+// (docs/decisions/0162-scanning-labels.md).
 
 import { Button } from "@maneman/ui/Button";
 import { Field, NumberInput, Select } from "@maneman/ui/Field";
@@ -12,6 +13,7 @@ import { stockLabels as copy } from "../content/stock-labels.ts";
 import { useAccess } from "../lib/access.ts";
 import form from "../components/forms.module.css";
 import { Loading, PanelFailed } from "../states/States.tsx";
+import { LabelFound } from "./LabelFound.tsx";
 import { LabelSheet, type PrintedLabel } from "./LabelSheet.tsx";
 import { placeName } from "./StockForm.tsx";
 import styles from "./labels.module.css";
@@ -269,6 +271,7 @@ export function Labels({ book, focus }: { book: Stock; focus: LabelsFor | null }
   }, [focus]);
   const consumable = book.consumables.find((each) => each.code === code);
   const at = { code, place };
+  const access = useAccess();
   return (
     <section className={form.panel} aria-labelledby="stock-labels" ref={panel}>
       <div className={form.panelHead}>
@@ -276,6 +279,7 @@ export function Labels({ book, focus }: { book: Stock; focus: LabelsFor | null }
           {copy.title}
         </h2>
       </div>
+      {access.mayCall("GET /api/stock/units/{code}") && <LabelFound book={book} />}
       <div className={form.fields}>
         <Choice
           label={copy.item}

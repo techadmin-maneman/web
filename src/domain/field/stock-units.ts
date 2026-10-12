@@ -11,7 +11,7 @@
 import { soonestFirst, type LotTake } from "./stock-lots.ts";
 import type { Place } from "./stock-places.ts";
 
-const UNIT_STATES = ["held", "in_transit", "fitted", "returned", "written_off", "missing"] as const;
+export const UNIT_STATES = ["held", "in_transit", "fitted", "returned", "written_off", "missing"] as const;
 type UnitState = (typeof UNIT_STATES)[number];
 
 /** The most pieces one delivery, or one labelling, labels. */
@@ -181,14 +181,16 @@ interface Arriving extends Taken {
 }
 
 /**
- * What `arrived` of a hair system's transfer brings: of the lots that left, soonest to expire first, its units before
- * the pieces never labelled, which are taken to be the ones lost on the way.
+ * What `arrived` of a hair system's transfer brings: the units named, or of the lots that left, soonest to expire first,
+ * its units before the pieces never labelled, which are taken to be the ones lost on the way. Null where a unit named
+ * is not one the transfer carries.
  */
 export async function piecesArriving(
   db: D1Database,
   transfer: { readonly id: string; readonly quantity: number },
   arrived: number,
-): Promise<Arriving> {
+  named: readonly string[] | null = null,
+): Promise<Arriving | null> {
   const [lots, units] = await Promise.all([
     db
       .prepare(
@@ -206,7 +208,8 @@ export async function piecesArriving(
       .bind(transfer.id)
       .all<UnitRow>(),
   ]);
-  const picked = pick(piecesOf(transfer.quantity, lots.results, units.results), arrived, { prefer: "labelled" }) ?? [];
+  const picked = pick(piecesOf(transfer.quantity, lots.results, units.results), arrived, { named, prefer: "labelled" });
+  if (picked === null) return null;
   const arriving = takenOf(picked);
   return { ...arriving, lost: units.results.map((unit) => unit.id).filter((id) => !arriving.units.includes(id)) };
 }
@@ -388,4 +391,59 @@ export async function lotLabel(db: D1Database, lotId: string): Promise<string | 
     .bind(lotId)
     .run();
   return db.prepare("SELECT label FROM stock_lots WHERE id = ?1").bind(lotId).first<string>("label");
+}
+/** A unit by its label, with its history, as a scan of the label finds it. */
+export interface UnitFound {
+  readonly code: string;
+  readonly consumableCode: string;
+  readonly lotCode: string | null;
+  readonly expiresOn: string | null;
+  readonly state: UnitState;
+  readonly place: Place | null;
+  /** Where it last was: its place, or the last place its history names. */
+  readonly lastPlace: Place | null;
+  readonly history: readonly {
+    readonly at: string;
+    readonly state: UnitState;
+    readonly place: Place | null;
+    readonly actor: string;
+  }[];
+}
+
+/** The unit a label names, with every line of its history, oldest first; null for a label we never made. */
+export async function unitFound(db: D1Database, label: string): Promise<UnitFound | null> {
+  const unit = await db
+    .prepare(
+      `SELECT u.id, u.code, u.consumable_code, l.lot_code, l.expires_on, u.state, u.place
+       FROM stock_units u LEFT JOIN stock_lots l ON l.id = u.lot_id WHERE u.code = ?1`,
+    )
+    .bind(label)
+    .first<{
+      id: string;
+      code: string;
+      consumable_code: string;
+      lot_code: string | null;
+      expires_on: string | null;
+      state: UnitState;
+      place: string | null;
+    }>();
+  if (unit === null) return null;
+  const { results } = await db
+    .prepare(
+      `SELECT e.at, e.state, e.place,
+         COALESCE((SELECT label FROM staff_service_tokens WHERE client_id = e.actor), e.actor) AS actor
+       FROM stock_unit_events e WHERE e.unit_id = ?1 ORDER BY e.at, e.rowid`,
+    )
+    .bind(unit.id)
+    .all<{ at: string; state: UnitState; place: string | null; actor: string }>();
+  return {
+    code: unit.code,
+    consumableCode: unit.consumable_code,
+    lotCode: unit.lot_code,
+    expiresOn: unit.expires_on,
+    state: unit.state,
+    place: unit.place,
+    lastPlace: unit.place ?? results.findLast((line) => line.place !== null)?.place ?? null,
+    history: results,
+  };
 }

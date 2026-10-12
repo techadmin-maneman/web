@@ -23,6 +23,7 @@
 import { createRoute, z } from "@hono/zod-openapi";
 import type { Context } from "hono";
 import { CONSUMABLE_BOUNDS, MAX_NOTE } from "../../config/consumables.ts";
+import { isPieceCode } from "../../config/pieces.ts";
 import {
   count,
   MOVEMENT_REASONS,
@@ -33,6 +34,7 @@ import {
 } from "../../domain/field/stock.ts";
 import { hairSystemSpecs } from "../../domain/field/hair-systems.ts";
 import { inTransit, sendStock } from "../../domain/field/stock-transit.ts";
+import { MAX_LABELLED } from "../../domain/field/stock-units.ts";
 import { stockView } from "../../domain/field/stock-view.ts";
 import {
   isPlaceWithin,
@@ -169,6 +171,13 @@ const Note = z
   .max(MAX_NOTE)
   .regex(/^[^\p{Cc}]+$/u);
 
+/** A hair system's pieces by their labels, as scanned: one movement takes as many as one delivery labels. */
+export const Labels = z
+  .array(z.string().max(32).refine(isPieceCode))
+  .min(1)
+  .max(MAX_LABELLED)
+  .openapi({ description: "A hair system's pieces by their labels, as scanned; as many as the quantity." });
+
 const LotCode = z
   .string()
   .trim()
@@ -178,7 +187,7 @@ const LotCode = z
   .openapi({ description: "The supplier's lot, as printed on the stock." });
 
 const REFUSED = errorResponse(
-  "invalid_request: fields names consumable_code for one nobody added, place_id for no place or one not in the caller's cities, lot_id for a lot the place holds none of, or quantity for more pieces of a hair system than one delivery labels",
+  "invalid_request: fields names consumable_code for one nobody added, place_id for no place or one not in the caller's cities, lot_id for a lot the place holds none of, quantity for more pieces of a hair system than one delivery labels, or units for a label the place does not hold or a count other than the quantity",
 );
 
 const stockRoute = createRoute({
@@ -223,7 +232,7 @@ const transferRoute = createRoute({
       required: true,
       ...json(
         z
-          .object({ consumable_code: Code, quantity: Quantity, from: PlaceId, to: PlaceId })
+          .object({ consumable_code: Code, quantity: Quantity, from: PlaceId, to: PlaceId, units: Labels.optional() })
           .strict()
           .openapi("StockTransfer"),
       ),
@@ -232,7 +241,7 @@ const transferRoute = createRoute({
   responses: {
     200: STOCK,
     400: errorResponse(
-      "invalid_request: fields names consumable_code, from, or to for the place it came from, or a place not in the caller's cities",
+      "invalid_request: fields names consumable_code, from, or to for the place it came from, or a place not in the caller's cities, or units for a label the place does not hold or a count other than the quantity",
     ),
     403: errorResponse("access_required"),
   },
@@ -282,6 +291,7 @@ const writeOffRoute = createRoute({
             lot_id: z.string().min(1).max(64).nullable().optional().openapi({
               description: "The lot lost, as one that expired; by default the lots that expire soonest.",
             }),
+            units: Labels.optional(),
           })
           .strict()
           .openapi("StockWriteOff"),
@@ -369,6 +379,10 @@ async function placesOutOfReach(c: Context<AppEnv>, places: Readonly<Record<stri
 
 const outOfReach = (c: Context<AppEnv>, fields: string[]) => refuse(c, "invalid_request", fields);
 
+/** Pieces named by their labels number the quantity moved. */
+const countsAsScanned = (body: { readonly quantity: number; readonly units?: readonly string[] }) =>
+  body.units === undefined || body.units.length === body.quantity;
+
 /** The movement's answer: refused, or the stock as it now stands, once each place it touched is checked for low. */
 async function after(c: Context<AppEnv>, moved: Moved, touched: readonly Place[]) {
   if (!moved.ok) return refuse(c, "invalid_request", moved.fields);
@@ -398,9 +412,10 @@ export function registerOpsStock(app: App): void {
     const body = c.req.valid("json");
     const refused = await placesOutOfReach(c, { from: body.from, to: body.to });
     if (refused.length > 0) return outOfReach(c, refused);
+    if (!countsAsScanned(body)) return refuse(c, "invalid_request", ["units"]);
     const moved = await sendStock(
       c.env.DB,
-      { code: body.consumable_code, quantity: body.quantity, from: body.from, to: body.to },
+      { code: body.consumable_code, quantity: body.quantity, from: body.from, to: body.to, units: body.units ?? null },
       written(c),
     );
     return after(c, moved, [body.from, body.to]);
@@ -431,6 +446,7 @@ export function registerOpsStock(app: App): void {
     const body = c.req.valid("json");
     const refused = await placesOutOfReach(c, { place_id: body.place_id });
     if (refused.length > 0) return outOfReach(c, refused);
+    if (!countsAsScanned(body)) return refuse(c, "invalid_request", ["units"]);
     const moved = await writeOff(
       c.env.DB,
       {
@@ -439,6 +455,7 @@ export function registerOpsStock(app: App): void {
         quantity: body.quantity,
         note: body.note,
         lotId: body.lot_id ?? null,
+        units: body.units ?? null,
       },
       written(c),
     );

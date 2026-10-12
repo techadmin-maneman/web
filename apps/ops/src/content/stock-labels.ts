@@ -1,5 +1,5 @@
-// The Stock page's labels (docs/decisions/0161-pieces-as-units.md). No design draws them; every word here is ours.
-// Only the Labels panel reads it, loaded when the page opens it.
+// The Stock page's labels, and the pieces scanned by them (docs/decisions/0161-pieces-as-units.md,
+// 0162-scanning-labels.md). No design draws them; every word here is ours. Only the Stock page reads it.
 
 const pieces = (count: number) => `${String(count)} ${count === 1 ? "piece" : "pieces"}`;
 
@@ -21,4 +21,28 @@ export const stockLabels = {
   lot: "Lot",
   expires: (date: string) => `Exp ${date}`,
   noLabel: "That label couldn't be made. Try again.",
+  scan: {
+    label: "Label",
+    add: "Add",
+    camera: "Camera",
+    stop: "Stop camera",
+    opening: "Opening the camera…",
+    refused: "No camera here. Type the label, or use a scanner.",
+  },
+  scanned: (count: number) => `${pieces(count)} scanned`,
+  remove: "Remove",
+  removeLabel: (label: string) => `Remove ${label}`,
+  find: "Find a label",
+  notFound: "No piece here has that label.",
+  states: {
+    held: "Held",
+    in_transit: "In transit",
+    fitted: "Fitted",
+    returned: "Returned",
+    written_off: "Written off",
+    missing: "Missing",
+  } as Readonly<Record<string, string>>,
+  /** "Held · Imran Qureshi" */
+  where: (state: string, place: string | null) => (place === null ? state : `${state} · ${place}`),
+  history: "History",
 };

@@ -18,6 +18,7 @@ import {
   transferStock,
   unitWritten,
   type Moved,
+  type Moving,
   type Written,
 } from "./stock.ts";
 
@@ -83,11 +84,7 @@ function entry(
  * Stock moved from one place to another: handed over at once to a kit, or sent to any other place, leaving its own
  * now and arriving when received.
  */
-export async function sendStock(
-  db: D1Database,
-  input: { readonly code: string; readonly quantity: number; readonly from: Place; readonly to: Place },
-  written: Written,
-): Promise<Moved> {
+export async function sendStock(db: D1Database, input: Moving, written: Written): Promise<Moved> {
   const to = await placeById(db, input.to);
   if (to === null || to.kind === "kit" || input.from === input.to) return transferStock(db, input, written);
   if (!(await consumableExists(db, input.code))) return { ok: false, fields: ["consumable_code"] };
@@ -95,8 +92,9 @@ export async function sendStock(
   if (fromKind === null) return { ok: false, fields: ["from"] };
   const transferId = crypto.randomUUID();
   const out = crypto.randomUUID();
-  const taken = await takenFrom(db, { code: input.code, place: input.from, quantity: input.quantity });
-  const takes = taken?.takes ?? [];
+  const taken = await takenFrom(db, { ...input, place: input.from, named: input.units ?? null });
+  if (taken === null) return { ok: false, fields: ["units"] };
+  const takes = taken.takes;
   const detail = { quantity: input.quantity, from: input.from, to: input.to, transfer: transferId };
   const movement = { code: input.code, reason: "transferred", transferId, note: null } as const;
   await db.batch([
@@ -110,7 +108,7 @@ export async function sendStock(
     movementStatement(db, { ...movement, place: input.from, kind: fromKind, quantity: -input.quantity }, written, out),
     ...lotMoves(db, { movementId: out, place: input.from, takes, sign: -1 }),
     ...unitChanges(db, {
-      units: taken?.units ?? [],
+      units: taken.units,
       state: "in_transit",
       place: input.to,
       movementId: out,
@@ -144,18 +142,21 @@ async function lotsSent(db: D1Database, transferId: string, quantity: number): P
 }
 
 /**
- * What a transfer brings of each lot, and its units' changes, each written only where this request settled it: a hair
- * system's units arrive before its pieces never labelled, and any not arriving went missing on the way.
+ * What a transfer brings of each lot, and its units' changes, each written only where this request settled it: of a
+ * hair system, the units named, or its units before its pieces never labelled; any not arriving went missing on the
+ * way. Null where units are named that the transfer does not carry.
  */
 async function arrivingAt(
   db: D1Database,
-  { transfer, arrived }: { readonly transfer: TransferRow; readonly arrived: number },
+  arrival: { readonly transfer: TransferRow; readonly arrived: number; readonly named: readonly string[] | null },
   settled: { readonly place: Place; readonly movementId: string | null; readonly settlement: string; written: Written },
-): Promise<{ readonly takes: readonly LotTake[]; readonly units: D1PreparedStatement[] }> {
+): Promise<{ readonly takes: readonly LotTake[]; readonly units: D1PreparedStatement[] } | null> {
+  const { transfer, arrived, named } = arrival;
   if ((await hairSystemProduct(db, transfer.consumable_code)) === null) {
-    return { takes: await lotsSent(db, transfer.id, arrived), units: [] };
+    return named === null ? { takes: await lotsSent(db, transfer.id, arrived), units: [] } : null;
   }
-  const arriving = await piecesArriving(db, transfer, arrived);
+  const arriving = await piecesArriving(db, transfer, arrived, named);
+  if (arriving === null) return null;
   const when = {
     sql: "EXISTS (SELECT 1 FROM stock_transfers WHERE id = ? AND settlement_id = ?)",
     binds: [transfer.id, settled.settlement],
@@ -188,6 +189,7 @@ async function settle(
     readonly back: boolean;
     readonly arrived: number | null;
     readonly note: string | null;
+    readonly units?: readonly string[] | null;
   },
   written: Written,
 ): Promise<Settled> {
@@ -197,7 +199,7 @@ async function settle(
     .first<TransferRow>();
   if (transfer === null) return { ok: false, missing: true };
   if (transfer.state !== "in_transit") return { ok: false, settled: true };
-  const arrived = input.back ? transfer.quantity : (input.arrived ?? transfer.quantity);
+  const arrived = input.back ? transfer.quantity : (input.units?.length ?? input.arrived ?? transfer.quantity);
   if (arrived > transfer.quantity) return { ok: false, fields: ["received"] };
   const place = input.back ? transfer.from_place : transfer.to_place;
   const kind = await kindOf(db, place);
@@ -211,8 +213,9 @@ async function settle(
     binds: [transfer.id, settlement],
   });
   const movementId = arrived > 0 ? into : null;
-  const arriving = await arrivingAt(db, { transfer, arrived }, { place, movementId, settlement, written });
-  const takes = arriving.takes;
+  const arrival = { transfer, arrived, named: input.units ?? null };
+  const arriving = await arrivingAt(db, arrival, { place, movementId, settlement, written });
+  if (arriving === null) return { ok: false, fields: ["units"] };
   const movement = movementStatementWhen(
     db,
     {
@@ -254,7 +257,7 @@ async function settle(
       settledHere(10),
     ),
     ...(arrived > 0 ? [movement] : []),
-    ...lotMoves(db, { movementId: into, place, takes, sign: 1 }),
+    ...lotMoves(db, { movementId: into, place, takes: arriving.takes, sign: 1 }),
     ...arriving.units,
   ]);
   // Another request settled it between the read and this batch, which then wrote nothing.
@@ -262,14 +265,21 @@ async function settle(
   return { ok: true, touched: [place] };
 }
 
-/** The transfer received at the place it was sent to: `received` of it, all of it by default. */
+/**
+ * The transfer received at the place it was sent to: `received` of it, all of it by default, or of a hair system the
+ * units named.
+ */
 export function receiveTransfer(
   db: D1Database,
   id: string,
-  input: { readonly received: number | null; readonly note: string | null },
+  input: { readonly received: number | null; readonly note: string | null; readonly units?: readonly string[] | null },
   written: Written,
 ): Promise<Settled> {
-  return settle(db, { id, back: false, arrived: input.received, note: input.note }, written);
+  return settle(
+    db,
+    { id, back: false, arrived: input.received, note: input.note, units: input.units ?? null },
+    written,
+  );
 }
 
 /** The transfer sent back to where it left, before it arrived. */

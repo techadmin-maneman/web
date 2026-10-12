@@ -9366,7 +9366,7 @@ export interface paths {
                         "application/json": components["schemas"]["Stock"];
                     };
                 };
-                /** @description invalid_request: fields names consumable_code for one nobody added, place_id for no place or one not in the caller's cities, lot_id for a lot the place holds none of, or quantity for more pieces of a hair system than one delivery labels */
+                /** @description invalid_request: fields names consumable_code for one nobody added, place_id for no place or one not in the caller's cities, lot_id for a lot the place holds none of, quantity for more pieces of a hair system than one delivery labels, or units for a label the place does not hold or a count other than the quantity */
                 400: {
                     headers: {
                         [name: string]: unknown;
@@ -9424,7 +9424,7 @@ export interface paths {
                         "application/json": components["schemas"]["Stock"];
                     };
                 };
-                /** @description invalid_request: fields names consumable_code, from, or to for the place it came from, or a place not in the caller's cities */
+                /** @description invalid_request: fields names consumable_code, from, or to for the place it came from, or a place not in the caller's cities, or units for a label the place does not hold or a count other than the quantity */
                 400: {
                     headers: {
                         [name: string]: unknown;
@@ -9482,7 +9482,7 @@ export interface paths {
                         "application/json": components["schemas"]["Stock"];
                     };
                 };
-                /** @description invalid_request: fields names consumable_code for one nobody added, place_id for no place or one not in the caller's cities, lot_id for a lot the place holds none of, or quantity for more pieces of a hair system than one delivery labels */
+                /** @description invalid_request: fields names consumable_code for one nobody added, place_id for no place or one not in the caller's cities, lot_id for a lot the place holds none of, quantity for more pieces of a hair system than one delivery labels, or units for a label the place does not hold or a count other than the quantity */
                 400: {
                     headers: {
                         [name: string]: unknown;
@@ -9540,7 +9540,7 @@ export interface paths {
                         "application/json": components["schemas"]["Stock"];
                     };
                 };
-                /** @description invalid_request: fields names consumable_code for one nobody added, place_id for no place or one not in the caller's cities, lot_id for a lot the place holds none of, or quantity for more pieces of a hair system than one delivery labels */
+                /** @description invalid_request: fields names consumable_code for one nobody added, place_id for no place or one not in the caller's cities, lot_id for a lot the place holds none of, quantity for more pieces of a hair system than one delivery labels, or units for a label the place does not hold or a count other than the quantity */
                 400: {
                     headers: {
                         [name: string]: unknown;
@@ -9728,7 +9728,7 @@ export interface paths {
                         "application/json": components["schemas"]["Stock"];
                     };
                 };
-                /** @description invalid_request: fields names received for more than was sent, or id for a place that is gone */
+                /** @description invalid_request: fields names received for more than was sent, id for a place that is gone, or units for a label the transfer does not carry or a count other than received */
                 400: {
                     headers: {
                         [name: string]: unknown;
@@ -9985,6 +9985,62 @@ export interface paths {
                 };
             };
         };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/stock/units/{code}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The piece a label names: its stock code and lot, where it is, and its history */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    code: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The piece */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["StockUnitFound"];
+                    };
+                };
+                /** @description access_required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description not_found: no piece has that label, or none in the caller's cities */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -13848,6 +13904,8 @@ export interface components {
             from: string;
             /** @description A place by its ID: central for the warehouse, a kit by its technician's ID. */
             to: string;
+            /** @description A hair system's pieces by their labels, as scanned; as many as the quantity. */
+            units?: string[];
         };
         StockCount: {
             consumable_code: string;
@@ -13868,6 +13926,8 @@ export interface components {
             note: string;
             /** @description The lot lost, as one that expired; by default the lots that expire soonest. */
             lot_id?: string | null;
+            /** @description A hair system's pieces by their labels, as scanned; as many as the quantity. */
+            units?: string[];
         };
         StockPlaceAdd: {
             /** @enum {string} */
@@ -13894,6 +13954,8 @@ export interface components {
             /** @description What arrived; all of it unless said. Less is what was lost on the way. */
             received?: number;
             note?: string | null;
+            /** @description A hair system's pieces that arrived, by their labels; those not named went missing. */
+            units?: string[];
         };
         StockDemand: {
             /** @description How far ahead the visits booked are read. */
@@ -13939,6 +14001,26 @@ export interface components {
             /** @description A place by its ID: central for the warehouse, a kit by its technician's ID. */
             place_id: string;
             quantity: number;
+        };
+        StockUnitFound: {
+            code: string;
+            consumable_code: string;
+            lot_code: string | null;
+            expires_on: string | null;
+            /** @enum {string} */
+            state: "held" | "in_transit" | "fitted" | "returned" | "written_off" | "missing";
+            /** @description Where it is now, or is going to in transit; null once it has left the stock. */
+            place_id: string | null;
+            /** @description Every change, oldest first. */
+            history: {
+                /** Format: date-time */
+                at: string;
+                /** @enum {string} */
+                state: "held" | "in_transit" | "fitted" | "returned" | "written_off" | "missing";
+                place_id: string | null;
+                /** @description Ops' Access identity, a service token's label, or a technician's ID. */
+                by: string;
+            }[];
         };
         StockLotLabel: {
             /** @description As its QR code holds it. */

@@ -476,6 +476,102 @@ test("prints a lot's label for each of its boxes", async ({ page }) => {
     .toEqual(Array.from({ length: 3 }, () => "MM-LT-0000001-BTape stripsTS-0901 · Exp Sun 31 Oct"));
 });
 
+test("names a hair system's pieces by their labels, as a scanner types them, and counts them", async ({ page }) => {
+  await open(page, { "GET /api/stock": json(withPieces), "POST /api/stock/transfers": json(withPieces) });
+  const form = recording(page);
+  await form.getByRole("radio", { name: opsCopy.stock.record.kinds.transfer }).check();
+  await form.getByLabel("Consumable").selectOption({ label: HAIR.name });
+  const scan = form.getByLabel(stockLabels.scan.label, { exact: true });
+  for (const typed of ["mm-ess-0000001-b", "MM-ESS-0000002-C", "MM-ESS-0000002-C"]) {
+    await scan.fill(typed);
+    await scan.press("Enter");
+  }
+  await expect(form).toContainText(stockLabels.scanned(2));
+  await expect(form.getByLabel(/^How many/)).toHaveCount(0);
+  await form.getByRole("button", { name: stockLabels.removeLabel("MM-ESS-0000001-B") }).click();
+  await expect(form).toContainText(stockLabels.scanned(1));
+  await form.getByRole("button", { name: "Review" }).click();
+  const sent = posted(page, "/api/stock/transfers");
+  await form.getByRole("button", { name: "Record" }).click();
+  expect((await sent).postDataJSON()).toEqual({
+    consumable_code: HAIR.code,
+    quantity: 1,
+    from: "central",
+    to: IMRAN,
+    units: ["MM-ESS-0000002-C"],
+  });
+});
+
+test("receives a hair system's transfer by the pieces scanned, the rest missing", async ({ page }) => {
+  const onTheWay = {
+    ...withRoom,
+    consumables: [...withRoom.consumables, HAIR],
+    in_transit: [
+      {
+        id: "tr-9",
+        consumable_code: HAIR.code,
+        quantity: 2,
+        from: "central",
+        to: ROOM,
+        sent_at: "2027-09-20T06:00:00.000Z",
+        sent_by: "ops@maneman.in",
+      },
+    ],
+  } satisfies OpsReply<"/api/stock">;
+  await open(page, {
+    "GET /api/stock": json(onTheWay),
+    "POST /api/stock/transfers/{id}/receive": json(withRoom),
+  });
+  const panel = page.getByRole("region", { name: stockTransit.title });
+  await panel.getByRole("button", { name: stockTransit.receiveLabel(HAIR.name, "Gurgaon stockroom") }).click();
+  const scan = panel.getByLabel(stockLabels.scan.label, { exact: true });
+  await scan.fill("MM-ESS-0000001-B");
+  await scan.press("Enter");
+  await expect(panel.getByLabel(`${stockTransit.arrived} (piece)`)).toHaveValue("1");
+  await expect(panel).toContainText(stockTransit.short(1, "piece"));
+  const received = posted(page, "/api/stock/transfers/tr-9/receive");
+  await panel.getByRole("button", { name: stockTransit.confirm }).click();
+  expect((await received).postDataJSON()).toEqual({ received: 1, units: ["MM-ESS-0000001-B"] });
+});
+
+test("finds the piece a label names, where it is and its history", async ({ page }) => {
+  const found = {
+    code: "MM-ESS-0000001-B",
+    consumable_code: HAIR.code,
+    lot_code: "HS-1",
+    expires_on: "2028-03-31",
+    state: "held",
+    place_id: IMRAN,
+    history: [
+      { at: "2026-09-14T06:30:00.000Z", state: "held", place_id: "central", by: "ops@maneman.in" },
+      { at: "2026-09-21T06:30:00.000Z", state: "held", place_id: IMRAN, by: "ops@maneman.in" },
+    ],
+  } satisfies OpsReply<"/api/stock/units/{code}">;
+  await open(page, { "GET /api/stock": json(withPieces), "GET /api/stock/units/{code}": json(found) });
+  const labels = page.getByRole("region", { name: stockLabels.title });
+  const find = labels.getByLabel(stockLabels.find);
+  await find.fill("MM-ESS-0000001-B");
+  await find.press("Enter");
+  const status = labels.getByRole("status");
+  await expect(status).toContainText(`MM-ESS-0000001-B · ${HAIR.name} · HS-1 · Exp Fri 31 Mar`);
+  await expect(status).toContainText(stockLabels.where("Held", "Imran Qureshi"));
+  await expect(labels.getByRole("list", { name: stockLabels.history }).getByRole("listitem")).toHaveCount(2);
+  expect(await axeViolations(page)).toEqual([]);
+});
+
+test("says so when no camera opens, leaving the label to be typed", async ({ page }) => {
+  await open(page, { "GET /api/stock": json(withPieces) });
+  await page.evaluate(() => {
+    Object.defineProperty(navigator, "mediaDevices", {
+      value: { getUserMedia: () => Promise.reject(new Error("No camera")) },
+    });
+  });
+  const labels = page.getByRole("region", { name: stockLabels.title });
+  await labels.getByRole("button", { name: stockLabels.scan.camera }).click();
+  await expect(labels.getByRole("alert")).toHaveText(stockLabels.scan.refused);
+  await expect(labels.getByLabel(stockLabels.find)).toBeEditable();
+});
+
 test("meets WCAG 2.2 AA, with a movement being checked as well", async ({ page }) => {
   await open(page);
   expect(await axeViolations(page)).toEqual([]);

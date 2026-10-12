@@ -6306,7 +6306,7 @@ Request body:
 }
 ```
 
-**400**: invalid_request: fields names consumable_code for one nobody added, place_id for no place or one not in the caller's cities, lot_id for a lot the place holds none of, or quantity for more pieces of a hair system than one delivery labels
+**400**: invalid_request: fields names consumable_code for one nobody added, place_id for no place or one not in the caller's cities, lot_id for a lot the place holds none of, quantity for more pieces of a hair system than one delivery labels, or units for a label the place does not hold or a count other than the quantity
 
 ```json
 {
@@ -6342,7 +6342,7 @@ Request body:
 }
 ```
 
-**400**: invalid_request: fields names consumable_code, from, or to for the place it came from, or a place not in the caller's cities
+**400**: invalid_request: fields names consumable_code, from, or to for the place it came from, or a place not in the caller's cities, or units for a label the place does not hold or a count other than the quantity
 
 ```json
 {
@@ -6378,7 +6378,7 @@ Request body:
 }
 ```
 
-**400**: invalid_request: fields names consumable_code for one nobody added, place_id for no place or one not in the caller's cities, lot_id for a lot the place holds none of, or quantity for more pieces of a hair system than one delivery labels
+**400**: invalid_request: fields names consumable_code for one nobody added, place_id for no place or one not in the caller's cities, lot_id for a lot the place holds none of, quantity for more pieces of a hair system than one delivery labels, or units for a label the place does not hold or a count other than the quantity
 
 ```json
 {
@@ -6414,7 +6414,7 @@ Request body:
 }
 ```
 
-**400**: invalid_request: fields names consumable_code for one nobody added, place_id for no place or one not in the caller's cities, lot_id for a lot the place holds none of, or quantity for more pieces of a hair system than one delivery labels
+**400**: invalid_request: fields names consumable_code for one nobody added, place_id for no place or one not in the caller's cities, lot_id for a lot the place holds none of, quantity for more pieces of a hair system than one delivery labels, or units for a label the place does not hold or a count other than the quantity
 
 ```json
 {
@@ -6530,7 +6530,7 @@ Request body:
 }
 ```
 
-**400**: invalid_request: fields names received for more than was sent, or id for a place that is gone
+**400**: invalid_request: fields names received for more than was sent, id for a place that is gone, or units for a label the transfer does not carry or a count other than received
 
 ```json
 {
@@ -6683,6 +6683,34 @@ Request body:
 ```
 
 **403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### GET /api/stock/units/{code}
+
+The piece a label names: its stock code and lot, where it is, and its history
+
+**200**: The piece
+
+```json
+{
+  "$ref": "#/components/schemas/StockUnitFound"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no piece has that label, or none in the caller's cities
 
 ```json
 {
@@ -20878,6 +20906,16 @@ Request body:
       "minLength": 1,
       "maxLength": 64,
       "description": "A place by its ID: central for the warehouse, a kit by its technician's ID."
+    },
+    "units": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "maxLength": 32
+      },
+      "minItems": 1,
+      "maxItems": 500,
+      "description": "A hair system's pieces by their labels, as scanned; as many as the quantity."
     }
   },
   "required": [
@@ -20984,6 +21022,16 @@ Request body:
       "minLength": 1,
       "maxLength": 64,
       "description": "The lot lost, as one that expired; by default the lots that expire soonest."
+    },
+    "units": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "maxLength": 32
+      },
+      "minItems": 1,
+      "maxItems": 500,
+      "description": "A hair system's pieces by their labels, as scanned; as many as the quantity."
     }
   },
   "required": [
@@ -21119,6 +21167,16 @@ Request body:
       "minLength": 1,
       "maxLength": 200,
       "pattern": "^[^\\p{Cc}]+$/u"
+    },
+    "units": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "maxLength": 32
+      },
+      "minItems": 1,
+      "maxItems": 500,
+      "description": "A hair system's pieces that arrived, by their labels; those not named went missing."
     }
   },
   "additionalProperties": false
@@ -21332,6 +21390,126 @@ Request body:
     "consumable_code",
     "place_id",
     "quantity"
+  ],
+  "additionalProperties": false
+}
+```
+
+### StockUnitFound
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "consumable_code": {
+      "type": "string"
+    },
+    "lot_code": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "expires_on": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "state": {
+      "type": "string",
+      "enum": [
+        "held",
+        "in_transit",
+        "fitted",
+        "returned",
+        "written_off",
+        "missing"
+      ]
+    },
+    "place_id": {
+      "anyOf": [
+        {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64,
+          "description": "A place by its ID: central for the warehouse, a kit by its technician's ID."
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Where it is now, or is going to in transit; null once it has left the stock."
+    },
+    "history": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "held",
+              "in_transit",
+              "fitted",
+              "returned",
+              "written_off",
+              "missing"
+            ]
+          },
+          "place_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 64,
+                "description": "A place by its ID: central for the warehouse, a kit by its technician's ID."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "by": {
+            "type": "string",
+            "description": "Ops' Access identity, a service token's label, or a technician's ID."
+          }
+        },
+        "required": [
+          "at",
+          "state",
+          "place_id",
+          "by"
+        ],
+        "additionalProperties": false
+      },
+      "description": "Every change, oldest first."
+    }
+  },
+  "required": [
+    "code",
+    "consumable_code",
+    "lot_code",
+    "expires_on",
+    "state",
+    "place_id",
+    "history"
   ],
   "additionalProperties": false
 }

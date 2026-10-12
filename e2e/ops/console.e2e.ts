@@ -194,13 +194,13 @@ test("leaves a click that asks for a new tab to the browser", async ({ page, con
   await expect(page).toHaveURL(/\/tasks$/);
 });
 
-test("serves its policy: its own origin only, no camera and no payment, and noindex", async ({ page }) => {
+test("serves its policy: its own origin only, its own camera, no payment, and noindex", async ({ page }) => {
   const response = await page.goto("/");
   const headers = response?.headers() ?? {};
   expect(headers["content-security-policy"]).toContain("default-src 'none'");
   expect(headers["content-security-policy"]).toContain("connect-src 'self'");
   expect(headers["content-security-policy"]).toContain("frame-src 'none'");
-  expect(headers["permissions-policy"]).toContain("camera=()");
+  expect(headers["permissions-policy"]).toContain("camera=(self)");
   expect(headers["permissions-policy"]).toContain("payment=()");
   expect(headers["x-robots-tag"]).toBe("noindex, nofollow");
 });
