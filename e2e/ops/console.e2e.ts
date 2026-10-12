@@ -37,7 +37,13 @@ test("opens on Tasks, with the sections under their departments and what waits i
   await expect(page).toHaveURL(/\/tasks$/);
 
   const department = (name: string) => navigation(page).getByRole("list", { name }).getByRole("link");
-  await expectNames(department("Operations"), ["Tasks, 8 waiting, some overdue", "Dispatch", "Technicians", "Stock"]);
+  await expectNames(department("Operations"), [
+    "Tasks, 8 waiting, some overdue",
+    "Dispatch",
+    "Technicians",
+    "Stock",
+    "Purchasing",
+  ]);
   await expectNames(department("Customer Care"), [
     "Clients",
     "Messages",
