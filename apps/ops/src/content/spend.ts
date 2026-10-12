@@ -19,19 +19,19 @@ export const spend = {
   },
   campaign: "Campaign, if any",
   campaignNote: "Start its name with its city, or with national.",
-  amount: "Amount, ₹",
+  amount: "Amount, Rs.",
   note: "Note",
   add: "Add",
   adding: "Adding",
   none: "Nothing yet.",
   columns: { month: "Month", city: "City", channel: "Channel", amount: "Amount", note: "Note", by: "Added by" },
   remove: "Take off",
-  /** "Take off: Oct 2026 · Gurgaon · ₹25,000" */
+  /** "Take off: October 2026 · Gurgaon · Rs. 25,000" */
   removeLabel: (month: string, city: string, amount: string) => `Take off: ${month} · ${city} · ${amount}`,
   errors: {
     month: "Pick a month from the list.",
     city: "Pick a city from the list.",
-    amount: "Type whole rupees, ₹1 or more.",
+    amount: "Type whole rupees, Rs. 1 or more.",
     invalid_request: "Check the amount and the month.",
     not_found: "Already taken off. Reload.",
     not_permitted: NOT_PERMITTED,

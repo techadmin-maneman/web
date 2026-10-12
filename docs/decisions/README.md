@@ -2,7 +2,7 @@
 
 Every decision this repository was built on, oldest first. A record says what was decided and why, and is not rewritten to say something else: a later record changes it, and says so in its own header (ADR 0001). **Changed by** gathers those later records, from either side, so an old record's reader knows to read on.
 
-This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. A record names its topic in its header, `- Topic:` and one of the headings below, and the test fails on one that does not. The next free number is 0150.
+This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. A record names its topic in its header, `- Topic:` and one of the headings below, and the test fails on one that does not. The next free number is 0151.
 
 ## By topic
 
@@ -182,6 +182,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 - [0126](0126-the-words-page.md) The Words page
 - [0127](0127-publishing-the-words.md) Publishing the site's words
 - [0147](0147-task-spans.md) Task spans
+- [0150](0150-spend.md) Spend
 
 ## Every decision, oldest first
 
@@ -334,3 +335,4 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0147](0147-task-spans.md) | Task spans | 2026-10-12 | accepted |  |
 | [0148](0148-the-channel-rule.md) | The channel rule | 2026-10-12 | accepted |  |
 | [0149](0149-lost-reasons.md) | Lost reasons | 2026-10-12 | accepted |  |
+| [0150](0150-spend.md) | Spend | 2026-10-12 | accepted |  |

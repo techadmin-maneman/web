@@ -104,6 +104,11 @@ const HISTORY = [
      grant_state, created_at, updated_at)
    SELECT 'ca-' || i, 'rc-' || (1 + i % 20), 'p-' || i, '${AGO}', 'consultation', 'a-' || i, 'granted', '${AGO}',
      '${AGO}' FROM n`,
+  `INSERT INTO partner_payouts (id, channel_id, month, amount, paid_on, reference, recorded_by, recorded_at)
+   SELECT 'pp-' || i, 'rc-' || (1 + i % 20), printf('%04d-%02d', 2000 + i / 240, 1 + (i / 20) % 12), 150000, date('${AGO}'), 'UTR' || i, 'finance@maneman.in',
+     '${AGO}' FROM n`,
+  `INSERT INTO spend_entries (id, month, city, channel, amount, entered_by, entered_at)
+   SELECT 'se-' || i, '2026-08', 'Gurgaon', 'partner', 2500000, 'growth@maneman.in', '${AGO}' FROM n`,
   `INSERT INTO credit_ledger (id, person_id, kind, visits, source_kind, source_id, expires_at, created_at)
    SELECT 'g-' || i, 'p-' || i, 'grant', 3, 'referral', 'ra-' || i, '${AGO}', '${AGO}' FROM n`,
   `INSERT INTO credit_ledger (id, person_id, kind, visits, grant_id, source_kind, source_id, created_at)
