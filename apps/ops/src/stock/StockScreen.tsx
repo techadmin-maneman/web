@@ -33,6 +33,7 @@ const PlacesPanel = lazy(() => import("./PlacesPanel.tsx").then((module) => ({ d
 /** The totals by zone or city, and the lots that expire soon, each loaded when shown. */
 const Totals = lazy(() => import("./Totals.tsx").then((module) => ({ default: module.Totals })));
 const Expiring = lazy(() => import("./Expiring.tsx").then((module) => ({ default: module.Expiring })));
+const Demand = lazy(() => import("./Demand.tsx").then((module) => ({ default: module.Demand })));
 
 /** Whether any lot within reach expires within the warning, so the Expiring panel is worth loading. */
 function anyExpiring(book: Stock): boolean {
@@ -284,6 +285,9 @@ export function StockScreen() {
           {firstKind !== undefined && (book ?? loaded.value).consumables.length > 0 && (
             <StockForm book={book ?? loaded.value} kinds={[firstKind, ...otherKinds]} onRecorded={setBook} />
           )}
+          <Suspense fallback={<Loading />}>
+            <Demand book={book ?? loaded.value} />
+          </Suspense>
           {(book ?? loaded.value).in_transit.length > 0 && (
             <Suspense fallback={<Loading />}>
               <InTransit book={book ?? loaded.value} onChanged={setBook} />

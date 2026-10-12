@@ -5,8 +5,8 @@
 //   POST /api/stock/transfers       stock handed to a kit, or sent to any other place to be received there
 //   POST /api/stock/counts          what ops counted at a place: the ledger takes the difference
 //   POST /api/stock/write-offs      a loss somebody saw, with what happened
-// the places themselves (src/routes/ops/stock.places.ts), and transfers received or sent back
-// (src/routes/ops/stock.transit.ts).
+// the places themselves (src/routes/ops/stock.places.ts), transfers received or sent back
+// (src/routes/ops/stock.transit.ts), and what the weeks ahead will use (src/routes/ops/stock.read.ts).
 //
 // Each movement is a row of the ledger, with the Access identity behind it,
 // written with its audit entry in one batch (ADR 0031); what a place holds is
@@ -249,6 +249,10 @@ const countRoute = createRoute({
             place_id: PlaceId,
             counted: z.number().int().min(0).max(CONSUMABLE_BOUNDS.maxQuantity),
             note: Note.nullable().optional(),
+            lot_code: LotCode.nullable().optional().openapi({
+              description: "The lot any more found than was held is of, as at an opening count.",
+            }),
+            expires_on: z.iso.date().nullable().optional(),
           })
           .strict()
           .openapi("StockCount"),
@@ -403,7 +407,16 @@ export function registerOpsStock(app: App): void {
     if (refused.length > 0) return outOfReach(c, refused);
     const moved = await count(
       c.env.DB,
-      { code: body.consumable_code, place: body.place_id, counted: body.counted, note: body.note ?? null },
+      {
+        code: body.consumable_code,
+        place: body.place_id,
+        counted: body.counted,
+        note: body.note ?? null,
+        // A count names a lot only where ops give one: found stock of no known age is of no lot.
+        ...((body.lot_code ?? null) === null && (body.expires_on ?? null) === null
+          ? {}
+          : { lot: { lotCode: body.lot_code ?? null, expiresOn: body.expires_on ?? null } }),
+      },
       written(c),
     );
     return after(c, moved, [body.place_id]);

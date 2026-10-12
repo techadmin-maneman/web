@@ -1,6 +1,7 @@
 // The lot a movement names (docs/decisions/0157-lots-and-expiry.md): a delivery's supplier lot and the day it expires,
-// both optional, the stock code's shelf life standing in for an expiry not given; and the lot a loss was, as one that
-// expired, or by default the lots that expire soonest.
+// both optional, the stock code's shelf life standing in for an expiry not given; a count's, for what it found more of
+// than was held, as at an opening count (0160); and the lot a loss was, as one that expired, or by default the lots
+// that expire soonest.
 
 import { Field, Select, TextInput } from "@maneman/ui/Field";
 import { shortDate } from "@maneman/web-kit/dates";
@@ -27,7 +28,7 @@ export function LotFields({
   draft: LotDraft;
   onEdit: (field: "lotCode" | "expiresOn" | "lotId") => (value: string) => void;
 }) {
-  if (draft.kind === "delivery") {
+  if (draft.kind === "delivery" || draft.kind === "count") {
     return (
       <div className={form.fields}>
         <Field label={copy.record.lot} className={form.field}>

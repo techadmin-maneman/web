@@ -7,6 +7,17 @@ export const stockViews = {
     noZone: "No zone",
     noCity: "No city",
   },
+  demand: {
+    title: "Next 4 weeks",
+    columns: ["Consumable", "City", "Booked visits use", "Held there"],
+    none: "Nothing booked in the next four weeks uses stock.",
+    noCity: "No city",
+    noProfile: "No hair profile to match",
+    short: (by: number) => `${String(by)} short`,
+    atRisk: "Fits at risk",
+    /** "Thu 24 Sep, Gurgaon: Mane Man Essential 8x10 1B, 20% grey, 100% not in the city" */
+    fit: (date: string, city: string, what: string) => `${date}, ${city}: ${what}`,
+  },
   expiring: {
     title: "Expiring",
     intro: (days: number) => `Lots expiring within ${String(days)} days, soonest first. Use them first or move them.`,

@@ -212,6 +212,34 @@ const latestIdQuery = (person: string): string =>
  * The hair system the client's profile recommends, by the tier of its first-fit service: the latest version's, as a
  * first fit is offered (src/domain/visits/next-visit.ts) and the client's Home recaps the consultation. Null for none.
  */
+/** What a hair system is matched to a client by: the product and the base, colour, grey and density. */
+export interface FitToMatch {
+  readonly product: string | null;
+  readonly base_width_in: number | null;
+  readonly base_length_in: number | null;
+  readonly colour: string | null;
+  readonly grey_percent: number | null;
+  readonly density_percent: number | null;
+}
+
+/**
+ * Each client's latest fit, of the clients named, for matching the hair system their fit needs (the stock demand,
+ * src/domain/field/stock-demand.ts): the spec alone, never the history or who took it.
+ */
+export async function latestFits(db: D1Database, people: readonly string[]): Promise<Map<string, FitToMatch>> {
+  const { results } = await db
+    .prepare(
+      `SELECT person_id, product, base_width_in, base_length_in, colour, grey_percent, density_percent
+       FROM hair_profiles WHERE person_id IN (SELECT value FROM json_each(?1))
+       ORDER BY created_at DESC, rowid DESC`,
+    )
+    .bind(JSON.stringify(people))
+    .all<FitToMatch & { person_id: string }>();
+  const latest = new Map<string, FitToMatch>();
+  for (const row of results) if (!latest.has(row.person_id)) latest.set(row.person_id, row);
+  return latest;
+}
+
 export async function recommendedProduct(db: D1Database, personId: string): Promise<string | null> {
   const row = await db
     .prepare("SELECT product FROM hair_profiles WHERE person_id = ?1 ORDER BY created_at DESC, rowid DESC LIMIT 1")

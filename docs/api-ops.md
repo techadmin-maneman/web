@@ -6606,6 +6606,26 @@ A transfer sent back to where it left, before it arrived
 }
 ```
 
+### GET /api/stock/demand
+
+What the next four weeks' visits will use, by city, beside what each city holds
+
+**200**: The demand ahead
+
+```json
+{
+  "$ref": "#/components/schemas/StockDemand"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ### GET /api/storage
 
 What the photographs and referral cards hold in R2, against their share, and the database against its limit
@@ -20802,6 +20822,23 @@ Request body:
       "minLength": 1,
       "maxLength": 200,
       "pattern": "^[^\\p{Cc}]+$/u"
+    },
+    "lot_code": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "minLength": 1,
+      "maxLength": 40,
+      "pattern": "^[^\\p{Cc}]+$/u",
+      "description": "The lot any more found than was held is of, as at an opening count."
+    },
+    "expires_on": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date"
     }
   },
   "required": [
@@ -20986,6 +21023,106 @@ Request body:
       "pattern": "^[^\\p{Cc}]+$/u"
     }
   },
+  "additionalProperties": false
+}
+```
+
+### StockDemand
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "days": {
+      "type": "integer",
+      "description": "How far ahead the visits booked are read."
+    },
+    "demand": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "consumable_code": {
+            "type": "string"
+          },
+          "city": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "expected": {
+            "type": "integer",
+            "description": "What the visits booked are expected to use."
+          },
+          "held": {
+            "type": "integer",
+            "description": "What the city's places hold now, a kit in its city."
+          }
+        },
+        "required": [
+          "consumable_code",
+          "city",
+          "expected",
+          "held"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "at_risk": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "appointment_id": {
+            "type": "string"
+          },
+          "window_start": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "city": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "consumable_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The hair system it needs; null where the client has no profile to match one by."
+          }
+        },
+        "required": [
+          "appointment_id",
+          "window_start",
+          "city",
+          "consumable_code"
+        ],
+        "additionalProperties": false
+      },
+      "description": "Fits booked whose hair system no place in their city holds enough of, soonest first."
+    }
+  },
+  "required": [
+    "days",
+    "demand",
+    "at_risk"
+  ],
   "additionalProperties": false
 }
 ```

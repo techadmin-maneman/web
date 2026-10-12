@@ -11,6 +11,9 @@
 /** A lot held anywhere is told of this many days before it expires, and every day after while it is still held. */
 export const EXPIRY_WARNING_DAYS = 30;
 
+/** How far ahead the demand preview reads the visits booked: four weeks. */
+export const DEMAND_DAYS = 28;
+
 /** A transfer still on its way this many days after it was sent is told of (docs/decisions/0158). */
 export const TRANSFER_OVERDUE_DAYS = 7;
 
