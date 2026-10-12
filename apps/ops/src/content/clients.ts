@@ -121,6 +121,19 @@ export const clients = {
     givenTo: (who: string, when: string) => `To ${who}, ${when}`,
     /** "Closed without a follow-up by priya@maneman.in, 28 Sep 2026", and ops' reason after it. */
     closedWithout: (who: string, when: string) => `Closed without follow-up by ${who}, ${when}`,
+    /** Why the client is not going ahead after a closed consultation (docs/decisions/0149-lost-reasons.md). */
+    lostReason: {
+      label: "Why not going ahead",
+      none: "Going ahead, or not said",
+      kept: (reason: string) => `Not going ahead: ${reason}`,
+      errors: {
+        invalid_request: "That reason is no longer listed. Reload.",
+        not_found: "Not found. Reload.",
+        not_permitted: NOT_PERMITTED,
+        offline: OFFLINE,
+        unknown: FAILED,
+      },
+    },
     /** The form a member of staff saves an address a client gives them with, which the app's own save follows. */
     given: {
       open: "Add an address",
