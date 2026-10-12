@@ -11,7 +11,7 @@ import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import { createStubPayments, type StubPayments } from "../../../src/providers/payments/stub.ts";
 import { captureLogs, deliverRazorpay, markDatabase, NOW, request } from "../helpers.ts";
-import { PERSON, working, type Working } from "../job-fixtures.ts";
+import { IMRAN, JOB, PERSON, working, type Working } from "../job-fixtures.ts";
 
 interface Orders {
   orders: { id: string; number: number; status: string; short_url: string | null; po_number: number | null }[];
@@ -66,7 +66,7 @@ beforeEach(async () => {
   captureLogs();
   await markDatabase();
   payments = createStubPayments();
-  job = await working("service", { payments });
+  job = await working("first_fit", { payments });
   await env.DB.prepare(
     `INSERT INTO services (kind, tier, name, minutes, sort, updated_by, updated_at)
      VALUES ('first_fit', 'essential', 'Mane Man Essential', 120, 1, 'test', ?1)`,
@@ -157,5 +157,77 @@ describe("a custom order", () => {
       .bind(PERSON, new Date(NOW.getTime() + 1000).toISOString())
       .run();
     expect((await codeOf(await raise())).fields).toEqual(["profile"]);
+  });
+});
+
+describe("a custom order's piece", () => {
+  const OTHER = "66666666-6666-4666-8666-666666666661";
+
+  it("arrives reserved to its client: out of free stock, and never offered at another client's fit", async () => {
+    await env.DB.batch([
+      env.DB.prepare(
+        "INSERT INTO people (id, created_at, mobile_e164, name) VALUES (?1, ?2, '+919810066661', 'Asha Verma')",
+      ).bind(OTHER, NOW.toISOString()),
+      env.DB.prepare(
+        `INSERT INTO hair_profiles (id, person_id, staff, created_at, product, base_width_in, base_length_in, colour,
+           grey_percent, density_percent)
+         VALUES ('hp-other', ?1, 'ops@localhost', ?2, 'essential', 7.5, 9, '1B', 30, 120)`,
+      ).bind(OTHER, NOW.toISOString()),
+    ]);
+    const raised = await job.opsPost(`/api/clients/${OTHER}/custom-orders`, {
+      supplier_id: supplier,
+      supplier_price: 15_000,
+      amount: 4_500_000,
+      promised_on: null,
+      wave: null,
+      note: null,
+    });
+    const order = (await raised.json<Orders>()).orders[0]?.id ?? "";
+    const linkId =
+      (await env.DB.prepare("SELECT razorpay_link_id FROM custom_orders WHERE id = ?1")
+        .bind(order)
+        .first<string>("razorpay_link_id")) ?? "";
+    await deliverRazorpay(linkPaid({ id: linkId, reference_id: order }), { deps: job.deps });
+    const po = await env.DB.prepare(
+      "SELECT o.id, l.id AS line, l.consumable_code AS code FROM purchase_orders o JOIN po_lines l ON l.po_id = o.id",
+    ).first<{ id: string; line: string; code: string }>();
+    await env.DB.prepare("UPDATE purchase_orders SET state = 'sent' WHERE id = ?1")
+      .bind(po?.id ?? "")
+      .run();
+    const received = await job.opsPost(`/api/purchase-orders/${po?.id ?? ""}/receipts`, {
+      lines: [{ po_line_id: po?.line ?? "", received: 1, damaged: 0, qc_failed: 0, lot_code: null, expires_on: null }],
+      supplier_invoice: null,
+      rupee_rate: 8325,
+      freight_paise: 0,
+      duty_paise: 0,
+      clearing_paise: 0,
+      note: null,
+    });
+    expect(received.status).toBe(200);
+    const unit = await env.DB.prepare("SELECT code, custom_order_id FROM stock_units").first<{
+      code: string;
+      custom_order_id: string;
+    }>();
+    expect(unit?.custom_order_id).toBe(order);
+    expect(
+      (await (await request(job.ops, `/api/clients/${OTHER}/custom-orders`)).json<Orders>()).orders[0]?.status,
+    ).toBe("arrived");
+
+    const matched = await (await request(job.ops, `/api/clients/${OTHER}/stock-match`)).json<{ held: unknown[] }>();
+    expect(matched.held).toEqual([]);
+    await job.opsPost("/api/stock/transfers", {
+      consumable_code: po?.code ?? "",
+      quantity: 1,
+      from: "central",
+      to: IMRAN,
+    });
+    const card = await (
+      await job.get(`/api/tech/jobs/${JOB}`)
+    ).json<{
+      kit_hair_systems: { code: string; held: number; units: { code: string }[] }[];
+    }>();
+    const listed = card.kit_hair_systems.find((each) => each.code === po?.code);
+    expect(listed?.units.map((each) => each.code) ?? []).not.toContain(unit?.code);
+    expect(listed?.held ?? 0).toBe(0);
   });
 });

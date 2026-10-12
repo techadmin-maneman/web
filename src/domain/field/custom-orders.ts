@@ -214,3 +214,23 @@ export async function cancelCustomOrder(db: D1Database, id: string, written: Wri
   ]);
   return cancelled?.meta.changes === 1;
 }
+
+/**
+ * The pieces a kit holds reserved to another client's custom order than the visit's, by label, each with its stock
+ * code: the piece step never offers them (docs/decisions/0175-custom-pieces-reserved.md).
+ */
+export async function reservedForOthers(
+  db: D1Database,
+  kit: string,
+  appointmentId: string,
+): Promise<Map<string, string>> {
+  const { results } = await db
+    .prepare(
+      `SELECT u.code, u.consumable_code FROM stock_units u JOIN custom_orders k ON k.id = u.custom_order_id
+       WHERE u.place = ?1 AND u.state = 'held' AND u.custom_order_id IS NOT NULL
+         AND k.person_id IS NOT (SELECT person_id FROM appointments WHERE id = ?2)`,
+    )
+    .bind(kit, appointmentId)
+    .all<{ code: string; consumable_code: string }>();
+  return new Map(results.map((row) => [row.code, row.consumable_code]));
+}

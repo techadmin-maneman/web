@@ -224,6 +224,14 @@ function lineStatements(
               "UPDATE stock_lots SET landed_cost_paise = ?2 WHERE id IN (SELECT lot_id FROM stock_lot_moves WHERE movement_id = ?1)",
             )
             .bind(row.movementId, row.landedUnitPaise),
+          // A custom order's piece is reserved to it as it is labelled (./custom-orders.ts).
+          db
+            .prepare(
+              `UPDATE stock_units SET custom_order_id = (SELECT custom_order_id FROM po_lines WHERE id = ?2)
+               WHERE id IN (SELECT unit_id FROM stock_unit_events WHERE movement_id = ?1)
+                 AND EXISTS (SELECT 1 FROM po_lines WHERE id = ?2 AND custom_order_id IS NOT NULL)`,
+            )
+            .bind(row.movementId, line.poLineId),
         ]),
     ...receiptClaimStatements(
       db,
