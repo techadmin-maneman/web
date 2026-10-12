@@ -77,7 +77,7 @@ function changes(was: Supplier, draft: Draft): string[] {
     .map(([field, label]) => form.confirm.line(label, said(was[field]), said(now[field])));
 }
 
-function Box(props: { label: string; value: string; size?: string; max: number; onChange: (text: string) => void }) {
+function Entry(props: { label: string; value: string; size?: string; max: number; onChange: (text: string) => void }) {
   return (
     <Field label={props.label} className={styles.field}>
       {(control) => (
@@ -100,27 +100,33 @@ function SupplierBoxes({ draft, edit }: { draft: Draft; edit: (field: keyof Draf
   return (
     <>
       <div className={styles.fields}>
-        <Box label={form.name} value={draft.name} size={styles.areaBox} max={80} onChange={edit("name")} />
-        <Box label={form.gstin} value={draft.gstin} size={styles.areaBox} max={15} onChange={edit("gstin")} />
-        <Box label={form.country} value={draft.country} size={styles.figureBox} max={2} onChange={edit("country")} />
-        <Box label={form.currency} value={draft.currency} size={styles.figureBox} max={3} onChange={edit("currency")} />
+        <Entry label={form.name} value={draft.name} size={styles.areaBox} max={80} onChange={edit("name")} />
+        <Entry label={form.gstin} value={draft.gstin} size={styles.areaBox} max={15} onChange={edit("gstin")} />
+        <Entry label={form.country} value={draft.country} size={styles.figureBox} max={2} onChange={edit("country")} />
+        <Entry
+          label={form.currency}
+          value={draft.currency}
+          size={styles.figureBox}
+          max={3}
+          onChange={edit("currency")}
+        />
       </div>
       <div className={styles.fields}>
-        <Box
+        <Entry
           label={form.contactName}
           value={draft.contactName}
           size={styles.areaBox}
           max={80}
           onChange={edit("contactName")}
         />
-        <Box
+        <Entry
           label={form.contactPhone}
           value={draft.contactPhone}
           size={styles.areaBox}
           max={16}
           onChange={edit("contactPhone")}
         />
-        <Box
+        <Entry
           label={form.contactEmail}
           value={draft.contactEmail}
           size={styles.areaBox}
@@ -129,8 +135,14 @@ function SupplierBoxes({ draft, edit }: { draft: Draft; edit: (field: keyof Draf
         />
       </div>
       <div className={styles.fields}>
-        <Box label={form.terms} value={draft.terms} size={styles.figureBox} max={3} onChange={edit("terms")} />
-        <Box label={form.warranty} value={draft.warranty} size={styles.figureBox} max={4} onChange={edit("warranty")} />
+        <Entry label={form.terms} value={draft.terms} size={styles.figureBox} max={3} onChange={edit("terms")} />
+        <Entry
+          label={form.warranty}
+          value={draft.warranty}
+          size={styles.figureBox}
+          max={4}
+          onChange={edit("warranty")}
+        />
       </div>
     </>
   );

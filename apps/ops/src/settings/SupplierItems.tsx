@@ -4,6 +4,7 @@
 
 import { Field, Select, TextInput } from "@maneman/ui/Field";
 import { Table } from "@maneman/ui/Table";
+import { inCurrency } from "@maneman/web-kit/money";
 import { useState } from "react";
 import { client } from "../api.ts";
 import { settings } from "../content/settings.ts";
@@ -18,10 +19,6 @@ const AMOUNT = /^\d{1,9}(?:\.\d{1,2})?$/;
 const WHOLE = /^\d{1,6}$/;
 
 type Item = Supplier["items"][number];
-
-/** A price in the supplier's currency, from its smallest unit: "USD 12.50". */
-const priced = (minor: number, currency: string): string =>
-  new Intl.NumberFormat("en-IN", { style: "currency", currency, currencyDisplay: "code" }).format(minor / 100);
 
 interface Draft {
   readonly code: string;
@@ -41,7 +38,7 @@ const draftOf = (book: Suppliers, item: Item | null): Draft => ({
   lead: item === null ? "" : String(item.lead_time_days),
 });
 
-function Box(props: { label: string; value: string; onChange: (text: string) => void }) {
+function Entry(props: { label: string; value: string; onChange: (text: string) => void }) {
   return (
     <Field label={props.label} className={styles.field}>
       {(control) => (
@@ -94,13 +91,13 @@ function ItemBoxes(props: {
             </Select>
           )}
         </Field>
-        <Box label={words.theirCode} value={draft.theirCode} onChange={edit("theirCode")} />
-        <Box label={words.price(supplier.currency)} value={draft.price} onChange={edit("price")} />
+        <Entry label={words.theirCode} value={draft.theirCode} onChange={edit("theirCode")} />
+        <Entry label={words.price(supplier.currency)} value={draft.price} onChange={edit("price")} />
       </div>
       <div className={styles.fields}>
-        <Box label={words.pack} value={draft.pack} onChange={edit("pack")} />
-        <Box label={words.minimum} value={draft.minimum} onChange={edit("minimum")} />
-        <Box label={words.lead} value={draft.lead} onChange={edit("lead")} />
+        <Entry label={words.pack} value={draft.pack} onChange={edit("pack")} />
+        <Entry label={words.minimum} value={draft.minimum} onChange={edit("minimum")} />
+        <Entry label={words.lead} value={draft.lead} onChange={edit("lead")} />
       </div>
     </>
   );
@@ -108,7 +105,7 @@ function ItemBoxes(props: {
 
 /** "Solvent · USD 12.50 · Pack 12 · Minimum 24 · 21 days" */
 const itemLine = (name: string, item: Omit<Item, "consumable_code" | "their_code">, currency: string) =>
-  `${name} · ${priced(item.unit_price, currency)} · ${words.pack} ${String(item.pack_size)} · ` +
+  `${name} · ${inCurrency(item.unit_price, currency)} · ${words.pack} ${String(item.pack_size)} · ` +
   `${words.minimum} ${String(item.minimum_order)} · ${words.days(item.lead_time_days)}`;
 
 function ItemForm({
@@ -220,7 +217,7 @@ export function SupplierItems({
                   {named(item.consumable_code)}
                 </th>
                 <td>{item.their_code ?? ""}</td>
-                <td className={styles.figure}>{priced(item.unit_price, supplier.currency)}</td>
+                <td className={styles.figure}>{inCurrency(item.unit_price, supplier.currency)}</td>
                 <td className={styles.figure}>{item.pack_size}</td>
                 <td className={styles.figure}>{item.minimum_order}</td>
                 <td className={styles.figure}>{words.days(item.lead_time_days)}</td>
