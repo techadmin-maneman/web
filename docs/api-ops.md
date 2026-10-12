@@ -1629,6 +1629,26 @@ Request body:
 }
 ```
 
+### GET /api/stock/usage
+
+Each technician's use beside expected, and each place's losses, over the last weeks
+
+**200**: Usage and shrinkage
+
+```json
+{
+  "$ref": "#/components/schemas/StockUsage"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ### POST /api/clients/{id}/erasure
 
 Erase a client now: their photographs and details. The CRM and Books follow within minutes
@@ -14610,6 +14630,157 @@ Request body:
     "count_class"
   ],
   "additionalProperties": false
+}
+```
+
+### StockUsage
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "since": {
+      "type": "string",
+      "format": "date"
+    },
+    "technicians": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "technician_id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "visits": {
+            "type": "integer"
+          },
+          "expected_value": {
+            "type": "number",
+            "description": "In paise, at each item's cost."
+          },
+          "used_value": {
+            "type": "number",
+            "description": "In paise, at each item's cost."
+          },
+          "over_percent": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "description": "Above nought where use ran over expected."
+          },
+          "flagged": {
+            "type": "boolean"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "consumable_code": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "expected": {
+                  "type": "number"
+                },
+                "used": {
+                  "type": "number"
+                },
+                "over_percent": {
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                }
+              },
+              "required": [
+                "consumable_code",
+                "name",
+                "expected",
+                "used",
+                "over_percent"
+              ]
+            }
+          }
+        },
+        "required": [
+          "technician_id",
+          "name",
+          "visits",
+          "expected_value",
+          "used_value",
+          "over_percent",
+          "flagged",
+          "items"
+        ]
+      }
+    },
+    "places": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "place_id": {
+            "type": "string"
+          },
+          "place": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "left_value": {
+            "type": "number",
+            "description": "In paise, at each item's cost."
+          },
+          "lost_value": {
+            "type": "number",
+            "description": "In paise, at each item's cost."
+          },
+          "write_offs": {
+            "type": "integer"
+          },
+          "shrinkage_percent": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "count_accuracy_percent": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "flagged": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "place_id",
+          "place",
+          "kind",
+          "left_value",
+          "lost_value",
+          "write_offs",
+          "shrinkage_percent",
+          "count_accuracy_percent",
+          "flagged"
+        ]
+      }
+    }
+  },
+  "required": [
+    "since",
+    "technicians",
+    "places"
+  ]
 }
 ```
 

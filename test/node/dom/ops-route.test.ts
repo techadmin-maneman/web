@@ -43,6 +43,7 @@ describe("the ops console's routes", () => {
       "Technicians",
       "Stock",
       "Counts",
+      "Usage",
       "Purchasing",
       "Supply plan",
     ]);
@@ -64,7 +65,7 @@ describe("the ops console's routes", () => {
     expect(namesIn("growth")).toEqual(["Referrals", "Areas", "Spend", "Words"]);
     expect(namesIn("admin")).toEqual(["Settings", "Staff", "Targets", "Activity"]);
     expect(SECTIONS.map((section) => section.department)).toEqual([
-      ...Array<string>(7).fill("operations"),
+      ...Array<string>(8).fill("operations"),
       ...Array<string>(6).fill("customer_care"),
       ...Array<string>(5).fill("finance"),
       ...Array<string>(4).fill("growth"),

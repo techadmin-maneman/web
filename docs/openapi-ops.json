@@ -5422,6 +5422,152 @@
         ],
         "additionalProperties": false
       },
+      "StockUsage": {
+        "type": "object",
+        "properties": {
+          "since": {
+            "type": "string",
+            "format": "date"
+          },
+          "technicians": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "technician_id": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "visits": {
+                  "type": "integer"
+                },
+                "expected_value": {
+                  "type": "number",
+                  "description": "In paise, at each item's cost."
+                },
+                "used_value": {
+                  "type": "number",
+                  "description": "In paise, at each item's cost."
+                },
+                "over_percent": {
+                  "type": [
+                    "number",
+                    "null"
+                  ],
+                  "description": "Above nought where use ran over expected."
+                },
+                "flagged": {
+                  "type": "boolean"
+                },
+                "items": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "consumable_code": {
+                        "type": "string"
+                      },
+                      "name": {
+                        "type": "string"
+                      },
+                      "expected": {
+                        "type": "number"
+                      },
+                      "used": {
+                        "type": "number"
+                      },
+                      "over_percent": {
+                        "type": [
+                          "number",
+                          "null"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "consumable_code",
+                      "name",
+                      "expected",
+                      "used",
+                      "over_percent"
+                    ]
+                  }
+                }
+              },
+              "required": [
+                "technician_id",
+                "name",
+                "visits",
+                "expected_value",
+                "used_value",
+                "over_percent",
+                "flagged",
+                "items"
+              ]
+            }
+          },
+          "places": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "place_id": {
+                  "type": "string"
+                },
+                "place": {
+                  "type": "string"
+                },
+                "kind": {
+                  "type": "string"
+                },
+                "left_value": {
+                  "type": "number",
+                  "description": "In paise, at each item's cost."
+                },
+                "lost_value": {
+                  "type": "number",
+                  "description": "In paise, at each item's cost."
+                },
+                "write_offs": {
+                  "type": "integer"
+                },
+                "shrinkage_percent": {
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                },
+                "count_accuracy_percent": {
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                },
+                "flagged": {
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "place_id",
+                "place",
+                "kind",
+                "left_value",
+                "lost_value",
+                "write_offs",
+                "shrinkage_percent",
+                "count_accuracy_percent",
+                "flagged"
+              ]
+            }
+          }
+        },
+        "required": [
+          "since",
+          "technicians",
+          "places"
+        ]
+      },
       "Erased": {
         "type": "object",
         "properties": {
@@ -18959,6 +19105,33 @@
           },
           "404": {
             "description": "not_found: no such item, or it is retired",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/stock/usage": {
+      "get": {
+        "summary": "Each technician's use beside expected, and each place's losses, over the last weeks",
+        "responses": {
+          "200": {
+            "description": "Usage and shrinkage",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StockUsage"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "access_required",
             "content": {
               "application/json": {
                 "schema": {

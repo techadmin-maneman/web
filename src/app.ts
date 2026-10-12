@@ -67,6 +67,7 @@ import { registerOpsForecast } from "./routes/ops/stock-forecast.ts";
 import { registerOpsSupplyPlan } from "./routes/ops/supply-plan.ts";
 import { registerOpsDemandEvents } from "./routes/ops/demand-events.ts";
 import { registerOpsCountTasks } from "./routes/ops/count-tasks.ts";
+import { registerOpsStockUsage } from "./routes/ops/stock-usage.ts";
 import { registerOpsJobSheet } from "./routes/ops/job-sheet.ts";
 import { registerOpsPaymentLinks } from "./routes/ops/payment-links.ts";
 import { registerOpsNoShowRulings } from "./routes/ops/no-show-rulings.ts";
@@ -222,6 +223,8 @@ const SURFACE_ROUTES: Readonly<Record<Surface, readonly ((app: App) => void)[]>>
     registerOpsDemandEvents,
     // Cycle counts, blind, with recounts and sign-off (docs/decisions/0185-cycle-counts.md).
     registerOpsCountTasks,
+    // Usage against expected, and shrinkage (docs/decisions/0186-usage-and-shrinkage.md).
+    registerOpsStockUsage,
     // Erasing a client from their page, the day they ask.
     registerOpsErasure,
     registerOpsProfile,

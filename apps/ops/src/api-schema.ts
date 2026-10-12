@@ -2682,6 +2682,51 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/stock/usage": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Each technician's use beside expected, and each place's losses, over the last weeks */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Usage and shrinkage */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["StockUsage"];
+                    };
+                };
+                /** @description access_required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/clients/{id}/erasure": {
         parameters: {
             query?: never;
@@ -14829,6 +14874,42 @@ export interface components {
         CountClassChange: {
             /** @enum {string|null} */
             count_class: "weekly" | "monthly" | "quarterly" | null;
+        };
+        StockUsage: {
+            /** Format: date */
+            since: string;
+            technicians: {
+                technician_id: string;
+                name: string;
+                visits: number;
+                /** @description In paise, at each item's cost. */
+                expected_value: number;
+                /** @description In paise, at each item's cost. */
+                used_value: number;
+                /** @description Above nought where use ran over expected. */
+                over_percent: number | null;
+                flagged: boolean;
+                items: {
+                    consumable_code: string;
+                    name: string;
+                    expected: number;
+                    used: number;
+                    over_percent: number | null;
+                }[];
+            }[];
+            places: {
+                place_id: string;
+                place: string;
+                kind: string;
+                /** @description In paise, at each item's cost. */
+                left_value: number;
+                /** @description In paise, at each item's cost. */
+                lost_value: number;
+                write_offs: number;
+                shrinkage_percent: number | null;
+                count_accuracy_percent: number | null;
+                flagged: boolean;
+            }[];
         };
         Erased: {
             /** Format: date-time */

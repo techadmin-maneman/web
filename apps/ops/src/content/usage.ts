@@ -1,0 +1,26 @@
+// Operations · Usage (docs/decisions/0186-usage-and-shrinkage.md). No design draws it; every word here is ours. Only
+// the Usage page reads it, loaded when it opens.
+
+export const usage = {
+  title: "Usage",
+  /** "Since 24 Aug 2026" */
+  since: (day: string) => `Since ${day}`,
+  technicians: "Against expected",
+  techniciansNote: "Each technician's consumables, valued at cost, against what their visits were expected to use.",
+  noTechnicians: "No visits done in these weeks.",
+  technicianColumns: ["Technician", "Visits", "Expected", "Used", "Over by", ""],
+  items: (name: string) => `Items of ${name}`,
+  itemsShort: "Items",
+  itemColumns: ["Item", "Expected", "Used", "Over by"],
+  places: "Losses",
+  placesNote: "What left each place, and what of it was counted short or written off.",
+  noPlaces: "Nothing left any place in these weeks.",
+  placeColumns: ["Place", "Left", "Lost", "Shrinkage", "Write-offs", "Counts right first time"],
+  flagged: "Flagged",
+  /** "+30%", "−20%", or a dash */
+  over: (percent: number | null) => {
+    if (percent === null) return "—";
+    return percent < 0 ? `−${String(-percent)}%` : `+${String(percent)}%`;
+  },
+  percent: (percent: number | null) => (percent === null ? "—" : `${String(percent)}%`),
+};
