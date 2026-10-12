@@ -726,3 +726,39 @@ export const session = {
     "Your account is switched off. Unsent work stays on this phone for 7 days and sends once you’re switched back on and sign in.",
   checking: "Loading",
 } as const;
+
+// The kit (docs/decisions/0164-the-kit-screen.md). No board draws it; every line is ours.
+export const kit = {
+  title: "Your kit",
+  link: "Your kit",
+  back: "Back to today",
+  failed: "Your kit didn’t load.",
+  retry: "Try again",
+  needsSignal: "Needs signal",
+  coming: {
+    title: "On its way",
+    /** "From Gurgaon stockroom · sent Mon 21 Sep" */
+    from: (place: string, sent: string) => `From ${place} · sent ${sent}`,
+    receive: "Receive all",
+    receiveScanned: (count: number) => `Receive ${String(count)} scanned`,
+    scanned: (count: number, of: number) => `${String(count)} of ${String(of)} scanned`,
+    notOnIt: "That label isn’t on this top-up.",
+    settled: "Already received or sent back.",
+  },
+  scan: { label: "Scan or type each label", add: "Add", camera: "Scan", stop: "Stop scanning" },
+  held: {
+    title: "In your kit",
+    none: "Your kit is empty.",
+    expires: (date: string) => `Expires ${date}`,
+    expired: (date: string) => `Expired ${date}`,
+    pieces: (count: number) => `${String(count)} labelled`,
+  },
+  returned: {
+    title: "To hand back",
+    /** "MM-ESS-0000007-H · came off Mon 21 Sep" */
+    line: (code: string, date: string) => `${code} · came off ${date}`,
+    handBack: (count: number) => `Hand back ${String(count)} ${count === 1 ? "piece" : "pieces"}`,
+  },
+  expired: { handBack: "Hand back expired stock" },
+  handedBack: "Handed back. Your stockroom receives it.",
+} as const;

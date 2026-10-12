@@ -208,6 +208,8 @@ export interface Moving {
   readonly from: Place;
   readonly to: Place;
   readonly units?: readonly string[] | null;
+  /** To a kit: it arrives only once the technician scans it in, as any other place receives a transfer. */
+  readonly waitForScan?: boolean;
 }
 
 /** Stock moved from one place to another: two rows, out of the one and into the other. */

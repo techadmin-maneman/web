@@ -1018,6 +1018,114 @@ Request body:
 }
 ```
 
+### GET /api/tech/kit
+
+What the kit holds, what is on its way to it, and the pieces to hand back
+
+**200**: The technician's kit
+
+```json
+{
+  "$ref": "#/components/schemas/TechnicianKit"
+}
+```
+
+**401**: session_required; device_revoked
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/tech/kit/transfers/{id}/receive
+
+A top-up received: all of it, or of a hair system the pieces scanned, the rest lost on the way
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/TechnicianKitReceipt"
+}
+```
+
+**200**: The technician's kit
+
+```json
+{
+  "$ref": "#/components/schemas/TechnicianKit"
+}
+```
+
+**400**: invalid_request: fields names units for a label the top-up does not carry
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**401**: session_required; device_revoked
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no top-up on its way to this kit
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**409**: transfer_settled: it was received or sent back already
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/tech/kit/hand-back
+
+Returned pieces, and the kit's expired stock, back to the place the kit hangs from
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/TechnicianKitHandBack"
+}
+```
+
+**200**: The technician's kit
+
+```json
+{
+  "$ref": "#/components/schemas/TechnicianKit"
+}
+```
+
+**400**: invalid_request: fields names pieces for a label not of a piece the kit holds as returned
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**401**: session_required; device_revoked
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ## Schemas
 
 ### ErrorResponse
@@ -3966,6 +4074,259 @@ Request body:
   "required": [
     "code"
   ],
+  "additionalProperties": false
+}
+```
+
+### TechnicianKit
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "held": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "unit": {
+            "type": "string"
+          },
+          "quantity": {
+            "type": "integer"
+          },
+          "hair_system": {
+            "type": "boolean"
+          },
+          "lots": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "lot_code": {
+                  "type": "string"
+                },
+                "expires_on": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "format": "date"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "quantity": {
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "lot_code",
+                "expires_on",
+                "quantity"
+              ],
+              "additionalProperties": false
+            },
+            "description": "The lots it holds some of, soonest to expire first."
+          },
+          "units": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "code": {
+                  "type": "string"
+                },
+                "lot_code": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "expires_on": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "format": "date"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "code",
+                "lot_code",
+                "expires_on"
+              ],
+              "additionalProperties": false
+            },
+            "description": "A hair system's pieces the kit holds labelled."
+          }
+        },
+        "required": [
+          "code",
+          "name",
+          "unit",
+          "quantity",
+          "hair_system",
+          "lots",
+          "units"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "coming": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "unit": {
+            "type": "string"
+          },
+          "quantity": {
+            "type": "integer"
+          },
+          "from": {
+            "type": "string",
+            "description": "The place it was sent from, by name."
+          },
+          "sent_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "units": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "The labels of a hair system's pieces on their way."
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "name",
+          "unit",
+          "quantity",
+          "from",
+          "sent_at",
+          "units"
+        ],
+        "additionalProperties": false
+      },
+      "description": "Top-ups on their way, each to receive once in hand, the oldest first."
+    },
+    "returned": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "piece_code": {
+            "type": "string"
+          },
+          "returned_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "piece_code",
+          "returned_at",
+          "reason"
+        ],
+        "additionalProperties": false
+      },
+      "description": "Pieces that came off clients, held to hand back, the oldest first."
+    },
+    "today": {
+      "type": "string",
+      "format": "date"
+    }
+  },
+  "required": [
+    "held",
+    "coming",
+    "returned",
+    "today"
+  ],
+  "additionalProperties": false
+}
+```
+
+### TechnicianKitReceipt
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "units": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "maxLength": 32
+      },
+      "minItems": 1,
+      "maxItems": 500
+    }
+  },
+  "additionalProperties": false
+}
+```
+
+### TechnicianKitHandBack
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "pieces": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 32
+      },
+      "maxItems": 100,
+      "default": []
+    },
+    "expired": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether every expired lot goes back too."
+    }
+  },
   "additionalProperties": false
 }
 ```

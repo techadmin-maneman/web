@@ -1,7 +1,8 @@
 // Transfers in transit (docs/decisions/0158-transfers-in-transit.md): stock sent to a warehouse, a hub or a stockroom
 // leaves its place when it is sent, of the lots that expire soonest, and arrives only when the other end receives it,
 // in full or short; until then it is in transit. One sent back before it arrives returns to where it left, of the
-// same lots. Stock handed to a kit arrives at once, as every transfer did before (src/domain/field/stock.ts).
+// same lots. Stock handed to a kit arrives at once, as every transfer did before (src/domain/field/stock.ts), unless it
+// waits for the technician to scan it in (docs/decisions/0164-the-kit-screen.md).
 //
 // Receiving and sending back each settle the transfer in the first statement of their batch, and every row after it
 // is written only where that statement settled it, so two people settling one transfer at once settle it once.
@@ -71,7 +72,7 @@ function entry(
   detail: AuditEntry["detail"],
 ): AuditEntry {
   return {
-    surface: "ops",
+    surface: written.actor.kind === "technician" ? "tech" : "ops",
     actor: written.actor,
     action,
     subject: { kind: "consumable", id: code },
@@ -81,12 +82,13 @@ function entry(
 }
 
 /**
- * Stock moved from one place to another: handed over at once to a kit, or sent to any other place, leaving its own
- * now and arriving when received.
+ * Stock moved from one place to another: handed over at once to a kit, or sent to any other place, or to a kit that
+ * waits for its technician's scan, leaving its own now and arriving when received.
  */
 export async function sendStock(db: D1Database, input: Moving, written: Written): Promise<Moved> {
   const to = await placeById(db, input.to);
-  if (to === null || to.kind === "kit" || input.from === input.to) return transferStock(db, input, written);
+  const atOnce = to?.kind === "kit" && input.waitForScan !== true;
+  if (to === null || atOnce || input.from === input.to) return transferStock(db, input, written);
   if (!(await consumableExists(db, input.code))) return { ok: false, fields: ["consumable_code"] };
   const fromKind = await kindOf(db, input.from);
   if (fromKind === null) return { ok: false, fields: ["from"] };

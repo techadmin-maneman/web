@@ -3,6 +3,7 @@
 //
 //   /                        today's jobs, tomorrow collapsed
 //   /waiting                 what has not reached us: the photo sets and the queued writes
+//   /kit                     the technician's kit (docs/decisions/0164-the-kit-screen.md)
 //   /jobs/:id                one job's card, and the evidence chain
 //   /jobs/:id/before-photos  step 1, the five before angles
 //   /jobs/:id/checklist      step 2
@@ -38,6 +39,7 @@ const STEP_OF = new Map<string, InJobStep>(
 export type Route =
   | { readonly page: "today" }
   | { readonly page: "waiting" }
+  | { readonly page: "kit" }
   | { readonly page: "job"; readonly id: string }
   | { readonly page: "step"; readonly id: string; readonly step: InJobStep }
   | { readonly page: "done"; readonly id: string };
@@ -48,7 +50,10 @@ const TODAY: Route = { page: "today" };
 export function routeOf(path: string): Route {
   const [first, second, third, ...rest] = path.split("/").filter((part) => part !== "");
   if (first === undefined || rest.length > 0) return TODAY;
-  if (second === undefined) return first === "waiting" ? { page: "waiting" } : TODAY;
+  if (second === undefined) {
+    if (first === "waiting") return { page: "waiting" };
+    return first === "kit" ? { page: "kit" } : TODAY;
+  }
   if (first !== "jobs" || !UUID.test(second)) return TODAY;
   if (third === undefined) return { page: "job", id: second };
   if (third === "done") return { page: "done", id: second };

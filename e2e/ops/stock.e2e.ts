@@ -167,14 +167,25 @@ test("a transfer shows both places, and says when the store would hold less than
   await form.getByLabel("To", { exact: true }).selectOption({ label: "Imran Qureshi" });
   await form.getByLabel("How many").fill("10");
   await form.getByRole("button", { name: "Review" }).click();
-
   const check = form.getByRole("group", { name: opsCopy.stock.confirm.title });
+  await expect(check).toContainText(opsCopy.stock.confirm.onItsWay("Imran Qureshi"));
+  await check.getByRole("button", { name: opsCopy.stock.confirm.back }).click();
+
+  // Handed over in person, it arrives at once.
+  await form.getByLabel(opsCopy.stock.record.waitForScan).uncheck();
+  await form.getByRole("button", { name: "Review" }).click();
   await expect(check).toContainText(`${WAREHOUSE}: -20 ml → -30 ml`);
   await expect(check).toContainText("Imran Qureshi: 150 ml → 160 ml");
   await expect(check).toContainText(`${WAREHOUSE} would go below zero`);
   const sent = posted(page, "/api/stock/transfers");
   await check.getByRole("button", { name: "Record" }).click();
-  expect((await sent).postDataJSON()).toEqual({ consumable_code: "solvent", quantity: 10, from: "central", to: IMRAN });
+  expect((await sent).postDataJSON()).toEqual({
+    consumable_code: "solvent",
+    quantity: 10,
+    from: "central",
+    to: IMRAN,
+    wait_for_scan: false,
+  });
 });
 
 test("will not move stock to the place it is in", async ({ page }) => {
@@ -499,6 +510,7 @@ test("names a hair system's pieces by their labels, as a scanner types them, and
     from: "central",
     to: IMRAN,
     units: ["MM-ESS-0000002-C"],
+    wait_for_scan: true,
   });
 });
 
