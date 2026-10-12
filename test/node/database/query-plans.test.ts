@@ -87,6 +87,8 @@ const SMALL_TABLES = new Set([
   "checklist_items",
   "partial_reasons",
   "lost_reasons",
+  // A row a product a time Finance set its cost.
+  "standard_costs",
   "consumables",
   "consumable_usage",
   // What Growth sets on the Words page, a row an edit: it grows with ops' work, not with clients.

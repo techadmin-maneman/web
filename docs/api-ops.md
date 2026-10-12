@@ -2306,6 +2306,62 @@ Take an entry off the figures
 }
 ```
 
+### GET /api/standard-costs
+
+Each first fit and replacement product still sold, with what it costs us today
+
+**200**: The products
+
+```json
+{
+  "$ref": "#/components/schemas/ProductCosts"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/standard-costs
+
+Set what a product costs us, from today
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/ProductCostChange"
+}
+```
+
+**200**: Set; the products as they now stand
+
+```json
+{
+  "$ref": "#/components/schemas/ProductCosts"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no such product still sold
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ### POST /api/visits/{id}/lost-reason
 
 Set, or clear, why a client is not going ahead with a fit after this consultation
@@ -12784,6 +12840,105 @@ Request body:
 }
 ```
 
+### ProductCosts
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "products": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "item": {
+            "type": "string",
+            "enum": [
+              "first_fit",
+              "replacement"
+            ]
+          },
+          "tier": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "cost": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Paise before GST; null while none is set."
+          },
+          "since": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The day the cost stands from."
+          }
+        },
+        "required": [
+          "item",
+          "tier",
+          "name",
+          "cost",
+          "since"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "products"
+  ],
+  "additionalProperties": false
+}
+```
+
+### ProductCostChange
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "item": {
+      "type": "string",
+      "enum": [
+        "first_fit",
+        "replacement"
+      ]
+    },
+    "tier": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 32
+    },
+    "cost": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100000000,
+      "description": "Paise before GST."
+    }
+  },
+  "required": [
+    "item",
+    "tier",
+    "cost"
+  ],
+  "additionalProperties": false
+}
+```
+
 ### LostReasonChange
 
 ```json
@@ -13761,6 +13916,7 @@ Request body:
         "setting.change",
         "price.set",
         "price.withdraw",
+        "standard_cost.set",
         "slot_times.set",
         "pincode.set",
         "pincode.rename",

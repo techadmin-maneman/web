@@ -5679,6 +5679,95 @@
         ],
         "additionalProperties": false
       },
+      "ProductCosts": {
+        "type": "object",
+        "properties": {
+          "products": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "item": {
+                  "type": "string",
+                  "enum": [
+                    "first_fit",
+                    "replacement"
+                  ]
+                },
+                "tier": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "cost": {
+                  "anyOf": [
+                    {
+                      "type": "integer"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "description": "Paise before GST; null while none is set."
+                },
+                "since": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "description": "The day the cost stands from."
+                }
+              },
+              "required": [
+                "item",
+                "tier",
+                "name",
+                "cost",
+                "since"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "products"
+        ],
+        "additionalProperties": false
+      },
+      "ProductCostChange": {
+        "type": "object",
+        "properties": {
+          "item": {
+            "type": "string",
+            "enum": [
+              "first_fit",
+              "replacement"
+            ]
+          },
+          "tier": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 32
+          },
+          "cost": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100000000,
+            "description": "Paise before GST."
+          }
+        },
+        "required": [
+          "item",
+          "tier",
+          "cost"
+        ],
+        "additionalProperties": false
+      },
       "LostReasonChange": {
         "type": "object",
         "properties": {
@@ -6573,6 +6662,7 @@
               "setting.change",
               "price.set",
               "price.withdraw",
+              "standard_cost.set",
               "slot_times.set",
               "pincode.set",
               "pincode.rename",
@@ -16341,6 +16431,78 @@
         }
       }
     },
+    "/api/standard-costs": {
+      "get": {
+        "summary": "Each first fit and replacement product still sold, with what it costs us today",
+        "responses": {
+          "200": {
+            "description": "The products",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductCosts"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "access_required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Set what a product costs us, from today",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProductCostChange"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Set; the products as they now stand",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductCosts"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "access_required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found: no such product still sold",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/visits/{id}/lost-reason": {
       "post": {
         "summary": "Set, or clear, why a client is not going ahead with a fit after this consultation",
@@ -17303,6 +17465,7 @@
                 "setting.change",
                 "price.set",
                 "price.withdraw",
+                "standard_cost.set",
                 "slot_times.set",
                 "pincode.set",
                 "pincode.rename",

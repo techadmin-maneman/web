@@ -296,6 +296,24 @@ export const settings = {
    * No board draws the services (docs/decisions/0085-services-ops-can-edit.md). What a price or a change was is
    * shown beside what it will be before anything is sent (docs/decisions/0071-what-ops-see-before-a-setting-changes.md).
    */
+  /** What each hair system costs us, for the margin figures (docs/decisions/0152-standard-costs.md). */
+  standardCosts: {
+    title: "Hair system costs",
+    note: "What each hair system costs us, before GST, for the margin figures. A new figure counts from today.",
+    columns: { product: "Product", cost: "Cost, Rs.", since: "Since" },
+    kinds: { first_fit: "First fit", replacement: "Replacement" },
+    notSet: "Not set",
+    save: "Save",
+    saved: "Saved.",
+    costLabel: (product: string) => `Cost of ${product}, Rs.`,
+    errors: {
+      invalid_request: "Type whole rupees.",
+      not_found: "That product is no longer sold. Reload.",
+      not_permitted: NOT_PERMITTED,
+      offline: OFFLINE,
+      unknown: FAILED,
+    },
+  },
   services: {
     title: "Services and prices",
     /** The four kinds, as the rest of the console names them. */

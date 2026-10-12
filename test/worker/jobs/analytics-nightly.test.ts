@@ -297,13 +297,31 @@ describe("the copy's client months", () => {
     const months = [...(warehouse.tables.get("fact_client_month")?.values() ?? [])].filter(
       (row) => row.client_key === rohit,
     );
-    expect(months.map((row) => [row.month, row.state, row.visits, row.revenue])).toEqual([
-      ["2026-09-01", "active", 1, 10000],
-      ["2026-10-01", "lapsed", 0, 0],
-      ["2026-11-01", "lapsed", 0, 0],
-      ["2026-12-01", "lapsed", 0, 0],
-      ["2027-01-01", "lost", 0, 0],
+    expect(months.map((row) => [row.month, row.state, row.visits, row.revenue, row.margin])).toEqual([
+      ["2026-09-01", "active", 1, 10000, 10000],
+      ["2026-10-01", "lapsed", 0, 0, 0],
+      ["2026-11-01", "lapsed", 0, 0, 0],
+      ["2026-12-01", "lapsed", 0, 0, 0],
+      ["2027-01-01", "lost", 0, 0, 0],
     ]);
-    expect(months[0]).toMatchObject({ cohort_month: "2026-09-01", city: "Gurgaon", channel: "Direct", margin: null });
+    expect(months[0]).toMatchObject({ cohort_month: "2026-09-01", city: "Gurgaon", channel: "Direct" });
+  });
+
+  it("takes a first fit's hair system off its margin at its standard cost, and leaves none where it has no cost", async () => {
+    await env.DB.prepare("UPDATE appointments SET type = 'first_fit', tier = 'standard' WHERE id = 'v-rohit'").run();
+    const marginNow = async () => {
+      const warehouse = createStubWarehouse();
+      await copyTonight(env.DB, warehouse, night);
+      const [rohit] = (await clientKeys(SECRET, ["p-rohit"])).values();
+      return warehouse.tables.get("fact_client_month")?.get(`2026-09-01|${rohit ?? ""}`)?.margin;
+    };
+
+    expect(await marginNow()).toBeNull();
+    await env.DB.prepare(
+      "INSERT INTO standard_costs (item, tier, cost, valid_from, set_by, set_at) VALUES ('first_fit', 'standard', 600000, '2026-09-01', 'finance@maneman.in', ?1)",
+    )
+      .bind(NOW.toISOString())
+      .run();
+    expect(await marginNow()).toBe(4000);
   });
 });

@@ -328,3 +328,19 @@ test.describe("the services and their prices", () => {
     await expect(page.getByLabel(settingsCopy.services.form.amount)).toHaveValue("4000");
   });
 });
+
+// What each hair system costs us, for the margin figures (docs/decisions/0152-standard-costs.md).
+test("takes a hair system's cost in whole rupees, from today", async ({ page }) => {
+  const products = [{ item: "first_fit", tier: "standard", name: "Mane Man Natural", cost: null, since: null }];
+  await open(page, "/prices", {
+    "GET /api/standard-costs": json({ products }),
+    "POST /api/standard-costs": json({ products: [{ ...products[0], cost: 600000, since: "2026-09-21" }] }),
+  });
+  const copy = settingsCopy.standardCosts;
+  const box = page.getByRole("textbox", { name: copy.costLabel("First fit · Mane Man Natural") });
+  await box.fill("6000");
+  const sent = posted(page, "/api/standard-costs");
+  await page.getByRole("button", { name: copy.save }).click();
+  expect((await sent).postDataJSON()).toEqual({ item: "first_fit", tier: "standard", cost: 600000 });
+  await expect(page.getByRole("cell", { name: "21 Sep" })).toBeVisible();
+});

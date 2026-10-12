@@ -141,6 +141,9 @@ export const ROUTE_NEEDS: Readonly<Record<string, RouteNeed | typeof SIGNED_IN>>
   "POST /api/prices/correct": need("finance", "manage"),
   "POST /api/prices/withdraw": need("finance", "manage"),
   "GET /api/services": readFromAnyPlace("finance"),
+  // What each hair system costs us, for the margin figures (docs/decisions/0152-standard-costs.md): national.
+  "GET /api/standard-costs": need("finance", "view"),
+  "POST /api/standard-costs": need("finance", "manage"),
 
   // Growth: referrals, the waitlist, and adding and launching a pincode, each kept to the caller's cities. The service
   // area lists every pincode we know, in every city, with how many wait in each, so it stays national.
