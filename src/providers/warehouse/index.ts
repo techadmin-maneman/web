@@ -51,13 +51,6 @@ export interface RunLog {
 
 export type AnalyticsProvider = "supabase" | "stub" | "none";
 
-/** Hyperdrive's connection string, once wrangler.jsonc gives this environment the ANALYTICS_DB binding. */
-export function hyperdriveOf(env: object): string | null {
-  const binding: unknown = Reflect.get(env, "ANALYTICS_DB");
-  if (typeof binding !== "object" || binding === null || !("connectionString" in binding)) return null;
-  return typeof binding.connectionString === "string" ? binding.connectionString : null;
-}
-
 /** The store for this environment; null where the copy is switched off, or its binding is not declared. */
 export function warehouseFor(provider: AnalyticsProvider, connectionString: string | null): WarehouseProvider | null {
   if (provider === "stub") return createStubWarehouse();

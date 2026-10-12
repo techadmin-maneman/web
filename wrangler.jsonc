@@ -249,6 +249,9 @@
           "migrations_dir": "migrations"
         }
       ],
+      // The reporting copy in Supabase, as analytics_writer over its session pooler, with caching off: the night reads
+      // back what it has just written (docs/decisions/0146-the-nightly-analytics-copy.md).
+      "hyperdrive": [{ "binding": "ANALYTICS_DB", "id": "b84e783ea2d543f489bcfaf2a2161c54" }],
       "r2_buckets": [
         { "binding": "UPLOADS", "bucket_name": "mm-prod-tryon-uploads" },
         { "binding": "RESULTS", "bucket_name": "mm-prod-tryon-results" },
@@ -319,7 +322,8 @@
         // Razorpay stays off until Phase 2's release (docs/open-points.md, item 6).
         "PAYMENTS_PROVIDER": "none",
         "GEOCODE_PROVIDER": "none",
-        "ANALYTICS_PROVIDER": "none",
+        // The nightly copy for Zoho Analytics; its client-key secret is set (docs/decisions/0146-the-nightly-analytics-copy.md).
+        "ANALYTICS_PROVIDER": "supabase",
         "ROUTES_PROVIDER": "none",
         "SELF_SERVE_BOOKING": "false",
         "REFERRER_NAME_ON_INVITE": "true",
