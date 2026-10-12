@@ -12,7 +12,7 @@ const ORDER = {
   number: 7,
   supplier_id: "sup-1",
   currency: "INR",
-  state: "drafted",
+  state: "drafted" as const,
   expected_on: "2026-10-15",
   note: null,
   total: 216_000,
@@ -24,7 +24,7 @@ const ORDER = {
   sent_at: null,
   cancel_reason: null,
   needs_second_approval: true,
-} as const;
+};
 
 const BOOK = {
   orders: [ORDER],
