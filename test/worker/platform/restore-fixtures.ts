@@ -54,6 +54,8 @@ export const ROWS_AT_T: readonly string[] = [
      VALUES ('ca1', 'rc1', 'p1', '${AT}', 'consultation', '${AT}', '${AT}')`,
   `INSERT INTO partner_payouts (id, channel_id, month, amount, paid_on, reference, recorded_by, recorded_at)
      VALUES ('pp1', 'rc1', '2026-08', 150000, '2026-09-05', 'UTR0905', 'finance@maneman.in', '${AT}')`,
+  `INSERT INTO spend_entries (id, month, city, channel, amount, entered_by, entered_at)
+     VALUES ('se1', '2026-08', 'Gurgaon', 'partner', 2500000, 'growth@maneman.in', '${AT}')`,
   // A pay grade and its rate for a service visit (docs/decisions/0122-technician-pay-per-visit.md).
   `INSERT INTO pay_grades (id, name, created_by, created_at) VALUES ('pg1', 'Senior', 'finance@maneman.in', '${AT}')`,
   `INSERT INTO visit_pay_rates (id, grade_id, city, visit_kind, amount, effective_from, set_by, set_at)

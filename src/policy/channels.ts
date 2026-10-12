@@ -23,6 +23,17 @@ export type ChannelCode = (typeof CHANNELS)[number]["code"];
 
 export const CHANNEL_CODES = CHANNELS.map((each) => each.code) as [ChannelCode, ...ChannelCode[]];
 
+/** What offline spend may be put under: every channel but the two whose spend Zoho reads from their ad accounts. */
+export const SPEND_CHANNELS = [
+  "partner",
+  "referral",
+  "organic_social",
+  "organic_search",
+  "direct",
+] as const satisfies readonly ChannelCode[];
+
+export type SpendChannel = (typeof SPEND_CHANNELS)[number];
+
 export interface LeadTouch {
   readonly utmSource: string | null;
   readonly utmMedium: string | null;
