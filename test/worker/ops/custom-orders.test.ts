@@ -10,6 +10,7 @@
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import { createStubPayments, type StubPayments } from "../../../src/providers/payments/stub.ts";
+import { asClient, signedIn } from "../clients.ts";
 import { captureLogs, deliverRazorpay, markDatabase, NOW, request } from "../helpers.ts";
 import { IMRAN, JOB, PERSON, working, type Working } from "../job-fixtures.ts";
 
@@ -288,5 +289,24 @@ describe("a paid custom order's refund", () => {
       note: null,
     });
     expect((await refund(id, "failed_check")).status).toBe(200);
+  });
+});
+
+describe("a client's custom orders, on their Home", () => {
+  it("lists each still in hand with where it stands, the link to pay while unpaid, never the supplier's price", async () => {
+    const [order] = (await (await raise()).json<Orders>()).orders;
+    const cookie = await signedIn(PERSON);
+    const mine = await (await asClient(cookie, "/api/me/custom-orders")).json<{ orders: Record<string, unknown>[] }>();
+    expect(mine.orders).toEqual([
+      {
+        number: 1,
+        status: "awaiting_payment",
+        promised_on: "2026-10-20",
+        amount: 4_500_000,
+        pay_url: expect.stringMatching(/^https:\/\/rzp\.io\//) as string,
+      },
+    ]);
+    await job.opsPost(`/api/custom-orders/${order?.id ?? ""}/cancel`);
+    expect((await (await asClient(cookie, "/api/me/custom-orders")).json<{ orders: unknown[] }>()).orders).toEqual([]);
   });
 });

@@ -28,6 +28,7 @@ import { registerClientAvailability } from "./routes/client/availability.ts";
 import { registerClientBooking } from "./routes/client/booking.ts";
 import { registerClientChanges } from "./routes/client/changes.ts";
 import { registerClientNotes } from "./routes/client/notes.ts";
+import { registerClientCustomOrders } from "./routes/client/custom-orders.ts";
 import { registerClientData } from "./routes/client/data.ts";
 import { registerClientDiscountCodes } from "./routes/client/discount-codes.ts";
 import { registerOpsDiscountCodes } from "./routes/ops/discount-codes.ts";
@@ -183,6 +184,8 @@ const SURFACE_ROUTES: Readonly<Record<Surface, readonly ((app: App) => void)[]>>
     registerClientDiscountCodes,
     registerClientChanges,
     registerClientNotes,
+    // Their custom orders, for Home (docs/decisions/0177-custom-orders-in-the-app.md).
+    registerClientCustomOrders,
     registerClientRefer,
     registerClientData,
   ],

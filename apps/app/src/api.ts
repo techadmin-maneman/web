@@ -136,6 +136,7 @@ export const api = {
     client.post("/api/auth/verify", { body: { challenge_id: challengeId, code } }),
   logout: () => client.post("/api/auth/logout"),
   me: () => client.get(HOME_PATH),
+  customOrders: () => client.get("/api/me/custom-orders"),
   profile: () => client.get("/api/profile"),
   saveAddress: (address: AddressSave) => client.patch("/api/profile/address", { body: address }),
   /** One session token for every keystroke of a search, so Google bills the session and not the letters. */

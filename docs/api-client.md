@@ -1668,6 +1668,26 @@ Request body:
 }
 ```
 
+### GET /api/me/custom-orders
+
+The client's custom orders still in hand
+
+**200**: Their custom orders
+
+```json
+{
+  "$ref": "#/components/schemas/MyCustomOrders"
+}
+```
+
+**401**: session_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ### GET /api/refer/card
 
 The client's own card while it is live: the JPEG the invite shows
@@ -6769,6 +6789,66 @@ Request body:
   },
   "required": [
     "note"
+  ],
+  "additionalProperties": false
+}
+```
+
+### MyCustomOrders
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "orders": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "number": {
+            "type": "integer"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "awaiting_payment",
+              "paid",
+              "ordered",
+              "arrived"
+            ]
+          },
+          "promised_on": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date"
+          },
+          "amount": {
+            "type": "integer",
+            "description": "What it costs them, in paise."
+          },
+          "pay_url": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The link to pay by, while it waits for payment."
+          }
+        },
+        "required": [
+          "number",
+          "status",
+          "promised_on",
+          "amount",
+          "pay_url"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "orders"
   ],
   "additionalProperties": false
 }

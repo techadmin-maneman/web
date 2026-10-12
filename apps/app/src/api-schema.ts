@@ -2618,6 +2618,51 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/me/custom-orders": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The client's custom orders still in hand */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Their custom orders */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["MyCustomOrders"];
+                    };
+                };
+                /** @description session_required */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/refer/card": {
         parameters: {
             query?: never;
@@ -4148,6 +4193,19 @@ export interface components {
         VisitNote: {
             /** @description What the technician should know at the door. Replaces any note before it. */
             note: string;
+        };
+        MyCustomOrders: {
+            orders: {
+                number: number;
+                /** @enum {string} */
+                status: "awaiting_payment" | "paid" | "ordered" | "arrived";
+                /** Format: date */
+                promised_on: string | null;
+                /** @description What it costs them, in paise. */
+                amount: number;
+                /** @description The link to pay by, while it waits for payment. */
+                pay_url: string | null;
+            }[];
         };
         Refer: {
             code: string;

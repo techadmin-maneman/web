@@ -13,6 +13,7 @@
 import { BookButton, BookNext, type ChangingVisit } from "../booking/index.ts";
 import { capsLook } from "@maneman/ui/Caps";
 import { ButtonLink } from "@maneman/ui/Button";
+import { lazy, Suspense } from "react";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { indiaDate, listDate, monthInIndia, shortDate } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";
@@ -35,6 +36,11 @@ import {
 } from "./VisitCard.tsx";
 import { ProposedMove } from "./ProposedMove.tsx";
 import styles from "./home.module.css";
+
+/** A custom order on its way, read apart from Home and loaded apart from it (./CustomOrderCard.tsx). */
+const CustomOrderCard = lazy(() =>
+  import("./CustomOrderCard.tsx").then((module) => ({ default: module.CustomOrderCard })),
+);
 import { firstNameOf } from "@rules/lib/names.ts";
 
 export function HomeScreen() {
@@ -49,6 +55,9 @@ export function HomeScreen() {
         {owed !== null && <PaymentOwed owed={owed} />}
         {me.credits !== null && <CreditTile credits={me.credits} />}
         {me.prompt !== null && <Prompt prompt={me.prompt} />}
+        <Suspense fallback={null}>
+          <CustomOrderCard />
+        </Suspense>
         {invoice !== null && <InvoiceLine invoice={invoice} />}
       </div>
     </Shell>
