@@ -58,7 +58,7 @@ export const FRONT_PINNED: Readonly<Record<string, { readonly lines?: number; re
   "apps/tech/src/job/NotHome.tsx": { fn: 167 },
   "apps/tech/src/login/SignIn.tsx": { fn: 153 },
   "apps/tech/src/steps/Consumables.tsx": { fn: 92 },
-  "apps/tech/src/steps/Piece.tsx": { fn: 101 },
+  "apps/tech/src/steps/Piece.tsx": { fn: 96 },
   "apps/tech/src/steps/Profile.tsx": { fn: 106 },
   "apps/tech/src/waiting/WaitingScreen.tsx": { fn: 150 },
   "scripts/fidelity/fidelity-app.ts": { lines: 1075, fn: 170 },

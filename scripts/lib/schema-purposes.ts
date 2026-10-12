@@ -147,6 +147,8 @@ export const PURPOSES: Readonly<Record<string, string>> = {
     "What each place holds of each lot: the sum of its rows in `stock_lot_moves`, kept by triggers as each is written (ADR 0157).",
   stock_transfers:
     "Each transfer sent to a warehouse, a hub or a stockroom: what left, from where, to where, and whether it arrived, in full or short, or was sent back (ADR 0158).",
+  piece_returns:
+    "Each piece that came off a client at a replacement, held in the technician's kit as returned until handed in (ADR 0163).",
   stock_units:
     "Each hair system piece labelled: its label, stock code and lot, and where it is now, held at a place, in transit, fitted or gone (ADR 0161).",
   stock_unit_events:

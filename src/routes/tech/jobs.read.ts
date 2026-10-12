@@ -4,6 +4,7 @@ import type { App } from "../../http/context.ts";
 import { type VisitType } from "../../config/visit-types.ts";
 import { offeredForJob, serviceOfJob } from "../../domain/field/consumables.ts";
 import { kitHairSystems } from "../../domain/field/hair-systems.ts";
+import { kitUnits } from "../../domain/field/stock-units.ts";
 import { checklistOf, declinedChecklistOf, jobSheet } from "../../domain/field/job-sheet-settings.ts";
 import { jobsOn } from "../../domain/field/tech-jobs.ts";
 import { jobDetail, lastVisitPhoto } from "../../domain/field/job-card.ts";
@@ -15,8 +16,12 @@ import { opsInputs } from "../../http/ops-inputs.ts";
 
 import { jobsRoute, jobRoute, lastVisitPhotoRoute } from "./jobs.routes.ts";
 
-/** The kit's hair systems in the job card's words, for the piece step to pick and match to the client's profile. */
+/**
+ * The kit's hair systems in the job card's words, for the piece step to pick and match to the client's profile, each
+ * with the labels of its pieces, so a label scanned with no signal still names its hair system.
+ */
 async function kitOf(db: D1Database, technicianId: string, date: string) {
+  const units = await kitUnits(db, technicianId);
   return (await kitHairSystems(db, technicianId, date)).map((each) => ({
     code: each.code,
     name: each.name,
@@ -27,6 +32,9 @@ async function kitOf(db: D1Database, technicianId: string, date: string) {
     colour: each.colour,
     grey_percent: each.greyPercent,
     density_percent: each.densityPercent,
+    units: units
+      .filter((unit) => unit.consumableCode === each.code)
+      .map((unit) => ({ code: unit.code, lot_code: unit.lotCode, expires_on: unit.expiresOn })),
   }));
 }
 

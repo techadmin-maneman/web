@@ -2677,6 +2677,46 @@ Request body:
     },
     "density_percent": {
       "type": "integer"
+    },
+    "units": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "description": "The label, as the piece step sends it back as piece_code."
+          },
+          "lot_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "expires_on": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "code",
+          "lot_code",
+          "expires_on"
+        ],
+        "additionalProperties": false
+      },
+      "description": "Its pieces the kit holds labelled, soonest to expire first."
     }
   },
   "required": [
@@ -2688,7 +2728,8 @@ Request body:
     "base_length_in",
     "colour",
     "grey_percent",
-    "density_percent"
+    "density_percent",
+    "units"
   ],
   "additionalProperties": false
 }

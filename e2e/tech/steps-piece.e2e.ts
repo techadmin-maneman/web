@@ -69,8 +69,16 @@ test.describe("the piece (board B3, step 4)", () => {
         name: "Mane Man Essential 8x10 1B, 20% grey, 100%",
         held: 1,
         density_percent: 100,
+        units: [],
       },
-      { ...spec, code: "hs_exact", name: "Mane Man Essential 8x10 1B, 20% grey, 120%", held: 2, density_percent: 120 },
+      {
+        ...spec,
+        code: "hs_exact",
+        name: "Mane Man Essential 8x10 1B, 20% grey, 120%",
+        held: 2,
+        density_percent: 120,
+        units: [],
+      },
     ];
     startedThrough(fake, "before_photos", "checklist", "consumables");
     await page.goto(`/jobs/${JOB_ID}/piece`);
@@ -86,6 +94,61 @@ test.describe("the piece (board B3, step 4)", () => {
 
     await expect.poll(() => writesTo(fake, "piece").length).toBe(1);
     expect(writesTo(fake, "piece")[0]?.body).toEqual({ piece_code: "MM-STD-5120-A", stock_code: "hs_exact" });
+  });
+
+  test("a label from the kit picks its hair system and lot, and an expired one keeps Next dim", async ({ page }) => {
+    const fake = await fakeTech(page);
+    fake.type = "first_fit";
+    fake.service = { tier: "essential", name: "Mane Man Essential" };
+    fake.profile = ROHITS_PROFILE;
+    fake.kitHairSystems = [
+      {
+        product: "essential",
+        base_width_in: 8,
+        base_length_in: 10,
+        colour: "1B",
+        grey_percent: 20,
+        density_percent: 120,
+        code: "hs_exact",
+        name: "Mane Man Essential 8x10 1B, 20% grey, 120%",
+        held: 2,
+        units: [
+          { code: "MM-ESS-0000007-H", lot_code: "HS-1", expires_on: "2031-03-31" },
+          { code: "MM-ESS-0000008-J", lot_code: "OLD", expires_on: "2020-01-31" },
+        ],
+      },
+    ];
+    startedThrough(fake, "before_photos", "checklist", "consumables");
+    await page.goto(`/jobs/${JOB_ID}/piece`);
+    const label = page.getByRole("textbox", { name: techCopy.steps.piece.label });
+
+    await label.fill("MM-ESS-0000008-J");
+    await expect(page.getByRole("alert")).toHaveText(techCopy.steps.piece.expired);
+    await expect(page.getByRole("button", { name: techCopy.steps.piece.expiredAction })).toBeDisabled();
+
+    await label.fill("mm-ess-0000007-h");
+    await expect(page.getByRole("textbox", { name: techCopy.steps.piece.lot })).toHaveValue("HS-1");
+    const kit = page.getByRole("region", { name: techCopy.steps.piece.kit.title });
+    await expect(kit.getByRole("button").first()).toHaveAttribute("aria-pressed", "true");
+    await page.getByRole("button", { name: techCopy.steps.next }).click();
+    await expect.poll(() => writesTo(fake, "piece").length).toBe(1);
+    expect(writesTo(fake, "piece")[0]?.body).toEqual({
+      piece_code: "MM-ESS-0000007-H",
+      supplier_lot: "HS-1",
+      stock_code: "hs_exact",
+    });
+  });
+
+  test("says so when no camera opens to scan the label, which can still be typed", async ({ page }) => {
+    await onThePiece(page);
+    await page.evaluate(() => {
+      Object.defineProperty(navigator, "mediaDevices", {
+        value: { getUserMedia: () => Promise.reject(new Error("No camera")) },
+      });
+    });
+    await page.getByRole("button", { name: techCopy.steps.piece.scan }).click();
+    await expect(page.getByRole("alert")).toHaveText(techCopy.steps.piece.camera.refused);
+    await expect(page.getByRole("textbox", { name: techCopy.steps.piece.label })).toBeEditable();
   });
 
   test("the label field is the whole of its 64 px box, so a gloved tap lands in it", async ({ page }) => {

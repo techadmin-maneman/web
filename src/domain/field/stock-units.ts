@@ -448,3 +448,44 @@ export async function unitFound(db: D1Database, label: string): Promise<UnitFoun
     history: results,
   };
 }
+
+/** A unit a technician's kit holds, as the piece step reads it: the stock code it is of, and its lot. */
+export interface KitUnit {
+  readonly code: string;
+  readonly consumableCode: string;
+  readonly lotCode: string | null;
+  readonly expiresOn: string | null;
+}
+
+interface KitUnitRow {
+  readonly code: string;
+  readonly consumable_code: string;
+  readonly lot_code: string | null;
+  readonly expires_on: string | null;
+}
+
+const KIT_UNITS = `SELECT u.code, u.consumable_code, l.lot_code, l.expires_on
+  FROM stock_units u INDEXED BY stock_units_held LEFT JOIN stock_lots l ON l.id = u.lot_id
+  WHERE u.place = ?1 AND u.state = 'held'`;
+
+const kitUnitOf = (row: KitUnitRow): KitUnit => ({
+  code: row.code,
+  consumableCode: row.consumable_code,
+  lotCode: row.lot_code,
+  expiresOn: row.expires_on,
+});
+
+/** Every unit a kit holds, soonest to expire first. */
+export async function kitUnits(db: D1Database, kit: Place): Promise<KitUnit[]> {
+  const { results } = await db
+    .prepare(`${KIT_UNITS} ORDER BY l.expires_on IS NULL, l.expires_on, u.serial`)
+    .bind(kit)
+    .all<KitUnitRow>();
+  return results.map(kitUnitOf);
+}
+
+/** The unit a kit holds under a label; null where it holds none. */
+export async function kitUnit(db: D1Database, kit: Place, label: string): Promise<KitUnit | null> {
+  const row = await db.prepare(`${KIT_UNITS} AND u.code = ?2`).bind(kit, label).first<KitUnitRow>();
+  return row === null ? null : kitUnitOf(row);
+}

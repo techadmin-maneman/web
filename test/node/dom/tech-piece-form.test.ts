@@ -66,6 +66,7 @@ describe("the kit's hair systems", () => {
     held: 1,
     ...spec,
     density_percent: 100,
+    units: [],
     ...more,
   });
   const profile = { fit: { ...spec, density_percent: 100, product: "natural" } };
