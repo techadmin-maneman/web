@@ -19,6 +19,8 @@ export const CUSTOM_ORDERS_PART: Part = {
     short_url: text("Payment link"),
     link_sent_at: time("Link sent"),
     paid_at: time("Paid"),
+    refund_reason: words("Refunded because"),
+    refunded_at: time("Refunded"),
     raised_at: time("Ordered"),
     updated_at: time("Last changed"),
   },

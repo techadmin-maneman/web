@@ -9,7 +9,7 @@ import { MATCHED_FIELDS } from "./stock-match.ts";
 import type { Written } from "./stock.ts";
 
 /** Where an order stands, as ops and the client read it: its own state, and its purchase order's once paid. */
-type CustomOrderStatus = "awaiting_payment" | "paid" | "ordered" | "arrived" | "cancelled";
+type CustomOrderStatus = "awaiting_payment" | "paid" | "ordered" | "arrived" | "refunded" | "cancelled";
 
 export interface CustomOrder {
   readonly id: string;
@@ -33,6 +33,7 @@ export interface CustomOrder {
   readonly linkSentAt: string | null;
   readonly paidAt: string | null;
   readonly poNumber: number | null;
+  readonly refundReason: "not_ordered" | "late" | "failed_check" | null;
   readonly raisedAt: string;
 }
 
@@ -59,17 +60,20 @@ type OrderRow = {
   paid_at: string | null;
   po_number: number | null;
   po_state: string | null;
+  refunded_at: string | null;
+  refund_reason: CustomOrder["refundReason"];
   raised_at: string;
 };
 
 const ORDER_SQL = `SELECT k.id, k.number, k.person_id, k.product, k.base_width_in, k.base_length_in, k.colour,
     k.grey_percent, k.density_percent, k.wave, k.note, k.supplier_id, k.supplier_price, s.currency, k.amount,
     k.promised_on, k.state, k.short_url, k.link_sent_at, k.paid_at, o.number AS po_number, o.state AS po_state,
-    k.raised_at
+    k.refunded_at, k.refund_reason, k.raised_at
   FROM custom_orders k JOIN suppliers s ON s.id = k.supplier_id LEFT JOIN purchase_orders o ON o.id = k.po_id`;
 
 function statusOf(row: OrderRow): CustomOrderStatus {
   if (row.state !== "paid") return row.state;
+  if (row.refunded_at !== null) return "refunded";
   if (row.po_state === "received") return "arrived";
   return row.po_state === "sent" || row.po_state === "part_received" ? "ordered" : "paid";
 }
@@ -96,6 +100,7 @@ const orderOf = (row: OrderRow): CustomOrder => ({
   linkSentAt: row.link_sent_at,
   paidAt: row.paid_at,
   poNumber: row.po_number,
+  refundReason: row.refund_reason,
   raisedAt: row.raised_at,
 });
 

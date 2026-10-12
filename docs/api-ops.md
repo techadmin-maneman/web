@@ -889,6 +889,58 @@ The stock code the client's hair profile matches exactly, and where its pieces a
 }
 ```
 
+### POST /api/custom-orders/{id}/refund
+
+A paid custom order refunded in full: not yet ordered, late past the grace, or failed its check
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/CustomOrderRefund"
+}
+```
+
+**200**: The client's custom orders, and the suppliers one may be raised with
+
+```json
+{
+  "$ref": "#/components/schemas/ClientCustomOrders"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no such client, or custom order, within the reader's places
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**409**: refund_not_due: the reason given does not hold, or the order is refunded already
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**503**: unavailable: Razorpay did not make the refund; ops are told to make it by hand
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ### GET /api/clients/{id}/custom-orders
 
 The client's custom orders, and the suppliers one may be raised with
@@ -8356,7 +8408,8 @@ Request body:
             "order_state",
             "claim_state",
             "return_settled",
-            "out_of_warranty"
+            "out_of_warranty",
+            "refund_not_due"
           ]
         },
         "request_id": {
@@ -11823,7 +11876,8 @@ Request body:
             "order_state",
             "claim_state",
             "return_settled",
-            "out_of_warranty"
+            "out_of_warranty",
+            "refund_not_due"
           ]
         },
         "request_id": {
@@ -13017,7 +13071,20 @@ Request body:
               "paid",
               "ordered",
               "arrived",
+              "refunded",
               "cancelled"
+            ]
+          },
+          "refund_reason": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "not_ordered",
+              "late",
+              "failed_check",
+              null
             ]
           },
           "short_url": {
@@ -13065,6 +13132,7 @@ Request body:
           "amount",
           "promised_on",
           "status",
+          "refund_reason",
           "short_url",
           "link_sent_at",
           "paid_at",
@@ -13100,6 +13168,28 @@ Request body:
     "orders",
     "suppliers"
   ]
+}
+```
+
+### CustomOrderRefund
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "reason": {
+      "type": "string",
+      "enum": [
+        "not_ordered",
+        "late",
+        "failed_check"
+      ]
+    }
+  },
+  "required": [
+    "reason"
+  ],
+  "additionalProperties": false
 }
 ```
 
@@ -15996,6 +16086,7 @@ Request body:
         "piece_return.write_off",
         "custom_order.raise",
         "custom_order.cancel",
+        "custom_order.refund",
         "task.assign",
         "task.hand_back",
         "task.close",
@@ -19636,7 +19727,8 @@ Request body:
         "care_hours",
         "remedy_limit",
         "lost_after_days",
-        "po_second_approval_above_rupees"
+        "po_second_approval_above_rupees",
+        "custom_order_grace_days"
       ]
     },
     "title": {
@@ -19807,7 +19899,8 @@ Request body:
         "care_hours",
         "remedy_limit",
         "lost_after_days",
-        "po_second_approval_above_rupees"
+        "po_second_approval_above_rupees",
+        "custom_order_grace_days"
       ]
     },
     "title": {

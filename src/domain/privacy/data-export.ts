@@ -52,7 +52,8 @@ export const EXPORT_QUERIES = {
   city_matters: "SELECT city, raised_at FROM city_matters WHERE person_id = ?1 ORDER BY raised_at",
   // Each hair system made for them, its spec, price and payment; never what the supplier charges us.
   custom_orders: `SELECT number, product, base_width_in, base_length_in, colour, grey_percent, density_percent, wave,
-    amount, promised_on, state, short_url, link_sent_at, paid_at, raised_at, updated_at FROM custom_orders
+    amount, promised_on, state, short_url, link_sent_at, paid_at, refund_reason, refunded_at, raised_at, updated_at
+    FROM custom_orders
     WHERE person_id = ?1 ORDER BY number`,
   // Free visits Care gave them, and why; never Care's note.
   remedies: `SELECT visits, reason, state, given_at, decided_at FROM remedies WHERE person_id = ?1

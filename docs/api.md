@@ -1522,7 +1522,8 @@ Razorpay's webhook: payments and refunds
             "order_state",
             "claim_state",
             "return_settled",
-            "out_of_warranty"
+            "out_of_warranty",
+            "refund_not_due"
           ]
         },
         "request_id": {

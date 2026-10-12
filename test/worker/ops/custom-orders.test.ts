@@ -231,3 +231,62 @@ describe("a custom order's piece", () => {
     expect(listed?.held ?? 0).toBe(0);
   });
 });
+
+describe("a paid custom order's refund", () => {
+  /** A custom order raised and paid; its purchase order drafted. */
+  async function paidOrder(): Promise<string> {
+    const [order] = (await (await raise()).json<Orders>()).orders;
+    const linkId =
+      (await env.DB.prepare("SELECT razorpay_link_id FROM custom_orders").first<string>("razorpay_link_id")) ?? "";
+    await deliverRazorpay(linkPaid({ id: linkId, reference_id: order?.id ?? "" }), { deps: job.deps });
+    return order?.id ?? "";
+  }
+  const refund = (id: string, reason: string) => job.opsPost(`/api/custom-orders/${id}/refund`, { reason });
+
+  it("is whole before its order goes out, and cancels the draft with it, once", async () => {
+    const id = await paidOrder();
+    const refunded = await refund(id, "not_ordered");
+    expect((await refunded.json<Orders>()).orders[0]?.status).toBe("refunded");
+    expect(payments.made.refunds).toEqual([{ paymentId: "pay_custom_1", amount: 4_500_000 }]);
+    expect(await env.DB.prepare("SELECT state FROM purchase_orders").first<string>("state")).toBe("cancelled");
+    expect([(await refund(id, "not_ordered")).status, payments.made.refunds.length]).toEqual([409, 1]);
+  });
+
+  it("is due once the order has gone only when the supplier is late past the grace, or the piece failed its check", async () => {
+    const id = await paidOrder();
+    const po = await env.DB.prepare(
+      "SELECT o.id, l.id AS line FROM purchase_orders o JOIN po_lines l ON l.po_id = o.id",
+    ).first<{ id: string; line: string }>();
+    await env.DB.prepare("UPDATE purchase_orders SET state = 'sent' WHERE id = ?1")
+      .bind(po?.id ?? "")
+      .run();
+    const refused = await refund(id, "not_ordered");
+    expect([refused.status, (await codeOf(refused)).code]).toEqual([409, "refund_not_due"]);
+    expect((await refund(id, "late")).status).toBe(409);
+
+    await env.DB.prepare("UPDATE custom_orders SET promised_on = '2026-09-10' WHERE id = ?1").bind(id).run();
+    expect((await refund(id, "late")).status).toBe(200);
+    expect(payments.made.refunds).toHaveLength(1);
+  });
+
+  it("is due when its piece failed its check on arrival", async () => {
+    const id = await paidOrder();
+    const po = await env.DB.prepare(
+      "SELECT o.id, l.id AS line FROM purchase_orders o JOIN po_lines l ON l.po_id = o.id",
+    ).first<{ id: string; line: string }>();
+    await env.DB.prepare("UPDATE purchase_orders SET state = 'sent' WHERE id = ?1")
+      .bind(po?.id ?? "")
+      .run();
+    expect((await refund(id, "failed_check")).status).toBe(409);
+    await job.opsPost(`/api/purchase-orders/${po?.id ?? ""}/receipts`, {
+      lines: [{ po_line_id: po?.line ?? "", received: 0, damaged: 0, qc_failed: 1, lot_code: null, expires_on: null }],
+      supplier_invoice: null,
+      rupee_rate: 8325,
+      freight_paise: 0,
+      duty_paise: 0,
+      clearing_paise: 0,
+      note: null,
+    });
+    expect((await refund(id, "failed_check")).status).toBe(200);
+  });
+});
