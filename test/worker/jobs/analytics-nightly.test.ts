@@ -298,7 +298,7 @@ describe("the copy's client months", () => {
       (row) => row.client_key === rohit,
     );
     expect(months.map((row) => [row.month, row.state, row.visits, row.revenue, row.margin])).toEqual([
-      ["2026-09-01", "active", 1, 10000, 10000],
+      ["2026-09-01", "new", 1, 10000, 10000],
       ["2026-10-01", "lapsed", 0, 0, 0],
       ["2026-11-01", "lapsed", 0, 0, 0],
       ["2026-12-01", "lapsed", 0, 0, 0],
@@ -357,11 +357,17 @@ describe("the copy's stock and credits", () => {
         `INSERT INTO credit_ledger (id, person_id, kind, visits, source_kind, source_id, created_at)
          VALUES ('g1', 'p-rohit', 'grant', 2, 'ops', 'remedy-1', ?1)`,
       ).bind(NOW.toISOString()),
+      env.DB.prepare(
+        `INSERT INTO credit_ledger (id, person_id, kind, visits, grant_id, source_kind, source_id, created_at)
+         VALUES ('u1', 'p-rohit', 'redeem', -1, 'g1', 'appointment', 'v-rohit', ?1)`,
+      ).bind(NOW.toISOString()),
     ]);
     const warehouse = createStubWarehouse();
 
     await copyTonight(env.DB, warehouse, night);
 
+    // As the dashboards read it: a grant adds what it gives, a visit used takes one off.
+    expect(warehouse.tables.get("fact_credit")?.get("u1")).toMatchObject({ kind: "used", visits: 1 });
     const weeks = warehouse.tables.get("fact_stock_week");
     expect(weeks?.get("2026-09-14|central|test_strip")).toMatchObject({ on_hand: 6, value: 240, alerts: 0 });
     expect(weeks?.get(`2026-09-14|kit:${IMRAN}|test_strip`)).toMatchObject({ on_hand: 4, expected: 2, alerts: 1 });
@@ -371,7 +377,11 @@ describe("the copy's stock and credits", () => {
       city: "Gurgaon",
     });
     expect(warehouse.tables.get("fact_stock_movement")?.size).toBe(3);
-    expect(warehouse.tables.get("fact_credit")?.get("g1")).toMatchObject({ kind: "grant", visits: 2, city: "Gurgaon" });
+    expect(warehouse.tables.get("fact_credit")?.get("g1")).toMatchObject({
+      kind: "granted",
+      visits: 2,
+      city: "Gurgaon",
+    });
   });
 });
 

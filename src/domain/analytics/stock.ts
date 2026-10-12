@@ -134,7 +134,7 @@ export async function stockTables(db: D1Database, today: string): Promise<readon
       key: ["place_key"],
       stamped: false,
       rows: [
-        { place_key: "central", kind: "central", city: null, technician_key: null },
+        { place_key: "central", kind: "store", city: null, technician_key: null },
         ...kits.map((kit) => ({ place_key: placeOf(kit.id), kind: "kit", city: kit.city, technician_key: kit.id })),
       ],
     },

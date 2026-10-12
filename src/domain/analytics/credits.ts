@@ -1,7 +1,8 @@
 // Free service visits in the reporting copy (docs/decisions/0153-supply-and-credits-in-the-copy.md): every entry of the
-// credit ledger, whatever gave, used, gave back, let expire or took back a visit, signed as the ledger keeps it, and
-// valued at a standard service visit's price on its day, so what is owed can be read at any date. Records marked as
-// tests are left out; an erased client's entries stay, with no key.
+// credit ledger, valued at a standard service visit's price on its day, so what is owed can be read at any date. As the
+// dashboards read it, a grant is "granted" and adds what it gives; every other entry takes off what it shows, so a visit
+// given back, which the ledger adds, shows a negative. Records marked as tests are left out; an erased client's entries
+// stay, with no key.
 
 import { indiaDate } from "../../lib/india-time.ts";
 import type { TableRows } from "../../providers/warehouse/index.ts";
@@ -18,6 +19,16 @@ interface CreditRow {
   readonly price: number | null;
 }
 
+/** The ledger's kinds as the dashboards name them. */
+const KIND_WORDS: Readonly<Record<string, string>> = {
+  grant: "granted",
+  redeem: "used",
+  restore: "given_back",
+  expire: "expired",
+  clawback: "taken_back",
+  adjust: "adjusted",
+};
+
 export async function creditRows(db: D1Database, keys: ReadonlyMap<string, string>): Promise<TableRows> {
   const { results } = await db
     .prepare(
@@ -32,14 +43,18 @@ export async function creditRows(db: D1Database, keys: ReadonlyMap<string, strin
     table: "fact_credit",
     key: ["entry_key"],
     stamped: true,
-    rows: results.map((row) => ({
-      entry_key: row.id,
-      entry_date: indiaDate(new Date(row.created_at)),
-      client_key: row.erased === 1 ? null : (keys.get(row.person_id) ?? null),
-      city: row.city,
-      kind: row.kind,
-      visits: row.visits,
-      value: row.price === null ? null : Math.round(row.visits * row.price) / 100,
-    })),
+    rows: results.map((row) => {
+      // A grant counts what it adds; every other entry what it takes off.
+      const visits = row.kind === "grant" ? row.visits : -row.visits;
+      return {
+        entry_key: row.id,
+        entry_date: indiaDate(new Date(row.created_at)),
+        client_key: row.erased === 1 ? null : (keys.get(row.person_id) ?? null),
+        city: row.city,
+        kind: KIND_WORDS[row.kind] ?? row.kind,
+        visits,
+        value: row.price === null ? null : Math.round(visits * row.price) / 100,
+      };
+    }),
   };
 }
