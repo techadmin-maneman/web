@@ -13,7 +13,7 @@
 // Anything else, "/" included, is where the console opens: Tasks, or for a
 // person who may not open Tasks, the first section they may.
 
-import { areas, clients, settings, shell, technicians } from "./content.ts";
+import { areas, clients, settingsTabs, shell, technicians } from "./content.ts";
 import type { Department } from "./lib/grants.ts";
 
 /** The router the apps share (packages/ui/router.tsx): the console's pages take it from here. */
@@ -34,6 +34,7 @@ export const SECTIONS = [
   { page: "stock", path: "/stock", department: "operations", reads: "GET /api/stock" },
   { page: "clients", path: "/clients", department: "customer_care", reads: "POST /api/clients/find" },
   { page: "messages", path: "/messages", department: "customer_care", reads: "GET /api/conversations" },
+  { page: "care-numbers", path: "/care-numbers", department: "customer_care", reads: "GET /api/care-numbers" },
   { page: "grievances", path: "/grievances", department: "customer_care", reads: "GET /api/grievances" },
   { page: "number-changes", path: "/number-changes", department: "customer_care", reads: "GET /api/number-changes" },
   {
@@ -264,7 +265,7 @@ export function redirectOf(path: string, mayCall: MayCall): string | null {
 
 /** Each section's name and each Settings tab's, from content.ts; typed here, so one left unnamed fails the build. */
 export const SECTION_NAMES: Readonly<Record<Page, string>> = shell.sections;
-export const SETTINGS_TAB_NAMES: Readonly<Record<SettingsTab, string>> = settings.tabs;
+export const SETTINGS_TAB_NAMES: Readonly<Record<SettingsTab, string>> = settingsTabs;
 export const AREA_TAB_NAMES: Readonly<Record<AreaTab, string>> = areas.tabs;
 export const TECHNICIAN_TAB_NAMES: Readonly<Record<TechnicianTab, string>> = technicians.tabs;
 

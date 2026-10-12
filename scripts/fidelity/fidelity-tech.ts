@@ -190,7 +190,7 @@ const cardFor = (id: string, progress: Progress = NOTHING_DONE): Schemas["Techni
       lng: 77.07,
     },
     access_notes: "Gate code 4417 · visitor bay B",
-    client: { name: CLIENTS[id] ?? "", mobile: "+919810000000", note: null },
+    client: { name: CLIENTS[id] ?? "", mobile: "+919810000000", note: null, whatsapp: true },
     progress,
     no_show_wait_min: 15,
     // An hour before the booked start, as ops set it, and the check-in radius in force.

@@ -2,7 +2,14 @@
 // minutes in hours, and by the answered-by hour of the next morning outside them. Times are India's.
 
 import { describe, expect, it } from "vitest";
-import { CARE_HOURS, careHoursConflicts, careIsOn, lastClosed, replyBy } from "../../../src/policy/care-hours.ts";
+import {
+  CARE_HOURS,
+  careHoursConflicts,
+  careIsOn,
+  careMinutesBetween,
+  lastClosed,
+  replyBy,
+} from "../../../src/policy/care-hours.ts";
 import { indiaInstant } from "../../../src/lib/india-time.ts";
 
 const india = (date: string, time: string) => indiaInstant(date, time);
@@ -44,5 +51,14 @@ describe("when Care last closed", () => {
     expect(lastClosed(india("2026-10-12", "22:10"))).toEqual(india("2026-10-12", "21:00"));
     expect(lastClosed(india("2026-10-13", "07:30"))).toEqual(india("2026-10-12", "21:00"));
     expect(lastClosed(india("2026-10-13", "12:00"))).toEqual(india("2026-10-12", "21:00"));
+  });
+});
+
+describe("a wait in Care hours", () => {
+  it("counts only the minutes Care are on", () => {
+    expect(careMinutesBetween(india("2026-10-12", "10:00"), india("2026-10-12", "10:45"))).toBe(45);
+    expect(careMinutesBetween(india("2026-10-12", "20:50"), india("2026-10-13", "09:20"))).toBe(30);
+    expect(careMinutesBetween(india("2026-10-12", "22:00"), india("2026-10-13", "08:00"))).toBe(0);
+    expect(careMinutesBetween(india("2026-10-12", "20:00"), india("2026-10-14", "10:00"))).toBe(60 + 720 + 60);
   });
 });

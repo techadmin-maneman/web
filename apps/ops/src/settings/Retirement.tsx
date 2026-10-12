@@ -8,7 +8,7 @@ import { Button } from "@maneman/ui/Button";
 import { longDate } from "@maneman/web-kit/dates";
 import { useState } from "react";
 import { api, type Answer, type Consumable, type Consumables } from "../api.ts";
-import { settings } from "../content.ts";
+import { settings } from "../content/settings.ts";
 import { CheckPanel } from "../components/CheckPanel.tsx";
 import styles from "../components/forms.module.css";
 

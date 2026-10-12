@@ -279,6 +279,17 @@ export const job = {
   clientNote: (who: string, note: string) => `${who}’s note: ${note}`,
   // The board draws no way to reach the client from the card.
   call: (who: string) => `Call ${who}`,
+  /** A word to the client from our number (docs/decisions/0145-technician-presets.md). */
+  tell: {
+    title: (who: string) => `Tell ${who}`,
+    minutes: "Minutes",
+    minute: (minutes: number) => `${String(minutes)} min`,
+    onTheWay: (minutes: number) => `On the way, ${String(minutes)} min`,
+    late: (minutes: number) => `Running ${String(minutes)} min late`,
+    atGate: "At the gate",
+    sent: (who: string) => `Sent to ${who} from our number.`,
+    noWhatsApp: (who: string) => `${who} takes no WhatsApp messages about visits. Call instead.`,
+  },
   whatsApp: (who: string) => `WhatsApp ${who}`,
   start: "Start job",
   continueJob: "Continue",

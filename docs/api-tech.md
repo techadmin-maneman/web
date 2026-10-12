@@ -877,6 +877,59 @@ Request body:
 }
 ```
 
+### POST /api/tech/jobs/{id}/updates
+
+Tell the client the technician is on the way, at the gate, or running late, from our number
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/TechnicianUpdate"
+}
+```
+
+**200**: Queued for the client now; false for a word heard before, or too late to help
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "sent": {
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "sent"
+  ],
+  "additionalProperties": false
+}
+```
+
+**400**: invalid_request: minutes are for on the way and running late, and not for at the gate
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**401**: session_required; device_revoked
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no such job, or never this technician's
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ### GET /api/tech/pieces/lookup
 
 The piece a label names
@@ -2022,12 +2075,17 @@ Request body:
                   "type": "null"
                 }
               ]
+            },
+            "whatsapp": {
+              "type": "boolean",
+              "description": "Whether they take messages about their visits on WhatsApp, as the card's presets go."
             }
           },
           "required": [
             "name",
             "mobile",
-            "note"
+            "note",
+            "whatsapp"
           ],
           "additionalProperties": false
         },
@@ -3703,6 +3761,41 @@ Request body:
       "additionalProperties": false
     }
   ]
+}
+```
+
+### TechnicianUpdate
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "preset": {
+      "type": "string",
+      "enum": [
+        "on_the_way",
+        "at_gate",
+        "running_late"
+      ]
+    },
+    "minutes": {
+      "anyOf": [
+        {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 120
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  },
+  "required": [
+    "preset",
+    "minutes"
+  ],
+  "additionalProperties": false
 }
 ```
 
