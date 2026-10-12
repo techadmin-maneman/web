@@ -2,7 +2,12 @@
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
-import { createAlertOnce, createResolveAlert, type AlertOnce } from "../../../src/domain/ops/alerts.ts";
+import {
+  createAlertOnce,
+  createResolveAlert,
+  retellUndelivered,
+  type AlertOnce,
+} from "../../../src/domain/ops/alerts.ts";
 import { HOUR_MS } from "../../../src/lib/durations.ts";
 import { createLogger } from "../../../src/log.ts";
 import { captureLogs, NOW } from "../helpers.ts";
@@ -248,6 +253,54 @@ describe("alertOnce", () => {
 
     expect(told).toEqual(["Invoice inv-1 is a draft. https://ops-staging.maneman.in/tasks"]);
     expect(logs.lines()).toContainEqual(expect.objectContaining({ event: "alert_not_stored", key: "k" }));
+  });
+});
+
+describe("a telling the chat did not take", () => {
+  const toldTimes = () => env.DB.prepare("SELECT told_at, last_told_at FROM alerts WHERE key = 'r1'").first();
+  const retell = (into: string[], taken = true) =>
+    retellUndelivered({
+      db: env.DB,
+      alert: (message) => {
+        into.push(message);
+        return Promise.resolve(taken);
+      },
+      now: () => hoursAfter(NOW, 0.1),
+      environment: "staging",
+      log: createLogger(),
+    });
+
+  // A failed post to the chat was counted as told, so an alert raised once never reached it.
+  it("waits on Tasks untold, and the retell pass tells the chat once it takes it", async () => {
+    const missed = createAlertOnce({
+      db: env.DB,
+      alert: () => Promise.resolve(false),
+      now: () => NOW,
+      environment: "staging",
+      log: createLogger(),
+    });
+    await missed({ key: "r1", message: "Refund rfnd_1 was refused.", link: "/tasks" });
+    expect(await toldTimes()).toEqual({ told_at: NOW.toISOString(), last_told_at: null });
+
+    const retold: string[] = [];
+    expect(await retell(retold, false)).toBe(0);
+    expect(await toldTimes()).toMatchObject({ last_told_at: null });
+    expect(await retell(retold)).toBe(1);
+    expect(await retell(retold)).toBe(0);
+    expect(retold.slice(1)).toEqual(["Refund rfnd_1 was refused. https://ops-staging.maneman.in/tasks"]);
+    expect(await toldTimes()).toMatchObject({ last_told_at: hoursAfter(NOW, 0.1).toISOString() });
+  });
+
+  it("tells the chat of a key once in ten minutes while nothing can be kept", async () => {
+    const broken = {
+      prepare: () => {
+        throw new Error("D1 is down");
+      },
+    } as unknown as D1Database;
+    for (const minutes of [0, 1, 9, 11]) {
+      await alertOnceOn(broken, () => new Date(NOW.getTime() + minutes * 60_000))({ key: "storm", message: "Down." });
+    }
+    expect(told).toEqual(["Down.", "Down."]);
   });
 });
 

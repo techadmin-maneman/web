@@ -90,18 +90,17 @@ describe("createAlert", () => {
     expect(chat.calls[0]?.body).not.toMatch(/9810000001|a@b\.in/);
   });
 
-  it("never throws, even when the webhook is down or missing", async () => {
+  it("never throws, and says whether the chat took it: not when it is down, nor when it refuses", async () => {
     const down = (() => Promise.reject(new Error("down"))) as typeof fetch;
     const failing = fakeFetch({ "https://chat.example/": () => new Response("no", { status: 500 }) });
     await expect(
       createAlert({ webhookUrl: "https://chat.example/hook", environment: "staging", fetch: down, log })("x"),
-    ).resolves.toBeUndefined();
+    ).resolves.toBe(false);
     await expect(
       createAlert({ webhookUrl: "https://chat.example/hook", environment: "staging", fetch: failing.fetch, log })("x"),
-    ).resolves.toBeUndefined();
-    await expect(
-      createAlert({ webhookUrl: null, environment: "local", fetch: down, log })("x"),
-    ).resolves.toBeUndefined();
+    ).resolves.toBe(false);
+    // With no chat to post to, the log line is the telling.
+    await expect(createAlert({ webhookUrl: null, environment: "local", fetch: down, log })("x")).resolves.toBe(true);
   });
 });
 
