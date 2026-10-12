@@ -88,6 +88,27 @@ export function kitPieceOf(
   return null;
 }
 
+/** Whether a label is of a piece in the kit that expires before the visit's day. */
+export function expiredInKit(job: Pick<Job, "kit_hair_systems" | "date">, label: string): boolean {
+  const piece = kitPieceOf(job, label);
+  return piece !== null && piece.expires_on !== null && piece.expires_on < job.date;
+}
+
+/**
+ * What a new label sets: a kit piece's hair system, and the lot a kit piece fills in, which follows the label. A lot the
+ * technician typed stays.
+ */
+export function afterLabel(
+  job: Pick<Job, "kit_hair_systems">,
+  was: { readonly code: string; readonly lot: string },
+  label: string,
+): { readonly stock: string | null; readonly lot: string } {
+  const filled = kitPieceOf(job, was.code)?.lot_code ?? null;
+  const piece = kitPieceOf(job, label);
+  const typed = given(was.lot) && was.lot !== filled;
+  return { stock: piece?.stock ?? null, lot: typed ? was.lot : (piece?.lot_code ?? "") };
+}
+
 /** Whether a one visit's client decided against the fit, which fits nothing and asks for no label. */
 export const declinedTheFit = (form: PieceForm, job: Pick<Job, "one_visit">): boolean =>
   job.one_visit && form.choice === DECLINED;

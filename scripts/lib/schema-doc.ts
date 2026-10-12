@@ -172,6 +172,7 @@ export const RESTORE_GROUPS: readonly RestoreGroup[] = [
       "stock_transfers",
       "stock_units",
       "stock_unit_events",
+      "piece_returns",
     ],
     leftAtT:
       "A delivery, transfer, count or loss recorded since, or a job's use, is lost, so what each place holds is wrong; a hub or stockroom added or changed since goes back, and each piece is where it was",
@@ -415,10 +416,8 @@ export function migratedTables(migrations: readonly MigrationFile[]): Table[] {
 const code = (text: string): string => `\`${text}\``;
 
 function columnRow(column: Column): string {
-  const notes = [
-    column.primaryKey ? "primary key" : "",
-    column.references === null ? "" : `→ ${code(column.references)}`,
-  ].filter((note) => note !== "");
+  const reference = column.references === null ? [] : [`→ ${code(column.references)}`];
+  const notes = [...(column.primaryKey ? ["primary key"] : []), ...reference];
   const empty = column.notNull || column.primaryKey ? "no" : "yes";
   const fallback = column.defaultValue === null ? "" : code(column.defaultValue);
   return `| ${code(column.name)} | ${column.type || "any"} | ${empty} | ${fallback} | ${notes.join("; ")} |`;

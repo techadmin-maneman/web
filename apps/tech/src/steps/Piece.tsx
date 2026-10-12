@@ -34,9 +34,10 @@ import type { Queued } from "../store/outbox.ts";
 import {
   choiceSent,
   declinedTheFit,
+  afterLabel,
+  expiredInKit,
   given,
   kitChoices,
-  kitPieceOf,
   noticeFor,
   onTheHead,
   pieceBody,
@@ -60,6 +61,30 @@ import { pieceSent } from "./sent-before.ts";
 import { StepFrame } from "./StepFrame.tsx";
 import { useStep } from "./useStep.ts";
 
+/** The label checked against the pieces we know: a client's fills in its base and lot where none is typed. */
+function useLookup(
+  job: Job,
+  form: { readonly code: string; readonly base: string; readonly lot: string },
+  fill: { readonly base: (base: string) => void; readonly lot: (lot: string) => void },
+) {
+  const [looked, setLooked] = useState<Looked>(NOT_LOOKED);
+  const [looking, once] = useOneAtATime();
+  const look = () =>
+    once(async () => {
+      const answer = await api.piece(form.code, job.id);
+      if (answer.ok) {
+        setLooked({ state: "found", found: answer.body });
+        // Another client's piece is refused, and its base and lot are no part of this job.
+        if (!answer.body.belongs_to_this_job) return;
+        if (!given(form.base)) fill.base(answer.body.piece.base ?? "");
+        if (!given(form.lot)) fill.lot(answer.body.piece.supplier_lot ?? "");
+        return;
+      }
+      setLooked(unreachable(answer) ? { state: "offline" } : { state: "unknown" });
+    });
+  return { looked, setLooked, looking, look } as const;
+}
+
 /** The step once the job is in hand: a refused piece starts as it was sent, so nothing is typed twice. */
 function Fitting({
   job,
@@ -77,42 +102,25 @@ function Fitting({
   const [base, setBase] = useState(sent?.base ?? "");
   const [lot, setLot] = useState(sent?.lot ?? "");
   const [stock, setStock] = useState<string | null>(sent?.stock ?? null);
-  const [looked, setLooked] = useState<Looked>(NOT_LOOKED);
-  const [looking, once] = useOneAtATime();
+  const { looked, setLooked, looking, look } = useLookup(job, { code, base, lot }, { base: setBase, lot: setLot });
   const [oldCode, setOldCode] = useState(sent?.oldCode ?? "");
   const [oldReason, setOldReason] = useState(sent?.oldReason ?? "");
   const [picking, setPicking] = useState<"new" | "old" | null>(null);
   const [choice, setChoice] = useState<Choice>(choiceSent(sent));
 
   const form: PieceForm = { code, base, lot, stock, oldCode, oldReason, choice };
-  const fromKit = kitPieceOf(job, code);
-  const expired = fromKit !== null && fromKit.expires_on !== null && fromKit.expires_on < job.date;
+  const expired = expiredInKit(job, code);
   const missing = expired
-    ? copy.piece.expired
+    ? copy.piece.expiredAction
     : stillMissing(form, job, looked.state === "found" && !looked.found.belongs_to_this_job);
-  /** A label typed or scanned: one of the kit's pieces picks its hair system, and its lot where none is typed. */
+  /** A label typed or scanned: one of the kit's pieces picks its hair system and fills in its lot. */
   const takeLabel = (label: string) => {
+    const next = afterLabel(job, { code, lot }, label);
     setCode(label);
     setLooked(NOT_LOOKED);
-    const piece = kitPieceOf(job, label);
-    if (piece === null) return;
-    setStock(piece.stock);
-    if (!given(lot) && piece.lot_code !== null) setLot(piece.lot_code);
+    if (next.stock !== null) setStock(next.stock);
+    setLot(next.lot);
   };
-
-  const look = () =>
-    once(async () => {
-      const answer = await api.piece(code, job.id);
-      if (answer.ok) {
-        setLooked({ state: "found", found: answer.body });
-        // Another client's piece is refused, and its base and lot are no part of this job.
-        if (!answer.body.belongs_to_this_job) return;
-        if (!given(base)) setBase(answer.body.piece.base ?? "");
-        if (!given(lot)) setLot(answer.body.piece.supplier_lot ?? "");
-        return;
-      }
-      setLooked(unreachable(answer) ? { state: "offline" } : { state: "unknown" });
-    });
 
   const pickNew = (piece: ClientPiece) => {
     setCode(piece.piece_code);

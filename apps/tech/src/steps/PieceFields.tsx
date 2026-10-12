@@ -168,6 +168,35 @@ function Picker(props: {
 }
 
 /** The new piece's label: typed, checked against the format, looked up, or picked; and what the lookup found. */
+/** "Scan the label": the camera, open until it reads a label, which goes in the box. */
+function ScanButton({ onCode }: { onCode: (code: string) => void }) {
+  const [scanning, setScanning] = useState(false);
+  return (
+    <>
+      <Button
+        variant="outlineOnInk"
+        size="control"
+        className={styles.second}
+        aria-pressed={scanning}
+        onClick={() => {
+          setScanning(!scanning);
+        }}
+      >
+        {scanning ? copy.piece.stopScan : copy.piece.scan}
+      </Button>
+      {scanning && (
+        <QrCamera
+          words={copy.piece.camera}
+          onRead={(text) => {
+            setScanning(false);
+            onCode(asLabel(text));
+          }}
+        />
+      )}
+    </>
+  );
+}
+
 export function LabelField(props: {
   code: string;
   looked: Looked;
@@ -183,7 +212,6 @@ export function LabelField(props: {
 }) {
   const { code, looked } = props;
   const malformed = given(code) && !isLabel(code);
-  const [scanning, setScanning] = useState(false);
   return (
     <>
       <div className={styles.field}>
@@ -211,26 +239,7 @@ export function LabelField(props: {
             {copy.piece.malformed}
           </p>
         )}
-        <Button
-          variant="outlineOnInk"
-          size="control"
-          className={styles.second}
-          aria-pressed={scanning}
-          onClick={() => {
-            setScanning(!scanning);
-          }}
-        >
-          {scanning ? copy.piece.stopScan : copy.piece.scan}
-        </Button>
-        {scanning && (
-          <QrCamera
-            words={copy.piece.camera}
-            onRead={(text) => {
-              setScanning(false);
-              props.onCode(asLabel(text));
-            }}
-          />
-        )}
+        <ScanButton onCode={props.onCode} />
         <Button
           variant="outlineOnInk"
           size="control"

@@ -121,17 +121,16 @@ test.describe("the piece (board B3, step 4)", () => {
     startedThrough(fake, "before_photos", "checklist", "consumables");
     await page.goto(`/jobs/${JOB_ID}/piece`);
     const label = page.getByRole("textbox", { name: techCopy.steps.piece.label });
-    const next = page.getByRole("button", { name: techCopy.steps.next });
 
     await label.fill("MM-ESS-0000008-J");
     await expect(page.getByRole("alert")).toHaveText(techCopy.steps.piece.expired);
-    await expect(next).toBeDisabled();
+    await expect(page.getByRole("button", { name: techCopy.steps.piece.expiredAction })).toBeDisabled();
 
     await label.fill("mm-ess-0000007-h");
     await expect(page.getByRole("textbox", { name: techCopy.steps.piece.lot })).toHaveValue("HS-1");
     const kit = page.getByRole("region", { name: techCopy.steps.piece.kit.title });
     await expect(kit.getByRole("button").first()).toHaveAttribute("aria-pressed", "true");
-    await next.click();
+    await page.getByRole("button", { name: techCopy.steps.next }).click();
     await expect.poll(() => writesTo(fake, "piece").length).toBe(1);
     expect(writesTo(fake, "piece")[0]?.body).toEqual({
       piece_code: "MM-ESS-0000007-H",

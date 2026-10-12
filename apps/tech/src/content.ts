@@ -478,6 +478,7 @@ export const steps = {
     stopScan: "Stop scanning",
     camera: { opening: "Opening the camera…", refused: "No camera. Type the label instead." },
     expired: "This piece has expired. Hand it in and use another.",
+    expiredAction: "That piece has expired",
     placeholder: "MM-STD-4417-B",
     // The board draws no label typed wrong.
     malformed: "Type it as on the tag, like MM-STD-4417-B.",
