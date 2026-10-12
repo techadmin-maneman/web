@@ -12,7 +12,7 @@ const EXPIRING_KEY = "stock_expiring:";
 const OVERDUE_KEY = "transfer_overdue:";
 
 /** India's date in the hour from 9 am, when the stock is looked at; null in every other hour. */
-export function stockWatchDueOn(now: Date): string | null {
+function stockWatchDueOn(now: Date): string | null {
   return indiaHour(now).endsWith("T09") ? indiaDate(now) : null;
 }
 
