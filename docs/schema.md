@@ -35,6 +35,7 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 | The audit log | `audit_log` | Who did what since `<T>` | Adding the rows since `<T>`: they are only ever added |
 | New people, leads, addresses and try-ons | `people`, `leads`, `addresses`, `tryon_jobs` | Bookings and leads made since are lost here; the CRM has the leads | The rows since `<T>` |
 | Technicians, and FSM's catalogue | `technicians`, `fsm_items` | A technician added or changed since goes back | Where FSM still holds them, the cron reads them again; otherwise the rows since `<T>` |
+| Recalls | `recalls`, `recall_pieces` | A recall raised since is gone though its lot stays blocked and its pieces stay due; one closed since is open again | Raising the recall again on the Quality page names the same lot, already blocked, so it is refused: ask the engineer |
 | Cycle counts | `count_tasks`, `count_lines` | A count since is open again, though the ledger keeps what it took; a task raised since is raised again the next morning | Counting the task again on the Counts page: the ledger takes a count that agrees with it as nought |
 | The demand forecast | `forecast_runs`, `forecast_lines`, `demand_events`, `plan_lines`, `forecast_accuracy` | A forecast run since is gone and the last before stands until the next is due, an event ops added or took off since is gone or back, a plan line decided since is proposed again, though its transfer or order stands, and a period measured since is measured again from the movements | Adding the events again on the Supply plan page; the next run is due within the planning period |
 | Worked out from other tables | `last_visits`, `ops_settings_snapshot`, `stock_balances`, `stock_lot_balances` | Nothing of their own: triggers keep each from the table it is worked out from | Putting back that table |
@@ -120,6 +121,8 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 - [purchase_orders](#purchase_orders): Each purchase order to a supplier: its state from drafted to closed or cancelled, who approved, sent or cancelled it, and when (ADR 0166).
 - [quick_replies](#quick_replies): Saved answers Customer Care pick in a chat, kept by a Customer Care manager (ADR 0141).
 - [razorpay_events](#razorpay_events): Each Razorpay webhook event, once, by its event ID (ADR 0044).
+- [recall_pieces](#recall_pieces): Each fitted piece a recall made due for replacement, and the day it was due before (ADR 0187).
+- [recalls](#recalls): Each lot recalled: why, who raised it and when, and when it was closed once dealt with (ADR 0187).
 - [receipt_lines](#receipt_lines): What a receipt brought of each order line: accepted, damaged, failed its check, its lot, and what one cost landed (ADR 0167).
 - [receipts](#receipts): Each receipt against a purchase order at the warehouse: who received it, the supplier's invoice, the rupee rate and the freight, duty and clearing (ADR 0167).
 - [referral_attributions](#referral_attributions): A person who came through an invite, to the first invite they used, what became of its grant, and who attached it and why where ops did (ADR 0048, ADR 0089).
@@ -1997,6 +2000,40 @@ Made by `0014_payments.sql`.
 | `event` | TEXT | no |  |  |
 | `received_at` | TEXT | no |  |  |
 
+## recall_pieces
+
+Each fitted piece a recall made due for replacement, and the day it was due before (ADR 0187).
+
+Made by `0155_recalls.sql`.
+
+| Column | Type | May be empty | Default | Key |
+| --- | --- | --- | --- | --- |
+| `recall_id` | TEXT | no |  | primary key; → `recalls.id` |
+| `piece_id` | TEXT | no |  | primary key |
+| `due_before` | TEXT | yes |  |  |
+
+## recalls
+
+Each lot recalled: why, who raised it and when, and when it was closed once dealt with (ADR 0187).
+
+Made by `0155_recalls.sql`.
+
+| Column | Type | May be empty | Default | Key |
+| --- | --- | --- | --- | --- |
+| `id` | TEXT | no |  | primary key |
+| `number` | INTEGER | no |  |  |
+| `lot_id` | TEXT | no |  | → `stock_lots.id` |
+| `reason` | TEXT | no |  |  |
+| `raised_by` | TEXT | no |  |  |
+| `raised_at` | TEXT | no |  |  |
+| `closed_by` | TEXT | yes |  |  |
+| `closed_at` | TEXT | yes |  |  |
+
+Indexes:
+
+- `recalls_one_open`: unique on (`lot_id`), where `closed_at IS NULL`
+- A `UNIQUE` constraint: unique on (`number`)
+
 ## receipt_lines
 
 What a receipt brought of each order line: accepted, damaged, failed its check, its lot, and what one cost landed (ADR 0167).
@@ -2532,7 +2569,7 @@ Triggers: `stock_lot_moves_balance`, `stock_lot_moves_taken_out`.
 
 Each lot of a stock code a delivery brought: the supplier's lot, or the day it was received, and the day it expires (ADR 0157).
 
-Made by `0135_stock_lots.sql`; changed by `0138_stock_units.sql`, `0142_receipts.sql`.
+Made by `0135_stock_lots.sql`; changed by `0138_stock_units.sql`, `0142_receipts.sql`, `0155_recalls.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -2544,6 +2581,7 @@ Made by `0135_stock_lots.sql`; changed by `0138_stock_units.sql`, `0142_receipts
 | `label` | TEXT | yes |  |  |
 | `label_serial` | INTEGER | yes |  |  |
 | `landed_cost_paise` | INTEGER | yes |  |  |
+| `recalled_at` | TEXT | yes |  |  |
 
 Indexes:
 
@@ -2677,7 +2715,7 @@ Indexes:
 
 Each hair system piece labelled: its label, stock code and lot, and where it is now, held at a place, in transit, fitted or gone (ADR 0161).
 
-Made by `0138_stock_units.sql`; changed by `0148_custom_reservations.sql`.
+Made by `0138_stock_units.sql`; changed by `0148_custom_reservations.sql`, `0155_recalls.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -2698,6 +2736,7 @@ Indexes:
 
 - A `UNIQUE` constraint: unique on (`code`)
 - A `UNIQUE` constraint: unique on (`serial`)
+- `stock_units_by_lot`: on (`lot_id`), where `lot_id IS NOT NULL`
 - `stock_units_by_transfer`: on (`transfer_id`), where `transfer_id IS NOT NULL`
 - `stock_units_by_visit`: on (`appointment_id`), where `appointment_id IS NOT NULL`
 - `stock_units_held`: on (`place`, `consumable_code`), where `state = 'held'`

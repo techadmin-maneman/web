@@ -2,7 +2,7 @@
 
 Every decision this repository was built on, oldest first. A record says what was decided and why, and is not rewritten to say something else: a later record changes it, and says so in its own header (ADR 0001). **Changed by** gathers those later records, from either side, so an old record's reader knows to read on.
 
-This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. A record names its topic in its header, `- Topic:` and one of the headings below, and the test fails on one that does not. The next free number is 0187.
+This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. A record names its topic in its header, `- Topic:` and one of the headings below, and the test fails on one that does not. The next free number is 0188.
 
 ## By topic
 
@@ -114,6 +114,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 - [0184](0184-the-one-visit-range.md) The one-visit range
 - [0185](0185-cycle-counts.md) Cycle counts
 - [0186](0186-usage-and-shrinkage.md) Usage against expected, and shrinkage
+- [0187](0187-recalls.md) Recalls
 
 ### Money and Books
 
@@ -408,3 +409,4 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0184](0184-the-one-visit-range.md) | The one-visit range | 2026-10-12 | accepted |  |
 | [0185](0185-cycle-counts.md) | Cycle counts | 2026-10-12 | accepted |  |
 | [0186](0186-usage-and-shrinkage.md) | Usage against expected, and shrinkage | 2026-10-12 | accepted |  |
+| [0187](0187-recalls.md) | Recalls | 2026-10-12 | accepted |  |

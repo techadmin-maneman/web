@@ -128,7 +128,7 @@ async function lotsSent(db: D1Database, transferId: string, quantity: number): P
       `SELECT lm.lot_id, -lm.quantity AS sent FROM stock_movements m
        JOIN stock_lot_moves lm ON lm.movement_id = m.id JOIN stock_lots l ON l.id = lm.lot_id
        WHERE m.transfer_id = ?1 AND m.quantity < 0
-       ORDER BY l.expires_on IS NULL, l.expires_on, l.received_at`,
+       ORDER BY l.recalled_at IS NOT NULL, l.expires_on IS NULL, l.expires_on, l.received_at`,
     )
     .bind(transferId)
     .all<{ lot_id: string; sent: number }>();

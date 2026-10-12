@@ -2727,6 +2727,214 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/recalls": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Every recall, and the lots one may be raised on */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The recalls */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Recalls"];
+                    };
+                };
+                /** @description access_required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        /** A lot recalled, with why: blocked everywhere, and each piece of it a client wears made due today */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["RecallRaise"];
+                };
+            };
+            responses: {
+                /** @description A recall, where its lot's stock is and who wears its pieces */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Recall"];
+                    };
+                };
+                /** @description invalid_request: fields names lot_id for no such lot, or one recalled already */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description access_required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description not_found: no such recall */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/recalls/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One recall: where its lot's stock is, and who wears its pieces */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description A recall, where its lot's stock is and who wears its pieces */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Recall"];
+                    };
+                };
+                /** @description access_required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description not_found: no such recall */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/recalls/{id}/close": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** A recall closed once its stock and pieces are dealt with; the lot stays blocked */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description A recall, where its lot's stock is and who wears its pieces */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Recall"];
+                    };
+                };
+                /** @description access_required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description not_found: no such recall open */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/clients/{id}/erasure": {
         parameters: {
             query?: never;
@@ -5806,7 +6014,7 @@ export interface paths {
                 query?: {
                     actor_kind?: "staff" | "service" | "client" | "technician" | "system";
                     actor?: string;
-                    action?: "ops.call" | "client.call" | "tech.call" | "consent.switch" | "number_change.request" | "number_change.withdraw" | "number_change.decide" | "deletion.request" | "deletion.decide" | "person.erase" | "referral.decide" | "referral.attach" | "channel.add" | "channel.change" | "channel.pause" | "channel.resume" | "word.set" | "chat.reply" | "chat.note" | "chat.close" | "chat.link" | "chat.save" | "care_person.move" | "care_person.move_all" | "care_rota.set" | "care_leave.add" | "care_leave.delete" | "city_matter.raise" | "care_name.set" | "quick_reply.add" | "quick_reply.retire" | "remedy.give" | "remedy.ask" | "remedy.approve" | "remedy.decline" | "word.publish" | "partner_payout.record" | "partner_payout.delete" | "spend.add" | "spend.remove" | "photo.view" | "pincode.launch" | "data.export" | "grievance.raise" | "grievance.resolve" | "no_show.decide" | "technician_device.revoke" | "technician.allow_sign_in" | "no_show.dispute" | "no_show.dispute_rule" | "technician.leave" | "technician.leave_cancelled" | "technician.add" | "technician.change" | "technician.deactivate" | "technician.reactivate" | "technician.delete" | "technician.pay_grade" | "pay_grade.add" | "pay_grade.rename" | "pay_grade.delete" | "pay_rate.set" | "setting.change" | "price.set" | "price.withdraw" | "standard_cost.set" | "target.set" | "target.remove" | "slot_times.set" | "pincode.set" | "pincode.rename" | "pincode.add" | "blackout.add" | "blackout.remove" | "service.add" | "service.rename" | "service.describe" | "service.length" | "service.reorder" | "service.retire" | "service.restore" | "credit.adjust" | "dispatch.client_told" | "dispatch.check_in_cleared" | "dispatch.move_proposed" | "dispatch.proposal_withdrawn" | "consumable.add" | "consumable.change" | "consumable.retire" | "consumable.restore" | "consumable.delete" | "consumable.usage" | "job_sheet.set" | "stock.receive" | "stock.transfer" | "stock.count" | "stock.write_off" | "stock.place_add" | "stock.place_change" | "stock.send" | "stock.receive_transfer" | "stock.send_back" | "stock.label" | "stock.hand_back" | "supplier.add" | "supplier.change" | "supplier.retire" | "supplier.restore" | "supplier.item_set" | "supplier.item_remove" | "purchase_order.draft" | "purchase_order.approve" | "purchase_order.send" | "purchase_order.cancel" | "purchase_order.receive" | "purchase_order.close" | "supplier_claim.send" | "supplier_claim.withdraw" | "supplier_claim.decide" | "piece_return.claim" | "piece_return.write_off" | "custom_order.raise" | "custom_order.cancel" | "custom_order.refund" | "plan_line.approve" | "plan_line.reject" | "demand_event.add" | "demand_event.remove" | "count_task.count" | "count_task.recount" | "count_task.sign_off" | "consumable.count_class" | "task.assign" | "task.hand_back" | "task.close" | "address.given_to_ops" | "alert.resolve" | "alert.send_again" | "booking.give_back" | "visit.book" | "visit.cancel" | "visit.close" | "visit.checkin_waive" | "visit.lost_reason" | "visit.move_accepted" | "hair_profile.correct" | "discount_code.make" | "discount_code.switch_off" | "discount_code.delete" | "discount_code.apply" | "discount_code.remove" | "staff.set" | "staff.enforce" | "staff.token_add" | "staff.token_remove" | "staff.delete";
+                    action?: "ops.call" | "client.call" | "tech.call" | "consent.switch" | "number_change.request" | "number_change.withdraw" | "number_change.decide" | "deletion.request" | "deletion.decide" | "person.erase" | "referral.decide" | "referral.attach" | "channel.add" | "channel.change" | "channel.pause" | "channel.resume" | "word.set" | "chat.reply" | "chat.note" | "chat.close" | "chat.link" | "chat.save" | "care_person.move" | "care_person.move_all" | "care_rota.set" | "care_leave.add" | "care_leave.delete" | "city_matter.raise" | "care_name.set" | "quick_reply.add" | "quick_reply.retire" | "remedy.give" | "remedy.ask" | "remedy.approve" | "remedy.decline" | "word.publish" | "partner_payout.record" | "partner_payout.delete" | "spend.add" | "spend.remove" | "photo.view" | "pincode.launch" | "data.export" | "grievance.raise" | "grievance.resolve" | "no_show.decide" | "technician_device.revoke" | "technician.allow_sign_in" | "no_show.dispute" | "no_show.dispute_rule" | "technician.leave" | "technician.leave_cancelled" | "technician.add" | "technician.change" | "technician.deactivate" | "technician.reactivate" | "technician.delete" | "technician.pay_grade" | "pay_grade.add" | "pay_grade.rename" | "pay_grade.delete" | "pay_rate.set" | "setting.change" | "price.set" | "price.withdraw" | "standard_cost.set" | "target.set" | "target.remove" | "slot_times.set" | "pincode.set" | "pincode.rename" | "pincode.add" | "blackout.add" | "blackout.remove" | "service.add" | "service.rename" | "service.describe" | "service.length" | "service.reorder" | "service.retire" | "service.restore" | "credit.adjust" | "dispatch.client_told" | "dispatch.check_in_cleared" | "dispatch.move_proposed" | "dispatch.proposal_withdrawn" | "consumable.add" | "consumable.change" | "consumable.retire" | "consumable.restore" | "consumable.delete" | "consumable.usage" | "job_sheet.set" | "stock.receive" | "stock.transfer" | "stock.count" | "stock.write_off" | "stock.place_add" | "stock.place_change" | "stock.send" | "stock.receive_transfer" | "stock.send_back" | "stock.label" | "stock.hand_back" | "supplier.add" | "supplier.change" | "supplier.retire" | "supplier.restore" | "supplier.item_set" | "supplier.item_remove" | "purchase_order.draft" | "purchase_order.approve" | "purchase_order.send" | "purchase_order.cancel" | "purchase_order.receive" | "purchase_order.close" | "supplier_claim.send" | "supplier_claim.withdraw" | "supplier_claim.decide" | "piece_return.claim" | "piece_return.write_off" | "custom_order.raise" | "custom_order.cancel" | "custom_order.refund" | "plan_line.approve" | "plan_line.reject" | "demand_event.add" | "demand_event.remove" | "count_task.count" | "count_task.recount" | "count_task.sign_off" | "consumable.count_class" | "recall.raise" | "recall.close" | "task.assign" | "task.hand_back" | "task.close" | "address.given_to_ops" | "alert.resolve" | "alert.send_again" | "booking.give_back" | "visit.book" | "visit.cancel" | "visit.close" | "visit.checkin_waive" | "visit.lost_reason" | "visit.move_accepted" | "hair_profile.correct" | "discount_code.make" | "discount_code.switch_off" | "discount_code.delete" | "discount_code.apply" | "discount_code.remove" | "staff.set" | "staff.enforce" | "staff.token_add" | "staff.token_remove" | "staff.delete";
                     /** @description A client's ID: what they did, and what was done to their record, visits, holds and requests. */
                     person?: string;
                     visit?: string;
@@ -14911,6 +15119,51 @@ export interface components {
                 flagged: boolean;
             }[];
         };
+        Recalls: {
+            recalls: {
+                id: string;
+                number: number;
+                lot_id: string;
+                lot_code: string;
+                consumable_code: string;
+                name: string;
+                reason: string;
+                raised_at: string;
+                closed_at: string | null;
+            }[];
+            lots: {
+                id: string;
+                lot_code: string;
+                consumable_code: string;
+                name: string;
+            }[];
+        };
+        Recall: {
+            id: string;
+            number: number;
+            lot_id: string;
+            lot_code: string;
+            consumable_code: string;
+            name: string;
+            reason: string;
+            raised_at: string;
+            closed_at: string | null;
+            held: {
+                place_id: string;
+                place: string;
+                quantity: number;
+            }[];
+            worn: {
+                piece_code: string;
+                person_id: string;
+                person: string;
+                due_on: string | null;
+            }[];
+        };
+        RecallRaise: {
+            lot_id: string;
+            reason: string;
+        };
         Erased: {
             /** Format: date-time */
             erased_at: string;
@@ -15473,7 +15726,7 @@ export interface components {
                 name: string | null;
             };
             /** @enum {string} */
-            action: "ops.call" | "client.call" | "tech.call" | "consent.switch" | "number_change.request" | "number_change.withdraw" | "number_change.decide" | "deletion.request" | "deletion.decide" | "person.erase" | "referral.decide" | "referral.attach" | "channel.add" | "channel.change" | "channel.pause" | "channel.resume" | "word.set" | "chat.reply" | "chat.note" | "chat.close" | "chat.link" | "chat.save" | "care_person.move" | "care_person.move_all" | "care_rota.set" | "care_leave.add" | "care_leave.delete" | "city_matter.raise" | "care_name.set" | "quick_reply.add" | "quick_reply.retire" | "remedy.give" | "remedy.ask" | "remedy.approve" | "remedy.decline" | "word.publish" | "partner_payout.record" | "partner_payout.delete" | "spend.add" | "spend.remove" | "photo.view" | "pincode.launch" | "data.export" | "grievance.raise" | "grievance.resolve" | "no_show.decide" | "technician_device.revoke" | "technician.allow_sign_in" | "no_show.dispute" | "no_show.dispute_rule" | "technician.leave" | "technician.leave_cancelled" | "technician.add" | "technician.change" | "technician.deactivate" | "technician.reactivate" | "technician.delete" | "technician.pay_grade" | "pay_grade.add" | "pay_grade.rename" | "pay_grade.delete" | "pay_rate.set" | "setting.change" | "price.set" | "price.withdraw" | "standard_cost.set" | "target.set" | "target.remove" | "slot_times.set" | "pincode.set" | "pincode.rename" | "pincode.add" | "blackout.add" | "blackout.remove" | "service.add" | "service.rename" | "service.describe" | "service.length" | "service.reorder" | "service.retire" | "service.restore" | "credit.adjust" | "dispatch.client_told" | "dispatch.check_in_cleared" | "dispatch.move_proposed" | "dispatch.proposal_withdrawn" | "consumable.add" | "consumable.change" | "consumable.retire" | "consumable.restore" | "consumable.delete" | "consumable.usage" | "job_sheet.set" | "stock.receive" | "stock.transfer" | "stock.count" | "stock.write_off" | "stock.place_add" | "stock.place_change" | "stock.send" | "stock.receive_transfer" | "stock.send_back" | "stock.label" | "stock.hand_back" | "supplier.add" | "supplier.change" | "supplier.retire" | "supplier.restore" | "supplier.item_set" | "supplier.item_remove" | "purchase_order.draft" | "purchase_order.approve" | "purchase_order.send" | "purchase_order.cancel" | "purchase_order.receive" | "purchase_order.close" | "supplier_claim.send" | "supplier_claim.withdraw" | "supplier_claim.decide" | "piece_return.claim" | "piece_return.write_off" | "custom_order.raise" | "custom_order.cancel" | "custom_order.refund" | "plan_line.approve" | "plan_line.reject" | "demand_event.add" | "demand_event.remove" | "count_task.count" | "count_task.recount" | "count_task.sign_off" | "consumable.count_class" | "task.assign" | "task.hand_back" | "task.close" | "address.given_to_ops" | "alert.resolve" | "alert.send_again" | "booking.give_back" | "visit.book" | "visit.cancel" | "visit.close" | "visit.checkin_waive" | "visit.lost_reason" | "visit.move_accepted" | "hair_profile.correct" | "discount_code.make" | "discount_code.switch_off" | "discount_code.delete" | "discount_code.apply" | "discount_code.remove" | "staff.set" | "staff.enforce" | "staff.token_add" | "staff.token_remove" | "staff.delete";
+            action: "ops.call" | "client.call" | "tech.call" | "consent.switch" | "number_change.request" | "number_change.withdraw" | "number_change.decide" | "deletion.request" | "deletion.decide" | "person.erase" | "referral.decide" | "referral.attach" | "channel.add" | "channel.change" | "channel.pause" | "channel.resume" | "word.set" | "chat.reply" | "chat.note" | "chat.close" | "chat.link" | "chat.save" | "care_person.move" | "care_person.move_all" | "care_rota.set" | "care_leave.add" | "care_leave.delete" | "city_matter.raise" | "care_name.set" | "quick_reply.add" | "quick_reply.retire" | "remedy.give" | "remedy.ask" | "remedy.approve" | "remedy.decline" | "word.publish" | "partner_payout.record" | "partner_payout.delete" | "spend.add" | "spend.remove" | "photo.view" | "pincode.launch" | "data.export" | "grievance.raise" | "grievance.resolve" | "no_show.decide" | "technician_device.revoke" | "technician.allow_sign_in" | "no_show.dispute" | "no_show.dispute_rule" | "technician.leave" | "technician.leave_cancelled" | "technician.add" | "technician.change" | "technician.deactivate" | "technician.reactivate" | "technician.delete" | "technician.pay_grade" | "pay_grade.add" | "pay_grade.rename" | "pay_grade.delete" | "pay_rate.set" | "setting.change" | "price.set" | "price.withdraw" | "standard_cost.set" | "target.set" | "target.remove" | "slot_times.set" | "pincode.set" | "pincode.rename" | "pincode.add" | "blackout.add" | "blackout.remove" | "service.add" | "service.rename" | "service.describe" | "service.length" | "service.reorder" | "service.retire" | "service.restore" | "credit.adjust" | "dispatch.client_told" | "dispatch.check_in_cleared" | "dispatch.move_proposed" | "dispatch.proposal_withdrawn" | "consumable.add" | "consumable.change" | "consumable.retire" | "consumable.restore" | "consumable.delete" | "consumable.usage" | "job_sheet.set" | "stock.receive" | "stock.transfer" | "stock.count" | "stock.write_off" | "stock.place_add" | "stock.place_change" | "stock.send" | "stock.receive_transfer" | "stock.send_back" | "stock.label" | "stock.hand_back" | "supplier.add" | "supplier.change" | "supplier.retire" | "supplier.restore" | "supplier.item_set" | "supplier.item_remove" | "purchase_order.draft" | "purchase_order.approve" | "purchase_order.send" | "purchase_order.cancel" | "purchase_order.receive" | "purchase_order.close" | "supplier_claim.send" | "supplier_claim.withdraw" | "supplier_claim.decide" | "piece_return.claim" | "piece_return.write_off" | "custom_order.raise" | "custom_order.cancel" | "custom_order.refund" | "plan_line.approve" | "plan_line.reject" | "demand_event.add" | "demand_event.remove" | "count_task.count" | "count_task.recount" | "count_task.sign_off" | "consumable.count_class" | "recall.raise" | "recall.close" | "task.assign" | "task.hand_back" | "task.close" | "address.given_to_ops" | "alert.resolve" | "alert.send_again" | "booking.give_back" | "visit.book" | "visit.cancel" | "visit.close" | "visit.checkin_waive" | "visit.lost_reason" | "visit.move_accepted" | "hair_profile.correct" | "discount_code.make" | "discount_code.switch_off" | "discount_code.delete" | "discount_code.apply" | "discount_code.remove" | "staff.set" | "staff.enforce" | "staff.token_add" | "staff.token_remove" | "staff.delete";
             subject: {
                 kind: string;
                 id: string;

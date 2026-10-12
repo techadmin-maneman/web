@@ -115,7 +115,8 @@ function piecesOf(total: number, lots: readonly { id: string; quantity: number }
   return [...lots.flatMap((lot) => lineOf(lot.id, lot.quantity, units)), ...lineOf(null, total - inLots, units)];
 }
 
-const SOONEST_FIRST = "ORDER BY l.expires_on IS NULL, l.expires_on, l.received_at";
+/** A recalled lot last of all (docs/decisions/0187-recalls.md), then soonest to expire first. */
+const SOONEST_FIRST = "ORDER BY l.recalled_at IS NOT NULL, l.expires_on IS NULL, l.expires_on, l.received_at";
 
 /** The pieces a place holds of a hair system, in the order they leave. */
 async function piecesAt(db: D1Database, code: string, place: Place): Promise<Piece[]> {

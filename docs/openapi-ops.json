@@ -5568,6 +5568,210 @@
           "places"
         ]
       },
+      "Recalls": {
+        "type": "object",
+        "properties": {
+          "recalls": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "number": {
+                  "type": "integer"
+                },
+                "lot_id": {
+                  "type": "string"
+                },
+                "lot_code": {
+                  "type": "string"
+                },
+                "consumable_code": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "reason": {
+                  "type": "string"
+                },
+                "raised_at": {
+                  "type": "string"
+                },
+                "closed_at": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              },
+              "required": [
+                "id",
+                "number",
+                "lot_id",
+                "lot_code",
+                "consumable_code",
+                "name",
+                "reason",
+                "raised_at",
+                "closed_at"
+              ]
+            }
+          },
+          "lots": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "lot_code": {
+                  "type": "string"
+                },
+                "consumable_code": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "lot_code",
+                "consumable_code",
+                "name"
+              ]
+            }
+          }
+        },
+        "required": [
+          "recalls",
+          "lots"
+        ]
+      },
+      "Recall": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "number": {
+            "type": "integer"
+          },
+          "lot_id": {
+            "type": "string"
+          },
+          "lot_code": {
+            "type": "string"
+          },
+          "consumable_code": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "raised_at": {
+            "type": "string"
+          },
+          "closed_at": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "held": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "place_id": {
+                  "type": "string"
+                },
+                "place": {
+                  "type": "string"
+                },
+                "quantity": {
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "place_id",
+                "place",
+                "quantity"
+              ]
+            }
+          },
+          "worn": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "piece_code": {
+                  "type": "string"
+                },
+                "person_id": {
+                  "type": "string"
+                },
+                "person": {
+                  "type": "string"
+                },
+                "due_on": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              },
+              "required": [
+                "piece_code",
+                "person_id",
+                "person",
+                "due_on"
+              ]
+            }
+          }
+        },
+        "required": [
+          "id",
+          "number",
+          "lot_id",
+          "lot_code",
+          "consumable_code",
+          "name",
+          "reason",
+          "raised_at",
+          "closed_at",
+          "held",
+          "worn"
+        ]
+      },
+      "RecallRaise": {
+        "type": "object",
+        "properties": {
+          "lot_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200,
+            "pattern": "^[^\\p{Cc}]+$/u"
+          }
+        },
+        "required": [
+          "lot_id",
+          "reason"
+        ],
+        "additionalProperties": false
+      },
       "Erased": {
         "type": "object",
         "properties": {
@@ -8132,6 +8336,8 @@
               "count_task.recount",
               "count_task.sign_off",
               "consumable.count_class",
+              "recall.raise",
+              "recall.close",
               "task.assign",
               "task.hand_back",
               "task.close",
@@ -19143,6 +19349,186 @@
         }
       }
     },
+    "/api/recalls": {
+      "get": {
+        "summary": "Every recall, and the lots one may be raised on",
+        "responses": {
+          "200": {
+            "description": "The recalls",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Recalls"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "access_required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "A lot recalled, with why: blocked everywhere, and each piece of it a client wears made due today",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecallRaise"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "A recall, where its lot's stock is and who wears its pieces",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Recall"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid_request: fields names lot_id for no such lot, or one recalled already",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "access_required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found: no such recall",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/recalls/{id}": {
+      "get": {
+        "summary": "One recall: where its lot's stock is, and who wears its pieces",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A recall, where its lot's stock is and who wears its pieces",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Recall"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "access_required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found: no such recall",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/recalls/{id}/close": {
+      "post": {
+        "summary": "A recall closed once its stock and pieces are dealt with; the lot stays blocked",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A recall, where its lot's stock is and who wears its pieces",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Recall"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "access_required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found: no such recall open",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/clients/{id}/erasure": {
       "post": {
         "summary": "Erase a client now: their photographs and details. The CRM and Books follow within minutes",
@@ -22382,6 +22768,8 @@
                 "count_task.recount",
                 "count_task.sign_off",
                 "consumable.count_class",
+                "recall.raise",
+                "recall.close",
                 "task.assign",
                 "task.hand_back",
                 "task.close",

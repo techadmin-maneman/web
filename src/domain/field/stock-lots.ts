@@ -28,8 +28,8 @@ export interface HeldLot {
 const HELD_LOTS = `SELECT l.id, l.consumable_code AS code, b.place, l.lot_code, l.expires_on, b.quantity
   FROM stock_lot_balances b JOIN stock_lots l ON l.id = b.lot_id`;
 
-/** Soonest to expire first, a lot with no expiry last, then the earliest received. */
-const SOONEST_FIRST = "ORDER BY l.expires_on IS NULL, l.expires_on, l.received_at";
+/** A recalled lot last of all (docs/decisions/0187-recalls.md); soonest to expire first, one with no expiry last, then the earliest received. */
+const SOONEST_FIRST = "ORDER BY l.recalled_at IS NOT NULL, l.expires_on IS NULL, l.expires_on, l.received_at";
 
 interface HeldLotRow {
   readonly id: string;

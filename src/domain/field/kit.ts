@@ -237,7 +237,10 @@ function piecesHandedIn(
   ];
 }
 
-/** Each stock code's expired stock a kit holds: what its lots that expired before today hold, at most its balance. */
+/**
+ * Each stock code's expired stock a kit holds, recalled stock among it (docs/decisions/0187-recalls.md): what its lots
+ * that expired before today or were recalled hold, at most its balance.
+ */
 async function expiredHeld(
   db: D1Database,
   kit: Place,
@@ -249,7 +252,7 @@ async function expiredHeld(
          MIN(SUM(b.quantity), COALESCE((SELECT quantity FROM stock_balances
            WHERE consumable_code = l.consumable_code AND place = ?1), 0)) AS quantity
        FROM stock_lot_balances b JOIN stock_lots l ON l.id = b.lot_id
-       WHERE b.place = ?1 AND b.quantity > 0 AND l.expires_on < ?2
+       WHERE b.place = ?1 AND b.quantity > 0 AND (l.expires_on < ?2 OR l.recalled_at IS NOT NULL)
        GROUP BY l.consumable_code`,
     )
     .bind(kit, today)

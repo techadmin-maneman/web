@@ -140,6 +140,8 @@ const ACTIONS: Readonly<Record<ActivityAction, string>> = {
   "count_task.recount": "Stock counted again",
   "count_task.sign_off": "Count difference signed off",
   "consumable.count_class": "Count class changed",
+  "recall.raise": "Lot recalled",
+  "recall.close": "Recall closed",
   "task.assign": "Task taken or given",
   "task.hand_back": "Task handed back",
   "task.close": "Task closed",

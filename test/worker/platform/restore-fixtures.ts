@@ -258,6 +258,9 @@ export const ROWS_AT_T: readonly string[] = [
   `INSERT INTO count_tasks (id, place_id, count_class, due_on, state, raised_at, counted_by, counted_at)
      VALUES ('ct1', 'central', 'quarterly', '2026-09-21', 'recount', '${AT}', 'ops@example.com', '${AT}')`,
   `INSERT INTO count_lines (task_id, consumable_code, held, counted, state) VALUES ('ct1', 'strip', 20, 15, 'recount')`,
+  `INSERT INTO stock_lots (id, consumable_code, lot_code, expires_on, received_at) VALUES ('lot-recalled', 'hs1', 'BAD-1', NULL, '${AT}')`,
+  `INSERT INTO recalls (id, number, lot_id, reason, raised_by, raised_at) VALUES ('rcl1', 1, 'lot-recalled', 'Shedding', 'ops@example.com', '${AT}')`,
+  `INSERT INTO recall_pieces (recall_id, piece_id, due_before) VALUES ('rcl1', 'piece-gone', '2027-03-01')`,
 ];
 
 /** What was written between <T> and the export: rows added, changed and deleted, in tables of every kind. */

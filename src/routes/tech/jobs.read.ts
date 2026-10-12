@@ -2,6 +2,7 @@
 
 import type { App } from "../../http/context.ts";
 import { reservedForOthers } from "../../domain/field/custom-orders.ts";
+import { recalledIn } from "../../domain/field/recalls.ts";
 import { type VisitType } from "../../config/visit-types.ts";
 import { offeredForJob, serviceOfJob } from "../../domain/field/consumables.ts";
 import { kitHairSystems } from "../../domain/field/hair-systems.ts";
@@ -20,10 +21,14 @@ import { jobsRoute, jobRoute, lastVisitPhotoRoute } from "./jobs.routes.ts";
 /**
  * The kit's hair systems in the job card's words, for the piece step to pick and match to the client's profile, each
  * with the labels of its pieces, so a label scanned with no signal still names its hair system. A piece reserved to
- * another client's custom order is left out (docs/decisions/0175-custom-pieces-reserved.md).
+ * another client's custom order is left out (docs/decisions/0175-custom-pieces-reserved.md), as is one of a recalled lot
+ * (docs/decisions/0187-recalls.md).
  */
 async function kitOf(db: D1Database, technicianId: string, job: { readonly id: string; readonly date: string }) {
-  const reserved = await reservedForOthers(db, technicianId, job.id);
+  const reserved = new Map([
+    ...(await reservedForOthers(db, technicianId, job.id)),
+    ...(await recalledIn(db, technicianId)),
+  ]);
   const units = (await kitUnits(db, technicianId)).filter((unit) => !reserved.has(unit.code));
   const kept = (code: string) => [...reserved.values()].filter((reservedCode) => reservedCode === code).length;
   return (await kitHairSystems(db, technicianId, job.date)).map((each) => ({

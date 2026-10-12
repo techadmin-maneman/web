@@ -47,6 +47,8 @@ export const PURPOSES: Readonly<Record<string, string>> = {
     "Each demand forecast run, once a planning period: its period, horizon and the rates it learned (ADR 0179).",
   plan_lines:
     "Each move the supply plan proposes from a forecast run, a transfer or an order, with the figures behind it and what ops decided (ADR 0180).",
+  recall_pieces: "Each fitted piece a recall made due for replacement, and the day it was due before (ADR 0187).",
+  recalls: "Each lot recalled: why, who raised it and when, and when it was closed once dealt with (ADR 0187).",
   stock_risks:
     "Each fit booked ahead found with no hair system in its city, or no profile to match one by, and when it was no longer at risk (ADR 0178).",
   supplier_claims:

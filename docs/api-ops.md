@@ -1649,6 +1649,126 @@ Each technician's use beside expected, and each place's losses, over the last we
 }
 ```
 
+### GET /api/recalls
+
+Every recall, and the lots one may be raised on
+
+**200**: The recalls
+
+```json
+{
+  "$ref": "#/components/schemas/Recalls"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/recalls
+
+A lot recalled, with why: blocked everywhere, and each piece of it a client wears made due today
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/RecallRaise"
+}
+```
+
+**200**: A recall, where its lot's stock is and who wears its pieces
+
+```json
+{
+  "$ref": "#/components/schemas/Recall"
+}
+```
+
+**400**: invalid_request: fields names lot_id for no such lot, or one recalled already
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no such recall
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### GET /api/recalls/{id}
+
+One recall: where its lot's stock is, and who wears its pieces
+
+**200**: A recall, where its lot's stock is and who wears its pieces
+
+```json
+{
+  "$ref": "#/components/schemas/Recall"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no such recall
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/recalls/{id}/close
+
+A recall closed once its stock and pieces are dealt with; the lot stays blocked
+
+**200**: A recall, where its lot's stock is and who wears its pieces
+
+```json
+{
+  "$ref": "#/components/schemas/Recall"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no such recall open
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ### POST /api/clients/{id}/erasure
 
 Erase a client now: their photographs and details. The CRM and Books follow within minutes
@@ -14784,6 +14904,225 @@ Request body:
 }
 ```
 
+### Recalls
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "recalls": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "number": {
+            "type": "integer"
+          },
+          "lot_id": {
+            "type": "string"
+          },
+          "lot_code": {
+            "type": "string"
+          },
+          "consumable_code": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "raised_at": {
+            "type": "string"
+          },
+          "closed_at": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "number",
+          "lot_id",
+          "lot_code",
+          "consumable_code",
+          "name",
+          "reason",
+          "raised_at",
+          "closed_at"
+        ]
+      }
+    },
+    "lots": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "lot_code": {
+            "type": "string"
+          },
+          "consumable_code": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "lot_code",
+          "consumable_code",
+          "name"
+        ]
+      }
+    }
+  },
+  "required": [
+    "recalls",
+    "lots"
+  ]
+}
+```
+
+### Recall
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string"
+    },
+    "number": {
+      "type": "integer"
+    },
+    "lot_id": {
+      "type": "string"
+    },
+    "lot_code": {
+      "type": "string"
+    },
+    "consumable_code": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string"
+    },
+    "reason": {
+      "type": "string"
+    },
+    "raised_at": {
+      "type": "string"
+    },
+    "closed_at": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "held": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "place_id": {
+            "type": "string"
+          },
+          "place": {
+            "type": "string"
+          },
+          "quantity": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "place_id",
+          "place",
+          "quantity"
+        ]
+      }
+    },
+    "worn": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "piece_code": {
+            "type": "string"
+          },
+          "person_id": {
+            "type": "string"
+          },
+          "person": {
+            "type": "string"
+          },
+          "due_on": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "piece_code",
+          "person_id",
+          "person",
+          "due_on"
+        ]
+      }
+    }
+  },
+  "required": [
+    "id",
+    "number",
+    "lot_id",
+    "lot_code",
+    "consumable_code",
+    "name",
+    "reason",
+    "raised_at",
+    "closed_at",
+    "held",
+    "worn"
+  ]
+}
+```
+
+### RecallRaise
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "lot_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64
+    },
+    "reason": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200,
+      "pattern": "^[^\\p{Cc}]+$/u"
+    }
+  },
+  "required": [
+    "lot_id",
+    "reason"
+  ],
+  "additionalProperties": false
+}
+```
+
 ### Erased
 
 ```json
@@ -17621,6 +17960,8 @@ Request body:
         "count_task.recount",
         "count_task.sign_off",
         "consumable.count_class",
+        "recall.raise",
+        "recall.close",
         "task.assign",
         "task.hand_back",
         "task.close",

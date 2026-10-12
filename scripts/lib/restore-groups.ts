@@ -228,6 +228,14 @@ export const RESTORE_GROUPS: readonly RestoreGroup[] = [
     putBackBy: "Where FSM still holds them, the cron reads them again; otherwise the rows since `<T>`",
   },
   {
+    what: "Recalls",
+    tables: ["recalls", "recall_pieces"],
+    leftAtT:
+      "A recall raised since is gone though its lot stays blocked and its pieces stay due; one closed since is open again",
+    putBackBy:
+      "Raising the recall again on the Quality page names the same lot, already blocked, so it is refused: ask the engineer",
+  },
+  {
     what: "Cycle counts",
     tables: ["count_tasks", "count_lines"],
     leftAtT:

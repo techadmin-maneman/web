@@ -68,6 +68,7 @@ import { registerOpsSupplyPlan } from "./routes/ops/supply-plan.ts";
 import { registerOpsDemandEvents } from "./routes/ops/demand-events.ts";
 import { registerOpsCountTasks } from "./routes/ops/count-tasks.ts";
 import { registerOpsStockUsage } from "./routes/ops/stock-usage.ts";
+import { registerOpsRecalls } from "./routes/ops/recalls.ts";
 import { registerOpsJobSheet } from "./routes/ops/job-sheet.ts";
 import { registerOpsPaymentLinks } from "./routes/ops/payment-links.ts";
 import { registerOpsNoShowRulings } from "./routes/ops/no-show-rulings.ts";
@@ -225,6 +226,8 @@ const SURFACE_ROUTES: Readonly<Record<Surface, readonly ((app: App) => void)[]>>
     registerOpsCountTasks,
     // Usage against expected, and shrinkage (docs/decisions/0186-usage-and-shrinkage.md).
     registerOpsStockUsage,
+    // Recalls: a lot blocked everywhere, and who wears it (docs/decisions/0187-recalls.md).
+    registerOpsRecalls,
     // Erasing a client from their page, the day they ask.
     registerOpsErasure,
     registerOpsProfile,

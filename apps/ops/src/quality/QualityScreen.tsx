@@ -1,0 +1,119 @@
+// Operations · Quality (docs/decisions/0187-recalls.md): every recall, each opened to where its lot is and who wears
+// it, and a lot recalled with why.
+
+import { Button } from "@maneman/ui/Button";
+import { Table } from "@maneman/ui/Table";
+import { useLoad } from "@maneman/ui/useLoad";
+import { errorText, type Failure } from "@maneman/web-kit/refusal";
+import { useState } from "react";
+import { client } from "../api.ts";
+import { Shell } from "../components/Shell.tsx";
+import form from "../components/forms.module.css";
+import { quality as copy } from "../content/quality.ts";
+import { useAccess } from "../lib/access.ts";
+import { Loading, PanelFailed } from "../states/States.tsx";
+import { RaiseRecall, RecallDetail, type Answer, type Book, type Detail } from "./Recall.tsx";
+
+const loadRecalls = () => client.get("/api/recalls");
+
+function Recalls({ book, onOpen }: { book: Book; onOpen: (id: string) => void }) {
+  if (book.recalls.length === 0) return <p className={form.note}>{copy.none}</p>;
+  return (
+    <Table className={form.table}>
+      <thead>
+        <tr>
+          {copy.columns.map((column) => (
+            <th key={column} scope="col">
+              {column}
+            </th>
+          ))}
+        </tr>
+      </thead>
+      <tbody>
+        {book.recalls.map((recall) => (
+          <tr key={recall.id}>
+            <th scope="row" className={form.rowHead}>
+              {copy.number(recall.number)}
+            </th>
+            <td>{recall.name}</td>
+            <td>{recall.lot_code}</td>
+            <td>{recall.raised_at.slice(0, 10)}</td>
+            <td>{recall.closed_at === null ? copy.open : copy.closed}</td>
+            <td>
+              <Button
+                variant="outline"
+                size="small"
+                aria-label={copy.view(copy.number(recall.number))}
+                onClick={() => {
+                  onOpen(recall.id);
+                }}
+              >
+                {copy.viewShort}
+              </Button>
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </Table>
+  );
+}
+
+export function QualityScreen() {
+  const [loaded, retry] = useLoad(loadRecalls);
+  const [book, setBook] = useState<Book | null>(null);
+  const [opened, setOpened] = useState<Detail | null>(null);
+  const [said, setSaid] = useState<string | null>(null);
+  const [failure, setFailure] = useState<Failure | null>(null);
+  const access = useAccess();
+  const current = book ?? (loaded.state === "loaded" ? loaded.value : null);
+  const reload = () => {
+    void loadRecalls().then((answer) => {
+      if (answer.ok) setBook(answer.body);
+    });
+  };
+  const answered = (answer: Answer, words: string) => {
+    if (!answer.ok) {
+      setFailure({ code: answer.code, fields: answer.fields });
+      return;
+    }
+    setOpened(answer.body);
+    setSaid(words);
+    setFailure(null);
+    reload();
+  };
+  const open = (id: string) => {
+    void client.get("/api/recalls/{id}", { path: { id } }).then((answer) => {
+      if (answer.ok) setOpened(answer.body);
+    });
+  };
+  return (
+    <Shell section="/quality" title={copy.title}>
+      {loaded.state === "loading" && <Loading />}
+      {loaded.state === "failed" && <PanelFailed onRetry={retry} requestId={loaded.requestId} />}
+      {current !== null && (
+        <div className={form.screen}>
+          <section className={form.panel} aria-labelledby="quality-recalls">
+            <div className={form.panelHead}>
+              <h2 className={form.panelTitle} id="quality-recalls">
+                {copy.recalls}
+              </h2>
+            </div>
+            <Recalls book={current} onOpen={open} />
+            {access.mayCall("POST /api/recalls") && <RaiseRecall book={current} onAnswer={answered} />}
+            {said !== null && (
+              <p className={form.saved} role="status">
+                {said}
+              </p>
+            )}
+            {failure !== null && (
+              <p className={form.error} role="alert">
+                {errorText(copy.errors, failure)}
+              </p>
+            )}
+          </section>
+          {opened !== null && <RecallDetail key={opened.id} recall={opened} onAnswer={answered} />}
+        </div>
+      )}
+    </Shell>
+  );
+}
