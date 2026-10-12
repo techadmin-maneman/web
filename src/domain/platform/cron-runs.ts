@@ -1,11 +1,21 @@
 // The cron's run record, the one row of cron_runs. Cloudflare stops a run that overruns its limits without a word,
 // and the jobs it had not finished go unrun. So each run notes when it starts and when it finishes, and a run that
 // finds the one before it never finished tells ops once.
+//
+// The row is also the run's lease: a run that finds the one before still within RUN_LEASE_MS of its start, and not
+// finished, takes it to be running still and runs nothing, so no job runs twice at once. Past the lease, the one
+// before is taken to have been cut short.
 
-import { HOUR_MS } from "../../lib/durations.ts";
+import { HOUR_MS, MINUTE_MS } from "../../lib/durations.ts";
 import type { AlertOnce, ResolveAlert } from "../ops/alerts.ts";
 
 export const CUT_SHORT_ALERT = "cron_run_cut_short";
+
+/**
+ * How long a run that has not finished is taken to be running still. A run's outside calls stop at 30 seconds
+ * (src/scheduled/cron.ts), so one running for three minutes was stopped.
+ */
+const RUN_LEASE_MS = 3 * MINUTE_MS;
 
 /** Runs finishing for this long after a cut-short one close its alert, so the next is told again. */
 const CUT_SHORT_CLEARS_AFTER_MS = HOUR_MS;
@@ -17,6 +27,8 @@ interface RunRow {
 
 /** What a run learns as it starts. */
 export interface RunStart {
+  /** When the run before it started, if that one is running still, so this one runs nothing; null otherwise. */
+  readonly runningSince: string | null;
   /** When the run before it started, if that one never finished; null when it finished, or there was none. */
   readonly cutShortAt: string | null;
   /** The jobs whose last run failed: only these have a count for a success to reset (src/scheduled/cron.ts). */
@@ -29,24 +41,30 @@ function finished(run: RunRow): boolean {
 }
 
 /**
- * Notes the run as started, and tells ops if the run before it never finished. It also reads the failing jobs, all in
- * one round trip to D1: each trip costs every minute's run CPU time.
+ * Notes the run as started, unless the run before it is running still, and tells ops if the run before it never
+ * finished. It also reads the failing jobs, all in one round trip to D1: each trip costs every minute's run CPU time.
  */
 export async function startRun(deps: { db: D1Database; alertOnce: AlertOnce }, startedAt: string): Promise<RunStart> {
   const { db, alertOnce } = deps;
-  const [lastRun, , failingRows] = await db.batch<Record<string, unknown>>([
+  const leaseEndedFor = new Date(Date.parse(startedAt) - RUN_LEASE_MS).toISOString();
+  const [lastRun, claimed, failingRows] = await db.batch<Record<string, unknown>>([
     db.prepare("SELECT started_at, completed_at FROM cron_runs WHERE id = 1"),
     db
       .prepare(
         `INSERT INTO cron_runs (id, started_at) VALUES (1, ?1)
-         ON CONFLICT (id) DO UPDATE SET started_at = excluded.started_at`,
+         ON CONFLICT (id) DO UPDATE SET started_at = excluded.started_at
+         WHERE cron_runs.completed_at >= cron_runs.started_at OR cron_runs.started_at <= ?2
+         RETURNING started_at`,
       )
-      .bind(startedAt),
+      .bind(startedAt, leaseEndedFor),
     db.prepare("SELECT job FROM cron_jobs WHERE failed_runs > 0"),
   ]);
   const failing = new Set((failingRows?.results ?? []).map((row) => String(row.job)));
   const previous = lastRun?.results[0] as RunRow | undefined;
-  if (previous === undefined || finished(previous)) return { cutShortAt: null, failing };
+  if (previous !== undefined && (claimed?.results.length ?? 0) === 0) {
+    return { runningSince: previous.started_at, cutShortAt: null, failing };
+  }
+  if (previous === undefined || finished(previous)) return { runningSince: null, cutShortAt: null, failing };
 
   await db.prepare("UPDATE cron_runs SET cut_short_at = ?1 WHERE id = 1").bind(startedAt).run();
   await alertOnce({
@@ -55,7 +73,7 @@ export async function startRun(deps: { db: D1Database; alertOnce: AlertOnce }, s
       `The cron run started at ${previous.started_at} never finished, so the jobs after where it stopped did not ` +
       `run. Cloudflare may have stopped it for its CPU time: runbook, "A cron run cut short".`,
   });
-  return { cutShortAt: previous.started_at, failing };
+  return { runningSince: null, cutShortAt: previous.started_at, failing };
 }
 
 /** Notes the run as finished, and closes the cut-short alert once runs have finished for an hour since. */
