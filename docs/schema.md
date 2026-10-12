@@ -2169,7 +2169,7 @@ Made by `0133_stock_places.sql`.
 | `parent_id` | TEXT | yes |  | → `stock_places.id` |
 | `zone` | TEXT | yes |  | → `zones.name` |
 | `city` | TEXT | yes |  | → `cities.name` |
-| `technician_id` | TEXT | yes |  | → `technicians.id` |
+| `technician_id` | TEXT | yes |  |  |
 | `active` | INTEGER | no | `1` |  |
 | `created_by` | TEXT | no |  |  |
 | `created_at` | TEXT | no |  |  |

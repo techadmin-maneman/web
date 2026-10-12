@@ -11,8 +11,9 @@ CREATE TABLE stock_places (
   -- A hub's zone; a stockroom's city. A kit is in its technician's city.
   zone TEXT REFERENCES zones (name),
   city TEXT REFERENCES cities (name),
-  -- A kit's technician, whose ID it shares. Deleting a technician added by mistake deletes their kit first.
-  technician_id TEXT REFERENCES technicians (id),
+  -- A kit's technician, whose ID it shares. No foreign key: the code before this release deletes a technician added
+  -- by mistake without knowing of kits, so a kit can outlive its technician, and reads leave such a kit out.
+  technician_id TEXT,
   active INTEGER NOT NULL DEFAULT 1 CHECK (active IN (0, 1)),
   created_by TEXT NOT NULL,
   created_at TEXT NOT NULL,
