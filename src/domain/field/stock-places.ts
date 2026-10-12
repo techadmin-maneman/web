@@ -60,11 +60,14 @@ const placeOf = (row: PlaceRow): StockPlace => ({
   active: row.active === 1,
 });
 
+/** A kit whose technician is gone, deleted as added by mistake, is no place. */
+const STANDING = "(p.kind <> 'kit' OR t.id IS NOT NULL)";
+
 /** Every place, down the tree: the warehouse, then the hubs, the stockrooms and the kits, each by name. */
 export async function allPlaces(db: D1Database): Promise<StockPlace[]> {
   const { results } = await db
     .prepare(
-      `${PLACES} ORDER BY CASE p.kind WHEN 'warehouse' THEN 0 WHEN 'hub' THEN 1 WHEN 'stockroom' THEN 2 ELSE 3 END,
+      `${PLACES} WHERE ${STANDING} ORDER BY CASE p.kind WHEN 'warehouse' THEN 0 WHEN 'hub' THEN 1 WHEN 'stockroom' THEN 2 ELSE 3 END,
          COALESCE(p.name, t.name) COLLATE NOCASE`,
     )
     .all<PlaceRow>();
@@ -72,7 +75,7 @@ export async function allPlaces(db: D1Database): Promise<StockPlace[]> {
 }
 
 export async function placeById(db: D1Database, id: Place): Promise<StockPlace | null> {
-  const row = await db.prepare(`${PLACES} WHERE p.id = ?1`).bind(id).first<PlaceRow>();
+  const row = await db.prepare(`${PLACES} WHERE p.id = ?1 AND ${STANDING}`).bind(id).first<PlaceRow>();
   return row === null ? null : placeOf(row);
 }
 

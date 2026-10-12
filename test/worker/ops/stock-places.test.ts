@@ -180,4 +180,17 @@ describe("a technician's kit", () => {
     const kit = await env.DB.prepare("SELECT 1 FROM stock_places WHERE id = ?1").bind(newcomer).first();
     expect(kit).toBeNull();
   });
+
+  // The code before the place tree deletes a technician without knowing of kits.
+  it("leaves out a kit whose technician was deleted without it", async () => {
+    await env.DB.prepare("DELETE FROM technicians WHERE id = ?1").bind(SAMEER).run();
+    expect((await stock()).places.map((place) => place.id)).not.toContain(SAMEER);
+    const moved = await job.opsPost("/api/stock/transfers", {
+      consumable_code: "tape_strips",
+      quantity: 1,
+      from: "central",
+      to: SAMEER,
+    });
+    expect((await errorOf(moved)).fields).toEqual(["to"]);
+  });
 });
