@@ -2252,6 +2252,7 @@ Made by `0136_stock_transfers.sql`.
 | `sent_at` | TEXT | no |  |  |
 | `settled_by` | TEXT | yes |  |  |
 | `settled_at` | TEXT | yes |  |  |
+| `settlement_id` | TEXT | yes |  |  |
 
 Indexes:
 
