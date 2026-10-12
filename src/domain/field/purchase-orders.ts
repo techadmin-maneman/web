@@ -179,19 +179,30 @@ export async function draftOrder(
 type Changed =
   { readonly ok: true } | { readonly ok: false; readonly missing: true } | { readonly ok: false; readonly state: true };
 
+/** An update of one order, `?1` its ID, stamping `change_id = ?9`, which this request's token fills. */
+interface OrderUpdate {
+  readonly sql: string;
+  readonly binds: readonly (string | number | null)[];
+}
+
+/**
+ * The update and its audit entry, the entry written only where the update stamped this request's token, so a change
+ * refused for its state is never audited, however close in time to another.
+ */
 async function changed(
   db: D1Database,
   order: { readonly id: string; readonly action: AuditAction },
-  update: D1PreparedStatement,
+  update: OrderUpdate,
   written: Written,
 ): Promise<Changed> {
-  // The entry only where this request's update landed: the row carries its time and its actor.
+  const token = crypto.randomUUID();
+  const unused = Array.from({ length: 8 - update.binds.length }, () => null);
   const landed = {
-    sql: "EXISTS (SELECT 1 FROM purchase_orders WHERE id = ?10 AND updated_at = ?11 AND ?12 IN (approved_by, second_approved_by, sent_by, cancelled_by))",
-    binds: [order.id, written.now.toISOString(), written.actor.id],
+    sql: "EXISTS (SELECT 1 FROM purchase_orders WHERE id = ?10 AND change_id = ?11)",
+    binds: [order.id, token],
   };
   const [result] = await db.batch([
-    update,
+    db.prepare(update.sql).bind(...update.binds, ...unused, token),
     auditStatementWhen(db, entry(written, order.action, order.id), written.now, landed),
   ]);
   if (result?.meta.changes === 1) return { ok: true };
@@ -214,45 +225,40 @@ export async function approveOrder(
   if (order.state !== "drafted" || order.approvedBy === written.actor.id) return { ok: false, state: true };
   const at = written.now.toISOString();
   const twice = needsSecondApproval(order, aboveRupees);
-  const update =
+  const update: OrderUpdate =
     order.approvedBy === null
-      ? db
-          .prepare(
-            `UPDATE purchase_orders SET approved_by = ?2, approved_at = ?3, state = ?4, updated_at = ?3
-             WHERE id = ?1 AND state = 'drafted' AND approved_by IS NULL`,
-          )
-          .bind(id, written.actor.id, at, twice ? "drafted" : "approved")
-      : db
-          .prepare(
-            `UPDATE purchase_orders SET second_approved_by = ?2, second_approved_at = ?3, state = 'approved', updated_at = ?3
-             WHERE id = ?1 AND state = 'drafted' AND approved_by IS NOT NULL AND approved_by <> ?2
-               AND second_approved_by IS NULL`,
-          )
-          .bind(id, written.actor.id, at);
+      ? {
+          sql: `UPDATE purchase_orders SET change_id = ?9, approved_by = ?2, approved_at = ?3, state = ?4, updated_at = ?3
+                WHERE id = ?1 AND state = 'drafted' AND approved_by IS NULL`,
+          binds: [id, written.actor.id, at, twice ? "drafted" : "approved"],
+        }
+      : {
+          sql: `UPDATE purchase_orders SET change_id = ?9, second_approved_by = ?2, second_approved_at = ?3,
+                  state = 'approved', updated_at = ?3
+                WHERE id = ?1 AND state = 'drafted' AND approved_by IS NOT NULL AND approved_by <> ?2
+                  AND second_approved_by IS NULL`,
+          binds: [id, written.actor.id, at],
+        };
   return changed(db, { id, action: "purchase_order.approve" }, update, written);
 }
 
 /** An approved order marked sent, once ops have sent it to the supplier. */
 export function markSent(db: D1Database, id: string, written: Written): Promise<Changed> {
-  const at = written.now.toISOString();
-  const update = db
-    .prepare(
-      `UPDATE purchase_orders SET state = 'sent', sent_by = ?2, sent_at = ?3, updated_at = ?3
-       WHERE id = ?1 AND state = 'approved'`,
-    )
-    .bind(id, written.actor.id, at);
+  const update = {
+    sql: `UPDATE purchase_orders SET change_id = ?9, state = 'sent', sent_by = ?2, sent_at = ?3, updated_at = ?3
+          WHERE id = ?1 AND state = 'approved'`,
+    binds: [id, written.actor.id, written.now.toISOString()],
+  };
   return changed(db, { id, action: "purchase_order.send" }, update, written);
 }
 
 /** An order cancelled, with why, before anything of it arrived. */
 export function cancelOrder(db: D1Database, id: string, reason: string, written: Written): Promise<Changed> {
-  const at = written.now.toISOString();
-  const update = db
-    .prepare(
-      `UPDATE purchase_orders SET state = 'cancelled', cancelled_by = ?2, cancelled_at = ?3, cancel_reason = ?4,
-         updated_at = ?3
-       WHERE id = ?1 AND state IN (SELECT value FROM json_each(?5))`,
-    )
-    .bind(id, written.actor.id, at, reason, JSON.stringify([...CANCELLABLE]));
+  const update = {
+    sql: `UPDATE purchase_orders SET change_id = ?9, state = 'cancelled', cancelled_by = ?2, cancelled_at = ?3,
+            cancel_reason = ?4, updated_at = ?3
+          WHERE id = ?1 AND state IN (SELECT value FROM json_each(?5))`,
+    binds: [id, written.actor.id, written.now.toISOString(), reason, JSON.stringify([...CANCELLABLE])],
+  };
   return changed(db, { id, action: "purchase_order.cancel" }, update, written);
 }

@@ -37,7 +37,7 @@ describe("the ops console's routes", () => {
   });
 
   it("lists the sections by department, Tasks first", () => {
-    expect(namesIn("operations")).toEqual(["Tasks", "Dispatch", "Technicians", "Stock"]);
+    expect(namesIn("operations")).toEqual(["Tasks", "Dispatch", "Technicians", "Stock", "Purchasing"]);
     expect(namesIn("customer_care")).toEqual([
       "Clients",
       "Messages",

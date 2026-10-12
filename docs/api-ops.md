@@ -7031,6 +7031,178 @@ A stock code taken off a supplier's list
 }
 ```
 
+### GET /api/purchase-orders
+
+Open orders and the latest settled, with the suppliers to order from
+
+**200**: The purchase orders
+
+```json
+{
+  "$ref": "#/components/schemas/PurchaseOrders"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/purchase-orders
+
+A new order, drafted from a supplier's list at its prices
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/PurchaseOrderDraft"
+}
+```
+
+**200**: The purchase orders
+
+```json
+{
+  "$ref": "#/components/schemas/PurchaseOrders"
+}
+```
+
+**400**: invalid_request: fields names supplier_id for no active supplier, lines.N for a stock code it does not list or fewer than its minimum, or lines for one named twice
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/purchase-orders/{id}/approve
+
+An approval: the first, or a second by another manager
+
+**200**: The purchase orders
+
+```json
+{
+  "$ref": "#/components/schemas/PurchaseOrders"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no such order
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**409**: order_state: the order is past the step asked, or the approver approved it already
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/purchase-orders/{id}/send
+
+An approved order marked sent
+
+**200**: The purchase orders
+
+```json
+{
+  "$ref": "#/components/schemas/PurchaseOrders"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no such order
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**409**: order_state: the order is past the step asked, or the approver approved it already
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/purchase-orders/{id}/cancel
+
+An order cancelled, with why, before anything of it arrived
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/PurchaseOrderCancel"
+}
+```
+
+**200**: The purchase orders
+
+```json
+{
+  "$ref": "#/components/schemas/PurchaseOrders"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no such order
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**409**: order_state: the order is past the step asked, or the approver approved it already
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ### GET /api/storage
 
 What the photographs and referral cards hold in R2, against their share, and the database against its limit
@@ -7594,7 +7766,8 @@ Request body:
             "last_admin",
             "in_use",
             "figures_conflict",
-            "transfer_settled"
+            "transfer_settled",
+            "order_state"
           ]
         },
         "request_id": {
@@ -11057,7 +11230,8 @@ Request body:
             "last_admin",
             "in_use",
             "figures_conflict",
-            "transfer_settled"
+            "transfer_settled",
+            "order_state"
           ]
         },
         "request_id": {
@@ -14896,6 +15070,10 @@ Request body:
         "supplier.restore",
         "supplier.item_set",
         "supplier.item_remove",
+        "purchase_order.draft",
+        "purchase_order.approve",
+        "purchase_order.send",
+        "purchase_order.cancel",
         "task.assign",
         "task.hand_back",
         "task.close",
@@ -18535,7 +18713,8 @@ Request body:
         "referral_reward",
         "care_hours",
         "remedy_limit",
-        "lost_after_days"
+        "lost_after_days",
+        "po_second_approval_above_rupees"
       ]
     },
     "title": {
@@ -18705,7 +18884,8 @@ Request body:
         "referral_reward",
         "care_hours",
         "remedy_limit",
-        "lost_after_days"
+        "lost_after_days",
+        "po_second_approval_above_rupees"
       ]
     },
     "title": {
@@ -22134,6 +22314,347 @@ Request body:
     "pack_size",
     "minimum_order",
     "lead_time_days"
+  ],
+  "additionalProperties": false
+}
+```
+
+### PurchaseOrders
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "orders": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "number": {
+            "type": "integer",
+            "description": "Shown as PO-0001."
+          },
+          "supplier_id": {
+            "type": "string"
+          },
+          "currency": {
+            "type": "string"
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "drafted",
+              "approved",
+              "sent",
+              "part_received",
+              "received",
+              "closed",
+              "cancelled"
+            ]
+          },
+          "expected_on": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "total": {
+            "type": "integer",
+            "description": "In the order's currency, its smallest unit."
+          },
+          "lines": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "consumable_code": {
+                  "type": "string"
+                },
+                "quantity": {
+                  "type": "integer"
+                },
+                "unit_price": {
+                  "type": "integer"
+                },
+                "received": {
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "id",
+                "consumable_code",
+                "quantity",
+                "unit_price",
+                "received"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "drafted_by": {
+            "type": "string"
+          },
+          "drafted_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "approved_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "second_approved_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "sent_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "cancel_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "needs_second_approval": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "number",
+          "supplier_id",
+          "currency",
+          "state",
+          "expected_on",
+          "note",
+          "total",
+          "lines",
+          "drafted_by",
+          "drafted_at",
+          "approved_by",
+          "second_approved_by",
+          "sent_at",
+          "cancel_reason",
+          "needs_second_approval"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "suppliers": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "currency": {
+            "type": "string"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "consumable_code": {
+                  "type": "string"
+                },
+                "unit_price": {
+                  "type": "integer"
+                },
+                "pack_size": {
+                  "type": "integer"
+                },
+                "minimum_order": {
+                  "type": "integer"
+                },
+                "lead_time_days": {
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "consumable_code",
+                "unit_price",
+                "pack_size",
+                "minimum_order",
+                "lead_time_days"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "currency",
+          "items"
+        ],
+        "additionalProperties": false
+      },
+      "description": "Every supplier, retired ones too, so an order names its supplier; only active ones are drafted to."
+    },
+    "consumables": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "unit": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "name",
+          "unit"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "second_approval_above_rupees": {
+      "type": "integer"
+    }
+  },
+  "required": [
+    "orders",
+    "suppliers",
+    "consumables",
+    "second_approval_above_rupees"
+  ],
+  "additionalProperties": false
+}
+```
+
+### PurchaseOrderDraft
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "supplier_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64
+    },
+    "lines": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "consumable_code": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "quantity": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1000000
+          }
+        },
+        "required": [
+          "consumable_code",
+          "quantity"
+        ],
+        "additionalProperties": false
+      },
+      "minItems": 1,
+      "maxItems": 100
+    },
+    "expected_on": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date"
+    },
+    "note": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "minLength": 1,
+      "maxLength": 200,
+      "pattern": "^[^\\p{Cc}]+$/u"
+    }
+  },
+  "required": [
+    "supplier_id",
+    "lines",
+    "expected_on",
+    "note"
+  ],
+  "additionalProperties": false
+}
+```
+
+### PurchaseOrderCancel
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "reason": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200,
+      "pattern": "^[^\\p{Cc}]+$/u"
+    }
+  },
+  "required": [
+    "reason"
   ],
   "additionalProperties": false
 }

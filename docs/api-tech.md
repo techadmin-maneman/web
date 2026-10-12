@@ -1228,7 +1228,8 @@ Request body:
             "last_admin",
             "in_use",
             "figures_conflict",
-            "transfer_settled"
+            "transfer_settled",
+            "order_state"
           ]
         },
         "request_id": {

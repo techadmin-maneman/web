@@ -24,6 +24,8 @@ CREATE TABLE purchase_orders (
   cancelled_at TEXT,
   cancel_reason TEXT,
   updated_at TEXT NOT NULL,
+  -- The last change's own token, which its audit entry is written only where it stands.
+  change_id TEXT,
   CHECK (second_approved_by IS NULL OR second_approved_by <> approved_by)
 );
 

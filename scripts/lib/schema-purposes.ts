@@ -23,6 +23,10 @@ export const PURPOSES: Readonly<Record<string, string>> = {
     "A consultation asked for while self-serve booking is off, for ops to fix the hour (ADR 0060).",
   consumable_usage:
     "What each service, a kind of visit at a tier of the price book, is expected to use of each consumable: where the technician's steppers start (ADR 0087).",
+  purchase_orders:
+    "Each purchase order to a supplier: its state from drafted to closed or cancelled, who approved, sent or cancelled it, and when (ADR 0166).",
+  po_lines:
+    "Each line of a purchase order: the stock code, how many, the price it was ordered at, and how many have arrived (ADR 0166).",
   suppliers:
     "Each supplier we buy stock from: its terms, currency and warranty, retired rather than deleted (ADR 0165).",
   supplier_items:

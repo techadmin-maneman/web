@@ -1,0 +1,58 @@
+/*
+ * The Purchasing page's own pieces: an order's lines beneath the list, and the order as it prints, alone, on A4. The
+ * sheet never shows on screen.
+ */
+
+.lines {
+  display: grid;
+  gap: var(--sp-8);
+  margin: var(--sp-12) 0 0;
+}
+
+.line {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-12);
+  align-items: flex-end;
+}
+
+.sheet {
+  display: none;
+}
+
+@media print {
+  :global(body > :not(#order-sheet)) {
+    display: none;
+  }
+
+  .sheet {
+    display: block;
+    color: var(--ink);
+    background: var(--white);
+    font-family: var(--font-sans);
+  }
+}
+
+.sheetTitle {
+  margin: 0 0 var(--sp-16);
+  font-family: var(--font-serif);
+  font-weight: var(--weight-regular);
+}
+
+.sheetTable {
+  width: 100%;
+  margin-top: var(--sp-16);
+  border-collapse: collapse;
+}
+
+.sheetTable th,
+.sheetTable td {
+  padding: var(--sp-8);
+  border-bottom: var(--hairline) solid var(--paper-line);
+  text-align: left;
+}
+
+.sheetTotal {
+  margin-top: var(--sp-16);
+  font-weight: var(--weight-medium);
+}
