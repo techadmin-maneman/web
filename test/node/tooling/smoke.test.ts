@@ -384,6 +384,16 @@ describe("smoke suite, on an app surface's host", () => {
     },
   );
 
+  it("passes a console whose Staff list refuses every route it does not name, in mm-api's own words", async () => {
+    const gated = { notFound: { status: 403, body: { error: { code: "not_permitted", request_id: REQUEST_ID } } } };
+    expect(await failures(onSurface("staging", gated))).toEqual([]);
+    const notOurs = { notFound: { status: 403, body: { error: { code: "forbidden", request_id: REQUEST_ID } } } };
+    expect(await failures(onSurface("staging", notOurs))).toEqual([
+      "mm-api error shape: error code is forbidden",
+      "public routes absent: the 403 is not ours",
+    ]);
+  });
+
   it("fails when the public site's routes answer on the surface's host", async () => {
     expect(await failures(onSurface("staging", { publicRoutes: "present" }))).toEqual([
       "public routes absent: /api/pincodes/122018 answered 200; it belongs to the public site",
