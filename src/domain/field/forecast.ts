@@ -10,7 +10,7 @@ import { baselineLayer, bookedLayer, dueLayer, pipelineLayer, type Horizon } fro
 /** How many lines one statement writes. */
 const LINES_A_STATEMENT = 400;
 
-export interface ForecastLine {
+interface ForecastLine {
   readonly code: string;
   readonly city: string;
   readonly period: number;

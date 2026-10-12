@@ -28,7 +28,7 @@ export interface Horizon {
 
 export type LayerMap = Map<string, number>;
 
-export const keyOf = (code: string, city: string | null, period: number) => `${code}|${city ?? ""}|${String(period)}`;
+const keyOf = (code: string, city: string | null, period: number) => `${code}|${city ?? ""}|${String(period)}`;
 
 const add = (map: LayerMap, key: string, quantity: number) => map.set(key, (map.get(key) ?? 0) + quantity);
 
