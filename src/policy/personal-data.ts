@@ -405,6 +405,26 @@ export const PERSONAL_COLUMNS: Readonly<Record<string, PersonalTable>> = {
       why: "What the pay step showed, and the hashed network address, go; the booking stays.",
     },
   },
+  custom_orders: {
+    leftOut: [
+      "id",
+      "person_id",
+      "note",
+      "supplier_id",
+      "supplier_price",
+      "razorpay_link_id",
+      "razorpay_payment_id",
+      "consumable_code",
+      "po_id",
+      "raised_by",
+    ],
+    whyLeftOut:
+      "Our and Razorpay's keys, the supplier and what it charges us, the stock code and order it was bought on, and ops' note and who raised it, which are our own record.",
+    erasure: {
+      blanks: ["note", "short_url"],
+      why: "Ops' note and the payment link's address go; the order stays with the payment it took.",
+    },
+  },
   remedies: {
     leftOut: ["id", "person_id", "note", "given_by", "decided_by"],
     whyLeftOut: "Our keys, and Care's note about them and who gave or decided it, which are staff's own record.",

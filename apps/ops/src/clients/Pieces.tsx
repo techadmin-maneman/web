@@ -1,8 +1,8 @@
 // Every piece the client has been fitted with, in the design's own six
 // columns. A piece is recorded by the technician's phone, so nothing here is
 // edited (src/routes/ops/client-pieces.ts). Above them, the client's
-// hair profile, which the board does not draw (./HairProfile.tsx), and the stock it matches (./StockMatch.tsx), each
-// loaded when the tab first opens.
+// hair profile, which the board does not draw (./HairProfile.tsx), the stock it matches (./StockMatch.tsx) and the
+// client's custom orders (./CustomOrders.tsx), each loaded when the tab first opens.
 //
 // The board sets the live piece's replacement date in brass and leaves the rest
 // quiet. A piece that has failed has been replaced, so the brass falls on the
@@ -25,6 +25,10 @@ const HairProfile = lazy(() =>
 
 const StockMatch = lazy(() =>
   loadOrReload(() => import("./StockMatch.tsx")).then((module) => ({ default: module.StockMatch })),
+);
+
+const CustomOrders = lazy(() =>
+  loadOrReload(() => import("./CustomOrders.tsx")).then((module) => ({ default: module.CustomOrders })),
 );
 
 const copy = clients.pieces;
@@ -58,6 +62,7 @@ export function Pieces({ clientId }: { clientId: string }) {
       <Suspense fallback={<Loading />}>
         <HairProfile clientId={clientId} />
         <StockMatch clientId={clientId} />
+        <CustomOrders clientId={clientId} />
       </Suspense>
       <PieceTable clientId={clientId} />
     </>

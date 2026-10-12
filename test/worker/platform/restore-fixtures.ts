@@ -160,6 +160,10 @@ export const ROWS_AT_T: readonly string[] = [
   `INSERT INTO supplier_claims (id, number, supplier_id, consumable_code, quantity, reason, receipt_line_id, unit_price,
      currency, state, drafted_by, drafted_at)
      VALUES ('cl1', 1, 'sup1', 'strip', 1, 'damaged', 'rl1', 125, 'USD', 'drafted', 'ops@example.com', '${AT}')`,
+  `INSERT INTO custom_orders (id, number, person_id, product, base_width_in, base_length_in, colour, grey_percent,
+     density_percent, supplier_id, supplier_price, amount, state, raised_by, raised_at, updated_at)
+     SELECT 'co1', 1, id, 'standard', 8, 10, '1B', 0, 100, 'sup1', 15000, 4500000, 'awaiting_payment', 'ops@example.com',
+       '${AT}', '${AT}' FROM people LIMIT 1`,
   `INSERT INTO hair_systems (code, product, base_width_in, base_length_in, colour, grey_percent, density_percent)
      VALUES ('hs1', 'standard', 8, 10, '1B', 0, 100)`,
   `INSERT INTO targets (month, city, measure, target, set_by, set_at)

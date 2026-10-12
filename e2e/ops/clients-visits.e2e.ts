@@ -9,6 +9,7 @@ import { expect, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
 import { CLIENT, fails, HAIR_PROFILE, json, NEW_RECORD, type Call, type OpsReply } from "./fixtures.ts";
 import {
+  NO_CUSTOM_ORDERS,
   NO_STOCK_MATCH,
   RECORD_PATH,
   READ_RECORD,
@@ -18,6 +19,7 @@ import {
 } from "./clients-fixtures.ts";
 import * as opsCopy from "../../apps/ops/src/content.ts";
 import { stockMatch as matchCopy } from "../../apps/ops/src/content/stock-match.ts";
+import { customOrders as customCopy } from "../../apps/ops/src/content/custom-orders.ts";
 
 const CORRECT_HAIR_PROFILE: Call = `POST ${RECORD_PATH}/hair-profile`;
 
@@ -268,5 +270,64 @@ test.describe("the client's match to stock", () => {
     };
     await openClient(page, `/clients/${CLIENT.id}/pieces`, { [READ_STOCK_MATCH]: json(incomplete) });
     await expect(section(page)).toContainText("The profile needs grey and density to match stock.");
+  });
+});
+
+// A hair system made for the client, paid in full before it is ordered (docs/decisions/0174-custom-orders.md).
+test.describe("the client's custom orders", () => {
+  test("raises one to their profile, its price in rupees, and shows its link while unpaid", async ({ page }) => {
+    const raised = {
+      ...NO_CUSTOM_ORDERS,
+      orders: [
+        {
+          id: "co-1",
+          number: 1,
+          product: "essential",
+          base_width_in: 7.5,
+          base_length_in: 9,
+          colour: "1B",
+          grey_percent: 30,
+          density_percent: 120,
+          wave: "slight_wave",
+          note: null,
+          supplier_id: "sup-1",
+          supplier_price: 15000,
+          currency: "USD",
+          amount: 4500000,
+          promised_on: "2027-10-20",
+          status: "awaiting_payment" as const,
+          short_url: "https://rzp.io/i/abc",
+          link_sent_at: "2027-09-22T05:12:00.000Z",
+          paid_at: null,
+          po_number: null,
+          raised_at: "2027-09-22T05:12:00.000Z",
+        },
+      ],
+    } satisfies OpsReply<"/api/clients/{id}/custom-orders">;
+    await openClient(page, `/clients/${CLIENT.id}/pieces`, {
+      [`POST ${RECORD_PATH}/custom-orders`]: json(raised),
+    });
+    const section = page.getByRole("region", { name: customCopy.title });
+    await section.getByRole("button", { name: customCopy.raise.open }).click();
+    await section.getByLabel(customCopy.raise.supplierPrice("USD")).fill("150");
+    await section.getByLabel(customCopy.raise.amount).fill("45000");
+    await section.getByLabel(customCopy.raise.wave).selectOption("slight_wave");
+    const sent = page.waitForRequest(
+      (request) => request.method() === "POST" && request.url().endsWith("/custom-orders"),
+    );
+    await section.getByRole("button", { name: customCopy.raise.send }).click();
+    expect((await sent).postDataJSON()).toEqual({
+      supplier_id: "sup-1",
+      supplier_price: 15000,
+      amount: 4500000,
+      promised_on: null,
+      wave: "slight_wave",
+      note: null,
+    });
+    const row = section.getByRole("row").filter({ hasText: "CU-0001" });
+    await expect(row).toContainText("7.5x9 1B, 30% grey, 120%, slight wave");
+    await expect(row).toContainText(customCopy.statuses.awaiting_payment ?? "");
+    await expect(row.getByRole("link", { name: customCopy.link })).toHaveAttribute("href", "https://rzp.io/i/abc");
+    expect(await axeViolations(page)).toEqual([]);
   });
 });

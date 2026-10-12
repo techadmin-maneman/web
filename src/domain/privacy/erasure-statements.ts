@@ -157,6 +157,8 @@ function appPersonalData(db: D1Database, personId: string): D1PreparedStatement[
  */
 function opsWordsAbout(db: D1Database, personId: string): D1PreparedStatement[] {
   return [
+    // Ops' note on a custom order made for them, and its payment link's address (docs/decisions/0174-custom-orders.md).
+    db.prepare("UPDATE custom_orders SET note = NULL, short_url = NULL WHERE person_id = ?1").bind(personId),
     db
       .prepare(
         `UPDATE referral_attributions SET review_reason = NULL, attach_reason = NULL

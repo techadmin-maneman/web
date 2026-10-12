@@ -2,6 +2,7 @@
 // heading, in the order the page shows them, and each field's label and how its value reads.
 
 import { day, money, text, time, words, yesNo, type Part } from "./my-data-fields.ts";
+import { CUSTOM_ORDERS_PART } from "./my-data-orders.ts";
 import { CODE_WORDS, PURPOSE_WORDS } from "./my-data-words.ts";
 
 // No design draws the readable copy of a client's data; every word here is ours.
@@ -254,6 +255,7 @@ export const MY_DATA = {
         decided_at: time("Approved or declined"),
       },
     },
+    custom_orders: CUSTOM_ORDERS_PART,
     recommended_by: {
       title: "The partner who recommended us",
       fields: {

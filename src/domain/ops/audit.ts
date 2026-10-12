@@ -174,6 +174,8 @@ export const AUDIT_ACTIONS = [
   "supplier_claim.decide",
   "piece_return.claim",
   "piece_return.write_off",
+  "custom_order.raise",
+  "custom_order.cancel",
   // Whose a task on the Tasks board is, a visit left partly done that ops closed without a follow-up, and an address
   // a client gave ops on the phone (docs/decisions/0092-task-owners.md).
   "task.assign",

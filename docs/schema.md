@@ -26,7 +26,7 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 | The Care inbox | `conversations`, `chat_messages`, `care_owners`, `care_weekly_off`, `care_leave`, `care_names`, `city_matters`, `quick_replies`, `remedies`, `technician_updates` | A message written since, the client's or ours, is gone from its thread | The rows since `<T>`; WhatsApp's own copy shows what was said |
 | Technicians' steps, pieces and photographs | `job_events`, `checkins`, `visits`, `consumables_used`, `no_show_cases`, `no_show_disputes`, `pieces`, `photos`, `photo_sets` | Steps, check-ins, outcomes, pieces fitted, no-shows and disputes since are lost; a photograph's file is kept with no row | The rows since `<T>` |
 | Hair profiles | `hair_profiles` | A profile recorded since is lost, and one an erasure blanked since is whole again | Adding the rows since `<T>`: they are only ever added. Erasing again blanks the rest |
-| Purchase orders | `purchase_orders`, `po_lines`, `receipts`, `receipt_lines`, `supplier_claims` | An order drafted since is gone, one approved, sent, received or cancelled since goes back to where it stood, a receipt since is lost with the stock it brought, and a claim since is gone or back at its earlier step | Adding the rows since `<T>`, and each order's and claim's state from the audit log |
+| Purchase orders | `purchase_orders`, `po_lines`, `receipts`, `receipt_lines`, `supplier_claims`, `custom_orders` | An order drafted since is gone, one approved, sent, received or cancelled since goes back to where it stood, a receipt since is lost with the stock it brought, and a claim or custom order since is gone or back at its earlier step | Adding the rows since `<T>`, and each order's, claim's and custom order's state from the audit log and Razorpay |
 | Stock | `stock_movements`, `stock_places`, `stock_lots`, `stock_lot_moves`, `stock_transfers`, `stock_units`, `stock_unit_events`, `piece_returns` | A delivery, transfer, count or loss recorded since, or a job's use, is lost, so what each place holds is wrong; a hub or stockroom added or changed since goes back, and each piece is where it was | Adding the rows since `<T>`, and setting each unit where its latest line of history puts it |
 | Referrals and credits | `referral_codes`, `referral_attributions`, `credit_ledger`, `waitlist_entries`, `referral_channels`, `channel_attributions`, `partner_payouts`, `spend_entries` | A credit, a grant, a partner, a partner's payment, an entry of offline spend or a place on a waitlist disappears | The rows since `<T>`. `credit_ledger` is only ever added to |
 | Ops' settings and what we sell | `ops_settings`, `price_book`, `standard_costs`, `targets`, `services`, `slot_times`, `serviceable_pincodes`, `technician_leave`, `visit_blackouts`, `city_blackouts`, `cities`, `zones`, `consumables`, `hair_systems`, `consumable_usage`, `suppliers`, `supplier_items`, `checklist_items`, `partial_reasons`, `lost_reasons`, `pay_grades`, `visit_pay_rates`, `word_versions`, `site_word_publishes` | A price, service, rule, area, day's times, day off, consumable, supplier, job-sheet list, pay rate or wording set since goes back | Setting it again in the console, which audits it |
@@ -69,6 +69,7 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 - [credit_ledger](#credit_ledger): Service-visit credits, entry by entry, each drawing on the grant it spends; a balance is summed, never kept (ADR 0033).
 - [cron_jobs](#cron_jobs): Each job of the cron, and how many runs in a row it has failed (ADR 0067).
 - [cron_runs](#cron_runs): One row: when the cron's latest run started and its last finished run ended, so a run cut short is told by the next.
+- [custom_orders](#custom_orders): Each hair system made for one client to their exact spec: the spec, supplier and price, its payment link and payment, and the order it was bought on (ADR 0174).
 - [deletion_requests](#deletion_requests): A client's request to be erased, waiting for ops, and what ops decided (ADR 0042, ADR 0078).
 - [deployment_identity](#deployment_identity): Which environment's database this is, so a Worker refuses to serve on another's (ADR 0003).
 - [discount_code_uses](#discount_code_uses): Each time a discount code was entered on a booking, its hold or its visit: by whom, and what it took off before GST once the price was known. Never deleted: one taken off is marked removed (ADR 0108).
@@ -765,6 +766,48 @@ Made by `0068_cron_runs.sql`.
 | `completed_at` | TEXT | yes |  |  |
 | `failed_jobs` | INTEGER | yes |  |  |
 | `cut_short_at` | TEXT | yes |  |  |
+
+## custom_orders
+
+Each hair system made for one client to their exact spec: the spec, supplier and price, its payment link and payment, and the order it was bought on (ADR 0174).
+
+Made by `0147_custom_orders.sql`.
+
+| Column | Type | May be empty | Default | Key |
+| --- | --- | --- | --- | --- |
+| `id` | TEXT | no |  | primary key |
+| `number` | INTEGER | no |  |  |
+| `person_id` | TEXT | no |  | → `people.id` |
+| `product` | TEXT | no |  |  |
+| `base_width_in` | REAL | no |  |  |
+| `base_length_in` | REAL | no |  |  |
+| `colour` | TEXT | no |  |  |
+| `grey_percent` | INTEGER | no |  |  |
+| `density_percent` | INTEGER | no |  |  |
+| `wave` | TEXT | yes |  |  |
+| `note` | TEXT | yes |  |  |
+| `supplier_id` | TEXT | no |  | → `suppliers.id` |
+| `supplier_price` | INTEGER | no |  |  |
+| `amount` | INTEGER | no |  |  |
+| `promised_on` | TEXT | yes |  |  |
+| `state` | TEXT | no |  |  |
+| `razorpay_link_id` | TEXT | yes |  |  |
+| `short_url` | TEXT | yes |  |  |
+| `link_sent_at` | TEXT | yes |  |  |
+| `razorpay_payment_id` | TEXT | yes |  |  |
+| `paid_at` | TEXT | yes |  |  |
+| `consumable_code` | TEXT | yes |  | → `consumables.code` |
+| `po_id` | TEXT | yes |  | → `purchase_orders.id` |
+| `raised_by` | TEXT | no |  |  |
+| `raised_at` | TEXT | no |  |  |
+| `updated_at` | TEXT | no |  |  |
+
+Indexes:
+
+- `custom_orders_by_person`: on (`person_id`)
+- `custom_orders_open`: on (`number`), where `state <> 'cancelled'`
+- A `UNIQUE` constraint: unique on (`number`)
+- A `UNIQUE` constraint: unique on (`razorpay_link_id`)
 
 ## deletion_requests
 
@@ -1686,7 +1729,7 @@ Triggers: `pieces_replacement_booked_added`, `pieces_replacement_booked_changed`
 
 Each line of a purchase order: the stock code, how many, the price it was ordered at, and how many have arrived (ADR 0166).
 
-Made by `0141_purchase_orders.sql`.
+Made by `0141_purchase_orders.sql`; changed by `0147_custom_orders.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -1696,6 +1739,7 @@ Made by `0141_purchase_orders.sql`.
 | `quantity` | INTEGER | no |  |  |
 | `unit_price` | INTEGER | no |  |  |
 | `received_quantity` | INTEGER | no | `0` |  |
+| `custom_order_id` | TEXT | yes |  | → `custom_orders.id` |
 
 Indexes:
 
