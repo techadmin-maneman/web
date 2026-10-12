@@ -1489,6 +1489,82 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/tech/jobs/{id}/updates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Tell the client the technician is on the way, at the gate, or running late, from our number */
+        post: {
+            parameters: {
+                query?: never;
+                header: {
+                    /** @description The phone's own ID for this write; a replay of it changes nothing. A UUIDv7 carries the moment it was queued. */
+                    "x-client-event-id": string;
+                    /** @description The job's starts_at as the phone holds it. When ops have moved the job since, the write is superseded, field time. */
+                    "x-job-starts-at"?: string;
+                };
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["TechnicianUpdate"];
+                };
+            };
+            responses: {
+                /** @description Queued for the client now; false for a word heard before, or too late to help */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            sent: boolean;
+                        };
+                    };
+                };
+                /** @description invalid_request: minutes are for on the way and running late, and not for at the gate */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description session_required; device_revoked */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description not_found: no such job, or never this technician's */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/tech/pieces/lookup": {
         parameters: {
             query?: never;
@@ -1854,6 +1930,8 @@ export interface components {
                 name: string;
                 mobile: string;
                 note: string | null;
+                /** @description Whether they take messages about their visits on WhatsApp, as the card's presets go. */
+                whatsapp: boolean;
             } | null;
             /** @description How long this visit's type waits before a no-show may be closed, so a phone with no signal can count it. */
             no_show_wait_min: number;
@@ -2172,6 +2250,11 @@ export interface components {
             outcome: "partial";
             /** @description One of the card's partial_reasons, by its id; one ops have since taken off is still taken. */
             reason: string;
+        };
+        TechnicianUpdate: {
+            /** @enum {string} */
+            preset: "on_the_way" | "at_gate" | "running_late";
+            minutes: number | null;
         };
         /** @description Whether the label is one of the job's client's pieces. */
         PieceLookup: {

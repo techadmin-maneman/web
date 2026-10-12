@@ -2472,6 +2472,26 @@ Decline a remedy
 }
 ```
 
+### GET /api/care-numbers
+
+Whether the same-day promise holds: reply times, same-day closes, the backlog, reasons and remedies
+
+**200**: The numbers
+
+```json
+{
+  "$ref": "#/components/schemas/CareNumbers"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ### GET /api/referral-channels
 
 Every partner, with what has come through each
@@ -12769,6 +12789,187 @@ Request body:
     "given_by",
     "given_at",
     "state"
+  ],
+  "additionalProperties": false
+}
+```
+
+### CareNumbers
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "from": {
+      "type": "string",
+      "format": "date"
+    },
+    "to": {
+      "type": "string",
+      "format": "date"
+    },
+    "replies": {
+      "type": "object",
+      "properties": {
+        "chats": {
+          "type": "integer"
+        },
+        "median_minutes": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "The middle first reply, in minutes counted in Care hours; null with none answered."
+        },
+        "within_target": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "The share of chats answered by their reply-by time, 0 to 1; null with none."
+        }
+      },
+      "required": [
+        "chats",
+        "median_minutes",
+        "within_target"
+      ],
+      "additionalProperties": false
+    },
+    "same_day": {
+      "anyOf": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The share closed the day they opened."
+    },
+    "backlog": {
+      "type": "object",
+      "properties": {
+        "waiting_on_us": {
+          "type": "integer"
+        },
+        "overdue": {
+          "type": "integer"
+        },
+        "waiting_on_client": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "waiting_on_us",
+        "overdue",
+        "waiting_on_client"
+      ],
+      "additionalProperties": false
+    },
+    "reasons": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string"
+          },
+          "chats": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "reason",
+          "chats"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "remedies": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string"
+          },
+          "remedies": {
+            "type": "integer"
+          },
+          "visits": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "reason",
+          "remedies",
+          "visits"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "by_person": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string"
+          },
+          "chats": {
+            "type": "integer"
+          },
+          "median_minutes": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The middle first reply, in minutes counted in Care hours; null with none answered."
+          },
+          "within_target": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The share of chats answered by their reply-by time, 0 to 1; null with none."
+          }
+        },
+        "required": [
+          "email",
+          "chats",
+          "median_minutes",
+          "within_target"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "from",
+    "to",
+    "replies",
+    "same_day",
+    "backlog",
+    "reasons",
+    "remedies",
+    "by_person"
   ],
   "additionalProperties": false
 }

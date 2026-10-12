@@ -9,7 +9,7 @@ import { Field, TextInput } from "@maneman/ui/Field";
 import { paiseFromRupees, rupees } from "@maneman/web-kit/money";
 import { useState } from "react";
 import { api, type Consumable, type Consumables } from "../api.ts";
-import { settings } from "../content.ts";
+import { settings } from "../content/settings.ts";
 import styles from "../components/forms.module.css";
 import { SettingForm, sentOf, useSteps } from "./SettingForm.tsx";
 

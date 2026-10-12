@@ -35,6 +35,8 @@ export const PURPOSES: Readonly<Record<string, string>> = {
   care_weekly_off: "Each Care team member's weekly days off, as a Customer Care manager sets them (ADR 0134).",
   care_leave: "Leave for a Care team member, from one date to another; their chats are covered meanwhile (ADR 0134).",
   care_names: "The first name each Care team member is known by to clients, as their Support card shows it (ADR 0136).",
+  technician_updates:
+    "A technician's word to the client from the job card: on the way, at the gate, or running late, sent from our number (ADR 0145).",
   remedies:
     "Free service visits Customer Care gave a client, with why: given within the limit, or awaiting a manager (ADR 0143).",
   quick_replies: "Saved answers Customer Care pick in a chat, kept by a Customer Care manager (ADR 0141).",

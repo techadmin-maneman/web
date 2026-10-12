@@ -48,3 +48,17 @@ export function replyBy(written: Date, hours: CareHours = CARE_HOURS): Date {
   const morning = written < onTheHour(date, hours.opens) ? date : addDays(date, 1);
   return onTheHour(morning, hours.answered_by);
 }
+
+/**
+ * The minutes between two moments that fall in Care hours, as the reply clock counts a wait: a message at 8:50 pm
+ * answered at 9:20 am has waited 30 minutes.
+ */
+export function careMinutesBetween(from: Date, to: Date, hours: CareHours = CARE_HOURS): number {
+  let minutes = 0;
+  for (let date = indiaDate(from); date <= indiaDate(to); date = addDays(date, 1)) {
+    const opens = Math.max(onTheHour(date, hours.opens).getTime(), from.getTime());
+    const closes = Math.min(onTheHour(date, hours.closes).getTime(), to.getTime());
+    if (closes > opens) minutes += (closes - opens) / MINUTE_MS;
+  }
+  return Math.round(minutes);
+}

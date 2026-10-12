@@ -90,6 +90,9 @@ export const ROWS_AT_T: readonly string[] = [
   `INSERT INTO appointments (id, fsm_id, person_id, type, window_start, window_end, technician_id, status, synced_at)
      VALUES ('ap1', 'ap1', 'p1', 'first_fit', '2026-09-22T03:30:00.000Z', '2026-09-22T06:30:00.000Z', 't1',
              'completed', '${AT}')`,
+  // Their technician's word from the job card (docs/decisions/0145-technician-presets.md).
+  `INSERT INTO technician_updates (id, appointment_id, technician_id, preset, minutes, written_at, created_at)
+     VALUES ('tu1', 'ap1', 't1', 'on_the_way', 20, '${AT}', '${AT}')`,
   // The friend's consultation: their request reads as booked.
   `INSERT INTO appointments (id, fsm_id, person_id, type, window_start, window_end, technician_id, status, synced_at)
      VALUES ('ap2', 'ap2', 'p2', 'consultation', '2026-10-05T03:30:00.000Z', '2026-10-05T04:30:00.000Z', 't1',

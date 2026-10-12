@@ -7,7 +7,7 @@
 
 import { Tabs, TAB } from "@maneman/ui/Tabs";
 import { OpsLink, Shell } from "../components/Shell.tsx";
-import { settings } from "../content.ts";
+import { settings } from "../content/settings.ts";
 import { settingsPath, SETTINGS_TAB_NAMES, SETTINGS_TABS, type SettingsTab } from "../route.ts";
 import { Blackouts } from "./Blackouts.tsx";
 import { Consumables } from "./Consumables.tsx";
