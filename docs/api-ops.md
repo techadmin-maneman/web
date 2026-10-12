@@ -1085,6 +1085,26 @@ A custom order not yet paid, cancelled, and its link with it
 }
 ```
 
+### GET /api/stock/forecast-accuracy
+
+How right the forecast was in one city: its last measured periods, and each item across them
+
+**200**: The accuracy
+
+```json
+{
+  "$ref": "#/components/schemas/ForecastAccuracy"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ### GET /api/stock/forecast
 
 The latest demand forecast, for one city or every city
@@ -1094,6 +1114,690 @@ The latest demand forecast, for one city or every city
 ```json
 {
   "$ref": "#/components/schemas/DemandForecast"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### GET /api/supply-plan
+
+The latest supply plan, each line with the figures behind it
+
+**200**: The supply plan
+
+```json
+{
+  "$ref": "#/components/schemas/SupplyPlan"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/supply-plan/draft
+
+The supply plan drafted again now, from the latest forecast
+
+**200**: The supply plan
+
+```json
+{
+  "$ref": "#/components/schemas/SupplyPlan"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**409**: order_state: no forecast has run yet
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/supply-plan/lines/{id}/approve
+
+A proposal approved at a quantity: its transfer sent, or its order drafted
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/PlanLineApproval"
+}
+```
+
+**200**: The supply plan
+
+```json
+{
+  "$ref": "#/components/schemas/SupplyPlan"
+}
+```
+
+**400**: invalid_request: fields names what the move was refused for, as stock moved since
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no such line
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**409**: order_state: the line is decided already
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/supply-plan/lines/{id}/reject
+
+A proposal rejected, with why
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/PlanLineRejection"
+}
+```
+
+**200**: The supply plan
+
+```json
+{
+  "$ref": "#/components/schemas/SupplyPlan"
+}
+```
+
+**400**: invalid_request: fields names what the move was refused for, as stock moved since
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no such line
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**409**: order_state: the line is decided already
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### GET /api/demand-events
+
+The events still to end, and the cities one may be set in
+
+**200**: The events calendar
+
+```json
+{
+  "$ref": "#/components/schemas/DemandEvents"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/demand-events
+
+An event added to the calendar
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/DemandEventAdd"
+}
+```
+
+**200**: The events calendar
+
+```json
+{
+  "$ref": "#/components/schemas/DemandEvents"
+}
+```
+
+**400**: invalid_request: fields names ends_on for an end before the start, or city for one not served
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/demand-events/{id}/remove
+
+An event taken off the calendar
+
+**200**: The events calendar
+
+```json
+{
+  "$ref": "#/components/schemas/DemandEvents"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no such event on the calendar
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### GET /api/count-tasks
+
+The count tasks in the caller's places, and every item's class
+
+**200**: The count tasks, and every item's class
+
+```json
+{
+  "$ref": "#/components/schemas/CountTasks"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### GET /api/count-tasks/{id}
+
+A count task and its items, never a figure
+
+**200**: A count task and its items, never a figure
+
+```json
+{
+  "$ref": "#/components/schemas/CountTask"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no such task in the caller's places
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### GET /api/count-tasks/{id}/differences
+
+The lines waiting for a sign-off, with what was held and both counts
+
+**200**: The differences
+
+```json
+{
+  "$ref": "#/components/schemas/CountDifferences"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no such task in the caller's places
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/count-tasks/{id}/counts
+
+An open task counted, every item it lists
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/CountTaskCounts"
+}
+```
+
+**200**: A count task and its items, never a figure
+
+```json
+{
+  "$ref": "#/components/schemas/CountTask"
+}
+```
+
+**400**: invalid_request: fields names lines where they are not every item the step counts
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no such task in the caller's places
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**409**: order_state: the task has moved past this step
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/count-tasks/{id}/recounts
+
+The lines that differed counted again
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/CountTaskRecounts"
+}
+```
+
+**200**: A count task and its items, never a figure
+
+```json
+{
+  "$ref": "#/components/schemas/CountTask"
+}
+```
+
+**400**: invalid_request: fields names lines where they are not every item the step counts
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no such task in the caller's places
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**409**: order_state: the task has moved past this step
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/count-tasks/{id}/sign-off
+
+A recount that still differs signed off, with why
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/CountTaskSignOff"
+}
+```
+
+**200**: A count task and its items, never a figure
+
+```json
+{
+  "$ref": "#/components/schemas/CountTask"
+}
+```
+
+**400**: invalid_request: fields names lines where they are not every item the step counts
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no such task in the caller's places
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**409**: order_state: the task has moved past this step
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/consumables/{code}/count-class
+
+An item's count class set, or put back to its kind's own with null
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/CountClassChange"
+}
+```
+
+**200**: The count tasks, and every item's class
+
+```json
+{
+  "$ref": "#/components/schemas/CountTasks"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no such item, or it is retired
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### GET /api/stock/usage
+
+Each technician's use beside expected, and each place's losses, over the last weeks
+
+**200**: Usage and shrinkage
+
+```json
+{
+  "$ref": "#/components/schemas/StockUsage"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### GET /api/recalls
+
+Every recall, and the lots one may be raised on
+
+**200**: The recalls
+
+```json
+{
+  "$ref": "#/components/schemas/Recalls"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/recalls
+
+A lot recalled, with why: blocked everywhere, and each piece of it a client wears made due today
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/RecallRaise"
+}
+```
+
+**200**: A recall, where its lot's stock is and who wears its pieces
+
+```json
+{
+  "$ref": "#/components/schemas/Recall"
+}
+```
+
+**400**: invalid_request: fields names lot_id for no such lot, or one recalled already
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no such recall
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### GET /api/recalls/{id}
+
+One recall: where its lot's stock is, and who wears its pieces
+
+**200**: A recall, where its lot's stock is and who wears its pieces
+
+```json
+{
+  "$ref": "#/components/schemas/Recall"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no such recall
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/recalls/{id}/close
+
+A recall closed once its stock and pieces are dealt with; the lot stays blocked
+
+**200**: A recall, where its lot's stock is and who wears its pieces
+
+```json
+{
+  "$ref": "#/components/schemas/Recall"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no such recall open
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### GET /api/quality/failures
+
+The labelled pieces fitted in the last year and how many failed, four ways
+
+**200**: Failure rates
+
+```json
+{
+  "$ref": "#/components/schemas/FailureRates"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### GET /api/stock/expiry-risk
+
+Each lot that will not all be used before it expires, valued at its landed cost
+
+**200**: Value at risk
+
+```json
+{
+  "$ref": "#/components/schemas/ExpiryRisk"
 }
 ```
 
@@ -13278,6 +13982,112 @@ Request body:
 }
 ```
 
+### ForecastAccuracy
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "periods": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "period_start": {
+            "type": "string",
+            "format": "date"
+          },
+          "period_days": {
+            "type": "integer"
+          },
+          "expected": {
+            "type": "number"
+          },
+          "actual": {
+            "type": "number"
+          },
+          "error_percent": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "Null where nothing was used."
+          },
+          "bias_percent": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "Above nought where the forecast ran high. Null where nothing was used."
+          },
+          "within_high_percent": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "period_start",
+          "period_days",
+          "expected",
+          "actual",
+          "error_percent",
+          "bias_percent",
+          "within_high_percent"
+        ]
+      }
+    },
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "consumable_code": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "expected": {
+            "type": "number"
+          },
+          "actual": {
+            "type": "number"
+          },
+          "error_percent": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "Null where nothing was used."
+          },
+          "bias_percent": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "Null where nothing was used."
+          }
+        },
+        "required": [
+          "consumable_code",
+          "name",
+          "expected",
+          "actual",
+          "error_percent",
+          "bias_percent"
+        ]
+      }
+    }
+  },
+  "required": [
+    "periods",
+    "items"
+  ]
+}
+```
+
 ### DemandForecast
 
 ```json
@@ -13326,6 +14136,9 @@ Request body:
           "consumable_code": {
             "type": "string"
           },
+          "name": {
+            "type": "string"
+          },
           "city": {
             "type": "string"
           },
@@ -13353,6 +14166,7 @@ Request body:
         },
         "required": [
           "consumable_code",
+          "name",
           "city",
           "period",
           "booked",
@@ -13368,6 +14182,1198 @@ Request body:
   "required": [
     "run",
     "lines"
+  ]
+}
+```
+
+### SupplyPlan
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "lines": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "transfer",
+              "order"
+            ]
+          },
+          "consumable_code": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "city": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "from": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "to": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "supplier": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "proposed": {
+            "type": "integer"
+          },
+          "quantity": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "usable": {
+            "type": "integer"
+          },
+          "need": {
+            "type": "number"
+          },
+          "safety": {
+            "type": "number"
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "proposed",
+              "approved",
+              "rejected"
+            ]
+          },
+          "reject_reason": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "po_number": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "consumable_code",
+          "name",
+          "city",
+          "from",
+          "to",
+          "supplier",
+          "proposed",
+          "quantity",
+          "usable",
+          "need",
+          "safety",
+          "state",
+          "reject_reason",
+          "po_number"
+        ]
+      }
+    }
+  },
+  "required": [
+    "lines"
+  ]
+}
+```
+
+### PlanLineApproval
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "quantity": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 1000000
+    }
+  },
+  "required": [
+    "quantity"
+  ],
+  "additionalProperties": false
+}
+```
+
+### PlanLineRejection
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "reason": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    }
+  },
+  "required": [
+    "reason"
+  ],
+  "additionalProperties": false
+}
+```
+
+### DemandEvents
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "events": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "city": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "starts_on": {
+            "type": "string",
+            "format": "date"
+          },
+          "ends_on": {
+            "type": "string",
+            "format": "date"
+          },
+          "uplift_percent": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "city",
+          "starts_on",
+          "ends_on",
+          "uplift_percent"
+        ]
+      }
+    },
+    "cities": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "required": [
+    "events",
+    "cities"
+  ]
+}
+```
+
+### DemandEventAdd
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 80
+    },
+    "city": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "minLength": 1,
+      "maxLength": 80
+    },
+    "starts_on": {
+      "type": "string",
+      "format": "date"
+    },
+    "ends_on": {
+      "type": "string",
+      "format": "date"
+    },
+    "uplift_percent": {
+      "type": "integer",
+      "minimum": -90,
+      "maximum": 500
+    }
+  },
+  "required": [
+    "name",
+    "city",
+    "starts_on",
+    "ends_on",
+    "uplift_percent"
+  ],
+  "additionalProperties": false
+}
+```
+
+### CountTasks
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "tasks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "place_id": {
+            "type": "string"
+          },
+          "place": {
+            "type": "string"
+          },
+          "count_class": {
+            "type": "string",
+            "enum": [
+              "weekly",
+              "monthly",
+              "quarterly"
+            ]
+          },
+          "due_on": {
+            "type": "string",
+            "format": "date"
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "open",
+              "recount",
+              "sign_off",
+              "done"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "place_id",
+          "place",
+          "count_class",
+          "due_on",
+          "state"
+        ]
+      }
+    },
+    "classes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "consumable_code": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "count_class": {
+            "type": "string",
+            "enum": [
+              "weekly",
+              "monthly",
+              "quarterly"
+            ]
+          },
+          "set": {
+            "type": "boolean",
+            "description": "Whether ops set it, rather than its kind's own."
+          },
+          "hair_system": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "consumable_code",
+          "name",
+          "count_class",
+          "set",
+          "hair_system"
+        ]
+      }
+    }
+  },
+  "required": [
+    "tasks",
+    "classes"
+  ]
+}
+```
+
+### CountTask
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "task": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "place_id": {
+          "type": "string"
+        },
+        "place": {
+          "type": "string"
+        },
+        "count_class": {
+          "type": "string",
+          "enum": [
+            "weekly",
+            "monthly",
+            "quarterly"
+          ]
+        },
+        "due_on": {
+          "type": "string",
+          "format": "date"
+        },
+        "state": {
+          "type": "string",
+          "enum": [
+            "open",
+            "recount",
+            "sign_off",
+            "done"
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "place_id",
+        "place",
+        "count_class",
+        "due_on",
+        "state"
+      ]
+    },
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "consumable_code": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "to_count",
+              "recount",
+              "sign_off",
+              "settled"
+            ]
+          }
+        },
+        "required": [
+          "consumable_code",
+          "name",
+          "state"
+        ]
+      }
+    }
+  },
+  "required": [
+    "task",
+    "items"
+  ]
+}
+```
+
+### CountDifferences
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "lines": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "consumable_code": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "held": {
+            "type": "integer"
+          },
+          "counted": {
+            "type": "integer"
+          },
+          "recounted": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "consumable_code",
+          "name",
+          "held",
+          "counted",
+          "recounted"
+        ]
+      }
+    }
+  },
+  "required": [
+    "lines"
+  ]
+}
+```
+
+### CountTaskCounts
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "lines": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "consumable_code": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "counted": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1000000
+          }
+        },
+        "required": [
+          "consumable_code",
+          "counted"
+        ],
+        "additionalProperties": false
+      },
+      "maxItems": 500
+    }
+  },
+  "required": [
+    "lines"
+  ],
+  "additionalProperties": false
+}
+```
+
+### CountTaskRecounts
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "lines": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "consumable_code": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "counted": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1000000
+          }
+        },
+        "required": [
+          "consumable_code",
+          "counted"
+        ],
+        "additionalProperties": false
+      },
+      "maxItems": 500
+    }
+  },
+  "required": [
+    "lines"
+  ],
+  "additionalProperties": false
+}
+```
+
+### CountTaskSignOff
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "note": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200,
+      "pattern": "^[^\\p{Cc}]+$/u"
+    }
+  },
+  "required": [
+    "note"
+  ],
+  "additionalProperties": false
+}
+```
+
+### CountClassChange
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "count_class": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "enum": [
+        "weekly",
+        "monthly",
+        "quarterly",
+        null
+      ]
+    }
+  },
+  "required": [
+    "count_class"
+  ],
+  "additionalProperties": false
+}
+```
+
+### StockUsage
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "since": {
+      "type": "string",
+      "format": "date"
+    },
+    "technicians": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "technician_id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "visits": {
+            "type": "integer"
+          },
+          "expected_value": {
+            "type": "number",
+            "description": "In paise, at each item's cost."
+          },
+          "used_value": {
+            "type": "number",
+            "description": "In paise, at each item's cost."
+          },
+          "over_percent": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "description": "Above nought where use ran over expected."
+          },
+          "flagged": {
+            "type": "boolean"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "consumable_code": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "expected": {
+                  "type": "number"
+                },
+                "used": {
+                  "type": "number"
+                },
+                "over_percent": {
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                }
+              },
+              "required": [
+                "consumable_code",
+                "name",
+                "expected",
+                "used",
+                "over_percent"
+              ]
+            }
+          }
+        },
+        "required": [
+          "technician_id",
+          "name",
+          "visits",
+          "expected_value",
+          "used_value",
+          "over_percent",
+          "flagged",
+          "items"
+        ]
+      }
+    },
+    "places": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "place_id": {
+            "type": "string"
+          },
+          "place": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "left_value": {
+            "type": "number",
+            "description": "In paise, at each item's cost."
+          },
+          "lost_value": {
+            "type": "number",
+            "description": "In paise, at each item's cost."
+          },
+          "write_offs": {
+            "type": "integer"
+          },
+          "shrinkage_percent": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "count_accuracy_percent": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "flagged": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "place_id",
+          "place",
+          "kind",
+          "left_value",
+          "lost_value",
+          "write_offs",
+          "shrinkage_percent",
+          "count_accuracy_percent",
+          "flagged"
+        ]
+      }
+    }
+  },
+  "required": [
+    "since",
+    "technicians",
+    "places"
+  ]
+}
+```
+
+### Recalls
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "recalls": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "number": {
+            "type": "integer"
+          },
+          "lot_id": {
+            "type": "string"
+          },
+          "lot_code": {
+            "type": "string"
+          },
+          "consumable_code": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "raised_at": {
+            "type": "string"
+          },
+          "closed_at": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "number",
+          "lot_id",
+          "lot_code",
+          "consumable_code",
+          "name",
+          "reason",
+          "raised_at",
+          "closed_at"
+        ]
+      }
+    },
+    "lots": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "lot_code": {
+            "type": "string"
+          },
+          "consumable_code": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "lot_code",
+          "consumable_code",
+          "name"
+        ]
+      }
+    }
+  },
+  "required": [
+    "recalls",
+    "lots"
+  ]
+}
+```
+
+### Recall
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string"
+    },
+    "number": {
+      "type": "integer"
+    },
+    "lot_id": {
+      "type": "string"
+    },
+    "lot_code": {
+      "type": "string"
+    },
+    "consumable_code": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string"
+    },
+    "reason": {
+      "type": "string"
+    },
+    "raised_at": {
+      "type": "string"
+    },
+    "closed_at": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "held": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "place_id": {
+            "type": "string"
+          },
+          "place": {
+            "type": "string"
+          },
+          "quantity": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "place_id",
+          "place",
+          "quantity"
+        ]
+      }
+    },
+    "worn": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "piece_code": {
+            "type": "string"
+          },
+          "person_id": {
+            "type": "string"
+          },
+          "person": {
+            "type": "string"
+          },
+          "due_on": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "piece_code",
+          "person_id",
+          "person",
+          "due_on"
+        ]
+      }
+    }
+  },
+  "required": [
+    "id",
+    "number",
+    "lot_id",
+    "lot_code",
+    "consumable_code",
+    "name",
+    "reason",
+    "raised_at",
+    "closed_at",
+    "held",
+    "worn"
+  ]
+}
+```
+
+### RecallRaise
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "lot_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64
+    },
+    "reason": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200,
+      "pattern": "^[^\\p{Cc}]+$/u"
+    }
+  },
+  "required": [
+    "lot_id",
+    "reason"
+  ],
+  "additionalProperties": false
+}
+```
+
+### FailureRates
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "since": {
+      "type": "string",
+      "format": "date"
+    },
+    "by_code": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "fitted": {
+            "type": "integer"
+          },
+          "failed": {
+            "type": "integer"
+          },
+          "rate_percent": {
+            "type": [
+              "number",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "name",
+          "fitted",
+          "failed",
+          "rate_percent"
+        ]
+      }
+    },
+    "by_lot": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "fitted": {
+            "type": "integer"
+          },
+          "failed": {
+            "type": "integer"
+          },
+          "rate_percent": {
+            "type": [
+              "number",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "name",
+          "fitted",
+          "failed",
+          "rate_percent"
+        ]
+      }
+    },
+    "by_supplier": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "fitted": {
+            "type": "integer"
+          },
+          "failed": {
+            "type": "integer"
+          },
+          "rate_percent": {
+            "type": [
+              "number",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "name",
+          "fitted",
+          "failed",
+          "rate_percent"
+        ]
+      }
+    },
+    "by_technician": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "fitted": {
+            "type": "integer"
+          },
+          "failed": {
+            "type": "integer"
+          },
+          "rate_percent": {
+            "type": [
+              "number",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "name",
+          "fitted",
+          "failed",
+          "rate_percent"
+        ]
+      }
+    }
+  },
+  "required": [
+    "since",
+    "by_code",
+    "by_lot",
+    "by_supplier",
+    "by_technician"
+  ]
+}
+```
+
+### ExpiryRisk
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "total_value": {
+      "type": "number",
+      "description": "In paise."
+    },
+    "lots": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "place_id": {
+            "type": "string"
+          },
+          "place": {
+            "type": "string"
+          },
+          "consumable_code": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "lot_code": {
+            "type": "string"
+          },
+          "expires_on": {
+            "type": "string",
+            "format": "date"
+          },
+          "quantity": {
+            "type": "number"
+          },
+          "value": {
+            "type": "number",
+            "description": "In paise, at the lot's landed cost."
+          },
+          "suggestion": {
+            "type": "string",
+            "enum": [
+              "write_off",
+              "move",
+              "use_first"
+            ]
+          },
+          "move_to": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "place_id",
+          "place",
+          "consumable_code",
+          "name",
+          "lot_code",
+          "expires_on",
+          "quantity",
+          "value",
+          "suggestion",
+          "move_to"
+        ]
+      }
+    }
+  },
+  "required": [
+    "total_value",
+    "lots"
   ]
 }
 ```
@@ -16201,6 +18207,16 @@ Request body:
         "custom_order.raise",
         "custom_order.cancel",
         "custom_order.refund",
+        "plan_line.approve",
+        "plan_line.reject",
+        "demand_event.add",
+        "demand_event.remove",
+        "count_task.count",
+        "count_task.recount",
+        "count_task.sign_off",
+        "consumable.count_class",
+        "recall.raise",
+        "recall.close",
         "task.assign",
         "task.hand_back",
         "task.close",

@@ -33,12 +33,22 @@ export const PURPOSES: Readonly<Record<string, string>> = {
     "What a receipt brought of each order line: accepted, damaged, failed its check, its lot, and what one cost landed (ADR 0167).",
   custom_orders:
     "Each hair system made for one client to their exact spec: the spec, supplier and price, its payment link and payment, and the order it was bought on (ADR 0174).",
+  count_lines:
+    "Each item a count task counted: what the ledger held, which the counter never saw, the count, any recount, and whether the ledger took it (ADR 0185).",
+  count_tasks:
+    "Each cycle count of one class of items at one place: raised once its period comes round, counted blind, counted again where it differs, signed off where that stands (ADR 0185).",
   demand_events:
     "The calendar of uplifts ops keep, each an event in a city or every city, which lifts the forecast's baseline (ADR 0179).",
+  forecast_accuracy:
+    "How right each forecast run was: its first period's expected use and high case of each stock code in each city beside what the kits used (ADR 0183).",
   forecast_lines:
     "Each forecast run's expected use of each stock code in each city and period, with what each of its four layers gave (ADR 0179).",
   forecast_runs:
     "Each demand forecast run, once a planning period: its period, horizon and the rates it learned (ADR 0179).",
+  plan_lines:
+    "Each move the supply plan proposes from a forecast run, a transfer or an order, with the figures behind it and what ops decided (ADR 0180).",
+  recall_pieces: "Each fitted piece a recall made due for replacement, and the day it was due before (ADR 0187).",
+  recalls: "Each lot recalled: why, who raised it and when, and when it was closed once dealt with (ADR 0187).",
   stock_risks:
     "Each fit booked ahead found with no hair system in its city, or no profile to match one by, and when it was no longer at risk (ADR 0178).",
   supplier_claims:

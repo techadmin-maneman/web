@@ -249,6 +249,18 @@ export const ROWS_AT_T: readonly string[] = [
      VALUES ('fr1', 'hs1', 'Gurgaon', 0, 1, 0, 0, 0, 1, 2.7)`,
   `INSERT INTO demand_events (id, name, city, starts_on, ends_on, uplift_percent, created_by, created_at)
      VALUES ('de1', 'Wedding season', 'Gurgaon', '2026-11-01', '2026-11-30', 20, 'ops@example.com', '${AT}')`,
+  `INSERT INTO plan_lines (id, run_id, kind, consumable_code, city, supplier_id, proposed, usable, need, safety, state,
+       drafted_at)
+     VALUES ('pln1', 'fr1', 'order', 'strip', NULL, 'sup1', 20, 0, 10, 4, 'proposed', '${AT}')`,
+  `INSERT INTO forecast_accuracy (run_id, consumable_code, city, period_start, period_days, expected, high, actual,
+       measured_at)
+     VALUES ('fr1', 'hs1', 'Gurgaon', '2026-09-21', 7, 1, 2.7, 1, '${AT}')`,
+  `INSERT INTO count_tasks (id, place_id, count_class, due_on, state, raised_at, counted_by, counted_at)
+     VALUES ('ct1', 'central', 'quarterly', '2026-09-21', 'recount', '${AT}', 'ops@example.com', '${AT}')`,
+  `INSERT INTO count_lines (task_id, consumable_code, held, counted, state) VALUES ('ct1', 'strip', 20, 15, 'recount')`,
+  `INSERT INTO stock_lots (id, consumable_code, lot_code, expires_on, received_at) VALUES ('lot-recalled', 'hs1', 'BAD-1', NULL, '${AT}')`,
+  `INSERT INTO recalls (id, number, lot_id, reason, raised_by, raised_at) VALUES ('rcl1', 1, 'lot-recalled', 'Shedding', 'ops@example.com', '${AT}')`,
+  `INSERT INTO recall_pieces (recall_id, piece_id, due_before) VALUES ('rcl1', 'piece-gone', '2027-03-01')`,
 ];
 
 /** What was written between <T> and the export: rows added, changed and deleted, in tables of every kind. */

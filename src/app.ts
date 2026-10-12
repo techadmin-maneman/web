@@ -64,6 +64,12 @@ import { registerOpsHairProfile } from "./routes/ops/hair-profile.ts";
 import { registerOpsStockMatch } from "./routes/ops/stock-match.ts";
 import { registerOpsCustomOrders } from "./routes/ops/custom-orders.ts";
 import { registerOpsForecast } from "./routes/ops/stock-forecast.ts";
+import { registerOpsSupplyPlan } from "./routes/ops/supply-plan.ts";
+import { registerOpsDemandEvents } from "./routes/ops/demand-events.ts";
+import { registerOpsCountTasks } from "./routes/ops/count-tasks.ts";
+import { registerOpsStockUsage } from "./routes/ops/stock-usage.ts";
+import { registerOpsRecalls } from "./routes/ops/recalls.ts";
+import { registerOpsStockQuality } from "./routes/ops/stock-quality.ts";
 import { registerOpsJobSheet } from "./routes/ops/job-sheet.ts";
 import { registerOpsPaymentLinks } from "./routes/ops/payment-links.ts";
 import { registerOpsNoShowRulings } from "./routes/ops/no-show-rulings.ts";
@@ -213,6 +219,18 @@ const SURFACE_ROUTES: Readonly<Record<Surface, readonly ((app: App) => void)[]>>
     registerOpsCustomOrders,
     // The demand forecast (docs/decisions/0179-demand-forecast.md).
     registerOpsForecast,
+    // The supply plan drafted from it (docs/decisions/0180-supply-plan.md).
+    registerOpsSupplyPlan,
+    // The events calendar the forecast reads (docs/decisions/0182-the-events-calendar.md).
+    registerOpsDemandEvents,
+    // Cycle counts, blind, with recounts and sign-off (docs/decisions/0185-cycle-counts.md).
+    registerOpsCountTasks,
+    // Usage against expected, and shrinkage (docs/decisions/0186-usage-and-shrinkage.md).
+    registerOpsStockUsage,
+    // Recalls: a lot blocked everywhere, and who wears it (docs/decisions/0187-recalls.md).
+    registerOpsRecalls,
+    // Failure rates and value at risk (docs/decisions/0188-failure-rates-and-value-at-risk.md).
+    registerOpsStockQuality,
     // Erasing a client from their page, the day they ask.
     registerOpsErasure,
     registerOpsProfile,

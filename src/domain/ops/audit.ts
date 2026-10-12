@@ -177,6 +177,16 @@ export const AUDIT_ACTIONS = [
   "custom_order.raise",
   "custom_order.cancel",
   "custom_order.refund",
+  "plan_line.approve",
+  "plan_line.reject",
+  "demand_event.add",
+  "demand_event.remove",
+  "count_task.count",
+  "count_task.recount",
+  "count_task.sign_off",
+  "consumable.count_class",
+  "recall.raise",
+  "recall.close",
   // Whose a task on the Tasks board is, a visit left partly done that ops closed without a follow-up, and an address
   // a client gave ops on the phone (docs/decisions/0092-task-owners.md).
   "task.assign",

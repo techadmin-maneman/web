@@ -2,7 +2,7 @@
 
 Every decision this repository was built on, oldest first. A record says what was decided and why, and is not rewritten to say something else: a later record changes it, and says so in its own header (ADR 0001). **Changed by** gathers those later records, from either side, so an old record's reader knows to read on.
 
-This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. A record names its topic in its header, `- Topic:` and one of the headings below, and the test fails on one that does not. The next free number is 0180.
+This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. A record names its topic in its header, `- Topic:` and one of the headings below, and the test fails on one that does not. The next free number is 0189.
 
 ## By topic
 
@@ -107,6 +107,15 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 - [0177](0177-custom-orders-in-the-app.md) Custom orders in the app
 - [0178](0178-stock-at-risk.md) Stock at risk
 - [0179](0179-demand-forecast.md) Demand forecast
+- [0180](0180-supply-plan.md) Supply plan
+- [0181](0181-tomorrows-kits.md) Tomorrow's kits
+- [0182](0182-the-events-calendar.md) The events calendar and the forecast on the Supply plan
+- [0183](0183-forecast-accuracy.md) Forecast accuracy
+- [0184](0184-the-one-visit-range.md) The one-visit range
+- [0185](0185-cycle-counts.md) Cycle counts
+- [0186](0186-usage-and-shrinkage.md) Usage against expected, and shrinkage
+- [0187](0187-recalls.md) Recalls
+- [0188](0188-failure-rates-and-value-at-risk.md) Failure rates and value at risk
 
 ### Money and Books
 
@@ -394,3 +403,12 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0177](0177-custom-orders-in-the-app.md) | Custom orders in the app | 2026-10-12 | accepted |  |
 | [0178](0178-stock-at-risk.md) | Stock at risk | 2026-10-12 | accepted |  |
 | [0179](0179-demand-forecast.md) | Demand forecast | 2026-10-12 | accepted |  |
+| [0180](0180-supply-plan.md) | Supply plan | 2026-10-12 | accepted |  |
+| [0181](0181-tomorrows-kits.md) | Tomorrow's kits | 2026-10-12 | accepted |  |
+| [0182](0182-the-events-calendar.md) | The events calendar and the forecast on the Supply plan | 2026-10-12 | accepted |  |
+| [0183](0183-forecast-accuracy.md) | Forecast accuracy | 2026-10-12 | accepted |  |
+| [0184](0184-the-one-visit-range.md) | The one-visit range | 2026-10-12 | accepted |  |
+| [0185](0185-cycle-counts.md) | Cycle counts | 2026-10-12 | accepted |  |
+| [0186](0186-usage-and-shrinkage.md) | Usage against expected, and shrinkage | 2026-10-12 | accepted |  |
+| [0187](0187-recalls.md) | Recalls | 2026-10-12 | accepted |  |
+| [0188](0188-failure-rates-and-value-at-risk.md) | Failure rates and value at risk | 2026-10-12 | accepted |  |

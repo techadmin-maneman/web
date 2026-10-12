@@ -64,6 +64,26 @@ const PurchasingScreen = lazy(() =>
     default: module.PurchasingScreen,
   })),
 );
+const CountsScreen = lazy(() =>
+  loadOrReload(() => import("./counts/CountsScreen.tsx")).then((module) => ({
+    default: module.CountsScreen,
+  })),
+);
+const UsageScreen = lazy(() =>
+  loadOrReload(() => import("./usage/UsageScreen.tsx")).then((module) => ({
+    default: module.UsageScreen,
+  })),
+);
+const QualityScreen = lazy(() =>
+  loadOrReload(() => import("./quality/QualityScreen.tsx")).then((module) => ({
+    default: module.QualityScreen,
+  })),
+);
+const SupplyPlanScreen = lazy(() =>
+  loadOrReload(() => import("./supply-plan/SupplyPlanScreen.tsx")).then((module) => ({
+    default: module.SupplyPlanScreen,
+  })),
+);
 const SpendScreen = lazy(() =>
   loadOrReload(() => import("./spend/SpendScreen.tsx")).then((module) => ({ default: module.SpendScreen })),
 );
@@ -85,6 +105,10 @@ const SCREENS: Readonly<Record<PlainPage, ComponentType>> = {
   dispatch: DispatchScreen,
   stock: StockScreen,
   purchasing: PurchasingScreen,
+  "supply-plan": SupplyPlanScreen,
+  counts: CountsScreen,
+  usage: UsageScreen,
+  quality: QualityScreen,
   grievances: GrievancesScreen,
   "number-changes": NumberChangesScreen,
   "deletion-requests": DeletionsScreen,

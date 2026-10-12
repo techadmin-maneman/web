@@ -27,8 +27,8 @@ describe("the hair profile's table", () => {
   it("is reached through it by the routes, the card, the erasure, the export and Home, and by no queue or provider", () => {
     // Imported from beside it or from any folder: "./hair-profiles.ts", "../clients/hair-profiles.ts". Home's first
     // fit offer and its recap of the consultation read the hair system recommended alone (recommendedProduct), and
-    // the stock demand, a client's match to stock and a custom order raised to it each client's latest fit spec
-    // (latestFits).
+    // the stock demand, a client's match to stock, a custom order raised to it, the forecast and the evening's kit check
+    // each client's latest fit spec (latestFits).
     const users = naming(/from "(?:\.\.?\/)+(?:domain\/)?(?:[a-z-]+\/)?hair-profiles\.ts"/).sort();
     expect(users).toEqual(
       [
@@ -37,6 +37,7 @@ describe("the hair profile's table", () => {
         "src/domain/field/job-card.ts",
         "src/domain/field/custom-orders.ts",
         "src/domain/field/forecast-layers.ts",
+        "src/domain/field/kit-check.ts",
         "src/domain/field/stock-demand.ts",
         "src/domain/field/stock-match.ts",
         "src/domain/visits/consultation-recap.ts",

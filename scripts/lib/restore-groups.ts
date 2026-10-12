@@ -228,10 +228,25 @@ export const RESTORE_GROUPS: readonly RestoreGroup[] = [
     putBackBy: "Where FSM still holds them, the cron reads them again; otherwise the rows since `<T>`",
   },
   {
-    what: "The demand forecast",
-    tables: ["forecast_runs", "forecast_lines", "demand_events"],
+    what: "Recalls",
+    tables: ["recalls", "recall_pieces"],
     leftAtT:
-      "A forecast run since is gone and the last before stands until the next is due, and an event ops added or took off since is gone or back",
+      "A recall raised since is gone though its lot stays blocked and its pieces stay due; one closed since is open again",
+    putBackBy:
+      "Raising the recall again on the Quality page names the same lot, already blocked, so it is refused: ask the engineer",
+  },
+  {
+    what: "Cycle counts",
+    tables: ["count_tasks", "count_lines"],
+    leftAtT:
+      "A count since is open again, though the ledger keeps what it took; a task raised since is raised again the next morning",
+    putBackBy: "Counting the task again on the Counts page: the ledger takes a count that agrees with it as nought",
+  },
+  {
+    what: "The demand forecast",
+    tables: ["forecast_runs", "forecast_lines", "demand_events", "plan_lines", "forecast_accuracy"],
+    leftAtT:
+      "A forecast run since is gone and the last before stands until the next is due, an event ops added or took off since is gone or back, a plan line decided since is proposed again, though its transfer or order stands, and a period measured since is measured again from the movements",
     putBackBy: "Adding the events again on the Supply plan page; the next run is due within the planning period",
   },
   {

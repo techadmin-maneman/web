@@ -35,7 +35,9 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 | The audit log | `audit_log` | Who did what since `<T>` | Adding the rows since `<T>`: they are only ever added |
 | New people, leads, addresses and try-ons | `people`, `leads`, `addresses`, `tryon_jobs` | Bookings and leads made since are lost here; the CRM has the leads | The rows since `<T>` |
 | Technicians, and FSM's catalogue | `technicians`, `fsm_items` | A technician added or changed since goes back | Where FSM still holds them, the cron reads them again; otherwise the rows since `<T>` |
-| The demand forecast | `forecast_runs`, `forecast_lines`, `demand_events` | A forecast run since is gone and the last before stands until the next is due, and an event ops added or took off since is gone or back | Adding the events again on the Supply plan page; the next run is due within the planning period |
+| Recalls | `recalls`, `recall_pieces` | A recall raised since is gone though its lot stays blocked and its pieces stay due; one closed since is open again | Raising the recall again on the Quality page names the same lot, already blocked, so it is refused: ask the engineer |
+| Cycle counts | `count_tasks`, `count_lines` | A count since is open again, though the ledger keeps what it took; a task raised since is raised again the next morning | Counting the task again on the Counts page: the ledger takes a count that agrees with it as nought |
+| The demand forecast | `forecast_runs`, `forecast_lines`, `demand_events`, `plan_lines`, `forecast_accuracy` | A forecast run since is gone and the last before stands until the next is due, an event ops added or took off since is gone or back, a plan line decided since is proposed again, though its transfer or order stands, and a period measured since is measured again from the movements | Adding the events again on the Supply plan page; the next run is due within the planning period |
 | Worked out from other tables | `last_visits`, `ops_settings_snapshot`, `stock_balances`, `stock_lot_balances` | Nothing of their own: triggers keep each from the table it is worked out from | Putting back that table |
 | The storage meter | `stored_objects`, `storage_meter` | Objects stored or deleted since are counted wrongly, as R2 is not restored | The rows since `<T>` |
 | Housekeeping | `alerts`, `board_version`, `cron_jobs`, `cron_runs`, `credit_expiry_cursor`, `counters`, `idempotency`, `number_codes`, `otp_challenges`, `tryon_sessions`, `events`, `sync_cursors`, `webhook_inbox`, `zoho_access_tokens`, `zoho_token`, `zoho_tokens` | Nothing that lasts | Nothing |
@@ -65,6 +67,8 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 - [consumables](#consumables): The consumables ops keep: name, unit, what one costs, the reorder levels, the day it is retired from, and FSM's part for it (ADR 0087).
 - [consumables_used](#consumables_used): The consumables a technician recorded at a job's third step, with what its service expected and what one cost that day (ADR 0038, ADR 0087).
 - [conversations](#conversations): The Care inbox: one thread for each number that writes to our WhatsApp number, matched to its client where we know the number (ADR 0129).
+- [count_lines](#count_lines): Each item a count task counted: what the ledger held, which the counter never saw, the count, any recount, and whether the ledger took it (ADR 0185).
+- [count_tasks](#count_tasks): Each cycle count of one class of items at one place: raised once its period comes round, counted blind, counted again where it differs, signed off where that stands (ADR 0185).
 - [counters](#counters): Fixed-window counters for the rate limits and the daily ceilings (ADR 0011).
 - [credit_expiry_cursor](#credit_expiry_cursor): One row: how far the pass that closes expired credits has got, so it reads only the grants that expired since.
 - [credit_ledger](#credit_ledger): Service-visit credits, entry by entry, each drawing on the grant it spends; a balance is summed, never kept (ADR 0033).
@@ -79,6 +83,7 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 - [dispatch_moves](#dispatch_moves): Every move ops make on the dispatch board: from where to where, by whom, why, what FSM said, and whether the client was told (ADR 0069).
 - [events](#events): What happened, for analysis, with no personal data in its payload.
 - [first_fit_requests](#first_fit_requests): A first fit asked for on the site's form with the consultation; a person's latest stands (ADR 0086). The form no longer asks for one (ADR 0105), and only the data export, erasure and an old consultation request's line still read it.
+- [forecast_accuracy](#forecast_accuracy): How right each forecast run was: its first period's expected use and high case of each stock code in each city beside what the kits used (ADR 0183).
 - [forecast_lines](#forecast_lines): Each forecast run's expected use of each stock code in each city and period, with what each of its four layers gave (ADR 0179).
 - [forecast_runs](#forecast_runs): Each demand forecast run, once a planning period: its period, horizon and the rates it learned (ADR 0179).
 - [fsm_items](#fsm_items): FSM's catalogue, to read each appointment's visit type from its service item and to compare FSM's prices with the price book (ADR 0032, ADR 0073).
@@ -110,11 +115,14 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 - [photos](#photos): One photograph of a set, by its angle, and where it and its thumbnail are kept in R2 (ADR 0028, ADR 0093).
 - [piece_returns](#piece_returns): Each piece that came off a client at a replacement, held in the technician's kit as returned until handed in (ADR 0163).
 - [pieces](#pieces): Each piece fitted, its base and lot, the day it was fitted and the day it falls due, and a failure with its reason. `fsm_id` is FSM's ID for a piece mirrored from FSM, otherwise the row's own (ADR 0032, ADR 0110).
+- [plan_lines](#plan_lines): Each move the supply plan proposes from a forecast run, a transfer or an order, with the figures behind it and what ops decided (ADR 0180).
 - [po_lines](#po_lines): Each line of a purchase order: the stock code, how many, the price it was ordered at, and how many have arrived (ADR 0166).
 - [price_book](#price_book): Every price from its date, and the only source of prices; an old row stays for what was sold under it (ADR 0045, ADR 0061).
 - [purchase_orders](#purchase_orders): Each purchase order to a supplier: its state from drafted to closed or cancelled, who approved, sent or cancelled it, and when (ADR 0166).
 - [quick_replies](#quick_replies): Saved answers Customer Care pick in a chat, kept by a Customer Care manager (ADR 0141).
 - [razorpay_events](#razorpay_events): Each Razorpay webhook event, once, by its event ID (ADR 0044).
+- [recall_pieces](#recall_pieces): Each fitted piece a recall made due for replacement, and the day it was due before (ADR 0187).
+- [recalls](#recalls): Each lot recalled: why, who raised it and when, and when it was closed once dealt with (ADR 0187).
 - [receipt_lines](#receipt_lines): What a receipt brought of each order line: accepted, damaged, failed its check, its lot, and what one cost landed (ADR 0167).
 - [receipts](#receipts): Each receipt against a purchase order at the warehouse: who received it, the supplier's invoice, the rupee rate and the freight, duty and clearing (ADR 0167).
 - [referral_attributions](#referral_attributions): A person who came through an invite, to the first invite they used, what became of its grant, and who attached it and why where ops did (ADR 0048, ADR 0089).
@@ -611,7 +619,7 @@ Made by `0049_consumables_and_stock.sql`.
 
 The consumables ops keep: name, unit, what one costs, the reorder levels, the day it is retired from, and FSM's part for it (ADR 0087).
 
-Made by `0049_consumables_and_stock.sql`; changed by `0135_stock_lots.sql`.
+Made by `0049_consumables_and_stock.sql`; changed by `0135_stock_lots.sql`, `0154_cycle_counts.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -628,6 +636,7 @@ Made by `0049_consumables_and_stock.sql`; changed by `0135_stock_lots.sql`.
 | `created_at` | TEXT | no |  |  |
 | `updated_at` | TEXT | no |  |  |
 | `shelf_life_days` | INTEGER | yes |  |  |
+| `count_class` | TEXT | yes |  |  |
 
 Indexes:
 
@@ -685,6 +694,50 @@ Indexes:
 - `conversations_by_opened`: on (`opened_at`)
 - `conversations_by_person`: on (`person_id`), where `person_id IS NOT NULL`
 - `conversations_by_state`: on (`state`, `last_message_at`)
+
+## count_lines
+
+Each item a count task counted: what the ledger held, which the counter never saw, the count, any recount, and whether the ledger took it (ADR 0185).
+
+Made by `0154_cycle_counts.sql`.
+
+| Column | Type | May be empty | Default | Key |
+| --- | --- | --- | --- | --- |
+| `task_id` | TEXT | no |  | primary key; → `count_tasks.id` |
+| `consumable_code` | TEXT | no |  | primary key; → `consumables.code` |
+| `held` | INTEGER | no |  |  |
+| `counted` | INTEGER | no |  |  |
+| `recounted` | INTEGER | yes |  |  |
+| `state` | TEXT | no |  |  |
+
+## count_tasks
+
+Each cycle count of one class of items at one place: raised once its period comes round, counted blind, counted again where it differs, signed off where that stands (ADR 0185).
+
+Made by `0154_cycle_counts.sql`.
+
+| Column | Type | May be empty | Default | Key |
+| --- | --- | --- | --- | --- |
+| `id` | TEXT | no |  | primary key |
+| `place_id` | TEXT | no |  |  |
+| `count_class` | TEXT | no |  |  |
+| `due_on` | TEXT | no |  |  |
+| `state` | TEXT | no |  |  |
+| `raised_at` | TEXT | no |  |  |
+| `counted_by` | TEXT | yes |  |  |
+| `counted_at` | TEXT | yes |  |  |
+| `recounted_by` | TEXT | yes |  |  |
+| `recounted_at` | TEXT | yes |  |  |
+| `signed_off_by` | TEXT | yes |  |  |
+| `signed_off_at` | TEXT | yes |  |  |
+| `sign_off_note` | TEXT | yes |  |  |
+| `done_at` | TEXT | yes |  |  |
+
+Indexes:
+
+- `count_tasks_by_place`: on (`place_id`, `count_class`, `due_on`)
+- `count_tasks_done`: on (`done_at`), where `state = 'done'`
+- `count_tasks_open`: on (`place_id`, `count_class`), where `state <> 'done'`
 
 ## counters
 
@@ -1010,6 +1063,28 @@ Indexes:
 
 Triggers: `first_fit_requests_fitted_asked`.
 
+## forecast_accuracy
+
+How right each forecast run was: its first period's expected use and high case of each stock code in each city beside what the kits used (ADR 0183).
+
+Made by `0153_forecast_accuracy.sql`.
+
+| Column | Type | May be empty | Default | Key |
+| --- | --- | --- | --- | --- |
+| `run_id` | TEXT | no |  | primary key |
+| `consumable_code` | TEXT | no |  | primary key |
+| `city` | TEXT | no |  | primary key |
+| `period_start` | TEXT | no |  |  |
+| `period_days` | INTEGER | no |  |  |
+| `expected` | REAL | no |  |  |
+| `high` | REAL | no |  |  |
+| `actual` | REAL | no |  |  |
+| `measured_at` | TEXT | no |  |  |
+
+Indexes:
+
+- `forecast_accuracy_by_city`: on (`city`, `period_start`)
+
 ## forecast_lines
 
 Each forecast run's expected use of each stock code in each city and period, with what each of its four layers gave (ADR 0179).
@@ -1033,7 +1108,7 @@ Made by `0151_forecast.sql`.
 
 Each demand forecast run, once a planning period: its period, horizon and the rates it learned (ADR 0179).
 
-Made by `0151_forecast.sql`.
+Made by `0151_forecast.sql`; changed by `0153_forecast_accuracy.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -1044,10 +1119,12 @@ Made by `0151_forecast.sql`.
 | `due_rate` | REAL | no |  |  |
 | `fit_rate` | REAL | no |  |  |
 | `ran_at` | TEXT | no |  |  |
+| `measured_at` | TEXT | yes |  |  |
 
 Indexes:
 
 - `forecast_runs_by_day`: on (`run_on`)
+- `forecast_runs_unmeasured`: on (`run_on`), where `measured_at IS NULL`
 
 ## fsm_items
 
@@ -1795,6 +1872,39 @@ Indexes:
 
 Triggers: `pieces_replacement_booked_added`, `pieces_replacement_booked_changed`.
 
+## plan_lines
+
+Each move the supply plan proposes from a forecast run, a transfer or an order, with the figures behind it and what ops decided (ADR 0180).
+
+Made by `0152_supply_plan.sql`.
+
+| Column | Type | May be empty | Default | Key |
+| --- | --- | --- | --- | --- |
+| `id` | TEXT | no |  | primary key |
+| `run_id` | TEXT | no |  |  |
+| `kind` | TEXT | no |  |  |
+| `consumable_code` | TEXT | no |  | → `consumables.code` |
+| `city` | TEXT | yes |  |  |
+| `from_place` | TEXT | yes |  | → `stock_places.id` |
+| `to_place` | TEXT | yes |  | → `stock_places.id` |
+| `supplier_id` | TEXT | yes |  | → `suppliers.id` |
+| `proposed` | INTEGER | no |  |  |
+| `quantity` | INTEGER | yes |  |  |
+| `usable` | INTEGER | no |  |  |
+| `need` | REAL | no |  |  |
+| `safety` | REAL | no |  |  |
+| `state` | TEXT | no |  |  |
+| `reject_reason` | TEXT | yes |  |  |
+| `decided_by` | TEXT | yes |  |  |
+| `decided_at` | TEXT | yes |  |  |
+| `po_id` | TEXT | yes |  | → `purchase_orders.id` |
+| `drafted_at` | TEXT | no |  |  |
+
+Indexes:
+
+- `plan_lines_by_run`: on (`run_id`)
+- `plan_lines_open`: on (`drafted_at`), where `state = 'proposed'`
+
 ## po_lines
 
 Each line of a purchase order: the stock code, how many, the price it was ordered at, and how many have arrived (ADR 0166).
@@ -1889,6 +1999,40 @@ Made by `0014_payments.sql`.
 | `event_id` | TEXT | no |  | primary key |
 | `event` | TEXT | no |  |  |
 | `received_at` | TEXT | no |  |  |
+
+## recall_pieces
+
+Each fitted piece a recall made due for replacement, and the day it was due before (ADR 0187).
+
+Made by `0155_recalls.sql`.
+
+| Column | Type | May be empty | Default | Key |
+| --- | --- | --- | --- | --- |
+| `recall_id` | TEXT | no |  | primary key; → `recalls.id` |
+| `piece_id` | TEXT | no |  | primary key |
+| `due_before` | TEXT | yes |  |  |
+
+## recalls
+
+Each lot recalled: why, who raised it and when, and when it was closed once dealt with (ADR 0187).
+
+Made by `0155_recalls.sql`.
+
+| Column | Type | May be empty | Default | Key |
+| --- | --- | --- | --- | --- |
+| `id` | TEXT | no |  | primary key |
+| `number` | INTEGER | no |  |  |
+| `lot_id` | TEXT | no |  | → `stock_lots.id` |
+| `reason` | TEXT | no |  |  |
+| `raised_by` | TEXT | no |  |  |
+| `raised_at` | TEXT | no |  |  |
+| `closed_by` | TEXT | yes |  |  |
+| `closed_at` | TEXT | yes |  |  |
+
+Indexes:
+
+- `recalls_one_open`: unique on (`lot_id`), where `closed_at IS NULL`
+- A `UNIQUE` constraint: unique on (`number`)
 
 ## receipt_lines
 
@@ -2376,7 +2520,7 @@ Made by `0130_standard_costs.sql`.
 
 What each place holds of each consumable, and when it last counted it: the sum of its rows in `stock_movements`, kept by triggers as each is written (ADR 0087).
 
-Made by `0053_balances_and_last_visits.sql`.
+Made by `0053_balances_and_last_visits.sql`; changed by `0154_cycle_counts.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -2384,6 +2528,10 @@ Made by `0053_balances_and_last_visits.sql`.
 | `place` | TEXT | no |  | primary key |
 | `quantity` | INTEGER | no |  |  |
 | `counted_at` | TEXT | yes |  |  |
+
+Indexes:
+
+- `stock_balances_by_place`: on (`place`, `consumable_code`), where `quantity > 0`
 
 ## stock_lot_balances
 
@@ -2421,7 +2569,7 @@ Triggers: `stock_lot_moves_balance`, `stock_lot_moves_taken_out`.
 
 Each lot of a stock code a delivery brought: the supplier's lot, or the day it was received, and the day it expires (ADR 0157).
 
-Made by `0135_stock_lots.sql`; changed by `0138_stock_units.sql`, `0142_receipts.sql`.
+Made by `0135_stock_lots.sql`; changed by `0138_stock_units.sql`, `0142_receipts.sql`, `0155_recalls.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -2433,6 +2581,7 @@ Made by `0135_stock_lots.sql`; changed by `0138_stock_units.sql`, `0142_receipts
 | `label` | TEXT | yes |  |  |
 | `label_serial` | INTEGER | yes |  |  |
 | `landed_cost_paise` | INTEGER | yes |  |  |
+| `recalled_at` | TEXT | yes |  |  |
 
 Indexes:
 
@@ -2566,7 +2715,7 @@ Indexes:
 
 Each hair system piece labelled: its label, stock code and lot, and where it is now, held at a place, in transit, fitted or gone (ADR 0161).
 
-Made by `0138_stock_units.sql`; changed by `0148_custom_reservations.sql`.
+Made by `0138_stock_units.sql`; changed by `0148_custom_reservations.sql`, `0155_recalls.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -2587,6 +2736,7 @@ Indexes:
 
 - A `UNIQUE` constraint: unique on (`code`)
 - A `UNIQUE` constraint: unique on (`serial`)
+- `stock_units_by_lot`: on (`lot_id`), where `lot_id IS NOT NULL`
 - `stock_units_by_transfer`: on (`transfer_id`), where `transfer_id IS NOT NULL`
 - `stock_units_by_visit`: on (`appointment_id`), where `appointment_id IS NOT NULL`
 - `stock_units_held`: on (`place`, `consumable_code`), where `state = 'held'`
