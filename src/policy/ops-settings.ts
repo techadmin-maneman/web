@@ -14,6 +14,7 @@
 import { CARE_HOURS, CARE_HOURS_KEYS, careHoursConflicts } from "./care-hours.ts";
 import { CHECKIN_RADIUS_M } from "./check-in.ts";
 import { LOST_AFTER_DAYS } from "./client-standing.ts";
+import { PLANNING_HORIZON_PERIODS, PLANNING_PERIOD_DAYS } from "./forecast.ts";
 import { CUSTOM_ORDER_GRACE_DAYS, PO_SECOND_APPROVAL_ABOVE_RUPEES } from "./purchasing.ts";
 import { MOST_REMEDY_VISITS, REMEDY_LIMIT, REMEDY_LIMIT_KEYS } from "./remedies.ts";
 import { DAY_BEFORE_REMINDER_HOUR, UNLOCK_HOUR } from "./job-visibility.ts";
@@ -349,6 +350,27 @@ export const OPS_SETTINGS = [
     max: 90,
     keys: null,
     fallback: CUSTOM_ORDER_GRACE_DAYS,
+  },
+  {
+    // The demand forecast and supply plan (docs/decisions/0179-demand-forecast.md).
+    name: "planning_period_days",
+    title: "Planning period",
+    note: "How often the forecast runs and the supply plan drafts orders, and the days each forecast figure covers.",
+    unit: "days",
+    min: 1,
+    max: 31,
+    keys: null,
+    fallback: PLANNING_PERIOD_DAYS,
+  },
+  {
+    name: "planning_horizon_periods",
+    title: "Forecast horizon",
+    note: "How many planning periods ahead the forecast looks. Keep it longer than the longest supplier lead time and one period, or the plan cannot see past what is already on order.",
+    unit: "periods",
+    min: 1,
+    max: 52,
+    keys: null,
+    fallback: PLANNING_HORIZON_PERIODS,
   },
 ] as const satisfies readonly OpsSetting[];
 

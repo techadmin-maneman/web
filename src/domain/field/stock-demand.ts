@@ -91,6 +91,7 @@ async function codedFits(
   db: D1Database,
   fits: readonly FitRow[],
 ): Promise<{ readonly fit: FitRow; readonly code: string | null }[]> {
+  if (fits.length === 0) return [];
   const profiles = await latestFits(
     db,
     fits.flatMap((fit) => fit.person_id ?? []),

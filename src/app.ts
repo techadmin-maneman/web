@@ -63,6 +63,7 @@ import { registerOpsGrievances } from "./routes/ops/grievances.ts";
 import { registerOpsHairProfile } from "./routes/ops/hair-profile.ts";
 import { registerOpsStockMatch } from "./routes/ops/stock-match.ts";
 import { registerOpsCustomOrders } from "./routes/ops/custom-orders.ts";
+import { registerOpsForecast } from "./routes/ops/stock-forecast.ts";
 import { registerOpsJobSheet } from "./routes/ops/job-sheet.ts";
 import { registerOpsPaymentLinks } from "./routes/ops/payment-links.ts";
 import { registerOpsNoShowRulings } from "./routes/ops/no-show-rulings.ts";
@@ -210,6 +211,8 @@ const SURFACE_ROUTES: Readonly<Record<Surface, readonly ((app: App) => void)[]>>
     registerOpsStockMatch,
     // Custom orders, paid in full before they are ordered (docs/decisions/0174-custom-orders.md).
     registerOpsCustomOrders,
+    // The demand forecast (docs/decisions/0179-demand-forecast.md).
+    registerOpsForecast,
     // Erasing a client from their page, the day they ask.
     registerOpsErasure,
     registerOpsProfile,

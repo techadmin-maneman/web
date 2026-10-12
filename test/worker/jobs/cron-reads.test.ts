@@ -225,6 +225,7 @@ const HISTORY = [
      sent_at, settled_by, settled_at, settlement_id)
    SELECT 'st-' || i, 'history_tape', 1, 'central', 'central', 'received', 1, 'ops@localhost', '${AGO}',
      'ops@localhost', '${AGO}', 'x-' || i FROM n`,
+  // The forecast ran today, as it does once a planning period, so the minute measured is not a forecast's.
   // Hair systems ordered from suppliers, received and billed in Books long ago: the Books pass reads only receipts
   // still to bill.
   `INSERT INTO consumables (code, name, unit, unit_cost, reorder_kit, created_at, updated_at)
@@ -243,6 +244,14 @@ const HISTORY = [
    SELECT 'rcp-' || i, 'po-' || i, 'ops@localhost', '${AGO}', 8325, 0, 0, 0, 'bb-' || i, '${AGO}' FROM n`,
   `INSERT INTO receipt_lines (id, receipt_id, po_line_id, received, damaged, qc_failed, landed_unit_paise)
    SELECT 'rl-' || i, 'rcp-' || i, 'pol-' || i, 1, 0, 0, 999000 FROM n`,
+  `INSERT INTO forecast_runs (id, run_on, period_days, horizon_periods, due_rate, fit_rate, ran_at)
+   SELECT 'fr-' || i, CASE WHEN i = 1 THEN '${TODAY}' ELSE date('${AGO}', '-' || (i % 30) || ' days') END, 7, 12,
+     0.8, 0.5, '${AGO}' FROM n`,
+  `INSERT INTO forecast_lines (run_id, consumable_code, city, period, booked, due, pipeline, baseline, expected, high)
+   SELECT 'fr-' || i, 'hs-' || i, 'Gurgaon', 0, 1, 0, 0, 0, 1, 2.7 FROM n`,
+  `INSERT INTO demand_events (id, name, city, starts_on, ends_on, uplift_percent, created_by, created_at)
+   SELECT 'de-' || i, 'Season ' || i, 'Gurgaon', date('${AGO}'), date('${AGO}', '+1 day'), 20, 'ops@localhost', '${AGO}'
+   FROM n WHERE i <= 20`,
   `INSERT INTO stock_risks (appointment_id, consumable_code, city, found_at, cleared_at)
    SELECT 'a-' || i, 'hs-' || i, 'Gurgaon', '${AGO}', '${AGO}' FROM n`,
   `INSERT INTO custom_orders (id, number, person_id, product, base_width_in, base_length_in, colour, grey_percent,

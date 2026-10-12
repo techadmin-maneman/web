@@ -33,6 +33,12 @@ export const PURPOSES: Readonly<Record<string, string>> = {
     "What a receipt brought of each order line: accepted, damaged, failed its check, its lot, and what one cost landed (ADR 0167).",
   custom_orders:
     "Each hair system made for one client to their exact spec: the spec, supplier and price, its payment link and payment, and the order it was bought on (ADR 0174).",
+  demand_events:
+    "The calendar of uplifts ops keep, each an event in a city or every city, which lifts the forecast's baseline (ADR 0179).",
+  forecast_lines:
+    "Each forecast run's expected use of each stock code in each city and period, with what each of its four layers gave (ADR 0179).",
+  forecast_runs:
+    "Each demand forecast run, once a planning period: its period, horizon and the rates it learned (ADR 0179).",
   stock_risks:
     "Each fit booked ahead found with no hair system in its city, or no profile to match one by, and when it was no longer at risk (ADR 0178).",
   supplier_claims:
