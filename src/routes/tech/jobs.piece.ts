@@ -1,12 +1,16 @@
 // The piece step's body (./jobs.steps.ts): on a one visit, the product the client chose or that they decided
 // against it; on any other job that takes one, the piece fitted or the one that failed. A hair system it names must be
-// one of ours, since it comes out of the technician's kit (src/domain/field/piece-use.ts).
+// one of ours, since it comes out of the technician's kit (src/domain/field/piece-use.ts). A label one of the kit's
+// units carries names the hair system and its lot itself, and an expired one is refused
+// (docs/decisions/0163-pieces-scanned-from-the-kit.md).
 
 import { z } from "@hono/zod-openapi";
 import { PieceRequestSchema } from "../../domain/field/job-event-bodies.ts";
 import { offeredProducts } from "../../domain/booking/services.ts";
 import { isHairSystem } from "../../domain/field/hair-systems.ts";
+import { kitUnit } from "../../domain/field/stock-units.ts";
 import { type WorkableJob } from "../../domain/field/workable-job.ts";
+import { technicianOf } from "../../http/technician-session.ts";
 import { indiaDate } from "../../lib/india-time.ts";
 import { takesStep } from "../../policy/in-job-steps.ts";
 import { pieceRecorded } from "../../policy/piece-step.ts";
@@ -15,8 +19,22 @@ import { type Ctx, type StepBody } from "./jobs.record.ts";
 
 type PieceBody = z.infer<typeof PieceRequestSchema>;
 
+/**
+ * The piece as the technician's kit knows it: a label one of their units carries names its hair system and its lot,
+ * whatever the step said; one that expired before the visit's day is refused.
+ */
+async function asTheKitHoldsIt(c: Ctx, job: WorkableJob, sent: PieceBody): Promise<PieceBody | null> {
+  if ("declined" in sent) return sent;
+  const unit = await kitUnit(c.env.DB, technicianOf(c).technicianId, sent.piece_code);
+  if (unit === null) return sent;
+  if (unit.expiresOn !== null && unit.expiresOn < indiaDate(job.windowStart)) return null;
+  return { ...sent, stock_code: unit.consumableCode, supplier_lot: sent.supplier_lot ?? unit.lotCode ?? undefined };
+}
+
 /** The piece step's body for this job: a one visit's choice, or a piece fitted or failed where the job takes one. */
-export async function pieceBody(c: Ctx, job: WorkableJob, body: PieceBody): Promise<StepBody> {
+export async function pieceBody(c: Ctx, job: WorkableJob, sent: PieceBody): Promise<StepBody> {
+  const body = await asTheKitHoldsIt(c, job, sent);
+  if (body === null) return { invalid: ["piece_code"] };
   const stockCode = "declined" in body ? null : (body.stock_code ?? null);
   if (stockCode !== null && !(await isHairSystem(c.env.DB, stockCode))) return { invalid: ["stock_code"] };
   if (job.oneVisit !== null) return oneVisitPiece(c, job, body);

@@ -472,8 +472,12 @@ export const steps = {
     nothingOffered: "No consumables listed yet. Ops add them in the console.",
   },
   piece: {
-    // A label carries no barcode or QR code, so the code is typed, never scanned.
+    // A label is scanned by its QR code, or typed (docs/decisions/0163-pieces-scanned-from-the-kit.md).
     label: "The new piece’s label",
+    scan: "Scan the label",
+    stopScan: "Stop scanning",
+    camera: { opening: "Opening the camera…", refused: "No camera. Type the label instead." },
+    expired: "This piece has expired. Hand it in and use another.",
     placeholder: "MM-STD-4417-B",
     // The board draws no label typed wrong.
     malformed: "Type it as on the tag, like MM-STD-4417-B.",

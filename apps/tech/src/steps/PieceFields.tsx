@@ -5,6 +5,8 @@
 import { capsLook } from "@maneman/ui/Caps";
 import { Button } from "@maneman/ui/Button";
 import { Icon } from "@maneman/ui/Icon";
+import { QrCamera } from "@maneman/ui/ScanField";
+import { useState } from "react";
 import type { Job, PieceLookup } from "../api.ts";
 import { job as jobCopy, oneVisit, steps as copy } from "../content.ts";
 import { STROKE, TAG } from "../icons.ts";
@@ -170,6 +172,8 @@ export function LabelField(props: {
   code: string;
   looked: Looked;
   looking: boolean;
+  /** The label is of a piece in the kit that has expired. */
+  expired: boolean;
   pieces: readonly ClientPiece[];
   picking: boolean;
   onCode: (code: string) => void;
@@ -179,6 +183,7 @@ export function LabelField(props: {
 }) {
   const { code, looked } = props;
   const malformed = given(code) && !isLabel(code);
+  const [scanning, setScanning] = useState(false);
   return (
     <>
       <div className={styles.field}>
@@ -210,6 +215,26 @@ export function LabelField(props: {
           variant="outlineOnInk"
           size="control"
           className={styles.second}
+          aria-pressed={scanning}
+          onClick={() => {
+            setScanning(!scanning);
+          }}
+        >
+          {scanning ? copy.piece.stopScan : copy.piece.scan}
+        </Button>
+        {scanning && (
+          <QrCamera
+            words={copy.piece.camera}
+            onRead={(text) => {
+              setScanning(false);
+              props.onCode(asLabel(text));
+            }}
+          />
+        )}
+        <Button
+          variant="outlineOnInk"
+          size="control"
+          className={styles.second}
           disabled={!isLabel(code) || props.looking}
           busy={props.looking}
           onClick={props.onLook}
@@ -218,6 +243,11 @@ export function LabelField(props: {
         </Button>
         <Picker pieces={props.pieces} open={props.picking} onToggle={props.onTogglePicking} onPick={props.onPick} />
       </div>
+      {props.expired && (
+        <p className={styles.warn} role="alert">
+          {copy.piece.expired}
+        </p>
+      )}
       {looked.state === "unknown" && (
         <p className={styles.note} role="status">
           {copy.piece.unknown}

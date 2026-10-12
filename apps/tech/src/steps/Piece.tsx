@@ -11,10 +11,12 @@
 // says first what the client paid for, and warns when the hair profile names
 // another product.
 //
-// The design draws "Scan the piece", but labels carry neither a barcode nor a QR
-// code, so the label is typed, or picked from the client's pieces the card
-// carries, and checked against the API's format before Next will take it. A
-// check against the mirror needs signal; a label the mirror does not know, or
+// "Scan the piece": the label's QR code is read by the camera, or the label
+// typed, or picked from the client's pieces the card carries, and checked against
+// the API's format before Next will take it. A label one of the kit's pieces
+// carries picks its hair system and fills its lot, with no signal needed, and one
+// that has expired keeps Next dim (docs/decisions/0163-pieces-scanned-from-the-kit.md).
+// A check against the mirror needs signal; a label the mirror does not know, or
 // one checked with none, still goes on the job as the technician entered it.
 //
 // The pieces tab keeps each piece's base and supplier lot, and on a
@@ -34,6 +36,7 @@ import {
   declinedTheFit,
   given,
   kitChoices,
+  kitPieceOf,
   noticeFor,
   onTheHead,
   pieceBody,
@@ -82,7 +85,20 @@ function Fitting({
   const [choice, setChoice] = useState<Choice>(choiceSent(sent));
 
   const form: PieceForm = { code, base, lot, stock, oldCode, oldReason, choice };
-  const missing = stillMissing(form, job, looked.state === "found" && !looked.found.belongs_to_this_job);
+  const fromKit = kitPieceOf(job, code);
+  const expired = fromKit !== null && fromKit.expires_on !== null && fromKit.expires_on < job.date;
+  const missing = expired
+    ? copy.piece.expired
+    : stillMissing(form, job, looked.state === "found" && !looked.found.belongs_to_this_job);
+  /** A label typed or scanned: one of the kit's pieces picks its hair system, and its lot where none is typed. */
+  const takeLabel = (label: string) => {
+    setCode(label);
+    setLooked(NOT_LOOKED);
+    const piece = kitPieceOf(job, label);
+    if (piece === null) return;
+    setStock(piece.stock);
+    if (!given(lot) && piece.lot_code !== null) setLot(piece.lot_code);
+  };
 
   const look = () =>
     once(async () => {
@@ -133,12 +149,10 @@ function Fitting({
             code={code}
             looked={looked}
             looking={looking}
+            expired={expired}
             pieces={(job.pieces ?? []).filter(toFit)}
             picking={picking === "new"}
-            onCode={(typed) => {
-              setCode(typed);
-              setLooked(NOT_LOOKED);
-            }}
+            onCode={takeLabel}
             onLook={() => void look()}
             onTogglePicking={toggle("new")}
             onPick={pickNew}

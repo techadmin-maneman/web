@@ -5,11 +5,13 @@
 //
 // The piece is the unit its label names, where the kit holds it, and that unit is fitted
 // (docs/decisions/0161-pieces-as-units.md). A label we never made takes a piece never labelled, or failing one, a unit,
-// which has then gone missing. A correction puts the units the visit took back in the kit.
+// which has then gone missing. A correction puts the units the visit took back in the kit. A piece that came off is
+// held in the kit as returned (src/domain/field/piece-returns.ts).
 
 import { useStillToRecord } from "../../policy/stock.ts";
 import { latestStep, takenFor, takenFromKit } from "./job-use.ts";
 import { pieceStepOf } from "./pieces.ts";
+import { pieceReturnStatements } from "./piece-returns.ts";
 import { givenBackToLots } from "./stock-lots.ts";
 import { takenFrom, takesOf, unitChanges, type Taken } from "./stock-units.ts";
 
@@ -66,14 +68,23 @@ export async function recordPieceUse(
   const body: unknown = JSON.parse(latest.body);
   const code = stockCodeOf(body);
   const fitted = new Map(code === null ? [] : [[code, 1]]);
+  const at = input.now.toISOString();
+  const returned = pieceStepOf(body)
+    .failed.filter((failure) => failure.field === "old_piece")
+    .flatMap((failure) =>
+      pieceReturnStatements(db, { jobId, technicianId, label: failure.code, reason: failure.reason, at }),
+    );
   const owed = useStillToRecord(fitted, await takenFor(db, { jobId, technicianId, hairSystems: true }));
-  if (owed.size === 0) return { lowered: false };
+  if (owed.size === 0) {
+    if (returned.length > 0) await db.batch(returned);
+    return { lowered: false };
+  }
   const label = pieceStepOf(body).fitted?.code ?? null;
   const moves = new Map<string, PieceMove>();
   for (const [stock, quantity] of owed) {
     moves.set(stock, await pieceMove(db, { code: stock, quantity, label, jobId }, technicianId));
   }
-  const step = { jobId, technicianId, eventId: latest.id, kind: "piece", at: input.now.toISOString() } as const;
+  const step = { jobId, technicianId, eventId: latest.id, kind: "piece", at } as const;
   const taken = await takenFromKit(db, step, owed, (stock) => moves.get(stock)?.takes ?? []);
   const units = [...moves].flatMap(([stock, move]) =>
     unitChanges(db, {
@@ -86,7 +97,7 @@ export async function recordPieceUse(
       actor: technicianId,
     }),
   );
-  const results = await db.batch<{ quantity: number }>([...taken.movements, ...taken.lots, ...units]);
+  const results = await db.batch<{ quantity: number }>([...taken.movements, ...taken.lots, ...units, ...returned]);
   const moved = results.slice(0, taken.movements.length).flatMap((result) => result.results);
   return { lowered: moved.some((row) => row.quantity < 0) };
 }

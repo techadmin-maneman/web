@@ -2045,6 +2045,13 @@ export interface components {
             colour: string;
             grey_percent: number;
             density_percent: number;
+            /** @description Its pieces the kit holds labelled, soonest to expire first. */
+            units: {
+                /** @description The label, as the piece step sends it back as piece_code. */
+                code: string;
+                lot_code: string | null;
+                expires_on: string | null;
+            }[];
         };
         TechnicianProduct: {
             /** @description What the piece step sends back as product. */

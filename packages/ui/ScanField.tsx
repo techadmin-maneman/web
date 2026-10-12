@@ -23,7 +23,14 @@ const READ_WIDTH = 640;
 /** How long between frames read. */
 const EVERY_MS = 150;
 
-function Camera({ words, onRead }: { words: ScanWords; onRead: (text: string) => void }) {
+/** The back camera, reading each frame for a QR code until one is found, which `onRead` is given once. */
+export function QrCamera({
+  words,
+  onRead,
+}: {
+  words: Pick<ScanWords, "opening" | "refused">;
+  onRead: (text: string) => void;
+}) {
   const video = useRef<HTMLVideoElement>(null);
   const read = useRef(onRead);
   const [state, setState] = useState<"opening" | "open" | "refused">("opening");
@@ -147,7 +154,7 @@ export function ScanField({
         </Button>
       </div>
       {reading && (
-        <Camera
+        <QrCamera
           words={words}
           onRead={(text) => {
             setReading(false);

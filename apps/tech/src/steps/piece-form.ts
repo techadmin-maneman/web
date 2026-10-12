@@ -76,6 +76,18 @@ export function noticeFor(refusedFields: readonly string[]): string {
   return aLabel ? copy.corrected.piece : copy.corrected.other;
 }
 
+/** The piece of the kit a label names, with the hair system it is; null for a label no piece in the kit carries. */
+export function kitPieceOf(
+  job: Pick<Job, "kit_hair_systems">,
+  label: string,
+): { readonly stock: string; readonly lot_code: string | null; readonly expires_on: string | null } | null {
+  for (const each of job.kit_hair_systems) {
+    const piece = each.units.find((unit) => unit.code === label);
+    if (piece !== undefined) return { stock: each.code, lot_code: piece.lot_code, expires_on: piece.expires_on };
+  }
+  return null;
+}
+
 /** Whether a one visit's client decided against the fit, which fits nothing and asks for no label. */
 export const declinedTheFit = (form: PieceForm, job: Pick<Job, "one_visit">): boolean =>
   job.one_visit && form.choice === DECLINED;

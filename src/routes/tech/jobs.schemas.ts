@@ -145,6 +145,17 @@ const KitHairSystemSchema = z
     colour: z.string(),
     grey_percent: z.number().int(),
     density_percent: z.number().int(),
+    units: z
+      .array(
+        z
+          .object({
+            code: z.string().openapi({ description: "The label, as the piece step sends it back as piece_code." }),
+            lot_code: z.union([z.string(), z.null()]),
+            expires_on: z.union([z.iso.date(), z.null()]),
+          })
+          .strict(),
+      )
+      .openapi({ description: "Its pieces the kit holds labelled, soonest to expire first." }),
   })
   .strict()
   .openapi("KitHairSystem");
