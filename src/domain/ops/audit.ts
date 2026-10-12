@@ -62,6 +62,9 @@ export const AUDIT_ACTIONS = [
   // A partner's month paid, or a payment recorded by mistake taken off (docs/decisions/0124-partner-statements.md).
   "partner_payout.record",
   "partner_payout.delete",
+  // A month's offline spend added, or taken off the figures (docs/decisions/0150-spend.md).
+  "spend.add",
+  "spend.remove",
   // Ops opening one of a client's photographs (docs/decisions/0031-access-and-audit.md).
   "photo.view",
   // A client's rights over their data (docs/decisions/0049-dpdp.md).

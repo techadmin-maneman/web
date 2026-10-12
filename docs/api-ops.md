@@ -2210,6 +2210,102 @@ Take a saved answer off the list
 }
 ```
 
+### GET /api/spend
+
+The last thirteen months' offline spend, the latest month first
+
+**200**: The entries, and the cities and channels an entry may name
+
+```json
+{
+  "$ref": "#/components/schemas/SpendList"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/spend
+
+Add a month's offline spend
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/SpendNew"
+}
+```
+
+**200**: Added
+
+```json
+{
+  "$ref": "#/components/schemas/SpendEntry"
+}
+```
+
+**400**: invalid_request: fields names month for one outside the list's months, or city for one we do not hold
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/spend/{id}/remove
+
+Take an entry off the figures
+
+**200**: Taken off
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "ok": {
+      "type": "boolean",
+      "enum": [
+        true
+      ]
+    }
+  },
+  "required": [
+    "ok"
+  ],
+  "additionalProperties": false
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no such entry on the figures
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ### POST /api/clients/{id}/remedies
 
 Give a client free service visits, with why: at once within the limit ops set, else for a manager
@@ -12369,6 +12465,199 @@ Request body:
 }
 ```
 
+### SpendList
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "entries": {
+      "type": "array",
+      "items": {
+        "$ref": "#/components/schemas/SpendEntry"
+      }
+    },
+    "cities": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "channels": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "partner",
+          "referral",
+          "organic_social",
+          "organic_search",
+          "direct"
+        ]
+      }
+    },
+    "first_month": {
+      "type": "string",
+      "description": "The earliest month an entry may be put in, YYYY-MM."
+    },
+    "this_month": {
+      "type": "string",
+      "description": "India's month now, the latest an entry may be put in."
+    }
+  },
+  "required": [
+    "entries",
+    "cities",
+    "channels",
+    "first_month",
+    "this_month"
+  ],
+  "additionalProperties": false
+}
+```
+
+### SpendEntry
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "month": {
+      "type": "string",
+      "description": "YYYY-MM."
+    },
+    "city": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Null for spend not aimed at one city."
+    },
+    "channel": {
+      "type": "string",
+      "enum": [
+        "partner",
+        "referral",
+        "organic_social",
+        "organic_search",
+        "direct"
+      ]
+    },
+    "campaign": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "amount": {
+      "type": "integer",
+      "description": "Paise, before GST."
+    },
+    "note": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "entered_by": {
+      "type": "string"
+    },
+    "entered_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "id",
+    "month",
+    "city",
+    "channel",
+    "campaign",
+    "amount",
+    "note",
+    "entered_by",
+    "entered_at"
+  ],
+  "additionalProperties": false
+}
+```
+
+### SpendNew
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "month": {
+      "type": "string",
+      "pattern": "^\\d{4}-(0[1-9]|1[0-2])$"
+    },
+    "city": {
+      "anyOf": [
+        {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 60
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "channel": {
+      "type": "string",
+      "enum": [
+        "partner",
+        "referral",
+        "organic_social",
+        "organic_search",
+        "direct"
+      ]
+    },
+    "campaign": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 120,
+      "description": "As the campaign is named, starting with its city or with national."
+    },
+    "amount": {
+      "type": "integer",
+      "minimum": 100,
+      "maximum": 10000000000,
+      "description": "Paise, before GST."
+    },
+    "note": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    }
+  },
+  "required": [
+    "month",
+    "city",
+    "channel",
+    "amount"
+  ],
+  "additionalProperties": false
+}
+```
+
 ### RemedyNew
 
 ```json
@@ -13111,6 +13400,8 @@ Request body:
         "word.publish",
         "partner_payout.record",
         "partner_payout.delete",
+        "spend.add",
+        "spend.remove",
         "photo.view",
         "pincode.launch",
         "data.export",

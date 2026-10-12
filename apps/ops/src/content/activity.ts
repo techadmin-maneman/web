@@ -46,6 +46,8 @@ const ACTIONS: Readonly<Record<ActivityAction, string>> = {
   "word.publish": "Site words published",
   "partner_payout.record": "Partner payment recorded",
   "partner_payout.delete": "Partner payment deleted",
+  "spend.add": "Spend added",
+  "spend.remove": "Spend taken off",
   "photo.view": "Photographs opened",
   "pincode.launch": "Pincode launched",
   "data.export": "Data exported",
