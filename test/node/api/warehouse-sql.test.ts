@@ -25,8 +25,15 @@ describe("the reporting copy's statements", () => {
   });
 
   it("deletes the rows whose keys, joined, are not tonight's", () => {
-    expect(staleSql("fact_capacity", ["day", "technician_key"])).toBe(
-      'DELETE FROM "analytics"."fact_capacity" WHERE NOT (("day"::text || \'|\' || "technician_key"::text) = ANY($1::text[]))',
+    expect(staleSql({ table: "fact_message_day", key: ["day", "kind"], stamped: true })).toBe(
+      'DELETE FROM "analytics"."fact_message_day" WHERE NOT (("day"::text || \'|\' || "kind"::text) = ANY($1::text[]))',
+    );
+  });
+
+  it("keeps the rows before a table's date as an earlier night wrote them", () => {
+    const keepBefore = { column: "day", from: "2026-09-20" };
+    expect(staleSql({ table: "fact_capacity", key: ["day"], stamped: true, keepBefore })).toMatch(
+      /= ANY\(\$1::text\[\]\)\) AND "day" >= \$2::date$/,
     );
   });
 });

@@ -16,10 +16,11 @@ The owner chose to report from Zoho Analytics, fed by a nightly copy of our figu
 4. **No row names a client.** A client is a key: an HMAC of our ID with `ANALYTICS_CLIENT_KEY`, a secret only the API holds, so the key is the same every night and cannot be turned back into a person. Records marked as tests are left out. An erased client's visits and payments stay as the business's record, with no key; their client row goes.
 5. **Money is in rupees before GST**, with the GST and any refund in columns of their own.
 6. **Each night's copy is checked**: the visits it holds and the payments' total, against what it was sent. A difference alerts (`analytics_totals`), as does a copy past 400 MB (`analytics_size`).
-7. **Production stays on `none` until counsel answers on pseudonymous rows and the data agreements with Supabase and Zoho.** There is no staging copy; the owner kept one Supabase project.
+7. **A technician's day is read from the dispatch board**, so the copy's utilisation is the board's: the half-slots open, none on a day of leave, and those taken. A day already worked keeps the figures it closed with; each night rewrites yesterday and the four weeks ahead, and the first night fills every day since the first visit.
+8. **Production stays on `none` until counsel answers on pseudonymous rows and the data agreements with Supabase and Zoho.** There is no staging copy; the owner kept one Supabase project.
 
 ## Consequences
 
 - Switching it on needs a writer role in Supabase for the API, a Hyperdrive config, the binding in wrangler.jsonc and the secret. Zoho's views then move from the sample schema to `analytics`.
-- Capacity, Care and messages follow in the next part. Until the growth figures are built, every client's channel is "direct", and a visit's booking window is empty.
+- Care cases follow once the Care numbers page has landed. Until the growth figures are built, every client's channel is "direct", and a visit's booking window is empty.
 - Tests: `test/worker/jobs/analytics-nightly.test.ts`, `test/node/api/warehouse-sql.test.ts`.

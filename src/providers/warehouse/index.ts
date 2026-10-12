@@ -15,6 +15,8 @@ export interface TableRows {
   readonly rows: readonly Row[];
   /** Whether the table carries updated_at, which Zoho fetches changed rows by. A small shared table is reloaded whole. */
   readonly stamped: boolean;
+  /** Rows from this date on are tonight's to replace; those before it stay as an earlier night wrote them. */
+  readonly keepBefore?: { readonly column: string; readonly from: string };
 }
 
 export interface WarehouseProvider {
