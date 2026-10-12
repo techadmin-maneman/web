@@ -40,12 +40,14 @@ export function upsertSql(
 
 /**
  * Deletes every row whose key is not among tonight's, the key's columns joined as text; for a table that keeps its
- * earlier rows, only among those from its date on.
+ * earlier rows, only among those from its date on. Tonight's keys go as one JSON list: without the server's types, which
+ * a pooler cannot carry, a list sent as an array arrives as one string.
  */
 export function staleSql({ table, key, keepBefore }: Omit<TableRows, "rows">): string {
   const joined = key.map((column) => `${quoted(column)}::text`).join(` || '|' || `);
   const since = keepBefore === undefined ? "" : ` AND ${quoted(keepBefore.column)} >= $2::date`;
-  return `DELETE FROM ${quoted(SCHEMA)}.${quoted(table)} WHERE NOT ((${joined}) = ANY($1::text[]))${since}`;
+  return `DELETE FROM ${quoted(SCHEMA)}.${quoted(table)}
+    WHERE (${joined}) NOT IN (SELECT jsonb_array_elements_text(($1::text)::jsonb))${since}`;
 }
 
 export function createSupabaseWarehouse(connectionString: string): WarehouseProvider {
@@ -71,7 +73,7 @@ export function createSupabaseWarehouse(connectionString: string): WarehouseProv
       }
       const keys = rows.map((row) => table.key.map((column) => String(row[column])).join("|"));
       const since = table.keepBefore === undefined ? [] : [table.keepBefore.from];
-      await sql.unsafe(staleSql(table), [keys, ...since] as never[]);
+      await sql.unsafe(staleSql(table), [JSON.stringify(keys), ...since] as never[]);
       return { written: rows.length, changed };
     },
     count: async (table) => {
