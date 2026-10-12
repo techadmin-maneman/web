@@ -1976,7 +1976,8 @@ Request body:
             "not_permitted",
             "last_admin",
             "in_use",
-            "figures_conflict"
+            "figures_conflict",
+            "transfer_settled"
           ]
         },
         "request_id": {

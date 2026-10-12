@@ -145,6 +145,8 @@ export const PURPOSES: Readonly<Record<string, string>> = {
   stock_lot_moves: "What each movement moved of each lot, soonest to expire first, at the movement's place (ADR 0157).",
   stock_lot_balances:
     "What each place holds of each lot: the sum of its rows in `stock_lot_moves`, kept by triggers as each is written (ADR 0157).",
+  stock_transfers:
+    "Each transfer sent to a warehouse, a hub or a stockroom: what left, from where, to where, and whether it arrived, in full or short, or was sent back (ADR 0158).",
   stock_movements:
     "Every movement of a consumable into or out of the central store or a technician's kit, never changed; what a place holds is the sum of its rows (ADR 0087).",
   stored_objects:

@@ -9,6 +9,7 @@ import { axeViolations } from "../a11y.ts";
 import { answer, fails, IMRAN, json, STOCK, type Answers, type OpsReply } from "./fixtures.ts";
 import * as opsCopy from "../../apps/ops/src/content.ts";
 import { stockPlaces } from "../../apps/ops/src/content/stock-places.ts";
+import { stockTransit } from "../../apps/ops/src/content/stock-transit.ts";
 
 const WAREHOUSE = "National warehouse";
 
@@ -294,6 +295,39 @@ test("adds a stockroom under the warehouse, and closes it again", async ({ page 
   expect((await closed).postDataJSON()).toEqual({ active: false });
   await expect(places.getByRole("rowheader", { name: "Gurgaon stockroom" })).toHaveCount(0);
   expect(await axeViolations(page)).toEqual([]);
+});
+
+test("receives a transfer short, saying what was lost on the way", async ({ page }) => {
+  const sent = {
+    consumable_code: "solvent",
+    from: "central",
+    to: ROOM,
+    sent_at: "2027-09-20T06:00:00.000Z",
+    sent_by: "ops@maneman.in",
+  };
+  const onTheWay = {
+    ...withRoom,
+    in_transit: [
+      { ...sent, id: "tr-1", quantity: 200 },
+      { ...sent, id: "tr-2", quantity: 50 },
+    ],
+  } satisfies OpsReply<"/api/stock">;
+  await open(page, {
+    "GET /api/stock": json(onTheWay),
+    "POST /api/stock/transfers/{id}/receive": json(withRoom),
+    "POST /api/stock/transfers/{id}/send-back": json(withRoom),
+  });
+  const panel = page.getByRole("region", { name: stockTransit.title });
+  await panel
+    .getByRole("button", { name: stockTransit.receiveLabel("Solvent", "Gurgaon stockroom") })
+    .first()
+    .click();
+  await panel.getByLabel(`${stockTransit.arrived} (ml)`).fill("180");
+  await expect(panel).toContainText(stockTransit.short(20, "ml"));
+  expect(await axeViolations(page)).toEqual([]);
+  const received = posted(page, "/api/stock/transfers/tr-1/receive");
+  await panel.getByRole("button", { name: stockTransit.confirm }).click();
+  expect((await received).postDataJSON()).toEqual({ received: 180 });
 });
 
 test("meets WCAG 2.2 AA, with a movement being checked as well", async ({ page }) => {

@@ -150,6 +150,9 @@ export const AUDIT_ACTIONS = [
   "stock.write_off",
   "stock.place_add",
   "stock.place_change",
+  "stock.send",
+  "stock.receive_transfer",
+  "stock.send_back",
   // Whose a task on the Tasks board is, a visit left partly done that ops closed without a follow-up, and an address
   // a client gave ops on the phone (docs/decisions/0092-task-owners.md).
   "task.assign",
@@ -227,6 +230,21 @@ export function auditStatement(db: D1Database, entry: AuditEntry, now: Date): D1
   return db
     .prepare(`INSERT INTO audit_log (${COLUMNS}) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)`)
     .bind(...valuesOf(entry, now));
+}
+
+/**
+ * The entry for a change earlier in the same batch that may change nothing, as a transfer another request settled
+ * first: written only while `condition`, an SQL test whose placeholders start at ?10 and take `binds`, holds.
+ */
+export function auditStatementWhen(
+  db: D1Database,
+  entry: AuditEntry,
+  now: Date,
+  condition: { readonly sql: string; readonly binds: readonly (string | number | null)[] },
+): D1PreparedStatement {
+  return db
+    .prepare(`INSERT INTO audit_log (${COLUMNS}) SELECT ?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9 WHERE ${condition.sql}`)
+    .bind(...valuesOf(entry, now), ...condition.binds);
 }
 
 /**

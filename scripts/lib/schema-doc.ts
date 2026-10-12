@@ -164,7 +164,7 @@ export const RESTORE_GROUPS: readonly RestoreGroup[] = [
   },
   {
     what: "Stock",
-    tables: ["stock_movements", "stock_places", "stock_lots", "stock_lot_moves"],
+    tables: ["stock_movements", "stock_places", "stock_lots", "stock_lot_moves", "stock_transfers"],
     leftAtT:
       "A delivery, transfer, count or loss recorded since, or a job's use, is lost, so what each place holds is wrong; a hub or stockroom added or changed since goes back",
     putBackBy: "Adding the rows since `<T>`",

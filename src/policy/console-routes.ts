@@ -82,6 +82,8 @@ export const ROUTE_NEEDS: Readonly<Record<string, RouteNeed | typeof SIGNED_IN>>
   "POST /api/stock/transfers": inOwnPlaces("operations", "act"),
   "POST /api/stock/counts": inOwnPlaces("operations", "act"),
   "POST /api/stock/write-offs": inOwnPlaces("operations", "act"),
+  "POST /api/stock/transfers/{id}/receive": inOwnPlaces("operations", "act"),
+  "POST /api/stock/transfers/{id}/send-back": inOwnPlaces("operations", "act"),
   "POST /api/stock/places": need("operations", "manage"),
   "POST /api/stock/places/{id}": need("operations", "manage"),
 
