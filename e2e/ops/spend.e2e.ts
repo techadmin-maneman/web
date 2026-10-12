@@ -44,7 +44,7 @@ test("adds a month's offline spend for a city, in whole rupees", async ({ page }
       return json({ ...FLYERS, id: "6d2e3f4a-5b6c-4d7e-8f9a-0b1c2d3e4f5a", month: "2026-09", note: null })(route);
     },
   });
-  await expect(page.getByRole("cell", { name: "Rs. 25,000" })).toBeVisible();
+  await expect(page.getByRole("cell", { name: "Rs. 25,000", exact: true })).toBeVisible();
 
   await page.getByLabel(copy.city).selectOption("Bengaluru");
   await page.getByLabel(copy.channel).selectOption("organic_social");
