@@ -128,6 +128,7 @@ describe("restoring the whole database", () => {
       "ops_settings_snapshot",
       "board_version",
       "stock_places",
+      "stock_lot_balances",
     ]);
   });
 });

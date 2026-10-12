@@ -95,6 +95,20 @@ const StockSchema = z
           quantity: z.number().int().openapi({ description: "The sum of the place's rows; below nought is a gap." }),
           low: z.boolean().openapi({ description: "At or below the level for its kind of place." }),
           counted_at: z.union([z.iso.datetime(), z.null()]).openapi({ description: "When it was last counted there." }),
+          lots: z
+            .array(
+              z
+                .object({
+                  id: z.string(),
+                  lot_code: z
+                    .string()
+                    .openapi({ description: "The supplier's lot, or R- and the day it was received." }),
+                  expires_on: z.union([z.iso.date(), z.null()]),
+                  quantity: z.number().int(),
+                })
+                .strict(),
+            )
+            .openapi({ description: "The lots the place holds some of, soonest to expire first." }),
         })
         .strict(),
     ),
@@ -136,8 +150,16 @@ const Note = z
   .max(MAX_NOTE)
   .regex(/^[^\p{Cc}]+$/u);
 
+const LotCode = z
+  .string()
+  .trim()
+  .min(1)
+  .max(40)
+  .regex(/^[^\p{Cc}]+$/u)
+  .openapi({ description: "The supplier's lot, as printed on the stock." });
+
 const REFUSED = errorResponse(
-  "invalid_request: fields names consumable_code for one nobody added, or place_id for no place or one not in the caller's cities",
+  "invalid_request: fields names consumable_code for one nobody added, place_id for no place or one not in the caller's cities, or lot_id for a lot the place holds none of",
 );
 
 const stockRoute = createRoute({
@@ -156,7 +178,15 @@ const deliveryRoute = createRoute({
       required: true,
       ...json(
         z
-          .object({ consumable_code: Code, quantity: Quantity, note: Note.nullable().optional() })
+          .object({
+            consumable_code: Code,
+            quantity: Quantity,
+            note: Note.nullable().optional(),
+            lot_code: LotCode.nullable().optional(),
+            expires_on: z.iso.date().nullable().optional().openapi({
+              description: "India's date it expires on; by default the day received plus the stock code's shelf life.",
+            }),
+          })
           .strict()
           .openapi("StockDelivery"),
       ),
@@ -221,7 +251,15 @@ const writeOffRoute = createRoute({
       required: true,
       ...json(
         z
-          .object({ consumable_code: Code, place_id: PlaceId, quantity: Quantity, note: Note })
+          .object({
+            consumable_code: Code,
+            place_id: PlaceId,
+            quantity: Quantity,
+            note: Note,
+            lot_id: z.string().min(1).max(64).nullable().optional().openapi({
+              description: "The lot lost, as one that expired; by default the lots that expire soonest.",
+            }),
+          })
           .strict()
           .openapi("StockWriteOff"),
       ),
@@ -261,6 +299,12 @@ export async function stockAnswer(c: Context<AppEnv>) {
       quantity: holding.quantity,
       low: holding.low,
       counted_at: holding.countedAt,
+      lots: holding.lots.map((lot) => ({
+        id: lot.id,
+        lot_code: lot.lotCode,
+        expires_on: lot.expiresOn,
+        quantity: lot.quantity,
+      })),
     })),
     movements: view.movements.map((movement) => ({
       at: movement.at,
@@ -303,7 +347,12 @@ export function registerOpsStock(app: App): void {
     const body = c.req.valid("json");
     const moved = await receiveStock(
       c.env.DB,
-      { code: body.consumable_code, quantity: body.quantity, note: body.note ?? null },
+      {
+        code: body.consumable_code,
+        quantity: body.quantity,
+        note: body.note ?? null,
+        lot: { lotCode: body.lot_code ?? null, expiresOn: body.expires_on ?? null },
+      },
       written(c),
     );
     return after(c, moved, [WAREHOUSE]);
@@ -339,7 +388,13 @@ export function registerOpsStock(app: App): void {
     if (refused.length > 0) return outOfReach(c, refused);
     const moved = await writeOff(
       c.env.DB,
-      { code: body.consumable_code, place: body.place_id, quantity: body.quantity, note: body.note },
+      {
+        code: body.consumable_code,
+        place: body.place_id,
+        quantity: body.quantity,
+        note: body.note,
+        lotId: body.lot_id ?? null,
+      },
       written(c),
     );
     return after(c, moved, [body.place_id]);

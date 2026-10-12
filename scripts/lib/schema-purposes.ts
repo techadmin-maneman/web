@@ -140,6 +140,11 @@ export const PURPOSES: Readonly<Record<string, string>> = {
     "What each place holds of each consumable, and when it last counted it: the sum of its rows in `stock_movements`, kept by triggers as each is written (ADR 0087).",
   stock_places:
     "Where stock is kept, as a tree: the national warehouse, zone hubs, city stockrooms and a kit for each technician, which a trigger adds with them (ADR 0155).",
+  stock_lots:
+    "Each lot of a stock code a delivery brought: the supplier's lot, or the day it was received, and the day it expires (ADR 0157).",
+  stock_lot_moves: "What each movement moved of each lot, soonest to expire first, at the movement's place (ADR 0157).",
+  stock_lot_balances:
+    "What each place holds of each lot: the sum of its rows in `stock_lot_moves`, kept by triggers as each is written (ADR 0157).",
   stock_movements:
     "Every movement of a consumable into or out of the central store or a technician's kit, never changed; what a place holds is the sum of its rows (ADR 0087).",
   stored_objects:

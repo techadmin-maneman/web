@@ -20,6 +20,7 @@ export const CONSUMABLES = {
       reorder_central: 200,
       retired_from: null,
       offered: true,
+      shelf_life_days: null,
       hair_system: null,
     },
     {
@@ -31,6 +32,7 @@ export const CONSUMABLES = {
       reorder_central: null,
       retired_from: "2027-09-01",
       offered: false,
+      shelf_life_days: null,
       hair_system: null,
     },
     {
@@ -42,6 +44,7 @@ export const CONSUMABLES = {
       reorder_central: null,
       retired_from: "2027-10-01",
       offered: true,
+      shelf_life_days: null,
       hair_system: null,
     },
     {
@@ -53,6 +56,7 @@ export const CONSUMABLES = {
       reorder_central: 50,
       retired_from: null,
       offered: true,
+      shelf_life_days: null,
       hair_system: null,
     },
   ],
@@ -138,6 +142,7 @@ const holding = (code: string, place: string, quantity: number, low = false, cou
   quantity,
   low,
   counted_at: countedAt,
+  lots: [],
 });
 
 /** A kit, under the warehouse until ops move it, in its technician's city. */

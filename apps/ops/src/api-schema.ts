@@ -8700,7 +8700,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Rename a consumable, or change its unit, its cost or its reorder levels. Only the fields sent change */
+        /** Rename a consumable, or change its unit, its cost, its reorder levels or its shelf life. Only the fields sent change */
         post: {
             parameters: {
                 query?: never;
@@ -9366,7 +9366,7 @@ export interface paths {
                         "application/json": components["schemas"]["Stock"];
                     };
                 };
-                /** @description invalid_request: fields names consumable_code for one nobody added, or place_id for no place or one not in the caller's cities */
+                /** @description invalid_request: fields names consumable_code for one nobody added, place_id for no place or one not in the caller's cities, or lot_id for a lot the place holds none of */
                 400: {
                     headers: {
                         [name: string]: unknown;
@@ -9482,7 +9482,7 @@ export interface paths {
                         "application/json": components["schemas"]["Stock"];
                     };
                 };
-                /** @description invalid_request: fields names consumable_code for one nobody added, or place_id for no place or one not in the caller's cities */
+                /** @description invalid_request: fields names consumable_code for one nobody added, place_id for no place or one not in the caller's cities, or lot_id for a lot the place holds none of */
                 400: {
                     headers: {
                         [name: string]: unknown;
@@ -9540,7 +9540,7 @@ export interface paths {
                         "application/json": components["schemas"]["Stock"];
                     };
                 };
-                /** @description invalid_request: fields names consumable_code for one nobody added, or place_id for no place or one not in the caller's cities */
+                /** @description invalid_request: fields names consumable_code for one nobody added, place_id for no place or one not in the caller's cities, or lot_id for a lot the place holds none of */
                 400: {
                     headers: {
                         [name: string]: unknown;
@@ -13251,6 +13251,8 @@ export interface components {
             retired_from: string | null;
             /** @description Whether the technician app offers it today. */
             offered: boolean;
+            /** @description Days from delivery to expiry, for a lot the supplier gives none; null for one that does not expire. */
+            shelf_life_days: number | null;
             /** @description A hair system's spec, counted in pieces and taken by the piece step; null for a consumable. */
             hair_system: components["schemas"]["HairSystemSpec"] | null;
         };
@@ -13288,6 +13290,7 @@ export interface components {
             unit_cost: number;
             reorder_kit?: number | null;
             reorder_central?: number | null;
+            shelf_life_days?: number | null;
         };
         ConsumableChange: {
             /** @description A letter or a digit first, then letters, digits, spaces and . , ' ( ) & / + % -; at most 60. */
@@ -13298,6 +13301,7 @@ export interface components {
             unit_cost?: number;
             reorder_kit?: number | null;
             reorder_central?: number | null;
+            shelf_life_days?: number | null;
         };
         ConsumableRetirement: {
             /** Format: date */
@@ -13425,6 +13429,14 @@ export interface components {
                 low: boolean;
                 /** @description When it was last counted there. */
                 counted_at: string | null;
+                /** @description The lots the place holds some of, soonest to expire first. */
+                lots: {
+                    id: string;
+                    /** @description The supplier's lot, or R- and the day it was received. */
+                    lot_code: string;
+                    expires_on: string | null;
+                    quantity: number;
+                }[];
             }[];
             /** @description The latest movements, newest first. */
             movements: {
@@ -13453,6 +13465,13 @@ export interface components {
             consumable_code: string;
             quantity: number;
             note?: string | null;
+            /** @description The supplier's lot, as printed on the stock. */
+            lot_code?: string | null;
+            /**
+             * Format: date
+             * @description India's date it expires on; by default the day received plus the stock code's shelf life.
+             */
+            expires_on?: string | null;
         };
         StockTransfer: {
             consumable_code: string;
@@ -13475,6 +13494,8 @@ export interface components {
             place_id: string;
             quantity: number;
             note: string;
+            /** @description The lot lost, as one that expired; by default the lots that expire soonest. */
+            lot_id?: string | null;
         };
         StockPlaceAdd: {
             /** @enum {string} */

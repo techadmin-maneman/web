@@ -13,6 +13,7 @@ import { api, type Stock } from "../api.ts";
 import { stock as copy } from "../content.ts";
 import { CheckPanel } from "../components/CheckPanel.tsx";
 import form from "../components/forms.module.css";
+import { LotFields } from "./LotFields.tsx";
 import styles from "./stock.module.css";
 
 export const KINDS = ["delivery", "transfer", "count", "write_off"] as const;
@@ -27,6 +28,9 @@ interface Draft {
   readonly place: string;
   readonly counted: string;
   readonly note: string;
+  readonly lotCode: string;
+  readonly expiresOn: string;
+  readonly lotId: string;
 }
 
 type Step = { readonly step: "editing" | "checking" | "saving" | "recorded" } | ({ readonly step: "failed" } & Failure);
@@ -138,7 +142,13 @@ async function sent(draft: Draft) {
   const note = draft.note.trim() === "" ? null : draft.note.trim();
   switch (draft.kind) {
     case "delivery":
-      return api.recordDelivery({ consumable_code: code, quantity: Number(draft.quantity), note });
+      return api.recordDelivery({
+        consumable_code: code,
+        quantity: Number(draft.quantity),
+        note,
+        lot_code: draft.lotCode.trim() === "" ? null : draft.lotCode.trim(),
+        expires_on: draft.expiresOn === "" ? null : draft.expiresOn,
+      });
     case "transfer":
       return api.recordTransfer({
         consumable_code: code,
@@ -159,9 +169,13 @@ async function sent(draft: Draft) {
         place_id: draft.place,
         quantity: Number(draft.quantity),
         note: draft.note.trim(),
+        lot_id: draft.lotId === "" ? null : draft.lotId,
       });
   }
 }
+
+/** What every box holds before anything is typed. */
+const EMPTY = { quantity: "", counted: "", note: "", lotCode: "", expiresOn: "", lotId: "" };
 
 /** Records a movement of one of `kinds`: those the caller may record, in KINDS' order. */
 export function StockForm({
@@ -177,16 +191,14 @@ export function StockForm({
   // The warehouse first where the caller's grants reach it, else their first place.
   const [first = "", second] = places.map(([value]) => value);
   const offered = book.consumables.filter((each) => !each.retired);
-  const [draft, setDraft] = useState<Draft>({
+  const [draft, setDraft] = useState<Draft>(() => ({
+    ...EMPTY,
     kind: kinds[0],
     code: offered[0]?.code ?? "",
-    quantity: "",
     from: first,
     to: second ?? first,
     place: first,
-    counted: "",
-    note: "",
-  });
+  }));
   const [step, setStep] = useState<Step>({ step: "editing" });
   const edit = (field: keyof Draft) => (value: string) => {
     setDraft({ ...draft, [field]: value });
@@ -204,7 +216,7 @@ export function StockForm({
       return;
     }
     onRecorded(answer.body);
-    setDraft({ ...draft, quantity: "", counted: "", note: "" });
+    setDraft({ ...draft, ...EMPTY });
     setStep({ step: "recorded" });
   };
 
@@ -251,6 +263,7 @@ export function StockForm({
             <Choice label={copy.record.place} value={draft.place} options={places} onChange={edit("place")} />
           )}
         </div>
+        <LotFields book={book} draft={draft} onEdit={edit} />
         <div className={form.fields}>
           {draft.kind === "count" ? (
             <Quantity

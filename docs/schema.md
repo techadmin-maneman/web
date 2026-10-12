@@ -26,7 +26,7 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 | The Care inbox | `conversations`, `chat_messages`, `care_owners`, `care_weekly_off`, `care_leave`, `care_names`, `city_matters`, `quick_replies`, `remedies`, `technician_updates` | A message written since, the client's or ours, is gone from its thread | The rows since `<T>`; WhatsApp's own copy shows what was said |
 | Technicians' steps, pieces and photographs | `job_events`, `checkins`, `visits`, `consumables_used`, `no_show_cases`, `no_show_disputes`, `pieces`, `photos`, `photo_sets` | Steps, check-ins, outcomes, pieces fitted, no-shows and disputes since are lost; a photograph's file is kept with no row | The rows since `<T>` |
 | Hair profiles | `hair_profiles` | A profile recorded since is lost, and one an erasure blanked since is whole again | Adding the rows since `<T>`: they are only ever added. Erasing again blanks the rest |
-| Stock | `stock_movements`, `stock_places` | A delivery, transfer, count or loss recorded since, or a job's use, is lost, so what each place holds is wrong; a hub or stockroom added or changed since goes back | Adding the rows since `<T>` |
+| Stock | `stock_movements`, `stock_places`, `stock_lots`, `stock_lot_moves` | A delivery, transfer, count or loss recorded since, or a job's use, is lost, so what each place holds is wrong; a hub or stockroom added or changed since goes back | Adding the rows since `<T>` |
 | Referrals and credits | `referral_codes`, `referral_attributions`, `credit_ledger`, `waitlist_entries`, `referral_channels`, `channel_attributions`, `partner_payouts`, `spend_entries` | A credit, a grant, a partner, a partner's payment, an entry of offline spend or a place on a waitlist disappears | The rows since `<T>`. `credit_ledger` is only ever added to |
 | Ops' settings and what we sell | `ops_settings`, `price_book`, `standard_costs`, `targets`, `services`, `slot_times`, `serviceable_pincodes`, `technician_leave`, `visit_blackouts`, `city_blackouts`, `cities`, `zones`, `consumables`, `hair_systems`, `consumable_usage`, `checklist_items`, `partial_reasons`, `lost_reasons`, `pay_grades`, `visit_pay_rates`, `word_versions`, `site_word_publishes` | A price, service, rule, area, day's times, day off, consumable, job-sheet list, pay rate or wording set since goes back | Setting it again in the console, which audits it |
 | Staff and access | `staff`, `staff_grants`, `staff_service_tokens`, `staff_access_mode` | Someone taken off the Staff list since, or a grant taken back, is let in again | Setting it again on the Staff page, before anything else |
@@ -34,7 +34,7 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 | The audit log | `audit_log` | Who did what since `<T>` | Adding the rows since `<T>`: they are only ever added |
 | New people, leads, addresses and try-ons | `people`, `leads`, `addresses`, `tryon_jobs` | Bookings and leads made since are lost here; the CRM has the leads | The rows since `<T>` |
 | Technicians, and FSM's catalogue | `technicians`, `fsm_items` | A technician added or changed since goes back | Where FSM still holds them, the cron reads them again; otherwise the rows since `<T>` |
-| Worked out from other tables | `last_visits`, `ops_settings_snapshot`, `stock_balances` | Nothing of their own: triggers keep each from the table it is worked out from | Putting back that table |
+| Worked out from other tables | `last_visits`, `ops_settings_snapshot`, `stock_balances`, `stock_lot_balances` | Nothing of their own: triggers keep each from the table it is worked out from | Putting back that table |
 | The storage meter | `stored_objects`, `storage_meter` | Objects stored or deleted since are counted wrongly, as R2 is not restored | The rows since `<T>` |
 | Housekeeping | `alerts`, `board_version`, `cron_jobs`, `cron_runs`, `credit_expiry_cursor`, `counters`, `idempotency`, `number_codes`, `otp_challenges`, `tryon_sessions`, `events`, `sync_cursors`, `webhook_inbox`, `zoho_access_tokens`, `zoho_token`, `zoho_tokens` | Nothing that lasts | Nothing |
 | The database's identity, and the restore's own switch | `deployment_identity`, `maintenance` | The identity is the same at every minute. Going back undoes the switch, so the steps turn it on again | Nothing |
@@ -125,6 +125,9 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 - [staff_service_tokens](#staff_service_tokens): The Access service tokens let in as every caller was before the Staff list, such as CI's (ADR 0109).
 - [standard_costs](#standard_costs): What each first fit and replacement product costs us, from its date, for the margin figures until stock lots carry what was paid; an old row stays for the visits under it (ADR 0152).
 - [stock_balances](#stock_balances): What each place holds of each consumable, and when it last counted it: the sum of its rows in `stock_movements`, kept by triggers as each is written (ADR 0087).
+- [stock_lot_balances](#stock_lot_balances): What each place holds of each lot: the sum of its rows in `stock_lot_moves`, kept by triggers as each is written (ADR 0157).
+- [stock_lot_moves](#stock_lot_moves): What each movement moved of each lot, soonest to expire first, at the movement's place (ADR 0157).
+- [stock_lots](#stock_lots): Each lot of a stock code a delivery brought: the supplier's lot, or the day it was received, and the day it expires (ADR 0157).
 - [stock_movements](#stock_movements): Every movement of a consumable into or out of the central store or a technician's kit, never changed; what a place holds is the sum of its rows (ADR 0087).
 - [stock_places](#stock_places): Where stock is kept, as a tree: the national warehouse, zone hubs, city stockrooms and a kit for each technician, which a trigger adds with them (ADR 0155).
 - [storage_meter](#storage_meter): What the apps' two buckets, client-photos and referral-cards, hold together: one row, the sum of `stored_objects` kept beside it, and the last mark of the share ops were told of (ADR 0093); and the last mark of the database's own size they were told of.
@@ -590,7 +593,7 @@ Made by `0049_consumables_and_stock.sql`.
 
 The consumables ops keep: name, unit, what one costs, the reorder levels, the day it is retired from, and FSM's part for it (ADR 0087).
 
-Made by `0049_consumables_and_stock.sql`.
+Made by `0049_consumables_and_stock.sql`; changed by `0135_stock_lots.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -606,6 +609,7 @@ Made by `0049_consumables_and_stock.sql`.
 | `fsm_checked_at` | TEXT | yes |  |  |
 | `created_at` | TEXT | no |  |  |
 | `updated_at` | TEXT | no |  |  |
+| `shelf_life_days` | INTEGER | yes |  |  |
 
 Indexes:
 
@@ -2122,6 +2126,55 @@ Made by `0053_balances_and_last_visits.sql`.
 | `place` | TEXT | no |  | primary key |
 | `quantity` | INTEGER | no |  |  |
 | `counted_at` | TEXT | yes |  |  |
+
+## stock_lot_balances
+
+What each place holds of each lot: the sum of its rows in `stock_lot_moves`, kept by triggers as each is written (ADR 0157).
+
+Made by `0135_stock_lots.sql`.
+
+| Column | Type | May be empty | Default | Key |
+| --- | --- | --- | --- | --- |
+| `lot_id` | TEXT | no |  | primary key; → `stock_lots.id` |
+| `place` | TEXT | no |  | primary key |
+| `quantity` | INTEGER | no |  |  |
+
+Indexes:
+
+- `stock_lot_balances_by_place`: on (`place`, `lot_id`)
+
+## stock_lot_moves
+
+What each movement moved of each lot, soonest to expire first, at the movement's place (ADR 0157).
+
+Made by `0135_stock_lots.sql`.
+
+| Column | Type | May be empty | Default | Key |
+| --- | --- | --- | --- | --- |
+| `movement_id` | TEXT | no |  | primary key; → `stock_movements.id` |
+| `lot_id` | TEXT | no |  | primary key; → `stock_lots.id` |
+| `place` | TEXT | no |  |  |
+| `quantity` | INTEGER | no |  |  |
+
+Triggers: `stock_lot_moves_balance`, `stock_lot_moves_taken_out`.
+
+## stock_lots
+
+Each lot of a stock code a delivery brought: the supplier's lot, or the day it was received, and the day it expires (ADR 0157).
+
+Made by `0135_stock_lots.sql`.
+
+| Column | Type | May be empty | Default | Key |
+| --- | --- | --- | --- | --- |
+| `id` | TEXT | no |  | primary key |
+| `consumable_code` | TEXT | no |  | → `consumables.code` |
+| `lot_code` | TEXT | no |  |  |
+| `expires_on` | TEXT | yes |  |  |
+| `received_at` | TEXT | no |  |  |
+
+Indexes:
+
+- A `UNIQUE` constraint: unique on (`consumable_code`, `lot_code`)
 
 ## stock_movements
 

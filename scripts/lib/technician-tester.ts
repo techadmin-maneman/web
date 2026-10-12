@@ -11,6 +11,8 @@ export function clearTester(technicianIds: readonly string[], personIds: readonl
   return [
     // A job's use and what was used point at its events, and the kit's stock at the technician. A
     // transfer goes with both its rows, so the central store holds what it held before it.
+    `DELETE FROM stock_lot_moves WHERE movement_id IN (SELECT id FROM stock_movements WHERE technician_id IN (${ids})
+       OR appointment_id IN (SELECT id FROM appointments WHERE technician_id IN (${ids})));`,
     `DELETE FROM stock_movements WHERE technician_id IN (${ids})
        OR appointment_id IN (SELECT id FROM appointments WHERE technician_id IN (${ids}))
        OR transfer_id IN (SELECT transfer_id FROM stock_movements WHERE technician_id IN (${ids}));`,

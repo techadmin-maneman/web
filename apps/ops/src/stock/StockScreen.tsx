@@ -42,6 +42,8 @@ function Held({ book, code, place }: { book: Stock; code: string; place: string 
   const holding = book.holdings.find((each) => each.consumable_code === code && each.place_id === place);
   const unit = book.consumables.find((each) => each.code === code)?.unit ?? "";
   const quantity = holding?.quantity ?? 0;
+  // The lots come soonest to expire first.
+  const soonest = holding?.lots.find((lot) => lot.expires_on !== null)?.expires_on ?? null;
   return (
     <td className={styles.held}>
       <span className={quantity < 0 ? styles.below : undefined}>{copy.held(quantity, unit)}</span>
@@ -49,6 +51,7 @@ function Held({ book, code, place }: { book: Stock; code: string; place: string 
       {holding?.counted_at !== null && holding?.counted_at !== undefined && (
         <span className={styles.counted}>{copy.counted(shortDate(indiaDate(holding.counted_at)))}</span>
       )}
+      {soonest !== null && <span className={styles.counted}>{copy.expires(shortDate(soonest))}</span>}
     </td>
   );
 }

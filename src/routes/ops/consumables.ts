@@ -37,7 +37,7 @@ import { errorResponse, refuse } from "../../http/errors.ts";
 import { json } from "../../http/openapi.ts";
 import { indiaDate } from "../../lib/india-time.ts";
 import { PRICE_TIER } from "../../policy/services.ts";
-import { Level, UnitCost } from "../schemas/consumables.ts";
+import { Level, ShelfLife, UnitCost } from "../schemas/consumables.ts";
 
 const Name = z.string().trim().regex(CONSUMABLE_NAME).openapi({
   description: "A letter or a digit first, then letters, digits, spaces and . , ' ( ) & / + % -; at most 60.",
@@ -78,6 +78,10 @@ const ConsumableSchema = z
       description: "The day in India it is no longer offered from; null while it is.",
     }),
     offered: z.boolean().openapi({ description: "Whether the technician app offers it today." }),
+    shelf_life_days: z.union([z.number().int(), z.null()]).openapi({
+      description:
+        "Days from delivery to expiry, for a lot the supplier gives none; null for one that does not expire.",
+    }),
     hair_system: z.union([HairSystemSpecSchema, z.null()]).openapi({
       description: "A hair system's spec, counted in pieces and taken by the piece step; null for a consumable.",
     }),
@@ -142,6 +146,7 @@ const addRoute = createRoute({
             unit_cost: UnitCost,
             reorder_kit: Level.optional(),
             reorder_central: Level.optional(),
+            shelf_life_days: ShelfLife.optional(),
           })
           .strict()
           .openapi("NewConsumable"),
@@ -156,7 +161,8 @@ const code = z.object({ code: z.string().min(1).max(64) });
 const changeRoute = createRoute({
   method: "post",
   path: "/api/consumables/{code}",
-  summary: "Rename a consumable, or change its unit, its cost or its reorder levels. Only the fields sent change",
+  summary:
+    "Rename a consumable, or change its unit, its cost, its reorder levels or its shelf life. Only the fields sent change",
   request: {
     params: code,
     body: {
@@ -169,6 +175,7 @@ const changeRoute = createRoute({
             unit_cost: UnitCost.optional(),
             reorder_kit: Level.optional(),
             reorder_central: Level.optional(),
+            shelf_life_days: ShelfLife.optional(),
           })
           .strict()
           .openapi("ConsumableChange"),
@@ -281,6 +288,7 @@ function consumableBody(consumable: Consumable, today: string, spec: HairSystemS
     reorder_central: consumable.reorderCentral,
     retired_from: consumable.retiredDate,
     offered: isOffered(consumable, today),
+    shelf_life_days: consumable.shelfLifeDays,
     hair_system: spec === undefined ? null : specBody(spec),
   };
 }
@@ -328,6 +336,7 @@ export function registerOpsConsumables(app: App): void {
         unitCost: body.unit_cost,
         reorderKit: body.reorder_kit ?? null,
         reorderCentral: body.reorder_central ?? null,
+        shelfLifeDays: body.shelf_life_days ?? null,
       },
       written(c),
     );
@@ -346,6 +355,7 @@ export function registerOpsConsumables(app: App): void {
         unitCost: body.unit_cost,
         reorderKit: body.reorder_kit,
         reorderCentral: body.reorder_central,
+        shelfLifeDays: body.shelf_life_days,
       },
       written(c),
     );

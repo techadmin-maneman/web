@@ -164,7 +164,7 @@ export const RESTORE_GROUPS: readonly RestoreGroup[] = [
   },
   {
     what: "Stock",
-    tables: ["stock_movements", "stock_places"],
+    tables: ["stock_movements", "stock_places", "stock_lots", "stock_lot_moves"],
     leftAtT:
       "A delivery, transfer, count or loss recorded since, or a job's use, is lost, so what each place holds is wrong; a hub or stockroom added or changed since goes back",
     putBackBy: "Adding the rows since `<T>`",
@@ -248,7 +248,7 @@ export const RESTORE_GROUPS: readonly RestoreGroup[] = [
   },
   {
     what: "Worked out from other tables",
-    tables: ["last_visits", "ops_settings_snapshot", "stock_balances"],
+    tables: ["last_visits", "ops_settings_snapshot", "stock_balances", "stock_lot_balances"],
     leftAtT: "Nothing of their own: triggers keep each from the table it is worked out from",
     putBackBy: "Putting back that table",
   },
