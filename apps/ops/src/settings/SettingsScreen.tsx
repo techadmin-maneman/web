@@ -1,6 +1,6 @@
 // Settings, under Admin: the rules, the days no visit is offered, the
-// consumables with each service's expected use, and the job sheet the
-// technician app reads with a job.
+// consumables with each service's expected use, the suppliers we buy them
+// from, and the job sheet the technician app reads with a job.
 //
 // The price book, the discount codes, the service area and the Staff list are
 // sections of their own departments (./PanelScreens.tsx).
@@ -13,11 +13,13 @@ import { Blackouts } from "./Blackouts.tsx";
 import { Consumables } from "./Consumables.tsx";
 import { JobSheet } from "./JobSheet.tsx";
 import { Rules } from "./Rules.tsx";
+import { Suppliers } from "./Suppliers.tsx";
 import styles from "../components/forms.module.css";
 
 function Panel({ tab }: { tab: SettingsTab }) {
   if (tab === "blackouts") return <Blackouts />;
   if (tab === "consumables") return <Consumables />;
+  if (tab === "suppliers") return <Suppliers />;
   if (tab === "job-sheet") return <JobSheet />;
   return <Rules />;
 }

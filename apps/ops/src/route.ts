@@ -8,7 +8,7 @@
 //   /clients/:id/:tab       a client's page, a tab at a time
 //   /technicians/:id/:tab   a technician's page: their week, leave, phones and kit
 //   /areas/:tab             who waits where, and the pincodes we serve
-//   /settings/:tab          the rules, blackout days, consumables and the job sheet
+//   /settings/:tab          the rules, blackout days, consumables, suppliers and the job sheet
 //
 // Anything else, "/" included, is where the console opens: Tasks, or for a
 // person who may not open Tasks, the first section they may.
@@ -84,7 +84,7 @@ export const TECHNICIAN_TABS = ["week", "leave", "phones", "kit"] as const;
 export type TechnicianTab = (typeof TECHNICIAN_TABS)[number];
 
 /** What Settings holds, in the order the section lists it. Rules has the section's own path. */
-export const SETTINGS_TABS = ["rules", "blackouts", "consumables", "job-sheet"] as const;
+export const SETTINGS_TABS = ["rules", "blackouts", "consumables", "suppliers", "job-sheet"] as const;
 export type SettingsTab = (typeof SETTINGS_TABS)[number];
 
 /** Areas, a tab at a time: who waits in each pincode, then the pincodes we serve. Waiting has the section's own path. */
@@ -101,7 +101,7 @@ export type Route =
 const TASKS: Route = { page: "tasks" };
 const CLIENT_PATH =
   /^\/clients(?:\/([0-9a-f-]{36})(?:\/(visits|pieces|payments|referrals|consents|photos|history))?)?$/;
-const SETTINGS_PATH = /^\/settings(?:\/(blackouts|consumables|job-sheet))?$/;
+const SETTINGS_PATH = /^\/settings(?:\/(blackouts|consumables|suppliers|job-sheet))?$/;
 const AREAS_PATH = /^\/areas(?:\/(served))?$/;
 const TECHNICIAN_PATH = /^\/technicians(?:\/([0-9a-f-]{36})(?:\/(week|leave|phones|kit))?)?$/;
 

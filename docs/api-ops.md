@@ -6746,6 +6746,291 @@ A lot's label, for its boxes, made the first time it is asked for
 }
 ```
 
+### GET /api/suppliers
+
+Every supplier, by name, with what each supplies
+
+**200**: Every supplier
+
+```json
+{
+  "$ref": "#/components/schemas/Suppliers"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/suppliers
+
+A new supplier
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/SupplierFields"
+}
+```
+
+**200**: Every supplier
+
+```json
+{
+  "$ref": "#/components/schemas/Suppliers"
+}
+```
+
+**400**: invalid_request: fields names name for one another supplier has, id for no such supplier, or consumable_code for none
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/suppliers/{id}
+
+A supplier's record changed
+
+Request body:
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 80,
+      "pattern": "^[^\\p{Cc}]+$/u"
+    },
+    "gstin": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^\\d{2}[A-Z]{5}\\d{4}[A-Z][1-9A-Z]Z[0-9A-Z]$",
+      "description": "India's GST number; null for none."
+    },
+    "country": {
+      "type": "string",
+      "pattern": "^[A-Z]{2}$",
+      "description": "ISO 3166 alpha-2, as IN."
+    },
+    "currency": {
+      "type": "string",
+      "pattern": "^[A-Z]{3}$",
+      "description": "ISO 4217, as INR: the one its invoices are in."
+    },
+    "contact_name": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "minLength": 1,
+      "maxLength": 80,
+      "pattern": "^[^\\p{Cc}]+$/u"
+    },
+    "contact_phone": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^\\+[1-9]\\d{6,14}$"
+    },
+    "contact_email": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 120,
+      "format": "email"
+    },
+    "payment_terms_days": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 365
+    },
+    "warranty_days": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 3650,
+      "description": "How long after a piece is fitted the supplier takes it back if it fails; nought for none."
+    }
+  },
+  "required": [
+    "name",
+    "gstin",
+    "country",
+    "currency",
+    "contact_name",
+    "contact_phone",
+    "contact_email",
+    "payment_terms_days",
+    "warranty_days"
+  ],
+  "additionalProperties": false
+}
+```
+
+**200**: Every supplier
+
+```json
+{
+  "$ref": "#/components/schemas/Suppliers"
+}
+```
+
+**400**: invalid_request: fields names name for one another supplier has, id for no such supplier, or consumable_code for none
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/suppliers/{id}/retire
+
+A supplier taken off new orders
+
+**200**: Every supplier
+
+```json
+{
+  "$ref": "#/components/schemas/Suppliers"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no such supplier
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/suppliers/{id}/restore
+
+A retired supplier put back
+
+**200**: Every supplier
+
+```json
+{
+  "$ref": "#/components/schemas/Suppliers"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no such supplier
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/suppliers/{id}/items
+
+What a supplier supplies of one stock code, set afresh
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/SupplierItem"
+}
+```
+
+**200**: Every supplier
+
+```json
+{
+  "$ref": "#/components/schemas/Suppliers"
+}
+```
+
+**400**: invalid_request: fields names name for one another supplier has, id for no such supplier, or consumable_code for none
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/suppliers/{id}/items/{code}/remove
+
+A stock code taken off a supplier's list
+
+**200**: Every supplier
+
+```json
+{
+  "$ref": "#/components/schemas/Suppliers"
+}
+```
+
+**400**: invalid_request: fields names name for one another supplier has, id for no such supplier, or consumable_code for none
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ### GET /api/storage
 
 What the photographs and referral cards hold in R2, against their share, and the database against its limit
@@ -14605,6 +14890,12 @@ Request body:
         "stock.send_back",
         "stock.label",
         "stock.hand_back",
+        "supplier.add",
+        "supplier.change",
+        "supplier.retire",
+        "supplier.restore",
+        "supplier.item_set",
+        "supplier.item_remove",
         "task.assign",
         "task.hand_back",
         "task.close",
@@ -21533,6 +21824,316 @@ Request body:
   },
   "required": [
     "label"
+  ],
+  "additionalProperties": false
+}
+```
+
+### Suppliers
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "suppliers": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "gstin": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "country": {
+            "type": "string"
+          },
+          "currency": {
+            "type": "string"
+          },
+          "contact_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "contact_phone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "contact_email": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "payment_terms_days": {
+            "type": "integer"
+          },
+          "warranty_days": {
+            "type": "integer"
+          },
+          "retired_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "consumable_code": {
+                  "type": "string"
+                },
+                "their_code": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "unit_price": {
+                  "type": "integer",
+                  "description": "In the supplier's currency, its smallest unit."
+                },
+                "pack_size": {
+                  "type": "integer"
+                },
+                "minimum_order": {
+                  "type": "integer"
+                },
+                "lead_time_days": {
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "consumable_code",
+                "their_code",
+                "unit_price",
+                "pack_size",
+                "minimum_order",
+                "lead_time_days"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "gstin",
+          "country",
+          "currency",
+          "contact_name",
+          "contact_phone",
+          "contact_email",
+          "payment_terms_days",
+          "warranty_days",
+          "retired_at",
+          "items"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "consumables": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "unit": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "name",
+          "unit"
+        ],
+        "additionalProperties": false
+      },
+      "description": "Every stock code, by name, for a supplier's items to name."
+    }
+  },
+  "required": [
+    "suppliers",
+    "consumables"
+  ],
+  "additionalProperties": false
+}
+```
+
+### SupplierFields
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 80,
+      "pattern": "^[^\\p{Cc}]+$/u"
+    },
+    "gstin": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^\\d{2}[A-Z]{5}\\d{4}[A-Z][1-9A-Z]Z[0-9A-Z]$",
+      "description": "India's GST number; null for none."
+    },
+    "country": {
+      "type": "string",
+      "pattern": "^[A-Z]{2}$",
+      "description": "ISO 3166 alpha-2, as IN."
+    },
+    "currency": {
+      "type": "string",
+      "pattern": "^[A-Z]{3}$",
+      "description": "ISO 4217, as INR: the one its invoices are in."
+    },
+    "contact_name": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "minLength": 1,
+      "maxLength": 80,
+      "pattern": "^[^\\p{Cc}]+$/u"
+    },
+    "contact_phone": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^\\+[1-9]\\d{6,14}$"
+    },
+    "contact_email": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 120,
+      "format": "email"
+    },
+    "payment_terms_days": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 365
+    },
+    "warranty_days": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 3650,
+      "description": "How long after a piece is fitted the supplier takes it back if it fails; nought for none."
+    }
+  },
+  "required": [
+    "name",
+    "gstin",
+    "country",
+    "currency",
+    "contact_name",
+    "contact_phone",
+    "contact_email",
+    "payment_terms_days",
+    "warranty_days"
+  ],
+  "additionalProperties": false
+}
+```
+
+### SupplierItem
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "consumable_code": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64
+    },
+    "their_code": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "minLength": 1,
+      "maxLength": 40,
+      "pattern": "^[^\\p{Cc}]+$/u"
+    },
+    "unit_price": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100000000,
+      "description": "One unit's price in the supplier's currency, in its smallest unit: paise for rupees."
+    },
+    "pack_size": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 10000
+    },
+    "minimum_order": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 100000
+    },
+    "lead_time_days": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 365,
+      "description": "As the supplier promises."
+    }
+  },
+  "required": [
+    "consumable_code",
+    "their_code",
+    "unit_price",
+    "pack_size",
+    "minimum_order",
+    "lead_time_days"
   ],
   "additionalProperties": false
 }
