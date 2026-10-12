@@ -252,6 +252,9 @@ export const ROWS_AT_T: readonly string[] = [
   `INSERT INTO plan_lines (id, run_id, kind, consumable_code, city, supplier_id, proposed, usable, need, safety, state,
        drafted_at)
      VALUES ('pln1', 'fr1', 'order', 'strip', NULL, 'sup1', 20, 0, 10, 4, 'proposed', '${AT}')`,
+  `INSERT INTO forecast_accuracy (run_id, consumable_code, city, period_start, period_days, expected, high, actual,
+       measured_at)
+     VALUES ('fr1', 'hs1', 'Gurgaon', '2026-09-21', 7, 1, 2.7, 1, '${AT}')`,
 ];
 
 /** What was written between <T> and the export: rows added, changed and deleted, in tables of every kind. */
