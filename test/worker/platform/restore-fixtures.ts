@@ -242,6 +242,7 @@ export const ROWS_AT_T: readonly string[] = [
      VALUES (1, 'ops@example.com', 'operations', 'act', 'national', 'owner@example.com', '${AT}')`,
   `INSERT INTO staff_service_tokens (client_id, label, added_by, added_at)
      VALUES ('ci.access', 'CI', 'owner@example.com', '${AT}')`,
+  `INSERT INTO stock_risks (appointment_id, consumable_code, city, found_at) VALUES ('ap1', 'hs1', 'Gurgaon', '${AT}')`,
 ];
 
 /** What was written between <T> and the export: rows added, changed and deleted, in tables of every kind. */
