@@ -12,6 +12,8 @@ import type {
   BooksItemDetails,
   BooksErasure,
   BooksProvider,
+  NewBooksBill,
+  NewBooksVendor,
 } from "./index.ts";
 
 /** The smallest valid PDF: one blank page. The stub's every document. */
@@ -20,11 +22,19 @@ const BLANK_PDF =
   "3 0 obj<</Type/Page/Parent 2 0 R/MediaBox[0 0 595 842]>>endobj\ntrailer<</Root 1 0 R>>\n%%EOF\n";
 
 /** The records whose answer a test can lose: the record is made, and the call fails. */
-export type StubBooksCreate = "recordPayment" | "recordRefund" | "upsertCustomer" | "createInvoice" | "createItem";
+export type StubBooksCreate =
+  "recordPayment" | "recordRefund" | "upsertCustomer" | "createInvoice" | "createItem" | "upsertVendor" | "createBill";
 
 /** The calls a test can make fail, or have refused, once. */
 export type StubBooksStep =
-  StubBooksCreate | "updateCustomer" | "crmContactOf" | "eraseCustomer" | "findInvoice" | "items" | "updateItem";
+  | StubBooksCreate
+  | "updateCustomer"
+  | "crmContactOf"
+  | "eraseCustomer"
+  | "findInvoice"
+  | "items"
+  | "updateItem"
+  | "findBill";
 
 /** The stub, and what was written to it, for tests to read. */
 export interface StubBooks extends BooksProvider {
@@ -41,6 +51,9 @@ export interface StubBooks extends BooksProvider {
     readonly invoices: NewBooksInvoice[];
     readonly itemsMade: BooksItemDetails[];
     readonly itemUpdates: ({ itemId: string } & BooksItemDetails)[];
+    /** Each vendor asked for by name, a second time as well. */
+    readonly vendors: NewBooksVendor[];
+    readonly bills: NewBooksBill[];
   };
   /** Makes the next call of this kind fail, as an outage does. */
   failNext(step: StubBooksStep, message?: string): void;
@@ -106,6 +119,8 @@ export function createStubBooks(world: StubBooksWorld = {}): StubBooks {
     invoices: [] as NewBooksInvoice[],
     itemsMade: [] as BooksItemDetails[],
     itemUpdates: [] as ({ itemId: string } & BooksItemDetails)[],
+    vendors: [] as NewBooksVendor[],
+    bills: [] as NewBooksBill[],
   };
   const controls = createStubControls();
   return {
@@ -116,6 +131,34 @@ export function createStubBooks(world: StubBooksWorld = {}): StubBooks {
     ...stubDocumentsAndPayments(made, world, controls),
     ...stubCustomers(made, controls),
     ...stubItems(made, world, controls),
+    ...stubPurchases(made, controls),
+  };
+}
+
+/** Vendors found again by name, and bills by our reference, as Books has them. */
+function stubPurchases(made: StubMade, controls: StubControls): Pick<BooksProvider, PurchaseCalls> {
+  const vendorIds = new Map<string, string>();
+  const billIds = new Map<string, string>();
+  return {
+    async upsertVendor(vendor) {
+      await controls.check("upsertVendor");
+      made.vendors.push(vendor);
+      const id = vendorIds.get(vendor.name) ?? `stub-vendor-${crypto.randomUUID()}`;
+      vendorIds.set(vendor.name, id);
+      return controls.answer("upsertVendor", id, id);
+    },
+    async findBill(reference) {
+      await controls.check("findBill");
+      const id = billIds.get(reference);
+      return id === undefined ? null : { id, reference };
+    },
+    async createBill(bill) {
+      await controls.check("createBill");
+      made.bills.push(bill);
+      const id = `stub-bill-${crypto.randomUUID()}`;
+      billIds.set(bill.reference, id);
+      return controls.answer("createBill", { id, reference: bill.reference }, id);
+    },
   };
 }
 
@@ -123,6 +166,7 @@ type StubMade = StubBooks["made"];
 type StubControls = ReturnType<typeof createStubControls>;
 type CustomerCalls = "upsertCustomer" | "updateCustomer" | "crmContactOf" | "eraseCustomer";
 type ItemCalls = "items" | "createItem" | "updateItem";
+type PurchaseCalls = "upsertVendor" | "findBill" | "createBill";
 
 function stubDocumentsAndPayments(made: StubMade, world: StubBooksWorld, controls: StubControls) {
   // What the stub recorded, by the keys a retry looks it up by.
@@ -132,7 +176,7 @@ function stubDocumentsAndPayments(made: StubMade, world: StubBooksWorld, control
   const invoicesByReference = new Map<string, BooksInvoice>();
   const issuedOrDraft = (id: string) => (made.issued.includes(id) ? "sent" : "draft");
 
-  const stub: Omit<BooksProvider, CustomerCalls | ItemCalls> = {
+  const stub: Omit<BooksProvider, CustomerCalls | ItemCalls | PurchaseCalls> = {
     findPayment: (customerId, reference) => Promise.resolve(paymentIds.get(`${customerId}:${reference}`) ?? null),
     async recordPayment(payment) {
       await controls.check("recordPayment");

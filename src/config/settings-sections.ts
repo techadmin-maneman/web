@@ -109,6 +109,7 @@ function readZohoBooks(read: Reader, providers: ProvidersRead): ZohoBooksSetting
     apiHost: read.text("ZOHO_BOOKS_API_HOST"),
     orgId: read.text("ZOHO_BOOKS_ORG_ID"),
     refundAccountId: read.optionalText("BOOKS_REFUND_ACCOUNT_ID"),
+    billAccounts: readBillAccounts(read),
     gst: readGstRegistration(read),
   };
   checkZohoHosts(read, [
@@ -116,6 +117,13 @@ function readZohoBooks(read: Reader, providers: ProvidersRead): ZohoBooksSetting
     ["ZOHO_BOOKS_API_HOST", zohoBooks.apiHost],
   ]);
   return zohoBooks;
+}
+
+/** The two accounts a bill posts to; none until both are set. */
+function readBillAccounts(read: Reader): ZohoBooksSettings["billAccounts"] {
+  const hairSystems = read.optionalText("BOOKS_COGS_ACCOUNT_ID");
+  const consumables = read.optionalText("BOOKS_CONSUMABLES_ACCOUNT_ID");
+  return hairSystems === null || consumables === null ? null : { hairSystems, consumables };
 }
 
 /** The GST registration, each part empty until the CA gives it. */

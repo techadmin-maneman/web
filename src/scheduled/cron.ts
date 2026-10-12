@@ -291,6 +291,7 @@ async function booksItemsJob({ env, deps, config, log, budget }: CronContext): P
 export function booksSyncOptions(config: StaticConfig): BooksSyncOptions {
   return {
     refundAccountId: config.settings.zohoBooks?.refundAccountId ?? null,
+    billAccounts: config.settings.zohoBooks?.billAccounts ?? null,
     labelAsTest: config.environment !== "production",
     gst: booksGst(config),
   };
@@ -303,7 +304,8 @@ function booksGst(config: StaticConfig): GstRegistration {
 
 async function booksJob({ env, deps, config, log, budget }: CronContext): Promise<void> {
   const done = await syncBooks({ db: env.DB, deps, options: booksSyncOptions(config), now: deps.now(), log, budget });
-  const written = done.customers + done.customersUpdated + done.recorded + done.applied + done.refunded;
+  const written =
+    done.customers + done.customersUpdated + done.recorded + done.applied + done.refunded + done.vendors + done.bills;
   if (written > 0) log.info("books_synced", done);
 }
 

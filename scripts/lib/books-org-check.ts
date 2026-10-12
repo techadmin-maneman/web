@@ -133,6 +133,42 @@ const isNotAuthorised = (answer: BooksAnswer): boolean =>
     "code" in answer.json &&
     answer.json.code === NOT_AUTHORISED);
 
+const ChartAccount = z.object({
+  account: z.object({ account_name: z.string(), account_type: z.string(), is_active: z.boolean() }),
+});
+
+/** The account types a bill's line may post to: an expense, or the cost of goods sold. */
+const BILL_ACCOUNT_TYPES: ReadonlySet<string> = new Set(["expense", "cost_of_goods_sold", "other_expense"]);
+
+/**
+ * An account a receipt's bill posts to (docs/decisions/0168-bills-in-books.md): it must be there, active, and an
+ * expense or the cost of goods sold. Without it, no bill is made.
+ */
+export function billAccount(
+  which: { readonly variable: string; readonly accountId: string | null },
+  answer: BooksAnswer | null,
+): CheckLine {
+  const check = `bill account ${which.variable}`;
+  if (which.accountId === null || answer === null) {
+    return { outcome: "fail", check, detail: `${which.variable} is empty, so no receipt becomes a bill` };
+  }
+  if (isNotAuthorised(answer)) {
+    return {
+      outcome: "skip",
+      check,
+      detail: `${which.accountId} could not be read: the scripts' token reads accounts with ZohoBooks.accountants.READ`,
+    };
+  }
+  const read = ChartAccount.safeParse(answer.json);
+  if (!read.success) return { outcome: "fail", check, detail: `Books holds no account ${which.accountId}` };
+  const { account } = read.data;
+  if (!account.is_active) return { outcome: "fail", check, detail: `${account.account_name} is inactive` };
+  if (!BILL_ACCOUNT_TYPES.has(account.account_type)) {
+    return { outcome: "fail", check, detail: `${account.account_name} is ${account.account_type}, not an expense` };
+  }
+  return { outcome: "pass", check, detail: `${account.account_name} (${account.account_type})` };
+}
+
 /** The account refunds are paid from, which Razorpay settles into: without it, no refund is recorded in Books. */
 export function refundAccount(accountId: string | null, answer: BooksAnswer | null): CheckLine {
   const check = "refund account";

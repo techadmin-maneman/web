@@ -1,16 +1,18 @@
 // Checks, before every release, that the Zoho Books org is set up the way invoices need: the organisation, its
-// invoice discount preference, Mane Man's GST identity and the refund account (scripts/lib/books-org-check.ts).
+// invoice discount preference, Mane Man's GST identity and the refund account; and the two accounts receipts' bills
+// post to (scripts/lib/books-org-check.ts).
 // Read-only: it changes nothing in Books. Each service's item is the Worker's own hourly check.
 //
 //   node --env-file=.env.books-scripts scripts/release/check-books-setup.ts [--env staging|production]
 //
 // The file holds ZOHO_BOOKS_CLIENT_ID, ZOHO_BOOKS_CLIENT_SECRET, ZOHO_BOOKS_SCRIPTS_REFRESH_TOKEN (the scripts' own:
 // scripts/lib/zoho-script-token.ts), ZOHO_BOOKS_ACCOUNTS_HOST, ZOHO_BOOKS_API_HOST and ZOHO_BOOKS_ORG_ID. The GSTIN,
-// its state and the refund account are read from wrangler.jsonc, for the environment named (staging unless said). No
-// secret is printed. A run makes three of the 2,000 calls a day Books allows the org.
+// its state, the refund account and the bill accounts are read from wrangler.jsonc, for the environment named (staging
+// unless said). No secret is printed. A run makes five of the 2,000 calls a day Books allows the org.
 
 import { parseArgs } from "node:util";
 import {
+  billAccount,
   discountPreference,
   gstIdentity,
   organisation,
@@ -57,6 +59,12 @@ const lines: CheckLine[] = [
   ),
   refundAccount(refundAccountId, refundAccountId === null ? null : await read(`/bankaccounts/${refundAccountId}`)),
 ];
+for (const variable of ["BOOKS_COGS_ACCOUNT_ID", "BOOKS_CONSUMABLES_ACCOUNT_ID"]) {
+  const accountId = workerVar(environment, variable);
+  lines.push(
+    billAccount({ variable, accountId }, accountId === null ? null : await read(`/chartofaccounts/${accountId}`)),
+  );
+}
 
 for (const line of lines) console.log(`${line.outcome.toUpperCase().padEnd(4)}  ${line.check}: ${line.detail}`);
 const failures = lines.filter((line) => line.outcome === "fail").length;

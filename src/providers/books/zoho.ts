@@ -26,6 +26,7 @@
 // Read from Books' documentation and not yet tried on the org: writing a discount onto a draft (docs/open-points.md,
 // item 181). scripts/release/zoho-contract-probe.ts tries every read on the org.
 
+import { purchaseCalls } from "./zoho-purchases.ts";
 import { z } from "zod";
 import type { ZohoBooksSettings } from "../../config/settings.ts";
 import type {
@@ -65,10 +66,11 @@ export function createZohoBooks(settings: ZohoBooksSettings, deps: ZohoRequester
     ...customerCalls(books),
     ...invoiceCalls(books),
     ...itemCalls(books),
+    ...purchaseCalls(books),
   };
 }
 
-interface BooksApi {
+export interface BooksApi {
   readonly request: ZohoRequest;
   /** "organization_id=…", which every path takes. */
   readonly org: string;

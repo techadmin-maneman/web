@@ -287,6 +287,7 @@ describe("the Books pass's options", () => {
     apiHost: "www.zohoapis.in",
     orgId: "60088931635",
     refundAccountId: "bank-7",
+    billAccounts: null,
     gst: { gstin: "06AAACM1234A1Z5", stateCode: "HR", sac: "999721" },
   };
 
@@ -303,6 +304,7 @@ describe("the Books pass's options", () => {
   it("has no refund account or GST without Books' settings, and labels nothing as a test in production", () => {
     expect(booksSyncOptions({ ...LOCAL_CONFIG, environment: "production" })).toMatchObject({
       refundAccountId: null,
+      billAccounts: null,
       labelAsTest: false,
       gst: NO_GST,
     });

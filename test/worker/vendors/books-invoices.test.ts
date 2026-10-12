@@ -197,7 +197,7 @@ describe("the invoice a finished visit gets", () => {
     expect(books.made.issued).toEqual([billed?.fsm_invoice_id]);
     expect(billed?.invoice_issued_at).toBe(AFTER.toISOString());
 
-    const options = { refundAccountId: null, labelAsTest: true, gst: NO_GST } as const;
+    const options = { refundAccountId: null, billAccounts: null, labelAsTest: true, gst: NO_GST } as const;
     const deps = depsAt(books, AFTER);
     await syncBooks({ db: env.DB, deps, options, now: AFTER, log: createLogger(), budget: createCallBudget(Infinity) });
     expect(books.made.customers).toHaveLength(1);
