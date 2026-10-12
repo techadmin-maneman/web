@@ -49,7 +49,7 @@ describe("a closed consultation's reason", () => {
     const { results } = await env.DB.prepare(
       "SELECT detail FROM audit_log WHERE action = 'visit.lost_reason' ORDER BY id",
     ).all<{ detail: string }>();
-    expect(results.map((row) => JSON.parse(row.detail))).toEqual([{ reason: "price" }, { reason: null }]);
+    expect(results.map((row) => JSON.parse(row.detail) as unknown)).toEqual([{ reason: "price" }, { reason: null }]);
   });
 
   it("refuses a code the job sheet never listed, and a visit that is no consultation", async () => {
