@@ -32,6 +32,9 @@ const PERSONAL_FIELDS = [
   "phone",
   "email",
   "to",
+  // Razorpay's names for a payer's number and UPI handle.
+  "contact",
+  "vpa",
   "ip",
   "upload_key",
   "result_key",

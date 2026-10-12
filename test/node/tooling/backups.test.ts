@@ -4,7 +4,15 @@
 import { DatabaseSync } from "node:sqlite";
 import { describe, expect, it } from "vitest";
 import { backupDueOn, deleteOldBackups, writeBackup } from "../../../src/domain/platform/backups.ts";
-import { backupKeyOf, Manifest, privateKeyOf, rowsIn, sqlFor, toBase64 } from "../../../scripts/lib/backup-restore.ts";
+import {
+  assertBackupOf,
+  backupKeyOf,
+  Manifest,
+  privateKeyOf,
+  rowsIn,
+  sqlFor,
+  toBase64,
+} from "../../../scripts/lib/backup-restore.ts";
 import { asD1, migratedDatabase } from "../d1-over-sqlite.ts";
 
 /** An R2 bucket of in-memory objects, as much of one as the backup uses. */
@@ -96,6 +104,23 @@ ${sqlFor(manifest, rows)}COMMIT;`);
         .get() as { n: number }
     ).n;
     expect(manifest.tables).toHaveLength(tables);
+  });
+
+  it("is refused for restoring into an environment other than the one that wrote it", () => {
+    const manifest = Manifest.parse({
+      format: 1,
+      environment: "staging",
+      created_at: "x",
+      wrapped_key: "k",
+      schema: [],
+      tables: [],
+    });
+    expect(() => {
+      assertBackupOf(manifest, "production");
+    }).toThrow("this backup is staging's, not production's");
+    expect(() => {
+      assertBackupOf(manifest, "staging");
+    }).not.toThrow();
   });
 
   it("deletes the backups past thirteen weeks, and keeps the rest", async () => {

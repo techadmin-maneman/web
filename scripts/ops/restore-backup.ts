@@ -9,7 +9,7 @@ import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { parseArgs } from "node:util";
-import { backupKeyOf, Manifest, privateKeyOf, rowsIn, sqlFor } from "../lib/backup-restore.ts";
+import { assertBackupOf, backupKeyOf, Manifest, privateKeyOf, rowsIn, sqlFor } from "../lib/backup-restore.ts";
 
 const { values } = parseArgs({
   options: { env: { type: "string" }, date: { type: "string" }, key: { type: "string" }, out: { type: "string" } },
@@ -40,6 +40,7 @@ function fetched(object: string): Buffer {
 
 try {
   const manifest = Manifest.parse(JSON.parse(new TextDecoder().decode(fetched(`${date}/manifest.json`))));
+  assertBackupOf(manifest, env);
   const backupKey = await backupKeyOf(manifest, await privateKeyOf(readFileSync(key, "utf8")));
   const rows = new Map<string, Record<string, unknown>[]>();
   for (const table of manifest.tables) {

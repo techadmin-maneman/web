@@ -14,6 +14,13 @@ export const Manifest = z.object({
 });
 export type Manifest = z.infer<typeof Manifest>;
 
+/** Refuses a backup another environment wrote: restoring it would carry that environment's rows here. */
+export function assertBackupOf(manifest: Manifest, environment: string): void {
+  if (manifest.environment !== environment) {
+    throw new Error(`this backup is ${manifest.environment}'s, not ${environment}'s`);
+  }
+}
+
 const fromBase64 = (text: string): Uint8Array => Uint8Array.from(atob(text), (char) => char.charCodeAt(0));
 
 /** A key exported as SPKI or PKCS8, as base64; the API types an export as a JSON key too, which those never are. */

@@ -48,6 +48,14 @@ Two config files name a type from `policy/consents.ts`: the consent purposes are
 message texts say which purpose each serves. They import types only, which load nothing, and the test lists them. Any
 other upward import fails the test, and a listed one that is gone must come off the list.
 
+## Data at rest
+
+D1 and R2 encrypt everything they hold at rest, AES-256 with keys Cloudflare manages, and every connection to them is
+TLS ([D1](https://developers.cloudflare.com/d1/reference/data-security/),
+[R2](https://developers.cloudflare.com/r2/reference/data-security/)). Inside the Worker a client's number and address
+are plain text: what keeps them is who may call which route, the audit of every ops call, and the keyed hashes where
+only a match is needed. The weekly backup is encrypted again, under our own key, before it reaches R2.
+
 ## Routes
 
 A route module sits under the surface that answers it, as `src/app.ts` lists them: `routes/public/`, `routes/client/`,
