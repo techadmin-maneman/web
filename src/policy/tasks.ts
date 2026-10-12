@@ -86,6 +86,7 @@ export const TASK_GROUPS = [
   "consultation_request",
   "first_fit_to_book",
   "replacement_order",
+  "stock_at_risk",
   "at_risk_client",
   "partial_visit",
   "referral_review",
@@ -126,6 +127,8 @@ export const TASK_SLA_HOURS: Slas = {
   consultation_request: 48,
   first_fit_to_book: 48,
   replacement_order: 48,
+  // A fit with no hair system in reach: within the two days, and never later than the fit (ADR 0178).
+  stock_at_risk: 48,
   at_risk_client: 48,
   partial_visit: 48,
   referral_review: 48,
