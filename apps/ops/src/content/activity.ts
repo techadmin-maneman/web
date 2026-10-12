@@ -122,6 +122,8 @@ const ACTIONS: Readonly<Record<ActivityAction, string>> = {
   "purchase_order.approve": "Purchase order approved",
   "purchase_order.send": "Purchase order sent",
   "purchase_order.cancel": "Purchase order cancelled",
+  "purchase_order.receive": "Purchase order received",
+  "purchase_order.close": "Purchase order closed short",
   "task.assign": "Task taken or given",
   "task.hand_back": "Task handed back",
   "task.close": "Task closed",

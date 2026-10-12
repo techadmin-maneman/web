@@ -167,6 +167,8 @@ export const AUDIT_ACTIONS = [
   "purchase_order.approve",
   "purchase_order.send",
   "purchase_order.cancel",
+  "purchase_order.receive",
+  "purchase_order.close",
   // Whose a task on the Tasks board is, a visit left partly done that ops closed without a follow-up, and an address
   // a client gave ops on the phone (docs/decisions/0092-task-owners.md).
   "task.assign",

@@ -23,3 +23,28 @@ export function needsSecondApproval(
 
 /** The states an order may be cancelled from: before anything of it arrived. */
 export const CANCELLABLE: ReadonlySet<PoState> = new Set(["drafted", "approved", "sent"]);
+
+/** One line of a receipt, as its landed cost is worked out: the supplier's price of one, and how many were accepted. */
+interface CostedLine {
+  readonly unitPrice: number;
+  readonly received: number;
+}
+
+/**
+ * What one unit of each line cost landed, in paise (docs/decisions/0167-receipts-and-landed-cost.md): the supplier's
+ * price, in its currency's smallest unit, at `rupeeRate` paise to one unit of that currency, and the line's share of
+ * `extras`, the receipt's freight, duty and clearing, by the value it brought. A line that brought nothing costs its
+ * price alone; where no line brought value, the extras are shared by count.
+ */
+export function landedUnitCosts(lines: readonly CostedLine[], rupeeRate: number, extras: number): number[] {
+  const unitPaise = lines.map((line) => (line.unitPrice * rupeeRate) / 100);
+  const values = lines.map((line, index) => (unitPaise[index] ?? 0) * line.received);
+  const totalValue = values.reduce((sum, value) => sum + value, 0);
+  const totalCount = lines.reduce((sum, line) => sum + line.received, 0);
+  return lines.map((line, index) => {
+    const unit = unitPaise[index] ?? 0;
+    if (line.received === 0) return Math.round(unit);
+    const share = totalValue > 0 ? (extras * (values[index] ?? 0)) / totalValue : (extras * line.received) / totalCount;
+    return Math.round(unit + share / line.received);
+  });
+}

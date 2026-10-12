@@ -54,9 +54,43 @@ export const purchasing = {
     noItems: "This supplier lists nothing yet. Add its items in Settings, Suppliers.",
   },
   sheet: { title: "Purchase order", date: "Date", supplier: "To" },
+  receive: {
+    open: "Receive",
+    title: "What arrived",
+    received: "Accepted",
+    damaged: "Damaged",
+    failed: "Failed check",
+    lot: "Lot (optional)",
+    expires: "Expires (optional)",
+    invoice: "Supplier invoice (optional)",
+    rate: (currency: string) => `Rupees to one ${currency}`,
+    freight: "Freight, rupees",
+    duty: "Duty, rupees",
+    clearing: "Clearing, rupees",
+    send: "Record receipt",
+    done: "Received. Print the labels on the Stock page.",
+    cancel: "Not now",
+    close: "Close short",
+    closed: "Closed short.",
+  },
+  receipts: {
+    title: "Receipts",
+    /** "21 Sep · INV-88" */
+    line: (date: string, invoice: string | null) => (invoice === null ? date : `${date} · ${invoice}`),
+    /** "Solvent: 24 accepted, 2 damaged · Rs. 55 landed" */
+    item: (line: { name: string; received: number; damaged: number; failed: number; landed: string }) =>
+      [
+        `${line.name}: ${String(line.received)} accepted`,
+        line.damaged > 0 ? `${String(line.damaged)} damaged` : null,
+        line.failed > 0 ? `${String(line.failed)} failed check` : null,
+      ]
+        .filter((part) => part !== null)
+        .join(", ") + ` · ${line.landed} landed`,
+  },
   errors: {
     supplier_id: "That supplier is retired or gone. Reload.",
     lines: "Each item once, at least its minimum.",
+    rupee_rate: "Give the rupee rate for this currency.",
     order_state: "That order has moved on. Reload.",
     not_found: "That order is gone. Reload.",
     invalid_request: "Check the lines.",

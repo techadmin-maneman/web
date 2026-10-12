@@ -12,7 +12,7 @@ const ORDER = {
   number: 7,
   supplier_id: "sup-1",
   currency: "INR",
-  state: "drafted",
+  state: "drafted" as const,
   expected_on: "2026-10-15",
   note: null,
   total: 216_000,
@@ -24,7 +24,8 @@ const ORDER = {
   sent_at: null,
   cancel_reason: null,
   needs_second_approval: true,
-} as const;
+  receipts: [],
+};
 
 const BOOK = {
   orders: [ORDER],
@@ -97,5 +98,67 @@ test("drafts an order from a supplier's list, its total shown first", async ({ p
     expected_on: "2026-10-20",
     note: null,
   });
+  expect(await axeViolations(page)).toEqual([]);
+});
+
+test("receives what arrived of a sent order, and lists the receipt with its landed cost", async ({ page }) => {
+  const sent = {
+    ...BOOK,
+    orders: [{ ...ORDER, state: "sent" as const, approved_by: "a@maneman.in", second_approved_by: "b@maneman.in" }],
+  };
+  const receivedLine = {
+    po_line_id: "pl-1",
+    received: 24,
+    damaged: 2,
+    qc_failed: 0,
+    lot_code: "SV-7",
+    expires_on: null,
+    landed_unit_paise: 5500,
+  };
+  const received = {
+    ...BOOK,
+    orders: [
+      {
+        ...ORDER,
+        state: "part_received" as const,
+        receipts: [
+          {
+            id: "rc-1",
+            received_by: "ops@maneman.in",
+            received_at: "2026-09-21T06:30:00.000Z",
+            supplier_invoice: "INV-88",
+            lines: [receivedLine],
+          },
+        ],
+      },
+    ],
+  };
+  await open(page, {
+    "GET /api/purchase-orders": json(sent),
+    "POST /api/purchase-orders/{id}/receipts": json(received),
+  });
+  await page.getByRole("button", { name: copy.open("PO-0007") }).click();
+  const panel = page.getByRole("region", { name: "PO-0007 · Kesh Supplies" });
+  await panel.getByRole("button", { name: copy.receive.open }).click();
+  const form = panel.getByRole("group", { name: copy.receive.title });
+  await form.getByLabel(copy.receive.received).fill("24");
+  await form.getByLabel(copy.receive.damaged).fill("2");
+  await form.getByLabel(copy.receive.lot).fill("SV-7");
+  await form.getByLabel(copy.receive.invoice).fill("INV-88");
+  await form.getByLabel(copy.receive.freight).fill("240");
+  const posted_ = posted(page, "/api/purchase-orders/po-1/receipts");
+  await form.getByRole("button", { name: copy.receive.send }).click();
+  expect((await posted_).postDataJSON()).toEqual({
+    lines: [{ po_line_id: "pl-1", received: 24, damaged: 2, qc_failed: 0, lot_code: "SV-7", expires_on: null }],
+    supplier_invoice: "INV-88",
+    rupee_rate: null,
+    freight_paise: 24_000,
+    duty_paise: 0,
+    clearing_paise: 0,
+    note: null,
+  });
+  await expect(panel).toContainText(
+    copy.receipts.item({ name: "Solvent", received: 24, damaged: 2, failed: 0, landed: "Rs. 55" }),
+  );
   expect(await axeViolations(page)).toEqual([]);
 });

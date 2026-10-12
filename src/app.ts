@@ -97,6 +97,7 @@ import { registerOpsStockDemand } from "./routes/ops/stock.read.ts";
 import { registerOpsStockUnits } from "./routes/ops/stock.units.ts";
 import { registerOpsSuppliers } from "./routes/ops/suppliers.ts";
 import { registerOpsPurchasing } from "./routes/ops/purchasing.ts";
+import { registerOpsReceipts } from "./routes/ops/purchasing.receipts.ts";
 import { registerOpsWaitlist } from "./routes/ops/waitlist.ts";
 import { registerConsultations } from "./routes/public/consultations.ts";
 import { registerLead } from "./routes/public/lead.ts";
@@ -266,6 +267,8 @@ const SURFACE_ROUTES: Readonly<Record<Surface, readonly ((app: App) => void)[]>>
     registerOpsSuppliers,
     // Purchase orders (docs/decisions/0166-purchase-orders.md).
     registerOpsPurchasing,
+    // Receipts against them, with landed cost (docs/decisions/0167-receipts-and-landed-cost.md).
+    registerOpsReceipts,
     // What the photographs and cards hold in R2 (docs/decisions/0093-the-storage-meter.md).
     registerOpsStorage,
     registerOpsWhoami,

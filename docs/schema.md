@@ -26,7 +26,7 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 | The Care inbox | `conversations`, `chat_messages`, `care_owners`, `care_weekly_off`, `care_leave`, `care_names`, `city_matters`, `quick_replies`, `remedies`, `technician_updates` | A message written since, the client's or ours, is gone from its thread | The rows since `<T>`; WhatsApp's own copy shows what was said |
 | Technicians' steps, pieces and photographs | `job_events`, `checkins`, `visits`, `consumables_used`, `no_show_cases`, `no_show_disputes`, `pieces`, `photos`, `photo_sets` | Steps, check-ins, outcomes, pieces fitted, no-shows and disputes since are lost; a photograph's file is kept with no row | The rows since `<T>` |
 | Hair profiles | `hair_profiles` | A profile recorded since is lost, and one an erasure blanked since is whole again | Adding the rows since `<T>`: they are only ever added. Erasing again blanks the rest |
-| Purchase orders | `purchase_orders`, `po_lines` | An order drafted since is gone, and one approved, sent or cancelled since goes back to where it stood | Adding the rows since `<T>`, and each order's state from the audit log |
+| Purchase orders | `purchase_orders`, `po_lines`, `receipts`, `receipt_lines` | An order drafted since is gone, one approved, sent, received or cancelled since goes back to where it stood, and a receipt since is lost with the stock it brought | Adding the rows since `<T>`, and each order's state from the audit log |
 | Stock | `stock_movements`, `stock_places`, `stock_lots`, `stock_lot_moves`, `stock_transfers`, `stock_units`, `stock_unit_events`, `piece_returns` | A delivery, transfer, count or loss recorded since, or a job's use, is lost, so what each place holds is wrong; a hub or stockroom added or changed since goes back, and each piece is where it was | Adding the rows since `<T>`, and setting each unit where its latest line of history puts it |
 | Referrals and credits | `referral_codes`, `referral_attributions`, `credit_ledger`, `waitlist_entries`, `referral_channels`, `channel_attributions`, `partner_payouts`, `spend_entries` | A credit, a grant, a partner, a partner's payment, an entry of offline spend or a place on a waitlist disappears | The rows since `<T>`. `credit_ledger` is only ever added to |
 | Ops' settings and what we sell | `ops_settings`, `price_book`, `standard_costs`, `targets`, `services`, `slot_times`, `serviceable_pincodes`, `technician_leave`, `visit_blackouts`, `city_blackouts`, `cities`, `zones`, `consumables`, `hair_systems`, `consumable_usage`, `suppliers`, `supplier_items`, `checklist_items`, `partial_reasons`, `lost_reasons`, `pay_grades`, `visit_pay_rates`, `word_versions`, `site_word_publishes` | A price, service, rule, area, day's times, day off, consumable, supplier, job-sheet list, pay rate or wording set since goes back | Setting it again in the console, which audits it |
@@ -110,6 +110,8 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 - [purchase_orders](#purchase_orders): Each purchase order to a supplier: its state from drafted to closed or cancelled, who approved, sent or cancelled it, and when (ADR 0166).
 - [quick_replies](#quick_replies): Saved answers Customer Care pick in a chat, kept by a Customer Care manager (ADR 0141).
 - [razorpay_events](#razorpay_events): Each Razorpay webhook event, once, by its event ID (ADR 0044).
+- [receipt_lines](#receipt_lines): What a receipt brought of each order line: accepted, damaged, failed its check, its lot, and what one cost landed (ADR 0167).
+- [receipts](#receipts): Each receipt against a purchase order at the warehouse: who received it, the supplier's invoice, the rupee rate and the freight, duty and clearing (ADR 0167).
 - [referral_attributions](#referral_attributions): A person who came through an invite, to the first invite they used, what became of its grant, and who attached it and why where ops did (ADR 0048, ADR 0089).
 - [referral_channels](#referral_channels): Partners who send us clients on their own code: the friend's reward and the partner's commission (ADR 0123).
 - [referral_codes](#referral_codes): A client's invite code, the version of their card, and how often the invite was opened (ADR 0048).
@@ -1766,6 +1768,52 @@ Made by `0014_payments.sql`.
 | `event` | TEXT | no |  |  |
 | `received_at` | TEXT | no |  |  |
 
+## receipt_lines
+
+What a receipt brought of each order line: accepted, damaged, failed its check, its lot, and what one cost landed (ADR 0167).
+
+Made by `0142_receipts.sql`.
+
+| Column | Type | May be empty | Default | Key |
+| --- | --- | --- | --- | --- |
+| `id` | TEXT | no |  | primary key |
+| `receipt_id` | TEXT | no |  | → `receipts.id` |
+| `po_line_id` | TEXT | no |  | → `po_lines.id` |
+| `received` | INTEGER | no |  |  |
+| `damaged` | INTEGER | no |  |  |
+| `qc_failed` | INTEGER | no |  |  |
+| `lot_code` | TEXT | yes |  |  |
+| `expires_on` | TEXT | yes |  |  |
+| `landed_unit_paise` | INTEGER | no |  |  |
+| `movement_id` | TEXT | yes |  | → `stock_movements.id` |
+
+Indexes:
+
+- `receipt_lines_by_receipt`: on (`receipt_id`)
+
+## receipts
+
+Each receipt against a purchase order at the warehouse: who received it, the supplier's invoice, the rupee rate and the freight, duty and clearing (ADR 0167).
+
+Made by `0142_receipts.sql`.
+
+| Column | Type | May be empty | Default | Key |
+| --- | --- | --- | --- | --- |
+| `id` | TEXT | no |  | primary key |
+| `po_id` | TEXT | no |  | → `purchase_orders.id` |
+| `received_by` | TEXT | no |  |  |
+| `received_at` | TEXT | no |  |  |
+| `supplier_invoice` | TEXT | yes |  |  |
+| `rupee_rate` | INTEGER | no |  |  |
+| `freight_paise` | INTEGER | no |  |  |
+| `duty_paise` | INTEGER | no |  |  |
+| `clearing_paise` | INTEGER | no |  |  |
+| `note` | TEXT | yes |  |  |
+
+Indexes:
+
+- `receipts_by_order`: on (`po_id`)
+
 ## referral_attributions
 
 A person who came through an invite, to the first invite they used, what became of its grant, and who attached it and why where ops did (ADR 0048, ADR 0089).
@@ -2247,7 +2295,7 @@ Triggers: `stock_lot_moves_balance`, `stock_lot_moves_taken_out`.
 
 Each lot of a stock code a delivery brought: the supplier's lot, or the day it was received, and the day it expires (ADR 0157).
 
-Made by `0135_stock_lots.sql`; changed by `0138_stock_units.sql`.
+Made by `0135_stock_lots.sql`; changed by `0138_stock_units.sql`, `0142_receipts.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -2258,6 +2306,7 @@ Made by `0135_stock_lots.sql`; changed by `0138_stock_units.sql`.
 | `received_at` | TEXT | no |  |  |
 | `label` | TEXT | yes |  |  |
 | `label_serial` | INTEGER | yes |  |  |
+| `landed_cost_paise` | INTEGER | yes |  |  |
 
 Indexes:
 

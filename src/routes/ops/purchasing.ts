@@ -12,6 +12,7 @@ import { createRoute, z } from "@hono/zod-openapi";
 import type { Context } from "hono";
 import { MAX_NOTE } from "../../config/consumables.ts";
 import { approveOrder, cancelOrder, draftOrder, markSent, purchaseOrders } from "../../domain/field/purchase-orders.ts";
+import { receiptsOf } from "../../domain/field/receipts.ts";
 import { allSuppliers } from "../../domain/field/suppliers.ts";
 import { actorOf } from "../../http/audit.ts";
 import type { App, AppEnv } from "../../http/context.ts";
@@ -54,6 +55,29 @@ const OrdersSchema = z
           sent_at: z.union([z.iso.datetime(), z.null()]),
           cancel_reason: MaybeText,
           needs_second_approval: z.boolean(),
+          receipts: z.array(
+            z
+              .object({
+                id: Text,
+                received_by: Text,
+                received_at: z.iso.datetime(),
+                supplier_invoice: MaybeText,
+                lines: z.array(
+                  z
+                    .object({
+                      po_line_id: Text,
+                      received: z.number().int(),
+                      damaged: z.number().int(),
+                      qc_failed: z.number().int(),
+                      lot_code: MaybeText,
+                      expires_on: z.union([z.iso.date(), z.null()]),
+                      landed_unit_paise: z.number().int().openapi({ description: "What one cost landed, in paise." }),
+                    })
+                    .strict(),
+                ),
+              })
+              .strict(),
+          ),
         })
         .strict(),
     ),
@@ -88,8 +112,8 @@ const OrdersSchema = z
   .strict()
   .openapi("PurchaseOrders");
 
-const ORDERS = { description: "The purchase orders", ...json(OrdersSchema) };
-const orderPath = { params: z.object({ id: z.string().min(1).max(64) }) };
+export const ORDERS = { description: "The purchase orders", ...json(OrdersSchema) };
+export const orderPath = { params: z.object({ id: z.string().min(1).max(64) }) };
 const ACCESS = errorResponse("access_required");
 const MISSING = errorResponse("not_found: no such order");
 const STATE = errorResponse("order_state: the order is past the step asked, or the approver approved it already");
@@ -101,7 +125,7 @@ const listRoute = createRoute({
   responses: { 200: ORDERS, 403: ACCESS },
 });
 
-const Note = z
+export const Note = z
   .string()
   .trim()
   .min(1)
@@ -169,7 +193,7 @@ const cancelRoute = createRoute({
   responses: STEP_ANSWERS,
 });
 
-async function ordersAnswer(c: Context<AppEnv>) {
+export async function ordersAnswer(c: Context<AppEnv>) {
   const [orders, suppliers, consumables, inputs] = await Promise.all([
     purchaseOrders(c.env.DB),
     allSuppliers(c.env.DB),
@@ -181,6 +205,10 @@ async function ordersAnswer(c: Context<AppEnv>) {
     opsInputs(c),
   ]);
   const above = inputs.poSecondApprovalAboveRupees;
+  const receipts = await receiptsOf(
+    c.env.DB,
+    orders.map((order) => order.id),
+  );
   return {
     orders: orders.map((order) => ({
       id: order.id,
@@ -205,6 +233,23 @@ async function ordersAnswer(c: Context<AppEnv>) {
       sent_at: order.sentAt,
       cancel_reason: order.cancelReason,
       needs_second_approval: needsSecondApproval(order, above),
+      receipts: receipts
+        .filter((receipt) => receipt.poId === order.id)
+        .map((receipt) => ({
+          id: receipt.id,
+          received_by: receipt.receivedBy,
+          received_at: receipt.receivedAt,
+          supplier_invoice: receipt.supplierInvoice,
+          lines: receipt.lines.map((line) => ({
+            po_line_id: line.poLineId,
+            received: line.received,
+            damaged: line.damaged,
+            qc_failed: line.qcFailed,
+            lot_code: line.lotCode,
+            expires_on: line.expiresOn,
+            landed_unit_paise: line.landedUnitPaise,
+          })),
+        })),
     })),
     suppliers: suppliers.map((supplier) => ({
       id: supplier.id,
@@ -226,9 +271,13 @@ async function ordersAnswer(c: Context<AppEnv>) {
   };
 }
 
-const written = (c: Context<AppEnv>) => ({ actor: actorOf(c), requestId: c.var.requestId, now: c.var.deps.now() });
+export const written = (c: Context<AppEnv>) => ({
+  actor: actorOf(c),
+  requestId: c.var.requestId,
+  now: c.var.deps.now(),
+});
 
-async function after(c: Context<AppEnv>, changed: Awaited<ReturnType<typeof markSent>>) {
+export async function after(c: Context<AppEnv>, changed: Awaited<ReturnType<typeof markSent>>) {
   if (!changed.ok) return "missing" in changed ? refuse(c, "not_found") : refuse(c, "order_state");
   return c.json(await ordersAnswer(c), 200);
 }

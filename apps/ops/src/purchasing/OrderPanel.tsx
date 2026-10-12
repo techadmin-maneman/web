@@ -12,6 +12,7 @@ import { purchasing as copy } from "../content/purchasing.ts";
 import form from "../components/forms.module.css";
 import { useAccess } from "../lib/access.ts";
 import { OrderSheet } from "./OrderSheet.tsx";
+import { Receiving } from "./Receiving.tsx";
 import type { Order, Orders } from "./types.ts";
 
 type Answer = Awaited<ReturnType<typeof client.post<"/api/purchase-orders/{id}/send">>>;
@@ -164,6 +165,7 @@ export function OrderPanel({
         {copy.order.total}: {inCurrency(order.total, order.currency)}
       </p>
       <Steps order={order} onAnswer={answered} />
+      <Receiving book={book} order={order} onChanged={onChanged} />
       <div className={form.actions}>
         <Button
           variant="outline"

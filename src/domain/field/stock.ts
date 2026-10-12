@@ -160,19 +160,29 @@ async function heldOf(db: D1Database, code: string, place: Place): Promise<numbe
   return row?.quantity ?? 0;
 }
 
+/** Stock arriving at the warehouse: a delivery, or a receipt against a purchase order. */
+interface Delivered {
+  readonly code: string;
+  readonly quantity: number;
+  readonly note: string | null;
+  readonly lot?: ReceivedLot;
+}
+
 /**
- * Stock received into the warehouse, into the lot named, or of none (src/domain/field/stock-lots.ts). A hair system's
- * pieces are each labelled as they arrive, so one delivery of them is at most MAX_LABELLED.
+ * A delivery's statements, `id` its row: the row, its lot (src/domain/field/stock-lots.ts), and a hair system's pieces
+ * each labelled as they arrive, so one delivery of them is at most MAX_LABELLED. Refused, naming the field, otherwise.
  */
-export async function receiveStock(
+export async function deliveryStatements(
   db: D1Database,
-  input: { readonly code: string; readonly quantity: number; readonly note: string | null; readonly lot?: ReceivedLot },
+  input: Delivered,
   written: Written,
-): Promise<Moved> {
+  id: string,
+): Promise<
+  { readonly ok: true; readonly statements: D1PreparedStatement[] } | { readonly ok: false; readonly fields: string[] }
+> {
   if (!(await consumableExists(db, input.code))) return { ok: false, fields: ["consumable_code"] };
   const product = await hairSystemProduct(db, input.code);
   if (product !== null && input.quantity > MAX_LABELLED) return { ok: false, fields: ["quantity"] };
-  const id = crypto.randomUUID();
   const lot = input.lot ?? { lotCode: null, expiresOn: null };
   const movement = { code: input.code, quantity: input.quantity, note: input.note };
   const received = await receivedLotMoves(
@@ -181,8 +191,7 @@ export async function receiveStock(
     written.now,
   );
   const units = Array.from({ length: product === null ? 0 : input.quantity }, () => crypto.randomUUID());
-  await db.batch([
-    auditStatement(db, entry("stock.receive", input.code, written, { quantity: input.quantity }), written.now),
+  const statements = [
     movementStatement(db, { ...movement, place: WAREHOUSE, kind: "warehouse", reason: "received" }, written, id),
     ...received.statements,
     ...newUnits(db, {
@@ -194,6 +203,17 @@ export async function receiveStock(
       movementId: id,
       ...unitWritten(written),
     }),
+  ];
+  return { ok: true, statements };
+}
+
+/** Stock received into the warehouse, into the lot named, or of none: a delivery recorded as it lands. */
+export async function receiveStock(db: D1Database, input: Delivered, written: Written): Promise<Moved> {
+  const delivered = await deliveryStatements(db, input, written, crypto.randomUUID());
+  if (!delivered.ok) return delivered;
+  await db.batch([
+    auditStatement(db, entry("stock.receive", input.code, written, { quantity: input.quantity }), written.now),
+    ...delivered.statements,
   ]);
   return { ok: true, lowered: [] };
 }

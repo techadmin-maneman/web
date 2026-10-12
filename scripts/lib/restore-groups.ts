@@ -126,8 +126,9 @@ export const RESTORE_GROUPS: readonly RestoreGroup[] = [
   },
   {
     what: "Purchase orders",
-    tables: ["purchase_orders", "po_lines"],
-    leftAtT: "An order drafted since is gone, and one approved, sent or cancelled since goes back to where it stood",
+    tables: ["purchase_orders", "po_lines", "receipts", "receipt_lines"],
+    leftAtT:
+      "An order drafted since is gone, one approved, sent, received or cancelled since goes back to where it stood, and a receipt since is lost with the stock it brought",
     putBackBy: "Adding the rows since `<T>`, and each order's state from the audit log",
   },
   {
