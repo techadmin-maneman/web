@@ -15,6 +15,7 @@
 import { capsLook } from "@maneman/ui/Caps";
 import { Icon } from "@maneman/ui/Icon";
 import { whatsappChat } from "@maneman/web-kit/whatsapp";
+import { TellClient } from "./TellClient.tsx";
 import { addressLine } from "@maneman/web-kit/address";
 import type { HairProfile, Job } from "../api.ts";
 import { job as copy, profile as profileCopy } from "../content.ts";
@@ -192,6 +193,7 @@ export function JobCard({ job }: { job: Job }) {
             </a>
           </div>
         )}
+        <TellClient job={job} />
       </section>
       <ProfileCard profile={job.profile} />
       {job.type !== "consultation" && <PieceCard job={job} />}

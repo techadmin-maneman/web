@@ -5,7 +5,7 @@ import { shortDate } from "@maneman/web-kit/dates";
 import { paiseFromRupees, rupees } from "@maneman/web-kit/money";
 import { isCodeText } from "@rules/policy/discount-codes.ts";
 import type { DiscountCodesNew } from "../api.ts";
-import { settings } from "../content.ts";
+import { settings } from "../content/settings.ts";
 
 const copy = settings.discountCodes;
 

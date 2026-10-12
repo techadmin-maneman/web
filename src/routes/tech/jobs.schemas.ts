@@ -167,7 +167,16 @@ export const JobDetailSchema = JobSummarySchema.extend({
   access_notes: z.union([z.string(), z.null()]),
   client: z
     .union([
-      z.object({ name: z.string(), mobile: z.string(), note: z.union([z.string(), z.null()]) }).strict(),
+      z
+        .object({
+          name: z.string(),
+          mobile: z.string(),
+          note: z.union([z.string(), z.null()]),
+          whatsapp: z.boolean().openapi({
+            description: "Whether they take messages about their visits on WhatsApp, as the card's presets go.",
+          }),
+        })
+        .strict(),
       z.null(),
     ])
     .openapi({ description: "Null until the day before the visit." }),

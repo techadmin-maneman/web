@@ -332,7 +332,7 @@ export function card(date: string, progress: Progress, options: CardOptions = {}
       ...options.address,
     },
     access_notes: "Gate code 4417 · visitor bay B",
-    client: { name: "Rohit M.", mobile: "+919810000000", note: null },
+    client: { name: "Rohit M.", mobile: "+919810000000", note: null, whatsapp: true },
     progress,
     no_show_wait_min: options.waitMinutes ?? 15,
     checkin_from: checkInOpens(date),

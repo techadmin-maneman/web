@@ -1,9 +1,9 @@
 // A member of staff's grants, as the Staff page says them and as its boxes hold them.
 
 import type { StaffGrant, StaffPerson } from "../api.ts";
-import { settings } from "../content.ts";
+import { grantPhrasing } from "../content.ts";
 
-const copy = settings.staff;
+const copy = grantPhrasing;
 
 export type Department = StaffGrant["department"];
 type Level = StaffGrant["level"];

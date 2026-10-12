@@ -24,6 +24,8 @@ interface JobClient {
   readonly name: string;
   readonly mobile: string;
   readonly note: string | null;
+  /** Whether they take messages about their visits on WhatsApp, which the card's presets go as. */
+  readonly whatsapp: boolean;
 }
 
 /** The address as the client saved it, the parts ADR 0054 added included: what gets them to the right door. */
@@ -179,7 +181,12 @@ export async function jobDetail(
     client:
       row.client_name === null || row.client_mobile === null
         ? null
-        : { name: row.client_name, mobile: row.client_mobile, note: row.client_note },
+        : {
+            name: row.client_name,
+            mobile: row.client_mobile,
+            note: row.client_note,
+            whatsapp: row.client_whatsapp === 1,
+          },
     ...unlockedParts,
   };
 }

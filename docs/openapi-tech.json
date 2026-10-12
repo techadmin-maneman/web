@@ -1009,12 +1009,17 @@
                         "type": "null"
                       }
                     ]
+                  },
+                  "whatsapp": {
+                    "type": "boolean",
+                    "description": "Whether they take messages about their visits on WhatsApp, as the card's presets go."
                   }
                 },
                 "required": [
                   "name",
                   "mobile",
-                  "note"
+                  "note",
+                  "whatsapp"
                 ],
                 "additionalProperties": false
               },
@@ -2551,6 +2556,36 @@
             "additionalProperties": false
           }
         ]
+      },
+      "TechnicianUpdate": {
+        "type": "object",
+        "properties": {
+          "preset": {
+            "type": "string",
+            "enum": [
+              "on_the_way",
+              "at_gate",
+              "running_late"
+            ]
+          },
+          "minutes": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 120
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "preset",
+          "minutes"
+        ],
+        "additionalProperties": false
       },
       "PieceLookup": {
         "type": "object",
@@ -4097,6 +4132,105 @@
           },
           "409": {
             "description": "superseded: the job changed under the phone; out_of_order: send the step before this one first; already_closed: the job has closed; only its checklist and consumables may be corrected, for an hour",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tech/jobs/{id}/updates": {
+      "post": {
+        "summary": "Tell the client the technician is on the way, at the gate, or running late, from our number",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]{8,64}$",
+              "description": "The phone's own ID for this write; a replay of it changes nothing. A UUIDv7 carries the moment it was queued."
+            },
+            "required": true,
+            "description": "The phone's own ID for this write; a replay of it changes nothing. A UUIDv7 carries the moment it was queued.",
+            "name": "x-client-event-id",
+            "in": "header"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "date-time",
+              "description": "The job's starts_at as the phone holds it. When ops have moved the job since, the write is superseded, field time."
+            },
+            "required": false,
+            "description": "The job's starts_at as the phone holds it. When ops have moved the job since, the write is superseded, field time.",
+            "name": "x-job-starts-at",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TechnicianUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Queued for the client now; false for a word heard before, or too late to help",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "sent": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "sent"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid_request: minutes are for on the way and running late, and not for at the gate",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "session_required; device_revoked",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found: no such job, or never this technician's",
             "content": {
               "application/json": {
                 "schema": {

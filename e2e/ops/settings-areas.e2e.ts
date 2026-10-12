@@ -13,6 +13,7 @@ import { expect, test } from "../support.ts";
 import { BLACKOUTS, fails, json } from "./fixtures.ts";
 import { open, posted } from "./settings-fixtures.ts";
 import * as opsCopy from "../../apps/ops/src/content.ts";
+import { settings as settingsCopy } from "../../apps/ops/src/content/settings.ts";
 
 test.describe("the service area, Areas' Served tab", () => {
   const area = (page: Page, pincode: string) => page.getByRole("textbox", { name: `Area name for ${pincode}` });
@@ -206,7 +207,7 @@ test.describe("the blackout days", () => {
       "/dispatch?from=2027-10-29",
     );
     const training = page.getByRole("listitem").filter({ hasText: "Mon 15 Nov · Every city · Staff training" });
-    await expect(training).toContainText(opsCopy.settings.blackouts.unrecorded);
+    await expect(training).toContainText(settingsCopy.blackouts.unrecorded);
     await expect(training).not.toContainText("still booked");
     await expect(training.getByRole("link", { name: /Show on board/ })).toHaveCount(0);
   });
@@ -224,7 +225,7 @@ test.describe("the blackout days", () => {
     };
     const added = { ...BLACKOUTS, blackouts: [...BLACKOUTS.blackouts, christmas] };
     await open(page, "/settings/blackouts", { "POST /api/blackouts": json(added) });
-    const add = page.getByRole("button", { name: opsCopy.settings.blackouts.add });
+    const add = page.getByRole("button", { name: settingsCopy.blackouts.add });
     await expect(add).toBeDisabled();
     await page.getByLabel("From", { exact: true }).fill("2027-12-24");
     await page.getByLabel("To", { exact: true }).fill("2027-12-24");
@@ -232,7 +233,7 @@ test.describe("the blackout days", () => {
     const request = posted(page, "/api/blackouts");
     await add.click();
     expect((await request).postDataJSON()).toEqual({ from: "2027-12-24", to: "2027-12-24", reason: "Christmas" });
-    await expect(page.getByRole("status").filter({ hasText: opsCopy.settings.blackouts.added })).toBeVisible();
+    await expect(page.getByRole("status").filter({ hasText: settingsCopy.blackouts.added })).toBeVisible();
     await expect(page.getByRole("listitem").filter({ hasText: "Fri 24 Dec · Every city · Christmas" })).toBeVisible();
     await expect(page.getByLabel("Reason")).toHaveValue("");
   });
@@ -254,7 +255,7 @@ test.describe("the blackout days", () => {
     await page.getByLabel("City").selectOption("Gurgaon");
     await page.getByLabel("Reason").fill("Holi");
     const request = posted(page, "/api/blackouts");
-    await page.getByRole("button", { name: opsCopy.settings.blackouts.add }).click();
+    await page.getByRole("button", { name: settingsCopy.blackouts.add }).click();
     expect((await request).postDataJSON()).toEqual({
       from: "2028-03-10",
       to: "2028-03-10",
@@ -269,7 +270,7 @@ test.describe("the blackout days", () => {
     await page.getByLabel("From", { exact: true }).fill("2027-10-01");
     await page.getByLabel("To", { exact: true }).fill("2027-12-01");
     await page.getByLabel("Reason").fill("Too long");
-    await page.getByRole("button", { name: opsCopy.settings.blackouts.add }).click();
+    await page.getByRole("button", { name: settingsCopy.blackouts.add }).click();
     await expect(page.getByRole("alert")).toHaveText("The last day must follow the first, within a month.");
   });
 

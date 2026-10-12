@@ -18,7 +18,7 @@ import { indiaDate, shortDate } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";
 import { useCallback, useState, type ReactNode } from "react";
 import { api, type DiscountCode, type DiscountCodes as Book } from "../api.ts";
-import { settings } from "../content.ts";
+import { settings } from "../content/settings.ts";
 import { useAccess } from "../lib/access.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import { CheckPanel } from "../components/CheckPanel.tsx";
