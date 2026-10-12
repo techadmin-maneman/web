@@ -24,7 +24,7 @@ Some jobs run only where what they need is switched on: the invoices and Books n
 
 Cloudflare stops a run that uses too much CPU time: 10 ms an invocation on Workers Free, 30 seconds on Workers Paid (ADR 0112). One run of every job took 30 to 60 ms of CPU on staging, far under the 30 seconds, so a run cut short is rare.
 
-Each run notes when it starts and when it finishes (`cron_runs`). A run that finds the one before it never finished alerts once (`cron_run_cut_short`), and pings the heartbeat's `/fail` saying so ("The outside watchers"). The alert closes once runs have finished for an hour. Only that minute's jobs missed a turn, and each runs again at its next minute, so one alert is a blip. The minute of the run's start says which jobs it was running: those whose `every` and `at` fall on it, in `src/scheduled/cron.ts`. Where it stands:
+Each run notes when it starts and when it finishes (`cron_runs`), and the row is its lease: a run that finds the one before unfinished and under three minutes old runs nothing (`cron_run_overlapping` in the logs), so no job runs twice at once. A run that finds the one before never finished, and older than that, alerts once (`cron_run_cut_short`), and pings the heartbeat's `/fail` saying so ("The outside watchers"). The alert closes once runs have finished for an hour. Only that minute's jobs missed a turn, and each runs again at its next minute, so one alert is a blip. The minute of the run's start says which jobs it was running: those whose `every` and `at` fall on it, in `src/scheduled/cron.ts`. Where it stands:
 
 ```sql
 SELECT started_at, completed_at, failed_jobs, cut_short_at FROM cron_runs;

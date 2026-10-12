@@ -388,6 +388,8 @@ function sharedInputs({ env, deps, log }: CronRun): () => Promise<OpsInputs> {
 interface RunResult {
   readonly outcomes: CronOutcome[];
   readonly cutShortAt: string | null;
+  /** Whether the run before was running still, so this one ran nothing and left the record to it. */
+  readonly skipped: boolean;
 }
 
 /**
@@ -401,7 +403,11 @@ export async function runCronJobs(jobs: readonly CronJob[], given: CronRun): Pro
 async function runJobs(jobs: readonly CronJob[], given: CronRun): Promise<RunResult> {
   const { run, meter } = metered(given);
   const startedAt = run.deps.now();
-  const { cutShortAt, failing } = await recordStart(run, startedAt.toISOString());
+  const { runningSince, cutShortAt, failing } = await recordStart(run, startedAt.toISOString());
+  if (runningSince !== null) {
+    run.log.warn("cron_run_overlapping", { running_since: runningSince });
+    return { outcomes: [], cutShortAt: null, skipped: true };
+  }
   const budget = createCallBudget(run.calls ?? CRON_CALLS, {
     until: startedAt.getTime() + CRON_CALLS_FOR_MS,
     now: () => run.deps.now().getTime(),
@@ -431,7 +437,7 @@ async function runJobs(jobs: readonly CronJob[], given: CronRun): Promise<RunRes
     ...usageFields(meter.usage()),
     d1_rows_read_by_job: rowsReadByJob,
   });
-  return { outcomes, cutShortAt };
+  return { outcomes, cutShortAt, skipped: false };
 }
 
 function metered(run: CronRun): { run: CronRun; meter: MeteredDatabase } {
@@ -443,10 +449,12 @@ function metered(run: CronRun): { run: CronRun; meter: MeteredDatabase } {
 /**
  * A whole scheduled run: the jobs, then the heartbeat that tells the outside monitor the cron is running. It pings
  * /fail when a job failed, or when the run before never finished, saying so; with nothing wrong, it pings only when
- * `pingWhenWell` (pingsWhenWell, src/scheduled/schedule.ts).
+ * `pingWhenWell` (pingsWhenWell, src/scheduled/schedule.ts). A run that ran nothing, the one before running still,
+ * leaves the ping to that one.
  */
 export async function runCron(jobs: readonly CronJob[], run: CronRun, pingWhenWell = true): Promise<void> {
-  const { outcomes, cutShortAt } = await runJobs(jobs, run);
+  const { outcomes, cutShortAt, skipped } = await runJobs(jobs, run);
+  if (skipped) return;
   const notFinished = cutShortAt === null ? [] : [`the run started at ${cutShortAt} never finished`];
   const wrong = [...notFinished, ...failedJobs(outcomes)];
   if (wrong.length === 0 && !pingWhenWell) return;
@@ -467,7 +475,7 @@ async function recordStart({ env, deps, log }: CronRun, startedAt: string): Prom
     return await startRun({ db: env.DB, alertOnce: (alert) => deps.alertOnce(alert) }, startedAt);
   } catch (error) {
     log.error("cron_run_not_recorded", { error });
-    return { cutShortAt: null, failing: new Set() };
+    return { runningSince: null, cutShortAt: null, failing: new Set() };
   }
 }
 
