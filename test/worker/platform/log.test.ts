@@ -30,6 +30,12 @@ describe("redact", () => {
     });
   });
 
+  it("redacts a payer's number and UPI handle as Razorpay names them", () => {
+    expect(redact({ payment: { contact: "+919876543210", vpa: "arjun@okbank", method: "upi" } })).toEqual({
+      payment: { contact: REDACTED, vpa: REDACTED, method: "upi" },
+    });
+  });
+
   it("keeps operational fields", () => {
     const fields = { event: "lead_created", lead_id: "0b0c…", state: "queued", ip_hash: "h", status: 201 };
     expect(redact(fields)).toEqual(fields);
