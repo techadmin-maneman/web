@@ -134,6 +134,8 @@ With self-serve booking off, a consultation booked on the site is a request: the
 
 **Open the doors:** delete the Access applications for `app.maneman.in` and `tech.maneman.in`; the ops console stays behind Access. Read the open alerts after the first day (RB, "Alerts and the cron").
 
+**The reporting copy** (ADR 0146): from this release production copies each night at 3 am India time into Supabase's `analytics` schema; its writer login, Hyperdrive config `mm-analytics` and `ANALYTICS_CLIENT_KEY` were set on 12 October 2026. The morning after its first night with real activity (`select max(ended_at) from analytics.load_run` and a count of `analytics.fact_visit`), point Zoho's views at it: in the Supabase SQL editor, run what `select 'create or replace view reporting.' || table_name || ' as select * from analytics.' || table_name || ';' from information_schema.views where table_schema = 'reporting'` prints. Zoho's 05:00 import then brings the real figures. The same with `sample` points them back.
+
 ### The dashboards
 
 These settings live only in each vendor's dashboard, where no test can read them. Walk each table, change what differs, and write the date you saw the expected value. Where a row says what was seen on 2 October 2026, that is what has to change.
