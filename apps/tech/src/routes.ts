@@ -37,6 +37,9 @@ export const ROUTES: readonly TechRoute[] = [
   { method: "POST", path: "/tech/jobs/{id}/discount-code" },
   { method: "POST", path: "/tech/jobs/{id}/updates" },
   { method: "GET", path: "/tech/pieces/lookup" },
+  { method: "GET", path: "/tech/kit" },
+  { method: "POST", path: "/tech/kit/transfers/{id}/receive" },
+  { method: "POST", path: "/tech/kit/hand-back" },
 ];
 
 /**

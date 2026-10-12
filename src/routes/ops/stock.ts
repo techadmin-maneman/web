@@ -82,7 +82,16 @@ const transferRoute = createRoute({
       required: true,
       ...json(
         z
-          .object({ consumable_code: Code, quantity: Quantity, from: PlaceId, to: PlaceId, units: Labels.optional() })
+          .object({
+            consumable_code: Code,
+            quantity: Quantity,
+            from: PlaceId,
+            to: PlaceId,
+            units: Labels.optional(),
+            wait_for_scan: z.boolean().optional().openapi({
+              description: "To a kit: it arrives only once the technician scans it in; by default it arrives at once.",
+            }),
+          })
           .strict()
           .openapi("StockTransfer"),
       ),
@@ -265,7 +274,14 @@ export function registerOpsStock(app: App): void {
     if (!countsAsScanned(body)) return refuse(c, "invalid_request", ["units"]);
     const moved = await sendStock(
       c.env.DB,
-      { code: body.consumable_code, quantity: body.quantity, from: body.from, to: body.to, units: body.units ?? null },
+      {
+        code: body.consumable_code,
+        quantity: body.quantity,
+        from: body.from,
+        to: body.to,
+        units: body.units ?? null,
+        waitForScan: body.wait_for_scan === true,
+      },
       written(c),
     );
     return after(c, moved, [body.from, body.to]);

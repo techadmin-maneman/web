@@ -104,6 +104,9 @@ export interface Fake {
   pieces: Piece[];
   /** The hair systems the technician's kit holds, on the card. */
   kitHairSystems: Card["kit_hair_systems"];
+  /** The kit screen: what it holds, what is coming, and its pieces to hand back; and what it is after a kit write. */
+  kit: Omit<TechReply<"/api/tech/kit">, "today">;
+  kitAfter: Omit<TechReply<"/api/tech/kit">, "today"> | null;
   /** The client's hair profile on the card, or none recorded. */
   profile: HairProfile | null;
   /** The checklist on the card: three items unless a test gives a longer one. */
@@ -193,6 +196,8 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
     clientChoice: null,
     pieces: [],
     kitHairSystems: [],
+    kit: { held: [], coming: [], returned: [] },
+    kitAfter: null,
     profile: null,
     checklist: CHECKLIST,
     address: {},
@@ -265,6 +270,11 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
 
     if (method === "POST") {
       if (path === "/api/tech/auth/logout") return reply(route, 204);
+      // The kit's writes are asked straight, never queued (docs/decisions/0164-the-kit-screen.md).
+      if (path.startsWith("/api/tech/kit/")) {
+        fake.writes.push({ path, eventId, startsAt, body: route.request().postDataJSON() as unknown });
+        return reply(route, 200, { ...(fake.kitAfter ?? fake.kit), today });
+      }
       if (path.endsWith("/photos/upload-url")) {
         if (fake.moved) return refuse(route, 409, "superseded", ["technician"], fake.wentTo);
         const body = route.request().postDataJSON() as { phase: string; angle: string };
@@ -352,6 +362,7 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
     }
 
     if (path === "/api/tech/me") return reply(route, 200, ME);
+    if (path === "/api/tech/kit") return reply(route, 200, { ...fake.kit, today });
     if (path === "/api/tech/jobs") {
       const date = url.searchParams.get("date") ?? "";
       // Outside the contract on purpose: what a broken release might send, which the app must survive.

@@ -21,6 +21,7 @@
 import { CaptureScreen } from "./camera/CaptureScreen.tsx";
 import { Stopped, StorageFull } from "./components/Banners.tsx";
 import { JobScreen } from "./job/JobScreen.tsx";
+import { KitScreen } from "./kit/KitScreen.tsx";
 import { OutboxContext, useOutboxSubscription } from "./lib/useOutbox.ts";
 import { useReplayTriggers } from "./lib/useReplayTriggers.ts";
 import { useSessionLifecycle } from "./lib/useSessionLifecycle.ts";
@@ -44,6 +45,8 @@ function pageFor(route: Route) {
       return <TodayScreen />;
     case "waiting":
       return <WaitingScreen />;
+    case "kit":
+      return <KitScreen />;
     case "job":
       return <JobScreen id={route.id} />;
     case "done":

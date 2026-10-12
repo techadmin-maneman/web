@@ -14604,6 +14604,7 @@ Request body:
         "stock.receive_transfer",
         "stock.send_back",
         "stock.label",
+        "stock.hand_back",
         "task.assign",
         "task.hand_back",
         "task.close",
@@ -20916,6 +20917,10 @@ Request body:
       "minItems": 1,
       "maxItems": 500,
       "description": "A hair system's pieces by their labels, as scanned; as many as the quantity."
+    },
+    "wait_for_scan": {
+      "type": "boolean",
+      "description": "To a kit: it arrives only once the technician scans it in; by default it arrives at once."
     }
   },
   "required": [

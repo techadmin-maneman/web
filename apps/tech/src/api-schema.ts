@@ -1709,6 +1709,187 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/tech/kit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** What the kit holds, what is on its way to it, and the pieces to hand back */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The technician's kit */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["TechnicianKit"];
+                    };
+                };
+                /** @description session_required; device_revoked */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tech/kit/transfers/{id}/receive": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** A top-up received: all of it, or of a hair system the pieces scanned, the rest lost on the way */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["TechnicianKitReceipt"];
+                };
+            };
+            responses: {
+                /** @description The technician's kit */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["TechnicianKit"];
+                    };
+                };
+                /** @description invalid_request: fields names units for a label the top-up does not carry */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description session_required; device_revoked */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description not_found: no top-up on its way to this kit */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description transfer_settled: it was received or sent back already */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tech/kit/hand-back": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Returned pieces, and the kit's expired stock, back to the place the kit hangs from */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["TechnicianKitHandBack"];
+                };
+            };
+            responses: {
+                /** @description The technician's kit */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["TechnicianKit"];
+                    };
+                };
+                /** @description invalid_request: fields names pieces for a label not of a piece the kit holds as returned */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description session_required; device_revoked */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -2293,6 +2474,62 @@ export interface components {
         TechnicianDiscountCode: {
             /** @description As the client gave it, any case. */
             code: string;
+        };
+        TechnicianKit: {
+            held: {
+                code: string;
+                name: string;
+                unit: string;
+                quantity: number;
+                hair_system: boolean;
+                /** @description The lots it holds some of, soonest to expire first. */
+                lots: {
+                    lot_code: string;
+                    expires_on: string | null;
+                    quantity: number;
+                }[];
+                /** @description A hair system's pieces the kit holds labelled. */
+                units: {
+                    code: string;
+                    lot_code: string | null;
+                    expires_on: string | null;
+                }[];
+            }[];
+            /** @description Top-ups on their way, each to receive once in hand, the oldest first. */
+            coming: {
+                id: string;
+                code: string;
+                name: string;
+                unit: string;
+                quantity: number;
+                /** @description The place it was sent from, by name. */
+                from: string;
+                /** Format: date-time */
+                sent_at: string;
+                /** @description The labels of a hair system's pieces on their way. */
+                units: string[];
+            }[];
+            /** @description Pieces that came off clients, held to hand back, the oldest first. */
+            returned: {
+                piece_code: string;
+                /** Format: date-time */
+                returned_at: string;
+                reason: string | null;
+            }[];
+            /** Format: date */
+            today: string;
+        };
+        TechnicianKitReceipt: {
+            units?: string[];
+        };
+        TechnicianKitHandBack: {
+            /** @default [] */
+            pieces: string[];
+            /**
+             * @description Whether every expired lot goes back too.
+             * @default false
+             */
+            expired: boolean;
         };
     };
     responses: never;

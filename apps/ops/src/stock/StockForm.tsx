@@ -5,7 +5,9 @@
 // figure it finds, and the ledger takes the difference. A place that would
 // hold less than nothing says so, since a delivery or a count is then missing.
 // A hair system's transfer or loss names its pieces by their labels, scanned
-// (docs/decisions/0162-scanning-labels.md), and counts them.
+// (docs/decisions/0162-scanning-labels.md), and counts them. A top-up to a kit
+// counts once the technician scans it in, unless handed over in person
+// (docs/decisions/0164-the-kit-screen.md).
 
 import { errorText, type Failure } from "@maneman/web-kit/refusal";
 import { Field, NumberInput, Select } from "@maneman/ui/Field";
@@ -36,6 +38,8 @@ interface Draft {
   readonly lotId: string;
   /** A hair system's pieces, by their labels as scanned; their count is the quantity. */
   readonly units: readonly string[];
+  /** To a kit: whether it waits for the technician's scan, as it does unless handed over in person. */
+  readonly waitForScan: boolean;
 }
 
 type Step = { readonly step: "editing" | "checking" | "saving" | "recorded" } | ({ readonly step: "failed" } & Failure);
@@ -113,7 +117,10 @@ function effectOf(book: Stock, draft: Draft): { lines: string[]; warnings: strin
   const moved = Number(draft.quantity);
   const changes: [string, number][] = [];
   if (draft.kind === "delivery") changes.push([warehouseOf(book), moved]);
-  if (draft.kind === "transfer") changes.push([draft.from, -moved], [draft.to, moved]);
+  // A top-up waiting for the technician's scan leaves now and arrives only then.
+  const waiting = toAKit(book, draft) && draft.waitForScan;
+  if (draft.kind === "transfer")
+    changes.push([draft.from, -moved], ...(waiting ? [] : [[draft.to, moved] as [string, number]]));
   if (draft.kind === "write_off") changes.push([draft.place, -moved]);
   if (draft.kind === "count") {
     const place = draft.place;
@@ -122,9 +129,12 @@ function effectOf(book: Stock, draft: Draft): { lines: string[]; warnings: strin
     changes.push([place, counted - held(place)]);
   }
   return {
-    lines: changes.map(([place, by]) =>
-      copy.confirm.line(placeName(book, place), said(held(place)), said(held(place) + by)),
-    ),
+    lines: [
+      ...changes.map(([place, by]) =>
+        copy.confirm.line(placeName(book, place), said(held(place)), said(held(place) + by)),
+      ),
+      ...(waiting ? [copy.confirm.onItsWay(placeName(book, draft.to))] : []),
+    ],
     warnings: changes
       .filter(([place, by]) => held(place) + by < 0)
       .map(([place]) => copy.confirm.below(placeName(book, place))),
@@ -142,7 +152,7 @@ function readyOf(draft: Draft, max: number): boolean {
   return true;
 }
 
-async function sent(draft: Draft) {
+async function sent(book: Stock, draft: Draft) {
   const code = draft.code;
   const note = draft.note.trim() === "" ? null : draft.note.trim();
   switch (draft.kind) {
@@ -161,6 +171,7 @@ async function sent(draft: Draft) {
         from: draft.from,
         to: draft.to,
         ...scannedOf(draft),
+        ...(toAKit(book, draft) ? { wait_for_scan: draft.waitForScan } : {}),
       });
     case "count":
       return api.recordCount({
@@ -183,6 +194,10 @@ async function sent(draft: Draft) {
   }
 }
 
+/** Whether a transfer goes to a technician's kit. */
+const toAKit = (book: Stock, draft: Draft) =>
+  draft.kind === "transfer" && book.places.some((place) => place.id === draft.to && place.kind === "kit");
+
 /** The pieces named, where any were scanned. */
 const scannedOf = (draft: Draft) => (draft.units.length === 0 ? {} : { units: [...draft.units] });
 
@@ -190,6 +205,24 @@ const scannedOf = (draft: Draft) => (draft.units.length === 0 ? {} : { units: [.
 const scans = (book: Stock, draft: Draft) =>
   (draft.kind === "transfer" || draft.kind === "write_off") &&
   book.consumables.some((each) => each.code === draft.code && each.hair_system);
+
+/** Whether a top-up to a kit waits for the technician to scan it in, as it does unless ops hand it over in person. */
+function WaitForScan({ book, draft, onDraft }: { book: Stock; draft: Draft; onDraft: (draft: Draft) => void }) {
+  if (!toAKit(book, draft)) return null;
+  return (
+    <label className={styles.kind}>
+      <input
+        className={styles.radio}
+        type="checkbox"
+        checked={draft.waitForScan}
+        onChange={(event) => {
+          onDraft({ ...draft, waitForScan: event.target.checked });
+        }}
+      />
+      {copy.record.waitForScan}
+    </label>
+  );
+}
 
 /** How many: what a count found, or what moves; nothing to type where pieces were scanned, which count themselves. */
 function HowMany(props: {
@@ -218,7 +251,16 @@ function HowMany(props: {
 }
 
 /** What every box holds before anything is typed. */
-const EMPTY = { quantity: "", counted: "", note: "", lotCode: "", expiresOn: "", lotId: "", units: [] };
+const EMPTY = {
+  quantity: "",
+  counted: "",
+  note: "",
+  lotCode: "",
+  expiresOn: "",
+  lotId: "",
+  units: [],
+  waitForScan: true,
+};
 
 /** Records a movement of one of `kinds`: those the caller may record, in KINDS' order. */
 export function StockForm({
@@ -243,7 +285,7 @@ export function StockForm({
     place: first,
   }));
   const [step, setStep] = useState<Step>({ step: "editing" });
-  const edit = (field: Exclude<keyof Draft, "units">) => (value: string) => {
+  const edit = (field: Exclude<keyof Draft, "units" | "waitForScan">) => (value: string) => {
     // Pieces scanned belong to one stock code and one kind of movement.
     setDraft({
       ...draft,
@@ -262,7 +304,7 @@ export function StockForm({
 
   const send = async () => {
     setStep({ step: "saving" });
-    const answer = await sent(draft);
+    const answer = await sent(book, draft);
     if (!answer.ok) {
       setStep({ step: "failed", code: answer.code, fields: answer.fields });
       return;
@@ -317,6 +359,7 @@ export function StockForm({
         </div>
         <LotFields book={book} draft={draft} onEdit={edit} />
         {scans(book, draft) && <PieceScans units={draft.units} onUnits={scan} />}
+        <WaitForScan book={book} draft={draft} onDraft={setDraft} />
         <div className={form.fields}>
           <HowMany draft={draft} unit={unit} onEdit={edit} />
           {draft.kind !== "transfer" && (

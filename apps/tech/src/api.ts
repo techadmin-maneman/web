@@ -42,6 +42,7 @@ export type Job = Omit<Schema["TechnicianJobDetail"], "checkin_radius_m"> & {
 export type JobState = Schema["TechnicianJobState"];
 export type CheckIn = Schema["CheckIn"];
 export type PieceLookup = Schema["PieceLookup"];
+export type Kit = Schema["TechnicianKit"];
 type PhotoTaken = Schema["TechnicianPhotoTaken"];
 /** The client's hair profile, which the profile step sends and the piece card reads (ADR 0106). */
 export type HairProfile = Schema["HairProfile"];
@@ -190,6 +191,19 @@ export const api = {
       body: { code },
       patience: PATIENCE_MS.write,
     }),
+
+  /** The kit: what it holds, what is coming to it, and its pieces to hand back (docs/decisions/0164-the-kit-screen.md). */
+  kit: () => client.get("/api/tech/kit", { patience: PATIENCE_MS.read }),
+  /** A top-up received in hand: all of it, or of a hair system the pieces scanned. Asked straight, with signal. */
+  receiveTopUp: (id: string, units: readonly string[] | null) =>
+    client.post("/api/tech/kit/transfers/{id}/receive", {
+      path: { id },
+      body: units === null ? {} : { units: [...units] },
+      patience: PATIENCE_MS.write,
+    }),
+  /** Returned pieces, and the kit's expired stock, back to its stockroom. */
+  handBack: (body: { pieces: string[]; expired: boolean }) =>
+    client.post("/api/tech/kit/hand-back", { body, patience: PATIENCE_MS.write }),
 
   /** A link to PUT one photograph to, good for fifteen minutes. */
   uploadLink: (jobId: string, phase: Phase, angle: Angle) =>

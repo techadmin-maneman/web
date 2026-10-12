@@ -32,6 +32,7 @@ import { registerClientData } from "./routes/client/data.ts";
 import { registerClientDiscountCodes } from "./routes/client/discount-codes.ts";
 import { registerOpsDiscountCodes } from "./routes/ops/discount-codes.ts";
 import { registerTechDiscountCodes } from "./routes/tech/discount-codes.ts";
+import { registerTechKit } from "./routes/tech/kit.ts";
 import { registerClientDisputes } from "./routes/client/disputes.ts";
 import { registerClientMoveProposals } from "./routes/client/move-proposals.ts";
 import { registerClientErrors } from "./routes/client-errors.ts";
@@ -274,6 +275,8 @@ const SURFACE_ROUTES: Readonly<Record<Surface, readonly ((app: App) => void)[]>>
     registerTechJobs,
     registerTechPieces,
     registerTechDiscountCodes,
+    // The technician's kit (docs/decisions/0164-the-kit-screen.md).
+    registerTechKit,
   ],
 };
 

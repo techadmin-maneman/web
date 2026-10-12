@@ -19,12 +19,13 @@ import { Offline } from "../components/Banners.tsx";
 import {
   atRisk as atRiskCopy,
   job as jobCopy,
+  kit as kitCopy,
   leaving as leavingCopy,
   queue as queueCopy,
   titles,
   today as copy,
 } from "../content.ts";
-import { STROKE } from "../icons.ts";
+import { STROKE, TAG } from "../icons.ts";
 import { rowState, type RowState } from "../lib/progress.ts";
 import { keepCards, useDay, useNames } from "../lib/useDay.ts";
 import { useOutbox } from "../lib/useOutbox.ts";
@@ -289,6 +290,11 @@ export function TodayScreen() {
       {day.state === "loaded" && jobs.length === 0 && <EmptyDay tomorrowJobs={tomorrowJobs} />}
       {jobs.length > 0 && <Jobs jobs={jobs} names={names} queued={waiting.events} heard={heard} />}
       {tomorrowJobs.length > 0 && <Tomorrow jobs={tomorrowJobs} names={names} queued={waiting.events} heard={heard} />}
+
+      <Link className={styles.waiting} to="/kit">
+        <Icon d={TAG} size={20} className={styles.waitingIcon} stroke={STROKE} />
+        <span className={styles.waitingLine}>{kitCopy.link}</span>
+      </Link>
     </main>
   );
 }
