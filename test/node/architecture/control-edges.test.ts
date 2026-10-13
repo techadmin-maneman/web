@@ -20,6 +20,9 @@ const EDGES: Readonly<Record<string, readonly string[]>> = {
   "--paper": ["--ink", "--ink-deep"],
   "--error-on-paper": ["--paper", "--white"],
   "--error-on-ink": ["--ink", "--ink-deep"],
+  // The roles a part reads, on whichever ground it stands (packages/brand/tokens.css).
+  "--border-control": ["--paper", "--white", "--paper-light", "--ink", "--ink-deep"],
+  "--status-error": ["--paper", "--white", "--ink", "--ink-deep"],
 };
 
 const CONTROL =

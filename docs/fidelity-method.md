@@ -13,6 +13,10 @@ How `npm run fidelity` pairs the design with the build. Its screenshots are in `
 
 Any difference in type, spacing, colour or order is a defect. The prices are not: they are the price book's, which the local build shows as it was on 22 September 2026, where v2 says ₹25,000, ₹1,500 and ₹17,000 (ADR 0022, item 39), and they are written "Rs. 30,000" where v2 writes its sign, as the owner ruled on 27 September 2026 (ADR 0025, item 51). Nor are the try-on's consent screen and gate: they show the notices that send the look to WhatsApp only and keep a client's try-on, whose placeholder words await counsel and are longer than v2's (ADR 0104; ADR 0084; ADR 0025, items 65 and 88). Nor is the try-on's order since the owner's ruling of 1 October 2026 (ADR 0104): nothing renders before the gate, so v2's processing and result screens pair with nothing (`try-5-processing` and `try-7-result` are no more), the looks screen's button reads Continue, the steps are of four, and the gate's frame reads "For your WhatsApp only"; the sent and unavailable screens have no pair in v2. Nor are the home page's words where the owner rewrote them on 1 October 2026 (ADR 0103): the hero, What it is, the comparison, How it works and the FAQ say the owner's words in v2's type; v2's two bases pair with Materials and construction, which took their place; v2's prices pair with nothing while the site gives none; and the range has no pair in v2.
 
+## The kit
+
+`npm run fidelity:ops` also shoots the console's kit (`/_kit`, local builds alone) whole, to `docs/fidelity/ops/kit.png`: every part of `packages/ui` in its states, on paper and on the ink. It has no board to pair with; it is how a part that changes is seen to change, and where a screen with no board takes its parts from (`docs/patterns.md`).
+
 ## Phase 2 boards
 
 The Phase 2 files in `design/phase2` run on the same prototype runtime. `test/node/architecture/briefs-and-designs.test.ts` checks that their `support.js` is byte-identical to `design/support.js`, so the same library routing renders them. Pairs for the client, technician and ops apps follow the Phase 1 method, with two differences:

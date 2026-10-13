@@ -18,7 +18,7 @@
 // pairs are the console's own frame brought down to 1000; every other pair is a
 // panel beside a panel, at its own size.
 
-import { readFileSync, rmSync } from "node:fs";
+import { mkdirSync, readFileSync, rmSync } from "node:fs";
 import type { Server } from "node:http";
 import { resolve } from "node:path";
 import { chromium, type Browser, type Page, type Route } from "@playwright/test";
@@ -623,6 +623,15 @@ async function consents(browser: Browser, design: Page): Promise<void> {
   await page.close();
 }
 
+/** The kit, every shared part in its states on paper and the ink, shot whole: it has no board, so no pair. */
+async function kit(browser: Browser): Promise<void> {
+  const page = await openConsole(browser, "/_kit");
+  await page.getByRole("heading", { level: 1, name: "The kit" }).waitFor();
+  mkdirSync(OUT, { recursive: true });
+  await page.screenshot({ path: resolve(OUT, "kit.png"), fullPage: true });
+  await page.close();
+}
+
 const servers: Server[] = [
   await serveDirectory(OPS_DIR, 4316, undefined, { spa: true }),
   await serveDirectory(DESIGN_DIR, 4315),
@@ -641,6 +650,7 @@ try {
   await noShows(browser, design);
   await tasks(browser, design);
   await technicians(browser, design);
+  await kit(browser);
   console.log(`fidelity: written to ${OUT}`);
 } finally {
   await browser.close();

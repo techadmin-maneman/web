@@ -160,6 +160,7 @@
   --on-surface: var(--text);
   --on-surface-muted: var(--text-muted);
   --border-subtle: var(--paper-line);
+  --border-control: var(--paper-control);
   --status-error: var(--error-on-paper);
   --status-saved: var(--text);
   --status-note: var(--text-muted);
@@ -170,6 +171,7 @@
   --on-surface: var(--paper);
   --on-surface-muted: var(--ink-muted);
   --border-subtle: var(--ink-line);
+  --border-control: var(--ink-line-strong);
   --status-error: var(--error-on-ink);
   --status-saved: var(--paper);
   --status-note: var(--ink-muted);

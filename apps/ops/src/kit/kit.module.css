@@ -1,0 +1,53 @@
+/* The kit (./KitScreen.tsx): each part's states on paper beside the same on the ink, a section a part. */
+
+.kit {
+  max-width: var(--ops-list);
+  padding: var(--sp-24) var(--sp-20);
+}
+
+.section {
+  margin-top: var(--sp-32);
+}
+
+.sectionTitle {
+  margin: 0 0 var(--sp-12);
+}
+
+.grounds {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(var(--ops-panel), 1fr));
+  gap: var(--sp-16);
+}
+
+.paper,
+.ink {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-12);
+  padding: var(--sp-20);
+  border: var(--hairline) solid var(--border-subtle);
+}
+
+.paper {
+  background: var(--surface);
+}
+
+.ink {
+  background: var(--surface);
+  color: var(--on-surface);
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-8);
+}
+
+.field {
+  max-width: var(--measure-form);
+}
+
+.style {
+  margin: 0;
+}

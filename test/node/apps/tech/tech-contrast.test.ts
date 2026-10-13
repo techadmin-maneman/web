@@ -57,6 +57,8 @@ const EDGE_PAIRINGS: readonly EdgePairing[] = [
     where: "a field, a box of the sign-in code, a checklist box not yet ticked, a piece to pick",
   },
   { edge: "--paper", ground: "--ink-deep", where: "the label's field, a ticked box" },
+  // A role, read as the ink's: the shared code field's boxes.
+  { edge: "--border-control", ground: "--ink-deep", where: "a box of the sign-in code" },
 ];
 
 /**

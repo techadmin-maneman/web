@@ -11,6 +11,7 @@ Where to read, by what you are here to do. The repository's own `README.md` says
 | [getting-started.md](getting-started.md) | Everything running on your laptop, with stub vendors                                         |
 | [glossary.md](glossary.md)               | Which word means what, where one thing has several names                                     |
 | [front-ends.md](front-ends.md)           | The four front ends: how each is built, run, tested and deployed, and what they share        |
+| [patterns.md](patterns.md)               | How a screen is put together: the shared parts, sending, saying what happened, console pages |
 
 ## Change
 
