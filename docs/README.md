@@ -22,6 +22,7 @@ Where to read, by what you are here to do. The repository's own `README.md` says
 | [codebase-upgrade-plan.md](codebase-upgrade-plan.md)             | Where the code is hard for a newcomer, and the phased plan to fix it                      |
 | [../CONTRIBUTING.md](../CONTRIBUTING.md)                         | Shipping a change: the branch, the checks, the size, when a person must look              |
 | [migrations.md](migrations.md)                                   | Writing a migration D1 will take, and the contract steps waiting                          |
+| [api-style.md](api-style.md)                                     | How a route is named and what it answers, held by a test                                  |
 | [frontend.md](frontend.md)                                       | The public site in detail: content, prices, notices, analytics                            |
 | [fidelity-method.md](fidelity-method.md), [fidelity/](fidelity/) | How a screen is compared with its design, and the pairs                                   |
 | [prompts/](prompts/README.md)                                    | The briefs, word for word                                                                 |
