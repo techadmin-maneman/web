@@ -131,6 +131,18 @@ describe("a fit booked", () => {
     ]);
   });
 
+  it("says so where no supplier sells it, and says nothing of a client with no profile to match", async () => {
+    await tellOfStockGap(env.DB, fit("2026-10-30"), { alertOnce, now: NOW });
+    expect(told).toEqual([expect.stringContaining("none is in Gurgaon or on its way; no supplier sells it.")]);
+    const noProfile = {
+      ...fit("2026-10-30"),
+      appointmentId: "fit-2",
+      personId: "88888888-8888-4888-8888-888888888889",
+    };
+    await tellOfStockGap(env.DB, noProfile, { alertOnce, now: NOW });
+    expect(told).toHaveLength(1);
+  });
+
   it("says nothing where a supplier delivers before the visit, or a piece is in the city's stockroom", async () => {
     await supplied(3);
     await tellOfStockGap(env.DB, fit("2026-10-05"), { alertOnce, now: NOW });

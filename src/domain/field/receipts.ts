@@ -62,9 +62,7 @@ async function invoiceReceived(db: D1Database, poId: string, invoice: string): P
 /** What the database refused a receipt for (migrations/0159), as the field it names. */
 function refusedField(error: unknown): string | null {
   const message = error instanceof Error ? error.message : String(error);
-  if (message.includes("over_received")) return "lines";
-  if (message.includes("invoice_received")) return "supplier_invoice";
-  return null;
+  return message.includes("over_received") ? "lines" : null;
 }
 
 /** What a receipt is checked against: its order's lines, each with the order's number, currency and state. */
@@ -195,7 +193,7 @@ export async function receiveOrder(
   try {
     await db.batch(batch);
   } catch (error) {
-    // A second receipt that landed beside this one took what was owed, or the invoice, first.
+    // A second receipt that landed beside this one took what was owed first.
     const field = refusedField(error);
     if (field === null) throw error;
     return { ok: false, fields: [field] };

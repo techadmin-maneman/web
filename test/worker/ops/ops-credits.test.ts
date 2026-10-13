@@ -50,6 +50,20 @@ describe("a console write sent again under its key", () => {
     expect((await adjust({ visits: 2, reason: "goodwill" }, PERSON, key)).status).toBe(200);
     expect((await creditBalance(env.DB, PERSON, NOW)).visits).toBe(2);
   });
+
+  it("refuses a key too short or too long to be one the console made, and makes nothing", async () => {
+    for (const key of ["short", "k".repeat(201)]) {
+      const answer = await adjust({ visits: 2, reason: "goodwill" }, PERSON, { "Idempotency-Key": key });
+      expect(await answer.json()).toMatchObject({ error: { code: "invalid_request", fields: ["Idempotency-Key"] } });
+    }
+    expect((await creditBalance(env.DB, PERSON, NOW)).visits).toBe(0);
+  });
+
+  it("leaves a read alone, keyed or not", async () => {
+    const read = await request(ops, `/api/clients/${PERSON}`, { headers: { "Idempotency-Key": "read-1a2b3c4d" } });
+    expect(read.status).toBe(200);
+    expect((await env.DB.prepare("SELECT COUNT(*) AS n FROM idempotency").first())?.n).toBe(0);
+  });
 });
 
 describe("POST /api/clients/:id/credits", () => {

@@ -15,7 +15,7 @@ import { creditOfVisit } from "../messages/visit-message-text.ts";
 import { rupees } from "@maneman/web-kit/money";
 
 /** Money going back to the client once a ruling is written. */
-export interface NoShowRefund {
+interface NoShowRefund {
   /** The refund owed, as the ruling's batch kept it. */
   readonly id: string;
   readonly appointmentId: string;

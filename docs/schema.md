@@ -2102,7 +2102,7 @@ Indexes:
 
 Each receipt against a purchase order at the warehouse: who received it, the supplier's invoice, the rupee rate and the freight, duty and clearing (ADR 0167).
 
-Made by `0142_receipts.sql`; changed by `0143_books_bills.sql`, `0159_receipts_held_to_the_order.sql`.
+Made by `0142_receipts.sql`; changed by `0143_books_bills.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -2123,8 +2123,6 @@ Indexes:
 
 - `receipts_by_order`: on (`po_id`)
 - `receipts_to_bill`: on (`received_at`), where `books_bill_id IS NULL`
-
-Triggers: `receipts_invoice_once`.
 
 ## referral_attributions
 

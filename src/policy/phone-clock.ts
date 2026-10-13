@@ -64,7 +64,7 @@ export const isOnVisitDay = (at: Date, visitStart: Date): boolean => indiaDate(a
  * How long a phone that worked a whole visit with no signal may take to send it and still have the day it says it
  * was done on believed. Its time is still held to the bounds above; only its day is taken.
  */
-export const LATE_SEND_DAYS = 7;
+const LATE_SEND_DAYS = 7;
 
 /**
  * When a check-in or a start was done, for the day it falls on: what the phone said, where it held the write past the
