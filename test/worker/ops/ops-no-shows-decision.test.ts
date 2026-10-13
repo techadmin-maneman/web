@@ -9,8 +9,9 @@
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { App } from "../../../src/http/context.ts";
-import { refundNoShow } from "../../../src/domain/no-shows/after-a-ruling.ts";
+import { settleNoShowRefund, settleOwedNoShowRefunds } from "../../../src/domain/no-shows/after-a-ruling.ts";
 import { decideNoShow } from "../../../src/domain/no-shows/no-shows.ts";
+import { createCallBudget } from "../../../src/lib/call-budget.ts";
 import { WAIVER_GIVES_BACK } from "../../../src/policy/no-show.ts";
 import { createStubPayments } from "../../../src/providers/payments/stub.ts";
 import {
@@ -36,6 +37,25 @@ const rule = (body: unknown) =>
     headers: { Origin: "https://maneman.test", "Content-Type": "application/json" },
     body: JSON.stringify(body),
   });
+
+/** Ops waive the case, giving back the payment and the credit. */
+const waiving = () => ({
+  caseId: CASE,
+  decision: "waived" as const,
+  reason: "The lift was out",
+  actor: "ops@localhost",
+  audit: {
+    surface: "ops" as const,
+    actor: { kind: "staff" as const, id: "ops@localhost" },
+    action: "no_show.decide" as const,
+    subject: { kind: "no_show_case", id: CASE },
+    requestId: "request-1",
+    detail: { decision: "waived" },
+  },
+  now: NOW,
+  terms: COMMITTED_TERMS,
+  waiver: WAIVER_GIVES_BACK,
+});
 
 /**
  * The visit paid for ahead and partly with a credit, as no real visit is, so one waiver can show what happens to
@@ -159,12 +179,12 @@ describe("POST /api/no-shows/:id/decision", () => {
     });
   });
 
-  // Once the ruling has committed, a retry answers not found; so nothing between the commit and Razorpay may fail
-  // without ops hearing of the refund owed. A waiver gives back the credit too, which once meant
-  // a read of the ledger before the refund.
-  it("tells ops of the refund owed when the database fails once the waiver has committed", async () => {
+  // Once the ruling has committed, a retry answers not found; so the refund is kept as owed in the ruling's batch,
+  // and a request that fails after it leaves it for the cron's refund job, which asks Razorpay for it.
+  it("keeps the refund owed when the database fails once the waiver has committed, and the cron makes it", async () => {
     await paidAndCredited();
-    const deps = fakeDependencies();
+    const payments = createStubPayments();
+    const deps = fakeDependencies({ payments });
 
     await request(
       appFor("local", deps, {}, "ops"),
@@ -176,11 +196,39 @@ describe("POST /api/no-shows/:id/decision", () => {
       },
       { DB: failingAfterTheFirstBatch(env.DB), MESSAGE_QUEUE: fakeQueue() },
     );
+    expect(payments.made.refunds).toEqual([]);
+    expect(deps.alerts).toEqual([]);
 
-    expect(deps.alerts).toEqual([
-      `The refund of Rs. 2,000 for visit ${VISIT}, a no-show waived, failed (its payment could not be read). ` +
-        `Refund it by hand in Razorpay, once. http://ops.localhost:4323/clients/${PERSON}/payments`,
-    ]);
+    const sweep = { ...deps, budget: createCallBudget(40) };
+    expect(await settleOwedNoShowRefunds(env.DB, sweep, new Date(NOW.getTime() + 5 * 60_000))).toBe(0);
+    expect(await settleOwedNoShowRefunds(env.DB, sweep, new Date(NOW.getTime() + 11 * 60_000))).toBe(1);
+    expect(payments.made.refunds).toEqual([expect.objectContaining({ paymentId: "pay_visit", amount: 200000 })]);
+    expect(await settleOwedNoShowRefunds(env.DB, sweep, new Date(NOW.getTime() + 30 * 60_000))).toBe(0);
+  });
+
+  it("asks again as for a refund that may have been made, where the first ask was cut short", async () => {
+    await paidAndCredited();
+    const ruled = await decideNoShow(env.DB, waiving());
+    const refused = { ...createStubPayments(), refund: () => Promise.reject(new Error("Razorpay 400")) };
+    const told: string[] = [];
+    const alertOnce = (alert: { message: string }) => {
+      told.push(alert.message);
+      return Promise.resolve();
+    };
+    if (ruled?.refund) {
+      await settleNoShowRefund(
+        env.DB,
+        { payments: refused, alertOnce },
+        { ...ruled.refund, askedAt: NOW.toISOString() },
+        NOW,
+      );
+    }
+    expect(told).toEqual([expect.stringContaining("Razorpay did not answer the refund of Rs. 2,000")]);
+    expect(
+      await env.DB.prepare(
+        "SELECT asked_at IS NOT NULL AS asked, settled_at IS NOT NULL AS settled FROM no_show_refunds",
+      ).first(),
+    ).toEqual({ asked: 1, settled: 1 });
   });
 
   it("moves no money on a waiver that gives nothing back", async () => {
@@ -233,7 +281,12 @@ describe("POST /api/no-shows/:id/decision", () => {
     });
     expect(ruled?.refund).not.toBeNull();
     if (ruled?.refund) {
-      await refundNoShow(env.DB, { payments, alertOnce: () => Promise.resolve() }, ruled.refund);
+      await settleNoShowRefund(
+        env.DB,
+        { payments, alertOnce: () => Promise.resolve() },
+        { ...ruled.refund, askedAt: null },
+        NOW,
+      );
     }
 
     expect(payments.made.refunds).toEqual([expect.objectContaining({ paymentId: "pay_visit", amount: 200000 })]);

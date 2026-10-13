@@ -1,17 +1,23 @@
 // What follows a ruling on a no-show, or on the client's dispute of its charge, once the ruling has committed
 // (src/domain/no-shows/no-shows.ts, src/domain/no-shows/no-show-disputes.ts; docs/decisions/0096-a-no-shows-charge-and-its-dispute.md):
 // the refund, the client's message, and whether a credit given back came back. A committed ruling cannot be made
-// again, so nothing here may fail without ops being told what is owed.
+// again, so what it gives back is kept as owed in its batch (no_show_refunds, migration 0161): the request asks
+// Razorpay at once, and the cron's refund job asks again for any it did not settle.
 
 import type { PaymentsProvider } from "../../providers/payments/index.ts";
 import { paymentsTab, type AlertOnce } from "../ops/alerts.ts";
-import { askRefund, refundLeftToOps, refundReceipt, type RefundOutcome } from "../money/refunds.ts";
-import { visitPayment, type VisitPayment } from "../visits/visit-changes.ts";
+import type { CallBudget } from "../../lib/call-budget.ts";
+import { MINUTE_MS } from "../../lib/durations.ts";
+import type { Logger } from "../../log.ts";
+import { ASKS, askRefund, refundLeftToOps, refundReceipt } from "../money/refunds.ts";
+import { visitPayment } from "../visits/visit-changes.ts";
 import { creditOfVisit } from "../messages/visit-message-text.ts";
 import { rupees } from "@maneman/web-kit/money";
 
 /** Money going back to the client once a ruling is written. */
-export interface NoShowRefund {
+interface NoShowRefund {
+  /** The refund owed, as the ruling's batch kept it. */
+  readonly id: string;
   readonly appointmentId: string;
   /** Whose visit it was, for ops' alert should Razorpay refuse; null once they have been erased. */
   readonly personId: string | null;
@@ -22,7 +28,7 @@ export interface NoShowRefund {
 }
 
 /** The credit a visit was paid with, where a ruling gives it back: whether it came back is read after the refund. */
-type CreditGivenBack = Omit<NoShowRefund, "amount">;
+type CreditGivenBack = Omit<NoShowRefund, "id" | "amount">;
 
 /** What follows a ruling on a no-show or on its dispute, once the ruling has committed (afterRuling). */
 export interface Ruled {
@@ -34,17 +40,24 @@ export interface Ruled {
   readonly creditGivenBack: CreditGivenBack | null;
 }
 
+type RefundDeps = { readonly payments: PaymentsProvider; readonly alertOnce: AlertOnce };
+
 /**
  * What follows a committed ruling, in this order: the refund, the client's message, and last whether a credit given
- * back came back. The ruling cannot be made again, so nothing is read before the refund, which tells ops itself of
- * anything that stops it.
+ * back came back. A refund that fails to settle here stays owed, for the cron's refund job to ask again.
  */
 export async function afterRuling(
   db: D1Database,
-  deps: { payments: PaymentsProvider; alertOnce: AlertOnce; notify: (messageId: string) => Promise<unknown> },
+  deps: RefundDeps & { now: () => Date; log: Logger; notify: (messageId: string) => Promise<unknown> },
   ruled: Ruled,
 ): Promise<void> {
-  if (ruled.refund !== null) await refundNoShow(db, deps, ruled.refund);
+  if (ruled.refund !== null) {
+    try {
+      await settleNoShowRefund(db, deps, { ...ruled.refund, askedAt: null }, deps.now());
+    } catch (error) {
+      deps.log.error("no_show_refund_left_owed", { appointment_id: ruled.refund.appointmentId, error });
+    }
+  }
   if (ruled.messageId !== null) await deps.notify(ruled.messageId);
   if (ruled.creditGivenBack !== null) await alertIfCreditNotBack(db, deps.alertOnce, ruled.creditGivenBack);
 }
@@ -64,38 +77,101 @@ async function alertIfCreditNotBack(db: D1Database, alertOnce: AlertOnce, credit
   });
 }
 
+/** A refund a ruling owes, as kept, with when Razorpay was first asked for it. */
+type OwedNoShowRefund = NoShowRefund & { readonly askedAt: string | null };
+
 /**
- * Refunds what a ruling gives back, at most what is left of the visit's payment, under a receipt of its own. The
- * ruling has committed by now, so whatever fails here, Razorpay's refusal, its silence or the read of the payment
- * before it, is left to ops, told once with the visit and what is owed, as a cancel's is (src/domain/visits/visit-changes.ts).
+ * Refunds what a ruling gives back, at most what is left of the visit's payment, under a receipt of its own, marked as
+ * asked first, so a second ask is made as for one that may have been made. Whatever Razorpay answers, short of a
+ * refund, is left to ops, told once with the visit and what is owed, as a cancel's is; a read or write that throws
+ * leaves it owed, for the cron to ask again.
  */
-export async function refundNoShow(
+export async function settleNoShowRefund(
   db: D1Database,
-  deps: { payments: PaymentsProvider; alertOnce: AlertOnce },
-  refund: NoShowRefund,
+  deps: RefundDeps,
+  owed: OwedNoShowRefund,
+  now: Date,
 ): Promise<void> {
-  let payment: VisitPayment | null = null;
-  let amount = refund.amount;
-  let outcome: RefundOutcome["kind"] | "unread" = "unread";
-  try {
-    payment = await visitPayment(db, refund.appointmentId);
-    if (payment === null) return;
-    amount = Math.min(refund.amount, payment.paid);
-    if (amount <= 0) return;
-    const receipt = refundReceipt({ kind: "no_show", why: refund.why, appointmentId: refund.appointmentId });
-    const notes = { appointment_id: refund.appointmentId, reason: `no-show ${refund.why}` };
-    outcome = (await askRefund(deps.payments, payment.razorpayPaymentId, { amount, notes, receipt })).kind;
-  } catch {
-    // The payment could not be read, so nothing was asked of Razorpay.
+  await db.prepare("UPDATE no_show_refunds SET asked_at = ?2 WHERE id = ?1").bind(owed.id, now.toISOString()).run();
+  const payment = await visitPayment(db, owed.appointmentId);
+  const amount = payment === null ? 0 : Math.min(owed.amount, payment.paid);
+  let refundId: string | null = null;
+  if (payment !== null && amount > 0) {
+    const receipt = refundReceipt({ kind: "no_show", why: owed.why, appointmentId: owed.appointmentId });
+    const notes = { appointment_id: owed.appointmentId, reason: `no-show ${owed.why}` };
+    const asked = await askRefund(
+      deps.payments,
+      payment.razorpayPaymentId,
+      { amount, notes, receipt },
+      { askedBefore: owed.askedAt !== null },
+    );
+    if (asked.kind === "refunded") refundId = asked.refundId;
+    else await refundLeft(deps.alertOnce, owed, { outcome: asked.kind, paymentId: payment.razorpayPaymentId, amount });
   }
-  if (outcome === "refunded") return;
-  const what = `${rupees(amount)} for visit ${refund.appointmentId}, a no-show ${refund.why}`;
-  await deps.alertOnce({
-    key: `no_show_refund_failed:${refund.why}:${refund.appointmentId}`,
-    message:
-      payment === null || outcome === "unread"
-        ? `The refund of ${what}, failed (its payment could not be read). Refund it by hand in Razorpay, once.`
-        : refundLeftToOps(outcome, what, payment.razorpayPaymentId, amount),
-    link: refund.personId === null ? "/payments" : paymentsTab(refund.personId),
+  await db
+    .prepare("UPDATE no_show_refunds SET settled_at = ?2, razorpay_refund_id = ?3 WHERE id = ?1")
+    .bind(owed.id, now.toISOString(), refundId)
+    .run();
+}
+
+/** Ops told once of a refund Razorpay did not make, or would not say it made, with the visit and what is owed. */
+async function refundLeft(
+  alertOnce: AlertOnce,
+  owed: OwedNoShowRefund,
+  asked: { outcome: "refused" | "unanswered"; paymentId: string; amount: number },
+): Promise<void> {
+  const what = `${rupees(asked.amount)} for visit ${owed.appointmentId}, a no-show ${owed.why}`;
+  await alertOnce({
+    key: `no_show_refund_failed:${owed.why}:${owed.appointmentId}`,
+    message: refundLeftToOps(asked.outcome, what, asked.paymentId, asked.amount),
+    link: owed.personId === null ? "/payments" : paymentsTab(owed.personId),
   });
+}
+
+/** Well after the request that ruled has stopped asking. */
+const OWED_AFTER_MS = 10 * MINUTE_MS;
+const OWED_PER_PASS = 10;
+
+/**
+ * No-show refunds the request that ruled did not settle, ten minutes on, oldest first, each asked for again while the
+ * run's budget has the calls a refund can make. Returns how many were settled.
+ */
+export async function settleOwedNoShowRefunds(
+  db: D1Database,
+  deps: RefundDeps & { readonly budget: CallBudget },
+  now: Date,
+): Promise<number> {
+  const { results } = await db
+    .prepare(
+      `SELECT r.id, r.appointment_id, r.why, r.amount, r.asked_at, pe.id AS person_id
+       FROM no_show_refunds r INDEXED BY no_show_refunds_owed
+         JOIN appointments a ON a.id = r.appointment_id
+         LEFT JOIN people pe ON pe.id = a.person_id AND pe.erased_at IS NULL
+       WHERE r.settled_at IS NULL AND r.created_at <= ?1
+       ORDER BY r.created_at LIMIT ?2`,
+    )
+    .bind(new Date(now.getTime() - OWED_AFTER_MS).toISOString(), OWED_PER_PASS)
+    .all<{
+      id: string;
+      appointment_id: string;
+      why: NoShowRefund["why"];
+      amount: number;
+      asked_at: string | null;
+      person_id: string | null;
+    }>();
+  let settled = 0;
+  for (const row of results) {
+    if (!deps.budget.spend(ASKS)) break;
+    const owed = {
+      id: row.id,
+      appointmentId: row.appointment_id,
+      personId: row.person_id,
+      why: row.why,
+      amount: row.amount,
+      askedAt: row.asked_at,
+    };
+    await settleNoShowRefund(db, deps, owed, now);
+    settled += 1;
+  }
+  return settled;
 }

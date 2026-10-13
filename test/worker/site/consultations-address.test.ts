@@ -75,6 +75,26 @@ describe("the address the consultation is at", () => {
     });
   });
 
+  it("finds the building on the site's own search, and pins the address to the one chosen", async () => {
+    const found = await request(site(), "/api/buildings/suggestions", post({ q: "Sunrise", session: "search-1" }));
+    expect(found.status).toBe(200);
+    const { suggestions } = await found.json<{ suggestions: { place_id: string; primary: string }[] }>();
+    const sunrise = suggestions.find((each) => each.primary === "Sunrise Greens");
+    expect(sunrise?.place_id).toBe("stub-place-sunrise");
+
+    const chosen = { ...ADDRESS, building: "Sunrise Greens", line1: "Sunrise Greens", place_id: sunrise?.place_id };
+    expect((await book({ address: { ...chosen, session_token: "search-1" } })).status).toBe(201);
+    const pinned = await env.DB.prepare("SELECT building, place_id, lat, lng, geocode_source FROM addresses").first();
+    // The technician's check-in is measured against it, as for an address saved in the app.
+    expect(pinned).toEqual({
+      building: "Sunrise Greens",
+      place_id: "stub-place-sunrise",
+      lat: 28.3951,
+      lng: 77.0619,
+      geocode_source: "google_geocoding",
+    });
+  });
+
   it("is kept with the day asked for, while self-serve booking is off", async () => {
     const answer = await request(
       site({ selfServeBooking: false }),

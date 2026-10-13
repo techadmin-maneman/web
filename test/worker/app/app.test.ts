@@ -144,6 +144,15 @@ describe("access log", () => {
     expect(JSON.stringify(logs.lines())).not.toContain("tok_supersecret");
   });
 
+  it("names the build of the app that called, so a page left open on an old one is told apart", async () => {
+    await markDatabase();
+    const logs = captureLogs();
+    await request(appFor(), "/api/result/tok_1", { headers: { "X-Client-Version": "7a782035b563" } });
+    await request(appFor(), "/api/result/tok_2");
+    const access = logs.lines().filter((line) => line.event === "request");
+    expect(access.map((line) => line.client_version)).toEqual(["7a782035b563", undefined]);
+  });
+
   it("says what the request cost D1: the rows it read and wrote, and its statements", async () => {
     await markDatabase();
     const app = appFor();

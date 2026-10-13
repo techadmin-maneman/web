@@ -36,6 +36,8 @@ interface Standing<K extends InJobStep> {
   readonly queued: readonly Queued[];
   /** Queues this step's write, once however often it is tapped, and opens the next screen. */
   readonly finish: (body: EventBody<K>) => Promise<void>;
+  /** Closes the job from this step, as "Can't fit today" does at the piece, and opens the close-out. */
+  readonly closeWith: (outcome: EventBody<"outcome">) => Promise<void>;
   readonly back: () => void;
 }
 
@@ -74,9 +76,19 @@ export function useStep<K extends InJobStep>(id: string, step: K): Standing<K> {
       else go(stepPath(id, following));
     });
 
+  const closeWith = (outcome: EventBody<"outcome">) =>
+    once(async () => {
+      if (job === null) return;
+      setFinishing(true);
+      await queue("outcome", id, outcome, job.starts_at);
+      await keepClosed(id);
+      void replay();
+      redirect(`/jobs/${id}/done`);
+    });
+
   const back = () => {
     go(`/jobs/${id}`);
   };
 
-  return { loaded: leaves ? LOADING : loaded, retry, refused, queued: waiting.events, finish, back };
+  return { loaded: leaves ? LOADING : loaded, retry, refused, queued: waiting.events, finish, closeWith, back };
 }

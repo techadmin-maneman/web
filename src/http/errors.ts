@@ -106,6 +106,8 @@ export const ERROR_CODES = [
   "in_progress",
   // The no-show wait has not run out yet (src/policy/no-show.ts), or a visit ops would close by hand is still to come.
   "too_early_to_close",
+  // A visit ops would close by hand as a no-show has no check-in from its technician to stand on.
+  "no_check_in",
   // A check-in or a start before the earliest check-in (src/policy/phone-clock.ts).
   "too_early_to_arrive",
   // A visit ops would close by hand is closed or cancelled already, or the technician's phone closed it; or a
@@ -164,6 +166,8 @@ export const ERROR_CODES = [
   "order_state",
   // The second approval of an order asked by the manager who gave its first.
   "same_approver",
+  // A purchase order carrying a client's custom order, cancelled on its own rather than through the custom order.
+  "custom_order",
   // A claim on a supplier past the step asked; a returned piece settled already; one that may not be claimed.
   "claim_state",
   "return_settled",
@@ -278,6 +282,7 @@ export const ERROR_STATUS = {
   not_trained: 409,
   in_progress: 409,
   too_early_to_close: 425,
+  no_check_in: 409,
   too_early_to_arrive: 409,
   already_closed: 409,
   no_service_area: 400,
@@ -309,6 +314,7 @@ export const ERROR_STATUS = {
   transfer_settled: 409,
   order_state: 409,
   same_approver: 409,
+  custom_order: 409,
   claim_state: 409,
   return_settled: 409,
   out_of_warranty: 409,

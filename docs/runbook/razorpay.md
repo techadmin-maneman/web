@@ -53,12 +53,12 @@ By hand, in Razorpay's dashboard, under Payment Links:
 
 ## A refund that failed
 
-"The refund of Rs. _n_ for visit _id_ … failed" (`cancel_refund_failed` for a cancel, the client's or ops', `no_show_refund_failed` for a waived no-show). Nothing tries it again. In Razorpay's dashboard, find the payment the alert names, check it shows no refund of that amount, refund it once, and close the alert. The refund's webhook records it, and the client's Payments tab shows it.
+"The refund of Rs. _n_ for visit _id_ … failed" (`cancel_refund_failed` for a cancel, the client's or ops', `no_show_refund_failed` for a no-show's waiver, charge or dispute). Nothing tries it again. In Razorpay's dashboard, find the payment the alert names, check it shows no refund of that amount, refund it once, and close the alert. The refund's webhook records it, and the client's Payments tab shows it.
 
 "Booking _id_ owes back payment _id_ …" (`hold_refund_failed`): a payment made too late, or for a hold already let go, that Razorpay would not refund. "Razorpay failed refund _id_ …" (`refund_failed`): a refund Razorpay accepted and then failed; the client's app says their refund is being redone. Neither is tried again by itself, and the Tasks board lists each under "Payment to refund" until a refund of the payment goes through. Refund it once from Razorpay's dashboard; where the alert says Razorpay did not answer, check first that no refund of it shows.
 
 A payment partly refunded in Razorpay's dashboard, whose hold is then given back, has the rest refunded with it.
 
-A cancel (the client's or ops') whose refund was never asked for, or never recorded (D1 lost, or the Worker stopped, once the visit was cancelled), is no alert: the cron's `cancel_refunds` job asks for it again at its first quarter-hourly run from ten minutes on, under the cancel's receipt. If Razorpay refuses that, the alert is the "may have been made" one, since the first ask may have refunded it: refund by hand only if the payment shows no refund of that amount.
+A cancel (the client's or ops') whose refund was never asked for, or never recorded (D1 lost, or the Worker stopped, once the visit was cancelled), is no alert: the cron's `cancel_refunds` job asks for it again at its first quarter-hourly run from ten minutes on, under the cancel's receipt. A no-show ruling's refund is kept the same way, as owed in `no_show_refunds` with the ruling, and the same job asks again for any still unsettled (`no_show_refunds_settled` in the log). If Razorpay refuses that, the alert is the "may have been made" one, since the first ask may have refunded it: refund by hand only if the payment shows no refund of that amount.
 
 ---

@@ -110,12 +110,13 @@ export const RESTORE_GROUPS: readonly RestoreGroup[] = [
       "consumables_used",
       "no_show_cases",
       "no_show_disputes",
+      "no_show_refunds",
       "pieces",
       "photos",
       "photo_sets",
     ],
     leftAtT:
-      "Steps, check-ins, outcomes, pieces fitted, no-shows and disputes since are lost; a photograph's file is kept with no row",
+      "Steps, check-ins, outcomes, pieces fitted, no-shows, disputes and the refunds they owe since are lost; a photograph's file is kept with no row",
     putBackBy: "The rows since `<T>`",
   },
   {

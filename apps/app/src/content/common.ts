@@ -165,6 +165,13 @@ export const errors = {
   retry: "Try again",
 } as const;
 
+/** A new version of the app, waiting to be taken (packages/web-kit/sw-update.ts). */
+export const update = {
+  // The design draws no new version.
+  line: "A new version is ready.",
+  action: "Update",
+} as const;
+
 /** A page that failed to draw, which React would otherwise leave blank. */
 export const broken = {
   // The design draws no page that failed.

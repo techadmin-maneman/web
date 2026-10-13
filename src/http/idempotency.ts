@@ -3,7 +3,7 @@
 // before the work starts, so two simultaneous retries cannot both do the work.
 
 import { z } from "@hono/zod-openapi";
-import type { Context } from "hono";
+import type { Context, MiddlewareHandler } from "hono";
 import type { ContentfulStatusCode } from "hono/utils/http-status";
 import type { AppEnv } from "./context.ts";
 import { errorBody, refuse, type ErrorCode } from "./errors.ts";
@@ -23,7 +23,7 @@ type IdempotencyStart =
   /** First time: do the work, then finish or abandon the key. */
   | { readonly kind: "new" }
   /** Done before: send this stored response again. */
-  | { readonly kind: "replay"; readonly body: unknown }
+  | { readonly kind: "replay"; readonly body: unknown; readonly status: number }
   /** The first request with this key has not finished yet. */
   | { readonly kind: "in_progress" }
   /** The key was used before with a different request body. */
@@ -80,14 +80,14 @@ async function startIdempotent(db: D1Database, record: IdempotencyRecord, now: D
   if (existing.response_json === null) return { kind: "in_progress" };
 
   const stored = JSON.parse(existing.response_json) as { status: number; body: unknown };
-  return { kind: "replay", body: stored.body };
+  return { kind: "replay", body: stored.body, status: stored.status };
 }
 
-/** Every keyed route answers its success with a 201, which is kept beside the body. */
-async function finishIdempotent(db: D1Database, record: IdempotencyRecord, body: unknown): Promise<void> {
+/** A success's answer, kept beside its status: every public keyed route answers a 201, a console write its own. */
+async function finishIdempotent(db: D1Database, record: IdempotencyRecord, body: unknown, status = 201): Promise<void> {
   await db
     .prepare("UPDATE idempotency SET response_json = ?4 WHERE key = ?1 AND route = ?2 AND created_at = ?3")
-    .bind(record.key, record.route, record.reservedAt, JSON.stringify({ status: 201, body }))
+    .bind(record.key, record.route, record.reservedAt, JSON.stringify({ status, body }))
     .run();
 }
 
@@ -186,3 +186,44 @@ export function answerKeyed<Body, Refused extends KeyedRefusal>(
   // Narrowed from the union, the refusal loses its own statuses; it is the Refused it was.
   return c.json(errorBody(outcome.code, c.var.requestId, outcome.fields), outcome.status as Refused["status"]);
 }
+
+/**
+ * A console write named by an Idempotency-Key, made once: the console sends a write again under its key only when the
+ * first one's answer never came, so a key seen before is answered as it was, its success kept for a day. A refusal,
+ * or a throw, frees the key, as for the public forms. A write without a key just runs.
+ */
+export const keyedWrite: MiddlewareHandler<AppEnv> = async (c, next) => {
+  const key = c.req.header("Idempotency-Key");
+  if (c.req.method === "GET" || c.req.method === "HEAD" || key === undefined) {
+    await next();
+    return undefined;
+  }
+  if (key.length < 8 || key.length > 200) return refuse(c, "invalid_request", ["Idempotency-Key"]);
+  const db = c.env.DB;
+  const now = c.var.deps.now();
+  const record: IdempotencyRecord = {
+    key,
+    route: `${c.req.method} ${new URL(c.req.url).pathname}`,
+    requestHash: await sha256Hex(await c.req.raw.clone().text()),
+    reservedAt: now.toISOString(),
+  };
+  const start = await startIdempotent(db, record, now);
+  if (start.kind === "replay") return c.json(start.body, start.status as ContentfulStatusCode);
+  if (start.kind === "in_progress") return refuse(c, "idempotency_in_progress");
+  if (start.kind === "key_reused") return refuse(c, "idempotency_key_reused");
+  try {
+    await next();
+  } catch (error) {
+    await settleKey(c.var.log, record, () => abandonIdempotent(db, record));
+    throw error;
+  }
+  const { res } = c;
+  const kept = res.ok && (res.headers.get("Content-Type") ?? "").includes("application/json");
+  if (!kept) {
+    await settleKey(c.var.log, record, () => abandonIdempotent(db, record));
+    return undefined;
+  }
+  const body: unknown = await res.clone().json();
+  await settleKey(c.var.log, record, () => finishIdempotent(db, record, body, res.status));
+  return undefined;
+};

@@ -1200,6 +1200,7 @@ Request body:
             "not_trained",
             "in_progress",
             "too_early_to_close",
+            "no_check_in",
             "too_early_to_arrive",
             "already_closed",
             "no_service_area",
@@ -1231,6 +1232,7 @@ Request body:
             "transfer_settled",
             "order_state",
             "same_approver",
+            "custom_order",
             "claim_state",
             "return_settled",
             "out_of_warranty",
@@ -1387,6 +1389,11 @@ Request body:
       "type": "string",
       "maxLength": 300,
       "description": "The page's path, with no query or fragment."
+    },
+    "version": {
+      "type": "string",
+      "maxLength": 40,
+      "description": "The build the page runs, as its mm-version."
     },
     "stack": {
       "type": "string",
@@ -3989,7 +3996,14 @@ Request body:
           "type": "string",
           "minLength": 1,
           "maxLength": 64,
-          "description": "One of the card's partial_reasons, by its id; one ops have since taken off is still taken."
+          "description": "One of the card's partial_reasons, by its id; one ops have since taken off is still taken. `no_piece` with cannot_fit."
+        },
+        "cannot_fit": {
+          "type": "boolean",
+          "enum": [
+            true
+          ],
+          "description": "Can't fit today: a fit closed from its piece step with no piece of the client's spec to fit, its reason `no_piece`. It follows the step before the piece, and ops are given the refit to book."
         }
       },
       "required": [

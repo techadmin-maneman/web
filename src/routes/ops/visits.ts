@@ -10,7 +10,7 @@
 import { createRoute, z } from "@hono/zod-openapi";
 import type { Context } from "hono";
 import { BOOKING_DAYS, BOOKING_WINDOWS } from "../../config/scheduling.ts";
-import { isAFitting, VISIT_TYPES, type VisitType } from "../../config/visit-types.ts";
+import { VISIT_TYPES, type VisitType } from "../../config/visit-types.ts";
 import { freeTechnicians } from "../../domain/booking/availability.ts";
 import { confirmUnpaid } from "../../domain/booking/bookings.ts";
 import { giveBack } from "../../domain/booking/give-back.ts";
@@ -46,6 +46,7 @@ import { stripStart } from "../../policy/next-visit.ts";
 import { PRICE_TIER } from "../../policy/services.ts";
 import { windowTimesOf } from "../../policy/slot-times.ts";
 import { ServiceSchema } from "../schemas/booking.ts";
+import { fittingOf } from "../../domain/booking/occupancy.ts";
 
 /** A visit's price, as the client's app gives it; the console's own "Price" is a row of the price book. */
 const PriceSchema = z
@@ -296,7 +297,11 @@ async function windowsOffered({
   reached: ReadonlySet<string> | null;
   now: Date;
 }) {
-  const visit = { minutes: service.minutes, until: service.retired_date, fitting: isAFitting(service.kind) };
+  const visit = {
+    minutes: service.minutes,
+    until: service.retired_date,
+    fitting: fittingOf(service.kind, service.tier),
+  };
   const [free, schedule] = await Promise.all([
     freeTechnicians({ db, personId: clientId, visit, from: days.start, days: BOOKING_DAYS, now }),
     loadSlotSchedule(db),

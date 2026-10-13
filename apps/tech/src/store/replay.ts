@@ -13,6 +13,9 @@
 //     for a job given to another technician, whom and when.
 //   - A check-in or no-show the API refused as early is kept as early, so the
 //     card can say so after a reload. It stops nothing and is not unsent work.
+//   - A write the API fails at its end (a 5xx, a 429) waits longer each time,
+//     and its job with it, while the other jobs go on. After MOST_TRIES, or a
+//     day on the phone, it stops as stuck for the technician to send again.
 
 import type { Moved } from "@maneman/web-kit/api";
 import type { EventKind } from "../routes.ts";
@@ -47,6 +50,27 @@ export interface Queued {
   readonly moved?: Moved | null;
   /** On a refusal, the API's ID for it, for the technician to quote. Absent on what an older build kept. */
   readonly request_id?: string | null;
+  /** How often the API failed it at its end, and the earliest it goes again. Absent on what an older build kept. */
+  readonly attempts?: number;
+  readonly next_at?: number | null;
+}
+
+/** The tries a write the API keeps failing gets before it stops as stuck, and the longest it waits between them. */
+export const MOST_TRIES = 8;
+const LONGEST_WAIT_MS = 30 * 60_000;
+/** A write still failing a day after it was queued is stuck, however few its tries. */
+export const STUCK_AFTER_MS = 24 * 60 * 60_000;
+
+/** How long a write waits before its next try: half a minute, doubling each time, a fifth either way at random. */
+export const waitBeforeTry = (attempts: number, jitter: number): number =>
+  Math.round(Math.min(LONGEST_WAIT_MS, 30_000 * 2 ** Math.max(0, attempts - 1)) * (0.8 + 0.4 * jitter));
+
+/** The earliest any write waiting out a failure goes again; null where none is waiting. */
+export function nextTryAt(queue: readonly Queued[]): number | null {
+  const times = queue.flatMap((event) =>
+    event.state === "waiting" && typeof event.next_at === "number" ? [event.next_at] : [],
+  );
+  return times.length === 0 ? null : Math.min(...times);
 }
 
 const inOrder = (queue: readonly Queued[]): Queued[] => [...queue].sort((a, b) => a.seq - b.seq);
@@ -56,15 +80,27 @@ export function stoppedJobs(queue: readonly Queued[]): ReadonlySet<string> {
   return new Set(queue.filter(stops).map((event) => event.job_id));
 }
 
-/** Every event that may go now, oldest first, with each stopped job's events left out. */
-export function sendable(queue: readonly Queued[]): Queued[] {
-  const stopped = stoppedJobs(queue);
-  return inOrder(queue).filter((event) => event.state === "waiting" && !stopped.has(event.job_id));
+/** The jobs whose next write is waiting out a failure: nothing of theirs goes before it may. */
+function restingJobs(queue: readonly Queued[], now: number): ReadonlySet<string> {
+  return new Set(
+    queue
+      .filter((event) => event.state === "waiting" && typeof event.next_at === "number" && event.next_at > now)
+      .map((event) => event.job_id),
+  );
 }
 
-/** The next event to send, or null when the queue is empty or every job in it has stopped. */
-export function nextToSend(queue: readonly Queued[]): Queued | null {
-  return sendable(queue)[0] ?? null;
+/** Every event that may go now, oldest first, with each stopped job's events, and each resting job's, left out. */
+export function sendable(queue: readonly Queued[], now = Date.now()): Queued[] {
+  const stopped = stoppedJobs(queue);
+  const resting = restingJobs(queue, now);
+  return inOrder(queue).filter(
+    (event) => event.state === "waiting" && !stopped.has(event.job_id) && !resting.has(event.job_id),
+  );
+}
+
+/** The next event to send, or null when the queue is empty or every job in it has stopped or is resting. */
+export function nextToSend(queue: readonly Queued[], now = Date.now()): Queued | null {
+  return sendable(queue, now)[0] ?? null;
 }
 
 export interface JobAccount {

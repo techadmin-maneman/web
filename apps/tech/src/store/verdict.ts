@@ -18,6 +18,8 @@ export type Refused = Extract<Answer<unknown>, { readonly ok: false }>;
 export type Verdict =
   /** No signal, or none usable: everything still waiting stays waiting. */
   | { readonly kind: "retry_later" }
+  /** The API failed it at its end, a 5xx or a 429: this job waits a while, and the others go on. */
+  | { readonly kind: "failed_there"; readonly answer: Refused }
   | { readonly kind: "signed_out" }
   /** Before the earliest check-in, or before the no-show wait ran out. Nothing is wrong with the job. */
   | { readonly kind: "too_early"; readonly code: string }
@@ -34,6 +36,7 @@ export type Verdict =
 const STOPS_THE_JOB: readonly string[] = [SUPERSEDED, OUT_OF_ORDER, ALREADY_CLOSED];
 
 export function classify(answer: Refused): Verdict {
+  if (answer.code !== "offline" && unreachable(answer)) return { kind: "failed_there", answer };
   if (unreachable(answer)) return { kind: "retry_later" };
   if (answer.status === 401) return { kind: "signed_out" };
   if (answer.code === TOO_EARLY_TO_CLOSE || answer.code === TOO_EARLY_TO_ARRIVE) {

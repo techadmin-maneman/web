@@ -12,6 +12,7 @@ const KIT = {
   id: "ct-1",
   place_id: "kit-1",
   place: "Imran Qureshi",
+  item: null,
   count_class: "weekly",
   due_on: "2026-09-21",
   state: "open",
@@ -19,12 +20,13 @@ const KIT = {
 const ROOM = { ...KIT, id: "ct-2", place_id: "room-1", place: "Delhi stockroom", state: "sign_off" };
 const BOOK = {
   tasks: [KIT, ROOM],
+  places: [{ id: "room-1", name: "Delhi stockroom" }],
   classes: [
     { consumable_code: "solvent", name: "Solvent", count_class: "quarterly", set: false, hair_system: false },
     { consumable_code: "hs-1", name: "Essential 8×10", count_class: "weekly", set: false, hair_system: true },
   ],
 };
-const PIECE = { consumable_code: "hs-1", name: "Essential 8×10" };
+const PIECE = { consumable_code: "hs-1", name: "Essential 8×10", labelled: false, unknown_labels: [] };
 
 let page: HTMLDivElement;
 let root: Root;
@@ -74,7 +76,9 @@ beforeEach(() => {
       "/api/count-tasks": BOOK,
       "/api/count-tasks/ct-1": { task: KIT, items: [{ ...PIECE, state: "to_count" }] },
       "/api/count-tasks/ct-2": { task: ROOM, items: [{ ...PIECE, state: "sign_off" }] },
-      "/api/count-tasks/ct-2/differences": { lines: [{ ...PIECE, held: 2, counted: 1, recounted: 1 }] },
+      "/api/count-tasks/ct-2/differences": {
+        lines: [{ ...PIECE, held: 2, counted: 1, recounted: 1, missing_labels: [], unknown_labels: [] }],
+      },
     };
     const body = answer[address.pathname];
     if (body !== undefined) return Promise.resolve(Response.json(body));

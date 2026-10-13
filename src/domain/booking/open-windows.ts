@@ -7,6 +7,7 @@ import { addDays, indiaDate } from "../../lib/india-time.ts";
 import { planStartsIn, type Plan } from "../../policy/one-visit.ts";
 import { siteVisit } from "./site-visit.ts";
 import { availability } from "./availability.ts";
+import { ONE_VISIT_FIT, type Fitting } from "./occupancy.ts";
 
 /** A day the form offers, and whether booking each of its windows would be taken. */
 interface OpenDay {
@@ -29,7 +30,7 @@ async function dayBooking(db: D1Database, plan: Plan, date: string, selfServeBoo
 /** The windows someone is free in, for each length a slot is held for, keyed "minutes/date". */
 async function freeWindows(
   db: D1Database,
-  asked: { readonly bookings: readonly DayBooking[]; readonly pincode: string; readonly fitting: boolean },
+  asked: { readonly bookings: readonly DayBooking[]; readonly pincode: string; readonly fitting: Fitting | null },
   first: string,
   now: Date,
 ): Promise<Map<string, Set<BookingWindow>>> {
@@ -67,7 +68,11 @@ export async function openDays(
     dates.map(async (date) => ({ date, booking: await dayBooking(db, plan, date, selfServeBooking) })),
   );
   // The one visit fits a hair system, which only a technician trained to fit takes.
-  const asking = { bookings: days.map((day) => day.booking), pincode, fitting: plan === "one_visit" };
+  const asking = {
+    bookings: days.map((day) => day.booking),
+    pincode,
+    fitting: plan === "one_visit" ? ONE_VISIT_FIT : null,
+  };
   const free = await freeWindows(db, asking, first, now);
 
   return days.map(({ date, booking }) => {

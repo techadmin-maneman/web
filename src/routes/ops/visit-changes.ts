@@ -103,9 +103,15 @@ const cancelRoute = createRoute({
 
 const HandCloseSchema = z
   .object({
-    outcome: z.enum(["done", "partial"]),
-    started_at: z.iso.datetime().openapi({ description: "When the work began, on the visit's own day." }),
-    ended_at: z.iso.datetime().openapi({ description: "When it ended: after it began, and not later than now." }),
+    outcome: z.enum(["done", "partial", "no_show"]),
+    started_at: z.iso
+      .datetime()
+      .optional()
+      .openapi({ description: "When the work began, on the visit's own day; left out for a no-show." }),
+    ended_at: z.iso
+      .datetime()
+      .optional()
+      .openapi({ description: "When it ended: after it began, and not later than now; left out for a no-show." }),
     reason: z.string().trim().max(REASON_MAX_CHARS).openapi({
       description: "Why it is closed by hand, and, for a visit partly done, why: kept with the visit.",
     }),
@@ -116,7 +122,7 @@ const HandCloseSchema = z
 const closeRoute = createRoute({
   method: "post",
   path: "/api/visits/{id}/close",
-  summary: "Close a visit by hand, as done or partly done, for work whose technician's phone was lost",
+  summary: "Close a visit by hand, as done, partly done or a no-show, for work whose technician's phone was lost",
   request: { params: visitParams, body: { required: true, ...json(HandCloseSchema) } },
   responses: {
     200: {
@@ -135,8 +141,11 @@ const closeRoute = createRoute({
     400: errorResponse("invalid_request: no reason, or times that do not fit the visit's day or end after now"),
     403: errorResponse("access_required"),
     404: errorResponse("not_found: no such visit in the caller's cities"),
-    409: errorResponse("already_closed: the visit is closed or cancelled, or the technician's phone closed it"),
-    425: errorResponse("too_early_to_close: the visit's time has not come"),
+    409: errorResponse(
+      "already_closed: the visit is closed or cancelled, or the technician's phone closed it; " +
+        "no_check_in: a no-show stands on the technician's check-in, and there is none",
+    ),
+    425: errorResponse("too_early_to_close: the visit's time, or a no-show's wait, has not come"),
   },
 });
 
@@ -289,10 +298,11 @@ async function closeForTechnician(c: Context<AppEnv>, visitId: string, asked: z.
   const close = {
     appointmentId: visitId,
     outcome: asked.outcome,
-    startedAt: asked.started_at,
-    endedAt: asked.ended_at,
+    startedAt: asked.started_at ?? null,
+    endedAt: asked.ended_at ?? null,
     byHand: { by: actorOf(c).id, reason: asked.reason },
     audit: visitAudit(c, "visit.close", visitId, { outcome: asked.outcome }),
+    waits: (await opsInputs(c)).noShowWaitMin,
   };
   const linkDeps = { ...deps, log, messagingSettings: c.var.config.settings.messaging };
   const closed = await closeByHand(c.env.DB, linkDeps, close, deps.now());

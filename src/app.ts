@@ -114,6 +114,7 @@ import { registerOpsScorecard } from "./routes/ops/purchasing.scorecard.ts";
 import { registerOpsReceipts } from "./routes/ops/purchasing.receipts.ts";
 import { registerOpsWaitlist } from "./routes/ops/waitlist.ts";
 import { registerConsultations } from "./routes/public/consultations.ts";
+import { registerBuildingSuggestions } from "./routes/public/building-suggestions.ts";
 import { registerLead } from "./routes/public/lead.ts";
 import { registerNumberCodes } from "./routes/public/number-codes.ts";
 import { registerReferralLanding } from "./routes/public/referral-landing.ts";
@@ -140,6 +141,7 @@ import { registerTryonClaim } from "./routes/public/tryon-claim.ts";
 import { registerTryonGenerate } from "./routes/public/tryon-generate.ts";
 import { registerTryonResult } from "./routes/public/tryon-result.ts";
 import { registerTryonUpload } from "./routes/public/tryon-upload.ts";
+import { keyedWrite } from "./http/idempotency.ts";
 
 /** Routes that report on the database themselves instead of being blocked by it. */
 const IDENTITY_EXEMPT_ROUTES = new Set(["/api/health"]);
@@ -156,6 +158,7 @@ const SURFACE_ROUTES: Readonly<Record<Surface, readonly ((app: App) => void)[]>>
     // A WhatsApp code that proves a number before /book's one visit or /try's gate acts on it.
     registerNumberCodes,
     registerConsultations,
+    registerBuildingSuggestions,
     registerLead,
     registerReferralLanding,
     // What a referral earns, for the invite's page and /book (docs/decisions/0107-referral-rewards-in-the-console.md).
@@ -360,7 +363,7 @@ export function createApp(
   app.use("/api/*", requireOwnDatabase);
   // The ops console is staff only: every call needs a valid Access token, and is audited (ADR 0031); then the Staff
   // list decides what the caller may do.
-  if (surface === "ops") app.use("/api/*", requireAccess, auditCall, requireStaffAccess);
+  if (surface === "ops") app.use("/api/*", requireAccess, auditCall, requireStaffAccess, keyedWrite);
   // The public site's writes are guarded by Turnstile; the other surfaces carry session cookies.
   if (surface !== "public") app.use("/api/*", requireSameOrigin);
 
@@ -446,6 +449,8 @@ function requestContext({
       ...usageFields(meter.usage()),
       d1_trips: waits.trips,
       d1_wait_ms: waits.ms,
+      // The build of the app that called, so a page left open on an old one is told apart (packages/web-kit/build.ts).
+      client_version: c.req.header("X-Client-Version")?.slice(0, 40),
     });
   });
 }

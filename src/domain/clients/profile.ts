@@ -218,15 +218,15 @@ export async function saveAddress(
 }
 
 /**
- * A person's first address, with no pin, for a batch it must stand or fall with: a booking from the site writes
- * it with the slot. It is written only while the person has no address, and never replaces one: the write
+ * A person's first address, pinned where a building was chosen, for a batch it must stand or fall with: a booking
+ * from the site writes it with the slot. It is written only while the person has no address, and never replaces one: the write
  * settles it, so two bookings at once cannot both write one (src/policy/site-booking.ts).
  */
 export function firstAddressStatement(
   db: D1Database,
   personId: string,
   address: Address,
-  now: Date,
+  { now, pin }: { readonly now: Date; readonly pin: AddressPin | null },
 ): D1PreparedStatement {
   return db
     .prepare(
@@ -234,7 +234,7 @@ export function firstAddressStatement(
        SELECT ${ADDRESS_VALUES}
        WHERE NOT EXISTS (SELECT 1 FROM addresses WHERE person_id = ?2 AND replaced_at IS NULL)`,
     )
-    .bind(...addressValues({ personId, address, pin: null, at: now.toISOString(), givenTo: null }));
+    .bind(...addressValues({ personId, address, pin, at: now.toISOString(), givenTo: null }));
 }
 
 export interface ConsentState {

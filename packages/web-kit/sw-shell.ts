@@ -3,6 +3,9 @@
 // it. Each worker answers its one kept API answer itself. Bundled into each sw.js at build time: it imports nothing, so
 // nothing is split into a chunk a classic service worker could not load.
 
+/** What a page posts to a new build's waiting worker to have it take over now (packages/web-kit/sw-update.ts). */
+export const TAKE_OVER = "mm-take-over";
+
 /** Marks an answer served from a kept copy, so the app knows it is working offline (each app's api.ts reads it). */
 const SERVED_FROM = "Mm-Served-From";
 
@@ -16,9 +19,12 @@ export function marked(kept: Response): Response {
 /**
  * Installs the build's `files` as the shell named `prefix` and `version`, drops older shells once it is active, and
  * answers each request as `answer` says: a page and the app's own files from the shell first, without waiting on the
- * network, and the worker's kept API answer by `keptAnswer`. A new build still arrives: the browser checks for a new
- * sw.js each time the app opens, the new worker keeps its own shell and drops this one, and the next open is the new
- * app. A page is always the app itself, as the Worker answers every path with it.
+ * network, and the worker's kept API answer by `keptAnswer`. A page is always the app itself, as the Worker answers
+ * every path with it.
+ *
+ * A new build's worker keeps its shell and then waits, so a page still open on the old build goes on loading the old
+ * build's files from the old shell. It takes over when a page tells it to, which reloads that page on the new build,
+ * or once no page of the old build is left open; only then is the old shell dropped.
  */
 export function serveTheShell(
   worker: ServiceWorkerGlobalScope,
@@ -33,9 +39,12 @@ export function serveTheShell(
       (async () => {
         const cache = await caches.open(name);
         await cache.addAll(shell.files);
-        await worker.skipWaiting();
       })(),
     );
+  });
+
+  worker.addEventListener("message", (event) => {
+    if (event.data === TAKE_OVER) event.waitUntil(worker.skipWaiting());
   });
 
   worker.addEventListener("activate", (event) => {

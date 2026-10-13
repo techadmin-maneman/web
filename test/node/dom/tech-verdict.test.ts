@@ -15,9 +15,13 @@ const refused = (status: number, code: Refused["code"], over: Partial<Refused> =
 });
 
 describe("what a refusal means for the round", () => {
-  it("waits for signal on none, on a busy API and on a fault of ours", () => {
-    for (const answer of [refused(0, "offline"), refused(429, "rate_limited"), refused(503, "unavailable")]) {
-      expect(classify(answer)).toEqual({ kind: "retry_later" });
+  it("waits for signal on none", () => {
+    expect(classify(refused(0, "offline"))).toEqual({ kind: "retry_later" });
+  });
+
+  it("holds back only its own job on a busy API or a fault of ours, while the others go on", () => {
+    for (const answer of [refused(429, "rate_limited"), refused(503, "unavailable"), refused(500, "internal_error")]) {
+      expect(classify(answer)).toEqual({ kind: "failed_there", answer });
     }
   });
 

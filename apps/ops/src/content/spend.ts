@@ -1,6 +1,6 @@
 // The Spend page's words (docs/decisions/0150-spend.md). No design draws it; every word here is ours.
 
-import { FAILED, NOT_PERMITTED, OFFLINE } from "./common.ts";
+import { FAILED, NOT_PERMITTED, OFFLINE, UNCONFIRMED } from "./common.ts";
 
 export const spend = {
   title: "Offline spend",
@@ -36,6 +36,7 @@ export const spend = {
     not_found: "Already taken off. Reload.",
     not_permitted: NOT_PERMITTED,
     offline: OFFLINE,
+    unconfirmed: UNCONFIRMED,
     unknown: FAILED,
   },
 };

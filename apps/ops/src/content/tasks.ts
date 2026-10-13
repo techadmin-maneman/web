@@ -57,6 +57,8 @@ export const tasks = {
     untold_move: "Call about a move",
     // Not drawn: a move to another day the client has not answered (docs/decisions/0115-a-move-to-another-day-waits-for-the-client.md).
     move_unanswered: "Move not answered",
+    visit_left_open: "Visit left open",
+    unassigned_visit: "No technician",
     // Not drawn: a chat past its reply-by time (docs/decisions/0132-the-reply-clock.md).
     unanswered_chat: "Unanswered chat",
     // Not drawn: a matter Care sent to the city (docs/decisions/0135-city-matters.md).
@@ -171,6 +173,10 @@ export const tasks = {
      * "9 weeks since the last visit · due Sat 19 Sep", as the Tasks design writes "9 weeks since service": the day the next
      * service fell due, from the cadence ops set. The task goes when the client books.
      */
+    /** "Service visit · Tue 22 Sep, 9:00 am · no technician": send someone from the board. */
+    unassigned_visit: (visit: string, when: string) => `${visit} · ${when} · no technician`,
+    /** "Tue 22 Sep · nobody attended", or "· not closed" for one begun: give the client a new time, or close it. */
+    visit_left_open: (when: string, begun: boolean) => `${when} · ${begun ? "not closed" : "nobody attended"}`,
     /** "hs_essential_8x10_1b_g20_d100 · none in their city", or the profile that matches no stock code yet. */
     stock_at_risk: (code: string) =>
       code === "" ? "No hair system matched to their profile" : `${code} · none in their city`,
@@ -189,6 +195,8 @@ export const tasks = {
     partial_visit: (reason: string, date: string) => `${reason} · ${date}`,
     /** A visit closed partial with no reason from the technician. */
     noReason: "No reason given",
+    // "Can't fit today" in the technician app: no piece of the client's spec to fit.
+    noPiece: "No piece to fit",
     no_show_decision: (technician: string) => `${technician} attended`,
     /** "Disputes the charge that kept Rs. 2,000", or the free service visit it spent. */
     no_show_dispute: (took: string) => `Disputes a charge: ${took}`,

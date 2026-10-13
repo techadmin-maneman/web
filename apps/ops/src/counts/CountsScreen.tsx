@@ -12,7 +12,8 @@ import { counts as copy } from "../content/counts.ts";
 import { useAccess } from "../lib/access.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import { CountClasses, type Book } from "./CountClasses.tsx";
-import { CountTaskPanel } from "./CountTask.tsx";
+import { CountTaskPanel, whatOf } from "./CountTask.tsx";
+import { StartCount } from "./StartCount.tsx";
 
 const loadTasks = () => client.get("/api/count-tasks");
 
@@ -35,14 +36,14 @@ function Tasks({ book, onOpen }: { book: Book; onOpen: (id: string) => void }) {
             <th scope="row" className={form.rowHead}>
               {task.place}
             </th>
-            <td>{copy.classes[task.count_class] ?? task.count_class}</td>
+            <td>{whatOf(task)}</td>
             <td>{task.due_on}</td>
             <td>{copy.states[task.state] ?? task.state}</td>
             <td>
               <Button
                 variant="outline"
                 size="small"
-                aria-label={`${copy.open} ${copy.heading(task.place, copy.classes[task.count_class] ?? task.count_class)}`}
+                aria-label={`${copy.open} ${copy.heading(task.place, whatOf(task))}`}
                 onClick={() => {
                   onOpen(task.id);
                 }}
@@ -82,6 +83,15 @@ export function CountsScreen() {
             </div>
             <Tasks book={current} onOpen={setOpen} />
           </section>
+          {access.mayCall("POST /api/count-tasks") && (
+            <StartCount
+              book={current}
+              onStarted={(id) => {
+                setOpen(id);
+                reload();
+              }}
+            />
+          )}
           {open !== null && <CountTaskPanel key={open} id={open} onChanged={reload} />}
           {access.mayCall("POST /api/consumables/{code}/count-class") && (
             <CountClasses book={current} onBook={setBook} />

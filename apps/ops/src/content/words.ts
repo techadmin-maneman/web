@@ -1,7 +1,7 @@
 // The Words page's words (Growth; docs/decisions/0126-the-words-page.md). The page imports them itself, so they stay
 // out of the console's first load.
 
-import { FAILED, NOT_PERMITTED, OFFLINE } from "./common.ts";
+import { FAILED, NOT_PERMITTED, OFFLINE, UNCONFIRMED } from "./common.ts";
 
 export const words = {
   title: "Words",
@@ -69,6 +69,7 @@ export const words = {
     not_found: "Not found. Reload.",
     not_permitted: NOT_PERMITTED,
     offline: OFFLINE,
+    unconfirmed: UNCONFIRMED,
     unknown: FAILED,
   },
 };

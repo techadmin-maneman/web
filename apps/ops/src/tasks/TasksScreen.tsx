@@ -59,6 +59,9 @@ import { TaskActions } from "./TaskActions.tsx";
 import { untoldMoveOf } from "./untold-move.ts";
 import styles from "./tasks.module.css";
 
+/** The reason a fit closed with "Can't fit today" (NO_PIECE in src/policy/in-job-steps.ts). */
+const NO_PIECE = "no_piece";
+
 type Group = TaskGroup["group"];
 
 const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
@@ -74,6 +77,17 @@ const fitWindow = (window: string | undefined): string | null =>
 const weeksBetween = (from: string, to: Date): number => Math.floor((to.getTime() - Date.parse(from)) / WEEK_MS);
 
 /** The second line: the one fact the group turns on. */
+
+/** A visit with no technician, or one left open past its day: its kind or state, then when it starts. */
+function visitNobodyHas(group: "unassigned_visit" | "visit_left_open", task: Task): string {
+  const copy = tasks.subs;
+  const [first = "", start = ""] = task.detail?.split(" ") ?? [];
+  if (start === "") return tasks.unknown;
+  const day = shortDate(indiaDate(start));
+  if (group === "visit_left_open") return copy.visit_left_open(day, first === "in_progress");
+  return copy.unassigned_visit(dispatch.typeNames[first] ?? first, `${day}, ${indiaClock(start)}`);
+}
+
 function subOf(group: Group, task: Task, now: Date): string {
   const copy = tasks.subs;
   if (group === "untold_move") return untoldMoveOf(task.detail);
@@ -121,6 +135,7 @@ function subOf(group: Group, task: Task, now: Date): string {
     if (consulted === "") return tasks.unknown;
     return copy.first_fit_to_book(shortDate(indiaDate(consulted)), fitWindow(fitIn));
   }
+  if (group === "unassigned_visit" || group === "visit_left_open") return visitNobodyHas(group, task);
   if (group === "stock_at_risk") return copy.stock_at_risk(task.detail ?? "");
   if (group === "at_risk_client") {
     // The last visit's start, and the day its next service fell due.
@@ -133,6 +148,9 @@ function subOf(group: Group, task: Task, now: Date): string {
     const [piece = "", due = ""] = task.detail?.split(" ") ?? [];
     if (due === "") return tasks.unknown;
     return copy.replacement_order(piece, fullDate(indiaDate(task.due)), fullDate(due));
+  }
+  if (group === "partial_visit" && task.detail?.endsWith(` ${NO_PIECE}`) === true) {
+    return copy.partial_visit(copy.noPiece, shortDate(indiaDate(task.since)));
   }
   if (group === "partial_visit") {
     // The visit's kind, then the technician's reason in the job sheet's words; and the day they closed the visit.

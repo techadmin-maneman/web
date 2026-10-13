@@ -24,7 +24,7 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 | Bookings and moves | `appointments`, `slot_holds`, `slot_claims`, `dispatch_moves`, `move_proposals`, `visit_changes`, `consultation_requests`, `first_fit_requests` | A visit booked, moved or cancelled since is lost, and its time can be booked again. Where FSM still holds visits, the cron books them there a second time | The rows since `<T>`, before the switch is turned off |
 | Messages | `outbound_messages` | The sweeper sends again what was sent since | The rows since `<T>`, before the switch is turned off |
 | The Care inbox | `conversations`, `chat_messages`, `care_owners`, `care_weekly_off`, `care_leave`, `care_names`, `city_matters`, `quick_replies`, `remedies`, `technician_updates` | A message written since, the client's or ours, is gone from its thread | The rows since `<T>`; WhatsApp's own copy shows what was said |
-| Technicians' steps, pieces and photographs | `job_events`, `checkins`, `visits`, `consumables_used`, `no_show_cases`, `no_show_disputes`, `pieces`, `photos`, `photo_sets` | Steps, check-ins, outcomes, pieces fitted, no-shows and disputes since are lost; a photograph's file is kept with no row | The rows since `<T>` |
+| Technicians' steps, pieces and photographs | `job_events`, `checkins`, `visits`, `consumables_used`, `no_show_cases`, `no_show_disputes`, `no_show_refunds`, `pieces`, `photos`, `photo_sets` | Steps, check-ins, outcomes, pieces fitted, no-shows, disputes and the refunds they owe since are lost; a photograph's file is kept with no row | The rows since `<T>` |
 | Hair profiles | `hair_profiles` | A profile recorded since is lost, and one an erasure blanked since is whole again | Adding the rows since `<T>`: they are only ever added. Erasing again blanks the rest |
 | Purchase orders | `purchase_orders`, `po_lines`, `receipts`, `receipt_lines`, `supplier_claims`, `custom_orders` | An order drafted since is gone, one approved, sent, received or cancelled since goes back to where it stood, a receipt since is lost with the stock it brought, and a claim or custom order since is gone or back at its earlier step | Adding the rows since `<T>`, and each order's, claim's and custom order's state from the audit log and Razorpay |
 | Stock | `stock_movements`, `stock_places`, `stock_lots`, `stock_lot_moves`, `stock_transfers`, `stock_units`, `stock_unit_events`, `piece_returns` | A delivery, transfer, count or loss recorded since, or a job's use, is lost, so what each place holds is wrong; a hub or stockroom added or changed since goes back, and each piece is where it was | Adding the rows since `<T>`, and setting each unit where its latest line of history puts it |
@@ -99,6 +99,7 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 - [move_proposals](#move_proposals): A move to another day ops asked a client to confirm: where the visit would go, until when, and whether it was accepted, taken back or made moot (ADR 0115).
 - [no_show_cases](#no_show_cases): The evidence a no-show is ruled on, the ruling, and what a charge cost the client (ADR 0065, ADR 0072, ADR 0096).
 - [no_show_disputes](#no_show_disputes): A client's dispute of a no-show's charge, one a charge, and ops' ruling on it, refunded or upheld, with their reason (ADR 0096).
+- [no_show_refunds](#no_show_refunds): What a no-show's ruling gives back of the visit's payment, kept as owed with the ruling until it is refunded or left to ops (ADR 0096).
 - [number_change_requests](#number_change_requests): A client's change of mobile number: the codes proven on both numbers, and what ops decided (ADR 0042, ADR 0078).
 - [number_codes](#number_codes): Each WhatsApp code sent to prove a number typed into the site, with the number and the code only as hashes (ADR 0081, ADR 0104).
 - [ops_settings](#ops_settings): The business inputs ops set in the console, a row each; a row that is not there means the committed default (ADR 0061).
@@ -243,7 +244,7 @@ Indexes:
 
 Each visit, mirrored from FSM or booked without it: when, with whom, of what type and in what state, and what we have learnt of each since, such as the window asked for and its invoice. `fsm_id` is FSM's ID for a visit FSM holds, otherwise the row's own (ADR 0032, ADR 0110).
 
-Made by `0011_fsm_mirror.sql`; changed by `0012_fsm_reconciliation.sql`, `0029_invoice_checks.sql`, `0030_invoice_issued.sql`, `0034_leave_and_asked_window.sql`, `0037_cron_indexes.sql`, `0041_vendor_correctness.sql`, `0044_hand_offs_and_messages.sql`, `0048_done_visits.sql`, `0050_services.sql`, `0053_balances_and_last_visits.sql`, `0056_task_owners.sql`, `0059_no_show_charges_and_disputes.sql`, `0060_flat_task_reads.sql`, `0061_one_visit.sql`, `0063_discount_codes.sql`, `0066_client_note_in_fsm.sql`, `0070_field_record_ours.sql`, `0076_books_without_fsm.sql`, `0090_board_version.sql`, `0098_checkin_waivers.sql`, `0099_retention.sql`, `0104_fsm_columns_expand.sql`.
+Made by `0011_fsm_mirror.sql`; changed by `0012_fsm_reconciliation.sql`, `0029_invoice_checks.sql`, `0030_invoice_issued.sql`, `0034_leave_and_asked_window.sql`, `0037_cron_indexes.sql`, `0041_vendor_correctness.sql`, `0044_hand_offs_and_messages.sql`, `0048_done_visits.sql`, `0050_services.sql`, `0053_balances_and_last_visits.sql`, `0056_task_owners.sql`, `0059_no_show_charges_and_disputes.sql`, `0060_flat_task_reads.sql`, `0061_one_visit.sql`, `0063_discount_codes.sql`, `0066_client_note_in_fsm.sql`, `0070_field_record_ours.sql`, `0076_books_without_fsm.sql`, `0090_board_version.sql`, `0098_checkin_waivers.sql`, `0099_retention.sql`, `0104_fsm_columns_expand.sql`, `0158_visits_left_open.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -292,6 +293,7 @@ Indexes:
 - `appointments_done_visits`: on (`window_start`), where `status = 'completed' AND type IN ('first_fit', 'service', 'replacement') AND deleted_at IS NULL`
 - `appointments_held_drafts`: on (`window_start`), where `status = 'completed' AND invoice_issued_at IS NULL AND fsm_invoice_id IS NOT NULL AND deleted_at IS NULL`
 - `appointments_live_by_person`: on (`person_id`), where `status IN ('scheduled', 'dispatched', 'in_progress') AND deleted_at IS NULL`
+- `appointments_live_by_start`: on (`window_start`), where `status IN ('scheduled', 'dispatched', 'in_progress') AND deleted_at IS NULL`
 - `appointments_to_bill`: on (`window_start`), where `status = 'completed' AND invoice_issued_at IS NULL AND deleted_at IS NULL AND type IN ('first_fit', 'service', 'replacement') AND one_visit IS NOT 'declined'`
 - `appointments_to_invoice`: on (`window_start`), where `status = 'completed' AND invoice_issued_at IS NULL AND fsm_work_order_id IS NOT NULL AND deleted_at IS NULL`
 - A `UNIQUE` constraint: unique on (`fsm_id`)
@@ -699,7 +701,7 @@ Indexes:
 
 Each item a count task counted: what the ledger held, which the counter never saw, the count, any recount, and whether the ledger took it (ADR 0185).
 
-Made by `0154_cycle_counts.sql`.
+Made by `0154_cycle_counts.sql`; changed by `0162_counts_by_label.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -709,12 +711,15 @@ Made by `0154_cycle_counts.sql`.
 | `counted` | INTEGER | no |  |  |
 | `recounted` | INTEGER | yes |  |  |
 | `state` | TEXT | no |  |  |
+| `labels` | TEXT | yes |  |  |
+| `missing_labels` | TEXT | yes |  |  |
+| `unknown_labels` | TEXT | yes |  |  |
 
 ## count_tasks
 
 Each cycle count of one class of items at one place: raised once its period comes round, counted blind, counted again where it differs, signed off where that stands (ADR 0185).
 
-Made by `0154_cycle_counts.sql`.
+Made by `0154_cycle_counts.sql`; changed by `0162_counts_by_label.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -732,6 +737,8 @@ Made by `0154_cycle_counts.sql`.
 | `signed_off_at` | TEXT | yes |  |  |
 | `sign_off_note` | TEXT | yes |  |  |
 | `done_at` | TEXT | yes |  |  |
+| `consumable_code` | TEXT | yes |  |  |
+| `started_by` | TEXT | yes |  |  |
 
 Indexes:
 
@@ -829,7 +836,7 @@ Made by `0068_cron_runs.sql`.
 
 Each hair system made for one client to their exact spec: the spec, supplier and price, its payment link and payment, and the order it was bought on (ADR 0174).
 
-Made by `0147_custom_orders.sql`; changed by `0149_custom_refunds.sql`.
+Made by `0147_custom_orders.sql`; changed by `0149_custom_refunds.sql`, `0160_custom_order_money.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -862,9 +869,12 @@ Made by `0147_custom_orders.sql`; changed by `0149_custom_refunds.sql`.
 | `refund_reason` | TEXT | yes |  |  |
 | `razorpay_refund_id` | TEXT | yes |  |  |
 | `refunded_at` | TEXT | yes |  |  |
+| `refund_asked_at` | TEXT | yes |  |  |
+| `payment_checked_at` | TEXT | yes |  |  |
 
 Indexes:
 
+- `custom_orders_awaiting_payment`: on (`link_sent_at`), where `state = 'awaiting_payment' AND razorpay_link_id IS NOT NULL`
 - `custom_orders_by_person`: on (`person_id`)
 - `custom_orders_open`: on (`number`), where `state <> 'cancelled'`
 - A `UNIQUE` constraint: unique on (`number`)
@@ -1445,6 +1455,28 @@ Indexes:
 - `no_show_disputes_open`: on (`created_at`), where `ruling IS NULL`
 - A `UNIQUE` constraint: unique on (`case_id`)
 
+## no_show_refunds
+
+What a no-show's ruling gives back of the visit's payment, kept as owed with the ruling until it is refunded or left to ops (ADR 0096).
+
+Made by `0161_no_show_refunds_owed.sql`.
+
+| Column | Type | May be empty | Default | Key |
+| --- | --- | --- | --- | --- |
+| `id` | TEXT | no |  | primary key |
+| `appointment_id` | TEXT | no |  | → `appointments.id` |
+| `why` | TEXT | no |  |  |
+| `amount` | INTEGER | no |  |  |
+| `created_at` | TEXT | no |  |  |
+| `asked_at` | TEXT | yes |  |  |
+| `settled_at` | TEXT | yes |  |  |
+| `razorpay_refund_id` | TEXT | yes |  |  |
+
+Indexes:
+
+- `no_show_refunds_owed`: on (`created_at`), where `settled_at IS NULL`
+- A `UNIQUE` constraint: unique on (`appointment_id`, `why`)
+
 ## number_change_requests
 
 A client's change of mobile number: the codes proven on both numbers, and what ops decided (ADR 0042, ADR 0078).
@@ -1911,7 +1943,7 @@ Indexes:
 
 Each line of a purchase order: the stock code, how many, the price it was ordered at, and how many have arrived (ADR 0166).
 
-Made by `0141_purchase_orders.sql`; changed by `0147_custom_orders.sql`.
+Made by `0141_purchase_orders.sql`; changed by `0147_custom_orders.sql`, `0159_receipts_held_to_the_order.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -1926,6 +1958,8 @@ Made by `0141_purchase_orders.sql`; changed by `0147_custom_orders.sql`.
 Indexes:
 
 - `po_lines_by_order`: on (`po_id`)
+
+Triggers: `po_lines_not_over_received`.
 
 ## price_book
 

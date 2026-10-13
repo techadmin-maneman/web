@@ -275,6 +275,11 @@
   cursor: pointer;
 }
 
+.leftOpen {
+  margin: var(--sp-24) var(--sp-20) var(--sp-8);
+  color: var(--ink-muted);
+}
+
 .tomorrowIcon {
   color: var(--ink-muted);
 }

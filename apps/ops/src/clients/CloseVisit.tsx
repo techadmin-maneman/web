@@ -17,7 +17,7 @@ const copy = clients.visits.handClose;
 
 type Outcome = HandClose["outcome"];
 
-const OUTCOMES: readonly Outcome[] = ["done", "partial"];
+const OUTCOMES: readonly Outcome[] = ["done", "partial", "no_show"];
 
 /** "09:20" on an India date, as the instant the API takes. */
 const instantOf = (date: string, time: string): string => new Date(`${date}T${time}:00+05:30`).toISOString();
@@ -55,15 +55,16 @@ function Form({ visitId, date, onClosed }: { visitId: string; date: string; onCl
   const [reason, setReason] = useState("");
   const [failed, setFailed] = useState<string | null>(null);
   const [busy, once] = useOneAtATime();
-  const ready = started !== "" && ended !== "" && reason.trim() !== "";
+  // A no-show's times are the technician's check-in and its wait.
+  const timed = outcome !== "no_show";
+  const ready = (!timed || (started !== "" && ended !== "")) && reason.trim() !== "";
 
   const close = () =>
     once(async () => {
       setFailed(null);
       const answer = await api.closeVisit(visitId, {
         outcome,
-        started_at: instantOf(date, started),
-        ended_at: instantOf(date, ended),
+        ...(timed ? { started_at: instantOf(date, started), ended_at: instantOf(date, ended) } : {}),
         reason: reason.trim(),
       });
       if (answer.ok) onClosed(outcome);
@@ -78,7 +79,8 @@ function Form({ visitId, date, onClosed }: { visitId: string; date: string; onCl
       }}
     >
       <OutcomeChoice outcome={outcome} onChoose={setOutcome} />
-      <div className={styles.times}>
+      {!timed && <p className={styles.note}>{copy.noShowNote}</p>}
+      <div className={styles.times} hidden={!timed}>
         <Field className={styles.field} label={copy.started}>
           {(control) => (
             <TextInput

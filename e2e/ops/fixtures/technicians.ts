@@ -22,6 +22,8 @@ const technician = (
   city,
   mobile: `+9198100000${String(n).padStart(2, "0")}`,
   fits_trained: true,
+  // Imran's two visits to come, which switching him off leaves with nobody.
+  visits_to_come: n === 1 ? 2 : 0,
   sign_in_stopped_at: null,
   devices,
   leave,
@@ -78,6 +80,7 @@ export const RAVI = {
   city: "Gurgaon",
   mobile: "+919810000004",
   fits_trained: true,
+  visits_to_come: 0,
 } satisfies Roster["switched_off"][number];
 
 export const TECHNICIAN_ADDED = { id: "88000000-0000-4000-8000-000000000005" } satisfies OpsReply<

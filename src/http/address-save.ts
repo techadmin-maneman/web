@@ -65,7 +65,7 @@ type Suggested =
 export async function suggestBuildings(
   c: Context<AppEnv>,
   asking: {
-    readonly limitScope: "address_suggest" | "ops_address_suggest";
+    readonly limitScope: "address_suggest" | "ops_address_suggest" | "site_address_suggest";
     readonly asker: string;
     readonly q: string;
     readonly session: string;
@@ -97,6 +97,25 @@ const sessionOrNew = (token: string | null | undefined): string =>
   token === null || token === undefined || token === "" ? crypto.randomUUID() : token;
 
 /**
+ * The building's coordinate, geocoded once from its Place ID within the day's ceiling; none for an address typed, or
+ * one Google could not place, which then saves without a pin.
+ */
+export async function pinFor(
+  c: Context<AppEnv>,
+  placeId: string | null,
+  sessionToken: string | null | undefined,
+): Promise<AddressPin | null> {
+  if (placeId === null || !(await withinGeocodeCeiling(c, c.var.deps.now()))) return null;
+  const resolved = await c.var.deps.geocode.resolve(placeId, sessionOrNew(sessionToken));
+  if (!resolved.ok) {
+    await lookupFailed(c, "address_resolve_failed", resolved);
+    return null;
+  }
+  await c.var.deps.resolveAlert(GOOGLE_REFUSED);
+  return { lat: resolved.place.lat, lng: resolved.place.lng, source: "google_geocoding" };
+}
+
+/**
  * Saves the address as the client's current one, and sends it on to their Books
  * customer and the CRM. A chosen building is geocoded here, once, and its coordinate kept.
  * A typed address has no Place ID and saves no pin: the geofence then measures
@@ -114,17 +133,7 @@ export async function saveClientAddress(
 ): Promise<void> {
   const { personId, address, sessionToken, givenToOps } = saving;
   const now = c.var.deps.now();
-  let pin: AddressPin | null = null;
-  if (address.placeId !== null && (await withinGeocodeCeiling(c, now))) {
-    const resolved = await c.var.deps.geocode.resolve(address.placeId, sessionOrNew(sessionToken));
-    if (resolved.ok) {
-      pin = { lat: resolved.place.lat, lng: resolved.place.lng, source: "google_geocoding" };
-      await c.var.deps.resolveAlert(GOOGLE_REFUSED);
-    } else {
-      await lookupFailed(c, "address_resolve_failed", resolved);
-    }
-  }
-
+  const pin = await pinFor(c, address.placeId, sessionToken);
   await saveAddress(c.env.DB, { personId, address, pin, now, givenToOps });
   await queueContactSync(c, personId);
 }

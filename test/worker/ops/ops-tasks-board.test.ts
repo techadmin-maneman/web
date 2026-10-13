@@ -40,7 +40,10 @@ interface Body {
 
 const tasks = async (): Promise<Body> => (await request(ops, "/api/tasks")).json<Body>();
 
-const groupNames = (body: Body) => body.groups.map((each) => each.group);
+// A visit these fixtures leave with no technician, or open from a day past, is on the board too; each has its own test
+// (test/worker/ops/tasks-open-visits.test.ts).
+const UNLOOKED_AFTER = new Set(["unassigned_visit", "visit_left_open"]);
+const groupNames = (body: Body) => body.groups.map((each) => each.group).filter((group) => !UNLOOKED_AFTER.has(group));
 
 const tasksIn = (body: Body, group: string) => body.groups.find((each) => each.group === group)?.tasks ?? [];
 

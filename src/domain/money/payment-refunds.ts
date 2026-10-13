@@ -74,3 +74,27 @@ export async function refundPayment(
   ).run();
   return { kind: "refunded", amount };
 }
+
+/**
+ * The Tasks board's payment to refund, a hold let go whose refund Razorpay would not make: what is owed back in paise
+ * and the Razorpay payment, for ops to refund. It goes once a refund of the payment is made (migration 0096's indexes).
+ */
+export const REFUND_OWED_LET_GO = `SELECT 'payment_to_refund' AS "group", p.id AS id, pe.id AS person_id, pe.name AS person_name,
+         'let_go ' || (p.amount - p.refunded_amount) || ' ' || p.razorpay_payment_id AS detail, h.updated_at AS since,
+         NULL AS due_by, '' AS episode
+    FROM payments p JOIN slot_holds h ON h.razorpay_order_id = p.razorpay_order_id
+    JOIN people pe ON pe.id = h.person_id
+   WHERE p.status = 'captured' AND p.appointment_id IS NULL AND h.state = 'released' AND h.refunded_at IS NULL
+     AND pe.erased_at IS NULL`;
+
+/** And a refund Razorpay failed, with nothing made since. */
+export const REFUND_OWED_FAILED = `SELECT 'payment_to_refund' AS "group", p.id AS id, pe.id AS person_id, pe.name AS person_name,
+         'refund_failed ' || r.amount || ' ' || p.razorpay_payment_id AS detail, r.updated_at AS since,
+         NULL AS due_by, '' AS episode
+    FROM refunds r JOIN payments p ON p.id = r.payment_id
+    JOIN people pe ON pe.id = p.person_id
+   WHERE r.status = 'failed' AND p.status <> 'refunded' AND pe.erased_at IS NULL
+     AND NOT EXISTS (
+       SELECT 1 FROM refunds later
+        WHERE later.payment_id = r.payment_id AND later.status IN ('created', 'processed')
+          AND later.created_at > r.created_at)`;

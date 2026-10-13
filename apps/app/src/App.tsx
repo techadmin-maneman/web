@@ -9,12 +9,13 @@
 // Home kept, a phone that signed out opens on the login; any other client
 // sees the error state, since their visit may still be booked.
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, type Dispatch, type SetStateAction } from "react";
 import { api, forgetHome, keptHome, onSessionEnded, type Me } from "./api.ts";
-import { titles } from "./content.ts";
+import { titles, update } from "./content.ts";
 import { HomeScreen } from "./home/HomeScreen.tsx";
 import { ReplacementScreen } from "./home/ReplacementScreen.tsx";
 import { focusIfLost } from "@maneman/ui/arrival";
+import { UpdateReady } from "@maneman/ui/UpdateReady";
 import { nameInTitle } from "./lib/arrival.ts";
 import { forgetSignedOut, rememberSignedOut, signedOutHere } from "./lib/signed-out.ts";
 import { ReferScreen } from "./refer/ReferScreen.tsx";
@@ -81,6 +82,22 @@ const pause = (ms: number) =>
   });
 
 /** `linkedMobile`: the number the site's booking confirmation opened the app with, for the login; or "". */
+/** Offline, the session says so; back online, Home is asked for again. */
+function useConnection(setSession: Dispatch<SetStateAction<Session>>, refreshSoon: () => Promise<void>) {
+  useEffect(() => {
+    const lost = () => {
+      setSession((now) => (now.kind === "in" ? { ...now, offline: true } : now));
+    };
+    const back = () => void refreshSoon();
+    window.addEventListener("offline", lost);
+    window.addEventListener("online", back);
+    return () => {
+      window.removeEventListener("offline", lost);
+      window.removeEventListener("online", back);
+    };
+  }, [setSession, refreshSoon]);
+}
+
 export function App({ linkedMobile }: { linkedMobile: string }) {
   const [session, setSession] = useState<Session>({ kind: "checking" });
   const path = usePath();
@@ -137,18 +154,7 @@ export function App({ linkedMobile }: { linkedMobile: string }) {
     });
   }, [signedIn]);
 
-  useEffect(() => {
-    const lost = () => {
-      setSession((now) => (now.kind === "in" ? { ...now, offline: true } : now));
-    };
-    const back = () => void refreshSoon();
-    window.addEventListener("offline", lost);
-    window.addEventListener("online", back);
-    return () => {
-      window.removeEventListener("offline", lost);
-      window.removeEventListener("online", back);
-    };
-  }, [refreshSoon]);
+  useConnection(setSession, refreshSoon);
 
   // The page's ground follows the screen: ink for the login, paper for everything the states screen draws and once in.
   useEffect(() => {
@@ -187,6 +193,7 @@ export function App({ linkedMobile }: { linkedMobile: string }) {
     case "in":
       return (
         <SessionContext value={{ me: session.me, offline: session.offline, refresh: () => void refresh(), logOut }}>
+          <UpdateReady copy={update} resting={routeOf(path).page === "home"} />
           {/* Keyed by the path, so each page opens at its top with its own data, and one that failed stays behind. */}
           <ErrorBoundary key={path}>{pageFor(routeOf(path), () => void refresh())}</ErrorBoundary>
         </SessionContext>

@@ -87,6 +87,7 @@ export const ROUTE_NEEDS: Readonly<Record<string, RouteNeed | typeof SIGNED_IN>>
   "POST /api/stock/transfers": inOwnPlaces("operations", "act"),
   "POST /api/stock/counts": inOwnPlaces("operations", "act"),
   "GET /api/count-tasks": inOwnPlaces("operations", "view"),
+  "POST /api/count-tasks": inOwnPlaces("operations", "act"),
   "GET /api/stock/usage": inOwnPlaces("operations", "manage"),
   "GET /api/recalls": need("operations", "view"),
   "GET /api/quality/failures": need("operations", "view"),
@@ -309,6 +310,8 @@ export const GIVING_NO_CITY: RouteNeed = need("operations", "manage");
 export const TASK_DEPARTMENTS: Readonly<Record<TaskGroup, Department>> = {
   untold_move: "operations",
   move_unanswered: "operations",
+  visit_left_open: "operations",
+  unassigned_visit: "operations",
   unanswered_chat: "customer_care",
   city_matter: "operations",
   remedy_approval: "customer_care",

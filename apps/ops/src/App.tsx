@@ -10,13 +10,9 @@ import { Fragment, lazy, Suspense, useEffect, type ComponentType } from "react";
 import { ClientScreen } from "./clients/ClientScreen.tsx";
 import { FindClientScreen } from "./clients/FindClientScreen.tsx";
 import { ClosedScreen } from "./components/ClosedScreen.tsx";
-import { DeletionsScreen } from "./deletions/DeletionsScreen.tsx";
 import { DispatchScreen } from "./dispatch/DispatchScreen.tsx";
-import { GrievancesScreen } from "./grievances/GrievancesScreen.tsx";
 import { useMayCall } from "./lib/access.ts";
 import { NoShowsScreen } from "./no-shows/NoShowsScreen.tsx";
-import { NumberChangesScreen } from "./number-changes/NumberChangesScreen.tsx";
-import { ReferralsScreen } from "./referrals/ReferralsScreen.tsx";
 import {
   keyOf,
   mayOpen,
@@ -29,7 +25,7 @@ import {
   type PlainPage,
   type Route,
 } from "./route.ts";
-import { loadOrReload } from "./lib/load-or-reload.ts";
+import { loadOrReload } from "@maneman/web-kit/load-or-reload";
 import { TasksScreen } from "./tasks/TasksScreen.tsx";
 import { TechniciansScreen } from "./technicians/TechniciansScreen.tsx";
 
@@ -44,6 +40,23 @@ const PartnerCommissionScreen = lazy(() =>
   settingsPanels().then((module) => ({ default: module.PartnerCommissionScreen })),
 );
 const StaffScreen = lazy(() => settingsPanels().then((module) => ({ default: module.StaffScreen })));
+// The queues ops open now and then load when opened, keeping the console's first load within its budget.
+const DeletionsScreen = lazy(() =>
+  loadOrReload(() => import("./deletions/DeletionsScreen.tsx")).then((module) => ({ default: module.DeletionsScreen })),
+);
+const GrievancesScreen = lazy(() =>
+  loadOrReload(() => import("./grievances/GrievancesScreen.tsx")).then((module) => ({
+    default: module.GrievancesScreen,
+  })),
+);
+const NumberChangesScreen = lazy(() =>
+  loadOrReload(() => import("./number-changes/NumberChangesScreen.tsx")).then((module) => ({
+    default: module.NumberChangesScreen,
+  })),
+);
+const ReferralsScreen = lazy(() =>
+  loadOrReload(() => import("./referrals/ReferralsScreen.tsx")).then((module) => ({ default: module.ReferralsScreen })),
+);
 const ActivityScreen = lazy(() =>
   loadOrReload(() => import("./activity/ActivityScreen.tsx")).then((module) => ({ default: module.ActivityScreen })),
 );

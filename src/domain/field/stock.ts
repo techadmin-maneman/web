@@ -273,6 +273,8 @@ interface Counted {
   readonly note: string | null;
   /** The lot any more found than was held is of, as at an opening count; none puts it in no known lot. */
   readonly lot?: ReceivedLot;
+  /** Of a hair system counted by its labels, the units there not scanned, which go missing by name. */
+  readonly missing?: readonly string[];
 }
 
 /**
@@ -296,12 +298,27 @@ export async function count(db: D1Database, input: Counted, written: Written): P
   if (!(await consumableExists(db, input.code))) return { ok: false, fields: ["consumable_code"] };
   const kind = await kindOf(db, input.place);
   if (kind === null) return { ok: false, fields: ["place_id"] };
+  // The units not scanned go first, by name, so the count of the rest takes none of those that are there.
+  const missing = input.missing ?? [];
+  let lowered = false;
+  if (missing.length > 0) {
+    lowered = await countWritten(db, { ...input, kind }, written, (held) => held - missing.length);
+  }
+  if (await countWritten(db, { ...input, kind, missing: [] }, written, () => input.counted)) lowered = true;
+  return { ok: true, lowered: lowered ? [input.place] : [] };
+}
+
+/** One count's row written, read again where stock moved between; whether it lowered the place. */
+async function countWritten(
+  db: D1Database,
+  input: Counted & { readonly kind: PlaceKind },
+  written: Written,
+  countedOf: (held: number) => number,
+): Promise<boolean> {
   for (let tries = 0; tries < COUNT_TRIES; tries += 1) {
     const held = await heldOf(db, input.code, input.place);
-    const difference = countDifference(input.counted, held);
-    if (await writeCount(db, { ...input, kind }, { held, difference }, written)) {
-      return { ok: true, lowered: difference < 0 ? [input.place] : [] };
-    }
+    const difference = countDifference(countedOf(held), held);
+    if (await writeCount(db, input, { held, difference }, written)) return difference < 0;
   }
   throw new Error(`the stock of ${input.code} moved each time it was counted`);
 }
@@ -325,15 +342,19 @@ async function writeCount(
   const detail = { place: input.place, counted: input.counted, ...found };
   // Less counted than held leaves from the lots that expire soonest, and of a hair system the pieces never labelled
   // first, any unit taken gone missing; more goes into the lot named, or none, and unlabelled.
+  const named = (input.missing ?? []).length > 0 ? input.missing : null;
   const taken =
     found.difference < 0
       ? await takenFrom(db, {
           code: input.code,
           place: input.place,
           quantity: -found.difference,
+          named,
           prefer: "unlabelled",
         })
       : null;
+  // A unit named that left since it was read: the count is read again.
+  if (named !== null && taken === null) return false;
   const takes = taken?.takes ?? [];
   const intoLot =
     found.difference > 0 && input.lot !== undefined

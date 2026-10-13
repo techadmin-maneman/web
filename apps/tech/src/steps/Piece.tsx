@@ -25,9 +25,11 @@
 // picked from the kit comes out of it as the step lands, those made to the
 // client's profile listed first (docs/decisions/0156-hair-systems-in-stock.md).
 
+import { Button } from "@maneman/ui/Button";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { useState } from "react";
 import { api, unreachable, type EventBody, type Job } from "../api.ts";
+import { Confirm } from "../components/Confirm.tsx";
 import { job as jobCopy, steps as copy } from "../content.ts";
 import { Failed, Loading } from "../states/States.tsx";
 import type { Queued } from "../store/outbox.ts";
@@ -60,6 +62,45 @@ import {
 import { pieceSent } from "./sent-before.ts";
 import { StepFrame } from "./StepFrame.tsx";
 import { useStep } from "./useStep.ts";
+import styles from "./steps.module.css";
+
+/** The outcome "Can't fit today" closes a fit with: partly done, no piece of the client's spec to fit. */
+const CANNOT_FIT: EventBody<"outcome"> = { outcome: "partial", reason: "no_piece", cannot_fit: true };
+const CANNOT_FIT_TODAY = "cannot_fit";
+
+/** "Can't fit today": asked first, then the job closed as partly done from here (useStep's closeWith). */
+function CannotFit({ onClose }: { onClose: (why: typeof CANNOT_FIT_TODAY) => void }) {
+  const [asking, setAsking] = useState(false);
+  const words = copy.piece.cannotFit;
+  return (
+    <>
+      <Button
+        variant="outlineOnInk"
+        size="small"
+        className={styles.wayOut}
+        onClick={() => {
+          setAsking(true);
+        }}
+      >
+        {words.action}
+      </Button>
+      {asking && (
+        <Confirm
+          title={words.title}
+          body={words.body}
+          yes={words.yes}
+          no={words.no}
+          onYes={() => {
+            onClose(CANNOT_FIT_TODAY);
+          }}
+          onNo={() => {
+            setAsking(false);
+          }}
+        />
+      )}
+    </>
+  );
+}
 
 /** The label checked against the pieces we know: a client's fills in its base and lot where none is typed. */
 function useLookup(
@@ -85,6 +126,15 @@ function useLookup(
   return { looked, setLooked, looking, look } as const;
 }
 
+/** What the step asks first: a one visit's client's choice, or what any other fit was paid for. */
+function Asked({ job, choice, onChoose }: { job: Job; choice: Choice; onChoose: (choice: Choice) => void }) {
+  return job.one_visit ? (
+    <ChoiceList products={job.products} choice={choice} onChoose={onChoose} />
+  ) : (
+    <PaidFor job={job} />
+  );
+}
+
 /** The step once the job is in hand: a refused piece starts as it was sent, so nothing is typed twice. */
 function Fitting({
   job,
@@ -94,7 +144,7 @@ function Fitting({
 }: {
   job: Job;
   refused: Queued | null;
-  onFinish: (body: EventBody<"piece">) => void;
+  onFinish: (body: EventBody<"piece"> | typeof CANNOT_FIT_TODAY) => void;
   onBack: () => void;
 }) {
   const sent = pieceSent(refused);
@@ -145,11 +195,7 @@ function Fitting({
         onFinish(pieceBody(form, job));
       }}
     >
-      {job.one_visit ? (
-        <ChoiceList products={job.products} choice={choice} onChoose={setChoice} />
-      ) : (
-        <PaidFor job={job} />
-      )}
+      <Asked job={job} choice={choice} onChoose={setChoice} />
       {!declinedTheFit(form, job) && (
         <>
           <KitPieces choices={kitChoices(job, choice)} stock={stock} onStock={setStock} />
@@ -183,16 +229,19 @@ function Fitting({
           )}
         </>
       )}
+      {!job.one_visit && <CannotFit onClose={onFinish} />}
     </StepFrame>
   );
 }
 
 export function Piece({ id }: { id: string }) {
-  const { loaded, retry, refused, finish, back } = useStep(id, "piece");
+  const { loaded, retry, refused, finish, closeWith, back } = useStep(id, "piece");
 
   if (loaded.state === "loading") return <Loading />;
   if (loaded.state === "failed") {
     return <Failed message={jobCopy.failed} retry={jobCopy.retry} onRetry={retry} requestId={loaded.requestId} />;
   }
-  return <Fitting job={loaded.value} refused={refused} onFinish={(body) => void finish(body)} onBack={back} />;
+  const finishing = (body: EventBody<"piece"> | typeof CANNOT_FIT_TODAY) =>
+    void (body === CANNOT_FIT_TODAY ? closeWith(CANNOT_FIT) : finish(body));
+  return <Fitting job={loaded.value} refused={refused} onFinish={finishing} onBack={back} />;
 }

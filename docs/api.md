@@ -551,6 +551,42 @@ Request body:
 }
 ```
 
+### POST /api/buildings/suggestions
+
+Buildings matching what a visitor has typed, for the address on /book
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/BuildingSuggestionsAsk"
+}
+```
+
+**200**: The suggestions, which may be empty
+
+```json
+{
+  "$ref": "#/components/schemas/AddressSuggestions"
+}
+```
+
+**400**: invalid_request
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**503**: busy: the visitor's or the day's address-lookup ceiling is reached; unavailable: Google could not be reached
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ### POST /api/lead
 
 Leave a name and number before choosing the visit
@@ -1490,6 +1526,7 @@ Razorpay's webhook: payments and refunds
             "not_trained",
             "in_progress",
             "too_early_to_close",
+            "no_check_in",
             "too_early_to_arrive",
             "already_closed",
             "no_service_area",
@@ -1521,6 +1558,7 @@ Razorpay's webhook: payments and refunds
             "transfer_settled",
             "order_state",
             "same_approver",
+            "custom_order",
             "claim_state",
             "return_settled",
             "out_of_warranty",
@@ -2144,6 +2182,14 @@ Razorpay's webhook: payments and refunds
       "maxLength": 300,
       "description": "For the technician, from the day before the visit: gate code, parking."
     },
+    "building": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 120,
+      "description": "The building as chosen from the suggestions; null if typed."
+    },
     "flat": {
       "type": "string",
       "minLength": 1,
@@ -2169,6 +2215,21 @@ Razorpay's webhook: payments and refunds
         "null"
       ],
       "maxLength": 120
+    },
+    "place_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 300,
+      "description": "Google's Place ID for the building, if one was chosen."
+    },
+    "session_token": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 100
     }
   },
   "required": [
@@ -2219,6 +2280,77 @@ Razorpay's webhook: payments and refunds
     "area",
     "credits",
     "invite"
+  ],
+  "additionalProperties": false
+}
+```
+
+### AddressSuggestions
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "suggestions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "place_id": {
+            "type": "string"
+          },
+          "primary": {
+            "type": "string"
+          },
+          "secondary": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "place_id",
+          "primary",
+          "secondary"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "attribution": {
+      "type": "string",
+      "enum": [
+        "Google Maps"
+      ]
+    }
+  },
+  "required": [
+    "suggestions",
+    "attribution"
+  ],
+  "additionalProperties": false
+}
+```
+
+### BuildingSuggestionsAsk
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "q": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200,
+      "description": "What the visitor has typed so far."
+    },
+    "session": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 100,
+      "description": "One token for the whole search, sent again with the booking."
+    }
+  },
+  "required": [
+    "q",
+    "session"
   ],
   "additionalProperties": false
 }

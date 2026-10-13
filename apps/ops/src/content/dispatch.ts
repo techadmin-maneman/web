@@ -1,6 +1,6 @@
 // The dispatch board's words: the week, a move and its reason, a block's drawer.
 
-import { FAILED, NOT_PERMITTED, OFFLINE } from "./common.ts";
+import { FAILED, NOT_PERMITTED, OFFLINE, UNCONFIRMED } from "./common.ts";
 
 export const dispatch = {
   title: "Dispatch",
@@ -113,6 +113,7 @@ export const dispatch = {
       not_found: "No longer on the board. Reload.",
       not_permitted: NOT_PERMITTED,
       offline: OFFLINE,
+      unconfirmed: UNCONFIRMED,
       unknown: FAILED,
     } as Readonly<Record<string, string>>,
   },
@@ -339,6 +340,7 @@ export const dispatch = {
       in_progress: "The technician has started this visit. It can't be moved.",
       ask_the_client: "Another day needs the client's OK. If you have it, choose Client asked.",
       offline: OFFLINE,
+      unconfirmed: UNCONFIRMED,
       unknown: FAILED,
     },
     /** The call's record did not go through. */

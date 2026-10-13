@@ -1,6 +1,6 @@
 // Stock: what each place holds, and a delivery, transfer, count or write-off recorded.
 
-import { FAILED, NOT_PERMITTED, OFFLINE } from "./common.ts";
+import { FAILED, NOT_PERMITTED, OFFLINE, UNCONFIRMED } from "./common.ts";
 
 /**
  * Every word of Stock. Stock is kept in our own ledger, per place: the warehouse, hubs, stockrooms and each
@@ -95,6 +95,7 @@ export const stock = {
     quantity: "One delivery labels at most 500 pieces.",
     note: "Say what happened, in up to 200 characters.",
     offline: OFFLINE,
+    unconfirmed: UNCONFIRMED,
     unknown: FAILED,
   } as Readonly<Record<string, string>>,
 } as const;

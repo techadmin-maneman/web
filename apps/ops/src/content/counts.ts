@@ -1,12 +1,12 @@
 // Operations · Counts (docs/decisions/0185-cycle-counts.md). No design draws it; every word here is ours. Only the
 // Counts page reads it, loaded when it opens.
 
-import { FAILED, NOT_PERMITTED, OFFLINE } from "./common.ts";
+import { FAILED, NOT_PERMITTED, OFFLINE, UNCONFIRMED } from "./common.ts";
 
 export const counts = {
   title: "Counts",
   tasks: "Count tasks",
-  none: "Nothing to count. Tasks come round each morning.",
+  none: "Nothing to count. Start one below, or wait for the morning's tasks.",
   columns: ["Place", "Class", "Due", "Stands", ""],
   classes: { weekly: "Weekly", monthly: "Monthly", quarterly: "Quarterly" } as Readonly<Record<string, string>>,
   states: {
@@ -21,6 +21,13 @@ export const counts = {
   countNote: "Count what is there.",
   recountNote: "These differed. Count them again.",
   counted: (name: string) => `Count of ${name}`,
+  /** A hair system held under labels: each one scanned, and any with no label counted beside them. */
+  scanEach: (name: string) => `Scan every ${name} here.`,
+  unlabelled: (name: string) => `${name} with no label`,
+  /** "Not held here: MM-ESS-0000041-R. Look into it." */
+  notHeld: (labels: readonly string[]) =>
+    `Not held here: ${labels.join(", ")}. Look into ${labels.length === 1 ? "it" : "them"}.`,
+  notScanned: (labels: readonly string[]) => `Not scanned: ${labels.join(", ")}.`,
   saveCount: "Save count",
   saveRecount: "Save recount",
   countSaid: (waiting: number) => (waiting === 0 ? "Counted." : `Counted. ${String(waiting)} to count again.`),
@@ -39,12 +46,21 @@ export const counts = {
   /** "Default · Weekly" */
   ownClass: (countClass: string) => `Default · ${countClass}`,
   classSaid: "Class saved.",
+  startTitle: "Count now",
+  place: "Place",
+  item: "Item",
+  choose: "Choose",
+  start: "Start count",
   errors: {
     lines: "The items changed since this opened. Reload.",
+    labels: "Scan each labelled piece once.",
+    counted: "That's fewer than the labels scanned.",
+    consumable_code: "This place holds none of that.",
     order_state: "Someone else counted this first. Reload.",
     not_found: "That is gone. Reload.",
     not_permitted: NOT_PERMITTED,
     offline: OFFLINE,
+    unconfirmed: UNCONFIRMED,
     unknown: FAILED,
   } as Readonly<Record<string, string>>,
 };

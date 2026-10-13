@@ -43,6 +43,10 @@ export function QrCamera({
     let stream: MediaStream | null = null;
     let timer = 0;
     const decoder = qrDecoder();
+    // No camera, or a reader that did not start: either way the label is typed.
+    const refuse = () => {
+      if (live) setState("refused");
+    };
     const open = async () => {
       const media = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" }, audio: false });
       stream = media;
@@ -67,13 +71,11 @@ export function QrCamera({
             return;
           }
         }
-        timer = window.setTimeout(() => void frame(), EVERY_MS);
+        timer = window.setTimeout(() => void frame().catch(refuse), EVERY_MS);
       };
       await frame();
     };
-    open().catch(() => {
-      if (live) setState("refused");
-    });
+    open().catch(refuse);
     return () => {
       live = false;
       window.clearTimeout(timer);

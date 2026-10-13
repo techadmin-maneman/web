@@ -122,6 +122,12 @@ const SMALL_TABLES = new Set([
 /** Statements that do read a whole table, each with why that is all right. */
 const ALLOWED = [
   {
+    // A custom order's purchase order, drafted once: the guard reads the custom order by its key. The scan is SQLite's
+    // look for custom orders pointing at the new purchase order, which it skips while no foreign key is broken.
+    file: "src/domain/field/custom-order-po.ts",
+    sql: "WHERE NOT EXISTS (SELECT 1 FROM custom_orders WHERE id = ?8 AND po_id IS NOT NULL)",
+  },
+  {
     // A visit booked without FSM, written only while its hold waits: the guard reads the hold by its key. The scan is
     // SQLite's look for holds pointing at the new visit, which it skips while no foreign key is broken.
     file: "src/domain/booking/bookings.ts",

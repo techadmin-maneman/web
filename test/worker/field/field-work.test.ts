@@ -146,6 +146,20 @@ describe("a technician's steps", () => {
     expect(await writeStatesOf(TODAY_JOB)).toEqual(["written"]);
   });
 
+  it("take a visit the phone worked with no signal and sent days later, and close it as it was done", async () => {
+    // Worked from 13:02 with no signal at all, and sent two days later, when the phone found it again.
+    const sentAt = minutesAfterStart(2 * 24 * 60 + 90);
+    await work(sentAt, TODAY_JOB, [
+      ["checkin", AT_THE_DOOR, 2],
+      ["start", undefined, 5],
+    ]);
+    await work(sentAt, TODAY_JOB, UP_TO_THE_OUTCOME.slice(2));
+    const closed = await postAt(sentAt, `/api/tech/jobs/${TODAY_JOB}/outcome`, { outcome: "done" }, uuidv7At(80));
+
+    expect(closed.status).toBe(202);
+    expect(await statusOf(TODAY_JOB)).toBe("completed");
+  });
+
   it("close a partial job as terminated, with the technician's reason", async () => {
     const sentAt = minutesAfterStart(90);
     await work(sentAt, TODAY_JOB, UP_TO_THE_OUTCOME);
@@ -164,6 +178,22 @@ describe("a technician's steps", () => {
       outcome: "partial",
       partial_reason: "client_stopped_it",
     });
+  });
+
+  it("close a fit as partly done from its piece step, Can't fit today, and on a fit alone", async () => {
+    const sentAt = minutesAfterStart(60);
+    const cannotFit = { outcome: "partial", reason: "no_piece", cannot_fit: true };
+    await work(sentAt, TODAY_JOB, UP_TO_THE_OUTCOME.slice(0, 5));
+    const onAService = await postAt(sentAt, `/api/tech/jobs/${TODAY_JOB}/outcome`, cannotFit, uuidv7At(50));
+    expect(await onAService.json()).toMatchObject({ error: { fields: ["cannot_fit"] } });
+
+    await env.DB.prepare("UPDATE appointments SET type = 'first_fit', tier = 'essential' WHERE id = ?1")
+      .bind(TODAY_JOB)
+      .run();
+    const closed = await postAt(sentAt, `/api/tech/jobs/${TODAY_JOB}/outcome`, cannotFit, uuidv7At(51));
+    expect(closed.status).toBe(202);
+    expect(await statusOf(TODAY_JOB)).toBe("terminated");
+    expect(await visitRowOf(TODAY_JOB)).toMatchObject({ outcome: "partial", partial_reason: "no_piece" });
   });
 
   it("close a no-show as terminated, never started", async () => {
@@ -318,6 +348,23 @@ describe("a closed job", () => {
     const pastTheHour = minutesAfterClose(61);
     await refusedAsClosed(await postAt(pastTheHour, stepPath("checklist"), { done: [] }, uuidv7At(150)));
     await refusedAsClosed(await postAt(pastTheHour, stepPath("consumables"), { items: [] }, uuidv7At(151)));
+  });
+
+  it("closes as a no-show by hand from the technician's check-in, opening the case, and never without one", async () => {
+    const byHand = { outcome: "no_show", reason: "Imran's phone died at the door; the client never answered" };
+    const refused = await opsPost(`/api/visits/${TODAY_JOB}/close`, byHand, fakeDependencies({ now: () => CLOSED_AT }));
+    expect(refused.status).toBe(409);
+    expect((await refused.json<{ error: { code: string } }>()).error.code).toBe("no_check_in");
+
+    await work(NOW, TODAY_JOB, [["checkin", AT_THE_DOOR, -30]]);
+    const closed = await opsPost(`/api/visits/${TODAY_JOB}/close`, byHand, fakeDependencies({ now: () => CLOSED_AT }));
+    expect(closed.status).toBe(200);
+    expect(await statusOf(TODAY_JOB)).toBe("terminated");
+    expect(await visitRowOf(TODAY_JOB)).toMatchObject({ started_at: null, outcome: "no_show" });
+    const cases = await env.DB.prepare("SELECT decision FROM no_show_cases WHERE appointment_id = ?1")
+      .bind(TODAY_JOB)
+      .all();
+    expect(cases.results).toEqual([{ decision: "undecided" }]);
   });
 
   it("refuses the phone's steps on a job ops closed by hand", async () => {

@@ -172,7 +172,10 @@ describe("POST /api/clients/{id}/address", () => {
       .bind(VISIT, PERSON, NOW.toISOString())
       .run();
     const groups = async () =>
-      (await (await request(ops, "/api/tasks")).json<{ groups: { group: string }[] }>()).groups.map((g) => g.group);
+      (await (await request(ops, "/api/tasks")).json<{ groups: { group: string }[] }>()).groups
+        .map((g) => g.group)
+        // The visit has no technician, which is a task of its own (test/worker/ops/tasks-open-visits.test.ts).
+        .filter((group) => group !== "unassigned_visit");
     expect(await groups()).toEqual(["address_to_confirm"]);
 
     await save(GIVEN);

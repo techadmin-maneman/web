@@ -33,6 +33,8 @@ import { paidNotBooked } from "../booking/hold-stages.ts";
 import { STOCK_RISKS_OPEN } from "../field/stock-risks.ts";
 import { statusIn, statusNotIn, VISIT_CALLED_OFF, VISIT_LIVE, VISIT_NOT_BEGUN } from "../../config/statuses.ts";
 import type { SqlValue } from "../../lib/sql.ts";
+import { REFUND_OWED_FAILED, REFUND_OWED_LET_GO } from "../money/payment-refunds.ts";
+import { UNASSIGNED_VISITS, VISITS_LEFT_OPEN } from "../dispatch/unassigned.ts";
 
 /** A visit to come, by its id and its start. */
 interface TaskVisit {
@@ -91,7 +93,7 @@ export const READ_CAP = 2000;
 const BOARD_VISIT = `
   LEFT JOIN dispatch_moves m ON t."group" = 'untold_move' AND m.id = t.id
   LEFT JOIN appointments v ON v.id = COALESCE(m.appointment_id,
-    CASE WHEN t."group" IN ('leave_conflict', 'move_unanswered') THEN t.id END)
+    CASE WHEN t."group" IN ('leave_conflict', 'move_unanswered', 'unassigned_visit', 'visit_left_open') THEN t.id END)
   LEFT JOIN people caller ON (m.id IS NOT NULL OR t."group" = 'move_unanswered') AND caller.id = v.person_id`;
 
 /**
@@ -124,8 +126,9 @@ const NOT_FITTED_SINCE_CONSULTED = "(s.visit_start IS NULL OR s.visit_start < s.
 
 /** What the board is read at: the moments and the next visit's days its queues compare with. */
 interface ReadAt {
-  /** India's date. */
+  /** India's date, and the instant it began. */
   readonly today: string;
+  readonly todayStarts: string;
   readonly now: string;
   readonly days: NextVisitDays;
   /** The first moment after the last day an at-risk client's last visit can have been done on. */
@@ -249,6 +252,10 @@ const QUEUES: readonly Queue[] = [
    WHERE a.status = 'completed' AND a.invoice_issued_at IS NULL
      AND a.deleted_at IS NULL AND a.fsm_invoice_id IS NOT NULL AND pe.erased_at IS NULL`,
   },
+  // A visit with no technician, due the day before it (src/domain/dispatch/unassigned.ts).
+  { sql: UNASSIGNED_VISITS, binds: (at) => [at.now] },
+  // A visit still open once its day is over (src/domain/dispatch/unassigned.ts).
+  { sql: VISITS_LEFT_OPEN, binds: (at) => [at.todayStarts] },
   // A job still booked on a day its technician is away: leave moves nothing, so ops move it. It waits from when the
   // leave was recorded, and falls due by the job. The client is named where there is one on our records.
   {
@@ -364,30 +371,9 @@ const QUEUES: readonly Queue[] = [
     LEFT JOIN people pe ON pe.id = d.person_id AND pe.erased_at IS NULL
    WHERE d.ruling IS NULL`,
   },
-  // A payment to refund: why ("let_go", a hold let go whose refund Razorpay would not make, or "refund_failed", a
-  // refund Razorpay failed), what is owed back in paise, and the Razorpay payment, for ops to refund from Razorpay's
-  // dashboard. It goes once a refund of the payment is made. Migration 0096's indexes read only those two sets.
-  {
-    sql: `SELECT 'payment_to_refund' AS "group", p.id AS id, pe.id AS person_id, pe.name AS person_name,
-         'let_go ' || (p.amount - p.refunded_amount) || ' ' || p.razorpay_payment_id AS detail, h.updated_at AS since,
-         NULL AS due_by, '' AS episode
-    FROM payments p JOIN slot_holds h ON h.razorpay_order_id = p.razorpay_order_id
-    JOIN people pe ON pe.id = h.person_id
-   WHERE p.status = 'captured' AND p.appointment_id IS NULL AND h.state = 'released' AND h.refunded_at IS NULL
-     AND pe.erased_at IS NULL`,
-  },
-  {
-    sql: `SELECT 'payment_to_refund' AS "group", p.id AS id, pe.id AS person_id, pe.name AS person_name,
-         'refund_failed ' || r.amount || ' ' || p.razorpay_payment_id AS detail, r.updated_at AS since,
-         NULL AS due_by, '' AS episode
-    FROM refunds r JOIN payments p ON p.id = r.payment_id
-    JOIN people pe ON pe.id = p.person_id
-   WHERE r.status = 'failed' AND p.status <> 'refunded' AND pe.erased_at IS NULL
-     AND NOT EXISTS (
-       SELECT 1 FROM refunds later
-        WHERE later.payment_id = r.payment_id AND later.status IN ('created', 'processed')
-          AND later.created_at > r.created_at)`,
-  },
+  // A payment to refund (src/domain/money/payment-refunds.ts): a hold let go, or a refund Razorpay failed.
+  { sql: REFUND_OWED_LET_GO },
+  { sql: REFUND_OWED_FAILED },
 ];
 
 interface Row {
@@ -465,6 +451,7 @@ export async function outstandingTasks(
   const toBookBefore = indiaInstant(addDays(firstFitToBookIfConsultedBy(today, days), 1), "00:00").toISOString();
   const at: ReadAt = {
     today,
+    todayStarts: indiaInstant(today, "00:00").toISOString(),
     now: now.toISOString(),
     days,
     atRiskBefore,
@@ -519,6 +506,8 @@ function taskOf(row: Row, sla: Slas, schedule: SlotSchedule): Task {
 const TASK_RECORDS: Readonly<Record<TaskGroup, PlacedRecord>> = {
   untold_move: "move",
   move_unanswered: "visit",
+  visit_left_open: "visit",
+  unassigned_visit: "visit",
   unanswered_chat: "conversation",
   city_matter: "city_matter",
   remedy_approval: "remedy",

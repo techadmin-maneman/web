@@ -45,6 +45,8 @@ export const today = {
   jobs: (count: number) => `${String(count)} ${count === 1 ? "job" : "jobs"} today`,
   first: (time: string, sector: string) => `First at ${time} · ${sector}`,
   tomorrow: (count: number) => `Tomorrow · ${String(count)} ${count === 1 ? "job" : "jobs"}`,
+  /** Yesterday's jobs not yet closed, above today's, so their work can be finished and sent. */
+  leftOpen: (count: number) => `Still open from yesterday · ${String(count)}`,
   signOut: "Sign out",
   empty: {
     label: "No jobs",
@@ -96,6 +98,13 @@ export const storage = {
   // Neither file draws a phone that is full.
   title: "This phone’s storage is full",
   body: "Free up space by deleting photos or apps you don’t need, then try again.",
+} as const;
+
+/** A new version of the app, waiting to be taken (packages/web-kit/sw-update.ts). */
+export const update = {
+  // Neither file draws a new version.
+  line: "A new version is ready.",
+  action: "Update",
 } as const;
 
 /** A screen that failed to draw, which React would otherwise leave blank. */
@@ -176,6 +185,8 @@ const stopped: Readonly<Record<string, string>> = {
   too_early_to_arrive: "Too early for this job. Tap again from the time on its card.",
   already_started: "This job was started, so it can’t close as a no-show.",
   photo_rejected: "The photos wouldn’t upload.",
+  // Failed at our end after several tries: nothing is wrong with what was done.
+  stuck: "This couldn’t reach us after several tries. Send it again.",
   not_found: "This job is no longer on your list, so what it holds can’t reach us.",
   already_closed: "This job is closed, so what it holds can’t reach us.",
   piece_code: "The piece’s label wasn’t accepted.",
@@ -474,6 +485,14 @@ export const steps = {
   piece: {
     // A label is scanned by its QR code, or typed (docs/decisions/0163-pieces-scanned-from-the-kit.md).
     label: "The new piece’s label",
+    // The board draws no way out of the fit; it closes as partly done, and ops book the refit.
+    cannotFit: {
+      action: "Can’t fit today",
+      title: "Close without fitting?",
+      body: "The job closes as partly done, and ops book the refit with the right piece.",
+      yes: "Close without fitting",
+      no: "Keep fitting",
+    },
     scan: "Scan the label",
     stopScan: "Stop scanning",
     camera: { opening: "Opening the camera…", refused: "No camera. Type the label instead." },

@@ -10,6 +10,7 @@ import { loadSlotSchedule } from "./slot-times.ts";
 import { loadBlackouts, occupancy, placement, techniciansFor, type Moving, type Technician } from "./occupancy.ts";
 import { statusIn, VISIT_LIVE } from "../../config/statuses.ts";
 import { techniciansBarredOn, visitsOfClient } from "./technician-rotation.ts";
+import type { Fitting } from "./occupancy.ts";
 
 /** A visit booked and still to happen. */
 const STILL_TO_HAPPEN = `deleted_at IS NULL AND ${statusIn("status", VISIT_LIVE)}`;
@@ -109,8 +110,8 @@ interface WindowTechnicians {
 interface VisitToPlace {
   readonly minutes: number;
   readonly until?: string | null;
-  /** A first fit, which only a technician trained to fit takes (ADR 0119). */
-  readonly fitting?: boolean;
+  /** A fit, which only a technician trained to fit takes (ADR 0119), and one who can reach its piece. */
+  readonly fitting?: Fitting | null;
 }
 
 /** Whose visit it is, and what it stands in for: a move in place keeps its technician, a replaced visit gives way. */
@@ -160,7 +161,7 @@ async function windowsOf({
   const units = unitsFor(visit.minutes);
   const to = addDays(range.from, range.days - 1);
   const [technicians, held, closed, visits] = await Promise.all([
-    techniciansFor(db, moving, { pincode, personId }, visit.fitting ?? false),
+    techniciansFor(db, moving, { pincode, personId }, visit.fitting ?? null),
     occupancy({
       db,
       from: range.from,

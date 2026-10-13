@@ -236,6 +236,15 @@ export const referral = {
    */
   address: {
     legend: "Your address",
+    /** The building search, as the client app words it: the technician finds the door by the building's pin. */
+    building: {
+      label: "Search for your building",
+      hint: "Search for your building or society, so your technician can find you.",
+      unavailable: "Search isn’t available right now. Type your address below instead.",
+      found: (count: number) => (count === 1 ? "1 building found" : `${String(count)} buildings found`),
+      // Google asks for their name against suggestions shown without a map.
+      attribution: "Google Maps",
+    },
     labels: {
       flat: "Flat or house number",
       floor: "Floor (optional)",

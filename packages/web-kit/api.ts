@@ -20,6 +20,8 @@
 // Every call is same-origin, so the session's cookie goes with it and the
 // Origin matches (docs/decisions/0026-hosts-and-surfaces.md).
 
+import { pageBuild } from "./build.ts";
+
 export type Method = "get" | "post" | "put" | "patch" | "delete";
 
 // ---- Reading a surface's document --------------------------------------------
@@ -91,7 +93,7 @@ type OptionsArgument<Op> = object extends CallOptions<Op> ? [options?: CallOptio
 // ---- Answers -----------------------------------------------------------------
 
 /** Why a call failed without the API saying: it never reached it, or the API gave no code. */
-export type LocalCode = "offline" | "unknown";
+export type LocalCode = "offline" | "unconfirmed" | "unknown";
 
 /** The technician a job went to, by first name, and when ops moved it there (docs/open-points.md, item 92). */
 export interface Moved {
@@ -151,6 +153,12 @@ export interface ClientOptions {
   readonly onAccessLapsed?: () => void;
   /** The code of a refusal that carried none, by its status: the technician app counts a bare 409 as superseded. */
   readonly missingCode?: (status: number) => string;
+  /**
+   * Whether each write carries an Idempotency-Key: a new one, or, for a write sent again whose answer never came, the
+   * one it went with, so the API answers it as it did rather than doing it twice. Such a write is said to be
+   * `unconfirmed`, not offline: it may have been done.
+   */
+  readonly keyWrites?: boolean;
 }
 
 /** The header the apps' service workers set on an answer from their copy. */
@@ -160,6 +168,39 @@ const SERVED_FROM = "Mm-Served-From";
 const REQUEST_ID = "X-Request-Id";
 
 const OFFLINE = { ok: false, status: 0, code: "offline", fields: [], moved: null, requestId: null } as const;
+
+/** A keyed write whose answer never came: it may have been done, and sending it again is answered, not done twice. */
+const UNCONFIRMED = { ok: false, status: 0, code: "unconfirmed", fields: [], moved: null, requestId: null } as const;
+
+/** How long a call waits: a read's patience, or a write's. */
+const patienceFor = (patience: Patience, method: string): number =>
+  method.toUpperCase() === "GET" ? patience.read : patience.write;
+
+/** The headers a call goes with: the caller's own, and JSON's where it sends JSON. */
+function headersOf(init: { readonly headers?: Readonly<Record<string, string>>; readonly json?: unknown }) {
+  const headers: Record<string, string> = { ...init.headers };
+  if (init.json !== undefined) headers["Content-Type"] = "application/json";
+  const build = pageBuild();
+  if (build !== null) headers["X-Client-Version"] = build;
+  return headers;
+}
+
+/** A write's body as its key compares it: the JSON sent, or nothing for a body of another kind. */
+const textOf = (body: BodyInit | undefined): string => (typeof body === "string" ? body : "");
+
+/** The key a write goes with, set on its headers: the one it went with when its answer never came, else a new one. */
+function keyFor(unanswered: Map<string, string>, sent: string | null, headers: Record<string, string>): string | null {
+  if (sent === null) return null;
+  const key = headers["Idempotency-Key"] ?? unanswered.get(sent) ?? crypto.randomUUID();
+  headers["Idempotency-Key"] = key;
+  return key;
+}
+
+/** A keyed write kept while its answer never came, and let go once one does. */
+function heardOf(unanswered: Map<string, string>, write: { sent: string; key: string; answered: boolean }): void {
+  if (write.answered) unanswered.delete(write.sent);
+  else unanswered.set(write.sent, write.key);
+}
 
 const isSessionEnded = (response: Response) => response.status === 401;
 
@@ -250,10 +291,8 @@ export function createClient<Paths, Code extends string = string>(options: Clien
   const redirect = options.redirect ?? (options.onAccessLapsed === undefined ? undefined : "manual");
   const missingCode = options.missingCode ?? (() => "unknown");
   const patience = options.patience ?? DEFAULT_PATIENCE;
-
-  function patienceFor(method: string): number {
-    return method.toUpperCase() === "GET" ? patience.read : patience.write;
-  }
+  /** Each keyed write sent and never answered, by what it sent, with the key it went with. */
+  const unanswered = new Map<string, string>();
 
   async function read<T>(response: Response, file: boolean): Promise<Answer<T, Code>> {
     if (response.ok) {
@@ -286,9 +325,10 @@ export function createClient<Paths, Code extends string = string>(options: Clien
   }
 
   async function request<T>(method: string, url: string, init: Asking = {}): Promise<Answer<T, Code>> {
-    const headers: Record<string, string> = { ...init.headers };
-    if (init.json !== undefined) headers["Content-Type"] = "application/json";
+    const headers = headersOf(init);
     const body = init.json === undefined ? init.body : JSON.stringify(init.json);
+    const sent = options.keyWrites === true && method !== "GET" ? `${method} ${url} ${textOf(body)}` : null;
+    const key = keyFor(unanswered, sent, headers);
     const response = await reach(
       url,
       {
@@ -297,11 +337,12 @@ export function createClient<Paths, Code extends string = string>(options: Clien
         ...(body === undefined ? {} : { body }),
         ...(redirect === undefined ? {} : { redirect }),
       },
-      init.patience ?? patienceFor(method),
+      init.patience ?? patienceFor(patience, method),
     );
+    if (sent !== null && key !== null) heardOf(unanswered, { sent, key, answered: response !== null });
     if (response === null) {
       options.onUnreached?.();
-      return OFFLINE;
+      return sent === null ? OFFLINE : UNCONFIRMED;
     }
     if (response.type === "opaqueredirect" && options.onAccessLapsed !== undefined) {
       options.onAccessLapsed();

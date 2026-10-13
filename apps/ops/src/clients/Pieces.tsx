@@ -17,7 +17,7 @@ import { api, type Piece } from "../api.ts";
 import { clients } from "../content.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import styles from "./clients.module.css";
-import { loadOrReload } from "../lib/load-or-reload.ts";
+import { loadOrReload } from "@maneman/web-kit/load-or-reload";
 
 const HairProfile = lazy(() =>
   loadOrReload(() => import("./HairProfile.tsx")).then((module) => ({ default: module.HairProfile })),

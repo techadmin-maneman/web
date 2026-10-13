@@ -25,7 +25,7 @@ import { useScreen } from "../lib/useScreen.ts";
 import { clock } from "../lib/when.ts";
 import { go, STEP_PATHS, stepPath, type InJobStep } from "../route.ts";
 import { useSession } from "../session.ts";
-import { account, forget, replay, type EventKind, type JobAccount } from "../store/outbox.ts";
+import { account, forget, replay, sendAgain, STUCK, type EventKind, type JobAccount } from "../store/outbox.ts";
 import { Progress } from "./Progress.tsx";
 import { IN_A_SET, photoSets, sentOf, type PhotoSet } from "../lib/sets.ts";
 import frame from "../components/frame.module.css";
@@ -37,8 +37,49 @@ const isInJobStep = (kind: EventKind): kind is InJobStep => kind in STEP_PATHS;
 
 /** A refused step the technician can open again and put right on its own screen; null for any other stop. */
 function correctable(stopped: JobAccount["stopped"]): InJobStep | null {
-  if (stopped?.state !== "refused") return null;
+  if (stopped?.state !== "refused" || stopped.note === STUCK) return null;
   return isInJobStep(stopped.kind) ? stopped.kind : null;
+}
+
+/** What stopped a job, the Ref to quote, and what can be done: send it again, put it right, or let it go. */
+function Stopped(props: {
+  readonly jobId: string;
+  readonly stopped: NonNullable<JobAccount["stopped"]>;
+  readonly startsAt: string | null;
+  readonly onForget: () => void;
+}) {
+  const { jobId, stopped } = props;
+  const toCorrect = correctable(stopped);
+  return (
+    <div className={styles.stopped} role="alert">
+      <p className={styles.stoppedLine}>{whatStopped(stopped, new Date(), props.startsAt)}</p>
+      {stopped.requestId !== null && (
+        <ErrorRef requestId={stopped.requestId} words={reference} className={styles.reference} />
+      )}
+      <div className={styles.buttons}>
+        {stopped.note === STUCK && (
+          <Button variant="outlineOnInk" size="small" className={styles.button} onClick={() => void sendAgain(jobId)}>
+            {copy.retry}
+          </Button>
+        )}
+        {toCorrect !== null && (
+          <Button
+            variant="outlineOnInk"
+            size="small"
+            className={styles.button}
+            onClick={() => {
+              go(stepPath(jobId, toCorrect));
+            }}
+          >
+            {PHOTO_STEPS.has(toCorrect) ? copy.retake : copy.correct}
+          </Button>
+        )}
+        <Button variant="outlineOnInk" size="small" className={styles.button} onClick={props.onForget}>
+          {copy.forget.open}
+        </Button>
+      </div>
+    </div>
+  );
 }
 
 /** Where a job's work stands: stopped, waiting for signal, or on its way. */
@@ -127,7 +168,6 @@ export function WaitingScreen() {
               const line = held.find((entry) => entry.job_id === id);
               const stopped = line?.stopped ?? null;
               const taken = since(id);
-              const toCorrect = correctable(stopped);
               return (
                 <li className={styles.job} key={id}>
                   <div className={styles.jobTop}>
@@ -147,38 +187,14 @@ export function WaitingScreen() {
                   {/* How long it has been on the phone, which is how much an eviction would take. */}
                   {taken !== null && <p className={styles.count}>{copy.since(clock(new Date(taken).toISOString()))}</p>}
                   {stopped !== null && (
-                    <div className={styles.stopped} role="alert">
-                      <p className={styles.stoppedLine}>
-                        {whatStopped(stopped, new Date(), kept.get(id)?.starts_at ?? null)}
-                      </p>
-                      {stopped.requestId !== null && (
-                        <ErrorRef requestId={stopped.requestId} words={reference} className={styles.reference} />
-                      )}
-                      <div className={styles.buttons}>
-                        {toCorrect !== null && (
-                          <Button
-                            variant="outlineOnInk"
-                            size="small"
-                            className={styles.button}
-                            onClick={() => {
-                              go(stepPath(id, toCorrect));
-                            }}
-                          >
-                            {PHOTO_STEPS.has(toCorrect) ? copy.retake : copy.correct}
-                          </Button>
-                        )}
-                        <Button
-                          variant="outlineOnInk"
-                          size="small"
-                          className={styles.button}
-                          onClick={() => {
-                            setForgetting(id);
-                          }}
-                        >
-                          {copy.forget.open}
-                        </Button>
-                      </div>
-                    </div>
+                    <Stopped
+                      jobId={id}
+                      stopped={stopped}
+                      startsAt={kept.get(id)?.starts_at ?? null}
+                      onForget={() => {
+                        setForgetting(id);
+                      }}
+                    />
                   )}
                   {stopped === null && !offline && (
                     <Button

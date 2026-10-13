@@ -39,15 +39,41 @@ type OrderLineRow = {
   id: string;
   consumable_code: string;
   unit_price: number;
+  /** What is still owed of the line: ordered, less what has come in. */
+  outstanding: number;
   number: number;
   currency: string;
   state: string;
 };
 
+/** Whether the order's supplier has had this invoice received already, on any of its orders. */
+async function invoiceReceived(db: D1Database, poId: string, invoice: string): Promise<boolean> {
+  const found = await db
+    .prepare(
+      `SELECT 1 FROM receipts r JOIN purchase_orders o ON o.id = r.po_id
+       WHERE o.supplier_id = (SELECT supplier_id FROM purchase_orders WHERE id = ?1)
+         AND lower(trim(r.supplier_invoice)) = lower(trim(?2)) LIMIT 1`,
+    )
+    .bind(poId, invoice)
+    .first();
+  return found !== null;
+}
+
+/** What the database refused a receipt for (migrations/0159), as the field it names. */
+function refusedField(error: unknown): string | null {
+  const message = error instanceof Error ? error.message : String(error);
+  return message.includes("over_received") ? "lines" : null;
+}
+
 /** What a receipt is checked against: its order's lines, each with the order's number, currency and state. */
 async function checkedReceipt(
   db: D1Database,
-  receipt: { readonly poId: string; readonly lines: readonly ReceiptLine[]; readonly rupeeRate: number | null },
+  receipt: {
+    readonly poId: string;
+    readonly lines: readonly ReceiptLine[];
+    readonly rupeeRate: number | null;
+    readonly supplierInvoice: string | null;
+  },
 ): Promise<
   | {
       readonly ok: true;
@@ -59,7 +85,8 @@ async function checkedReceipt(
 > {
   const { results: orderLines } = await db
     .prepare(
-      `SELECT l.id, l.consumable_code, l.unit_price, o.number, o.currency, o.state FROM po_lines l
+      `SELECT l.id, l.consumable_code, l.unit_price, l.quantity - l.received_quantity AS outstanding, o.number,
+         o.currency, o.state FROM po_lines l
        JOIN purchase_orders o ON o.id = l.po_id WHERE l.po_id = ?1`,
     )
     .bind(receipt.poId)
@@ -74,6 +101,14 @@ async function checkedReceipt(
   if (stray >= 0) return { ok: false, fields: [`lines.${String(stray)}`] };
   if (receipt.lines.every((line) => line.received + line.damaged + line.qcFailed === 0)) {
     return { ok: false, fields: ["lines"] };
+  }
+  // No line takes more than it still owes, however it arrived.
+  const over = matched.findIndex(
+    ({ line, of }) => line.received + line.damaged + line.qcFailed > (of?.outstanding ?? 0),
+  );
+  if (over >= 0) return { ok: false, fields: [`lines.${String(over)}`] };
+  if (receipt.supplierInvoice !== null && (await invoiceReceived(db, receipt.poId, receipt.supplierInvoice))) {
+    return { ok: false, fields: ["supplier_invoice"] };
   }
   return { ok: true, order, rate, matched };
 }
@@ -124,7 +159,7 @@ export async function receiveOrder(
       ...lineStatements(db, { receiptId: id, line, landedUnitPaise: landed[index] ?? 0, movementId }, written),
     );
   }
-  await db.batch([
+  const batch = [
     receivedAudit(db, { poId: receipt.poId, id, lines: receipt.lines.length }, written),
     db
       .prepare(
@@ -154,7 +189,15 @@ export async function receiveOrder(
          WHERE id = ?1 AND state IN ('sent', 'part_received')`,
       )
       .bind(receipt.poId, written.now.toISOString(), crypto.randomUUID()),
-  ]);
+  ];
+  try {
+    await db.batch(batch);
+  } catch (error) {
+    // A second receipt that landed beside this one took what was owed first.
+    const field = refusedField(error);
+    if (field === null) throw error;
+    return { ok: false, fields: [field] };
+  }
   return { ok: true, id };
 }
 

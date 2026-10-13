@@ -496,7 +496,7 @@ Request body:
 
 ### POST /api/visits/{id}/close
 
-Close a visit by hand, as done or partly done, for work whose technician's phone was lost
+Close a visit by hand, as done, partly done or a no-show, for work whose technician's phone was lost
 
 Request body:
 
@@ -538,7 +538,7 @@ Request body:
 }
 ```
 
-**409**: already_closed: the visit is closed or cancelled, or the technician's phone closed it
+**409**: already_closed: the visit is closed or cancelled, or the technician's phone closed it; no_check_in: a no-show stands on the technician's check-in, and there is none
 
 ```json
 {
@@ -546,7 +546,7 @@ Request body:
 }
 ```
 
-**425**: too_early_to_close: the visit's time has not come
+**425**: too_early_to_close: the visit's time, or a no-show's wait, has not come
 
 ```json
 {
@@ -1381,6 +1381,50 @@ The count tasks in the caller's places, and every item's class
 }
 ```
 
+### POST /api/count-tasks
+
+A count of one item at one place, started now; one already open is the answer
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/CountStart"
+}
+```
+
+**201**: A count task and its items, never a figure
+
+```json
+{
+  "$ref": "#/components/schemas/CountTask"
+}
+```
+
+**400**: invalid_request: fields names consumable_code where the place holds none of it
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no such place in the caller's reach
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ### GET /api/count-tasks/{id}
 
 A count task and its items, never a figure
@@ -1457,7 +1501,7 @@ Request body:
 }
 ```
 
-**400**: invalid_request: fields names lines where they are not every item the step counts
+**400**: invalid_request: fields names lines where they are not every item the step counts, or lines.N.labels where a line of an item held under labels has none or one twice, or lines.N.counted where it counts fewer than were scanned
 
 ```json
 {
@@ -1509,7 +1553,7 @@ Request body:
 }
 ```
 
-**400**: invalid_request: fields names lines where they are not every item the step counts
+**400**: invalid_request: fields names lines where they are not every item the step counts, or lines.N.labels where a line of an item held under labels has none or one twice, or lines.N.counted where it counts fewer than were scanned
 
 ```json
 {
@@ -1561,7 +1605,7 @@ Request body:
 }
 ```
 
-**400**: invalid_request: fields names lines where they are not every item the step counts
+**400**: invalid_request: fields names lines where they are not every item the step counts, or lines.N.labels where a line of an item held under labels has none or one twice, or lines.N.counted where it counts fewer than were scanned
 
 ```json
 {
@@ -9160,6 +9204,7 @@ Request body:
             "not_trained",
             "in_progress",
             "too_early_to_close",
+            "no_check_in",
             "too_early_to_arrive",
             "already_closed",
             "no_service_area",
@@ -9191,6 +9236,7 @@ Request body:
             "transfer_settled",
             "order_state",
             "same_approver",
+            "custom_order",
             "claim_state",
             "return_settled",
             "out_of_warranty",
@@ -9347,6 +9393,11 @@ Request body:
       "type": "string",
       "maxLength": 300,
       "description": "The page's path, with no query or fragment."
+    },
+    "version": {
+      "type": "string",
+      "maxLength": 40,
+      "description": "The build the page runs, as its mm-version."
     },
     "stack": {
       "type": "string",
@@ -12567,18 +12618,19 @@ Request body:
       "type": "string",
       "enum": [
         "done",
-        "partial"
+        "partial",
+        "no_show"
       ]
     },
     "started_at": {
       "type": "string",
       "format": "date-time",
-      "description": "When the work began, on the visit's own day."
+      "description": "When the work began, on the visit's own day; left out for a no-show."
     },
     "ended_at": {
       "type": "string",
       "format": "date-time",
-      "description": "When it ended: after it began, and not later than now."
+      "description": "When it ended: after it began, and not later than now; left out for a no-show."
     },
     "reason": {
       "type": "string",
@@ -12588,8 +12640,6 @@ Request body:
   },
   "required": [
     "outcome",
-    "started_at",
-    "ended_at",
     "reason"
   ],
   "additionalProperties": false
@@ -12687,6 +12737,7 @@ Request body:
             "not_trained",
             "in_progress",
             "too_early_to_close",
+            "no_check_in",
             "too_early_to_arrive",
             "already_closed",
             "no_service_area",
@@ -12718,6 +12769,7 @@ Request body:
             "transfer_settled",
             "order_state",
             "same_approver",
+            "custom_order",
             "claim_state",
             "return_settled",
             "out_of_warranty",
@@ -14584,6 +14636,25 @@ Request body:
           "place": {
             "type": "string"
           },
+          "item": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "consumable_code": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "consumable_code",
+              "name"
+            ],
+            "description": "The one item of a count ops started; null on the morning's tasks of a class."
+          },
           "count_class": {
             "type": "string",
             "enum": [
@@ -14610,11 +14681,31 @@ Request body:
           "id",
           "place_id",
           "place",
+          "item",
           "count_class",
           "due_on",
           "state"
         ]
       }
+    },
+    "places": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ]
+      },
+      "description": "The places in the caller's reach, where a count may be started."
     },
     "classes": {
       "type": "array",
@@ -14655,6 +14746,7 @@ Request body:
   },
   "required": [
     "tasks",
+    "places",
     "classes"
   ]
 }
@@ -14677,6 +14769,25 @@ Request body:
         },
         "place": {
           "type": "string"
+        },
+        "item": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "properties": {
+            "consumable_code": {
+              "type": "string"
+            },
+            "name": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "consumable_code",
+            "name"
+          ],
+          "description": "The one item of a count ops started; null on the morning's tasks of a class."
         },
         "count_class": {
           "type": "string",
@@ -14704,6 +14815,7 @@ Request body:
         "id",
         "place_id",
         "place",
+        "item",
         "count_class",
         "due_on",
         "state"
@@ -14728,12 +14840,25 @@ Request body:
               "sign_off",
               "settled"
             ]
+          },
+          "labelled": {
+            "type": "boolean",
+            "description": "Held there under labels, which are scanned to count it."
+          },
+          "unknown_labels": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Labels the latest count scanned that the place does not hold."
           }
         },
         "required": [
           "consumable_code",
           "name",
-          "state"
+          "state",
+          "labelled",
+          "unknown_labels"
         ]
       }
     }
@@ -14742,6 +14867,31 @@ Request body:
     "task",
     "items"
   ]
+}
+```
+
+### CountStart
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "place_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64
+    },
+    "consumable_code": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64
+    }
+  },
+  "required": [
+    "place_id",
+    "consumable_code"
+  ],
+  "additionalProperties": false
 }
 ```
 
@@ -14773,6 +14923,20 @@ Request body:
               "integer",
               "null"
             ]
+          },
+          "missing_labels": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Held there, and not scanned."
+          },
+          "unknown_labels": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Scanned, and not held there."
           }
         },
         "required": [
@@ -14780,7 +14944,9 @@ Request body:
           "name",
           "held",
           "counted",
-          "recounted"
+          "recounted",
+          "missing_labels",
+          "unknown_labels"
         ]
       }
     }
@@ -14811,6 +14977,17 @@ Request body:
             "type": "integer",
             "minimum": 0,
             "maximum": 1000000
+          },
+          "labels": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "pattern": "^[^\\p{Cc}]+$/u"
+            },
+            "maxItems": 500,
+            "description": "Of a hair system held under labels, each label scanned; `counted` counts them with any pieces there that carry none."
           }
         },
         "required": [
@@ -14849,6 +15026,17 @@ Request body:
             "type": "integer",
             "minimum": 0,
             "maximum": 1000000
+          },
+          "labels": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "pattern": "^[^\\p{Cc}]+$/u"
+            },
+            "maxItems": 500,
+            "description": "Of a hair system held under labels, each label scanned; `counted` counts them with any pieces there that carry none."
           }
         },
         "required": [
@@ -18337,6 +18525,7 @@ Request body:
         "plan_line.reject",
         "demand_event.add",
         "demand_event.remove",
+        "count_task.start",
         "count_task.count",
         "count_task.recount",
         "count_task.sign_off",
@@ -20098,6 +20287,10 @@ Request body:
             "type": "boolean",
             "description": "Trained to fit: only such a technician is offered or given a first fit (ADR 0119)."
           },
+          "visits_to_come": {
+            "type": "integer",
+            "description": "Their visits still to come and not begun, which switching them off leaves with nobody."
+          },
           "sign_in_stopped_at": {
             "anyOf": [
               {
@@ -20174,6 +20367,7 @@ Request body:
           "city",
           "mobile",
           "fits_trained",
+          "visits_to_come",
           "sign_in_stopped_at",
           "devices",
           "leave"
@@ -20228,6 +20422,10 @@ Request body:
           "fits_trained": {
             "type": "boolean",
             "description": "Trained to fit: only such a technician is offered or given a first fit (ADR 0119)."
+          },
+          "visits_to_come": {
+            "type": "integer",
+            "description": "Their visits still to come and not begun, which switching them off leaves with nobody."
           }
         },
         "required": [
@@ -20236,7 +20434,8 @@ Request body:
           "zone",
           "city",
           "mobile",
-          "fits_trained"
+          "fits_trained",
+          "visits_to_come"
         ],
         "additionalProperties": false
       },
@@ -20838,6 +21037,8 @@ Request body:
             "enum": [
               "untold_move",
               "move_unanswered",
+              "visit_left_open",
+              "unassigned_visit",
               "unanswered_chat",
               "city_matter",
               "remedy_approval",

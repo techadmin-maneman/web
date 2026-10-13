@@ -1,7 +1,7 @@
 // Operations · Purchasing (docs/decisions/0166-purchase-orders.md, 0169-supplier-claims.md). No design draws it;
 // every word here is ours. Only the Purchasing page reads it, loaded when it opens.
 
-import { FAILED, NOT_PERMITTED, OFFLINE } from "./common.ts";
+import { FAILED, NOT_PERMITTED, OFFLINE, UNCONFIRMED } from "./common.ts";
 
 export const purchasing = {
   title: "Purchasing",
@@ -179,6 +179,7 @@ export const purchasing = {
     rupee_rate: "Give the rupee rate for this currency.",
     order_state: "That order has moved on. Reload.",
     same_approver: "You gave its first approval. Another Operations manager gives the second.",
+    custom_order: "A client's custom order is on this order. Cancel the custom order, which refunds them.",
     claim_state: "That claim has moved on. Reload.",
     return_settled: "That piece is settled already. Reload.",
     out_of_warranty: "Its warranty has ended. Write it off instead.",
@@ -190,6 +191,7 @@ export const purchasing = {
     invalid_request: "Check the lines.",
     not_permitted: NOT_PERMITTED,
     offline: OFFLINE,
+    unconfirmed: UNCONFIRMED,
     unknown: FAILED,
   } as Readonly<Record<string, string>>,
 };

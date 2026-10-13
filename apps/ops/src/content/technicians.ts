@@ -1,6 +1,6 @@
 // Technicians: the roster, a technician's page, their leave and phones, and the waiting list's line.
 
-import { FAILED, NOT_PERMITTED, OFFLINE } from "./common.ts";
+import { FAILED, NOT_PERMITTED, OFFLINE, UNCONFIRMED } from "./common.ts";
 
 /**
  * The Technicians roster. The design draws five columns; four are answered, and the
@@ -82,6 +82,7 @@ export const technicians = {
       not_permitted: NOT_PERMITTED,
       not_found: "That phone is no longer theirs. Reload.",
       offline: OFFLINE,
+      unconfirmed: UNCONFIRMED,
       unknown: FAILED,
     } as Readonly<Record<string, string>>,
   },
@@ -126,6 +127,7 @@ export const technicians = {
       invalid_request: "The last day must follow the first, within a year.",
       not_found: "No longer exists. Reload.",
       offline: OFFLINE,
+      unconfirmed: UNCONFIRMED,
       unknown: FAILED,
     },
   },
@@ -171,7 +173,11 @@ export const technicians = {
   switchOff: {
     open: "Switch off",
     openLabel: (name: string) => `Switch off ${name}`,
-    warning: "Signs them out. Upcoming visits go back to the dispatch board.",
+    /** Said before they are switched off: what it leaves with nobody, which Tasks then raises. */
+    warning: (visits: number) =>
+      visits === 0
+        ? "Signs them out. Nothing is booked on them."
+        : `Signs them out. ${String(visits)} upcoming ${visits === 1 ? "visit goes" : "visits go"} back to the dispatch board with nobody, each on Tasks until someone is sent.`,
     confirm: "Switch off",
     sending: "Switching off",
     cancel: "Cancel",
@@ -200,6 +206,7 @@ export const technicians = {
     not_found: "No longer on the roster. Reload.",
     not_permitted: NOT_PERMITTED,
     offline: OFFLINE,
+    unconfirmed: UNCONFIRMED,
     unknown: FAILED,
   },
 } as const;

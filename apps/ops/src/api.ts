@@ -208,8 +208,7 @@ type ErrorCode = components["schemas"]["ErrorResponse"]["error"]["code"];
  * spent token is the same thing seen from behind Access.
  */
 function lapsedIn(response: Response, code: string | undefined): boolean {
-  if (response.type === "opaqueredirect") return true;
-  return response.status === 401 || code === "access_required";
+  return response.type === "opaqueredirect" || response.status === 401 || code === "access_required";
 }
 
 /** The console's one client; a feature with calls of its own (./care/care-api.ts) makes them with it. */
@@ -220,6 +219,8 @@ export const client = createClient<paths, ErrorCode | "signed_out">({
   onSessionEnded: markLapsed,
   // Access's redirect carries none of the API's codes.
   missingCode: (status) => (status === 0 ? "signed_out" : "unknown"),
+  // A write whose answer was lost is sent again under its key, and answered as it was (src/http/idempotency.ts).
+  keyWrites: true,
 });
 
 /** Where a job is being put: the technician, the India date and the window. */

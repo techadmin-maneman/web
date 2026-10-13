@@ -106,6 +106,13 @@ describe("a call", () => {
     expect(answer).toMatchObject({ ok: true, status: 202, body: { challenge_id: "c" } });
   });
 
+  it("names the page's build, as its index.html does, so the API's logs can tell an old one", async () => {
+    const sent = answering(() => json(200, { id: "a" }));
+    vi.stubGlobal("document", { querySelector: () => ({ content: "7a782035b563" }) });
+    await createClient<Paths, Code>().get("/api/visits/{id}", { path: { id: "a" } });
+    expect(new Headers(sent[0]?.init.headers).get("X-Client-Version")).toBe("7a782035b563");
+  });
+
   it("answers null for a success with nothing in it", async () => {
     answering(() => new Response(null, { status: 204 }));
     expect(await createClient<Paths, Code>().post("/api/auth/logout")).toMatchObject({ ok: true, body: null });
@@ -186,6 +193,30 @@ describe("a refusal", () => {
     expect(plain).toMatchObject({ ok: false, status: 409, code: "unknown" });
     const told = createClient<Paths, Code>({ missingCode: (status) => (status === 409 ? "superseded" : "unknown") });
     expect(await told.get("/api/visits/{id}", { path: { id: "a" } })).toMatchObject({ code: "superseded" });
+  });
+});
+
+describe("a keyed write", () => {
+  const keyOf = (sent: Sent | undefined) => new Headers(sent?.init.headers).get("Idempotency-Key");
+
+  it("goes with a new key each time it is answered, and with the same one again when its answer never came", async () => {
+    const answers = [
+      () => Promise.reject(new TypeError("lost")),
+      () => Promise.resolve(json(202, { challenge_id: "c" })),
+    ];
+    const sent: Sent[] = [];
+    vi.stubGlobal("fetch", (url: string, init: RequestInit) => {
+      sent.push({ url, init });
+      return (answers.shift() ?? (() => Promise.resolve(json(202, { challenge_id: "c" }))))();
+    });
+    const api = createClient<Paths, Code>({ keyWrites: true });
+    const lost = await api.post("/api/auth/otp", { body: { mobile: "9810000001" } });
+    expect(lost).toMatchObject({ ok: false, code: "unconfirmed" });
+    await api.post("/api/auth/otp", { body: { mobile: "9810000001" } });
+    await api.post("/api/auth/otp", { body: { mobile: "9810000001" } });
+    expect(keyOf(sent[0])).not.toBeNull();
+    expect(keyOf(sent[1])).toBe(keyOf(sent[0]));
+    expect(keyOf(sent[2])).not.toBe(keyOf(sent[0]));
   });
 });
 
@@ -360,6 +391,6 @@ describe("the types each call is given and answers with", () => {
 
   it("answer a refusal with one of the document's codes, or the client's own", () => {
     type Refused = Extract<Answer<unknown, Code>, { ok: false }>["code"];
-    expectTypeOf<Refused>().toEqualTypeOf<Code | "offline" | "unknown">();
+    expectTypeOf<Refused>().toEqualTypeOf<Code | "offline" | "unconfirmed" | "unknown">();
   });
 });

@@ -19,6 +19,7 @@ const ReportSchema = z
     kind: z.enum(["error", "unhandled_rejection", "render", "outbox_gave_up"]),
     message: z.string().max(500),
     path: z.string().max(300).openapi({ description: "The page's path, with no query or fragment." }),
+    version: z.string().max(40).optional().openapi({ description: "The build the page runs, as its mm-version." }),
     stack: z.string().max(4000).optional(),
     source: z.string().max(500).optional().openapi({ description: "The script the error was thrown in." }),
     line: z.number().int().nonnegative().optional(),

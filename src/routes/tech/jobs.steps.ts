@@ -64,6 +64,7 @@ import {
 
 import { pieceBody } from "./jobs.piece.ts";
 import { registerPhotographs } from "./jobs.photos.ts";
+import { NO_PIECE, takesStep } from "../../policy/in-job-steps.ts";
 
 export function registerTechJobSteps(app: App): void {
   registerArrival(app);
@@ -326,13 +327,18 @@ function registerProfileAndOutcome(app: App): void {
     return step(
       c,
       "outcome",
-      async () => {
+      async (job) => {
         if (body.outcome === "done") {
           if (body.lost_reason === undefined) return { outcome: "done" };
           const lost = knownCodes((await jobSheet(c.env.DB)).lostReasons);
           return lost.has(body.lost_reason)
             ? { outcome: "done", lost_reason: body.lost_reason }
             : { invalid: ["lost_reason"] };
+        }
+        if (body.cannot_fit === true) {
+          return body.reason === NO_PIECE && takesStep("piece", job.type, job.oneVisit !== null)
+            ? { outcome: "partial", reason: NO_PIECE, cannot_fit: true }
+            : { invalid: ["cannot_fit"] };
         }
         const known = knownCodes((await jobSheet(c.env.DB)).partialReasons);
         return known.has(body.reason) ? { outcome: "partial", reason: body.reason } : { invalid: ["reason"] };

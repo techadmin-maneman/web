@@ -212,6 +212,9 @@ async function refundTaken(
 /** The longest event body read. */
 const MAX_EVENT_BYTES = 1024 * 1024;
 
+/** What a custom order's payment needs of the request: the salt its payer's number is hashed with, and the alerts. */
+const paidDepsOf = (c: Context<AppEnv>) => ({ ...c.var.deps, hashSalt: c.var.config.settings.ipHashSalt });
+
 export function registerRazorpayHook(app: App): void {
   app.openapi(razorpayHookRoute, async (c) => {
     const { requestId, log, config, deps } = c.var;
@@ -256,7 +259,7 @@ export function registerRazorpayHook(app: App): void {
       const hold = await holdOfLink(db, { razorpayLinkId: link.id, reference: link.reference_id ?? null });
       const customOrder = hold === null ? await customOrderOfLink(db, link) : null;
       if (customOrder !== null) {
-        await customOrderPaid(db, { orderId: customOrder, payment }, config.settings.ipHashSalt, now);
+        await customOrderPaid(db, { orderId: customOrder, payment }, paidDepsOf(c), now);
         log.info("razorpay_hook_custom_order_paid", { custom_order_id: customOrder });
       } else if (hold === null) {
         const visit = await linkPaid(db, { link, payment }, config.settings.ipHashSalt, now);

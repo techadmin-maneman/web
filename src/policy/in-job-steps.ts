@@ -97,6 +97,13 @@ export function landsAfterClose(kind: JobEventKind, closedAt: Date, now: Date): 
   return now.getTime() - closedAt.getTime() < CORRECTION_WINDOW_MS;
 }
 
+/** A fit's way out at its piece step, "Can't fit today": its outcome's partial reason, which ops do not keep. */
+export const NO_PIECE = "no_piece";
+
+/** Whether an outcome is "Can't fit today", closing a fit from its piece step. */
+const cannotFit = (kind: JobEventKind, body: Record<string, unknown>): boolean =>
+  kind === "outcome" && body.cannot_fit === true;
+
 /** Whether an event closes the job as a no-show (src/policy/no-show.ts). */
 export const isNoShow = (kind: JobEventKind, body: Record<string, unknown>): boolean =>
   kind === "outcome" && body.outcome === "no_show";
@@ -123,7 +130,8 @@ export function stepBefore({
   if (kind === "start" || isNoShow(kind, body)) return done.has("check_in") ? null : "check_in";
   if (!done.has("start")) return "start";
   const wanted: readonly JobEventKind[] = stepsFor(type, oneVisit);
-  const position = wanted.indexOf(kind);
+  // "Can't fit today" closes the job where its piece is asked for, so it follows the step before the piece.
+  const position = wanted.indexOf(cannotFit(kind, body) && wanted.includes("piece") ? "piece" : kind);
   if (position <= 0) return null;
   const previous = wanted[position - 1];
   return previous === undefined || done.has(previous) ? null : previous;

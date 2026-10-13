@@ -2,31 +2,32 @@
 //   GET  /api/count-tasks                     the tasks still to finish and those done in the last week, in the
 //                                             caller's places, and every item with its class
 //   GET  /api/count-tasks/{id}                one task and its items, never a figure
+//   POST /api/count-tasks                     a count of one item at one place, started now
 //   GET  /api/count-tasks/{id}/differences    the lines waiting for a sign-off, with what was held and both counts
-//   POST /api/count-tasks/{id}/counts         an open task counted, every item it lists
+//   POST /api/count-tasks/{id}/counts         an open task counted, every item it lists; a hair system held under
+//                                             labels by the labels scanned
 //   POST /api/count-tasks/{id}/recounts       the lines that differed counted again
 //   POST /api/count-tasks/{id}/sign-off       a recount that still differs signed off, with why
 //   POST /api/consumables/{code}/count-class  an item's class set, or put back to its kind's own
 //
-// Read with Operations VIEW in the caller's places; counted with ACT; the differences and the sign-off with MANAGE;
-// the classes with Operations MANAGE.
+// Read with Operations VIEW in the caller's places; started and counted with ACT; the differences and the sign-off
+// with MANAGE; the classes with Operations MANAGE.
 
 import { createRoute, z } from "@hono/zod-openapi";
 import type { Context } from "hono";
 import {
-  countClasses,
   countItems,
   countTask,
   countTasks,
   differences,
-  setCountClass,
   signOff,
   submitCounts,
   submitRecounts,
   type CountTask,
   type Stepped,
 } from "../../domain/field/count-tasks.ts";
-import { isPlaceWithin, placesWithin } from "../../domain/field/stock-places.ts";
+import { countClasses, setCountClass, startCount } from "../../domain/field/cycle-counts.ts";
+import { allPlaces, isPlaceWithin, placeById, placesWithin } from "../../domain/field/stock-places.ts";
 import { actorOf } from "../../http/audit.ts";
 import { opsInputs } from "../../http/ops-inputs.ts";
 import type { App, AppEnv } from "../../http/context.ts";
@@ -35,6 +36,7 @@ import { json } from "../../http/openapi.ts";
 import { routeReach } from "../../http/staff-access.ts";
 import { addDays, indiaDate } from "../../lib/india-time.ts";
 import { MAX_NOTE } from "../../config/consumables.ts";
+import { MAX_LABELLED } from "../../domain/field/stock-units.ts";
 import { COUNT_CLASSES } from "../../policy/cycle-counts.ts";
 
 /** How long a done task stays on the list. */
@@ -54,6 +56,10 @@ const TaskSchema = z.object({
   id: z.string(),
   place_id: z.string(),
   place: z.string(),
+  item: z
+    .object({ consumable_code: z.string(), name: z.string() })
+    .nullable()
+    .openapi({ description: "The one item of a count ops started; null on the morning's tasks of a class." }),
   count_class: Class,
   due_on: z.iso.date(),
   state: State,
@@ -65,6 +71,9 @@ const TASKS = {
     z
       .object({
         tasks: z.array(TaskSchema),
+        places: z
+          .array(z.object({ id: z.string(), name: z.string() }))
+          .openapi({ description: "The places in the caller's reach, where a count may be started." }),
         classes: z.array(
           z.object({
             consumable_code: z.string(),
@@ -90,6 +99,10 @@ const TASK = {
             consumable_code: z.string(),
             name: z.string(),
             state: z.enum(["to_count", "recount", "sign_off", "settled"]),
+            labelled: z.boolean().openapi({ description: "Held there under labels, which are scanned to count it." }),
+            unknown_labels: z
+              .array(z.string())
+              .openapi({ description: "Labels the latest count scanned that the place does not hold." }),
           }),
         ),
       })
@@ -99,16 +112,36 @@ const TASK = {
 
 const ACCESS = errorResponse("access_required");
 const taskPath = { params: z.object({ id: z.string().min(1).max(64) }) };
+const Label = z
+  .string()
+  .trim()
+  .min(1)
+  .max(64)
+  .regex(/^[^\p{Cc}]+$/u);
 const Lines = z
   .object({
     lines: z
-      .array(z.object({ consumable_code: Code, counted: z.number().int().min(0).max(1_000_000) }).strict())
+      .array(
+        z
+          .object({
+            consumable_code: Code,
+            counted: z.number().int().min(0).max(1_000_000),
+            labels: z.array(Label).max(MAX_LABELLED).optional().openapi({
+              description:
+                "Of a hair system held under labels, each label scanned; `counted` counts them with any pieces there that carry none.",
+            }),
+          })
+          .strict(),
+      )
       .max(500),
   })
   .strict();
 const STEP_ANSWERS = {
   200: TASK,
-  400: errorResponse("invalid_request: fields names lines where they are not every item the step counts"),
+  400: errorResponse(
+    "invalid_request: fields names lines where they are not every item the step counts, or lines.N.labels where a line " +
+      "of an item held under labels has none or one twice, or lines.N.counted where it counts fewer than were scanned",
+  ),
   403: ACCESS,
   404: errorResponse("not_found: no such task in the caller's places"),
   409: errorResponse("order_state: the task has moved past this step"),
@@ -119,6 +152,29 @@ const listRoute = createRoute({
   path: "/api/count-tasks",
   summary: "The count tasks in the caller's places, and every item's class",
   responses: { 200: TASKS, 403: ACCESS },
+});
+
+const startRoute = createRoute({
+  method: "post",
+  path: "/api/count-tasks",
+  summary: "A count of one item at one place, started now; one already open is the answer",
+  request: {
+    body: {
+      required: true,
+      ...json(
+        z
+          .object({ place_id: z.string().min(1).max(64), consumable_code: Code })
+          .strict()
+          .openapi("CountStart"),
+      ),
+    },
+  },
+  responses: {
+    201: TASK,
+    400: errorResponse("invalid_request: fields names consumable_code where the place holds none of it"),
+    403: ACCESS,
+    404: errorResponse("not_found: no such place in the caller's reach"),
+  },
 });
 
 const taskRoute = createRoute({
@@ -147,6 +203,8 @@ const differencesRoute = createRoute({
                 held: z.number().int(),
                 counted: z.number().int(),
                 recounted: z.number().int().nullable(),
+                missing_labels: z.array(z.string()).openapi({ description: "Held there, and not scanned." }),
+                unknown_labels: z.array(z.string()).openapi({ description: "Scanned, and not held there." }),
               }),
             ),
           })
@@ -205,6 +263,7 @@ const taskJson = (task: CountTask) => ({
   id: task.id,
   place_id: task.placeId,
   place: task.place,
+  item: task.item === null ? null : { consumable_code: task.item.code, name: task.item.name },
   count_class: task.countClass,
   due_on: task.dueOn,
   state: task.state,
@@ -213,12 +272,16 @@ const taskJson = (task: CountTask) => ({
 async function tasksAnswer(c: Context<AppEnv>) {
   const now = c.var.deps.now();
   const within = await placesWithin(c.env.DB, await routeReach(c));
-  const [tasks, classes] = await Promise.all([
+  const [tasks, classes, places] = await Promise.all([
     countTasks(c.env.DB, within, addDays(indiaDate(now), -DONE_SHOWN_DAYS)),
     countClasses(c.env.DB),
+    allPlaces(c.env.DB),
   ]);
   return {
     tasks: tasks.map(taskJson),
+    places: places
+      .filter((place) => place.active && isPlaceWithin(within, place.id))
+      .map((place) => ({ id: place.id, name: place.name })),
     classes: classes.map((item) => ({
       consumable_code: item.code,
       name: item.name,
@@ -240,7 +303,13 @@ async function taskAnswer(c: Context<AppEnv>, task: CountTask) {
   const items = await countItems(c.env.DB, task);
   return {
     task: taskJson(task),
-    items: items.map((item) => ({ consumable_code: item.code, name: item.name, state: item.state })),
+    items: items.map((item) => ({
+      consumable_code: item.code,
+      name: item.name,
+      state: item.state,
+      labelled: item.labelled,
+      unknown_labels: [...item.unknown],
+    })),
   };
 }
 
@@ -265,10 +334,21 @@ async function after(c: Context<AppEnv>, stepped: Stepped) {
 }
 
 const linesOf = (body: z.infer<typeof Lines>) =>
-  body.lines.map((line) => ({ code: line.consumable_code, counted: line.counted }));
+  body.lines.map((line) => ({ code: line.consumable_code, counted: line.counted, labels: line.labels }));
 
 export function registerOpsCountTasks(app: App): void {
   app.openapi(listRoute, async (c) => c.json(await tasksAnswer(c), 200));
+
+  app.openapi(startRoute, async (c) => {
+    const { place_id: place, consumable_code: code } = c.req.valid("json");
+    const within = isPlaceWithin(await placesWithin(c.env.DB, await routeReach(c)), place);
+    if (!within || (await placeById(c.env.DB, place)) === null) return refuse(c, "not_found");
+    const today = indiaDate(c.var.deps.now());
+    const id = await startCount(c.env.DB, { place, code, today }, written(c));
+    const task = id === null ? null : await countTask(c.env.DB, id);
+    if (task === null) return refuse(c, "invalid_request", ["consumable_code"]);
+    return c.json(await taskAnswer(c, task), 201);
+  });
 
   app.openapi(taskRoute, async (c) => {
     const task = await taskInReach(c, c.req.valid("param").id);
@@ -288,6 +368,8 @@ export function registerOpsCountTasks(app: App): void {
           held: line.held,
           counted: line.counted,
           recounted: line.recounted,
+          missing_labels: [...line.missing],
+          unknown_labels: [...line.unknown],
         })),
       },
       200,

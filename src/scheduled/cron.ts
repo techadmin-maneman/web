@@ -22,6 +22,7 @@ import { syncBooks } from "../domain/books/books-sync.ts";
 import type { BooksSyncOptions } from "../domain/books/books-pass.ts";
 import { closeStaleLowStock } from "../domain/field/low-stock.ts";
 import { settleOwedRefunds } from "../domain/money/cancel-refunds.ts";
+import { settleOwedNoShowRefunds } from "../domain/no-shows/after-a-ruling.ts";
 import { retellUndelivered } from "../domain/ops/alerts.ts";
 import { watchStock } from "../domain/field/stock-watch.ts";
 import { finishRun, startRun, type RunStart } from "../domain/platform/cron-runs.ts";
@@ -61,6 +62,7 @@ import {
 import { CRON_CALLS, type Timing } from "./schedule.ts";
 import { checkWhatsAppBridge } from "./whatsapp-bridge.ts";
 import { type MessagingMessage } from "../config/pipeline.ts";
+import { tellOfUnassignedToday } from "../domain/dispatch/unassigned.ts";
 
 export interface CronContext {
   readonly env: Env;
@@ -73,6 +75,9 @@ export interface CronContext {
   /** The figures ops set, read once for the run by the first job that asks. */
   readonly inputs: () => Promise<OpsInputs>;
 }
+
+const stockWatch = ({ env, deps }: CronContext) => watchStock(env.DB, deps);
+const unassignedToday = ({ env, deps }: CronContext) => tellOfUnassignedToday(env.DB, deps);
 
 /** What a run is given; the budget and the figures ops set are the run's own, shared by its jobs. */
 type CronRun = Omit<CronContext, "budget" | "inputs"> & {
@@ -140,9 +145,12 @@ async function unbookedHoldsJob({ env, deps, log, budget }: CronContext): Promis
   if (booked > 0) log.warn("unbooked_holds_booked", { count: booked });
 }
 
+/** Refunds a request owed and did not settle: a cancel's, then a no-show ruling's. */
 async function cancelRefundsJob({ env, deps, log, budget }: CronContext): Promise<void> {
   const settled = await settleOwedRefunds(env.DB, { ...deps, budget, log }, deps.now());
   if (settled > 0) log.warn("cancel_refunds_settled", { count: settled });
+  const noShows = await settleOwedNoShowRefunds(env.DB, { ...deps, budget }, deps.now());
+  if (noShows > 0) log.warn("no_show_refunds_settled", { count: noShows });
 }
 
 async function erasedFilesJob({ env, deps, log }: CronContext): Promise<void> {
@@ -167,14 +175,7 @@ async function alertsRetoldJob({ env, deps, config, log }: CronContext): Promise
   if (told > 0) log.info("alerts_retold", { told });
 }
 
-/** Stock that expires soon, and transfers long on their way, told each morning (src/domain/field/stock-watch.ts). */
-async function stockWatchJob({ env, deps }: CronContext): Promise<void> {
-  await watchStock(env.DB, deps);
-}
-
-async function deletionAlertsJob({ env, deps }: CronContext): Promise<void> {
-  await alertAgedDeletions(env.DB, deps.now(), deps.alertOnce);
-}
+const deletionAlertsJob = ({ env, deps }: CronContext) => alertAgedDeletions(env.DB, deps.now(), deps.alertOnce);
 
 async function grievanceAlertsJob({ env, deps, config }: CronContext): Promise<void> {
   await tellOfNewGrievances(env.DB, deps.alert, `${OPS_ORIGIN[config.environment]}/grievances`, deps.now());
@@ -225,13 +226,9 @@ async function backupJob({ env, deps, config, log }: CronContext): Promise<void>
 }
 
 /** A low-stock alert whose consumable was retired since, or whose retirement came round, closes. */
-async function lowStockJob({ env, deps }: CronContext): Promise<void> {
-  await closeStaleLowStock(env.DB, deps);
-}
+const lowStockJob = ({ env, deps }: CronContext) => closeStaleLowStock(env.DB, deps);
 
-async function whatsAppBridgeJob({ deps, log, budget }: CronContext): Promise<void> {
-  await checkWhatsAppBridge(deps, log, budget);
-}
+const whatsAppBridgeJob = ({ deps, log, budget }: CronContext) => checkWhatsAppBridge(deps, log, budget);
 
 /** Records yesterday's figure on the first run of the day; the day's later runs find it recorded. */
 async function utilisationJob({ env, deps, log }: CronContext): Promise<void> {
@@ -350,7 +347,8 @@ export const CRON_JOBS: readonly CronJob[] = [
   { name: "kept_looks", needs: "nothing", every: 60, at: 19, run: letKeptLooksGo },
   { name: "deletion_alerts", needs: "nothing", every: 60, at: 24, run: deletionAlertsJob },
   // Stock that expires within a month, and transfers a week on their way, in the hour from 9 am in India.
-  { name: "stock_watch", needs: "nothing", every: 60, at: 44, run: stockWatchJob },
+  // Stock that expires soon, and transfers long on their way, told each morning (src/domain/field/stock-watch.ts).
+  { name: "stock_watch", needs: "nothing", every: 60, at: 44, run: stockWatch },
   // The grievances raised in the hour, in one message, so one client cannot flood the chat.
   { name: "grievance_alerts", needs: "nothing", every: 60, at: 24, run: grievanceAlertsJob },
   { name: "housekeeping", needs: "nothing", every: 60, at: 28, run: deleteExpiredRecords },
@@ -367,6 +365,8 @@ export const CRON_JOBS: readonly CronJob[] = [
   { name: "task_spans", needs: "nothing", every: 60, at: 26, run: taskSpansJob },
   // The operating figure behind the weekend-share assumption (src/policy/dispatch.ts): once a day, the day's board.
   { name: "dispatch_utilisation", needs: "nothing", every: 60, at: 43, run: utilisationJob },
+  // A visit today with no technician, told each hour until someone is sent (src/domain/dispatch/unassigned.ts).
+  { name: "unassigned_today", needs: "nothing", every: 60, at: 46, run: unassignedToday },
   { name: "low_stock", needs: "nothing", every: 60, at: 50, run: lowStockJob },
   // The next service falling due with nothing booked (docs/decisions/0086-the-next-visit-is-offered.md).
   { name: "next_service_reminders", needs: "messaging", every: 60, at: 44, run: nextServiceRemindersJob },

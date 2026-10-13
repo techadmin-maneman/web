@@ -52,3 +52,24 @@ export function creditBack(db: D1Database, appointmentId: string, now: Date, rul
     )
     .bind(crypto.randomUUID(), appointmentId, now.toISOString(), ruled.id, ruled.rulingId);
 }
+
+/**
+ * What the ruling this request made gives back of the visit's payment, kept as owed in its batch, so a request that
+ * stops after the commit leaves it for the cron's refund job (src/domain/no-shows/after-a-ruling.ts).
+ */
+export function refundOwed(
+  db: D1Database,
+  owed: { readonly appointmentId: string; readonly why: string; readonly amount: number; readonly now: Date },
+  ruled: RulingClaim,
+): { id: string; statement: D1PreparedStatement } {
+  const id = crypto.randomUUID();
+  const statement = db
+    .prepare(
+      `INSERT INTO no_show_refunds (id, appointment_id, why, amount, created_at)
+       SELECT ?1, ?2, ?3, ?4, ?5
+       WHERE EXISTS (SELECT 1 FROM ${ruled.table} WHERE id = ?6 AND ruling_id = ?7)
+       ON CONFLICT DO NOTHING`,
+    )
+    .bind(id, owed.appointmentId, owed.why, owed.amount, owed.now.toISOString(), ruled.id, ruled.rulingId);
+  return { id, statement };
+}

@@ -3899,6 +3899,34 @@
     "text": "Your address"
   },
   {
+    "key": "site:referral/referral.address.building.label",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "Search for your building"
+  },
+  {
+    "key": "site:referral/referral.address.building.hint",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "Search for your building or society, so your technician can find you."
+  },
+  {
+    "key": "site:referral/referral.address.building.unavailable",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "Search isn’t available right now. Type your address below instead."
+  },
+  {
+    "key": "site:referral/referral.address.building.attribution",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "Google Maps"
+  },
+  {
     "key": "site:referral/referral.address.labels.flat",
     "surface": "site",
     "group": "Invite page",
@@ -4849,6 +4877,13 @@
     "group": "Messages",
     "where": "deletion_rejected_v1",
     "text": "Hi {{1}}, we haven't deleted your Mane Man account.\nOur reason: {{2}} Message us if you disagree."
+  },
+  {
+    "key": "message:concern_answered_v1",
+    "surface": "message",
+    "group": "Messages",
+    "where": "concern_answered_v1",
+    "text": "Hi {{1}}, we've answered your concern.\nRead our reply in the Mane Man app, under Profile."
   },
   {
     "key": "message:deletion_done_v1",

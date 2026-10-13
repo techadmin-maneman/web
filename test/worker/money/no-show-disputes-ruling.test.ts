@@ -8,7 +8,9 @@
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { App } from "../../../src/http/context.ts";
+import { settleOwedNoShowRefunds } from "../../../src/domain/no-shows/after-a-ruling.ts";
 import { ruleOnDispute } from "../../../src/domain/no-shows/no-show-disputes.ts";
+import { createCallBudget } from "../../../src/lib/call-budget.ts";
 import { composeVisitMessage } from "../../../src/domain/messages/visit-message-text.ts";
 import { openSession } from "../../../src/domain/sign-in/sessions.ts";
 import type { DisputeRuling } from "../../../src/policy/no-show.ts";
@@ -228,10 +230,11 @@ describe("POST /api/no-shows/disputes/:id/ruling", () => {
   });
 
   // Once the ruling has committed, a retry answers "ruled already" and the client's message says the money is on its
-  // way; so nothing between the commit and Razorpay may fail without ops hearing of the refund owed.
-  it("tells ops of the refund owed when the database fails once the ruling has committed", async () => {
+  // way; so the refund is kept as owed in the ruling's batch, and the cron's refund job makes what the request did not.
+  it("keeps the refund owed when the database fails once the ruling has committed, and the cron makes it", async () => {
     const id = await raised();
-    const deps = fakeDependencies();
+    const payments = createStubPayments();
+    const deps = fakeDependencies({ payments });
 
     const answer = await request(
       appFor("local", deps, {}, "ops"),
@@ -245,10 +248,10 @@ describe("POST /api/no-shows/disputes/:id/ruling", () => {
     );
 
     expect(answer.status).toBe(200);
-    expect(deps.alerts).toEqual([
-      `The refund of Rs. 4,000 for visit ${VISIT}, a no-show refunded on dispute, failed (its payment could not be ` +
-        `read). Refund it by hand in Razorpay, once. http://ops.localhost:4323/clients/${PERSON}/payments`,
-    ]);
+    expect(payments.made.refunds).toEqual([]);
+    const later = new Date(NOW.getTime() + 11 * 60_000);
+    expect(await settleOwedNoShowRefunds(env.DB, { ...deps, budget: createCallBudget(40) }, later)).toBe(1);
+    expect(payments.made.refunds).toEqual([expect.objectContaining({ paymentId: "pay_visit", amount: 400000 })]);
   });
 
   it("refunds at most what is left of the payment, where some went back by hand since the charge", async () => {

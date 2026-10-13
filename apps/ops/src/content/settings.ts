@@ -1,6 +1,6 @@
 // Settings: the rules, the services and their prices, discount codes, the consumables, the job sheet and staff.
 
-import { FAILED, NOT_PERMITTED, OFFLINE } from "./common.ts";
+import { FAILED, NOT_PERMITTED, OFFLINE, UNCONFIRMED } from "./common.ts";
 import { grantPhrasing, settingsTabs } from "./settings-shell.ts";
 import { dispatch } from "./dispatch.ts";
 import { tasks } from "./tasks.ts";
@@ -128,6 +128,7 @@ export const settings = {
       code_exists: "That code already exists.",
       not_found: "That code no longer exists. Reload.",
       offline: OFFLINE,
+      unconfirmed: UNCONFIRMED,
       unknown: FAILED,
     } as Readonly<Record<string, string>>,
   },
@@ -288,6 +289,7 @@ export const settings = {
       not_permitted: NOT_PERMITTED,
       invalid_request: "Out of range. Not saved.",
       offline: OFFLINE,
+      unconfirmed: UNCONFIRMED,
       unknown: FAILED,
     } as Readonly<Record<string, string>>,
   },
@@ -327,6 +329,7 @@ export const settings = {
       city: "Choose one of our cities.",
       not_found: "Already reopened. Reload.",
       offline: OFFLINE,
+      unconfirmed: UNCONFIRMED,
       unknown: FAILED,
     } as Readonly<Record<string, string>>,
   },
@@ -349,6 +352,7 @@ export const settings = {
       not_found: "That product is no longer sold. Reload.",
       not_permitted: NOT_PERMITTED,
       offline: OFFLINE,
+      unconfirmed: UNCONFIRMED,
       unknown: FAILED,
     },
   },
@@ -488,6 +492,7 @@ export const settings = {
       service_retired: "It's retired by then, so it can't be priced.",
       not_found: "No longer exists. Reload.",
       offline: OFFLINE,
+      unconfirmed: UNCONFIRMED,
       unknown: FAILED,
     } as Readonly<Record<string, string>>,
     /** Taking back a price that applies already, or has applied: it may stand on an invoice. */
@@ -577,6 +582,7 @@ export const settings = {
       invalid_request: "Check the details.",
       not_permitted: NOT_PERMITTED,
       offline: OFFLINE,
+      unconfirmed: UNCONFIRMED,
       unknown: FAILED,
     } as Readonly<Record<string, string>>,
   },
@@ -629,6 +635,7 @@ export const settings = {
         invalid_request: "Check the figures.",
         not_permitted: NOT_PERMITTED,
         offline: OFFLINE,
+        unconfirmed: UNCONFIRMED,
         unknown: FAILED,
       } as Readonly<Record<string, string>>,
     },
@@ -707,6 +714,7 @@ export const settings = {
       items: "Unknown or repeated consumable.",
       not_found: "No longer listed. Reload.",
       offline: OFFLINE,
+      unconfirmed: UNCONFIRMED,
       unknown: FAILED,
     } as Readonly<Record<string, string>>,
   },
@@ -755,6 +763,7 @@ export const settings = {
       items: "Too few or too many items.",
       label: "Each item needs words, within the limit, with no repeats.",
       offline: OFFLINE,
+      unconfirmed: UNCONFIRMED,
       unknown: FAILED,
     } as Readonly<Record<string, string>>,
   },
@@ -817,6 +826,7 @@ export const settings = {
       not_permitted: "You need Admin · Manage, and can grant only within your own area.",
       last_admin: "Someone must keep national Admin · Manage. Grant it to someone else first.",
       offline: OFFLINE,
+      unconfirmed: UNCONFIRMED,
       unknown: FAILED,
     } as Readonly<Record<string, string>>,
     enforcement: {
@@ -836,6 +846,7 @@ export const settings = {
       errors: {
         not_permitted: "Only national Admin · Manage can change this.",
         offline: OFFLINE,
+        unconfirmed: UNCONFIRMED,
         unknown: FAILED,
       } as Readonly<Record<string, string>>,
     },
@@ -860,6 +871,7 @@ export const settings = {
         not_found: "No longer listed. Reload.",
         not_permitted: "Only national Admin · Manage can change service tokens.",
         offline: OFFLINE,
+        unconfirmed: UNCONFIRMED,
         unknown: FAILED,
       } as Readonly<Record<string, string>>,
     },

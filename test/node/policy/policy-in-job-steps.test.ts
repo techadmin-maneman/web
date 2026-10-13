@@ -68,6 +68,19 @@ describe("the steps of a job", () => {
     expect(stepBefore({ kind: "after_photos", type: "replacement", done: toConsumables, body: {} })).toBe("piece");
   });
 
+  it("closes a fit from its piece step, Can't fit today, once the step before the piece is in", () => {
+    const cannotFit = { outcome: "partial", reason: "no_piece", cannot_fit: true };
+    const toConsumables = done("check_in", "start", "before_photos", "checklist", "consumables");
+    expect(stepBefore({ kind: "outcome", type: "first_fit", done: toConsumables, body: cannotFit })).toBeNull();
+    const toChecklist = done("check_in", "start", "before_photos", "checklist");
+    expect(stepBefore({ kind: "outcome", type: "replacement", done: toChecklist, body: cannotFit })).toBe(
+      "consumables",
+    );
+    // Any other outcome still follows the after photographs.
+    const partial = { outcome: "partial", reason: "client_stopped_it" };
+    expect(stepBefore({ kind: "outcome", type: "first_fit", done: toConsumables, body: partial })).toBe("after_photos");
+  });
+
   // A declined one visit's checklist asked for the fit's items, since the choice came after it.
   it("takes a one visit's choice, at the piece, before its checklist, and then the rest in order", () => {
     expect(stepsFor("first_fit", true)).toEqual([

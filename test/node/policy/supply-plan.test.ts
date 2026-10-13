@@ -1,7 +1,16 @@
 // The supply plan's rules (src/policy/supply-plan.ts; docs/decisions/0180-supply-plan.md).
 
 import { describe, expect, it } from "vitest";
-import { lend, needOver, orderQuantity, periodsCovering, shortOf, spareOf } from "../../../src/policy/supply-plan.ts";
+import {
+  coverDays,
+  lend,
+  needOver,
+  orderQuantity,
+  periodsCovering,
+  shortOf,
+  spareOf,
+  supplierFor,
+} from "../../../src/policy/supply-plan.ts";
 
 describe("the supply plan", () => {
   it("sees across the supplier's lead time and a period more", () => {
@@ -51,5 +60,26 @@ describe("the supply plan", () => {
       ["Noida", 1],
       ["Gurgaon", 5],
     ]);
+  });
+
+  it("counts the days stock lasts against the forecast, its cities' periods added", () => {
+    const forecast = [
+      { period: 0, expected: 2, high: 3 },
+      { period: 0, expected: 1, high: 2 },
+      { period: 1, expected: 4, high: 5 },
+    ];
+    expect(coverDays(forecast, 0, 7)).toBe(0);
+    expect(coverDays(forecast, 3, 7)).toBe(7);
+    expect(coverDays(forecast, 5, 7)).toBe(10);
+    expect(coverDays(forecast, 7, 7)).toBe(Number.POSITIVE_INFINITY);
+  });
+
+  it("orders from the cheapest supplier, unless the stock runs out before they could deliver; then the quickest", () => {
+    const abroad = { id: "abroad", unit_price: 900, lead_time_days: 42 };
+    const local = { id: "local", unit_price: 1_200, lead_time_days: 7 };
+    const nearer = { id: "nearer", unit_price: 1_100, lead_time_days: 7 };
+    expect(supplierFor([local, abroad], 60)?.id).toBe("abroad");
+    expect(supplierFor([local, abroad, nearer], 10)?.id).toBe("nearer");
+    expect(supplierFor<typeof local>([], 10)).toBeUndefined();
   });
 });

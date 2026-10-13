@@ -180,7 +180,8 @@ type Changed =
   | { readonly ok: true }
   | { readonly ok: false; readonly missing: true }
   | { readonly ok: false; readonly state: true }
-  | { readonly ok: false; readonly sameApprover: true };
+  | { readonly ok: false; readonly sameApprover: true }
+  | { readonly ok: false; readonly customOrder: true };
 
 /** An update of one order, `?1` its ID, stamping `change_id = ?9`, which this request's token fills. */
 interface OrderUpdate {
@@ -266,8 +267,16 @@ export function closeOrder(db: D1Database, id: string, written: Written): Promis
   return changed(db, { id, action: "purchase_order.close" }, update, written);
 }
 
-/** An order cancelled, with why, before anything of it arrived. */
-export function cancelOrder(db: D1Database, id: string, reason: string, written: Written): Promise<Changed> {
+/**
+ * An order cancelled, with why, before anything of it arrived. One carrying a client's custom order is cancelled
+ * through the custom order, which refunds them; cancelled here, the client's money would have nowhere to go.
+ */
+export async function cancelOrder(db: D1Database, id: string, reason: string, written: Written): Promise<Changed> {
+  const carries = await db
+    .prepare("SELECT 1 FROM po_lines WHERE po_id = ?1 AND custom_order_id IS NOT NULL LIMIT 1")
+    .bind(id)
+    .first();
+  if (carries !== null) return { ok: false, customOrder: true };
   const update = {
     sql: `UPDATE purchase_orders SET change_id = ?9, state = 'cancelled', cancelled_by = ?2, cancelled_at = ?3,
             cancel_reason = ?4, updated_at = ?3

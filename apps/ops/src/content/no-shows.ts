@@ -1,6 +1,6 @@
 // No-shows: the case, the charge, its ruling and a client's dispute.
 
-import { FAILED, NOT_PERMITTED, OFFLINE } from "./common.ts";
+import { FAILED, NOT_PERMITTED, OFFLINE, UNCONFIRMED } from "./common.ts";
 
 /**
  * The design's Payments: the day's money over "No-shows and late
@@ -185,6 +185,7 @@ export const noShows = {
       not_permitted: NOT_PERMITTED,
       not_found: "Already decided. Reload.",
       offline: OFFLINE,
+      unconfirmed: UNCONFIRMED,
       unknown: FAILED,
     } as Readonly<Record<string, string>>,
   },
@@ -239,6 +240,7 @@ export const noShows = {
       not_permitted: NOT_PERMITTED,
       not_found: "Already ruled on. Reload.",
       offline: OFFLINE,
+      unconfirmed: UNCONFIRMED,
       unknown: FAILED,
     } as Readonly<Record<string, string>>,
   },

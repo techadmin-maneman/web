@@ -1,0 +1,32 @@
+/* The line that a new build is waiting (./UpdateReady.tsx): a quiet strip, ruled off from the screen beneath. */
+
+@layer base, ui;
+
+@layer ui {
+  .ready {
+    display: flex;
+    flex-shrink: 0;
+    gap: var(--sp-12);
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--sp-12) var(--sp-20);
+    border-bottom: var(--hairline) solid var(--paper-line);
+    background: var(--paper-light);
+  }
+
+  .onInk {
+    border-bottom-color: var(--ink-rule);
+    background: var(--ink-deep);
+  }
+
+  .line {
+    margin: 0;
+    font-size: var(--fs-15);
+    line-height: var(--lh-145);
+    color: var(--text-soft);
+  }
+
+  .onInk .line {
+    color: var(--ink-soft);
+  }
+}
