@@ -149,3 +149,18 @@ jobs:
           CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
           CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
         run: npm run smoke:csp -- --environment staging
+
+  tell:
+    name: page whoever is on call
+    needs: [checks, deploy]
+    if: ${{ failure() }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: A push to the urgent topic (docs/runbook/alerts.md)
+        env:
+          URGENT_PUSH_URL: ${{ secrets.URGENT_PUSH_URL }}
+          RUN: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          if [ -z "$URGENT_PUSH_URL" ]; then echo "No URGENT_PUSH_URL: nobody to page"; exit 0; fi
+          curl -fsS -H "Title: Staging deploy failed" -H "Priority: urgent" -H "Tags: rotating_light" -H "Click: $RUN" -d "Staging deploy failed: $RUN" "$URGENT_PUSH_URL"
