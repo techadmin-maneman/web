@@ -8,6 +8,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import type { App } from "../../../src/http/context.ts";
 import { clientHistory } from "../../../src/domain/visits/client-history.ts";
 import { openSession } from "../../../src/domain/sign-in/sessions.ts";
+import { aPayment } from "../fixtures/index.ts";
 import { appFor, captureLogs, fakeDependencies, markDatabase, NOW, request } from "../helpers.ts";
 
 const PERSON = "11111111-1111-4111-8111-111111111111";
@@ -33,22 +34,18 @@ async function visit(type: string, date: string, status = "completed"): Promise<
 let payments = 0;
 async function payment(amount: number, refunded = 0, captured = true): Promise<void> {
   const id = `55555555-5555-4555-8555-${String(++payments).padStart(12, "0")}`;
-  await env.DB.prepare(
-    `INSERT INTO payments (id, person_id, razorpay_payment_id, amount, currency, status, refunded_amount,
-       captured_at, created_at, updated_at)
-     VALUES (?1, ?2, ?3, ?4, 'INR', ?5, ?6, ?7, ?8, ?8)`,
-  )
-    .bind(
-      id,
-      PERSON,
-      `pay_${id}`,
-      amount,
-      refunded === 0 ? "captured" : "partially_refunded",
-      refunded,
-      captured ? "2026-09-01T06:00:00.000Z" : null,
-      "2026-09-01T06:00:00.000Z",
-    )
-    .run();
+  await aPayment({
+    id,
+    person_id: PERSON,
+    razorpay_payment_id: `pay_${id}`,
+    amount,
+    method: null,
+    status: refunded === 0 ? "captured" : "partially_refunded",
+    refunded_amount: refunded,
+    captured_at: captured ? "2026-09-01T06:00:00.000Z" : null,
+    created_at: "2026-09-01T06:00:00.000Z",
+    updated_at: "2026-09-01T06:00:00.000Z",
+  });
 }
 
 let pieces = 0;

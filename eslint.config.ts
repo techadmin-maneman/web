@@ -130,7 +130,9 @@ export default defineConfig(
   {
     // What a junior developer can hold in their head on a first read: no ternary inside another, and no function
     // or file past these sizes. A file past them today is pinned at its size below, so it may shrink but not grow.
+    // Each table's row type is written from the migrations (npm run schema), as long as the schema is.
     files: ["src/**/*.ts"],
+    ignores: ["src/lib/rows.ts"],
     rules: {
       "no-nested-ternary": "warn",
       "max-lines-per-function": sized("error", SIZE.fn),

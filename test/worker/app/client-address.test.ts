@@ -8,6 +8,7 @@ import type { App } from "../../../src/http/context.ts";
 import { visitAddress } from "../../../src/domain/visits/check-ins.ts";
 import { openSession } from "../../../src/domain/sign-in/sessions.ts";
 import { checkIn } from "../../../src/policy/check-in.ts";
+import { aHold, aTechnician } from "../fixtures/index.ts";
 import { appFor, fakeDependencies, fakeQueue, markDatabase, NOW, request, type TestDependencies } from "../helpers.ts";
 import { ORIGIN, OLD, servedPincode } from "./client-profile-fixtures.ts";
 
@@ -158,17 +159,18 @@ describe("PATCH /api/profile/address", () => {
     });
 
     it("counts a visit paid for and still being booked, as the client's booking", async () => {
-      await env.DB.batch([
-        env.DB.prepare(
-          "INSERT INTO technicians (id, fsm_id, name, initials, active, updated_at) VALUES ('t1', 't1', 'Imran Qureshi', 'IQ', 1, ?1)",
-        ).bind(NOW.toISOString()),
-        env.DB.prepare(
-          `INSERT INTO slot_holds (id, person_id, type, date, window_label, technician_id, start_unit, amount,
-             amount_ex_gst, gst_percent, state, pincode, expires_at, created_at, updated_at, confirmed_at)
-           VALUES ('hold-1', 'p1', 'service', '2026-09-24', 'afternoon', 't1', 2, 200000, 200000, 0, 'held', '122018',
-             ?1, ?1, ?1, ?1)`,
-        ).bind(NOW.toISOString()),
-      ]);
+      await aTechnician({ id: "t1" });
+      await aHold({
+        id: "hold-1",
+        person_id: "p1",
+        technician_id: "t1",
+        window_label: "afternoon",
+        start_unit: 2,
+        amount: 200000,
+        amount_ex_gst: 200000,
+        expires_at: NOW.toISOString(),
+        confirmed_at: NOW.toISOString(),
+      });
       expect((await send(client, "PATCH", "/api/profile/address", inDelhi)).status).toBe(409);
       expect(await pincodeSaved()).toBe("122018");
     });

@@ -1,6 +1,7 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { RESTORE_GROUPS } from "../../../scripts/lib/restore-groups.ts";
+import { rowTypes } from "../../../scripts/lib/row-types.ts";
 import { DAY_VALUED_AT, migratedTables, schemaDoc } from "../../../scripts/lib/schema-doc.ts";
 import { PURPOSES } from "../../../scripts/lib/schema-purposes.ts";
 
@@ -90,5 +91,9 @@ describe("the repository's schema", () => {
 
   it("is docs/schema.md as npm run schema writes it", () => {
     expect(readFileSync("docs/schema.md", "utf8")).toBe(schemaDoc(tables));
+  });
+
+  it("gives each table's row type in src/lib/rows.ts as npm run schema writes it", () => {
+    expect(readFileSync("src/lib/rows.ts", "utf8")).toBe(rowTypes(tables));
   });
 });
