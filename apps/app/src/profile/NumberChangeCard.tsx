@@ -1,10 +1,12 @@
 // The account's change of mobile number: both numbers proved by a code each, then ops decide. The design
 // draws the card's first state; the ones after it are written in the same card, with placeholder words.
 
+import { TextButton } from "@maneman/ui/TextLink";
+import { MobileInput } from "@maneman/ui/MobileInput";
 import { capsLook } from "@maneman/ui/Caps";
 import { ONE_TIME_CODE } from "@rules/policy/one-time-code.ts";
 import { Button } from "@maneman/ui/Button";
-import { codeDigits } from "@maneman/ui/CodeField";
+import { CodeField } from "@maneman/ui/CodeField";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { indiaDate, shortDate } from "@maneman/web-kit/dates";
 import { mobileDigits } from "@maneman/web-kit/mobile";
@@ -55,9 +57,9 @@ function Withdrawal({ problem, busy, onWithdraw }: { problem: string | null; bus
           {problem}
         </p>
       )}
-      <button className={styles.withdraw} type="button" disabled={busy} onClick={onWithdraw}>
+      <TextButton className={styles.withdraw} disabled={busy} onClick={onWithdraw}>
         {copy.withdraw}
-      </button>
+      </TextButton>
     </>
   );
 }
@@ -92,19 +94,19 @@ function ProvingCodes({
     >
       <p className={styles.cardBody}>{copy.codes}</p>
       {(["old", "new"] as const).map((which) => (
-        <label key={which} className={styles.formField}>
-          <span className={styles.formLabel}>{which === "old" ? copy.oldCode : copy.newCode(change.new_mobile)}</span>
+        <div key={which} className={styles.formField}>
+          <p className={styles.formLabel} aria-hidden="true">
+            {which === "old" ? copy.oldCode : copy.newCode(change.new_mobile)}
+          </p>
           {proven(which) ? (
             <span className={styles.muted}>{copy.proven}</span>
           ) : (
-            <input
-              className={styles.input}
-              inputMode="numeric"
-              autoComplete="one-time-code"
-              maxLength={ONE_TIME_CODE.digits}
+            <CodeField
+              label={which === "old" ? copy.oldCode : copy.newCode(change.new_mobile)}
               value={codes[which]}
-              onChange={(event) => {
-                onCode(which, codeDigits(event.target.value));
+              invalid={notes[which] !== null}
+              onChange={(digits) => {
+                onCode(which, digits);
               }}
             />
           )}
@@ -113,7 +115,7 @@ function ProvingCodes({
               {notes[which]}
             </span>
           )}
-        </label>
+        </div>
       ))}
       <Button variant="primary" size="control" className={styles.primary} type="submit" disabled={busy}>
         {copy.check}
@@ -150,23 +152,16 @@ function StartChange({
     >
       {decided !== null && <Decided decided={decided} />}
       <p className={styles.cardBody}>{copy.body}</p>
-      <div className={styles.numberField}>
-        <span className={styles.prefix} aria-hidden="true">
-          {copy.prefix}
-        </span>
-        <input
-          className={styles.numberInput}
-          type="tel"
-          inputMode="numeric"
-          autoComplete="tel-national"
-          placeholder={copy.placeholder}
-          aria-label={copy.placeholder}
-          value={typed}
-          onChange={(event) => {
-            onTyped(event.target.value);
-          }}
-        />
-      </div>
+      <MobileInput
+        className={styles.numberField}
+        prefix={copy.prefix}
+        placeholder={copy.placeholder}
+        aria-label={copy.placeholder}
+        value={typed}
+        onChange={(event) => {
+          onTyped(event.target.value);
+        }}
+      />
       {problem !== null && (
         <p className={styles.error} role="alert">
           {problem}

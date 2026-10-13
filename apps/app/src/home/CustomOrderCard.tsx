@@ -2,6 +2,7 @@
 // app.md): waiting on payment with the link to pay, paid, being made by the day promised, or arrived. Read by itself,
 // so Home never waits on it; nothing shows where it cannot be read.
 
+import { TextLink } from "@maneman/ui/TextLink";
 import { useLoad } from "@maneman/ui/useLoad";
 import { shortDate } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";
@@ -19,9 +20,9 @@ function Line({ order }: { order: Order }) {
       <>
         <p className={styles.promptLine}>{copy.awaitingPayment}</p>
         {order.pay_url !== null && (
-          <a className={styles.promptLink} href={order.pay_url} target="_blank" rel="noreferrer">
+          <TextLink tone="brass" className={styles.promptLink} href={order.pay_url} newTab>
             <span>{copy.pay(rupees(order.amount))}</span>
-          </a>
+          </TextLink>
         )}
       </>
     );

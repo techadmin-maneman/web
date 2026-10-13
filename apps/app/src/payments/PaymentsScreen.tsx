@@ -9,6 +9,7 @@
 // Above them, a consultation and fit in one visit the client was fitted at and
 // has not paid for, opening the link Razorpay texted.
 
+import { TileLink } from "@maneman/ui/Tile";
 import { capsLook } from "@maneman/ui/Caps";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { useLoad } from "@maneman/ui/useLoad";
@@ -107,10 +108,10 @@ function OwedRow({ owed, thisYear }: { owed: OwedPayment; thisYear: number }) {
       {owed.url === null ? (
         <div className={styles.entry}>{body}</div>
       ) : (
-        <a className={styles.entry} href={owed.url} target="_blank" rel="noopener">
+        <TileLink className={styles.entry} href={owed.url} newTab>
           {body}
           <VisuallyHidden>{`, ${copy.newTab}`}</VisuallyHidden>
-        </a>
+        </TileLink>
       )}
     </li>
   );

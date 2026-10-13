@@ -39,6 +39,26 @@ export function SheetPanel({ className, children }: { readonly className?: strin
   return <div className={classes(styles.panel, className)}>{children}</div>;
 }
 
+/**
+ * The way out of a sheet, in words above its panel: in the paper's own colour on the dark ground around a sheet, or
+ * quieter on a screen of ink.
+ */
+export function SheetClose({
+  onClose,
+  quiet = false,
+  children,
+}: {
+  readonly onClose: () => void;
+  readonly quiet?: boolean;
+  readonly children: ReactNode;
+}) {
+  return (
+    <button type="button" className={classes(styles.close, quiet && styles.closeQuiet)} onClick={onClose}>
+      {children}
+    </button>
+  );
+}
+
 export function Sheet({
   ref,
   labelledBy,

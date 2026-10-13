@@ -5,6 +5,7 @@
 // error, and given the focus. The API refuses a pincode we do not come to, which offers the waitlist, and a move to
 // another city while a visit is booked, which offers a message to ops.
 
+import { TextLink } from "@maneman/ui/TextLink";
 import { AddressFields, type AddressFieldsClasses } from "@maneman/ui/AddressFields";
 import { Button } from "@maneman/ui/Button";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
@@ -163,14 +164,14 @@ export function AddressForm({
         </p>
       )}
       {refused === "not_served" && (
-        <a className={styles.link} href={WAITLIST_URL}>
-          <span>{copy.form.waitlist}</span>
-        </a>
+        <TextLink className={styles.link} href={WAITLIST_URL}>
+          {copy.form.waitlist}
+        </TextLink>
       )}
       {refused === "visit_booked" && (
-        <a className={styles.link} href={whatsappWith(messages.moveCity)} rel="noopener">
-          <span>{copy.form.message}</span>
-        </a>
+        <TextLink className={styles.link} href={whatsappWith(messages.moveCity)}>
+          {copy.form.message}
+        </TextLink>
       )}
       <div className={styles.row}>
         <Button variant="primary" size="control" className={styles.primary} type="submit" disabled={busy}>

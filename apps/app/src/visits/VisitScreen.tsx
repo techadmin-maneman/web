@@ -6,12 +6,13 @@
 // next visit, with Reschedule and Add a note until it begins. A
 // visit that is not the client's says so, rather than offering to try again.
 
+import { DocumentLink } from "@maneman/ui/DocumentLink";
 import { DisputeSheet } from "../booking/index.ts";
 import { VisitCard } from "../home/index.ts";
 import { PhotoRow, type OpenPhoto, PhotoSheet } from "../photos/index.ts";
 import { capsLook } from "@maneman/ui/Caps";
 import { ICONS } from "@maneman/brand/icons";
-import { Button } from "@maneman/ui/Button";
+import { Button, ButtonLink } from "@maneman/ui/Button";
 import { Icon } from "@maneman/ui/Icon";
 import { useLoad } from "@maneman/ui/useLoad";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
@@ -58,9 +59,15 @@ function Invoice({ visit }: { visit: VisitDetail }) {
       return (
         <div className={styles.late}>
           <p className={styles.invoiceLine}>{copy.checking}</p>
-          <a className={styles.message} href={whatsappWith(message)} rel="noopener">
+          <ButtonLink
+            variant="outline"
+            size="small"
+            className={styles.message}
+            href={whatsappWith(message)}
+            rel="noopener"
+          >
             {copy.message}
-          </a>
+          </ButtonLink>
         </div>
       );
     }
@@ -69,19 +76,25 @@ function Invoice({ visit }: { visit: VisitDetail }) {
       return (
         <div className={styles.late}>
           <p className={styles.invoiceLine}>{copy.late}</p>
-          <a className={styles.message} href={whatsappWith(message)} rel="noopener">
+          <ButtonLink
+            variant="outline"
+            size="small"
+            className={styles.message}
+            href={whatsappWith(message)}
+            rel="noopener"
+          >
             {copy.message}
-          </a>
+          </ButtonLink>
         </div>
       );
     }
     case "open":
       return visit.document_id === null ? null : (
-        <a className={styles.invoice} href={documentUrl(visit.document_id)} target="_blank" rel="noopener">
+        <DocumentLink href={documentUrl(visit.document_id)}>
           <span>{copy.open}</span>
           <VisuallyHidden>{copy.newTab}</VisuallyHidden>
           <Icon className={styles.invoiceIcon} d={ICONS.download} size={18} />
-        </a>
+        </DocumentLink>
       );
   }
 }

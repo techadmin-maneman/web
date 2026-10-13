@@ -3,12 +3,13 @@
 // sheet's date and window, then pays whatever the move costs. Cancelling is confirmed on the terms shown; if the
 // 24 hours ran out meanwhile, the new terms are shown instead.
 
+import { TextButton } from "@maneman/ui/TextLink";
 import { refundDestination } from "../payments/index.ts";
 import { capsLook } from "@maneman/ui/Caps";
 import { fullDate, indiaDate, weekdayDate } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";
 import { Button, ButtonLink } from "@maneman/ui/Button";
-import { Sheet, SheetPanel } from "@maneman/ui/Sheet";
+import { Sheet, SheetClose, SheetPanel } from "@maneman/ui/Sheet";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { api, type BookableType, type CancelTerms, type Me, type MoveTerms } from "../api.ts";
@@ -154,9 +155,7 @@ export function ChangeSheet(props: {
         onClose(changed.current);
       }}
     >
-      <button className={styles.close} type="button" onClick={close}>
-        {booking.close}
-      </button>
+      <SheetClose onClose={close}>{booking.close}</SheetClose>
       <SheetPanel className={styles.sheet}>
         {step.kind === "loading" && (
           <>
@@ -187,9 +186,9 @@ export function ChangeSheet(props: {
                 {change.move.keep}
               </Button>
             </div>
-            <button className={styles.quiet} type="button" onClick={() => void show("cancel")}>
+            <TextButton tone="muted" className={styles.quiet} onClick={() => void show("cancel")}>
               {change.move.cancelInstead}
-            </button>
+            </TextButton>
           </>
         )}
         {step.kind === "cancel" && (

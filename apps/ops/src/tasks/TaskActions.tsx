@@ -3,6 +3,7 @@
 // close it without a follow-up, with why. The design draws each task's owner and none of these; they sit beneath the
 // task's own lines, as the way to where it is decided does.
 
+import { TextButton } from "@maneman/ui/TextLink";
 import { REASON_MAX_CHARS } from "@rules/policy/decision-reasons.ts";
 import { errorText } from "@maneman/web-kit/refusal";
 import { Button } from "@maneman/ui/Button";
@@ -164,9 +165,9 @@ function Act({
   expanded?: boolean;
 }) {
   return (
-    <Button variant="text" size="compact" ref={actRef} aria-expanded={expanded} onClick={onClick}>
+    <TextButton tone="muted" compact ref={actRef} aria-expanded={expanded} onClick={onClick}>
       <Named label={label} subject={subject} />
-    </Button>
+    </TextButton>
   );
 }
 

@@ -10,21 +10,6 @@
   --focus-colour: var(--paper);
 }
 
-.close {
-  flex-shrink: 0;
-  align-self: flex-end;
-  min-width: var(--tap);
-  min-height: var(--tap);
-  margin-right: var(--sp-8);
-  padding: 0 var(--sp-12);
-  border: 0;
-  background: none;
-  font: inherit;
-  font-size: var(--fs-15);
-  color: var(--paper);
-  cursor: pointer;
-}
-
 .sheet p,
 .sheet h2 {
   margin: 0;
@@ -280,19 +265,16 @@
 }
 
 /* The line ops wrote for a service, under its name: a row that carries one grows to hold it. */
-.window:has(.serviceLine) {
+
+.serviceCard {
   padding-block: var(--sp-12);
 }
 
-.serviceLine {
+.serviceLine,
+.serviceTime {
   display: block;
   margin-top: var(--sp-4);
   font-size: var(--fs-14);
-  color: var(--text-muted);
-}
-
-.window:has(.radio:checked) .serviceLine {
-  color: var(--ink-soft);
 }
 
 /* The pay step, and the credit step's first fit. */
@@ -382,20 +364,7 @@
 
 /* "Remind me on WhatsApp the day before": the whole line is the target. */
 .remind {
-  display: flex;
-  align-items: center;
-  gap: var(--sp-12);
-  min-height: var(--tap);
   margin-top: var(--sp-16);
-  font-size: var(--fs-15);
-  cursor: pointer;
-}
-
-.remind input {
-  width: var(--sp-20);
-  height: var(--sp-20);
-  margin: 0;
-  accent-color: var(--ink);
 }
 
 /*
@@ -410,17 +379,7 @@
 }
 
 .consentsOpen {
-  display: flex;
-  align-items: center;
   justify-content: center;
-  min-height: var(--tap);
-  list-style: none;
-  text-decoration: underline;
-  cursor: pointer;
-}
-
-.consentsOpen::-webkit-details-marker {
-  display: none;
 }
 
 .sheet .consents p + p {
@@ -474,27 +433,6 @@
   gap: var(--sp-8);
 }
 
-.noteLabel {
-  font-size: var(--fs-16);
-  color: var(--text-soft);
-}
-
-.noteInput {
-  padding: var(--sp-12) var(--sp-16);
-  border: var(--hairline) solid var(--paper-control);
-  background: var(--white);
-  font: inherit;
-  font-size: var(--fs-16);
-  line-height: var(--lh-145);
-  color: var(--text);
-  resize: vertical;
-}
-
-.noteInput:focus {
-  outline: var(--focus-width) solid var(--ink);
-  outline-offset: calc(-1 * var(--focus-width));
-}
-
 .offlineLine {
   font-size: var(--fs-15);
   line-height: var(--lh-160);
@@ -530,16 +468,7 @@
   align-items: center;
   justify-content: center;
   width: fit-content;
-  min-height: var(--tap);
   margin: var(--sp-16) auto 0;
-  padding: 0 var(--sp-8);
-  border: 0;
-  background: none;
-  font: inherit;
-  font-size: var(--fs-14);
-  color: var(--text-muted);
-  text-decoration: underline;
-  cursor: pointer;
 }
 
 /*
@@ -548,20 +477,6 @@
  */
 .code {
   margin-top: var(--sp-12);
-}
-
-.codeLink {
-  display: flex;
-  align-items: center;
-  min-height: var(--tap);
-  padding: 0;
-  border: 0;
-  background: none;
-  font: inherit;
-  font-size: var(--fs-14);
-  color: var(--text-muted);
-  text-decoration: underline;
-  cursor: pointer;
 }
 
 .codeApplied {
@@ -578,19 +493,7 @@
 .codeInput {
   flex: 1;
   min-width: 0;
-  height: var(--btn-md);
-  padding: 0 var(--sp-16);
-  border: var(--hairline) solid var(--paper-control);
-  background: var(--white);
-  font: inherit;
-  font-size: var(--fs-16);
   text-transform: uppercase;
-  color: var(--text);
-}
-
-.codeInput:focus {
-  outline: var(--focus-width) solid var(--ink);
-  outline-offset: calc(-1 * var(--focus-width));
 }
 
 .sheet .moneyNote {
@@ -711,19 +614,8 @@
 
 .note,
 .done {
-  display: flex;
-  align-items: center;
   justify-content: center;
   width: 100%;
-  min-height: var(--btn-md);
-  border: var(--hairline) solid var(--ink-line);
-  background: none;
-  font: inherit;
-  font-size: var(--fs-15);
-  font-weight: var(--weight-medium);
-  color: var(--paper);
-  text-decoration: none;
-  cursor: pointer;
 }
 
 .confirmedCalendar {
@@ -736,6 +628,4 @@
 
 .done {
   margin-top: var(--sp-8);
-  border-color: transparent;
-  color: var(--ink-soft);
 }

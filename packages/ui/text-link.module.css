@@ -1,18 +1,84 @@
-/* A link in a sentence (./TextLink.tsx). */
+/* Words that act or go somewhere (./TextLink.tsx): underlined in the tone of their ground. */
 
 @layer base, ui;
 
 @layer ui {
-  .link {
-    color: var(--text);
+  .words {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--sp-8);
+    min-height: var(--tap);
+    padding: 0;
+    border: 0;
+    background: none;
+    font: inherit;
+    text-align: left;
     text-decoration: underline;
-    text-decoration-color: var(--paper-line);
+    text-decoration-thickness: var(--hairline);
     text-underline-offset: var(--sp-4);
+    cursor: pointer;
+  }
+
+  .compact {
+    min-height: var(--sp-24);
+    font-size: var(--fs-14);
+  }
+
+  .words:disabled {
+    color: var(--text-quiet);
+    text-decoration-color: currentcolor;
+    cursor: default;
+  }
+
+  .words[aria-busy="true"] {
+    cursor: progress;
+    opacity: var(--busy-opacity);
+  }
+
+  .plain {
+    color: var(--text);
+    text-decoration-color: var(--paper-line);
+  }
+
+  .muted {
+    color: var(--text-muted);
+    text-decoration-color: var(--paper-line);
+  }
+
+  .ink {
+    color: var(--ink-soft);
+    text-decoration-color: var(--ink-line);
+  }
+
+  .brass {
+    color: var(--text);
+    text-decoration-color: var(--brass);
+  }
+
+  .danger {
+    color: var(--error-on-paper);
+    text-decoration-color: currentcolor;
+  }
+
+  .words:active:not(:disabled) {
+    text-decoration-thickness: var(--rule-strong);
   }
 
   @media (hover: hover) {
-    .link:hover {
+    .plain:hover:not(:disabled),
+    .muted:hover:not(:disabled),
+    .brass:hover:not(:disabled) {
+      color: var(--text);
       text-decoration-color: currentcolor;
+    }
+
+    .ink:hover:not(:disabled) {
+      color: var(--paper);
+      text-decoration-color: currentcolor;
+    }
+
+    .danger:hover:not(:disabled) {
+      text-decoration-thickness: var(--rule-strong);
     }
   }
 }

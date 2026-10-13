@@ -49,7 +49,7 @@ export function ClientPanel({ personId }: { readonly personId: string }) {
       </dl>
       <p className={styles.note}>
         {LINKS.map(([tab, label]) => (
-          <OpsLink key={tab} className={textLinkLook(own.link)} to={clientPath(personId, tab)}>
+          <OpsLink key={tab} className={textLinkLook({ className: own.link })} to={clientPath(personId, tab)}>
             {label}
           </OpsLink>
         ))}

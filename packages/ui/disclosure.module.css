@@ -1,10 +1,29 @@
-/* A disclosure (./Disclosure.tsx). */
+/* A disclosure (./Disclosure.tsx): its summary in the words of a text action, underlined, with no marker. */
 
 @layer base, ui;
 
 @layer ui {
   .summary {
+    display: flex;
+    align-items: center;
+    min-height: var(--tap);
+    color: var(--text-muted);
+    list-style: none;
+    text-decoration: underline;
+    text-decoration-color: var(--paper-line);
+    text-underline-offset: var(--sp-4);
     cursor: pointer;
+  }
+
+  .summary::-webkit-details-marker {
+    display: none;
+  }
+
+  @media (hover: hover) {
+    .summary:hover {
+      color: var(--text);
+      text-decoration-color: currentcolor;
+    }
   }
 
   .disclosure[open] > .summary {

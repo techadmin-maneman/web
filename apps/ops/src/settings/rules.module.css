@@ -5,11 +5,7 @@
 }
 
 .summary {
-  cursor: pointer;
   width: fit-content;
-  font-size: var(--fs-14);
-  color: var(--text);
-  text-decoration: underline;
 }
 
 .manyBody {

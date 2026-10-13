@@ -1,7 +1,7 @@
 // A move the client has not heard of, settled from its row: the number to call, and "Told by phone" once ops have
 // called. The task leaves the board once the call is recorded, as it does from the dispatch board's drawer.
 
-import { Button } from "@maneman/ui/Button";
+import { TextButton } from "@maneman/ui/TextLink";
 import { TextLink } from "@maneman/ui/TextLink";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
@@ -49,10 +49,10 @@ export function CallAboutMove({
         <VisuallyHidden>{` · ${subject}`}</VisuallyHidden>
       </TextLink>
       {mayTell && (
-        <Button variant="text" size="compact" disabled={busy} onClick={() => void record()}>
+        <TextButton tone="muted" compact disabled={busy} onClick={() => void record()}>
           {busy ? copy.recording : copy.told}
           <VisuallyHidden>{` · ${subject}`}</VisuallyHidden>
-        </Button>
+        </TextButton>
       )}
       {failed && (
         <span className={styles.error} role="alert">

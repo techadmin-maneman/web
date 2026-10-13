@@ -6,6 +6,7 @@
 // would tell the client something untrue about their data. Where switching a
 // purpose off leaves something as it was, a line says so.
 
+import { Switch } from "@maneman/ui/Switch";
 import { capsLook } from "@maneman/ui/Caps";
 import { Button } from "@maneman/ui/Button";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
@@ -68,20 +69,15 @@ export function ConsentList({
                     {consent.granted && consent.since !== null ? copy.given(longDate(consent.since)) : copy.notGiven}
                   </p>
                 </div>
-                <button
-                  className={styles.switch}
-                  type="button"
-                  role="switch"
-                  aria-checked={consent.granted}
-                  aria-labelledby={`consent-${consent.purpose}`}
-                  onClick={() => {
+                <Switch
+                  checked={consent.granted}
+                  labelledBy={`consent-${consent.purpose}`}
+                  onToggle={() => {
                     setFailed(null);
                     if (!consent.granted && consent.purpose === "photos_referral_cards") setConfirming(consent.purpose);
                     else void switchTo(consent.purpose, !consent.granted);
                   }}
-                >
-                  <span className={styles.knob} />
-                </button>
+                />
               </div>
               {WHEN_OFF[consent.purpose] !== undefined && (
                 // Always in the page, so a screen reader hears the line come and go with the switch.

@@ -31,7 +31,7 @@
 // Above the tasks, "Needs a hand" lists the alerts ops were told of and not yet
 // put right (NeedsAHand.tsx).
 
-import { Button } from "@maneman/ui/Button";
+import { TextButton } from "@maneman/ui/TextLink";
 import { capsLook } from "@maneman/ui/Caps";
 import { useLoad } from "@maneman/ui/useLoad";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
@@ -289,9 +289,9 @@ function GroupCard({ group, unfolded, onFold, rowOf }: GroupProps) {
         {shown.map(rowOf)}
       </ul>
       {folds && (
-        <Button
-          variant="text"
-          size="compact"
+        <TextButton
+          tone="muted"
+          compact
           className={styles.fold}
           aria-expanded={unfolded}
           aria-controls={listId}
@@ -299,7 +299,7 @@ function GroupCard({ group, unfolded, onFold, rowOf }: GroupProps) {
         >
           {unfolded ? tasks.fewer : tasks.more(listed - ROWS_FOLDED)}
           <VisuallyHidden>{` · ${name}`}</VisuallyHidden>
-        </Button>
+        </TextButton>
       )}
       {shown.length === listed && group.count > listed && (
         <p className={styles.shown}>{tasks.shown(listed, group.count)}</p>
@@ -325,9 +325,9 @@ function DepartmentSection({ section, children }: { section: TaskSection; childr
 function OverdueCount({ count, onJump }: { count: number; onJump: (() => void) | null }) {
   if (onJump === null) return <span className={styles.overdue}>{tasks.overdue(count)}</span>;
   return (
-    <Button variant="textDanger" size="compact" aria-label={tasks.overdueJump(count)} onClick={onJump}>
+    <TextButton tone="danger" compact aria-label={tasks.overdueJump(count)} onClick={onJump}>
       {tasks.overdue(count)}
-    </Button>
+    </TextButton>
   );
 }
 

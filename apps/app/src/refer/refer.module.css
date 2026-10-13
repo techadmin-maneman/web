@@ -67,23 +67,7 @@
 
 /* Refer's quiet way to the tracker, and the empty tracker's way to the revoke. */
 .quiet {
-  display: flex;
-  align-items: center;
   justify-content: center;
-  min-height: var(--tap);
-  padding: 0;
-  border: 0;
-  background: none;
-  font: inherit;
-  font-size: var(--fs-16);
-  color: var(--text);
-  text-decoration: none;
-  cursor: pointer;
-}
-
-.quiet span {
-  padding-bottom: var(--sp-4);
-  border-bottom: var(--hairline) solid var(--paper-line);
 }
 
 /* What the fits have earned and what is left, then each friend fitted. */
@@ -301,39 +285,8 @@
  * Each card drawn, with its box ticked when it is the one chosen. A native radio button lies over the
  * whole drawing, unseen: one tab stop for the pair, and the arrow keys between them.
  */
-.choice {
-  position: relative;
-  display: block;
-  width: 100%;
-  padding: 0;
-  border: var(--hairline) solid var(--paper-control);
-  background: none;
-  font: inherit;
-  color: var(--text);
-  text-align: left;
-  cursor: pointer;
-}
 
 /* Above the card, which is positioned for its lockup. */
-.radio {
-  position: absolute;
-  z-index: 1;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  margin: 0;
-  opacity: 0;
-  cursor: inherit;
-}
-
-.choice:has(.radio:focus-visible) {
-  outline: var(--focus-width) solid var(--focus-colour);
-  outline-offset: var(--focus-offset);
-}
-
-.chosen {
-  border-color: var(--ink);
-}
 
 .choiceText {
   display: flex;
@@ -356,22 +309,6 @@
   margin-top: var(--sp-4);
   font-size: var(--fs-14);
   color: var(--text-muted);
-}
-
-.box {
-  display: flex;
-  flex-shrink: 0;
-  align-items: center;
-  justify-content: center;
-  width: var(--sp-20);
-  height: var(--sp-20);
-  border: var(--hairline) solid var(--paper-control);
-}
-
-.chosen .box {
-  border-color: var(--ink);
-  background: var(--ink);
-  color: var(--paper);
 }
 
 .screenBody > .primary {
@@ -453,20 +390,6 @@ img.card {
 }
 
 /* The lines the photographs need agreed to, the irreversible one last. */
-.close {
-  flex-shrink: 0;
-  align-self: flex-end;
-  min-width: var(--tap);
-  min-height: var(--tap);
-  margin-right: var(--sp-8);
-  padding: 0 var(--sp-12);
-  border: 0;
-  background: none;
-  font: inherit;
-  font-size: var(--fs-15);
-  color: var(--paper);
-  cursor: pointer;
-}
 
 .sheetTitle {
   margin: 0;
@@ -529,21 +452,6 @@ img.card {
   padding-top: 0;
 }
 
-.inkClose {
-  flex-shrink: 0;
-  align-self: flex-end;
-  min-width: var(--tap);
-  min-height: var(--tap);
-  margin-right: var(--sp-8);
-  padding: 0 var(--sp-12);
-  border: 0;
-  background: none;
-  font: inherit;
-  font-size: var(--fs-15);
-  color: var(--ink-soft);
-  cursor: pointer;
-}
-
 .eyebrow {
   margin: 0;
   font-size: var(--fs-15);
@@ -604,18 +512,7 @@ img.card {
 }
 
 .retry {
-  display: inline-flex;
-  align-items: center;
-  min-height: var(--tap);
   margin-top: var(--sp-16);
-  padding: 0 var(--sp-16);
-  border: var(--hairline) solid var(--ink);
-  background: none;
-  font: inherit;
-  font-size: var(--fs-15);
-  font-weight: var(--weight-medium);
-  color: var(--text);
-  cursor: pointer;
 }
 
 .via {
@@ -635,23 +532,7 @@ img.card {
 }
 
 .way {
-  display: flex;
-  align-items: center;
+  justify-content: flex-start;
   gap: var(--sp-16);
   width: 100%;
-  min-height: var(--btn-lg);
-  padding: 0 var(--sp-16);
-  border: var(--hairline) solid var(--ink-line);
-  background: none;
-  font: inherit;
-  font-size: var(--fs-16);
-  color: var(--ink-soft);
-  text-align: left;
-  text-decoration: none;
-  cursor: pointer;
-}
-
-.whatsapp {
-  border-color: var(--gilt);
-  color: var(--paper);
 }

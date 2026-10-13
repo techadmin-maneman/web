@@ -169,43 +169,6 @@
     color: var(--error-on-paper);
   }
 
-  /* ---- Words ------------------------------------------------------------------ */
-
-  .text {
-    display: inline-flex;
-    justify-content: flex-start;
-    padding: 0;
-    color: var(--text-muted);
-    font-weight: var(--control-weight);
-    text-decoration: underline;
-    text-decoration-color: var(--paper-line);
-    text-underline-offset: var(--sp-4);
-  }
-
-  .text:active:not(:disabled) {
-    color: var(--text);
-  }
-
-  .textDanger:active:not(:disabled) {
-    text-decoration-thickness: var(--rule-strong);
-  }
-
-  .text:disabled,
-  .textDanger:disabled {
-    color: var(--text-quiet);
-    text-decoration: none;
-  }
-
-  .textDanger {
-    display: inline-flex;
-    justify-content: flex-start;
-    padding: 0;
-    color: var(--error-on-paper);
-    font-weight: var(--control-weight);
-    text-decoration: underline;
-    text-underline-offset: var(--sp-4);
-  }
-
   /* ---- A pointer resting on it: at a desk, never a finger's lingering tap ----- */
 
   @media (hover: hover) {
@@ -232,15 +195,6 @@
 
     .outlineOnInk:hover:not(:disabled) {
       background: var(--ink-raised);
-    }
-
-    .text:hover:not(:disabled) {
-      color: var(--text);
-      text-decoration-color: currentcolor;
-    }
-
-    .textDanger:hover:not(:disabled) {
-      text-decoration-thickness: var(--rule-strong);
     }
   }
 }

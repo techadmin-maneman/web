@@ -12,8 +12,8 @@
 // A search that names a client, an area or a pincode outlines the blocks it
 // found, so the one visit is plain among a technician's eight.
 
+import { TextButton } from "@maneman/ui/TextLink";
 import { Table } from "@maneman/ui/Table";
-import { Button } from "@maneman/ui/Button";
 import { Tile } from "@maneman/ui/Tile";
 import { capsLook } from "@maneman/ui/Caps";
 import { classes } from "@maneman/ui/classes";
@@ -234,9 +234,9 @@ export function Grid({ board, rows, inHand, found, onOpen, onTake, onLand, onRou
                 <span className={styles.dayName}>{dayHead(date)}</span>
                 <span className={percent >= dispatch.peak ? styles.peak : styles.util}>{dispatch.util(percent)}</span>
                 {onRoutes !== null && (
-                  <Button
-                    variant="text"
-                    size="compact"
+                  <TextButton
+                    tone="muted"
+                    compact
                     className={styles.dayMap}
                     aria-label={dispatch.routes.openLabel(dayHead(date))}
                     onClick={() => {
@@ -244,7 +244,7 @@ export function Grid({ board, rows, inHand, found, onOpen, onTake, onLand, onRou
                     }}
                   >
                     {dispatch.routes.open}
-                  </Button>
+                  </TextButton>
                 )}
               </th>
             );

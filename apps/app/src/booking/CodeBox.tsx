@@ -3,6 +3,8 @@
 // what is left. A code that does not apply is told only that. The box is shut while the sheet is busy paying; once
 // Checkout is closed unpaid, the code may change again, and the next Pay makes a new order for the new price.
 
+import { Label, TextInput } from "@maneman/ui/Field";
+import { TextButton } from "@maneman/ui/TextLink";
 import { capsLook } from "@maneman/ui/Caps";
 import { Button } from "@maneman/ui/Button";
 import { useState } from "react";
@@ -72,9 +74,9 @@ export function CodeBox(props: {
         {applied.list_price !== null && (
           <p className={styles.codeApplied}>{copy.applied(applied.code, amountOff(applied.list_price, hold.price))}</p>
         )}
-        <button className={styles.codeLink} type="button" disabled={busy || sending} onClick={() => void remove()}>
+        <TextButton tone="muted" disabled={busy || sending} onClick={() => void remove()}>
           {sending ? copy.removing : copy.remove}
-        </button>
+        </TextButton>
         {shown}
       </div>
     );
@@ -83,16 +85,15 @@ export function CodeBox(props: {
   if (!open) {
     return (
       <div className={styles.code}>
-        <button
-          className={styles.codeLink}
-          type="button"
+        <TextButton
+          tone="muted"
           disabled={busy}
           onClick={() => {
             setOpen(true);
           }}
         >
           {copy.open}
-        </button>
+        </TextButton>
       </div>
     );
   }
@@ -105,14 +106,13 @@ export function CodeBox(props: {
         void apply();
       }}
     >
-      <label className={capsLook(styles.label)} htmlFor="discount-code">
+      <Label className={capsLook(styles.label)} htmlFor="discount-code">
         {copy.label}
-      </label>
+      </Label>
       <div className={styles.codeRow}>
-        <input
+        <TextInput
           id="discount-code"
           className={styles.codeInput}
-          type="text"
           autoCapitalize="characters"
           autoComplete="off"
           value={typed}

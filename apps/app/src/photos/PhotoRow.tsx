@@ -8,6 +8,7 @@
 // (docs/decisions/0093-the-storage-meter.md). Each is fetched only as it nears
 // the screen, and says its size, so the page does not move as it arrives.
 
+import { Tile } from "@maneman/ui/Tile";
 import { classes } from "@maneman/ui/classes";
 import { fullDate } from "@maneman/web-kit/dates";
 import { useState } from "react";
@@ -74,17 +75,16 @@ export function PhotoRow({ set, date, onOpen }: { set: PhotoSet; date: string; o
           fileName: `mane-man-${date}-${phase}-${angle}.jpg`,
         };
         return (
-          <button
+          <Tile
             key={angle}
             className={styles.cell}
-            type="button"
             aria-label={alt}
             onClick={() => {
               onOpen(opened);
             }}
           >
             <Thumb link={thumbnail} alt="" />
-          </button>
+          </Tile>
         );
       })}
     </div>

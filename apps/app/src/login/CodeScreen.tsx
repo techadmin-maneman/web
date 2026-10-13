@@ -1,5 +1,6 @@
 // The code screen (design/phase2/Client App).
 
+import { TextButton } from "@maneman/ui/TextLink";
 import { IconButton } from "@maneman/ui/IconButton";
 import { apiNow } from "../lib/clock.ts";
 import { ONE_TIME_CODE } from "@rules/policy/one-time-code.ts";
@@ -79,9 +80,9 @@ function Another(props: {
   const copy = login.code;
   if (props.closed) {
     return (
-      <button className={styles.link} type="button" onClick={props.onFresh} disabled={props.busy}>
+      <TextButton tone="ink" className={styles.link} onClick={props.onFresh} disabled={props.busy}>
         <span>{copy.fresh}</span>
-      </button>
+      </TextButton>
     );
   }
   if (props.resendIn > 0) {
@@ -93,9 +94,9 @@ function Another(props: {
     );
   }
   return (
-    <button className={styles.link} type="button" onClick={props.onResend} disabled={props.busy}>
+    <TextButton tone="ink" className={styles.link} onClick={props.onResend} disabled={props.busy}>
       <span>{copy.resend}</span>
-    </button>
+    </TextButton>
   );
 }
 
@@ -173,9 +174,9 @@ export function CodeScreen(props: Props) {
         )}
         <div className={styles.links}>
           {offerSms && (
-            <button className={styles.link} type="button" onClick={props.onSms} disabled={props.busy}>
+            <TextButton tone="ink" className={styles.link} onClick={props.onSms} disabled={props.busy}>
               <span>{copy.sms}</span>
-            </button>
+            </TextButton>
           )}
           <Another
             closed={closed}
@@ -184,9 +185,9 @@ export function CodeScreen(props: Props) {
             onFresh={props.onFresh}
             onResend={props.onResend}
           />
-          <button className={styles.link} type="button" onClick={props.onHelp}>
+          <TextButton tone="ink" className={styles.link} onClick={props.onHelp}>
             <span>{copy.noBooking}</span>
-          </button>
+          </TextButton>
         </div>
         {closed && <div ref={props.turnstileBox} className={styles.turnstile} />}
         {/* Said once, as the countdown runs out; the count itself is shown and not spoken. */}

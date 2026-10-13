@@ -1,7 +1,7 @@
 // A long table's heads that sort, the bar above it that narrows it, and the button beneath it that shows the next
 // page (./useTableView.ts). A head sorts on a press and reverses on the next; aria-sort says which way it runs.
 
-import { Button } from "@maneman/ui/Button";
+import { TextButton } from "@maneman/ui/TextLink";
 import { Field, Select, TextInput } from "@maneman/ui/Field";
 import { SortButton } from "@maneman/ui/Table";
 import { classes } from "@maneman/ui/classes";
@@ -89,9 +89,9 @@ export function Narrowing<Row>({
       {view.narrowed && (
         <p className={styles.count}>
           {copy.count(view.matching, view.total)}
-          <Button variant="text" size="compact" className={styles.clear} onClick={view.clear}>
+          <TextButton tone="muted" compact className={styles.clear} onClick={view.clear}>
             {copy.clear}
-          </Button>
+          </TextButton>
         </p>
       )}
     </div>
@@ -104,9 +104,9 @@ export function TableEnd<Row>({ view, className }: { view: TableView<Row>; class
   if (view.more === null) return null;
   return (
     <p className={classes(styles.end, className)}>
-      <Button variant="text" size="compact" onClick={view.more}>
+      <TextButton tone="muted" compact onClick={view.more}>
         {copy.more}
-      </Button>
+      </TextButton>
     </p>
   );
 }

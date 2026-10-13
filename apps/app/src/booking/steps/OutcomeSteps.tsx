@@ -1,8 +1,9 @@
 // What came of paying, the hold that ran out, the booking confirmed, and a wait.
 
+import { TextButton } from "@maneman/ui/TextLink";
 import { capsLook } from "@maneman/ui/Caps";
 import { ICONS } from "@maneman/brand/icons";
-import { Button } from "@maneman/ui/Button";
+import { Button, ButtonLink } from "@maneman/ui/Button";
 import { Icon } from "@maneman/ui/Icon";
 import { shortDate, weekdayDate } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";
@@ -108,9 +109,9 @@ export function ConfirmedStep(props: { hold: Hold; moved: boolean; reminded: boo
         />
       </div>
       <ConfirmedNote hold={hold} technician={technician} />
-      <button className={styles.done} type="button" onClick={onDone}>
+      <TextButton tone="ink" className={styles.done} onClick={onDone}>
         {copy.close}
-      </button>
+      </TextButton>
     </div>
   );
 }
@@ -124,22 +125,29 @@ function ConfirmedNote({ hold, technician }: { hold: Hold; technician: string })
   const message = messages.note(VISIT_TYPES[hold.type], shortDate(hold.date));
   if (hold.visit_id === null) {
     return (
-      <a className={styles.note} href={whatsappWith(message)} rel="noopener">
+      <ButtonLink
+        variant="outlineOnInk"
+        size="control"
+        className={styles.note}
+        href={whatsappWith(message)}
+        rel="noopener"
+      >
         {booking.confirmed.note(technician)}
-      </a>
+      </ButtonLink>
     );
   }
   return (
     <>
-      <button
+      <Button
+        variant="outlineOnInk"
+        size="control"
         className={styles.note}
-        type="button"
         onClick={() => {
           setOpen(true);
         }}
       >
         {booking.confirmed.note(technician)}
-      </button>
+      </Button>
       {open && (
         <NoteSheet
           visitId={hold.visit_id}

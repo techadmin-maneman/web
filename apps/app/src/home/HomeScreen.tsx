@@ -10,6 +10,7 @@
 // beneath that (src/domain/clients/home-prompt.ts). Where the prompt offers the next visit, it is Home's one way to book it,
 // with the sheet opened on its day and window; a replacement is booked here like any other visit.
 
+import { TextLink, textLinkLook } from "@maneman/ui/TextLink";
 import { BookButton, BookNext, type ChangingVisit } from "../booking/index.ts";
 import { capsLook } from "@maneman/ui/Caps";
 import { ButtonLink } from "@maneman/ui/Button";
@@ -261,10 +262,10 @@ function PaymentOwed({ owed }: { owed: NonNullable<Me["payment_owed"]> }) {
       {owed.url === null ? (
         <p className={styles.owedWait}>{copy.onItsWay}</p>
       ) : (
-        <a className={styles.promptLink} href={owed.url} target="_blank" rel="noopener">
+        <TextLink tone="brass" className={styles.promptLink} href={owed.url} newTab>
           <span>{copy.pay}</span>
           <VisuallyHidden>{`, ${copy.newTab}`}</VisuallyHidden>
-        </a>
+        </TextLink>
       )}
     </section>
   );
@@ -300,7 +301,7 @@ function Prompt({ prompt }: { prompt: NonNullable<Me["prompt"]> }) {
       return (
         <div className={styles.prompt}>
           <p className={styles.promptLine}>{home.prompt.address}</p>
-          <AppLink className={styles.promptLink} to="/profile">
+          <AppLink className={textLinkLook({ tone: "brass", className: styles.promptLink })} to="/profile">
             <span>{home.prompt.addAddress}</span>
           </AppLink>
         </div>
@@ -372,10 +373,10 @@ function InvoiceLine({ invoice }: { invoice: NonNullable<Me["invoice"]> }) {
   return (
     <div className={styles.prompt}>
       <p className={styles.promptLine}>{copy.invoice(visitName(invoice.type), shortDate(invoice.date))}</p>
-      <a className={styles.promptLink} href={documentUrl(invoice.visit_id)} target="_blank" rel="noopener">
+      <TextLink tone="brass" className={styles.promptLink} href={documentUrl(invoice.visit_id)} newTab>
         <span>{copy.openInvoice}</span>
         <VisuallyHidden>{visits.detail.invoice.newTab}</VisuallyHidden>
-      </a>
+      </TextLink>
     </div>
   );
 }
@@ -383,7 +384,7 @@ function InvoiceLine({ invoice }: { invoice: NonNullable<Me["invoice"]> }) {
 /** "See what that involves": the app's own page on a replacement, in place of a WhatsApp message to us. */
 function Involves() {
   return (
-    <AppLink className={styles.promptLink} to="/replacement">
+    <AppLink className={textLinkLook({ tone: "brass", className: styles.promptLink })} to="/replacement">
       <span>{home.prompt.involves}</span>
     </AppLink>
   );

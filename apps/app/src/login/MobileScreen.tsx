@@ -1,5 +1,6 @@
 // The mobile number (design/phase2/Client App).
 
+import { MobileInput } from "@maneman/ui/MobileInput";
 import { classes } from "@maneman/ui/classes";
 import { Button } from "@maneman/ui/Button";
 import { Mark } from "@maneman/ui/Mark";
@@ -50,25 +51,19 @@ export function MobileScreen({ initial, busy, error, ended, turnstileBox, onSubm
             if (digits !== null) onSubmit(digits);
           }}
         >
-          <div className={styles.field}>
-            <span className={styles.prefix} aria-hidden="true">
-              {copy.prefix}
-            </span>
-            <input
-              className={styles.input}
-              name="mobile"
-              type="tel"
-              inputMode="numeric"
-              autoComplete="tel-national"
-              aria-label={copy.label}
-              aria-invalid={shown !== null}
-              aria-describedby={shown === null ? undefined : "mobile-error"}
-              value={typed}
-              onChange={(event) => {
-                setTyped(event.target.value);
-              }}
-            />
-          </div>
+          <MobileInput
+            onInk
+            className={styles.field}
+            prefix={copy.prefix}
+            name="mobile"
+            aria-label={copy.label}
+            aria-invalid={shown !== null}
+            aria-describedby={shown === null ? undefined : "mobile-error"}
+            value={typed}
+            onChange={(event) => {
+              setTyped(event.target.value);
+            }}
+          />
           {shown !== null && (
             <p className={styles.error} id="mobile-error" role="alert">
               {shown}

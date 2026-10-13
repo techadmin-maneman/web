@@ -1,6 +1,7 @@
 // The account's data card: a copy of the client's data, and a concern raised and answered
 // (docs/decisions/0049-dpdp.md).
 
+import { Field, TextArea } from "@maneman/ui/Field";
 import { capsLook } from "@maneman/ui/Caps";
 import { GRIEVANCE_MAX_CHARS } from "@rules/policy/grievances.ts";
 import { Button, ButtonLink } from "@maneman/ui/Button";
@@ -37,6 +38,26 @@ function sendProblem(code: string): "limited" | "failed" {
 }
 
 /** The client's rights over their data: a copy of it, and a way to raise a concern (docs/decisions/0049-dpdp.md). */
+/** What the client writes to us: a grievance, up to the most it may be. */
+function GrievanceField({ text, onText }: { text: string; onText: (text: string) => void }) {
+  return (
+    <Field className={styles.formField} label={profile.data.field}>
+      {(control) => (
+        <TextArea
+          {...control}
+          rows={4}
+          maxLength={GRIEVANCE_MAX_CHARS}
+          required
+          value={text}
+          onChange={(event) => {
+            onText(event.target.value);
+          }}
+        />
+      )}
+    </Field>
+  );
+}
+
 export function DataCard({ grievances, onRaised }: { grievances: Profile["grievances"]; onRaised: () => void }) {
   const copy = profile.data;
   const [writing, setWriting] = useState(false);
@@ -90,19 +111,7 @@ export function DataCard({ grievances, onRaised }: { grievances: Profile["grieva
           void send();
         }}
       >
-        <label className={styles.formField}>
-          <span className={styles.formLabel}>{copy.field}</span>
-          <textarea
-            className={styles.input}
-            rows={4}
-            maxLength={GRIEVANCE_MAX_CHARS}
-            required
-            value={text}
-            onChange={(event) => {
-              setText(event.target.value);
-            }}
-          />
-        </label>
+        <GrievanceField text={text} onText={setText} />
         {(state === "failed" || state === "limited") && (
           <p className={styles.error} role="alert">
             {state === "limited" ? copy.limited : copy.failed}

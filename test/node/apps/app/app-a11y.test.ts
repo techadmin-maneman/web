@@ -21,8 +21,9 @@ function rulesOf(path: string): [string, string][] {
 }
 
 describe("the client app", () => {
+  // The login's number field is the shared MobileInput.
   it("rings the login's number field as it rings every control: 2 px, in the ground's colour", () => {
-    const field = rulesOf("apps/app/src/login/login.module.css").find(
+    const field = rulesOf("packages/ui/mobile-input.module.css").find(
       ([selector]) => selector === ".field:focus-within",
     );
     expect(field?.[1]).toContain("outline: var(--focus-width) solid var(--focus-colour)");

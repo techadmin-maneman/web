@@ -71,13 +71,6 @@
   border-bottom: var(--hairline) solid var(--paper-line);
 }
 
-.versionLine {
-  padding: var(--sp-8) 0;
-  font-size: var(--fs-14);
-  color: var(--text);
-  cursor: pointer;
-}
-
 .form {
   display: flex;
   flex-direction: column;

@@ -6,8 +6,8 @@
 // untold, and this is how they are told (docs/decisions/0071-what-ops-see-before-a-setting-changes.md). A pincode
 // the service area does not hold is added first, with its area's name and its city.
 
+import { TextButton } from "@maneman/ui/TextLink";
 import { DateInput, Label } from "@maneman/ui/Field";
-import { Button } from "@maneman/ui/Button";
 import { useFocusOnMount } from "@maneman/ui/useFocusOnMount";
 import { errorText } from "@maneman/web-kit/refusal";
 import { capsLook } from "@maneman/ui/Caps";
@@ -159,9 +159,9 @@ function AreaRow({ area, thisYear, onChoose }: { area: Area; thisYear: number; o
         {onChoose === null ? (
           area.pincode
         ) : (
-          <Button variant="text" size="compact" aria-label={chooseLabel(area)} onClick={onChoose}>
+          <TextButton tone="muted" compact aria-label={chooseLabel(area)} onClick={onChoose}>
             {area.pincode}
-          </Button>
+          </TextButton>
         )}
       </th>
       <td className={styles.area}>
