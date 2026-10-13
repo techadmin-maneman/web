@@ -2,7 +2,7 @@
 
 Every decision this repository was built on, oldest first. A record says what was decided and why, and is not rewritten to say something else: a later record changes it, and says so in its own header (ADR 0001). **Changed by** gathers those later records, from either side, so an old record's reader knows to read on.
 
-This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. A record names its topic in its header, `- Topic:` and one of the headings below, and the test fails on one that does not. The next free number is 0194.
+This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. A record names its topic in its header, `- Topic:` and one of the headings below, and the test fails on one that does not. The next free number is 0195.
 
 ## By topic
 
@@ -36,6 +36,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 - [0148](0148-the-channel-rule.md) The channel rule
 - [0151](0151-retention-figures.md) Retention figures
 - [0153](0153-supply-and-credits-in-the-copy.md) Supply and credits in the copy
+- [0194](0194-the-build-on-workers-paid.md) The build on Workers Paid
 
 ### Booking and visits
 
@@ -239,7 +240,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0006](0006-deployment-pipeline.md) | Deployment pipeline | 2026-09-21 | accepted | [0010](0010-applying-triggers.md), [0075](0075-tests-held-to-the-contract-and-the-local-stack.md) |
 | [0007](0007-platform-constraints.md) | Platform facts that block M1's definition of done | 2026-09-21 | resolved by 0008 | [0008](0008-owner-decisions-on-platform-constraints.md) |
 | [0008](0008-owner-decisions-on-platform-constraints.md) | Owner decisions on the platform constraints | 2026-09-21 | accepted |  |
-| [0009](0009-stay-inside-cloudflare-free-tier.md) | Stay inside Cloudflare's free tier | 2026-09-21 | accepted | [0112](0112-workers-paid.md) |
+| [0009](0009-stay-inside-cloudflare-free-tier.md) | Stay inside Cloudflare's free tier | 2026-09-21 | accepted | [0112](0112-workers-paid.md), [0194](0194-the-build-on-workers-paid.md) |
 | [0010](0010-applying-triggers.md) | Applying triggers | 2026-09-21 | accepted |  |
 | [0011](0011-lead-api.md) | The lead API | 2026-09-21 | accepted | [0067](0067-alerts-and-silent-failures.md) |
 | [0012](0012-zoho-sync.md) | The Zoho sync | 2026-09-21 | accepted | [0070](0070-vendor-correctness.md) |
@@ -321,7 +322,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0088](0088-every-policy-in-the-console.md) | Every policy in the console | 2026-09-28 | accepted, on the owner's standing rule of 27 September 2026 | [0095](0095-a-booking-fsm-refuses-is-held.md), [0096](0096-a-no-shows-charge-and-its-dispute.md), [0119](0119-blackouts-by-city-and-trained-fitters.md) |
 | [0089](0089-an-invite-is-not-lost.md) | An invite is not lost when the friend books away from its page | 2026-09-28 | accepted |  |
 | [0092](0092-task-owners.md) | Whose each task is, a visit ops close without a follow-up, and an address given to ops | 2026-09-28 | accepted |  |
-| [0093](0093-the-storage-meter.md) | The storage meter, the photograph upload limit, and thumbnails made on the phone | 2026-09-28 | accepted, on the owner's rulings of 27 September 2026 |  |
+| [0093](0093-the-storage-meter.md) | The storage meter, the photograph upload limit, and thumbnails made on the phone | 2026-09-28 | accepted, on the owner's rulings of 27 September 2026 | [0194](0194-the-build-on-workers-paid.md) |
 | [0094](0094-where-a-consent-was-given.md) | Where a consent was given, and an erasure blanks a check-in's coordinates | 2026-09-28 | accepted, on the owner's rulings of 27 September 2026 |  |
 | [0095](0095-a-booking-fsm-refuses-is-held.md) | A booking FSM refuses is held, not refunded | 2026-09-29 | superseded by 0110 on 4 October 2026: no booking waits on FSM, so none is held for ops | [0100](0100-a-refund-is-made-once.md), [0110](0110-field-work-without-fsm.md) |
 | [0096](0096-a-no-shows-charge-and-its-dispute.md) | A no-show's charge and its dispute, and the free change a visit ops moved keeps | 2026-09-29 | accepted, on the owner's rulings of 27 September 2026 | [0100](0100-a-refund-is-made-once.md) |
@@ -422,3 +423,4 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0191](0191-a-replaced-piece-comes-off.md) | A replaced piece comes off | 2026-10-13 | accepted |  |
 | [0192](0192-free-remakes.md) | Free remakes | 2026-10-13 | accepted |  |
 | [0193](0193-the-rest-of-the-rules-in-the-console.md) | The rest of the rules in the console | 2026-10-13 | accepted |  |
+| [0194](0194-the-build-on-workers-paid.md) | The build on Workers Paid | 2026-10-13 | accepted |  |

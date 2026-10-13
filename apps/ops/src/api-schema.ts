@@ -18040,8 +18040,6 @@ export interface components {
             held_bytes: number;
             /** @description The photographs' and cards' share of R2's free 10 GB; past it R2 bills. */
             share_bytes: number;
-            /** @description Past this the technician app's photographs are refused and wait on the phones. */
-            ceiling_bytes: number;
             /** @description What this environment's D1 database holds. */
             database_bytes: number;
             /** @description D1's limit on one database on Workers Paid; past it every write fails. */

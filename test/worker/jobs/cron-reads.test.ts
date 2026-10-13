@@ -15,7 +15,7 @@ import {
   BOARD_VERSION_ROWS_READ,
   CRON_ROWS_READ_PER_QUIET_RUN,
   CRON_STATEMENTS_PER_RUN,
-} from "../../../scripts/lib/free-tier-budget.ts";
+} from "../../../scripts/lib/usage-budget.ts";
 import type { StaticConfig } from "../../../src/guard.ts";
 import { meterDatabase } from "../../../src/lib/d1-meter.ts";
 import { createLogger } from "../../../src/log.ts";
@@ -399,7 +399,7 @@ describe("each minute's run", () => {
 });
 
 // The open dispatch board asks for its version every minute and reads itself again when it has moved, so what one load
-// reads, for the visits in its week, and what one look at the version reads, are what scripts/lib/free-tier-budget.ts
+// reads, for the visits in its week, and what one look at the version reads, are what scripts/lib/usage-budget.ts
 // counts the day's reads by.
 describe("a load of the dispatch board", () => {
   const ops = appFor("local", fakeDependencies(), {}, "ops");

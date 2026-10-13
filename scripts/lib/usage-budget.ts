@@ -1,7 +1,7 @@
-// Two budgets. R2's: the worst case the try-on can store and ask of it, from the ceilings in each environment's config,
-// plus the share set aside for clients' photographs and referral cards. R2 bills past its free allowance (docs/decisions/0009, 0093), so
-// test/node/tooling/free-tier-budget.test.ts holds them under 80% of it, and no ceiling can be raised into that
-// share without the build failing. And the reads: what one request to a route, one console board or one cron run may
+// Two budgets. R2's: what the try-on can store and ask of it at the ceilings in each environment's config, with the
+// share set aside for clients' photographs and referral cards, priced a month at R2's rates past its free allowance
+// (docs/decisions/0194-the-build-on-workers-paid.md). test/node/tooling/usage-budget.test.ts holds it to
+// R2_MONTHLY_BUDGET_USD, so a ceiling may rise if what it costs is accepted. And the reads: what one request to a route, one console board or one cron run may
 // read, which the soak and test/worker/jobs/cron-reads.test.ts hold them to, so work grows with what it handles and
 // not with the history behind it.
 //
@@ -16,15 +16,19 @@ import {
 import { MAX_COPY_BYTES, MAX_RESULT_BYTES, MAX_UPLOAD_BYTES, PHOTO_RETENTION_MS } from "../../src/config/tryon.ts";
 import { PHOTO_SHARE_BYTES } from "../../src/policy/storage-share.ts";
 
-/** R2's free allowance, per Cloudflare's pricing pages (read 21 September 2026). */
-export const FREE_TIER = {
+/** R2's free allowance of Standard storage, per Cloudflare's pricing pages. */
+export const R2_FREE_ALLOWANCE = {
   /** 10 GB-month, counted in decimal gigabytes, which is the smaller reading. */
   r2StorageBytes: 10 * 1e9,
   r2ClassAPerMonth: 1_000_000,
   r2ClassBPerMonth: 10_000_000,
 } as const;
 
-export const HEADROOM = 0.8;
+/** What R2 bills past the allowance, in US dollars: a GB-month stored, and a million of each class of operation. */
+export const R2_RATES = { storageGbMonth: 0.015, classAMillion: 4.5, classBMillion: 0.36 } as const;
+
+/** What R2 may cost a month at every ceiling: half the account's $10 budget alert (docs/decisions/0112-workers-paid.md). */
+export const R2_MONTHLY_BUDGET_USD = 5;
 
 /**
  * The photographs' and cards' share of the same allowance (docs/decisions/0039-phase-2-budget.md).
@@ -145,21 +149,23 @@ export function worstCaseUsage(environments: readonly Ceilings[]): Usage {
   };
 }
 
-/**
- * Each use over 80% of its allowance once the photographs' share is added, as a
- * readable line; empty when all fit.
- */
+/** What a month of `usage` costs, in US dollars, with the photographs' share beside it: nothing within the allowance. */
+export function monthlyCostUsd(usage: Usage, reserved: Usage = PHOTO_ALLOWANCE): number {
+  const past = (used: number, set: number, allowance: number) => Math.max(0, used + set - allowance);
+  const free = R2_FREE_ALLOWANCE;
+  return (
+    (past(usage.r2StorageBytes, reserved.r2StorageBytes, free.r2StorageBytes) / 1e9) * R2_RATES.storageGbMonth +
+    (past(usage.r2ClassAPerMonth, reserved.r2ClassAPerMonth, free.r2ClassAPerMonth) / 1e6) * R2_RATES.classAMillion +
+    (past(usage.r2ClassBPerMonth, reserved.r2ClassBPerMonth, free.r2ClassBPerMonth) / 1e6) * R2_RATES.classBMillion
+  );
+}
+
+/** A line saying what the month would cost, where it is past the budget; empty within it. */
 export function overBudget(usage: Usage, reserved: Usage = PHOTO_ALLOWANCE): string[] {
-  const lines: string[] = [];
-  const check = (name: string, used: number, set: number, allowance: number): void => {
-    if (used + set > allowance * HEADROOM) {
-      lines.push(
-        `${name}: ${String(Math.round(used))}, with Phase 2's ${String(set)}, is over 80% of the free ${String(allowance)}`,
-      );
-    }
-  };
-  check("R2 storage (bytes)", usage.r2StorageBytes, reserved.r2StorageBytes, FREE_TIER.r2StorageBytes);
-  check("R2 Class A operations a month", usage.r2ClassAPerMonth, reserved.r2ClassAPerMonth, FREE_TIER.r2ClassAPerMonth);
-  check("R2 Class B operations a month", usage.r2ClassBPerMonth, reserved.r2ClassBPerMonth, FREE_TIER.r2ClassBPerMonth);
-  return lines;
+  const cost = monthlyCostUsd(usage, reserved);
+  return cost <= R2_MONTHLY_BUDGET_USD
+    ? []
+    : [
+        `R2 would cost $${cost.toFixed(2)} a month at the ceilings, past the budget of $${String(R2_MONTHLY_BUDGET_USD)}`,
+      ];
 }

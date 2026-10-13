@@ -50,6 +50,7 @@ Nothing here needs a release. The first two have dates.
 - [ ] **Production's AILabTools key** (item 153): `W secret put AILAB_API_KEY --env production`, with a key of production's own.
 - [ ] **Staging's refund account:** the owner's "Razorpay – staging test" ID as `BOOKS_REFUND_ACCOUNT_ID` in `env.staging.vars`, released through CI (item 10).
 - [ ] **The weekly backup** (RB, "Restoring D1", "From a weekly backup"): the key pair made and its public key set as staging's and production's `BACKUP_PUBLIC_KEY`, and `mm-prod-backups` made, on 13 October 2026. Left: the private key in the owner's password manager, and its file deleted. Production's first backup is one by hand with `backup-now.ts` just before its first release.
+- [ ] **Old photographs to Infrequent Access, once production's pass the free 10 GB** (ADR 0194): R2's Infrequent Access class has no free allowance, so not before. Then a lifecycle rule on `mm-prod-client-photos` moving objects older than 90 days, and `scripts/lib/buckets.ts` taught to expect it.
 - [ ] **Error tracking** (RB, "The outside watchers", point 4): a Sentry project for staging and one for production, on the free plan, each DSN as that environment's `SENTRY_DSN`.
 - [ ] **Staging's cron heartbeat** (RB, "The outside watchers", point 1): a healthchecks.io check, its ping URL as staging's `HEARTBEAT_URL`; and Account Analytics: Read on `mm-ci-staging`, so each staging deploy reports mm-api's CPU time (provisioning, step 6).
 

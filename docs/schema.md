@@ -2788,7 +2788,7 @@ Indexes:
 
 What the apps' two buckets, client-photos and referral-cards, hold together: one row, the sum of `stored_objects` kept beside it, and the last mark of the share ops were told of (ADR 0093); and the last mark of the database's own size they were told of.
 
-Made by `0055_storage_meter.sql`; changed by `0072_database_size_told.sql`.
+Made by `0055_storage_meter.sql`; changed by `0072_database_size_told.sql`, `0164_storage_growth_by_day.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -2796,6 +2796,8 @@ Made by `0055_storage_meter.sql`; changed by `0072_database_size_told.sql`.
 | `bytes` | INTEGER | no |  |  |
 | `told_percent` | INTEGER | no | `0` |  |
 | `database_told_percent` | INTEGER | no | `0` |  |
+| `growth_date` | TEXT | yes |  |  |
+| `growth_from_bytes` | INTEGER | yes |  |  |
 
 ## stored_objects
 

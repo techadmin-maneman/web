@@ -27540,10 +27540,6 @@ Request body:
       "type": "integer",
       "description": "The photographs' and cards' share of R2's free 10 GB; past it R2 bills."
     },
-    "ceiling_bytes": {
-      "type": "integer",
-      "description": "Past this the technician app's photographs are refused and wait on the phones."
-    },
     "database_bytes": {
       "type": "integer",
       "description": "What this environment's D1 database holds."
@@ -27556,7 +27552,6 @@ Request body:
   "required": [
     "held_bytes",
     "share_bytes",
-    "ceiling_bytes",
     "database_bytes",
     "database_limit_bytes"
   ],

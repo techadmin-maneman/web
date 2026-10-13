@@ -6,7 +6,7 @@
 
 import { createRoute, z } from "@hono/zod-openapi";
 import { MAX_STOCK_PHOTO_BYTES, stockPhoto, storeStockPhoto } from "../../domain/field/stock-photos.ts";
-import { hasStorageRoom } from "../../domain/platform/storage-meter.ts";
+import { mayUpload } from "../../domain/platform/storage-meter.ts";
 import { cappedBody } from "../../http/capped-body.ts";
 import type { App } from "../../http/context.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
@@ -46,7 +46,9 @@ export function registerOpsStockPhotos(app: App): void {
   app.openapi(storeRoute, async (c) => {
     const bytes = await cappedBody(c.req.raw, MAX_STOCK_PHOTO_BYTES);
     if (bytes === null || bytes.byteLength === 0) return refuse(c, "photo_invalid_file");
-    if (!(await hasStorageRoom(c.env.DB, c.var.deps.alertOnce, bytes.byteLength))) return refuse(c, "busy");
+    const now = c.var.deps.now();
+    const uploader = { scope: "photo_upload:stock", key: "stock", now, settings: c.var.config.settings } as const;
+    if (!(await mayUpload(c.env.DB, c.var.deps.alertOnce, uploader))) return refuse(c, "busy");
     const id = await storeStockPhoto(c.env.DB, c.env.CLIENT_PHOTOS, bytes);
     if (id === null) return refuse(c, "photo_invalid_file");
     return c.json({ photo_id: id }, 201);

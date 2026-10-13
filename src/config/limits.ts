@@ -1,7 +1,6 @@
 // How often one number or one address may ask for something, and how many login codes go out in a day. The same in
-// every environment, so constants rather than Worker vars: mm-api is at the Workers Free plan's 64 vars and secrets
-// (docs/decisions/0009-stay-inside-cloudflare-free-tier.md, rule 6). The daily ceilings that differ by environment,
-// and the try-on result's retention, are still vars.
+// every environment, so constants rather than Worker vars. The daily ceilings that differ by environment, and the
+// try-on result's retention, are vars.
 //
 // A local run may raise one with a var of the same name, as the browser tests do (playwright.config.ts). The startup
 // guard refuses such a var anywhere else.

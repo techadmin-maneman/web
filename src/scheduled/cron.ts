@@ -183,7 +183,7 @@ const grievanceAlertsJob = ({ env, deps, config }: CronContext) =>
 
 /** R2's share and the database fill over months, so an hourly look is enough. */
 async function storageMeterJob({ env, deps, config }: CronContext): Promise<void> {
-  await tellOfStorage(env.DB, deps.alertOnce, config.environment);
+  await tellOfStorage(env.DB, deps.alertOnce, config.environment, deps.now());
   await tellOfDatabaseSize(env.DB, deps.alertOnce, await readDatabaseBytes(env.DB));
 }
 
@@ -358,7 +358,6 @@ export const CRON_JOBS: readonly CronJob[] = [
   { name: "housekeeping", needs: "nothing", every: 60, at: 28, run: deleteExpiredRecords },
   // An erased client's customer in Books, deleted, or blanked where an invoice names it.
   { name: "books_erasures", needs: "books", every: 60, at: 29, run: booksErasuresJob },
-  // What the account has used today of the free plan's daily allowances, told at 70%.
   // What the photographs and cards hold of R2, told at half, 80% and all of their share (docs/decisions/0093), and
   // the database against D1's limit, told at half, 80% and 95%.
   { name: "storage_meter", needs: "nothing", every: 60, at: 39, run: storageMeterJob },

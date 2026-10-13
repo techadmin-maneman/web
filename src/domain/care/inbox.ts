@@ -55,12 +55,12 @@ export async function fileInbound(db: D1Database, inbound: Inbound): Promise<voi
 }
 
 export const INBOX_VIEWS = ["mine", "open", "waiting", "closed", "all"] as const;
-export type InboxView = (typeof INBOX_VIEWS)[number];
+type InboxView = (typeof INBOX_VIEWS)[number];
 
 /** How many threads a page of a view lists, newest first. */
 export const PAGE_THREADS = 50;
 
-export interface ConversationRow {
+interface ConversationRow {
   readonly id: string;
   readonly person: { readonly id: string; readonly name: string } | null;
   readonly mobile: string;

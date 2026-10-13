@@ -11,7 +11,7 @@
 
 import { z } from "zod";
 import { callCloudflare, describeAnswer, type ApiAnswer } from "./cloudflare-api.ts";
-import { OTHER_ROUTE_ROWS_READ, ROUTE_ROWS_READ } from "./free-tier-budget.ts";
+import { OTHER_ROUTE_ROWS_READ, ROUTE_ROWS_READ } from "./usage-budget.ts";
 
 export interface Invocations {
   readonly requests: number;

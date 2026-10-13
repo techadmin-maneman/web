@@ -45,7 +45,7 @@ import {
 import { callerAccess, permits } from "../../http/staff-access.ts";
 import { placesReached, type Level } from "../../policy/access.ts";
 import { callerMeetsNeed, TASK_DEPARTMENTS, taskNeed } from "../../policy/console-routes.ts";
-import { TaskFactsSchema } from "./task-facts.ts";
+import { TaskFactsSchema } from "./tasks.schemas.ts";
 
 /** The tasks each group lists, the longest waits; its count is the whole queue's. */
 export const TASKS_SHOWN = 50;

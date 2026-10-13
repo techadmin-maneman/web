@@ -3,7 +3,7 @@
 
 import type { App } from "../../http/context.ts";
 import { jobChangesSince } from "../../domain/field/job-events.ts";
-import { hasStorageRoom } from "../../domain/platform/storage-meter.ts";
+import { mayUpload } from "../../domain/platform/storage-meter.ts";
 import { workableJob, type WorkableJob } from "../../domain/field/workable-job.ts";
 import {
   anglesHeld,
@@ -24,13 +24,19 @@ import { uploadUrlRoute, uploadRoute, smallUploadRoute, photosRoute } from "./jo
 import { type Ctx, hasClosed, namedJob, step, superseded, refusalOf } from "./jobs.record.ts";
 
 /**
- * Whether the job has closed, and whether the bucket has room for the bytes sent, read in one round trip to D1. The
- * body is read first, which needs nothing of D1; bytes too large to take ask for no room.
+ * Whether the job has closed, and whether the technician's phone may upload another today, read together. The body is
+ * read first, which needs nothing of D1; bytes too large to take count for nothing.
  */
 function roomInOpenJob(c: Ctx, appointmentId: string, bytes: Uint8Array | null): Promise<[boolean, boolean]> {
+  const uploader = {
+    scope: "photo_upload:technician",
+    key: technicianOf(c).technicianId,
+    now: c.var.deps.now(),
+    settings: c.var.config.settings,
+  } as const;
   return Promise.all([
     hasClosed(c, appointmentId),
-    bytes === null ? Promise.resolve(true) : hasStorageRoom(c.env.DB, c.var.deps.alertOnce, bytes.byteLength),
+    bytes === null ? Promise.resolve(true) : mayUpload(c.env.DB, c.var.deps.alertOnce, uploader),
   ]);
 }
 

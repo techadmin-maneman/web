@@ -9,7 +9,7 @@
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
-import { TASKS_ROWS_READ_PER_LOOK } from "../../../scripts/lib/free-tier-budget.ts";
+import { TASKS_ROWS_READ_PER_LOOK } from "../../../scripts/lib/usage-budget.ts";
 import { NOW, appFor, captureLogs, fakeDependencies, markDatabase, request } from "../helpers.ts";
 import { DAY_MS, AGO, IN_TWO_MONTHS, over, rowsReadBy } from "./cron-reads-fixtures.ts";
 

@@ -1,6 +1,6 @@
 // What clients' photographs and referral cards hold in R2, behind Access
 // (docs/decisions/0093-the-storage-meter.md), and what the database holds:
-//   GET /api/storage    the storage meter's figure, beside the share and the runaway ceiling, and the database's size
+//   GET /api/storage    the storage meter's figure, beside the photographs' share, and the database's size
 //                       beside D1's limit
 //
 // Settings shows it, so ops can see how near each limit is before the alerts
@@ -12,7 +12,7 @@ import { errorResponse } from "../../http/errors.ts";
 import { json } from "../../http/openapi.ts";
 import { readDatabaseBytes, readMeter } from "../../domain/platform/storage-meter.ts";
 import { DATABASE_LIMIT_BYTES } from "../../policy/database-size.ts";
-import { RUNAWAY_CEILING_BYTES, SHARE_BYTES } from "../../policy/storage-share.ts";
+import { SHARE_BYTES } from "../../policy/storage-share.ts";
 
 const StorageSchema = z
   .object({
@@ -20,10 +20,6 @@ const StorageSchema = z
     share_bytes: z.number().int().openapi({
       description: "The photographs' and cards' share of R2's free 10 GB; past it R2 bills.",
     }),
-    ceiling_bytes: z
-      .number()
-      .int()
-      .openapi({ description: "Past this the technician app's photographs are refused and wait on the phones." }),
     database_bytes: z.number().int().openapi({ description: "What this environment's D1 database holds." }),
     database_limit_bytes: z
       .number()
@@ -51,7 +47,6 @@ export function registerOpsStorage(app: App): void {
       {
         held_bytes: bytes,
         share_bytes: SHARE_BYTES[c.var.config.environment],
-        ceiling_bytes: RUNAWAY_CEILING_BYTES,
         database_bytes: await readDatabaseBytes(c.env.DB),
         database_limit_bytes: DATABASE_LIMIT_BYTES,
       },

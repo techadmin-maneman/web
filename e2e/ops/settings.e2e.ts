@@ -35,7 +35,6 @@ test("says what photos and referral cards hold, and the database, under The cons
   const storage = json({
     held_bytes: 1_240_000_000,
     share_bytes: 4e9,
-    ceiling_bytes: 20e9,
     database_bytes: 212_000_000,
     database_limit_bytes: 10e9,
   });

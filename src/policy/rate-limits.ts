@@ -7,6 +7,7 @@ import type { Settings } from "../config/settings.ts";
 import { CODE_CHECKS } from "./discount-codes.ts";
 import { GRIEVANCES_PER_DAY } from "./grievances.ts";
 import { INVITE_MISSES_PER_ADDRESS_HOURLY } from "./invites.ts";
+import { PHOTO_UPLOADS_PER_TECHNICIAN_DAILY, STOCK_PHOTO_UPLOADS_DAILY } from "./storage-share.ts";
 
 /** The window a count runs in: India's day, or India's hour. */
 export type Period = "day" | "hour";
@@ -45,6 +46,10 @@ export const RATE_LIMITS = {
   // Their own try-on's photograph and look, counted apart from the site's result links so the site's traffic never
   // turns them away (ADR 0014's R2 budget is held by the number of clients).
   "tryon_image:person": { per: "day", limit: 200 },
+  // Photographs stored, at a rate no day's work makes past (src/policy/storage-share.ts): a technician's phone, and
+  // ops' stock photographs together.
+  "photo_upload:technician": { per: "day", limit: PHOTO_UPLOADS_PER_TECHNICIAN_DAILY },
+  "photo_upload:stock": { per: "day", limit: STOCK_PHOTO_UPLOADS_DAILY },
   address_suggest: { per: "day", limit: SUGGESTIONS_PER_DAY },
   ops_address_suggest: { per: "day", limit: SUGGESTIONS_PER_DAY },
   // A visitor to the site's booking form, by their address's salted hash.

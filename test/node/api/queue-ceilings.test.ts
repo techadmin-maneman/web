@@ -3,7 +3,7 @@
 
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
-import { pollsPerRender } from "../../../scripts/lib/free-tier-budget.ts";
+import { pollsPerRender } from "../../../scripts/lib/usage-budget.ts";
 import { readJsonc } from "../../../scripts/lib/jsonc.ts";
 import { DOWNLOAD_QUEUE_RETRIES, MAX_SEND_ATTEMPTS, SUBMIT_ATTEMPTS } from "../../../src/config/pipeline.ts";
 import { MAX_CONTACT_UPDATE_ATTEMPTS } from "../../../src/queues/crm-sync.ts";

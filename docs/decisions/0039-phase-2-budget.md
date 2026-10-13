@@ -6,7 +6,7 @@
 
 ## Context
 
-The owner kept Phase 2 on Cloudflare's free plan with hard caps (22 September 2026), so ADR 0009 stands: nothing may bill. Everything on Workers Free stops at its limit, except R2, which bills past 10 GB. `test/node/tooling/free-tier-budget.test.ts` already holds the try-on's worst case under 80% of each allowance.
+The owner kept Phase 2 on Cloudflare's free plan with hard caps (22 September 2026), so ADR 0009 stands: nothing may bill. Everything on Workers Free stops at its limit, except R2, which bills past 10 GB. `test/node/tooling/usage-budget.test.ts` already holds the try-on's worst case under 80% of each allowance.
 
 That worst case was already at the line. Production kept each try-on result for thirty days, and staging and production together could hold 7.96 GB of results, **79.6% of R2's 10 GB**. Phase 2 has to fit into what is left:
 
@@ -26,7 +26,7 @@ The privacy page changes in two places:
 
 Production has served no try-on, so no stored result is affected.
 
-**Phase 2 has a share of each allowance, set aside in the budget** (`PHASE_2_ALLOWANCE`, `scripts/lib/free-tier-budget.ts`). The budget test adds it to the try-on's worst case, and fails if the two together pass 80%. So no try-on ceiling can be raised into Phase 2's share.
+**Phase 2 has a share of each allowance, set aside in the budget** (`PHASE_2_ALLOWANCE`, `scripts/lib/usage-budget.ts`). The budget test adds it to the try-on's worst case, and fails if the two together pass 80%. So no try-on ceiling can be raised into Phase 2's share.
 
 | Allowance              | Free plan  | Try-on worst case | Phase 2's share | Together |
 | ---------------------- | ---------- | ----------------- | --------------- | -------- |
@@ -61,7 +61,7 @@ Before the photographs pass that runway, the owner must decide between the paid 
 
 - **The table above was worked at 6 MB a result.** At today's 5 MB (`MAX_RESULT_BYTES`) the try-on's worst case was 3.28 GB, 72.8% with Phase 2's share.
 - **The small copies a client keeps as their before photo** are held with their looks until the client books, and are counted at the upload ceiling: the try-on's worst case is now 3.60 GB, **76.0%** with Phase 2's share. Class A is 11.1% and Class B 10.4%.
-- **A client's kept try-on is held for good**, the copy until they are erased and the look until their first fit is photographed, which for a client never fitted is never. So it is paid from Phase 2's share. Each visit on the runway may be a new client's, with one kept try-on of up to 5.25 MB, so the runway is **462 visits** at worst (`photoRunwayVisits`, `scripts/lib/free-tier-budget.ts`). A copy of the look as small as the before photo would leave 1,228. The owner decides (`docs/open-points.md`, item 151).
+- **A client's kept try-on is held for good**, the copy until they are erased and the look until their first fit is photographed, which for a client never fitted is never. So it is paid from Phase 2's share. Each visit on the runway may be a new client's, with one kept try-on of up to 5.25 MB, so the runway is **462 visits** at worst (`photoRunwayVisits`, `scripts/lib/usage-budget.ts`). A copy of the look as small as the before photo would leave 1,228. The owner decides (`docs/open-points.md`, item 151).
 
 ## Consequences
 

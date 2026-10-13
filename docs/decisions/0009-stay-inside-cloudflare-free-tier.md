@@ -47,7 +47,7 @@ On Workers Free every product except R2 fails closed, which is an outage rather 
 ## Update, 21 September 2026 (M3)
 
 - **Presigned uploads replaced.** The prompt's presigned R2 upload link could be replayed until it expired, each replay a billed write that no ceiling could count. Photos now come through the API, which writes each once (docs/decisions/0014-try-on-api.md).
-- **The arithmetic, and the test that enforces it.** Both are in docs/decisions/0015-render-pipeline.md; `test/node/tooling/free-tier-budget.test.ts` enforces them. R2 storage is the binding limit: it holds production to 40 renders a day while results are kept 30 days at up to 6 MB each.
+- **The arithmetic, and the test that enforces it.** Both are in docs/decisions/0015-render-pipeline.md; `test/node/tooling/usage-budget.test.ts` enforces them. R2 storage is the binding limit: it holds production to 40 renders a day while results are kept 30 days at up to 6 MB each.
 
 ## Update, 25 September 2026: D1's reads
 
@@ -55,8 +55,8 @@ D1's 5 million rows read a day had no budget, and the five-minute cron read whol
 
 - **Migration 0037** gives each lookup on the cron's path, and the lookups made while a client pays, an index. Most are partial: they hold only the rows still waiting, so they stay small however much history gathers.
 - **`test/node/database/query-plans.test.ts`** plans each statement on those paths against every migration, and fails when one reads a growing table from end to end.
-- **`test/worker/jobs/cron-reads.test.ts`** runs every cron job over a finished history and again over twice that history, and fails when a run reads more for it. A quiet run reads about 70 rows, and 100 in the evening (`CRON_ROWS_READ_PER_QUIET_RUN`, `scripts/lib/free-tier-budget.ts`).
-- **`scripts/lib/free-tier-budget.ts`** models the cron's reads: production busy on every run (5,000 rows) and staging at rest, about 1.5 million a day. `test/node/tooling/free-tier-budget.test.ts` holds that under 40% of the allowance, which leaves requests the rest of the 80%.
+- **`test/worker/jobs/cron-reads.test.ts`** runs every cron job over a finished history and again over twice that history, and fails when a run reads more for it. A quiet run reads about 70 rows, and 100 in the evening (`CRON_ROWS_READ_PER_QUIET_RUN`, `scripts/lib/usage-budget.ts`).
+- **`scripts/lib/usage-budget.ts`** models the cron's reads: production busy on every run (5,000 rows) and staging at rest, about 1.5 million a day. `test/node/tooling/usage-budget.test.ts` holds that under 40% of the allowance, which leaves requests the rest of the 80%.
 - **The dispatch board** (4 October 2026). Read in full every minute by each open console, about 70 rows and 18 for each visit in its week, it alone would pass the requests' share at about 40 visits a week. It now asks every minute for a one-row version that triggers raise when anything it draws changes, and reads itself again only then, and in full every ten minutes (ADR 0069). `boardRowsReadPerDay` models it at five changes a visit, each read by every open board: room for about 160 visits a week. That is still short of 2,000 clients (about 470 a week), since each read grows with the week; reading only the visits changed since the last version is the next step.
 
 ## Update, 2 October 2026: D1's size

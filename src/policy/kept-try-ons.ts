@@ -7,7 +7,7 @@
 // A client is someone who has booked a visit, of any kind. Their try-on is kept only if its photograph was agreed to
 // under a notice that says so, and only if its look is still held when they are a client: before then the try-on
 // keeps the published notices' rules. A client keeps one try-on, the oldest, so what R2 holds for good grows with the
-// clients and not with the try-ons each makes (scripts/lib/free-tier-budget.ts).
+// clients and not with the try-ons each makes (scripts/lib/usage-budget.ts).
 
 /** Where a kept try-on lives, as the prompt gives the bucket for clients' photographs: what is kept stays until deleted. */
 // Its rules, as the brief states them:
