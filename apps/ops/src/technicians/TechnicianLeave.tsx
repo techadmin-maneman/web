@@ -106,11 +106,8 @@ function Period({
       </div>
       {step !== "listed" && (
         <CheckPanel
-          title={copy.check.title(period)}
+          question={copy.check.title(period)}
           lines={[copy.check.line]}
-          send={copy.check.send}
-          sending={copy.check.sending}
-          back={copy.check.back}
           busy={step === "sending"}
           onSend={() => void takeBack()}
           onBack={() => {

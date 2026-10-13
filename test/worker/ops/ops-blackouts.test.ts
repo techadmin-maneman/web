@@ -85,6 +85,33 @@ describe("GET /api/blackouts", () => {
   });
 });
 
+describe("GET /api/blackouts/booked", () => {
+  const booked = (query: string) => request(ops, `/api/blackouts/booked?${query}`);
+
+  it("counts the visits closing days would leave to move, in every city or one, before any is closed", async () => {
+    for (const [id, start, city] of [
+      ["visit-1", "2026-10-20T03:30:00.000Z", "Gurgaon"],
+      ["visit-2", "2026-10-21T18:29:00.000Z", "Delhi"], // 11:59 pm on the 21st in India
+      ["visit-3", "2026-10-21T18:30:00.000Z", "Gurgaon"], // midnight, the 22nd: past the last day
+    ]) {
+      await env.DB.prepare(
+        `INSERT INTO appointments (id, fsm_id, status, fsm_status, window_start, service_city, fsm_modified_at, synced_at)
+         VALUES (?1, ?1, 'scheduled', 'scheduled', ?2, ?3, ?4, ?4)`,
+      )
+        .bind(id, start, city, NOW.toISOString())
+        .run();
+    }
+    expect(await (await booked("from=2026-10-20&to=2026-10-21")).json()).toEqual({ booked: 2 });
+    expect(await (await booked("from=2026-10-20&to=2026-10-21&city=Gurgaon")).json()).toEqual({ booked: 1 });
+    expect((await env.DB.prepare("SELECT COUNT(*) AS n FROM visit_blackouts").first())?.n).toBe(0);
+  });
+
+  it("refuses the days it would refuse to close, and a city we do not have", async () => {
+    expect((await booked("from=2026-09-01&to=2026-09-02")).status).toBe(400);
+    expect((await booked("from=2026-10-20&to=2026-10-21&city=Atlantis")).status).toBe(400);
+  });
+});
+
 describe("POST /api/blackouts", () => {
   it("blacks out every day from the first to the last, which booking then offers to nobody", async () => {
     const answer = await post("/api/blackouts", { from: "2026-10-20", to: "2026-10-22", reason: "Diwali" });

@@ -6,6 +6,7 @@ import { expect, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
 import { answer, json, type Answers, type OpsReply } from "./fixtures.ts";
 import { settings as settingsCopy } from "../../apps/ops/src/content/settings.ts";
+import { review } from "../../apps/ops/src/content/common.ts";
 
 const copy = settingsCopy.suppliers;
 
@@ -60,10 +61,10 @@ test("lists each supplier with its terms, and adds one once checked", async ({ p
   await page.getByLabel(copy.form.name, { exact: true }).fill("Kesh Supplies");
   await page.getByLabel(copy.form.gstin).fill("07aabck1234m1z5");
   await page.getByLabel(copy.form.terms).fill("15");
-  await page.getByRole("button", { name: copy.form.add }).click();
+  await page.getByRole("button", { name: review.next }).click();
   await expect(page.getByText(copy.form.confirm.adding("Kesh Supplies", "IN", "INR"))).toBeVisible();
   const sent = posted(page, "/api/suppliers");
-  await page.getByRole("button", { name: copy.form.confirm.send }).click();
+  await page.getByRole("button", { name: review.send }).click();
   expect((await sent).postDataJSON()).toEqual({
     name: "Kesh Supplies",
     gstin: "07AABCK1234M1Z5",
@@ -87,11 +88,11 @@ test("shows what a supplier supplies, and sets a price old beside new", async ({
 
   await items.getByLabel(copy.item.consumable).selectOption({ label: "Solvent" });
   await items.getByLabel(copy.item.price("USD", "ml")).fill("13");
-  await items.getByRole("button", { name: copy.item.set }).click();
+  await items.getByRole("button", { name: review.next }).click();
   await expect(items).toContainText("USD 12.50");
   await expect(items).toContainText("USD 13.00");
   const sent = posted(page, "/api/suppliers/sup-1/items");
-  await items.getByRole("button", { name: copy.form.confirm.send }).click();
+  await items.getByRole("button", { name: review.send }).click();
   expect((await sent).postDataJSON()).toEqual({
     consumable_code: "solvent",
     their_code: "SV-500",

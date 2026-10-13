@@ -6481,6 +6481,34 @@ Request body:
 }
 ```
 
+### GET /api/blackouts/booked
+
+How many visits are still booked on days ops are about to close, in one city or every city
+
+**200**: The visits closing the days would leave to move
+
+```json
+{
+  "$ref": "#/components/schemas/BlackoutBooked"
+}
+```
+
+**400**: invalid_request: fields names from, to or city as for adding the days
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ### POST /api/blackouts/remove
 
 Offer the days from one date to another again
@@ -23859,6 +23887,23 @@ Request body:
     "reason",
     "set_by",
     "set_at",
+    "booked"
+  ],
+  "additionalProperties": false
+}
+```
+
+### BlackoutBooked
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "booked": {
+      "type": "integer"
+    }
+  },
+  "required": [
     "booked"
   ],
   "additionalProperties": false

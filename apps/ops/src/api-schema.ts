@@ -9764,6 +9764,67 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/blackouts/booked": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** How many visits are still booked on days ops are about to close, in one city or every city */
+        get: {
+            parameters: {
+                query: {
+                    /** @description The first day, today or later. */
+                    from: string;
+                    /** @description The last day, the first included; a month on at most when adding. */
+                    to: string;
+                    /** @description One of the cities the list names. */
+                    city?: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The visits closing the days would leave to move */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["BlackoutBooked"];
+                    };
+                };
+                /** @description invalid_request: fields names from, to or city as for adding the days */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description access_required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/blackouts/remove": {
         parameters: {
             query?: never;
@@ -17298,6 +17359,9 @@ export interface components {
             set_by: string | null;
             set_at: string | null;
             /** @description Visits still booked on the day. Blacking a day out moves none of them: ops do. */
+            booked: number;
+        };
+        BlackoutBooked: {
             booked: number;
         };
         BlackoutAdd: {

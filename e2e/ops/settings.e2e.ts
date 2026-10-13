@@ -108,12 +108,12 @@ test.describe("the rules", () => {
       },
     });
     await page.getByLabel("Check-in radius").fill("150");
-    await section(page, "Visits in the field").getByRole("button", { name: "Save" }).click();
+    await section(page, "Visits in the field").getByRole("button", { name: "Review" }).click();
 
     // ADR 0071's rule for a price, followed for a rule (docs/decisions/0086-the-next-visit-is-offered.md).
     const check = page.getByRole("group", { name: "Review the change" });
     await expect(check).toBeFocused();
-    await expect(check).toContainText("Check-in radius: 200 metres → 150 metres.");
+    await expect(check).toContainText("Check-in radius: 200 metres → 150 metres");
     expect(sent).toBe(0);
 
     const request = posted(page, "/api/settings/checkin_radius_m");
@@ -125,7 +125,7 @@ test.describe("the rules", () => {
   test("goes back to the figures without sending when the change is not the one meant", async ({ page }) => {
     await open(page);
     await page.getByLabel("Check-in radius").fill("150");
-    await section(page, "Visits in the field").getByRole("button", { name: "Save" }).click();
+    await section(page, "Visits in the field").getByRole("button", { name: "Review" }).click();
     await page.getByRole("group", { name: "Review the change" }).getByRole("button", { name: "Edit" }).click();
     await expect(page.getByRole("group", { name: "Review the change" })).toHaveCount(0);
     await expect(page.getByLabel("Check-in radius")).toHaveValue("150");
@@ -135,7 +135,7 @@ test.describe("the rules", () => {
     page,
   }) => {
     await open(page);
-    const save = section(page, "Visits in the field").getByRole("button", { name: "Save" });
+    const save = section(page, "Visits in the field").getByRole("button", { name: "Review" });
     await expect(save).toBeDisabled();
     await page.getByLabel("Check-in radius").fill("");
     await expect(save).toBeDisabled();
@@ -151,7 +151,7 @@ test.describe("the rules", () => {
     await radius.fill("1440");
     await expect(radius).toHaveAttribute("aria-invalid", "true");
     await expect(radius).toHaveAccessibleDescription("Enter 50–1000 metres.");
-    await expect(section(page, "Visits in the field").getByRole("button", { name: "Save" })).toBeDisabled();
+    await expect(section(page, "Visits in the field").getByRole("button", { name: "Review" })).toBeDisabled();
     await radius.fill("150");
     await expect(radius).not.toHaveAttribute("aria-invalid", "true");
   });
@@ -163,7 +163,7 @@ test.describe("the rules", () => {
     });
     const wait = page.getByRole("group", { name: "No-show wait" });
     await wait.getByLabel("First fit", { exact: true }).fill("90");
-    await section(page, "Visits in the field").getByRole("button", { name: "Save" }).click();
+    await section(page, "Visits in the field").getByRole("button", { name: "Review" }).click();
     await page.getByRole("group", { name: "Review the change" }).getByRole("button", { name: "Confirm" }).click();
     await expect(page.getByRole("listitem").filter({ has: wait }).getByRole("alert")).toHaveText(
       "First fit: out of range. Not saved.",
@@ -181,7 +181,7 @@ test.describe("the rules", () => {
     const days = page.getByRole("group", { name: "Booking and next visits" });
     await days.getByText("Show all 8").click();
     await days.getByLabel("Between service visits").fill("60");
-    await section(page, "Booking and payment").getByRole("button", { name: "Save" }).click();
+    await section(page, "Booking and payment").getByRole("button", { name: "Review" }).click();
     await page.getByRole("group", { name: "Review the change" }).getByRole("button", { name: "Confirm" }).click();
     await expect(page.getByRole("listitem").filter({ has: days }).getByRole("alert")).toHaveText(
       "“Bookable ahead” must be at least “Between service visits”. Not saved.",
@@ -202,7 +202,7 @@ test.describe("the rules", () => {
     ]);
     const field = section(page, "Visits in the field");
     await expect(field.getByRole("group")).toHaveText([/^Check-in radius/, /^No-show wait/, /^Phone clock limits/]);
-    await expect(page.getByRole("button", { name: "Save", exact: true })).toHaveCount(6);
+    await expect(page.getByRole("button", { name: "Review", exact: true })).toHaveCount(6);
 
     await jump.getByRole("link", { name: "Referrals" }).click();
     await expect(page).toHaveURL(/\/settings#referrals$/);
@@ -223,18 +223,18 @@ test.describe("the rules", () => {
     });
     await page.getByLabel("Check-in radius").fill("150");
     await page.getByRole("group", { name: "No-show wait" }).getByLabel("Service visit", { exact: true }).fill("20");
-    await section(page, "Visits in the field").getByRole("button", { name: "Save" }).click();
+    await section(page, "Visits in the field").getByRole("button", { name: "Review" }).click();
 
     const check = page.getByRole("group", { name: "Review the change" });
     await expect(check.getByRole("listitem")).toHaveText([
-      "Check-in radius: 200 metres → 150 metres.",
-      "No-show wait · Service visit: 15 minutes → 20 minutes.",
+      "Check-in radius: 200 metres → 150 metres",
+      "No-show wait · Service visit: 15 minutes → 20 minutes",
     ]);
     expect(sent).toEqual([]);
     await check.getByRole("button", { name: "Confirm" }).click();
     await expect(page.getByRole("status").filter({ hasText: "Saved." })).toBeVisible();
     expect(sent).toEqual(["checkin_radius_m", "no_show_wait_min"]);
-    await expect(section(page, "Visits in the field").getByRole("button", { name: "Save" })).toBeDisabled();
+    await expect(section(page, "Visits in the field").getByRole("button", { name: "Review" })).toBeDisabled();
   });
 
   test("says which rule was refused when one of a section's changes is, and keeps the one that saved", async ({
@@ -253,7 +253,7 @@ test.describe("the rules", () => {
     await page.getByLabel("Check-in radius").fill("150");
     const wait = page.getByRole("group", { name: "No-show wait" });
     await wait.getByLabel("Service visit", { exact: true }).fill("20");
-    await section(page, "Visits in the field").getByRole("button", { name: "Save" }).click();
+    await section(page, "Visits in the field").getByRole("button", { name: "Review" }).click();
     await page.getByRole("group", { name: "Review the change" }).getByRole("button", { name: "Confirm" }).click();
 
     await expect(page.getByRole("listitem").filter({ has: wait }).getByRole("alert")).toHaveText(
@@ -300,14 +300,14 @@ test.describe("the rules", () => {
     // A horizon shorter than the fortnight the strip shows is not offered.
     const booking = section(page, "Booking and payment");
     await days.getByLabel("Bookable ahead").fill("10");
-    await expect(booking.getByRole("button", { name: "Save" })).toBeDisabled();
+    await expect(booking.getByRole("button", { name: "Review" })).toBeDisabled();
     await days.getByLabel("Bookable ahead").fill("45");
 
     await days.getByLabel("Between service visits").fill("28");
-    await booking.getByRole("button", { name: "Save" }).click();
+    await booking.getByRole("button", { name: "Review" }).click();
     const check = page.getByRole("group", { name: "Review the change" });
     await expect(check.getByRole("listitem")).toHaveText([
-      "Booking and next visits · Between service visits: 30 days → 28 days.",
+      "Booking and next visits · Between service visits: 30 days → 28 days",
     ]);
     expect(await axeViolations(page)).toEqual([]);
 
@@ -345,11 +345,11 @@ test.describe("the rules", () => {
 
     await reward.getByLabel("Referrer").fill("2");
     await reward.getByLabel("Friend").fill("0");
-    await section(page, "Referrals").getByRole("button", { name: "Save" }).click();
+    await section(page, "Referrals").getByRole("button", { name: "Review" }).click();
     const check = page.getByRole("group", { name: "Review the change" });
     await expect(check.getByRole("listitem")).toHaveText([
-      "Referral reward · Referrer: 3 service visits → 2 service visits.",
-      "Referral reward · Friend: 3 service visits → 0 service visits.",
+      "Referral reward · Referrer: 3 service visits → 2 service visits",
+      "Referral reward · Friend: 3 service visits → 0 service visits",
     ]);
 
     const request = posted(page, "/api/settings/referral_reward");
@@ -391,9 +391,9 @@ test.describe("the rules", () => {
     ]);
 
     await service.selectOption("nothing");
-    await section(page, "Moves, cancels and no-shows").getByRole("button", { name: "Save" }).click();
+    await section(page, "Moves, cancels and no-shows").getByRole("button", { name: "Review" }).click();
     const check = page.getByRole("group", { name: "Review the change" });
-    await expect(check).toContainText("Late move or cancel charge · Service visit: The full visit → Nothing.");
+    await expect(check).toContainText("Late move or cancel charge · Service visit: The full visit → Nothing");
     const request = posted(page, "/api/settings/late_change_charge");
     await check.getByRole("button", { name: "Confirm" }).click();
     expect((await request).postDataJSON()).toEqual({

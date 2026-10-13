@@ -6,17 +6,17 @@
 // understands. The check shows what is added, renamed and taken off before
 // anything is sent (ADR 0071).
 
-import { Fieldset, TextInput } from "@maneman/ui/Field";
-import { errorText, type Failure } from "@maneman/web-kit/refusal";
+import { TextInput } from "@maneman/ui/Field";
 import { Button } from "@maneman/ui/Button";
 import { longDate } from "@maneman/web-kit/dates";
 import { useRef, useState } from "react";
 import type { Answer, JobSheet, JobSheetItemSent, JobSheetList } from "../api.ts";
 import { settings } from "../content/settings.ts";
 import { whoWords } from "../lib/who.ts";
-import { CheckPanel } from "../components/CheckPanel.tsx";
+import { review } from "../content/common.ts";
 import own from "./consumables.module.css";
 import styles from "../components/forms.module.css";
+import { SettingForm, sentOf, useSteps } from "./SettingForm.tsx";
 
 const copy = settings.jobSheet;
 
@@ -49,8 +49,6 @@ function changesOf(list: JobSheetList, lines: readonly Line[]): string[] {
   return changes;
 }
 
-type Step = { readonly step: "editing" | "checking" | "saving" | "saved" } | ({ readonly step: "failed" } & Failure);
-
 interface Props {
   readonly id: string;
   readonly title: string;
@@ -59,7 +57,8 @@ interface Props {
   readonly longest: number;
   readonly itemLabel: (position: number) => string;
   readonly addLabel: string;
-  readonly onSave: (items: JobSheetItemSent[]) => Promise<Answer<JobSheet>>;
+  /** The list's write, which the form's steps send once its change is confirmed. */
+  readonly send: (items: JobSheetItemSent[]) => Promise<Answer<JobSheet>>;
   /** This list, out of the sheet the save answers with. */
   readonly pick: (sheet: JobSheet) => JobSheetList;
   readonly onSaved: (sheet: JobSheet) => void;
@@ -151,11 +150,30 @@ export function ListRead({ title, list }: { title: string; list: JobSheetList })
 export function ListEditor(props: Props) {
   const { id, title, list, most, longest } = props;
   const [lines, setLines] = useState<Line[]>(() => linesOf(list));
-  const [step, setStep] = useState<Step>({ step: "editing" });
+  const [saved, setSaved] = useState(false);
+  const steps = useSteps(
+    async () =>
+      sentOf(
+        await props.send(
+          lines.map((line) =>
+            line.code === null ? { label: line.label.trim() } : { code: line.code, label: line.label.trim() },
+          ),
+        ),
+        (sheet) => ({ sheet }),
+      ),
+    (sent) => {
+      // The new items have their codes now, so a second save names them rather than adding them again.
+      setLines(linesOf(props.pick(sent.sheet)));
+      setSaved(true);
+      steps.edit();
+      props.onSaved(sent.sheet);
+    },
+  );
   const added = useRef(0);
   const change = (next: Line[]) => {
     setLines(next);
-    setStep({ step: "editing" });
+    setSaved(false);
+    steps.edit();
   };
   const labels = lines.map((line) => line.label.trim().toLowerCase());
   const ready =
@@ -165,28 +183,23 @@ export function ListEditor(props: Props) {
   // What is off the list: retired before, or taken off in this draft, each able to go back on.
   const off = [...list.retired, ...list.items].filter((item) => !lines.some((line) => line.code === item.code));
   const changes = changesOf(list, lines);
-  const checking = step.step === "checking" || step.step === "saving";
-
-  const send = async () => {
-    setStep({ step: "saving" });
-    const answer = await props.onSave(
-      lines.map((line) =>
-        line.code === null ? { label: line.label.trim() } : { code: line.code, label: line.label.trim() },
-      ),
-    );
-    if (!answer.ok) {
-      setStep({ step: "failed", code: answer.code, fields: answer.fields });
-      return;
-    }
-    // The new items have their codes now, so a second save names them rather than adding them again.
-    setLines(linesOf(props.pick(answer.body)));
-    props.onSaved(answer.body);
-    setStep({ step: "saved" });
-  };
 
   return (
-    <Fieldset className={styles.group} legend={title} legendLook="title">
-      <p className={styles.set}>{setLineOf(list)}</p>
+    <SettingForm
+      said={saved ? copy.saved : null}
+      title={title}
+      steps={steps}
+      ready={ready}
+      errors={copy.errors}
+      onCancel={null}
+      sendable={changes.length > 0}
+      above={<p className={styles.set}>{setLineOf(list)}</p>}
+      checking={(changes.length === 0 ? [review.nothing] : changes).map((line) => (
+        <p className={styles.checkLine} key={line}>
+          {line}
+        </p>
+      ))}
+    >
       <ol className={own.items}>
         {lines.map((line, index) => (
           <Item
@@ -247,45 +260,6 @@ export function ListEditor(props: Props) {
           </ul>
         </div>
       )}
-      {checking && (
-        <CheckPanel
-          title={copy.confirm.title}
-          lines={changes.length === 0 ? [copy.confirm.nothing] : changes}
-          send={copy.confirm.send}
-          sending={copy.saving}
-          back={copy.confirm.back}
-          busy={step.step === "saving"}
-          ready={changes.length > 0}
-          onSend={() => void send()}
-          onBack={() => {
-            setStep({ step: "editing" });
-          }}
-        />
-      )}
-      {!checking && (
-        <div className={styles.actions}>
-          <Button
-            variant="primary"
-            size="small"
-            disabled={!ready}
-            onClick={() => {
-              setStep({ step: "checking" });
-            }}
-          >
-            {copy.save}
-          </Button>
-        </div>
-      )}
-      {step.step === "saved" && (
-        <p className={styles.saved} role="status">
-          {copy.saved}
-        </p>
-      )}
-      {step.step === "failed" && (
-        <p className={styles.error} role="alert">
-          {errorText(copy.errors, step)}
-        </p>
-      )}
-    </Fieldset>
+    </SettingForm>
   );
 }

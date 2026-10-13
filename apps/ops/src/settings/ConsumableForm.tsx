@@ -149,14 +149,6 @@ export function ConsumableForm({
       title={consumable === null ? form.addTitle : form.changeTitle(consumable.name)}
       steps={steps}
       ready={ready}
-      words={{
-        next: consumable === null ? form.add : form.save,
-        cancel: form.cancel,
-        checkTitle: form.confirm.title,
-        send: form.confirm.send,
-        saving: form.saving,
-        back: form.confirm.back,
-      }}
       errors={copy.errors}
       onCancel={onCancel}
       sendable={lines.length > 0}

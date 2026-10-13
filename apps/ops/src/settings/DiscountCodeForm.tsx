@@ -7,14 +7,11 @@
 // it covers and its limits, and only the second press makes them, as a price is set
 // (docs/decisions/0071-what-ops-see-before-a-setting-changes.md).
 
-import { errorText, type Failure } from "@maneman/web-kit/refusal";
-import { Button } from "@maneman/ui/Button";
 import { Checkbox, ChoiceGroup, DateInput, Field, NumberInput, Select, TextInput } from "@maneman/ui/Field";
 import { useState } from "react";
 import { CODE_LENGTH } from "@rules/policy/discount-codes.ts";
-import { api, type DiscountCodesNew } from "../api.ts";
+import { api } from "../api.ts";
 import { settings } from "../content/settings.ts";
-import { CheckPanel } from "../components/CheckPanel.tsx";
 import {
   checkLines,
   codeError,
@@ -26,15 +23,10 @@ import {
   type Covered,
   type Draft,
 } from "./discount-draft.ts";
+import { SettingForm, sentOf, useSteps } from "./SettingForm.tsx";
 import styles from "../components/forms.module.css";
 
 const copy = settings.discountCodes;
-
-type Step =
-  | { readonly step: "editing" }
-  | { readonly step: "checking" | "sending"; readonly sent: DiscountCodesNew }
-  | { readonly step: "made"; readonly codes: readonly string[] }
-  | { readonly step: "failed"; readonly failure: Failure };
 
 /** A change to some of the draft's boxes. */
 type Edit = (change: Partial<Draft>) => void;
@@ -231,76 +223,44 @@ export function DiscountCodeForm({
   onClose: () => void;
 }) {
   const [draft, setDraft] = useState<Draft>(EMPTY);
-  const [step, setStep] = useState<Step>({ step: "editing" });
-
+  const [made, setMade] = useState<readonly string[] | null>(null);
+  const steps = useSteps(
+    async () => sentOf(await api.makeDiscountCodes(requestOf(draft)), (body) => ({ codes: body.codes })),
+    (sent) => {
+      setDraft(EMPTY);
+      setMade(sent.codes);
+      steps.edit();
+      onMade();
+    },
+  );
   const edit: Edit = (change) => {
     setDraft({ ...draft, ...change });
-    setStep({ step: "editing" });
+    setMade(null);
+    steps.edit();
   };
-
-  const send = async (sent: DiscountCodesNew) => {
-    setStep({ step: "sending", sent });
-    const answer = await api.makeDiscountCodes(sent);
-    if (!answer.ok) {
-      setStep({ step: "failed", failure: { code: answer.code, fields: answer.fields } });
-      return;
-    }
-    setDraft(EMPTY);
-    setStep({ step: "made", codes: answer.body.codes });
-    onMade();
-  };
-
-  if (step.step === "checking" || step.step === "sending") {
-    return (
-      <div className={styles.group}>
-        <CheckPanel
-          title={copy.checkTitle}
-          lines={checkLines(draft, step.sent)}
-          send={copy.send}
-          sending={copy.sending}
-          back={copy.back}
-          busy={step.step === "sending"}
-          onSend={() => void send(step.sent)}
-          onBack={() => {
-            setStep({ step: "editing" });
-          }}
-        />
-      </div>
-    );
-  }
 
   return (
-    <form
-      className={styles.group}
-      aria-label={copy.make}
-      onSubmit={(event) => {
-        event.preventDefault();
-        setStep({ step: "checking", sent: requestOf(draft) });
-      }}
+    <SettingForm
+      said={made === null ? null : copy.made(made)}
+      title={copy.make}
+      steps={steps}
+      ready={isReady(draft)}
+      errors={copy.errors}
+      onCancel={onClose}
+      checking={
+        steps.step === "editing"
+          ? null
+          : checkLines(draft, requestOf(draft)).map((line) => (
+              <p className={styles.checkLine} key={line}>
+                {line}
+              </p>
+            ))
+      }
     >
       <WhatIsMade draft={draft} most={most} edit={edit} />
       <WhatItTakesOff draft={draft} edit={edit} />
       <Covers draft={draft} edit={edit} />
       <Limits draft={draft} today={today} edit={edit} />
-
-      <div className={styles.actions}>
-        <Button type="submit" variant="primary" size="small" disabled={!isReady(draft)}>
-          {copy.check}
-        </Button>
-        <Button variant="outline" size="small" className={styles.quiet} onClick={onClose}>
-          {copy.close}
-        </Button>
-      </div>
-      {step.step === "made" && (
-        <p className={styles.saved} role="status">
-          {copy.made(step.codes)}
-        </p>
-      )}
-      {step.step === "failed" && (
-        <p className={styles.error} role="alert">
-          {errorText(copy.errors, step.failure)}
-        </p>
-      )}
-    </form>
+    </SettingForm>
   );
 }

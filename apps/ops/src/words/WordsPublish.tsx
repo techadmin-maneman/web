@@ -41,11 +41,8 @@ export function PublishCheck(props: {
   return (
     <>
       <CheckPanel
-        title={publish.title}
+        question={publish.title}
         lines={props.unpublished === 0 ? [publish.none] : [publish.changed(props.unpublished), when]}
-        send={publish.send}
-        sending={publish.sending}
-        back={publish.back}
         busy={step === "sending"}
         ready={props.unpublished > 0}
         onSend={() => void send()}

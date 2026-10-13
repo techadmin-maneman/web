@@ -12,7 +12,7 @@ import { client } from "../api.ts";
 import { settings } from "../content/settings.ts";
 import { useAccess } from "../lib/access.ts";
 import styles from "../components/forms.module.css";
-import { SettingForm, sentOf, useSteps } from "./SettingForm.tsx";
+import { ActionCheck, SettingForm, sentOf, useSteps } from "./SettingForm.tsx";
 import type { Supplier, Suppliers } from "./SupplierForm.tsx";
 
 const copy = settings.suppliers;
@@ -158,14 +158,6 @@ function ItemForm({
       title={words.title(supplier.name)}
       steps={steps}
       ready={ready}
-      words={{
-        next: words.set,
-        cancel: copy.form.cancel,
-        checkTitle: copy.form.confirm.title,
-        send: copy.form.confirm.send,
-        saving: copy.form.saving,
-        back: copy.form.confirm.back,
-      }}
       errors={copy.errors}
       onCancel={null}
       checking={[before === null ? line : copy.form.confirm.line(name, before, line)].map((each) => (
@@ -176,6 +168,53 @@ function ItemForm({
     >
       <ItemBoxes book={book} supplier={supplier} draft={draft} onDraft={setDraft} edit={edit} onPick={steps.edit} />
     </SettingForm>
+  );
+}
+
+/** A row's Remove, which asks before the item comes off the supplier's list. */
+function RemoveItem(props: {
+  supplier: Supplier;
+  code: string;
+  name: string;
+  mayRemove: boolean;
+  onSaved: (book: Suppliers, said: string) => void;
+}) {
+  const [asking, setAsking] = useState(false);
+  if (!props.mayRemove) return null;
+  if (!asking) {
+    return (
+      <RowButton
+        className={styles.inline}
+        aria-label={words.removeLabel(props.name)}
+        onClick={() => {
+          setAsking(true);
+        }}
+      >
+        {words.remove}
+      </RowButton>
+    );
+  }
+  return (
+    <ActionCheck
+      label={words.remove}
+      question={words.removeQuestion(props.name, props.supplier.name)}
+      send={async () =>
+        sentOf(
+          await client.post("/api/suppliers/{id}/items/{code}/remove", {
+            path: { id: props.supplier.id, code: props.code },
+          }),
+          (next) => ({ next }),
+        )
+      }
+      onDone={(sent) => {
+        setAsking(false);
+        props.onSaved(sent.next, words.removed);
+      }}
+      errors={copy.errors}
+      onCancel={() => {
+        setAsking(false);
+      }}
+    />
   );
 }
 
@@ -191,10 +230,6 @@ export function SupplierItems({
   const access = useAccess();
   const named = (code: string) => book.consumables.find((each) => each.code === code)?.name ?? code;
   const unitOf = (code: string) => book.consumables.find((each) => each.code === code)?.unit ?? "";
-  const remove = async (code: string) => {
-    const answer = await client.post("/api/suppliers/{id}/items/{code}/remove", { path: { id: supplier.id, code } });
-    if (answer.ok) onSaved(answer.body, words.removed);
-  };
   return (
     <Panel titleId="supplier-items" title={words.title(supplier.name)}>
       {supplier.items.length === 0 ? (
@@ -225,15 +260,13 @@ export function SupplierItems({
                 <td className={styles.figure}>{words.amount(item.minimum_order, unitOf(item.consumable_code))}</td>
                 <td className={styles.figure}>{words.days(item.lead_time_days)}</td>
                 <td>
-                  {access.mayCall("POST /api/suppliers/{id}/items/{code}/remove") && (
-                    <RowButton
-                      className={styles.inline}
-                      aria-label={words.removeLabel(named(item.consumable_code))}
-                      onClick={() => void remove(item.consumable_code)}
-                    >
-                      {words.remove}
-                    </RowButton>
-                  )}
+                  <RemoveItem
+                    supplier={supplier}
+                    code={item.consumable_code}
+                    name={named(item.consumable_code)}
+                    mayRemove={access.mayCall("POST /api/suppliers/{id}/items/{code}/remove")}
+                    onSaved={onSaved}
+                  />
                 </td>
               </tr>
             ))}

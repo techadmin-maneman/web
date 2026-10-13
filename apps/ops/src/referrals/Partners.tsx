@@ -56,11 +56,8 @@ function PauseCheck({ partner, onDone, onBack }: { partner: Partner; onDone: Row
   return (
     <>
       <CheckPanel
-        title={paused ? copy.check.resumeTitle(partner.name) : copy.check.pauseTitle(partner.name)}
+        question={paused ? copy.check.resumeTitle(partner.name) : copy.check.pauseTitle(partner.name)}
         lines={[paused ? copy.check.resumeLine : copy.check.pauseLine]}
-        send={copy.check.send}
-        sending={copy.check.saving}
-        back={copy.check.back}
         busy={step === "sending"}
         onSend={() => void send()}
         onBack={onBack}

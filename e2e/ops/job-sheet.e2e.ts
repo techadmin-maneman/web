@@ -46,7 +46,7 @@ test("renames, moves, takes off and adds, shows each before it is sent, and keep
   await list.getByRole("button", { name: "Remove: Piece removed" }).click();
   await list.getByRole("button", { name: settingsCopy.jobSheet.add }).click();
   await list.getByLabel("Item 3").fill("Photo angles checked");
-  await list.getByRole("button", { name: "Save" }).click();
+  await list.getByRole("button", { name: "Review" }).click();
 
   const check = list.getByRole("group", { name: "Review the change" });
   await expect(check).toBeFocused();
@@ -73,7 +73,7 @@ test("puts an item taken off back on the list, under its own code", async ({ pag
   await list.getByRole("button", { name: "Restore: Adhesive renewed" }).click();
   await expect(list.getByLabel("Item 4")).toHaveValue("Adhesive renewed");
 
-  await list.getByRole("button", { name: "Save" }).click();
+  await list.getByRole("button", { name: "Review" }).click();
   const sent = posted(page, "/api/job-sheet/checklists/service");
   await list.getByRole("button", { name: "Confirm" }).click();
   expect((await sent).postDataJSON()).toMatchObject({
@@ -85,12 +85,12 @@ test("will not save an item with no words, nor two alike", async ({ page }) => {
   await open(page);
   const list = checklist(page);
   await list.getByRole("button", { name: settingsCopy.jobSheet.add }).click();
-  await expect(list.getByRole("button", { name: "Save" })).toBeDisabled();
+  await expect(list.getByRole("button", { name: "Review" })).toBeDisabled();
 
   await list.getByLabel("Item 4").fill("piece removed");
-  await expect(list.getByRole("button", { name: "Save" })).toBeDisabled();
+  await expect(list.getByRole("button", { name: "Review" })).toBeDisabled();
   await list.getByLabel("Item 4").fill("Piece checked");
-  await expect(list.getByRole("button", { name: "Save" })).toBeEnabled();
+  await expect(list.getByRole("button", { name: "Review" })).toBeEnabled();
 });
 
 test("sets the partial reasons the Tasks board reads", async ({ page }) => {
@@ -98,7 +98,7 @@ test("sets the partial reasons the Tasks board reads", async ({ page }) => {
   const reasons = page.getByRole("group", { name: settingsCopy.jobSheet.reasons });
   await reasons.getByRole("button", { name: settingsCopy.jobSheet.addReason }).click();
   await reasons.getByLabel("Reason 3").fill("Power cut");
-  await reasons.getByRole("button", { name: "Save" }).click();
+  await reasons.getByRole("button", { name: "Review" }).click();
   await expect(reasons.getByRole("group", { name: "Review the change" })).toContainText("Added: Power cut");
 
   const sent = posted(page, "/api/job-sheet/partial-reasons");
@@ -117,7 +117,7 @@ test("meets WCAG 2.2 AA, with a change being checked as well", async ({ page }) 
   expect(await axeViolations(page)).toEqual([]);
 
   await checklist(page).getByLabel("Item 1").fill("Piece taken off");
-  await checklist(page).getByRole("button", { name: "Save" }).click();
+  await checklist(page).getByRole("button", { name: "Review" }).click();
   await expect(checklist(page).getByRole("group", { name: "Review the change" })).toBeVisible();
   expect(await axeViolations(page)).toEqual([]);
 });

@@ -17,6 +17,8 @@ import { errorText } from "@maneman/web-kit/refusal";
 import { Panel } from "@maneman/ui/Panel";
 import { Field, Fieldset, Label, NumberInput, Select, TextInput } from "@maneman/ui/Field";
 import { CheckPanel } from "../components/CheckPanel.tsx";
+import { review as reviewWords } from "../content/common.ts";
+import { useSteps, type Sent } from "./SettingForm.tsx";
 import { Button } from "@maneman/ui/Button";
 import { useLoad } from "@maneman/ui/useLoad";
 import { useState, type ReactNode } from "react";
@@ -47,11 +49,6 @@ interface Change {
 }
 
 /** How a section's form is going. A refusal keeps the rule it came from, so it shows under that rule. */
-type Saving =
-  | { readonly step: "editing" | "saved" }
-  | { readonly step: "checking" | "saving"; readonly changes: readonly Change[] }
-  | { readonly step: "failed"; readonly rule: string; readonly code: string; readonly fields: readonly string[] };
-
 /** A rule's draft: the text in each box, or the choice, keyed as the value is. One number uses the rule's own name. */
 type Draft = Readonly<Record<string, string>>;
 
@@ -333,11 +330,7 @@ function Check({
   const moved = changes.flatMap(({ rule, value }) => movedBy(rule, value ?? rule.default));
   return (
     <CheckPanel
-      title={copy.confirm.title}
       lines={toStandard.map(({ rule }) => copy.confirm.standard(rule.title))}
-      send={copy.confirm.send}
-      sending={copy.saving}
-      back={copy.confirm.back}
       busy={busy}
       onSend={onSend}
       onBack={onBack}
@@ -476,41 +469,73 @@ interface GroupSectionProps {
   readonly children?: ReactNode;
 }
 
-/** One subject's rules, under its own heading and anchor, sent together by one Save. */
+/** A section's Review, and what its last change came to. */
+function ReviewBar(props: { ready: boolean; saved: boolean; onReview: () => void }) {
+  return (
+    <>
+      <div className={styles.actions}>
+        <Button variant="primary" size="small" disabled={!props.ready} onClick={props.onReview}>
+          {reviewWords.next}
+        </Button>
+      </div>
+      {props.saved && (
+        <p className={styles.saved} role="status">
+          {copy.saved}
+        </p>
+      )}
+    </>
+  );
+}
+
+/** One subject's rules, under its own heading and anchor, reviewed and sent together. */
 function GroupSection({ section, allowed, onSaved, children }: GroupSectionProps) {
   const { id, rules } = section;
   const [drafts, setDrafts] = useState<Drafts>(() =>
     Object.fromEntries(rules.map((rule) => [rule.name, draftOf(rule)])),
   );
-  const [saving, setSaving] = useState<Saving>({ step: "editing" });
+  /** What the check shows and Confirm sends: the section's changes, or one rule put back to its standard. */
+  const [sending, setSending] = useState<readonly Change[]>([]);
+  /** The rule a refusal stopped at, which says so beside its boxes. */
+  const [refusedRule, setRefusedRule] = useState<string | null>(null);
+  const [saved, setSaved] = useState(false);
+  // One rule at a time, in the order shown: a refusal stops the rest, and says which rule it was.
+  const steps = useSteps(
+    async (): Promise<Sent<object>> => {
+      for (const { rule, value } of sending) {
+        const answer = await api.setSetting(rule.name, value);
+        if (!answer.ok) {
+          setRefusedRule(rule.name);
+          return { ok: false as const, code: answer.code, fields: answer.fields };
+        }
+        setDrafts((already) => ({ ...already, [rule.name]: draftOf(answer.body) }));
+        onSaved(answer.body);
+      }
+      return { ok: true as const };
+    },
+    () => {
+      setSaved(true);
+      steps.edit();
+    },
+  );
 
   // A figure that would not move is not a change: the log never records one that was not.
   const changes = changesIn(rules, drafts);
-  const checking = saving.step === "checking" || saving.step === "saving";
+  const review = (these: readonly Change[]) => {
+    setSending(these);
+    setRefusedRule(null);
+    steps.check();
+  };
 
   const edit = (rule: OpsSetting) => (key: string, text: string) => {
     setDrafts({ ...drafts, [rule.name]: { ...draftIn(drafts, rule), [key]: text } });
-    setSaving({ step: "editing" });
+    setSaved(false);
+    setRefusedRule(null);
+    steps.edit();
   };
 
   const refusalFor = (rule: OpsSetting): string | undefined => {
-    if (saving.step !== "failed" || saving.rule !== rule.name) return undefined;
-    return ruleRefusal(rule, saving.code, saving.fields);
-  };
-
-  // One rule at a time, in the order shown: a refusal stops the rest, and says which rule it was.
-  const send = async (sending: readonly Change[]) => {
-    setSaving({ step: "saving", changes: sending });
-    for (const { rule, value } of sending) {
-      const answer = await api.setSetting(rule.name, value);
-      if (!answer.ok) {
-        setSaving({ step: "failed", rule: rule.name, code: answer.code, fields: answer.fields });
-        return;
-      }
-      setDrafts((already) => ({ ...already, [rule.name]: draftOf(answer.body) }));
-      onSaved(answer.body);
-    }
-    setSaving({ step: "saved" });
+    if (steps.failed === null || refusedRule !== rule.name) return undefined;
+    return ruleRefusal(rule, steps.failed.code, steps.failed.fields ?? []);
   };
 
   const titleId = `${id}-title`;
@@ -527,44 +552,27 @@ function GroupSection({ section, allowed, onSaved, children }: GroupSectionProps
             rule={rule}
             draft={draftIn(drafts, rule)}
             allowed={allowed}
-            held={checking}
+            held={steps.step !== "editing"}
             refusal={refusalFor(rule)}
             onEdit={edit(rule)}
             onStandard={() => {
-              setSaving({ step: "checking", changes: [{ rule, value: null }] });
+              review([{ rule, value: null }]);
             }}
           />
         ))}
       </ul>
 
-      {checking && (
-        <Check
-          changes={saving.changes}
-          busy={saving.step === "saving"}
-          onSend={() => void send(saving.changes)}
-          onBack={() => {
-            setSaving({ step: "editing" });
+      {steps.step !== "editing" && (
+        <Check changes={sending} busy={steps.step === "saving"} onSend={steps.go} onBack={steps.edit} />
+      )}
+      {steps.step === "editing" && allowed.mayChange && (
+        <ReviewBar
+          ready={changes.length > 0}
+          saved={saved}
+          onReview={() => {
+            review(changes);
           }}
         />
-      )}
-      {!checking && allowed.mayChange && (
-        <div className={styles.actions}>
-          <Button
-            variant="primary"
-            size="small"
-            disabled={changes.length === 0}
-            onClick={() => {
-              setSaving({ step: "checking", changes });
-            }}
-          >
-            {copy.save}
-          </Button>
-        </div>
-      )}
-      {saving.step === "saved" && (
-        <p className={styles.saved} role="status">
-          {copy.saved}
-        </p>
       )}
     </section>
   );

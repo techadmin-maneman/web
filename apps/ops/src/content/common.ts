@@ -59,3 +59,18 @@ export const deleting = {
   sending: "Deleting",
   cancel: "Cancel",
 } as const;
+
+/**
+ * The one way a change is sent (docs/decisions/0071-what-ops-see-before-a-setting-changes.md): boxes, then Review,
+ * then the change beside what it was, sent only by Confirm. A one-press action asks its question instead, and its
+ * Cancel closes it. A change line reads "Field: was → now", with no full stop; a sentence keeps its own.
+ */
+export const review = {
+  next: "Review",
+  title: "Review the change",
+  send: "Confirm",
+  sending: "Saving",
+  edit: "Edit",
+  cancel: "Cancel",
+  nothing: "No changes.",
+} as const;

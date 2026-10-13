@@ -12,6 +12,8 @@
 // what is live matches (scripts/release/check-triggers.ts).
 
 import { execFileSync } from "node:child_process";
+import { mkdirSync } from "node:fs";
+import { dirname, join } from "node:path";
 import { parseArgs } from "node:util";
 import { currentVersion, wranglerFor } from "../lib/release.ts";
 import { WORKERS } from "../lib/workers.ts";
@@ -30,6 +32,8 @@ for (const worker of WORKERS) {
     continue;
   }
   console.log(`${worker.name}-${environment}: attaching its triggers`);
+  // Wrangler wants an app's build folder to exist, though attaching its triggers uploads nothing from it.
+  if (worker.kind === "spa") mkdirSync(join(dirname(worker.config), "dist", environment), { recursive: true });
   console.log(wrangler(["triggers", "deploy"]));
 }
 

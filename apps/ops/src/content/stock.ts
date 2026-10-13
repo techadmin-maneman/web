@@ -60,13 +60,10 @@ export const stock = {
   },
   confirm: {
     // What the movement does to each place, the old beside the new.
-    title: "Review the movement",
     line: (place: string, was: string, now: string) => `${place}: ${was} → ${now}`,
     below: (place: string) => `${place} would go below zero.`,
     onItsWay: (place: string) => `${place}: arrives once scanned in`,
     same: "Matches what's held. Records the count only.",
-    send: "Record",
-    back: "Edit",
   },
   recorded: "Recorded.",
   movements: {

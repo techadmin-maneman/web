@@ -7,7 +7,7 @@
 // uses on record.
 
 import { Disclosure } from "@maneman/ui/Disclosure";
-import { errorText, type Failure } from "@maneman/web-kit/refusal";
+import { errorText } from "@maneman/web-kit/refusal";
 import { Panel } from "@maneman/ui/Panel";
 import { Button, RowButton } from "@maneman/ui/Button";
 import { Field, TextInput } from "@maneman/ui/Field";
@@ -22,7 +22,7 @@ import { api, type DiscountCode, type DiscountCodes as Book } from "../api.ts";
 import { settings } from "../content/settings.ts";
 import { useAccess } from "../lib/access.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
-import { CheckPanel } from "../components/CheckPanel.tsx";
+import { ActionCheck, sentOf } from "./SettingForm.tsx";
 import { DeleteAction } from "../components/DeleteAction.tsx";
 import { Narrowing, SortHeads, TableEnd } from "../components/TableTools.tsx";
 import { useTableView, type Column } from "../components/useTableView.ts";
@@ -80,36 +80,18 @@ interface RowProps {
   readonly onDone: (said: string) => void;
 }
 
-/** The check before a code is switched off; only its second press sends. */
+/** The question before a code is switched off; only Confirm sends. */
 function SwitchOffCheck({ code, onDone, onBack }: { code: DiscountCode; onDone: () => void; onBack: () => void }) {
-  const [step, setStep] = useState<"checking" | "sending" | Failure>("checking");
-  const send = async () => {
-    setStep("sending");
-    const answer = await api.switchOffDiscountCode(code.id);
-    if (!answer.ok) {
-      setStep({ code: answer.code, fields: answer.fields });
-      return;
-    }
-    onDone();
-  };
   return (
-    <>
-      <CheckPanel
-        title={copy.switchTitle(code.code)}
-        lines={[copy.switchLine(code.uses)]}
-        send={copy.switchOff}
-        sending={copy.switching}
-        back={copy.back}
-        busy={step === "sending"}
-        onSend={() => void send()}
-        onBack={onBack}
-      />
-      {typeof step === "object" && (
-        <p className={styles.error} role="alert">
-          {errorText(copy.errors, step)}
-        </p>
-      )}
-    </>
+    <ActionCheck
+      label={copy.switchOff}
+      question={copy.switchTitle(code.code)}
+      lines={[copy.switchLine(code.uses)]}
+      send={async () => sentOf(await api.switchOffDiscountCode(code.id), () => ({}))}
+      onDone={onDone}
+      errors={copy.errors}
+      onCancel={onBack}
+    />
   );
 }
 

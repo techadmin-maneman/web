@@ -1,5 +1,6 @@
 // Blackout days, behind Access (Settings; docs/decisions/0088-every-policy-in-the-console.md):
 //   GET  /api/blackouts          every day from today on that no visit is offered, and what is still booked on it
+//   GET  /api/blackouts/booked   the visits booked on days ops are about to close, for the check before they do
 //   POST /api/blackouts          black out the days from one date to another, with a reason
 //   POST /api/blackouts/remove   offer the days from one date to another again
 //
@@ -13,6 +14,7 @@ import type { App } from "../../http/context.ts";
 import {
   addBlackouts,
   additionRefusal,
+  bookedBetween,
   BLACKOUT_MAX_DAYS,
   blackoutsFrom,
   periodRefusal,
@@ -70,6 +72,21 @@ const listRoute = createRoute({
   path: "/api/blackouts",
   summary: "Every day from today on that no visit is offered, with the visits still booked on each",
   responses: { 200: { description: "The days", ...json(ListSchema) }, 403: errorResponse("access_required") },
+});
+
+const bookedRoute = createRoute({
+  method: "get",
+  path: "/api/blackouts/booked",
+  summary: "How many visits are still booked on days ops are about to close, in one city or every city",
+  request: { query: z.object({ ...Period, city: CitySchema.optional() }) },
+  responses: {
+    200: {
+      description: "The visits closing the days would leave to move",
+      ...json(z.object({ booked: z.number().int() }).strict().openapi("BlackoutBooked")),
+    },
+    400: errorResponse("invalid_request: fields names from, to or city as for adding the days"),
+    403: errorResponse("access_required"),
+  },
 });
 
 const addRoute = createRoute({
@@ -135,6 +152,16 @@ export function registerOpsBlackouts(app: App): void {
   };
 
   app.openapi(listRoute, async (c) => c.json(await list(c.env.DB, indiaDate(c.var.deps.now())), 200));
+
+  app.openapi(bookedRoute, async (c) => {
+    const today = indiaDate(c.var.deps.now());
+    const { from, to, city: asked } = c.req.valid("query");
+    const refused = additionRefusal({ from, to }, today);
+    if (refused !== null) return refuse(c, "invalid_request", [refused]);
+    const city = await cityAsked(c.env.DB, asked);
+    if (city === undefined) return refuse(c, "invalid_request", ["city"]);
+    return c.json({ booked: await bookedBetween(c.env.DB, { from, to, city }) }, 200);
+  });
 
   app.openapi(addRoute, async (c) => {
     const now = c.var.deps.now();

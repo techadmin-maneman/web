@@ -367,12 +367,8 @@ export function StockForm({
         </div>
         {checking ? (
           <CheckPanel
-            title={copy.confirm.title}
             lines={effect.lines}
             warnings={effect.warnings}
-            send={copy.confirm.send}
-            sending={copy.confirm.send}
-            back={copy.confirm.back}
             busy={step.step === "saving"}
             onSend={() => void send()}
             onBack={() => {

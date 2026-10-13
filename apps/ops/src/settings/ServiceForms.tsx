@@ -13,20 +13,11 @@ import { api, type Kind, type OpsService, type Price, type ServiceBook } from ".
 import { settings } from "../content/settings.ts";
 import { PRICE_TIER, tierCodeOf } from "@rules/policy/services.ts";
 import styles from "../components/forms.module.css";
-import { Refused, SettingForm, sentOf, useSteps, type FormWords, type Sent } from "./SettingForm.tsx";
+import { Refused, SettingForm, sentOf, useSteps, type Sent } from "./SettingForm.tsx";
 
 const copy = settings.services;
 const form = copy.form;
 const check = copy.check;
-
-const WORDS: FormWords = {
-  next: form.next,
-  cancel: form.cancel,
-  checkTitle: check.title,
-  send: check.send,
-  saving: copy.saving,
-  back: check.back,
-};
 
 /** What a write answered: the book as it now stands, or the refusal, with the boxes it names. */
 export type Written = Sent<{
@@ -103,7 +94,6 @@ export function PriceForm(props: {
       }
       steps={steps}
       ready={ready}
-      words={{ ...WORDS, send: form.setPrice }}
       errors={copy.errors}
       onCancel={props.onCancel}
       checking={
@@ -211,11 +201,8 @@ export function TakeBack(props: {
   return (
     <>
       <CheckPanel
-        lines={[check.takeBack(longDate(row.valid_from))]}
+        question={check.takeBack(longDate(row.valid_from))}
         busy={steps.step === "saving"}
-        send={check.takeBackConfirm}
-        sending={copy.saving}
-        back={check.keep}
         onSend={steps.go}
         onBack={props.onKeep}
       />
@@ -245,7 +232,6 @@ export function RenameForm(props: {
       title={form.renameTitle(service.name)}
       steps={steps}
       ready={name.trim() !== "" && name.trim() !== service.name}
-      words={WORDS}
       errors={copy.errors}
       onCancel={props.onCancel}
       checking={<p className={styles.checkLine}>{check.rename(service.name, name.trim(), service.tier)}</p>}
@@ -289,7 +275,6 @@ export function DescribeForm(props: {
       title={form.describeTitle(service.name)}
       steps={steps}
       ready={line.trim() !== was}
-      words={WORDS}
       errors={copy.errors}
       onCancel={props.onCancel}
       checking={<p className={styles.checkLine}>{check.describe(service.name, was, line.trim())}</p>}
@@ -332,7 +317,6 @@ export function LengthForm(props: {
       title={form.lengthTitle(service.name)}
       steps={steps}
       ready={minutes.trim() !== "" && Number(minutes) !== service.minutes}
-      words={WORDS}
       errors={copy.errors}
       onCancel={props.onCancel}
       checking={<p className={styles.checkLine}>{check.length(service.name, service.minutes, Number(minutes))}</p>}
@@ -378,7 +362,6 @@ export function RetireForm(props: {
       title={form.retireTitle(service.name)}
       steps={steps}
       ready={from !== ""}
-      words={WORDS}
       errors={copy.errors}
       onCancel={props.onCancel}
       checking={<p className={styles.checkLine}>{check.retire(service.name, longDate(from))}</p>}
@@ -417,11 +400,8 @@ export function RestoreCheck(props: {
   return (
     <>
       <CheckPanel
-        lines={[check.restore(service.name)]}
+        question={check.restore(service.name)}
         busy={steps.step === "saving"}
-        send={check.send}
-        sending={copy.saving}
-        back={check.back}
         onSend={steps.go}
         onBack={props.onKeep}
       />
@@ -451,9 +431,6 @@ export function OrderCheck(props: {
       <CheckPanel
         lines={[check.order(copy.kinds[props.kind] ?? props.kind, names(props.was), names(props.now))]}
         busy={steps.step === "saving"}
-        send={check.send}
-        sending={copy.saving}
-        back={check.back}
         onSend={steps.go}
         onBack={props.onKeep}
       />
@@ -487,7 +464,6 @@ export function AddForm(props: {
       title={form.addTitle(kindName)}
       steps={steps}
       ready={ready}
-      words={WORDS}
       errors={copy.errors}
       onCancel={props.onCancel}
       checking={<p className={styles.checkLine}>{check.add(kindName, name.trim(), Number(minutes), codeSent)}</p>}

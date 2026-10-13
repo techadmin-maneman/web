@@ -13740,6 +13740,18 @@
         ],
         "additionalProperties": false
       },
+      "BlackoutBooked": {
+        "type": "object",
+        "properties": {
+          "booked": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "booked"
+        ],
+        "additionalProperties": false
+      },
       "BlackoutAdd": {
         "type": "object",
         "properties": {
@@ -27782,6 +27794,79 @@
           },
           "400": {
             "description": "invalid_request: fields names from when it is before today, to when it is before from or more than a month on, city when it is not one of ours, and reason when there is none or it is not one a list can hold",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "access_required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/blackouts/booked": {
+      "get": {
+        "summary": "How many visits are still booked on days ops are about to close, in one city or every city",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "date",
+              "description": "The first day, today or later."
+            },
+            "required": true,
+            "description": "The first day, today or later.",
+            "name": "from",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "date",
+              "description": "The last day, the first included; a month on at most when adding."
+            },
+            "required": true,
+            "description": "The last day, the first included; a month on at most when adding.",
+            "name": "to",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 60,
+              "description": "One of the cities the list names."
+            },
+            "required": false,
+            "description": "One of the cities the list names.",
+            "name": "city",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The visits closing the days would leave to move",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BlackoutBooked"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid_request: fields names from, to or city as for adding the days",
             "content": {
               "application/json": {
                 "schema": {

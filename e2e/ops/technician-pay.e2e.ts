@@ -4,7 +4,7 @@
 import type { Page } from "@playwright/test";
 import { expect, test } from "../support.ts";
 import { answer, json, type OpsReply } from "./answer.ts";
-import { deleting } from "../../apps/ops/src/content/common.ts";
+import { deleting, review } from "../../apps/ops/src/content/common.ts";
 import { technicianPay as copy } from "../../apps/ops/src/content/technician-pay.ts";
 
 const SENIOR = "5f8a6c1e-2b3d-4e5f-8a9b-0c1d2e3f4a5b";
@@ -82,10 +82,10 @@ test("sets a rate from a date, in rupees, for every city, once it is reviewed", 
   await page.getByLabel(copy.form.kind, { exact: true }).selectOption(copy.kinds.replacement);
   await page.getByLabel(copy.form.amount).fill("450");
   await page.getByLabel(copy.form.from, { exact: true }).fill("2026-10-01");
-  await page.getByRole("button", { name: copy.form.next }).click();
-  await expect(page.getByText("Trainee · Replacement · Every city: — → Rs. 450, from Thu 1 Oct.")).toBeVisible();
+  await page.getByRole("button", { name: review.next }).click();
+  await expect(page.getByText("Trainee · Replacement · Every city: — → Rs. 450, from Thu 1 Oct")).toBeVisible();
   expect(sent).toBeNull();
-  await page.getByRole("button", { name: copy.check.send }).click();
+  await page.getByRole("button", { name: review.send }).click();
   await expect(page.getByRole("status")).toHaveText(copy.done.saved);
   expect(sent).toEqual({ grade_id: TRAINEE, city: null, kind: "replacement", amount: 45000, from: "2026-10-01" });
 });
@@ -99,14 +99,14 @@ test("adds a grade, and gives a technician one", async ({ page }) => {
   await open(page, { "POST /api/technician-pay/grades": keep, "POST /api/technician-pay/technicians/{id}": keep });
   await page.getByRole("button", { name: copy.rates.addGrade }).click();
   await page.getByRole("textbox", { name: copy.form.name, exact: true }).fill("Lead");
-  await page.getByRole("button", { name: copy.form.next }).click();
+  await page.getByRole("button", { name: review.next }).click();
   await expect(page.getByText(copy.check.add("Lead"))).toBeVisible();
-  await page.getByRole("button", { name: copy.check.send }).click();
+  await page.getByRole("button", { name: review.send }).click();
   await page.getByRole("button", { name: copy.technicians.changeLabel("Test technician Two") }).click();
   await page.getByLabel(copy.form.grade, { exact: true }).selectOption("Trainee");
-  await page.getByRole("button", { name: copy.form.next }).click();
+  await page.getByRole("button", { name: review.next }).click();
   await expect(page.getByText(copy.check.grade("Test technician Two", "No grade", "Trainee"))).toBeVisible();
-  await page.getByRole("button", { name: copy.check.send }).click();
+  await page.getByRole("button", { name: review.send }).click();
   await expect.poll(() => posts).toEqual([{ name: "Lead" }, { grade_id: TRAINEE }]);
 });
 

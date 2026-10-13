@@ -524,6 +524,7 @@ export const api = {
     client.post("/api/technician-pay/technicians/{id}", { path: { id: technicianId }, body: { grade_id: gradeId } }),
   blackouts: () => client.get("/api/blackouts"),
   /** Every day from the first to the last, both included. A day already blacked out takes this reason. */
+  blackoutsBooked: (period: BlackoutRemove) => client.get("/api/blackouts/booked", { query: period }),
   addBlackouts: (period: BlackoutAdd) => client.post("/api/blackouts", { body: period }),
   /** The days from the first to the last are offered again. */
   removeBlackouts: (period: BlackoutRemove) => client.post("/api/blackouts/remove", { body: period }),

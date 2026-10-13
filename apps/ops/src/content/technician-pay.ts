@@ -64,13 +64,13 @@ export const technicianPay = {
   check: {
     title: "Review the change",
     add: (name: string) => `Add the grade ${name}.`,
-    rename: (was: string, now: string) => `${was} → ${now}.`,
-    rate: (where: string, was: string, now: string, from: string) => `${where}: ${was} → ${now}, from ${from}.`,
+    rename: (was: string, now: string) => `${was} → ${now}`,
+    rate: (where: string, was: string, now: string, from: string) => `${where}: ${was} → ${now}, from ${from}`,
     /** "Senior · Service visit · Delhi". */
     where: (grade: string, kind: string, city: string) => `${grade} · ${kind} · ${city}`,
     nothing: "none",
     everyCitys: "every city's rate",
-    grade: (name: string, was: string, now: string) => `${name}: ${was} → ${now}.`,
+    grade: (name: string, was: string, now: string) => `${name}: ${was} → ${now}`,
     send: "Confirm",
     saving: "Saving",
     back: "Back",

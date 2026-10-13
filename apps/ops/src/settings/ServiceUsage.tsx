@@ -7,18 +7,17 @@
 // changes, old beside new (ADR 0071). An empty box is none.
 
 import { Fieldset, Label, Select, TextInput } from "@maneman/ui/Field";
-import { errorText, type Failure } from "@maneman/web-kit/refusal";
 import { Panel } from "@maneman/ui/Panel";
-import { Button } from "@maneman/ui/Button";
 import { longDate } from "@maneman/web-kit/dates";
 import { useState } from "react";
 import { api, type Consumables, type ServiceUse } from "../api.ts";
 import { dispatch } from "../content.ts";
 import { settings } from "../content/settings.ts";
 import { useAccess } from "../lib/access.ts";
-import { CheckPanel } from "../components/CheckPanel.tsx";
+import { review } from "../content/common.ts";
 import styles from "../components/forms.module.css";
 import own from "./consumables.module.css";
+import { SettingForm, sentOf, useSteps, type Sent } from "./SettingForm.tsx";
 
 const copy = settings.consumables;
 const words = copy.usage;
@@ -33,14 +32,74 @@ type Draft = Readonly<Record<string, string>>;
 const draftOf = (service: ServiceUse | undefined): Draft =>
   Object.fromEntries((service?.expected ?? []).map((each) => [each.code, String(each.quantity)]));
 
-type Step = { readonly step: "editing" | "checking" | "saving" | "saved" } | ({ readonly step: "failed" } & Failure);
-
 /**
  * Every consumable offered, and any retired one this service still expects, so a save never drops it unseen. Never a
  * hair system: it is fitted to the client, not used by a service.
  */
 const listedFor = (consumable: Consumables["consumables"][number], expected: ReadonlySet<string>) =>
   consumable.hair_system === null && (consumable.offered || expected.has(consumable.code));
+
+/** The service chosen, and each listed consumable's box. */
+function UsageFields(props: {
+  book: Consumables;
+  chosen: string;
+  listed: Consumables["consumables"];
+  draft: Draft;
+  mayChange: boolean;
+  onChoose: (key: string) => void;
+  onFigure: (code: string, text: string) => void;
+}) {
+  const { book, listed, draft } = props;
+  return (
+    <>
+      <div className={styles.field}>
+        <Label htmlFor="usage-service">{words.service}</Label>
+        <Select
+          className={styles.select}
+          id="usage-service"
+          value={props.chosen}
+          onChange={(event) => {
+            props.onChoose(event.target.value);
+          }}
+        >
+          {[...new Set(book.services.map((each) => each.visit_type))].map((kind) => (
+            <optgroup key={kind} label={dispatch.typeNames[kind] ?? kind}>
+              {book.services
+                .filter((each) => each.visit_type === kind)
+                .map((each) => (
+                  <option key={keyOf(each)} value={keyOf(each)}>
+                    {serviceName(each)}
+                  </option>
+                ))}
+            </optgroup>
+          ))}
+        </Select>
+      </div>
+      {listed.length === 0 ? (
+        <p className={styles.note}>{words.noneOffered}</p>
+      ) : (
+        <ul className={own.uses}>
+          {listed.map((each) => (
+            <li className={own.use} key={each.code}>
+              <Label htmlFor={`usage-${each.code}`}>{words.quantity(each.name, each.unit)}</Label>
+              <TextInput
+                className={styles.number}
+                id={`usage-${each.code}`}
+                inputMode="numeric"
+                maxLength={3}
+                readOnly={!props.mayChange}
+                value={draft[each.code] ?? ""}
+                onChange={(event) => {
+                  props.onFigure(each.code, event.target.value);
+                }}
+              />
+            </li>
+          ))}
+        </ul>
+      )}
+    </>
+  );
+}
 
 export function ServiceUsage({ book, onSaved }: { book: Consumables; onSaved: (book: Consumables) => void }) {
   const [chosen, setChosen] = useState(() => {
@@ -49,7 +108,7 @@ export function ServiceUsage({ book, onSaved }: { book: Consumables; onSaved: (b
   });
   const service = book.services.find((each) => keyOf(each) === chosen);
   const [draft, setDraft] = useState<Draft>(() => draftOf(service));
-  const [step, setStep] = useState<Step>({ step: "editing" });
+  const [saved, setSaved] = useState(false);
   const mayChange = useAccess().mayCall("POST /api/service-usage");
 
   const expectedCodes = new Set(service?.expected.map((each) => each.code) ?? []);
@@ -69,115 +128,64 @@ export function ServiceUsage({ book, onSaved }: { book: Consumables; onSaved: (b
       quantity === null ? words.confirm.none : `${String(quantity)} ${each.unit}`;
     return [words.confirm.line(each.name, said(before), said(after))];
   });
+  const steps = useSteps(
+    async (): Promise<Sent<{ next: Consumables }>> => {
+      if (service === undefined) return { ok: false, code: "not_found" };
+      const answer = await api.setServiceUsage({ visit_type: service.visit_type, tier: service.tier, items });
+      return sentOf(answer, (next) => ({ next }));
+    },
+    (sent) => {
+      setSaved(true);
+      steps.edit();
+      onSaved(sent.next);
+    },
+  );
+  const title = service === undefined ? words.title : serviceName(service);
+  const fields = (
+    <UsageFields
+      book={book}
+      chosen={chosen}
+      listed={listed}
+      draft={draft}
+      mayChange={mayChange}
+      onChoose={(key) => {
+        setChosen(key);
+        setDraft(draftOf(book.services.find((each) => keyOf(each) === key)));
+        setSaved(false);
+        steps.edit();
+      }}
+      onFigure={(code, text) => {
+        setDraft({ ...draft, [code]: text });
+        setSaved(false);
+        steps.edit();
+      }}
+    />
+  );
 
-  const send = async () => {
-    if (service === undefined) return;
-    setStep({ step: "saving" });
-    const answer = await api.setServiceUsage({ visit_type: service.visit_type, tier: service.tier, items });
-    if (!answer.ok) {
-      setStep({ step: "failed", code: answer.code, fields: answer.fields });
-      return;
-    }
-    onSaved(answer.body);
-    setStep({ step: "saved" });
-  };
-
-  const checking = step.step === "checking" || step.step === "saving";
   return (
     <Panel titleId="service-usage" title={words.title} className={styles.panel}>
-      <Fieldset
-        className={styles.group}
-        legend={service === undefined ? words.title : serviceName(service)}
-        legendLook="title"
-      >
-        <div className={styles.field}>
-          <Label htmlFor="usage-service">{words.service}</Label>
-          <Select
-            className={styles.select}
-            id="usage-service"
-            value={chosen}
-            onChange={(event) => {
-              setChosen(event.target.value);
-              setDraft(draftOf(book.services.find((each) => keyOf(each) === event.target.value)));
-              setStep({ step: "editing" });
-            }}
-          >
-            {[...new Set(book.services.map((each) => each.visit_type))].map((kind) => (
-              <optgroup key={kind} label={dispatch.typeNames[kind] ?? kind}>
-                {book.services
-                  .filter((each) => each.visit_type === kind)
-                  .map((each) => (
-                    <option key={keyOf(each)} value={keyOf(each)}>
-                      {serviceName(each)}
-                    </option>
-                  ))}
-              </optgroup>
-            ))}
-          </Select>
-        </div>
-        {listed.length === 0 ? (
-          <p className={styles.note}>{words.noneOffered}</p>
-        ) : (
-          <ul className={own.uses}>
-            {listed.map((each) => (
-              <li className={own.use} key={each.code}>
-                <Label htmlFor={`usage-${each.code}`}>{words.quantity(each.name, each.unit)}</Label>
-                <TextInput
-                  className={styles.number}
-                  id={`usage-${each.code}`}
-                  inputMode="numeric"
-                  maxLength={3}
-                  readOnly={!mayChange}
-                  value={draft[each.code] ?? ""}
-                  onChange={(event) => {
-                    setDraft({ ...draft, [each.code]: event.target.value });
-                    setStep({ step: "editing" });
-                  }}
-                />
-              </li>
-            ))}
-          </ul>
-        )}
-        {checking && (
-          <CheckPanel
-            title={words.confirm.title}
-            lines={lines.length === 0 ? [words.confirm.nothing] : lines}
-            send={words.confirm.send}
-            sending={copy.form.saving}
-            back={words.confirm.back}
-            busy={step.step === "saving"}
-            ready={lines.length > 0}
-            onSend={() => void send()}
-            onBack={() => {
-              setStep({ step: "editing" });
-            }}
-          />
-        )}
-        {!checking && mayChange && (
-          <div className={styles.actions}>
-            <Button
-              variant="primary"
-              size="small"
-              disabled={service === undefined || listed.length === 0 || !valid}
-              onClick={() => {
-                setStep({ step: "checking" });
-              }}
-            >
-              {words.save}
-            </Button>
-          </div>
-        )}
-        {step.step === "saved" && (
-          <p className={styles.saved} role="status">
-            {words.saved}
-          </p>
-        )}
-        {step.step === "failed" && (
-          <p className={styles.error} role="alert">
-            {errorText(copy.errors, step)}
-          </p>
-        )}
-      </Fieldset>
+      {mayChange ? (
+        <SettingForm
+          said={saved ? words.saved : null}
+          title={title}
+          steps={steps}
+          ready={service !== undefined && listed.length > 0 && valid}
+          errors={copy.errors}
+          onCancel={null}
+          sendable={lines.length > 0}
+          checking={(lines.length === 0 ? [review.nothing] : lines).map((line) => (
+            <p className={styles.checkLine} key={line}>
+              {line}
+            </p>
+          ))}
+        >
+          {fields}
+        </SettingForm>
+      ) : (
+        <Fieldset className={styles.group} legend={title} legendLook="title">
+          {fields}
+        </Fieldset>
+      )}
     </Panel>
   );
 }

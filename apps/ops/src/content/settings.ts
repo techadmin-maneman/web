@@ -276,7 +276,7 @@ export const settings = {
     /** The check before a rule is sent: each figure that moves, the old beside the new. */
     confirm: {
       title: "Review the change",
-      change: (label: string, was: string, now: string) => `${label}: ${was} → ${now}.`,
+      change: (label: string, was: string, now: string) => `${label}: ${was} → ${now}`,
       /** A figure as the check writes it: "200 metres". */
       figure: (value: number, unit: string) => `${String(value)} ${unit}`,
       /** A base ops are naming for the first time had no figure of its own. */
@@ -309,8 +309,15 @@ export const settings = {
     city: "City",
     everyCity: "Every city",
     reason: "Reason",
-    add: "Close these days",
-    adding: "Closing",
+    formTitle: "Close days",
+    /** The check's line: "Tue 20 Oct to Thu 22 Oct · Gurgaon · Diwali". */
+    closing: (period: string, city: string, reason: string) => `${period} · ${city} · ${reason}`,
+    /** What closing the days leaves to move, said before they are closed. */
+    stranded: (visits: number) =>
+      `${String(visits)} ${visits === 1 ? "visit is" : "visits are"} booked on these days. Move ${
+        visits === 1 ? "it" : "them"
+      } on the dispatch board.`,
+    uncounted: "Booked visits couldn't be counted. Check the dispatch board.",
     added: "Closed.",
     none: "No closed days.",
     /** "Tue 20 Oct to Thu 22 Oct", and "Tue 20 Oct" for one day. */
@@ -327,7 +334,7 @@ export const settings = {
     remove: "Reopen",
     /** The button's whole name, since the list holds many and each button says the same. */
     removeLabel: (period: string) => `Reopen ${period}`,
-    removing: "Reopening",
+    reopen: (period: string) => `Reopen ${period}?`,
     errors: {
       not_permitted: NOT_PERMITTED,
       from: "The first day can't be in the past.",
@@ -351,9 +358,10 @@ export const settings = {
     columns: { product: "Product", cost: "Cost, Rs.", since: "Since" },
     kinds: { first_fit: "First fit", replacement: "Replacement" },
     notSet: "Not set",
-    save: "Save",
     saved: "Saved.",
     costLabel: (product: string) => `Cost of ${product}, Rs.`,
+    reviewLabel: (product: string) => `Review the cost of ${product}`,
+    change: (product: string, was: string, now: string) => `${product}: ${was} → ${now}, from today`,
     errors: {
       invalid_request: "Type whole rupees.",
       not_found: "That product is no longer sold. Reload.",
@@ -447,7 +455,7 @@ export const settings = {
     /** The check before anything is sent: what it is now, and what it will be. */
     check: {
       title: "Review the change",
-      price: (name: string, was: string, now: string, from: string) => `${name}: ${was} → ${now}, from ${from}.`,
+      price: (name: string, was: string, now: string, from: string) => `${name}: ${was} → ${now}, from ${from}`,
       correct: ({
         name,
         was,
@@ -460,17 +468,17 @@ export const settings = {
         wasFrom: string;
         now: string;
         from: string;
-      }) => `${name}: ${was} from ${wasFrom} → ${now} from ${from}.`,
+      }) => `${name}: ${was} from ${wasFrom} → ${now} from ${from}`,
       nothing: "nothing",
-      gstChanges: (was: number, now: number) => `GST: ${String(was)}% → ${String(now)}%.`,
+      gstChanges: (was: number, now: number) => `GST: ${String(was)}% → ${String(now)}%`,
       sameDay: "Replaces the price already set for that day.",
-      rename: (was: string, now: string, tier: string) => `${was} → ${now}. The code stays ${tier}.`,
+      rename: (was: string, now: string, tier: string) => `${was} → ${now} (code stays ${tier})`,
       describe: (name: string, was: string, now: string) =>
         `${name}: ${descriptionWords(was)} → ${descriptionWords(now)}`,
-      length: (name: string, was: number, now: number) => `${name}: ${String(was)} → ${String(now)} minutes.`,
+      length: (name: string, was: number, now: number) => `${name}: ${String(was)} → ${String(now)} minutes`,
       retire: (name: string, from: string) => `${name} is hidden from ${from}.`,
-      restore: (name: string) => `Offer ${name} again.`,
-      order: (kind: string, was: string, now: string) => `${kind}: ${was} → ${now}.`,
+      restore: (name: string) => `Offer ${name} again?`,
+      order: (kind: string, was: string, now: string) => `${kind}: ${was} → ${now}`,
       add: (kind: string, name: string, minutes: number, _tier: string) =>
         `Add ${name} to ${kind}: ${String(minutes)} minutes. Hidden until priced.`,
       takeBack: (from: string) => `Withdraw the price from ${from}?`,
@@ -532,6 +540,8 @@ export const settings = {
     itemsLabel: (name: string) => `Items of ${name}`,
     retiredSaid: "Retired.",
     restoredSaid: "Restored.",
+    retireQuestion: (name: string) => `Retire ${name}? Their open orders stay.`,
+    restoreQuestion: (name: string) => `Restore ${name}?`,
     form: {
       addTitle: "Add a supplier",
       changeTitle: (name: string) => `Change ${name}`,
@@ -583,6 +593,7 @@ export const settings = {
       saved: "Saved.",
       remove: "Remove",
       removeLabel: (name: string) => `Remove ${name}`,
+      removeQuestion: (item: string, supplier: string) => `Take ${item} off ${supplier}'s list?`,
       removed: "Removed.",
     },
     errors: {
@@ -643,7 +654,9 @@ export const settings = {
       kit: "Kit low at (optional)",
       store: "Hub or stockroom low at (optional)",
       central: "Warehouse low at (optional)",
-      add: "Add hair system",
+      formTitle: "Add a hair system",
+      /** The check's line: the spec the code is made to, and what one costs. */
+      adding: (spec: string, cost: string) => `${spec}, at ${cost} each`,
       added: "Added.",
       errors: {
         product: "Pick a product from the list.",
@@ -695,9 +708,7 @@ export const settings = {
       title: (name: string) => `Retire ${name}`,
       from: "Retire from",
       question: (name: string, from: string) => `Technicians can't log ${name} from ${from}. Past jobs keep it.`,
-      send: "Confirm",
       restore: (name: string) => `Offer ${name} again?`,
-      restoreSend: "Confirm",
       done: "Done.",
     },
     usage: {
@@ -875,14 +886,13 @@ export const settings = {
       addedBy: (who: string, when: string) => `Added by ${who} on ${when}`,
       clientId: "Client ID",
       label: "Name",
-      add: "Add token",
-      adding: "Adding",
+      addTitle: "Add a service token",
+      /** The check's line: "Uptime check · 1a2b3c.access". */
+      adding: (label: string, clientId: string) => `${label} · ${clientId}`,
       remove: "Remove",
       removeLabel: (label: string) => `Remove ${label}`,
       removeTitle: (label: string) => `Remove ${label}?`,
       removeLine: "It's refused once access control is on.",
-      removing: "Removing",
-      back: "Keep",
       onlyNational: "Only national Admin · Manage can change service tokens.",
       errors: {
         client_id: "Paste the client ID exactly as shown.",

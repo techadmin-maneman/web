@@ -12,6 +12,7 @@ import { stockPlaces } from "../../apps/ops/src/content/stock-places.ts";
 import { stockTransit } from "../../apps/ops/src/content/stock-transit.ts";
 import { stockLabels } from "../../apps/ops/src/content/stock-labels.ts";
 import { stockViews } from "../../apps/ops/src/content/stock-views.ts";
+import { review } from "../../apps/ops/src/content/common.ts";
 
 const WAREHOUSE = "National warehouse";
 
@@ -98,11 +99,11 @@ test("records a delivery into the store, showing what it holds before and after"
   await form.getByLabel(opsCopy.stock.record.note).fill("Supplier's note 4418");
   await form.getByRole("button", { name: "Review" }).click();
 
-  const check = form.getByRole("group", { name: opsCopy.stock.confirm.title });
+  const check = form.getByRole("group", { name: review.title });
   await expect(check).toBeFocused();
   await expect(check).toContainText(`${WAREHOUSE}: 120 strip → 220 strip`);
   const sent = posted(page, "/api/stock/deliveries");
-  await check.getByRole("button", { name: "Record" }).click();
+  await check.getByRole("button", { name: review.send }).click();
   expect((await sent).postDataJSON()).toEqual({
     consumable_code: "tape_strips",
     quantity: 100,
@@ -122,7 +123,7 @@ test("takes a delivery's supplier lot and its expiry", async ({ page }) => {
   await form.getByLabel(opsCopy.stock.record.expires).fill("2027-11-30");
   await form.getByRole("button", { name: "Review" }).click();
   const sent = posted(page, "/api/stock/deliveries");
-  await form.getByRole("button", { name: "Record" }).click();
+  await form.getByRole("button", { name: review.send }).click();
   expect((await sent).postDataJSON()).toMatchObject({ lot_code: "SV-2611", expires_on: "2027-11-30" });
 });
 
@@ -154,7 +155,7 @@ test("says when the soonest lot a place holds expires, and writes off the lot na
   await form.getByLabel(opsCopy.stock.record.lossNote).fill("Past its date");
   await form.getByRole("button", { name: "Review" }).click();
   const sent = posted(page, "/api/stock/write-offs");
-  await form.getByRole("button", { name: "Record" }).click();
+  await form.getByRole("button", { name: review.send }).click();
   expect((await sent).postDataJSON()).toMatchObject({ lot_id: "lot-1", quantity: 20 });
 });
 
@@ -167,9 +168,9 @@ test("a transfer shows both places, and says when the store would hold less than
   await form.getByLabel("To", { exact: true }).selectOption({ label: "Imran Qureshi" });
   await form.getByLabel("How many").fill("10");
   await form.getByRole("button", { name: "Review" }).click();
-  const check = form.getByRole("group", { name: opsCopy.stock.confirm.title });
+  const check = form.getByRole("group", { name: review.title });
   await expect(check).toContainText(opsCopy.stock.confirm.onItsWay("Imran Qureshi"));
-  await check.getByRole("button", { name: opsCopy.stock.confirm.back }).click();
+  await check.getByRole("button", { name: review.edit }).click();
 
   // Handed over in person, it arrives at once.
   await form.getByLabel(opsCopy.stock.record.waitForScan).uncheck();
@@ -178,7 +179,7 @@ test("a transfer shows both places, and says when the store would hold less than
   await expect(check).toContainText("Imran Qureshi: 150 ml → 160 ml");
   await expect(check).toContainText(`${WAREHOUSE} would go below zero`);
   const sent = posted(page, "/api/stock/transfers");
-  await check.getByRole("button", { name: "Record" }).click();
+  await check.getByRole("button", { name: review.send }).click();
   expect((await sent).postDataJSON()).toEqual({
     consumable_code: "solvent",
     quantity: 10,
@@ -206,18 +207,18 @@ test("a count shows the figure it finds, and one that agrees says it records onl
   await form.getByLabel("Where").selectOption({ label: "Imran Qureshi" });
   await form.getByLabel(opsCopy.stock.record.counted).fill("3");
   await form.getByRole("button", { name: "Review" }).click();
-  await expect(form.getByRole("group", { name: opsCopy.stock.confirm.title })).toContainText(
+  await expect(form.getByRole("group", { name: review.title })).toContainText(
     "Matches what's held. Records the count only.",
   );
 
   await form.getByRole("button", { name: "Edit" }).click();
   await form.getByLabel(opsCopy.stock.record.counted).fill("2");
   await form.getByRole("button", { name: "Review" }).click();
-  await expect(form.getByRole("group", { name: opsCopy.stock.confirm.title })).toContainText(
+  await expect(form.getByRole("group", { name: review.title })).toContainText(
     "Imran Qureshi: 3 strip → 2 strip",
   );
   const sent = posted(page, "/api/stock/counts");
-  await form.getByRole("button", { name: "Record" }).click();
+  await form.getByRole("button", { name: review.send }).click();
   expect((await sent).postDataJSON()).toEqual({
     consumable_code: "tape_strips",
     place_id: IMRAN,
@@ -237,7 +238,7 @@ test("a loss needs its words, and a refusal names what was wrong", async ({ page
 
   await form.getByLabel(opsCopy.stock.record.lossNote).fill("Two burst in the heat");
   await form.getByRole("button", { name: "Review" }).click();
-  await form.getByRole("button", { name: "Record" }).click();
+  await form.getByRole("button", { name: review.send }).click();
   await expect(form.getByRole("alert")).toHaveText("Unknown place. Reload.");
 });
 
@@ -440,7 +441,7 @@ test("opens a hair system's labels after its delivery, the latest batch ticked, 
   await form.getByLabel("Consumable").selectOption({ label: HAIR.name });
   await form.getByLabel("How many").fill("2");
   await form.getByRole("button", { name: "Review" }).click();
-  await form.getByRole("button", { name: "Record" }).click();
+  await form.getByRole("button", { name: review.send }).click();
 
   const labels = page.getByRole("region", { name: stockLabels.title });
   await expect(labels.getByLabel(stockLabels.item)).toHaveValue(HAIR.code);
@@ -504,7 +505,7 @@ test("names a hair system's pieces by their labels, as a scanner types them, and
   await expect(form).toContainText(stockLabels.scanned(1));
   await form.getByRole("button", { name: "Review" }).click();
   const sent = posted(page, "/api/stock/transfers");
-  await form.getByRole("button", { name: "Record" }).click();
+  await form.getByRole("button", { name: review.send }).click();
   expect((await sent).postDataJSON()).toEqual({
     consumable_code: HAIR.code,
     quantity: 1,
@@ -591,6 +592,6 @@ test("meets WCAG 2.2 AA, with a movement being checked as well", async ({ page }
 
   await recording(page).getByLabel("How many").fill("5");
   await recording(page).getByRole("button", { name: "Review" }).click();
-  await expect(recording(page).getByRole("group", { name: opsCopy.stock.confirm.title })).toBeVisible();
+  await expect(recording(page).getByRole("group", { name: review.title })).toBeVisible();
   expect(await axeViolations(page)).toEqual([]);
 });
