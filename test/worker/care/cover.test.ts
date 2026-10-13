@@ -8,7 +8,7 @@ import type { App } from "../../../src/http/context.ts";
 import { markDatabase, captureLogs, NOW, request } from "../helpers.ts";
 import { insertPerson } from "../tryon-fixtures.ts";
 import { technician } from "../clients.ts";
-import { enforce, listStaff, opsAs, person } from "../ops/staff-fixtures.ts";
+import { enforce, listStaff, opsAs, person, relax } from "../ops/staff-fixtures.ts";
 
 const ASHA = "asha@maneman.test";
 const RAVI = "ravi@maneman.test";
@@ -36,6 +36,7 @@ const memberOf = async (email: string) => (await team()).find((member) => member
 beforeEach(async () => {
   captureLogs();
   await markDatabase();
+  await relax();
   await listStaff(ASHA, ["customer_care:act:national"]);
   await listStaff(RAVI, ["customer_care:act:national"]);
   await listStaff(LEAD, ["customer_care:manage:national"]);
