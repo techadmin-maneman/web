@@ -50,7 +50,7 @@ const WHOLE = /^\d{1,6}$/;
 
 /** A place by name: a kit by its technician's, marked once they left, and a hub or a stockroom marked once closed. */
 export function placeName(book: Stock, id: string): string {
-  const place = book.places.find((each) => each.id === id);
+  const place = [...book.places, ...book.other_places].find((each) => each.id === id);
   if (place === undefined) return id;
   if (place.active) return place.name;
   return place.kind === "kit" ? copy.left(place.name) : copy.closed(place.name);

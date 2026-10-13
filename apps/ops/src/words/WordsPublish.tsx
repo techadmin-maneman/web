@@ -2,6 +2,7 @@
 // last published, and the check before the next publish, which says how many lines changed since and when the site
 // shows them. Only its second press publishes.
 
+import { whoWords } from "../lib/who.ts";
 import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { indiaDate, shortDate } from "@maneman/web-kit/dates";
 import { errorText, type Failure } from "@maneman/web-kit/refusal";
@@ -17,7 +18,7 @@ const { publish } = copy;
 export function LastPublished({ published }: { published: WordsPublish | null }) {
   return (
     <p className={styles.note}>
-      {published === null ? publish.never : publish.last(shortDate(indiaDate(published.at)), published.by)}
+      {published === null ? publish.never : publish.last(shortDate(indiaDate(published.at)), whoWords(published.by))}
     </p>
   );
 }

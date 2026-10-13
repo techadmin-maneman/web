@@ -25391,6 +25391,82 @@ Request body:
       },
       "description": "Every open place down the tree, the warehouse first, and any closed one still holding stock: those in the caller's cities, a hub with every city of its zone, and the warehouse only with a national grant."
     },
+    "other_places": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "A place by its ID: central for the warehouse, a kit by its technician's ID."
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "warehouse",
+              "hub",
+              "stockroom",
+              "kit"
+            ]
+          },
+          "name": {
+            "type": "string",
+            "description": "A kit's is its technician's name."
+          },
+          "parent_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 64,
+                "description": "A place by its ID: central for the warehouse, a kit by its technician's ID."
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The place it hangs from; null for the warehouse."
+          },
+          "zone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "city": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "active": {
+            "type": "boolean",
+            "description": "Open; a kit is open while its technician is."
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "name",
+          "parent_id",
+          "zone",
+          "city",
+          "active"
+        ],
+        "additionalProperties": false
+      },
+      "description": "The places the latest movements name that places does not hold: a kit of a technician who left, or a closed room, so each movement says where it was."
+    },
     "holdings": {
       "type": "array",
       "items": {
@@ -25610,6 +25686,7 @@ Request body:
   "required": [
     "consumables",
     "places",
+    "other_places",
     "holdings",
     "movements",
     "today",

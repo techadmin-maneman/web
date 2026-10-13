@@ -3,6 +3,7 @@
 // to lives in the page's address (./filters.ts), so a client's whole record, linked from their History tab, opens
 // already narrowed. The design draws no board for it; it is built as Areas' tables are.
 
+import { ROUTE_NEEDS } from "@rules/policy/console-routes.ts";
 import { EmptyState } from "@maneman/ui/EmptyState";
 import { Chip } from "@maneman/ui/Chip";
 import { Button } from "@maneman/ui/Button";
@@ -42,10 +43,20 @@ function Who({ actor, surface }: Pick<ActivityEntry, "actor" | "surface">) {
   );
 }
 
-/** What the entry was, and for a call the method and path it made, IDs only. */
+const TEMPLATES = Object.keys(ROUTE_NEEDS).map((key) => {
+  const [method = "", template = ""] = key.split(" ");
+  return { method, template, pattern: new RegExp(`^${template.replace(/\{[^}]+\}/g, "[^/]+")}$`) };
+});
+
+/** A call's path as the route it reached, "/api/stock/lots/{id}": the record it touched is named beside it. */
+const routeOf = (method: string, path: string): string =>
+  TEMPLATES.find((each) => each.method === method && each.pattern.test(path))?.template ??
+  path.replace(/[0-9a-f-]{36}/g, "{id}");
+
+/** What the entry was, and for a call the method and the route it reached, never an ID. */
 function What({ action, detail }: Pick<ActivityEntry, "action" | "detail">) {
-  const path = typeof detail?.path === "string" ? detail.path : null;
   const method = typeof detail?.method === "string" ? detail.method : null;
+  const path = typeof detail?.path === "string" ? routeOf(method ?? "", detail.path) : null;
   // The log keeps actions an earlier build wrote under names this one no longer has words for.
   const said = Object.hasOwn(copy.actions, action) ? copy.actions[action] : action;
   return (

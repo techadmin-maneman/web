@@ -17668,6 +17668,21 @@ export interface components {
                 /** @description Open; a kit is open while its technician is. */
                 active: boolean;
             }[];
+            /** @description The places the latest movements name that places does not hold: a kit of a technician who left, or a closed room, so each movement says where it was. */
+            other_places: {
+                /** @description A place by its ID: central for the warehouse, a kit by its technician's ID. */
+                id: string;
+                /** @enum {string} */
+                kind: "warehouse" | "hub" | "stockroom" | "kit";
+                /** @description A kit's is its technician's name. */
+                name: string;
+                /** @description The place it hangs from; null for the warehouse. */
+                parent_id: string | null;
+                zone: string | null;
+                city: string | null;
+                /** @description Open; a kit is open while its technician is. */
+                active: boolean;
+            }[];
             holdings: {
                 consumable_code: string;
                 /** @description A place by its ID: central for the warehouse, a kit by its technician's ID. */

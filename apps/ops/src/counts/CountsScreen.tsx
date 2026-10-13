@@ -1,6 +1,7 @@
 // Operations · Counts (docs/decisions/0185-cycle-counts.md): the count tasks in the caller's places, each opened to be
 // counted, counted again or signed off; and each item's count class.
 
+import { fullDate } from "@maneman/web-kit/dates";
 import { Panel } from "@maneman/ui/Panel";
 import { Button } from "@maneman/ui/Button";
 import { Table } from "@maneman/ui/Table";
@@ -38,7 +39,7 @@ function Tasks({ book, onOpen }: { book: Book; onOpen: (id: string) => void }) {
               {task.place}
             </th>
             <td>{whatOf(task)}</td>
-            <td>{task.due_on}</td>
+            <td>{fullDate(task.due_on)}</td>
             <td>{copy.states[task.state] ?? task.state}</td>
             <td>
               <Button

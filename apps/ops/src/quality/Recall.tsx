@@ -1,6 +1,7 @@
 // One recall (docs/decisions/0187-recalls.md): where its lot's stock is, who wears its pieces, and its close once dealt
 // with; and a lot recalled, with why.
 
+import { fullDate } from "@maneman/web-kit/dates";
 import { Panel } from "@maneman/ui/Panel";
 import { Button } from "@maneman/ui/Button";
 import { Field, Select, TextInput } from "@maneman/ui/Field";
@@ -99,7 +100,7 @@ function WornRows({ worn, mayBook }: { worn: readonly Worn[]; mayBook: boolean }
               {each.person}
             </th>
             <td>{each.piece_code}</td>
-            <td>{each.due_on ?? ""}</td>
+            <td>{each.due_on === null ? "" : fullDate(each.due_on)}</td>
             <td>{mayBook && <BookFree worn={each} />}</td>
           </tr>
         ))}

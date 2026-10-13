@@ -193,7 +193,7 @@ function TokenRow({ token, removable, onChanged }: TokenRowProps) {
     <li className={styles.rule}>
       <p className={styles.period}>{token.label}</p>
       <p className={styles.set}>{token.client_id}</p>
-      <p className={styles.set}>{words.addedBy(token.added_by, longDate(token.added_at))}</p>
+      <p className={styles.set}>{words.addedBy(whoWords(token.added_by), longDate(token.added_at))}</p>
       {removable && (
         <ActionCheck
           label={words.remove}

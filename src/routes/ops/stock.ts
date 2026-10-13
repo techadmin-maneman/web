@@ -189,6 +189,15 @@ export async function stockAnswer(c: Context<AppEnv>) {
       city: place.city,
       active: place.active,
     })),
+    other_places: view.otherPlaces.map((place) => ({
+      id: place.id,
+      kind: place.kind,
+      name: place.name,
+      parent_id: place.parentId,
+      zone: place.zone,
+      city: place.city,
+      active: place.active,
+    })),
     holdings: view.holdings.map((holding) => ({
       consumable_code: holding.code,
       place_id: holding.place,

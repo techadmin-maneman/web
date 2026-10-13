@@ -29,7 +29,6 @@ import {
 } from "./route.ts";
 import { PageBoundary } from "./states/ErrorBoundary.tsx";
 import { TasksScreen } from "./tasks/TasksScreen.tsx";
-import { TechniciansScreen } from "./technicians/TechniciansScreen.tsx";
 
 const SettingsScreen = lazyScreen(() =>
   import("./settings/SettingsScreen.tsx").then((module) => module.SettingsScreen),
@@ -46,6 +45,9 @@ const PartnerCommissionScreen = lazyScreen(() =>
 );
 const StaffScreen = lazyScreen(() => import("./settings/PanelScreens.tsx").then((module) => module.StaffScreen));
 // The queues ops open now and then load when opened, keeping the console's first load within its budget.
+const TechniciansScreen = lazyScreen(() =>
+  import("./technicians/TechniciansScreen.tsx").then((module) => module.TechniciansScreen),
+);
 const NoShowsScreen = lazyScreen(() => import("./no-shows/NoShowsScreen.tsx").then((module) => module.NoShowsScreen));
 const DeletionsScreen = lazyScreen(() =>
   import("./deletions/DeletionsScreen.tsx").then((module) => module.DeletionsScreen),

@@ -98,16 +98,14 @@ async function failDayOldMessages(run: UnsentMessagesRun): Promise<void> {
     )
     .bind(before(run, GIVE_UP_MS), before(run, SENDING_LEASE_MS), BATCH_LIMIT)
     .all<{ id: string; kind: string }>();
-  const example = results[0];
-  if (example === undefined) return;
+  if (results.length === 0) return;
 
-  run.log.warn("messages_unsent_failed", { count: results.length });
+  run.log.warn("messages_unsent_failed", { count: results.length, example: results[0]?.id, kind: results[0]?.kind });
   await run.deps.alertOnce({
     key: `messages_unsent:${indiaDate(run.now)}`,
     message:
-      `Messages queued over a day ago were never sent, and are now failed: ${String(results.length)} on this run, ` +
-      `${example.id} (${example.kind}) among them. Replay those still worth sending once the bridge is back ` +
-      '(runbook, "Replaying a failed message").',
+      `${String(results.length)} ${results.length === 1 ? "message" : "messages"} queued over a day ago never sent. ` +
+      'Replay those still worth sending once WhatsApp is back (runbook, "Replaying a failed message").',
   });
 }
 

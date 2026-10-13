@@ -1,6 +1,7 @@
 // Operations · Quality (docs/decisions/0187-recalls.md, 0188-failure-rates-and-value-at-risk.md): every recall, each
 // opened to where its lot is and who wears it, and a lot recalled with why; failure rates; and the value at risk.
 
+import { longDate } from "@maneman/web-kit/dates";
 import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { Panel } from "@maneman/ui/Panel";
 import { Button } from "@maneman/ui/Button";
@@ -41,7 +42,7 @@ function Recalls({ book, onOpen }: { book: Book; onOpen: (id: string) => void })
             </th>
             <td>{recall.name}</td>
             <td>{recall.lot_code}</td>
-            <td>{recall.raised_at.slice(0, 10)}</td>
+            <td>{longDate(recall.raised_at)}</td>
             <td>{recall.closed_at === null ? copy.open : copy.closed}</td>
             <td>
               <Button

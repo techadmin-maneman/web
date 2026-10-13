@@ -180,6 +180,20 @@ describe("a technician's kit", () => {
     expect(kit).toBeNull();
   });
 
+  it("names the kit of a technician who left in the movements, though it holds nothing and has no column", async () => {
+    await sendAndReceive(2, "central", SAMEER);
+    await job.opsPost("/api/stock/write-offs", {
+      consumable_code: "tape_strips",
+      place_id: SAMEER,
+      quantity: 2,
+      note: "Lost",
+    });
+    await env.DB.prepare("UPDATE technicians SET active = 0 WHERE id = ?1").bind(SAMEER).run();
+    const book = await stock();
+    expect(book.places.map((place) => place.id)).not.toContain(SAMEER);
+    expect(book.other_places).toEqual([expect.objectContaining({ id: SAMEER, kind: "kit", active: false })]);
+  });
+
   // The code before the place tree deletes a technician without knowing of kits.
   it("leaves out a kit whose technician was deleted without it", async () => {
     await env.DB.prepare("DELETE FROM technicians WHERE id = ?1").bind(SAMEER).run();

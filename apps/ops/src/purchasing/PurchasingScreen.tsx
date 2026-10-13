@@ -2,6 +2,7 @@
 // opened beneath the list to approve, mark sent, cancel or print; a new order drafted from a supplier's list; and the
 // claims on suppliers, with the returned pieces to settle (./Claims.tsx); and each supplier's scorecard.
 
+import { fullDate } from "@maneman/web-kit/dates";
 import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { Panel } from "@maneman/ui/Panel";
 import { RowButton } from "@maneman/ui/Button";
@@ -54,7 +55,7 @@ function OrdersTable({ book, onOpen }: { book: Orders; onOpen: (id: string) => v
             <td>{supplierOf(order.supplier_id)}</td>
             <td>{copy.states[order.state] ?? order.state}</td>
             <td className={form.figure}>{inCurrency(order.total, order.currency)}</td>
-            <td>{order.expected_on ?? ""}</td>
+            <td>{order.expected_on === null ? "" : fullDate(order.expected_on)}</td>
           </tr>
         ))}
       </tbody>
