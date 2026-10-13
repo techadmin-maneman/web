@@ -1,7 +1,7 @@
 // Operations · Supply plan (docs/decisions/0180-supply-plan.md). No design draws it; every word here is ours. Only the
 // Supply plan page reads it, loaded when it opens.
 
-import { FAILED, NOT_PERMITTED, OFFLINE } from "./common.ts";
+import { FAILED, NOT_PERMITTED, OFFLINE, UNCONFIRMED } from "./common.ts";
 
 export const supplyPlan = {
   title: "Supply plan",
@@ -79,6 +79,7 @@ export const supplyPlan = {
       not_found: "That event is gone. Reload.",
       not_permitted: NOT_PERMITTED,
       offline: OFFLINE,
+      unconfirmed: UNCONFIRMED,
       unknown: FAILED,
     } as Readonly<Record<string, string>>,
   },
@@ -89,6 +90,7 @@ export const supplyPlan = {
     supplier_id: "That supplier is retired. Reject the line, or draft again.",
     not_permitted: NOT_PERMITTED,
     offline: OFFLINE,
+    unconfirmed: UNCONFIRMED,
     unknown: FAILED,
   } as Readonly<Record<string, string>>,
 };

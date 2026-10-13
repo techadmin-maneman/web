@@ -1,6 +1,6 @@
 // Areas: the waitlist by area, a launch, and the pincodes we serve.
 
-import { FAILED, NOT_PERMITTED, OFFLINE } from "./common.ts";
+import { FAILED, NOT_PERMITTED, OFFLINE, UNCONFIRMED } from "./common.ts";
 
 /**
  * Areas, under Growth: who waits in each pincode, and every pincode we hold. Both tabs mark a pincode live through
@@ -52,6 +52,7 @@ export const areas = {
       launch_in_future: "The launch date must be today or earlier.",
       no_technician: "No technician works in this city yet. Add one in Technicians first.",
       offline: OFFLINE,
+      unconfirmed: UNCONFIRMED,
       unknown: FAILED,
     } as Readonly<Record<string, string>>,
   },
@@ -76,6 +77,7 @@ export const areas = {
       invalid_request: "Check the pincode, area name and city.",
       not_permitted: NOT_PERMITTED,
       offline: OFFLINE,
+      unconfirmed: UNCONFIRMED,
       unknown: FAILED,
     } as Readonly<Record<string, string>>,
   },
@@ -139,6 +141,7 @@ export const areas = {
       /** A pincode we do not hold: one is added below, never by the file. */
       invalid_request: "Unknown pincode. Add it first.",
       offline: OFFLINE,
+      unconfirmed: UNCONFIRMED,
       unknown: FAILED,
     } as Readonly<Record<string, string>>,
   },

@@ -1,7 +1,7 @@
 // The Stock page's Places panel (docs/decisions/0155-the-stock-place-tree.md). No design draws it; every word here is
 // ours. Only the panel reads it, and it loads only for national managers.
 
-import { FAILED, NOT_PERMITTED, OFFLINE } from "./common.ts";
+import { FAILED, NOT_PERMITTED, OFFLINE, UNCONFIRMED } from "./common.ts";
 
 export const stockPlaces = {
   title: "Places",
@@ -38,6 +38,7 @@ export const stockPlaces = {
     invalid_request: "Check the details.",
     not_permitted: NOT_PERMITTED,
     offline: OFFLINE,
+    unconfirmed: UNCONFIRMED,
     unknown: FAILED,
   } as Readonly<Record<string, string>>,
 };

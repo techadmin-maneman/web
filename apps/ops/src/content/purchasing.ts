@@ -1,7 +1,7 @@
 // Operations · Purchasing (docs/decisions/0166-purchase-orders.md, 0169-supplier-claims.md). No design draws it;
 // every word here is ours. Only the Purchasing page reads it, loaded when it opens.
 
-import { FAILED, NOT_PERMITTED, OFFLINE } from "./common.ts";
+import { FAILED, NOT_PERMITTED, OFFLINE, UNCONFIRMED } from "./common.ts";
 
 export const purchasing = {
   title: "Purchasing",
@@ -191,6 +191,7 @@ export const purchasing = {
     invalid_request: "Check the lines.",
     not_permitted: NOT_PERMITTED,
     offline: OFFLINE,
+    unconfirmed: UNCONFIRMED,
     unknown: FAILED,
   } as Readonly<Record<string, string>>,
 };

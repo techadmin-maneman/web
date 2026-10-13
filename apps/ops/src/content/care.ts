@@ -1,7 +1,7 @@
 // The Care inbox's words (Customer Care; docs/decisions/0129-the-care-inbox.md). The page imports them itself, so
 // they stay out of the console's first load.
 
-import { FAILED, NOT_PERMITTED, OFFLINE } from "./common.ts";
+import { FAILED, NOT_PERMITTED, OFFLINE, UNCONFIRMED } from "./common.ts";
 
 export const care = {
   title: "Messages",
@@ -72,6 +72,7 @@ export const care = {
       not_found: "Not found. Reload.",
       not_permitted: NOT_PERMITTED,
       offline: OFFLINE,
+      unconfirmed: UNCONFIRMED,
       unknown: FAILED,
     },
   },
@@ -196,6 +197,7 @@ export const care = {
       not_found: "Not found. Reload.",
       not_permitted: NOT_PERMITTED,
       offline: OFFLINE,
+      unconfirmed: UNCONFIRMED,
       unknown: FAILED,
     },
   },
@@ -211,6 +213,7 @@ export const care = {
       not_found: "Not found. Reload.",
       not_permitted: NOT_PERMITTED,
       offline: OFFLINE,
+      unconfirmed: UNCONFIRMED,
       unknown: FAILED,
     },
   },
@@ -266,6 +269,7 @@ export const care = {
       not_found: "Not found. Reload.",
       not_permitted: NOT_PERMITTED,
       offline: OFFLINE,
+      unconfirmed: UNCONFIRMED,
       unknown: FAILED,
     },
   },
@@ -286,6 +290,7 @@ export const care = {
     not_found: "Not found. Reload.",
     not_permitted: NOT_PERMITTED,
     offline: OFFLINE,
+    unconfirmed: UNCONFIRMED,
     unknown: FAILED,
   },
 };

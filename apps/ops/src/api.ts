@@ -220,6 +220,8 @@ export const client = createClient<paths, ErrorCode | "signed_out">({
   onSessionEnded: markLapsed,
   // Access's redirect carries none of the API's codes.
   missingCode: (status) => (status === 0 ? "signed_out" : "unknown"),
+  // A write whose answer was lost is sent again under its key, and answered as it was (src/http/keyed-writes.ts).
+  keyWrites: true,
 });
 
 /** Where a job is being put: the technician, the India date and the window. */

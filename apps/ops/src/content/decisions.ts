@@ -1,6 +1,6 @@
 // The decision queues that are not referrals: concerns raised, deletions asked for, and changes of number.
 
-import { FAILED, NOT_PERMITTED, OFFLINE } from "./common.ts";
+import { FAILED, NOT_PERMITTED, OFFLINE, UNCONFIRMED } from "./common.ts";
 
 export const grievances = {
   title: "Concerns",
@@ -23,6 +23,7 @@ export const grievances = {
       not_permitted: NOT_PERMITTED,
       not_found: "Already answered. Reload.",
       offline: OFFLINE,
+      unconfirmed: UNCONFIRMED,
       unknown: FAILED,
     } as Readonly<Record<string, string>>,
   },
@@ -91,6 +92,7 @@ export const deletions = {
       payment_held: "A refund is still owed. Delete once Payments shows it refunded.",
       payment_owed: "A payment link is still unpaid. Delete once it's paid.",
       offline: OFFLINE,
+      unconfirmed: UNCONFIRMED,
       unknown: "That didn't work. Nothing was erased.",
     } as Readonly<Record<string, string>>,
     /** Beneath a refusal, the client's tab that settles it. */
@@ -129,6 +131,7 @@ export const numberChanges = {
       number_in_use: "Another client already has that number.",
       not_found: "Already decided. Reload.",
       offline: OFFLINE,
+      unconfirmed: UNCONFIRMED,
       unknown: FAILED,
     } as Readonly<Record<string, string>>,
   },

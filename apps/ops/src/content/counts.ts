@@ -1,7 +1,7 @@
 // Operations · Counts (docs/decisions/0185-cycle-counts.md). No design draws it; every word here is ours. Only the
 // Counts page reads it, loaded when it opens.
 
-import { FAILED, NOT_PERMITTED, OFFLINE } from "./common.ts";
+import { FAILED, NOT_PERMITTED, OFFLINE, UNCONFIRMED } from "./common.ts";
 
 export const counts = {
   title: "Counts",
@@ -45,6 +45,7 @@ export const counts = {
     not_found: "That is gone. Reload.",
     not_permitted: NOT_PERMITTED,
     offline: OFFLINE,
+    unconfirmed: UNCONFIRMED,
     unknown: FAILED,
   } as Readonly<Record<string, string>>,
 };

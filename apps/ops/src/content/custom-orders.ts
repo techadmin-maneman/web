@@ -1,7 +1,7 @@
 // A client's custom orders, on their Pieces tab (docs/decisions/0174-custom-orders.md). Only that panel reads it,
 // loaded when the tab opens.
 
-import { FAILED, NOT_PERMITTED, OFFLINE } from "./common.ts";
+import { FAILED, NOT_PERMITTED, OFFLINE, UNCONFIRMED } from "./common.ts";
 
 export const customOrders = {
   title: "Custom orders",
@@ -66,6 +66,7 @@ export const customOrders = {
     invalid_request: "Check the order.",
     not_permitted: NOT_PERMITTED,
     offline: OFFLINE,
+    unconfirmed: UNCONFIRMED,
     unknown: FAILED,
   } as Readonly<Record<string, string>>,
 };

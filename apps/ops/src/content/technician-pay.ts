@@ -1,7 +1,7 @@
 // The Technician pay page's words (Finance; docs/decisions/0122-technician-pay-per-visit.md). The page imports them
 // itself, so they stay out of the console's first load.
 
-import { FAILED, NOT_PERMITTED, OFFLINE } from "./common.ts";
+import { FAILED, NOT_PERMITTED, OFFLINE, UNCONFIRMED } from "./common.ts";
 
 export const technicianPay = {
   kinds: {
@@ -86,6 +86,7 @@ export const technicianPay = {
     not_found: "Already gone. Reload.",
     not_permitted: NOT_PERMITTED,
     offline: OFFLINE,
+    unconfirmed: UNCONFIRMED,
     unknown: FAILED,
   },
 };

@@ -1,6 +1,6 @@
 // The referrals queue and table: a grant held for review, and every referrer.
 
-import { FAILED, NOT_PERMITTED, OFFLINE } from "./common.ts";
+import { FAILED, NOT_PERMITTED, OFFLINE, UNCONFIRMED } from "./common.ts";
 
 export const referrals = {
   title: "Referrals",
@@ -40,6 +40,7 @@ export const referrals = {
       // A consultation and fit is sold only once paid, so its grant waits for the payment; it can be rejected now.
       not_paid: "The friend hasn't paid yet. Approve once they have, or reject now.",
       offline: OFFLINE,
+      unconfirmed: UNCONFIRMED,
       unknown: FAILED,
     } as Readonly<Record<string, string>>,
   },

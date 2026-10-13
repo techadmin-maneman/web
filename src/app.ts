@@ -141,6 +141,7 @@ import { registerTryonClaim } from "./routes/public/tryon-claim.ts";
 import { registerTryonGenerate } from "./routes/public/tryon-generate.ts";
 import { registerTryonResult } from "./routes/public/tryon-result.ts";
 import { registerTryonUpload } from "./routes/public/tryon-upload.ts";
+import { keyedWrite } from "./http/idempotency.ts";
 
 /** Routes that report on the database themselves instead of being blocked by it. */
 const IDENTITY_EXEMPT_ROUTES = new Set(["/api/health"]);
@@ -362,7 +363,7 @@ export function createApp(
   app.use("/api/*", requireOwnDatabase);
   // The ops console is staff only: every call needs a valid Access token, and is audited (ADR 0031); then the Staff
   // list decides what the caller may do.
-  if (surface === "ops") app.use("/api/*", requireAccess, auditCall, requireStaffAccess);
+  if (surface === "ops") app.use("/api/*", requireAccess, auditCall, requireStaffAccess, keyedWrite);
   // The public site's writes are guarded by Turnstile; the other surfaces carry session cookies.
   if (surface !== "public") app.use("/api/*", requireSameOrigin);
 
