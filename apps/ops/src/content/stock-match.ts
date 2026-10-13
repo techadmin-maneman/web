@@ -22,7 +22,7 @@ export const stockMatch = {
   /** "The profile needs grey and density to match stock." */
   incomplete: (missing: readonly string[]) =>
     `The profile needs ${joined(missing.map((field) => FIELDS[field] ?? field))} to match stock.`,
-  custom: "No stock code is made to this profile. Theirs is a custom order.",
+  custom: "No stocked hair system matches. Raise a custom order.",
   matched: (name: string) => `Matches ${name}.`,
   noneHeld: "None held yet.",
   /** "1 · Imran Qureshi, Gurgaon" */

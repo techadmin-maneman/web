@@ -76,9 +76,9 @@ export const dispatch = {
     away: "Away",
     awayLabel: (technician: string, date: string) => `${technician} is away on ${date}`,
     /** Leave recorded over jobs already booked moves none of them; ops do. */
-    stranded: (jobs: number) => `Away · ${String(jobs)} ${jobs === 1 ? "job" : "jobs"} to move`,
-    strandedLabel: (technician: string, date: string, jobs: number) =>
-      `${technician} is away on ${date}, with ${String(jobs)} ${jobs === 1 ? "job" : "jobs"} still to move`,
+    stranded: (visits: number) => `Away · ${String(visits)} ${visits === 1 ? "visit" : "visits"} to move`,
+    strandedLabel: (technician: string, date: string, visits: number) =>
+      `${technician} is away on ${date}, with ${String(visits)} ${visits === 1 ? "visit" : "visits"} still to move`,
   },
   tray: {
     title: "Unassigned",
@@ -202,7 +202,7 @@ export const dispatch = {
       { reason: "technician_unavailable", label: "Technician unavailable" },
       { reason: "client_asked", label: "Client asked" },
       { reason: "zone_rebalance", label: "Zone rebalance" },
-      { reason: "running_over", label: "Earlier job running over" },
+      { reason: "running_over", label: "Earlier visit running over" },
     ],
     /** The board's line, for a client who agreed to WhatsApp about their visits. */
     note: (job: string) => `${job} gets the new window on WhatsApp.`,

@@ -62,7 +62,7 @@ export const care = {
     sent: "Sent.",
     noted: "Note added.",
     closed: "Chat closed.",
-    failed: "WhatsApp did not take it. It is kept in the chat as not sent.",
+    failed: "Not sent. Try again, or call the client.",
   },
   carePerson: {
     label: "Care person",

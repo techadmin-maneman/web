@@ -10,7 +10,7 @@ export const technicianPay = {
     first_fit: "First fit",
     service: "Service visit",
     replacement: "Replacement",
-    no_show: "Client not home",
+    no_show: "No-show",
   },
   rates: {
     title: "Rates per visit",

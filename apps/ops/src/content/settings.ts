@@ -354,7 +354,7 @@ export const settings = {
   /** What each hair system costs us, for the margin figures (docs/decisions/0152-standard-costs.md). */
   standardCosts: {
     title: "Hair system costs",
-    note: "What each hair system costs us, before GST, for the margin figures. A new figure counts from today.",
+    note: "Cost before GST. Changes count from today.",
     columns: { product: "Product", cost: "Cost, Rs.", since: "Since" },
     kinds: { first_fit: "First fit", replacement: "Replacement" },
     notSet: "Not set",

@@ -20,7 +20,7 @@ export const quality = {
   lotLabel: (name: string, lotCode: string) => `${name} · ${lotCode}`,
   reason: "Why it is recalled",
   confirmRaise: "Recall it",
-  raisedSaid: "Recalled. Its pieces are kept from fits and each client's is due now.",
+  raisedSaid: "Recalled. Its pieces are blocked, and their wearers are due a replacement.",
   held: "Where it is",
   heldColumns: ["Place", "Quantity"],
   noneHeld: "None held anywhere.",

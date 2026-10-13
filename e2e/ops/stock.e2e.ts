@@ -79,12 +79,12 @@ test("past six places, shows the warehouse and one place, picked, marking each p
   await answer(page, { "GET /api/stock/demand": json(NO_DEMAND), "GET /api/stock": json(many) });
   await page.goto("/stock");
   const table = onHand(page);
-  await expect(table.getByRole("columnheader")).toHaveText(["Consumable", WAREHOUSE, "Technician 1"]);
+  await expect(table.getByRole("columnheader")).toHaveText(["Item", WAREHOUSE, "Technician 1"]);
 
   const kit = table.getByLabel("Place");
   await expect(kit.getByRole("option", { name: "Technician 5 · low" })).toHaveCount(1);
   await kit.selectOption({ label: "Technician 5 · low" });
-  await expect(table.getByRole("columnheader")).toHaveText(["Consumable", WAREHOUSE, "Technician 5"]);
+  await expect(table.getByRole("columnheader")).toHaveText(["Item", WAREHOUSE, "Technician 5"]);
   const tape = table.getByRole("row").filter({ has: page.getByRole("rowheader", { name: "Tape strips" }) });
   await expect(tape.getByRole("cell").nth(1)).toContainText("5 strip");
   await expect(tape.getByRole("cell").nth(1)).toContainText("Low");
@@ -94,7 +94,7 @@ test("past six places, shows the warehouse and one place, picked, marking each p
 test("records a delivery into the store, showing what it holds before and after", async ({ page }) => {
   await open(page, { "POST /api/stock/deliveries": json(STOCK) });
   const form = recording(page);
-  await form.getByLabel("Consumable").selectOption({ label: "Tape strips" });
+  await form.getByLabel("Item").selectOption({ label: "Tape strips" });
   await form.getByLabel("How many").fill("100");
   await form.getByLabel(opsCopy.stock.record.note).fill("Supplier's note 4418");
   await form.getByRole("button", { name: "Review" }).click();
@@ -117,7 +117,7 @@ test("records a delivery into the store, showing what it holds before and after"
 test("takes a delivery's supplier lot and its expiry", async ({ page }) => {
   await open(page, { "POST /api/stock/deliveries": json(STOCK) });
   const form = recording(page);
-  await form.getByLabel("Consumable").selectOption({ label: "Solvent" });
+  await form.getByLabel("Item").selectOption({ label: "Solvent" });
   await form.getByLabel("How many").fill("500");
   await form.getByLabel(opsCopy.stock.record.lot).fill("SV-2611");
   await form.getByLabel(opsCopy.stock.record.expires).fill("2027-11-30");
@@ -148,8 +148,8 @@ test("says when the soonest lot a place holds expires, and writes off the lot na
   await expect(tape.getByRole("cell").nth(0)).toContainText("Expires 31 Oct 2027");
 
   const form = recording(page);
-  await form.getByLabel("Loss").check();
-  await form.getByLabel("Consumable").selectOption({ label: "Tape strips" });
+  await form.getByLabel("Write-off").check();
+  await form.getByLabel("Item").selectOption({ label: "Tape strips" });
   await form.getByLabel(opsCopy.stock.record.lostLot).selectOption({ label: "TS-0901 · expires 31 Oct 2027" });
   await form.getByLabel("How many").fill("20");
   await form.getByLabel(opsCopy.stock.record.lossNote).fill("Past its date");
@@ -163,7 +163,7 @@ test("a transfer shows both places, and says when the store would hold less than
   await open(page, { "POST /api/stock/transfers": json(STOCK) });
   const form = recording(page);
   await form.getByLabel("Transfer").check();
-  await form.getByLabel("Consumable").selectOption({ label: "Solvent" });
+  await form.getByLabel("Item").selectOption({ label: "Solvent" });
   await form.getByLabel("From", { exact: true }).selectOption({ label: WAREHOUSE });
   await form.getByLabel("To", { exact: true }).selectOption({ label: "Imran Qureshi" });
   await form.getByLabel("How many").fill("10");
@@ -203,7 +203,7 @@ test("a count shows the figure it finds, and one that agrees says it records onl
   await open(page, { "POST /api/stock/counts": json(STOCK) });
   const form = recording(page);
   await form.getByLabel("Count").check();
-  await form.getByLabel("Consumable").selectOption({ label: "Tape strips" });
+  await form.getByLabel("Item").selectOption({ label: "Tape strips" });
   await form.getByLabel("Where").selectOption({ label: "Imran Qureshi" });
   await form.getByLabel(opsCopy.stock.record.counted).fill("3");
   await form.getByRole("button", { name: "Review" }).click();
@@ -214,9 +214,7 @@ test("a count shows the figure it finds, and one that agrees says it records onl
   await form.getByRole("button", { name: "Edit" }).click();
   await form.getByLabel(opsCopy.stock.record.counted).fill("2");
   await form.getByRole("button", { name: "Review" }).click();
-  await expect(form.getByRole("group", { name: review.title })).toContainText(
-    "Imran Qureshi: 3 strip → 2 strip",
-  );
+  await expect(form.getByRole("group", { name: review.title })).toContainText("Imran Qureshi: 3 strip → 2 strip");
   const sent = posted(page, "/api/stock/counts");
   await form.getByRole("button", { name: review.send }).click();
   expect((await sent).postDataJSON()).toEqual({
@@ -232,7 +230,7 @@ test("a count shows the figure it finds, and one that agrees says it records onl
 test("a loss needs its words, and a refusal names what was wrong", async ({ page }) => {
   await open(page, { "POST /api/stock/write-offs": fails(400, "invalid_request", ["place_id"]) });
   const form = recording(page);
-  await form.getByLabel("Loss").check();
+  await form.getByLabel("Write-off").check();
   await form.getByLabel("How many").fill("2");
   await expect(form.getByRole("button", { name: "Review" })).toBeDisabled();
 
@@ -259,7 +257,7 @@ test("sorts the movements by a column, and narrows them by a list or a search", 
   const movements = page.getByRole("region", { name: opsCopy.stock.movements.title });
   const rows = movements.getByRole("row");
   await expect(movements.getByRole("columnheader", { name: "When" })).toHaveAttribute("aria-sort", "descending");
-  await expect(rows.nth(1)).toContainText("Used on a job");
+  await expect(rows.nth(1)).toContainText("Used on a visit");
 
   await movements.getByRole("button", { name: "Change", exact: true }).click();
   await expect(movements.getByRole("columnheader", { name: "Change" })).toHaveAttribute("aria-sort", "ascending");
@@ -275,7 +273,7 @@ test("sorts the movements by a column, and narrows them by a list or a search", 
 
   await movements.getByLabel(opsCopy.tables.search).fill("imran");
   await expect(rows).toHaveCount(2);
-  await expect(rows.nth(1)).toContainText("Used on a job");
+  await expect(rows.nth(1)).toContainText("Used on a visit");
   await movements.getByLabel(opsCopy.tables.search).fill("nothing like it");
   await expect(movements.getByText(opsCopy.tables.none)).toBeVisible();
 });
@@ -366,7 +364,7 @@ test("adds up every place, and each city, and lists the lots that expire soon", 
   const table = onHand(page);
   await table.getByLabel(opsCopy.stock.totalsBy).selectOption({ label: opsCopy.stock.byCity });
   await expect(table.getByRole("columnheader")).toHaveText([
-    "Consumable",
+    "Item",
     stockViews.totals.national,
     "Gurgaon",
     stockViews.totals.noCity,
@@ -438,7 +436,7 @@ test("opens a hair system's labels after its delivery, the latest batch ticked, 
   });
   const printed = await catchPrints(page);
   const form = recording(page);
-  await form.getByLabel("Consumable").selectOption({ label: HAIR.name });
+  await form.getByLabel("Item").selectOption({ label: HAIR.name });
   await form.getByLabel("How many").fill("2");
   await form.getByRole("button", { name: "Review" }).click();
   await form.getByRole("button", { name: review.send }).click();
@@ -493,7 +491,7 @@ test("names a hair system's pieces by their labels, as a scanner types them, and
   await open(page, { "GET /api/stock": json(withPieces), "POST /api/stock/transfers": json(withPieces) });
   const form = recording(page);
   await form.getByRole("radio", { name: opsCopy.stock.record.kinds.transfer }).check();
-  await form.getByLabel("Consumable").selectOption({ label: HAIR.name });
+  await form.getByLabel("Item").selectOption({ label: HAIR.name });
   const scan = form.getByLabel(stockLabels.scan.label, { exact: true });
   for (const typed of ["mm-ess-0000001-b", "MM-ESS-0000002-C", "MM-ESS-0000002-C"]) {
     await scan.fill(typed);

@@ -13,7 +13,7 @@ export const stock = {
   left: (name: string) => `${name} (left)`,
   /** A hub or a stockroom closed while it still holds stock. */
   closed: (name: string) => `${name} (closed)`,
-  consumable: "Consumable",
+  consumable: "Item",
   // Not drawn: past a handful of places, the one shown beside the warehouse, and a place low on anything.
   place: "Place",
   placeLow: " · low",
@@ -37,9 +37,9 @@ export const stock = {
       delivery: "Delivery to the warehouse",
       transfer: "Transfer",
       count: "Count",
-      write_off: "Loss",
+      write_off: "Write-off",
     } as Readonly<Record<string, string>>,
-    consumable: "Consumable",
+    consumable: "Item",
     quantity: "How many",
     /** "How many (ml)": the unit beside the label, where the field takes a figure in it. */
     inUnit: (label: string, unit: string) => (unit === "" ? label : `${label} (${unit})`),
@@ -69,13 +69,13 @@ export const stock = {
   movements: {
     title: "Latest movements",
     narrow: "Filter movements",
-    columns: ["When", "Consumable", "Where", "Change", "Why", "Who"],
+    columns: ["When", "Item", "Where", "Change", "Why", "Who"],
     reasons: {
       received: "Delivered",
       transferred: "Transfer",
-      used: "Used on a job",
+      used: "Used on a visit",
       counted: "Count",
-      written_off: "Loss",
+      written_off: "Write-off",
     } as Readonly<Record<string, string>>,
     none: "No movements yet.",
     change: (quantity: number) => (quantity > 0 ? `+${String(quantity)}` : String(quantity)),

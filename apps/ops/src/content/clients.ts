@@ -84,7 +84,7 @@ export const clients = {
   /** The tabs of the design's eight that the ops routes answer, in its order, and History, which it draws none of. */
   tabs: [
     { tab: "visits", label: "Visits" },
-    { tab: "pieces", label: "Hair" },
+    { tab: "pieces", label: "Hair systems" },
     { tab: "payments", label: "Payments" },
     { tab: "referrals", label: "Referrals" },
     { tab: "consents", label: "Consents" },
@@ -331,7 +331,7 @@ export const clients = {
       cancelling: "Cancelling…",
       /** "Cancelled. Rs. 2,000 goes back to their UPI." */
       done: (gives: string) => `Cancelled. ${gives.charAt(0).toUpperCase()}${gives.slice(1)}`,
-      termsChanged: "The free window has closed. Check the refund and try again.",
+      termsChanged: "The free-change period has ended. Check the refund and try again.",
       errors: {
         not_permitted: NOT_PERMITTED,
         not_changeable: "Started, passed or already cancelled.",
@@ -394,8 +394,7 @@ export const clients = {
       done: "Done",
       closing: "Closing",
     },
-    // "Not home" is ours; the board draws Done and Partial.
-    outcomes: { done: "Done", partial: "Partial", no_show: "Not home" },
+    outcomes: { done: "Done", partial: "Partly done", no_show: "No-show" },
     statuses: { cancelled: "Cancelled", terminated: "Not done", other: "—" } as Readonly<Record<string, string>>,
     /** Paid ahead, or covered by a credit: the client app's own badge. */
     prepaid: "Prepaid",

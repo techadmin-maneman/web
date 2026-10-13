@@ -41,7 +41,7 @@ export const stockLabels = {
     in_transit: "In transit",
     fitted: "Fitted",
     returned: "Returned",
-    written_off: "Written off",
+    written_off: "Write-off",
     missing: "Missing",
   } as Readonly<Record<string, string>>,
   /** "Held · Imran Qureshi" */

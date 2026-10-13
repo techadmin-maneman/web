@@ -163,7 +163,7 @@ async function tellLeftOver(pass: Pass, payment: PaymentToApply, owed: number): 
     message:
       `Payment ${payment.id} (Books ${payment.books_payment_id}) was ${rupees(payment.amount)}, and invoice ` +
       `${payment.fsm_invoice_id} owed ${rupees(owed)} of it, so ${rupees(left)} has nothing to be set against. ` +
-      "It stays in Books as credit owed to the client until it is settled by hand.",
+      "It stays in Books as credit owed to the client.",
     link: paymentsTab(payment.person_id),
   });
 }

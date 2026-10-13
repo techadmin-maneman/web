@@ -35,7 +35,7 @@ describe("the Tasks board's sections", () => {
     for (const each of TASK_GROUPS) expect(DEPARTMENTS).toContain(TASK_DEPARTMENTS[each]);
   });
 
-  // On staging, 29 rows of one group stood between "Call about a move" and "Job on a day off", and data-rights
+  // On staging, 29 rows of one group stood between "Call about a move" and "Visit on a day off", and data-rights
   // deadlines were mixed in with sales follow-ups, in one list.
   it("puts each group under its department, in the navigation's order, each keeping the policy's order", () => {
     const sections = sectionsOf([

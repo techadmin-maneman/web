@@ -6,7 +6,7 @@ import { FAILED, NOT_PERMITTED, OFFLINE, UNCONFIRMED } from "./common.ts";
 export const counts = {
   title: "Counts",
   tasks: "Count tasks",
-  none: "Nothing to count. Start one below, or wait for the morning's tasks.",
+  none: "Nothing to count today.",
   columns: ["Place", "Class", "Due", "Stands", ""],
   classes: { weekly: "Weekly", monthly: "Monthly", quarterly: "Quarterly" } as Readonly<Record<string, string>>,
   states: {

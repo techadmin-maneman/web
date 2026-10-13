@@ -78,7 +78,7 @@ test("lists the jobs still booked on a leave each time the tab opens, each with 
   await open(page);
   const main = await pageOf(page, "Sandeep Yadav", "Leave");
   const stranded = () => main.getByRole("listitem").filter({ hasText: "2 Oct 2027 to 6 Oct 2027" });
-  await expect(stranded()).toContainText("1 job is still booked on these days. Move it on the board.");
+  await expect(stranded()).toContainText("1 visit is still booked on these days. Move it on the dispatch board.");
   await expect(stranded()).toContainText("Mon 4 Oct, 10:30 am · Rohit Malhotra");
   await expect(
     stranded().getByRole("link", { name: "Show on board: Mon 4 Oct, 10:30 am · Rohit Malhotra" }),
@@ -128,7 +128,7 @@ test("records leave, saying first that nobody can be booked on those days, and s
 
   await expect(main.getByRole("status")).toHaveText(opsCopy.technicians.leave.recorded);
   const period = main.getByRole("listitem").filter({ hasText: "12 Oct 2027 to 14 Oct 2027" });
-  await expect(period).toContainText("1 job is still booked on these days. Move it on the board.");
+  await expect(period).toContainText("1 visit is still booked on these days. Move it on the dispatch board.");
   await expect(period).toContainText("Wed 13 Oct, 10:30 am · Rohit Malhotra");
 });
 

@@ -135,7 +135,7 @@ export const OPS_SETTINGS = [
   {
     name: "late_change_charge",
     title: "Late move or cancel charge",
-    note: "Charged by kind of visit, inside the free window.",
+    note: "Charged by kind of visit, inside the free-change period.",
     keys: VISIT_TYPES,
     choices: Object.fromEntries(VISIT_TYPES.map((type) => [type, chargesFor(type)])),
     fallback: LATE_CHANGE_CHARGES,

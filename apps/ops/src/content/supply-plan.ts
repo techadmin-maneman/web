@@ -7,7 +7,7 @@ export const supplyPlan = {
   title: "Supply plan",
   transfers: "Transfers",
   orders: "Orders",
-  none: "Nothing proposed. The plan drafts again once the next forecast runs.",
+  none: "Nothing to approve.",
   transferColumns: ["Item", "From", "To", "For", "Quantity", ""],
   orderColumns: ["Item", "Supplier", "For", "Quantity", ""],
   /** "Needs 12.5 with 4 safety · can use 3" */
@@ -30,7 +30,7 @@ export const supplyPlan = {
   forecast: {
     title: "Forecast",
     city: "City",
-    none: "No forecast yet. It runs once each planning period.",
+    none: "No forecast yet.",
     empty: (city: string) => `Nothing expected in ${city}.`,
     /** "Expected use in each 7-day period from 21 Sep 2026, the high case beneath." */
     note: (days: number, from: string) =>
