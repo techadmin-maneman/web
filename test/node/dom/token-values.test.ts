@@ -18,9 +18,11 @@ const LOADED_TOGETHER = {
 };
 
 const declarations = (path: string) =>
-  [...readFileSync(path, "utf8").replace(/\/\*[\s\S]*?\*\//g, "").matchAll(/(--[a-z0-9-]+)\s*:\s*([^;]+);/g)].map(
-    (match) => ({ name: match[1] ?? "", value: (match[2] ?? "").trim() }),
-  );
+  [
+    ...readFileSync(path, "utf8")
+      .replace(/\/\*[\s\S]*?\*\//g, "")
+      .matchAll(/(--[a-z0-9-]+)\s*:\s*([^;]+);/g),
+  ].map((match) => ({ name: match[1] ?? "", value: (match[2] ?? "").trim() }));
 
 describe.each(Object.entries(LOADED_TOGETHER))("%s's tokens", (_surface, files) => {
   // A type size and a space may share a figure; within each kind a figure has one name.
@@ -43,12 +45,12 @@ describe("the colour roles", () => {
       return start !== -1 && at > start && at < css.indexOf("}", start);
     });
   };
-  const roles = block("[data-ground=\"ink\"]").map(({ name }) => name);
+  const roles = block('[data-ground="ink"]').map(({ name }) => name);
 
   it("are each an alias of the palette, on paper and on the ink", () => {
     expect(roles.length).toBeGreaterThan(5);
     const onPaper = css.slice(css.lastIndexOf(":root {"));
     for (const role of roles) expect(onPaper, role).toMatch(new RegExp(`${role}: var\\(--[a-z0-9-]+\\);`));
-    for (const { name, value } of block("[data-ground=\"ink\"]")) expect(value, name).toMatch(/^var\(--[a-z0-9-]+\)$/);
+    for (const { name, value } of block('[data-ground="ink"]')) expect(value, name).toMatch(/^var\(--[a-z0-9-]+\)$/);
   });
 });

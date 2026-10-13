@@ -17,7 +17,7 @@ const SCREENS = filesUnder("apps/ops/src").map((path) => ({ path, text: readFile
 
 describe("the console's screens", () => {
   it("cut no instant to its UTC day", () => {
-    expect(SCREENS.filter(({ text }) => /_at\.slice\(0, 10\)/.test(text)).map(({ path }) => path)).toEqual([]);
+    expect(SCREENS.filter(({ text }) => text.includes("_at.slice(0, 10)")).map(({ path }) => path)).toEqual([]);
   });
 
   it("print no day field as it is stored", () => {

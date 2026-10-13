@@ -12,7 +12,6 @@ import styles from "../components/forms.module.css";
 
 const { form, check } = copy;
 
-
 interface Draft {
   readonly name: string;
   readonly friendVisits: string;

@@ -150,10 +150,7 @@ test.describe("the services and their prices", () => {
     await edit(page, "Service visit");
     await page.getByRole("button", { name: "Change the price of Service visit" }).click();
     await page.getByRole("button", { name: "Review" }).click();
-    await page
-      .getByRole("group", { name: "Review the change" })
-      .getByRole("button", { name: review.send })
-      .click();
+    await page.getByRole("group", { name: "Review the change" }).getByRole("button", { name: review.send }).click();
     await expect(page.getByRole("alert")).toContainText("starts tomorrow at the earliest");
   });
 

@@ -101,6 +101,9 @@ function Another(props: {
   );
 }
 
+/** A problem with the code, on the ink the screen stands on. */
+const ERROR_LOOK = messageLook({ tone: "error", ground: "ink", className: styles.error });
+
 export function CodeScreen(props: Props) {
   const copy = login.code;
   const { challenge, problem } = props;
@@ -162,11 +165,7 @@ export function CodeScreen(props: Props) {
         {message !== null && (
           // Busy while a code is on its way, so a screen reader is told the screen is working
           // rather than re-reading the problem the client has already acted on.
-          <p
-            className={messageLook({ tone: "error", ground: "ink", className: styles.error })}
-            role="alert"
-            aria-busy={props.busy}
-          >
+          <p className={ERROR_LOOK} role="alert" aria-busy={props.busy}>
             {message}
           </p>
         )}

@@ -12,7 +12,6 @@ import own from "./words.module.css";
 
 const { form, check } = copy;
 
-
 /** What the page or the sender fills: "{city}", "{{2}}". */
 const holesOf = (text: string): string[] => [...new Set(text.match(/\{\{\d+\}\}|\{[a-zA-Z]+\}/g) ?? [])];
 

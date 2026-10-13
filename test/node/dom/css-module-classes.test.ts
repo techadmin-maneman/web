@@ -39,7 +39,8 @@ function missingIn(program: ts.Program, file: string): string[] {
     if (!from.endsWith(".module.css") || binding === undefined) continue;
     const symbol = checker.getSymbolAtLocation(binding);
     const path = stylesheetOf(file, from);
-    if (symbol !== undefined) modules.set(symbol, { name: binding.text, defined: existsSync(path) ? classesOf(path) : null });
+    if (symbol !== undefined)
+      modules.set(symbol, { name: binding.text, defined: existsSync(path) ? classesOf(path) : null });
   }
   if (modules.size === 0) return [];
   const missing = new Set<string>();
@@ -52,7 +53,8 @@ function missingIn(program: ts.Program, file: string): string[] {
     if (read !== null && ts.isIdentifier(read.object)) {
       const symbol = checker.getSymbolAtLocation(read.object);
       const module = symbol === undefined ? undefined : modules.get(symbol);
-      if (module !== undefined && module.defined?.has(read.key) !== true) missing.add(`${file}: ${module.name}.${read.key}`);
+      if (module !== undefined && module.defined?.has(read.key) !== true)
+        missing.add(`${file}: ${module.name}.${read.key}`);
     }
     ts.forEachChild(node, visit);
   };
