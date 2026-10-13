@@ -67,27 +67,7 @@
 
 /* Each batch of pieces labelled together, ticked to print. */
 .batches {
-  display: grid;
-  gap: var(--sp-8);
-  margin: var(--sp-8) 0 0;
-  padding: 0;
-  border: 0;
-}
-
-.batch {
-  display: flex;
-  align-items: center;
-  gap: var(--sp-8);
-  min-height: var(--tap);
-  font-size: var(--fs-15);
-  cursor: pointer;
-}
-
-.tick {
-  width: var(--ops-box);
-  height: var(--ops-box);
-  margin: 0;
-  accent-color: var(--ink);
+  margin-top: var(--sp-8);
 }
 
 /* The pieces a movement names, each with its Remove. */

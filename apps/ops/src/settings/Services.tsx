@@ -7,6 +7,7 @@
 // to it, with its prices still to come and its earlier ones. One action is open at a time, and each shows what it
 // changes before it is sent (./ServiceForms.tsx).
 
+import { RowButton } from "@maneman/ui/Button";
 import { Panel } from "@maneman/ui/Panel";
 import { Table } from "@maneman/ui/Table";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
@@ -193,15 +194,14 @@ function ActionButton(props: {
 }) {
   if (!props.opened.may(props.kind)) return null;
   return (
-    <button
+    <RowButton
       className={classes(styles.inline, prices.action)}
-      type="button"
       aria-label={props.label}
       disabled={props.opened.action !== null}
       onClick={props.onClick}
     >
       {props.children}
-    </button>
+    </RowButton>
   );
 }
 
@@ -245,9 +245,8 @@ function Strip(props: {
           <p key={row.valid_from} className={prices.line}>
             {copy.toCome(priceWords(row), longDate(row.valid_from))}
             {opened.may("correct") && (
-              <button
+              <RowButton
                 className={styles.inline}
-                type="button"
                 aria-label={copy.labels.correct(target.name, longDate(row.valid_from))}
                 disabled={busy}
                 onClick={() => {
@@ -255,12 +254,11 @@ function Strip(props: {
                 }}
               >
                 {copy.actions.correct}
-              </button>
+              </RowButton>
             )}
             {opened.may("takeBack") && (
-              <button
+              <RowButton
                 className={styles.inline}
-                type="button"
                 aria-label={copy.labels.takeBack(target.name, longDate(row.valid_from))}
                 disabled={busy}
                 onClick={() => {
@@ -268,7 +266,7 @@ function Strip(props: {
                 }}
               >
                 {copy.actions.takeBack}
-              </button>
+              </RowButton>
             )}
           </p>
         ))}
@@ -325,9 +323,8 @@ function PriceRow(props: {
               )}
         </td>
         <td className={prices.edit}>
-          <button
+          <RowButton
             className={styles.inline}
-            type="button"
             aria-label={copy.labels.edit(target.name)}
             aria-expanded={open}
             aria-controls={open ? stripId : undefined}
@@ -337,7 +334,7 @@ function PriceRow(props: {
             }}
           >
             {copy.actions.edit}
-          </button>
+          </RowButton>
         </td>
       </tr>
       {open && (

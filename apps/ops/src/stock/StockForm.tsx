@@ -10,7 +10,7 @@
 // (docs/decisions/0164-the-kit-screen.md).
 
 import { errorText, type Failure } from "@maneman/web-kit/refusal";
-import { Field, NumberInput, Select } from "@maneman/ui/Field";
+import { Checkbox, ChoiceGroup, Field, Label, NumberInput, Radio, Select, TextInput } from "@maneman/ui/Field";
 import { Button } from "@maneman/ui/Button";
 import { useState } from "react";
 import { api, type Stock } from "../api.ts";
@@ -210,17 +210,13 @@ const scans = (book: Stock, draft: Draft) =>
 function WaitForScan({ book, draft, onDraft }: { book: Stock; draft: Draft; onDraft: (draft: Draft) => void }) {
   if (!toAKit(book, draft)) return null;
   return (
-    <label className={styles.kind}>
-      <input
-        className={styles.radio}
-        type="checkbox"
-        checked={draft.waitForScan}
-        onChange={(event) => {
-          onDraft({ ...draft, waitForScan: event.target.checked });
-        }}
-      />
-      {copy.record.waitForScan}
-    </label>
+    <Checkbox
+      label={copy.record.waitForScan}
+      checked={draft.waitForScan}
+      onChange={(event) => {
+        onDraft({ ...draft, waitForScan: event.target.checked });
+      }}
+    />
   );
 }
 
@@ -322,24 +318,20 @@ export function StockForm({
         </h2>
       </div>
       <div className={form.group}>
-        <fieldset className={styles.kinds}>
-          <legend className={styles.kindsLegend}>{copy.record.what}</legend>
+        <ChoiceGroup className={styles.kinds} legend={copy.record.what} inline>
           {kinds.map((kind) => (
-            <label className={styles.kind} key={kind}>
-              <input
-                className={styles.radio}
-                type="radio"
-                name="stock-kind"
-                value={kind}
-                checked={draft.kind === kind}
-                onChange={() => {
-                  edit("kind")(kind);
-                }}
-              />
-              {copy.record.kinds[kind]}
-            </label>
+            <Radio
+              key={kind}
+              label={copy.record.kinds[kind]}
+              name="stock-kind"
+              value={kind}
+              checked={draft.kind === kind}
+              onChange={() => {
+                edit("kind")(kind);
+              }}
+            />
           ))}
-        </fieldset>
+        </ChoiceGroup>
         <div className={form.fields}>
           <Choice
             label={copy.record.consumable}
@@ -364,13 +356,10 @@ export function StockForm({
           <HowMany draft={draft} unit={unit} onEdit={edit} />
           {draft.kind !== "transfer" && (
             <div className={form.field}>
-              <label className={form.fieldLabel} htmlFor="stock-note">
-                {draft.kind === "write_off" ? copy.record.lossNote : copy.record.note}
-              </label>
-              <input
+              <Label htmlFor="stock-note">{draft.kind === "write_off" ? copy.record.lossNote : copy.record.note}</Label>
+              <TextInput
                 className={form.text}
                 id="stock-note"
-                type="text"
                 maxLength={200}
                 value={draft.note}
                 onChange={(event) => {

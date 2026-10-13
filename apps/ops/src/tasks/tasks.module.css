@@ -33,20 +33,6 @@
   color: var(--error-on-paper);
 }
 
-/* The same figure where a task past its day is listed: it takes the keyboard to the first. */
-.overdueJump {
-  min-height: var(--sp-24);
-  padding: 0;
-  border: 0;
-  background: none;
-  font: inherit;
-  font-size: var(--fs-14);
-  color: var(--error-on-paper);
-  text-decoration: underline;
-  text-underline-offset: var(--sp-4);
-  cursor: pointer;
-}
-
 .empty {
   margin: 0;
   font-size: var(--fs-15);
@@ -125,19 +111,7 @@
 
 /* The rest of a group's longest waits, and back to its first few. */
 .fold {
-  display: block;
-  min-height: var(--sp-24);
   margin: var(--sp-8) var(--sp-20) var(--sp-12);
-  padding: 0;
-  border: 0;
-  background: none;
-  font: inherit;
-  font-size: var(--fs-14);
-  color: var(--text-muted);
-  text-decoration: underline;
-  text-decoration-color: var(--paper-line);
-  text-underline-offset: var(--sp-4);
-  cursor: pointer;
 }
 
 /* ---- One task ------------------------------------------------------------- */
@@ -250,39 +224,11 @@ a.subject {
   }
 }
 
-/* Drawn as the way to where a task is decided is: quiet, underlined words, on a target 24 px tall (WCAG 2.5.8). */
-.act {
-  display: inline-flex;
-  align-items: center;
-  min-height: var(--sp-24);
-  padding: 0;
-  border: 0;
-  background: none;
-  font: inherit;
-  font-size: var(--fs-14);
-  color: var(--text-muted);
-  text-decoration: underline;
-  text-decoration-color: var(--paper-line);
-  text-underline-offset: var(--sp-4);
-  cursor: pointer;
-}
-
 .form {
   display: flex;
   flex-direction: column;
   gap: var(--sp-8);
   margin-top: var(--sp-8);
-}
-
-.select {
-  min-height: var(--ops-row);
-  padding: 0 var(--sp-8);
-  border: var(--hairline) solid var(--paper-control);
-  border-radius: 0;
-  background: var(--paper-light);
-  font: inherit;
-  font-size: var(--fs-14);
-  color: var(--text);
 }
 
 .reason {

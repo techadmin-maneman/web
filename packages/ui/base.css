@@ -38,6 +38,9 @@
     --control-weight: var(--weight-medium);
     --small-height: var(--tap);
     --small-text: var(--fs-15);
+    /* Inside a table row, which keeps the row at the console's row height. */
+    --compact-height: var(--sp-28);
+    --compact-text: var(--fs-13);
     /* A filled button's edge: none, unless the app draws its filled buttons edged as its outlined ones are. */
     --filled-edge: 0;
     /* The column at its widest, which a sheet matches: the design's, unless the app grows it on a larger phone. */

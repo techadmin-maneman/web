@@ -10,6 +10,7 @@
 // before any search, the clients opened this session are offered
 // (lib/client-search.ts), and beneath them every client (./ClientList.tsx).
 
+import { Label, TextInput } from "@maneman/ui/Field";
 import { errorText } from "@maneman/web-kit/refusal";
 import { Button } from "@maneman/ui/Button";
 import { indiaClock, indiaDate, shortDate } from "@maneman/web-kit/dates";
@@ -123,10 +124,10 @@ export function FindClientScreen() {
           void find(text.trim());
         }}
       >
-        <label className={styles.findLabel} htmlFor="find">
+        <Label className={styles.findLabel} htmlFor="find">
           {copy.label}
-        </label>
-        <input
+        </Label>
+        <TextInput
           id="find"
           className={styles.findField}
           type="search"

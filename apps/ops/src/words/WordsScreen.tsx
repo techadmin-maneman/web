@@ -1,7 +1,7 @@
 // Growth · Words (docs/decisions/0126-the-words-page.md): every line of the site and every WhatsApp message to a
 // client, found by page or by what it says, each changed in its row, with its history beneath it.
 
-import { Button } from "@maneman/ui/Button";
+import { Button, RowButton } from "@maneman/ui/Button";
 import { Panel } from "@maneman/ui/Panel";
 import { Table } from "@maneman/ui/Table";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
@@ -45,9 +45,8 @@ function RowActions({ word, mayChange, acting, onAct }: { word: Word } & Omit<Ro
   return (
     <td className={own.actions}>
       {mayChange && (
-        <button
+        <RowButton
           className={styles.inline}
-          type="button"
           aria-label={copy.editLabel(place)}
           disabled={acting !== null}
           onClick={() => {
@@ -55,11 +54,10 @@ function RowActions({ word, mayChange, acting, onAct }: { word: Word } & Omit<Ro
           }}
         >
           {copy.edit}
-        </button>
+        </RowButton>
       )}
-      <button
+      <RowButton
         className={styles.inline}
-        type="button"
         aria-label={copy.historyLabel(place)}
         disabled={acting !== null}
         onClick={() => {
@@ -67,7 +65,7 @@ function RowActions({ word, mayChange, acting, onAct }: { word: Word } & Omit<Ro
         }}
       >
         {copy.history}
-      </button>
+      </RowButton>
     </td>
   );
 }

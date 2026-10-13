@@ -15,6 +15,7 @@
 // to cost a no-show once ops rule, under whoever Access says is signed in
 // (src/policy/no-show.ts, docs/decisions/0031-access-and-audit.md).
 
+import { DateInput, Label, TextArea } from "@maneman/ui/Field";
 import { REASON_MAX_CHARS } from "@rules/policy/decision-reasons.ts";
 import { useFocusOnMount } from "@maneman/ui/useFocusOnMount";
 import { errorText } from "@maneman/web-kit/refusal";
@@ -92,13 +93,12 @@ function DayHead({ date, shown, onDay }: { date: string; shown: string; onDay: (
         {copy.title(shortDate(date), date === today)}
       </h2>
       <div>
-        <label className={styles.dayLabel} htmlFor="money-day">
+        <Label className={styles.dayLabel} htmlFor="money-day">
           {copy.pick}
-        </label>
-        <input
+        </Label>
+        <DateInput
           className={styles.dayField}
           id="money-day"
-          type="date"
           max={today}
           value={shown}
           onChange={(event) => {
@@ -359,10 +359,10 @@ function Case({ each, now, may, onDecided }: CaseProps) {
   return (
     <>
       <CaseFacts each={each} now={now} />
-      <label className={styles.reasonLabel} htmlFor={`reason-${each.id}`}>
+      <Label className={styles.reasonLabel} htmlFor={`reason-${each.id}`}>
         {copy.reason.label}
-      </label>
-      <textarea
+      </Label>
+      <TextArea
         id={`reason-${each.id}`}
         className={styles.reasonField}
         maxLength={REASON_MAX_CHARS}

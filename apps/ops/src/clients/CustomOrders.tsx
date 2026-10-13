@@ -2,6 +2,7 @@
 // with its spec, price and where it stands, its payment link sent again or the order cancelled while unpaid; and a new
 // one raised.
 
+import { TextLink } from "@maneman/ui/TextLink";
 import { Button } from "@maneman/ui/Button";
 import { Field, Select } from "@maneman/ui/Field";
 import { Table } from "@maneman/ui/Table";
@@ -130,9 +131,9 @@ function OrdersTable({ book, onAnswer }: { book: CustomOrdersBook; onAnswer: (an
               {order.status === "awaiting_payment" && order.short_url !== null && (
                 <>
                   {" · "}
-                  <a href={order.short_url} target="_blank" rel="noreferrer">
+                  <TextLink href={order.short_url} newTab>
                     {copy.link}
-                  </a>
+                  </TextLink>
                 </>
               )}
             </td>

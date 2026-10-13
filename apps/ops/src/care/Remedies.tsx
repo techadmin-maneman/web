@@ -2,7 +2,7 @@
 // the panel on the Messages page where a Customer Care manager approves or declines those above the limit.
 
 import { REASON_MAX_CHARS } from "@rules/policy/decision-reasons.ts";
-import { Button } from "@maneman/ui/Button";
+import { Button, RowButton } from "@maneman/ui/Button";
 import { Field, Select, TextArea } from "@maneman/ui/Field";
 import { useLoad } from "@maneman/ui/useLoad";
 import { shortDate, indiaDate } from "@maneman/web-kit/dates";
@@ -155,22 +155,20 @@ export function RemediesPanel() {
           {remedy.note === null ? "" : ` · ${remedy.note}`}{" "}
           {mayDecide && remedy.state === "awaiting" && (
             <>
-              <button
+              <RowButton
                 className={styles.inline}
-                type="button"
                 aria-label={copy.approveLabel(remedy.person.name)}
                 onClick={() => void careApi.decideRemedy(remedy.id, true).then(retry)}
               >
                 {copy.approve}
-              </button>{" "}
-              <button
+              </RowButton>{" "}
+              <RowButton
                 className={styles.inline}
-                type="button"
                 aria-label={copy.declineLabel(remedy.person.name)}
                 onClick={() => void careApi.decideRemedy(remedy.id, false).then(retry)}
               >
                 {copy.decline}
-              </button>
+              </RowButton>
             </>
           )}
         </li>

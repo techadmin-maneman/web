@@ -24,12 +24,19 @@ export const BUTTON_VARIANTS = [
   "danger",
   /** The one that cannot be undone, as the console's deletion: oxblood, with paper words. */
   "destructive",
+  /** A quiet action among words, as "Show 5 more" or "Clear": muted words, underlined, no edge. */
+  "text",
+  /** The same, in oxblood, for a figure that warns: the count of tasks run over, which takes you to the first. */
+  "textDanger",
 ] as const;
 
 export type ButtonVariant = (typeof BUTTON_VARIANTS)[number];
 
-/** The screen's primary action, any other action, and a small one inline, such as "Try again". */
-export type ButtonSize = "action" | "control" | "small";
+/**
+ * The screen's primary action, any other action, a small one inline, such as "Try again", and a compact one inside a
+ * table row, which keeps the row at its height.
+ */
+export type ButtonSize = "action" | "control" | "small" | "compact";
 
 interface Look {
   readonly variant: ButtonVariant;
@@ -67,6 +74,11 @@ export function Button({ variant, size, className, busy = false, type = "button"
       onClick={click}
     />
   );
+}
+
+/** An action inside a table row, beside the row's words: compact and outlined, so the row keeps its height. */
+export function RowButton(props: Omit<ButtonProps, "variant" | "size">) {
+  return <Button {...props} variant="outline" size="compact" />;
 }
 
 type ButtonLinkProps = Look &

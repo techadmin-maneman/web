@@ -1,0 +1,25 @@
+/*
+ * A list of choices drawn as rows (./Field.tsx's ChoiceGroup, ruled): each a row of the tap's height over the boards'
+ * rule, as the console's lists of reasons are. The rule separates rows; it is not a control's edge.
+ */
+
+@layer base, ui;
+
+@layer ui {
+  .ruled {
+    gap: 0;
+    border-top: var(--hairline) solid var(--text);
+  }
+
+  .ruled > * {
+    align-items: center;
+    gap: var(--sp-16);
+    min-height: var(--tap);
+    padding: var(--sp-8) 0;
+    border-bottom: var(--hairline) solid var(--paper-line);
+  }
+
+  .ruled label {
+    font-size: var(--fs-15);
+  }
+}

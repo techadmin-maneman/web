@@ -50,27 +50,10 @@
 .text {
   display: block;
   width: 100%;
-  min-height: var(--field-h);
   margin-top: var(--sp-8);
-  padding: 0 var(--sp-16);
-  border: var(--hairline) solid var(--paper-control);
-  border-radius: 0;
-  background: var(--white);
-  font: inherit;
-  font-size: var(--fs-15);
-  color: var(--text);
 }
 
 /* Room for the arrow the shared Select draws. */
-.select {
-  padding-right: var(--sp-32);
-}
-
-.select:focus-visible,
-.text:focus-visible {
-  outline: var(--focus-width) solid var(--ink);
-  outline-offset: calc(-1 * var(--focus-width));
-}
 
 /* Earlier and later days, either side of the day's box. */
 .days {
@@ -133,28 +116,7 @@
 }
 
 .choices {
-  margin: var(--sp-16) 0 0;
-  padding: 0;
-  border: 0;
-}
-
-.legend {
-  padding: 0;
-  font-size: var(--fs-14);
-  color: var(--text-muted);
-}
-
-.choice {
-  display: flex;
-  align-items: center;
-  gap: var(--sp-8);
-  margin-top: var(--sp-8);
-  font-size: var(--fs-15);
-}
-
-.choice input {
-  margin: 0;
-  accent-color: var(--ink);
+  margin-top: var(--sp-16);
 }
 
 .times {

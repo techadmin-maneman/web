@@ -6,6 +6,8 @@
 // untold, and this is how they are told (docs/decisions/0071-what-ops-see-before-a-setting-changes.md). A pincode
 // the service area does not hold is added first, with its area's name and its city.
 
+import { DateInput, Label } from "@maneman/ui/Field";
+import { Button } from "@maneman/ui/Button";
 import { useFocusOnMount } from "@maneman/ui/useFocusOnMount";
 import { errorText } from "@maneman/web-kit/refusal";
 import { capsLook } from "@maneman/ui/Caps";
@@ -105,13 +107,10 @@ function LaunchOne({ launching, today, launchOn, mayRename, onLaunchOn, onCancel
       )}
       {!area.served && step !== "done" && (
         <div className={styles.field}>
-          <label className={styles.fieldLabel} htmlFor="launch-on">
-            {waitlist.date}
-          </label>
-          <input
+          <Label htmlFor="launch-on">{waitlist.date}</Label>
+          <DateInput
             className={styles.launchDate}
             id="launch-on"
-            type="date"
             max={today}
             value={launchOn}
             onChange={(event) => {
@@ -160,9 +159,9 @@ function AreaRow({ area, thisYear, onChoose }: { area: Area; thisYear: number; o
         {onChoose === null ? (
           area.pincode
         ) : (
-          <button className={styles.choose} type="button" aria-label={chooseLabel(area)} onClick={onChoose}>
+          <Button variant="text" size="compact" aria-label={chooseLabel(area)} onClick={onChoose}>
             {area.pincode}
-          </button>
+          </Button>
         )}
       </th>
       <td className={styles.area}>

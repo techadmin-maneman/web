@@ -1,6 +1,7 @@
 // Customer Care · Messages (docs/decisions/0129-the-care-inbox.md): the chats on our WhatsApp number, a view at a
 // time, the longest-waiting first to see, and each chat opened beneath its row with our automatic messages in it.
 
+import { RowButton } from "@maneman/ui/Button";
 import { Field, Select } from "@maneman/ui/Field";
 import { Panel } from "@maneman/ui/Panel";
 import { Table } from "@maneman/ui/Table";
@@ -88,9 +89,8 @@ function ConversationRows(props: {
         </td>
         <td className={own.figure}>{shortDate(indiaDate(conversation.last_message_at))}</td>
         <td className={own.actions}>
-          <button
+          <RowButton
             className={styles.inline}
-            type="button"
             aria-label={copy.openLabel(who)}
             aria-expanded={props.open}
             onClick={() => {
@@ -98,7 +98,7 @@ function ConversationRows(props: {
             }}
           >
             {copy.open}
-          </button>
+          </RowButton>
         </td>
       </tr>
       {props.open && (

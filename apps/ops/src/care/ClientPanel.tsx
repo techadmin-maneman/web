@@ -1,6 +1,7 @@
 // The client beside their chat (docs/decisions/0140-the-client-panel.md): their next and last visit, free service
 // visits and city, with a link to each part of their page where Care book, move or take payment.
 
+import { textLinkLook } from "@maneman/ui/TextLink";
 import { useLoad } from "@maneman/ui/useLoad";
 import { indiaClock, shortDate } from "@maneman/web-kit/dates";
 import { useCallback } from "react";
@@ -48,7 +49,7 @@ export function ClientPanel({ personId }: { readonly personId: string }) {
       </dl>
       <p className={styles.note}>
         {LINKS.map(([tab, label]) => (
-          <OpsLink key={tab} className={own.link} to={clientPath(personId, tab)}>
+          <OpsLink key={tab} className={textLinkLook(own.link)} to={clientPath(personId, tab)}>
             {label}
           </OpsLink>
         ))}

@@ -1,0 +1,18 @@
+/* A link in a sentence (./TextLink.tsx). */
+
+@layer base, ui;
+
+@layer ui {
+  .link {
+    color: var(--text);
+    text-decoration: underline;
+    text-decoration-color: var(--paper-line);
+    text-underline-offset: var(--sp-4);
+  }
+
+  @media (hover: hover) {
+    .link:hover {
+      text-decoration-color: currentcolor;
+    }
+  }
+}

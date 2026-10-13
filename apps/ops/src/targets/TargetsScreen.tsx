@@ -1,7 +1,7 @@
 // Admin · Targets (docs/decisions/0154-targets-and-reporting-access.md): each month's plan, city by city, by measure,
 // which the nightly reporting copy carries for every scorecard to set beside the actual.
 
-import { Button } from "@maneman/ui/Button";
+import { Button, RowButton } from "@maneman/ui/Button";
 import { Field, Select, TextInput } from "@maneman/ui/Field";
 import { Panel } from "@maneman/ui/Panel";
 import { Table } from "@maneman/ui/Table";
@@ -144,14 +144,13 @@ function TargetTable({ list, onSaved }: { list: Targets; onSaved: (list: Targets
               <td>{target.set_by}</td>
               {mayRemove && (
                 <td>
-                  <button
+                  <RowButton
                     className={styles.inline}
-                    type="button"
                     aria-label={copy.removeLabel(target.city, copy.measures[target.measure])}
                     onClick={() => void remove(target.city, target.measure)}
                   >
                     {copy.remove}
-                  </button>
+                  </RowButton>
                 </td>
               )}
             </tr>

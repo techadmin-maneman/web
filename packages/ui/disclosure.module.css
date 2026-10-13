@@ -1,0 +1,13 @@
+/* A disclosure (./Disclosure.tsx). */
+
+@layer base, ui;
+
+@layer ui {
+  .summary {
+    cursor: pointer;
+  }
+
+  .disclosure[open] > .summary {
+    margin-bottom: var(--sp-8);
+  }
+}

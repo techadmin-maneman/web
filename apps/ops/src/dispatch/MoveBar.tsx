@@ -4,6 +4,7 @@
 // same sheet". The list holds the windows the job would land in, on the rows
 // ops have narrowed the board to, so it is as short as the search makes it, the nearest first (ADR 0120).
 
+import { Label, Select } from "@maneman/ui/Field";
 import { Button } from "@maneman/ui/Button";
 import { shortDate } from "@maneman/web-kit/dates";
 import { useState, type Ref } from "react";
@@ -73,10 +74,8 @@ export function MoveBar({ inHand, checking, rows, dates, onLand, onStop, ref }: 
       {!checking && destinations.length > 0 && (
         <div className={styles.list}>
           <div className={styles.field}>
-            <label className={styles.fieldLabel} htmlFor="dispatch-destination">
-              {copy.list}
-            </label>
-            <select
+            <Label htmlFor="dispatch-destination">{copy.list}</Label>
+            <Select
               id="dispatch-destination"
               className={styles.select}
               value={chosen}
@@ -92,7 +91,7 @@ export function MoveBar({ inHand, checking, rows, dates, onLand, onStop, ref }: 
                   {each.label}
                 </option>
               ))}
-            </select>
+            </Select>
           </div>
           <Button
             variant="outline"

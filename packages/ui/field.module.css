@@ -33,6 +33,14 @@
     padding: 0 var(--sp-8);
   }
 
+  /* The same line inside a table row, as tall as the row allows. */
+  .compact {
+    height: var(--compact-height);
+    margin-top: 0;
+    padding: 0 var(--sp-8);
+    font-size: var(--fs-14);
+  }
+
   .figure {
     font-variant-numeric: tabular-nums;
   }
@@ -100,5 +108,75 @@
   .checkLabel {
     font-size: var(--fs-14);
     line-height: var(--lh-145);
+  }
+
+  /* ---- Choices that answer one question ------------------------------------- */
+
+  .group {
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+  }
+
+  .legend {
+    margin-bottom: var(--sp-8);
+    padding: 0;
+    font-size: var(--fs-14);
+    color: var(--text-muted);
+  }
+
+  .choices {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-8);
+    margin-top: var(--sp-8);
+  }
+
+  .legendTitle {
+    margin-bottom: var(--sp-8);
+    padding: 0;
+    font-family: var(--font-serif);
+    font-size: var(--fs-18);
+  }
+
+  .legendCaps {
+    margin-bottom: var(--sp-8);
+    padding: 0;
+  }
+
+  .inline {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: var(--sp-8) var(--sp-20);
+  }
+
+  /* ---- A file, and a value along a scale ------------------------------------ */
+
+  .file {
+    padding: 0;
+    border: 0;
+    background: none;
+    font-size: var(--fs-14);
+    color: var(--text-muted);
+  }
+
+  .file::file-selector-button {
+    min-height: var(--tap);
+    margin-right: var(--sp-12);
+    padding: 0 var(--sp-16);
+    border: var(--hairline) solid var(--ink);
+    background: transparent;
+    color: var(--text);
+    font: inherit;
+    font-size: var(--fs-15);
+    font-weight: var(--weight-medium);
+    cursor: pointer;
+  }
+
+  .range {
+    width: 100%;
+    margin: 0;
+    accent-color: var(--ink);
   }
 }

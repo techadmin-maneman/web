@@ -2,7 +2,7 @@
 // clients know it, clients, weekly days off and leave, and who covers them today. A Customer Care manager sets the
 // name, the days off and the leave from the member's row.
 
-import { Button } from "@maneman/ui/Button";
+import { Button, RowButton } from "@maneman/ui/Button";
 import { Checkbox, DateInput, Field, Select, TextInput } from "@maneman/ui/Field";
 import { Table } from "@maneman/ui/Table";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
@@ -176,15 +176,14 @@ function LeaveList(props: { leave: readonly Leave[]; mayManage: boolean; onChang
           <li key={leave.id}>
             {periodOf(leave)}
             {props.mayManage && (
-              <button
+              <RowButton
                 className={styles.inline}
-                type="button"
                 disabled={busy}
                 aria-label={copy.takeBackLabel(periodOf(leave))}
                 onClick={() => void send(() => careApi.deleteLeave(leave.id))}
               >
                 {copy.takeBack}
-              </button>
+              </RowButton>
             )}
           </li>
         ))}
@@ -289,17 +288,16 @@ function RowActions(props: { member: CareMember; acting: Acting; onActing: (acti
     ...(member.clients > 0 ? ([["move", copy.moveAll, copy.moveAllLabel(member.email)]] as const) : []),
   ];
   return actions.map(([acting, label, aria]) => (
-    <button
+    <RowButton
       key={acting}
       className={styles.inline}
-      type="button"
       aria-label={aria}
       onClick={() => {
         props.onActing(props.acting === acting ? null : acting);
       }}
     >
       {label}
-    </button>
+    </RowButton>
   ));
 }
 

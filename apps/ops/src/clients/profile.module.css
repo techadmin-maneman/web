@@ -96,24 +96,8 @@
   width: 100%;
 }
 
-.select {
-  min-height: var(--ops-row);
-  padding: 0 var(--sp-8);
-  border: var(--hairline) solid var(--paper-control);
-  border-radius: 0;
-  background: var(--paper-light);
-  font: inherit;
-  font-size: var(--fs-14);
-  color: var(--text);
-}
-
 .history {
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp-8);
   margin: 0;
-  border: 0;
-  padding: 0;
 }
 
 .error {

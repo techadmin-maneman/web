@@ -1,7 +1,7 @@
 // Saved answers (docs/decisions/0141-quick-replies.md): picked in a chat and filled in with the client's first name and
 // next visit, and kept on the Messages page by a Customer Care manager.
 
-import { Button } from "@maneman/ui/Button";
+import { Button, RowButton } from "@maneman/ui/Button";
 import { Field, Select, TextArea, TextInput } from "@maneman/ui/Field";
 import { useLoad } from "@maneman/ui/useLoad";
 import { indiaClock, shortDate } from "@maneman/web-kit/dates";
@@ -149,14 +149,13 @@ export function QuickRepliesPanel() {
             <li key={reply.id}>
               <span className={own.who}>{reply.title}</span> · {reply.text}{" "}
               {mayKeep && (
-                <button
+                <RowButton
                   className={styles.inline}
-                  type="button"
                   aria-label={copy.retireLabel(reply.title)}
                   onClick={() => void careApi.retireQuickReply(reply.id).then(retry)}
                 >
                   {copy.retire}
-                </button>
+                </RowButton>
               )}
             </li>
           ))}

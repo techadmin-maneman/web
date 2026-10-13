@@ -1,0 +1,20 @@
+/* The link past the navigation (./SkipLink.tsx). */
+
+@layer base, ui;
+
+@layer ui {
+  .skip {
+    position: absolute;
+    top: var(--sp-8);
+    left: var(--sp-8);
+    z-index: 4;
+    padding: var(--sp-8) var(--sp-16);
+    background: var(--paper);
+    color: var(--text);
+    transform: translateY(-200%);
+  }
+
+  .skip:focus {
+    transform: none;
+  }
+}

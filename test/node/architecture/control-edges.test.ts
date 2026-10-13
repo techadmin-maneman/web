@@ -51,8 +51,9 @@ function controlEdges(): { where: string; edge: string }[] {
 describe("the controls' edges, in the client app, the console and the shared fields", () => {
   const edges = controlEdges();
 
+  // Most controls are drawn by the shared package now, so most edges are packages/ui's.
   it("reads every stylesheet's controls, so the check below checks something", () => {
-    expect(edges.length).toBeGreaterThanOrEqual(30);
+    expect(edges.length).toBeGreaterThanOrEqual(15);
   });
 
   it("draws each control's edge in a colour that clears 3:1", () => {

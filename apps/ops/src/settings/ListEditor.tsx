@@ -6,6 +6,7 @@
 // understands. The check shows what is added, renamed and taken off before
 // anything is sent (ADR 0071).
 
+import { Fieldset, TextInput } from "@maneman/ui/Field";
 import { errorText, type Failure } from "@maneman/web-kit/refusal";
 import { Button } from "@maneman/ui/Button";
 import { longDate } from "@maneman/web-kit/dates";
@@ -86,10 +87,9 @@ function Item({
   const name = line.label.trim() === "" ? copy.unnamed : line.label.trim();
   return (
     <li className={own.item}>
-      <input
+      <TextInput
         className={own.label}
         id={`${id}-${line.key}`}
-        type="text"
         maxLength={props.longest}
         aria-label={props.itemLabel(index + 1)}
         value={line.label}
@@ -97,9 +97,9 @@ function Item({
           onLabel(event.target.value);
         }}
       />
-      <button
-        className={own.move}
-        type="button"
+      <Button
+        variant="outline"
+        size="small"
         aria-label={copy.up(name)}
         disabled={index === 0}
         onClick={() => {
@@ -107,10 +107,10 @@ function Item({
         }}
       >
         {copy.upButton}
-      </button>
-      <button
-        className={own.move}
-        type="button"
+      </Button>
+      <Button
+        variant="outline"
+        size="small"
         aria-label={copy.down(name)}
         disabled={index === count - 1}
         onClick={() => {
@@ -118,10 +118,10 @@ function Item({
         }}
       >
         {copy.downButton}
-      </button>
-      <button className={own.move} type="button" aria-label={copy.remove(name)} onClick={onRemove}>
+      </Button>
+      <Button variant="outline" size="small" aria-label={copy.remove(name)} onClick={onRemove}>
         {copy.removeButton}
-      </button>
+      </Button>
     </li>
   );
 }
@@ -185,8 +185,7 @@ export function ListEditor(props: Props) {
   };
 
   return (
-    <fieldset className={styles.group}>
-      <legend className={styles.ruleTitle}>{title}</legend>
+    <Fieldset className={styles.group} legend={title} legendLook="title">
       <p className={styles.set}>{setLineOf(list)}</p>
       <ol className={own.items}>
         {lines.map((line, index) => (
@@ -232,9 +231,9 @@ export function ListEditor(props: Props) {
             {off.map((item) => (
               <li className={own.retiredItem} key={item.code}>
                 <span>{item.label}</span>
-                <button
-                  className={own.move}
-                  type="button"
+                <Button
+                  variant="outline"
+                  size="small"
                   aria-label={copy.putBack(item.label)}
                   disabled={lines.length >= most}
                   onClick={() => {
@@ -242,7 +241,7 @@ export function ListEditor(props: Props) {
                   }}
                 >
                   {copy.putBackButton}
-                </button>
+                </Button>
               </li>
             ))}
           </ul>
@@ -287,6 +286,6 @@ export function ListEditor(props: Props) {
           {errorText(copy.errors, step)}
         </p>
       )}
-    </fieldset>
+    </Fieldset>
   );
 }

@@ -9,6 +9,7 @@
 // board draws it. An empty tray folds to a rail, so a laptop's width goes to
 // the week's days.
 
+import { Tile } from "@maneman/ui/Tile";
 import { capsLook } from "@maneman/ui/Caps";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { shortDate } from "@maneman/web-kit/dates";
@@ -61,9 +62,8 @@ type Take = (job: Job, from: HTMLElement) => void;
 function TrayJob({ each, onOpen, onTake }: { each: Unassigned; onOpen: Take; onTake: Take | null }) {
   const job: Job = { kind: "unassigned", job: each };
   return (
-    <button
+    <Tile
       className={styles.trayJob}
-      type="button"
       draggable={onTake !== null}
       data-appointment={each.appointment_id}
       onDragStart={
@@ -80,7 +80,7 @@ function TrayJob({ each, onOpen, onTake }: { each: Unassigned; onOpen: Take; onT
       }}
     >
       <TrayLines each={each} />
-    </button>
+    </Tile>
   );
 }
 

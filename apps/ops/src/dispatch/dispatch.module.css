@@ -61,21 +61,6 @@
 }
 
 /* The console's table row height, which keeps the row as dense as the grid beneath it. */
-.tool {
-  min-height: var(--ops-row);
-  padding: 0 var(--sp-12);
-  border: var(--hairline) solid var(--paper-control);
-  background: transparent;
-  font: inherit;
-  font-size: var(--fs-13);
-  color: var(--text);
-  cursor: pointer;
-}
-
-.tool:disabled {
-  cursor: default;
-  color: var(--text-muted);
-}
 
 .field {
   display: flex;
@@ -88,22 +73,6 @@
 .find {
   flex: 1;
   min-width: var(--local-tray);
-}
-
-.fieldLabel {
-  line-height: var(--lh-130);
-}
-
-.select,
-.input {
-  min-height: var(--ops-row);
-  padding: 0 var(--sp-8);
-  border: var(--hairline) solid var(--paper-control);
-  border-radius: 0;
-  background: var(--paper-light);
-  font: inherit;
-  font-size: var(--fs-13);
-  color: var(--text);
 }
 
 /* ---- The week: technicians down, seven days across ----------------------- */
@@ -591,41 +560,10 @@
 }
 
 .reasons {
-  margin: var(--sp-20) 0 0;
-  padding: 0;
-  border: 0;
-  border-top: var(--hairline) solid var(--text);
-}
-
-.reason {
-  display: flex;
-  align-items: center;
-  gap: var(--sp-16);
-  min-height: var(--tap);
-  padding: var(--sp-12) 0;
-  border-bottom: var(--hairline) solid var(--paper-line);
-  font-size: var(--fs-15);
-  cursor: pointer;
+  margin-top: var(--sp-20);
 }
 
 /* Round, not the house square: only one reason is kept. */
-.radio {
-  flex-shrink: 0;
-  width: var(--sp-16);
-  height: var(--sp-16);
-  margin: 0;
-  border: var(--hairline) solid var(--paper-control);
-  border-radius: 50%;
-  background: transparent;
-  appearance: none;
-  cursor: pointer;
-}
-
-.radio:checked {
-  border-color: var(--ink);
-  background: var(--ink);
-  box-shadow: inset 0 0 0 var(--sp-4) var(--paper);
-}
 
 /* What the move does, behind the board's brass rule. */
 .consequence {
@@ -829,12 +767,4 @@
 
 .dayMap {
   margin-top: var(--sp-4);
-  padding: 0;
-  border: 0;
-  background: none;
-  color: var(--text-muted);
-  font: inherit;
-  font-size: var(--fs-13);
-  text-decoration: underline;
-  cursor: pointer;
 }

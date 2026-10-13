@@ -1,6 +1,8 @@
 // Operations · Purchasing, its claims (docs/decisions/0169-supplier-claims.md): every open claim on a supplier and the
 // latest settled, each opened beneath the list for its next step; then the returned pieces handed in to settle.
 
+import { TextLink } from "@maneman/ui/TextLink";
+import { RowButton } from "@maneman/ui/Button";
 import { Table } from "@maneman/ui/Table";
 import { useLoad } from "@maneman/ui/useLoad";
 import { errorText, type Failure } from "@maneman/web-kit/refusal";
@@ -44,16 +46,15 @@ function ClaimsTable({
         {book.claims.map((claim) => (
           <tr key={claim.id}>
             <th scope="row" className={form.rowHead}>
-              <button
+              <RowButton
                 className={form.inline}
-                type="button"
                 aria-label={copy.claims.open(copy.claims.number(claim.number))}
                 onClick={() => {
                   onOpen(claim.id);
                 }}
               >
                 {copy.claims.number(claim.number)}
-              </button>
+              </RowButton>
             </th>
             <td>{supplierOf(claim.supplier_id)}</td>
             <td>{copy.claims.item(claim.name, claim.quantity, claim.piece_code)}</td>
@@ -107,9 +108,9 @@ export function Claims({ orders }: { orders: Orders }) {
             </p>
             {opened.photo_id !== null && (
               <p className={form.note}>
-                <a href={`/api/stock-photos/${opened.photo_id}`} target="_blank" rel="noreferrer">
+                <TextLink href={`/api/stock-photos/${opened.photo_id}`} newTab>
                   {copy.photo.view}
-                </a>
+                </TextLink>
               </p>
             )}
             <ClaimSteps key={opened.id} claim={opened} onAnswer={answered} />

@@ -3,6 +3,7 @@
 // client's page books from, started from what the task holds; the task leaves the board once the visit is booked, and
 // stays while a payment link for it waits to be paid.
 
+import { Button } from "@maneman/ui/Button";
 import { BookVisit, type Prefill } from "../clients/index.ts";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { useRef, useState } from "react";
@@ -68,9 +69,9 @@ export function BookFromTask({
   if (!mayBook || prefill === null || person === null) return null;
   return (
     <span className={styles.acts}>
-      <button
-        type="button"
-        className={styles.act}
+      <Button
+        variant="text"
+        size="compact"
         ref={opener}
         aria-haspopup="dialog"
         onClick={() => {
@@ -79,7 +80,7 @@ export function BookFromTask({
       >
         {prefill.covers === undefined ? tasks.book : tasks.bookFree}
         <VisuallyHidden>{` · ${subject}`}</VisuallyHidden>
-      </button>
+      </Button>
       {open && (
         <BookVisit
           clientId={person.id}

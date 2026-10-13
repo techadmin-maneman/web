@@ -3,7 +3,7 @@
 // order in another currency, and its freight, duty and clearing, which the landed cost shares out.
 
 import { Button } from "@maneman/ui/Button";
-import { Field, TextInput } from "@maneman/ui/Field";
+import { Field, Fieldset, TextInput } from "@maneman/ui/Field";
 import { errorText, type Failure } from "@maneman/web-kit/refusal";
 import { paiseFromRupees } from "@maneman/web-kit/money";
 import { useState } from "react";
@@ -48,14 +48,13 @@ function LineFields(props: { name: string; draft: LineDraft; onDraft: (draft: Li
     onDraft({ ...draft, [field]: text });
   };
   return (
-    <fieldset className={styles.line}>
-      <legend className={form.fieldLabel}>{props.name}</legend>
+    <Fieldset className={styles.line} legend={props.name}>
       <Entry label={copy.receive.received} value={draft.received} onChange={set("received")} />
       <Entry label={copy.receive.damaged} value={draft.damaged} onChange={set("damaged")} />
       <Entry label={copy.receive.failed} value={draft.failed} onChange={set("failed")} />
       <Entry label={copy.receive.lot} value={draft.lot} onChange={set("lot")} />
       <Entry label={copy.receive.expires} value={draft.expires} type="date" onChange={set("expires")} />
-    </fieldset>
+    </Fieldset>
   );
 }
 
