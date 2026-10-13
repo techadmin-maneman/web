@@ -122,11 +122,6 @@ const SMALL_TABLES = new Set([
 /** Statements that do read a whole table, each with why that is all right. */
 const ALLOWED = [
   {
-    // Once a night, at the end of the reconciliation's pass: the copies FSM did not list.
-    file: "src/scheduled/reconcile-fsm.ts",
-    sql: "SELECT fsm_id FROM appointments WHERE deleted_at IS NULL AND (reconciled_at IS NULL OR reconciled_at < ?1)",
-  },
-  {
     // A visit booked without FSM, written only while its hold waits: the guard reads the hold by its key. The scan is
     // SQLite's look for holds pointing at the new visit, which it skips while no foreign key is broken.
     file: "src/domain/booking/bookings.ts",
