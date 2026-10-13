@@ -75,6 +75,16 @@ export class Reader {
     return allowed[0];
   }
 
+  /** Comma-separated email addresses, lower-cased; empty when unset. */
+  emails(name: string): string[] {
+    const entries = (this.optionalText(name) ?? "").split(",").map((entry) => entry.trim().toLowerCase());
+    const found = entries.filter((entry) => entry !== "");
+    if (found.some((entry) => !/^[^\s@,]+@[^\s@,]+$/.test(entry))) {
+      this.problems.push(`${name} has an entry that is not an email address`);
+    }
+    return found;
+  }
+
   /** Comma-separated Indian mobile numbers, as E.164; empty when unset. */
   mobiles(name: string): string[] {
     const entries = (this.optionalText(name) ?? "").split(",").map((entry) => entry.trim());

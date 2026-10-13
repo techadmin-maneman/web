@@ -6,18 +6,20 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { ROUTE_NEEDS } from "../../../src/policy/console-routes.ts";
 import { appFor, fakeDependencies, markDatabase, request } from "../helpers.ts";
+import { relax } from "./staff-fixtures.ts";
 
 const ACCESS = { teamDomain: "maneman.cloudflareaccess.com", opsAudience: "ops-audience" };
-/** A fresh database lists nobody, and does not enforce the list, so every call goes ahead. */
+/** A database that lists nobody and does not enforce the list, with no bootstrap admin: every call goes ahead. */
 const NOT_LISTED = { enforced: false, listed: false, grants: [], may_call: Object.keys(ROUTE_NEEDS) };
 
 beforeEach(async () => {
   await markDatabase();
+  await relax();
 });
 
 describe("GET /api/whoami", () => {
   it("names the member of staff Access let through, and where signing out goes", async () => {
-    const ops = appFor("local", fakeDependencies(), { access: ACCESS }, "ops");
+    const ops = appFor("local", fakeDependencies(), { access: ACCESS, staffBootstrapAdmins: [] }, "ops");
     const answer = await request(ops, "/api/whoami");
     expect(answer.status).toBe(200);
     expect(await answer.json()).toEqual({
@@ -28,7 +30,7 @@ describe("GET /api/whoami", () => {
   });
 
   it("offers no way out where no Access stands in front, as on a laptop", async () => {
-    const ops = appFor("local", fakeDependencies(), {}, "ops");
+    const ops = appFor("local", fakeDependencies(), { staffBootstrapAdmins: [] }, "ops");
     expect(await (await request(ops, "/api/whoami")).json()).toEqual({
       signed_in_as: "ops@localhost",
       sign_out: null,

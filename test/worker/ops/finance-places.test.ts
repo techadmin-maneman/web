@@ -6,7 +6,7 @@ import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { App } from "../../../src/http/context.ts";
 import { captureLogs, fakeQueue, markDatabase, NOW, request } from "../helpers.ts";
-import { enforce, listStaff, opsAs, person } from "./staff-fixtures.ts";
+import { enforce, listStaff, opsAs, person, relax } from "./staff-fixtures.ts";
 
 interface Client {
   readonly digit: number;
@@ -346,6 +346,7 @@ describe("Finance's reach", () => {
   });
 
   it("narrows nothing while the Staff list is not enforced", async () => {
+    await relax();
     await listStaff("delhi@maneman.in", ["finance:act:city:Delhi"]);
     const delhi = opsAs(person("delhi@maneman.in"));
 

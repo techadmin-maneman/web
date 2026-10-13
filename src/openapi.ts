@@ -42,6 +42,7 @@ const DOCUMENTATION_CONFIG: StaticConfig = {
     routes: { apiKey: null },
     analytics: { clientKeySecret: null },
     access: null,
+    staffBootstrapAdmins: [],
     login: {
       codePepper: "",
       codeMobileDailyLimit: 0,

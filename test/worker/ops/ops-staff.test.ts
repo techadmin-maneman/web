@@ -5,7 +5,7 @@
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import { captureLogs, markDatabase, request } from "../helpers.ts";
-import { allowToken, enforce, listStaff, opsAs, person, post, token } from "./staff-fixtures.ts";
+import { allowToken, enforce, listStaff, opsAs, person, post, token, relax } from "./staff-fixtures.ts";
 
 const OWNER = "owner@maneman.in";
 const NCR_ADMIN = "ncr.admin@maneman.in";
@@ -43,6 +43,7 @@ let logs: ReturnType<typeof captureLogs>;
 beforeEach(async () => {
   logs = captureLogs();
   await markDatabase();
+  await relax();
   await listStaff(OWNER, ["admin:manage:national", "finance:manage:national"]);
   await listStaff(NCR_ADMIN, ["admin:manage:zone:NCR"]);
   await listStaff("mumbai@maneman.in", ["growth:act:city:Mumbai"]);

@@ -201,6 +201,11 @@ export interface Settings {
   readonly razorpay: RazorpaySettings | null;
   /** Present when ACCESS_PROVIDER is "cloudflare". */
   readonly access: AccessSettings | null;
+  /**
+   * The people who hold every department nationally whatever the Staff list says, so a new environment's empty list
+   * cannot lock everyone out of the console (STAFF_BOOTSTRAP_ADMINS).
+   */
+  readonly staffBootstrapAdmins: readonly string[];
   /** The address search: its key when there is one, and its daily ceiling always. */
   readonly geocode: GeocodeSettings;
   /** The dispatch board's drive times and day map: Google's key, or null unless ROUTES_PROVIDER is "google". */
@@ -295,6 +300,7 @@ export function readSettings(
     ...zohoClients,
     razorpay,
     access,
+    staffBootstrapAdmins: read.emails("STAFF_BOOTSTRAP_ADMINS"),
     geocode,
     routes: { apiKey: providers.ROUTES_PROVIDER === "google" ? read.text("GOOGLE_MAPS_API_KEY") : null },
     analytics: { clientKeySecret: readClientKeySecret(read, providers) },

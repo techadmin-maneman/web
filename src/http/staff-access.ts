@@ -26,7 +26,7 @@ export async function callerAccess(c: Context<AppEnv>): Promise<CallerAccess> {
   if (held !== undefined) return held;
   const identity = c.var.accessIdentity;
   if (identity === undefined) throw new Error("ops routes run after requireAccess");
-  const access = await callerAccessOf(c.env.DB, identity);
+  const access = await callerAccessOf(c.env.DB, identity, c.var.config.settings.staffBootstrapAdmins);
   c.set("staffAccess", access);
   return access;
 }

@@ -94,6 +94,7 @@
     // GST in Books, empty until the CA gives the GSTIN, the state it is registered in and the SAC code.
     "BOOKS_GSTIN": "",
     "BOOKS_GST_STATE": "",
+    "STAFF_BOOTSTRAP_ADMINS": "ops@localhost",
     "BOOKS_SAC": "",
     // Razorpay (docs/decisions/0044-payments-mirror.md). The stub takes no money and reaches nothing.
     "PAYMENTS_PROVIDER": "stub",
@@ -207,6 +208,7 @@
         // GST in Books, empty until the CA gives the GSTIN, the state it is registered in and the SAC code.
         "BOOKS_GSTIN": "",
         "BOOKS_GST_STATE": "",
+        "STAFF_BOOTSTRAP_ADMINS": "tech@maneman.in,adwate@gmail.com",
         "BOOKS_SAC": "",
         // Razorpay in test mode: no real money. The key secret and the webhook secret are secrets.
         "PAYMENTS_PROVIDER": "razorpay",
@@ -318,6 +320,7 @@
         // GST in Books, empty until the CA gives the GSTIN, the state it is registered in and the SAC code.
         "BOOKS_GSTIN": "",
         "BOOKS_GST_STATE": "",
+        "STAFF_BOOTSTRAP_ADMINS": "tech@maneman.in,adwate@gmail.com",
         "BOOKS_SAC": "",
         // Razorpay stays off until Phase 2's release (docs/open-points.md, item 6).
         "PAYMENTS_PROVIDER": "none",

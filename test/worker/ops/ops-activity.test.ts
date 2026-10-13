@@ -7,6 +7,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { auditStatement, type AuditEntry } from "../../../src/domain/ops/audit.ts";
 import type { App } from "../../../src/http/context.ts";
 import { appFor, fakeDependencies, markDatabase, NOW, request } from "../helpers.ts";
+import { relax } from "./staff-fixtures.ts";
 
 const CLIENT = "0d1e2f30-0000-4000-8000-000000000001";
 const OTHER_CLIENT = "0d1e2f30-0000-4000-8000-000000000002";
@@ -51,6 +52,7 @@ const staff = (id: string) => ({ kind: "staff" as const, id });
 
 beforeEach(async () => {
   await markDatabase();
+  await relax();
   await env.DB.prepare(
     `INSERT INTO people (id, created_at, mobile_e164, name) VALUES (?1, ?3, '+919810000001', 'Rohit Malhotra'),
        (?2, ?3, '+919810000002', 'Kabir Suri')`,

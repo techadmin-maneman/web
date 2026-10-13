@@ -6,6 +6,7 @@ import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { App } from "../../../src/http/context.ts";
 import { appFor, fakeDependencies, markDatabase, NOW, request } from "../helpers.ts";
+import { relax } from "./staff-fixtures.ts";
 
 const CLIENT = "0d1e2f30-0000-4000-8000-000000000001";
 const OTHER_CLIENT = "0d1e2f30-0000-4000-8000-000000000002";
@@ -45,6 +46,7 @@ async function calls(): Promise<CallRow[]> {
 beforeEach(async () => {
   clock = NOW;
   await markDatabase();
+  await relax();
 });
 
 describe("whose record a call opened", () => {
