@@ -3,7 +3,8 @@
 //
 // What these hold: a task is raised for each class a place holds once its period comes round, and none while one is
 // open; a count shows no figure; a count within the tolerance goes into the ledger, one past it is counted again, and a
-// recount that still differs waits for a manager's sign-off, ops told; and ops set an item's class.
+// recount that still differs waits for a manager's sign-off, ops told; a hair system held under labels is counted by
+// them, the labels not scanned gone missing by name; ops start a count of one item; and ops set an item's class.
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
@@ -78,7 +79,9 @@ describe("cycle counts", () => {
     const quarterly = listed.tasks.find((task) => task.count_class === "quarterly")?.id ?? "";
 
     const shown = await (await request(job.ops, `/api/count-tasks/${weekly}`)).json<Task>();
-    expect(shown.items).toEqual([{ consumable_code: code, name: NAME, state: "to_count" }]);
+    expect(shown.items).toEqual([
+      { consumable_code: code, name: NAME, state: "to_count", labelled: false, unknown_labels: [] },
+    ]);
 
     const lines = (counted: number) => ({ lines: [{ consumable_code: code, counted }] });
     const counted = await job.opsPost(`/api/count-tasks/${weekly}/counts`, lines(1));
@@ -92,7 +95,7 @@ describe("cycle counts", () => {
     expect(alert).not.toBeNull();
     const differs = await request(job.ops, `/api/count-tasks/${weekly}/differences`);
     expect((await differs.json<{ lines: unknown[] }>()).lines).toEqual([
-      { consumable_code: code, name: NAME, held: 2, counted: 1, recounted: 1 },
+      { consumable_code: code, name: NAME, held: 2, counted: 1, recounted: 1, missing_labels: [], unknown_labels: [] },
     ]);
     const signed = await job.opsPost(`/api/count-tasks/${weekly}/sign-off`, { note: "One piece not found" });
     expect((await signed.json<Task>()).task.state).toBe("done");
@@ -142,5 +145,60 @@ describe("cycle counts", () => {
     expect(await held(code)).toBe(2);
     const alert = await env.DB.prepare("SELECT key FROM alerts WHERE key = ?1").bind(`count_differs:${weekly}`).first();
     expect(alert).toBeNull();
+  });
+
+  it("count a hair system held under labels by scanning them: one not scanned goes missing by name", async () => {
+    const labelled = await job.opsPost("/api/stock/units", { consumable_code: code, place_id: IMRAN, quantity: 2 });
+    const labels = (await labelled.json<{ units: { code: string }[] }>()).units.map((unit) => unit.code).sort();
+    const [kept = "", lost = ""] = labels;
+    await raiseCountTasks(env.DB, "2026-09-21", NOW, classDaysOf(CYCLE_COUNTS));
+    const weekly = (await tasks()).tasks.find((task) => task.count_class === "weekly")?.id ?? "";
+    const shown = await (await request(job.ops, `/api/count-tasks/${weekly}`)).json<Task>();
+    expect(shown.items[0]).toMatchObject({ labelled: true });
+
+    const byNumber = await job.opsPost(`/api/count-tasks/${weekly}/counts`, {
+      lines: [{ consumable_code: code, counted: 2 }],
+    });
+    expect(await byNumber.json()).toMatchObject({ error: { fields: ["lines.0.labels"] } });
+
+    // The piece labelled first is there and the second is not; a label from elsewhere is scanned as well.
+    const scanned = { consumable_code: code, counted: 2, labels: [kept, "MM-ESS-0009999-K"] };
+    const counted = await job.opsPost(`/api/count-tasks/${weekly}/counts`, { lines: [scanned] });
+    const answer = await counted.json<Task>();
+    expect(answer.task.state).toBe("recount");
+    expect(answer.items[0]).toMatchObject({ unknown_labels: ["MM-ESS-0009999-K"] });
+
+    const again = { consumable_code: code, counted: 1, labels: [kept] };
+    await job.opsPost(`/api/count-tasks/${weekly}/recounts`, { lines: [again] });
+    const differs = await request(job.ops, `/api/count-tasks/${weekly}/differences`);
+    expect((await differs.json<{ lines: unknown[] }>()).lines).toEqual([
+      expect.objectContaining({ missing_labels: [lost], unknown_labels: [] }),
+    ]);
+    await job.opsPost(`/api/count-tasks/${weekly}/sign-off`, { note: "One piece not found" });
+    expect(await held(code)).toBe(1);
+    const states = await env.DB.prepare("SELECT code, state FROM stock_units ORDER BY code").all();
+    expect(states.results).toEqual([
+      { code: kept, state: "held" },
+      { code: lost, state: "missing" },
+    ]);
+  });
+
+  it("start a count of one item now, which the morning's tasks leave be", async () => {
+    const start = (body: unknown) => job.opsPost("/api/count-tasks", body);
+    const started = await start({ place_id: IMRAN, consumable_code: "solvent" });
+    expect(started.status).toBe(201);
+    const task = await started.json<Task & { task: { id: string; item: unknown } }>();
+    expect(task.task.item).toEqual({ consumable_code: "solvent", name: "Solvent" });
+    expect(task.items.map((item) => item.consumable_code)).toEqual(["solvent"]);
+    expect((await (await start({ place_id: IMRAN, consumable_code: "solvent" })).json<typeof task>()).task.id).toBe(
+      task.task.id,
+    );
+
+    await env.DB.prepare("UPDATE stock_balances SET quantity = 0 WHERE consumable_code = ?1").bind(code).run();
+    expect((await start({ place_id: IMRAN, consumable_code: code })).status).toBe(400);
+    expect((await start({ place_id: "nowhere", consumable_code: "solvent" })).status).toBe(404);
+
+    // The quarterly task is raised as ever beside the one started.
+    expect(await raiseCountTasks(env.DB, "2026-09-21", NOW, classDaysOf(CYCLE_COUNTS))).toBe(1);
   });
 });

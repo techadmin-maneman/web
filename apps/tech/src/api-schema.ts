@@ -1940,6 +1940,8 @@ export interface components {
             message: string;
             /** @description The page's path, with no query or fragment. */
             path: string;
+            /** @description The build the page runs, as its mm-version. */
+            version?: string;
             stack?: string;
             /** @description The script the error was thrown in. */
             source?: string;

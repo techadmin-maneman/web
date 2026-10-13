@@ -1390,6 +1390,11 @@ Request body:
       "maxLength": 300,
       "description": "The page's path, with no query or fragment."
     },
+    "version": {
+      "type": "string",
+      "maxLength": 40,
+      "description": "The build the page runs, as its mm-version."
+    },
     "stack": {
       "type": "string",
       "maxLength": 4000

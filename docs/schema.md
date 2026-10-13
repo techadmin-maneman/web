@@ -701,7 +701,7 @@ Indexes:
 
 Each item a count task counted: what the ledger held, which the counter never saw, the count, any recount, and whether the ledger took it (ADR 0185).
 
-Made by `0154_cycle_counts.sql`.
+Made by `0154_cycle_counts.sql`; changed by `0162_counts_by_label.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -711,12 +711,15 @@ Made by `0154_cycle_counts.sql`.
 | `counted` | INTEGER | no |  |  |
 | `recounted` | INTEGER | yes |  |  |
 | `state` | TEXT | no |  |  |
+| `labels` | TEXT | yes |  |  |
+| `missing_labels` | TEXT | yes |  |  |
+| `unknown_labels` | TEXT | yes |  |  |
 
 ## count_tasks
 
 Each cycle count of one class of items at one place: raised once its period comes round, counted blind, counted again where it differs, signed off where that stands (ADR 0185).
 
-Made by `0154_cycle_counts.sql`.
+Made by `0154_cycle_counts.sql`; changed by `0162_counts_by_label.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -734,6 +737,8 @@ Made by `0154_cycle_counts.sql`.
 | `signed_off_at` | TEXT | yes |  |  |
 | `sign_off_note` | TEXT | yes |  |  |
 | `done_at` | TEXT | yes |  |  |
+| `consumable_code` | TEXT | yes |  |  |
+| `started_by` | TEXT | yes |  |  |
 
 Indexes:
 

@@ -182,6 +182,7 @@ export const AUDIT_ACTIONS = [
   "plan_line.reject",
   "demand_event.add",
   "demand_event.remove",
+  "count_task.start",
   "count_task.count",
   "count_task.recount",
   "count_task.sign_off",
@@ -295,6 +296,7 @@ export function auditStatementIfWritten(
     readonly table:
       | "grievances"
       | "consents"
+      | "count_tasks"
       | "referral_attributions"
       | "stock_movements"
       | "task_closures"

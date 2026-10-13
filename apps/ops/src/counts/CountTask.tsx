@@ -13,8 +13,18 @@ import form from "../components/forms.module.css";
 import { counts as copy } from "../content/counts.ts";
 import { useAccess } from "../lib/access.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
+import { PieceScans } from "../stock/index.ts";
 
 type Task = paths["/api/count-tasks/{id}"]["get"]["responses"][200]["content"]["application/json"];
+
+type Item = Task["items"][number];
+
+/** What one item's line sends: its figure, and the labels scanned where the place holds it under labels. */
+function lineOf(item: Item, figure: string, labels: readonly string[]) {
+  if (!item.labelled) return { consumable_code: item.consumable_code, counted: Number(figure) };
+  const unlabelled = figure === "" ? 0 : Number(figure);
+  return { consumable_code: item.consumable_code, counted: labels.length + unlabelled, labels: [...labels] };
+}
 
 type Answer =
   | { readonly ok: true; readonly body: Task }
@@ -31,13 +41,12 @@ function Counting({
   const recount = task.task.state === "recount";
   const items = task.items.filter((item) => item.state === (recount ? "recount" : "to_count"));
   const [figures, setFigures] = useState<Readonly<Record<string, string>>>({});
-  const ready = items.every((item) => /^\d+$/.test(figures[item.consumable_code] ?? ""));
+  const [scans, setScans] = useState<Readonly<Record<string, readonly string[]>>>({});
+  // A labelled item's figure counts only its pieces with no label, and may be left empty.
+  const ready = items.every((item) => /^\d+$/.test(figures[item.consumable_code] ?? (item.labelled ? "0" : "")));
   const save = async () => {
     const body = {
-      lines: items.map((item) => ({
-        consumable_code: item.consumable_code,
-        counted: Number(figures[item.consumable_code]),
-      })),
+      lines: items.map((item) => lineOf(item, figures[item.consumable_code] ?? "", scans[item.consumable_code] ?? [])),
     };
     const path = { path: { id: task.task.id } };
     const answer = recount
@@ -49,18 +58,31 @@ function Counting({
     <div className={form.group}>
       <p className={form.note}>{recount ? copy.recountNote : copy.countNote}</p>
       {items.map((item) => (
-        <Field key={item.consumable_code} label={copy.counted(item.name)} className={form.field}>
-          {(control) => (
-            <TextInput
-              {...control}
-              inputMode="numeric"
-              value={figures[item.consumable_code] ?? ""}
-              onChange={(event) => {
-                setFigures((was) => ({ ...was, [item.consumable_code]: event.target.value }));
-              }}
-            />
+        <div key={item.consumable_code} className={form.group}>
+          {item.labelled && (
+            <>
+              <p className={form.note}>{copy.scanEach(item.name)}</p>
+              <PieceScans
+                units={scans[item.consumable_code] ?? []}
+                onUnits={(units) => {
+                  setScans((was) => ({ ...was, [item.consumable_code]: units }));
+                }}
+              />
+            </>
           )}
-        </Field>
+          <Field label={item.labelled ? copy.unlabelled(item.name) : copy.counted(item.name)} className={form.field}>
+            {(control) => (
+              <TextInput
+                {...control}
+                inputMode="numeric"
+                value={figures[item.consumable_code] ?? ""}
+                onChange={(event) => {
+                  setFigures((was) => ({ ...was, [item.consumable_code]: event.target.value }));
+                }}
+              />
+            )}
+          </Field>
+        </div>
       ))}
       <div className={form.actions}>
         <Button variant="primary" size="small" disabled={!ready} onClick={() => void save()}>
@@ -106,6 +128,15 @@ function SignOff({ task, onAnswer }: { task: Task; onAnswer: (answer: Answer, sa
           ))}
         </tbody>
       </Table>
+      {loaded.value.lines.map(
+        (line) =>
+          (line.missing_labels.length > 0 || line.unknown_labels.length > 0) && (
+            <p className={form.note} key={line.consumable_code}>
+              {line.name}: {line.missing_labels.length > 0 && copy.notScanned(line.missing_labels)}{" "}
+              {line.unknown_labels.length > 0 && copy.notHeld(line.unknown_labels)}
+            </p>
+          ),
+      )}
       <Field label={copy.why} className={form.field}>
         {(control) => (
           <TextInput
@@ -156,6 +187,10 @@ function Step({
   return <Counting key={state} task={task} onAnswer={onAnswer} />;
 }
 
+/** What a task counts: its one item, or its class. */
+export const whatOf = (task: Task["task"]): string =>
+  task.item?.name ?? copy.classes[task.count_class] ?? task.count_class;
+
 export function CountTaskPanel({ id, onChanged }: { id: string; onChanged: () => void }) {
   const load = useCallback(() => client.get("/api/count-tasks/{id}", { path: { id } }), [id]);
   const [loaded, retry] = useLoad(load);
@@ -181,10 +216,18 @@ export function CountTaskPanel({ id, onChanged }: { id: string; onChanged: () =>
         <>
           <div className={form.panelHead}>
             <h2 className={form.panelTitle} id="count-task">
-              {copy.heading(current.task.place, copy.classes[current.task.count_class] ?? current.task.count_class)}
+              {copy.heading(current.task.place, whatOf(current.task))}
             </h2>
           </div>
           <Step task={current} onAnswer={answered} />
+          {current.items.map(
+            (item) =>
+              item.unknown_labels.length > 0 && (
+                <p className={form.note} key={item.consumable_code}>
+                  {item.name}: {copy.notHeld(item.unknown_labels)}
+                </p>
+              ),
+          )}
         </>
       )}
       {said !== null && (

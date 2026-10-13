@@ -266,6 +266,11 @@
             "maxLength": 300,
             "description": "The page's path, with no query or fragment."
           },
+          "version": {
+            "type": "string",
+            "maxLength": 40,
+            "description": "The build the page runs, as its mm-version."
+          },
           "stack": {
             "type": "string",
             "maxLength": 4000
@@ -5183,6 +5188,25 @@
                 "place": {
                   "type": "string"
                 },
+                "item": {
+                  "type": [
+                    "object",
+                    "null"
+                  ],
+                  "properties": {
+                    "consumable_code": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "consumable_code",
+                    "name"
+                  ],
+                  "description": "The one item of a count ops started; null on the morning's tasks of a class."
+                },
                 "count_class": {
                   "type": "string",
                   "enum": [
@@ -5209,11 +5233,31 @@
                 "id",
                 "place_id",
                 "place",
+                "item",
                 "count_class",
                 "due_on",
                 "state"
               ]
             }
+          },
+          "places": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "name"
+              ]
+            },
+            "description": "The places in the caller's reach, where a count may be started."
           },
           "classes": {
             "type": "array",
@@ -5254,6 +5298,7 @@
         },
         "required": [
           "tasks",
+          "places",
           "classes"
         ]
       },
@@ -5271,6 +5316,25 @@
               },
               "place": {
                 "type": "string"
+              },
+              "item": {
+                "type": [
+                  "object",
+                  "null"
+                ],
+                "properties": {
+                  "consumable_code": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "consumable_code",
+                  "name"
+                ],
+                "description": "The one item of a count ops started; null on the morning's tasks of a class."
               },
               "count_class": {
                 "type": "string",
@@ -5298,6 +5362,7 @@
               "id",
               "place_id",
               "place",
+              "item",
               "count_class",
               "due_on",
               "state"
@@ -5322,12 +5387,25 @@
                     "sign_off",
                     "settled"
                   ]
+                },
+                "labelled": {
+                  "type": "boolean",
+                  "description": "Held there under labels, which are scanned to count it."
+                },
+                "unknown_labels": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "description": "Labels the latest count scanned that the place does not hold."
                 }
               },
               "required": [
                 "consumable_code",
                 "name",
-                "state"
+                "state",
+                "labelled",
+                "unknown_labels"
               ]
             }
           }
@@ -5336,6 +5414,26 @@
           "task",
           "items"
         ]
+      },
+      "CountStart": {
+        "type": "object",
+        "properties": {
+          "place_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "consumable_code": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          }
+        },
+        "required": [
+          "place_id",
+          "consumable_code"
+        ],
+        "additionalProperties": false
       },
       "CountDifferences": {
         "type": "object",
@@ -5362,6 +5460,20 @@
                     "integer",
                     "null"
                   ]
+                },
+                "missing_labels": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "description": "Held there, and not scanned."
+                },
+                "unknown_labels": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "description": "Scanned, and not held there."
                 }
               },
               "required": [
@@ -5369,7 +5481,9 @@
                 "name",
                 "held",
                 "counted",
-                "recounted"
+                "recounted",
+                "missing_labels",
+                "unknown_labels"
               ]
             }
           }
@@ -5395,6 +5509,17 @@
                   "type": "integer",
                   "minimum": 0,
                   "maximum": 1000000
+                },
+                "labels": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 64,
+                    "pattern": "^[^\\p{Cc}]+$/u"
+                  },
+                  "maxItems": 500,
+                  "description": "Of a hair system held under labels, each label scanned; `counted` counts them with any pieces there that carry none."
                 }
               },
               "required": [
@@ -5428,6 +5553,17 @@
                   "type": "integer",
                   "minimum": 0,
                   "maximum": 1000000
+                },
+                "labels": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 64,
+                    "pattern": "^[^\\p{Cc}]+$/u"
+                  },
+                  "maxItems": 500,
+                  "description": "Of a hair system held under labels, each label scanned; `counted` counts them with any pieces there that carry none."
                 }
               },
               "required": [
@@ -8601,6 +8737,7 @@
               "plan_line.reject",
               "demand_event.add",
               "demand_event.remove",
+              "count_task.start",
               "count_task.count",
               "count_task.recount",
               "count_task.sign_off",
@@ -19286,6 +19423,61 @@
             }
           }
         }
+      },
+      "post": {
+        "summary": "A count of one item at one place, started now; one already open is the answer",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CountStart"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "A count task and its items, never a figure",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CountTask"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid_request: fields names consumable_code where the place holds none of it",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "access_required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found: no such place in the caller's reach",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/api/count-tasks/{id}": {
@@ -19423,7 +19615,7 @@
             }
           },
           "400": {
-            "description": "invalid_request: fields names lines where they are not every item the step counts",
+            "description": "invalid_request: fields names lines where they are not every item the step counts, or lines.N.labels where a line of an item held under labels has none or one twice, or lines.N.counted where it counts fewer than were scanned",
             "content": {
               "application/json": {
                 "schema": {
@@ -19502,7 +19694,7 @@
             }
           },
           "400": {
-            "description": "invalid_request: fields names lines where they are not every item the step counts",
+            "description": "invalid_request: fields names lines where they are not every item the step counts, or lines.N.labels where a line of an item held under labels has none or one twice, or lines.N.counted where it counts fewer than were scanned",
             "content": {
               "application/json": {
                 "schema": {
@@ -19581,7 +19773,7 @@
             }
           },
           "400": {
-            "description": "invalid_request: fields names lines where they are not every item the step counts",
+            "description": "invalid_request: fields names lines where they are not every item the step counts, or lines.N.labels where a line of an item held under labels has none or one twice, or lines.N.counted where it counts fewer than were scanned",
             "content": {
               "application/json": {
                 "schema": {
@@ -23179,6 +23371,7 @@
                 "plan_line.reject",
                 "demand_event.add",
                 "demand_event.remove",
+                "count_task.start",
                 "count_task.count",
                 "count_task.recount",
                 "count_task.sign_off",
