@@ -2,12 +2,13 @@
 // time, the longest-waiting first to see, and each chat opened beneath its row with our automatic messages in it.
 
 import { RowButton } from "@maneman/ui/Button";
-import { Field, Select } from "@maneman/ui/Field";
+import { Button } from "@maneman/ui/Button";
+import { Field, Select, TextInput } from "@maneman/ui/Field";
 import { Panel } from "@maneman/ui/Panel";
 import { Table } from "@maneman/ui/Table";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { classes } from "@maneman/ui/classes";
-import { useLoad } from "@maneman/ui/useLoad";
+import { useLiveLoad } from "@maneman/ui/useLoad";
 import { indiaDate, shortDate } from "@maneman/web-kit/dates";
 import { useCallback, useState } from "react";
 import { careApi, type Conversation, type ConversationView } from "./care-api.ts";
@@ -25,30 +26,76 @@ import own from "./care.module.css";
 const VIEWS: readonly ConversationView[] = ["open", "mine", "waiting", "closed", "all"];
 const COLUMNS = 7;
 
+/** How often the list is read again while it is in view, for new chats and the clients' replies. */
+const LIST_EVERY_MS = 20_000;
+
 const isView = (value: string): value is ConversationView => VIEWS.some((view) => view === value);
 
 function ViewChoice({ view, onView }: { view: ConversationView; onView: (view: ConversationView) => void }) {
   return (
-    <div className={own.tools}>
-      <Field label={copy.show}>
+    <Field label={copy.show}>
+      {(control) => (
+        <Select
+          {...control}
+          className={styles.choiceBox}
+          value={view}
+          onChange={(event) => {
+            if (isView(event.target.value)) onView(event.target.value);
+          }}
+        >
+          {VIEWS.map((each) => (
+            <option key={each} value={each}>
+              {copy.views[each]}
+            </option>
+          ))}
+        </Select>
+      )}
+    </Field>
+  );
+}
+
+/** A chat found by the client's name or number, in the view shown; found when Find is pressed. */
+function Search({ search, onSearch }: { search: string; onSearch: (search: string) => void }) {
+  const [typed, setTyped] = useState(search);
+  return (
+    <form
+      className={own.search}
+      role="search"
+      onSubmit={(event) => {
+        event.preventDefault();
+        onSearch(typed.trim());
+      }}
+    >
+      <Field label={copy.search}>
         {(control) => (
-          <Select
+          <TextInput
             {...control}
-            className={styles.choiceBox}
-            value={view}
+            type="search"
+            value={typed}
+            maxLength={80}
             onChange={(event) => {
-              if (isView(event.target.value)) onView(event.target.value);
+              setTyped(event.target.value);
             }}
-          >
-            {VIEWS.map((each) => (
-              <option key={each} value={each}>
-                {copy.views[each]}
-              </option>
-            ))}
-          </Select>
+          />
         )}
       </Field>
-    </div>
+      <Button type="submit" variant="outline" size="small">
+        {copy.find}
+      </Button>
+      {search !== "" && (
+        <Button
+          variant="outline"
+          size="small"
+          className={styles.quiet}
+          onClick={() => {
+            setTyped("");
+            onSearch("");
+          }}
+        >
+          {copy.clear}
+        </Button>
+      )}
+    </form>
   );
 }
 
@@ -118,14 +165,60 @@ function ConversationRows(props: {
   );
 }
 
-function Conversations({ view }: { view: ConversationView }) {
-  const load = useCallback(() => careApi.conversations(view), [view]);
-  const [loaded, retry] = useLoad(load);
+interface Older {
+  readonly conversations: readonly Conversation[];
+  readonly next: string | null;
+}
+
+/** The pages shown as one list: a chat that moved up since an older page was read is shown once, where it is now. */
+function shownOf(latest: readonly Conversation[], older: Older | null): Conversation[] {
+  const seen = new Set(latest.map((conversation) => conversation.id));
+  return [...latest, ...(older?.conversations ?? []).filter((conversation) => !seen.has(conversation.id))];
+}
+
+/** The view's chats, the latest page kept current while it is in view, and older pages added beneath on asking. */
+function Conversations({ view, search }: { view: ConversationView; search: string }) {
+  const load = useCallback(() => careApi.conversations(view, search), [view, search]);
+  const { loaded, refresh, retry } = useLiveLoad(load, LIST_EVERY_MS);
   const [opened, setOpened] = useState<string | null>(null);
+  const [older, setOlder] = useState<Older | null>(null);
+  const [loadingOlder, setLoadingOlder] = useState(false);
   if (loaded.state === "loading") return <Loading />;
   if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
-  const { conversations } = loaded.value;
+  const conversations = shownOf(loaded.value.conversations, older);
   if (conversations.length === 0) return <p className={styles.note}>{copy.none}</p>;
+  const next = older === null ? loaded.value.next_before : older.next;
+  const showOlder = async (before: string) => {
+    setLoadingOlder(true);
+    const answer = await careApi.conversations(view, search, before);
+    setLoadingOlder(false);
+    if (!answer.ok) return;
+    setOlder({
+      conversations: [...(older?.conversations ?? []), ...answer.body.conversations],
+      next: answer.body.next_before,
+    });
+  };
+  return (
+    <>
+      <ConversationTable conversations={conversations} opened={opened} onOpen={setOpened} onChanged={refresh} />
+      {next !== null && (
+        <div className={own.more}>
+          <p className={styles.note}>{copy.latest(conversations.length)}</p>
+          <Button variant="outline" size="small" busy={loadingOlder} onClick={() => void showOlder(next)}>
+            {loadingOlder ? copy.loadingMore : copy.more}
+          </Button>
+        </div>
+      )}
+    </>
+  );
+}
+
+function ConversationTable(props: {
+  conversations: readonly Conversation[];
+  opened: string | null;
+  onOpen: (id: string | null) => void;
+  onChanged: () => void;
+}) {
   const columns = copy.columns;
   return (
     <div className={own.scroll}>
@@ -148,13 +241,13 @@ function Conversations({ view }: { view: ConversationView }) {
           </tr>
         </thead>
         <tbody>
-          {conversations.map((conversation) => (
+          {props.conversations.map((conversation) => (
             <ConversationRows
               key={conversation.id}
               conversation={conversation}
-              open={opened === conversation.id}
-              onOpen={setOpened}
-              onChanged={retry}
+              open={props.opened === conversation.id}
+              onOpen={props.onOpen}
+              onChanged={props.onChanged}
             />
           ))}
         </tbody>
@@ -165,12 +258,16 @@ function Conversations({ view }: { view: ConversationView }) {
 
 export function MessagesScreen() {
   const [view, setView] = useState<ConversationView>("open");
+  const [search, setSearch] = useState("");
   return (
     <Shell section="/messages" title={SECTION_NAMES.messages}>
       <div className={styles.screen}>
         <Panel titleId="messages" title={copy.title} className={styles.panel}>
-          <ViewChoice view={view} onView={setView} />
-          <Conversations key={view} view={view} />
+          <div className={own.tools}>
+            <ViewChoice view={view} onView={setView} />
+            <Search search={search} onSearch={setSearch} />
+          </div>
+          <Conversations key={`${view}:${search}`} view={view} search={search} />
         </Panel>
         <Panel titleId="care-team" title={copy.team.title} className={styles.panel}>
           <CareTeam />

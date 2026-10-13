@@ -125,3 +125,51 @@ describe("the Care inbox", () => {
     expect((await request(ops, `/api/conversations/${crypto.randomUUID()}`)).status).toBe(404);
   });
 });
+
+describe("the Care inbox's list, a page at a time", () => {
+  interface Page {
+    conversations: { mobile: string; person: { name: string } | null }[];
+    next_before: string | null;
+  }
+
+  const page = async (query: string) =>
+    (await (await request(ops, `/api/conversations?view=all&${query}`)).json<Page>()) satisfies Page;
+
+  /** Sixty threads, each a minute later than the one before; the last is Arjun's. */
+  async function sixtyThreads(): Promise<void> {
+    await env.DB.batch(
+      Array.from({ length: 60 }, (_, index) => {
+        const at = new Date(Date.parse("2026-09-20T04:00:00Z") + index * 60_000).toISOString();
+        const mobile = index === 59 ? "+919810000001" : `+91981100${String(index).padStart(4, "0")}`;
+        return env.DB.prepare(
+          `INSERT INTO conversations (id, person_id, mobile_e164, state, opened_at, last_message_at, created_at, updated_at)
+           VALUES (?1, (SELECT id FROM people WHERE mobile_e164 = ?2), ?2, 'open', ?3, ?3, ?3, ?3)`,
+        ).bind(crypto.randomUUID(), mobile, at);
+      }),
+    );
+  }
+
+  it("lists the latest fifty, then the rest from where the page ended, each once", async () => {
+    await sixtyThreads();
+    const first = await page("");
+    expect(first.conversations).toHaveLength(50);
+    expect(first.conversations[0]?.mobile).toBe("+919810000001");
+    expect(first.next_before).not.toBeNull();
+
+    const rest = await page(`before=${encodeURIComponent(first.next_before ?? "")}`);
+    expect(rest.conversations).toHaveLength(10);
+    expect(rest.next_before).toBeNull();
+    const all = [...first.conversations, ...rest.conversations].map((each) => each.mobile);
+    expect(new Set(all).size).toBe(60);
+    expect(all.at(-1)).toBe("+919811000000");
+  });
+
+  it("finds a chat by the client's name, or by part of a number", async () => {
+    await sixtyThreads();
+    expect((await page("search=arjun")).conversations).toEqual([
+      expect.objectContaining({ person: { id: "p1", name: "Arjun Mehta" } }),
+    ]);
+    expect((await page("search=11000%20042")).conversations.map((each) => each.mobile)).toEqual(["+919811000042"]);
+    expect((await page("search=nobody")).conversations).toEqual([]);
+  });
+});

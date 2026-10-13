@@ -21,7 +21,8 @@ export type CarePeriod = NonNullable<NonNullable<paths["/api/care-numbers"]["get
 export type CareMember = Success<paths["/api/care-team"]["get"]>["team"][number];
 
 export const careApi = {
-  conversations: (view: ConversationView) => client.get("/api/conversations", { query: { view } }),
+  conversations: (view: ConversationView, search: string, before?: string) =>
+    client.get("/api/conversations", { query: { view, ...(search === "" ? {} : { search }), before } }),
   conversation: (id: string) => client.get("/api/conversations/{id}", { path: { id } }),
   replyChat: (id: string, text: string) =>
     client.post("/api/conversations/{id}/replies", { path: { id }, body: { text } }),

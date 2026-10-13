@@ -16,7 +16,7 @@ const TEST_LINES = 500;
 
 /** A loader written inline is a new function every render, which useLoad and useAsync would run again on each one. */
 const INLINE_LOADER = {
-  selector: "CallExpression[callee.name=/^use(Load|Async)$/] > :function",
+  selector: "CallExpression[callee.name=/^use(Load|LiveLoad|Async)$/] > :function",
   message: "Give useLoad or useAsync a module's function, or one held in useCallback: an inline one runs every render.",
 };
 

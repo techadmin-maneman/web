@@ -57,8 +57,8 @@ export async function fileInbound(db: D1Database, inbound: Inbound): Promise<voi
 export const INBOX_VIEWS = ["mine", "open", "waiting", "closed", "all"] as const;
 export type InboxView = (typeof INBOX_VIEWS)[number];
 
-/** How many threads a view lists, newest first. */
-const LISTED = 200;
+/** How many threads a page of a view lists, newest first. */
+export const PAGE_THREADS = 50;
 
 export interface ConversationRow {
   readonly id: string;
@@ -124,17 +124,36 @@ function rowOf(row: ListRow, { hours, cover }: InboxContext): ConversationRow {
   };
 }
 
+/** A page of a view, asked for: by whom, the client's name or number searched for, and where the last page ended. */
+export interface InboxAsked {
+  readonly view: InboxView;
+  readonly me: string;
+  readonly search?: string | undefined;
+  /** The thread the last page ended on, as `nextBefore` gave it. */
+  readonly before?: string | undefined;
+}
+
+interface InboxPage {
+  readonly conversations: ConversationRow[];
+  /** Where the next page starts; null when this one is the last. */
+  readonly nextBefore: string | null;
+}
+
+/** A thread's place in the list: when it last moved, then its id, for two that moved at the same moment. */
+const placeOf = (row: ListRow) => `${row.last_message_at}_${row.id}`;
+
 /**
- * The threads of a view, the latest first; "mine" is the open and waiting threads of `me`'s clients, and of the clients
- * of whoever `me` covers today.
+ * A page of the threads of a view, the latest first; "mine" is the open and waiting threads of `me`'s clients, and of
+ * the clients of whoever `me` covers today. A search finds a client's name, or a number, anywhere in it.
  */
 export async function listConversations(
   db: D1Database,
-  view: InboxView,
-  me: string,
+  { view, me, search = "", before }: InboxAsked,
   context: InboxContext,
-): Promise<ConversationRow[]> {
+): Promise<InboxPage> {
   const covered = [...context.cover].filter(([, by]) => by === me).map(([off]) => off);
+  const [beforeAt = null, beforeId = null] = before === undefined ? [] : before.split("_");
+  const digits = search.replace(/\D/g, "");
   const { results } = await db
     .prepare(
       `SELECT c.id, c.person_id, p.name, c.mobile_e164, c.state, o.email AS care_person, t.id AS technician_id,
@@ -146,12 +165,29 @@ export async function listConversations(
             AND m.author <> ?4) AS last_reply_at
        FROM conversations c LEFT JOIN people p ON p.id = c.person_id LEFT JOIN care_owners o ON o.person_id = c.person_id
          LEFT JOIN technicians t ON t.mobile_e164 = c.mobile_e164 AND t.active = 1
-       WHERE ?1 = 'all' OR c.state = ?1 OR (?1 = 'mine' AND o.email IN (SELECT value FROM json_each(?3)) AND c.state <> 'closed')
-       ORDER BY c.last_message_at DESC LIMIT ?2`,
+       WHERE (?1 = 'all' OR c.state = ?1
+           OR (?1 = 'mine' AND o.email IN (SELECT value FROM json_each(?3)) AND c.state <> 'closed'))
+         AND (?5 = '' OR instr(lower(p.name), lower(?5)) > 0 OR (?6 <> '' AND instr(c.mobile_e164, ?6) > 0))
+         AND (?7 IS NULL OR (c.last_message_at, c.id) < (?7, ?8))
+       ORDER BY c.last_message_at DESC, c.id DESC LIMIT ?2`,
     )
-    .bind(view, LISTED, JSON.stringify([me, ...covered]), AUTO_REPLY)
+    .bind(
+      view,
+      PAGE_THREADS + 1,
+      JSON.stringify([me, ...covered]),
+      AUTO_REPLY,
+      search.trim(),
+      digits,
+      beforeAt,
+      beforeId,
+    )
     .all<ListRow>();
-  return results.map((row) => rowOf(row, context));
+  const page = results.slice(0, PAGE_THREADS);
+  const last = page.at(-1);
+  return {
+    conversations: page.map((row) => rowOf(row, context)),
+    nextBefore: results.length > PAGE_THREADS && last !== undefined ? placeOf(last) : null,
+  };
 }
 
 /** One entry of a thread: a chat message, or one of our automatic messages to the client. */

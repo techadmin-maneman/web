@@ -2548,7 +2548,7 @@ Request body:
 
 ### GET /api/conversations
 
-The Care inbox's threads of a view, the latest first
+The Care inbox's threads of a view, the latest first, a page at a time
 
 **200**: The threads
 
@@ -16575,11 +16575,24 @@ Request body:
       "type": "array",
       "items": {
         "$ref": "#/components/schemas/Conversation"
-      }
+      },
+      "description": "At most 50, the latest first."
+    },
+    "next_before": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Where the next page starts, for ?before=; null on the last page."
     }
   },
   "required": [
-    "conversations"
+    "conversations",
+    "next_before"
   ],
   "additionalProperties": false
 }

@@ -3932,11 +3932,15 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** The Care inbox's threads of a view, the latest first */
+        /** The Care inbox's threads of a view, the latest first, a page at a time */
         get: {
             parameters: {
                 query?: {
                     view?: "mine" | "open" | "waiting" | "closed" | "all";
+                    /** @description A client's name, or a number, or part of either. */
+                    search?: string;
+                    /** @description The next page: next_before from the last one. */
+                    before?: string;
                 };
                 header?: never;
                 path?: never;
@@ -15678,7 +15682,10 @@ export interface components {
             reason: "booking" | "move_or_cancel" | "fit_problem" | "aftercare" | "billing" | "sign_in" | "try_on" | "data_request" | "other";
         };
         Conversations: {
+            /** @description At most 50, the latest first. */
             conversations: components["schemas"]["Conversation"][];
+            /** @description Where the next page starts, for ?before=; null on the last page. */
+            next_before: string | null;
         };
         CareTeam: {
             team: components["schemas"]["CareMember"][];

@@ -16,8 +16,25 @@
   margin: var(--sp-16) var(--sp-20) var(--sp-8);
 }
 
+/* A chat found by name or number: the box, then Find and Clear beside it. */
+.search {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: var(--sp-12);
+}
+
 .scroll {
   overflow-x: auto;
+}
+
+/* Past the latest page: how many are shown, and the older ones on asking. */
+.more {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-12) var(--sp-24);
+  margin: var(--sp-12) var(--sp-20) var(--sp-16);
 }
 
 .table {
