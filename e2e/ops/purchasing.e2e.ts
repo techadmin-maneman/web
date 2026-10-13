@@ -81,7 +81,12 @@ test("does not offer the second approval to the manager who gave the first", asy
     "GET /api/whoami": json({
       signed_in_as: "ops@maneman.in",
       sign_out: null,
-      staff: { enforced: false, listed: true, grants: [], may_call: [] },
+      staff: {
+        enforced: false,
+        listed: true,
+        grants: [],
+        may_call: ["GET /api/purchase-orders", "POST /api/purchase-orders/{id}/approve"],
+      },
     }),
   });
   await page.getByRole("button", { name: copy.open("PO-0007") }).click();

@@ -20,7 +20,7 @@ export const RULE_GROUPS = [
   { id: "referrals", rules: ["referral_reward"] },
   { id: "care", rules: ["care_hours", "remedy_limit"] },
   { id: "reports", rules: ["lost_after_days"] },
-  { id: "purchasing", rules: ["po_second_approval_above_rupees", "custom_order_grace_days"] },
+  { id: "purchasing", rules: ["po_second_approval_above_rupees", "po_rupees_to_one", "custom_order_grace_days"] },
   { id: "supply_plan", rules: ["planning_period_days", "planning_horizon_periods"] },
   { id: "console", rules: ["task_sla_hours", "technician_work"] },
 ] as const satisfies readonly RuleGroup[];
