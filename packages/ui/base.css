@@ -52,6 +52,9 @@
     /* A field's box: the tap's height, which the technician app raises on its body. */
     --field-height: var(--tap);
     --field-text: var(--fs-15);
+    /* A line of what just happened: the body's 15 px, which the console and the site set smaller and the technician
+       app larger. */
+    --message-size: var(--fs-15);
     /* Inside a table row, which keeps the row at the console's row height. */
     --compact-height: var(--sp-28);
     --compact-text: var(--fs-13);

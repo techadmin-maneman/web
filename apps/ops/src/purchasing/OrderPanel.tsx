@@ -1,6 +1,7 @@
 // One purchase order beneath the list (docs/decisions/0166-purchase-orders.md): its lines and total, and what can be
 // done with it now: approved, by a second manager where it needs one; marked sent; cancelled with why; printed.
 
+import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { Panel } from "@maneman/ui/Panel";
 import { Button } from "@maneman/ui/Button";
 import { Field, TextInput } from "@maneman/ui/Field";
@@ -184,9 +185,9 @@ export function OrderPanel({
         </Button>
       </div>
       {failure !== null && (
-        <p className={form.error} role="alert">
+        <InlineMessage tone="error" className={form.error}>
           {errorText(copy.errors, failure)}
-        </p>
+        </InlineMessage>
       )}
       {printing && (
         <OrderSheet

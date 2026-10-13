@@ -33,12 +33,6 @@
   color: var(--error-on-paper);
 }
 
-.empty {
-  margin: 0;
-  font-size: var(--fs-15);
-  color: var(--text-muted);
-}
-
 /* ---- The board, by department --------------------------------------------- */
 
 .queue {

@@ -11,13 +11,14 @@
 // Nothing is sent until ops have seen the change: each figure that moves, the
 // old beside the new, and only the second press sends it, as a price is set.
 
+import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { Disclosure } from "@maneman/ui/Disclosure";
 import { TextLink } from "@maneman/ui/TextLink";
 import { errorText } from "@maneman/web-kit/refusal";
 import { Panel } from "@maneman/ui/Panel";
 import { Field, Fieldset, Label, NumberInput, Select, TextInput } from "@maneman/ui/Field";
 import { CheckPanel } from "../components/CheckPanel.tsx";
-import { review as reviewWords } from "../content/common.ts";
+import { ReviewBar } from "./ReviewBar.tsx";
 import { useSteps, type Sent } from "./SettingForm.tsx";
 import { Button } from "@maneman/ui/Button";
 import { useLoad } from "@maneman/ui/useLoad";
@@ -453,9 +454,9 @@ function Rule({ rule, draft, allowed, held, refusal, onEdit, onStandard }: RuleP
         </div>
       )}
       {refusal !== undefined && (
-        <p className={styles.error} role="alert">
+        <InlineMessage tone="error" className={styles.error}>
           {refusal}
-        </p>
+        </InlineMessage>
       )}
     </li>
   );
@@ -467,24 +468,6 @@ interface GroupSectionProps {
   readonly onSaved: (saved: OpsSetting) => void;
   /** What the section shows above its rules. */
   readonly children?: ReactNode;
-}
-
-/** A section's Review, and what its last change came to. */
-function ReviewBar(props: { ready: boolean; saved: boolean; onReview: () => void }) {
-  return (
-    <>
-      <div className={styles.actions}>
-        <Button variant="primary" size="small" disabled={!props.ready} onClick={props.onReview}>
-          {reviewWords.next}
-        </Button>
-      </div>
-      {props.saved && (
-        <p className={styles.saved} role="status">
-          {copy.saved}
-        </p>
-      )}
-    </>
-  );
 }
 
 /** One subject's rules, under its own heading and anchor, reviewed and sent together. */

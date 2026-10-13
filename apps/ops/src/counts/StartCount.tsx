@@ -1,6 +1,7 @@
 // A count of one item at one place, started now rather than waiting for the morning's tasks
 // (docs/decisions/0185-cycle-counts.md).
 
+import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { Panel } from "@maneman/ui/Panel";
 import { Button } from "@maneman/ui/Button";
 import { Field, Select } from "@maneman/ui/Field";
@@ -68,9 +69,9 @@ export function StartCount({ book, onStarted }: { book: Book; onStarted: (id: st
         </div>
       </div>
       {failure !== null && (
-        <p className={form.error} role="alert">
+        <InlineMessage tone="error" className={form.error}>
           {errorText(copy.errors, failure)}
-        </p>
+        </InlineMessage>
       )}
     </Panel>
   );

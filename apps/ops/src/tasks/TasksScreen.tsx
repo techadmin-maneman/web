@@ -31,6 +31,7 @@
 // Above the tasks, "Needs a hand" lists the alerts ops were told of and not yet
 // put right (NeedsAHand.tsx).
 
+import { EmptyState } from "@maneman/ui/EmptyState";
 import { TextButton } from "@maneman/ui/TextLink";
 import { capsLook } from "@maneman/ui/Caps";
 import { useLoad } from "@maneman/ui/useLoad";
@@ -324,7 +325,7 @@ function Queue() {
       </div>
       {truncated && <p className={styles.note}>{tasks.truncated}</p>}
       {sections.length === 0 ? (
-        <p className={styles.empty}>{tasks.empty}</p>
+        <EmptyState look="panel" line={tasks.empty} />
       ) : (
         sections.map((section) => (
           <DepartmentSection key={section.department} section={section}>

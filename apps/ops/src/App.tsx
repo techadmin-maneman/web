@@ -13,7 +13,6 @@ import { FindClientScreen } from "./clients/FindClientScreen.tsx";
 import { ClosedScreen } from "./components/ClosedScreen.tsx";
 import { DispatchScreen } from "./dispatch/DispatchScreen.tsx";
 import { useMayCall } from "./lib/access.ts";
-import { NoShowsScreen } from "./no-shows/NoShowsScreen.tsx";
 import {
   keyOf,
   mayOpen,
@@ -47,6 +46,7 @@ const PartnerCommissionScreen = lazyScreen(() =>
 );
 const StaffScreen = lazyScreen(() => import("./settings/PanelScreens.tsx").then((module) => module.StaffScreen));
 // The queues ops open now and then load when opened, keeping the console's first load within its budget.
+const NoShowsScreen = lazyScreen(() => import("./no-shows/NoShowsScreen.tsx").then((module) => module.NoShowsScreen));
 const DeletionsScreen = lazyScreen(() =>
   import("./deletions/DeletionsScreen.tsx").then((module) => module.DeletionsScreen),
 );

@@ -6,6 +6,7 @@
 // (docs/decisions/0089-an-invite-is-not-lost.md). No board draws it
 // (docs/fidelity-method.md).
 
+import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { REASON_MAX_CHARS } from "@rules/policy/decision-reasons.ts";
 import { errorText } from "@maneman/web-kit/refusal";
 import { capsLook } from "@maneman/ui/Caps";
@@ -133,9 +134,9 @@ function AttachForm({
         {sending ? copy.form.saving : copy.form.save}
       </Button>
       {attaching.step === "failed" && (
-        <p className={styles.error} role="alert">
+        <InlineMessage tone="error" className={styles.error}>
           {errorText(copy.form.errors, { code: attaching.code })}
-        </p>
+        </InlineMessage>
       )}
     </form>
   );

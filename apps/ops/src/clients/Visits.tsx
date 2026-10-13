@@ -8,6 +8,7 @@
 // (CancelVisit.tsx) or close by hand one whose technician's phone was lost (CloseVisit.tsx). Each visit to come links
 // to its place on the dispatch board. Beneath the visits, any booking that refunded its payment by itself, and why.
 
+import { EmptyState } from "@maneman/ui/EmptyState";
 import { capsLook } from "@maneman/ui/Caps";
 import { Button } from "@maneman/ui/Button";
 import { Table } from "@maneman/ui/Table";
@@ -229,7 +230,7 @@ function VisitTable({
     <section className={styles.visitList} aria-label={title}>
       <h3 className={capsLook(styles.sectionTitle)}>{title}</h3>
       {visits.length === 0 ? (
-        <p className={styles.empty}>{empty}</p>
+        <EmptyState look="panel" line={empty} />
       ) : (
         <Table className={styles.table}>
           <thead>

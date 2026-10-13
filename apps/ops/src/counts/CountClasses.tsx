@@ -1,6 +1,7 @@
 // Each item's count class (docs/decisions/0185-cycle-counts.md): its kind's own, a hair system weekly and the rest
 // quarterly, or the one ops set.
 
+import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { Panel } from "@maneman/ui/Panel";
 import { Field, Select } from "@maneman/ui/Field";
 import { Table } from "@maneman/ui/Table";
@@ -77,14 +78,14 @@ export function CountClasses({ book, onBook }: { book: Book; onBook: (book: Book
         </tbody>
       </Table>
       {said !== null && (
-        <p className={form.saved} role="status">
+        <InlineMessage tone="saved" className={form.saved}>
           {said}
-        </p>
+        </InlineMessage>
       )}
       {failure !== null && (
-        <p className={form.error} role="alert">
+        <InlineMessage tone="error" className={form.error}>
           {errorText(copy.errors, failure)}
-        </p>
+        </InlineMessage>
       )}
     </Panel>
   );

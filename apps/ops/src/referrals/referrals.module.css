@@ -19,13 +19,6 @@
   padding: var(--sp-20);
 }
 
-.empty {
-  margin: 0;
-  padding: var(--sp-16) var(--sp-20);
-  font-size: var(--fs-15);
-  color: var(--text-muted);
-}
-
 /* ---- One held grant ------------------------------------------------------ */
 
 .grantHead {
@@ -91,8 +84,6 @@
 
 .error {
   margin: var(--sp-12) 0 0;
-  font-size: var(--fs-14);
-  color: var(--error-on-paper);
 }
 
 /* ---- Every referrer's figures -------------------------------------------- */

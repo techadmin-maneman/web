@@ -15,6 +15,8 @@
 // to cost a no-show once ops rule, under whoever Access says is signed in
 // (src/policy/no-show.ts, docs/decisions/0031-access-and-audit.md).
 
+import { InlineMessage } from "@maneman/ui/InlineMessage";
+import { EmptyState } from "@maneman/ui/EmptyState";
 import { DateInput, Label, TextArea } from "@maneman/ui/Field";
 import { REASON_MAX_CHARS } from "@rules/policy/decision-reasons.ts";
 import { useFocusOnMount } from "@maneman/ui/useFocusOnMount";
@@ -58,7 +60,7 @@ function evidenceOf(charge: Charge): string {
 
 function Charges({ charges, today }: { charges: readonly Charge[]; today: boolean }) {
   const copy = noShows.money.charges;
-  if (charges.length === 0) return <p className={styles.empty}>{copy.empty(today)}</p>;
+  if (charges.length === 0) return <EmptyState look="panel" line={copy.empty(today)} />;
 
   return (
     <ul className={styles.charges}>
@@ -398,9 +400,9 @@ function Case({ each, now, may, onDecided }: CaseProps) {
         </div>
       )}
       {ruling.step === "failed" && (
-        <p className={styles.error} role="alert">
+        <InlineMessage tone="error" className={styles.error}>
           {errorText(copy.errors, { code: ruling.code })}
-        </p>
+        </InlineMessage>
       )}
     </>
   );
@@ -452,7 +454,7 @@ function DecidedToday() {
   return (
     <Panel titleId="decided-today" title={decided.title}>
       {cases.length === 0 ? (
-        <p className={styles.empty}>{decided.empty}</p>
+        <EmptyState look="panel" line={decided.empty} />
       ) : (
         <ul className={styles.charges}>
           {cases.map((each) => (

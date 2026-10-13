@@ -6,6 +6,7 @@
 // (docs/decisions/0054-address-capture.md). The search is an addition, never a
 // gate: an address typed without it saves, with no pin. No board draws any of it.
 
+import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { capsLook } from "@maneman/ui/Caps";
 import { Button } from "@maneman/ui/Button";
 import { Field, TextInput } from "@maneman/ui/Field";
@@ -177,9 +178,9 @@ export function GivenAddressForm({
       {/* A building chosen from the search is line one, so line one is asked only where none was. */}
       {ADDRESS_FIELDS.filter(({ part }) => part !== "line1" || !given(draft.building)).map(field)}
       {problem !== null && (
-        <p className={styles.error} role="alert">
+        <InlineMessage tone="error" className={styles.error}>
           {problem}
-        </p>
+        </InlineMessage>
       )}
       <div className={styles.actions}>
         <Button variant="primary" size="small" type="submit" busy={busy}>

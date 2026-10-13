@@ -1,6 +1,7 @@
 // A technician's Kit tab: what their kit holds of each consumable, as the stock ledger counts it, with the same Low
 // mark the Stock section gives it. Movements are recorded in Stock, which the tab links to.
 
+import { EmptyState } from "@maneman/ui/EmptyState";
 import { buttonLook } from "@maneman/ui/Button";
 import { FIGURE, Table } from "@maneman/ui/Table";
 import { failedRequestId, useLoad } from "@maneman/ui/useLoad";
@@ -43,7 +44,7 @@ export function Kit({ technician }: { technician: TechnicianSummary }) {
   return (
     <>
       {held.length === 0 ? (
-        <p className={styles.none}>{copy.none}</p>
+        <EmptyState look="panel" line={copy.none} />
       ) : (
         <Table className={styles.kit}>
           <thead>

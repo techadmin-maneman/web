@@ -1,6 +1,7 @@
 // One chat in the Care inbox (docs/decisions/0129-the-care-inbox.md): what the client wrote, our replies and notes,
 // and our automatic messages to them with how far each got, in order.
 
+import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { OpsLink } from "../components/Shell.tsx";
 import { textLinkLook } from "@maneman/ui/TextLink";
 import { Button } from "@maneman/ui/Button";
@@ -136,9 +137,9 @@ export function Thread({
         </ol>
       )}
       {said !== null && (
-        <p className={styles.saved} role="status">
+        <InlineMessage tone="saved" className={styles.saved}>
           {said}
-        </p>
+        </InlineMessage>
       )}
       {mayAct && conversation.person === null && conversation.technician === null && (
         <Stranger conversationId={conversation.id} onDone={onChanged} />

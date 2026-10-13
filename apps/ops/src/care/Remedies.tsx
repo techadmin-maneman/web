@@ -1,6 +1,7 @@
 // Remedies (docs/decisions/0143-remedies.md): free service visits Care give a client from their chat, with why, and
 // the panel on the Messages page where a Customer Care manager approves or declines those above the limit.
 
+import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { REASON_MAX_CHARS } from "@rules/policy/decision-reasons.ts";
 import { Button, RowButton } from "@maneman/ui/Button";
 import { Field, Select, TextArea } from "@maneman/ui/Field";
@@ -94,9 +95,9 @@ export function RemedyForm({ personId }: { readonly personId: string }) {
     return (
       <div className={own.closing}>
         {said !== null && (
-          <p className={styles.saved} role="status">
+          <InlineMessage tone="saved" className={styles.saved}>
             {said}
-          </p>
+          </InlineMessage>
         )}
         <Button
           variant="outline"

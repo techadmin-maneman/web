@@ -1,6 +1,7 @@
 // Operations · Quality (docs/decisions/0187-recalls.md, 0188-failure-rates-and-value-at-risk.md): every recall, each
 // opened to where its lot is and who wears it, and a lot recalled with why; failure rates; and the value at risk.
 
+import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { Panel } from "@maneman/ui/Panel";
 import { Button } from "@maneman/ui/Button";
 import { Table } from "@maneman/ui/Table";
@@ -99,14 +100,14 @@ export function QualityScreen() {
             <Recalls book={current} onOpen={open} />
             {access.mayCall("POST /api/recalls") && <RaiseRecall book={current} onAnswer={answered} />}
             {said !== null && (
-              <p className={form.saved} role="status">
+              <InlineMessage tone="saved" className={form.saved}>
                 {said}
-              </p>
+              </InlineMessage>
             )}
             {failure !== null && (
-              <p className={form.error} role="alert">
+              <InlineMessage tone="error" className={form.error}>
                 {errorText(copy.errors, failure)}
-              </p>
+              </InlineMessage>
             )}
           </Panel>
           {opened !== null && <RecallDetail key={opened.id} recall={opened} onAnswer={answered} />}

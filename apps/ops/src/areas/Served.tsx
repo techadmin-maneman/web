@@ -13,6 +13,7 @@
 // panel Waiting uses first (docs/decisions/0071-what-ops-see-before-a-setting-changes.md).
 // A pincode the file does not hold is added beneath the table.
 
+import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { Fieldset } from "@maneman/ui/Field";
 import { Panel } from "@maneman/ui/Panel";
 import { Button } from "@maneman/ui/Button";
@@ -213,9 +214,9 @@ function Area({ pincodes: loadedPincodes, cities }: { pincodes: readonly ServedP
         <Fieldset className={styles.group} legend={areas.add.title} legendLook="title">
           <AddPincode pincode={null} cities={cities} onAdded={addedHere} />
           {added !== null && (
-            <p className={styles.saved} role="status">
+            <InlineMessage tone="saved" className={styles.saved}>
               {areas.add.added(added.pincode, added.city)}
-            </p>
+            </InlineMessage>
           )}
         </Fieldset>
       )}

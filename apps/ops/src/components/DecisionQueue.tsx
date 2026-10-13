@@ -9,6 +9,7 @@
 // address names -- a task on the Tasks board links to it -- is scrolled to,
 // focused and marked, as the board marks a selection.
 
+import { EmptyState } from "@maneman/ui/EmptyState";
 import { Panel } from "@maneman/ui/Panel";
 import { useRef, useState, type ReactNode } from "react";
 import { rowId, useTargetRow } from "../lib/target.ts";
@@ -66,7 +67,7 @@ export function DecisionQueue<T extends { readonly id: string }>({
           {done}
         </p>
       )}
-      {waiting.length === 0 ? <p className={styles.empty}>{empty}</p> : rows}
+      {waiting.length === 0 ? <EmptyState look="panel" line={empty} /> : rows}
       {note !== undefined && <p className={styles.note}>{note}</p>}
     </Panel>
   );

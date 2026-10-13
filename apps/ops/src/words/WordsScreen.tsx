@@ -1,6 +1,7 @@
 // Growth · Words (docs/decisions/0126-the-words-page.md): every line of the site and every WhatsApp message to a
 // client, found by page or by what it says, each changed in its row, with its history beneath it.
 
+import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { Button, RowButton } from "@maneman/ui/Button";
 import { Panel } from "@maneman/ui/Panel";
 import { Table } from "@maneman/ui/Table";
@@ -216,9 +217,9 @@ function Words() {
         />
       )}
       {said !== null && (
-        <p className={styles.saved} role="status">
+        <InlineMessage tone="saved" className={styles.saved}>
           {said}
-        </p>
+        </InlineMessage>
       )}
       <WordsTable view={view} row={row} />
     </Panel>

@@ -1,6 +1,7 @@
 // Where the client is signed in (docs/decisions/0029-sessions.md): each browser, this one marked, and a way to sign
 // any other out. A lost or handed-on phone otherwise stays signed in for 90 days from its last use.
 
+import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { TextButton } from "@maneman/ui/TextLink";
 import { capsLook } from "@maneman/ui/Caps";
 import { Button } from "@maneman/ui/Button";
@@ -71,9 +72,9 @@ export function SessionsCard() {
         })}
       </ul>
       {failed && (
-        <p className={styles.error} role="alert">
+        <InlineMessage tone="error" className={styles.error}>
           {copy.failed}
-        </p>
+        </InlineMessage>
       )}
       {others.length > 1 && (
         <Button

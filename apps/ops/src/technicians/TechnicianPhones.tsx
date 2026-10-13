@@ -2,6 +2,8 @@
 // signed out or revoked. Revoking a phone ends its session and makes it drop its cached jobs, so it asks before it
 // sends (src/domain/dispatch/technicians.ts). It also stops them signing in on any phone until ops let them again.
 
+import { InlineMessage } from "@maneman/ui/InlineMessage";
+import { EmptyState } from "@maneman/ui/EmptyState";
 import { errorText } from "@maneman/web-kit/refusal";
 import { Button } from "@maneman/ui/Button";
 import { indiaClock, longDate } from "@maneman/web-kit/dates";
@@ -102,9 +104,9 @@ function Phone({ phone, technician }: { phone: Device; technician: Technician })
         </div>
       )}
       {revoking.step === "failed" && (
-        <p className={styles.error} role="alert">
+        <InlineMessage tone="error" className={styles.error}>
           {errorText(copy.errors, { code: revoking.code })}
-        </p>
+        </InlineMessage>
       )}
     </li>
   );
@@ -152,9 +154,9 @@ function SignInStopped({ technician, since }: { technician: Technician; since: s
         </div>
       )}
       {allowing.step === "failed" && (
-        <p className={styles.error} role="alert">
+        <InlineMessage tone="error" className={styles.error}>
           {errorText(copy.errors, { code: allowing.code })}
-        </p>
+        </InlineMessage>
       )}
     </div>
   );
@@ -166,7 +168,7 @@ export function Phones({ technician }: { technician: Technician }) {
     <>
       {stopped !== null && <SignInStopped technician={technician} since={stopped} />}
       {technician.devices.length === 0 ? (
-        <p className={styles.none}>{copy.none}</p>
+        <EmptyState look="panel" line={copy.none} />
       ) : (
         <ul className={styles.phoneList}>
           {technician.devices.map((phone) => (

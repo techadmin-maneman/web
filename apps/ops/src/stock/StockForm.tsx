@@ -9,6 +9,7 @@
 // counts once the technician scans it in, unless handed over in person
 // (docs/decisions/0164-the-kit-screen.md).
 
+import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { Panel } from "@maneman/ui/Panel";
 import { errorText, type Failure } from "@maneman/web-kit/refusal";
 import { Checkbox, ChoiceGroup, Field, Label, NumberInput, Radio, Select, TextInput } from "@maneman/ui/Field";
@@ -390,14 +391,14 @@ export function StockForm({
           </div>
         )}
         {step.step === "recorded" && (
-          <p className={form.saved} role="status">
+          <InlineMessage tone="saved" className={form.saved}>
             {copy.recorded}
-          </p>
+          </InlineMessage>
         )}
         {step.step === "failed" && (
-          <p className={form.error} role="alert">
+          <InlineMessage tone="error" className={form.error}>
             {errorText(copy.errors, step)}
-          </p>
+          </InlineMessage>
         )}
       </div>
     </Panel>

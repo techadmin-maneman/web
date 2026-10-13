@@ -29,6 +29,4 @@
 
 .failure {
   margin-top: var(--sp-16);
-  font-size: var(--fs-14);
-  color: var(--error-on-paper);
 }

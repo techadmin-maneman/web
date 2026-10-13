@@ -1,0 +1,54 @@
+/* The ops console's drawer (./Drawer.tsx): a panel fixed under the header at the page's right, over a page left in
+   view, headed by its title in the serif over a rule in the text's own ink. */
+
+@layer base, ui;
+
+@layer ui {
+  .drawer {
+    position: fixed;
+    inset: var(--header-h) 0 auto auto;
+    width: var(--ops-panel);
+    max-width: 100%;
+    max-height: calc(100dvh - var(--header-h));
+    margin: 0;
+    padding: 0;
+    overflow-y: auto;
+    border: var(--hairline) solid var(--paper-line);
+    background: var(--paper);
+    color: var(--text);
+  }
+
+  .drawer::backdrop {
+    background: transparent;
+  }
+
+  .drawer:focus {
+    outline: none;
+  }
+
+  .head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--sp-16);
+    padding: var(--sp-12) var(--sp-20);
+    border-bottom: var(--hairline) solid var(--text);
+  }
+
+  .title {
+    margin: 0;
+    font-family: var(--font-serif);
+    font-weight: var(--weight-regular);
+    font-size: var(--fs-22);
+  }
+
+  .sub {
+    margin: var(--sp-4) 0 0;
+    font-size: var(--fs-14);
+    color: var(--text-muted);
+  }
+
+  .body {
+    padding: var(--sp-8) var(--sp-20) var(--sp-20);
+  }
+}

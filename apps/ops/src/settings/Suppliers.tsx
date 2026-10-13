@@ -1,6 +1,7 @@
 // Settings, Suppliers (docs/decisions/0165-suppliers.md): who we buy stock from, on what terms, each retired rather
 // than deleted; and beneath, what the supplier picked supplies, with their price, pack, minimum and lead time.
 
+import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { RowButton } from "@maneman/ui/Button";
 import { Panel } from "@maneman/ui/Panel";
 import { Table } from "@maneman/ui/Table";
@@ -160,9 +161,9 @@ export function Suppliers() {
           onRetired={saved}
         />
         {said !== null && (
-          <p className={styles.saved} role="status">
+          <InlineMessage tone="saved" className={styles.saved}>
             {said}
-          </p>
+          </InlineMessage>
         )}
         {changing !== undefined ? (
           <SupplierForm

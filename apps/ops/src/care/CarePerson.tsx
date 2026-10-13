@@ -1,6 +1,7 @@
 // A client's Care person in their chat (docs/decisions/0131-care-people.md): who looks after them, and for a Customer
 // Care manager, moving them to another of the team.
 
+import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { Button } from "@maneman/ui/Button";
 import { Field, Select } from "@maneman/ui/Field";
 import { useLoad } from "@maneman/ui/useLoad";
@@ -97,9 +98,9 @@ export function CarePerson(props: {
         {words.label}: {now === null ? words.none : coveredOf(now, props.email, props.coveredBy)}
       </p>
       {said !== null && (
-        <p className={styles.saved} role="status">
+        <InlineMessage tone="saved" className={styles.saved}>
           {said}
-        </p>
+        </InlineMessage>
       )}
       {mayMove && (
         <Team

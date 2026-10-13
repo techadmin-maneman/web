@@ -1,6 +1,7 @@
 // A photograph of stock for a write-off or a claim (docs/decisions/0170-stock-photos.md): taken or chosen, made small
 // in the browser as the technician's camera makes its photographs, stored, and shown once stored.
 
+import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { FileInput, Label } from "@maneman/ui/Field";
 import { Button } from "@maneman/ui/Button";
 import { errorText } from "@maneman/web-kit/refusal";
@@ -85,9 +86,9 @@ export function StockPhoto({
         </p>
       )}
       {failed !== null && (
-        <p className={form.error} role="alert">
+        <InlineMessage tone="error" className={form.error}>
           {errorText(copy.errors, { code: failed, fields: [] })}
-        </p>
+        </InlineMessage>
       )}
     </div>
   );

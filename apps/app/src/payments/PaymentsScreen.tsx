@@ -19,7 +19,7 @@ import { rupees } from "@maneman/web-kit/money";
 import { api, type CreditLine, type Entry, type Me, type OwedPayment } from "../api.ts";
 import { empty, payments } from "../content.ts";
 import { AppLink, Shell } from "../components/Shell.tsx";
-import { EmptyState } from "../components/EmptyState.tsx";
+import { EmptyState } from "@maneman/ui/EmptyState";
 import { oneVisitOf } from "../lib/visit.ts";
 import { useSession } from "../session.ts";
 import { Loading } from "../states/Loading.tsx";
@@ -168,7 +168,7 @@ export function PaymentsScreen() {
   return (
     <Shell header={{ kind: "tab", title: payments.title }} tab="/payments">
       {owed.length > 0 && <Owed owed={owed} thisYear={thisYear} />}
-      {rows.length === 0 && owed.length === 0 && <EmptyState lines={emptyLines(me)} tight />}
+      {rows.length === 0 && owed.length === 0 && <EmptyState look="page" lines={emptyLines(me)} tight />}
       {rows.length > 0 && (
         <ul className={styles.list}>
           {rows.map((row) =>

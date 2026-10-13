@@ -1,6 +1,7 @@
 // The consultation form's own fieldsets (./Consultation.tsx): what to book, the discount code on the site's own page,
 // the day strip, and the windows on the day picked. Each window and day the API says is full is drawn, and disabled.
 
+import { messageLook } from "@maneman/ui/InlineMessage";
 import { ChoiceCard } from "@maneman/ui/ChoiceCard";
 import { DateStrip } from "@maneman/ui/DateStrip";
 import { Fieldset, Label, TextInput } from "@maneman/ui/Field";
@@ -82,7 +83,7 @@ export function DiscountCode({
         }}
       />
       {refused && (
-        <div id="invite-consultation-code-error" class={styles.error}>
+        <div id="invite-consultation-code-error" class={messageLook({ tone: "error", className: styles.error })}>
           {referral.errors.codeNotApplicable}
         </div>
       )}

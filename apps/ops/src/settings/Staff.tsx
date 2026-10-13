@@ -2,6 +2,7 @@
 // in. No board draws it, so it is laid out as the other Settings panels are. The API narrows the list to the places
 // its viewer may see, and refuses a change beyond their own.
 
+import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { Label, TextInput } from "@maneman/ui/Field";
 import { errorText } from "@maneman/web-kit/refusal";
 import { Panel } from "@maneman/ui/Panel";
@@ -171,9 +172,9 @@ function People({ book, onChanged }: PanelProps) {
         </div>
       )}
       {said !== null && (
-        <p className={styles.saved} role="status">
+        <InlineMessage tone="saved" className={styles.saved}>
           {said}
-        </p>
+        </InlineMessage>
       )}
     </Panel>
   );

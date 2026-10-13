@@ -29,6 +29,7 @@ body {
   --edge-on-ink: var(--ink-line-strong);
   --field-height: var(--tech-stepper);
   --field-text: var(--fs-18);
+  --message-size: var(--fs-16);
 
   background: var(--ink-deep);
   color: var(--paper);

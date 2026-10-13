@@ -3,6 +3,7 @@
 // another, or closed once it is empty and nothing open is under it. A technician's kit comes with them, and is only
 // moved.
 
+import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { Panel } from "@maneman/ui/Panel";
 import { Button, RowButton } from "@maneman/ui/Button";
 import { Field, Select, TextInput } from "@maneman/ui/Field";
@@ -90,9 +91,9 @@ function NameBox({ value, onChange }: { value: string; onChange: (value: string)
 function Refusal({ failure }: { failure: Failure | null }) {
   if (failure === null) return null;
   return (
-    <p className={form.error} role="alert">
+    <InlineMessage tone="error" className={form.error}>
       {errorText(copy.errors, failure)}
-    </p>
+    </InlineMessage>
   );
 }
 

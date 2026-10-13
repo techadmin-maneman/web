@@ -1,6 +1,7 @@
 // A Delete button for something added by mistake: pressed, it asks once, and only the second press deletes. A refusal
 // is said in the caller's words, as why it stays and what to do instead (an in_use is the usual one).
 
+import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { Button } from "@maneman/ui/Button";
 import { useState } from "react";
 import { deleting } from "../content.ts";
@@ -101,9 +102,9 @@ export function DeleteAction<Body>({
         </div>
       )}
       {failed !== null && (
-        <p className={styles.error} role="alert">
+        <InlineMessage tone="error" className={styles.error}>
           {failed}
-        </p>
+        </InlineMessage>
       )}
     </>
   );

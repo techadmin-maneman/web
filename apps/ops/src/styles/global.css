@@ -11,9 +11,11 @@
 @import "@maneman/brand/fonts.css";
 @import "@maneman/ui/base.css";
 
-/* The console's filled buttons are edged as its outlined ones are, so the two stand side by side at one width. */
+/* The console's filled buttons are edged as its outlined ones are, so the two stand side by side at one width; its
+   lines of what just happened are in its 14 px small size. */
 :root {
   --filled-edge: var(--hairline);
+  --message-size: var(--fs-14);
 }
 
 body {

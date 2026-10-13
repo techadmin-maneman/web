@@ -3,6 +3,7 @@
 // consumable lot's label, for its boxes, in as many copies as there are boxes. Any label scanned here finds its piece
 // (docs/decisions/0162-scanning-labels.md).
 
+import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { Panel } from "@maneman/ui/Panel";
 import { Button } from "@maneman/ui/Button";
 import { Checkbox, ChoiceGroup, Field, NumberInput, Select } from "@maneman/ui/Field";
@@ -137,9 +138,9 @@ function PieceLabels({ name, at }: { name: string; at: LabelsFor }) {
         </p>
       )}
       {labelling === "failed" && (
-        <p className={form.error} role="alert">
+        <InlineMessage tone="error" className={form.error}>
           {copy.notLabelled}
-        </p>
+        </InlineMessage>
       )}
       <Batches key={String(after?.times ?? 0)} units={units.units} name={name} />
     </>
@@ -205,9 +206,9 @@ function LotLabels({ book, name, at }: { book: Stock; name: string; at: LabelsFo
         </Field>
       </div>
       {failed && (
-        <p className={form.error} role="alert">
+        <InlineMessage tone="error" className={form.error}>
           {copy.noLabel}
-        </p>
+        </InlineMessage>
       )}
       <div className={form.actions}>
         <Button

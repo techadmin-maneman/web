@@ -11,7 +11,7 @@ import { useState } from "react";
 import { api, type PhotoTimeline } from "../api.ts";
 import { empty, photos, states, TRY_ON_URL } from "../content.ts";
 import { AppLink, Shell } from "../components/Shell.tsx";
-import { EmptyState } from "../components/EmptyState.tsx";
+import { EmptyState } from "@maneman/ui/EmptyState";
 import { TAB_ICONS } from "../icons.ts";
 import { visitName } from "../lib/visit.ts";
 import { PageFailed } from "../states/PageFailed.tsx";
@@ -46,7 +46,7 @@ function Timeline({ timeline, onOpen }: { timeline: PhotoTimeline; onOpen: (phot
         {empty.photos.tryOn}
       </ButtonLink>
     );
-    return <EmptyState lines={empty.photos.lines} icon={TAB_ICONS.photos} action={tryOn} />;
+    return <EmptyState look="page" lines={empty.photos.lines} icon={TAB_ICONS.photos} action={tryOn} />;
   }
   return (
     <>
@@ -67,7 +67,7 @@ function Timeline({ timeline, onOpen }: { timeline: PhotoTimeline; onOpen: (phot
           </section>
         ))}
       </div>
-      {visits.length === 0 && <EmptyState lines={empty.photos.lines} />}
+      {visits.length === 0 && <EmptyState look="page" lines={empty.photos.lines} />}
     </>
   );
 }

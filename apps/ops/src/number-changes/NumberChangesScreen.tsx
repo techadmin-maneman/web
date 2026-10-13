@@ -10,6 +10,7 @@
 // somebody else already holds is refused by the API, and said so here. Each
 // change says how long it has left, counted as the Tasks board counts it.
 
+import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { Label, TextArea } from "@maneman/ui/Field";
 import { REASON_MAX_CHARS } from "@rules/policy/decision-reasons.ts";
 import { errorText } from "@maneman/web-kit/refusal";
@@ -141,9 +142,9 @@ function Change({ change, now, mayDecide, onDecided }: ChangeProps) {
         </div>
       )}
       {deciding.step === "failed" && (
-        <p className={styles.error} role="alert">
+        <InlineMessage tone="error" className={styles.error}>
           {errorText(copy.errors, { code: deciding.code })}
-        </p>
+        </InlineMessage>
       )}
     </>
   );

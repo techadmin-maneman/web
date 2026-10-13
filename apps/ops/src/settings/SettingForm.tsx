@@ -2,6 +2,7 @@
 // its boxes, then a check of what it is now beside what it will be, and only the second press sends it. A refusal
 // shows beneath, with the check still up to send again or go back to the boxes.
 
+import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { Fieldset } from "@maneman/ui/Field";
 import { Button } from "@maneman/ui/Button";
 import type { Answer } from "@maneman/web-kit/api";
@@ -65,9 +66,9 @@ export function useSteps<T>(
 export function Refused(props: { readonly failed: Failure | null; readonly errors: Readonly<Record<string, string>> }) {
   if (props.failed === null) return null;
   return (
-    <p className={styles.error} role="alert">
+    <InlineMessage tone="error" className={styles.error}>
       {errorText(props.errors, props.failed)}
-    </p>
+    </InlineMessage>
   );
 }
 
@@ -161,9 +162,9 @@ export function SettingForm(props: {
       )}
       <Refused failed={steps.failed} errors={props.errors} />
       {props.said !== undefined && props.said !== null && (
-        <p className={styles.saved} role="status">
+        <InlineMessage tone="saved" className={styles.saved}>
           {props.said}
-        </p>
+        </InlineMessage>
       )}
     </Fieldset>
   );

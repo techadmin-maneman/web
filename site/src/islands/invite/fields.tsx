@@ -1,6 +1,7 @@
 // The parts both forms are made of: the pincode they are for, where the hair loss is, the person's fields, the
 // invite /book remembers, and the button that sends them; and /book's steps, with the name and number it kept first.
 
+import { messageLook } from "@maneman/ui/InlineMessage";
 import { Button } from "@maneman/ui/Button";
 import { ChoiceCard } from "@maneman/ui/ChoiceCard";
 import { Checkbox, Fieldset, Label, TextInput } from "@maneman/ui/Field";
@@ -109,7 +110,7 @@ export function PersonFieldset(props: {
           />
           <div aria-live="polite">
             {nameBad && (
-              <div id={`${idPrefix}-name-error`} class={styles.error}>
+              <div id={`${idPrefix}-name-error`} class={messageLook({ tone: "error", className: styles.error })}>
                 {referral.form.nameError}
               </div>
             )}
@@ -132,7 +133,7 @@ export function PersonFieldset(props: {
           />
           <div aria-live="polite">
             {mobileBad && (
-              <div id={`${idPrefix}-mobile-error`} class={styles.error}>
+              <div id={`${idPrefix}-mobile-error`} class={messageLook({ tone: "error", className: styles.error })}>
                 {referral.form.mobileError}
               </div>
             )}
@@ -184,7 +185,7 @@ export function ConsentBox(props: {
       />
       <div aria-live="polite">
         {bad && (
-          <div id={`${idPrefix}-consent-error`} class={styles.error}>
+          <div id={`${idPrefix}-consent-error`} class={messageLook({ tone: "error", className: styles.error })}>
             {referral.form.consentError}
           </div>
         )}
@@ -262,7 +263,9 @@ export function Send(props: {
   const line = markedLine(props.marked) ?? props.failure;
   return (
     <>
-      <div aria-live="polite">{line !== null && <div class={styles.failure}>{line}</div>}</div>
+      <div aria-live="polite">
+        {line !== null && <div class={messageLook({ tone: "error", className: styles.failure })}>{line}</div>}
+      </div>
       <Button
         variant="primary"
         size="action"

@@ -675,16 +675,8 @@
 
 /* ---- Shared ------------------------------------------------------------- */
 
-.empty {
-  margin: 0;
-  font-size: var(--fs-15);
-  color: var(--text-muted);
-}
-
 .error {
   margin: var(--sp-12) 0 0;
-  font-size: var(--fs-14);
-  color: var(--error-on-paper);
 }
 
 /* The page's buttons (packages/ui/Button.tsx), as wide as their words. */

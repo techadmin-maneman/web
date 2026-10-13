@@ -1,6 +1,7 @@
 // Raising a custom order (docs/decisions/0174-custom-orders.md): made to the client's profile, from a supplier at its
 // price, with what the client pays and when the supplier promised it. Raising it sends the client the payment link.
 
+import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { Button } from "@maneman/ui/Button";
 import { Field, Select, TextInput } from "@maneman/ui/Field";
 import { errorText, type Failure } from "@maneman/web-kit/refusal";
@@ -154,9 +155,9 @@ export function RaiseCustomOrder({
         </Button>
       </div>
       {failure !== null && (
-        <p className={form.error} role="alert">
+        <InlineMessage tone="error" className={form.error}>
           {errorText(copy.errors, failure)}
-        </p>
+        </InlineMessage>
       )}
     </div>
   );

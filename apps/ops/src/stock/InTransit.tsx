@@ -3,6 +3,7 @@
 // left can send it back before it arrives. A hair system's pieces that arrived are scanned, and those not scanned
 // went missing on the way (docs/decisions/0162-scanning-labels.md).
 
+import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { Panel } from "@maneman/ui/Panel";
 import { Button, RowButton } from "@maneman/ui/Button";
 import { Field, NumberInput, TextInput } from "@maneman/ui/Field";
@@ -93,9 +94,9 @@ function Receiving(props: { book: Stock; transfer: Transfer; onDone: (book: Stoc
         </Button>
       </div>
       {failure !== null && (
-        <p className={form.error} role="alert">
+        <InlineMessage tone="error" className={form.error}>
           {errorText(copy.errors, failure)}
-        </p>
+        </InlineMessage>
       )}
     </div>
   );
@@ -186,9 +187,9 @@ export function InTransit({ book, onChanged }: { book: Stock; onChanged: (book: 
         />
       )}
       {failure !== null && (
-        <p className={form.error} role="alert">
+        <InlineMessage tone="error" className={form.error}>
           {errorText(copy.errors, failure)}
-        </p>
+        </InlineMessage>
       )}
     </Panel>
   );

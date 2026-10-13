@@ -2,6 +2,7 @@
 // last published, and the check before the next publish, which says how many lines changed since and when the site
 // shows them. Only its second press publishes.
 
+import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { indiaDate, shortDate } from "@maneman/web-kit/dates";
 import { errorText, type Failure } from "@maneman/web-kit/refusal";
 import { useState } from "react";
@@ -49,9 +50,9 @@ export function PublishCheck(props: {
         onBack={props.onBack}
       />
       {typeof step === "object" && (
-        <p className={styles.error} role="alert">
+        <InlineMessage tone="error" className={styles.error}>
           {errorText(copy.errors, step)}
-        </p>
+        </InlineMessage>
       )}
     </>
   );

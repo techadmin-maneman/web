@@ -9,6 +9,7 @@
 // technicians here (./TechnicianForms.tsx); those switched off are listed
 // beneath the table.
 
+import { EmptyState } from "@maneman/ui/EmptyState";
 import { Table } from "@maneman/ui/Table";
 import { capsLook } from "@maneman/ui/Caps";
 import { Button } from "@maneman/ui/Button";
@@ -207,7 +208,7 @@ function Roster() {
         </p>
       )}
       {book.technicians.length === 0 ? (
-        <p className={styles.empty}>{technicians.empty}</p>
+        <EmptyState look="panel" line={technicians.empty} />
       ) : (
         <RosterTable active={book.technicians} figures={figures} />
       )}

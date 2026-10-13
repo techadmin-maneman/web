@@ -2,6 +2,7 @@
 // with its spec, price and where it stands, its payment link sent again or the order cancelled while unpaid; and a new
 // one raised.
 
+import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { Panel } from "@maneman/ui/Panel";
 import { TextLink } from "@maneman/ui/TextLink";
 import { Button } from "@maneman/ui/Button";
@@ -196,14 +197,14 @@ export function CustomOrders({ clientId }: { clientId: string }) {
         </div>
       )}
       {said !== null && (
-        <p className={form.saved} role="status">
+        <InlineMessage tone="saved" className={form.saved}>
           {said}
-        </p>
+        </InlineMessage>
       )}
       {failure !== null && (
-        <p className={form.error} role="alert">
+        <InlineMessage tone="error" className={form.error}>
           {errorText(copy.errors, failure)}
-        </p>
+        </InlineMessage>
       )}
     </Panel>
   );

@@ -16,7 +16,7 @@ import { useCallback, useState } from "react";
 import { api, type Refer } from "../api.ts";
 import { empty, refer } from "../content.ts";
 import { AppLink, Shell } from "../components/Shell.tsx";
-import { EmptyState } from "../components/EmptyState.tsx";
+import { EmptyState } from "@maneman/ui/EmptyState";
 import { useSession } from "../session.ts";
 import { Loading } from "../states/Loading.tsx";
 import { PageFailed } from "../states/PageFailed.tsx";
@@ -103,7 +103,11 @@ export function ReferScreen() {
   const { me } = useSession();
   return (
     <Shell header={{ kind: "tab", title: refer.title }} tab="/refer">
-      {me.state === "fitted" ? <Fitted /> : <EmptyState lines={empty.refer.lines(rewardOf(me), pendingInviteOf(me))} />}
+      {me.state === "fitted" ? (
+        <Fitted />
+      ) : (
+        <EmptyState look="page" lines={empty.refer.lines(rewardOf(me), pendingInviteOf(me))} />
+      )}
     </Shell>
   );
 }

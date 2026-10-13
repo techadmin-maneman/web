@@ -1,6 +1,7 @@
 // One count task (docs/decisions/0185-cycle-counts.md): counted blind, item by item; what differed counted again; and
 // a recount that still differs signed off by a manager, who alone sees what the ledger held.
 
+import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { Panel } from "@maneman/ui/Panel";
 import { Button } from "@maneman/ui/Button";
 import { Field, TextInput } from "@maneman/ui/Field";
@@ -224,14 +225,14 @@ export function CountTaskPanel({ id, onChanged }: { id: string; onChanged: () =>
           ),
       )}
       {said !== null && (
-        <p className={form.saved} role="status">
+        <InlineMessage tone="saved" className={form.saved}>
           {said}
-        </p>
+        </InlineMessage>
       )}
       {failure !== null && (
-        <p className={form.error} role="alert">
+        <InlineMessage tone="error" className={form.error}>
           {errorText(copy.errors, failure)}
-        </p>
+        </InlineMessage>
       )}
     </Panel>
   );

@@ -1,6 +1,7 @@
 // Operations · Purchasing, its claims (docs/decisions/0169-supplier-claims.md): every open claim on a supplier and the
 // latest settled, each opened beneath the list for its next step; then the returned pieces handed in to settle.
 
+import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { Panel } from "@maneman/ui/Panel";
 import { TextLink } from "@maneman/ui/TextLink";
 import { RowButton } from "@maneman/ui/Button";
@@ -113,14 +114,14 @@ export function Claims({ orders }: { orders: Orders }) {
           </div>
         )}
         {said !== null && (
-          <p className={form.saved} role="status">
+          <InlineMessage tone="saved" className={form.saved}>
             {said}
-          </p>
+          </InlineMessage>
         )}
         {failure !== null && (
-          <p className={form.error} role="alert">
+          <InlineMessage tone="error" className={form.error}>
             {errorText(copy.errors, failure)}
-          </p>
+          </InlineMessage>
         )}
       </Panel>
       <Panel titleId="returned-pieces" title={copy.returns.title}>

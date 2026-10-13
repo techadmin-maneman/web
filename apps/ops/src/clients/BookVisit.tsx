@@ -2,9 +2,10 @@
 // choose or whoever is free. A paid visit goes out as a payment link and is booked once the client pays; anything
 // else is booked at once (src/routes/ops/visits.ts). No board draws it (docs/fidelity-method.md).
 
+import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { errorText } from "@maneman/web-kit/refusal";
 import { Button } from "@maneman/ui/Button";
-import { Dialog } from "@maneman/ui/Dialog";
+import { Drawer } from "@maneman/ui/Drawer";
 import { Field, TextInput } from "@maneman/ui/Field";
 import { useLoad } from "@maneman/ui/useLoad";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
@@ -96,9 +97,9 @@ function Booked({ booked }: { booked: VisitBooked }) {
 function Unreadable({ onRetry }: { onRetry: () => void }) {
   return (
     <div>
-      <p className={styles.error} role="alert">
+      <InlineMessage tone="error" className={styles.error}>
         {copy.unreadable}
-      </p>
+      </InlineMessage>
       <Button variant="outline" size="small" className={styles.quiet} onClick={onRetry}>
         {copy.retry}
       </Button>
@@ -362,9 +363,9 @@ function Form({
         </Button>
       </div>
       {failed !== null && (
-        <p className={styles.error} role="alert">
+        <InlineMessage tone="error" className={styles.error}>
           {errorText(copy.errors, { code: failed })}
-        </p>
+        </InlineMessage>
       )}
     </form>
   );
@@ -387,18 +388,10 @@ export function BookVisit({
 }) {
   const [booked, setBooked] = useState<VisitBooked | null>(null);
   return (
-    <Dialog
-      className={styles.drawer}
-      labelledBy="book-visit-title"
-      canClose
-      onDismiss={() => {
-        onClose(booked);
-      }}
-    >
-      <div className={styles.head}>
-        <h2 className={styles.title} id="book-visit-title">
-          {copy.title(name)}
-        </h2>
+    <Drawer
+      titleId="book-visit-title"
+      title={copy.title(name)}
+      aside={
         <Button
           variant="outline"
           size="small"
@@ -409,14 +402,17 @@ export function BookVisit({
         >
           {copy.close}
         </Button>
-      </div>
-      <div className={styles.body}>
-        {booked === null ? (
-          <Form clientId={clientId} prefill={prefill} onBooked={setBooked} />
-        ) : (
-          <Booked booked={booked} />
-        )}
-      </div>
-    </Dialog>
+      }
+      canClose
+      onDismiss={() => {
+        onClose(booked);
+      }}
+    >
+      {booked === null ? (
+        <Form clientId={clientId} prefill={prefill} onBooked={setBooked} />
+      ) : (
+        <Booked booked={booked} />
+      )}
+    </Drawer>
   );
 }

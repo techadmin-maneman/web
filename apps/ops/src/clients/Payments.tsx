@@ -8,6 +8,8 @@
 // the visits and the reason, and the server writes the ledger's entry and its
 // audit entry together; the balance it answers is shown, and heads the page.
 
+import { InlineMessage } from "@maneman/ui/InlineMessage";
+import { EmptyState } from "@maneman/ui/EmptyState";
 import { ChoiceGroup, Label, Radio, TextInput } from "@maneman/ui/Field";
 import { errorText } from "@maneman/web-kit/refusal";
 import { capsLook } from "@maneman/ui/Caps";
@@ -79,7 +81,7 @@ function CodeLine({ entry }: { entry: ClientPayment }) {
 }
 
 function PaymentTable({ payments }: { payments: readonly ClientPayment[] }) {
-  if (payments.length === 0) return <p className={styles.empty}>{copy.none}</p>;
+  if (payments.length === 0) return <EmptyState look="panel" line={copy.none} />;
   return (
     <Table className={styles.table}>
       <thead>
@@ -144,7 +146,7 @@ function CopyLink({ url, what }: { url: string; what: string }) {
 }
 
 function LinkTable({ links }: { links: readonly ClientPaymentLink[] }) {
-  if (links.length === 0) return <p className={styles.empty}>{linkCopy.none}</p>;
+  if (links.length === 0) return <EmptyState look="panel" line={linkCopy.none} />;
   return (
     <Table className={styles.table}>
       <thead>
@@ -181,7 +183,7 @@ function invoiceStateOf(invoice: ClientInvoice): string {
 }
 
 function InvoiceTable({ invoices }: { invoices: readonly ClientInvoice[] }) {
-  if (invoices.length === 0) return <p className={styles.empty}>{invoiceCopy.none}</p>;
+  if (invoices.length === 0) return <EmptyState look="panel" line={invoiceCopy.none} />;
   return (
     <Table className={styles.table}>
       <thead>
@@ -312,9 +314,9 @@ function CreditForm({
             </p>
           )}
           {adjusting.step === "failed" && (
-            <p className={styles.error} role="alert">
+            <InlineMessage tone="error" className={styles.error}>
               {errorText(creditCopy.errors, { code: adjusting.code })}
-            </p>
+            </InlineMessage>
           )}
         </form>
       )}

@@ -23,6 +23,7 @@
 // installed app has its own cookie jar, so this is a second sign-in on a phone
 // already signed in, and saying nothing would read as a lost account.
 
+import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { MobileInput } from "@maneman/ui/MobileInput";
 import { useSecondsLeft } from "@maneman/ui/useSecondsLeft";
 import { CodeField } from "@maneman/ui/CodeField";
@@ -208,9 +209,9 @@ export function SignIn({ why, onSignedIn }: { why: Out; onSignedIn: () => void }
       {challenge !== null && error === null && <p className={styles.note}>{copy.codeSent}</p>}
       {quiet && hint === null && note !== null && <p className={styles.note}>{note}</p>}
       {shown !== null && (
-        <p className={styles.error} role="alert">
+        <InlineMessage tone="error" ground="ink" className={styles.error}>
           {shown}
-        </p>
+        </InlineMessage>
       )}
 
       <div className={styles.foot}>

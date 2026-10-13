@@ -1,5 +1,6 @@
 // The code screen (design/phase2/Client App).
 
+import { messageLook } from "@maneman/ui/InlineMessage";
 import { TextButton } from "@maneman/ui/TextLink";
 import { IconButton } from "@maneman/ui/IconButton";
 import { apiNow } from "../lib/clock.ts";
@@ -161,7 +162,7 @@ export function CodeScreen(props: Props) {
         {message !== null && (
           // Busy while a code is on its way, so a screen reader is told the screen is working
           // rather than re-reading the problem the client has already acted on.
-          <p className={styles.error} role="alert" aria-busy={props.busy}>
+          <p className={messageLook({ tone: "error", ground: "ink", className: styles.error })} role="alert" aria-busy={props.busy}>
             {message}
           </p>
         )}

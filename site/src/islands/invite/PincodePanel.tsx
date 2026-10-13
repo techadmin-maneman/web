@@ -1,4 +1,5 @@
 import "../refs-as-props.ts";
+import { messageLook } from "@maneman/ui/InlineMessage";
 import { Label, TextInput } from "@maneman/ui/Field";
 import { Button } from "@maneman/ui/Button";
 import { ICONS } from "@maneman/brand/icons";
@@ -76,7 +77,7 @@ export function PincodePanel(props: { check: PincodeCheck }) {
           </form>
           <div aria-live="polite">
             {error !== null && (
-              <div id="invite-pincode-error" class={styles.error}>
+              <div id="invite-pincode-error" class={messageLook({ tone: "error", className: styles.error })}>
                 {error}
               </div>
             )}

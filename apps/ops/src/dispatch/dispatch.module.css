@@ -388,13 +388,6 @@
   color: var(--error-on-paper);
 }
 
-.empty {
-  margin: 0;
-  padding: var(--sp-16) var(--sp-16);
-  font-size: var(--fs-14);
-  color: var(--text-muted);
-}
-
 /* Where leave is recorded, and where the tray's asked window comes from. */
 .note {
   margin: 0;
@@ -518,29 +511,6 @@
 
 /* ---- The panels a job opens, each a modal dialog ------------------------- */
 
-.panel {
-  position: fixed;
-  inset: var(--header-h) 0 auto auto;
-  width: var(--ops-panel);
-  max-width: 100%;
-  max-height: calc(100dvh - var(--header-h));
-  margin: 0;
-  padding: 0;
-  overflow-y: auto;
-  border: var(--hairline) solid var(--paper-line);
-  background: var(--paper);
-  color: var(--text);
-}
-
-/* The board stays in view behind a panel, as the boards draw them, and takes no clicks while it is open. */
-.panel::backdrop {
-  background: transparent;
-}
-
-.panel:focus {
-  outline: none;
-}
-
 .picker {
   padding: var(--sp-24);
 }
@@ -587,38 +557,12 @@
 
 /* ---- The drawer ---------------------------------------------------------- */
 
-.drawerHead {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: var(--sp-16);
-  padding: var(--sp-16) var(--sp-20);
-  border-bottom: var(--hairline) solid var(--text);
-}
-
-.drawerTitle {
-  margin: 0;
-  font-family: var(--font-serif);
-  font-weight: var(--weight-regular);
-  font-size: var(--fs-22);
-}
-
-.drawerWhen {
-  margin: var(--sp-4) 0 0;
-  font-size: var(--fs-14);
-  color: var(--text-muted);
-}
-
 /* "Prepaid", in brass small capitals at the drawer's head. */
 .badge {
   flex-shrink: 0;
   letter-spacing: var(--tracking-12);
   font-size: var(--fs-14);
   color: var(--brass-text);
-}
-
-.drawerBody {
-  padding: var(--sp-16) var(--sp-20);
 }
 
 .rows {

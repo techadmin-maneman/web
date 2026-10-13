@@ -6,6 +6,7 @@
 // (docs/decisions/0071-what-ops-see-before-a-setting-changes.md). Codes switched off fold away beneath the table, their
 // uses on record.
 
+import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { Disclosure } from "@maneman/ui/Disclosure";
 import { errorText } from "@maneman/web-kit/refusal";
 import { Panel } from "@maneman/ui/Panel";
@@ -423,9 +424,9 @@ export function DiscountCodes() {
         />
       )}
       {said !== null && (
-        <p className={styles.saved} role="status">
+        <InlineMessage tone="saved" className={styles.saved}>
           {said}
-        </p>
+        </InlineMessage>
       )}
       {book.codes.length === 0 ? (
         <>

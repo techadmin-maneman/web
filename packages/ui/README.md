@@ -26,6 +26,9 @@ The React parts the three Phase 2 apps share: the client app, the ops console an
 | `@maneman/ui/SkipLink`       | The keyboard's way past a page's header to its content                                                                                                                                                          |
 | `@maneman/ui/Sheet`          | A sheet that rises from the foot of the column, as a native modal dialog that Back closes, and `SheetPanel`, its paper                                                                                          |
 | `@maneman/ui/Dialog`         | A panel opened over the page as a native modal dialog, whose caller decides when it may close                                                                                                                   |
+| `@maneman/ui/Drawer`         | The ops console's drawer: a Dialog under the header at the right, titled over a rule, its body a form or not |
+| `@maneman/ui/EmptyState`     | Nothing to show yet: a page's two lines in the client app's look, or one muted line in a console panel |
+| `@maneman/ui/InlineMessage`  | A line saying what just happened: an error (alert), a change saved (status) or a note, on paper or ink |
 | `@maneman/ui/Panel`          | The ops console's bordered panel, headed by its title and its count                                                                                                                                             |
 | `@maneman/ui/Field`          | `Field` (a label, a hint and an error tied to their control), `Label`, `TextInput`, `NumberInput`, `DateInput`, `Select`, `TextArea`, `Checkbox`, `Radio`, `Fieldset`, `ChoiceGroup`, `FileInput`, `RangeInput` |
 | `@maneman/ui/AddressFields`  | An address's parts as labelled fields, held to the API's longest; the site's /book and invite pages draw it too                                                                                                 |

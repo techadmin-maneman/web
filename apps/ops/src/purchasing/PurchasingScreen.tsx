@@ -2,6 +2,7 @@
 // opened beneath the list to approve, mark sent, cancel or print; a new order drafted from a supplier's list; and the
 // claims on suppliers, with the returned pieces to settle (./Claims.tsx); and each supplier's scorecard.
 
+import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { Panel } from "@maneman/ui/Panel";
 import { RowButton } from "@maneman/ui/Button";
 import { Table } from "@maneman/ui/Table";
@@ -82,9 +83,9 @@ export function PurchasingScreen() {
           <Panel titleId="orders" title={copy.orders}>
             <OrdersTable book={current} onOpen={setOpen} />
             {said !== null && (
-              <p className={form.saved} role="status">
+              <InlineMessage tone="saved" className={form.saved}>
                 {said}
-              </p>
+              </InlineMessage>
             )}
           </Panel>
           {opened !== null && <OrderPanel key={opened.id} book={current} order={opened} onChanged={changed} />}

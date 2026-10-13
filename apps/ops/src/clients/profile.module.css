@@ -95,8 +95,6 @@
 
 .error {
   margin: 0;
-  font-size: var(--fs-14);
-  color: var(--error-on-paper);
 }
 
 .actions {

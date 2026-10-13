@@ -238,14 +238,10 @@
 
 .saved {
   margin: var(--sp-8) var(--sp-20) 0;
-  font-size: var(--fs-14);
-  color: var(--text-muted);
 }
 
 .error {
   margin: var(--sp-8) var(--sp-20) 0;
-  font-size: var(--fs-14);
-  color: var(--error-on-paper);
 }
 
 .rule .saved,

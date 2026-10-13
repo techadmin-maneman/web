@@ -3,6 +3,8 @@
 // form says so before it is sent. Leave moves none of the jobs already booked: each waits on the Tasks board until
 // ops move it, and "Show on board" opens the board on that job's week, with their row in view and the job's drawer open.
 
+import { InlineMessage } from "@maneman/ui/InlineMessage";
+import { EmptyState } from "@maneman/ui/EmptyState";
 import { DateInput, Field, TextInput } from "@maneman/ui/Field";
 import { Button } from "@maneman/ui/Button";
 import { failedRequestId, useLoad } from "@maneman/ui/useLoad";
@@ -118,9 +120,9 @@ function Period({
       )}
       {leave.jobs.length > 0 && <Stranded jobs={leave.jobs} technician={technician} />}
       {failed !== null && (
-        <p className={styles.error} role="alert">
+        <InlineMessage tone="error" className={styles.error}>
           {failed}
-        </p>
+        </InlineMessage>
       )}
     </li>
   );
@@ -219,9 +221,9 @@ function LeaveForm({
         </Button>
       </div>
       {failed !== null && (
-        <p className={styles.error} role="alert">
+        <InlineMessage tone="error" className={styles.error}>
           {failed}
-        </p>
+        </InlineMessage>
       )}
     </form>
   );
@@ -248,7 +250,7 @@ export function Leave({ technician }: { technician: TechnicianSummary }) {
   return (
     <>
       {leave.length === 0 ? (
-        <p className={styles.none}>{copy.none}</p>
+        <EmptyState look="panel" line={copy.none} />
       ) : (
         <ul className={styles.leaveList}>
           {leave.map((period) => (

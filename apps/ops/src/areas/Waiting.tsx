@@ -6,6 +6,8 @@
 // untold, and this is how they are told (docs/decisions/0071-what-ops-see-before-a-setting-changes.md). A pincode
 // the service area does not hold is added first, with its area's name and its city.
 
+import { InlineMessage } from "@maneman/ui/InlineMessage";
+import { EmptyState } from "@maneman/ui/EmptyState";
 import { TextButton } from "@maneman/ui/TextLink";
 import { DateInput, Label } from "@maneman/ui/Field";
 import { useFocusOnMount } from "@maneman/ui/useFocusOnMount";
@@ -201,7 +203,7 @@ function Pincodes({
     { label: alerts, sort: (row) => row.alerts, className: styles.alerts },
   ];
   const view = useTableView(listed, columns, { search: (row) => `${row.pincode} ${areaName(row)}` });
-  if (listed.length === 0) return <p className={styles.empty}>{waitlist.empty}</p>;
+  if (listed.length === 0) return <EmptyState look="panel" line={waitlist.empty} />;
   return (
     <section className={styles.panel}>
       <Narrowing view={view} label={waitlist.narrow} className={styles.narrow} />
@@ -291,9 +293,9 @@ export function Waiting() {
   return (
     <div className={styles.column}>
       {refused !== null && (
-        <p className={styles.error} role="alert">
+        <InlineMessage tone="error" className={styles.error}>
           {errorText(copy.errors, { code: refused })}
-        </p>
+        </InlineMessage>
       )}
       {whenLoaded(loaded, {
         loading: <Loading />,

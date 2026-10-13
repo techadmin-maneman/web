@@ -1,6 +1,7 @@
 // Adding a member of staff, or changing their grants and whether they are let in. The whole list of grants is sent
 // and replaces theirs; the check names each grant given or taken away before anything is saved.
 
+import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { Checkbox, Fieldset, Label, Select, TextInput } from "@maneman/ui/Field";
 import { errorText } from "@maneman/web-kit/refusal";
 import { Button } from "@maneman/ui/Button";
@@ -237,9 +238,9 @@ export function StaffForm(props: {
         </Button>
       </div>
       {listed && (
-        <p className={styles.error} role="alert">
+        <InlineMessage tone="error" className={styles.error}>
           {errorText(copy.errors, { code: "already_listed" })}
-        </p>
+        </InlineMessage>
       )}
     </SettingForm>
   );

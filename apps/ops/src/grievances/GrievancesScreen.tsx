@@ -8,6 +8,7 @@
 // the audit log under whoever Access says is signed in (ADR 0031). It messages
 // nobody: ops answer the client themselves, on the number shown.
 
+import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { errorText } from "@maneman/web-kit/refusal";
 import { Button } from "@maneman/ui/Button";
 import { Field, TextArea } from "@maneman/ui/Field";
@@ -92,9 +93,9 @@ function Open({ each, now, mayAnswer, onAnswered }: OpenProps) {
         </div>
       )}
       {answering.step === "failed" && (
-        <p className={styles.error} role="alert">
+        <InlineMessage tone="error" className={styles.error}>
           {errorText(copy.errors, { code: answering.code })}
-        </p>
+        </InlineMessage>
       )}
     </>
   );

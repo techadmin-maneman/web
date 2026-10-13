@@ -6,6 +6,8 @@
 // Each name in a held pair is a way to that client's page, and each grant says
 // how long it has been held, as the board writes it.
 
+import { InlineMessage } from "@maneman/ui/InlineMessage";
+import { EmptyState } from "@maneman/ui/EmptyState";
 import { lazyScreen } from "@maneman/ui/lazyScreen";
 import { REASON_MAX_CHARS } from "@rules/policy/decision-reasons.ts";
 import { errorText } from "@maneman/web-kit/refusal";
@@ -164,9 +166,9 @@ function HeldGrant({ grant, now, mayDecide, onDecided }: HeldGrantProps) {
         </div>
       )}
       {decision.step === "failed" && (
-        <p className={styles.error} role="alert">
+        <InlineMessage tone="error" className={styles.error}>
           {errorText(copy.errors, { code: decision.code })}
-        </p>
+        </InlineMessage>
       )}
     </>
   );
@@ -287,7 +289,7 @@ function ReferrersTable({ version }: { version: number }) {
           {copy.title}
         </VisuallyHidden>
         {pages.referrers.length === 0 ? (
-          <p className={styles.empty}>{copy.empty}</p>
+          <EmptyState look="panel" line={copy.empty} />
         ) : (
           <>
             <Narrowing view={view} label={copy.narrow} className={styles.narrow} />

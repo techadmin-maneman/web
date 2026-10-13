@@ -107,8 +107,6 @@
 
 .error {
   margin: var(--sp-12) 0 0;
-  font-size: var(--fs-14);
-  color: var(--error-on-paper);
 }
 
 .settleOn {

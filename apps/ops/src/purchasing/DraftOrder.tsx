@@ -2,6 +2,7 @@
 // its minimum, at the price it lists; the total shown before it is drafted. Drafting sends nothing to the supplier: an
 // order goes out only once approved and marked sent.
 
+import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { Panel } from "@maneman/ui/Panel";
 import { Button, RowButton } from "@maneman/ui/Button";
 import { Field, Select, TextInput } from "@maneman/ui/Field";
@@ -86,14 +87,14 @@ function LineBoxes(props: {
         ×
       </RowButton>
       {questioned && (
-        <p className={form.error} role="status">
+        <InlineMessage tone="error" className={form.error}>
           {copy.draft.farAbove(
             inCurrency(item.unit_price, currency),
             unit,
             Math.round(times),
             inCurrency(listed.unit_cost, "INR"),
           )}
-        </p>
+        </InlineMessage>
       )}
     </div>
   );
@@ -263,9 +264,9 @@ export function DraftOrder({ book, onDrafted }: { book: Orders; onDrafted: (book
         </Button>
       </div>
       {failure !== null && (
-        <p className={form.error} role="alert">
+        <InlineMessage tone="error" className={form.error}>
           {errorText(copy.errors, failure)}
-        </p>
+        </InlineMessage>
       )}
     </Panel>
   );

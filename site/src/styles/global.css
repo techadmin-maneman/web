@@ -82,13 +82,14 @@
 }
 
 /* The site's buttons are wider than the apps', the words further from the edges, and its fields as tall as its
-   buttons (packages/ui/base.css). */
+   buttons (packages/ui/base.css); its lines of what went wrong are in its 14 px small size. */
 :root {
   --action-pad: var(--sp-32);
   --control-pad: var(--sp-24);
   --small-pad: var(--sp-20);
   --field-height: var(--btn-lg);
   --field-text: var(--fs-16);
+  --message-size: var(--fs-14);
 }
 
 .visually-hidden {

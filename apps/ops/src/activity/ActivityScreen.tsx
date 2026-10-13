@@ -3,6 +3,7 @@
 // to lives in the page's address (./filters.ts), so a client's whole record, linked from their History tab, opens
 // already narrowed. The design draws no board for it; it is built as Areas' tables are.
 
+import { EmptyState } from "@maneman/ui/EmptyState";
 import { Chip } from "@maneman/ui/Chip";
 import { Button } from "@maneman/ui/Button";
 import { Table } from "@maneman/ui/Table";
@@ -128,7 +129,7 @@ function Log({ filters }: { filters: Filters }) {
     if (!answer.ok) return;
     setOlder({ entries: [...(older?.entries ?? []), ...answer.body.entries], next: answer.body.next_before });
   };
-  if (entries.length === 0) return <p className={styles.empty}>{copy.empty}</p>;
+  if (entries.length === 0) return <EmptyState look="panel" line={copy.empty} />;
   return (
     <>
       <Rows entries={entries} />

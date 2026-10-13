@@ -9,6 +9,7 @@
 // systems are listed with them, counted in pieces, and added by spec beneath
 // (docs/decisions/0156-hair-systems-in-stock.md).
 
+import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { RowButton } from "@maneman/ui/Button";
 import { Panel } from "@maneman/ui/Panel";
 import { Table } from "@maneman/ui/Table";
@@ -235,9 +236,9 @@ export function Consumables() {
           </Table>
         )}
         {said !== null && (
-          <p className={styles.saved} role="status">
+          <InlineMessage tone="saved" className={styles.saved}>
             {said}
-          </p>
+          </InlineMessage>
         )}
         <Form
           book={current}

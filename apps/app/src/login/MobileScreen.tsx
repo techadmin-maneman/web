@@ -1,5 +1,6 @@
 // The mobile number (design/phase2/Client App).
 
+import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { MobileInput } from "@maneman/ui/MobileInput";
 import { classes } from "@maneman/ui/classes";
 import { Button } from "@maneman/ui/Button";
@@ -65,9 +66,9 @@ export function MobileScreen({ initial, busy, error, ended, turnstileBox, onSubm
             }}
           />
           {shown !== null && (
-            <p className={styles.error} id="mobile-error" role="alert">
+            <InlineMessage tone="error" ground="ink" className={styles.error} id="mobile-error">
               {shown}
-            </p>
+            </InlineMessage>
           )}
           {!invalid && error === "rate_limited" && <MessageUs />}
           <div ref={turnstileBox} className={styles.turnstile} />

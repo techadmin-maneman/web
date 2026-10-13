@@ -1,5 +1,6 @@
 // The account's deletion card: a request to delete the account, which ops carry out or reject.
 
+import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { capsLook } from "@maneman/ui/Caps";
 import { Button } from "@maneman/ui/Button";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
@@ -72,9 +73,9 @@ export function DeletionCard({
       <div className={styles.confirm} aria-busy={busy}>
         <p className={styles.cardBody}>{copy.confirm}</p>
         {failed && (
-          <p className={styles.error} role="alert">
+          <InlineMessage tone="error" className={styles.error}>
             {copy.failed}
-          </p>
+          </InlineMessage>
         )}
         <div className={styles.row}>
           <Button

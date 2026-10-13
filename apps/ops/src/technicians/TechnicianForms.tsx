@@ -2,9 +2,10 @@
 // Switching off asks first, since it signs them out at once and hands their visits still to come back to the dispatch
 // board.
 
+import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { capsLook } from "@maneman/ui/Caps";
 import { Button, buttonLook } from "@maneman/ui/Button";
-import { Dialog } from "@maneman/ui/Dialog";
+import { Drawer } from "@maneman/ui/Drawer";
 import { Checkbox, Field, Select, TextInput } from "@maneman/ui/Field";
 import { indiaClock, indiaDate, shortDate } from "@maneman/web-kit/dates";
 import { mobileDigits } from "@maneman/web-kit/mobile";
@@ -167,35 +168,31 @@ export function AddTechnician({
   };
 
   return (
-    <Dialog className={styles.drawer} labelledBy="add-title" canClose={!sending} onDismiss={onClose}>
-      <div className={styles.drawerHead}>
-        <h2 className={styles.drawerTitle} id="add-title">
-          {copy.title}
-        </h2>
+    <Drawer
+      titleId="add-title"
+      title={copy.title}
+      canClose={!sending}
+      onDismiss={onClose}
+      onSubmit={(event) => {
+        event.preventDefault();
+        void send();
+      }}
+    >
+      <Fields typed={typed} cities={cities} onType={setTyped} focusFirst={false} />
+      <div className={styles.actions}>
+        <Button variant="primary" size="small" className={styles.save} type="submit" disabled={sending}>
+          {sending ? copy.saving : copy.save}
+        </Button>
+        <Button variant="outline" size="small" className={styles.quiet} disabled={sending} onClick={onClose}>
+          {copy.cancel}
+        </Button>
       </div>
-      <form
-        className={styles.drawerBody}
-        onSubmit={(event) => {
-          event.preventDefault();
-          void send();
-        }}
-      >
-        <Fields typed={typed} cities={cities} onType={setTyped} focusFirst={false} />
-        <div className={styles.actions}>
-          <Button variant="primary" size="small" className={styles.save} type="submit" disabled={sending}>
-            {sending ? copy.saving : copy.save}
-          </Button>
-          <Button variant="outline" size="small" className={styles.quiet} disabled={sending} onClick={onClose}>
-            {copy.cancel}
-          </Button>
-        </div>
-        {failed !== null && (
-          <p className={styles.error} role="alert">
-            {failed}
-          </p>
-        )}
-      </form>
-    </Dialog>
+      {failed !== null && (
+        <InlineMessage tone="error" className={styles.error}>
+          {failed}
+        </InlineMessage>
+      )}
+    </Drawer>
   );
 }
 
@@ -284,9 +281,9 @@ function ChangeForm({
         </Button>
       </div>
       {failed !== null && (
-        <p className={styles.error} role="alert">
+        <InlineMessage tone="error" className={styles.error}>
           {failed}
-        </p>
+        </InlineMessage>
       )}
     </form>
   );
@@ -380,9 +377,9 @@ function SwitchOff({
         </Button>
       </div>
       {failed !== null && (
-        <p className={styles.error} role="alert">
+        <InlineMessage tone="error" className={styles.error}>
           {failed}
-        </p>
+        </InlineMessage>
       )}
     </div>
   );
@@ -421,9 +418,9 @@ function SwitchOn({ technician, onSwitchedOn }: { technician: TechnicianSummary;
         </Button>
       </div>
       {failed !== null && (
-        <p className={styles.error} role="alert">
+        <InlineMessage tone="error" className={styles.error}>
           {failed}
-        </p>
+        </InlineMessage>
       )}
     </>
   );
