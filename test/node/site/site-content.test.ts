@@ -99,7 +99,7 @@ describe("content", () => {
   // ADR 0104: the look goes to WhatsApp only, never to the site, so every build shows the notices that say so, which
   // await counsel and still keep a client's try-on (ADR 0084).
   it("says on every page of the try-on that the look goes to WhatsApp only, and never promises it on screen", () => {
-    expect([site.notices.photo.version, site.notices.gate.version]).toEqual(["photo-v4", "gate-v4"]);
+    expect([site.notices.photo.version, site.notices.gate.version]).toEqual(["photo-v4", "gate-v5"]);
     expect([site.notices.photo.approved, site.notices.gate.approved]).toEqual([false, false]);
     expect(site.tryOnSendsCopy).toBe(true);
     const privacy = textOf(site.legalPages.privacy);
@@ -332,7 +332,7 @@ describe("the publish gate", () => {
   it("stops production on what awaits counsel alone: every published block is real", () => {
     expect(publishProblems()).toEqual([
       "the photo notice (photo-v4) is not approved",
-      "the gate notice (gate-v4) is not approved",
+      "the gate notice (gate-v5) is not approved",
       "the privacy page's wording is not approved",
       "the terms page's wording is not approved",
     ]);

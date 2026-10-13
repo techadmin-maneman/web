@@ -61,7 +61,7 @@ const ClaimRequestSchema = z
       .max(40)
       .optional()
       .openapi({
-        example: "gate-v4",
+        example: "gate-v5",
         description:
           "The gate's notice the page showed: the current one, the only one a claim may record, when left out " +
           "(docs/decisions/0104-the-try-ons-look-on-whatsapp-only.md).",

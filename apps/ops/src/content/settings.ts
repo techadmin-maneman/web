@@ -430,6 +430,8 @@ export const settings = {
       retireFrom: "Hidden from",
       addTitle: (kind: string) => `New ${kind} service`,
       code: "Code",
+      /** A replacement priced for one hair system: clients who wear it are offered this one. */
+      replacementCode: "Give it the code of the hair system it replaces, and clients who wear that one are offered it.",
       next: "Review",
       cancel: "Cancel",
     },

@@ -20,9 +20,11 @@ export type Consent = Profile["consents"][number];
 
 /** What switching each of these off means, said while it is off. */
 const WHEN_OFF: Partial<Record<ConsentPurpose, string>> = {
-  photos_own_record: profile.ownRecordOff,
   whatsapp_visits: profile.visitsOff,
 };
+
+/** Every visit is photographed for the client's record: a line in the list, never a switch. */
+const NO_SWITCH: readonly ConsentPurpose[] = ["photos_own_record"];
 
 /** The consents as the profile holds them, which a switch the API recorded changes there. */
 export function ConsentList({
@@ -56,7 +58,10 @@ export function ConsentList({
         {copy.agreed}
       </h2>
       <ul className={styles.consents}>
-        {consents.map((consent) => {
+        <li className={styles.consent}>
+          <p className={styles.consentName}>{copy.visitPhotos}</p>
+        </li>
+        {consents.filter((consent) => !NO_SWITCH.includes(consent.purpose)).map((consent) => {
           const name = copy.purposes[consent.purpose];
           return (
             <li key={consent.purpose} className={styles.consent}>

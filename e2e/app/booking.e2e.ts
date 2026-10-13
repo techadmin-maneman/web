@@ -56,8 +56,7 @@ test("books and pays for a service visit through Razorpay Checkout", async ({ pa
   await expect(pay.getByText(/^\S+ never handles money\.$/)).toBeVisible();
   // Already switched on, so the sheet does not ask again.
   await expect(pay.getByRole("checkbox", { name: REMIND })).toHaveCount(0);
-  // Both photograph consents are decided, so booking asks for neither, as the pay step draws it.
-  await expect(pay.getByText("What booking agrees to")).toHaveCount(0);
+  // Booking agrees to no photograph consent, whatever the client decided.
   await expect(pay.getByText(/^By booking this visit/)).toHaveCount(0);
 
   await pay.getByRole("button", { name: "Pay Rs. 2,000" }).click();

@@ -683,7 +683,7 @@
     "surface": "site",
     "group": "Home",
     "where": "tryOnTeaser",
-    "text": "One photograph, one look from six, sent privately to your WhatsApp. A simulation, not a photograph of a result. Your photograph is deleted within the hour."
+    "text": "One photograph, one look from six, sent privately to your WhatsApp. A simulation, not a photograph of a result. Your photograph is deleted within the hour; a small copy stays with your look for up to 14 days."
   },
   {
     "key": "site:home/tryOnTeaser.start",
@@ -2125,7 +2125,7 @@
     "surface": "site",
     "group": "Page titles",
     "where": "pageDescriptions",
-    "text": "One photograph, one look from six, sent privately to your WhatsApp. A simulation, not a photograph of a result. Your photograph is deleted within the hour."
+    "text": "One photograph, one look from six, sent privately to your WhatsApp. A simulation, not a photograph of a result. Your photograph is deleted within the hour; a small copy stays with your look for up to 14 days."
   },
   {
     "key": "site:pages/pageDescriptions.book",

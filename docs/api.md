@@ -2929,7 +2929,7 @@ Razorpay's webhook: payments and refunds
       "type": "string",
       "minLength": 1,
       "maxLength": 40,
-      "example": "gate-v4",
+      "example": "gate-v5",
       "description": "The gate's notice the page showed: the current one, the only one a claim may record, when left out (docs/decisions/0104-the-try-ons-look-on-whatsapp-only.md)."
     },
     "attribution": {

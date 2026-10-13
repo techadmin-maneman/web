@@ -135,11 +135,30 @@ export async function bookableService(
   kind: VisitType,
   tier: string | undefined,
   on: string,
+  wears: string | null = null,
 ): Promise<PricedService | null> {
   const offered = await offeredServices(db, on, [kind]);
   if (tier !== undefined) return offered.find((service) => service.tier === tier) ?? null;
   if (!hasStandardService(kind)) return null;
+  if (kind === "replacement") return replacementFor(offered, wears)[0] ?? null;
   return offered.find((service) => service.tier === STANDARD_TIER) ?? offered[0] ?? null;
+}
+
+/**
+ * The replacement a client is offered: the one ops price for the hair system they wear, a replacement service under
+ * that product's code, else the standard one, so a product ops have not priced yet costs the single price. Every
+ * other kind's services pass as they are.
+ */
+export function replacementFor<T extends { readonly kind: VisitType; readonly tier: string }>(
+  services: readonly T[],
+  wears: string | null,
+): T[] {
+  const replacements = services.filter((service) => service.kind === "replacement");
+  const theirs =
+    replacements.find((service) => service.tier === wears) ??
+    replacements.find((service) => service.tier === STANDARD_TIER) ??
+    replacements[0];
+  return services.filter((service) => service.kind !== "replacement" || service === theirs);
 }
 
 /** The hair systems a first fit is sold as on a day: the first-fit services offered and priced then, in ops' order. */

@@ -33,7 +33,6 @@ import {
   api,
   type Address,
   type BookableType,
-  type BookingConsent,
   type BookingWindow,
   type MoveTerms,
   type OfferedService,
@@ -43,7 +42,6 @@ import {
 import { booking } from "../content.ts";
 import { focusIfLost } from "@maneman/ui/arrival";
 import { drawsItsOwnClose, nextStep } from "./flow.ts";
-import { undecidedOf } from "./consents.ts";
 import { hasLaterDays } from "./days.ts";
 import { useDays } from "./use-days.ts";
 import { usePay } from "./use-pay.ts";
@@ -122,7 +120,6 @@ export function BookingSheet({ type, services = [], tier, recommended, moving, f
   // The address the profile had when it was last read.
   const savedAddress = useRef<Address | null>(null);
   /** The photograph purposes the client has never decided on, which booking a new visit also agrees to. */
-  const [undecided, setUndecided] = useState<readonly BookingConsent[]>([]);
   const days = useDays({ dispatch, movingId, offeredDate, offeredWindow, addressMissing });
   const { availability, date, chosenWindow, showDays } = days;
 
@@ -147,7 +144,6 @@ export function BookingSheet({ type, services = [], tier, recommended, moving, f
       api.profile(),
     ]);
     setReminders(profile.ok ? remindersOn(profile.body) : null);
-    setUndecided(profile.ok ? undecidedOf(profile.body) : []);
     savedAddress.current = profile.ok ? profile.body.address : null;
     if (answer !== null && !answer.ok) {
       if (answer.code === "not_served") showNotServed();
@@ -214,7 +210,6 @@ export function BookingSheet({ type, services = [], tier, recommended, moving, f
     dialog,
     dispatch,
     movingId,
-    undecided,
     beforeStarting: async () => {
       if (remind && reminders !== true) await switchOnReminders();
     },
@@ -300,7 +295,6 @@ export function BookingSheet({ type, services = [], tier, recommended, moving, f
             busy={busy}
             problem={problem}
             askToRemind={reminders !== true}
-            consents={movingId === undefined ? undecided : []}
             remind={remind}
             onRemind={setRemind}
             onPay={() => void payFor(step.hold)}

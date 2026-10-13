@@ -30,7 +30,7 @@ import {
   type Asked,
   type ProposedBooking,
 } from "../../domain/booking/proposed-visits.ts";
-import { offeredAmong, servicesOnDay } from "../../domain/booking/services.ts";
+import { offeredAmong, replacementFor, servicesOnDay } from "../../domain/booking/services.ts";
 import { homePrompts, promptFacts, whatHomeOffers } from "../../domain/clients/home-prompt.ts";
 import { currentAddress, liveContact } from "../../domain/clients/profile.ts";
 import { spendableCredits } from "../../domain/money/credits.ts";
@@ -57,6 +57,7 @@ import {
 import { PriceSchema } from "../schemas/booking.ts";
 import { OwedPaymentSchema } from "./payments.ts";
 import { creditsBody, CreditsSchema } from "./refer.ts";
+import { wornProduct } from "../../domain/field/stock-gap.ts";
 
 const MeSchema = z
   .object({
@@ -362,7 +363,7 @@ export function registerClientMe(app: App): void {
 
     // Each read is a trip to D1 and back, so the reads that need nothing from each other go together.
     const nameOnInvite = c.var.config.settings.referrerNameOnInvite;
-    const [person, upcoming, underWay, credits, fitted, form, types, services, home, invite, owed, recap] =
+    const [person, upcoming, underWay, credits, fitted, form, types, services, home, invite, owed, recap, wears] =
       await Promise.all([
         liveContact(db, personId),
         nextVisit(db, personId, now),
@@ -376,6 +377,7 @@ export function registerClientMe(app: App): void {
         pendingInviteOf(db, personId, now, nameOnInvite),
         owedPayments(db, personId),
         consultationRecap(db, personId),
+        wornProduct(db, personId),
       ]);
     if (person === null) return refuse(c, "session_required");
 
@@ -384,7 +386,8 @@ export function registerClientMe(app: App): void {
     // A form's consultation counts as booked while it stands, asked for or held.
     const booked = home.next.booked || upcoming !== null || form.proposal !== null;
     const { remake, offer } = whatHomeOffers(booked, home.prompt, home.next.offer);
-    const offered = offeredAmong(services, tomorrow, types).map((service) => ({
+    // A replacement is the one priced for the hair system they wear, or else the single price.
+    const offered = replacementFor(offeredAmong(services, tomorrow, types), wears).map((service) => ({
       type: service.kind,
       tier: service.tier,
       name: service.name,

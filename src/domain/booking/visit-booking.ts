@@ -40,6 +40,7 @@ import { bookableService, offeredProducts, type PricedService } from "./services
 import { loadSlotSchedule } from "./slot-times.ts";
 import { termsInForce } from "../visits/visit-changes.ts";
 import { REMAKE_TERMS, remakeBookedStatement, remakesOwed, type Remake } from "./remakes.ts";
+import { wornProduct } from "../field/stock-gap.ts";
 
 /** What ops ask for. */
 export interface VisitAsked {
@@ -225,7 +226,8 @@ export async function saleFor(
   if (asked.date < opens || asked.date > last) return refused({ status: 422, code: "not_bookable" });
   if (await alreadyToCome(db, asked, now)) return refused({ status: 409, code: "already_booked" });
 
-  const service = await bookableService(db, asked.kind, asked.tier, asked.date);
+  const wears = asked.kind === "replacement" && asked.tier === undefined ? await wornProduct(db, asked.personId) : null;
+  const service = await bookableService(db, asked.kind, asked.tier, asked.date, wears);
   if (service === null) return refused({ status: 422, code: await noServiceRefusal(db, asked) });
   if (asked.covers !== undefined) {
     const covers = await remakeAsked(db, asked);

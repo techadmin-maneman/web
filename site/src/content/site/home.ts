@@ -198,7 +198,7 @@ export const tryOnTeaser = {
   eyebrow: "Try-on",
   title: "See yourself with hair before anyone comes to your home.",
   // The look on WhatsApp only is ADR 0104's.
-  body: "One photograph, one look from six, sent privately to your WhatsApp. A simulation, not a photograph of a result. Your photograph is deleted within the hour.",
+  body: "One photograph, one look from six, sent privately to your WhatsApp. A simulation, not a photograph of a result. Your photograph is deleted within the hour; a small copy stays with your look for up to 14 days.",
   start: "Start the try-on",
   before: "Before",
   after: "After",
