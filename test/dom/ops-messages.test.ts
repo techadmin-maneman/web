@@ -419,19 +419,23 @@ describe("the Messages page", () => {
         input.dispatchEvent(new Event("input", { bubbles: true }));
       });
     };
+    // The list's own search box sits above, so each box is looked for in the stranger's panel.
+    const panel = () => page.querySelector(`section[aria-label="${copy.stranger.title}"]`) ?? page;
     const named = (text: string) =>
-      [...page.querySelectorAll("button")].find((each) => each.textContent.trim() === text);
+      [...panel().querySelectorAll("button")].find((each) => each.textContent.trim() === text);
     await click(page.querySelector(`button[aria-label="${copy.openLabel(STRANGER.mobile)}"]`));
     expect(page.textContent).toContain(copy.stranger.title);
-    type(page.querySelector<HTMLInputElement>('input[maxlength="60"]') ?? undefined, "Arjun");
+    type(panel().querySelector<HTMLInputElement>('input[maxlength="60"]') ?? undefined, "Arjun");
     await click(named(copy.stranger.search));
     await click(page.querySelector(`button[aria-label="${copy.stranger.linkLabel("Arjun Mehta")}"]`));
     expect(posted.at(-1)).toEqual({
       path: `/api/conversations/${STRANGER.id}/link`,
       body: { person_id: ARJUN.person?.id },
     });
-    type(page.querySelector<HTMLInputElement>('input[maxlength="80"]') ?? undefined, "Meera Iyer");
-    const foundUs = [...page.querySelectorAll("select")].find((each) => each.querySelector('option[value="partner"]'));
+    type(panel().querySelector<HTMLInputElement>('input[maxlength="80"]') ?? undefined, "Meera Iyer");
+    const foundUs = [...panel().querySelectorAll("select")].find((each) =>
+      each.querySelector('option[value="partner"]'),
+    );
     act(() => {
       if (foundUs === undefined) return;
       Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, "value")?.set?.call(foundUs, "partner");

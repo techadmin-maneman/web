@@ -75,7 +75,10 @@ describe("useLiveLoad", () => {
   });
 
   it("shows loading, then the failure, on Try again", async () => {
-    answers = [{ ok: false, status: 503, requestId: "r-1" }, { ok: true, body: "one chat" }];
+    answers = [
+      { ok: false, status: 503, requestId: "r-1" },
+      { ok: true, body: "one chat" },
+    ];
     act(() => {
       root.render(createElement(Probe));
     });
