@@ -8977,7 +8977,7 @@ export interface paths {
                 query?: never;
                 header?: never;
                 path: {
-                    name: "checkin_radius_m" | "no_show_wait_min" | "change_notice_hours" | "late_change_charge" | "no_show_charge" | "no_show_waiver" | "address_unlock_hour" | "reminder_hour" | "phone_clock" | "task_sla_hours" | "piece_cycle_days" | "payment_hold" | "dispute_window_days" | "technician_work" | "booking_days" | "referral_reward" | "care_hours" | "remedy_limit" | "lost_after_days" | "po_second_approval_above_rupees" | "custom_order_grace_days" | "planning_period_days" | "planning_horizon_periods";
+                    name: "checkin_radius_m" | "no_show_wait_min" | "change_notice_hours" | "late_change_charge" | "no_show_charge" | "no_show_waiver" | "address_unlock_hour" | "reminder_hour" | "phone_clock" | "task_sla_hours" | "piece_cycle_days" | "payment_hold" | "dispute_window_days" | "technician_work" | "booking_days" | "referral_reward" | "care_hours" | "remedy_limit" | "lost_after_days" | "po_second_approval_above_rupees" | "po_rupees_to_one" | "custom_order_grace_days" | "planning_period_days" | "planning_horizon_periods";
                 };
                 cookie?: never;
             };
@@ -16719,7 +16719,7 @@ export interface components {
         OpsSetting: components["schemas"]["NumberRule"] | components["schemas"]["ChoiceRule"];
         NumberRule: {
             /** @enum {string} */
-            name: "checkin_radius_m" | "no_show_wait_min" | "change_notice_hours" | "late_change_charge" | "no_show_charge" | "no_show_waiver" | "address_unlock_hour" | "reminder_hour" | "phone_clock" | "task_sla_hours" | "piece_cycle_days" | "payment_hold" | "dispute_window_days" | "technician_work" | "booking_days" | "referral_reward" | "care_hours" | "remedy_limit" | "lost_after_days" | "po_second_approval_above_rupees" | "custom_order_grace_days" | "planning_period_days" | "planning_horizon_periods";
+            name: "checkin_radius_m" | "no_show_wait_min" | "change_notice_hours" | "late_change_charge" | "no_show_charge" | "no_show_waiver" | "address_unlock_hour" | "reminder_hour" | "phone_clock" | "task_sla_hours" | "piece_cycle_days" | "payment_hold" | "dispute_window_days" | "technician_work" | "booking_days" | "referral_reward" | "care_hours" | "remedy_limit" | "lost_after_days" | "po_second_approval_above_rupees" | "po_rupees_to_one" | "custom_order_grace_days" | "planning_period_days" | "planning_horizon_periods";
             title: string;
             note: string;
             set_by: string | null;
@@ -16752,7 +16752,7 @@ export interface components {
         };
         ChoiceRule: {
             /** @enum {string} */
-            name: "checkin_radius_m" | "no_show_wait_min" | "change_notice_hours" | "late_change_charge" | "no_show_charge" | "no_show_waiver" | "address_unlock_hour" | "reminder_hour" | "phone_clock" | "task_sla_hours" | "piece_cycle_days" | "payment_hold" | "dispute_window_days" | "technician_work" | "booking_days" | "referral_reward" | "care_hours" | "remedy_limit" | "lost_after_days" | "po_second_approval_above_rupees" | "custom_order_grace_days" | "planning_period_days" | "planning_horizon_periods";
+            name: "checkin_radius_m" | "no_show_wait_min" | "change_notice_hours" | "late_change_charge" | "no_show_charge" | "no_show_waiver" | "address_unlock_hour" | "reminder_hour" | "phone_clock" | "task_sla_hours" | "piece_cycle_days" | "payment_hold" | "dispute_window_days" | "technician_work" | "booking_days" | "referral_reward" | "care_hours" | "remedy_limit" | "lost_after_days" | "po_second_approval_above_rupees" | "po_rupees_to_one" | "custom_order_grace_days" | "planning_period_days" | "planning_horizon_periods";
             title: string;
             note: string;
             set_by: string | null;

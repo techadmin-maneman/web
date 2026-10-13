@@ -109,10 +109,18 @@ describe("approving an order", () => {
     expect(await firstOrder(approved)).toMatchObject({ state: "approved", needs_second_approval: false });
   });
 
-  it("always needs two for an order in another currency", () => {
+  it("needs two for an order in a currency with no rate set, whatever it is worth", () => {
     expect(needsSecondApproval({ currency: "USD", total: 100 }, 1_000_000)).toBe(true);
     expect(needsSecondApproval({ currency: "INR", total: 500_000 }, 5000)).toBe(false);
     expect(needsSecondApproval({ currency: "INR", total: 500_001 }, 5000)).toBe(true);
+  });
+
+  it("judges an order in another currency in rupees, at the rate ops set for it", () => {
+    const rates = { default: 0, USD: 84 };
+    // USD 140.00 at Rs. 84 is Rs. 11,760.
+    expect(needsSecondApproval({ currency: "USD", total: 14_000 }, 50_000, rates)).toBe(false);
+    expect(needsSecondApproval({ currency: "USD", total: 14_000 }, 10_000, rates)).toBe(true);
+    expect(needsSecondApproval({ currency: "CNY", total: 14_000 }, 50_000, rates)).toBe(true);
   });
 });
 

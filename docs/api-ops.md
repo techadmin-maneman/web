@@ -21861,6 +21861,7 @@ Request body:
         "remedy_limit",
         "lost_after_days",
         "po_second_approval_above_rupees",
+        "po_rupees_to_one",
         "custom_order_grace_days",
         "planning_period_days",
         "planning_horizon_periods"
@@ -22035,6 +22036,7 @@ Request body:
         "remedy_limit",
         "lost_after_days",
         "po_second_approval_above_rupees",
+        "po_rupees_to_one",
         "custom_order_grace_days",
         "planning_period_days",
         "planning_horizon_periods"

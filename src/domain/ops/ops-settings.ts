@@ -66,6 +66,8 @@ export interface OpsInputs {
   readonly lostAfterDays: number;
   /** A rupee order worth more than this needs a second approver (src/policy/purchasing.ts). */
   readonly poSecondApprovalAboveRupees: number;
+  /** Rupees to one unit of each other currency, for approvals (src/policy/purchasing.ts). */
+  readonly poRupeesToOne: Readonly<Record<string, number>>;
   /** Days past its promised date before a custom order is late (src/policy/purchasing.ts). */
   readonly customOrderGraceDays: number;
   /** The forecast's period and horizon (src/policy/forecast.ts). */
@@ -115,6 +117,7 @@ function shape(values: OpsValues): OpsInputs {
     remedyLimit: values.remedy_limit,
     lostAfterDays: values.lost_after_days,
     poSecondApprovalAboveRupees: values.po_second_approval_above_rupees,
+    poRupeesToOne: values.po_rupees_to_one,
     customOrderGraceDays: values.custom_order_grace_days,
     planningPeriodDays: values.planning_period_days,
     planningHorizonPeriods: values.planning_horizon_periods,

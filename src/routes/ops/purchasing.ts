@@ -244,7 +244,7 @@ export async function ordersAnswer(c: Context<AppEnv>) {
       second_approved_by: order.secondApprovedBy,
       sent_at: order.sentAt,
       cancel_reason: order.cancelReason,
-      needs_second_approval: needsSecondApproval(order, above),
+      needs_second_approval: needsSecondApproval(order, above, inputs.poRupeesToOne),
       receipts: receipts
         .filter((receipt) => receipt.poId === order.id)
         .map((receipt) => ({
@@ -312,8 +312,9 @@ export function registerOpsPurchasing(app: App): void {
   });
 
   app.openapi(stepRoute("approve", "An approval: the first, or a second by another manager"), async (c) => {
-    const { poSecondApprovalAboveRupees } = await opsInputs(c);
-    return after(c, await approveOrder(c.env.DB, c.req.valid("param").id, poSecondApprovalAboveRupees, written(c)));
+    const { poSecondApprovalAboveRupees, poRupeesToOne } = await opsInputs(c);
+    const rule = { aboveRupees: poSecondApprovalAboveRupees, rupeesToOne: poRupeesToOne };
+    return after(c, await approveOrder(c.env.DB, c.req.valid("param").id, rule, written(c)));
   });
 
   app.openapi(stepRoute("send", "An approved order marked sent"), async (c) =>

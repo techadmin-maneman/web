@@ -220,7 +220,7 @@ async function changed(
 export async function approveOrder(
   db: D1Database,
   id: string,
-  aboveRupees: number,
+  rule: { readonly aboveRupees: number; readonly rupeesToOne: Readonly<Record<string, number>> },
   written: Written,
 ): Promise<Changed> {
   const order = (await purchaseOrders(db)).find((each) => each.id === id) ?? null;
@@ -228,7 +228,7 @@ export async function approveOrder(
   if (order.state !== "drafted") return { ok: false, state: true };
   if (order.approvedBy === written.actor.id) return { ok: false, sameApprover: true };
   const at = written.now.toISOString();
-  const twice = needsSecondApproval(order, aboveRupees);
+  const twice = needsSecondApproval(order, rule.aboveRupees, rule.rupeesToOne);
   const update: OrderUpdate =
     order.approvedBy === null
       ? {

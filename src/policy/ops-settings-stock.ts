@@ -3,19 +3,29 @@
 
 import { PLANNING_HORIZON_PERIODS, PLANNING_PERIOD_DAYS } from "./forecast.ts";
 import type { OpsSetting } from "./ops-settings.ts";
-import { CUSTOM_ORDER_GRACE_DAYS, PO_SECOND_APPROVAL_ABOVE_RUPEES } from "./purchasing.ts";
+import { CUSTOM_ORDER_GRACE_DAYS, PO_RUPEES_TO_ONE, PO_SECOND_APPROVAL_ABOVE_RUPEES } from "./purchasing.ts";
 
 export const STOCK_SETTINGS = [
   {
     // Purchase orders (docs/decisions/0166-purchase-orders.md).
     name: "po_second_approval_above_rupees",
     title: "Second approver above",
-    note: "A purchase order in rupees worth more than this needs a second Operations manager to approve it; one in another currency always does. Nought means every order needs two.",
+    note: "A purchase order worth more than this in rupees needs a second Operations manager to approve it; one in another currency is judged at its rate below. Nought means every order needs two.",
     unit: "rupees",
     min: 0,
     max: 100_000_000,
     keys: null,
     fallback: PO_SECOND_APPROVAL_ABOVE_RUPEES,
+  },
+  {
+    name: "po_rupees_to_one",
+    title: "Rupees to one, for approvals",
+    note: "By currency code, as USD: what one unit is worth in rupees when an order in it is judged against Second approver above. Nought: such an order always needs two approvers.",
+    unit: "rupees",
+    min: 0,
+    max: 10_000,
+    keys: "open",
+    fallback: PO_RUPEES_TO_ONE,
   },
   {
     // Custom orders (docs/decisions/0176-custom-order-refunds.md).
