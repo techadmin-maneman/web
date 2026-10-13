@@ -65,6 +65,7 @@ import { MINUTE_MS } from "../lib/durations.ts";
 import { isOneOf } from "../lib/one-of.ts";
 import { MessagingMessageSchema } from "../config/pipeline.ts";
 import { runConsumer, type Settle } from "./consumer.ts";
+import { composeRecallNotice } from "../domain/field/recall-notice.ts";
 
 const RETRY_DELAY_SECONDS = 30;
 /** A send claimed longer ago than this is taken to have died, and may be claimed again. */
@@ -240,6 +241,8 @@ async function contentOf(db: D1Database, config: StaticConfig, row: MessageRow, 
       return composeDeletionRejected(db, row.subject_id, row.person_id);
     case "concern_answered":
       return composeConcernAnswered(db, row.subject_id, row.person_id);
+    case "recall_notice":
+      return composeRecallNotice(db, row.subject_id, row.person_id);
     case "messages_stopped":
       return composeMessagesStopped(db, row.person_id);
     case "move_proposed":

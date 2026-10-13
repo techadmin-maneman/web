@@ -220,12 +220,13 @@ export const guides: readonly Guide[] = [
 export const areasPage = {
   publish: true,
   pageTitle: "Where we come · Mane Man",
-  description: "Hair systems fitted at home across Delhi NCR: Gurgaon, Delhi, Noida, Faridabad and Ghaziabad.",
+  description: "Hair systems fitted at home by a trained technician, in the cities we serve.",
   title: "Where we come",
-  lead: "Your technician comes to your home, anywhere we serve in Delhi NCR.",
-  cities: ["Gurgaon", "Delhi", "Noida", "Faridabad", "Ghaziabad"],
-  /** Beneath the list: the pincodes we serve decide the streets, so a visitor checks theirs. */
+  // As built, naming no city; the site's Worker writes in the cities ops serve (site/src/lib/cities.ts).
+  lead: "Your technician comes to your home, wherever we serve.",
+  cities: "Your technician comes to your home in {cities}.",
+  /** The pincodes we serve decide the streets, so a visitor checks theirs. */
   streets: "Within each city, we serve by pincode. Check yours to see the days we can come.",
-  next: "Mumbai and Bengaluru are next. Leave your number on the booking page, and we'll tell you when we reach your city.",
+  next: "Not there yet? Leave your number on the booking page, and we'll tell you when we reach your city.",
   check: "Check your pincode",
 };

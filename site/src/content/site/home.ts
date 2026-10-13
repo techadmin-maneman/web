@@ -466,11 +466,14 @@ export const faq = {
     },
     {
       q: "What if I do not like it at the fit?",
-      a: GUARANTEE,
+      a: `Say so before it's fitted and you pay nothing. Once it's fitted: ${GUARANTEE.charAt(0).toLowerCase()}${GUARANTEE.slice(1)}`,
     },
     {
       q: "Which cities do you cover?",
-      a: "All of Delhi NCR: Gurgaon, Delhi, Noida, Faridabad and Ghaziabad. Mumbai and Bengaluru are next. Leave your number and we will tell you when a technician is working in your city.",
+      // As built, naming no city; the site's Worker writes in the cities ops serve (site/src/lib/cities.ts).
+      a: "We come by pincode. Check yours on the booking page; if we're not there yet, leave your number and we'll tell you when we are.",
+      cities:
+        "We're in {cities}, by pincode. Check yours on the booking page; if we're not there yet, leave your number and we'll tell you when we are.",
     },
     {
       q: "What does it cost?",

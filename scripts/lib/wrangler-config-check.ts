@@ -489,8 +489,8 @@ export function checkSiteConfig(config: JsonObject): string[] {
     entry: {
       main: "./src/worker.ts",
       assetsBinding: "ASSETS",
-      // "/" joins them while the site gives prices (site/src/lib/flags.ts).
-      runWorkerFirst: ["/book", "/r", "/r/*", "/_astro/*.mp4"],
+      // "/" and "/areas" name the cities ops serve, written in by the Worker (site/src/lib/cities.ts).
+      runWorkerFirst: ["/", "/areas", "/book", "/r", "/r/*", "/_astro/*.mp4"],
       service: { binding: "API", worker: "mm-api" },
     },
   });

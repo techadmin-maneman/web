@@ -34,12 +34,18 @@ const environment = siteEnvironment(process.env.MM_ENV);
 // marked for the owner or counsel (scripts/lib/content-gate.ts).
 if (environment === "production") assertPublishable(contentProblems(CONTENT_FILES.site));
 
+/** Every page the build wrote, by its path under dist with forward slashes, a guide's under guides/ among them. */
+async function builtPages(dir: URL): Promise<string[]> {
+  const files = await readdir(dir, { recursive: true });
+  return files.map((file) => file.replaceAll("\\", "/")).filter((file) => file.endsWith(".html"));
+}
+
 /** Deletes every file in _astro that no page, script or stylesheet names (unreferencedAssets). */
 async function removeUnreferencedAssets(dir: URL): Promise<void> {
   const assets = new URL("_astro/", dir);
   const files = await readdir(assets);
   const readable = [
-    ...(await readdir(dir)).filter((file) => file.endsWith(".html")).map((file) => new URL(file, dir)),
+    ...(await builtPages(dir)).map((file) => new URL(file, dir)),
     ...files.filter((file) => /\.(js|css)$/.test(file)).map((file) => new URL(file, assets)),
   ];
   const texts = await Promise.all(readable.map((file) => readFile(file, "utf8")));
@@ -58,7 +64,7 @@ export default defineConfig({
       name: "mm-environment-files",
       hooks: {
         "astro:build:done": async ({ dir }) => {
-          const pages = (await readdir(dir)).filter((file) => file.endsWith(".html"));
+          const pages = await builtPages(dir);
           const inline = { scripts: [] as string[], styles: [] as string[] };
           for (const page of pages) {
             const code = inlineCode(await readFile(new URL(page, dir), "utf8"));

@@ -1,4 +1,5 @@
-// What goes wrong in the client, ops and technician apps, as their pages report it (packages/web-kit/client-errors.ts):
+// What goes wrong in the site and the client, ops and technician apps, as their pages report it
+// (packages/web-kit/client-errors.ts):
 //
 //   POST /api/client-errors   a script error, a promise nobody caught, a screen that could not draw, or a write the
 //                             technician app's outbox gave up on

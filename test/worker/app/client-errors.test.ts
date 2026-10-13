@@ -48,8 +48,9 @@ describe("POST /api/client-errors", () => {
     },
   );
 
-  it("is not a route of the public site", async () => {
-    expect((await report("public", CRASH)).status).toBe(404);
+  it("logs a crash on the public site, its booking form or its try-on", async () => {
+    expect((await report("public", { ...CRASH, path: "/book" })).status).toBe(204);
+    expect(reported()[0]).toMatchObject({ app: "public", path: "/book" });
   });
 
   it("logs a write the technician app gave up on, under the refusal's own request ID", async () => {

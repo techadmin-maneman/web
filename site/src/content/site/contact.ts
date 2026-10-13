@@ -11,6 +11,13 @@ export const whatsapp = {
   label: `WhatsApp · ${WHATSAPP_DISPLAY}`,
 };
 
+/** The booking form or the try-on, when it failed to draw: the way to us instead. */
+export const islandFailed = {
+  publish: true,
+  message: "This didn't load. Message us on WhatsApp and we'll help you from there.",
+  action: "Message us on WhatsApp",
+};
+
 /** The business as search engines read it (LocalBusiness). Only published facts. */
 export const business = {
   name: "Mane Man",

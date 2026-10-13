@@ -37,6 +37,7 @@ import { Stage } from "./Stage.tsx";
 import styles from "./TryOn.module.css";
 import { Upload } from "./Upload.tsx";
 import { useGate } from "./useGate.ts";
+import { IslandBoundary } from "../IslandBoundary.tsx";
 
 interface Props {
   turnstileSiteKey: string;
@@ -46,7 +47,7 @@ interface Props {
   lookThumbnails: readonly string[] | null;
 }
 
-export default function TryOn(props: Props) {
+function TryOnFlow(props: Props) {
   const [state, send] = useReducer(step, START);
   const { screen, demo, mobile } = state;
   const heading = useRef<HTMLHeadingElement>(null);
@@ -217,5 +218,14 @@ export default function TryOn(props: Props) {
         <div ref={turnstileBox} class={styles.turnstile} />
       </div>
     </div>
+  );
+}
+
+/** The island as the page mounts it: a throw while it draws is reported, and the way to us shown in its place. */
+export default function TryOn(props: Props) {
+  return (
+    <IslandBoundary>
+      <TryOnFlow {...props} />
+    </IslandBoundary>
   );
 }

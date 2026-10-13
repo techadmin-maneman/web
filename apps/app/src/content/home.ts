@@ -135,7 +135,7 @@ export const home = {
     expect: [
       "Your scalp measured and your colour matched.",
       "Choose your hair system, fitted there and then.",
-      "Love it? Pay by the link we text you. If not, you pay nothing.",
+      "Decide before it's fitted: go ahead and pay by the link we text you, or decide against it and pay nothing.",
     ],
   },
   /** No board draws it. A one visit the client was fitted at and has not paid for yet. */

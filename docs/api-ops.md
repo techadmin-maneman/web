@@ -21039,6 +21039,7 @@ Request body:
               "move_unanswered",
               "visit_left_open",
               "unassigned_visit",
+              "recall_call",
               "unanswered_chat",
               "city_matter",
               "remedy_approval",

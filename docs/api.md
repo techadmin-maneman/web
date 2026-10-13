@@ -57,6 +57,18 @@ The prices the site publishes, from the price book, in force today. Cacheable fo
 }
 ```
 
+### GET /api/served-cities
+
+The cities the site says it comes to. Cacheable for a minute.
+
+**200**: The cities
+
+```json
+{
+  "$ref": "#/components/schemas/ServedCities"
+}
+```
+
 ### GET /api/site-words
 
 The site's words as last published, which each build of the site lays over its copy
@@ -1400,6 +1412,36 @@ Request body:
 }
 ```
 
+### POST /api/client-errors
+
+Report an error in the app's own page
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/ClientErrorReport"
+}
+```
+
+**204**: Logged
+
+**400**: invalid_request
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**429**: rate_limited: this address has sent its reports for the hour, or every address has
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ### POST /api/hooks/evolution/{token}
 
 Evolution's delivery receipts (messages.update) for the WhatsApp messages we sent, and the messages on our number (messages.upsert), where a STOP reply stops our messages
@@ -1797,6 +1839,27 @@ Razorpay's webhook: payments and refunds
     "name",
     "minutes",
     "price"
+  ],
+  "additionalProperties": false
+}
+```
+
+### ServedCities
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "cities": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Each city with a pincode ops serve, in the console's order."
+    }
+  },
+  "required": [
+    "cities"
   ],
   "additionalProperties": false
 }
@@ -3024,6 +3087,81 @@ Razorpay's webhook: payments and refunds
   },
   "required": [
     "token"
+  ],
+  "additionalProperties": false
+}
+```
+
+### ClientErrorReport
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "kind": {
+      "type": "string",
+      "enum": [
+        "error",
+        "unhandled_rejection",
+        "render",
+        "outbox_gave_up"
+      ]
+    },
+    "message": {
+      "type": "string",
+      "maxLength": 500
+    },
+    "path": {
+      "type": "string",
+      "maxLength": 300,
+      "description": "The page's path, with no query or fragment."
+    },
+    "version": {
+      "type": "string",
+      "maxLength": 40,
+      "description": "The build the page runs, as its mm-version."
+    },
+    "stack": {
+      "type": "string",
+      "maxLength": 4000
+    },
+    "source": {
+      "type": "string",
+      "maxLength": 500,
+      "description": "The script the error was thrown in."
+    },
+    "line": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "column": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "step": {
+      "type": "string",
+      "maxLength": 40,
+      "description": "outbox_gave_up: the write's kind, as `checklist`."
+    },
+    "code": {
+      "type": "string",
+      "maxLength": 60,
+      "description": "outbox_gave_up: the code the API refused it with."
+    },
+    "status": {
+      "type": "integer",
+      "description": "outbox_gave_up: the refusal's HTTP status."
+    },
+    "request_id": {
+      "type": "string",
+      "maxLength": 64,
+      "description": "outbox_gave_up: the refusal's request ID, which its own log lines carry."
+    }
+  },
+  "required": [
+    "kind",
+    "message",
+    "path"
   ],
   "additionalProperties": false
 }

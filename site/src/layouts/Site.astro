@@ -99,12 +99,16 @@ const ogImage = new URL(image.path, SITE_ORIGIN).href;
     {home && <Footer />}
     {home && <StickyBar />}
     <script>
-      // Where this visit came from, kept for the booking or the try-on to send,
-      // read before the analytics tags tidy the address; and an invite this
-      // browser has remembered for more than thirty days, taken away.
+      // Every script error and promise nobody caught reported, as the apps' are
+      // (packages/web-kit/client-errors.ts). Where this visit came from, kept
+      // for the booking or the try-on to send, read before the analytics tags
+      // tidy the address; and an invite this browser has remembered for more
+      // than thirty days, taken away.
+      import { reportUncaughtErrors } from "@maneman/web-kit/client-errors";
       import { startAnalytics } from "../lib/analytics.ts";
       import { forgetStaleInvite } from "../lib/remembered-invite.ts";
       import { captureAttribution } from "../lib/visit.ts";
+      reportUncaughtErrors();
       captureAttribution();
       forgetStaleInvite();
       startAnalytics();

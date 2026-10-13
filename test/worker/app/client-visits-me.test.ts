@@ -201,6 +201,32 @@ describe("GET /api/me's prompt and invoice line", () => {
     expect(me).toMatchObject({ remake: { type: "first_fit", why: "partial" }, booking: { next: null } });
   });
 
+  // A recall the client must hear of leads Home whatever else is booked, until its replacement is.
+  it("offers a recalled piece's free replacement even with a service booked", async () => {
+    await seed([done("ap-done", "2026-09-10"), booked("ap-next")]);
+    await signIn();
+    await fitPiece("2027-03-01");
+    await env.DB.batch([
+      env.DB.prepare(
+        `INSERT INTO consumables (code, name, unit, unit_cost, reorder_kit, created_at, updated_at)
+         VALUES ('hs-1', 'Essential', 'piece', 1, 0, ?1, ?1)`,
+      ).bind(NOW.toISOString()),
+      env.DB.prepare(
+        "INSERT INTO stock_lots (id, consumable_code, lot_code, received_at) VALUES ('lot-1', 'hs-1', 'BAD', ?1)",
+      ).bind(NOW.toISOString()),
+      env.DB.prepare(
+        `INSERT INTO recalls (id, number, lot_id, reason, raised_by, raised_at)
+         VALUES ('recall-1', 1, 'lot-1', 'Shedding', 'ops@localhost', ?1)`,
+      ).bind(NOW.toISOString()),
+      env.DB.prepare(
+        "INSERT INTO recall_pieces (recall_id, piece_id, due_before) SELECT 'recall-1', id, replacement_due_at FROM pieces",
+      ),
+    ]);
+    const me = await (await get("/api/me")).json<{ remake: unknown; next_visit: unknown }>();
+    expect(me.remake).toEqual({ type: "replacement", why: "recall" });
+    expect(me.next_visit).not.toBeNull();
+  });
+
   it("offers no replacement for a piece another has taken the place of", async () => {
     await seed([done("ap-done", "2026-09-10"), booked("ap-next")]);
     await signIn();

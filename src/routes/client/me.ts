@@ -111,7 +111,9 @@ const MeSchema = z
         "The soonest visit paid for, or booked free, that is not booked yet: neither booked nor refunded. It is " +
         "on its way, and becomes a visit once it is booked (ADR 0068).",
     }),
-    remake: z.union([RemakeSchema, z.null()]).openapi({ description: "Null when none, and while a visit is booked." }),
+    remake: z.union([RemakeSchema, z.null()]).openapi({
+      description: "Null when none; a partly done visit's while another visit is booked, a recall's never.",
+    }),
     payment_owed: z.union([OwedPaymentSchema, z.null()]).openapi({
       description:
         "The oldest payment the client owes: a consultation and fit in one visit they were fitted at, paid by the " +

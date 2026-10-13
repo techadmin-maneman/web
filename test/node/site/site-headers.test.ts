@@ -120,4 +120,12 @@ describe("the sitemap", () => {
     expect(paths).toEqual(["/", "/try", "/privacy"]);
     expect(sitemapFile(paths)).toContain("<loc>https://maneman.in/try</loc>");
   });
+
+  // Each guide is built as guides/<slug>.html, a folder down.
+  it("lists a page a folder down by its address, as the guides are", () => {
+    expect(pagePath("guides/hair-system-or-transplant.html")).toBe("/guides/hair-system-or-transplant");
+    expect(sitemapFile(["/guides/hair-system-or-transplant"])).toContain(
+      "<loc>https://maneman.in/guides/hair-system-or-transplant</loc>",
+    );
+  });
 });

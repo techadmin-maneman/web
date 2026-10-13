@@ -59,6 +59,8 @@ export const tasks = {
     move_unanswered: "Move not answered",
     visit_left_open: "Visit left open",
     unassigned_visit: "No technician",
+    // Not drawn: a client wearing a recalled piece (docs/decisions/0187-recalls.md).
+    recall_call: "Recall call",
     // Not drawn: a chat past its reply-by time (docs/decisions/0132-the-reply-clock.md).
     unanswered_chat: "Unanswered chat",
     // Not drawn: a matter Care sent to the city (docs/decisions/0135-city-matters.md).
@@ -175,6 +177,8 @@ export const tasks = {
      */
     /** "Service visit · Tue 22 Sep, 9:00 am · no technician": send someone from the board. */
     unassigned_visit: (visit: string, when: string) => `${visit} · ${when} · no technician`,
+    /** "MM-ESS-0000041-R · recalled, replacement free": call them to book it. */
+    recall_call: (pieces: string) => `${pieces} · recalled, replacement free`,
     /** "Tue 22 Sep · nobody attended", or "· not closed" for one begun: give the client a new time, or close it. */
     visit_left_open: (when: string, begun: boolean) => `${when} · ${begun ? "not closed" : "nobody attended"}`,
     /** "hs_essential_8x10_1b_g20_d100 · none in their city", or the profile that matches no stock code yet. */

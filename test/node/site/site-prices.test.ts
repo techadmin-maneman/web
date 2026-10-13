@@ -95,11 +95,12 @@ describe("the site's prices", () => {
   });
 
   // The Worker writes the figures into / only while the site gives them, so only then does / go through it.
-  it("sends / through the site Worker only while the site gives prices, in every environment", () => {
+  // The home page names the cities ops serve whatever the prices, so it goes through the Worker in every environment.
+  it("sends / and /areas through the site Worker, in every environment", () => {
     type Assets = { assets: { run_worker_first: string[] } };
     const config = readJsonc("site/wrangler.jsonc") as Assets & { env: Record<string, Assets> };
     for (const assets of [config, ...Object.values(config.env)].map((each) => each.assets)) {
-      expect(assets.run_worker_first.includes("/")).toBe(PRICES_SHOWN);
+      expect(assets.run_worker_first).toEqual(expect.arrayContaining(["/", "/areas"]));
     }
   });
 

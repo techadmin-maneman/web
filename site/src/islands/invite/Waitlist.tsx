@@ -37,7 +37,8 @@ export function Waitlist(props: FormProps & { person: PersonFields | null; onLis
     undefined,
     person === null ? undefined : { ...person, consent: false },
   );
-  const [alert, setAlert] = useState(false);
+  // Joining the list is asking to be told at launch, so the box starts ticked.
+  const [alert, setAlert] = useState(true);
   const [extent, setExtent] = useState<LossExtent | null>(null);
   // On /book, the invite this browser remembers: the form says who is told of the fit before it sends it.
   const [remembered, setRemembered] = useState(() => (props.invited ? null : rememberedInvite()));

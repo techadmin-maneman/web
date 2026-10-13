@@ -24,13 +24,17 @@
 // The built films are given a byte range at a time, which the assets cannot do: iOS Safari plays a video only from a
 // server that can.
 //
-// While the site gives no prices (PRICES_SHOWN), the Worker asks for no price book, and / is left to the assets.
+// The home page and /areas name the cities ops serve (GET /api/served-cities), kept a minute as the prices are, so a
+// launch reaches the site without a rebuild; each sentence that names them is built naming none.
+//
+// While the site gives no prices (PRICES_SHOWN), the Worker asks for no price book.
 // Every answer of mm-api's that cannot be used is one line in the Worker's log, and a failure is remembered for ten
 // seconds, so a down mm-api is not asked again by every view.
 
 import { inviteDescription, invitePageTitle, inviteTitle } from "./content/referral.ts";
 import type { Invite, PublishedPrices, ReferralReward } from "./lib/api.ts";
 import { partOf } from "./lib/byte-range.ts";
+import { isServedCities, namingCities, type ServedCities } from "./lib/cities.ts";
 import { cardPath, HOUSE_CARD, INVITE_PATH, isInvite } from "./lib/invite.ts";
 import { fillPrices, isPublishedPrices, pricesOf, priceWords, type PriceWords } from "./lib/prices.ts";
 import { isReferralReward } from "./lib/reward.ts";
@@ -52,6 +56,9 @@ const FILM = /^\/_astro\/[^/]+\.mp4$/;
 /** The pages besides the landing that show a price. */
 const PRICED_PAGES = new Set(["/", "/book"]);
 
+/** The pages that name the cities we come to. */
+const CITY_PAGES = new Set(["/", "/areas"]);
+
 /** The page besides the landing that says what a referral earns. */
 const REWARD_PAGE = "/book";
 
@@ -62,7 +69,7 @@ const KEPT_MS = 60_000;
 const FAILURE_KEPT_MS = 10_000;
 
 /** What the Worker asks mm-api for, as its log line names it. */
-type Asked = "invite" | "prices" | "reward";
+type Asked = "invite" | "prices" | "reward" | "cities";
 
 /** One line in the Worker's log for an answer it cannot use, and null in its place. */
 function failed(asked: Asked, status: number | null, reason: string): null {
@@ -106,6 +113,10 @@ const askForPrices = (env: SiteEnv, origin: string): Promise<PublishedPrices | n
 /** What a referral earns, or null when mm-api could not say. */
 const askForReward = (env: SiteEnv, origin: string): Promise<ReferralReward | null> =>
   fetchJson(env, new Request(`${origin}/api/referral-reward`), "reward", isReferralReward);
+
+/** The cities ops serve, or null when mm-api could not say. */
+const askForCities = (env: SiteEnv, origin: string): Promise<ServedCities | null> =>
+  fetchJson(env, new Request(`${origin}/api/served-cities`), "cities", isServedCities);
 
 type Ask<T> = (env: SiteEnv, origin: string) => Promise<T | null>;
 
@@ -236,6 +247,20 @@ class Structured {
   }
 }
 
+/** A sentence that names the cities we come to, written from its data-cities over the one it was built with. */
+class CitiesNamed {
+  private readonly cities: readonly string[];
+
+  constructor(cities: readonly string[]) {
+    this.cities = cities;
+  }
+
+  element(element: Element): void {
+    const sentence = element.getAttribute("data-cities");
+    if (sentence !== null) element.setInnerContent(namingCities(sentence, this.cities));
+  }
+}
+
 function writePrices(rewriter: HTMLRewriter, prices: PublishedPrices): void {
   const words = priceWords(pricesOf(prices));
   rewriter.on("[data-price]", new Figure(words));
@@ -254,6 +279,7 @@ export interface SiteWorkerOptions {
 export function createSiteWorker({ clock = Date.now, pricesShown = PRICES_SHOWN }: SiteWorkerOptions = {}) {
   const publishedPrices = cachedFor(KEPT_MS, clock, askForPrices);
   const referralReward = cachedFor(KEPT_MS, clock, askForReward);
+  const servedCities = cachedFor(KEPT_MS, clock, askForCities);
 
   return {
     async fetch(request: Request, env: SiteEnv): Promise<Response> {
@@ -262,7 +288,8 @@ export function createSiteWorker({ clock = Date.now, pricesShown = PRICES_SHOWN 
       if (NO_CODE.test(url.pathname)) return Response.redirect(`${url.origin}/book${url.search}`, 301);
 
       const code = INVITE_PATH.exec(url.pathname)?.[1]?.toUpperCase();
-      if (code === undefined && !PRICED_PAGES.has(url.pathname)) return env.ASSETS.fetch(request);
+      const namesCities = CITY_PAGES.has(url.pathname);
+      if (code === undefined && !PRICED_PAGES.has(url.pathname) && !namesCities) return env.ASSETS.fetch(request);
 
       // The landing is r.html for every code, which the assets serve at /r (site/astro.config.ts builds files).
       const path = code === undefined ? url.pathname : "/r";
@@ -270,13 +297,15 @@ export function createSiteWorker({ clock = Date.now, pricesShown = PRICES_SHOWN 
       if (!page.ok || request.method !== "GET") return page;
 
       const saysReward = code !== undefined || url.pathname === REWARD_PAGE;
-      const [prices, invite, reward] = await Promise.all([
-        pricesShown ? publishedPrices(env, url.origin) : null,
+      const [prices, invite, reward, cities] = await Promise.all([
+        pricesShown && (code !== undefined || PRICED_PAGES.has(url.pathname)) ? publishedPrices(env, url.origin) : null,
         code === undefined ? null : lookUp(env, request, url.origin, code),
         saysReward ? referralReward(env, url.origin) : null,
+        namesCities ? servedCities(env, url.origin) : null,
       ]);
       const rewriter = new HTMLRewriter();
       if (prices !== null) writePrices(rewriter, prices);
+      if (cities !== null && cities.cities.length > 0) rewriter.on("[data-cities]", new CitiesNamed(cities.cities));
       if (reward !== null) rewriter.on("body", new Written("data-reward", JSON.stringify(reward)));
       if (code !== undefined) {
         rewriter.on("head > title", new Retitled(invitePageTitle(invite)));
