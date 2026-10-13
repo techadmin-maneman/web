@@ -131,9 +131,48 @@ describe("a receipt against an order in rupees", () => {
       ),
     ).toBe(5500);
 
-    const rest = await job.opsPost(`/api/purchase-orders/${order.id}/receipts`, receipt([line(lineId, 24)]));
+    const rest = await job.opsPost(
+      `/api/purchase-orders/${order.id}/receipts`,
+      receipt([line(lineId, 24)], { supplier_invoice: "INV-91" }),
+    );
     expect((await rest.json<Orders>()).orders.find((each) => each.id === order.id)?.state).toBe("received");
     expect(await held("solvent")).toBe(48);
+  });
+
+  it("takes no more of a line than it still owes, and a supplier's invoice once", async () => {
+    const supplier = await supplierOf("INR", [{ code: "solvent", price: 4500 }]);
+    const order = await sentOrder(supplier, [{ consumable_code: "solvent", quantity: 8 }]);
+    const lineId = order.lines[0]?.id ?? "";
+    // Six good and two damaged: the two are still owed, so the order stays part received.
+    const first = await job.opsPost(
+      `/api/purchase-orders/${order.id}/receipts`,
+      receipt([line(lineId, 6, { damaged: 2 })], { supplier_invoice: "MHI/2612/118" }),
+    );
+    expect(first.status).toBe(200);
+
+    // The same delivery taken again, as a second tap or a second person would.
+    const again = await job.opsPost(
+      `/api/purchase-orders/${order.id}/receipts`,
+      receipt([line(lineId, 2)], { supplier_invoice: " mhi/2612/118 " }),
+    );
+    expect(again.status).toBe(400);
+    expect((await again.json<{ error: { fields: string[] } }>()).error.fields).toEqual(["supplier_invoice"]);
+
+    const over = await job.opsPost(
+      `/api/purchase-orders/${order.id}/receipts`,
+      receipt([line(lineId, 3)], { supplier_invoice: "MHI/2612/140" }),
+    );
+    expect(over.status).toBe(400);
+    expect((await over.json<{ error: { fields: string[] } }>()).error.fields).toEqual(["lines.0"]);
+    expect(await held("solvent")).toBe(6);
+
+    // The two replacements, on their own invoice.
+    const replaced = await job.opsPost(
+      `/api/purchase-orders/${order.id}/receipts`,
+      receipt([line(lineId, 2)], { supplier_invoice: "MHI/2612/140" }),
+    );
+    expect((await replaced.json<Orders>()).orders.find((each) => each.id === order.id)?.state).toBe("received");
+    expect(await held("solvent")).toBe(8);
   });
 
   it("closes an order short, and refuses a receipt it cannot take", async () => {
