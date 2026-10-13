@@ -7,6 +7,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import type { App } from "../../../src/http/context.ts";
 import { openSession } from "../../../src/domain/sign-in/sessions.ts";
 import { appFor, fakeDependencies, fakeQueue, markDatabase, NOW, request, type TestDependencies } from "../helpers.ts";
+import { relax } from "../ops/staff-fixtures.ts";
 import { ORIGIN, OLD, servedPincode, auditActions } from "./client-profile-fixtures.ts";
 
 let deps: TestDependencies;
@@ -167,6 +168,8 @@ describe("PATCH /api/consents/:purpose", () => {
   });
 
   it("offers ops no way to grant one: there is no ops route that writes consents", async () => {
+    // The Staff list refuses an ops path it does not list before routing; off, the ops host shows what it serves.
+    await relax();
     expect((await send(ops, "PATCH", "/api/consents/photos_marketing", { granted: true })).status).toBe(404);
   });
 });
