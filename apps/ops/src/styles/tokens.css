@@ -1,0 +1,21 @@
+/* The ops console's own sizes: its frame, its density and its tables (design/phase2/Ops Console.dc.html). The
+   sizes the apps share are packages/brand/tokens-apps.css; these are read by the console alone, and set the
+   shared parts' room where the console needs its own (packages/ui/base.css). */
+
+:root {
+  --ops-row: 34px; /* a table row: dense but not cramped */
+  --ops-figure: 76px; /* a column of figures, right aligned */
+  --ops-panel: 484px; /* a panel the boards draw on its own, such as the launch confirmation */
+  --ops-list: 1200px; /* a list page on a desktop: the main width, short of rows too wide to scan */
+  --ops-area: 200px; /* an area's name, and a tier's, as ops type them */
+  --ops-date: var(--skeleton-card); /* a date box that shows the whole year beside the picker's button */
+  --ops-scroll-max-h: 70dvh; /* the dispatch grid on a narrow screen, with the tray beneath it */
+  /* A dispatch block is this tall for each slot it takes. The board draws 22, 34 and 46 px, under two lines of type
+     that make one slot and a slot and a half read alike (ADR 0025, item 49). */
+  --ops-slot: 42px;
+  --ops-table-min: 960px; /* the narrowest a wide table goes before it scrolls */
+
+  /* The shared parts' room, as the console draws them. */
+  --drawer-width: var(--ops-panel);
+  --table-row-height: var(--ops-row);
+}

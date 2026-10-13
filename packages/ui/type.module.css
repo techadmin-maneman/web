@@ -1,0 +1,65 @@
+/* The named text styles every surface shares (./type.ts): each a size from the one scale (packages/brand/tokens.css)
+   with its leading, its tracking and its family. A screen picks a style rather than a size. */
+
+@layer base, ui;
+
+@layer ui {
+  .display,
+  .title1,
+  .title2,
+  .title3,
+  .label {
+    font-family: var(--font-serif);
+    font-weight: var(--weight-regular);
+  }
+
+  .display {
+    font-size: var(--fs-56);
+    line-height: var(--lh-100);
+    letter-spacing: var(--tracking-display);
+  }
+
+  .title1 {
+    font-size: var(--fs-34);
+    line-height: var(--lh-115);
+    letter-spacing: var(--tracking-title);
+  }
+
+  .title2 {
+    font-size: var(--fs-28);
+    line-height: var(--lh-115);
+    letter-spacing: var(--tracking-heading);
+  }
+
+  .title3 {
+    font-size: var(--fs-22);
+    line-height: var(--lh-130);
+  }
+
+  .bodyLarge {
+    font-size: var(--fs-17);
+    line-height: var(--lh-145);
+  }
+
+  .body {
+    font-size: var(--fs-15);
+    line-height: var(--lh-160);
+  }
+
+  .label {
+    font-size: var(--fs-14);
+    font-variant-caps: all-small-caps;
+    letter-spacing: var(--tracking-14);
+  }
+
+  .caption {
+    font-size: var(--fs-13);
+    line-height: var(--lh-145);
+  }
+
+  .figure {
+    font-size: var(--fs-15);
+    line-height: var(--lh-145);
+    font-variant-numeric: tabular-nums;
+  }
+}

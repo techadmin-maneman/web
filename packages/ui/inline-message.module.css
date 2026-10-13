@@ -11,26 +11,21 @@
   }
 
   .error {
-    color: var(--error-on-paper);
+    color: var(--status-error);
   }
 
   .saved {
-    color: var(--text);
+    color: var(--status-saved);
   }
 
   .note {
-    color: var(--text-muted);
+    color: var(--status-note);
   }
 
-  .onInk.error {
-    color: var(--error-on-ink);
-  }
-
-  .onInk.saved {
-    color: var(--paper);
-  }
-
-  .onInk.note {
-    color: var(--ink-muted);
+  /* Its ground, for a line the screen around it does not mark as ink: the site's islands. */
+  .onInk {
+    --status-error: var(--error-on-ink);
+    --status-saved: var(--paper);
+    --status-note: var(--ink-muted);
   }
 }

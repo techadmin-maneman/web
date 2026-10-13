@@ -5,6 +5,7 @@
 import type { ReactNode, Ref, RefObject } from "react";
 import { classes } from "./classes.ts";
 import styles from "./panel.module.css";
+import { typeLook } from "./type.ts";
 
 export function Panel({
   titleId,
@@ -33,7 +34,12 @@ export function Panel({
   return (
     <section className={classes(styles.panel, className)} aria-labelledby={titleId} ref={ref}>
       <div className={styles.head}>
-        <h2 className={styles.title} id={titleId} ref={headingRef} tabIndex={headingRef === undefined ? undefined : -1}>
+        <h2
+          className={typeLook("title-3", styles.title)}
+          id={titleId}
+          ref={headingRef}
+          tabIndex={headingRef === undefined ? undefined : -1}
+        >
           {title}
         </h2>
         {count !== undefined && <span className={styles.count}>{count}</span>}

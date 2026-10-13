@@ -4,6 +4,7 @@
 import type { ComponentProps, ReactNode } from "react";
 import { Dialog } from "./Dialog.tsx";
 import styles from "./drawer.module.css";
+import { typeLook } from "./type.ts";
 
 /** The drawer's frame alone, for a panel that opens where a drawer does but draws its own inside. */
 export const drawerFrame = styles.drawer;
@@ -22,7 +23,7 @@ export function Drawer(props: {
   readonly children: ReactNode;
 }) {
   const title = (
-    <h2 className={styles.title} id={props.titleId}>
+    <h2 className={typeLook("title-3", styles.title)} id={props.titleId}>
       {props.title}
     </h2>
   );

@@ -1,10 +1,5 @@
 /* Discount codes: every code's figures in a row of five, then the codes as a table, the switched-off ones folded. */
 
-/* This page's own size, which nothing else draws (ADR 0077, as amended). */
-:root {
-  --local-codes-table: 960px; /* the narrowest the table goes before it scrolls */
-}
-
 .figures {
   display: flex;
   flex-wrap: wrap;
@@ -28,7 +23,7 @@
 }
 
 .table {
-  min-width: var(--local-codes-table);
+  min-width: var(--ops-table-min);
 }
 
 .code {

@@ -7,15 +7,15 @@
   .drawer {
     position: fixed;
     inset: var(--header-h) 0 auto auto;
-    width: var(--ops-panel);
+    width: var(--drawer-width);
     max-width: 100%;
     max-height: calc(100dvh - var(--header-h));
     margin: 0;
     padding: 0;
     overflow-y: auto;
-    border: var(--hairline) solid var(--paper-line);
-    background: var(--paper);
-    color: var(--text);
+    border: var(--hairline) solid var(--border-subtle);
+    background: var(--surface);
+    color: var(--on-surface);
   }
 
   .drawer::backdrop {
@@ -32,20 +32,17 @@
     justify-content: space-between;
     gap: var(--sp-16);
     padding: var(--sp-12) var(--sp-20);
-    border-bottom: var(--hairline) solid var(--text);
+    border-bottom: var(--hairline) solid var(--on-surface);
   }
 
   .title {
     margin: 0;
-    font-family: var(--font-serif);
-    font-weight: var(--weight-regular);
-    font-size: var(--fs-22);
   }
 
   .sub {
     margin: var(--sp-4) 0 0;
     font-size: var(--fs-14);
-    color: var(--text-muted);
+    color: var(--on-surface-muted);
   }
 
   .body {

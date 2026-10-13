@@ -55,7 +55,7 @@
 
 .amount {
   font-family: var(--font-serif);
-  font-size: var(--fs-21);
+  font-size: var(--fs-22);
   line-height: var(--lh-100);
   font-variant-numeric: lining-nums tabular-nums;
 }

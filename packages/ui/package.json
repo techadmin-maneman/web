@@ -47,6 +47,7 @@
     "./Tabs": "./Tabs.tsx",
     "./TextLink": "./TextLink.tsx",
     "./Tile": "./Tile.tsx",
+    "./type": "./type.ts",
     "./ToggleButton": "./ToggleButton.tsx",
     "./UpdateReady": "./UpdateReady.tsx",
     "./useAsync": "./useAsync.ts",

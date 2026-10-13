@@ -20,7 +20,7 @@
   }
 
   .icon {
-    color: var(--text-muted);
+    color: var(--on-surface-muted);
   }
 
   .first {
@@ -32,7 +32,7 @@
   .line {
     font-size: var(--fs-15);
     line-height: var(--lh-160);
-    color: var(--text-muted);
+    color: var(--on-surface-muted);
   }
 
   .panel {
@@ -40,6 +40,6 @@
     padding: var(--sp-16) var(--sp-20);
     font-size: var(--fs-15);
     line-height: var(--lh-160);
-    color: var(--text-muted);
+    color: var(--on-surface-muted);
   }
 }

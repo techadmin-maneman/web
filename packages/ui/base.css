@@ -52,6 +52,12 @@
     /* A field's box: the tap's height, which the technician app raises on its body. */
     --field-height: var(--tap);
     --field-text: var(--fs-15);
+    /* The shared parts' room, which the console and the technician app set for themselves: a drawer's width, a
+       table row's height, a checklist row's and its box's. */
+    --drawer-width: var(--app-column);
+    --table-row-height: auto;
+    --check-row-height: var(--tap-row);
+    --check-box-size: var(--sp-36);
     /* A line of what just happened: the body's 15 px, which the console and the site set smaller and the technician
        app larger. */
     --message-size: var(--fs-15);
@@ -66,6 +72,7 @@
 
   body {
     font-family: var(--font-sans);
+    line-height: var(--lh-145);
     -webkit-font-smoothing: antialiased;
   }
 
@@ -78,6 +85,12 @@
   h6,
   th {
     font-weight: var(--weight-regular);
+  }
+
+  /* The sans is loaded at 400 and 500, so a browser's 700 for bold would be made up too. */
+  strong,
+  b {
+    font-weight: var(--weight-medium);
   }
 
   /*

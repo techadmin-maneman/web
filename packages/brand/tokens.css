@@ -88,6 +88,8 @@
   --lh-145: 1.45;
   --lh-160: 1.6;
 
+  /* The fixed sizes, the apps' and the site's alike: the small and body sizes a step apart, then the headings'. The
+     named text styles (packages/ui/type.module.css) are made of them. */
   --fs-13: 13px;
   --fs-14: 14px;
   --fs-15: 15px;
@@ -96,6 +98,13 @@
   --fs-18: 18px;
   --fs-22: 22px;
   --fs-24: 24px;
+  --fs-26: 26px;
+  --fs-28: 28px;
+  --fs-30: 30px;
+  --fs-32: 32px;
+  --fs-34: 34px;
+  --fs-40: 40px;
+  --fs-56: 56px;
 
   /* ---- Fixed spaces: a 4-point scale, and a 2 px step for what sits against a line ---------------- */
   --sp-2: 2px;
@@ -112,15 +121,15 @@
 
   /* ---- Lines, controls and motion ---------------------------------------- */
   --hairline: 1px;
-  --rule-strong: 2px;
-  --sr-only-size: 1px;
-  --focus-width: 2px;
-  --focus-offset: 2px;
+  --rule-strong: var(--sp-2);
+  --sr-only-size: var(--hairline);
+  --focus-width: var(--sp-2);
+  --focus-offset: var(--sp-2);
   --focus-offset-wide: 3px; /* a ring clear of a link's underline, or of an edged control's own edge */
   --focus-inset: calc(-1 * var(--focus-width)); /* a ring drawn inside a row or a cell, which would clip one outside */
   --tap: 44px; /* the smallest touch target; also the small button's height */
   --btn-lg: 56px;
-  --btn-md: 48px;
+  --btn-md: var(--sp-48);
   --note-h: 80px; /* a short note's box, as a no-show's reason is drawn */
   --busy-opacity: 0.6; /* a button working on what was asked */
 
@@ -133,16 +142,35 @@
   /* ---- The viewport: no board draws these; each lets a layout reach past its column -------------- */
   --app-column-max: 480px; /* the client app's column, filling a phone wider than the design's 390 px */
   --photo-max-h: 56dvh; /* a photograph opened large, with room for its caption beneath */
-  --ops-scroll-max-h: 70dvh; /* the dispatch grid on a narrow screen, with the tray beneath it */
-
-  /* ---- The dispatch board's slot: no board draws it ----------------------- */
-  /* A block is this tall for each slot it takes. The dispatch board draws 22, 34 and 46 px, under two lines of type that make
-     one slot and a slot and a half read alike (ADR 0025, item 49). */
-  --ops-slot: 42px;
 
   /* ---- The frame the site and the apps share ----------------------------------------------- */
-  --header-h: 56px;
+  --header-h: var(--btn-lg);
   --measure-column: 660px;
   --measure-form: 440px;
   --preview-h: clamp(340px, 56vw, 520px); /* a photograph being taken: the try-on's, the technician's camera */
+}
+
+/*
+ * Roles: what a colour is for, each an alias of the palette above (docs/decisions/0077, as amended). A part reads a
+ * role, never a ground's colour, and a ground redefines the roles beneath it: [data-ground="ink"] on a screen, or
+ * on one part, turns every role under it to the ink's. A theme would be one more block of aliases.
+ */
+:root {
+  --surface: var(--paper);
+  --on-surface: var(--text);
+  --on-surface-muted: var(--text-muted);
+  --border-subtle: var(--paper-line);
+  --status-error: var(--error-on-paper);
+  --status-saved: var(--text);
+  --status-note: var(--text-muted);
+}
+
+[data-ground="ink"] {
+  --surface: var(--ink);
+  --on-surface: var(--paper);
+  --on-surface-muted: var(--ink-muted);
+  --border-subtle: var(--ink-line);
+  --status-error: var(--error-on-ink);
+  --status-saved: var(--paper);
+  --status-note: var(--ink-muted);
 }

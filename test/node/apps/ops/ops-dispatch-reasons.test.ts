@@ -13,7 +13,7 @@ const valueOf = (file: string, selector: string, property: string): string | und
 
 describe("a move's reasons", () => {
   it("sit on the panel's paper", () => {
-    expect(valueOf("packages/ui/drawer.module.css", ".drawer", "background")).toBe("var(--paper)");
+    expect(valueOf("packages/ui/drawer.module.css", ".drawer", "background")).toBe("var(--surface)");
   });
 
   it("are the shared radios, one kept, in a ruled list", () => {

@@ -5,7 +5,7 @@
 // property the stylesheet declares for itself, as the compare's divider
 // position is.
 
-import { readdirSync, readFileSync, statSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { rawValues } from "../../raw-values.ts";
@@ -34,7 +34,10 @@ const defined = new Set([
 ]);
 
 describe.each(APPS)("%s's design tokens", (_app, source) => {
-  const stylesheets = files(source).filter((path) => path.endsWith(".css"));
+  // An app's own sizes, which it alone reads (apps/<app>/src/styles/tokens.css), are where its raw values are written.
+  const ownTokens = `${source}/styles/tokens.css`;
+  const appDefined = new Set([...defined, ...(existsSync(ownTokens) ? tokenNames(ownTokens) : [])]);
+  const stylesheets = files(source).filter((path) => path.endsWith(".css") && path !== ownTokens);
   const components = files(source).filter((path) => path.endsWith(".tsx"));
 
   it("has stylesheets to check", () => {
@@ -50,7 +53,7 @@ describe.each(APPS)("%s's design tokens", (_app, source) => {
     const css = readFileSync(path, "utf8");
     const own = new Set(tokenNames(path));
     const used = [...css.matchAll(/var\((--[a-z0-9-]+)/g)].map((match) => match[1] ?? "");
-    expect(used.filter((name) => !defined.has(name) && !own.has(name))).toEqual([]);
+    expect(used.filter((name) => !appDefined.has(name) && !own.has(name))).toEqual([]);
   });
 
   it.each(components)("%s sets no inline style, which the policy would refuse", (path) => {

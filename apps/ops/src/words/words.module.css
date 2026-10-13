@@ -2,7 +2,6 @@
 
 /* This page's own sizes, which nothing else draws (ADR 0077, as amended). */
 :root {
-  --local-words-table: 960px; /* the narrowest the table goes before it scrolls */
   --local-words-text: 560px; /* the widest a line's wording runs before it wraps */
 }
 
@@ -15,7 +14,7 @@
 }
 
 .table {
-  min-width: var(--local-words-table);
+  min-width: var(--ops-table-min);
 }
 
 .table th,

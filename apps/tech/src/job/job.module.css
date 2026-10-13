@@ -227,7 +227,7 @@
 
 .changedLine {
   margin: 0 0 var(--sp-12);
-  font-size: var(--fs-19);
+  font-size: var(--fs-18);
   line-height: var(--lh-145);
   color: var(--paper);
 }
@@ -273,7 +273,7 @@
 
 .failedLine {
   margin: 0 0 var(--sp-12);
-  font-size: var(--fs-19);
+  font-size: var(--fs-18);
   line-height: var(--lh-145);
   color: var(--paper);
 }

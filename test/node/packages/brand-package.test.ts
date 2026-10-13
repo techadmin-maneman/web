@@ -80,8 +80,13 @@ describe("marks", () => {
 
 describe("every token", () => {
   const files = ["packages/brand/tokens.css", "packages/brand/tokens-apps.css"];
+  // A ground's block redefines the colour roles on purpose: each role is counted once, where it is first defined.
   const names = files.flatMap((file) =>
-    [...readFileSync(file, "utf8").matchAll(/(--[a-z0-9-]+)\s*:/g)].map((match) => match[1] ?? ""),
+    [
+      ...readFileSync(file, "utf8")
+        .replace(/\[data-ground="ink"\] \{[^}]*\}/g, "")
+        .matchAll(/(--[a-z0-9-]+)\s*:/g),
+    ].map((match) => match[1] ?? ""),
   );
 
   // --fs-30 was once defined twice, which a Map of the names hides.
