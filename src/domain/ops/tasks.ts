@@ -91,7 +91,7 @@ export const READ_CAP = 2000;
 const BOARD_VISIT = `
   LEFT JOIN dispatch_moves m ON t."group" = 'untold_move' AND m.id = t.id
   LEFT JOIN appointments v ON v.id = COALESCE(m.appointment_id,
-    CASE WHEN t."group" IN ('leave_conflict', 'move_unanswered') THEN t.id END)
+    CASE WHEN t."group" IN ('leave_conflict', 'move_unanswered', 'unassigned_visit', 'visit_left_open') THEN t.id END)
   LEFT JOIN people caller ON (m.id IS NOT NULL OR t."group" = 'move_unanswered') AND caller.id = v.person_id`;
 
 /**
@@ -124,8 +124,9 @@ const NOT_FITTED_SINCE_CONSULTED = "(s.visit_start IS NULL OR s.visit_start < s.
 
 /** What the board is read at: the moments and the next visit's days its queues compare with. */
 interface ReadAt {
-  /** India's date. */
+  /** India's date, and the instant it began. */
   readonly today: string;
+  readonly todayStarts: string;
   readonly now: string;
   readonly days: NextVisitDays;
   /** The first moment after the last day an at-risk client's last visit can have been done on. */
@@ -248,6 +249,31 @@ const QUEUES: readonly Queue[] = [
     FROM appointments a JOIN people pe ON pe.id = a.person_id
    WHERE a.status = 'completed' AND a.invoice_issued_at IS NULL
      AND a.deleted_at IS NULL AND a.fsm_invoice_id IS NOT NULL AND pe.erased_at IS NULL`,
+  },
+  // A visit with no technician, as a switch-off leaves its jobs: someone must be sent. It waits from when it last
+  // changed, and falls due the day before it.
+  {
+    sql: `SELECT 'unassigned_visit' AS "group", a.id AS id, pe.id AS person_id, pe.name AS person_name,
+         a.type || ' ' || a.window_start AS detail, a.synced_at AS since,
+         strftime('%Y-%m-%dT%H:%M:%fZ', a.window_start, '-1 day') AS due_by, '' AS episode
+    FROM appointments a INDEXED BY appointments_by_technician
+    LEFT JOIN people pe ON pe.id = a.person_id AND pe.erased_at IS NULL
+   WHERE a.technician_id IS NULL AND a.window_start >= ?1 AND a.deleted_at IS NULL
+     AND ${statusIn("a.status", VISIT_NOT_BEGUN)}`,
+    binds: (at) => [at.now],
+  },
+  // A visit still open once its day is over in India: nobody came, or it was never closed. It waits from the midnight
+  // after its day. A no-show is its own group.
+  {
+    sql: `SELECT 'visit_left_open' AS "group", a.id AS id, pe.id AS person_id, pe.name AS person_name,
+         a.status || ' ' || a.window_start AS detail,
+         strftime('%Y-%m-%dT%H:%M:%fZ', date(a.window_start, '+330 minutes', '+1 day'), '-330 minutes') AS since,
+         NULL AS due_by, '' AS episode
+    FROM appointments a INDEXED BY appointments_live_by_start
+    LEFT JOIN people pe ON pe.id = a.person_id AND pe.erased_at IS NULL
+   WHERE a.status IN ('scheduled', 'dispatched', 'in_progress') AND a.deleted_at IS NULL AND a.window_start < ?1
+     AND NOT EXISTS (SELECT 1 FROM no_show_cases n WHERE n.appointment_id = a.id)`,
+    binds: (at) => [at.todayStarts],
   },
   // A job still booked on a day its technician is away: leave moves nothing, so ops move it. It waits from when the
   // leave was recorded, and falls due by the job. The client is named where there is one on our records.
@@ -465,6 +491,7 @@ export async function outstandingTasks(
   const toBookBefore = indiaInstant(addDays(firstFitToBookIfConsultedBy(today, days), 1), "00:00").toISOString();
   const at: ReadAt = {
     today,
+    todayStarts: indiaInstant(today, "00:00").toISOString(),
     now: now.toISOString(),
     days,
     atRiskBefore,
@@ -519,6 +546,8 @@ function taskOf(row: Row, sla: Slas, schedule: SlotSchedule): Task {
 const TASK_RECORDS: Readonly<Record<TaskGroup, PlacedRecord>> = {
   untold_move: "move",
   move_unanswered: "visit",
+  visit_left_open: "visit",
+  unassigned_visit: "visit",
   unanswered_chat: "conversation",
   city_matter: "city_matter",
   remedy_approval: "remedy",

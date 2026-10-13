@@ -78,6 +78,8 @@ import { DELETION_DECIDED_WITHIN_DAYS } from "./account-deletion.ts";
 export const TASK_GROUPS = [
   "untold_move",
   "move_unanswered",
+  "visit_left_open",
+  "unassigned_visit",
   "unanswered_chat",
   "city_matter",
   "remedy_approval",
@@ -115,6 +117,10 @@ export const TASK_SLA_HOURS: Slas = {
   untold_move: 4,
   // A move to another day the client has not answered keeps them waiting on a day: a call the same day too.
   move_unanswered: 4,
+  // A visit nobody attended, or never closed, whose day has passed: the client is owed a new time the next day.
+  visit_left_open: 24,
+  // A visit with no technician: never later than the day before it (src/domain/ops/tasks.ts).
+  unassigned_visit: 24,
   // Due by the reply clock (src/policy/care-hours.ts), which always comes first; a day bounds it.
   unanswered_chat: 24,
   // A client waiting on their city: within the day.

@@ -61,6 +61,7 @@ import {
 import { CRON_CALLS, type Timing } from "./schedule.ts";
 import { checkWhatsAppBridge } from "./whatsapp-bridge.ts";
 import { type MessagingMessage } from "../config/pipeline.ts";
+import { tellOfUnassignedToday } from "../domain/dispatch/unassigned.ts";
 
 export interface CronContext {
   readonly env: Env;
@@ -234,6 +235,10 @@ async function whatsAppBridgeJob({ deps, log, budget }: CronContext): Promise<vo
 }
 
 /** Records yesterday's figure on the first run of the day; the day's later runs find it recorded. */
+async function unassignedTodayJob({ env, deps }: CronContext): Promise<void> {
+  await tellOfUnassignedToday(env.DB, deps, deps.now());
+}
+
 async function utilisationJob({ env, deps, log }: CronContext): Promise<void> {
   const date = await recordUtilisation(env.DB, deps.now());
   if (date !== null) log.info("dispatch_utilisation_recorded", { date });
@@ -367,6 +372,8 @@ export const CRON_JOBS: readonly CronJob[] = [
   { name: "task_spans", needs: "nothing", every: 60, at: 26, run: taskSpansJob },
   // The operating figure behind the weekend-share assumption (src/policy/dispatch.ts): once a day, the day's board.
   { name: "dispatch_utilisation", needs: "nothing", every: 60, at: 43, run: utilisationJob },
+  // A visit today with no technician, told each hour until someone is sent (src/domain/dispatch/unassigned.ts).
+  { name: "unassigned_today", needs: "nothing", every: 60, at: 46, run: unassignedTodayJob },
   { name: "low_stock", needs: "nothing", every: 60, at: 50, run: lowStockJob },
   // The next service falling due with nothing booked (docs/decisions/0086-the-next-visit-is-offered.md).
   { name: "next_service_reminders", needs: "messaging", every: 60, at: 44, run: nextServiceRemindersJob },

@@ -121,6 +121,14 @@ function subOf(group: Group, task: Task, now: Date): string {
     if (consulted === "") return tasks.unknown;
     return copy.first_fit_to_book(shortDate(indiaDate(consulted)), fitWindow(fitIn));
   }
+  if (group === "unassigned_visit" || group === "visit_left_open") {
+    // The visit's kind or state, then its start.
+    const [first = "", start = ""] = task.detail?.split(" ") ?? [];
+    if (start === "") return tasks.unknown;
+    const day = shortDate(indiaDate(start));
+    if (group === "visit_left_open") return copy.visit_left_open(day, first === "in_progress");
+    return copy.unassigned_visit(dispatch.typeNames[first] ?? first, `${day}, ${indiaClock(start)}`);
+  }
   if (group === "stock_at_risk") return copy.stock_at_risk(task.detail ?? "");
   if (group === "at_risk_client") {
     // The last visit's start, and the day its next service fell due.

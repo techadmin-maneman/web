@@ -59,6 +59,10 @@ describe("tasks", () => {
       untold_move: 4,
       // A move to another day the client has not answered (ADR 0115).
       move_unanswered: 4,
+      // A visit nobody attended or closed: the client is owed a new time the next day.
+      visit_left_open: 24,
+      // A visit with no technician falls due the day before it in any case.
+      unassigned_visit: 24,
       // A chat falls due by the reply clock, which comes first; a day bounds it (ADR 0132).
       unanswered_chat: 24,
       // A client waiting on their city: within the day (ADR 0135).

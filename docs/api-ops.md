@@ -20838,6 +20838,8 @@ Request body:
             "enum": [
               "untold_move",
               "move_unanswered",
+              "visit_left_open",
+              "unassigned_visit",
               "unanswered_chat",
               "city_matter",
               "remedy_approval",
