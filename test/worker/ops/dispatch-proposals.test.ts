@@ -150,6 +150,18 @@ describe("a move to another day ops ask the client to confirm", () => {
     expect(await sameDay.json()).toMatchObject({ error: { code: "invalid_request", fields: ["date"] } });
   });
 
+  it("asks about a visit nobody came to until its new time, so the ask is not born closed", async () => {
+    // Sunday's visit, missed: its start is a day past.
+    await insertJob(B, { type: "service", start: "2026-09-20T03:30:00.000Z", technician: IMRAN });
+    await env.DB.prepare("UPDATE appointments SET person_id = ?2 WHERE id = ?1").bind(B, ROHIT).run();
+    expect((await propose(toSameerWednesdayMorning(B))).status).toBe(200);
+    const proposal = await env.DB.prepare("SELECT expires_at FROM move_proposals WHERE appointment_id = ?1")
+      .bind(B)
+      .first<{ expires_at: string }>();
+    // Open until Wednesday's 9 am, the new time, which comes before the default two days from now are up.
+    expect(proposal?.expires_at).toBe("2026-09-23T03:30:00.000Z");
+  });
+
   it("sends nothing to a client who has not agreed to WhatsApp about visits, and ops call them", async () => {
     await agreeToVisitMessages(false);
     const answer = await propose(toSameerWednesdayMorning(A));

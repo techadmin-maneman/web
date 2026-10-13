@@ -37,6 +37,7 @@ export const MESSAGE_KINDS = [
   "address_not_served",
   // Ops kept the account the client asked us to delete, with their reason (src/domain/privacy/deletion.ts).
   "deletion_rejected",
+  "concern_answered", // ops answered a concern the client raised about their data (src/routes/ops/grievances.ts)
   "messages_stopped", // the answer to a STOP reply (src/domain/messages/stop-messages.ts)
 ] as const;
 export type MessageKind = (typeof MESSAGE_KINDS)[number];

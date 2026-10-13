@@ -146,6 +146,8 @@ export const TEMPLATES = {
   // client reads it.
   deletion_rejected_v1:
     "Hi {{1}}, we haven't deleted your Mane Man account.\nOur reason: {{2}} Message us if you disagree.",
+  // Ops' answer to a concern the client raised about their data. The answer itself is in the app, under Profile.
+  concern_answered_v1: "Hi {{1}}, we've answered your concern.\nRead our reply in the Mane Man app, under Profile.",
   // Sent once the erasure is done, to the number it has just blanked.
   deletion_done_v1:
     "Hi {{1}}, as you asked, we've deleted your Mane Man account.\nYour invoices are kept for eight years, as the law requires.",
@@ -261,6 +263,7 @@ export const MESSAGE_CLASSES: Readonly<Record<MessageKind, MessageClass>> = {
   address_on_account: "answering",
   address_not_served: "answering",
   deletion_rejected: "automatic", // ops' ruling
+  concern_answered: "answering", // the answer to their own concern
   messages_stopped: "answering", // their own STOP reply
 };
 

@@ -11,6 +11,8 @@ import { reachBinding, withinReach } from "../../domain/clients/places.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
 import { json } from "../../http/openapi.ts";
 import { opsInputs } from "../../http/ops-inputs.ts";
+import { queueMessage } from "../../http/queue-message.ts";
+import { concernAnsweredMessage } from "../../domain/ops/grievances.ts";
 import { routeReach, withinRouteReach } from "../../http/staff-access.ts";
 import { dueAt } from "../../policy/tasks.ts";
 
@@ -102,11 +104,15 @@ export function registerOpsGrievances(app: App): void {
     const staff = actorOf(c);
     const now = c.var.deps.now();
     const db = c.env.DB;
-    const open = await db.prepare("SELECT 1 FROM grievances WHERE id = ?1 AND state = 'open'").bind(id).first();
+    const open = await db
+      .prepare("SELECT person_id FROM grievances WHERE id = ?1 AND state = 'open'")
+      .bind(id)
+      .first<{ person_id: string }>();
     if (open === null || !(await withinRouteReach(c, "grievance", id))) {
       return refuse(c, "not_found");
     }
-    // The answer and its audit entry, together or not at all (src/domain/ops/audit.ts).
+    const told = concernAnsweredMessage(db, { grievanceId: id, personId: open.person_id, now });
+    // The answer, its audit entry and the client's message, together or not at all (src/domain/ops/audit.ts).
     await db.batch([
       db
         .prepare(
@@ -125,7 +131,9 @@ export function registerOpsGrievances(app: App): void {
         },
         now,
       ),
+      told.statement,
     ]);
+    await queueMessage(c, told.id);
     return c.json({ state: "resolved" as const }, 200);
   });
 }

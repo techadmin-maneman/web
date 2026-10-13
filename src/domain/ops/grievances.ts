@@ -1,7 +1,10 @@
-// A client's concerns about how we use their data: the ones their profile shows them, and one message an hour to the
-// team chat about new ones.
+// A client's concerns about how we use their data: the ones their profile shows them, one message an hour to the
+// team chat about new ones, and the WhatsApp that tells the client ops have answered.
 
 import { DAY_MS, HOUR_MS } from "../../lib/durations.ts";
+import { firstNameOf } from "../../lib/names.ts";
+import { queueMessage } from "../messages/queued-messages.ts";
+import type { Composed } from "../messages/visit-message-text.ts";
 import { DECISION_SHOWN_DAYS } from "../../policy/decision-reasons.ts";
 import { GRIEVANCES_SHOWN } from "../../policy/grievances.ts";
 
@@ -76,4 +79,36 @@ export async function tellOfNewGrievances(
 function newGrievancesMessage(raised: number, queueLink: string): string {
   if (raised === 1) return `A client raised a grievance in the last hour. Answer it in Grievances: ${queueLink}`;
   return `${String(raised)} grievances were raised in the last hour. Answer them in Grievances: ${queueLink}`;
+}
+
+/** The message that tells the client their concern is answered; for the batch that records the answer. */
+export function concernAnsweredMessage(
+  db: D1Database,
+  input: { readonly grievanceId: string; readonly personId: string; readonly now: Date },
+): { id: string; statement: D1PreparedStatement } {
+  const id = crypto.randomUUID();
+  const statement = queueMessage(db, {
+    id,
+    personId: input.personId,
+    kind: "concern_answered",
+    subject: { kind: "grievance", id: input.grievanceId },
+    at: input.now.toISOString(),
+  });
+  return { id, statement };
+}
+
+/**
+ * What a queued answer says: the client's first name, and where to read the answer. It answers the client's own
+ * concern, so it goes whatever they chose about visit messages.
+ */
+export async function composeConcernAnswered(db: D1Database, grievanceId: string, personId: string): Promise<Composed> {
+  const row = await db
+    .prepare(
+      `SELECT p.name FROM grievances g JOIN people p ON p.id = g.person_id
+       WHERE g.id = ?1 AND g.person_id = ?2 AND g.state = 'resolved'`,
+    )
+    .bind(grievanceId, personId)
+    .first<{ name: string }>();
+  if (row === null) return { skip: "the concern was not answered" };
+  return { template: "concern_answered_v1", params: [firstNameOf(row.name)] };
 }

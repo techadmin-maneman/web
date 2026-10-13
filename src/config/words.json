@@ -4851,6 +4851,13 @@
     "text": "Hi {{1}}, we haven't deleted your Mane Man account.\nOur reason: {{2}} Message us if you disagree."
   },
   {
+    "key": "message:concern_answered_v1",
+    "surface": "message",
+    "group": "Messages",
+    "where": "concern_answered_v1",
+    "text": "Hi {{1}}, we've answered your concern.\nRead our reply in the Mane Man app, under Profile."
+  },
+  {
     "key": "message:deletion_done_v1",
     "surface": "message",
     "group": "Messages",

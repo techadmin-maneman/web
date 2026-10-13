@@ -43,9 +43,12 @@ export async function proposeMove(
   if (move.date === indiaDate(new Date(job.window_start))) return { kind: "same_day" };
   const id = crypto.randomUUID();
   const at = now.toISOString();
-  // Open for ops' hours (src/policy/dispatch.ts), or until the visit's own start if that is sooner.
+  // Open for ops' hours (src/policy/dispatch.ts), or until the visit's own start if that is sooner; a visit already
+  // missed is asked about until the new time instead, so its ask is not born closed.
   const openFor = (await readOpsInputs(db, now)).moveProposalHours * HOUR_MS;
-  const expiresAt = new Date(Math.min(now.getTime() + openFor, Date.parse(job.window_start))).toISOString();
+  const wasAt = Date.parse(job.window_start);
+  const closesBy = wasAt > now.getTime() ? wasAt : move.start.getTime();
+  const expiresAt = new Date(Math.min(now.getTime() + openFor, closesBy)).toISOString();
   const personId = job.person_id;
   const messageId = (await agreedToVisitMessages(db, job.id)) ? crypto.randomUUID() : null;
   await db.batch([

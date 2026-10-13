@@ -254,6 +254,11 @@ describe("a grant of Customer Care in one city", () => {
     expect((await post(delhi, `/api/grievances/${IN_DELHI.grievance}/resolve`, answer)).status).toBe(200);
     const open = await env.DB.prepare("SELECT id FROM grievances WHERE state = 'open' ORDER BY id").all();
     expect(open.results).toEqual([{ id: IN_GURGAON.grievance }, { id: NOWHERE.grievance }]);
+    // The client hears on WhatsApp that their concern is answered, as the app promises.
+    const told = await env.DB.prepare("SELECT person_id, kind, subject_kind, subject_id FROM outbound_messages").all();
+    expect(told.results).toEqual([
+      { person_id: IN_DELHI.id, kind: "concern_answered", subject_kind: "grievance", subject_id: IN_DELHI.grievance },
+    ]);
   });
 
   it("lists and decides only its city's number changes", async () => {
