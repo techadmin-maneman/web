@@ -187,15 +187,15 @@ function Conversations({ view, search }: { view: ConversationView; search: strin
   if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
   const conversations = shownOf(loaded.value.conversations, older);
   if (conversations.length === 0) return <p className={styles.note}>{copy.none}</p>;
-  const next = older === null ? loaded.value.next_before : older.next;
-  const showOlder = async (before: string) => {
+  const next = older === null ? loaded.value.next_cursor : older.next;
+  const showOlder = async (cursor: string) => {
     setLoadingOlder(true);
-    const answer = await careApi.conversations(view, search, before);
+    const answer = await careApi.conversations(view, search, cursor);
     setLoadingOlder(false);
     if (!answer.ok) return;
     setOlder({
       conversations: [...(older?.conversations ?? []), ...answer.body.conversations],
-      next: answer.body.next_before,
+      next: answer.body.next_cursor,
     });
   };
   return (

@@ -93,8 +93,15 @@ test("says so when someone has answered it already", async ({ page }) => {
   await expect(page.getByRole("alert")).toContainText("Already answered. Reload.");
 });
 
+test("says when more are open than the queue holds", async ({ page }) => {
+  await page.clock.setFixedTime(TASKS_READ_ON);
+  await answer(page, { "GET /api/grievances": json({ ...GRIEVANCES, more: true }) });
+  await page.goto("/grievances");
+  await expect(queue(page).getByText(opsCopy.firstShown(2))).toBeVisible();
+});
+
 test("says so when no grievance is open", async ({ page }) => {
-  await answer(page, { "GET /api/grievances": json({ grievances: [] }) });
+  await answer(page, { "GET /api/grievances": json({ grievances: [], more: false }) });
   await page.goto("/grievances");
   await expect(page.getByText(opsCopy.grievances.queue.empty)).toBeVisible();
 });

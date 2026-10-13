@@ -14,6 +14,7 @@
 
 import { createRoute, z } from "@hono/zod-openapi";
 import { json } from "../../http/openapi.ts";
+import { capped, More } from "../../http/paging.ts";
 import { afterRuling } from "../../domain/no-shows/after-a-ruling.ts";
 import { decideNoShow, listNoShowCases, MESSAGE_STATES } from "../../domain/no-shows/no-shows.ts";
 import { actorOf } from "../../http/audit.ts";
@@ -26,6 +27,9 @@ import { WAIVING_A_NO_SHOW } from "../../policy/console-routes.ts";
 import { needsReason, REASON_MAX_CHARS } from "../../policy/decision-reasons.ts";
 import { NO_SHOW_DECISIONS } from "../../policy/no-show.ts";
 import { dueAt } from "../../policy/tasks.ts";
+
+/** As many cases as the board can usefully hold, the undecided first. */
+const LIMIT = 200;
 
 const NoShowCaseSchema = z
   .object({
@@ -92,6 +96,7 @@ const NoShowCaseSchema = z
 const NoShowsSchema = z
   .object({
     cases: z.array(NoShowCaseSchema),
+    more: More(LIMIT),
     waiver: z
       .object({ payment: z.enum(["refunded", "kept"]), credit: z.enum(["returned", "spent"]) })
       .strict()
@@ -134,10 +139,11 @@ export function registerOpsNoShows(app: App): void {
   app.openapi(noShowsRoute, async (c) => {
     const { decision } = c.req.valid("query");
     const reached = await routeReach(c);
-    const [cases, inputs] = await Promise.all([listNoShowCases(c.env.DB, decision, 200, reached), opsInputs(c)]);
+    const [read, inputs] = await Promise.all([listNoShowCases(c.env.DB, decision, LIMIT + 1, reached), opsInputs(c)]);
+    const { rows: cases, more } = capped(read, LIMIT);
     const due = (openedAt: string) => dueAt(new Date(openedAt), "no_show_decision", inputs.taskSlaHours).toISOString();
     return c.json(
-      { cases: cases.map((each) => ({ ...each, due: due(each.opened_at) })), waiver: inputs.noShowWaiver },
+      { cases: cases.map((each) => ({ ...each, due: due(each.opened_at) })), more, waiver: inputs.noShowWaiver },
       200,
     );
   });

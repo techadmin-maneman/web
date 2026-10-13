@@ -30,10 +30,10 @@ interface Entry {
 const READER = "owner@maneman.in";
 
 /** A page of the log, less the entry each reading writes of itself, as every ops call does. */
-async function read(query = ""): Promise<{ entries: Entry[]; next_before: number | null }> {
+async function read(query = ""): Promise<{ entries: Entry[]; next_cursor: string | null }> {
   const answer = await request(opsAs(READER), `/api/activity${query}`);
   expect(answer.status).toBe(200);
-  const page = await answer.json<{ entries: Entry[]; next_before: number | null }>();
+  const page = await answer.json<{ entries: Entry[]; next_cursor: string | null }>();
   return { ...page, entries: page.entries.filter((entry) => entry.actor.id !== READER) };
 }
 
@@ -83,14 +83,14 @@ describe("the activity log", () => {
       },
     ]);
 
-    const { entries, next_before } = await read();
+    const { entries, next_cursor } = await read();
 
     expect(entries.map((entry) => [entry.actor, entry.action, entry.subject])).toEqual([
       [{ kind: "staff", id: "care@maneman.in", name: null }, "visit.cancel", { kind: "appointment", id: VISIT }],
       [{ kind: "technician", id: IMRAN, name: "Imran Qureshi" }, "tech.call", null],
       [{ kind: "client", id: CLIENT, name: "Rohit Malhotra" }, "client.call", null],
     ]);
-    expect(next_before).toBeNull();
+    expect(next_cursor).toBeNull();
   });
 
   it("gives one client's whole record: what they did, and what was done to them and their visits", async () => {
@@ -184,10 +184,15 @@ describe("the activity log", () => {
 
     const first = await read("?action=price.set");
     expect(first.entries).toHaveLength(50);
-    expect(first.next_before).toBe(first.entries.at(-1)?.id);
+    expect(first.next_cursor).not.toBeNull();
 
-    const second = await read(`?action=price.set&before=${String(first.next_before)}`);
+    const second = await read(`?action=price.set&cursor=${first.next_cursor ?? ""}`);
     expect(second.entries).toHaveLength(5);
-    expect(second.next_before).toBeNull();
+    expect(second.next_cursor).toBeNull();
+    const ids = [...first.entries, ...second.entries].map((each) => each.id);
+    expect(new Set(ids).size).toBe(55);
+
+    // A cursor this list never gave is refused, not read as the first page.
+    expect((await request(opsAs(READER), "/api/activity?cursor=bm90LWFuLWlk")).status).toBe(400);
   });
 });

@@ -145,19 +145,19 @@ test("reads the referrers a page at a time", async ({ page }) => {
         redeemed: 1,
       },
     ],
-    more: false,
+    next_cursor: null,
   };
   await page.clock.setFixedTime(TASKS_READ_ON);
   await answer(page, {
     "GET /api/referrals/held": json(HELD),
     "GET /api/referrers": (route) => {
-      const offset = new URL(route.request().url()).searchParams.get("offset");
-      return json(offset === "0" ? { ...REFERRERS, more: true } : second)(route);
+      const cursor = new URL(route.request().url()).searchParams.get("cursor");
+      return json(cursor === null ? { ...REFERRERS, next_cursor: "NA" } : second)(route);
     },
   });
   await page.goto("/referrals");
 
-  const asked = page.waitForRequest((request) => request.url().includes("/api/referrers?offset=4"));
+  const asked = page.waitForRequest((request) => request.url().includes("/api/referrers?cursor=NA"));
   await page.getByRole("button", { name: "Show more" }).click();
   await asked;
   await expect(page.getByRole("row").filter({ hasText: "Nikhil Arora" })).toBeVisible();

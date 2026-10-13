@@ -112,6 +112,12 @@
   list-style: none;
 }
 
+/* Beneath a list that holds the first so many of more. */
+.first {
+  margin: 0;
+  padding: var(--sp-12) var(--sp-20);
+}
+
 /* Named apart from .charge, which is the queue's button and stands on ink. */
 .chargeRow {
   padding: var(--sp-12) var(--sp-20);

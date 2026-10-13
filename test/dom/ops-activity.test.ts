@@ -19,7 +19,7 @@ beforeEach(() => {
     const address = new URL(url, "https://ops.maneman.test");
     if (address.pathname === "/api/activity") {
       reads.push(address.search);
-      return Promise.resolve(Response.json({ entries: [], next_before: null }));
+      return Promise.resolve(Response.json({ entries: [], next_cursor: null }));
     }
     return Promise.resolve(Response.json({ error: { code: "unavailable", request_id: "r-1" } }, { status: 503 }));
   });

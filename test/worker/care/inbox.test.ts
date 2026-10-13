@@ -129,7 +129,7 @@ describe("the Care inbox", () => {
 describe("the Care inbox's list, a page at a time", () => {
   interface Page {
     conversations: { mobile: string; person: { name: string } | null }[];
-    next_before: string | null;
+    next_cursor: string | null;
   }
 
   const page = async (query: string) =>
@@ -154,11 +154,11 @@ describe("the Care inbox's list, a page at a time", () => {
     const first = await page("");
     expect(first.conversations).toHaveLength(50);
     expect(first.conversations[0]?.mobile).toBe("+919810000001");
-    expect(first.next_before).not.toBeNull();
+    expect(first.next_cursor).not.toBeNull();
 
-    const rest = await page(`before=${encodeURIComponent(first.next_before ?? "")}`);
+    const rest = await page(`cursor=${first.next_cursor ?? ""}`);
     expect(rest.conversations).toHaveLength(10);
-    expect(rest.next_before).toBeNull();
+    expect(rest.next_cursor).toBeNull();
     const all = [...first.conversations, ...rest.conversations].map((each) => each.mobile);
     expect(new Set(all).size).toBe(60);
     expect(all.at(-1)).toBe("+919811000000");

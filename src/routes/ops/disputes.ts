@@ -14,6 +14,7 @@ import { MESSAGE_STATES } from "../../domain/no-shows/no-shows.ts";
 import { afterRuling } from "../../domain/no-shows/after-a-ruling.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
 import { json } from "../../http/openapi.ts";
+import { capped, More } from "../../http/paging.ts";
 import { opsInputs } from "../../http/ops-inputs.ts";
 import { queueMessage } from "../../http/queue-message.ts";
 import { permitsOn, routeReach, withinRouteReach } from "../../http/staff-access.ts";
@@ -75,7 +76,10 @@ const disputesRoute = createRoute({
   path: "/api/no-shows/disputes",
   summary: "Disputed no-show charges in the caller's cities still to rule on, oldest first, each with its evidence",
   responses: {
-    200: { description: "The disputes", ...json(z.object({ disputes: z.array(DisputeSchema) }).strict()) },
+    200: {
+      description: "The disputes",
+      ...json(z.object({ disputes: z.array(DisputeSchema), more: More(LIMIT) }).strict()),
+    },
     403: errorResponse("access_required"),
   },
 });
@@ -96,9 +100,10 @@ const rulingRoute = createRoute({
 export function registerOpsDisputes(app: App): void {
   app.openapi(disputesRoute, async (c) => {
     const reached = await routeReach(c);
-    const [disputes, inputs] = await Promise.all([openDisputes(c.env.DB, LIMIT, reached), opsInputs(c)]);
+    const [read, inputs] = await Promise.all([openDisputes(c.env.DB, LIMIT + 1, reached), opsInputs(c)]);
+    const { rows: disputes, more } = capped(read, LIMIT);
     const due = (raisedAt: string) => dueAt(new Date(raisedAt), "no_show_dispute", inputs.taskSlaHours).toISOString();
-    return c.json({ disputes: disputes.map((each) => ({ ...each, due: due(each.raised_at) })) }, 200);
+    return c.json({ disputes: disputes.map((each) => ({ ...each, due: due(each.raised_at) })), more }, 200);
   });
 
   app.openapi(rulingRoute, async (c) => {

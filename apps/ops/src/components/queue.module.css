@@ -33,6 +33,12 @@
   outline-offset: var(--focus-inset);
 }
 
+/* Beneath a queue that holds the first so many of more. */
+.first {
+  margin: 0;
+  padding: var(--sp-16) var(--sp-20);
+}
+
 .note {
   margin: 0;
   padding: var(--sp-16) var(--sp-20);

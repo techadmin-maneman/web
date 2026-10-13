@@ -10,6 +10,7 @@ import { casesDecidedSince } from "../../domain/no-shows/no-show-rulings.ts";
 import { chargePreview } from "../../domain/no-shows/no-shows.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
 import { json } from "../../http/openapi.ts";
+import { capped, More } from "../../http/paging.ts";
 import { opsInputs } from "../../http/ops-inputs.ts";
 import { routeReach, withinRouteReach } from "../../http/staff-access.ts";
 import { indiaDate, indiaInstant } from "../../lib/india-time.ts";
@@ -69,7 +70,10 @@ const decidedRoute = createRoute({
   path: "/api/no-shows/decided",
   summary: "The no-shows in the caller's cities ruled on today in India, the latest first, each with its ruling",
   responses: {
-    200: { description: "The day's rulings", ...json(z.object({ cases: z.array(DecidedCaseSchema) }).strict()) },
+    200: {
+      description: "The day's rulings",
+      ...json(z.object({ cases: z.array(DecidedCaseSchema), more: More(LIMIT) }).strict()),
+    },
     403: errorResponse("access_required"),
   },
 });
@@ -85,7 +89,8 @@ export function registerOpsNoShowRulings(app: App): void {
 
   app.openapi(decidedRoute, async (c) => {
     const startOfToday = indiaInstant(indiaDate(c.var.deps.now()), "00:00");
-    const cases = await casesDecidedSince(c.env.DB, startOfToday, LIMIT, await routeReach(c));
-    return c.json({ cases }, 200);
+    const read = await casesDecidedSince(c.env.DB, startOfToday, LIMIT + 1, await routeReach(c));
+    const { rows: cases, more } = capped(read, LIMIT);
+    return c.json({ cases, more }, 200);
   });
 }

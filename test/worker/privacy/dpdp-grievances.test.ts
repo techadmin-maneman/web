@@ -47,6 +47,7 @@ describe("grievances", () => {
     const ops = appFor("local", fakeDependencies(), {}, "ops");
     const open = await (await request(ops, "/api/grievances")).json();
     expect(open).toEqual({
+      more: false,
       grievances: [
         {
           id,

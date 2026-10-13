@@ -243,7 +243,7 @@ test("says so when nothing has been decided today", async ({ page }) => {
   await answer(page, {
     "GET /api/payments": json(DAY_MONEY),
     "GET /api/no-shows": json(NO_SHOWS),
-    "GET /api/no-shows/decided": json({ cases: [] }),
+    "GET /api/no-shows/decided": json({ cases: [], more: false }),
   });
   await page.goto("/payments");
   await expect(page.getByRole("region", { name: DECIDED_TODAY })).toContainText(opsCopy.noShows.decided.empty);

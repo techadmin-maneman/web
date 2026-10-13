@@ -113,6 +113,7 @@ function Queue() {
       titleId="grievances"
       title={copy.title}
       items={loaded.value.grievances}
+      more={loaded.value.more}
       rowKind="grievance"
       empty={copy.empty}
     >

@@ -36,7 +36,6 @@ export const FRONT_PINNED: Readonly<Record<string, { readonly lines?: number; re
   "apps/ops/src/deletions/DeletionsScreen.tsx": { fn: 113 },
   "apps/ops/src/dispatch/BlockDrawer.tsx": { fn: 136 },
   "apps/ops/src/dispatch/DispatchScreen.tsx": { fn: 166 },
-  "apps/ops/src/no-shows/NoShowsScreen.tsx": { lines: 420 },
   "apps/ops/src/number-changes/NumberChangesScreen.tsx": { fn: 103 },
   "apps/ops/src/referrals/ReferralsScreen.tsx": { fn: 112 },
   "apps/ops/src/settings/Blackouts.tsx": { fn: 120 },

@@ -120,7 +120,7 @@ function Rows({ entries }: { entries: readonly ActivityEntry[] }) {
 
 interface Older {
   readonly entries: readonly ActivityEntry[];
-  readonly next: number | null;
+  readonly next: string | null;
 }
 
 /** The log as narrowed, a page at a time: older pages are added beneath as they are asked for. */
@@ -132,13 +132,13 @@ function Log({ filters }: { filters: Filters }) {
   if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
 
   const entries = [...loaded.value.entries, ...(older?.entries ?? [])];
-  const next = older === null ? loaded.value.next_before : older.next;
-  const showOlder = async (before: number) => {
+  const next = older === null ? loaded.value.next_cursor : older.next;
+  const showOlder = async (cursor: string) => {
     setLoadingOlder(true);
-    const answer = await api.activity(askedOf(filters, before));
+    const answer = await api.activity(askedOf(filters, cursor));
     setLoadingOlder(false);
     if (!answer.ok) return;
-    setOlder({ entries: [...(older?.entries ?? []), ...answer.body.entries], next: answer.body.next_before });
+    setOlder({ entries: [...(older?.entries ?? []), ...answer.body.entries], next: answer.body.next_cursor });
   };
   if (entries.length === 0) return <EmptyState look="panel" line={copy.empty} />;
   return (

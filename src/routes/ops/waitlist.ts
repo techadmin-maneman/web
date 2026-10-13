@@ -14,6 +14,7 @@ import { launchedPincode, pincodeOf, pincodesWithNoTechnician } from "../../doma
 import { launchPincode, launchPreview, waitlistByPincode } from "../../domain/booking/waitlist.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
 import { json } from "../../http/openapi.ts";
+import { countOf, CursorQuery, cursorOf, NextCursor } from "../../http/paging.ts";
 import { queuePacedMessages } from "../../http/queue-message.ts";
 import { reachOf, routeReach } from "../../http/staff-access.ts";
 import { indiaDate } from "../../lib/india-time.ts";
@@ -115,7 +116,7 @@ const referrersRoute = createRoute({
   summary: `The figures of the referrers in the caller's cities, the busiest first, ${String(REFERRERS_PAGE)} at a time`,
   request: {
     query: z.object({
-      offset: z.coerce.number().int().min(0).default(0).openapi({ description: "How many to skip: 0, then 50 on." }),
+      cursor: CursorQuery,
     }),
   },
   responses: {
@@ -138,11 +139,12 @@ const referrersRoute = createRoute({
                 })
                 .strict(),
             ),
-            more: z.boolean().openapi({ description: "Another page follows this one." }),
+            next_cursor: NextCursor,
           })
           .strict(),
       ),
     },
+    400: errorResponse("invalid_request: a cursor this list did not give"),
   },
 });
 
@@ -212,9 +214,11 @@ export function registerOpsWaitlist(app: App): void {
   });
 
   app.openapi(referrersRoute, async (c) => {
-    const { offset } = c.req.valid("query");
+    const offset = countOf(c.req.valid("query").cursor);
+    if (offset === null) return refuse(c, "invalid_request");
     const referrers = await referrersFrom(c.env.DB, offset, await routeReach(c));
-    return c.json({ referrers: referrers.slice(0, REFERRERS_PAGE), more: referrers.length > REFERRERS_PAGE }, 200);
+    const next = referrers.length > REFERRERS_PAGE ? cursorOf(String(offset + REFERRERS_PAGE)) : null;
+    return c.json({ referrers: referrers.slice(0, REFERRERS_PAGE), next_cursor: next }, 200);
   });
 }
 

@@ -264,7 +264,7 @@ describe("ops' referrers", () => {
           redeemed: 1,
         },
       ],
-      more: false,
+      next_cursor: null,
     });
   });
 
@@ -286,14 +286,17 @@ describe("ops' referrers", () => {
     });
     await env.DB.batch(statements.flat());
 
-    type Page = { referrers: { opens: number }[]; more: boolean };
+    type Page = { referrers: { opens: number }[]; next_cursor: string | null };
     const first = await (await request(ops(), "/api/referrers")).json<Page>();
     expect(first.referrers).toHaveLength(REFERRERS_PAGE);
     expect(first.referrers[0]?.opens).toBe(REFERRERS_PAGE);
-    expect(first.more).toBe(true);
+    expect(first.next_cursor).not.toBeNull();
 
     // Rohit, whose code nobody has opened, is the last.
-    const next = await (await request(ops(), `/api/referrers?offset=${String(REFERRERS_PAGE)}`)).json<Page>();
-    expect(next).toEqual({ referrers: [expect.objectContaining({ name: "Rohit Malhotra", opens: 0 })], more: false });
+    const next = await (await request(ops(), `/api/referrers?cursor=${first.next_cursor ?? ""}`)).json<Page>();
+    expect(next).toEqual({
+      referrers: [expect.objectContaining({ name: "Rohit Malhotra", opens: 0 })],
+      next_cursor: null,
+    });
   });
 });

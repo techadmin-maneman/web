@@ -79,7 +79,7 @@ Every client in the caller's cities, the soonest next visit first, then those wi
 }
 ```
 
-**400**: invalid_request
+**400**: invalid_request: a cursor this list did not give
 
 ```json
 {
@@ -2558,6 +2558,14 @@ The Care inbox's threads of a view, the latest first, a page at a time
 }
 ```
 
+**400**: invalid_request: a cursor this list did not give
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 **403**: access_required
 
 ```json
@@ -4016,10 +4024,15 @@ Open grievances in the caller's cities, oldest first, as Tasks counts them: none
         ],
         "additionalProperties": false
       }
+    },
+    "more": {
+      "type": "boolean",
+      "description": "More than 200 match: these are the first 200."
     }
   },
   "required": [
-    "grievances"
+    "grievances",
+    "more"
   ],
   "additionalProperties": false
 }
@@ -4081,19 +4094,31 @@ The audit log, newest first: who did what, on which record, when
         "$ref": "#/components/schemas/ActivityEntry"
       }
     },
-    "next_before": {
-      "type": [
-        "integer",
-        "null"
+    "next_cursor": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
       ],
-      "description": "Asked as `before`, the next page; null when this one reaches the log's start."
+      "description": "Asked as `cursor`, the next page; null on the last."
     }
   },
   "required": [
     "entries",
-    "next_before"
+    "next_cursor"
   ],
   "additionalProperties": false
+}
+```
+
+**400**: invalid_request: a cursor this list did not give
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
 }
 ```
 
@@ -4336,16 +4361,31 @@ The figures of the referrers in the caller's cities, the busiest first, 50 at a 
         "additionalProperties": false
       }
     },
-    "more": {
-      "type": "boolean",
-      "description": "Another page follows this one."
+    "next_cursor": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Asked as `cursor`, the next page; null on the last."
     }
   },
   "required": [
     "referrers",
-    "more"
+    "next_cursor"
   ],
   "additionalProperties": false
+}
+```
+
+**400**: invalid_request: a cursor this list did not give
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
 }
 ```
 
@@ -5080,10 +5120,15 @@ The no-shows in the caller's cities ruled on today in India, the latest first, e
       "items": {
         "$ref": "#/components/schemas/NoShowDecided"
       }
+    },
+    "more": {
+      "type": "boolean",
+      "description": "More than 200 match: these are the first 200."
     }
   },
   "required": [
-    "cases"
+    "cases",
+    "more"
   ],
   "additionalProperties": false
 }
@@ -5112,10 +5157,15 @@ Disputed no-show charges in the caller's cities still to rule on, oldest first, 
       "items": {
         "$ref": "#/components/schemas/NoShowDispute"
       }
+    },
+    "more": {
+      "type": "boolean",
+      "description": "More than 50 match: these are the first 50."
     }
   },
   "required": [
-    "disputes"
+    "disputes",
+    "more"
   ],
   "additionalProperties": false
 }
@@ -9536,9 +9586,16 @@ Request body:
         "additionalProperties": false
       }
     },
-    "more": {
-      "type": "boolean",
-      "description": "Another page of 50 follows."
+    "next_cursor": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The next page of 50; null on the last."
     },
     "cities": {
       "type": "array",
@@ -9550,7 +9607,7 @@ Request body:
   },
   "required": [
     "clients",
-    "more",
+    "next_cursor",
     "cities"
   ],
   "additionalProperties": false
@@ -16606,7 +16663,7 @@ Request body:
       },
       "description": "At most 50, the latest first."
     },
-    "next_before": {
+    "next_cursor": {
       "anyOf": [
         {
           "type": "string"
@@ -16615,12 +16672,12 @@ Request body:
           "type": "null"
         }
       ],
-      "description": "Where the next page starts, for ?before=; null on the last page."
+      "description": "Asked as `cursor`, the next page; null on the last."
     }
   },
   "required": [
     "conversations",
-    "next_before"
+    "next_cursor"
   ],
   "additionalProperties": false
 }
@@ -19825,6 +19882,10 @@ Request body:
         "$ref": "#/components/schemas/NoShowCase"
       }
     },
+    "more": {
+      "type": "boolean",
+      "description": "More than 200 match: these are the first 200."
+    },
     "waiver": {
       "type": "object",
       "properties": {
@@ -19853,6 +19914,7 @@ Request body:
   },
   "required": [
     "cases",
+    "more",
     "waiver"
   ],
   "additionalProperties": false
@@ -22084,6 +22146,10 @@ Request body:
         "$ref": "#/components/schemas/OpsCharge"
       },
       "description": "No-shows and late cancellations, the earliest first."
+    },
+    "more": {
+      "type": "boolean",
+      "description": "More than 200 match: these are the first 200."
     }
   },
   "required": [
@@ -22092,7 +22158,8 @@ Request body:
     "refunds_processing",
     "refunded",
     "charged",
-    "charges"
+    "charges",
+    "more"
   ],
   "additionalProperties": false,
   "description": "Derived at read time from the payments themselves; no total is kept."

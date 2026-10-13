@@ -68,6 +68,7 @@ export const NO_SHOWS = {
       decided_at: null,
     },
   ],
+  more: false,
 } satisfies OpsReply<"/api/no-shows">;
 
 /**
@@ -77,6 +78,7 @@ export const NO_SHOWS = {
 export const NO_SHOW_UNMEASURED = {
   waiver: { payment: "refunded", credit: "returned" },
   cases: [{ ...VIKRAMS_CASE, distance_m: null }],
+  more: false,
 } satisfies OpsReply<"/api/no-shows">;
 
 /** What charging Vikram's visit would do: their service visit was paid Rs. 2,360, and a no-show keeps all of it. */
@@ -106,6 +108,7 @@ export const DECIDED = {
       charge: null,
     },
   ],
+  more: false,
 } satisfies OpsReply<"/api/no-shows/decided">;
 
 /**
@@ -142,6 +145,7 @@ export const DAY_MONEY = {
       technician: "Imran Qureshi",
     },
   ],
+  more: false,
 } satisfies OpsReply<"/api/payments">;
 
 /**
@@ -171,6 +175,7 @@ export const DISPUTES = {
       closed_at: "2027-09-18T06:17:00.000Z",
     },
   ],
+  more: false,
 } satisfies OpsReply<"/api/no-shows/disputes">;
 
 /**
@@ -328,6 +333,7 @@ export const GRIEVANCES = {
       due: "2027-08-31T06:00:00.000Z",
     },
   ],
+  more: false,
 } satisfies OpsReply<"/api/grievances">;
 
 export const DELETION_REQUESTS = {

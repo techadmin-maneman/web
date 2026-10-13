@@ -82,5 +82,5 @@ export const REFERRERS = {
       redeemed: 0,
     },
   ],
-  more: false,
+  next_cursor: null,
 } satisfies OpsReply<"/api/referrers">;

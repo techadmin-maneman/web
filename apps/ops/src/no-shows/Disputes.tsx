@@ -197,6 +197,7 @@ export function Disputes({ onRuled }: { onRuled: () => void }) {
       titleId="disputes"
       title={copy.queueTitle}
       items={loaded.value.disputes}
+      more={loaded.value.more}
       rowKind="dispute"
       empty={copy.none}
     >

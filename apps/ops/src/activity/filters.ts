@@ -38,10 +38,10 @@ export function filtersOf(search: string): Filters {
 }
 
 /** The query the API is asked with: only what is set. */
-export function askedOf(filters: Filters, before?: number): ActivityAsked {
+export function askedOf(filters: Filters, cursor?: string): ActivityAsked {
   const asked: ActivityAsked = {};
   for (const [name, value] of Object.entries(filters)) {
     if (typeof value === "string" && value !== "") Object.assign(asked, { [name]: value });
   }
-  return before === undefined ? asked : { ...asked, before };
+  return cursor === undefined ? asked : { ...asked, cursor };
 }

@@ -32,6 +32,7 @@ import { CLIENT_STATES, clientStateOf, UPCOMING_STATUSES } from "../../domain/vi
 import type { App } from "../../http/context.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
 import { json } from "../../http/openapi.ts";
+import { countOf, CursorQuery, cursorOf, NextCursor } from "../../http/paging.ts";
 import { routeReach, withinRouteReach, type PersonRow } from "../../http/staff-access.ts";
 import { INDIAN_MOBILE_PATTERN, toE164 } from "../../lib/mobile.ts";
 import { unknownClient } from "../schemas/clients.ts";
@@ -127,7 +128,7 @@ const listRoute = createRoute({
     query: z.object({
       state: z.enum(CLIENT_STATES).optional().openapi({ description: "Where they stand; any, left out." }),
       city: z.string().trim().min(1).max(60).optional(),
-      page: z.coerce.number().int().min(0).max(10_000).optional().openapi({ description: "From 0." }),
+      cursor: CursorQuery,
     }),
   },
   responses: {
@@ -150,14 +151,16 @@ const listRoute = createRoute({
                 })
                 .strict(),
             ),
-            more: z.boolean().openapi({ description: `Another page of ${String(CLIENTS_PER_PAGE)} follows.` }),
+            next_cursor: NextCursor.openapi({
+              description: `The next page of ${String(CLIENTS_PER_PAGE)}; null on the last.`,
+            }),
             cities: z.array(z.string()).openapi({ description: "The cities served that the caller reaches, by name." }),
           })
           .strict()
           .openapi("ClientList"),
       ),
     },
-    400: errorResponse("invalid_request"),
+    400: errorResponse("invalid_request: a cursor this list did not give"),
   },
 });
 
@@ -175,10 +178,12 @@ const containing = (text: string): string => `%${text.replace(/[\\%_]/g, (charac
 
 export function registerOpsClients(app: App): void {
   app.openapi(listRoute, async (c) => {
-    const { state, city, page } = c.req.valid("query");
+    const { state, city, cursor } = c.req.valid("query");
+    const page = countOf(cursor);
+    if (page === null) return refuse(c, "invalid_request");
     const reach = reachBinding(await routeReach(c));
     const [listed, served] = await Promise.all([
-      listClients(c.env.DB, { state, city, page: page ?? 0, reach }),
+      listClients(c.env.DB, { state, city, page, reach }),
       c.env.DB.prepare(
         "SELECT name FROM cities WHERE served = 1 AND (?1 IS NULL OR name IN (SELECT value FROM json_each(?1))) ORDER BY name",
       )
@@ -195,7 +200,7 @@ export function registerOpsClients(app: App): void {
           city: client.city,
           next_visit: client.nextVisit,
         })),
-        more: listed.more,
+        next_cursor: listed.more ? cursorOf(String(page + 1)) : null,
         cities: served.results.map((row) => row.name),
       },
       200,

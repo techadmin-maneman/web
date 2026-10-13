@@ -25,7 +25,7 @@ const KABIR = {
 };
 const LISTED = {
   clients: [ROHIT, KABIR],
-  more: true,
+  next_cursor: "MQ",
   cities: ["Gurgaon", "Noida"],
 } satisfies OpsReply<"/api/clients">;
 
@@ -56,7 +56,7 @@ test("lists every client beneath the search, narrowed by status and city, the na
   expect(new URL(page.url()).search).toBe("?state=lead&city=Noida");
 
   await list.getByRole("button", { name: opsCopy.clients.list.next }).click();
-  await expect.poll(() => asked.at(-1)).toBe("?state=lead&city=Noida&page=1");
+  await expect.poll(() => asked.at(-1)).toBe("?state=lead&city=Noida&cursor=MQ");
   await expect(list.getByText("Page 2")).toBeVisible();
 
   // The address opens the list narrowed as it was: a bookmark, or a link sent to a colleague.

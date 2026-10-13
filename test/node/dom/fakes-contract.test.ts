@@ -23,7 +23,7 @@ describe("the contract the fakes are held to", () => {
     expect(contractErrors("ops", "GET", "/api/grievances", 200, extra).join()).toContain(
       '"additionalProperty":"answered"',
     );
-    expect(contractErrors("ops", "GET", "/api/referrers", 200, { referrers: [] }).join()).toContain("more");
+    expect(contractErrors("ops", "GET", "/api/referrers", 200, { referrers: [] }).join()).toContain("next_cursor");
   });
 
   it("refuses a status the route never answers, and a method it does not take", () => {

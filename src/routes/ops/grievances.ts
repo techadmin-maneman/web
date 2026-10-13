@@ -10,11 +10,15 @@ import { auditStatement } from "../../domain/ops/audit.ts";
 import { reachBinding, withinReach } from "../../domain/clients/places.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
 import { json } from "../../http/openapi.ts";
+import { capped, More } from "../../http/paging.ts";
 import { opsInputs } from "../../http/ops-inputs.ts";
 import { queueMessage } from "../../http/queue-message.ts";
 import { concernAnsweredMessage } from "../../domain/ops/grievances.ts";
 import { routeReach, withinRouteReach } from "../../http/staff-access.ts";
 import { dueAt } from "../../policy/tasks.ts";
+
+/** As many open grievances as the page can usefully hold, the oldest first. */
+const LIMIT = 200;
 
 const openRoute = createRoute({
   method: "get",
@@ -42,6 +46,7 @@ const openRoute = createRoute({
                 })
                 .strict(),
             ),
+            more: More(LIMIT),
           })
           .strict(),
       ),
@@ -78,14 +83,16 @@ export function registerOpsGrievances(app: App): void {
       `SELECT g.id, g.person_id, p.name, p.mobile_e164, g.text, g.created_at FROM grievances g
        JOIN people p ON p.id = g.person_id
        WHERE g.state = 'open' AND p.erased_at IS NULL AND ${withinReach("grievance", "g", "?1")}
-       ORDER BY g.created_at`,
+       ORDER BY g.created_at LIMIT ?2`,
     )
-      .bind(reachBinding(reached))
+      .bind(reachBinding(reached), LIMIT + 1)
       .all<{ id: string; person_id: string; name: string; mobile_e164: string; text: string; created_at: string }>();
     const sla = (await opsInputs(c)).taskSlaHours;
+    const { rows, more } = capped(results, LIMIT);
     return c.json(
       {
-        grievances: results.map((row) => ({
+        more,
+        grievances: rows.map((row) => ({
           id: row.id,
           person_id: row.person_id,
           name: row.name,

@@ -28,59 +28,20 @@ import { type Loaded, useLoad } from "@maneman/ui/useLoad";
 import { indiaClock, indiaDate, minutesBetween, shortDate } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";
 import { type ReactNode, useCallback, useRef, useState } from "react";
-import { api, type Charge, type ChargePreview, type DecidedNoShow, type NoShowCase } from "../api.ts";
+import { api, type ChargePreview, type DecidedNoShow, type NoShowCase } from "../api.ts";
 import { DecisionQueue } from "../components/DecisionQueue.tsx";
 import { OpsLink, Shell } from "../components/Shell.tsx";
-import { noShows } from "../content.ts";
+import { firstShown, noShows } from "../content.ts";
 import { useAccess, WAIVING_A_NO_SHOW } from "../lib/access.ts";
 import { Left } from "../lib/Left.tsx";
 import { clientPath } from "../route.ts";
+import { Charges } from "./Charges.tsx";
 import { Disputes } from "./Disputes.tsx";
 import { Distance } from "./Distance.tsx";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import styles from "./no-shows.module.css";
 
 type Choice = "charged" | "waived";
-
-/** The charge's first line: the client, then what it was. */
-function whoOf(charge: Charge): string {
-  const copy = noShows.money.charges;
-  const name = charge.person?.name ?? copy.unknown;
-  if (charge.kind === "no_show") return copy.noShow(name);
-  return charge.change === "moved" ? copy.moved(name) : copy.cancelled(name);
-}
-
-/** The line of evidence beneath it, in the board's own words. */
-function evidenceOf(charge: Charge): string {
-  const copy = noShows.money.charges;
-  const was = charge.visit_started_at === null ? copy.undated : indiaClock(charge.visit_started_at);
-  if (charge.kind !== "no_show") return copy.changed(indiaClock(charge.at), was);
-  return charge.technician === null ? copy.unattended(was) : copy.attended(charge.technician, was);
-}
-
-function Charges({ charges, today }: { charges: readonly Charge[]; today: boolean }) {
-  const copy = noShows.money.charges;
-  if (charges.length === 0) return <EmptyState look="panel" line={copy.empty(today)} />;
-
-  return (
-    <ul className={styles.charges}>
-      {charges.map((charge) => (
-        <li className={styles.chargeRow} key={charge.id}>
-          <div className={styles.chargeLine}>
-            <span className={styles.who}>{whoOf(charge)}</span>
-            {/* A no-show charged before a charge recorded what it kept carries no amount. */}
-            {charge.amount === null ? (
-              <span className={styles.unrecorded}>{copy.noAmount}</span>
-            ) : (
-              <span className={styles.chargeAmount}>{rupees(charge.amount)}</span>
-            )}
-          </div>
-          <p className={styles.evidence}>{evidenceOf(charge)}</p>
-        </li>
-      ))}
-    </ul>
-  );
-}
 
 /** India's date today, by this computer's clock. */
 const indiaToday = () => indiaDate(new Date().toISOString());
@@ -145,7 +106,7 @@ function Money() {
         </div>
       </dl>
       <h3 className={capsLook(styles.chargesTitle)}>{copy.charges.title}</h3>
-      <Charges charges={day.charges} today={isToday} />
+      <Charges charges={day.charges} today={isToday} more={day.more} />
     </section>
   );
 }
@@ -418,7 +379,14 @@ function Queue({ onDecided }: { onDecided: () => void }) {
   const charge = access.mayCall("POST /api/no-shows/{id}/decision");
   const may: MayRule = { charge, waive: charge && access.reaches(WAIVING_A_NO_SHOW) };
   return (
-    <DecisionQueue titleId="no-shows" title={copy.title} items={loaded.value.cases} rowKind="case" empty={copy.empty}>
+    <DecisionQueue
+      titleId="no-shows"
+      title={copy.title}
+      items={loaded.value.cases}
+      more={loaded.value.more}
+      rowKind="case"
+      empty={copy.empty}
+    >
       {(each, ruled) => (
         <Case
           each={each}
@@ -450,7 +418,7 @@ function DecidedToday() {
   if (loaded.state === "loading") return <Loading />;
   if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
 
-  const { cases } = loaded.value;
+  const { cases, more } = loaded.value;
   return (
     <Panel titleId="decided-today" title={decided.title}>
       {cases.length === 0 ? (
@@ -469,6 +437,11 @@ function DecidedToday() {
             </li>
           ))}
         </ul>
+      )}
+      {more && (
+        <InlineMessage tone="note" className={styles.first}>
+          {firstShown(cases.length)}
+        </InlineMessage>
       )}
     </Panel>
   );

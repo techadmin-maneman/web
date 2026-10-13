@@ -19,6 +19,9 @@ export const OFFLINE = "You're offline. Reconnect and try again.";
 /** A change whose answer never came: it may have gone through, and the same change sent again is not made twice. */
 export const UNCONFIRMED = "We couldn't confirm that went through. Check before trying again.";
 
+/** Beneath a list that stops at its first so many. */
+export const firstShown = (count: number) => `Showing the first ${String(count)}`;
+
 /** A refusal with no words of its own. */
 export const FAILED = "That didn't work. Try again.";
 

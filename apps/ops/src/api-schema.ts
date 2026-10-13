@@ -119,8 +119,8 @@ export interface paths {
                     /** @description Where they stand; any, left out. */
                     state?: "fitted" | "lead" | "nothing_booked";
                     city?: string;
-                    /** @description From 0. */
-                    page?: number | null;
+                    /** @description The next page: `next_cursor` from the last one. Left out, the first. */
+                    cursor?: string;
                 };
                 header?: never;
                 path?: never;
@@ -137,7 +137,7 @@ export interface paths {
                         "application/json": components["schemas"]["ClientList"];
                     };
                 };
-                /** @description invalid_request */
+                /** @description invalid_request: a cursor this list did not give */
                 400: {
                     headers: {
                         [name: string]: unknown;
@@ -3939,8 +3939,8 @@ export interface paths {
                     view?: "mine" | "open" | "waiting" | "closed" | "all";
                     /** @description A client's name, or a number, or part of either. */
                     search?: string;
-                    /** @description The next page: next_before from the last one. */
-                    before?: string;
+                    /** @description The next page: `next_cursor` from the last one. Left out, the first. */
+                    cursor?: string;
                 };
                 header?: never;
                 path?: never;
@@ -3955,6 +3955,15 @@ export interface paths {
                     };
                     content: {
                         "application/json": components["schemas"]["Conversations"];
+                    };
+                };
+                /** @description invalid_request: a cursor this list did not give */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
                 /** @description access_required */
@@ -6079,6 +6088,8 @@ export interface paths {
                                  */
                                 due: string;
                             }[];
+                            /** @description More than 200 match: these are the first 200. */
+                            more: boolean;
                         };
                     };
                 };
@@ -6167,8 +6178,8 @@ export interface paths {
                     from?: string;
                     /** @description India's date, the last included. */
                     to?: string;
-                    /** @description The page after the one whose `next_before` this is. */
-                    before?: number;
+                    /** @description The next page: `next_cursor` from the last one. Left out, the first. */
+                    cursor?: string;
                     /** @description include: the calls that only read, as each page opened makes, too. Left out, what changed alone. */
                     reads?: "include";
                 };
@@ -6186,9 +6197,18 @@ export interface paths {
                     content: {
                         "application/json": {
                             entries: components["schemas"]["ActivityEntry"][];
-                            /** @description Asked as `before`, the next page; null when this one reaches the log's start. */
-                            next_before: number | null;
+                            /** @description Asked as `cursor`, the next page; null on the last. */
+                            next_cursor: string | null;
                         };
+                    };
+                };
+                /** @description invalid_request: a cursor this list did not give */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
             };
@@ -6349,8 +6369,8 @@ export interface paths {
         get: {
             parameters: {
                 query?: {
-                    /** @description How many to skip: 0, then 50 on. */
-                    offset?: number | null;
+                    /** @description The next page: `next_cursor` from the last one. Left out, the first. */
+                    cursor?: string;
                 };
                 header?: never;
                 path?: never;
@@ -6380,9 +6400,18 @@ export interface paths {
                                 /** @description Credits of theirs spent on visits. */
                                 redeemed: number;
                             }[];
-                            /** @description Another page follows this one. */
-                            more: boolean;
+                            /** @description Asked as `cursor`, the next page; null on the last. */
+                            next_cursor: string | null;
                         };
+                    };
+                };
+                /** @description invalid_request: a cursor this list did not give */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
             };
@@ -7639,6 +7668,8 @@ export interface paths {
                     content: {
                         "application/json": {
                             cases: components["schemas"]["NoShowDecided"][];
+                            /** @description More than 200 match: these are the first 200. */
+                            more: boolean;
                         };
                     };
                 };
@@ -7686,6 +7717,8 @@ export interface paths {
                     content: {
                         "application/json": {
                             disputes: components["schemas"]["NoShowDispute"][];
+                            /** @description More than 50 match: these are the first 50. */
+                            more: boolean;
                         };
                     };
                 };
@@ -14198,8 +14231,8 @@ export interface components {
                 city: string | null;
                 next_visit: string | null;
             }[];
-            /** @description Another page of 50 follows. */
-            more: boolean;
+            /** @description The next page of 50; null on the last. */
+            next_cursor: string | null;
             /** @description The cities served that the caller reaches, by name. */
             cities: string[];
         };
@@ -15745,8 +15778,8 @@ export interface components {
         Conversations: {
             /** @description At most 50, the latest first. */
             conversations: components["schemas"]["Conversation"][];
-            /** @description Where the next page starts, for ?before=; null on the last page. */
-            next_before: string | null;
+            /** @description Asked as `cursor`, the next page; null on the last. */
+            next_cursor: string | null;
         };
         CareTeam: {
             team: components["schemas"]["CareMember"][];
@@ -16415,6 +16448,8 @@ export interface components {
         };
         NoShowCases: {
             cases: components["schemas"]["NoShowCase"][];
+            /** @description More than 200 match: these are the first 200. */
+            more: boolean;
             /** @description What waiving a case gives back now, as ops set it in Settings (no_show_waiver). */
             waiver: {
                 /** @enum {string} */
@@ -16956,6 +16991,8 @@ export interface components {
             charged: number;
             /** @description No-shows and late cancellations, the earliest first. */
             charges: components["schemas"]["OpsCharge"][];
+            /** @description More than 200 match: these are the first 200. */
+            more: boolean;
         };
         OpsCharge: {
             /**

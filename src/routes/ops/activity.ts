@@ -8,7 +8,9 @@ import { SURFACES } from "../../config/environments.ts";
 import { activity } from "../../domain/ops/activity.ts";
 import { AUDIT_ACTIONS, type AuditActor } from "../../domain/ops/audit.ts";
 import type { App } from "../../http/context.ts";
+import { errorResponse, refuse } from "../../http/errors.ts";
 import { json } from "../../http/openapi.ts";
+import { CursorQuery, cursorOf, NextCursor, placeOf } from "../../http/paging.ts";
 
 const ACTOR_KINDS = [
   "staff",
@@ -60,9 +62,7 @@ const listRoute = createRoute({
       visit: z.string().trim().min(1).max(64).optional(),
       from: z.iso.date().optional().openapi({ description: "India's date, the first included." }),
       to: z.iso.date().optional().openapi({ description: "India's date, the last included." }),
-      before: z.coerce.number().int().positive().optional().openapi({
-        description: "The page after the one whose `next_before` this is.",
-      }),
+      cursor: CursorQuery,
       reads: z.enum(["include"]).optional().openapi({
         description: "include: the calls that only read, as each page opened makes, too. Left out, what changed alone.",
       }),
@@ -75,19 +75,20 @@ const listRoute = createRoute({
         z
           .object({
             entries: z.array(EntrySchema),
-            next_before: z.number().int().nullable().openapi({
-              description: "Asked as `before`, the next page; null when this one reaches the log's start.",
-            }),
+            next_cursor: NextCursor,
           })
           .strict(),
       ),
     },
+    400: errorResponse("invalid_request: a cursor this list did not give"),
   },
 });
 
 export function registerOpsActivity(app: App): void {
   app.openapi(listRoute, async (c) => {
     const query = c.req.valid("query");
+    const before = query.cursor === undefined ? undefined : Number(placeOf(query.cursor));
+    if (before !== undefined && !(Number.isSafeInteger(before) && before > 0)) return refuse(c, "invalid_request");
     const page = await activity(c.env.DB, {
       actorKind: query.actor_kind,
       actor: query.actor,
@@ -96,7 +97,7 @@ export function registerOpsActivity(app: App): void {
       visit: query.visit,
       from: query.from,
       to: query.to,
-      before: query.before,
+      before,
       reads: query.reads === "include",
     });
     return c.json(
@@ -105,7 +106,7 @@ export function registerOpsActivity(app: App): void {
           ...entry,
           detail: entry.detail === null ? null : { ...entry.detail },
         })),
-        next_before: page.nextBefore,
+        next_cursor: page.nextBefore === null ? null : cursorOf(String(page.nextBefore)),
       },
       200,
     );
