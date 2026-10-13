@@ -1,8 +1,11 @@
-// The windows a visit can start in on the day chosen, open or full. The client app's booking sheet and the site's
-// /book and invite pages draw it alike, each in its own words and its own look. The site compiles it with Preact
-// (site/astro.config.ts), so it uses nothing Preact lacks.
+// The windows a visit can start in on the day chosen, open or full, each a card to choose (./ChoiceCard.tsx). The
+// client app's booking sheet and the site's /book and invite pages draw it alike, in one look; the site compiles it
+// with Preact (site/astro.config.ts), so it uses nothing Preact lacks.
 
-import { classes as join } from "./classes.ts";
+import { CARD_NOTE, ChoiceCard } from "./ChoiceCard.tsx";
+import { Fieldset } from "./Field.tsx";
+import { classes } from "./classes.ts";
+import styles from "./window-choice.module.css";
 
 export interface WindowOption<Id extends string> {
   readonly id: Id;
@@ -11,27 +14,6 @@ export interface WindowOption<Id extends string> {
   readonly open: boolean;
   /** A line beneath the hours, such as that a change this close to the visit is charged. */
   readonly note?: string | undefined;
-}
-
-type ClassName = string | undefined;
-
-/** Each surface's own look. */
-export interface WindowChoiceClasses {
-  /** The fieldset, where the choice has a legend of its own. */
-  readonly group?: ClassName;
-  readonly legend?: ClassName;
-  readonly options: ClassName;
-  readonly option: ClassName;
-  /** Added to the chosen option, where the look needs more than the radio's own state. */
-  readonly optionOn?: ClassName;
-  readonly radio: ClassName;
-  /** Where the name, the hours and the note sit together in a span of their own. */
-  readonly text?: ClassName;
-  readonly name: ClassName;
-  readonly hours: ClassName;
-  readonly note?: ClassName;
-  /** "Full", where it stands beneath the hours rather than in their place. */
-  readonly full?: ClassName;
 }
 
 export function WindowChoice<Id extends string>(props: {
@@ -46,45 +28,40 @@ export function WindowChoice<Id extends string>(props: {
   readonly legend?: string;
   readonly labelledBy?: string;
   readonly onChoose: (id: Id) => void;
-  readonly classes: WindowChoiceClasses;
+  /** The choice's place on its screen. */
+  readonly className?: string | undefined;
 }) {
-  const { classes, fullInPlaceOfHours = false } = props;
-  const options = props.options.map((option) => {
-    const lines = (
-      <>
-        <span className={classes.name}>{option.name}</span>
-        <span className={classes.hours}>{!option.open && fullInPlaceOfHours ? props.fullWord : option.hours}</span>
-        {option.note !== undefined && <span className={classes.note}>{option.note}</span>}
-      </>
-    );
-    return (
-      <label key={option.id} className={join(classes.option, option.id === props.chosen && classes.optionOn)}>
-        <input
-          className={classes.radio}
-          type="radio"
-          name={props.name}
-          checked={option.id === props.chosen}
-          disabled={!option.open}
-          onChange={() => {
-            props.onChoose(option.id);
-          }}
-        />
-        {classes.text === undefined ? lines : <span className={classes.text}>{lines}</span>}
-        {!option.open && !fullInPlaceOfHours && <span className={classes.full}>{props.fullWord}</span>}
-      </label>
-    );
-  });
+  const { fullInPlaceOfHours = false } = props;
+  const options = props.options.map((option) => (
+    <ChoiceCard
+      key={option.id}
+      name={props.name}
+      checked={option.id === props.chosen}
+      disabled={!option.open}
+      onChange={() => {
+        props.onChoose(option.id);
+      }}
+    >
+      <span className={styles.text}>
+        <span className={styles.name}>{option.name}</span>
+        <span className={classes(styles.hours, CARD_NOTE)}>
+          {!option.open && fullInPlaceOfHours ? props.fullWord : option.hours}
+        </span>
+        {option.note !== undefined && <span className={classes(styles.hours, styles.late)}>{option.note}</span>}
+      </span>
+      {!option.open && !fullInPlaceOfHours && <span className={classes(styles.full, CARD_NOTE)}>{props.fullWord}</span>}
+    </ChoiceCard>
+  ));
   if (props.legend === undefined) {
     return (
-      <div className={classes.options} role="radiogroup" aria-labelledby={props.labelledBy}>
+      <div className={classes(styles.options, props.className)} role="radiogroup" aria-labelledby={props.labelledBy}>
         {options}
       </div>
     );
   }
   return (
-    <fieldset className={classes.group}>
-      <legend className={classes.legend}>{props.legend}</legend>
-      <div className={classes.options}>{options}</div>
-    </fieldset>
+    <Fieldset className={props.className} legend={props.legend}>
+      <div className={styles.options}>{options}</div>
+    </Fieldset>
   );
 }

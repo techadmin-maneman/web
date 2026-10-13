@@ -1,7 +1,7 @@
 // Growth · Spend (docs/decisions/0150-spend.md): a month's offline spend, for a city or national, by channel, which the
 // nightly reporting copy counts beside the ad accounts' own. An entry is added whole, and taken off rather than changed.
 
-import { Button } from "@maneman/ui/Button";
+import { Button, RowButton } from "@maneman/ui/Button";
 import { Field, Select, TextInput } from "@maneman/ui/Field";
 import { Panel } from "@maneman/ui/Panel";
 import { Table } from "@maneman/ui/Table";
@@ -173,9 +173,8 @@ function SpendTable(props: { entries: readonly SpendEntry[]; mayRemove: boolean;
             <td>{entry.entered_by}</td>
             {props.mayRemove && (
               <td>
-                <button
+                <RowButton
                   className={styles.inline}
-                  type="button"
                   aria-label={copy.removeLabel(
                     fullMonth(entry.month),
                     entry.city ?? copy.national,
@@ -186,7 +185,7 @@ function SpendTable(props: { entries: readonly SpendEntry[]; mayRemove: boolean;
                   }}
                 >
                   {copy.remove}
-                </button>
+                </RowButton>
               </td>
             )}
           </tr>

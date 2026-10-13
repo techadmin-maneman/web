@@ -12,6 +12,9 @@
 // A search that names a client, an area or a pincode outlines the blocks it
 // found, so the one visit is plain among a technician's eight.
 
+import { TextButton } from "@maneman/ui/TextLink";
+import { Table } from "@maneman/ui/Table";
+import { Tile } from "@maneman/ui/Tile";
 import { capsLook } from "@maneman/ui/Caps";
 import { classes } from "@maneman/ui/classes";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
@@ -94,9 +97,8 @@ function BlockButton({ job, found, onOpen, onTake }: BlockButtonProps) {
   const movable = isMovable(block);
   const begun = begunWord(block);
   return (
-    <button
+    <Tile
       className={classes(styles.block, inkOf(block), sizeOf(block), !movable && styles.finished)}
-      type="button"
       data-appointment={block.appointment_id}
       data-match={found?.(block) === true ? "" : undefined}
       draggable={movable && onTake !== null}
@@ -117,7 +119,7 @@ function BlockButton({ job, found, onOpen, onTake }: BlockButtonProps) {
       </span>
       <span className={styles.what}>{whatOf(block)}</span>
       {begun !== null && <span className={styles.what}>{begun}</span>}
-    </button>
+    </Tile>
   );
 }
 
@@ -176,10 +178,9 @@ function Cell({ technician, date, blocks, away, inHand, found, onOpen, onTake, o
       {inHand !== null && windows !== null && windows.length > 0 && (
         <div className={styles.targets}>
           {windows.map((window) => (
-            <button
+            <Tile
               className={styles.target}
               key={window}
-              type="button"
               tabIndex={-1}
               aria-label={dispatch.landing.choose(
                 nameOf(inHand.job),
@@ -199,7 +200,7 @@ function Cell({ technician, date, blocks, away, inHand, found, onOpen, onTake, o
               }}
             >
               {windowWord(window)}
-            </button>
+            </Tile>
           ))}
         </div>
       )}
@@ -222,7 +223,7 @@ interface GridProps {
 
 export function Grid({ board, rows, inHand, found, onOpen, onTake, onLand, onRoutes }: GridProps) {
   return (
-    <table className={styles.grid}>
+    <Table plain className={styles.grid}>
       <thead>
         <tr>
           <td className={styles.corner} />
@@ -233,16 +234,17 @@ export function Grid({ board, rows, inHand, found, onOpen, onTake, onLand, onRou
                 <span className={styles.dayName}>{dayHead(date)}</span>
                 <span className={percent >= dispatch.peak ? styles.peak : styles.util}>{dispatch.util(percent)}</span>
                 {onRoutes !== null && (
-                  <button
+                  <TextButton
+                    tone="muted"
+                    compact
                     className={styles.dayMap}
-                    type="button"
                     aria-label={dispatch.routes.openLabel(dayHead(date))}
                     onClick={() => {
                       onRoutes(date);
                     }}
                   >
                     {dispatch.routes.open}
-                  </button>
+                  </TextButton>
                 )}
               </th>
             );
@@ -273,6 +275,6 @@ export function Grid({ board, rows, inHand, found, onOpen, onTake, onLand, onRou
           </tr>
         ))}
       </tbody>
-    </table>
+    </Table>
   );
 }

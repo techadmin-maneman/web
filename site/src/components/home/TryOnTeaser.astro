@@ -1,5 +1,6 @@
 ---
 // The try-on teaser: copy on the left, a before/after pair on the right.
+import { buttonLook } from "@maneman/ui/Button";
 import BeforeAfter from "../../islands/BeforeAfter.tsx";
 import { placeholderTag, teaserPair, tryOnTeaser } from "../../content/site.ts";
 import { SHOW_PLACEHOLDER_TAGS, isShown } from "../../lib/build.ts";
@@ -15,7 +16,7 @@ const widths = [390, 780, 1200];
       <div class="eyebrow caps">{tryOnTeaser.eyebrow}</div>
       <h2>{tryOnTeaser.title}</h2>
       <p>{tryOnTeaser.body}</p>
-      <a class="btn btn--lg btn--paper start" href="/try">
+      <a class={buttonLook({ variant: "light", size: "action", className: "start" })} href="/try">
         {tryOnTeaser.start}
       </a>
     </div>

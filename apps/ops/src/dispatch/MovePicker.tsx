@@ -20,8 +20,7 @@ import { REASON_MAX_CHARS } from "@rules/policy/decision-reasons.ts";
 import { classes } from "@maneman/ui/classes";
 import { Button } from "@maneman/ui/Button";
 import { Dialog } from "@maneman/ui/Dialog";
-import { Field, TextArea } from "@maneman/ui/Field";
-import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
+import { ChoiceGroup, Field, Radio, TextArea } from "@maneman/ui/Field";
 import { indiaClock, shortDate } from "@maneman/web-kit/dates";
 import { useState } from "react";
 import type { MoveReason } from "../api.ts";
@@ -128,24 +127,20 @@ export function MovePicker({ job, to, landsAt, blackout, sending, clearingCheckI
         {copy.title(nameOf(job), to.technician.name)}
       </h2>
       <p className={styles.pickerWhen}>{stood === null ? copy.to(lands) : copy.fromTo(stood, lands)}</p>
-      <fieldset className={styles.reasons} disabled={sending}>
-        <VisuallyHidden as="legend">{copy.legend}</VisuallyHidden>
+      <ChoiceGroup className={styles.reasons} legend={copy.legend} legendLook="hidden" disabled={sending} ruled>
         {copy.reasons.map((each) => (
-          <label className={styles.reason} key={each.reason}>
-            <input
-              className={styles.radio}
-              type="radio"
-              name="move-reason"
-              value={each.reason}
-              checked={reason === each.reason}
-              onChange={() => {
-                setReason(each.reason);
-              }}
-            />
-            <span>{each.label}</span>
-          </label>
+          <Radio
+            key={each.reason}
+            label={each.label}
+            name="move-reason"
+            value={each.reason}
+            checked={reason === each.reason}
+            onChange={() => {
+              setReason(each.reason);
+            }}
+          />
         ))}
-      </fieldset>
+      </ChoiceGroup>
       {blackout && (
         <>
           <p className={styles.consequence}>{copy.blackout(shortDate(to.date))}</p>

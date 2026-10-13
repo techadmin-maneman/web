@@ -2,6 +2,8 @@
 // The guides (src/content/guides.ts): their list at /guides and each at /guides/<slug>. A guide whose wording is not yet
 // approved is built for staging under the design's "Placeholder" tag, and production builds no page for it;
 // with none approved, production has no /guides at all.
+import { textLinkLook } from "@maneman/ui/TextLink";
+import { buttonLook } from "@maneman/ui/Button";
 import { guides, guidesPage, type Guide } from "../../content/guides.ts";
 import { placeholderTag } from "../../content/site.ts";
 import Site from "../../layouts/Site.astro";
@@ -32,7 +34,7 @@ const shown = guides.filter(isShown);
       <ul class="list">
         {shown.map((each) => (
           <li>
-            <a class="title" href={`/guides/${each.slug}`}>
+            <a class={textLinkLook({ inline: true, className: "title" })} href={`/guides/${each.slug}`}>
               {each.title}
             </a>
             <p>{each.description}</p>
@@ -55,7 +57,7 @@ const shown = guides.filter(isShown);
           ))}
         </section>
       ))}
-      <a class="btn btn--lg btn--ink book" href="/book">
+      <a class={buttonLook({ variant: "primary", size: "action", className: "book" })} href="/book">
         {guidesPage.book}
       </a>
     </article>
@@ -105,9 +107,6 @@ const shown = guides.filter(isShown);
     font-family: var(--font-serif);
     font-size: var(--fs-24);
     line-height: var(--lh-130);
-    color: inherit;
-    text-decoration: underline;
-    text-underline-offset: var(--sp-4);
   }
   .list p {
     margin-top: var(--sp-8);

@@ -5,7 +5,7 @@
 // The session token is made once when the form opens and sent with every keystroke and again with the address, so
 // Google bills one session. The API refuses a request without one.
 
-import { AddressSearch, type AddressSearchClasses } from "@maneman/ui/AddressSearch";
+import { AddressSearch } from "@maneman/ui/AddressSearch";
 import { api } from "../api.ts";
 import { profile } from "../content.ts";
 import styles from "./profile.module.css";
@@ -14,20 +14,6 @@ interface ChosenBuilding {
   readonly placeId: string;
   readonly building: string;
 }
-
-const CLASSES: AddressSearchClasses = {
-  field: styles.searchField,
-  label: styles.formField,
-  labelText: styles.formLabel,
-  input: styles.input,
-  suggestions: styles.suggestions,
-  suggestion: styles.suggestion,
-  suggestionActive: styles.suggestionActive,
-  name: styles.suggestionName,
-  where: styles.suggestionWhere,
-  hint: styles.muted,
-  attribution: styles.attribution,
-};
 
 export function BuildingSearch({
   value,
@@ -64,7 +50,7 @@ export function BuildingSearch({
         attribution: copy.attribution,
         found: copy.found,
       }}
-      classes={CLASSES}
+      className={styles.searchField}
     />
   );
 }

@@ -2,6 +2,7 @@
 // which it opens on the words typed. They go in the history entry, never the
 // address (lib/client-search.ts).
 
+import { Label, TextInput } from "@maneman/ui/Field";
 import { Button } from "@maneman/ui/Button";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { useState } from "react";
@@ -24,10 +25,10 @@ export function ClientFinder() {
         if (typed !== "") findFrom(typed);
       }}
     >
-      <label htmlFor="find-anywhere">
+      <Label htmlFor="find-anywhere">
         <VisuallyHidden>{shell.find.label}</VisuallyHidden>
-      </label>
-      <input
+      </Label>
+      <TextInput
         id="find-anywhere"
         className={styles.finderField}
         type="search"

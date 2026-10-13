@@ -4,6 +4,7 @@
 // the sections by department, shows only those the person may open, and says
 // how many tasks wait in each.
 
+import { SkipLink } from "@maneman/ui/SkipLink";
 import { capsLook } from "@maneman/ui/Caps";
 import { Button } from "@maneman/ui/Button";
 import { Mark } from "@maneman/ui/Mark";
@@ -176,16 +177,13 @@ export function Shell({ section, title, sub, flush, finder = true, children }: P
   useFocusOnArrival(heading);
   return (
     <div className={styles.console}>
-      <a
-        className={styles.skip}
-        href="#content"
-        onClick={(event) => {
-          event.preventDefault();
+      <SkipLink
+        onSkip={() => {
           main.current?.focus();
         }}
       >
         {shell.skip}
-      </a>
+      </SkipLink>
       <Navigation current={section} />
       <div className={styles.body}>
         <header className={styles.header}>

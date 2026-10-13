@@ -68,14 +68,7 @@ interface ConsultationProps extends FormProps {
 const oneVisitStartsIn = (window: BookingWindow): boolean => isOneOf(ONE_VISIT_WINDOWS, window);
 
 /** The WhatsApp code's field, on this form's paper. */
-const CODE_FIELD: CodeFieldClasses = {
-  label: styles.label,
-  input: styles.input,
-  bad: styles.bad,
-  hint: styles.hint,
-  error: styles.error,
-  again: styles.change,
-};
+const CODE_FIELD: CodeFieldClasses = { hint: styles.hint, error: styles.error, again: undefined };
 
 /** The button's words: what the plan books, or, once a code is on its way, confirming it. */
 function submitLabel(plan: Plan, codeWaiting: boolean): string {
@@ -208,6 +201,7 @@ function AddressPart(
           mobile={form.fields.mobile}
           code={numberCode.code}
           failure={numberCode.failure}
+          onInk={false}
           classes={CODE_FIELD}
           onInput={numberCode.setCode}
           onAgain={props.onCodeAgain}

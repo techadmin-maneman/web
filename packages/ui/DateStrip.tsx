@@ -1,9 +1,10 @@
 // The days a visit can be booked on, as a row of squares: one group of native radios, so one tab stop, and the arrow
 // keys move between the days. A day with nothing open is drawn but cannot be chosen. The client app's booking sheet
-// and the site's /book and invite pages draw it alike, each in its own words and its own look; the site compiles it
-// with Preact (site/astro.config.ts), so it uses nothing Preact lacks.
+// and the site's /book and invite pages draw it alike, in one look; the site compiles it with Preact
+// (site/astro.config.ts), so it uses nothing Preact lacks.
 
-import { classes as join } from "./classes.ts";
+import { classes } from "./classes.ts";
+import styles from "./date-strip.module.css";
 
 export interface StripDate {
   /** YYYY-MM-DD. */
@@ -19,20 +20,6 @@ export interface StripDate {
   readonly marked?: boolean;
 }
 
-type ClassName = string | undefined;
-
-/** Each surface's own look. */
-export interface DateStripClasses {
-  readonly strip: ClassName;
-  readonly day: ClassName;
-  /** Added to the chosen day, where the look needs more than the radio's own state. */
-  readonly dayOn?: ClassName;
-  readonly radio: ClassName;
-  readonly weekday: ClassName;
-  readonly number: ClassName;
-  readonly mark?: ClassName;
-}
-
 export function DateStrip(props: {
   /** The radios' name, one per form. */
   readonly name: string;
@@ -41,19 +28,19 @@ export function DateStrip(props: {
   /** The heading the group is named by; without one, a fieldset around the strip names it. */
   readonly labelledBy?: string;
   readonly onChoose: (date: string) => void;
-  readonly classes: DateStripClasses;
+  /** The strip's place on its screen. */
+  readonly className?: string | undefined;
 }) {
-  const { classes } = props;
   return (
     <div
-      className={classes.strip}
+      className={classes(styles.strip, props.className)}
       role={props.labelledBy === undefined ? undefined : "radiogroup"}
       aria-labelledby={props.labelledBy}
     >
       {props.days.map((day) => (
-        <label key={day.date} className={join(classes.day, day.date === props.chosen && classes.dayOn)}>
+        <label key={day.date} className={styles.day}>
           <input
-            className={classes.radio}
+            className={styles.radio}
             type="radio"
             name={props.name}
             checked={day.date === props.chosen}
@@ -63,13 +50,13 @@ export function DateStrip(props: {
               props.onChoose(day.date);
             }}
           />
-          <span className={classes.weekday} aria-hidden="true">
+          <span className={styles.weekday} aria-hidden="true">
             {day.weekday}
           </span>
-          <span className={classes.number} aria-hidden="true">
+          <span className={styles.number} aria-hidden="true">
             {day.number}
           </span>
-          {day.marked === true && <span className={classes.mark} aria-hidden="true" />}
+          {day.marked === true && <span className={styles.mark} aria-hidden="true" />}
         </label>
       ))}
     </div>

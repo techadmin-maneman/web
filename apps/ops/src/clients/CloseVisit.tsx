@@ -6,7 +6,7 @@ import { REASON_MAX_CHARS } from "@rules/policy/decision-reasons.ts";
 import { errorText } from "@maneman/web-kit/refusal";
 import { Button } from "@maneman/ui/Button";
 import { Dialog } from "@maneman/ui/Dialog";
-import { Field, TextArea, TextInput } from "@maneman/ui/Field";
+import { ChoiceGroup, Field, Radio, TextArea, TextInput } from "@maneman/ui/Field";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { useId, useState } from "react";
 import { api, type HandClose } from "../api.ts";
@@ -32,23 +32,19 @@ function closeRefusal(code: string, fields: readonly string[]): string {
 function OutcomeChoice({ outcome, onChoose }: { outcome: Outcome; onChoose: (outcome: Outcome) => void }) {
   const id = useId();
   return (
-    <fieldset className={styles.choices}>
-      <legend className={styles.legend}>{copy.outcome}</legend>
+    <ChoiceGroup className={styles.choices} legend={copy.outcome}>
       {OUTCOMES.map((each) => (
-        <div className={styles.choice} key={each}>
-          <input
-            type="radio"
-            id={`${id}-${each}`}
-            name={`${id}-outcome`}
-            checked={outcome === each}
-            onChange={() => {
-              onChoose(each);
-            }}
-          />
-          <label htmlFor={`${id}-${each}`}>{copy.outcomes[each]}</label>
-        </div>
+        <Radio
+          key={each}
+          label={copy.outcomes[each]}
+          name={`${id}-outcome`}
+          checked={outcome === each}
+          onChange={() => {
+            onChoose(each);
+          }}
+        />
       ))}
-    </fieldset>
+    </ChoiceGroup>
   );
 }
 
@@ -87,7 +83,6 @@ function Form({ visitId, date, onClosed }: { visitId: string; date: string; onCl
           {(control) => (
             <TextInput
               {...control}
-              className={styles.text}
               type="time"
               value={started}
               disabled={busy}
@@ -101,7 +96,6 @@ function Form({ visitId, date, onClosed }: { visitId: string; date: string; onCl
           {(control) => (
             <TextInput
               {...control}
-              className={styles.text}
               type="time"
               value={ended}
               disabled={busy}

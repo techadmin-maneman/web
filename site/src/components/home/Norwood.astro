@@ -1,6 +1,7 @@
 ---
 // The Norwood scale: stages I–II (nothing to fit) and III–VII (we fit). The
 // photographs are placeholders; content can switch to v2's line drawings.
+import { buttonLook } from "@maneman/ui/Button";
 import { norwood, norwoodPhotos, placeholderTag, type NorwoodStage } from "../../content/site.ts";
 import { SHOW_PLACEHOLDER_TAGS, isShown } from "../../lib/build.ts";
 import DesignPicture from "../DesignPicture.astro";
@@ -65,7 +66,7 @@ function cards(stages: readonly NorwoodStage[], offset: number) {
     ))}
 
     <div class="actions">
-      <a class="btn btn--md btn--ink" href="/book">
+      <a class={buttonLook({ variant: "primary", size: "control" })} href="/book">
         {norwood.book}
       </a>
     </div>

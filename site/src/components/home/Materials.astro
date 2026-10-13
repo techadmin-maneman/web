@@ -1,6 +1,7 @@
 ---
 // Materials and construction: what a hair system is made of, group by group. Every group is closed until it is
 // opened, and each opens on its own.
+import { ruledDisclosureLook as ruled } from "@maneman/ui/Disclosure";
 import { materials, placeholderTag } from "../../content/site.ts";
 import { SHOW_PLACEHOLDER_TAGS, isShown } from "../../lib/build.ts";
 import { ICONS } from "@maneman/brand/icons";
@@ -12,10 +13,11 @@ import DesignPicture from "../DesignPicture.astro";
   <p class="lead intro">{materials.intro}</p>
   <div class="list">
     {materials.groups.map((group) => (
-      <details>
-        <summary>
+      <details class={ruled.details}>
+        <summary class={ruled.summary}>
           <span>{group.title}</span>
           <svg
+            class={ruled.sign}
             viewBox="0 0 24 24"
             width="17"
             height="17"
@@ -26,7 +28,7 @@ import DesignPicture from "../DesignPicture.astro";
             aria-hidden="true"
           >
             <path d={ICONS.minus} />
-            <path class="vertical" d="M12 6 V18" />
+            <path class={ruled.upright} d="M12 6 V18" />
           </svg>
         </summary>
         <div class="group">
@@ -80,33 +82,10 @@ import DesignPicture from "../DesignPicture.astro";
   .list {
     border-top: var(--hairline) solid var(--text);
   }
-  details {
-    border-bottom: var(--hairline) solid var(--paper-line);
-  }
   summary {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: var(--sp-20);
-    padding: var(--sp-24) 0;
-    cursor: pointer;
     font-family: var(--font-serif);
     font-size: var(--fs-h5);
     line-height: var(--lh-115);
-    list-style: none;
-  }
-  summary::-webkit-details-marker {
-    display: none;
-  }
-  summary svg {
-    flex-shrink: 0;
-    color: var(--text-muted);
-  }
-  details[open] summary svg {
-    color: var(--text);
-  }
-  details[open] .vertical {
-    display: none;
   }
   .group {
     padding-bottom: var(--sp-24);

@@ -112,10 +112,8 @@ export function StepFrame({
             size="action"
             className={frame.action}
             disabled={!ready}
-            aria-disabled={!settled}
-            onClick={() => {
-              if (settled) onAction();
-            }}
+            settling={!settled}
+            onClick={onAction}
           >
             {ready ? action : (unfinished ?? action)}
           </Button>

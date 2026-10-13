@@ -1,15 +1,15 @@
-// The WhatsApp code's field, beneath the number it went to (useNumberCode.ts). /book and /try each give it their own
-// classes, on paper and on ink.
+// The WhatsApp code's field, beneath the number it went to (useNumberCode.ts): the shared field, on /book's paper or
+// /try's ink, with each page's own words beneath it.
 
+import "./refs-as-props.ts";
+import { Label, TextInput } from "@maneman/ui/Field";
+import { TextButton } from "@maneman/ui/TextLink";
 import { ONE_TIME_CODE } from "@rules/policy/one-time-code.ts";
 import { useEffect, useRef } from "preact/hooks";
 import { numberCode as words } from "../content/site.ts";
 
-/** A CSS module's classes, each of which the module may lack. */
+/** A page's classes for the words beneath the field, and for where "Send again" stands. */
 export interface CodeFieldClasses {
-  readonly label: string | undefined;
-  readonly input: string | undefined;
-  readonly bad: string | undefined;
   readonly hint: string | undefined;
   readonly error: string | undefined;
   readonly again: string | undefined;
@@ -21,11 +21,12 @@ export function NumberCodeField(props: {
   mobile: string;
   code: string;
   failure: string | null;
+  onInk: boolean;
   classes: CodeFieldClasses;
   onInput: (code: string) => void;
   onAgain: (event: Event) => void;
 }) {
-  const { idPrefix, classes, failure } = props;
+  const { idPrefix, onInk, classes, failure } = props;
   const field = useRef<HTMLInputElement>(null);
   const bad = failure !== null;
   const hintId = `${idPrefix}-code-hint`;
@@ -38,13 +39,13 @@ export function NumberCodeField(props: {
 
   return (
     <div>
-      <label class={classes.label} for={`${idPrefix}-code`}>
+      <Label htmlFor={`${idPrefix}-code`} onInk={onInk}>
         {words.label}
-      </label>
-      <input
+      </Label>
+      <TextInput
+        onInk={onInk}
         ref={field}
         id={`${idPrefix}-code`}
-        class={[classes.input, bad ? classes.bad : ""].join(" ")}
         value={props.code}
         inputMode="numeric"
         autocomplete="one-time-code"
@@ -66,15 +67,15 @@ export function NumberCodeField(props: {
           </div>
         )}
       </div>
-      <button
-        type="button"
-        class={classes.again}
+      <TextButton
+        tone={onInk ? "ink" : "plain"}
+        className={classes.again}
         onClick={(event) => {
           props.onAgain(event);
         }}
       >
         {words.again}
-      </button>
+      </TextButton>
     </div>
   );
 }

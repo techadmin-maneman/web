@@ -145,24 +145,6 @@
   margin-top: var(--sp-12);
 }
 
-.document {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--sp-12);
-  width: 100%;
-  min-height: var(--btn-lg);
-  padding: 0 var(--sp-16);
-  border: var(--hairline) solid var(--paper-line);
-  background: var(--paper-light);
-  font: inherit;
-  font-size: var(--fs-16);
-  color: var(--text);
-  text-align: left;
-  text-decoration: none;
-  cursor: pointer;
-}
-
 .documentIcon {
   flex-shrink: 0;
   color: var(--ink);
@@ -183,15 +165,7 @@
 }
 
 .notify {
-  display: inline-flex;
-  align-items: center;
-  min-height: var(--tap);
-  padding: 0 var(--sp-16);
-  border: var(--hairline) solid var(--ink);
-  font-size: var(--fs-15);
-  font-weight: var(--weight-medium);
-  color: var(--text);
-  text-decoration: none;
+  align-self: flex-start;
 }
 
 /* A refund past its working days, and the way to ask about it, beneath its facts. */

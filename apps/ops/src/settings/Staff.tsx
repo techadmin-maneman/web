@@ -2,6 +2,7 @@
 // in. No board draws it, so it is laid out as the other Settings panels are. The API narrows the list to the places
 // its viewer may see, and refuses a change beyond their own.
 
+import { Label, TextInput } from "@maneman/ui/Field";
 import { errorText, type Failure } from "@maneman/web-kit/refusal";
 import { Panel } from "@maneman/ui/Panel";
 import { Button } from "@maneman/ui/Button";
@@ -313,13 +314,10 @@ function TokenForm({ onChanged }: { onChanged: (book: StaffBook) => void }) {
     >
       <div className={styles.fields}>
         <div className={styles.field}>
-          <label className={styles.fieldLabel} htmlFor="token-client-id">
-            {words.clientId}
-          </label>
-          <input
+          <Label htmlFor="token-client-id">{words.clientId}</Label>
+          <TextInput
             id="token-client-id"
             className={styles.text}
-            type="text"
             autoComplete="off"
             maxLength={100}
             value={clientId}
@@ -330,13 +328,10 @@ function TokenForm({ onChanged }: { onChanged: (book: StaffBook) => void }) {
           />
         </div>
         <div className={styles.field}>
-          <label className={styles.fieldLabel} htmlFor="token-label">
-            {words.label}
-          </label>
-          <input
+          <Label htmlFor="token-label">{words.label}</Label>
+          <TextInput
             id="token-label"
             className={styles.text}
-            type="text"
             maxLength={60}
             value={label}
             onChange={(event) => {

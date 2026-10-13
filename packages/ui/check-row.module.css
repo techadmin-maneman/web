@@ -1,0 +1,50 @@
+/* A checklist's line on the ink (./CheckRow.tsx), at the technician app's sizes. */
+
+@layer base, ui;
+
+@layer ui {
+  .row {
+    display: flex;
+    gap: var(--sp-16);
+    align-items: center;
+    width: 100%;
+    min-height: var(--tech-row);
+    padding: var(--sp-20);
+    border: 0;
+    border-bottom: var(--hairline) solid var(--ink-rule);
+    background: transparent;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+  }
+
+  .row:focus-visible {
+    outline: var(--focus-width) solid var(--paper);
+    outline-offset: calc(-1 * var(--focus-width));
+  }
+
+  .box {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    width: var(--tech-box);
+    height: var(--tech-box);
+    border: var(--rule-strong) solid var(--ink-line-strong);
+  }
+
+  .boxDone {
+    border-color: var(--paper);
+    background: var(--paper);
+    color: var(--ink-deep);
+  }
+
+  .words {
+    font-size: var(--fs-19);
+    color: var(--paper);
+  }
+
+  .wordsDone {
+    color: var(--ink-muted);
+  }
+}

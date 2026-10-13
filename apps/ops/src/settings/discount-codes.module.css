@@ -61,10 +61,6 @@
 
 .offSummary {
   margin: 0 var(--sp-20);
-  font-size: var(--fs-14);
-  color: var(--text);
-  text-decoration: underline;
-  cursor: pointer;
 }
 
 /* Finding a code, and the table's list, on one line above the table. */

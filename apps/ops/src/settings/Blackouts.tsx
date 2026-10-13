@@ -7,6 +7,7 @@
 // names who added all of it; offering them again sends that run of days back. Blacking out a day moves nothing already booked on it, so
 // each run says how many visits are still booked on it, and opens the dispatch board on its first day to move them.
 
+import { DateInput, Label, Select, TextInput } from "@maneman/ui/Field";
 import { errorText, type Failure } from "@maneman/web-kit/refusal";
 import { Panel } from "@maneman/ui/Panel";
 import { Button, buttonLook } from "@maneman/ui/Button";
@@ -118,13 +119,10 @@ function AddForm(props: { today: string; cities: readonly string[]; onAdded: (da
     >
       <div className={styles.fields}>
         <div className={styles.field}>
-          <label className={styles.fieldLabel} htmlFor="blackout-from">
-            {copy.from}
-          </label>
-          <input
+          <Label htmlFor="blackout-from">{copy.from}</Label>
+          <DateInput
             className={styles.date}
             id="blackout-from"
-            type="date"
             min={today}
             value={draft.from}
             onChange={(event) => {
@@ -133,13 +131,10 @@ function AddForm(props: { today: string; cities: readonly string[]; onAdded: (da
           />
         </div>
         <div className={styles.field}>
-          <label className={styles.fieldLabel} htmlFor="blackout-to">
-            {copy.to}
-          </label>
-          <input
+          <Label htmlFor="blackout-to">{copy.to}</Label>
+          <DateInput
             className={styles.date}
             id="blackout-to"
-            type="date"
             min={draft.from === "" ? today : draft.from}
             value={draft.to}
             onChange={(event) => {
@@ -148,10 +143,8 @@ function AddForm(props: { today: string; cities: readonly string[]; onAdded: (da
           />
         </div>
         <div className={styles.field}>
-          <label className={styles.fieldLabel} htmlFor="blackout-city">
-            {copy.city}
-          </label>
-          <select
+          <Label htmlFor="blackout-city">{copy.city}</Label>
+          <Select
             className={styles.date}
             id="blackout-city"
             value={draft.city}
@@ -165,16 +158,13 @@ function AddForm(props: { today: string; cities: readonly string[]; onAdded: (da
                 {city}
               </option>
             ))}
-          </select>
+          </Select>
         </div>
         <div className={styles.field}>
-          <label className={styles.fieldLabel} htmlFor="blackout-reason">
-            {copy.reason}
-          </label>
-          <input
+          <Label htmlFor="blackout-reason">{copy.reason}</Label>
+          <TextInput
             className={styles.text}
             id="blackout-reason"
-            type="text"
             maxLength={60}
             value={draft.reason}
             onChange={(event) => {

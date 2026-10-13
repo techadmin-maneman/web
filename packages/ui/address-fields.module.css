@@ -1,0 +1,32 @@
+/* An address's parts (./AddressFields.tsx): each the shared field's label, box, hint and error. */
+
+@layer base, ui;
+
+@layer ui {
+  .label {
+    margin: 0;
+    font-size: var(--fs-14);
+    color: var(--text-muted);
+  }
+
+  .hint,
+  .error {
+    margin: var(--sp-8) 0 0;
+    font-size: var(--fs-14);
+  }
+
+  .hint {
+    color: var(--text-muted);
+  }
+
+  .error {
+    color: var(--error-on-paper);
+  }
+
+  /* The pincode already checked, shown in its place. */
+  .shown {
+    margin: var(--sp-8) 0 0;
+    font-size: var(--fs-16);
+    font-variant-numeric: tabular-nums;
+  }
+}

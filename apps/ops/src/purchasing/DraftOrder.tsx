@@ -2,7 +2,7 @@
 // its minimum, at the price it lists; the total shown before it is drafted. Drafting sends nothing to the supplier: an
 // order goes out only once approved and marked sent.
 
-import { Button } from "@maneman/ui/Button";
+import { Button, RowButton } from "@maneman/ui/Button";
 import { Field, Select, TextInput } from "@maneman/ui/Field";
 import { errorText, type Failure } from "@maneman/web-kit/refusal";
 import { inCurrency } from "@maneman/web-kit/money";
@@ -81,14 +81,9 @@ function LineBoxes(props: {
           />
         )}
       </Field>
-      <button
-        className={form.inline}
-        type="button"
-        aria-label={copy.draft.removeLine(named(line.code))}
-        onClick={props.onRemove}
-      >
+      <RowButton className={form.inline} aria-label={copy.draft.removeLine(named(line.code))} onClick={props.onRemove}>
         ×
-      </button>
+      </RowButton>
       {questioned && (
         <p className={form.error} role="status">
           {copy.draft.farAbove(

@@ -1,3 +1,6 @@
+import { Button } from "@maneman/ui/Button";
+import { ChoiceCard } from "@maneman/ui/ChoiceCard";
+import { Fieldset } from "@maneman/ui/Field";
 import { looks, tryOn } from "../../content/site.ts";
 import { lookLabel } from "./machine.ts";
 import { Title, type HeadingRef } from "./Title.tsx";
@@ -19,39 +22,41 @@ export function Looks(props: {
     <div>
       <Title heading={props.heading}>{tryOn.looks.title}</Title>
       <p class={styles.body}>{tryOn.looks.body}</p>
-      <fieldset class={`${styles.choices} ${styles.lookGrid}`}>
-        <legend class="visually-hidden">{tryOn.looks.title}</legend>
+      <Fieldset legend={tryOn.looks.title} legendLook="hidden" className={styles.lookGrid}>
         {looks.map((option, index) => (
-          <label key={option.id} class={`${styles.look} ${look === index ? styles.picked : ""}`}>
-            <input
-              type="radio"
-              name="look"
-              class="visually-hidden"
-              checked={look === index}
-              onChange={() => {
-                props.onChoose(index);
-              }}
-            />
-            {thumbnails !== null && (
-              <span class={styles.thumb}>
-                <img class={styles.thumbImage} src={thumbnails[index]} alt="" loading="lazy" decoding="async" />
+          <ChoiceCard
+            key={option.id}
+            name="look"
+            look="picture"
+            onInk
+            checked={look === index}
+            onChange={() => {
+              props.onChoose(index);
+            }}
+          >
+            <>
+              {thumbnails !== null && (
+                <span class={styles.thumb}>
+                  <img class={styles.thumbImage} src={thumbnails[index]} alt="" loading="lazy" decoding="async" />
+                </span>
+              )}
+              <span class={styles.lookText}>
+                <span class={styles.lookDensity}>{option.density}</span>
+                <span class={styles.lookDetail}>{option.detail}</span>
               </span>
-            )}
-            <span class={styles.lookText}>
-              <span class={styles.lookDensity}>{option.density}</span>
-              <span class={styles.lookDetail}>{option.detail}</span>
-            </span>
-          </label>
+            </>
+          </ChoiceCard>
         ))}
-      </fieldset>
-      <button
-        type="button"
-        class={`${styles.next} ${styles.nextSpaced} ${look >= 0 ? styles.nextOn : styles.nextOff}`}
+      </Fieldset>
+      <Button
+        variant="light"
+        size="action"
+        className={`${styles.next} ${styles.nextSpaced}`}
         aria-disabled={look < 0}
         onClick={props.onContinue}
       >
         {lookLabel(look)}
-      </button>
+      </Button>
     </div>
   );
 }

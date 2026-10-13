@@ -47,7 +47,6 @@ export function Choose(props: {
       {(control) => (
         <Select
           {...control}
-          className={styles.select}
           value={props.value}
           disabled={props.busy}
           onChange={(event) => {

@@ -3,6 +3,7 @@
 // offering it from that day; nothing already recorded moves, and neither does
 // its stock. The check says so before anything is sent (ADR 0071).
 
+import { DateInput, Fieldset, Label } from "@maneman/ui/Field";
 import { errorText, type Failure } from "@maneman/web-kit/refusal";
 import { Button } from "@maneman/ui/Button";
 import { longDate } from "@maneman/web-kit/dates";
@@ -51,8 +52,7 @@ function Refused({ step }: { step: Step }) {
 export function Restoring({ consumable, onSaved, onCancel }: Props) {
   const [step, , send] = useSend({ step: "checking" }, onSaved);
   return (
-    <fieldset className={styles.group}>
-      <legend className={styles.ruleTitle}>{copy.restoreLabel(consumable.name)}</legend>
+    <Fieldset className={styles.group} legend={copy.restoreLabel(consumable.name)} legendLook="title">
       <CheckPanel
         title={copy.form.confirm.title}
         lines={[words.restore(consumable.name)]}
@@ -64,7 +64,7 @@ export function Restoring({ consumable, onSaved, onCancel }: Props) {
         onBack={onCancel}
       />
       <Refused step={step} />
-    </fieldset>
+    </Fieldset>
   );
 }
 
@@ -74,17 +74,13 @@ export function Retiring({ consumable, today, onSaved, onCancel }: Props & { rea
   const [step, setStep, send] = useSend({ step: "editing" }, onSaved);
   const id = `retire-${consumable.code}`;
   return (
-    <fieldset className={styles.group}>
-      <legend className={styles.ruleTitle}>{words.title(consumable.name)}</legend>
+    <Fieldset className={styles.group} legend={words.title(consumable.name)} legendLook="title">
       <div className={styles.fields}>
         <div className={styles.field}>
-          <label className={styles.fieldLabel} htmlFor={id}>
-            {words.from}
-          </label>
-          <input
+          <Label htmlFor={id}>{words.from}</Label>
+          <DateInput
             className={styles.date}
             id={id}
-            type="date"
             min={today}
             value={from}
             onChange={(event) => {
@@ -125,6 +121,6 @@ export function Retiring({ consumable, today, onSaved, onCancel }: Props & { rea
         />
       )}
       <Refused step={step} />
-    </fieldset>
+    </Fieldset>
   );
 }

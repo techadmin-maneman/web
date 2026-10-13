@@ -75,45 +75,12 @@
 
 /* Edged at 3:1 against the ink (WCAG 1.4.11), where the design's --ink-line is 1.75:1 (ADR 0025, item 36). */
 .field {
-  display: flex;
-  height: var(--btn-lg);
   margin-top: var(--sp-36);
-  border: var(--hairline) solid var(--ink-line-strong);
 }
 
 /* The app's focus ring, drawn round the whole field: the prefix with the number. */
-.field:focus-within {
-  outline: var(--focus-width) solid var(--focus-colour);
-  outline-offset: var(--focus-offset);
-}
-
-.prefix {
-  display: flex;
-  align-items: center;
-  padding: 0 var(--sp-16);
-  border-right: var(--hairline) solid var(--ink-line);
-  font-size: var(--fs-17);
-  font-variant-numeric: tabular-nums;
-  color: var(--ink-muted);
-}
-
-.input {
-  flex: 1;
-  min-width: 0;
-  padding: 0 var(--sp-16);
-  border: 0;
-  background: transparent;
-  font: inherit;
-  font-size: var(--fs-17);
-  font-variant-numeric: tabular-nums;
-  letter-spacing: var(--tracking-number);
-  color: var(--paper);
-}
 
 /* The field draws the ring. */
-.input:focus-visible {
-  outline: none;
-}
 
 /* Why the login is showing: the session ended while the app was open. */
 .notice {
@@ -158,24 +125,7 @@
 }
 
 .link {
-  display: flex;
-  align-items: center;
-  gap: var(--sp-8);
   align-self: flex-start;
-  min-height: var(--tap);
-  padding: 0;
-  border: 0;
-  background: none;
-  font: inherit;
-  font-size: var(--fs-16);
-  color: var(--ink-soft);
-  text-decoration: none;
-  cursor: pointer;
-}
-
-.link span {
-  padding-bottom: var(--sp-4);
-  border-bottom: var(--hairline) solid var(--ink-line);
 }
 
 .countdown {

@@ -13,7 +13,7 @@
 // hand; the test then reads every stylesheet of the app, so a colour or a
 // ground that is not listed fails it rather than slipping by.
 
-import { readdirSync, statSync } from "node:fs";
+import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { edgeOf, ratio, rulesOf, tokenRatio } from "../../contrast.ts";
@@ -59,15 +59,16 @@ const EDGE_PAIRINGS: readonly EdgePairing[] = [
   { edge: "--paper", ground: "--ink-deep", where: "the label's field, a ticked box" },
 ];
 
-/** The controls the edge pairings speak for, each by its stylesheet and its rule. */
+/**
+ * The controls the edge pairings speak for, each by its stylesheet and its rule: the shared ones the app draws on the
+ * ink (the sign-in number, a code's box, a checklist's box, a field).
+ */
 const CONTROLS = [
-  { file: "apps/tech/src/login/login.module.css", selector: ".mobile" },
+  { file: "packages/ui/mobile-input.module.css", selector: ".onInk" },
   { file: "packages/ui/code-field.module.css", selector: ".box" },
-  { file: "apps/tech/src/steps/steps.module.css", selector: ".box" },
-  { file: "apps/tech/src/steps/steps.module.css", selector: ".boxDone" },
-  { file: "apps/tech/src/steps/steps.module.css", selector: ".box64" },
-  { file: "apps/tech/src/steps/steps.module.css", selector: ".labelField" },
-  { file: "apps/tech/src/steps/steps.module.css", selector: ".pick" },
+  { file: "packages/ui/check-row.module.css", selector: ".box" },
+  { file: "packages/ui/check-row.module.css", selector: ".boxDone" },
+  { file: "packages/ui/field.module.css", selector: ".onInk" },
 ] as const;
 
 function stylesheets(dir: string): string[] {
@@ -145,6 +146,11 @@ describe("the technician app's control edges", () => {
     },
   );
 
+  // A piece to pick, and every other outlined button and toggle on the ink, takes the app's own edge.
+  it("edges the shared outlines on the ink in --ink-line-strong", () => {
+    expect(readFileSync("apps/tech/src/styles/global.css", "utf8")).toMatch(/--edge-on-ink: var\(--ink-line-strong\);/);
+  });
+
   it("does not use the boards' --ink-line, which falls short of 3:1 on the ink", () => {
     expect(tokenRatio("--ink-line", "--ink-deep")).toBeLessThan(3);
     expect(EDGE_PAIRINGS.map((pairing) => pairing.edge)).not.toContain("--ink-line");
@@ -166,7 +172,8 @@ describe("what the stylesheets use", () => {
     expect(used.texts.size).toBeGreaterThanOrEqual(6);
     expect(used.both.length).toBeGreaterThanOrEqual(5);
     expect(used.both).toContainEqual([".gold", "--ink-deep", "--gilt"]);
-    expect(used.both).toContainEqual([".outlineOnInk:disabled", "--ink-tag", "--ink-disabled"]);
+    const firstSelector = used.both.map(([selector, text, ground]) => [selector.split(",")[0], text, ground]);
+    expect(firstSelector).toContainEqual([".outlineOnInk:disabled", "--ink-tag", "--ink-disabled"]);
   });
 
   it("sets no text colour the pairings do not list", () => {

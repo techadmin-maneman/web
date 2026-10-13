@@ -7,18 +7,22 @@ import { classes } from "./classes.ts";
 import { Icon } from "./Icon.tsx";
 import styles from "./icon-button.module.css";
 
-/** The look, for a link that is only its icon: a screen's way back to another page. */
-export const iconButtonLook = (className?: string): string => classes(styles.iconButton, className);
+/** The look, for a link that is only its icon: a screen's way back to another page, or the site's WhatsApp chat. */
+export const iconButtonLook = (className?: string, edged = false): string =>
+  classes(styles.iconButton, edged && styles.edged, className);
 
 export function IconButton({
   d,
   label,
   size,
   stroke,
+  edged = false,
   className,
   type = "button",
   ...rest
 }: Omit<ButtonHTMLAttributes<HTMLButtonElement>, "aria-label" | "children"> & {
+  /** Edged on the ink, as a stepper's minus and plus are. */
+  readonly edged?: boolean;
   /** The icon's path, from @maneman/brand/icons. */
   readonly d: string;
   /** What it does, for a screen reader: "Back". */
@@ -27,7 +31,7 @@ export function IconButton({
   readonly stroke?: number;
 }) {
   return (
-    <button {...rest} type={type} className={iconButtonLook(className)} aria-label={label}>
+    <button {...rest} type={type} className={iconButtonLook(className, edged)} aria-label={label}>
       <Icon d={d} size={size} stroke={stroke} />
     </button>
   );

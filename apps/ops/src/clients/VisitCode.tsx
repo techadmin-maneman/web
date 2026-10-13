@@ -4,6 +4,7 @@
 // when booking on the site is shown under "None" and starts the box. The cell keeps what its last answer said, so the
 // tab is not read again for it.
 
+import { Label, TextInput } from "@maneman/ui/Field";
 import { errorText } from "@maneman/web-kit/refusal";
 import { Button } from "@maneman/ui/Button";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
@@ -83,13 +84,12 @@ export function VisitCode({ visit }: { visit: ClientVisit }) {
           void apply();
         }}
       >
-        <label htmlFor={`code-${visit.id}`}>
+        <Label htmlFor={`code-${visit.id}`}>
           <VisuallyHidden>{copy.label}</VisuallyHidden>
-        </label>
-        <input
+        </Label>
+        <TextInput
           id={`code-${visit.id}`}
           className={styles.codeInput}
-          type="text"
           autoCapitalize="characters"
           value={typed}
           onChange={(event) => {

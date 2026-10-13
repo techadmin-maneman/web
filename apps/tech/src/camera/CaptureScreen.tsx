@@ -27,6 +27,7 @@
 // A set the API refused opens here again with the photographs that reached us
 // counted, and only the refused angles to take.
 
+import { Tile } from "@maneman/ui/Tile";
 import { StepFrame, useSettled, useStep } from "../steps/index.ts";
 import { Button } from "@maneman/ui/Button";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
@@ -165,9 +166,8 @@ export function CaptureScreen({ id, phase }: { id: string; phase: Phase }) {
         size="action"
         className={styles.take}
         disabled={!all && !canCapture}
-        aria-disabled={!settled}
+        settling={!settled}
         onClick={() => {
-          if (!settled) return;
           if (all) void finish({ phase });
           else void take();
         }}
@@ -235,14 +235,13 @@ export function CaptureScreen({ id, phase }: { id: string; phase: Phase }) {
               {frameId === null ? (
                 label
               ) : (
-                <button
-                  type="button"
+                <Tile
                   className={styles.tileRetake}
                   aria-label={copy.retakeAngle(copy.angles[name])}
                   onClick={() => void retake(frameId)}
                 >
                   {label}
-                </button>
+                </Tile>
               )}
             </li>
           );

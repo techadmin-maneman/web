@@ -1,6 +1,7 @@
 // Settings, Suppliers (docs/decisions/0165-suppliers.md): who we buy stock from, on what terms, each retired rather
 // than deleted; and beneath, what the supplier picked supplies, with their price, pack, minimum and lead time.
 
+import { RowButton } from "@maneman/ui/Button";
 import { Panel } from "@maneman/ui/Panel";
 import { Table } from "@maneman/ui/Table";
 import { useLoad } from "@maneman/ui/useLoad";
@@ -37,33 +38,22 @@ function Actions(props: {
   return (
     <td>
       <span>{retired ? copy.retired : copy.active}</span>{" "}
-      <button
-        className={styles.inline}
-        type="button"
-        aria-label={copy.itemsLabel(supplier.name)}
-        onClick={props.onItems}
-      >
+      <RowButton className={styles.inline} aria-label={copy.itemsLabel(supplier.name)} onClick={props.onItems}>
         {copy.items}
-      </button>
+      </RowButton>
       {access.mayCall("POST /api/suppliers/{id}") && (
-        <button
-          className={styles.inline}
-          type="button"
-          aria-label={copy.changeLabel(supplier.name)}
-          onClick={props.onChange}
-        >
+        <RowButton className={styles.inline} aria-label={copy.changeLabel(supplier.name)} onClick={props.onChange}>
           {copy.change}
-        </button>
+        </RowButton>
       )}
       {access.mayCall("POST /api/suppliers/{id}/retire") && (
-        <button
+        <RowButton
           className={styles.inline}
-          type="button"
           aria-label={retired ? copy.restoreLabel(supplier.name) : copy.retireLabel(supplier.name)}
           onClick={() => void retirement()}
         >
           {retired ? copy.restore : copy.retire}
-        </button>
+        </RowButton>
       )}
     </td>
   );

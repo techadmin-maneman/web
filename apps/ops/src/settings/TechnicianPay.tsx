@@ -2,6 +2,7 @@
 // Finance names the grades, sets a rate per grade and kind of visit, for every city or one, from a date, and gives
 // each technician a grade. No board draws it, so its panels are laid out as Settings' are.
 
+import { RowButton } from "@maneman/ui/Button";
 import { Panel } from "@maneman/ui/Panel";
 import { Table } from "@maneman/ui/Table";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
@@ -42,9 +43,8 @@ function TechnicianRows({ technician, pay, maySet, acting, onAct, onDone }: { te
         <td>{grade}</td>
         <td className={own.actions}>
           {maySet && pay.grades.length > 0 && (
-            <button
+            <RowButton
               className={styles.inline}
-              type="button"
               aria-label={copy.changeLabel(technician.name)}
               disabled={acting !== null}
               onClick={() => {
@@ -52,7 +52,7 @@ function TechnicianRows({ technician, pay, maySet, acting, onAct, onDone }: { te
               }}
             >
               {copy.change}
-            </button>
+            </RowButton>
           )}
         </td>
       </tr>

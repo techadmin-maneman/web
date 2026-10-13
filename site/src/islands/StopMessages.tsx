@@ -1,6 +1,8 @@
 // The /stop page, which the link at the foot of a reminder or the launch alert opens. The link's token is in the
 // address's fragment, so no server or log sees it until the tap sends it.
 
+import { TextLink } from "@maneman/ui/TextLink";
+import { Button } from "@maneman/ui/Button";
 import { whatsappChat } from "@maneman/web-kit/whatsapp";
 import { Fragment } from "preact";
 import { useEffect, useRef, useState } from "preact/hooks";
@@ -22,7 +24,11 @@ function WithChatLink(props: { text: string }) {
     <>
       {parts.map((part, index) => (
         <Fragment key={index}>
-          {index > 0 && <a href={whatsappChat(whatsapp.number)}>{whatsapp.display}</a>}
+          {index > 0 && (
+            <TextLink href={whatsappChat(whatsapp.number)} inline>
+              {whatsapp.display}
+            </TextLink>
+          )}
           {part}
         </Fragment>
       ))}
@@ -94,16 +100,16 @@ export default function StopMessages() {
     <section class={styles.page}>
       <h1 class="section-title">{words.ask.title}</h1>
       <p class={`lead ${styles.body}`}>{words.ask.body}</p>
-      <button
-        type="button"
-        class="btn btn--lg btn--ink"
+      <Button
+        variant="primary"
+        size="action"
         aria-disabled={screen.busy}
         onClick={() => {
           void stop();
         }}
       >
         {words.ask.button}
-      </button>
+      </Button>
       <div aria-live="polite">{screen.offline && <p class={styles.failure}>{words.offline}</p>}</div>
     </section>
   );

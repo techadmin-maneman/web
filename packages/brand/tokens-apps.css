@@ -42,7 +42,6 @@
 
   /* The ops console's frame and density (design/phase2/Ops Console.dc.html, its opening note). */
   --ops-row: 34px; /* a table row: dense but not cramped */
-  --ops-box: 16px; /* a square to tick, as the dispatch board's reason picker draws it */
   --ops-figure: 76px; /* a column of figures, right aligned */
   --ops-panel: 484px; /* a panel the boards draw on its own, such as the launch confirmation */
   --ops-list: 1200px; /* a list page on a desktop: the main width, short of rows too wide to scan */

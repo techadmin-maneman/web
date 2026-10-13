@@ -2,6 +2,7 @@
 // opened beneath the list to approve, mark sent, cancel or print; a new order drafted from a supplier's list; and the
 // claims on suppliers, with the returned pieces to settle (./Claims.tsx); and each supplier's scorecard.
 
+import { RowButton } from "@maneman/ui/Button";
 import { Table } from "@maneman/ui/Table";
 import { useLoad } from "@maneman/ui/useLoad";
 import { inCurrency } from "@maneman/web-kit/money";
@@ -38,16 +39,15 @@ function OrdersTable({ book, onOpen }: { book: Orders; onOpen: (id: string) => v
         {book.orders.map((order) => (
           <tr key={order.id}>
             <th scope="row" className={form.rowHead}>
-              <button
+              <RowButton
                 className={form.inline}
-                type="button"
                 aria-label={copy.open(copy.number(order.number))}
                 onClick={() => {
                   onOpen(order.id);
                 }}
               >
                 {copy.number(order.number)}
-              </button>
+              </RowButton>
             </th>
             <td>{supplierOf(order.supplier_id)}</td>
             <td>{copy.states[order.state] ?? order.state}</td>

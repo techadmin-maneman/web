@@ -3,6 +3,7 @@
 // form says so before it is sent. Leave moves none of the jobs already booked: each waits on the Tasks board until
 // ops move it, and "Show on board" opens the board on that job's week, with their row in view and the job's drawer open.
 
+import { DateInput, Field, TextInput } from "@maneman/ui/Field";
 import { Button } from "@maneman/ui/Button";
 import { failedRequestId, useLoad } from "@maneman/ui/useLoad";
 import { fullDate, indiaClock, indiaDate, shortDate } from "@maneman/web-kit/dates";
@@ -173,45 +174,45 @@ function LeaveForm({
       }}
     >
       <div className={styles.fields}>
-        <label className={styles.field}>
-          <span className={styles.label}>{copy.from}</span>
-          <input
-            className={styles.input}
-            type="date"
-            required
-            // The form opens where the button that asked for it stood, so the keyboard goes to its first field.
-            autoFocus
-            value={entry.from}
-            onChange={(event) => {
-              setEntry({ ...entry, from: event.target.value });
-            }}
-          />
-        </label>
-        <label className={styles.field}>
-          <span className={styles.label}>{copy.to}</span>
-          <input
-            className={styles.input}
-            type="date"
-            required
-            value={entry.to}
-            onChange={(event) => {
-              setEntry({ ...entry, to: event.target.value });
-            }}
-          />
-        </label>
+        <Field className={styles.field} label={copy.from}>
+          {(control) => (
+            <DateInput
+              {...control}
+              required
+              // The form opens where the button that asked for it stood, so the keyboard goes to its first field.
+              autoFocus
+              value={entry.from}
+              onChange={(event) => {
+                setEntry({ ...entry, from: event.target.value });
+              }}
+            />
+          )}
+        </Field>
+        <Field className={styles.field} label={copy.to}>
+          {(control) => (
+            <DateInput
+              {...control}
+              required
+              value={entry.to}
+              onChange={(event) => {
+                setEntry({ ...entry, to: event.target.value });
+              }}
+            />
+          )}
+        </Field>
       </div>
-      <label className={styles.field}>
-        <span className={styles.label}>{copy.note}</span>
-        <input
-          className={styles.input}
-          type="text"
-          maxLength={200}
-          value={entry.note}
-          onChange={(event) => {
-            setEntry({ ...entry, note: event.target.value });
-          }}
-        />
-      </label>
+      <Field className={styles.field} label={copy.note}>
+        {(control) => (
+          <TextInput
+            {...control}
+            maxLength={200}
+            value={entry.note}
+            onChange={(event) => {
+              setEntry({ ...entry, note: event.target.value });
+            }}
+          />
+        )}
+      </Field>
       <div className={styles.actions}>
         <Button variant="primary" size="small" className={styles.save} type="submit" disabled={sending}>
           {sending ? copy.saving : copy.save}

@@ -5,6 +5,7 @@
 // The position reaches CSS as --position. The starting value comes from a
 // class, so the server-rendered HTML carries no inline style.
 
+import { RangeInput } from "@maneman/ui/Field";
 import type { ComponentChildren } from "preact";
 import { useEffect, useRef, useState } from "preact/hooks";
 import { ICONS } from "@maneman/brand/icons";
@@ -59,9 +60,8 @@ export default function BeforeAfter(props: Props) {
           </svg>
         ))}
       </div>
-      <input
-        class={styles.input}
-        type="range"
+      <RangeInput
+        over
         min={0}
         max={100}
         value={position}

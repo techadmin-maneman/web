@@ -2,7 +2,8 @@
 // link, what its friend gets, its commission per fit, and what has come through it. Each row edits the partner or
 // pauses it, shown before it is sent (docs/decisions/0071-what-ops-see-before-a-setting-changes.md).
 
-import { Button } from "@maneman/ui/Button";
+import { TextLink } from "@maneman/ui/TextLink";
+import { Button, RowButton } from "@maneman/ui/Button";
 import { Panel } from "@maneman/ui/Panel";
 import { Table } from "@maneman/ui/Table";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
@@ -76,16 +77,15 @@ function PauseCheck({ partner, onDone, onBack }: { partner: Partner; onDone: Row
 /** The partner's link as a QR code, to print for their counter. */
 function QrButton({ partner }: { partner: Partner }) {
   return (
-    <button
+    <RowButton
       className={styles.inline}
-      type="button"
       aria-label={copy.qrLabel(partner.name)}
       onClick={() => {
         saveFile(copy.qrName(partner.code), partnerQr(`${SITE.origin}/r/${partner.code}`), "image/svg+xml");
       }}
     >
       {copy.qr}
-    </button>
+    </RowButton>
   );
 }
 
@@ -98,10 +98,9 @@ function RowActions({ partner, acting, onAct }: { partner: Partner } & Pick<RowP
       : ["pause", copy.pause, copy.pauseLabel(partner.name)],
   ];
   return actions.map(([kind, words, label]) => (
-    <button
+    <RowButton
       key={kind}
       className={styles.inline}
-      type="button"
       aria-label={label}
       disabled={acting !== null}
       onClick={() => {
@@ -109,7 +108,7 @@ function RowActions({ partner, acting, onAct }: { partner: Partner } & Pick<RowP
       }}
     >
       {words}
-    </button>
+    </RowButton>
   ));
 }
 
@@ -148,9 +147,9 @@ function PartnerRows({ partner, ...row }: { partner: Partner } & RowProps) {
           {partner.paused_at !== null && <span className={own.paused}> · {copy.paused}</span>}
         </th>
         <td>
-          <a className={own.link} href={`${SITE.origin}/r/${partner.code}`} target="_blank" rel="noopener">
+          <TextLink href={`${SITE.origin}/r/${partner.code}`} newTab>
             {copy.link(SITE.host, partner.code)}
-          </a>
+          </TextLink>
         </td>
         <td>
           {copy.friendGets(partner.friend_visits, partner.valid_days)}

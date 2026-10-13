@@ -17,7 +17,7 @@ interface Props {
   readonly disabled?: boolean;
   /** Whether the keyboard starts in it, as it does on a screen that asks for nothing else. */
   readonly autoFocus?: boolean;
-  readonly className?: string;
+  readonly className?: string | undefined;
   readonly onChange: (value: string) => void;
   /** The input itself, so a screen can put focus back in it after a wrong code. */
   readonly ref?: Ref<HTMLInputElement>;

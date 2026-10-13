@@ -3,6 +3,7 @@
 // address the client gave ops on the phone says so, so the client can check what
 // was typed for them (docs/decisions/0092-task-owners.md).
 
+import { TextButton } from "@maneman/ui/TextLink";
 import { capsLook } from "@maneman/ui/Caps";
 import { longDate } from "@maneman/web-kit/dates";
 import { useRef, useState } from "react";
@@ -68,15 +69,14 @@ export function AddressSection({
               {givenToOps !== null && <p className={styles.muted}>{copy.givenToOps(longDate(givenToOps))}</p>}
             </>
           )}
-          <button
+          <TextButton
             className={styles.link}
-            type="button"
             onClick={() => {
               setEditing(true);
             }}
           >
             <span>{address === null ? copy.addAddress : copy.editAddress}</span>
-          </button>
+          </TextButton>
         </div>
       )}
     </section>

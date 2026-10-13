@@ -27,36 +27,8 @@
 }
 
 .mobile {
-  display: flex;
   height: var(--tech-primary);
   margin-top: var(--sp-32);
-  border: var(--hairline) solid var(--ink-line-strong);
-}
-
-.prefix {
-  display: flex;
-  align-items: center;
-  padding: 0 var(--sp-16);
-  border-right: var(--hairline) solid var(--ink-line);
-  font-size: var(--fs-18);
-  font-variant-numeric: tabular-nums;
-  color: var(--ink-muted);
-}
-
-.number {
-  flex: 1;
-  min-width: 0;
-  padding: 0 var(--sp-16);
-  border: 0;
-  background: transparent;
-  font: inherit;
-  font-size: var(--fs-18);
-  font-variant-numeric: tabular-nums;
-  color: var(--paper);
-}
-
-.number::placeholder {
-  color: var(--ink-muted);
 }
 
 .codeBlock {

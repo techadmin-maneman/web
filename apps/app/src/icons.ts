@@ -22,9 +22,6 @@ export const CHEVRON = GLYPHS.chevron;
 /** Beside the pay step's "Slot held": a clock face. */
 export const CLOCK = "M12 3.5 A8.5 8.5 0 0 1 12 20.5 A8.5 8.5 0 0 1 12 3.5 M12 7.5 V12 L15 14.5";
 
-/** In the pay step's chosen way to pay, and the card choice's chosen card. */
-export const CHECK = GLYPHS.check;
-
 /** The preview's two other ways to share: to another app, and by copying the link. */
 export const OTHER_APPS =
   "M8 7 H6 A2 2 0 0 0 4 9 V18 A2 2 0 0 0 6 20 H18 A2 2 0 0 0 20 18 V9 A2 2 0 0 0 18 7 H16 M12 3 V13 M8.5 6.5 L12 3 L15.5 6.5";

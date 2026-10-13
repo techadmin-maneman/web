@@ -1,0 +1,29 @@
+/* A document's row (./DocumentLink.tsx). */
+
+@layer base, ui;
+
+@layer ui {
+  .document {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--sp-12);
+    width: 100%;
+    min-height: var(--btn-lg);
+    padding: 0 var(--sp-16);
+    border: var(--hairline) solid var(--paper-line);
+    background: var(--paper-light);
+    font: inherit;
+    font-size: var(--fs-16);
+    color: var(--text);
+    text-align: left;
+    text-decoration: none;
+    cursor: pointer;
+  }
+
+  @media (hover: hover) {
+    .document:hover {
+      background: var(--paper-shade);
+    }
+  }
+}

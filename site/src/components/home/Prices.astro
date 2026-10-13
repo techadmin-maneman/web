@@ -3,6 +3,8 @@
 // all of them the price book's (docs/decisions/0073-prices-from-the-price-book.md).
 // The first fit's is the cheapest hair system ops offer, which mm-site's Worker
 // writes in; the page is built without one.
+import { textLinkLook } from "@maneman/ui/TextLink";
+import { buttonLook } from "@maneman/ui/Button";
 import { prices } from "../../content/site.ts";
 import { asBuilt, priceTemplate } from "../../lib/prices.ts";
 ---
@@ -32,11 +34,11 @@ import { asBuilt, priceTemplate } from "../../lib/prices.ts";
     <span>{prices.payment}</span>
   </div>
   <div class="actions">
-    <a class="btn btn--lg btn--ink book" href="/book">
+    <a class={buttonLook({ variant: "primary", size: "action", className: "book" })} href="/book">
       {prices.book}
     </a>
-    <a class="try" href="/try">
-      <span>{prices.tryOn}</span>
+    <a class={textLinkLook({ className: "try" })} href="/try">
+      {prices.tryOn}
     </a>
   </div>
 </section>
@@ -108,12 +110,5 @@ import { asBuilt, priceTemplate } from "../../lib/prices.ts";
   }
   .try {
     font-size: var(--fs-16);
-    display: inline-flex;
-    align-items: center;
-    min-height: var(--tap);
-  }
-  .try span {
-    border-bottom: var(--hairline) solid var(--paper-line);
-    padding-bottom: var(--sp-4);
   }
 </style>

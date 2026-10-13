@@ -11,9 +11,11 @@
 // Nothing is sent until ops have seen the change: each figure that moves, the
 // old beside the new, and only the second press sends it, as a price is set.
 
+import { Disclosure } from "@maneman/ui/Disclosure";
+import { TextLink } from "@maneman/ui/TextLink";
 import { errorText } from "@maneman/web-kit/refusal";
 import { Panel } from "@maneman/ui/Panel";
-import { Field, NumberInput, Select } from "@maneman/ui/Field";
+import { Field, Fieldset, Label, NumberInput, Select, TextInput } from "@maneman/ui/Field";
 import { CheckPanel } from "../components/CheckPanel.tsx";
 import { Button } from "@maneman/ui/Button";
 import { useLoad } from "@maneman/ui/useLoad";
@@ -29,7 +31,6 @@ import { Loading, PanelFailed } from "../states/States.tsx";
 import { CHARGES_A_LATE_FEE, CONSOLE_GROUP, sectionsOf, type RuleGroupId, type RuleSection } from "./rule-groups.ts";
 import styles from "../components/forms.module.css";
 import rules from "./rules.module.css";
-import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 
 const copy = settings.rules;
 
@@ -268,13 +269,10 @@ function AddKey({ rule, onAdd }: { rule: NumberRule; onAdd: (key: string, text: 
   return (
     <div className={styles.addKey}>
       <div className={styles.field}>
-        <label className={styles.fieldLabel} htmlFor={`${rule.name}-new-key`}>
-          {copy.keyName}
-        </label>
-        <input
+        <Label htmlFor={`${rule.name}-new-key`}>{copy.keyName}</Label>
+        <TextInput
           className={styles.text}
           id={`${rule.name}-new-key`}
-          type="text"
           maxLength={64}
           value={key}
           onChange={(event) => {
@@ -283,13 +281,10 @@ function AddKey({ rule, onAdd }: { rule: NumberRule; onAdd: (key: string, text: 
         />
       </div>
       <div className={styles.field}>
-        <label className={styles.fieldLabel} htmlFor={`${rule.name}-new-value`}>
-          {copy.keyValue}
-        </label>
-        <input
+        <Label htmlFor={`${rule.name}-new-value`}>{copy.keyValue}</Label>
+        <NumberInput
           className={styles.number}
           id={`${rule.name}-new-value`}
-          type="number"
           inputMode="numeric"
           step={1}
           min={rule.min}
@@ -404,10 +399,9 @@ function Boxes({ rule, draft, children }: { rule: OpsSetting; draft: Draft; chil
   const open = rule.kind === "number" && rule.keys === "open";
   if (count <= MANY && !open) return <>{children}</>;
   return (
-    <details className={rules.many}>
-      <summary className={rules.summary}>{copy.showAll(count)}</summary>
+    <Disclosure className={rules.many} summaryClassName={rules.summary} summary={copy.showAll(count)}>
       <div className={rules.manyBody}>{children}</div>
-    </details>
+    </Disclosure>
   );
 }
 
@@ -433,13 +427,13 @@ function Rule({ rule, draft, allowed, held, refusal, onEdit, onStandard }: RuleP
   const mayGoBack = allowed.mayChange && !held && rule.set_by !== null;
   return (
     <li className={styles.rule} id={rule.name} tabIndex={-1}>
-      <fieldset className={styles.group} disabled={held || !allowed.mayChange}>
-        {/* A rule of one figure has its name on its box, so the legend is said, not shown twice. */}
-        {rule.kind === "number" && typeof rule.value === "number" ? (
-          <VisuallyHidden as="legend">{rule.title}</VisuallyHidden>
-        ) : (
-          <legend className={styles.ruleTitle}>{rule.title}</legend>
-        )}
+      {/* A rule of one figure has its name on its box, so the legend is said, not shown twice. */}
+      <Fieldset
+        className={styles.group}
+        legend={rule.title}
+        legendLook={rule.kind === "number" && typeof rule.value === "number" ? "hidden" : "title"}
+        disabled={held || !allowed.mayChange}
+      >
         {pricedInPrices && (
           <p className={styles.note}>
             <OpsLink className={styles.link} to={PRICES_PATH}>
@@ -451,7 +445,7 @@ function Rule({ rule, draft, allowed, held, refusal, onEdit, onStandard }: RuleP
           <Fields rule={rule} draft={draft} onChange={onEdit} />
           {allowed.mayChange && rule.kind === "number" && rule.keys === "open" && <AddKey rule={rule} onAdd={onEdit} />}
         </Boxes>
-      </fieldset>
+      </Fieldset>
 
       {mayGoBack && (
         <div className={styles.actions}>
@@ -592,9 +586,7 @@ function JumpList({ sections }: { sections: readonly RuleSection<OpsSetting>[] }
       <ul className={styles.jumpList}>
         {sections.map((section) => (
           <li key={section.id}>
-            <a className={styles.link} href={`#${section.id}`}>
-              {GROUP_NAMES[section.id]}
-            </a>
+            <TextLink href={`#${section.id}`}>{GROUP_NAMES[section.id]}</TextLink>
           </li>
         ))}
       </ul>

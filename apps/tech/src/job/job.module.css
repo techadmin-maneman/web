@@ -81,17 +81,7 @@
 
 .navigate,
 .reachLink {
-  display: flex;
   gap: var(--sp-12);
-  align-items: center;
-  justify-content: center;
-  min-height: var(--tech-stepper);
-  border: var(--hairline) solid var(--ink-line);
-  background: none;
-  font-family: inherit;
-  font-size: var(--fs-17);
-  color: var(--paper);
-  text-decoration: none;
 }
 
 .navigate {
@@ -109,22 +99,6 @@
   flex-wrap: wrap;
   gap: var(--sp-8);
   margin: var(--sp-8) 0;
-}
-
-.minute,
-.minuteOn {
-  min-height: var(--tech-stepper);
-  padding: 0 var(--sp-12);
-  border: var(--hairline) solid var(--ink-line);
-  background: none;
-  font: inherit;
-  color: var(--paper);
-}
-
-.minuteOn {
-  font-weight: var(--weight-medium);
-  text-decoration: underline;
-  text-underline-offset: var(--sp-4);
 }
 
 .reach {

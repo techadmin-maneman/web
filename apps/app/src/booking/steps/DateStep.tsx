@@ -2,7 +2,7 @@
 
 import { classes } from "@maneman/ui/classes";
 import { Button } from "@maneman/ui/Button";
-import { DateStrip, type DateStripClasses, type StripDate } from "@maneman/ui/DateStrip";
+import { DateStrip, type StripDate } from "@maneman/ui/DateStrip";
 import { weekdayDate } from "@maneman/web-kit/dates";
 import { booking } from "../../content.ts";
 import { dayInsideNotice, isFull, offeredFullLine, type Day } from "../days.ts";
@@ -16,15 +16,6 @@ function dayLabel(day: Day, noticeHours: number): string {
   if (dayInsideNotice(day)) return `${weekdayDate(day.date)}, ${copy.within(noticeHours)}`;
   return weekdayDate(day.date);
 }
-
-const DATE_CLASSES: DateStripClasses = {
-  strip: styles.strip,
-  day: styles.day,
-  radio: styles.radio,
-  weekday: styles.weekday,
-  number: styles.number,
-  mark: styles.dayLate,
-};
 
 /** A day as the strip draws it: full ones drawn but not chosen, those with a window inside the notice marked. */
 function stripDate(day: Day, noticeHours: number): StripDate {
@@ -74,7 +65,6 @@ export function DateStep(props: {
         days={props.days.map((day) => stripDate(day, props.noticeHours))}
         chosen={props.chosen}
         onChoose={props.onChoose}
-        classes={DATE_CLASSES}
       />
       <div className={styles.legend} aria-hidden="true">
         <span>

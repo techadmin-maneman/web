@@ -1,3 +1,4 @@
+import { Button, ButtonLink } from "@maneman/ui/Button";
 import { ICONS } from "@maneman/brand/icons";
 import { tryOn } from "../../content/site.ts";
 import type { ErrorKind } from "../../lib/tryon-errors.ts";
@@ -21,13 +22,13 @@ export function Failed(props: { kind: ErrorKind; heading: HeadingRef; onAgain: (
       <div class={styles.noticeActions}>
         {/* While the try-on cannot run, another photograph would be refused too. */}
         {props.kind !== "unavailable" && (
-          <button type="button" class="btn btn--lg btn--paper" onClick={props.onAgain}>
+          <Button variant="light" size="action" onClick={props.onAgain}>
             {tryOn.error.another}
-          </button>
+          </Button>
         )}
-        <a class="btn btn--lg btn--line-on-ink" href="/book">
+        <ButtonLink variant="outlineOnInk" size="action" href="/book">
           {tryOn.error.book}
-        </a>
+        </ButtonLink>
       </div>
     </div>
   );

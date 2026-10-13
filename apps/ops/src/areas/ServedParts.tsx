@@ -1,9 +1,11 @@
 // The Served tab's parts (./Served.tsx): the city tabs with their bulk pair, one pincode's row, who a save would
 // message, what sits beneath Save, and a file read with its changes shown before they go into the table.
 
+import { Checkbox, DateInput, Fieldset, FileInput, Label, TextInput } from "@maneman/ui/Field";
 import { errorText } from "@maneman/web-kit/refusal";
 import { Button } from "@maneman/ui/Button";
 import { Table } from "@maneman/ui/Table";
+import { TabButton, Tabs } from "@maneman/ui/Tabs";
 import type { AreaChange, ServedPincode } from "../api.ts";
 import { areas } from "../content.ts";
 import styles from "../components/forms.module.css";
@@ -40,10 +42,10 @@ export function PincodeRow({ pincode, row, mayChange, onChange }: PincodeRowProp
         {id}
       </th>
       <td>
-        <input
+        <TextInput
+          compact
           className={styles.cellText}
           id={`area-${id}`}
-          type="text"
           maxLength={40}
           aria-label={copy.areaLabel(id)}
           disabled={!mayChange}
@@ -54,9 +56,7 @@ export function PincodeRow({ pincode, row, mayChange, onChange }: PincodeRowProp
         />
       </td>
       <td>
-        <input
-          className={styles.box}
-          type="checkbox"
+        <Checkbox
           aria-label={copy.served(id)}
           disabled={!mayChange}
           checked={row.served}
@@ -66,9 +66,9 @@ export function PincodeRow({ pincode, row, mayChange, onChange }: PincodeRowProp
         />
       </td>
       <td>
-        <input
+        <DateInput
+          compact
           className={styles.cellDate}
-          type="date"
           aria-label={copy.launchOn(id)}
           disabled={!mayChange}
           value={row.launch_on ?? ""}
@@ -188,16 +188,12 @@ export function UploadFile({
   onCancel: () => void;
 }) {
   return (
-    <fieldset className={styles.group}>
-      <legend className={styles.ruleTitle}>{copy.upload.title}</legend>
+    <Fieldset className={styles.group} legend={copy.upload.title} legendLook="title">
       <div className={styles.field}>
-        <label className={styles.fieldLabel} htmlFor="area-file">
-          {copy.upload.label}
-        </label>
-        <input
+        <Label htmlFor="area-file">{copy.upload.label}</Label>
+        <FileInput
           className={styles.file}
           id="area-file"
-          type="file"
           accept=".csv,text/csv"
           aria-describedby="area-file-hint"
           onChange={(event) => {
@@ -228,7 +224,7 @@ export function UploadFile({
           {upload.says}
         </p>
       )}
-    </fieldset>
+    </Fieldset>
   );
 }
 
@@ -251,25 +247,23 @@ export function CityTabs({
   const cityTabs = [...new Set(pincodes.map((each) => each.city))];
   return (
     <>
-      <nav className={styles.cities} aria-label={copy.title}>
+      <Tabs className={styles.cities} label={copy.title}>
         {cityTabs.map((each) => {
           const all = pincodes.filter((one) => one.city === each);
           const served = all.filter((one) => draft[one.pincode]?.served === true).length;
           return (
-            <button
+            <TabButton
               key={each}
-              className={styles.city}
-              type="button"
-              aria-current={each === city ? "true" : undefined}
+              current={each === city}
               onClick={() => {
                 onCity(each);
               }}
             >
               {copy.city(each, served, all.length)}
-            </button>
+            </TabButton>
           );
         })}
-      </nav>
+      </Tabs>
 
       {mayChange && (
         <div className={styles.actions}>

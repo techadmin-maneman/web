@@ -1,6 +1,7 @@
 // Where the client is signed in (docs/decisions/0029-sessions.md): each browser, this one marked, and a way to sign
 // any other out. A lost or handed-on phone otherwise stays signed in for 90 days from its last use.
 
+import { TextButton } from "@maneman/ui/TextLink";
 import { capsLook } from "@maneman/ui/Caps";
 import { Button } from "@maneman/ui/Button";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
@@ -55,15 +56,14 @@ export function SessionsCard() {
                   </p>
                 </div>
                 {!session.this_device && (
-                  <button
+                  <TextButton
                     className={styles.withdraw}
-                    type="button"
                     disabled={busy}
                     aria-label={copy.signOutOf(device)}
                     onClick={() => void signOut(() => api.signOutSession(session.id))}
                   >
                     {copy.signOut}
-                  </button>
+                  </TextButton>
                 )}
               </div>
             </li>

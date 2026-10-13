@@ -6,9 +6,10 @@
 // (docs/decisions/0071-what-ops-see-before-a-setting-changes.md). Codes switched off fold away beneath the table, their
 // uses on record.
 
+import { Disclosure } from "@maneman/ui/Disclosure";
 import { errorText, type Failure } from "@maneman/web-kit/refusal";
 import { Panel } from "@maneman/ui/Panel";
-import { Button } from "@maneman/ui/Button";
+import { Button, RowButton } from "@maneman/ui/Button";
 import { Field, TextInput } from "@maneman/ui/Field";
 import { Table } from "@maneman/ui/Table";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
@@ -117,9 +118,8 @@ function RowActions({ code, acting, may, onAct }: { code: DiscountCode } & Omit<
   return (
     <td className={own.actions}>
       {may.off && code.switched_off === null && (
-        <button
+        <RowButton
           className={styles.inline}
-          type="button"
           aria-label={copy.switchOffLabel(code.code)}
           disabled={acting !== null}
           onClick={() => {
@@ -127,12 +127,11 @@ function RowActions({ code, acting, may, onAct }: { code: DiscountCode } & Omit<
           }}
         >
           {copy.switchOff}
-        </button>
+        </RowButton>
       )}
       {may.delete && code.deletable && (
-        <button
+        <RowButton
           className={styles.inline}
-          type="button"
           aria-label={copy.deleteLabel(code.code)}
           disabled={acting !== null}
           onClick={() => {
@@ -140,7 +139,7 @@ function RowActions({ code, acting, may, onAct }: { code: DiscountCode } & Omit<
           }}
         >
           {copy.delete}
-        </button>
+        </RowButton>
       )}
     </td>
   );
@@ -293,8 +292,7 @@ function SwitchedOff({ codes, ...row }: { codes: readonly DiscountCode[] } & Row
     [columns.offOn, false],
   ];
   return (
-    <details className={own.off}>
-      <summary className={own.offSummary}>{copy.switchedOffTitle(codes.length)}</summary>
+    <Disclosure className={own.off} summaryClassName={own.offSummary} summary={copy.switchedOffTitle(codes.length)}>
       <div className={own.scroll}>
         <Table className={classes(styles.table, own.table)}>
           <thead>
@@ -316,7 +314,7 @@ function SwitchedOff({ codes, ...row }: { codes: readonly DiscountCode[] } & Row
           </tbody>
         </Table>
       </div>
-    </details>
+    </Disclosure>
   );
 }
 

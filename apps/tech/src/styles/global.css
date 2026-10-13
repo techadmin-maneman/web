@@ -26,6 +26,9 @@ body {
   --control-weight: var(--weight-regular);
   --small-height: var(--tech-min);
   --small-text: var(--fs-17);
+  --edge-on-ink: var(--ink-line-strong);
+  --field-height: var(--tech-stepper);
+  --field-text: var(--fs-18);
 
   background: var(--ink-deep);
   color: var(--paper);

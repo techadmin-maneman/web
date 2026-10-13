@@ -1,6 +1,8 @@
 ---
 // The fixed header. Below 760 px the section links and the area tag hide; v2
 // has no menu button there, so there is none.
+import { textLinkLook } from "@maneman/ui/TextLink";
+import { buttonLook } from "@maneman/ui/Button";
 import { header } from "../content/site.ts";
 
 // A page that is itself the booking form offers no button to it.
@@ -10,7 +12,7 @@ const booking = path === "/book" || path.startsWith("/r/") || path === "/r";
 
 <div class="space" aria-hidden="true"></div>
 <header class="bar on-ink">
-  <a class="brand" href="/" aria-label={header.homeLabel}>
+  <a class={textLinkLook({ tone: "ink", quiet: true, className: "brand" })} href="/" aria-label={header.homeLabel}>
     <svg class="mark" viewBox="0 0 200 217.4" width="34" height="37" aria-hidden="true">
       <use href="#mm"></use>
     </svg>
@@ -21,14 +23,14 @@ const booking = path === "/book" || path.startsWith("/r/") || path === "/r";
   <div class="right">
     <nav class="wide-only" aria-label={header.navLabel}>
       {header.nav.map((link) => (
-        <a class="link" href={link.href}>
+        <a class={textLinkLook({ tone: "ink", quiet: true, className: "link" })} href={link.href}>
           {link.label}
         </a>
       ))}
     </nav>
     <span class="area caps wide-only">{header.area}</span>
     {!booking && (
-      <a class="btn btn--sm btn--line-on-ink" href="/book">
+      <a class={buttonLook({ variant: "outlineOnInk", size: "small" })} href="/book">
         {header.book}
       </a>
     )}
@@ -54,10 +56,7 @@ const booking = path === "/book" || path.startsWith("/r/") || path === "/r";
     padding: 0 var(--gutter);
   }
   .brand {
-    display: flex;
-    align-items: center;
     gap: var(--sp-12);
-    min-height: var(--tap);
   }
   .mark {
     fill: var(--gilt);
@@ -71,13 +70,8 @@ const booking = path === "/book" || path.startsWith("/r/") || path === "/r";
     align-items: center;
     gap: var(--header-gap);
   }
-  .link,
-  .link:hover {
+  .link {
     font-size: var(--fs-15);
-    color: var(--paper);
-    display: inline-flex;
-    align-items: center;
-    min-height: var(--tap);
   }
   .area {
     font-size: var(--fs-15);

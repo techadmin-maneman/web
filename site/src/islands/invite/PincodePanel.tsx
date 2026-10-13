@@ -1,3 +1,6 @@
+import "../refs-as-props.ts";
+import { Label, TextInput } from "@maneman/ui/Field";
+import { Button } from "@maneman/ui/Button";
 import { ICONS } from "@maneman/brand/icons";
 import { referral } from "../../content/referral.ts";
 import type { PincodeAnswer } from "../../lib/api.ts";
@@ -42,13 +45,13 @@ export function PincodePanel(props: { check: PincodeCheck }) {
           <h2 class={styles.panelTitle}>{referral.pincode.title}</h2>
           <form class={styles.pincodeForm} onSubmit={(event) => void props.check.check(event)} noValidate>
             <div class={styles.pincodeField}>
-              <label class={styles.label} for="invite-pincode">
+              <Label htmlFor="invite-pincode" onInk>
                 {referral.pincode.label}
-              </label>
-              <input
+              </Label>
+              <TextInput
+                onInk
                 ref={props.check.field}
                 id="invite-pincode"
-                class={`${styles.input} ${error === null ? "" : styles.bad}`}
                 value={props.check.pincode}
                 placeholder={referral.pincode.placeholder}
                 inputMode="numeric"
@@ -61,9 +64,15 @@ export function PincodePanel(props: { check: PincodeCheck }) {
                 }}
               />
             </div>
-            <button type="submit" class={`btn btn--lg btn--paper ${styles.check}`} aria-disabled={props.check.checking}>
+            <Button
+              variant="light"
+              size="action"
+              className={styles.check}
+              type="submit"
+              aria-disabled={props.check.checking}
+            >
               {props.check.checking ? referral.pincode.checking : referral.pincode.check}
-            </button>
+            </Button>
           </form>
           <div aria-live="polite">
             {error !== null && (

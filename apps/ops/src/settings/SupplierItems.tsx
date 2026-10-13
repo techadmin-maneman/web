@@ -2,6 +2,7 @@
 // their currency, the pack it comes in, the least they take, and the lead time they promise. Setting an item shows the
 // old beside the new before it is sent (ADR 0071); removing one takes it off their list.
 
+import { RowButton } from "@maneman/ui/Button";
 import { Field, Select, TextInput } from "@maneman/ui/Field";
 import { Table } from "@maneman/ui/Table";
 import { inCurrency } from "@maneman/web-kit/money";
@@ -229,14 +230,13 @@ export function SupplierItems({
                 <td className={styles.figure}>{words.days(item.lead_time_days)}</td>
                 <td>
                   {access.mayCall("POST /api/suppliers/{id}/items/{code}/remove") && (
-                    <button
+                    <RowButton
                       className={styles.inline}
-                      type="button"
                       aria-label={words.removeLabel(named(item.consumable_code))}
                       onClick={() => void remove(item.consumable_code)}
                     >
                       {words.remove}
-                    </button>
+                    </RowButton>
                   )}
                 </td>
               </tr>

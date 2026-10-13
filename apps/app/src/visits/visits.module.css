@@ -121,30 +121,9 @@
 
 /* The other kind of visit a fitted client may book, quietly beneath it (ADR 0086); the board draws one button. */
 .other {
-  display: flex;
-  align-items: center;
   justify-content: center;
   width: 100%;
-  min-height: var(--tap);
   margin-top: var(--sp-8);
-  padding: 0;
-  border: 0;
-  background: none;
-  font-family: inherit;
-  font-size: var(--fs-15);
-  color: var(--text);
-  text-decoration: none;
-  cursor: pointer;
-}
-
-.other span {
-  padding-bottom: var(--sp-4);
-  border-bottom: var(--hairline) solid var(--brass);
-}
-
-.other:disabled {
-  color: var(--text-quiet);
-  cursor: default;
 }
 
 /* The client's own record, beneath Visits' lists; the board draws none. */
@@ -253,31 +232,10 @@
 }
 
 .message {
-  display: inline-flex;
-  align-items: center;
-  min-height: var(--tap);
-  padding: 0 var(--sp-16);
-  border: var(--hairline) solid var(--ink);
-  font-size: var(--fs-15);
-  font-weight: var(--weight-medium);
-  color: var(--text);
-  text-decoration: none;
+  align-self: flex-start;
 }
 
 /* The one document row, drawn as an entry's page draws a tax document. */
-.invoice {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--sp-12);
-  min-height: var(--btn-lg);
-  padding: 0 var(--sp-16);
-  border: var(--hairline) solid var(--paper-line);
-  background: var(--paper-light);
-  font-size: var(--fs-16);
-  color: var(--text);
-  text-decoration: none;
-}
 
 .invoiceIcon {
   flex-shrink: 0;

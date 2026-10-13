@@ -1,5 +1,7 @@
 // The service, for a client with more than one open to them (ADR 0085).
 
+import { CARD_NOTE, ChoiceCard } from "@maneman/ui/ChoiceCard";
+import { classes } from "@maneman/ui/classes";
 import { capsLook } from "@maneman/ui/Caps";
 import { Button } from "@maneman/ui/Button";
 import type { OfferedService } from "../../api.ts";
@@ -47,16 +49,15 @@ export function ServiceStep(props: {
               .map((service) => {
                 const { amount, split } = priceFigures(service.price);
                 return (
-                  <label key={service.tier} className={styles.window}>
-                    <input
-                      className={styles.radio}
-                      type="radio"
-                      name="booking-service"
-                      checked={service.type === props.chosen?.type && service.tier === props.chosen.tier}
-                      onChange={() => {
-                        props.onChoose(service);
-                      }}
-                    />
+                  <ChoiceCard
+                    key={service.tier}
+                    className={styles.serviceCard}
+                    name="booking-service"
+                    checked={service.type === props.chosen?.type && service.tier === props.chosen.tier}
+                    onChange={() => {
+                      props.onChoose(service);
+                    }}
+                  >
                     <span>
                       <span className={styles.windowName}>{service.name}</span>
                       {service.type === "first_fit" && service.tier === props.recommended?.tier && (
@@ -65,15 +66,15 @@ export function ServiceStep(props: {
                         </span>
                       )}
                       {service.description !== null && (
-                        <span className={styles.serviceLine}>{service.description}</span>
+                        <span className={classes(styles.serviceLine, CARD_NOTE)}>{service.description}</span>
                       )}
-                      <span className={styles.windowTime}>{booking.length(service.minutes)}</span>
+                      <span className={classes(styles.serviceTime, CARD_NOTE)}>{booking.length(service.minutes)}</span>
                     </span>
                     <span className={styles.serviceMoney}>
                       <span className={styles.windowName}>{service.price.amount === 0 ? copy.free : amount}</span>
-                      {split !== null && <span className={styles.windowTime}>{split}</span>}
+                      {split !== null && <span className={classes(styles.serviceTime, CARD_NOTE)}>{split}</span>}
                     </span>
-                  </label>
+                  </ChoiceCard>
                 );
               })}
           </div>

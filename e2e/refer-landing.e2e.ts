@@ -114,8 +114,8 @@ test("the invite names the referrer, and a served pincode opens the consultation
   await expect(page.getByText("Rohit is told when you are fitted. That is when the 3 visits land.")).toBeVisible();
 
   await fillForm(page);
-  // The radio itself is visually hidden, as the design has it: a person clicks its label.
-  await page.getByText("Afternoon", { exact: true }).click();
+  // The radio lies unseen over its card, where a person's tap lands.
+  await page.getByRole("radio", { name: /Afternoon/ }).check();
   await expect(page.getByRole("radio", { name: /Afternoon/ })).toBeChecked();
   await page.getByText("You may contact me on WhatsApp about this consultation.").click();
   await page.getByRole("button", { name: referralCopy.referral.consultation.submit }).click();
@@ -138,7 +138,7 @@ test("a booking through the invite is counted, with nothing personal and no code
   await page.getByLabel("Pincode").fill(SERVED.pincode);
   await page.getByRole("button", { name: referralCopy.referral.pincode.check }).click();
   await fillForm(page);
-  await page.getByText("Afternoon", { exact: true }).click();
+  await page.getByRole("radio", { name: /Afternoon/ }).check();
   await page.getByText("You may contact me on WhatsApp about this consultation.").click();
   await page.getByRole("button", { name: referralCopy.referral.consultation.submit }).click();
   await expect(page.getByText(referralCopy.referral.booked.label, { exact: true })).toBeVisible();
@@ -480,13 +480,13 @@ test("the fields the form needs are marked as required", async ({ page }) => {
 });
 
 /**
- * The outline a keyboard user sees for the focused hidden radio or checkbox: on its label, or on the box drawn
- * inside the label for a checkbox.
+ * The outline a keyboard user sees for the focused radio or checkbox, each laid unseen over what is drawn: on a
+ * radio's card, its label, or on a checkbox's box, the input's parent.
  */
 function outlineOf(page: Page, drawn: "label" | "box"): Promise<string> {
   return page.evaluate((part) => {
-    const label = document.activeElement?.closest("label") ?? null;
-    const element = part === "label" ? label : (label?.querySelector("[aria-hidden='true']") ?? null);
+    const focused = document.activeElement;
+    const element = (part === "label" ? focused?.closest("label") : focused?.parentElement) ?? null;
     if (element === null) return "nothing focused";
     const style = getComputedStyle(element);
     return `${style.outlineStyle} ${style.outlineWidth}`;
@@ -637,7 +637,7 @@ test("offers the consultation alone or with the fit in one visit, and asks ops f
 
   const plan = page.getByRole("group", { name: referralCopy.referral.consultation.plan.legend });
   await expect(plan.getByRole("radio", { name: "Consultation · an hour" })).toBeChecked();
-  await plan.getByText("Consultation and fit · three hours").click();
+  await plan.getByRole("radio", { name: "Consultation and fit · three hours" }).check();
   await expect(
     plan.getByText(/Choose your hair system with your technician and have it fitted there and then\./),
   ).toBeVisible();

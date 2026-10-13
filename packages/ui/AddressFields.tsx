@@ -5,7 +5,9 @@
 // uses nothing Preact lacks: its fields listen with onInput, which React and Preact hear alike.
 
 import { ADDRESS_FIELDS, type AddressField, type AddressPart } from "@maneman/web-kit/address";
-import { classes as join } from "./classes.ts";
+import { Label, TextInput } from "./Field.tsx";
+import { TextButton } from "./TextLink.tsx";
+import styles from "./address-fields.module.css";
 
 export interface AddressFieldsWords {
   readonly labels: Readonly<Record<AddressPart, string>>;
@@ -13,22 +15,6 @@ export interface AddressFieldsWords {
   readonly hints?: Readonly<Partial<Record<AddressPart, string>>>;
   /** The button that unfolds the folded parts, where the form folds them. */
   readonly more?: string;
-}
-
-type ClassName = string | undefined;
-
-/** Each surface's own look. */
-export interface AddressFieldsClasses {
-  readonly field: ClassName;
-  readonly label: ClassName;
-  readonly input: ClassName;
-  /** Added to a marked part's input. */
-  readonly inputBad?: ClassName;
-  readonly error?: ClassName;
-  readonly hint?: ClassName;
-  readonly more?: ClassName;
-  /** The pincode, where it is shown rather than asked. */
-  readonly shown?: ClassName;
 }
 
 interface Props {
@@ -48,12 +34,12 @@ interface Props {
   readonly disabled?: boolean;
   readonly onChange: (part: AddressPart, value: string) => void;
   readonly words: AddressFieldsWords;
-  readonly classes: AddressFieldsClasses;
+  /** Each part's place in its form, where the form lays them out itself. */
+  readonly fieldClassName?: string;
 }
 
 function PartInput({ field, props }: { field: AddressField; props: Props }) {
   const { part } = field;
-  const { classes } = props;
   const id = `${props.idPrefix}-${part}`;
   const marked = props.marked.includes(part);
   const error = marked && props.errorOf !== undefined ? props.errorOf(part) : null;
@@ -61,13 +47,10 @@ function PartInput({ field, props }: { field: AddressField; props: Props }) {
   let describedBy = hint === undefined ? undefined : `${id}-hint`;
   if (marked) describedBy = error === null ? props.describedBy : `${id}-error`;
   return (
-    <div className={classes.field}>
-      <label className={classes.label} htmlFor={id}>
-        {props.words.labels[part]}
-      </label>
-      <input
+    <div className={props.fieldClassName}>
+      <Label htmlFor={id}>{props.words.labels[part]}</Label>
+      <TextInput
         id={id}
-        className={join(classes.input, marked && classes.inputBad)}
         value={props.valueOf(part)}
         maxLength={field.maxLength}
         autoComplete={field.autoComplete}
@@ -84,14 +67,14 @@ function PartInput({ field, props }: { field: AddressField; props: Props }) {
       {props.errorOf !== undefined && (
         <div aria-live="polite">
           {error !== null && (
-            <div id={`${id}-error`} className={classes.error}>
+            <p id={`${id}-error`} className={styles.error}>
               {error}
-            </div>
+            </p>
           )}
         </div>
       )}
       {hint !== undefined && (
-        <p id={`${id}-hint`} className={classes.hint}>
+        <p id={`${id}-hint`} className={styles.hint}>
           {hint}
         </p>
       )}
@@ -100,7 +83,7 @@ function PartInput({ field, props }: { field: AddressField; props: Props }) {
 }
 
 export function AddressFields(props: Props) {
-  const { classes, words } = props;
+  const { words } = props;
   const shown = ADDRESS_FIELDS.filter(
     ({ part, folded }) => props.without?.includes(part) !== true && (props.folded === undefined || folded !== true),
   );
@@ -110,9 +93,9 @@ export function AddressFields(props: Props) {
       {shown.flatMap((field) => {
         if (field.part === "pincode" && props.shownPincode !== undefined) {
           return [
-            <div key={field.part} className={classes.field}>
-              <div className={classes.label}>{words.labels.pincode}</div>
-              <p className={classes.shown}>{props.shownPincode}</p>
+            <div key={field.part} className={props.fieldClassName}>
+              <p className={styles.label}>{words.labels.pincode}</p>
+              <p className={styles.shown}>{props.shownPincode}</p>
             </div>,
           ];
         }
@@ -120,9 +103,9 @@ export function AddressFields(props: Props) {
         if (field.part !== "flat" || props.folded === undefined) return [input];
         return [
           input,
-          <button key="more" type="button" className={classes.more} onClick={props.folded.onUnfold}>
+          <TextButton key="more" tone="muted" onClick={props.folded.onUnfold}>
             {words.more}
-          </button>,
+          </TextButton>,
         ];
       })}
     </>

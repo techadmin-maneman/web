@@ -2,9 +2,10 @@
 // why a no-show's charge is wrong, once a charge, and ops refund or uphold it. No board draws it, so the sheet is
 // ours, in the note sheet's frame, with placeholder words (docs/fidelity-method.md).
 
+import { Field, TextArea } from "@maneman/ui/Field";
 import { DISPUTE_REASON_MAX_CHARS } from "@rules/policy/no-show.ts";
 import { Button } from "@maneman/ui/Button";
-import { Sheet, SheetPanel } from "@maneman/ui/Sheet";
+import { Sheet, SheetClose, SheetPanel } from "@maneman/ui/Sheet";
 import { useEffect, useRef, useState } from "react";
 import { api } from "../api.ts";
 import { booking, dispute as copy } from "../content.ts";
@@ -45,9 +46,7 @@ export function DisputeSheet(props: { visitId: string; onClose: (disputed: boole
         props.onClose(step !== "writing" && step !== "failed");
       }}
     >
-      <button className={styles.close} type="button" onClick={close}>
-        {booking.close}
-      </button>
+      <SheetClose onClose={close}>{booking.close}</SheetClose>
       <SheetPanel className={styles.sheet}>
         {step === "writing" && (
           <form
@@ -60,19 +59,20 @@ export function DisputeSheet(props: { visitId: string; onClose: (disputed: boole
             <h2 className={styles.changeTitle} id="dispute-title">
               {copy.title}
             </h2>
-            <label className={styles.noteField}>
-              <span className={styles.noteLabel}>{copy.label}</span>
-              <textarea
-                className={styles.noteInput}
-                rows={4}
-                maxLength={DISPUTE_REASON_MAX_CHARS}
-                required
-                value={text}
-                onChange={(event) => {
-                  setText(event.target.value);
-                }}
-              />
-            </label>
+            <Field className={styles.noteField} label={copy.label}>
+              {(control) => (
+                <TextArea
+                  {...control}
+                  rows={4}
+                  maxLength={DISPUTE_REASON_MAX_CHARS}
+                  required
+                  value={text}
+                  onChange={(event) => {
+                    setText(event.target.value);
+                  }}
+                />
+              )}
+            </Field>
             <Button
               variant="primary"
               size="action"

@@ -1,6 +1,8 @@
 // One chat in the Care inbox (docs/decisions/0129-the-care-inbox.md): what the client wrote, our replies and notes,
 // and our automatic messages to them with how far each got, in order.
 
+import { OpsLink } from "../components/Shell.tsx";
+import { textLinkLook } from "@maneman/ui/TextLink";
 import { Button } from "@maneman/ui/Button";
 import { useLoad } from "@maneman/ui/useLoad";
 import { indiaClock, indiaDate, shortDate } from "@maneman/web-kit/dates";
@@ -72,9 +74,9 @@ function About({ conversation }: { conversation: Conversation }) {
     return (
       <p className={styles.note}>
         {thread.technician}{" "}
-        <a className={own.link} href={technicianPath(technician.id)}>
+        <OpsLink className={textLinkLook()} to={technicianPath(technician.id)}>
           {thread.technicianPage}
-        </a>
+        </OpsLink>
       </p>
     );
   }
@@ -82,9 +84,9 @@ function About({ conversation }: { conversation: Conversation }) {
   return (
     <>
       <p className={styles.note}>
-        <a className={own.link} href={clientPath(person.id, "visits")}>
+        <OpsLink className={textLinkLook()} to={clientPath(person.id, "visits")}>
           {thread.page}
-        </a>
+        </OpsLink>
       </p>
       <ClientPanel personId={person.id} />
       <CarePerson personId={person.id} email={conversation.care_person} coveredBy={conversation.covered_by} />

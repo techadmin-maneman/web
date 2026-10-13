@@ -2,6 +2,8 @@
 // the gate, or running late, sent from our number through the outbox, so a word tapped without signal goes when the
 // phone finds it. A client who takes no WhatsApp messages about their visits is called instead.
 
+import { Button } from "@maneman/ui/Button";
+import { ToggleButton } from "@maneman/ui/ToggleButton";
 import { useState } from "react";
 import type { Job } from "../api.ts";
 import { job as copy } from "../content.ts";
@@ -30,29 +32,29 @@ export function TellClient({ job }: { job: Job }) {
       <p className={styles.landmarkLabel}>{copy.tell.title(who)}</p>
       <div className={styles.minutes} role="group" aria-label={copy.tell.minutes}>
         {MINUTES.map((each) => (
-          <button
+          <ToggleButton
             key={each}
-            type="button"
-            className={each === minutes ? styles.minuteOn : styles.minute}
-            aria-pressed={each === minutes}
+            onInk
+            className={styles.minute}
+            pressed={each === minutes}
             onClick={() => {
               setMinutes(each);
             }}
           >
             {copy.tell.minute(each)}
-          </button>
+          </ToggleButton>
         ))}
       </div>
       <div className={styles.reach}>
-        <button type="button" className={styles.reachLink} onClick={() => void tell("on_the_way")}>
+        <Button variant="outlineOnInk" size="control" onClick={() => void tell("on_the_way")}>
           {copy.tell.onTheWay(minutes)}
-        </button>
-        <button type="button" className={styles.reachLink} onClick={() => void tell("running_late")}>
+        </Button>
+        <Button variant="outlineOnInk" size="control" onClick={() => void tell("running_late")}>
           {copy.tell.late(minutes)}
-        </button>
-        <button type="button" className={styles.reachLink} onClick={() => void tell("at_gate")}>
+        </Button>
+        <Button variant="outlineOnInk" size="control" onClick={() => void tell("at_gate")}>
           {copy.tell.atGate}
-        </button>
+        </Button>
       </div>
       {sent !== null && (
         <p className={styles.access} role="status">

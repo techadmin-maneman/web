@@ -5,7 +5,7 @@
 import { capsLook } from "@maneman/ui/Caps";
 import { Button, buttonLook } from "@maneman/ui/Button";
 import { Dialog } from "@maneman/ui/Dialog";
-import { Field, TextInput } from "@maneman/ui/Field";
+import { Checkbox, Field, Select, TextInput } from "@maneman/ui/Field";
 import { indiaClock, indiaDate, shortDate } from "@maneman/web-kit/dates";
 import { mobileDigits } from "@maneman/web-kit/mobile";
 import { useState } from "react";
@@ -96,7 +96,7 @@ function Fields({
       </Field>
       <Field label={copy.city} className={styles.formField}>
         {(control) => (
-          <select
+          <Select
             {...control}
             className={styles.select}
             value={typed.city}
@@ -110,19 +110,17 @@ function Fields({
                 {city}
               </option>
             ))}
-          </select>
+          </Select>
         )}
       </Field>
-      <label className={styles.check}>
-        <input
-          type="checkbox"
-          checked={typed.fitsTrained}
-          onChange={(event) => {
-            onType({ ...typed, fitsTrained: event.target.checked });
-          }}
-        />
-        {copy.fitsTrained}
-      </label>
+      <Checkbox
+        className={styles.check}
+        label={copy.fitsTrained}
+        checked={typed.fitsTrained}
+        onChange={(event) => {
+          onType({ ...typed, fitsTrained: event.target.checked });
+        }}
+      />
     </>
   );
 }

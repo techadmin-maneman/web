@@ -3,7 +3,7 @@
 // left can send it back before it arrives. A hair system's pieces that arrived are scanned, and those not scanned
 // went missing on the way (docs/decisions/0162-scanning-labels.md).
 
-import { Button } from "@maneman/ui/Button";
+import { Button, RowButton } from "@maneman/ui/Button";
 import { Field, NumberInput, TextInput } from "@maneman/ui/Field";
 import { Table } from "@maneman/ui/Table";
 import { indiaDate, shortDate } from "@maneman/web-kit/dates";
@@ -121,24 +121,14 @@ function Row(props: { book: Stock; transfer: Transfer; onReceive: () => void; on
       <td className={form.figure}>{shortDate(indiaDate(transfer.sent_at))}</td>
       <td className={styles.held}>
         {access.mayCall("POST /api/stock/transfers/{id}/receive") && (
-          <button
-            className={form.inline}
-            type="button"
-            aria-label={copy.receiveLabel(what, to)}
-            onClick={props.onReceive}
-          >
+          <RowButton className={form.inline} aria-label={copy.receiveLabel(what, to)} onClick={props.onReceive}>
             {copy.receive}
-          </button>
+          </RowButton>
         )}{" "}
         {access.mayCall("POST /api/stock/transfers/{id}/send-back") && (
-          <button
-            className={form.inline}
-            type="button"
-            aria-label={copy.sendBackLabel(what, from)}
-            onClick={props.onSendBack}
-          >
+          <RowButton className={form.inline} aria-label={copy.sendBackLabel(what, from)} onClick={props.onSendBack}>
             {copy.sendBack}
-          </button>
+          </RowButton>
         )}
       </td>
     </tr>

@@ -4,7 +4,8 @@
 // out says so beneath it, as the name and the number do. The floor, the tower and the landmark are folded away
 // until asked for, beneath the flat.
 
-import { AddressFields, type AddressFieldsClasses } from "@maneman/ui/AddressFields";
+import { Fieldset } from "@maneman/ui/Field";
+import { AddressFields } from "@maneman/ui/AddressFields";
 import type { AddressPart } from "@maneman/web-kit/address";
 import { useEffect, useRef, useState } from "preact/hooks";
 import { referral } from "../../content/referral.ts";
@@ -12,17 +13,6 @@ import type { AddressFields as Address, RequiredPart } from "../../lib/address.t
 import styles from "./Invite.module.css";
 
 const copy = referral.address;
-
-const ADDRESS_CLASSES: AddressFieldsClasses = {
-  field: undefined,
-  label: styles.label,
-  input: styles.input,
-  inputBad: styles.bad,
-  error: styles.error,
-  hint: styles.hint,
-  more: styles.more,
-  shown: styles.addressPincode,
-};
 
 const WORDS = {
   labels: { ...copy.labels, access_notes: copy.labels.accessNotes, pincode: copy.pincode },
@@ -60,8 +50,7 @@ export function AddressFieldset(props: {
   }, [unfolded, idPrefix]);
 
   return (
-    <fieldset class={styles.group}>
-      <legend class={`caps ${styles.legend}`}>{copy.legend}</legend>
+    <Fieldset legend={copy.legend} legendLook="caps">
       <div class={styles.fields}>
         <AddressFields
           idPrefix={`${idPrefix}-address`}
@@ -87,9 +76,8 @@ export function AddressFieldset(props: {
             if (key !== null) props.onChange({ ...address, [key]: value });
           }}
           words={WORDS}
-          classes={ADDRESS_CLASSES}
         />
       </div>
-    </fieldset>
+    </Fieldset>
   );
 }

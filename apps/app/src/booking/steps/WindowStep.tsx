@@ -1,25 +1,13 @@
 // The window.
 
-import { classes } from "@maneman/ui/classes";
 import { Button } from "@maneman/ui/Button";
-import { WindowChoice, type WindowChoiceClasses } from "@maneman/ui/WindowChoice";
+import { WindowChoice } from "@maneman/ui/WindowChoice";
 import { weekdayDate } from "@maneman/web-kit/dates";
 import type { BookingWindow } from "../../api.ts";
 import { booking, WINDOW_HOURS, WINDOW_NAMES } from "../../content.ts";
 import { windowContinue, type Day } from "../days.ts";
 import styles from "../booking.module.css";
 import { TITLE_ID, stepOf, Heading } from "./shared.tsx";
-
-const WINDOW_CLASSES: WindowChoiceClasses = {
-  options: styles.windows,
-  option: styles.window,
-  radio: styles.radio,
-  text: styles.windowText,
-  name: styles.windowName,
-  hours: styles.windowTime,
-  note: classes(styles.windowTime, styles.windowLate),
-  full: styles.windowNote,
-};
 
 /**
  * The day's windows the visit can start in, open or full. Who comes is never promised: a technician never
@@ -55,7 +43,6 @@ export function WindowStep(props: {
         chosen={props.chosen}
         fullWord={copy.full}
         onChoose={props.onChoose}
-        classes={WINDOW_CLASSES}
       />
       {props.problem !== null && (
         <p className={styles.problem} role="alert">

@@ -26,7 +26,7 @@
 // When the phone sees the countdown end it lets the hold go too, but not while
 // Checkout is open: it waits for Checkout's answer.
 
-import { Sheet, SheetPanel } from "@maneman/ui/Sheet";
+import { Sheet, SheetClose, SheetPanel } from "@maneman/ui/Sheet";
 import { addDays } from "@maneman/web-kit/dates";
 import { useEffect, useEffectEvent, useReducer, useRef, useState } from "react";
 import {
@@ -239,11 +239,7 @@ export function BookingSheet({ type, services = [], tier, recommended, moving, f
         onClose(changed.current);
       }}
     >
-      {!drawsItsOwnClose(step) && (
-        <button className={styles.close} type="button" onClick={close}>
-          {booking.close}
-        </button>
-      )}
+      {!drawsItsOwnClose(step) && <SheetClose onClose={close}>{booking.close}</SheetClose>}
       <SheetPanel className={styles.sheet}>
         {step.kind === "loading" && <LoadingStep />}
         {step.kind === "broken" && <WaitStep text={booking.failedToStart} onClose={close} />}

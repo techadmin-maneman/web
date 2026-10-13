@@ -56,12 +56,6 @@
   background: var(--paper-light);
 }
 
-.link {
-  color: var(--text);
-  text-decoration: underline;
-  text-underline-offset: var(--sp-4);
-}
-
 .items {
   display: flex;
   flex-direction: column;

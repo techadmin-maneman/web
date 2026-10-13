@@ -3,10 +3,11 @@
 // close it without a follow-up, with why. The design draws each task's owner and none of these; they sit beneath the
 // task's own lines, as the way to where it is decided does.
 
+import { TextButton } from "@maneman/ui/TextLink";
 import { REASON_MAX_CHARS } from "@rules/policy/decision-reasons.ts";
 import { errorText } from "@maneman/web-kit/refusal";
 import { Button } from "@maneman/ui/Button";
-import { Field, TextArea } from "@maneman/ui/Field";
+import { Field, Select, TextArea } from "@maneman/ui/Field";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { useRef, useState, type RefObject } from "react";
@@ -58,7 +59,7 @@ function GiveForm({
     <div className={styles.form}>
       <Field label={<Named label={copy.giveTo} subject={subject} />}>
         {(control) => (
-          <select
+          <Select
             {...control}
             className={styles.select}
             // The list stands where the button that asked for it stood, so the keyboard goes to it.
@@ -75,7 +76,7 @@ function GiveForm({
               </option>
             ))}
             {owner !== null && <option value="">{copy.giveNobody}</option>}
-          </select>
+          </Select>
         )}
       </Field>
       <div className={styles.formActions}>
@@ -164,9 +165,9 @@ function Act({
   expanded?: boolean;
 }) {
   return (
-    <button type="button" className={styles.act} ref={actRef} aria-expanded={expanded} onClick={onClick}>
+    <TextButton tone="muted" compact ref={actRef} aria-expanded={expanded} onClick={onClick}>
       <Named label={label} subject={subject} />
-    </button>
+    </TextButton>
   );
 }
 

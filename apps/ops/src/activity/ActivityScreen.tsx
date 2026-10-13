@@ -3,6 +3,7 @@
 // to lives in the page's address (./filters.ts), so a client's whole record, linked from their History tab, opens
 // already narrowed. The design draws no board for it; it is built as Areas' tables are.
 
+import { Chip } from "@maneman/ui/Chip";
 import { Button } from "@maneman/ui/Button";
 import { Table } from "@maneman/ui/Table";
 import { useLoad } from "@maneman/ui/useLoad";
@@ -157,18 +158,15 @@ function Linked({ filters, onApply }: { filters: Filters; onApply: (filters: Fil
   return (
     <ul className={styles.linked}>
       {shown.map(([name, label, value]) => (
-        <li key={name} className={styles.chip}>
-          {label} · {value?.slice(0, 8)}
-          <button
-            type="button"
-            className={styles.chipOff}
-            aria-label={copy.filters.remove(label)}
-            onClick={() => {
+        <li key={name}>
+          <Chip
+            removeLabel={copy.filters.remove(label)}
+            onRemove={() => {
               onApply({ ...filters, [name]: undefined });
             }}
           >
-            ×
-          </button>
+            {label} · {value?.slice(0, 8)}
+          </Chip>
         </li>
       ))}
     </ul>

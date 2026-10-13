@@ -8,8 +8,7 @@
 // one, or the consultation's alone once the client decided against the fit at
 // the piece step before it.
 
-import { GLYPHS } from "@maneman/brand/icons";
-import { Icon } from "@maneman/ui/Icon";
+import { CheckRow } from "@maneman/ui/CheckRow";
 import { useState } from "react";
 import type { EventBody, Job } from "../api.ts";
 import { job as jobCopy, oneVisit, steps as copy } from "../content.ts";
@@ -67,21 +66,17 @@ function Ticking({
           const ticked = done.includes(item.id);
           return (
             <li key={item.id}>
-              <button
-                className={styles.check}
-                type="button"
-                aria-pressed={ticked}
-                onClick={() => {
+              <CheckRow
+                done={ticked}
+                tickStroke={BOX_TICK_STROKE}
+                onToggle={() => {
                   setDone((already) =>
                     already.includes(item.id) ? already.filter((one) => one !== item.id) : [...already, item.id],
                   );
                 }}
               >
-                <span className={ticked ? styles.boxDone : styles.box}>
-                  {ticked && <Icon d={GLYPHS.check} size={22} stroke={BOX_TICK_STROKE} />}
-                </span>
-                <span className={ticked ? styles.checkDone : styles.checkLabel}>{item.label}</span>
-              </button>
+                {item.label}
+              </CheckRow>
             </li>
           );
         })}

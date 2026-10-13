@@ -335,7 +335,6 @@ function Form({
           {(control) => (
             <TextInput
               {...control}
-              className={styles.text}
               autoComplete="off"
               autoCapitalize="characters"
               spellCheck={false}

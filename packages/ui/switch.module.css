@@ -1,0 +1,47 @@
+/* A switch (./Switch.tsx): a square knob that moves to the right, the track filled in the ink, when it is on. */
+
+@layer base, ui;
+
+@layer ui {
+  .switch {
+    position: relative;
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: flex-start;
+    width: var(--switch-width);
+    height: var(--sp-24);
+    padding: var(--sp-2);
+    border: var(--hairline) solid var(--paper-control);
+    background: var(--white);
+    cursor: pointer;
+  }
+
+  /* The tap's height, though the switch is drawn smaller. */
+  .switch::after {
+    content: "";
+    position: absolute;
+    inset: calc((var(--sp-24) - var(--tap)) / 2 - var(--hairline)) 0;
+  }
+
+  .knob {
+    width: var(--sp-20);
+    height: var(--sp-20);
+    background: var(--paper-line);
+  }
+
+  .switch[aria-checked="true"] {
+    justify-content: flex-end;
+    border-color: var(--ink);
+    background: var(--ink);
+  }
+
+  .switch[aria-checked="true"] .knob {
+    background: var(--paper);
+  }
+
+  .switch:disabled {
+    cursor: default;
+    opacity: var(--busy-opacity);
+  }
+}

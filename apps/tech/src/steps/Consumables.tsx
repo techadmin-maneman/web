@@ -10,9 +10,9 @@
 // Each count is said as it changes, and each stepper names the count it
 // changes, so a screen reader hears "Tape strips: 2" rather than nothing.
 
+import { IconButton } from "@maneman/ui/IconButton";
 import { ICONS } from "@maneman/brand/icons";
 import { Button } from "@maneman/ui/Button";
-import { Icon } from "@maneman/ui/Icon";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { useId, useState } from "react";
 import type { EventBody, Job } from "../api.ts";
@@ -62,36 +62,67 @@ function Stepper({
         <span className={styles.countUnit}>{copy.consumables.unit(consumable.unit, consumable.expected)}</span>
       </span>
       <span className={styles.stepper}>
-        <button
+        <IconButton
+          edged
           className={styles.step}
-          type="button"
-          aria-label={copy.consumables.less(name)}
+          d={ICONS.minus}
+          size={20}
+          stroke={STEPPER_STROKE}
+          label={copy.consumables.less(name)}
           aria-describedby={said}
           onClick={() => {
             change(-1);
           }}
-        >
-          <Icon d={ICONS.minus} size={20} stroke={STEPPER_STROKE} />
-        </button>
+        />
         <span className={styles.number} aria-hidden="true">
           {count}
         </span>
-        <button
+        <IconButton
+          edged
           className={styles.step}
-          type="button"
-          aria-label={copy.consumables.more(name)}
+          d={ICONS.plus}
+          size={20}
+          stroke={STEPPER_STROKE}
+          label={copy.consumables.more(name)}
           aria-describedby={said}
           onClick={() => {
             change(1);
           }}
-        >
-          <Icon d={ICONS.plus} size={20} stroke={STEPPER_STROKE} />
-        </button>
+        />
         <VisuallyHidden id={said} role="status">
           {copy.consumables.count(name, count)}
         </VisuallyHidden>
       </span>
     </li>
+  );
+}
+
+/** What else the kit holds, each one tap to add to the visit's use. */
+function Picks({
+  others,
+  onPick,
+}: {
+  others: readonly { readonly code: string; readonly name: string }[];
+  onPick: (code: string) => void;
+}) {
+  return (
+    <ul className={styles.picks}>
+      {others.map((each) => (
+        <li key={each.code}>
+          <Button
+            variant="outlineOnInk"
+            size="control"
+            className={styles.pick}
+            aria-label={copy.consumables.addOne(each.name)}
+            onClick={() => {
+              onPick(each.code);
+            }}
+          >
+            {each.name}
+          </Button>
+        </li>
+      ))}
+    </ul>
   );
 }
 
@@ -165,24 +196,14 @@ function Counting({
             {copy.consumables.add}
           </Button>
           {adding && (
-            <ul className={styles.picks}>
-              {others.map((each) => (
-                <li key={each.code}>
-                  <button
-                    className={styles.pick}
-                    type="button"
-                    aria-label={copy.consumables.addOne(each.name)}
-                    onClick={() => {
-                      setShown([...shown, each.code]);
-                      setCounts(new Map(counts).set(each.code, Math.max(1, counts.get(each.code) ?? 0)));
-                      setAdding(false);
-                    }}
-                  >
-                    {each.name}
-                  </button>
-                </li>
-              ))}
-            </ul>
+            <Picks
+              others={others}
+              onPick={(code) => {
+                setShown([...shown, code]);
+                setCounts(new Map(counts).set(code, Math.max(1, counts.get(code) ?? 0)));
+                setAdding(false);
+              }}
+            />
           )}
         </div>
       )}
