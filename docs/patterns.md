@@ -31,4 +31,6 @@ There is one way, held by `test/node/apps/ops/ops-settings-writes.test.ts` (docs
 - **A list page** is one `Panel` with its title and count, `TableTools` above a `Table` (search, filters, sorting by `SortButton`, Show more), and an `EmptyState` in the panel when nothing matches. Example: Referrals (`apps/ops/src/referrals/ReferralsScreen.tsx`).
 - **A detail page** is a head naming the record, `Tabs` for its parts, and a `Panel` a part; an action that changes the record opens in a `Drawer` from the right. Example: a client's page (`apps/ops/src/clients/ClientScreen.tsx`).
 - **A settings page** is a `Panel` per subject, each subject's rules in a `SettingForm` or a group of them under one Review. Example: Rules (`apps/ops/src/settings/Rules.tsx`).
+- **Sections of one job** are a group (`SECTION_GROUPS`, `apps/ops/src/route.ts`): Inventory, Care and Data requests each have one entry in the navigation, and each of their pages is headed by the group's sections as tabs. A new section of such a job joins its group.
+- **Ctrl K** (or ⌘K) opens Go to, from any page: the pages the person may open, by name, and clients by name or four digits of their number.
 - **Words** are in `apps/<app>/src/content/`: staff copy says the state and the action only.

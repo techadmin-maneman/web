@@ -1,14 +1,14 @@
-// Settings, under Admin: the rules, the days no visit is offered, the
-// consumables with each service's expected use, the suppliers we buy them
-// from, and the job sheet the technician app reads with a job.
+// Settings, under Admin: the rules, the days no visit is offered, and the job sheet the technician app reads with a
+// job.
 //
-// The price book, the discount codes, the service area and the Staff list are
-// sections of their own departments (./PanelScreens.tsx).
+// The price book, the discount codes, the service area and the Staff list are sections of their own departments
+// (./PanelScreens.tsx); the items we stock and the suppliers we buy them from are Inventory's (ItemsScreen,
+// SuppliersScreen).
 
 import { Tabs, TAB } from "@maneman/ui/Tabs";
 import { OpsLink, Shell } from "../components/Shell.tsx";
 import { settings } from "../content/settings.ts";
-import { settingsPath, SETTINGS_TAB_NAMES, SETTINGS_TABS, type SettingsTab } from "../route.ts";
+import { SECTION_NAMES, settingsPath, SETTINGS_TAB_NAMES, SETTINGS_TABS, type SettingsTab } from "../route.ts";
 import { Blackouts } from "./Blackouts.tsx";
 import { Consumables } from "./Consumables.tsx";
 import { JobSheet } from "./JobSheet.tsx";
@@ -18,10 +18,30 @@ import styles from "../components/forms.module.css";
 
 function Panel({ tab }: { tab: SettingsTab }) {
   if (tab === "blackouts") return <Blackouts />;
-  if (tab === "consumables") return <Consumables />;
-  if (tab === "suppliers") return <Suppliers />;
   if (tab === "job-sheet") return <JobSheet />;
   return <Rules />;
+}
+
+/** The items we stock, each service's expected use, and the hair systems: a tab of Inventory. */
+export function ItemsScreen() {
+  return (
+    <Shell section="/items" title={SECTION_NAMES.items}>
+      <div className={styles.screen}>
+        <Consumables />
+      </div>
+    </Shell>
+  );
+}
+
+/** The suppliers we buy from, and what each supplies: a tab of Inventory. */
+export function SuppliersScreen() {
+  return (
+    <Shell section="/suppliers" title={SECTION_NAMES.suppliers}>
+      <div className={styles.screen}>
+        <Suppliers />
+      </div>
+    </Shell>
+  );
 }
 
 export function SettingsScreen({ tab }: { tab: SettingsTab }) {

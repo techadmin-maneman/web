@@ -20,7 +20,6 @@ import { OpsLink, Shell } from "../components/Shell.tsx";
 import { stock as copy } from "../content.ts";
 import { useAccess, type OpsCall } from "../lib/access.ts";
 import { recordedBy } from "../lib/who.ts";
-import { settingsPath } from "../route.ts";
 import form from "../components/forms.module.css";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import { Narrowing, SortHeads, TableEnd } from "../components/TableTools.tsx";
@@ -104,7 +103,7 @@ function Held({ book, code, place }: { book: Stock; code: string; place: string 
 function ToSettings() {
   return (
     <>
-      <OpsLink className={form.link} to={settingsPath("consumables")}>
+      <OpsLink className={form.link} to="/items">
         {copy.settings}
       </OpsLink>
       .

@@ -6,8 +6,6 @@ import { DEPARTMENT_NAMES } from "./shell.ts";
 export const settingsTabs = {
   rules: "Policies",
   blackouts: "Closed days",
-  consumables: "Consumables",
-  suppliers: "Suppliers",
   "job-sheet": "Job sheet",
 };
 

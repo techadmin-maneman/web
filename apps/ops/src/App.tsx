@@ -66,6 +66,13 @@ const ActivityScreen = lazyScreen(() =>
 );
 const AreasScreen = lazyScreen(() => import("./areas/AreasScreen.tsx").then((module) => module.AreasScreen));
 const MessagesScreen = lazyScreen(() => import("./care/MessagesScreen.tsx").then((module) => module.MessagesScreen));
+const CareSettingsScreen = lazyScreen(() =>
+  import("./care/MessagesScreen.tsx").then((module) => module.CareSettingsScreen),
+);
+const ItemsScreen = lazyScreen(() => import("./settings/SettingsScreen.tsx").then((module) => module.ItemsScreen));
+const SuppliersScreen = lazyScreen(() =>
+  import("./settings/SettingsScreen.tsx").then((module) => module.SuppliersScreen),
+);
 const TargetsScreen = lazyScreen(() => import("./targets/TargetsScreen.tsx").then((module) => module.TargetsScreen));
 const StockScreen = lazyScreen(() => import("./stock/StockScreen.tsx").then((module) => module.StockScreen));
 const PurchasingScreen = lazyScreen(() =>
@@ -93,6 +100,8 @@ const SCREENS: Readonly<Record<PlainPage, ComponentType>> = {
   stock: StockScreen,
   purchasing: PurchasingScreen,
   "supply-plan": SupplyPlanScreen,
+  items: ItemsScreen,
+  suppliers: SuppliersScreen,
   counts: CountsScreen,
   usage: UsageScreen,
   quality: QualityScreen,
@@ -107,6 +116,7 @@ const SCREENS: Readonly<Record<PlainPage, ComponentType>> = {
   referrals: ReferralsScreen,
   words: WordsScreen,
   messages: MessagesScreen,
+  "care-settings": CareSettingsScreen,
   "care-numbers": CareNumbersScreen,
   spend: SpendScreen,
   targets: TargetsScreen,

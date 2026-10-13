@@ -269,6 +269,16 @@ export function MessagesScreen() {
           </div>
           <Conversations key={`${view}:${search}`} view={view} search={search} />
         </Panel>
+      </div>
+    </Shell>
+  );
+}
+
+/** Care's own settings, a tab beside the inbox: the team's rota, the remedies Care may offer, and the quick replies. */
+export function CareSettingsScreen() {
+  return (
+    <Shell section="/care-settings" title={SECTION_NAMES["care-settings"]}>
+      <div className={styles.screen}>
         <Panel titleId="care-team" title={copy.team.title} className={styles.panel}>
           <CareTeam />
         </Panel>

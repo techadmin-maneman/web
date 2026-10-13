@@ -47,27 +47,24 @@ describe("the ops console's routes", () => {
       "Quality",
       "Purchasing",
       "Supply plan",
+      "Items",
+      "Suppliers",
     ]);
     expect(namesIn("customer_care")).toEqual([
       "Clients",
       "Messages",
+      "Care settings",
       "Care numbers",
       "Concerns",
       "Number changes",
       "Deletion requests",
     ]);
-    expect(namesIn("finance")).toEqual([
-      "Payments",
-      "Prices",
-      "Discount codes",
-      "Technician pay",
-      "Partner commission",
-    ]);
+    expect(namesIn("finance")).toEqual(["Charges", "Prices", "Discount codes", "Technician pay", "Partner commission"]);
     expect(namesIn("growth")).toEqual(["Referrals", "Areas", "Spend", "Words"]);
     expect(namesIn("admin")).toEqual(["Settings", "Staff", "Targets", "Activity"]);
     expect(SECTIONS.map((section) => section.department)).toEqual([
-      ...Array<string>(9).fill("operations"),
-      ...Array<string>(6).fill("customer_care"),
+      ...Array<string>(11).fill("operations"),
+      ...Array<string>(7).fill("customer_care"),
       ...Array<string>(5).fill("finance"),
       ...Array<string>(4).fill("growth"),
       ...Array<string>(4).fill("admin"),
@@ -75,9 +72,10 @@ describe("the ops console's routes", () => {
   });
 
   // The day's money sat under "No-shows".
-  it("names the money section Payments, at the address it has always had", () => {
-    expect(SECTION_NAMES[routeOf("/payments").page]).toBe("Payments");
-    expect(titleOf(routeOf("/payments"))).toBe("Payments · Mane Man operations");
+  // Payments was a client's tab and the day's money and the no-shows at once: the section is Charges.
+  it("names the money section Charges, at the address it has always had", () => {
+    expect(SECTION_NAMES[routeOf("/payments").page]).toBe("Charges");
+    expect(titleOf(routeOf("/payments"))).toBe("Charges · Mane Man operations");
   });
 
   it("shows each section to those whose call opening its page is one the API lists", () => {
@@ -89,7 +87,9 @@ describe("the ops console's routes", () => {
   it("opens Settings' tabs and a client's tabs at their own paths", () => {
     expect(routeOf("/settings")).toEqual({ page: "settings", tab: "rules" });
     expect(routeOf(settingsPath("blackouts"))).toEqual({ page: "settings", tab: "blackouts" });
-    expect(routeOf("/settings/consumables")).toEqual({ page: "settings", tab: "consumables" });
+    // The items and the suppliers are Inventory's now; their old Settings addresses still land.
+    expect(routeOf("/settings/consumables")).toEqual({ page: "items" });
+    expect(routeOf("/settings/suppliers")).toEqual({ page: "suppliers" });
     expect(routeOf("/settings/job-sheet")).toEqual({ page: "settings", tab: "job-sheet" });
     expect(routeOf("/stock")).toEqual({ page: "stock" });
     expect(routeOf(`/clients/${CLIENT}/photos`)).toEqual({ page: "clients", clientId: CLIENT, tab: "photos" });

@@ -29,7 +29,9 @@ async function expectNames(links: Locator, names: readonly string[]): Promise<vo
 }
 
 // Twelve flat sections, no counts, and the day's inbox sixth.
-test("opens on Tasks, with the sections under their departments and what waits in each", async ({ page }) => {
+test("opens on Tasks, with the sections under their departments, those of one job as one, and what waits in each", async ({
+  page,
+}) => {
   await page.clock.setFixedTime(TASKS_READ_ON);
   await answer(page, { "GET /api/tasks": json(TASKS) });
   await page.goto("/");
@@ -41,23 +43,11 @@ test("opens on Tasks, with the sections under their departments and what waits i
     "Tasks, 8 waiting, some overdue",
     "Dispatch",
     "Technicians",
-    "Stock",
-    "Counts",
-    "Usage",
-    "Quality",
-    "Purchasing",
-    "Supply plan",
+    "Inventory",
   ]);
-  await expectNames(department("Customer Care"), [
-    "Clients",
-    "Messages",
-    "Care numbers",
-    "Concerns",
-    "Number changes, 1 waiting, some overdue",
-    "Deletion requests, 1 waiting",
-  ]);
+  await expectNames(department("Customer Care"), ["Clients", "Care", "Data requests, 2 waiting, some overdue"]);
   await expectNames(department("Finance"), [
-    "Payments, 2 waiting, some overdue",
+    "Charges, 2 waiting, some overdue",
     "Prices",
     "Discount codes",
     "Technician pay",
@@ -78,9 +68,9 @@ test("shows a person only the sections their access opens, and opens on the firs
   });
   await page.goto("/");
   await expect(page).toHaveURL(/\/payments$/);
-  await expect(page.getByRole("heading", { level: 1, name: "Payments" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "Charges" })).toBeVisible();
   await expect(navigation(page).getByRole("list")).toHaveCount(1);
-  await expectNames(navigation(page).getByRole("list", { name: "Finance" }).getByRole("link"), ["Payments", "Prices"]);
+  await expectNames(navigation(page).getByRole("list", { name: "Finance" }).getByRole("link"), ["Charges", "Prices"]);
 
   await page.goto("/areas");
   await expect(page.getByRole("heading", { level: 1, name: "Areas" })).toBeVisible();
@@ -248,4 +238,26 @@ test("meets WCAG 2.2 AA on its sections", async ({ page }) => {
     await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
     expect(await axeViolations(page), path).toEqual([]);
   }
+});
+
+// Inventory's nine sections were nine entries of Operations; the job is one entry now, its sections a page's tabs.
+test("heads each section of a group with the group's sections as tabs, and marks the one open", async ({ page }) => {
+  await answer(page, { "GET /api/tasks": json(TASKS) });
+  await page.goto("/counts");
+  const tabs = page.getByRole("main").getByRole("navigation", { name: opsCopy.shell.groups.inventory });
+  await expect(tabs.getByRole("link", { name: "Counts" })).toHaveAttribute("aria-current", "page");
+  await expect(tabs.getByRole("link", { name: "Items" })).toBeVisible();
+  await expect(navigation(page).getByRole("link", { name: "Inventory" })).toHaveAttribute("aria-current", "page");
+});
+
+test("goes to a page by its name from anywhere, with Ctrl K", async ({ page }) => {
+  await answer(page, { "GET /api/tasks": json(TASKS) });
+  await page.goto("/tasks");
+  await expect(page.getByRole("heading", { level: 1, name: "Tasks" })).toBeVisible();
+  await page.keyboard.press("Control+k");
+  const palette = page.getByRole("dialog", { name: opsCopy.shell.palette.title });
+  await palette.getByLabel(opsCopy.shell.palette.label).fill("disp");
+  await palette.getByRole("link", { name: "Dispatch" }).click();
+  await expect(page).toHaveURL(/\/dispatch$/);
+  await expect(palette).toBeHidden();
 });

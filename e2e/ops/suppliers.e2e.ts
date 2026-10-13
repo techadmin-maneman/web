@@ -44,8 +44,8 @@ const BOOK = {
 
 async function open(page: Page, extra: Answers = {}): Promise<void> {
   await answer(page, { "GET /api/suppliers": json(BOOK), ...extra });
-  await page.goto("/settings/suppliers");
-  await expect(page.getByRole("heading", { name: copy.title })).toBeVisible();
+  await page.goto("/suppliers");
+  await expect(page.getByRole("heading", { level: 2, name: copy.title })).toBeVisible();
 }
 
 const posted = (page: Page, path: string) =>

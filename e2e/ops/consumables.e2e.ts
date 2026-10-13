@@ -14,7 +14,7 @@ import { review } from "../../apps/ops/src/content/common.ts";
 
 async function open(page: Page, extra: Answers = {}): Promise<void> {
   await answer(page, { "GET /api/consumables": json(CONSUMABLES), ...extra });
-  await page.goto("/settings/consumables");
+  await page.goto("/items");
   await expect(page.getByRole("heading", { level: 2, name: "Consumables" })).toBeVisible();
 }
 
@@ -26,7 +26,7 @@ const row = (page: Page, name: string) => page.getByRole("row").filter({ has: pa
 test.describe("the list", () => {
   test("gives each its cost, the levels it is low at, and whether it is offered", async ({ page }) => {
     await open(page);
-    await expect(page).toHaveTitle("Consumables · Settings · Mane Man operations");
+    await expect(page).toHaveTitle("Items · Mane Man operations");
 
     const tape = row(page, "Tape strips strip");
     await expect(tape).toContainText("Rs. 12.50");

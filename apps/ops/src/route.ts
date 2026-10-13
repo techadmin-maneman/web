@@ -3,12 +3,14 @@
 //
 // SECTIONS below is the one list of them, in the navigation's order: by
 // department, Tasks first. The navigation draws it, routeOf reads it, and each
-// page is titled from it. Four sections have pages beneath them:
+// page is titled from it. SECTION_GROUPS gathers sections of one job under one
+// entry, each section a tab of the others: inventory, Care, and the data requests.
+// Four sections have pages beneath them:
 //
 //   /clients/:id/:tab       a client's page, a tab at a time
 //   /technicians/:id/:tab   a technician's page: their week, leave, phones and kit
 //   /areas/:tab             who waits where, and the pincodes we serve
-//   /settings/:tab          the rules, blackout days, consumables, suppliers and the job sheet
+//   /settings/:tab          the rules, closed days and the job sheet
 //
 // Anything else, "/" included, is where the console opens: Tasks, or for a
 // person who may not open Tasks, the first section they may.
@@ -37,8 +39,11 @@ export const SECTIONS = [
   { page: "quality", path: "/quality", department: "operations", reads: "GET /api/recalls" },
   { page: "purchasing", path: "/purchasing", department: "operations", reads: "GET /api/purchase-orders" },
   { page: "supply-plan", path: "/supply-plan", department: "operations", reads: "GET /api/supply-plan" },
+  { page: "items", path: "/items", department: "operations", reads: "GET /api/consumables" },
+  { page: "suppliers", path: "/suppliers", department: "operations", reads: "GET /api/suppliers" },
   { page: "clients", path: "/clients", department: "customer_care", reads: "POST /api/clients/find" },
   { page: "messages", path: "/messages", department: "customer_care", reads: "GET /api/conversations" },
+  { page: "care-settings", path: "/care-settings", department: "customer_care", reads: "GET /api/care-team" },
   { page: "care-numbers", path: "/care-numbers", department: "customer_care", reads: "GET /api/care-numbers" },
   { page: "grievances", path: "/grievances", department: "customer_care", reads: "GET /api/grievances" },
   { page: "number-changes", path: "/number-changes", department: "customer_care", reads: "GET /api/number-changes" },
@@ -69,6 +74,26 @@ export const SECTIONS = [
 ] as const satisfies readonly SectionShape[];
 
 export type Section = (typeof SECTIONS)[number];
+
+/**
+ * Sections of one job, which the navigation shows as one entry and each page heads with the others as tabs: what is
+ * stocked, from counting it to buying it; Care's inbox, its own settings and its numbers; and the requests clients
+ * make of their data. The entry opens on the first the person may open.
+ */
+export const SECTION_GROUPS = [
+  {
+    group: "inventory",
+    pages: ["stock", "counts", "usage", "quality", "purchasing", "supply-plan", "items", "suppliers"],
+  },
+  { group: "care", pages: ["messages", "care-settings", "care-numbers"] },
+  { group: "data-requests", pages: ["grievances", "number-changes", "deletion-requests"] },
+] as const;
+
+export type SectionGroup = (typeof SECTION_GROUPS)[number];
+
+/** The group a page is a tab of; null for a section that stands alone. */
+export const groupOf = (page: string): SectionGroup | null =>
+  SECTION_GROUPS.find((each) => (each.pages as readonly string[]).includes(page)) ?? null;
 export type Page = Section["page"];
 export type SectionPath = Section["path"];
 
@@ -89,7 +114,7 @@ export const TECHNICIAN_TABS = ["week", "leave", "phones", "kit"] as const;
 export type TechnicianTab = (typeof TECHNICIAN_TABS)[number];
 
 /** What Settings holds, in the order the section lists it. Rules has the section's own path. */
-export const SETTINGS_TABS = ["rules", "blackouts", "consumables", "suppliers", "job-sheet"] as const;
+export const SETTINGS_TABS = ["rules", "blackouts", "job-sheet"] as const;
 export type SettingsTab = (typeof SETTINGS_TABS)[number];
 
 /** Areas, a tab at a time: who waits in each pincode, then the pincodes we serve. Waiting has the section's own path. */
@@ -106,7 +131,7 @@ export type Route =
 const TASKS: Route = { page: "tasks" };
 const CLIENT_PATH =
   /^\/clients(?:\/([0-9a-f-]{36})(?:\/(visits|pieces|payments|referrals|consents|photos|history))?)?$/;
-const SETTINGS_PATH = /^\/settings(?:\/(blackouts|consumables|suppliers|job-sheet))?$/;
+const SETTINGS_PATH = /^\/settings(?:\/(blackouts|job-sheet))?$/;
 const AREAS_PATH = /^\/areas(?:\/(served))?$/;
 const TECHNICIAN_PATH = /^\/technicians(?:\/([0-9a-f-]{36})(?:\/(week|leave|phones|kit))?)?$/;
 
@@ -122,6 +147,8 @@ const MOVED: Readonly<Record<string, string>> = {
   "/waitlist": "/areas",
   "/service-area": "/areas/served",
   "/no-shows": "/payments",
+  "/settings/consumables": "/items",
+  "/settings/suppliers": "/suppliers",
 };
 
 /** Where a page that has moved is now; null for a path that has not moved. */

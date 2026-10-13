@@ -6,10 +6,10 @@ import * as opsCopy from "../../apps/ops/src/content.ts";
 const DISPUTES_QUEUE = "Disputed charges";
 
 // The money sat under "No-shows", only ever today's.
-test("is the console's Payments, at the address No-shows had", async ({ page }) => {
+test("is the console's Charges, at the address No-shows had", async ({ page }) => {
   await open(page);
-  await expect(page.getByRole("heading", { level: 1, name: "Payments" })).toBeVisible();
-  await expect(page.getByRole("navigation").getByRole("link", { name: "Payments" })).toHaveAttribute(
+  await expect(page.getByRole("heading", { level: 1, name: "Charges" })).toBeVisible();
+  await expect(page.getByRole("navigation").getByRole("link", { name: "Charges" })).toHaveAttribute(
     "aria-current",
     "page",
   );
