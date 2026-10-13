@@ -7,7 +7,7 @@ import { auditStatement, type AuditActor } from "../ops/audit.ts";
 
 /** Every City matter not yet closed, as the board reads its queues; the note is its detail. */
 export const CITY_MATTERS_OPEN = `SELECT 'city_matter' AS "group", m.id AS id, m.person_id AS person_id,
-     pe.name AS person_name, m.note AS detail, m.raised_at AS since, NULL AS due_by, '' AS episode
+     pe.name AS person_name, m.note AS detail, json_object('note', m.note) AS facts, m.raised_at AS since, NULL AS due_by, '' AS episode
   FROM city_matters m JOIN people pe ON pe.id = m.person_id
  WHERE pe.erased_at IS NULL
    AND NOT EXISTS (SELECT 1 FROM task_closures c WHERE c.task_group = 'city_matter' AND c.subject_id = m.id)`;

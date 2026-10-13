@@ -25,7 +25,8 @@ import type { App, AppEnv } from "../../http/context.ts";
 import { staffMemberOf } from "../../http/audit.ts";
 import { closeTask } from "../../domain/ops/task-closures.ts";
 import { assignTask, handBackTask, staffSeenSince, type TaskKey } from "../../domain/ops/task-owners.ts";
-import { outstandingTasks, overdueCount, READ_CAP, tasksWithin, type Task } from "../../domain/ops/tasks.ts";
+import { outstandingTasks, overdueCount, READ_CAP, type Task } from "../../domain/ops/tasks.ts";
+import { tasksWithin } from "../../domain/ops/task-reach.ts";
 import { lowStockPlaces } from "../../domain/field/low-stock.ts";
 import { opsInputs } from "../../http/ops-inputs.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
@@ -44,6 +45,7 @@ import {
 import { callerAccess, permits } from "../../http/staff-access.ts";
 import { placesReached, type Level } from "../../policy/access.ts";
 import { callerMeetsNeed, TASK_DEPARTMENTS, taskNeed } from "../../policy/console-routes.ts";
+import { TaskFactsSchema } from "./task-facts.ts";
 
 /** The tasks each group lists, the longest waits; its count is the whole queue's. */
 export const TASKS_SHOWN = 50;
@@ -82,9 +84,10 @@ const TaskSchema = z
           "The visit to come the dispatch board settles the task on, so the task can open it there: a move the " +
           "client has not heard of, and a job on its technician's day off. Left out for every other group.",
       }),
+    facts: TaskFactsSchema,
     detail: z.union([z.string(), z.null()]).openapi({
       description:
-        "The one fact the group turns on: a piece's label and the day it falls due, a fraud rule, a technician, a Books invoice; " +
+        "Read facts instead: detail goes once no console reads it. The one fact the group turns on: a piece's label and the day it falls due, a fraud rule, a technician, a Books invoice; " +
         'for a move the client has not heard of, the start it moved to and why ("no_consent" or ' +
         '"not_sent", as the dispatch board\'s untold says); for a consultation asked for, its day and window and, ' +
         "where a first fit was asked for with it, " +
@@ -251,8 +254,8 @@ async function readTheBoard(c: Context<AppEnv>, level: Level) {
 
 /** A task as the board answers it: the visit and the client's mobile only where its group carries them. */
 function taskBody(task: Task) {
-  const { id, detail, since, due, owner, visit } = task;
-  const body = { id, person: personBody(task.person), detail, since, due, owner };
+  const { id, facts, detail, since, due, owner, visit } = task;
+  const body = { id, person: personBody(task.person), facts, detail, since, due, owner };
   return visit === null ? body : { ...body, visit };
 }
 

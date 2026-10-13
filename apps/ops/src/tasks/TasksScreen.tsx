@@ -35,13 +35,12 @@ import { TextButton } from "@maneman/ui/TextLink";
 import { capsLook } from "@maneman/ui/Caps";
 import { useLoad } from "@maneman/ui/useLoad";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
-import { fullDate, indiaClock, indiaDate, shortDate } from "@maneman/web-kit/dates";
-import { rupees } from "@maneman/web-kit/money";
+import { indiaDate, shortDate } from "@maneman/web-kit/dates";
 import { useRef, useState, type ReactNode } from "react";
 import { flushSync } from "react-dom";
 import type { Task, TaskGroup, Tasks } from "../api.ts";
 import { OpsLink, Shell } from "../components/Shell.tsx";
-import { dispatch, referrals, tasks } from "../content.ts";
+import { tasks } from "../content.ts";
 import { taskNeed, useAccess, whoami } from "../lib/access.ts";
 import { daysUntil } from "../lib/due.ts";
 import { Left } from "../lib/Left.tsx";
@@ -50,151 +49,15 @@ import { rowId } from "../lib/target.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import { BookFromTask } from "./BookFromTask.tsx";
 import { CallAboutMove } from "./CallAboutMove.tsx";
-import { owedLinkOf } from "./payment-link.ts";
 import { PaymentLinkActions } from "./PaymentLinkActions.tsx";
 import { decidedAt, taskClientPath } from "../lib/task-links.ts";
 import { NeedsAHand } from "./NeedsAHand.tsx";
 import { firstOverdue, ROWS_FOLDED, sectionsOf, type TaskSection } from "./sections.ts";
+import { subOf } from "./task-subs.ts";
 import { TaskActions } from "./TaskActions.tsx";
-import { untoldMoveOf } from "./untold-move.ts";
 import styles from "./tasks.module.css";
 
-/** The reason a fit closed with "Can't fit today" (NO_PIECE in src/policy/in-job-steps.ts). */
-const NO_PIECE = "no_piece";
-
 type Group = TaskGroup["group"];
-
-const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
-
-/** The fraud rules, as the Referrals design letters them: a held grant is the same grant on both screens. */
-const SIGNALS: Readonly<Record<string, string>> = referrals.queue.signals;
-
-/** A window's name, as the dispatch board writes it, for the window a first fit is wanted in; null for either. */
-const fitWindow = (window: string | undefined): string | null =>
-  window === undefined || window === "any" ? null : (dispatch.windows[window] ?? window);
-
-/** Whole weeks from one instant to another. */
-const weeksBetween = (from: string, to: Date): number => Math.floor((to.getTime() - Date.parse(from)) / WEEK_MS);
-
-/** The second line: the one fact the group turns on. */
-
-/** A visit with no technician, or one left open past its day: its kind or state, then when it starts. */
-function visitNobodyHas(group: "unassigned_visit" | "visit_left_open", task: Task): string {
-  const copy = tasks.subs;
-  const [first = "", start = ""] = task.detail?.split(" ") ?? [];
-  if (start === "") return tasks.unknown;
-  const day = shortDate(indiaDate(start));
-  if (group === "visit_left_open") return copy.visit_left_open(day, first === "in_progress");
-  return copy.unassigned_visit(dispatch.typeNames[first] ?? first, `${day}, ${indiaClock(start)}`);
-}
-
-function subOf(group: Group, task: Task, now: Date): string {
-  const copy = tasks.subs;
-  if (group === "untold_move") return untoldMoveOf(task.detail);
-  if (group === "city_matter") return task.detail === null ? tasks.unknown : copy.city_matter(task.detail);
-  if (group === "remedy_approval") {
-    // The visits asked for come first in what the remedy recorded.
-    const [visits = ""] = task.detail?.split(" ") ?? [];
-    return copy.remedy_approval(Number(visits));
-  }
-  if (group === "unanswered_chat") {
-    return copy.unanswered_chat(`${shortDate(indiaDate(task.since))}, ${indiaClock(task.since)}`);
-  }
-  if (group === "leave_conflict") {
-    // The job's start, then the technician who is away that day.
-    const [start = "", ...technician] = task.detail?.split(" ") ?? [];
-    if (start === "") return tasks.unknown;
-    return copy.leave_conflict(`${shortDate(indiaDate(start))}, ${indiaClock(start)}`, technician.join(" "));
-  }
-  if (group === "address_to_confirm") {
-    // The visit's start.
-    return task.detail === null
-      ? tasks.unknown
-      : copy.address_to_confirm(`${shortDate(indiaDate(task.detail))}, ${indiaClock(task.detail)}`);
-  }
-  if (group === "consultation_request") {
-    // The day and the window, as the request recorded them: both are always there. Then the first fit, where the
-    // site's form asked for it too, and the window it was wanted in; or the one visit, and its discount code.
-    const [day = "", when = "", plan, fitInOrCode] = task.detail?.split(" ") ?? [];
-    const asked = copy.consultation_request(fullDate(indiaDate(day)), dispatch.windows[when] ?? when);
-    if (plan === "one_visit") {
-      return `${asked} ${copy.withOneVisit}${fitInOrCode === undefined ? "" : copy.withCode(fitInOrCode)}`;
-    }
-    return plan === "first_fit" ? `${asked} ${copy.withFirstFit(fitWindow(fitInOrCode))}` : asked;
-  }
-  if (group === "move_unanswered") {
-    // The day and window proposed, then whether it ran out unanswered.
-    const [day = "", window = "", ranOut] = task.detail?.split(" ") ?? [];
-    if (day === "") return tasks.unknown;
-    const when = `${shortDate(day)}, ${(dispatch.windows[window] ?? window).toLowerCase()}`;
-    return ranOut === "ran_out" ? copy.move_unanswered.ranOut(when) : copy.move_unanswered.open(when);
-  }
-  if (group === "first_fit_to_book") {
-    // The consultation's start, and the window the fit is offered in.
-    const [consulted = "", fitIn] = task.detail?.split(" ") ?? [];
-    if (consulted === "") return tasks.unknown;
-    return copy.first_fit_to_book(shortDate(indiaDate(consulted)), fitWindow(fitIn));
-  }
-  if (group === "unassigned_visit" || group === "visit_left_open") return visitNobodyHas(group, task);
-  if (group === "recall_call") return task.detail === null ? copy.unknown : copy.recall_call(task.detail);
-  if (group === "stock_at_risk") return copy.stock_at_risk(task.detail ?? "");
-  if (group === "at_risk_client") {
-    // The last visit's start, and the day its next service fell due.
-    const [last = "", due = ""] = task.detail?.split(" ") ?? [];
-    if (last === "" || due === "") return tasks.unknown;
-    return copy.at_risk_client(weeksBetween(last, now), shortDate(due));
-  }
-  if (group === "replacement_order") {
-    // The piece's label, and the day it falls due; the order goes in by the task's own day.
-    const [piece = "", due = ""] = task.detail?.split(" ") ?? [];
-    if (due === "") return tasks.unknown;
-    return copy.replacement_order(piece, fullDate(indiaDate(task.due)), fullDate(due));
-  }
-  if (group === "partial_visit" && task.detail?.endsWith(` ${NO_PIECE}`) === true) {
-    return copy.partial_visit(copy.noPiece, shortDate(indiaDate(task.since)));
-  }
-  if (group === "partial_visit") {
-    // The visit's kind, then the technician's reason in the job sheet's words; and the day they closed the visit.
-    const reason = task.detail?.split(" ").slice(1).join(" ") ?? "";
-    return copy.partial_visit(reason === "" ? copy.noReason : reason, shortDate(indiaDate(task.since)));
-  }
-  if (group === "referral_review") return SIGNALS[task.detail ?? ""] ?? copy.unknown;
-  if (group === "no_show_decision") return task.detail === null ? copy.unknown : copy.no_show_decision(task.detail);
-  if (group === "no_show_dispute") return copy.no_show_dispute(disputedTook(task.detail));
-  if (group === "draft_invoice") return copy.draft_invoice(shortDate(indiaDate(task.since)));
-  if (group === "payment_owed") {
-    const link = owedLinkOf(task.detail);
-    if (link === null) return tasks.unknown;
-    return copy.payment_owed(link.product, rupees(link.amount), link.state);
-  }
-  if (group === "payment_to_refund") {
-    // Why, what is owed back in paise, and the Razorpay payment to refund it from.
-    const [why = "", amount = "", payment = ""] = task.detail?.split(" ") ?? [];
-    if (payment === "") return tasks.unknown;
-    return copy.payment_to_refund(rupees(Number(amount)), payment, why);
-  }
-  switch (group) {
-    case "grievance":
-      return copy.grievance;
-    case "number_change":
-      return copy.number_change;
-    case "erasure_request":
-      return copy.erasure_request;
-    default:
-      return unknownGroup(group);
-  }
-}
-
-/** A group this console does not know: it compiles only once every group the API names has its line above. */
-function unknownGroup(_group: never): string {
-  return tasks.unknown;
-}
-
-/** What a disputed charge kept: its amount in paise, or, where it kept no money, the credit it spent. */
-function disputedTook(kept: string | null): string {
-  const amount = Number(kept ?? "0");
-  return amount > 0 ? rupees(amount) : tasks.subs.disputedCredit;
-}
 
 /**
  * The first line of a task with no client to name: an erased client has no
@@ -203,7 +66,7 @@ function disputedTook(kept: string | null): string {
 function unnamedSubject(group: Group, task: Task): string {
   if (group === "no_show_dispute") return tasks.disputeErased;
   // A chat from a number we don't know is named by the number.
-  if (group === "unanswered_chat") return task.detail ?? tasks.unknown;
+  if (task.facts.group === "unanswered_chat") return task.facts.mobile;
   return tasks.visit(shortDate(indiaDate(task.since)));
 }
 
@@ -257,7 +120,7 @@ function Row({ group, task, now, acting, marked }: RowProps) {
             {subject}
           </OpsLink>
         )}
-        <span className={styles.sub}>{subOf(group, task, now)}</span>
+        <span className={styles.sub}>{subOf(task, now)}</span>
         {where !== null && action !== undefined && (
           <span className={styles.sub}>
             <OpsLink className={styles.decide} to={where}>
@@ -267,7 +130,7 @@ function Row({ group, task, now, acting, marked }: RowProps) {
             </OpsLink>
           </span>
         )}
-        <BookFromTask group={group} task={task} subject={subject} onBooked={acting.onClosed} />
+        <BookFromTask task={task} subject={subject} onBooked={acting.onClosed} />
         {group === "payment_owed" && <PaymentLinkActions task={task} subject={subject} />}
         <CallAboutMove group={group} task={task} subject={subject} onTold={acting.onClosed} />
         <TaskActions group={group} task={task} subject={subject} {...acting} />

@@ -12,6 +12,7 @@ const CLIENT = "22000000-0000-4000-8000-000000000001";
 const task = (id: string): Task => ({
   id,
   person: { id: CLIENT, name: "Rohit Malhotra" },
+  facts: { group: "grievance" },
   detail: null,
   since: "2027-09-21T06:00:00.000Z",
   due: "2027-09-23T06:00:00.000Z",

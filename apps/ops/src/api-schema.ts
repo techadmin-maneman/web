@@ -16669,7 +16669,8 @@ export interface components {
                 /** Format: date-time */
                 starts_at: string;
             };
-            /** @description The one fact the group turns on: a piece's label and the day it falls due, a fraud rule, a technician, a Books invoice; for a move the client has not heard of, the start it moved to and why ("no_consent" or "not_sent", as the dispatch board's untold says); for a consultation asked for, its day and window and, where a first fit was asked for with it, "first_fit" and the window wanted ("any" for either); for an at-risk client, the last visit's start and the day the next service fell due; for a first fit to book, the consultation's start and the window the fit is offered in, the consultation's ("any" where a fit cannot start in it); for a payment owed, the link's state ("sent", "unsent" or "refused"), its amount in paise, its address ("-" until Razorpay made it) and the product; for a payment to refund, why ("let_go", a hold let go whose refund Razorpay would not make, or "refund_failed"), what is owed back in paise, and the Razorpay payment. */
+            facts: components["schemas"]["TaskFacts"];
+            /** @description Read facts instead: detail goes once no console reads it. The one fact the group turns on: a piece's label and the day it falls due, a fraud rule, a technician, a Books invoice; for a move the client has not heard of, the start it moved to and why ("no_consent" or "not_sent", as the dispatch board's untold says); for a consultation asked for, its day and window and, where a first fit was asked for with it, "first_fit" and the window wanted ("any" for either); for an at-risk client, the last visit's start and the day the next service fell due; for a first fit to book, the consultation's start and the window the fit is offered in, the consultation's ("any" where a fit cannot start in it); for a payment owed, the link's state ("sent", "unsent" or "refused"), its amount in paise, its address ("-" until Razorpay made it) and the product; for a payment to refund, why ("let_go", a hold let go whose refund Razorpay would not make, or "refund_failed"), what is owed back in paise, and the Razorpay payment. */
             detail: string | null;
             /**
              * Format: date-time
@@ -16683,6 +16684,153 @@ export interface components {
             due: string;
             /** @description The Access e-mail of the member of staff it is theirs; null while it is nobody's. */
             owner: string | null;
+        };
+        /** @description What the task turns on, by its group. */
+        TaskFacts: {
+            /** @enum {string} */
+            group: "unanswered_chat";
+            mobile: string;
+        } | {
+            /** @enum {string} */
+            group: "city_matter";
+            note: string | null;
+        } | {
+            /** @enum {string} */
+            group: "remedy_approval";
+            visits: number;
+            reason: string;
+        } | {
+            /** @enum {string} */
+            group: "untold_move";
+            /**
+             * Format: date-time
+             * @description The start the visit moved to.
+             */
+            starts_at: string;
+            /** @enum {string} */
+            reason: "no_consent" | "not_sent";
+        } | {
+            /** @enum {string} */
+            group: "move_unanswered";
+            /** Format: date */
+            date: string;
+            window: string;
+            ran_out: boolean;
+        } | {
+            /** @enum {string} */
+            group: "consultation_request";
+            /** Format: date */
+            date: string;
+            window: string;
+            one_visit: boolean;
+            discount_code: string | null;
+            /** @description A first fit asked for with it, and the window wanted, null for either; null for none. */
+            first_fit: {
+                window: string | null;
+            } | null;
+        } | {
+            /** @enum {string} */
+            group: "replacement_order";
+            piece_code: string;
+            /** Format: date */
+            due_on: string;
+        } | {
+            /** @enum {string} */
+            group: "recall_call";
+            piece_codes: string[];
+        } | {
+            /** @enum {string} */
+            group: "stock_at_risk";
+            consumable_code: string | null;
+        } | {
+            /** @enum {string} */
+            group: "referral_review";
+            /** @description The first fraud rule met. */
+            signal: string | null;
+        } | {
+            /** @enum {string} */
+            group: "grievance";
+        } | {
+            /** @enum {string} */
+            group: "number_change";
+        } | {
+            /** @enum {string} */
+            group: "erasure_request";
+        } | {
+            /** @enum {string} */
+            group: "no_show_decision";
+            technician: string | null;
+        } | {
+            /** @enum {string} */
+            group: "draft_invoice";
+            invoice_id: string;
+        } | {
+            /** @enum {string} */
+            group: "unassigned_visit";
+            kind: string;
+            /** Format: date-time */
+            starts_at: string;
+        } | {
+            /** @enum {string} */
+            group: "visit_left_open";
+            status: string;
+            /** Format: date-time */
+            starts_at: string;
+        } | {
+            /** @enum {string} */
+            group: "leave_conflict";
+            /** Format: date-time */
+            starts_at: string;
+            technician: string;
+        } | {
+            /** @enum {string} */
+            group: "address_to_confirm";
+            /** Format: date-time */
+            starts_at: string;
+        } | {
+            /** @enum {string} */
+            group: "partial_visit";
+            kind: string;
+            reason_code: string | null;
+            /** @description In the words ops gave it, or the job sheet's. */
+            reason: string | null;
+        } | {
+            /** @enum {string} */
+            group: "at_risk_client";
+            /** Format: date-time */
+            last_visit_at: string;
+            /** Format: date */
+            due_on: string;
+        } | {
+            /** @enum {string} */
+            group: "first_fit_to_book";
+            /** Format: date-time */
+            consulted_at: string;
+            /** @description The consultation's; null where a fit cannot start in it. */
+            fit_window: string | null;
+        } | {
+            /** @enum {string} */
+            group: "payment_owed";
+            /** @enum {string} */
+            state: "sent" | "unsent" | "refused" | "closed";
+            amount: number;
+            /** @description Null until Razorpay made the link. */
+            url: string | null;
+            product: string;
+        } | {
+            /** @enum {string} */
+            group: "no_show_dispute";
+            /** @description What the charge kept, in paise. */
+            kept: number | null;
+        } | {
+            /** @enum {string} */
+            group: "payment_to_refund";
+            /** @enum {string} */
+            why: "let_go" | "refund_failed";
+            /** @description Owed back, in paise. */
+            amount: number;
+            /** @description The Razorpay payment to refund it from. */
+            payment: string;
         };
         TaskOwner: {
             /** @description The Access e-mail of the member of staff it is theirs; null while it is nobody's. */

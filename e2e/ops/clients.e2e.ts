@@ -52,6 +52,7 @@ const OPEN_FOR_ROHIT = {
         {
           id: "91000000-0000-4000-8000-000000000002",
           person: { id: CLIENT.id, name: CLIENT.name },
+          facts: { group: "replacement_order", piece_code: "MM-STD-4417-C", due_on: "2027-09-22" },
           detail: "MM-STD-4417-C 2027-09-22",
           since: "2027-09-16T18:30:00.000Z",
           due: "2027-09-18T18:30:00.000Z",
@@ -67,6 +68,7 @@ const OPEN_FOR_ROHIT = {
         {
           id: "94000000-0000-4000-8000-000000000009",
           person: { id: CLIENT.id, name: CLIENT.name },
+          facts: { group: "number_change" },
           detail: null,
           since: "2027-09-21T06:00:00.000Z",
           due: "2027-09-23T06:00:00.000Z",

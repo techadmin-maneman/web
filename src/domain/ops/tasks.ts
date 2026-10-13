@@ -15,9 +15,7 @@ import { DAY_MS } from "../../lib/durations.ts";
 import { addDays, indiaDate, indiaInstant } from "../../lib/india-time.ts";
 import { UNTOLD_MOVE, UNTOLD_REASON } from "../dispatch/dispatch-board.ts";
 import { LEAVE_ON_THE_DAY } from "../dispatch/leave.ts";
-import { citiesOf, type PlacedId, type PlacedRecord } from "../clients/places.ts";
 import { loadSlotSchedule, type SlotSchedule } from "../booking/slot-times.ts";
-import { reachesCity, type PlacesReached } from "../../policy/access.ts";
 import {
   atRiskIfDoneBy,
   firstFitToBookIfConsultedBy,
@@ -35,6 +33,7 @@ import { statusIn, statusNotIn, VISIT_CALLED_OFF, VISIT_LIVE, VISIT_NOT_BEGUN } 
 import type { SqlValue } from "../../lib/sql.ts";
 import { REFUND_OWED_FAILED, REFUND_OWED_LET_GO } from "../money/payment-refunds.ts";
 import { UNASSIGNED_VISITS, VISITS_LEFT_OPEN } from "../dispatch/unassigned.ts";
+import { factsOf, type TaskFacts } from "./task-facts.ts";
 
 /** A visit to come, by its id and its start. */
 interface TaskVisit {
@@ -61,6 +60,8 @@ export interface Task {
    * in, a payment link's state, amount and product, what a disputed charge kept.
    */
   readonly detail: string | null;
+  /** What the task turns on, by its group (./task-facts.ts): what `detail` writes as words, as fields. */
+  readonly facts: TaskFacts;
   readonly since: string;
   readonly due: string;
   /**
@@ -156,7 +157,8 @@ const QUEUES: readonly Queue[] = [
   // A move is still to be told of while its visit is today or later.
   {
     sql: `SELECT 'untold_move' AS "group", m.id AS id, a.person_id AS person_id, pe.name AS person_name,
-         m.now_start || ' ' || ${UNTOLD_REASON} AS detail, m.created_at AS since, NULL AS due_by, '' AS episode
+         m.now_start || ' ' || ${UNTOLD_REASON} AS detail,
+         json_object('starts_at', m.now_start, 'reason', ${UNTOLD_REASON}) AS facts, m.created_at AS since, NULL AS due_by, '' AS episode
     FROM appointments a JOIN dispatch_moves m ON m.appointment_id = a.id JOIN people pe ON pe.id = a.person_id
    WHERE a.deleted_at IS NULL AND ${statusIn("a.status", VISIT_NOT_BEGUN)} AND a.window_start >= ?1
      AND m.now_start >= ?1 AND pe.erased_at IS NULL AND ${UNTOLD_MOVE}`,
@@ -168,6 +170,7 @@ const QUEUES: readonly Queue[] = [
   {
     sql: `SELECT 'move_unanswered' AS "group", a.id AS id, a.person_id AS person_id, pe.name AS person_name,
          p.date || ' ' || p.window_label || CASE WHEN p.expires_at <= ?1 THEN ' ran_out' ELSE '' END AS detail,
+         json_object('date', p.date, 'window', p.window_label, 'ran_out', json(CASE WHEN p.expires_at <= ?1 THEN 'true' ELSE 'false' END)) AS facts,
          CASE WHEN p.message_id IS NULL THEN p.created_at
               ELSE strftime('%Y-%m-%dT%H:%M:%fZ', p.created_at, '+1 day') END AS since,
          NULL AS due_by, p.id AS episode
@@ -186,6 +189,11 @@ const QUEUES: readonly Queue[] = [
            || CASE WHEN r.one_visit = 1 THEN ' one_visit' || COALESCE(' ' || r.discount_code, '')
                    WHEN f.id IS NULL THEN ''
                    ELSE ' first_fit ' || COALESCE(f.preferred_window, 'any') END AS detail,
+         json_object('date', r.requested_date, 'window', r.requested_window,
+           'one_visit', json(CASE WHEN r.one_visit = 1 THEN 'true' ELSE 'false' END),
+           'discount_code', CASE WHEN r.one_visit = 1 THEN r.discount_code END,
+           'first_fit', json(CASE WHEN r.one_visit = 0 AND f.id IS NOT NULL
+             THEN json_object('window', NULLIF(f.preferred_window, 'any')) ELSE 'null' END)) AS facts,
          r.created_at AS since, NULL AS due_by, '' AS episode
     FROM consultation_requests r JOIN people pe ON pe.id = r.person_id
     LEFT JOIN first_fit_requests f ON f.person_id = r.person_id
@@ -200,6 +208,7 @@ const QUEUES: readonly Queue[] = [
   {
     sql: `SELECT 'replacement_order' AS "group", p.id AS id, p.person_id AS person_id, pe.name AS person_name,
          p.piece_code || ' ' || p.replacement_due_at AS detail,
+         json_object('piece_code', p.piece_code, 'due_on', p.replacement_due_at) AS facts,
          COALESCE((SELECT MAX(r.raised_at) FROM recall_pieces rp INDEXED BY recall_pieces_by_piece
                    JOIN recalls r ON r.id = rp.recall_id WHERE rp.piece_id = p.id AND r.closed_at IS NULL),
                   date(p.replacement_due_at, ?1)) AS since,
@@ -216,7 +225,8 @@ const QUEUES: readonly Queue[] = [
   // A client wearing a piece of an open recall, whose replacement is not booked: Care calls them, from the recall on.
   {
     sql: `SELECT 'recall_call' AS "group", pe.id AS id, pe.id AS person_id, pe.name AS person_name,
-         GROUP_CONCAT(p.piece_code, ' ') AS detail, MIN(r.raised_at) AS since, NULL AS due_by, '' AS episode
+         GROUP_CONCAT(p.piece_code, ' ') AS detail, json_object('piece_codes', json_group_array(p.piece_code)) AS facts,
+         MIN(r.raised_at) AS since, NULL AS due_by, '' AS episode
     FROM recalls r JOIN recall_pieces rp ON rp.recall_id = r.id JOIN pieces p ON p.id = rp.piece_id
     JOIN people pe ON pe.id = p.person_id
    WHERE r.closed_at IS NULL AND p.replacement_booked = 0 AND p.replaced_at IS NULL AND p.deleted_at IS NULL
@@ -228,19 +238,20 @@ const QUEUES: readonly Queue[] = [
   // A grant is read only while it is held.
   {
     sql: `SELECT 'referral_review' AS "group", r.id AS id, c.person_id AS person_id, pe.name AS person_name,
-         r.fraud_signals AS detail, r.updated_at AS since, NULL AS due_by, '' AS episode
+         r.fraud_signals AS detail, json_object('signal', json_extract(r.fraud_signals, '$[0]')) AS facts,
+         r.updated_at AS since, NULL AS due_by, '' AS episode
     FROM referral_attributions r JOIN referral_codes c ON c.code = r.code JOIN people pe ON pe.id = c.person_id
    WHERE r.grant_state = 'held' AND pe.erased_at IS NULL`,
   },
   {
     sql: `SELECT 'grievance' AS "group", g.id AS id, g.person_id AS person_id, pe.name AS person_name, NULL AS detail,
-         g.created_at AS since, NULL AS due_by, '' AS episode
+         json_object() AS facts, g.created_at AS since, NULL AS due_by, '' AS episode
     FROM grievances g JOIN people pe ON pe.id = g.person_id
    WHERE g.state = 'open' AND pe.erased_at IS NULL`,
   },
   {
     sql: `SELECT 'no_show_decision' AS "group", n.id AS id, pe.id AS person_id, pe.name AS person_name, t.name AS detail,
-         n.created_at AS since, NULL AS due_by, '' AS episode
+         json_object('technician', t.name) AS facts, n.created_at AS since, NULL AS due_by, '' AS episode
     FROM no_show_cases n JOIN checkins ci ON ci.id = n.checkin_id JOIN appointments a ON a.id = n.appointment_id
     LEFT JOIN people pe ON pe.id = a.person_id AND pe.erased_at IS NULL
     LEFT JOIN technicians t ON t.id = ci.technician_id
@@ -248,19 +259,20 @@ const QUEUES: readonly Queue[] = [
   },
   {
     sql: `SELECT 'number_change' AS "group", nc.id AS id, nc.person_id AS person_id, pe.name AS person_name,
-         NULL AS detail, ${NUMBER_CHANGE_WAITING_SINCE} AS since, NULL AS due_by, '' AS episode
+         NULL AS detail, json_object() AS facts, ${NUMBER_CHANGE_WAITING_SINCE} AS since, NULL AS due_by, '' AS episode
     FROM number_change_requests nc JOIN people pe ON pe.id = nc.person_id
    WHERE nc.state = 'awaiting_ops' AND pe.erased_at IS NULL`,
   },
   {
     sql: `SELECT 'erasure_request' AS "group", d.id AS id, d.person_id AS person_id, pe.name AS person_name,
-         NULL AS detail, d.created_at AS since, NULL AS due_by, '' AS episode
+         NULL AS detail, json_object() AS facts, d.created_at AS since, NULL AS due_by, '' AS episode
     FROM deletion_requests d JOIN people pe ON pe.id = d.person_id
    WHERE d.state = 'requested' AND pe.erased_at IS NULL`,
   },
   {
     sql: `SELECT 'draft_invoice' AS "group", a.id AS id, a.person_id AS person_id, pe.name AS person_name,
-         a.fsm_invoice_id AS detail, COALESCE(a.window_end, a.synced_at) AS since, NULL AS due_by, '' AS episode
+         a.fsm_invoice_id AS detail, json_object('invoice_id', a.fsm_invoice_id) AS facts,
+         COALESCE(a.window_end, a.synced_at) AS since, NULL AS due_by, '' AS episode
     FROM appointments a JOIN people pe ON pe.id = a.person_id
    WHERE a.status = 'completed' AND a.invoice_issued_at IS NULL
      AND a.deleted_at IS NULL AND a.fsm_invoice_id IS NOT NULL AND pe.erased_at IS NULL`,
@@ -274,6 +286,7 @@ const QUEUES: readonly Queue[] = [
   {
     sql: `SELECT 'leave_conflict' AS "group", a.id AS id, pe.id AS person_id, pe.name AS person_name,
          a.window_start || ' ' || t.name AS detail,
+         json_object('starts_at', a.window_start, 'technician', t.name) AS facts,
          (SELECT MIN(l.created_at) FROM technician_leave l WHERE ${LEAVE_ON_THE_DAY}) AS since,
          a.window_start AS due_by, ${LEAVE_CONFLICT_EPISODE} AS episode
     FROM appointments a JOIN technicians t ON t.id = a.technician_id
@@ -287,7 +300,8 @@ const QUEUES: readonly Queue[] = [
   // falls due by the visit itself.
   {
     sql: `SELECT 'address_to_confirm' AS "group", a.id AS id, a.person_id AS person_id, pe.name AS person_name,
-         a.window_start AS detail, COALESCE(a.first_seen_at, a.synced_at) AS since, a.window_start AS due_by,
+         a.window_start AS detail, json_object('starts_at', a.window_start) AS facts,
+         COALESCE(a.first_seen_at, a.synced_at) AS since, a.window_start AS due_by,
          '' AS episode
     FROM appointments a JOIN people pe ON pe.id = a.person_id
    WHERE a.deleted_at IS NULL AND ${statusIn("a.status", VISIT_NOT_BEGUN)} AND a.window_start >= ?1
@@ -303,6 +317,9 @@ const QUEUES: readonly Queue[] = [
     sql: `SELECT 'partial_visit' AS "group", a.id AS id, a.person_id AS person_id, pe.name AS person_name,
          a.type || ' ' || COALESCE((SELECT r.label FROM partial_reasons r WHERE r.code = v.partial_reason),
            v.partial_reason, v.close_reason, '') AS detail,
+         json_object('kind', a.type, 'reason_code', COALESCE(v.partial_reason, v.close_reason),
+           'reason', COALESCE((SELECT r.label FROM partial_reasons r WHERE r.code = v.partial_reason),
+             CASE WHEN v.partial_reason IS NULL THEN v.close_reason END)) AS facts,
          COALESCE(v.ended_at, a.window_end, v.updated_at) AS since, NULL AS due_by, '' AS episode
     FROM visits v JOIN appointments a ON a.id = v.appointment_id JOIN people pe ON pe.id = a.person_id
    WHERE v.outcome = 'partial' AND v.followed_up = 0 AND COALESCE(v.partial_reason, '') <> 'no_show'
@@ -318,6 +335,7 @@ const QUEUES: readonly Queue[] = [
   {
     sql: `SELECT 'at_risk_client' AS "group", s.visit_id AS id, s.person_id AS person_id, pe.name AS person_name,
          s.visit_start || ' ' || date(s.visit_start, '+330 minutes', ?3) AS detail,
+         json_object('last_visit_at', s.visit_start, 'due_on', date(s.visit_start, '+330 minutes', ?3)) AS facts,
          date(s.visit_start, '+330 minutes', ?2) AS since, NULL AS due_by, '' AS episode
     FROM last_visits s JOIN people pe ON pe.id = s.person_id
    WHERE s.visit_start < ?1 AND pe.erased_at IS NULL
@@ -344,7 +362,8 @@ const QUEUES: readonly Queue[] = [
   // consultation, along the partial index `last_visits_unfitted`.
   {
     sql: `SELECT 'first_fit_to_book' AS "group", s.person_id AS id, s.person_id AS person_id, pe.name AS person_name,
-         s.consulted_start AS detail, date(s.consulted_start, '+330 minutes', ?2) AS since, NULL AS due_by,
+         s.consulted_start AS detail, json_object('consulted_at', s.consulted_start) AS facts,
+         date(s.consulted_start, '+330 minutes', ?2) AS since, NULL AS due_by,
          ${FIRST_FIT_EPISODE} AS episode
     FROM last_visits s JOIN people pe ON pe.id = s.person_id
    WHERE s.consulted_start < ?1 AND ${NOT_FITTED_SINCE_CONSULTED} AND pe.erased_at IS NULL
@@ -369,6 +388,9 @@ const QUEUES: readonly Queue[] = [
          CASE WHEN l.refused_at IS NOT NULL THEN 'refused' WHEN l.sent_at IS NULL THEN 'unsent'
               WHEN COALESCE(l.closes_at <= ?2, l.sent_at <= ?1) THEN 'closed' ELSE 'sent' END
            || ' ' || l.amount || ' ' || COALESCE(l.short_url, '-') || ' ' || COALESCE(s.name, l.tier) AS detail,
+         json_object('state', CASE WHEN l.refused_at IS NOT NULL THEN 'refused' WHEN l.sent_at IS NULL THEN 'unsent'
+              WHEN COALESCE(l.closes_at <= ?2, l.sent_at <= ?1) THEN 'closed' ELSE 'sent' END,
+           'amount', l.amount, 'url', l.short_url, 'product', COALESCE(s.name, l.tier)) AS facts,
          l.created_at AS since, NULL AS due_by, '' AS episode
     FROM payment_links l JOIN appointments a ON a.id = l.appointment_id JOIN people pe ON pe.id = a.person_id
     LEFT JOIN services s ON s.kind = 'first_fit' AND s.tier = l.tier
@@ -379,7 +401,7 @@ const QUEUES: readonly Queue[] = [
   // client raised it. The index on the open disputes reads only those.
   {
     sql: `SELECT 'no_show_dispute' AS "group", d.id AS id, pe.id AS person_id, pe.name AS person_name,
-         CAST(n.kept_amount AS TEXT) AS detail, d.created_at AS since, NULL AS due_by, '' AS episode
+         CAST(n.kept_amount AS TEXT) AS detail, json_object('kept', n.kept_amount) AS facts, d.created_at AS since, NULL AS due_by, '' AS episode
     FROM no_show_disputes d JOIN no_show_cases n ON n.id = d.case_id
     LEFT JOIN people pe ON pe.id = d.person_id AND pe.erased_at IS NULL
    WHERE d.ruling IS NULL`,
@@ -395,6 +417,8 @@ interface Row {
   person_id: string | null;
   person_name: string | null;
   detail: string | null;
+  /** The task's facts, as the statement wrote them in JSON (./task-facts.ts). */
+  facts: string | null;
   since: string;
   /** The start of the visit a task is about, which it may fall due no later than. */
   due_by: string | null;
@@ -508,57 +532,12 @@ function taskOf(row: Row, sla: Slas, schedule: SlotSchedule): Task {
     person: personOf(row),
     visit: visitOf(row),
     detail: detailOf(row, schedule),
+    facts: factsOf(row, schedule),
     since,
     due: dueOf(row, since, sla).toISOString(),
     episode: row.episode,
     owner: row.owner,
   };
-}
-
-/** The record each group's task is read from, which its id names and which says where the task is. */
-const TASK_RECORDS: Readonly<Record<TaskGroup, PlacedRecord>> = {
-  untold_move: "move",
-  move_unanswered: "visit",
-  visit_left_open: "visit",
-  unassigned_visit: "visit",
-  unanswered_chat: "conversation",
-  city_matter: "city_matter",
-  remedy_approval: "remedy",
-  leave_conflict: "visit",
-  address_to_confirm: "visit",
-  consultation_request: "consultation_request",
-  first_fit_to_book: "client",
-  replacement_order: "piece",
-  recall_call: "client",
-  stock_at_risk: "visit",
-  at_risk_client: "visit",
-  partial_visit: "visit",
-  referral_review: "referral",
-  no_show_decision: "no_show",
-  no_show_dispute: "dispute",
-  number_change: "number_change",
-  erasure_request: "deletion_request",
-  grievance: "grievance",
-  draft_invoice: "visit",
-  payment_owed: "payment_link",
-  payment_to_refund: "payment",
-};
-
-const recordOf = (task: Task): PlacedId => ({ kind: TASK_RECORDS[task.group], id: task.id });
-
-/**
- * The tasks within reach: each group's where the caller's grants in the department that decides it reach its record's
- * city. A city is looked up only for a task whose group is not reached everywhere.
- */
-export async function tasksWithin(
-  db: D1Database,
-  tasks: readonly Task[],
-  reachOf: (group: TaskGroup) => PlacesReached,
-): Promise<Task[]> {
-  const toPlace = tasks.filter((task) => reachOf(task.group).kind !== "everywhere");
-  if (toPlace.length === 0) return [...tasks];
-  const cityOf = await citiesOf(db, toPlace.map(recordOf));
-  return tasks.filter((task) => reachesCity(reachOf(task.group), cityOf(recordOf(task))));
 }
 
 /** How many have waited past their day. The console reads the same day, so both agree. */

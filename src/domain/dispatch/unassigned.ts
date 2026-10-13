@@ -58,7 +58,8 @@ export async function visitsToComeBy(db: D1Database, now: Date): Promise<Readonl
  * when it last changed, and falls due the day before it. `?1` is now.
  */
 export const UNASSIGNED_VISITS = `SELECT 'unassigned_visit' AS "group", a.id AS id, pe.id AS person_id, pe.name AS person_name,
-         a.type || ' ' || a.window_start AS detail, a.synced_at AS since,
+         a.type || ' ' || a.window_start AS detail, json_object('kind', a.type, 'starts_at', a.window_start) AS facts,
+         a.synced_at AS since,
          strftime('%Y-%m-%dT%H:%M:%fZ', a.window_start, '-1 day') AS due_by, '' AS episode
     FROM appointments a INDEXED BY appointments_by_technician
     LEFT JOIN people pe ON pe.id = a.person_id AND pe.erased_at IS NULL
@@ -71,6 +72,7 @@ export const UNASSIGNED_VISITS = `SELECT 'unassigned_visit' AS "group", a.id AS 
  */
 export const VISITS_LEFT_OPEN = `SELECT 'visit_left_open' AS "group", a.id AS id, pe.id AS person_id, pe.name AS person_name,
          a.status || ' ' || a.window_start AS detail,
+         json_object('status', a.status, 'starts_at', a.window_start) AS facts,
          strftime('%Y-%m-%dT%H:%M:%fZ', date(a.window_start, '+330 minutes', '+1 day'), '-330 minutes') AS since,
          NULL AS due_by, '' AS episode
     FROM appointments a INDEXED BY appointments_live_by_start

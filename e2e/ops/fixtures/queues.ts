@@ -195,6 +195,7 @@ export const TASKS = {
         {
           id: "91000000-0000-4000-8000-000000000001",
           person: { id: "22000000-0000-4000-8000-000000000002", name: "Kunal Mehta" },
+          facts: { group: "replacement_order", piece_code: "MM-STD-4417-K", due_on: "2027-10-17" },
           detail: "MM-STD-4417-K 2027-10-17",
           since: "2027-09-16T18:30:00.000Z",
           due: "2027-09-18T18:30:00.000Z",
@@ -203,6 +204,7 @@ export const TASKS = {
         {
           id: "91000000-0000-4000-8000-000000000002",
           person: { id: CLIENT.id, name: CLIENT.name },
+          facts: { group: "replacement_order", piece_code: "MM-STD-4417-C", due_on: "2027-09-22" },
           detail: "MM-STD-4417-C 2027-09-22",
           since: "2027-09-21T18:30:00.000Z",
           due: "2027-09-23T18:30:00.000Z",
@@ -218,6 +220,7 @@ export const TASKS = {
         {
           id: "92000000-0000-4000-8000-000000000001",
           person: { id: "22000000-0000-4000-8000-000000000003", name: "Rohan Bhalla" },
+          facts: { group: "referral_review", signal: "shared_address" },
           detail: "shared_address",
           since: "2027-09-17T06:00:00.000Z",
           due: "2027-09-19T06:00:00.000Z",
@@ -226,6 +229,7 @@ export const TASKS = {
         {
           id: "92000000-0000-4000-8000-000000000002",
           person: { id: "22000000-0000-4000-8000-000000000004", name: "Karan Bose" },
+          facts: { group: "referral_review", signal: "monthly_cap" },
           detail: "monthly_cap",
           since: "2027-09-20T06:00:00.000Z",
           due: "2027-09-22T06:00:00.000Z",
@@ -241,6 +245,7 @@ export const TASKS = {
         {
           id: "66000000-0000-4000-8000-000000000001",
           person: { id: "22000000-0000-4000-8000-000000000010", name: "Deepak Rao" },
+          facts: { group: "no_show_decision", technician: "Imran Qureshi" },
           detail: "Imran Qureshi",
           since: "2027-09-19T06:17:00.000Z",
           due: "2027-09-21T06:17:00.000Z",
@@ -249,6 +254,7 @@ export const TASKS = {
         {
           id: "66000000-0000-4000-8000-000000000002",
           person: { id: "22000000-0000-4000-8000-000000000011", name: "Sanjay Bhatia" },
+          facts: { group: "no_show_decision", technician: "Sandeep Yadav" },
           detail: "Sandeep Yadav",
           since: "2027-09-20T04:46:00.000Z",
           due: "2027-09-22T04:46:00.000Z",
@@ -264,6 +270,7 @@ export const TASKS = {
         {
           id: "94000000-0000-4000-8000-000000000001",
           person: { id: "22000000-0000-4000-8000-000000000005", name: "Vikram Sethi" },
+          facts: { group: "number_change" },
           detail: null,
           since: "2027-09-18T06:00:00.000Z",
           due: "2027-09-20T06:00:00.000Z",
@@ -279,6 +286,7 @@ export const TASKS = {
         {
           id: "95000000-0000-4000-8000-000000000001",
           person: { id: "22000000-0000-4000-8000-000000000006", name: "Ashish Gill" },
+          facts: { group: "erasure_request" },
           detail: null,
           since: "2027-09-21T06:00:00.000Z",
           due: "2027-09-23T06:00:00.000Z",

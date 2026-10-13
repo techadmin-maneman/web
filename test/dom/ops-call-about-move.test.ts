@@ -14,6 +14,7 @@ const UNTOLD: Task = {
   id: MOVE,
   person: { id: "11111111-1111-4111-8111-111111111111", name: "Rohit Malhotra", mobile: "+919810000001" },
   visit: { id: "22222222-2222-4222-8222-222222222222", starts_at: "2027-09-23T03:30:00.000Z" },
+  facts: { group: "untold_move", starts_at: "2027-09-23T03:30:00.000Z", reason: "not_sent" },
   detail: "2027-09-23T03:30:00.000Z",
   since: "2027-09-21T06:00:00.000Z",
   due: "2027-09-21T10:00:00.000Z",

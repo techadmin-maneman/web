@@ -7,7 +7,8 @@ import { fitsAtRisk } from "./stock-demand.ts";
 
 /** The open risks, as the Tasks board reads its rows (src/domain/ops/tasks.ts). */
 export const STOCK_RISKS_OPEN = `SELECT 'stock_at_risk' AS "group", r.appointment_id AS id, a.person_id AS person_id,
-    pe.name AS person_name, COALESCE(r.consumable_code, '') AS detail, r.found_at AS since,
+    pe.name AS person_name, COALESCE(r.consumable_code, '') AS detail,
+    json_object('consumable_code', r.consumable_code) AS facts, r.found_at AS since,
     a.window_start AS due_by, '' AS episode
   FROM stock_risks r INDEXED BY stock_risks_open
   JOIN appointments a ON a.id = r.appointment_id LEFT JOIN people pe ON pe.id = a.person_id

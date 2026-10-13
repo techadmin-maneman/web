@@ -129,7 +129,6 @@ export const tasks = {
     untold_move: {
       no_consent: (when: string) => `Moved to ${when} · not opted in to WhatsApp`,
       not_sent: (when: string) => `Moved to ${when} · WhatsApp failed`,
-      unknown: (when: string) => `Moved to ${when} · not told`,
     },
     /**
      * "Asked to move to Wed 23 Sep, morning": call the client. One that ran out says so; withdraw it on the board, or

@@ -53,7 +53,8 @@ async function givenLately(db: D1Database, personId: string, limit: RemedyLimit,
 
 /** Every remedy awaiting a manager, as the Tasks board reads its queues (src/domain/ops/tasks.ts). */
 export const REMEDIES_AWAITING = `SELECT 'remedy_approval' AS "group", r.id AS id, r.person_id AS person_id,
-     pe.name AS person_name, r.visits || ' ' || r.reason AS detail, r.given_at AS since, NULL AS due_by, '' AS episode
+     pe.name AS person_name, r.visits || ' ' || r.reason AS detail,
+     json_object('visits', r.visits, 'reason', r.reason) AS facts, r.given_at AS since, NULL AS due_by, '' AS episode
   FROM remedies r JOIN people pe ON pe.id = r.person_id
  WHERE r.state = 'awaiting' AND pe.erased_at IS NULL`;
 

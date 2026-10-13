@@ -139,6 +139,14 @@ test("books a consultation asked for from its Tasks row, on the day and window a
           {
             id: "95000000-0000-4000-8000-000000000001",
             person: { id: CLIENT.id, name: CLIENT.name },
+            facts: {
+              group: "consultation_request",
+              date: "2027-09-24",
+              window: "morning",
+              one_visit: false,
+              discount_code: null,
+              first_fit: null,
+            },
             detail: "2027-09-24 morning",
             since: "2027-09-21T06:00:00.000Z",
             due: "2027-09-23T06:00:00.000Z",
@@ -212,6 +220,12 @@ test("books a first fit left partly done again, free, from its Tasks row, and th
           {
             id: FIT,
             person: { id: CLIENT.id, name: CLIENT.name },
+            facts: {
+              group: "partial_visit",
+              kind: "first_fit",
+              reason_code: "piece_not_ready",
+              reason: "Hair system not ready",
+            },
             detail: "first_fit Hair system not ready",
             since: "2027-09-19T06:00:00.000Z",
             due: "2027-09-21T06:00:00.000Z",
