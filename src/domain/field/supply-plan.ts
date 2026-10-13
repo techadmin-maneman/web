@@ -2,15 +2,18 @@
 // over its supplier's lead time and a period, with safety stock, against what the city can use: what its places hold,
 // what is on its way to it, less what is reserved to custom orders. A short city borrows from a city with spare, then
 // from the warehouse, each a transfer between stockrooms; what is still short, less what is on order, is ordered from
-// the supplier who sells it cheapest, in whole packs. A new draft replaces the last one's proposals.
+// the supplier who sells it cheapest, in whole packs, or the one who delivers soonest where the stock runs out before
+// the cheapest could deliver. A new draft replaces the last one's proposals.
 
 import {
+  coverDays,
   lend,
   needOver,
   orderQuantity,
   periodsCovering,
   shortOf,
   spareOf,
+  supplierFor,
   type PeriodForecast,
 } from "../../policy/supply-plan.ts";
 
@@ -158,15 +161,19 @@ function linesFor(code: string, read: Awaited<ReturnType<typeof standing>>, peri
     lines.filter((line) => line.from === warehouse).reduce((sum, line) => sum + line.proposed, 0) +
     unplaced.reduce((sum, each) => sum + shortOf(each.usable, each.need, each.safety), 0);
   const toOrder = stillShort - Math.max(spare, 0) - sumOf(read.coming, code, null);
-  if (toOrder > 0 && cheapest !== undefined) {
+  const counted =
+    standings.reduce((sum, each) => sum + each.usable, 0) + Math.max(spare, 0) + sumOf(read.coming, code, null);
+  const forecast = read.forecast.filter((row) => row.consumable_code === code);
+  const supplier = supplierFor(terms, coverDays(forecast, counted, periodDays));
+  if (toOrder > 0 && supplier !== undefined) {
     lines.push({
       kind: "order",
       code,
       city: null,
       from: null,
       to: null,
-      supplierId: cheapest.supplier_id,
-      proposed: orderQuantity(toOrder, cheapest.pack_size, cheapest.minimum_order),
+      supplierId: supplier.supplier_id,
+      proposed: orderQuantity(toOrder, supplier.pack_size, supplier.minimum_order),
       usable: Math.max(spare, 0) + sumOf(read.coming, code, null),
       need: standings.reduce((sum, each) => sum + each.need, 0),
       safety: Math.round(Math.sqrt(standings.reduce((sum, each) => sum + each.safety ** 2, 0)) * 10) / 10,

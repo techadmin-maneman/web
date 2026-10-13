@@ -485,6 +485,14 @@ export const steps = {
   piece: {
     // A label is scanned by its QR code, or typed (docs/decisions/0163-pieces-scanned-from-the-kit.md).
     label: "The new piece’s label",
+    // The board draws no way out of the fit; it closes as partly done, and ops book the refit.
+    cannotFit: {
+      action: "Can’t fit today",
+      title: "Close without fitting?",
+      body: "The job closes as partly done, and ops book the refit with the right piece.",
+      yes: "Close without fitting",
+      no: "Keep fitting",
+    },
     scan: "Scan the label",
     stopScan: "Stop scanning",
     camera: { opening: "Opening the camera…", refused: "No camera. Type the label instead." },

@@ -180,6 +180,22 @@ describe("a technician's steps", () => {
     });
   });
 
+  it("close a fit as partly done from its piece step, Can't fit today, and on a fit alone", async () => {
+    const sentAt = minutesAfterStart(60);
+    const cannotFit = { outcome: "partial", reason: "no_piece", cannot_fit: true };
+    await work(sentAt, TODAY_JOB, UP_TO_THE_OUTCOME.slice(0, 5));
+    const onAService = await postAt(sentAt, `/api/tech/jobs/${TODAY_JOB}/outcome`, cannotFit, uuidv7At(50));
+    expect(await onAService.json()).toMatchObject({ error: { fields: ["cannot_fit"] } });
+
+    await env.DB.prepare("UPDATE appointments SET type = 'first_fit', tier = 'essential' WHERE id = ?1")
+      .bind(TODAY_JOB)
+      .run();
+    const closed = await postAt(sentAt, `/api/tech/jobs/${TODAY_JOB}/outcome`, cannotFit, uuidv7At(51));
+    expect(closed.status).toBe(202);
+    expect(await statusOf(TODAY_JOB)).toBe("terminated");
+    expect(await visitRowOf(TODAY_JOB)).toMatchObject({ outcome: "partial", partial_reason: "no_piece" });
+  });
+
   it("close a no-show as terminated, never started", async () => {
     await work(NOW, TODAY_JOB, [["checkin", AT_THE_DOOR, -30]]);
 

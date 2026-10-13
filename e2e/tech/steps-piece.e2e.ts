@@ -36,6 +36,27 @@ test.describe("the piece (board B3, step 4)", () => {
     await expect(page.getByText(techCopy.steps.piece.malformed)).toBeVisible();
   });
 
+  test("closes as partly done with no piece fitted, Can't fit today, once asked", async ({ page }) => {
+    const fake = await onThePiece(page);
+    const words = techCopy.steps.piece.cannotFit;
+    await page.getByRole("button", { name: words.action }).click();
+    const asked = page.getByRole("dialog", { name: words.title });
+    await expect(asked).toContainText(words.body);
+    expect(await axeViolations(page)).toEqual([]);
+    await asked.getByRole("button", { name: words.no }).click();
+    await expect(asked).toHaveCount(0);
+    expect(writesTo(fake, "outcome")).toEqual([]);
+
+    await page.getByRole("button", { name: words.action }).click();
+    await page.getByRole("dialog", { name: words.title }).getByRole("button", { name: words.yes }).click();
+    await expect(page.getByText("Rohit M. · partial")).toBeVisible();
+    expect(writesTo(fake, "outcome").at(-1)?.body).toEqual({
+      outcome: "partial",
+      reason: "no_piece",
+      cannot_fit: true,
+    });
+  });
+
   test("says what a first fit was paid for, and warns when the hair profile names another product", async ({
     page,
   }) => {

@@ -30,6 +30,7 @@ import {
 } from "./public-booking.ts";
 import { holdSlot } from "./hold-slot.ts";
 import { personWithMobile, formPerson } from "./form-person.ts";
+import { ONE_VISIT_FIT } from "./occupancy.ts";
 
 /** Where a booking is, as the client reads it: the area once ops have named it, its city until then. */
 const placeOf = (pincode: Pincode): string => pincode.area ?? pincode.city;
@@ -457,7 +458,7 @@ async function newNumbersState(
 ): Promise<"booked" | "requested" | "taken"> {
   const visit = form.selfServeBooking ? await siteVisit(form.db, request.plan, request.date) : null;
   if (visit === null) return "requested";
-  const length = { minutes: visit.service.minutes, fitting: request.plan === "one_visit" };
+  const length = { minutes: visit.service.minutes, fitting: request.plan === "one_visit" ? ONE_VISIT_FIT : null };
   const [day] = await availability({
     db: form.db,
     placing: { personId: null, pincode: request.pincode },

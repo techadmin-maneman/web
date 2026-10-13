@@ -2458,8 +2458,13 @@ export interface components {
         } | {
             /** @enum {string} */
             outcome: "partial";
-            /** @description One of the card's partial_reasons, by its id; one ops have since taken off is still taken. */
+            /** @description One of the card's partial_reasons, by its id; one ops have since taken off is still taken. `no_piece` with cannot_fit. */
             reason: string;
+            /**
+             * @description Can't fit today: a fit closed from its piece step with no piece of the client's spec to fit, its reason `no_piece`. It follows the step before the piece, and ops are given the refit to book.
+             * @enum {boolean}
+             */
+            cannot_fit?: true;
         };
         TechnicianUpdate: {
             /** @enum {string} */

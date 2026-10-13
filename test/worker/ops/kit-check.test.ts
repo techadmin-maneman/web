@@ -98,6 +98,9 @@ describe("tomorrow's kits", () => {
       ].sort((a, b) => a.consumable_code.localeCompare(b.consumable_code)),
     );
     expect(told[0]).toContain("Imran Qureshi's kit is short for tomorrow: ");
+    // The stockroom holds solvent enough, and none of the client's hair system: that gap is told as one.
+    expect(told[0]).toContain(`Gurgaon stockroom can't cover ${code}: order or move one.`);
+    expect(told[0]).not.toContain("cover solvent");
   });
 
   it("carries the city's one-visit range for a one visit whose client is not yet known", async () => {

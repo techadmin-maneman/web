@@ -121,7 +121,7 @@ describe("a city's own closed days, and first fits", () => {
       const [day] = await availability({
         db: env.DB,
         placing: { personId: null, pincode: GURGAON },
-        visit: { minutes: 180, fitting: true },
+        visit: { minutes: 180, fitting: { product: "essential" } },
         from: "2026-09-23",
         days: 1,
         now: NOW,

@@ -25,9 +25,11 @@
 // picked from the kit comes out of it as the step lands, those made to the
 // client's profile listed first (docs/decisions/0156-hair-systems-in-stock.md).
 
+import { Button } from "@maneman/ui/Button";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { useState } from "react";
 import { api, unreachable, type EventBody, type Job } from "../api.ts";
+import { Confirm } from "../components/Confirm.tsx";
 import { job as jobCopy, steps as copy } from "../content.ts";
 import { Failed, Loading } from "../states/States.tsx";
 import type { Queued } from "../store/outbox.ts";
@@ -57,9 +59,59 @@ import {
   PaidFor,
   type Looked,
 } from "./PieceFields.tsx";
+import { redirect } from "../route.ts";
+import { keepClosed } from "../store/jobs.ts";
+import { queue, replay } from "../store/outbox.ts";
 import { pieceSent } from "./sent-before.ts";
 import { StepFrame } from "./StepFrame.tsx";
 import { useStep } from "./useStep.ts";
+import styles from "./steps.module.css";
+
+/** The outcome "Can't fit today" closes a fit with: partly done, no piece of the client's spec to fit. */
+const CANNOT_FIT: EventBody<"outcome"> = { outcome: "partial", reason: "no_piece", cannot_fit: true };
+
+/**
+ * "Can't fit today": asked first, then the job closed as partly done from here, queued as any outcome is, and the
+ * close-out shown. A one visit's client who decides against the fit says so in its choice instead.
+ */
+function CannotFit({ job }: { job: Job }) {
+  const [asking, setAsking] = useState(false);
+  const [, once] = useOneAtATime();
+  const close = () =>
+    once(async () => {
+      await queue("outcome", job.id, CANNOT_FIT, job.starts_at);
+      await keepClosed(job.id);
+      void replay();
+      redirect(`/jobs/${job.id}/done`);
+    });
+  const words = copy.piece.cannotFit;
+  return (
+    <>
+      <Button
+        variant="outlineOnInk"
+        size="small"
+        className={styles.wayOut}
+        onClick={() => {
+          setAsking(true);
+        }}
+      >
+        {words.action}
+      </Button>
+      {asking && (
+        <Confirm
+          title={words.title}
+          body={words.body}
+          yes={words.yes}
+          no={words.no}
+          onYes={() => void close()}
+          onNo={() => {
+            setAsking(false);
+          }}
+        />
+      )}
+    </>
+  );
+}
 
 /** The label checked against the pieces we know: a client's fills in its base and lot where none is typed. */
 function useLookup(
@@ -83,6 +135,15 @@ function useLookup(
       setLooked(unreachable(answer) ? { state: "offline" } : { state: "unknown" });
     });
   return { looked, setLooked, looking, look } as const;
+}
+
+/** What the step asks first: a one visit's client's choice, or what any other fit was paid for. */
+function Asked({ job, choice, onChoose }: { job: Job; choice: Choice; onChoose: (choice: Choice) => void }) {
+  return job.one_visit ? (
+    <ChoiceList products={job.products} choice={choice} onChoose={onChoose} />
+  ) : (
+    <PaidFor job={job} />
+  );
 }
 
 /** The step once the job is in hand: a refused piece starts as it was sent, so nothing is typed twice. */
@@ -145,11 +206,7 @@ function Fitting({
         onFinish(pieceBody(form, job));
       }}
     >
-      {job.one_visit ? (
-        <ChoiceList products={job.products} choice={choice} onChoose={setChoice} />
-      ) : (
-        <PaidFor job={job} />
-      )}
+      <Asked job={job} choice={choice} onChoose={setChoice} />
       {!declinedTheFit(form, job) && (
         <>
           <KitPieces choices={kitChoices(job, choice)} stock={stock} onStock={setStock} />
@@ -183,6 +240,7 @@ function Fitting({
           )}
         </>
       )}
+      {!job.one_visit && <CannotFit job={job} />}
     </StepFrame>
   );
 }

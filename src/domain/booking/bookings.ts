@@ -25,6 +25,8 @@ import {
 } from "./booked-hold.ts";
 import { moveInPlace, replacesBegunVisit, moveRefused, retireReplaced } from "./move-in-place.ts";
 import { giveBack, giveBackUnkept } from "./give-back.ts";
+import { tellOfStockGap } from "../field/stock-gap.ts";
+import { isAFitting } from "../../config/visit-types.ts";
 
 type Started = { readonly kind: "free" } | { readonly kind: "pay"; readonly orderId: string };
 
@@ -390,4 +392,8 @@ async function afterBooked(db: D1Database, hold: HoldRow, now: Date, options: Co
   const [, written] = await db.batch([carePersonStatement(db, hold.person_id, now), message.statement]);
   if ((written?.results.length ?? 0) > 0) await options.notify?.(message.id);
   if (hold.move_kind === "replace") await retireReplaced(db, hold, now, options);
+  if (isAFitting(hold.type) && options.alertOnce !== undefined) {
+    const fit = { ...hold, appointmentId: visitId, personId: hold.person_id, technicianId: hold.technician_id };
+    await tellOfStockGap(db, fit, { alertOnce: options.alertOnce, now });
+  }
 }

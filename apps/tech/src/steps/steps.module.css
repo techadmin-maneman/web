@@ -365,3 +365,9 @@
 .labelInput {
   height: var(--tech-primary);
 }
+
+/* The piece step's way out, "Can't fit today": below the step's own fields, apart from its one action. */
+.wayOut {
+  align-self: flex-start;
+  margin-top: var(--sp-24);
+}

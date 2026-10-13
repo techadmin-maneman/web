@@ -3,7 +3,7 @@
 
 import { z } from "@hono/zod-openapi";
 import { BOOKING_DAYS, BOOKING_WINDOWS } from "../../config/scheduling.ts";
-import { isAFitting, VISIT_TYPES } from "../../config/visit-types.ts";
+import { VISIT_TYPES } from "../../config/visit-types.ts";
 import { availability } from "../../domain/booking/availability.ts";
 import { loadSlotSchedule } from "../../domain/booking/slot-times.ts";
 import { currentAddress } from "../../domain/clients/profile.ts";
@@ -21,6 +21,7 @@ import { changeChargedOnBooking } from "../../policy/moving-a-visit.ts";
 import { stripStart } from "../../policy/next-visit.ts";
 import { windowTimesOf } from "../../policy/slot-times.ts";
 import { PriceSchema, ServiceSchema, Tier } from "../schemas/booking.ts";
+import { fittingOf } from "../../domain/booking/occupancy.ts";
 
 const AvailabilitySchema = z
   .object({
@@ -147,7 +148,7 @@ export function registerClientAvailability(app: App): void {
       availability({
         db,
         placing,
-        visit: { minutes: service.minutes, until, fitting: isAFitting(type) },
+        visit: { minutes: service.minutes, until, fitting: fittingOf(type, service.tier) },
         from: start,
         days: BOOKING_DAYS,
         now,

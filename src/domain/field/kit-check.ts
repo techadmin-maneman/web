@@ -22,6 +22,7 @@ type FitRow = {
   city: string | null;
 };
 type HeldRow = { place: string; code: string; quantity: number };
+type KitSource = { kit: string; name: string; source: string | null; source_name: string | null };
 
 /** What each technician's visits tomorrow need, by kit and stock code. */
 async function neededTomorrow(
@@ -111,9 +112,37 @@ async function oneVisitRanges(
   return ranges;
 }
 
+/** What a kit's top-ups come from holds of each code, so a gap the source cannot fill either is told as one. */
+async function heldAtSources(db: D1Database, sources: readonly string[], codes: readonly string[]): Promise<HeldRow[]> {
+  if (sources.length === 0 || codes.length === 0) return [];
+  const { results } = await db
+    .prepare(
+      `SELECT place, consumable_code AS code, quantity FROM stock_balances
+       WHERE place IN (SELECT value FROM json_each(?1)) AND consumable_code IN (SELECT value FROM json_each(?2))`,
+    )
+    .bind(JSON.stringify([...new Set(sources)]), JSON.stringify([...new Set(codes)]))
+    .all<HeldRow>();
+  return results;
+}
+
+/** Ops' line about a kit short for tomorrow: what it lacks, and what its source has none of either. */
+function shortLine(
+  kit: { readonly name: string; readonly sourceName: string | null },
+  gaps: readonly { readonly code: string; readonly gap: number; readonly atSource: number }[],
+): string {
+  const lacks = gaps.map((gap) => `${String(gap.gap)} ${gap.code}`).join(", ");
+  const nowhere = gaps.filter((gap) => gap.atSource < gap.gap).map((gap) => gap.code);
+  const gapLine =
+    nowhere.length === 0
+      ? ""
+      : ` ${kit.sourceName ?? "Its stockroom"} can't cover ${nowhere.join(", ")}: order or move one.`;
+  return `${kit.name}'s kit is short for tomorrow: ${lacks}. A top-up waits on the Supply plan.${gapLine}`;
+}
+
 /**
  * Each kit checked against its visits tomorrow, once the evening comes: its top-ups proposed on the supply plan, in
- * place of the evening's last, and ops told of each kit short. How many kits are short.
+ * place of the evening's last, and ops told of each kit short, and of what its source cannot cover either. How many
+ * kits are short.
  */
 export async function checkTomorrowsKits(
   db: D1Database,
@@ -129,7 +158,7 @@ export async function checkTomorrowsKits(
   const pairs = JSON.stringify(
     [...needs].flatMap(([kit, kitNeeds]) => [...kitNeeds.keys()].map((code) => [code, kit])),
   );
-  const [held, places] = await db.batch<HeldRow | { kit: string; source: string | null; name: string }>([
+  const [held, places] = await db.batch<HeldRow | KitSource>([
     db
       .prepare(
         `SELECT place, consumable_code AS code, quantity FROM stock_balances
@@ -139,15 +168,22 @@ export async function checkTomorrowsKits(
       .bind(pairs),
     db
       .prepare(
-        `SELECT t.id AS kit, t.name,
-           COALESCE((SELECT r.id FROM stock_places r WHERE r.kind = 'stockroom' AND r.city = t.city),
-                    (SELECT w.id FROM stock_places w WHERE w.kind = 'warehouse')) AS source
-         FROM technicians t WHERE t.id IN (SELECT value FROM json_each(?1))`,
+        `SELECT t.id AS kit, t.name, s.id AS source, s.name AS source_name
+         FROM technicians t
+           LEFT JOIN stock_places s ON s.id = COALESCE(
+             (SELECT r.id FROM stock_places r WHERE r.kind = 'stockroom' AND r.city = t.city),
+             (SELECT w.id FROM stock_places w WHERE w.kind = 'warehouse'))
+         WHERE t.id IN (SELECT value FROM json_each(?1))`,
       )
       .bind(kits),
   ]);
   const heldRows = (held?.results ?? []) as HeldRow[];
-  const placeRows = (places?.results ?? []) as { kit: string; source: string | null; name: string }[];
+  const placeRows = (places?.results ?? []) as KitSource[];
+  const atSources = await heldAtSources(
+    db,
+    placeRows.flatMap((row) => row.source ?? []),
+    [...needs.values()].flatMap((kitNeeds) => [...kitNeeds.keys()]),
+  );
   const run = `kit-check:${tomorrow}`;
   const at = now.toISOString();
   const lines: D1PreparedStatement[] = [];
@@ -158,7 +194,8 @@ export async function checkTomorrowsKits(
     if (place === undefined || source === null) continue;
     const gaps = [...kitNeeds].flatMap(([code, needed]) => {
       const have = heldRows.find((row) => row.place === kit && row.code === code)?.quantity ?? 0;
-      return needed > have ? [{ code, gap: needed - have, have, needed }] : [];
+      const atSource = atSources.find((row) => row.place === source && row.code === code)?.quantity ?? 0;
+      return needed > have ? [{ code, gap: needed - have, have, needed, atSource }] : [];
     });
     if (gaps.length === 0) continue;
     short += 1;
@@ -175,7 +212,7 @@ export async function checkTomorrowsKits(
     }
     await alertOnce({
       key: `kit_short:${kit}:${tomorrow}`,
-      message: `${place.name}'s kit is short for tomorrow: ${gaps.map((gap) => `${String(gap.gap)} ${gap.code}`).join(", ")}. A top-up waits on the Supply plan.`,
+      message: shortLine({ name: place.name, sourceName: place.source_name }, gaps),
       link: "/supply-plan",
     });
   }

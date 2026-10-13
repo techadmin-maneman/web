@@ -39,6 +39,7 @@ describe("the hair profile's table", () => {
         "src/domain/field/forecast-layers.ts",
         "src/domain/field/kit-check.ts",
         "src/domain/field/stock-demand.ts",
+        "src/domain/field/stock-gap.ts",
         "src/domain/field/stock-match.ts",
         "src/domain/visits/consultation-recap.ts",
         "src/domain/visits/next-visit.ts",

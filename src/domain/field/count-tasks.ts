@@ -3,7 +3,7 @@
 // past it, it is counted again, and a recount that still differs waits for a manager's sign-off, which is the case it
 // makes, with why.
 
-import { classOf, needsRecount, type CountClass, type CycleCounts } from "../../policy/cycle-counts.ts";
+import { needsRecount, type CountClass, type CycleCounts } from "../../policy/cycle-counts.ts";
 import { auditStatement } from "../ops/audit.ts";
 import { labelColumns, labelFields, labelsFound, labelsHeld, labelsOf, type CountedLine } from "./count-labels.ts";
 import type { Place } from "./stock-places.ts";
@@ -432,58 +432,4 @@ export async function signOff(db: D1Database, id: string, note: string, written:
     ]);
     return { ok: true, waiting: 0, task: { ...claimed, state: "done" } };
   });
-}
-
-export interface ClassedItem {
-  readonly code: string;
-  readonly name: string;
-  readonly countClass: CountClass;
-  /** Whether ops set the class, rather than it being its kind's own. */
-  readonly set: boolean;
-  readonly hairSystem: boolean;
-}
-
-/** Every item not retired, with its class: consumables first, then hair systems, each by name. */
-export async function countClasses(db: D1Database): Promise<ClassedItem[]> {
-  const { results } = await db
-    .prepare(
-      `SELECT c.code, c.name, c.count_class, h.code IS NOT NULL AS hair_system
-       FROM consumables c LEFT JOIN hair_systems h ON h.code = c.code
-       WHERE c.retired_date IS NULL ORDER BY 4, c.name COLLATE NOCASE`,
-    )
-    .all<{ code: string; name: string; count_class: CountClass | null; hair_system: number }>();
-  return results.map((row) => ({
-    code: row.code,
-    name: row.name,
-    countClass: classOf(row.count_class, row.hair_system === 1),
-    set: row.count_class !== null,
-    hairSystem: row.hair_system === 1,
-  }));
-}
-
-/** An item's class set, or put back to its kind's own with null. Whether there was such an item. */
-export async function setCountClass(
-  db: D1Database,
-  code: string,
-  countClass: CountClass | null,
-  written: Written,
-): Promise<boolean> {
-  const changed = await db
-    .prepare("UPDATE consumables SET count_class = ?2 WHERE code = ?1 AND retired_date IS NULL")
-    .bind(code, countClass)
-    .run();
-  if (changed.meta.changes !== 1) return false;
-  await auditStatement(
-    db,
-    {
-      surface: "ops",
-      actor: written.actor,
-      action: "consumable.count_class",
-      subject: { kind: "consumable", id: code },
-      requestId: written.requestId,
-      detail: { count_class: countClass },
-    },
-    written.now,
-  ).run();
-  return true;
 }

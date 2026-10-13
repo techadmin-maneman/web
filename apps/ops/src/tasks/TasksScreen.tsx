@@ -59,6 +59,9 @@ import { TaskActions } from "./TaskActions.tsx";
 import { untoldMoveOf } from "./untold-move.ts";
 import styles from "./tasks.module.css";
 
+/** The reason a fit closed with "Can't fit today" (NO_PIECE in src/policy/in-job-steps.ts). */
+const NO_PIECE = "no_piece";
+
 type Group = TaskGroup["group"];
 
 const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
@@ -145,6 +148,9 @@ function subOf(group: Group, task: Task, now: Date): string {
     const [piece = "", due = ""] = task.detail?.split(" ") ?? [];
     if (due === "") return tasks.unknown;
     return copy.replacement_order(piece, fullDate(indiaDate(task.due)), fullDate(due));
+  }
+  if (group === "partial_visit" && task.detail?.endsWith(` ${NO_PIECE}`) === true) {
+    return copy.partial_visit(copy.noPiece, shortDate(indiaDate(task.since)));
   }
   if (group === "partial_visit") {
     // The visit's kind, then the technician's reason in the job sheet's words; and the day they closed the visit.

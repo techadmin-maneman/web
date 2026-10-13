@@ -195,6 +195,8 @@ export const tasks = {
     partial_visit: (reason: string, date: string) => `${reason} · ${date}`,
     /** A visit closed partial with no reason from the technician. */
     noReason: "No reason given",
+    // "Can't fit today" in the technician app: no piece of the client's spec to fit.
+    noPiece: "No piece to fit",
     no_show_decision: (technician: string) => `${technician} attended`,
     /** "Disputes the charge that kept Rs. 2,000", or the free service visit it spent. */
     no_show_dispute: (took: string) => `Disputes a charge: ${took}`,

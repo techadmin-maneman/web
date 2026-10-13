@@ -175,9 +175,7 @@ async function alertsRetoldJob({ env, deps, config, log }: CronContext): Promise
   if (told > 0) log.info("alerts_retold", { told });
 }
 
-async function deletionAlertsJob({ env, deps }: CronContext): Promise<void> {
-  await alertAgedDeletions(env.DB, deps.now(), deps.alertOnce);
-}
+const deletionAlertsJob = ({ env, deps }: CronContext) => alertAgedDeletions(env.DB, deps.now(), deps.alertOnce);
 
 async function grievanceAlertsJob({ env, deps, config }: CronContext): Promise<void> {
   await tellOfNewGrievances(env.DB, deps.alert, `${OPS_ORIGIN[config.environment]}/grievances`, deps.now());
@@ -228,13 +226,9 @@ async function backupJob({ env, deps, config, log }: CronContext): Promise<void>
 }
 
 /** A low-stock alert whose consumable was retired since, or whose retirement came round, closes. */
-async function lowStockJob({ env, deps }: CronContext): Promise<void> {
-  await closeStaleLowStock(env.DB, deps);
-}
+const lowStockJob = ({ env, deps }: CronContext) => closeStaleLowStock(env.DB, deps);
 
-async function whatsAppBridgeJob({ deps, log, budget }: CronContext): Promise<void> {
-  await checkWhatsAppBridge(deps, log, budget);
-}
+const whatsAppBridgeJob = ({ deps, log, budget }: CronContext) => checkWhatsAppBridge(deps, log, budget);
 
 /** Records yesterday's figure on the first run of the day; the day's later runs find it recorded. */
 async function utilisationJob({ env, deps, log }: CronContext): Promise<void> {

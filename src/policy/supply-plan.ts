@@ -73,3 +73,33 @@ export function lend(
   }
   return { loans, short };
 }
+
+/**
+ * How many days `usable` lasts against the forecast, period by period from today, the forecast's periods added across
+ * its cities; Infinity where it outlasts the horizon.
+ */
+export function coverDays(forecast: readonly PeriodForecast[], usable: number, periodDays: number): number {
+  const byPeriod = new Map<number, number>();
+  for (const line of forecast) byPeriod.set(line.period, (byPeriod.get(line.period) ?? 0) + line.expected);
+  let left = usable;
+  for (const [period, expected] of [...byPeriod].sort((a, b) => a[0] - b[0])) {
+    if (left < expected) return period * periodDays + Math.floor((periodDays * left) / expected);
+    left -= expected;
+  }
+  return Number.POSITIVE_INFINITY;
+}
+
+interface Terms {
+  readonly unit_price: number;
+  readonly lead_time_days: number;
+}
+
+/**
+ * Whom an order goes to: the supplier who sells it cheapest, unless what the plan can count on runs out before that
+ * supplier could deliver; then the one who delivers soonest, the cheaper of any who tie.
+ */
+export function supplierFor<T extends Terms>(terms: readonly T[], coversDays: number): T | undefined {
+  const cheapest = [...terms].sort((a, b) => a.unit_price - b.unit_price)[0];
+  if (cheapest === undefined || cheapest.lead_time_days <= coversDays) return cheapest;
+  return [...terms].sort((a, b) => a.lead_time_days - b.lead_time_days || a.unit_price - b.unit_price)[0];
+}
