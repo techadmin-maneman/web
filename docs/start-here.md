@@ -186,7 +186,7 @@ this map, or when the map names something that no longer exists.
 
 ### Messages
 
-- **Database work** (`src/domain/messages/`): `queued-messages`, `visit-messages`, `visit-message-text`, `technician-updates` (a word from the job card), `move-proposal-text`, `stop-messages`,
+- **Database work** (`src/domain/messages/`): `queued-messages`, `visit-messages`, `visit-message-text`, `technician-updates` (a word from the job card), `move-proposal-text`, `stop-messages`, `inbound` (what any provider reports, in one shape),
   `paced-line`
 - **Rules** (`src/policy/`): `message-pacing`
 - **Data** (`src/config/`): `message-templates`, `message-kinds`

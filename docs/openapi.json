@@ -3527,6 +3527,46 @@
         }
       }
     },
+    "/api/hooks/msg91/{token}": {
+      "post": {
+        "summary": "MSG91's WhatsApp webhook: delivery reports for the messages we sent, and the messages on our number, where a STOP stops our messages",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "token",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Taken, or ignored. Either way MSG91 need not send it again"
+          },
+          "401": {
+            "description": "unauthorized: the token is wrong",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found: MSG91 is not the messaging provider, or its webhook has no MSG91_WEBHOOK_TOKEN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/hooks/razorpay": {
       "post": {
         "summary": "Razorpay's webhook: payments and refunds",

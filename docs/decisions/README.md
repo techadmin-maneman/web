@@ -2,7 +2,7 @@
 
 Every decision this repository was built on, oldest first. A record says what was decided and why, and is not rewritten to say something else: a later record changes it, and says so in its own header (ADR 0001). **Changed by** gathers those later records, from either side, so an old record's reader knows to read on.
 
-This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. A record names its topic in its header, `- Topic:` and one of the headings below, and the test fails on one that does not. The next free number is 0197.
+This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. A record names its topic in its header, `- Topic:` and one of the headings below, and the test fails on one that does not. The next free number is 0198.
 
 ## By topic
 
@@ -181,6 +181,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 - [0143](0143-remedies.md) Remedies
 - [0144](0144-care-numbers.md) The Care numbers
 - [0145](0145-technician-presets.md) A technician's word from the job card
+- [0197](0197-one-inbound-port.md) One inbound port
 
 ### Referrals
 
@@ -345,7 +346,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0111](0111-a-technician-never-takes-two-visits-in-a-row.md) | A technician never takes two visits in a row | 2026-10-05 | accepted, on the owner's ruling of 5 October 2026 | [0118](0118-booking-never-dead-ends.md) |
 | [0112](0112-workers-paid.md) | Workers Paid | 2026-10-06 | accepted, on the owner's purchase of 6 October 2026 |  |
 | [0113](0113-fsms-columns-go.md) | FSM's columns go | 2026-10-06 | accepted |  |
-| [0114](0114-whatsapp-business-platform-through-msg91.md) | The WhatsApp Business Platform through MSG91 | 2026-10-11 | accepted |  |
+| [0114](0114-whatsapp-business-platform-through-msg91.md) | The WhatsApp Business Platform through MSG91 | 2026-10-11 | accepted | [0197](0197-one-inbound-port.md) |
 | [0115](0115-a-move-to-another-day-waits-for-the-client.md) | A move to another day waits for the client | 2026-10-11 | accepted |  |
 | [0116](0116-book-asks-for-the-name-and-number-first.md) | /book asks for the name and number first | 2026-10-11 | accepted |  |
 | [0117](0117-a-technician-takes-visits-in-their-own-city.md) | A technician takes visits in their own city | 2026-10-11 | accepted | [0118](0118-booking-never-dead-ends.md) |
@@ -428,3 +429,4 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0194](0194-the-build-on-workers-paid.md) | The build on Workers Paid | 2026-10-13 | accepted |  |
 | [0195](0195-the-cron-a-job-at-a-time.md) | The cron a job at a time | 2026-10-13 | accepted |  |
 | [0196](0196-long-work-in-workflows.md) | Long work in Workflows | 2026-10-13 | accepted, on the owner's ruling of 13 October 2026 |  |
+| [0197](0197-one-inbound-port.md) | One inbound port | 2026-10-13 | accepted, on the owner's ruling of 13 October 2026 |  |

@@ -9,7 +9,7 @@ beforeEach(async () => {
   captureLogs();
 });
 
-const settings = { authKey: "msg91-key", integratedNumber: "919800000000" };
+const settings = { authKey: "msg91-key", integratedNumber: "919800000000", webhookToken: null };
 
 /** The one template send of `http`'s first call: its template, and the components of its one recipient. */
 function sent(http: ReturnType<typeof fakeFetch>) {

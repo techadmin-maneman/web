@@ -123,6 +123,7 @@ import { registerClientVisits } from "./routes/client/visits.ts";
 import { registerClientPhotos } from "./routes/client/photos.ts";
 import { registerDevVisits } from "./routes/dev-visits.ts";
 import { registerEvolutionHook } from "./routes/hooks/evolution.ts";
+import { registerMsg91Hook } from "./routes/hooks/msg91.ts";
 import { registerRazorpayHook } from "./routes/hooks/razorpay.ts";
 import { registerStopMessages } from "./routes/public/stop-messages.ts";
 import { registerHealth } from "./routes/health.ts";
@@ -175,6 +176,7 @@ const SURFACE_ROUTES: Readonly<Record<Surface, readonly ((app: App) => void)[]>>
     registerClientErrors,
     // Webhooks sit on the public host (ADR 0026).
     registerEvolutionHook,
+    registerMsg91Hook,
     registerRazorpayHook,
   ],
   client: [

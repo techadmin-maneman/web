@@ -3,7 +3,8 @@
 // carries the delivery receipts for the messages we sent, which fill in
 // outbound_messages.delivered_at and read_at for the no-show evidence.
 // MESSAGES_UPSERT carries every message on the number; a STOP reply among them
-// withdraws its sender's WhatsApp consents (src/domain/messages/stop-messages.ts).
+// withdraws its sender's WhatsApp consents. Both go to the inbound port every
+// provider feeds (src/domain/messages/inbound.ts).
 //
 // Evolution is set to send those two events only (provisioning, step 12); any other
 // event is ignored. The body names the chat and carries the instance's API key,
@@ -15,20 +16,13 @@ import { createRoute, z } from "@hono/zod-openapi";
 import type { Context } from "hono";
 import type { App, AppEnv } from "../../http/context.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
-import { queueMessage } from "../../http/queue-message.ts";
+import { inboundContext } from "../../http/inbound-context.ts";
 import { secretsMatch } from "../../lib/hash.ts";
-import { answerAfterHours } from "../../domain/care/after-hours.ts";
-import { fileInbound } from "../../domain/care/inbox.ts";
-import { opsInputs } from "../../http/ops-inputs.ts";
-import { stopByReply } from "../../domain/messages/stop-messages.ts";
-import { isStopReply } from "../../policy/consents.ts";
+import { takeInbound, type Inbound } from "../../domain/messages/inbound.ts";
 
 /** Receipts that say something new. SERVER_ACK (reached WhatsApp's servers) and PENDING do not. */
 const DELIVERED = new Set(["DELIVERY_ACK", "READ", "PLAYED"]);
 const READ = new Set(["READ", "PLAYED"]);
-
-/** A request carrying more than this many receipts or messages has the rest ignored, inside the free plan's limits. */
-const MAX_ITEMS = 50;
 
 // Loose on purpose: whatever else Evolution sends is ignored, not refused, so Evolution does not retry it.
 const EventSchema = z.object({ event: z.string() });
@@ -91,100 +85,43 @@ export function registerEvolutionHook(app: App): void {
       return c.body(null, 204);
     }
     const event = named.data.event.toLowerCase().replace(/_/g, ".");
-    if (event === "messages.update") await takeReceipts(c, body);
-    else if (event === "messages.upsert") await takeReplies(c, body);
-    else log.info("evolution_hook_ignored", { event: event.slice(0, 40) });
+    if (event === "messages.update" || event === "messages.upsert") {
+      const events = event === "messages.update" ? receiptsIn(c, body) : messagesIn(c, body);
+      const taken = await takeInbound(inboundContext(c), events);
+      log.info(event === "messages.update" ? "evolution_receipts" : "evolution_replies", taken);
+    } else log.info("evolution_hook_ignored", { event: event.slice(0, 40) });
     return c.body(null, 204);
   });
 }
 
-async function takeReceipts(c: Context<AppEnv>, body: unknown): Promise<void> {
+/** The receipts that say something new, for the inbound port. */
+function receiptsIn(c: Context<AppEnv>, body: unknown): Inbound[] {
   const parsed = ReceiptsSchema.safeParse(body);
   if (!parsed.success) {
     c.var.log.warn("evolution_hook_unreadable");
-    return;
+    return [];
   }
-  const receipts = [parsed.data.data ?? []].flat().slice(0, MAX_ITEMS);
-  const now = c.var.deps.now().toISOString();
-  let recorded = 0;
-  for (const receipt of receipts) {
+  return [parsed.data.data ?? []].flat().flatMap((receipt): Inbound[] => {
     const providerMessageId = receipt.keyId ?? receipt.key?.id;
-    if (providerMessageId === undefined || receipt.fromMe === false || !DELIVERED.has(receipt.status)) continue;
-    recorded += await recordReceipt(c.env.DB, providerMessageId, READ.has(receipt.status), now);
-  }
-  c.var.log.info("evolution_receipts", { receipts: receipts.length, recorded });
+    if (providerMessageId === undefined || receipt.fromMe === false || !DELIVERED.has(receipt.status)) return [];
+    return [{ kind: "receipt", providerMessageId, read: READ.has(receipt.status) }];
+  });
 }
 
-/** Marks our message delivered, and read if it was. The first report of each wins. */
-async function recordReceipt(db: D1Database, providerMessageId: string, read: boolean, at: string): Promise<number> {
-  const result = await db
-    .prepare(
-      `UPDATE outbound_messages
-       SET delivered_at = COALESCE(delivered_at, ?2),
-           read_at = CASE WHEN ?3 = 1 THEN COALESCE(read_at, ?2) ELSE read_at END
-       WHERE provider_message_id = ?1 AND (delivered_at IS NULL OR (?3 = 1 AND read_at IS NULL))`,
-    )
-    .bind(providerMessageId, at, read ? 1 : 0)
-    .run();
-  return result.meta.changes;
-}
-
-/** Reads the messages people sent us, and acts on each STOP: its sender's consents withdrawn, and one answer. */
-async function takeReplies(c: Context<AppEnv>, body: unknown): Promise<void> {
-  const { deps, log, requestId } = c.var;
+/** The messages people sent our number, for the inbound port: never ours, nor a group's, nor one with no text. */
+function messagesIn(c: Context<AppEnv>, body: unknown): Inbound[] {
   const parsed = MessagesSchema.safeParse(body);
   if (!parsed.success) {
-    log.warn("evolution_hook_unreadable");
-    return;
+    c.var.log.warn("evolution_hook_unreadable");
+    return [];
   }
-  const messages = [parsed.data.data ?? []].flat().slice(0, MAX_ITEMS);
-  let stopped = 0;
-  let filed = 0;
-  for (const message of messages) {
-    const from = await fileReply(c.env.DB, message, deps.now());
-    filed += from === null ? 0 : 1;
-    const mobileE164 = stopReplyFrom(message);
-    if (mobileE164 === null) {
-      if (from !== null) {
-        await answerAfterHours(c.env.DB, deps.messaging, c.var.config.settings.messaging, await afterHours(c, from));
-      }
-      continue;
-    }
-    const answerId = await stopByReply(c.env.DB, { mobileE164, requestId, now: deps.now() });
-    if (answerId === null) continue;
-    stopped += 1;
-    await queueMessage(c, answerId);
-  }
-  log.info("evolution_replies", { messages: messages.length, stopped, filed });
-}
-
-/** Files a client's message in their thread in the Care inbox (src/domain/care/inbox.ts); 1 if it was theirs. */
-/** Files a client's message in the Care inbox; the number it came from, or null for anything not filed. */
-async function fileReply(db: D1Database, message: Message, now: Date): Promise<string | null> {
-  if (message.key?.fromMe !== false) return null;
-  const text = textOf(message);
-  const mobileE164 = senderNumber(message.key);
-  if (text === undefined || mobileE164 === null) return null;
-  await fileInbound(db, { mobileE164, text, providerMessageId: message.key.id ?? null, at: now });
-  return mobileE164;
-}
-
-/** A message just filed, as the after-hours answer reads it: who, when, and the Care hours ops set. */
-const afterHours = async (c: Context<AppEnv>, mobileE164: string) => ({
-  mobileE164,
-  at: c.var.deps.now(),
-  hours: (await opsInputs(c)).careHours,
-});
-
-const textOf = (message: Message): string | undefined =>
-  message.message?.conversation ?? message.message?.extendedTextMessage?.text;
-
-/** The number a STOP reply came from, as E.164; null for anything else, ours, or from a group. */
-function stopReplyFrom(message: Message): string | null {
-  if (message.key?.fromMe !== false) return null;
-  const text = textOf(message);
-  if (text === undefined || !isStopReply(text)) return null;
-  return senderNumber(message.key);
+  return [parsed.data.data ?? []].flat().flatMap((message): Inbound[] => {
+    if (message.key?.fromMe !== false) return [];
+    const text = message.message?.conversation ?? message.message?.extendedTextMessage?.text;
+    const mobileE164 = senderNumber(message.key);
+    if (text === undefined || mobileE164 === null) return [];
+    return [{ kind: "message", mobileE164, text, providerMessageId: message.key.id ?? null }];
+  });
 }
 
 const PERSONAL_CHAT = "@s.whatsapp.net";

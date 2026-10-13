@@ -228,7 +228,11 @@ describe("validateStaticConfig: MSG91", () => {
 
   it("reads the key and the sending number, digits only, and leaves Evolution unread", () => {
     const config = validateStaticConfig({ ...production, ...msg91 });
-    expect(config.settings.messaging.msg91).toEqual({ authKey: "msg91-key", integratedNumber: "919800000000" });
+    expect(config.settings.messaging.msg91).toEqual({
+      authKey: "msg91-key",
+      integratedNumber: "919800000000",
+      webhookToken: null,
+    });
     expect(config.settings.messaging.evolution).toBeNull();
   });
 

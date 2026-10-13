@@ -302,7 +302,11 @@ function readMsg91(read: Reader, providers: ProvidersRead): Msg91Settings | null
   const msg91: Msg91Settings = {
     authKey: read.text("MSG91_AUTH_KEY"),
     integratedNumber: read.text("MSG91_INTEGRATED_NUMBER").replace(/\D/g, ""),
+    webhookToken: read.optionalText("MSG91_WEBHOOK_TOKEN"),
   };
+  if (msg91.webhookToken !== null && msg91.webhookToken.length < 32) {
+    read.problems.push("MSG91_WEBHOOK_TOKEN must be at least 32 characters");
+  }
   if (msg91.integratedNumber !== "" && !/^\d{11,15}$/.test(msg91.integratedNumber)) {
     read.problems.push("MSG91_INTEGRATED_NUMBER must be the sending number with its country code, as 919810000000");
   }
