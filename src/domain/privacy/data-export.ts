@@ -43,10 +43,13 @@ export const EXPORT_QUERIES = {
   discount_codes: `SELECT c.code, u.amount_off, u.given_by, u.created_at, u.removed_at, u.removed_by
     FROM discount_code_uses u JOIN discount_codes c ON c.id = u.code_id WHERE u.person_id = ?1 ORDER BY u.created_at`,
   credits: "SELECT kind, visits, expires_at, created_at FROM credit_ledger WHERE person_id = ?1 ORDER BY created_at",
-  // Their chats with the Care team, and when each thread began, ended and last moved; never staff's notes.
+  // Their chats with the Care team, and when each thread began, ended and last moved; never staff's notes. A thread
+  // from their number not yet linked to them, begun before they were a client, is theirs too.
   chats: `SELECT c.created_at AS thread, c.last_message_at, c.closed_at, c.close_reason, m.direction, m.text, m.sent_at
     FROM conversations c LEFT JOIN chat_messages m ON m.conversation_id = c.id AND m.direction <> 'note'
-    WHERE c.person_id = ?1 ORDER BY m.sent_at`,
+    WHERE c.person_id = ?1
+      OR (c.person_id IS NULL AND c.mobile_e164 = (SELECT mobile_e164 FROM people WHERE id = ?1))
+    ORDER BY m.sent_at`,
   care_person: "SELECT email AS care_person, since FROM care_owners WHERE person_id = ?1",
   // That Care sent something to their city, and when; never Care's note.
   city_matters: "SELECT city, raised_at FROM city_matters WHERE person_id = ?1 ORDER BY raised_at",

@@ -69,7 +69,14 @@ export async function personalDataStatements(
       .prepare("UPDATE referral_attributions SET friend_first_name = NULL WHERE referred_person_id = ?1")
       .bind(personId),
     // Their chats with the Care team: the words go, and the thread's number becomes nobody's
-    // (docs/decisions/0129-the-care-inbox.md).
+    // (docs/decisions/0129-the-care-inbox.md). A thread from their number not yet theirs, begun before they were a
+    // client, is made theirs first, while the person's row still holds the number.
+    db
+      .prepare(
+        `UPDATE conversations SET person_id = ?1
+         WHERE person_id IS NULL AND mobile_e164 = (SELECT mobile_e164 FROM people WHERE id = ?1)`,
+      )
+      .bind(personId),
     db
       .prepare(
         "UPDATE chat_messages SET text = NULL WHERE conversation_id IN (SELECT id FROM conversations WHERE person_id = ?1)",
