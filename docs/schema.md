@@ -621,7 +621,7 @@ Made by `0049_consumables_and_stock.sql`.
 
 The consumables ops keep: name, unit, what one costs, the reorder levels, the day it is retired from, and FSM's part for it (ADR 0087).
 
-Made by `0049_consumables_and_stock.sql`; changed by `0135_stock_lots.sql`, `0154_cycle_counts.sql`.
+Made by `0049_consumables_and_stock.sql`; changed by `0135_stock_lots.sql`, `0154_cycle_counts.sql`, `0166_store_reorder_levels.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -639,6 +639,7 @@ Made by `0049_consumables_and_stock.sql`; changed by `0135_stock_lots.sql`, `015
 | `updated_at` | TEXT | no |  |  |
 | `shelf_life_days` | INTEGER | yes |  |  |
 | `count_class` | TEXT | yes |  |  |
+| `reorder_store` | INTEGER | yes |  |  |
 
 Indexes:
 

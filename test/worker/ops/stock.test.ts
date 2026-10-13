@@ -217,13 +217,13 @@ describe("low stock", () => {
     );
     expect(await held("tape_strips", IMRAN)).toEqual({ quantity: 4, low: true });
     expect(job.deps.alerts).toEqual([
-      expect.stringContaining(`Stock is low in technician ${IMRAN}'s kit: Tape strips 4 strip (level 5)`),
+      expect.stringContaining(`Tape strips is low in technician ${IMRAN}'s kit: 4 strip, at or below its level of 5.`),
     ]);
     expect(job.deps.alerts[0]).not.toContain("Imran");
     // The console names the kit by its technician, as the chat is never told.
     const listed = await (await request(job.ops, "/api/alerts")).json<{ alerts: { message: string }[] }>();
     expect(listed.alerts.map((alert) => alert.message)).toEqual([
-      expect.stringContaining("Stock is low in Imran Qureshi's kit: Tape strips 4 strip (level 5)"),
+      expect.stringContaining("Tape strips is low in Imran Qureshi's kit: 4 strip, at or below its level of 5."),
     ]);
 
     // Lower still, and the same alert is counted, not told again.
@@ -234,7 +234,7 @@ describe("low stock", () => {
     );
     expect(job.deps.alerts).toHaveLength(1);
     const open = await env.DB.prepare("SELECT count FROM alerts WHERE key = ?1 AND resolved_at IS NULL")
-      .bind(`low_stock:kit:${IMRAN}`)
+      .bind(`low_stock:kit:${IMRAN}:tape_strips`)
       .first<{ count: number }>();
     expect(open?.count).toBe(2);
 
@@ -245,7 +245,7 @@ describe("low stock", () => {
       to: IMRAN,
     });
     const closed = await env.DB.prepare("SELECT resolved_at FROM alerts WHERE key = ?1")
-      .bind(`low_stock:kit:${IMRAN}`)
+      .bind(`low_stock:kit:${IMRAN}:tape_strips`)
       .first<{ resolved_at: string | null }>();
     expect(closed?.resolved_at).not.toBeNull();
     expect(await held("tape_strips", IMRAN)).toEqual({ quantity: 12, low: false });
@@ -263,7 +263,7 @@ describe("low stock", () => {
       to: IMRAN,
     });
     expect(job.deps.alerts).toEqual([
-      expect.stringContaining("Stock is low in National warehouse: Tape strips 8 strip (level 20)"),
+      expect.stringContaining("Tape strips is low in National warehouse: 8 strip, at or below its level of 20."),
     ]);
   });
 
@@ -276,7 +276,7 @@ describe("low stock", () => {
       from: "central",
       to: IMRAN,
     });
-    expect(job.deps.alerts).toEqual([expect.stringContaining("Stock is low in National warehouse")]);
+    expect(job.deps.alerts).toEqual([expect.stringContaining("Tape strips is low in National warehouse")]);
     expect(await lowPlaces()).toBe(1);
 
     const retired = await job.opsPost("/api/consumables/tape_strips/retire", { from: "2026-09-21" });
@@ -300,5 +300,33 @@ describe("low stock", () => {
       to: IMRAN,
     });
     expect(await held("tape_strips", IMRAN)).toEqual({ quantity: 1, low: false });
+  });
+
+  it("tells each item a place is low on apart, and closes each once that item is no longer low", async () => {
+    await job.opsPost("/api/consumables", { name: "Adhesive", unit: "ml", unit_cost: 900, reorder_kit: 50 });
+    const openKeys = async () =>
+      (
+        await env.DB.prepare(
+          "SELECT key FROM alerts WHERE key >= 'low_stock:' AND key < 'low_stock;' AND resolved_at IS NULL ORDER BY key",
+        ).all<{ key: string }>()
+      ).results.map((row) => row.key);
+    for (const [code, quantity] of [
+      ["tape_strips", 10],
+      ["adhesive", 60],
+    ] as const) {
+      await job.opsPost("/api/stock/deliveries", { consumable_code: code, quantity: 100 });
+      await job.opsPost("/api/stock/transfers", { consumable_code: code, quantity, from: "central", to: IMRAN });
+    }
+    await job.opsPost("/api/stock/counts", { consumable_code: "tape_strips", place_id: IMRAN, counted: 3 });
+    await job.opsPost("/api/stock/counts", { consumable_code: "adhesive", place_id: IMRAN, counted: 40 });
+    expect(job.deps.alerts).toEqual([
+      expect.stringContaining("Tape strips is low in technician"),
+      expect.stringContaining("Adhesive is low in technician"),
+    ]);
+    expect(await openKeys()).toEqual([`low_stock:kit:${IMRAN}:adhesive`, `low_stock:kit:${IMRAN}:tape_strips`]);
+    expect(await lowPlaces()).toBe(1);
+
+    await job.opsPost("/api/stock/counts", { consumable_code: "tape_strips", place_id: IMRAN, counted: 12 });
+    expect(await openKeys()).toEqual([`low_stock:kit:${IMRAN}:adhesive`]);
   });
 });

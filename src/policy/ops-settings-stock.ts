@@ -16,7 +16,7 @@ import { STOCK_WATCH, STOCK_WATCH_KEYS } from "./stock.ts";
 import { STOCK_QUALITY, STOCK_QUALITY_KEYS } from "./stock-quality.ts";
 import { STOCK_USAGE, STOCK_USAGE_KEYS } from "./stock-usage.ts";
 import { SCORECARD_DAYS } from "./supplier-scorecard.ts";
-import { HOUR_OF_DAY } from "../config/setting-units.ts";
+import { DAY_OF_WEEK, HOUR_OF_DAY } from "../config/setting-units.ts";
 
 /** A class counted at least as often as the next: weekly before monthly, monthly before quarterly. */
 const countConflicts = (days: CycleCounts): (readonly [string, string])[] => [
@@ -95,7 +95,7 @@ export const STOCK_SETTINGS = [
     // Tomorrow's kits (docs/decisions/0181-tomorrows-kits.md, 0184-the-one-visit-range.md).
     name: "kit_check",
     title: "Tomorrow's kits",
-    note: "When the evening's kit check starts, and how many hair systems a kit with a one visit tomorrow carries.",
+    note: "When the evening's kit check starts, how many hair systems a kit with a one visit tomorrow carries, and the evening it tops each kit up for the week.",
     unit: HOUR_OF_DAY,
     min: 0,
     max: 22,
@@ -103,6 +103,7 @@ export const STOCK_SETTINGS = [
     bounds: {
       from_hour: { min: 12, max: 22 },
       one_visit_range: { min: 0, max: 20, unit: "hair systems" },
+      top_up_weekday: { min: 0, max: 6, unit: DAY_OF_WEEK },
     },
     fallback: KIT_CHECK,
   },

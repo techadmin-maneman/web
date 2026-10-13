@@ -1,5 +1,5 @@
 // Adding a consumable, or changing one: its name, its unit, what one costs,
-// the levels a kit and the central store are low at, and its shelf life
+// the levels a kit, a hub or stockroom and the warehouse are low at, and its shelf life
 // (docs/decisions/0087-consumables-and-stock.md, 0157-lots-and-expiry.md). The boxes start from what the
 // consumable is now; the check shows each field that changes, old beside new,
 // before anything is sent (ADR 0071). Every box holds text: an empty level is
@@ -25,18 +25,20 @@ interface Draft {
   readonly unit: string;
   readonly cost: string;
   readonly kit: string;
+  readonly store: string;
   readonly central: string;
   readonly shelf: string;
 }
 
 const draftOf = (consumable: Consumable | null): Draft =>
   consumable === null
-    ? { name: "", unit: "", cost: "", kit: "", central: "", shelf: "" }
+    ? { name: "", unit: "", cost: "", kit: "", store: "", central: "", shelf: "" }
     : {
         name: consumable.name,
         unit: consumable.unit,
         cost: String(consumable.unit_cost / 100),
         kit: consumable.reorder_kit === null ? "" : String(consumable.reorder_kit),
+        store: consumable.reorder_store === null ? "" : String(consumable.reorder_store),
         central: consumable.reorder_central === null ? "" : String(consumable.reorder_central),
         shelf: consumable.shelf_life_days === null ? "" : String(consumable.shelf_life_days),
       };
@@ -55,6 +57,9 @@ function changes(was: Consumable, draft: Draft): string[] {
   }
   if (levelOf(draft.kit) !== was.reorder_kit) {
     lines.push(line(fields.kit, levelWords(was.reorder_kit), levelWords(levelOf(draft.kit))));
+  }
+  if (levelOf(draft.store) !== was.reorder_store) {
+    lines.push(line(fields.store, levelWords(was.reorder_store), levelWords(levelOf(draft.store))));
   }
   if (levelOf(draft.central) !== was.reorder_central) {
     lines.push(line(fields.central, levelWords(was.reorder_central), levelWords(levelOf(draft.central))));
@@ -103,7 +108,9 @@ export function ConsumableForm({
     draft.unit.trim() !== "" &&
     RUPEES.test(draft.cost.trim()) &&
     paiseFromRupees(draft.cost) <= maxUnitCost &&
-    [draft.kit, draft.central, draft.shelf].every((level) => level.trim() === "" || WHOLE.test(level.trim()));
+    [draft.kit, draft.store, draft.central, draft.shelf].every(
+      (level) => level.trim() === "" || WHOLE.test(level.trim()),
+    );
   const steps = useSteps(
     async () => {
       const fields = {
@@ -111,6 +118,7 @@ export function ConsumableForm({
         unit: draft.unit.trim(),
         unit_cost: paiseFromRupees(draft.cost),
         reorder_kit: levelOf(draft.kit),
+        reorder_store: levelOf(draft.store),
         reorder_central: levelOf(draft.central),
         shelf_life_days: levelOf(draft.shelf),
       };
@@ -131,7 +139,7 @@ export function ConsumableForm({
     consumable === null
       ? [
           form.confirm.adding(draft.name.trim(), draft.unit.trim(), rupees(paiseFromRupees(draft.cost))),
-          copy.levels(levelOf(draft.kit), levelOf(draft.central)),
+          copy.levels({ kit: levelOf(draft.kit), store: levelOf(draft.store), central: levelOf(draft.central) }),
           copy.shelfLife(levelOf(draft.shelf)),
         ]
       : changes(consumable, draft);
@@ -202,6 +210,7 @@ export function ConsumableForm({
       </div>
       <div className={styles.fields}>
         <Figure label={form.kit} value={draft.kit} onChange={edit("kit")} />
+        <Figure label={form.store} value={draft.store} onChange={edit("store")} />
         <Figure label={form.central} value={draft.central} onChange={edit("central")} />
         <Figure label={form.shelf} value={draft.shelf} onChange={edit("shelf")} />
       </div>

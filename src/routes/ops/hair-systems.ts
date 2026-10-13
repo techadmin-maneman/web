@@ -35,6 +35,7 @@ const addRoute = createRoute({
             unit_cost: UnitCost,
             reorder_kit: Level.optional(),
             reorder_central: Level.optional(),
+            reorder_store: Level.optional(),
           })
           .strict()
           .openapi("NewHairSystem"),
@@ -65,6 +66,7 @@ export function registerOpsHairSystems(app: App): void {
         unitCost: body.unit_cost,
         reorderKit: body.reorder_kit ?? null,
         reorderCentral: body.reorder_central ?? null,
+        reorderStore: body.reorder_store ?? null,
       },
       { actor: actorOf(c), requestId: c.var.requestId, now: c.var.deps.now() },
     );

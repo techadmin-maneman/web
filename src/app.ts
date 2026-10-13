@@ -381,9 +381,7 @@ export function createApp(
   app.notFound((c) => refuse(c, "not_found"));
   app.onError((error, c) => {
     // Hono raises a 400 for a body that is not valid JSON.
-    if (error instanceof HTTPException && error.status === 400) {
-      return refuse(c, "invalid_request", ["body"]);
-    }
+    if (error instanceof HTTPException && error.status === 400) return refuse(c, "invalid_request", ["body"]);
     // A read D1 failed for a reason that passes by itself, after its tries (src/lib/d1-retry.ts): try again shortly.
     if (c.req.method === "GET" && isTransientD1Error(error)) {
       c.var.log.warn("d1_unavailable", { error });

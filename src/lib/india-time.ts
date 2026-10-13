@@ -30,9 +30,12 @@ export function addDays(date: string, days: number): string {
   return new Date(Date.parse(`${date}T00:00:00Z`) + days * DAY_MS).toISOString().slice(0, 10);
 }
 
+/** A date's day of the week: 0 for Sunday to 6 for Saturday. */
+export const weekdayOf = (date: string): number => new Date(`${date}T00:00:00Z`).getUTCDay();
+
 /** True for Saturday and Sunday. */
 export function isWeekend(date: string): boolean {
-  const day = new Date(`${date}T00:00:00Z`).getUTCDay(); // 0 is Sunday, 6 is Saturday
+  const day = weekdayOf(date);
   return day === 0 || day === 6;
 }
 

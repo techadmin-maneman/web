@@ -100,6 +100,7 @@ interface NewHairSystem extends HairSystemSpec {
   readonly unitCost: number;
   readonly reorderKit: number | null;
   readonly reorderCentral: number | null;
+  readonly reorderStore?: number | null;
 }
 
 /**
@@ -161,6 +162,7 @@ export async function addHairSystem(
       unit_cost: added.unitCost,
       reorder_kit: added.reorderKit,
       reorder_central: added.reorderCentral,
+      reorder_store: added.reorderStore ?? null,
       created_at: at,
       updated_at: at,
     }),

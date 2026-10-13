@@ -111,8 +111,9 @@ describe("a piece fitted", () => {
     expect(await heldInKit(second)).toBe(1);
     expect(job.deps.alerts).toEqual([
       expect.stringContaining(
-        `Stock is low in technician ${IMRAN}'s kit: Mane Man Essential 8x10 1B, 20% grey, 100% 1 piece`,
+        `Mane Man Essential 8x10 1B, 20% grey, 100% is low in technician ${IMRAN}'s kit: 1 piece, at or below its level`,
       ),
+      expect.stringContaining("Mane Man Essential 8x10 1B, 30% grey, 100% is low in technician"),
     ]);
   });
 

@@ -14165,7 +14165,18 @@
                 "type": "null"
               }
             ],
-            "description": "The central store is low at or below this; null for no level."
+            "description": "The warehouse is low at or below this; null for no level."
+          },
+          "reorder_store": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "A city stockroom or a hub is low at or below this; null tells nothing of a store."
           },
           "retired_from": {
             "anyOf": [
@@ -14213,6 +14224,7 @@
           "unit_cost",
           "reorder_kit",
           "reorder_central",
+          "reorder_store",
           "retired_from",
           "offered",
           "shelf_life_days",
@@ -14359,6 +14371,18 @@
               }
             ]
           },
+          "reorder_store": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100000
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "shelf_life_days": {
             "anyOf": [
               {
@@ -14411,6 +14435,18 @@
             ]
           },
           "reorder_central": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100000
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "reorder_store": {
             "anyOf": [
               {
                 "type": "integer",
@@ -14582,6 +14618,18 @@
             ]
           },
           "reorder_central": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100000
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "reorder_store": {
             "anyOf": [
               {
                 "type": "integer",
@@ -14954,6 +15002,16 @@
                       "type": "null"
                     }
                   ]
+                },
+                "reorder_store": {
+                  "anyOf": [
+                    {
+                      "type": "integer"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
                 }
               },
               "required": [
@@ -14963,7 +15021,8 @@
                 "retired",
                 "hair_system",
                 "reorder_kit",
-                "reorder_central"
+                "reorder_central",
+                "reorder_store"
               ],
               "additionalProperties": false
             }

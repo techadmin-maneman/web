@@ -5,15 +5,8 @@
 // changed, and each row not staged deleted.
 
 import postgres from "postgres";
-import {
-  metaOf,
-  rowKey,
-  type Cell,
-  type RunLog,
-  type TableMeta,
-  type TableRows,
-  type WarehouseProvider,
-} from "./index.ts";
+import type { Cell, RunLog, TableMeta, TableRows, WarehouseProvider } from "./index.ts";
+import { metaOf, rowKey } from "./tables.ts";
 
 const SCHEMA = "analytics";
 

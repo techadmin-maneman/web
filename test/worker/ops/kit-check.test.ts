@@ -11,7 +11,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { checkTomorrowsKits } from "../../../src/domain/field/kit-check.ts";
 import { draftPlan } from "../../../src/domain/field/supply-plan.ts";
 import { NOW, markDatabase, request } from "../helpers.ts";
-import { IMRAN, working, type Working } from "../job-fixtures.ts";
+import { IMRAN, SAMEER, working, type Working } from "../job-fixtures.ts";
 import { KIT_CHECK } from "../../../src/policy/kit-check.ts";
 
 const CLIENT = "88888888-8888-4888-8888-888888888881";
@@ -97,7 +97,9 @@ describe("tomorrow's kits", () => {
         { consumable_code: "solvent", from_place: "gurgaon-room", to_place: IMRAN, proposed: 6 },
       ].sort((a, b) => a.consumable_code.localeCompare(b.consumable_code)),
     );
-    expect(told[0]).toContain("Imran Qureshi's kit is short for tomorrow: ");
+    // The chat is told the kit by its technician's ID; the console names them.
+    expect(told[0]).toContain(`Short for tomorrow in technician ${IMRAN}'s kit: `);
+    expect(told[0]).not.toContain("Imran");
     // The stockroom holds solvent enough, and none of the client's hair system: that gap is told as one.
     expect(told[0]).toContain(`Gurgaon stockroom can't cover ${code}: order or move one.`);
     expect(told[0]).not.toContain("cover solvent");
@@ -127,6 +129,40 @@ describe("tomorrow's kits", () => {
     expect(pieces).toEqual({ proposed: 2 });
   });
 
+  it("tops each kit up for the week on the evening ops set: the week's consumables and the kit level", async () => {
+    await job.opsPost("/api/consumables/solvent", { reorder_kit: 5 });
+    const later = new Date(NOW.getTime() + 3 * 24 * 60 * 60 * 1000).toISOString();
+    const past = new Date(NOW.getTime() + 9 * 24 * 60 * 60 * 1000).toISOString();
+    await env.DB.batch(
+      [
+        ["service-later", later],
+        ["service-past-the-week", past],
+      ].map(([id, at]) =>
+        env.DB.prepare(
+          `INSERT INTO appointments (id, fsm_id, person_id, type, tier, status, window_start, window_end, technician_id,
+             service_city, synced_at)
+           VALUES (?1, ?1, NULL, 'service', 'standard', 'scheduled', ?2, ?2, ?3, 'Gurgaon', ?2)`,
+        ).bind(id, at, IMRAN),
+      ),
+    );
+    // Monday's evening: the week's top-up day.
+    await checkTomorrowsKits(env.DB, EVENING, alertOnce, { ...KIT_CHECK, top_up_weekday: 1 });
+    const lines = await env.DB.prepare(
+      `SELECT to_place, consumable_code, proposed, usable, need, safety FROM plan_lines
+       ORDER BY to_place = ?1 DESC, consumable_code = 'solvent'`,
+    )
+      .bind(IMRAN)
+      .all();
+    // Two visits in the week at 10 ml each and a level of 5, against the 4 ml the kit holds; the hair system is
+    // tomorrow's. A kit with no visits is still brought up to its level.
+    expect(lines.results).toEqual([
+      { to_place: IMRAN, consumable_code: code, proposed: 1, usable: 0, need: 1, safety: 0 },
+      { to_place: IMRAN, consumable_code: "solvent", proposed: 21, usable: 4, need: 20, safety: 5 },
+      { to_place: SAMEER, consumable_code: "solvent", proposed: 5, usable: 0, need: 0, safety: 5 },
+    ]);
+    expect(told).toContainEqual(expect.stringContaining(`Short for the week in technician ${IMRAN}'s kit: `));
+  });
+
   it("sends an approved top-up to wait for the technician's scan, and outlasts the plan's own redraft", async () => {
     await checkTomorrowsKits(env.DB, EVENING, alertOnce, KIT_CHECK);
     const solvent = await env.DB.prepare("SELECT id FROM plan_lines WHERE consumable_code = 'solvent'").first<string>(
@@ -135,6 +171,10 @@ describe("tomorrow's kits", () => {
     expect((await job.opsPost(`/api/supply-plan/lines/${solvent ?? ""}/approve`, { quantity: 6 })).status).toBe(200);
     const moving = await env.DB.prepare("SELECT to_place, quantity, state FROM stock_transfers").all();
     expect(moving.results).toEqual([{ to_place: IMRAN, quantity: 6, state: "in_transit" }]);
+    // The next evening hour counts what is on its way as held, and proposes no second top-up.
+    await checkTomorrowsKits(env.DB, EVENING, alertOnce, KIT_CHECK);
+    const solventLines = await env.DB.prepare("SELECT state FROM plan_lines WHERE consumable_code = 'solvent'").all();
+    expect(solventLines.results).toEqual([{ state: "approved" }]);
 
     await env.DB.prepare(
       `INSERT INTO forecast_runs (id, run_on, period_days, horizon_periods, due_rate, fit_rate, ran_at)

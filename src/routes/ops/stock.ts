@@ -178,6 +178,7 @@ export async function stockAnswer(c: Context<AppEnv>) {
       hair_system: hairSystems.has(consumable.code),
       reorder_kit: consumable.reorderKit,
       reorder_central: consumable.reorderCentral,
+      reorder_store: consumable.reorderStore,
     })),
     places: view.places.map((place) => ({
       id: place.id,

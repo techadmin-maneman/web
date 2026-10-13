@@ -26,6 +26,7 @@ interface Draft {
   readonly density: string;
   readonly cost: string;
   readonly kit: string;
+  readonly store: string;
   readonly central: string;
 }
 
@@ -93,6 +94,7 @@ function readyOf(draft: Draft): boolean {
     Number(draft.grey) <= 100 &&
     RUPEES.test(draft.cost.trim()) &&
     optionalWhole(draft.kit) &&
+    optionalWhole(draft.store) &&
     optionalWhole(draft.central)
   );
 }
@@ -130,6 +132,7 @@ function SpecFields({
       <div className={styles.fields}>
         <Figure label={copy.cost} value={draft.cost} onChange={edit("cost")} />
         <Figure label={copy.kit} value={draft.kit} onChange={edit("kit")} />
+        <Figure label={copy.store} value={draft.store} onChange={edit("store")} />
         <Figure label={copy.central} value={draft.central} onChange={edit("central")} />
       </div>
     </>
@@ -146,6 +149,7 @@ const sentOf = (draft: Draft) => ({
   density_percent: DENSITIES.find((each) => String(each) === draft.density) ?? 100,
   unit_cost: Math.round(Number(draft.cost) * 100),
   reorder_kit: level(draft.kit),
+  reorder_store: level(draft.store),
   reorder_central: level(draft.central),
 });
 
@@ -160,6 +164,7 @@ export function HairSystemForm({ book, onSaved }: { book: Book; onSaved: (book: 
     density: "100",
     cost: "",
     kit: "",
+    store: "",
     central: "",
   };
   const [draft, setDraft] = useState<Draft>(blank);

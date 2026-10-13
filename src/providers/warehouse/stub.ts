@@ -1,15 +1,8 @@
 // A reporting store that keeps what it is given, for tests and local runs: the same staging, stamping and deleting as
 // the real one, so a test can see a night's rows, what changed, and the run it logged.
 
-import {
-  metaOf,
-  rowKey,
-  type Row,
-  type RunLog,
-  type TableMeta,
-  type TableRows,
-  type WarehouseProvider,
-} from "./index.ts";
+import type { Row, RunLog, TableMeta, TableRows, WarehouseProvider } from "./index.ts";
+import { metaOf, rowKey } from "./tables.ts";
 
 export interface StubWarehouse extends WarehouseProvider {
   readonly tables: Map<string, Map<string, Row>>;

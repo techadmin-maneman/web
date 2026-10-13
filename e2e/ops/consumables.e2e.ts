@@ -29,7 +29,7 @@ test.describe("the list", () => {
 
     const tape = row(page, "Tape strips strip");
     await expect(tape).toContainText("Rs. 12.50");
-    await expect(tape).toContainText("Kit 5 · store 50");
+    await expect(tape).toContainText("Kit 5 · warehouse 50");
     await expect(tape).toContainText(settingsCopy.consumables.states.offered);
     await expect(row(page, "Solvent ml")).toContainText("Offered until 1 Oct 2027");
     await expect(row(page, "Shampoo sachet sachet")).toContainText("Retired from 1 Sep 2027");
@@ -62,6 +62,7 @@ test.describe("a consumable added or changed", () => {
       unit_cost: 750,
       reorder_kit: 10,
       reorder_central: null,
+      reorder_store: null,
       shelf_life_days: null,
     });
     await expect(page.getByRole("status").filter({ hasText: settingsCopy.consumables.form.added })).toBeVisible();
@@ -220,6 +221,7 @@ test.describe("hair systems", () => {
       unit_cost: 1_200_000,
       reorder_kit: null,
       reorder_central: null,
+      reorder_store: null,
     });
     await reread;
     await expect(page.getByRole("status")).toHaveText(words.added);

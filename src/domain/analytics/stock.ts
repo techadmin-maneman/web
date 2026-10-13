@@ -5,6 +5,7 @@
 // Kits of technicians marked as tests are left out.
 
 import { addDays, indiaDate } from "../../lib/india-time.ts";
+import { levelAt } from "../../policy/stock.ts";
 import type { Row, TableRows } from "../../providers/warehouse/index.ts";
 
 interface Item {
@@ -14,6 +15,7 @@ interface Item {
   readonly unit_cost: number;
   readonly reorder_kit: number | null;
   readonly reorder_central: number | null;
+  readonly reorder_store: number | null;
 }
 
 interface Movement {
@@ -97,7 +99,7 @@ function weeksOf(
 /** The catalogue, the places, the ledger and what each completed visit was expected to use. */
 async function readStock(db: D1Database) {
   const [items, places, movements, expected] = await db.batch<Item | StockPlace | Movement | Expected>([
-    db.prepare("SELECT code, name, unit, unit_cost, reorder_kit, reorder_central FROM consumables"),
+    db.prepare("SELECT code, name, unit, unit_cost, reorder_kit, reorder_central, reorder_store FROM consumables"),
     db.prepare(
       `SELECT p.id, p.kind, COALESCE(p.city, t.city) AS city, p.technician_id
        FROM stock_places p LEFT JOIN technicians t ON t.id = p.technician_id
@@ -130,8 +132,16 @@ export async function stockTables(db: D1Database, today: string): Promise<readon
   const keys = new Map(places.map((place) => [place.id, keyOf(place)]));
   const placeKey = (id: string) => keys.get(id) ?? `kit:${id}`;
   const valueOf = (code: string, quantity: number) => Math.round(quantity * (byCode.get(code)?.unit_cost ?? 0)) / 100;
-  const reorderAt = (place: string, code: string) =>
-    place.startsWith("kit:") ? byCode.get(code)?.reorder_kit : byCode.get(code)?.reorder_central;
+  const reorderAt = (place: string, code: string) => {
+    const item = byCode.get(code);
+    if (item === undefined) return null;
+    const levels = {
+      reorderKit: item.reorder_kit,
+      reorderCentral: item.reorder_central,
+      reorderStore: item.reorder_store,
+    };
+    return levelAt(levels, place === "central" ? "warehouse" : (place.split(":")[0] ?? ""));
+  };
 
   const weeks: Row[] = weeksOf(moves, expected, { today, placeKey }).map((week) => {
     const level = reorderAt(week.place, week.code);
@@ -143,7 +153,7 @@ export async function stockTables(db: D1Database, today: string): Promise<readon
       value: valueOf(week.code, week.on_hand),
       used: week.used,
       expected: week.expected,
-      alerts: level !== null && level !== undefined && week.on_hand <= level ? 1 : 0,
+      alerts: level !== null && week.on_hand <= level ? 1 : 0,
     };
   });
   return [

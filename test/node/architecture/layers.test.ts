@@ -12,7 +12,7 @@ const LAYERS = [
   ["config"],
   ["policy"],
   ["domain", "providers"],
-  ["http", "queues", "scheduled", "wiring"],
+  ["http", "queues", "scheduled", "workflows", "wiring"],
   ["routes"],
   ["app"],
 ] as const;

@@ -401,6 +401,7 @@ const HAIR = {
   hair_system: true,
   reorder_kit: 1,
   reorder_central: null,
+  reorder_store: null,
 };
 const withPieces = { ...STOCK, consumables: [...STOCK.consumables, HAIR] };
 const UNITS = {

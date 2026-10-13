@@ -17422,8 +17422,10 @@ export interface components {
             unit_cost: number;
             /** @description A kit is low at or below this, in the consumable's unit; null for no level. */
             reorder_kit: number | null;
-            /** @description The central store is low at or below this; null for no level. */
+            /** @description The warehouse is low at or below this; null for no level. */
             reorder_central: number | null;
+            /** @description A city stockroom or a hub is low at or below this; null tells nothing of a store. */
+            reorder_store: number | null;
             /** @description The day in India it is no longer offered from; null while it is. */
             retired_from: string | null;
             /** @description Whether the technician app offers it today. */
@@ -17467,6 +17469,7 @@ export interface components {
             unit_cost: number;
             reorder_kit?: number | null;
             reorder_central?: number | null;
+            reorder_store?: number | null;
             shelf_life_days?: number | null;
         };
         ConsumableChange: {
@@ -17478,6 +17481,7 @@ export interface components {
             unit_cost?: number;
             reorder_kit?: number | null;
             reorder_central?: number | null;
+            reorder_store?: number | null;
             shelf_life_days?: number | null;
         };
         ConsumableRetirement: {
@@ -17506,6 +17510,7 @@ export interface components {
             unit_cost: number;
             reorder_kit?: number | null;
             reorder_central?: number | null;
+            reorder_store?: number | null;
         };
         JobSheet: {
             checklists: components["schemas"]["JobSheetChecklist"][];
@@ -17582,6 +17587,7 @@ export interface components {
                 hair_system: boolean;
                 reorder_kit: number | null;
                 reorder_central: number | null;
+                reorder_store: number | null;
             }[];
             /** @description Every open place down the tree, the warehouse first, and any closed one still holding stock: those in the caller's cities, a hub with every city of its zone, and the warehouse only with a national grant. */
             places: {
