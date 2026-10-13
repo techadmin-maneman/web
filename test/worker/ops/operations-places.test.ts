@@ -6,7 +6,7 @@ import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { App } from "../../../src/http/context.ts";
 import { appFor, captureLogs, fakeDependencies, fakeQueue, markDatabase, NOW, request } from "../helpers.ts";
-import { enforce, listStaff, person, type GrantCode, relax } from "./staff-fixtures.ts";
+import { enforce, listStaff, person, type GrantCode } from "./staff-fixtures.ts";
 
 const DELHI_TECH = "33333333-3333-4333-8333-333333333331";
 const GURGAON_TECH = "33333333-3333-4333-8333-333333333332";
@@ -449,7 +449,6 @@ describe("Operations' reach", () => {
   });
 
   it("narrows nothing while the Staff list is not enforced", async () => {
-    await relax();
     await listStaff("delhi@maneman.in", ["operations:view:city:Delhi"]);
     const delhi = opsAs("delhi@maneman.in");
 

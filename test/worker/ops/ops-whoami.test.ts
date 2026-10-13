@@ -6,15 +6,13 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { ROUTE_NEEDS } from "../../../src/policy/console-routes.ts";
 import { appFor, fakeDependencies, markDatabase, request } from "../helpers.ts";
-import { relax } from "./staff-fixtures.ts";
 
 const ACCESS = { teamDomain: "maneman.cloudflareaccess.com", opsAudience: "ops-audience" };
-/** A database that lists nobody and does not enforce the list, with no bootstrap admin: every call goes ahead. */
+/** A fresh database lists nobody and does not enforce the list; with no bootstrap admin, every call goes ahead. */
 const NOT_LISTED = { enforced: false, listed: false, grants: [], may_call: Object.keys(ROUTE_NEEDS) };
 
 beforeEach(async () => {
   await markDatabase();
-  await relax();
 });
 
 describe("GET /api/whoami", () => {

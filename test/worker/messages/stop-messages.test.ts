@@ -20,7 +20,6 @@ import {
   request,
 } from "../helpers.ts";
 import { insertPerson } from "../tryon-fixtures.ts";
-import { relax } from "../ops/staff-fixtures.ts";
 
 const PERSON = "55555555-5555-4555-8555-555555555551";
 const MOBILE = "+919810000051";
@@ -138,8 +137,6 @@ describe("POST /api/stop", () => {
   });
 
   it("answers only on the public host", async () => {
-    // The Staff list refuses an ops path it does not list before routing; off, the ops host shows what it serves.
-    await relax();
     const token = await tokenFor("whatsapp_visits");
     for (const surface of ["client", "ops", "tech"] as const) {
       const res = await request(appFor("local", fakeDependencies(), {}, surface), "/api/stop", {

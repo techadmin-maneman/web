@@ -42,11 +42,6 @@ export async function allowToken(clientId: string): Promise<void> {
     .run();
 }
 
-/** The list switched off, as a database was before it started on: what would be refused is only logged. */
-export async function relax(): Promise<void> {
-  await env.DB.prepare("UPDATE staff_access_mode SET enforced = 0 WHERE id = 1").run();
-}
-
 export async function enforce(): Promise<void> {
   await env.DB.prepare("UPDATE staff_access_mode SET enforced = 1 WHERE id = 1").run();
 }

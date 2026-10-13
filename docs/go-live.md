@@ -25,7 +25,7 @@ Nothing here needs a release. The first two have dates.
 - [ ] **A dedicated WhatsApp number** on its own Evolution instance, its webhook to us (item 38; provisioning, step 12, and "The WhatsApp number is banned" for moving a number).
 - [ ] **Fix staging's Google key** (item 54; provisioning, step 13): in Google Cloud, on the key's project, enable the **Places API (New)** and the **Geocoding API**; link billing; restrict the key to those two APIs and give it **no application restriction by website**, since our server calls it; set the quotas provisioning, step 13 lists. Then save an address on app-staging with a building chosen from the list and check it carries a pin (provisioning, step 13, "If the address search misbehaves").
 - [ ] **Make the repository private, before the site's release** (items 88 and 89). It is public for free Actions minutes, so its briefs, rulings, prices and runbooks are readable by anyone. Buy GitHub Team, switch the repository to private, then require every `ci.yml` job on `main`, limit the `production` environment to `main`, and check whether required reviewers on a private repository's environment need a higher plan.
-- [x] **The console's permissions on staging** (ADRs 0109 and 0189): on since before the audit; migration 0156 keeps every environment on.
+- [x] **The console's permissions on staging** (ADRs 0109 and 0189): on since 26 May 2026.
 - [ ] **Zoho tokens** (provisioning, step 8 and 11b.1): a Self Client refresh token for scripts and proofs alone (item 32); the CRM token again with `ZohoCRM.modules.contacts.ALL` (item 21); and every token with only the scopes its sync uses (item 36).
 - [ ] **The CRM** (provisioning, step 8): `node --env-file=.env.crm-<env> scripts/ops/setup-crm.ts --check`, then without `--check`, then `node --env-file=.env.worker-<env> scripts/ops/check-zoho-setup.ts` (item 34); and, by hand, the one workflow rule: contact consent becoming true assigns an owner, nothing firing for "Try-on — delivery only" (item 35).
 - [ ] **The technicians:** each one added in the console's Technicians with his mobile number, his city and his zone; your own as well, to sign in to the technician app yourself.
@@ -108,7 +108,7 @@ With self-serve booking off, a consultation booked on the site is a request: the
 **Before it:**
 
 - [ ] The payment run of section 2 passed (item 8).
-- [ ] **The console's permissions in production** (ADRs 0109 and 0189): the list is on from its first release, and only `STAFF_BOOTSTRAP_ADMINS` reach the console until each person's grants are added on production's Admin › Staff.
+- [ ] **The console's permissions in production** (ADRs 0109 and 0189): production's first release creates the list off. Once that release is live, switch Access control on at Admin › Staff; `STAFF_BOOTSTRAP_ADMINS` keep you in while the list is empty. Then add each person's grants.
 - [ ] Razorpay live: KYC, live keys, and the live webhook to `https://maneman.in/api/hooks/razorpay` with the nine events of "The dashboards" below (items 5, 6 and 154; provisioning, step 11c).
 - [ ] The Razorpay and Zoho tables of "The dashboards" below walked on staging and production, each result recorded.
 - [ ] The CA's answers, and GST on in Books with the real GSTIN, Books synced again (items 2, 3, 9, 14, 16, 17 and 26).

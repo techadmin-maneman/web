@@ -10,7 +10,6 @@ import { byHost, surfaceOf } from "../../../src/http/surfaces.ts";
 import worker from "../../../src/index.ts";
 import { HealthSchema } from "../../../src/routes/health.ts";
 import { appFor, captureLogs, markDatabase } from "../helpers.ts";
-import { relax } from "../ops/staff-fixtures.ts";
 
 const LOCAL_ORIGINS: Readonly<Record<Surface, string>> = {
   public: "http://localhost:8787",
@@ -75,8 +74,6 @@ describe("the Worker, locally", () => {
   it.each(SURFACES.filter((surface) => surface !== "public"))(
     "answers every public route with a 404 on the %s host, even from its own origin",
     async (surface) => {
-      // The Staff list refuses an ops path it does not list before routing; off, the ops host shows what it serves.
-      await relax();
       const routes = publicRoutes();
       expect(routes.length).toBeGreaterThan(5);
 
