@@ -106,6 +106,8 @@ export const ERROR_CODES = [
   "in_progress",
   // The no-show wait has not run out yet (src/policy/no-show.ts), or a visit ops would close by hand is still to come.
   "too_early_to_close",
+  // A visit ops would close by hand as a no-show has no check-in from its technician to stand on.
+  "no_check_in",
   // A check-in or a start before the earliest check-in (src/policy/phone-clock.ts).
   "too_early_to_arrive",
   // A visit ops would close by hand is closed or cancelled already, or the technician's phone closed it; or a
@@ -278,6 +280,7 @@ export const ERROR_STATUS = {
   not_trained: 409,
   in_progress: 409,
   too_early_to_close: 425,
+  no_check_in: 409,
   too_early_to_arrive: 409,
   already_closed: 409,
   no_service_area: 400,

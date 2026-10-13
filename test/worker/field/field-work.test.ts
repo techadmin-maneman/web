@@ -334,6 +334,23 @@ describe("a closed job", () => {
     await refusedAsClosed(await postAt(pastTheHour, stepPath("consumables"), { items: [] }, uuidv7At(151)));
   });
 
+  it("closes as a no-show by hand from the technician's check-in, opening the case, and never without one", async () => {
+    const byHand = { outcome: "no_show", reason: "Imran's phone died at the door; the client never answered" };
+    const refused = await opsPost(`/api/visits/${TODAY_JOB}/close`, byHand, fakeDependencies({ now: () => CLOSED_AT }));
+    expect(refused.status).toBe(409);
+    expect((await refused.json<{ error: { code: string } }>()).error.code).toBe("no_check_in");
+
+    await work(NOW, TODAY_JOB, [["checkin", AT_THE_DOOR, -30]]);
+    const closed = await opsPost(`/api/visits/${TODAY_JOB}/close`, byHand, fakeDependencies({ now: () => CLOSED_AT }));
+    expect(closed.status).toBe(200);
+    expect(await statusOf(TODAY_JOB)).toBe("terminated");
+    expect(await visitRowOf(TODAY_JOB)).toMatchObject({ started_at: null, outcome: "no_show" });
+    const cases = await env.DB.prepare("SELECT decision FROM no_show_cases WHERE appointment_id = ?1")
+      .bind(TODAY_JOB)
+      .all();
+    expect(cases.results).toEqual([{ decision: "undecided" }]);
+  });
+
   it("refuses the phone's steps on a job ops closed by hand", async () => {
     await work(minutesAfterStart(10), TODAY_JOB, UP_TO_THE_OUTCOME.slice(0, 2));
     const byHand = {

@@ -1200,6 +1200,7 @@ Request body:
             "not_trained",
             "in_progress",
             "too_early_to_close",
+            "no_check_in",
             "too_early_to_arrive",
             "already_closed",
             "no_service_area",

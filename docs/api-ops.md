@@ -496,7 +496,7 @@ Request body:
 
 ### POST /api/visits/{id}/close
 
-Close a visit by hand, as done or partly done, for work whose technician's phone was lost
+Close a visit by hand, as done, partly done or a no-show, for work whose technician's phone was lost
 
 Request body:
 
@@ -538,7 +538,7 @@ Request body:
 }
 ```
 
-**409**: already_closed: the visit is closed or cancelled, or the technician's phone closed it
+**409**: already_closed: the visit is closed or cancelled, or the technician's phone closed it; no_check_in: a no-show stands on the technician's check-in, and there is none
 
 ```json
 {
@@ -546,7 +546,7 @@ Request body:
 }
 ```
 
-**425**: too_early_to_close: the visit's time has not come
+**425**: too_early_to_close: the visit's time, or a no-show's wait, has not come
 
 ```json
 {
@@ -9160,6 +9160,7 @@ Request body:
             "not_trained",
             "in_progress",
             "too_early_to_close",
+            "no_check_in",
             "too_early_to_arrive",
             "already_closed",
             "no_service_area",
@@ -12567,18 +12568,19 @@ Request body:
       "type": "string",
       "enum": [
         "done",
-        "partial"
+        "partial",
+        "no_show"
       ]
     },
     "started_at": {
       "type": "string",
       "format": "date-time",
-      "description": "When the work began, on the visit's own day."
+      "description": "When the work began, on the visit's own day; left out for a no-show."
     },
     "ended_at": {
       "type": "string",
       "format": "date-time",
-      "description": "When it ended: after it began, and not later than now."
+      "description": "When it ended: after it began, and not later than now; left out for a no-show."
     },
     "reason": {
       "type": "string",
@@ -12588,8 +12590,6 @@ Request body:
   },
   "required": [
     "outcome",
-    "started_at",
-    "ended_at",
     "reason"
   ],
   "additionalProperties": false
@@ -12687,6 +12687,7 @@ Request body:
             "not_trained",
             "in_progress",
             "too_early_to_close",
+            "no_check_in",
             "too_early_to_arrive",
             "already_closed",
             "no_service_area",
