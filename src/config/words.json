@@ -4214,6 +4214,41 @@
     "text": "We need this to contact you."
   },
   {
+    "key": "site:referral/referral.form.legal.before",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "Our "
+  },
+  {
+    "key": "site:referral/referral.form.legal.terms",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "terms"
+  },
+  {
+    "key": "site:referral/referral.form.legal.between",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": " and "
+  },
+  {
+    "key": "site:referral/referral.form.legal.privacy",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "privacy notice"
+  },
+  {
+    "key": "site:referral/referral.form.legal.after",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": " apply."
+  },
+  {
     "key": "site:referral/referral.form.marked",
     "surface": "site",
     "group": "Invite page",

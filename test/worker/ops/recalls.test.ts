@@ -130,7 +130,9 @@ describe("a recall", () => {
 
     // Booked, the call and the notice are done with.
     await env.DB.prepare("UPDATE pieces SET replacement_booked = 1").run();
-    expect(await composeRecallNotice(env.DB, raised.id, PERSON)).toMatchObject({ skip: expect.any(String) });
+    expect(await composeRecallNotice(env.DB, raised.id, PERSON)).toEqual({
+      skip: "the recall is closed, or its replacement is booked",
+    });
   });
 
   it("leaves a recalled lot to go last when stock is sent on", async () => {

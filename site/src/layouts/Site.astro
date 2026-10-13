@@ -5,6 +5,7 @@
 // production's host, Open Graph and X cards, and any structured data.
 import "../styles/global.css";
 import Footer from "../components/Footer.astro";
+import LegalFooter from "../components/LegalFooter.astro";
 import Header from "../components/Header.astro";
 import Sprite from "../components/Sprite.astro";
 import StickyBar from "../components/StickyBar.astro";
@@ -96,7 +97,7 @@ const ogImage = new URL(image.path, SITE_ORIGIN).href;
     <main>
       <slot />
     </main>
-    {home && <Footer />}
+    {home ? <Footer /> : <LegalFooter />}
     {home && <StickyBar />}
     <script>
       // Every script error and promise nobody caught reported, as the apps' are

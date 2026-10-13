@@ -7,7 +7,14 @@
 //
 // The referral landing's address holds a person's invite code, so no tag reads
 // it: Google's tags are given the address without the code, and the Meta Pixel,
-// which reports the address as it stands, is not loaded there.
+// which reports the address as it stands, is not loaded there. No tag is given
+// an address's fragment, where /stop keeps its token, and none loads on /stop.
+//
+// What a booking says of the person, how far their hair loss has gone and the
+// area they live in, reaches no tag: each event goes without them.
+//
+// Google's tags start with every kind of consent denied, so they set no cookie,
+// and the Meta Pixel loads only once the visitor has agreed (CONSENT_KEY).
 
 import type { LossExtent } from "@rules/config/booking.ts";
 import type { BookingWindow } from "@rules/config/scheduling.ts";
@@ -96,10 +103,31 @@ function startMetaPixel(pixelId: string): void {
   fbq("track", "PageView");
 }
 
-/** The address as the tags are told it: an invite's code taken out. */
+/** The address as the tags are told it: its fragment and an invite's code taken out. */
 function reportedAddress(address: string): string {
-  return address.replace(INVITE_PATH_IN_URL, "/r/");
+  return (address.split("#")[0] ?? "").replace(INVITE_PATH_IN_URL, "/r/");
 }
+
+/** Where the visitor's answer to the site's ad and measurement cookies is kept, "granted" once they agree. */
+const CONSENT_KEY = "mm-ad-consent";
+
+/** Whether the visitor has agreed to the ad tags. Storage refused, as in a private window, is no agreement. */
+function consented(): boolean {
+  try {
+    return localStorage.getItem(CONSENT_KEY) === "granted";
+  } catch {
+    return false;
+  }
+}
+
+/** The page whose address carries the token that stops a person's messages. */
+const STOP_PATH = "/stop";
+
+/** What a booking event says of the person, which no tag is given. */
+const PERSONAL_PARAMETERS = new Set(["area", "loss_extent"]);
+
+const withoutPersonal = (parameters: Record<string, unknown>) =>
+  Object.fromEntries(Object.entries(parameters).filter(([key]) => !PERSONAL_PARAMETERS.has(key)));
 
 /**
  * Removes any query parameter that is not a campaign tag from the address, so
@@ -116,7 +144,15 @@ function clearUnknownParameters(): void {
 export function startAnalytics(): void {
   clearUnknownParameters();
   window.dataLayer ??= [];
+  if (location.pathname === STOP_PATH) return;
   const ids = ANALYTICS_IDS[ENVIRONMENT];
+  const agreed = consented() ? "granted" : "denied";
+  gtag("consent", "default", {
+    ad_storage: agreed,
+    ad_user_data: agreed,
+    ad_personalization: agreed,
+    analytics_storage: agreed,
+  });
   const googleTag = ids.ga4 ?? ids.googleAds?.id;
   if (googleTag !== undefined) {
     loadScript(`https://www.googletagmanager.com/gtag/js?id=${googleTag}`);
@@ -127,11 +163,12 @@ export function startAnalytics(): void {
   if (ids.ga4 !== null) gtag("config", ids.ga4, ENVIRONMENT === "production" ? {} : { debug_mode: true });
   if (ids.googleAds !== null) gtag("config", ids.googleAds.id);
   const onInvite = INVITE_PATH_IN_URL.test(location.pathname);
-  if (ids.metaPixel !== null && !onInvite) startMetaPixel(ids.metaPixel);
+  if (ids.metaPixel !== null && !onInvite && agreed === "granted") startMetaPixel(ids.metaPixel);
 }
 
 export function track(event: AnalyticsEvent): void {
-  const { name, ...parameters } = event;
+  const { name, ...all } = event;
+  const parameters = withoutPersonal(all);
   gtag("event", name, parameters);
 
   // A booking or a try-on claim is a lead: the conversion the ads are bought for.

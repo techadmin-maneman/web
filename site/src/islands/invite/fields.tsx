@@ -5,7 +5,7 @@ import { Button } from "@maneman/ui/Button";
 import { ChoiceCard } from "@maneman/ui/ChoiceCard";
 import { Checkbox, Fieldset, Label, TextInput } from "@maneman/ui/Field";
 import { MobileInput } from "@maneman/ui/MobileInput";
-import { TextButton } from "@maneman/ui/TextLink";
+import { TextButton, TextLink } from "@maneman/ui/TextLink";
 import { useEffect, useRef } from "preact/hooks";
 import { ICONS } from "@maneman/brand/icons";
 import { formatMobileField } from "@maneman/web-kit/mobile";
@@ -189,7 +189,26 @@ export function ConsentBox(props: {
           </div>
         )}
       </div>
+      <LegalLinks />
     </>
+  );
+}
+
+/** The terms the form binds the visitor to, and the privacy notice, each a link, beneath its agreement. */
+function LegalLinks() {
+  const words = referral.form.legal;
+  return (
+    <p class={styles.legal}>
+      {words.before}
+      <TextLink inline href="/terms">
+        {words.terms}
+      </TextLink>
+      {words.between}
+      <TextLink inline href="/privacy">
+        {words.privacy}
+      </TextLink>
+      {words.after}
+    </p>
   );
 }
 

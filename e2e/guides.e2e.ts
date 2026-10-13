@@ -20,9 +20,13 @@ test("lists every guide, and each opens with its title and a way to book", async
   await expect(page.getByRole("link", { name: guideCopy.guidesPage.book })).toHaveAttribute("href", "/book");
 });
 
-test("names each city we come to, and sends a visitor to check their pincode", async ({ page }) => {
+// As built it names no city; the site's Worker writes in those ops serve (test/worker/site/site-worker-cities.test.ts).
+test("says where we come, ready for the cities served, and sends a visitor to check their pincode", async ({
+  page,
+}) => {
   await page.goto("/areas");
   await expect(page.getByRole("heading", { level: 1, name: guideCopy.areasPage.title })).toBeVisible();
-  await expect(page.getByRole("listitem")).toHaveText([...guideCopy.areasPage.cities]);
+  const lead = page.getByText(guideCopy.areasPage.lead);
+  await expect(lead).toHaveAttribute("data-cities", guideCopy.areasPage.cities);
   await expect(page.getByRole("link", { name: guideCopy.areasPage.check })).toHaveAttribute("href", "/book");
 });

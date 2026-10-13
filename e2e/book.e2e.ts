@@ -583,7 +583,8 @@ test("a pincode we do not serve lists the number kept, with the launch alert off
   await expect(page.getByLabel(siteCopy.tryOn.gate.name, { exact: true })).toHaveCount(0);
 
   await page.getByText("You may contact me about this request.").click();
-  await page.getByText(referralCopy.referral.waitlist.launchAlert).click();
+  // Joining the list is asking to be told at launch, so the box starts ticked.
+  await expect(page.getByLabel(referralCopy.referral.waitlist.launchAlert)).toBeChecked();
   await page.getByRole("button", { name: referralCopy.referral.waitlist.submit }).click();
 
   await expect(page.getByRole("heading", { name: "You are on the Bandra list" })).toBeVisible();
@@ -605,8 +606,8 @@ test("a booking and a waitlist are both counted, with nothing personal", async (
   await page.getByRole("button", { name: referralCopy.referral.consultation.submit }).click();
   await expect(page.getByText(referralCopy.referral.booked.label, { exact: true })).toBeVisible();
   expect(await analyticsEvents(page)).toEqual([
-    ["lead_submitted", { page: "book", served: true, area: "Sector 65", window: "morning", loss_extent: "receding" }],
-    ["booking_confirmed", { page: "book", area: "Sector 65", window: "morning", state: "booked" }],
+    ["lead_submitted", { page: "book", served: true, window: "morning" }],
+    ["booking_confirmed", { page: "book", window: "morning", state: "booked" }],
   ]);
   await expectNoPersonalData(page, ["Test Visitor", "9810000000", "98100 00000", "Flat 402", "Palm Grove Society"]);
 
@@ -615,8 +616,8 @@ test("a booking and a waitlist are both counted, with nothing personal", async (
   await page.getByRole("button", { name: referralCopy.referral.waitlist.submit }).click();
   await expect(page.getByRole("heading", { name: "You are on the Bandra list" })).toBeVisible();
   expect(await analyticsEvents(page)).toEqual([
-    ["lead_submitted", { page: "book", served: false, area: "Bandra", window: null, loss_extent: null }],
-    ["waitlist_submitted", { page: "book", area: "Bandra" }],
+    ["lead_submitted", { page: "book", served: false, window: null }],
+    ["waitlist_submitted", { page: "book" }],
   ]);
   await expectNoPersonalData(page, ["Test Visitor", "9810000000", "98100 00000"]);
 });
@@ -680,6 +681,7 @@ test("a friend who opened an invite joins a waitlist here with it, and is told t
   ).toBeVisible();
   await expect(page.getByRole("button", { name: referralCopy.referral.remembered.joinWithout })).toBeVisible();
   await page.getByText("You may contact me about this request.").click();
+  await page.getByText(referralCopy.referral.waitlist.launchAlert).click();
   await page.getByRole("button", { name: referralCopy.referral.waitlist.submit }).click();
 
   await expect(page.getByRole("heading", { name: "You are on the Bandra list" })).toBeVisible();

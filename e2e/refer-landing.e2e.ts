@@ -144,8 +144,8 @@ test("a booking through the invite is counted, with nothing personal and no code
   await expect(page.getByText(referralCopy.referral.booked.label, { exact: true })).toBeVisible();
 
   expect(await analyticsEvents(page)).toEqual([
-    ["lead_submitted", { page: "invite", served: true, area: "Sector 65", window: "afternoon", loss_extent: null }],
-    ["booking_confirmed", { page: "invite", area: "Sector 65", window: "morning", state: "booked" }],
+    ["lead_submitted", { page: "invite", served: true, window: "afternoon" }],
+    ["booking_confirmed", { page: "invite", window: "morning", state: "booked" }],
   ]);
   const commands = await analyticsCommands(page);
   expect(commands).toContainEqual(["set", { page_location: `${new URL(page.url()).origin}/r/` }]);
@@ -232,7 +232,7 @@ test("an unserved pincode takes the number instead, and the launch alert is the 
 
   await fillPerson(page);
   await page.getByText("You may contact me about this request.").click();
-  await page.getByText(referralCopy.referral.waitlist.launchAlert).click();
+  await expect(page.getByLabel(referralCopy.referral.waitlist.launchAlert)).toBeChecked();
   await page.getByRole("button", { name: referralCopy.referral.waitlist.submit }).click();
 
   await expect(page.getByRole("heading", { name: "You are on the Bandra list" })).toBeVisible();

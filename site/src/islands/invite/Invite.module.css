@@ -658,3 +658,11 @@
     margin-top: var(--sp-36);
   }
 }
+
+/* Beneath a form's agreement: the terms and privacy notice that apply, each a link (fields.tsx). */
+.legal {
+  margin: var(--sp-8) 0 0;
+  font-size: var(--fs-14);
+  line-height: var(--lh-160);
+  color: var(--text-muted);
+}
