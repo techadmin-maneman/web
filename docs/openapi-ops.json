@@ -116,6 +116,7 @@
                   "figures_conflict",
                   "transfer_settled",
                   "order_state",
+                  "same_approver",
                   "claim_state",
                   "return_settled",
                   "out_of_warranty",
@@ -3374,6 +3375,7 @@
                   "figures_conflict",
                   "transfer_settled",
                   "order_state",
+                  "same_approver",
                   "claim_state",
                   "return_settled",
                   "out_of_warranty",
@@ -29161,7 +29163,7 @@
             }
           },
           "409": {
-            "description": "order_state: the order is past the step asked, or the approver approved it already",
+            "description": "order_state: the order is past the step asked; same_approver: the manager who gave the first approval asked for the second",
             "content": {
               "application/json": {
                 "schema": {
@@ -29220,7 +29222,7 @@
             }
           },
           "409": {
-            "description": "order_state: the order is past the step asked, or the approver approved it already",
+            "description": "order_state: the order is past the step asked; same_approver: the manager who gave the first approval asked for the second",
             "content": {
               "application/json": {
                 "schema": {
@@ -29289,7 +29291,7 @@
             }
           },
           "409": {
-            "description": "order_state: the order is past the step asked, or the approver approved it already",
+            "description": "order_state: the order is past the step asked; same_approver: the manager who gave the first approval asked for the second",
             "content": {
               "application/json": {
                 "schema": {

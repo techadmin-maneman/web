@@ -177,7 +177,10 @@ export async function draftOrder(
 
 /** An order's change, written only where its state still allows it: refused as gone, or as no longer allowed. */
 type Changed =
-  { readonly ok: true } | { readonly ok: false; readonly missing: true } | { readonly ok: false; readonly state: true };
+  | { readonly ok: true }
+  | { readonly ok: false; readonly missing: true }
+  | { readonly ok: false; readonly state: true }
+  | { readonly ok: false; readonly sameApprover: true };
 
 /** An update of one order, `?1` its ID, stamping `change_id = ?9`, which this request's token fills. */
 interface OrderUpdate {
@@ -222,7 +225,8 @@ export async function approveOrder(
 ): Promise<Changed> {
   const order = (await purchaseOrders(db)).find((each) => each.id === id) ?? null;
   if (order === null) return { ok: false, missing: true };
-  if (order.state !== "drafted" || order.approvedBy === written.actor.id) return { ok: false, state: true };
+  if (order.state !== "drafted") return { ok: false, state: true };
+  if (order.approvedBy === written.actor.id) return { ok: false, sameApprover: true };
   const at = written.now.toISOString();
   const twice = needsSecondApproval(order, aboveRupees);
   const update: OrderUpdate =

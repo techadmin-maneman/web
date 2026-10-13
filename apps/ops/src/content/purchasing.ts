@@ -178,6 +178,7 @@ export const purchasing = {
     lines: "Each item once, at least its minimum.",
     rupee_rate: "Give the rupee rate for this currency.",
     order_state: "That order has moved on. Reload.",
+    same_approver: "You gave its first approval. Another Operations manager gives the second.",
     claim_state: "That claim has moved on. Reload.",
     return_settled: "That piece is settled already. Reload.",
     out_of_warranty: "Its warranty has ended. Write it off instead.",

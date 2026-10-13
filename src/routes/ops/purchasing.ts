@@ -125,7 +125,9 @@ export const ORDERS = { description: "The purchase orders", ...json(OrdersSchema
 export const orderPath = { params: z.object({ id: z.string().min(1).max(64) }) };
 const ACCESS = errorResponse("access_required");
 const MISSING = errorResponse("not_found: no such order");
-const STATE = errorResponse("order_state: the order is past the step asked, or the approver approved it already");
+const STATE = errorResponse(
+  "order_state: the order is past the step asked; same_approver: the manager who gave the first approval asked for the second",
+);
 
 const listRoute = createRoute({
   method: "get",
@@ -288,8 +290,9 @@ export const written = (c: Context<AppEnv>) => ({
 });
 
 export async function after(c: Context<AppEnv>, changed: Awaited<ReturnType<typeof markSent>>) {
-  if (!changed.ok) return "missing" in changed ? refuse(c, "not_found") : refuse(c, "order_state");
-  return c.json(await ordersAnswer(c), 200);
+  if (changed.ok) return c.json(await ordersAnswer(c), 200);
+  if ("missing" in changed) return refuse(c, "not_found");
+  return refuse(c, "sameApprover" in changed ? "same_approver" : "order_state");
 }
 
 export function registerOpsPurchasing(app: App): void {

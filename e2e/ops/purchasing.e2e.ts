@@ -75,6 +75,21 @@ test("lists each order, opens one, and approves it, awaiting a second approver",
   expect(await axeViolations(page)).toEqual([]);
 });
 
+test("does not offer the second approval to the manager who gave the first", async ({ page }) => {
+  await open(page, {
+    "GET /api/purchase-orders": json(FIRST_APPROVED),
+    "GET /api/whoami": json({
+      signed_in_as: "ops@maneman.in",
+      sign_out: null,
+      staff: { enforced: false, listed: true, grants: [], may_call: [] },
+    }),
+  });
+  await page.getByRole("button", { name: copy.open("PO-0007") }).click();
+  const panel = page.getByRole("region", { name: "PO-0007 · Kesh Supplies" });
+  await expect(panel).toContainText(copy.awaitingSecond);
+  await expect(panel.getByRole("button", { name: copy.order.secondApprove })).toHaveCount(0);
+});
+
 test("cancels an order, with why", async ({ page }) => {
   const cancelled = { ...BOOK, orders: [{ ...ORDER, state: "cancelled", cancel_reason: "Out of stock" }] };
   await open(page, { "POST /api/purchase-orders/{id}/cancel": json(cancelled) });

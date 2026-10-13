@@ -8063,7 +8063,7 @@ An approval: the first, or a second by another manager
 }
 ```
 
-**409**: order_state: the order is past the step asked, or the approver approved it already
+**409**: order_state: the order is past the step asked; same_approver: the manager who gave the first approval asked for the second
 
 ```json
 {
@@ -8099,7 +8099,7 @@ An approved order marked sent
 }
 ```
 
-**409**: order_state: the order is past the step asked, or the approver approved it already
+**409**: order_state: the order is past the step asked; same_approver: the manager who gave the first approval asked for the second
 
 ```json
 {
@@ -8143,7 +8143,7 @@ Request body:
 }
 ```
 
-**409**: order_state: the order is past the step asked, or the approver approved it already
+**409**: order_state: the order is past the step asked; same_approver: the manager who gave the first approval asked for the second
 
 ```json
 {
@@ -9130,6 +9130,7 @@ Request body:
             "figures_conflict",
             "transfer_settled",
             "order_state",
+            "same_approver",
             "claim_state",
             "return_settled",
             "out_of_warranty",
@@ -12598,6 +12599,7 @@ Request body:
             "figures_conflict",
             "transfer_settled",
             "order_state",
+            "same_approver",
             "claim_state",
             "return_settled",
             "out_of_warranty",

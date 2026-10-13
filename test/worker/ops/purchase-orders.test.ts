@@ -94,7 +94,7 @@ describe("approving an order", () => {
     const once = await job.opsPost(`/api/purchase-orders/${id}/approve`);
     expect(await firstOrder(once)).toMatchObject({ state: "drafted", approved_by: "ops@localhost" });
     const again = await job.opsPost(`/api/purchase-orders/${id}/approve`);
-    expect((await fieldsOf(again)).code).toBe("order_state");
+    expect((await fieldsOf(again)).code).toBe("same_approver");
 
     // Another manager approved first; this one gives the second approval.
     await env.DB.prepare("UPDATE purchase_orders SET approved_by = 'first@maneman.in' WHERE id = ?1").bind(id).run();

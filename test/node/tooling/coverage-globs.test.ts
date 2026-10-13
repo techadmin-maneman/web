@@ -7,11 +7,12 @@ import { describe, expect, it } from "vitest";
 function expand(pattern: string): string[] {
   const group = /\{([^}]+)\}/.exec(pattern);
   if (group === null) return [pattern];
-  return group[1].split(",").map((each) => pattern.replace(group[0], each));
+  const [whole, names = ""] = group;
+  return names.split(",").map((each) => pattern.replace(whole, each));
 }
 
 const floors = [...readFileSync("vitest.config.ts", "utf8").matchAll(/^\s*"((?:src|scripts)\/[^"]+)":\s*\{/gm)].map(
-  (match) => match[1],
+  (match) => match[1] ?? "",
 );
 
 describe("the coverage floors", () => {
