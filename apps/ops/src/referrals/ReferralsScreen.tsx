@@ -6,6 +6,7 @@
 // Each name in a held pair is a way to that client's page, and each grant says
 // how long it has been held, as the board writes it.
 
+import { lazyScreen } from "@maneman/ui/lazyScreen";
 import { REASON_MAX_CHARS } from "@rules/policy/decision-reasons.ts";
 import { errorText } from "@maneman/web-kit/refusal";
 import { capsLook } from "@maneman/ui/Caps";
@@ -14,7 +15,7 @@ import { Field, TextArea } from "@maneman/ui/Field";
 import { Table } from "@maneman/ui/Table";
 import { useLoad } from "@maneman/ui/useLoad";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
-import { lazy, Suspense, useEffect, useRef, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { api, type Held, type Referrer } from "../api.ts";
 import { DecisionQueue } from "../components/DecisionQueue.tsx";
 import { OpsLink, Shell } from "../components/Shell.tsx";
@@ -28,7 +29,7 @@ import { useTableView, type Column } from "../components/useTableView.ts";
 import styles from "./referrals.module.css";
 
 /** The partners' panel, fetched as the page draws it: it stays out of the console's first load. */
-const Partners = lazy(() => import("./Partners.tsx").then((module) => ({ default: module.Partners })));
+const Partners = lazyScreen(() => import("./Partners.tsx").then((module) => module.Partners));
 
 type Choice = "approve" | "reject";
 

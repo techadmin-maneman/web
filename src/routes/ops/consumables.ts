@@ -72,7 +72,10 @@ const ConsumableSchema = z
       description: "A kit is low at or below this, in the consumable's unit; null for no level.",
     }),
     reorder_central: z.union([z.number().int(), z.null()]).openapi({
-      description: "The central store is low at or below this; null for no level.",
+      description: "The warehouse is low at or below this; null for no level.",
+    }),
+    reorder_store: z.union([z.number().int(), z.null()]).openapi({
+      description: "A city stockroom or a hub is low at or below this; null tells nothing of a store.",
     }),
     retired_from: z.union([z.iso.date(), z.null()]).openapi({
       description: "The day in India it is no longer offered from; null while it is.",
@@ -146,6 +149,7 @@ const addRoute = createRoute({
             unit_cost: UnitCost,
             reorder_kit: Level.optional(),
             reorder_central: Level.optional(),
+            reorder_store: Level.optional(),
             shelf_life_days: ShelfLife.optional(),
           })
           .strict()
@@ -175,6 +179,7 @@ const changeRoute = createRoute({
             unit_cost: UnitCost.optional(),
             reorder_kit: Level.optional(),
             reorder_central: Level.optional(),
+            reorder_store: Level.optional(),
             shelf_life_days: ShelfLife.optional(),
           })
           .strict()
@@ -286,6 +291,7 @@ function consumableBody(consumable: Consumable, today: string, spec: HairSystemS
     unit_cost: consumable.unitCost,
     reorder_kit: consumable.reorderKit,
     reorder_central: consumable.reorderCentral,
+    reorder_store: consumable.reorderStore,
     retired_from: consumable.retiredDate,
     offered: isOffered(consumable, today),
     shelf_life_days: consumable.shelfLifeDays,
@@ -336,6 +342,7 @@ export function registerOpsConsumables(app: App): void {
         unitCost: body.unit_cost,
         reorderKit: body.reorder_kit ?? null,
         reorderCentral: body.reorder_central ?? null,
+        reorderStore: body.reorder_store ?? null,
         shelfLifeDays: body.shelf_life_days ?? null,
       },
       written(c),
@@ -355,6 +362,7 @@ export function registerOpsConsumables(app: App): void {
         unitCost: body.unit_cost,
         reorderKit: body.reorder_kit,
         reorderCentral: body.reorder_central,
+        reorderStore: body.reorder_store,
         shelfLifeDays: body.shelf_life_days,
       },
       written(c),

@@ -4,9 +4,9 @@
 import { OpsLink } from "../components/Shell.tsx";
 import { textLinkLook } from "@maneman/ui/TextLink";
 import { Button } from "@maneman/ui/Button";
-import { useLoad } from "@maneman/ui/useLoad";
+import { useLiveLoad } from "@maneman/ui/useLoad";
 import { indiaClock, indiaDate, shortDate } from "@maneman/web-kit/dates";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { careApi, type ChatThread, type Conversation, type ThreadItem } from "./care-api.ts";
 import { care as copy } from "../content/care.ts";
 import { useAccess } from "../lib/access.ts";
@@ -22,6 +22,9 @@ import styles from "../components/forms.module.css";
 import own from "./care.module.css";
 
 const thread = copy.thread;
+
+/** How often an open chat is read again while it is in view, for the client's next message. */
+const THREAD_EVERY_MS = 10_000;
 
 /** Who the chat is with: the client's name, or the number we don't know. */
 export const whoOf = (conversation: Conversation): string => conversation.person?.name ?? conversation.mobile;
@@ -105,9 +108,12 @@ export function Thread({
   onChanged: () => void;
 }) {
   const load = useCallback(() => careApi.conversation(conversation.id), [conversation.id]);
-  const [loaded, retry] = useLoad(load);
-  /** The chat as Care's last reply, note or close left it. */
+  const { loaded, refresh, retry } = useLiveLoad(load, THREAD_EVERY_MS);
+  /** The chat as Care's last reply, note or close left it, until the chat is next read. */
   const [changed, setChanged] = useState<ChatThread | null>(null);
+  useEffect(() => {
+    setChanged(null);
+  }, [loaded]);
   const [said, setSaid] = useState<string | null>(null);
   const mayAct = useAccess().mayCall("POST /api/conversations/{id}/replies");
   if (loaded.state === "loading") return <Loading />;
@@ -146,6 +152,8 @@ export function Thread({
           onThread={(next, words) => {
             setChanged(next);
             setSaid(words);
+            // Read again at once, so a read begun before the change cannot put the chat back as it was.
+            refresh();
           }}
         />
       )}

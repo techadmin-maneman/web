@@ -1,5 +1,6 @@
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
+import { readPersonData } from "../../../src/domain/privacy/data-export.ts";
 import { erasePerson } from "../../../src/domain/privacy/erasure.ts";
 import { createLogger } from "../../../src/log.ts";
 import { captureLogs, markDatabase, NOW } from "../helpers.ts";
@@ -237,5 +238,61 @@ describe("erasure blanks what a pay step kept on a hold", () => {
       "SELECT state, consents_shown, consents_ip_hash FROM slot_holds WHERE id = 'hold-1'",
     ).first();
     expect(hold).toEqual({ state: "released", consents_shown: null, consents_ip_hash: null });
+  });
+});
+
+// A number that wrote to Care before it was a client's (docs/decisions/0129-the-care-inbox.md): the thread becomes
+// theirs when they do, and an erasure and their data export reach it either way.
+describe("erasure and the export reach a chat begun before the client was one", () => {
+  const MOBILE = "+919810000055";
+  const PERSON = "5b2f7c1e-8d4a-4f3b-9c6e-2a1d0e9f8b7c";
+
+  async function threadFrom(mobile: string, id: string): Promise<void> {
+    const at = NOW.toISOString();
+    await env.DB.batch([
+      env.DB.prepare(
+        `INSERT INTO conversations (id, person_id, mobile_e164, opened_at, last_message_at, created_at, updated_at)
+         VALUES (?1, NULL, ?2, ?3, ?3, ?3, ?3)`,
+      ).bind(id, mobile, at),
+      env.DB.prepare(
+        `INSERT INTO chat_messages (id, conversation_id, direction, author, text, sent_at, created_at)
+         VALUES (?1, ?2, 'in', 'client', 'Is the Delhi studio open on Sunday?', ?3, ?3)`,
+      ).bind(`${id}-m`, id, at),
+    ]);
+  }
+
+  const addPerson = (id: string, mobile: string) =>
+    env.DB.prepare("INSERT INTO people (id, created_at, mobile_e164, name) VALUES (?1, ?2, ?3, 'Rohan Bedi')")
+      .bind(id, NOW.toISOString(), mobile)
+      .run();
+
+  const thread = (id: string) =>
+    env.DB.prepare(
+      "SELECT c.person_id, c.mobile_e164, m.text FROM conversations c JOIN chat_messages m ON m.conversation_id = c.id WHERE c.id = ?1",
+    )
+      .bind(id)
+      .first();
+
+  it("links the thread to the client once they become one, or take its number", async () => {
+    await threadFrom(MOBILE, "thread-1");
+    await addPerson(PERSON, MOBILE);
+    expect(await thread("thread-1")).toMatchObject({ person_id: PERSON });
+
+    await threadFrom("+919810000056", "thread-2");
+    await env.DB.prepare("UPDATE people SET mobile_e164 = '+919810000056' WHERE id = ?1").bind(PERSON).run();
+    expect(await thread("thread-2")).toMatchObject({ person_id: PERSON });
+  });
+
+  it("exports and erases a thread from their number that was never linked to them", async () => {
+    await addPerson(PERSON, MOBILE);
+    // As a thread filed before threads were linked to a client who arrived later.
+    await threadFrom(MOBILE, "thread-1");
+    expect(await thread("thread-1")).toMatchObject({ person_id: null });
+
+    const exported = await readPersonData(env.DB, PERSON);
+    expect(exported.chats).toEqual([expect.objectContaining({ text: "Is the Delhi studio open on Sunday?" })]);
+
+    expect(await statusOf(PERSON)).toBe(200);
+    expect(await thread("thread-1")).toEqual({ person_id: PERSON, mobile_e164: "erased:thread-1", text: null });
   });
 });

@@ -84,6 +84,7 @@ describe("GET /api/tasks, the next visit", () => {
       {
         id: VISIT,
         person: { id: PERSON, name: "Rohit Malhotra" },
+        facts: { group: "at_risk_client", last_visit_at: "2026-08-01T04:30:00.000Z", due_on: "2026-08-31" },
         detail: "2026-08-01T04:30:00.000Z 2026-08-31",
         since: "2026-09-06T18:30:00.000Z",
         due: "2026-09-08T18:30:00.000Z",
@@ -136,6 +137,7 @@ describe("GET /api/tasks, the next visit", () => {
       {
         id: PERSON,
         person: { id: PERSON, name: "Rohit Malhotra" },
+        facts: { group: "first_fit_to_book", consulted_at: "2026-09-10T04:30:00.000Z", fit_window: "morning" },
         detail: "2026-09-10T04:30:00.000Z morning",
         since: "2026-09-16T18:30:00.000Z",
         due: "2026-09-18T18:30:00.000Z",

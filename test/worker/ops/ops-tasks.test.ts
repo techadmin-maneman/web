@@ -147,6 +147,14 @@ describe("GET /api/tasks", () => {
       {
         id: REQUEST,
         person: { id: PERSON, name: "Rohit Malhotra" },
+        facts: {
+          group: "consultation_request",
+          date: "2026-09-23",
+          window: "morning",
+          one_visit: false,
+          discount_code: null,
+          first_fit: null,
+        },
         detail: "2026-09-23 morning",
         since: "2026-09-20T06:00:00.000Z",
         due: "2026-09-22T06:00:00.000Z",
@@ -177,6 +185,7 @@ describe("GET /api/tasks", () => {
       {
         id: PIECE,
         person: { id: PERSON, name: "Rohit Malhotra" },
+        facts: { group: "replacement_order", piece_code: "MM-STD-4417-C", due_on: "2026-09-01" },
         detail: "MM-STD-4417-C 2026-09-01",
         // India's midnight thirty days before it fell due, and two days later it was overdue.
         since: "2026-08-01T18:30:00.000Z",
@@ -261,6 +270,7 @@ describe("GET /api/tasks", () => {
       {
         id: DISPUTE,
         person: { id: PERSON, name: "Rohit Malhotra" },
+        facts: { group: "no_show_dispute", kept: 200000 },
         detail: "200000",
         since: "2026-09-20T06:00:00.000Z",
         due: "2026-09-22T06:00:00.000Z",
@@ -305,6 +315,7 @@ describe("GET /api/tasks", () => {
       {
         id: GRIEVANCE,
         person: { id: PERSON, name: "Rohit Malhotra" },
+        facts: { group: "grievance" },
         detail: null,
         since: "2026-09-20T06:00:00.000Z",
         due: "2026-10-20T06:00:00.000Z",

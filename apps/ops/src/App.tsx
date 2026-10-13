@@ -6,7 +6,8 @@
 // Areas, the settings sections and a technician's page load the first time they open, so
 // the console's first load stays within its 150 KB budget (scripts/lib/spa-build.ts).
 
-import { Fragment, lazy, Suspense, useEffect, type ComponentType } from "react";
+import { lazyScreen } from "@maneman/ui/lazyScreen";
+import { Fragment, Suspense, useEffect, type ComponentType } from "react";
 import { ClientScreen } from "./clients/ClientScreen.tsx";
 import { FindClientScreen } from "./clients/FindClientScreen.tsx";
 import { ClosedScreen } from "./components/ClosedScreen.tsx";
@@ -19,97 +20,68 @@ import {
   redirect,
   redirectOf,
   routeOf,
+  SECTION_NAMES,
+  sectionOf,
   titleOf,
   usePath,
   type MayCall,
   type PlainPage,
   type Route,
 } from "./route.ts";
-import { loadOrReload } from "@maneman/web-kit/load-or-reload";
+import { PageBoundary } from "./states/ErrorBoundary.tsx";
 import { TasksScreen } from "./tasks/TasksScreen.tsx";
 import { TechniciansScreen } from "./technicians/TechniciansScreen.tsx";
 
-const settingsPanels = () => loadOrReload(() => import("./settings/PanelScreens.tsx"));
-const SettingsScreen = lazy(() =>
-  loadOrReload(() => import("./settings/SettingsScreen.tsx")).then((module) => ({ default: module.SettingsScreen })),
+const SettingsScreen = lazyScreen(() =>
+  import("./settings/SettingsScreen.tsx").then((module) => module.SettingsScreen),
 );
-const PricesScreen = lazy(() => settingsPanels().then((module) => ({ default: module.PricesScreen })));
-const DiscountCodesScreen = lazy(() => settingsPanels().then((module) => ({ default: module.DiscountCodesScreen })));
-const TechnicianPayScreen = lazy(() => settingsPanels().then((module) => ({ default: module.TechnicianPayScreen })));
-const PartnerCommissionScreen = lazy(() =>
-  settingsPanels().then((module) => ({ default: module.PartnerCommissionScreen })),
+const PricesScreen = lazyScreen(() => import("./settings/PanelScreens.tsx").then((module) => module.PricesScreen));
+const DiscountCodesScreen = lazyScreen(() =>
+  import("./settings/PanelScreens.tsx").then((module) => module.DiscountCodesScreen),
 );
-const StaffScreen = lazy(() => settingsPanels().then((module) => ({ default: module.StaffScreen })));
+const TechnicianPayScreen = lazyScreen(() =>
+  import("./settings/PanelScreens.tsx").then((module) => module.TechnicianPayScreen),
+);
+const PartnerCommissionScreen = lazyScreen(() =>
+  import("./settings/PanelScreens.tsx").then((module) => module.PartnerCommissionScreen),
+);
+const StaffScreen = lazyScreen(() => import("./settings/PanelScreens.tsx").then((module) => module.StaffScreen));
 // The queues ops open now and then load when opened, keeping the console's first load within its budget.
-const DeletionsScreen = lazy(() =>
-  loadOrReload(() => import("./deletions/DeletionsScreen.tsx")).then((module) => ({ default: module.DeletionsScreen })),
+const DeletionsScreen = lazyScreen(() =>
+  import("./deletions/DeletionsScreen.tsx").then((module) => module.DeletionsScreen),
 );
-const GrievancesScreen = lazy(() =>
-  loadOrReload(() => import("./grievances/GrievancesScreen.tsx")).then((module) => ({
-    default: module.GrievancesScreen,
-  })),
+const GrievancesScreen = lazyScreen(() =>
+  import("./grievances/GrievancesScreen.tsx").then((module) => module.GrievancesScreen),
 );
-const NumberChangesScreen = lazy(() =>
-  loadOrReload(() => import("./number-changes/NumberChangesScreen.tsx")).then((module) => ({
-    default: module.NumberChangesScreen,
-  })),
+const NumberChangesScreen = lazyScreen(() =>
+  import("./number-changes/NumberChangesScreen.tsx").then((module) => module.NumberChangesScreen),
 );
-const ReferralsScreen = lazy(() =>
-  loadOrReload(() => import("./referrals/ReferralsScreen.tsx")).then((module) => ({ default: module.ReferralsScreen })),
+const ReferralsScreen = lazyScreen(() =>
+  import("./referrals/ReferralsScreen.tsx").then((module) => module.ReferralsScreen),
 );
-const ActivityScreen = lazy(() =>
-  loadOrReload(() => import("./activity/ActivityScreen.tsx")).then((module) => ({ default: module.ActivityScreen })),
+const ActivityScreen = lazyScreen(() =>
+  import("./activity/ActivityScreen.tsx").then((module) => module.ActivityScreen),
 );
-const AreasScreen = lazy(() =>
-  loadOrReload(() => import("./areas/AreasScreen.tsx")).then((module) => ({ default: module.AreasScreen })),
+const AreasScreen = lazyScreen(() => import("./areas/AreasScreen.tsx").then((module) => module.AreasScreen));
+const MessagesScreen = lazyScreen(() => import("./care/MessagesScreen.tsx").then((module) => module.MessagesScreen));
+const TargetsScreen = lazyScreen(() => import("./targets/TargetsScreen.tsx").then((module) => module.TargetsScreen));
+const StockScreen = lazyScreen(() => import("./stock/StockScreen.tsx").then((module) => module.StockScreen));
+const PurchasingScreen = lazyScreen(() =>
+  import("./purchasing/PurchasingScreen.tsx").then((module) => module.PurchasingScreen),
 );
-const MessagesScreen = lazy(() =>
-  loadOrReload(() => import("./care/MessagesScreen.tsx")).then((module) => ({ default: module.MessagesScreen })),
+const CountsScreen = lazyScreen(() => import("./counts/CountsScreen.tsx").then((module) => module.CountsScreen));
+const UsageScreen = lazyScreen(() => import("./usage/UsageScreen.tsx").then((module) => module.UsageScreen));
+const QualityScreen = lazyScreen(() => import("./quality/QualityScreen.tsx").then((module) => module.QualityScreen));
+const SupplyPlanScreen = lazyScreen(() =>
+  import("./supply-plan/SupplyPlanScreen.tsx").then((module) => module.SupplyPlanScreen),
 );
-const TargetsScreen = lazy(() =>
-  loadOrReload(() => import("./targets/TargetsScreen.tsx")).then((module) => ({ default: module.TargetsScreen })),
+const SpendScreen = lazyScreen(() => import("./spend/SpendScreen.tsx").then((module) => module.SpendScreen));
+const CareNumbersScreen = lazyScreen(() =>
+  import("./care/CareNumbersScreen.tsx").then((module) => module.CareNumbersScreen),
 );
-const StockScreen = lazy(() =>
-  loadOrReload(() => import("./stock/StockScreen.tsx")).then((module) => ({ default: module.StockScreen })),
-);
-const PurchasingScreen = lazy(() =>
-  loadOrReload(() => import("./purchasing/PurchasingScreen.tsx")).then((module) => ({
-    default: module.PurchasingScreen,
-  })),
-);
-const CountsScreen = lazy(() =>
-  loadOrReload(() => import("./counts/CountsScreen.tsx")).then((module) => ({
-    default: module.CountsScreen,
-  })),
-);
-const UsageScreen = lazy(() =>
-  loadOrReload(() => import("./usage/UsageScreen.tsx")).then((module) => ({
-    default: module.UsageScreen,
-  })),
-);
-const QualityScreen = lazy(() =>
-  loadOrReload(() => import("./quality/QualityScreen.tsx")).then((module) => ({
-    default: module.QualityScreen,
-  })),
-);
-const SupplyPlanScreen = lazy(() =>
-  loadOrReload(() => import("./supply-plan/SupplyPlanScreen.tsx")).then((module) => ({
-    default: module.SupplyPlanScreen,
-  })),
-);
-const SpendScreen = lazy(() =>
-  loadOrReload(() => import("./spend/SpendScreen.tsx")).then((module) => ({ default: module.SpendScreen })),
-);
-const CareNumbersScreen = lazy(() =>
-  loadOrReload(() => import("./care/CareNumbersScreen.tsx")).then((module) => ({ default: module.CareNumbersScreen })),
-);
-const WordsScreen = lazy(() =>
-  loadOrReload(() => import("./words/WordsScreen.tsx")).then((module) => ({ default: module.WordsScreen })),
-);
-const TechnicianScreen = lazy(() =>
-  loadOrReload(() => import("./technicians/TechnicianScreen.tsx")).then((module) => ({
-    default: module.TechnicianScreen,
-  })),
+const WordsScreen = lazyScreen(() => import("./words/WordsScreen.tsx").then((module) => module.WordsScreen));
+const TechnicianScreen = lazyScreen(() =>
+  import("./technicians/TechnicianScreen.tsx").then((module) => module.TechnicianScreen),
 );
 
 /** The screen each section of one page opens on. */
@@ -169,12 +141,15 @@ export function App() {
     // The hash names a row to land on, as "/no-shows#case-…" from an older task.
     if (to !== null) redirect(`${to}${window.location.hash}`);
   }, [path, mayCall]);
-  // Keyed by the path, so each section opens at its top with its own data.
+  // Keyed by the page, so each section opens at its top with its own data, and a page that failed to draw is left
+  // behind with it.
   return (
     <Fragment key={keyOf(route)}>
-      <Suspense fallback={null}>
-        <Page route={route} mayCall={mayCall} />
-      </Suspense>
+      <PageBoundary section={sectionOf(route.page).path} title={SECTION_NAMES[route.page]}>
+        <Suspense fallback={null}>
+          <Page route={route} mayCall={mayCall} />
+        </Suspense>
+      </PageBoundary>
     </Fragment>
   );
 }

@@ -84,8 +84,9 @@ describe("a stranger's chat", () => {
     await post(care(), `/api/conversations/${CHAT}/link`, { person_id: ARJUN });
     const again = await post(care(), `/api/conversations/${CHAT}/save`, { name: "Meera Iyer" });
     expect(await again.json()).toMatchObject({ error: { code: "invalid_request", fields: ["conversation"] } });
-    await env.DB.prepare("UPDATE conversations SET person_id = NULL WHERE id = ?1").bind(CHAT).run();
+    // A client taking the number links the thread to them (migration 0163); unlinked again, it is a number ours.
     await env.DB.prepare("UPDATE people SET mobile_e164 = '+919811112222' WHERE id = ?1").bind(ARJUN).run();
+    await env.DB.prepare("UPDATE conversations SET person_id = NULL WHERE id = ?1").bind(CHAT).run();
     expect((await post(care(), `/api/conversations/${CHAT}/save`, { name: "Meera Iyer" })).status).toBe(409);
     expect(
       (await post(care(), `/api/conversations/${CHAT}/link`, { person_id: "33333333-3333-4333-8333-333333333333" }))

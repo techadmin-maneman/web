@@ -144,8 +144,9 @@ const ALLOWED = [
   { file: "src/domain/no-shows/no-shows.ts", sql: "FROM no_show_cases n JOIN checkins c ON c.id = n.checkin_id" },
   { file: "src/domain/money/discount-codes.ts", sql: "AS uses, (SELECT COALESCE(SUM(u.amount_off), 0)" },
   { file: "src/domain/care/remedies.ts", sql: "FROM remedies r JOIN people p ON p.id = r.person_id" },
-  // The weekly backup's list of tables: SQLite's own catalogue, which holds a row a table.
-  { file: "src/domain/platform/backups.ts", sql: "SELECT name, sql FROM sqlite_master" },
+  // The weekly backup's list of tables, indexes and triggers, and each table's keys: SQLite's own catalogue, a row a
+  // table, index or trigger.
+  { file: "src/domain/platform/backups.ts", sql: "FROM sqlite_master m LEFT JOIN pragma_foreign_key_list(m.name) f" },
   // The reporting copy reads every client, visit and payment, once a night in the hour from 3 am in India
   // (docs/decisions/0146-the-nightly-analytics-copy.md).
   { file: "src/domain/analytics/nightly.ts", sql: "SELECT id FROM people WHERE test_record = 0 AND erased_at IS NULL" },

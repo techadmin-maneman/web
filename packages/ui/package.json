@@ -26,6 +26,7 @@
     "./Field": "./Field.tsx",
     "./Icon": "./Icon.tsx",
     "./IconButton": "./IconButton.tsx",
+    "./lazyScreen": "./lazyScreen.ts",
     "./Mark": "./Mark.tsx",
     "./MobileInput": "./MobileInput.tsx",
     "./motion": "./motion.ts",

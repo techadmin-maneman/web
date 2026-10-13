@@ -5,7 +5,8 @@ import { env } from "cloudflare:workers";
 import { describe, expect, it } from "vitest";
 import { readMeter } from "../../../src/domain/platform/storage-meter.ts";
 import { MAX_PHOTO_BYTES, MAX_THUMBNAIL_BYTES } from "../../../src/domain/field/tech-photos.ts";
-import { PHOTO_SHARE_BYTES, RUNAWAY_CEILING_BYTES } from "../../../src/policy/storage-share.ts";
+import { PHOTO_SHARE_BYTES, PHOTO_UPLOADS_PER_TECHNICIAN_DAILY } from "../../../src/policy/storage-share.ts";
+import { indiaDate } from "../../../src/lib/india-time.ts";
 import { NOW, request } from "../helpers.ts";
 import { syntheticJpeg, syntheticPng } from "../tryon-fixtures.ts";
 import {
@@ -13,6 +14,7 @@ import {
   bindings,
   cookie,
   deps,
+  IMRAN,
   insertJob,
   opsPost,
   OTHER_JOB,
@@ -100,15 +102,21 @@ describe("the photographs", () => {
     expect(deps.alerts).toEqual([]);
   });
 
-  it("refuses a photograph past the runaway ceiling, which waits on the phone, and tells ops", async () => {
+  it("refuses a photograph past the phone's day of uploads, which waits on the phone, and tells ops", async () => {
     await startJob();
+    // The bucket's size is no reason to refuse: four times the share stores on.
     await env.DB.prepare("UPDATE storage_meter SET bytes = ?1")
-      .bind(RUNAWAY_CEILING_BYTES - 10)
+      .bind(PHOTO_SHARE_BYTES * 4)
+      .run();
+    await env.DB.prepare(
+      "INSERT INTO counters (scope, key, window_start, count) VALUES ('photo_upload:technician', ?1, ?2, ?3)",
+    )
+      .bind(IMRAN, indiaDate(NOW), PHOTO_UPLOADS_PER_TECHNICIAN_DAILY)
       .run();
     const refused = await putPhoto(await opsFreeUploadLink(), syntheticJpeg(1200, 1600));
     expect(refused.status).toBe(503);
     expect(await refused.json()).toMatchObject({ error: { code: "busy" } });
-    expect(deps.alerts).toEqual([expect.stringContaining("past the runaway ceiling of 20 GB")]);
+    expect(deps.alerts).toEqual([expect.stringContaining("A technician's phone reached the day's limit of uploads")]);
     expect(await env.DB.prepare("SELECT COUNT(*) AS photos FROM photos").first("photos")).toBe(0);
   });
 

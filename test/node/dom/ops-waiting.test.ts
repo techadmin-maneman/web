@@ -17,6 +17,8 @@ function group(name: TaskGroup["group"], count: number, dues: readonly string[])
     tasks: dues.map((due, index) => ({
       id: `${name}-${String(index)}`,
       person: null,
+      // Only the group's own count and dues are read here.
+      facts: { group: name } as TaskGroup["tasks"][number]["facts"],
       detail: null,
       since: "2027-09-15T06:00:00.000Z",
       due,

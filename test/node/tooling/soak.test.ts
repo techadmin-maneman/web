@@ -4,7 +4,7 @@
 // and how long Home and a job card took.
 
 import { describe, expect, it } from "vitest";
-import { OTHER_ROUTE_ROWS_READ, ROUTE_ROWS_READ } from "../../../scripts/lib/free-tier-budget.ts";
+import { OTHER_ROUTE_ROWS_READ, ROUTE_ROWS_READ } from "../../../scripts/lib/usage-budget.ts";
 import {
   judgeRouteLatency,
   judgeRouteReads,

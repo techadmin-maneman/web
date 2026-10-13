@@ -21,6 +21,19 @@ export const STOCK_WATCH: StockWatch = { expiry_warning_days: 30, demand_days: 2
 /** A place is low at or below its reorder level; a place with no level set is never low. */
 export const isLow = (held: number, level: number | null): boolean => level !== null && held <= level;
 
+/** An item's levels, one for each kind of place. */
+export interface Levels {
+  readonly reorderKit: number | null;
+  readonly reorderCentral: number | null;
+  readonly reorderStore: number | null;
+}
+
+/** The level a kind of place is low at: a kit its own, the warehouse the central one, a stockroom or hub the stores'. */
+export function levelAt(levels: Levels, kind: string): number | null {
+  if (kind === "kit") return levels.reorderKit;
+  return kind === "warehouse" ? levels.reorderCentral : levels.reorderStore;
+}
+
 /** A count writes the difference between what was counted and what the rows said: nought when they agree. */
 export const countDifference = (counted: number, held: number): number => counted - held;
 

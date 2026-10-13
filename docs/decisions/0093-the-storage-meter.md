@@ -81,7 +81,7 @@ The owner ruled on two of these on 27 September 2026:
 
 ## The budget
 
-Each visit's ten photographs now bring ten thumbnails, counted at 32 KB each (`THUMBNAIL_BYTES`, `scripts/lib/free-tier-budget.ts`). Phase 2's share is the policy's own figure (`PHASE_2_SHARE_BYTES`), so the budget and the meter cannot disagree.
+Each visit's ten photographs now bring ten thumbnails, counted at 32 KB each (`THUMBNAIL_BYTES`, `scripts/lib/usage-budget.ts`). Phase 2's share is the policy's own figure (`PHASE_2_SHARE_BYTES`), so the budget and the meter cannot disagree.
 
 |                                                      | Before       | After        |
 | ---------------------------------------------------- | ------------ | ------------ |

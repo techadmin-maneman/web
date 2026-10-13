@@ -1,5 +1,7 @@
 // Whether the triggers Cloudflare has attached are the ones each Worker's
-// config asks for: cron schedules, and queue consumers with their settings.
+// config asks for: cron schedules, queue consumers with their settings, and the
+// Workflows its config binds, which only `wrangler triggers deploy` creates
+// (docs/decisions/0196-long-work-in-workflows.md).
 // CI deploys code and cannot attach triggers (docs/decisions/0010-applying-triggers.md),
 // so after a deploy this compares the live account with the configs of the commit now
 // serving. It only reads, and says plainly what its token could not read.
@@ -33,6 +35,16 @@ const TriggerKeys = z.object({
   queues: z.object({ consumers: z.array(ConfiguredConsumer).optional() }).optional(),
 });
 const WorkerConfig = TriggerKeys.extend({ env: z.record(z.string(), TriggerKeys).optional() });
+
+const WorkflowKeys = z.object({ workflows: z.array(z.object({ name: z.string() })).optional() });
+const WorkflowConfig = WorkflowKeys.extend({ env: z.record(z.string(), WorkflowKeys).optional() });
+
+/** The Workflows a Worker's config binds in one environment, by name. */
+function configuredWorkflows(config: JsonObject, environment: RemoteEnvironmentName): readonly string[] {
+  return (WorkflowConfig.parse(config).env?.[environment]?.workflows ?? []).map((workflow) => workflow.name);
+}
+
+const Workflows = z.object({ result: z.array(z.object({ name: z.string(), script_name: z.string().optional() })) });
 
 /** The triggers a Worker's config attaches in one environment. */
 export function configuredTriggers(config: JsonObject, environment: RemoteEnvironmentName): Triggers {
@@ -197,10 +209,27 @@ function consumerSettingsFinding(
   return { subject, outcome: "differs", detail: `${differences.join("; ")}. ${remedies(environment).apply}` };
 }
 
+/** The Workflows the config binds, against those the account has for the script. */
+function workflowFinding(
+  script: string,
+  wanted: readonly string[],
+  workflows: ApiAnswer,
+  environment: RemoteEnvironmentName,
+) {
+  const subject = `${script} workflows`;
+  if (!workflows.ok) return notRead(subject, workflows, environment);
+  const live = Workflows.parse(workflows.body)
+    .result.filter((workflow) => workflow.script_name === undefined || workflow.script_name === script)
+    .map((workflow) => workflow.name);
+  return compare(subject, wanted, live, environment);
+}
+
 export async function checkTriggers(check: TriggerCheck): Promise<Finding[]> {
   const { environment } = check;
   const call = (path: string) => callCloudflare(check.token, `/accounts/${check.accountId}${path}`, {}, check.fetch);
   const queues = await call("/queues?per_page=100");
+  const bindsWorkflows = check.workers.some((worker) => configuredWorkflows(worker.config, environment).length > 0);
+  const workflows = bindsWorkflows ? await call("/workflows?per_page=100") : null;
 
   const findings: Finding[] = [];
   for (const worker of check.workers) {
@@ -215,6 +244,8 @@ export async function checkTriggers(check: TriggerCheck): Promise<Finding[]> {
     findings.push(consumerFinding(script, wanted, queues, environment));
     const consumers = configuredConsumers(worker.config, environment);
     if (consumers.length > 0) findings.push(consumerSettingsFinding(script, consumers, queues, environment));
+    const bound = configuredWorkflows(worker.config, environment);
+    if (bound.length > 0 && workflows !== null) findings.push(workflowFinding(script, bound, workflows, environment));
   }
   return findings;
 }

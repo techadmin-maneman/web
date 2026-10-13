@@ -3,14 +3,14 @@
 
 import { DatabaseSync } from "node:sqlite";
 import { describe, expect, it } from "vitest";
-import { backupDueOn, deleteOldBackups, writeBackup } from "../../../src/domain/platform/backups.ts";
+import { deleteOldBackups, writeBackup } from "../../../src/domain/platform/backups.ts";
 import {
   assertBackupOf,
-  backupKeyOf,
   Manifest,
   privateKeyOf,
   rowsIn,
   sqlFor,
+  tableKeyOf,
   toBase64,
 } from "../../../scripts/lib/backup-restore.ts";
 import { asD1, migratedDatabase } from "../d1-over-sqlite.ts";
@@ -52,18 +52,21 @@ async function keyPair() {
 const SUNDAY_3_30_IST = new Date("2026-10-10T22:00:00Z");
 
 describe("the weekly backup", () => {
-  it("is due in the hour from 3 am in India on Sundays, and at no other time", () => {
-    expect(backupDueOn(SUNDAY_3_30_IST)).toBe("2026-10-11");
-    expect(backupDueOn(new Date("2026-10-10T22:31:00Z"))).toBeNull();
-    expect(backupDueOn(new Date("2026-10-03T22:00:00Z"))).toBe("2026-10-04");
-    expect(backupDueOn(new Date("2026-10-09T22:00:00Z"))).toBeNull();
-  });
-
   it("is read back, decrypted with the owner's key, into the same rows in an empty database", async () => {
     const sqlite = migratedDatabase();
     sqlite
       .prepare("INSERT INTO people (id, created_at, mobile_e164, name) VALUES ('p1', '2026-10-01', '+919810000001', ?)")
       .run("Rohit O'Brien");
+    // Rows that load only in the right order: an address, whose table sorts before the people it points at, and a
+    // kit pointing at another kit written after it.
+    sqlite.exec(`
+      INSERT INTO addresses (id, person_id, created_at, line1, locality, city, pincode)
+        VALUES ('a1', 'p1', '2026-10-01', '4 Lodhi Road', 'Lodhi Colony', 'Delhi', '110003');
+      INSERT INTO stock_places (id, kind, name, created_by, created_at)
+        VALUES ('w1', 'warehouse', 'Okhla', 'admin', '2026-10-01');
+      INSERT INTO stock_places (id, kind, parent_id, technician_id, created_by, created_at)
+        VALUES ('k1', 'kit', 'w1', 't1', 'admin', '2026-10-01'), ('k2', 'kit', 'w1', 't2', 'admin', '2026-10-01');
+      UPDATE stock_places SET parent_id = 'k2' WHERE id = 'k1';`);
     const { bucket, objects } = memoryBucket();
     const { publicKey, pem } = await keyPair();
 
@@ -73,10 +76,18 @@ describe("the weekly backup", () => {
       publicKey,
       environment: "staging",
       now: SUNDAY_3_30_IST,
+      date: "2026-10-11",
     });
     expect(written).toMatchObject({ prefix: "2026-10-11/" });
     expect(
-      await writeBackup({ db: asD1(sqlite), bucket, publicKey, environment: "staging", now: SUNDAY_3_30_IST }),
+      await writeBackup({
+        db: asD1(sqlite),
+        bucket,
+        publicKey,
+        environment: "staging",
+        now: SUNDAY_3_30_IST,
+        date: "2026-10-11",
+      }),
     ).toBe("already");
     // Nothing of a client's is readable in what is stored.
     for (const [key, body] of objects) {
@@ -84,20 +95,32 @@ describe("the weekly backup", () => {
     }
 
     const manifest = Manifest.parse(JSON.parse(new TextDecoder().decode(objects.get("2026-10-11/manifest.json"))));
-    const key = await backupKeyOf(manifest, await privateKeyOf(pem));
+    expect(manifest.format).toBe(2);
+    const privateKey = await privateKeyOf(pem);
     const rows = new Map<string, Record<string, unknown>[]>();
     for (const table of manifest.tables) {
       const body = objects.get(table.object);
       if (body === undefined) throw new Error(`${table.object} is in the bucket`);
-      rows.set(table.name, await rowsIn(key, table.iv, body));
+      rows.set(table.name, await rowsIn(await tableKeyOf(manifest, table, privateKey), table.iv, body));
     }
     expect(rows.get("people")).toEqual([expect.objectContaining({ id: "p1", name: "Rohit O'Brien" })]);
 
+    // Read children first: a row added while the backup runs cannot be missing the row it points at.
+    const read = manifest.tables.map((table) => table.name);
+    expect(read.indexOf("visits")).toBeLessThan(read.indexOf("people"));
+
+    // D1 loads a long file as several transactions; the strictest split checks every statement as it lands.
     const restored = new DatabaseSync(":memory:");
-    // As D1 loads a file: in one transaction, its foreign keys checked at the end.
-    restored.exec(`BEGIN;
-${sqlFor(manifest, rows)}COMMIT;`);
+    restored.exec(sqlFor(manifest, rows));
     expect(restored.prepare("SELECT name FROM people WHERE id = 'p1'").get()).toEqual({ name: "Rohit O'Brien" });
+    expect(restored.prepare("SELECT parent_id FROM stock_places WHERE id = 'k1'").get()).toEqual({ parent_id: "k2" });
+    const counts = (database: DatabaseSync) =>
+      database
+        .prepare(
+          "SELECT type, count(*) AS n FROM sqlite_master WHERE sql IS NOT NULL AND name NOT LIKE 'sqlite_%' GROUP BY type",
+        )
+        .all();
+    expect(counts(restored)).toEqual(counts(sqlite));
     const tables = (
       sqlite
         .prepare("SELECT count(*) AS n FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'")

@@ -97,6 +97,7 @@ describe("GET /api/tasks", () => {
       {
         id: VISIT,
         person: { id: PERSON, name: "Rohit Malhotra" },
+        facts: { group: "draft_invoice", invoice_id: "books-inv-7" },
         detail: "books-inv-7",
         // It waits from the end of the visit, and two days later it is overdue.
         since: "2026-09-20T06:00:00.000Z",
@@ -143,6 +144,12 @@ describe("GET /api/tasks", () => {
         {
           id: VISIT,
           person: { id: PERSON, name: "Rohit Malhotra" },
+          facts: {
+            group: "partial_visit",
+            kind: "service",
+            reason_code: "piece_not_ready",
+            reason: "Hair system not ready",
+          },
           detail: "service Hair system not ready",
           since: "2026-09-20T05:40:00.000Z",
           due: "2026-09-22T05:40:00.000Z",
@@ -187,6 +194,7 @@ describe("GET /api/tasks", () => {
         {
           id: VISIT,
           person: { id: PERSON, name: "Rohit Malhotra" },
+          facts: { group: "address_to_confirm", starts_at: "2026-09-22T04:30:00.000Z" },
           detail: "2026-09-22T04:30:00.000Z",
           since: "2026-09-21T03:00:00.000Z",
           // Two days on would be after the visit: the technician needs the address before they set out.

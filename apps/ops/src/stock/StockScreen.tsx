@@ -8,11 +8,12 @@
 // rest here. A place at or below its level is marked Low in words, and raises
 // one alert (src/domain/field/stock.ts), which is why there is no Tasks group for it.
 
+import { lazyScreen } from "@maneman/ui/lazyScreen";
 import { Field, Select } from "@maneman/ui/Field";
 import { Table } from "@maneman/ui/Table";
 import { useLoad } from "@maneman/ui/useLoad";
 import { fullDate, indiaClock, indiaDate, shortDate } from "@maneman/web-kit/dates";
-import { lazy, Suspense, useState } from "react";
+import { Suspense, useState } from "react";
 import { api, type Stock } from "../api.ts";
 import { OpsLink, Shell } from "../components/Shell.tsx";
 import { stock as copy } from "../content.ts";
@@ -28,15 +29,15 @@ import type { LabelsFor } from "./Labels.tsx";
 import styles from "./stock.module.css";
 
 /** The places, read only by national managers, so the panel loads only for them. */
-const PlacesPanel = lazy(() => import("./PlacesPanel.tsx").then((module) => ({ default: module.PlacesPanel })));
+const PlacesPanel = lazyScreen(() => import("./PlacesPanel.tsx").then((module) => module.PlacesPanel));
 
 /** The totals by zone or city, and the lots that expire soon, each loaded when shown. */
-const Totals = lazy(() => import("./Totals.tsx").then((module) => ({ default: module.Totals })));
-const Expiring = lazy(() => import("./Expiring.tsx").then((module) => ({ default: module.Expiring })));
-const Demand = lazy(() => import("./Demand.tsx").then((module) => ({ default: module.Demand })));
+const Totals = lazyScreen(() => import("./Totals.tsx").then((module) => module.Totals));
+const Expiring = lazyScreen(() => import("./Expiring.tsx").then((module) => module.Expiring));
+const Demand = lazyScreen(() => import("./Demand.tsx").then((module) => module.Demand));
 
 /** The labels of pieces and lots, loaded for those who may print them. */
-const Labels = lazy(() => import("./Labels.tsx").then((module) => ({ default: module.Labels })));
+const Labels = lazyScreen(() => import("./Labels.tsx").then((module) => module.Labels));
 
 /** Whether any lot within reach expires within the warning, so the Expiring panel is worth loading. */
 function anyExpiring(book: Stock): boolean {
@@ -69,7 +70,7 @@ function Grouping({ by, onBy }: { by: string; onBy: (by: "place" | "zone" | "cit
 }
 
 /** What is on its way, which loads only while something is. */
-const InTransit = lazy(() => import("./InTransit.tsx").then((module) => ({ default: module.InTransit })));
+const InTransit = lazyScreen(() => import("./InTransit.tsx").then((module) => module.InTransit));
 
 /** The call that records each movement. A delivery goes into the warehouse, which only national staff reach. */
 const RECORDING: Readonly<Record<Kind, OpsCall>> = {

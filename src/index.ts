@@ -1,4 +1,4 @@
-import { env } from "cloudflare:workers";
+import { env, WorkflowEntrypoint, type WorkflowEvent, type WorkflowStep } from "cloudflare:workers";
 import { createApp } from "./app.ts";
 import type { App } from "./http/context.ts";
 import { ENABLED_SURFACES, type Surface } from "./config/environments.ts";
@@ -13,8 +13,12 @@ import { pingHeartbeat } from "./providers/heartbeat.ts";
 import { handleCrmSyncBatch } from "./queues/crm-sync.ts";
 import { handleMessagingBatch } from "./queues/messaging.ts";
 import { handleRenderBatch } from "./queues/render.ts";
-import { CRON_JOBS, runCron } from "./scheduled/cron.ts";
+import { CRON_JOBS } from "./scheduled/cron.ts";
+import { runCron } from "./scheduled/cron-runner.ts";
 import { jobsDue, pingsWhenWell } from "./scheduled/schedule.ts";
+import { warehouseFor } from "./providers/warehouse/index.ts";
+import { copyNight } from "./workflows/analytics-copy.ts";
+import { backUp } from "./workflows/backup.ts";
 
 // Runs at module load. A Worker without a valid ENVIRONMENT, missing a secret
 // its providers need, or in production with a stub provider, throws here:
@@ -170,3 +174,27 @@ export default {
     await runCron(jobsDue(CRON_JOBS, cron, scheduledTime), run, pingsWhenWell(cron, scheduledTime));
   },
 } satisfies ExportedHandler<Env>;
+
+/** A Workflow's run: on this environment's own database only, its errors reported as the cron's are. */
+async function workflowRun(workerEnv: Env, name: string) {
+  await assertOwnDatabase(workerEnv.DB);
+  const log = runLogger({ job: name }, undefined);
+  return { env: workerEnv, config, deps: makeDependencies(workerEnv, log, "background") };
+}
+
+/** The nightly reporting copy, a step for each part of the night (src/workflows/analytics-copy.ts). */
+export class AnalyticsCopy extends WorkflowEntrypoint<Env, { readonly date: string }> {
+  override async run(event: WorkflowEvent<{ readonly date: string }>, step: WorkflowStep): Promise<void> {
+    const run = await workflowRun(this.env, "analytics_copy");
+    const warehouse = () =>
+      warehouseFor(config.providers.ANALYTICS_PROVIDER, this.env.ANALYTICS_DB?.connectionString ?? null);
+    await copyNight(step, { ...run, warehouse }, event.payload.date);
+  }
+}
+
+/** The weekly backup, a step for each table (src/workflows/backup.ts). */
+export class WeeklyBackup extends WorkflowEntrypoint<Env, { readonly date: string }> {
+  override async run(event: WorkflowEvent<{ readonly date: string }>, step: WorkflowStep): Promise<void> {
+    await backUp(step, await workflowRun(this.env, "backup"), event.payload.date);
+  }
+}

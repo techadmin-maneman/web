@@ -152,13 +152,19 @@ export const settings = {
     jump: "Jump to",
     lateFees: "Late fees are set in Prices",
     allowed: (min: number, max: number, unit: string) => `${String(min)}–${String(max)} ${unit}`,
+    /** A figure read in words, its range as the words say it: "5 pm to 10 pm, on a 24-hour clock". */
+    allowedWords: (min: string, max: string, how: string) => `${min} to ${max}, ${how}`,
     /** An hour of the day, typed on a 24-hour clock and read as "6 pm". */
-    allowedHours: (min: string, max: string) => `${min} to ${max}, on a 24-hour clock`,
+    allowedHours: "on a 24-hour clock",
     hour: (hour: number) => {
       if (hour === 0) return "midnight";
       if (hour === 12) return "noon";
       return hour < 12 ? `${String(hour)} am` : `${String(hour - 12)} pm`;
     },
+    /** A day of the week, typed 0 for Sunday to 6 for Saturday and read by its name. */
+    allowedDays: "0 for Sunday",
+    weekday: (day: number) =>
+      ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"][day] ?? String(day),
     /** A figure typed outside its bounds, said in the hint's place, since it leaves Save with nothing to send. */
     outOfBounds: (min: string, max: string) => `Enter ${min}–${max}.`,
     /** A rule with many boxes, shut: "Show all 18". */
@@ -244,7 +250,7 @@ export const settings = {
         quarterly: "Quarterly items, every",
         recount_above_percent: "Recount a difference above",
       },
-      kit_check: { from_hour: "Check from", one_visit_range: "One-visit range" },
+      kit_check: { from_hour: "Check from", one_visit_range: "One-visit range", top_up_weekday: "Week's top-up on" },
       forecast_assumptions: {
         baseline_periods: "Baseline averages",
         learning_days: "Rates learned over",
@@ -595,11 +601,15 @@ export const settings = {
     title: "Consumables",
     columns: ["Consumable", "Cost each", "Low at", "Status"],
     none: "No consumables yet.",
-    /** "Kit 5 · store 50", the levels a place is low at. */
-    levels: (kit: number | null, central: number | null) => {
-      if (kit === null && central === null) return "No level";
-      const parts = [kit === null ? null : `Kit ${String(kit)}`, central === null ? null : `store ${String(central)}`];
-      return parts.filter((part) => part !== null).join(" · ");
+    /** "Kit 5 · hub or stockroom 20 · warehouse 50", the levels each kind of place is low at. */
+    levels: (at: { kit: number | null; store: number | null; central: number | null }) => {
+      const parts = [
+        at.kit === null ? null : `kit ${String(at.kit)}`,
+        at.store === null ? null : `hub or stockroom ${String(at.store)}`,
+        at.central === null ? null : `warehouse ${String(at.central)}`,
+      ].filter((part) => part !== null);
+      const words = parts.join(" · ");
+      return words === "" ? "No level" : words.charAt(0).toUpperCase() + words.slice(1);
     },
     states: {
       offered: "Offered",
@@ -631,7 +641,8 @@ export const settings = {
       density: "Density",
       cost: "Cost each, in rupees",
       kit: "Kit low at (optional)",
-      central: "Store low at (optional)",
+      store: "Hub or stockroom low at (optional)",
+      central: "Warehouse low at (optional)",
       add: "Add hair system",
       added: "Added.",
       errors: {
@@ -651,7 +662,8 @@ export const settings = {
       unit: "Unit",
       cost: "Cost each, in rupees",
       kit: "Kit low at (optional)",
-      central: "Store low at (optional)",
+      store: "Hub or stockroom low at (optional)",
+      central: "Warehouse low at (optional)",
       shelf: "Shelf life, days (optional)",
       add: "Add",
       save: "Save consumable",
@@ -669,7 +681,8 @@ export const settings = {
           unit: "Unit",
           cost: "Cost each",
           kit: "Kit low at",
-          central: "Store low at",
+          store: "Hub or stockroom low at",
+          central: "Warehouse low at",
           shelf: "Shelf life",
         },
         noLevel: "none",
@@ -713,6 +726,7 @@ export const settings = {
       unit: "Letters only: strip, ml, sachet.",
       unit_cost: "Outside the allowed range.",
       reorder_kit: "A whole number, or blank.",
+      reorder_store: "A whole number, or blank.",
       reorder_central: "A whole number, or blank.",
       from: "Today or later.",
       tier: "That service no longer exists.",

@@ -20,7 +20,7 @@ import { CheckPanel } from "../components/CheckPanel.tsx";
 import { Button } from "@maneman/ui/Button";
 import { useLoad } from "@maneman/ui/useLoad";
 import { useState, type ReactNode } from "react";
-import { HOUR_OF_DAY } from "@rules/config/setting-units.ts";
+import { DAY_OF_WEEK, HOUR_OF_DAY } from "@rules/config/setting-units.ts";
 import { api, type ChoiceRule, type NumberRule, type OpsSetting, type SettingValue } from "../api.ts";
 import { OpsLink } from "../components/Shell.tsx";
 import { settings } from "../content/settings.ts";
@@ -124,9 +124,15 @@ interface Moved {
   readonly now: string;
 }
 
-/** "6 pm" for an hour of the day; else the figure and its unit. */
+/** Figures read in words: an hour as the clock says it, typed on a 24-hour clock; a day by its name, 0 for Sunday. */
+const READ_AS: Readonly<Record<string, { readonly say: (figure: number) => string; readonly range: string }>> = {
+  [HOUR_OF_DAY]: { say: copy.hour, range: copy.allowedHours },
+  [DAY_OF_WEEK]: { say: copy.weekday, range: copy.allowedDays },
+};
+
+/** "6 pm" for an hour of the day, "Monday" for a day of the week; else the figure and its unit. */
 function figureWords(figure: number, unit: string): string {
-  return unit === HOUR_OF_DAY ? copy.hour(figure) : copy.confirm.figure(figure, unit);
+  return READ_AS[unit]?.say(figure) ?? copy.confirm.figure(figure, unit);
 }
 
 /** A number as the check reads it, with its unit. Null before is a base not yet named; null after, one unnamed. */
@@ -191,18 +197,17 @@ function FigureField({
   text: string;
   onChange: (text: string) => void;
 }) {
-  // An hour of the day is typed on a 24-hour clock and read beside the box as the clock says it.
-  const clock = bounds.unit === HOUR_OF_DAY;
-  const typed = Number(text);
-  const anHour = text !== "" && Number.isInteger(typed) && typed >= 0 && typed <= 23;
+  // An hour or a day of the week is read beside its box in words.
+  const reading = READ_AS[bounds.unit];
+  const fits = whole(text, bounds.min, bounds.max);
   let unit = bounds.unit;
-  if (clock) unit = anHour ? copy.hour(typed) : "";
+  if (reading !== undefined) unit = fits ? reading.say(Number(text)) : "";
   // A figure outside the bounds is not a change Save can send, so the box says why rather than Save going grey.
-  const outside = text.trim() !== "" && !whole(text, bounds.min, bounds.max);
-  const range = clock
-    ? copy.allowedHours(copy.hour(bounds.min), copy.hour(bounds.max))
-    : copy.allowed(bounds.min, bounds.max, bounds.unit);
-  const why = clock ? range : copy.outOfBounds(String(bounds.min), `${String(bounds.max)} ${bounds.unit}`);
+  const outside = text.trim() !== "" && !fits;
+  const why =
+    reading === undefined
+      ? copy.outOfBounds(String(bounds.min), `${String(bounds.max)} ${bounds.unit}`)
+      : copy.allowedWords(reading.say(bounds.min), reading.say(bounds.max), reading.range);
   return (
     <Field label={label} error={outside ? why : null} className={styles.field}>
       {(control) => (

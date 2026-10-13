@@ -3,7 +3,7 @@
 // latest movements. The movements themselves are written by src/domain/field/stock.ts.
 
 import { indiaDate } from "../../lib/india-time.ts";
-import { isLow } from "../../policy/stock.ts";
+import { isLow, levelAt } from "../../policy/stock.ts";
 import { allConsumables, isOffered, type Consumable } from "./consumables.ts";
 import type { Reason } from "./stock.ts";
 import { heldLots, type HeldLot } from "./stock-lots.ts";
@@ -104,7 +104,7 @@ export async function stockView(
     places.map((place): Holding => {
       const row = held.find((each) => each.consumable_code === consumable.code && each.place === place.id);
       const quantity = row?.quantity ?? 0;
-      const level = place.kind === "kit" ? consumable.reorderKit : consumable.reorderCentral;
+      const level = levelAt(consumable, place.kind);
       return {
         code: consumable.code,
         place: place.id,

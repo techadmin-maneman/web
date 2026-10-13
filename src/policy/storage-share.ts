@@ -1,8 +1,8 @@
-// What clients' photographs and referral cards may hold of R2, and when ops
-// are told (docs/decisions/0093-the-storage-meter.md). They have a share of
-// R2's free 10 GB, and R2's paid storage is accepted as the share fills, so a
-// full share is told, never refused. What is refused is a runaway, far past anything the business
-// makes. src/domain/platform/storage-meter.ts keeps the figure these are read against.
+// What clients' photographs and referral cards may hold of R2, and when ops are told
+// (docs/decisions/0093-the-storage-meter.md, 0194-the-build-on-workers-paid.md). They have a share of R2's free 10 GB,
+// and R2's paid storage is accepted as the share fills, so a full share is told, never refused. What is refused is a
+// runaway: uploads at a rate no day's work makes. src/domain/platform/storage-meter.ts keeps the figure these are read
+// against.
 
 import type { EnvironmentName } from "../config/environments.ts";
 
@@ -19,24 +19,25 @@ export const SHARE_BYTES: Readonly<Record<EnvironmentName, number>> = {
   production: 3.6e9,
 };
 
-/** Ops are told once as the figure reaches each, the last when the share is full. */
+/** Ops are told once as the figure reaches each, then at each whole share more, as R2 bills for it. */
 const TOLD_AT_PERCENT = [50, 80, 100] as const;
-export type Mark = (typeof TOLD_AT_PERCENT)[number];
 
-/**
- * Past this, the technician's phone keeps its photographs until ops make room. It is twice R2's free allowance and
- * five times the share: a business that reaches it has been told three times on the way, and a broken build or a
- * misused upload link that runs to it costs about $0.20 a month in storage.
- */
-export const RUNAWAY_CEILING_BYTES = 20e9;
-
-/** The highest mark the figure has reached of `shareBytes`, or null below the first. */
-export function markReached(heldBytes: number, shareBytes: number): Mark | null {
+/** The highest mark the figure has reached of `shareBytes`, as a percentage of it, or null below the first. */
+export function markReached(heldBytes: number, shareBytes: number): number | null {
   const percent = (heldBytes / shareBytes) * 100;
-  const reached = TOLD_AT_PERCENT.filter((mark) => percent >= mark);
-  return reached.at(-1) ?? null;
+  if (percent >= 100) return Math.floor(percent / 100) * 100;
+  return TOLD_AT_PERCENT.filter((mark) => percent >= mark).at(-1) ?? null;
 }
 
-/** Whether `incomingBytes` more may be stored. A full share is no reason to refuse; only the runaway ceiling is. */
-export const hasRoom = (heldBytes: number, incomingBytes: number): boolean =>
-  heldBytes + incomingBytes <= RUNAWAY_CEILING_BYTES;
+/**
+ * The photographs and small copies one technician's phone may upload in an India day: a day of twelve visits, each
+ * with its ten photographs and their copies, every one taken twice. Past it, a broken build or a misused link is
+ * refused, and the phone keeps its photographs until the next day or until ops find the cause.
+ */
+export const PHOTO_UPLOADS_PER_TECHNICIAN_DAILY = 12 * 10 * 2 * 2;
+
+/** The stock photographs ops may upload in an India day, all of them together. */
+export const STOCK_PHOTO_UPLOADS_DAILY = 300;
+
+/** A day in which the photographs and cards grow by more than this is told to ops: a hundred visits' at their largest. */
+export const UNUSUAL_DAILY_GROWTH_BYTES = 2e9;

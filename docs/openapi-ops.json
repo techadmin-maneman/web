@@ -6987,11 +6987,24 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/Conversation"
-            }
+            },
+            "description": "At most 50, the latest first."
+          },
+          "next_before": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Where the next page starts, for ?before=; null on the last page."
           }
         },
         "required": [
-          "conversations"
+          "conversations",
+          "next_before"
         ],
         "additionalProperties": false
       },
@@ -11231,6 +11244,9 @@
             "additionalProperties": false,
             "description": "The visit to come the dispatch board settles the task on, so the task can open it there: a move the client has not heard of, and a job on its technician's day off. Left out for every other group."
           },
+          "facts": {
+            "$ref": "#/components/schemas/TaskFacts"
+          },
           "detail": {
             "anyOf": [
               {
@@ -11240,7 +11256,7 @@
                 "type": "null"
               }
             ],
-            "description": "The one fact the group turns on: a piece's label and the day it falls due, a fraud rule, a technician, a Books invoice; for a move the client has not heard of, the start it moved to and why (\"no_consent\" or \"not_sent\", as the dispatch board's untold says); for a consultation asked for, its day and window and, where a first fit was asked for with it, \"first_fit\" and the window wanted (\"any\" for either); for an at-risk client, the last visit's start and the day the next service fell due; for a first fit to book, the consultation's start and the window the fit is offered in, the consultation's (\"any\" where a fit cannot start in it); for a payment owed, the link's state (\"sent\", \"unsent\" or \"refused\"), its amount in paise, its address (\"-\" until Razorpay made it) and the product; for a payment to refund, why (\"let_go\", a hold let go whose refund Razorpay would not make, or \"refund_failed\"), what is owed back in paise, and the Razorpay payment."
+            "description": "Read facts instead: detail goes once no console reads it. The one fact the group turns on: a piece's label and the day it falls due, a fraud rule, a technician, a Books invoice; for a move the client has not heard of, the start it moved to and why (\"no_consent\" or \"not_sent\", as the dispatch board's untold says); for a consultation asked for, its day and window and, where a first fit was asked for with it, \"first_fit\" and the window wanted (\"any\" for either); for an at-risk client, the last visit's start and the day the next service fell due; for a first fit to book, the consultation's start and the window the fit is offered in, the consultation's (\"any\" where a fit cannot start in it); for a payment owed, the link's state (\"sent\", \"unsent\" or \"refused\"), its amount in paise, its address (\"-\" until Razorpay made it) and the product; for a payment to refund, why (\"let_go\", a hold let go whose refund Razorpay would not make, or \"refund_failed\"), what is owed back in paise, and the Razorpay payment."
           },
           "since": {
             "type": "string",
@@ -11269,12 +11285,647 @@
         "required": [
           "id",
           "person",
+          "facts",
           "detail",
           "since",
           "due",
           "owner"
         ],
         "additionalProperties": false
+      },
+      "TaskFacts": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "group": {
+                "type": "string",
+                "enum": [
+                  "unanswered_chat"
+                ]
+              },
+              "mobile": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "group",
+              "mobile"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "group": {
+                "type": "string",
+                "enum": [
+                  "city_matter"
+                ]
+              },
+              "note": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "group",
+              "note"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "group": {
+                "type": "string",
+                "enum": [
+                  "remedy_approval"
+                ]
+              },
+              "visits": {
+                "type": "integer"
+              },
+              "reason": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "group",
+              "visits",
+              "reason"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "group": {
+                "type": "string",
+                "enum": [
+                  "untold_move"
+                ]
+              },
+              "starts_at": {
+                "type": "string",
+                "format": "date-time",
+                "description": "The start the visit moved to."
+              },
+              "reason": {
+                "type": "string",
+                "enum": [
+                  "no_consent",
+                  "not_sent"
+                ]
+              }
+            },
+            "required": [
+              "group",
+              "starts_at",
+              "reason"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "group": {
+                "type": "string",
+                "enum": [
+                  "move_unanswered"
+                ]
+              },
+              "date": {
+                "type": "string",
+                "format": "date"
+              },
+              "window": {
+                "type": "string"
+              },
+              "ran_out": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "group",
+              "date",
+              "window",
+              "ran_out"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "group": {
+                "type": "string",
+                "enum": [
+                  "consultation_request"
+                ]
+              },
+              "date": {
+                "type": "string",
+                "format": "date"
+              },
+              "window": {
+                "type": "string"
+              },
+              "one_visit": {
+                "type": "boolean"
+              },
+              "discount_code": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "first_fit": {
+                "type": [
+                  "object",
+                  "null"
+                ],
+                "properties": {
+                  "window": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  }
+                },
+                "required": [
+                  "window"
+                ],
+                "additionalProperties": false,
+                "description": "A first fit asked for with it, and the window wanted, null for either; null for none."
+              }
+            },
+            "required": [
+              "group",
+              "date",
+              "window",
+              "one_visit",
+              "discount_code",
+              "first_fit"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "group": {
+                "type": "string",
+                "enum": [
+                  "replacement_order"
+                ]
+              },
+              "piece_code": {
+                "type": "string"
+              },
+              "due_on": {
+                "type": "string",
+                "format": "date"
+              }
+            },
+            "required": [
+              "group",
+              "piece_code",
+              "due_on"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "group": {
+                "type": "string",
+                "enum": [
+                  "recall_call"
+                ]
+              },
+              "piece_codes": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            },
+            "required": [
+              "group",
+              "piece_codes"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "group": {
+                "type": "string",
+                "enum": [
+                  "stock_at_risk"
+                ]
+              },
+              "consumable_code": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "group",
+              "consumable_code"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "group": {
+                "type": "string",
+                "enum": [
+                  "referral_review"
+                ]
+              },
+              "signal": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "The first fraud rule met."
+              }
+            },
+            "required": [
+              "group",
+              "signal"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "group": {
+                "type": "string",
+                "enum": [
+                  "grievance"
+                ]
+              }
+            },
+            "required": [
+              "group"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "group": {
+                "type": "string",
+                "enum": [
+                  "number_change"
+                ]
+              }
+            },
+            "required": [
+              "group"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "group": {
+                "type": "string",
+                "enum": [
+                  "erasure_request"
+                ]
+              }
+            },
+            "required": [
+              "group"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "group": {
+                "type": "string",
+                "enum": [
+                  "no_show_decision"
+                ]
+              },
+              "technician": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "group",
+              "technician"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "group": {
+                "type": "string",
+                "enum": [
+                  "draft_invoice"
+                ]
+              },
+              "invoice_id": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "group",
+              "invoice_id"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "group": {
+                "type": "string",
+                "enum": [
+                  "unassigned_visit"
+                ]
+              },
+              "kind": {
+                "type": "string"
+              },
+              "starts_at": {
+                "type": "string",
+                "format": "date-time"
+              }
+            },
+            "required": [
+              "group",
+              "kind",
+              "starts_at"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "group": {
+                "type": "string",
+                "enum": [
+                  "visit_left_open"
+                ]
+              },
+              "status": {
+                "type": "string"
+              },
+              "starts_at": {
+                "type": "string",
+                "format": "date-time"
+              }
+            },
+            "required": [
+              "group",
+              "status",
+              "starts_at"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "group": {
+                "type": "string",
+                "enum": [
+                  "leave_conflict"
+                ]
+              },
+              "starts_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "technician": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "group",
+              "starts_at",
+              "technician"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "group": {
+                "type": "string",
+                "enum": [
+                  "address_to_confirm"
+                ]
+              },
+              "starts_at": {
+                "type": "string",
+                "format": "date-time"
+              }
+            },
+            "required": [
+              "group",
+              "starts_at"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "group": {
+                "type": "string",
+                "enum": [
+                  "partial_visit"
+                ]
+              },
+              "kind": {
+                "type": "string"
+              },
+              "reason_code": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "reason": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "In the words ops gave it, or the job sheet's."
+              }
+            },
+            "required": [
+              "group",
+              "kind",
+              "reason_code",
+              "reason"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "group": {
+                "type": "string",
+                "enum": [
+                  "at_risk_client"
+                ]
+              },
+              "last_visit_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "due_on": {
+                "type": "string",
+                "format": "date"
+              }
+            },
+            "required": [
+              "group",
+              "last_visit_at",
+              "due_on"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "group": {
+                "type": "string",
+                "enum": [
+                  "first_fit_to_book"
+                ]
+              },
+              "consulted_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "fit_window": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "The consultation's; null where a fit cannot start in it."
+              }
+            },
+            "required": [
+              "group",
+              "consulted_at",
+              "fit_window"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "group": {
+                "type": "string",
+                "enum": [
+                  "payment_owed"
+                ]
+              },
+              "state": {
+                "type": "string",
+                "enum": [
+                  "sent",
+                  "unsent",
+                  "refused",
+                  "closed"
+                ]
+              },
+              "amount": {
+                "type": "integer"
+              },
+              "url": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Null until Razorpay made the link."
+              },
+              "product": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "group",
+              "state",
+              "amount",
+              "url",
+              "product"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "group": {
+                "type": "string",
+                "enum": [
+                  "no_show_dispute"
+                ]
+              },
+              "kept": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "description": "What the charge kept, in paise."
+              }
+            },
+            "required": [
+              "group",
+              "kept"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "group": {
+                "type": "string",
+                "enum": [
+                  "payment_to_refund"
+                ]
+              },
+              "why": {
+                "type": "string",
+                "enum": [
+                  "let_go",
+                  "refund_failed"
+                ]
+              },
+              "amount": {
+                "type": "integer",
+                "description": "Owed back, in paise."
+              },
+              "payment": {
+                "type": "string",
+                "description": "The Razorpay payment to refund it from."
+              }
+            },
+            "required": [
+              "group",
+              "why",
+              "amount",
+              "payment"
+            ],
+            "additionalProperties": false
+          }
+        ],
+        "description": "What the task turns on, by its group."
       },
       "TaskOwner": {
         "type": "object",
@@ -13514,7 +14165,18 @@
                 "type": "null"
               }
             ],
-            "description": "The central store is low at or below this; null for no level."
+            "description": "The warehouse is low at or below this; null for no level."
+          },
+          "reorder_store": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "A city stockroom or a hub is low at or below this; null tells nothing of a store."
           },
           "retired_from": {
             "anyOf": [
@@ -13562,6 +14224,7 @@
           "unit_cost",
           "reorder_kit",
           "reorder_central",
+          "reorder_store",
           "retired_from",
           "offered",
           "shelf_life_days",
@@ -13708,6 +14371,18 @@
               }
             ]
           },
+          "reorder_store": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100000
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "shelf_life_days": {
             "anyOf": [
               {
@@ -13760,6 +14435,18 @@
             ]
           },
           "reorder_central": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100000
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "reorder_store": {
             "anyOf": [
               {
                 "type": "integer",
@@ -13931,6 +14618,18 @@
             ]
           },
           "reorder_central": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100000
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "reorder_store": {
             "anyOf": [
               {
                 "type": "integer",
@@ -14303,6 +15002,16 @@
                       "type": "null"
                     }
                   ]
+                },
+                "reorder_store": {
+                  "anyOf": [
+                    {
+                      "type": "integer"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
                 }
               },
               "required": [
@@ -14312,7 +15021,8 @@
                 "retired",
                 "hair_system",
                 "reorder_kit",
-                "reorder_central"
+                "reorder_central",
+                "reorder_store"
               ],
               "additionalProperties": false
             }
@@ -16511,10 +17221,6 @@
             "type": "integer",
             "description": "The photographs' and cards' share of R2's free 10 GB; past it R2 bills."
           },
-          "ceiling_bytes": {
-            "type": "integer",
-            "description": "Past this the technician app's photographs are refused and wait on the phones."
-          },
           "database_bytes": {
             "type": "integer",
             "description": "What this environment's D1 database holds."
@@ -16527,7 +17233,6 @@
         "required": [
           "held_bytes",
           "share_bytes",
-          "ceiling_bytes",
           "database_bytes",
           "database_limit_bytes"
         ],
@@ -21091,7 +21796,7 @@
     },
     "/api/conversations": {
       "get": {
-        "summary": "The Care inbox's threads of a view, the latest first",
+        "summary": "The Care inbox's threads of a view, the latest first, a page at a time",
         "parameters": [
           {
             "schema": {
@@ -21107,6 +21812,28 @@
             },
             "required": false,
             "name": "view",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "maxLength": 80,
+              "description": "A client's name, or a number, or part of either."
+            },
+            "required": false,
+            "description": "A client's name, or a number, or part of either.",
+            "name": "search",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "maxLength": 100,
+              "description": "The next page: next_before from the last one."
+            },
+            "required": false,
+            "description": "The next page: next_before from the last one.",
+            "name": "before",
             "in": "query"
           }
         ],

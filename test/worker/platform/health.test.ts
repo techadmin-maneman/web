@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { REQUEST_ID_HEADER } from "../../../src/http/context.ts";
 import { createLogger } from "../../../src/log.ts";
 import { HealthSchema } from "../../../src/routes/health.ts";
-import { runCronJobs } from "../../../src/scheduled/cron.ts";
+import { runCronJobs } from "../../../src/scheduled/cron-runner.ts";
 import { LOCAL_CONFIG, NOW, appFor, captureLogs, fakeDependencies, markDatabase, request } from "../helpers.ts";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;

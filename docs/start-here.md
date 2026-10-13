@@ -83,7 +83,7 @@ this map, or when the map names something that no longer exists.
 ### The technician's work in the field
 
 - **Database work** (`src/domain/field/`): `tech-jobs`, `job-card`, `workable-job`, `job-events`, `job-event-bodies`, `job-record`, `job-use`, `piece-use`,
-  `job-sheet-settings`, `tech-photos`, `visit-photos`, `photo-views`, `pieces`, `stock`, `stock-places`, `stock-lots`, `stock-transit`, `stock-units`, `stock-view`, `piece-returns`, `kit`, `suppliers`, `purchase-orders`, `receipts`, `supplier-claims`, `returned-pieces`, `custom-orders`, `custom-order-po`, `stock-photos`, `supplier-scorecard`, `stock-match`, `stock-risks`, `forecast`, `forecast-layers`, `forecast-accuracy`, `supply-plan`, `supply-plan-lines`, `kit-check`, `demand-events`, `cycle-counts`, `count-tasks`, `count-labels`, `stock-usage`, `recalls`, `recall-notice`, `stock-quality`, `stock-watch`, `stock-demand`, `stock-gap`, `low-stock`,
+  `job-sheet-settings`, `tech-photos`, `visit-photos`, `photo-views`, `pieces`, `stock`, `stock-places`, `stock-lots`, `stock-transit`, `stock-units`, `stock-view`, `piece-returns`, `kit`, `suppliers`, `purchase-orders`, `receipts`, `supplier-claims`, `returned-pieces`, `custom-orders`, `custom-order-po`, `stock-photos`, `supplier-scorecard`, `stock-match`, `stock-risks`, `forecast`, `forecast-layers`, `forecast-accuracy`, `supply-plan`, `supply-plan-lines`, `kit-check`, `kit-week`, `demand-events`, `cycle-counts`, `count-tasks`, `count-labels`, `stock-usage`, `recalls`, `recall-notice`, `stock-quality`, `stock-watch`, `stock-demand`, `stock-gap`, `low-stock`,
   `consumables`, `hair-systems`
 - **Rules** (`src/policy/`): `in-job-steps`, `piece-step`, `job-visibility`, `phone-clock`, `stock`
 - **Data** (`src/config/`): `job-sheet`, `pieces`, `consumables`
@@ -186,7 +186,7 @@ this map, or when the map names something that no longer exists.
 
 ### Messages
 
-- **Database work** (`src/domain/messages/`): `queued-messages`, `visit-messages`, `visit-message-text`, `technician-updates` (a word from the job card), `move-proposal-text`, `stop-messages`,
+- **Database work** (`src/domain/messages/`): `queued-messages`, `visit-messages`, `visit-message-text`, `technician-updates` (a word from the job card), `move-proposal-text`, `stop-messages`, `inbound` (what any provider reports, in one shape),
   `paced-line`
 - **Rules** (`src/policy/`): `message-pacing`
 - **Data** (`src/config/`): `message-templates`, `message-kinds`
@@ -232,7 +232,8 @@ this map, or when the map names something that no longer exists.
 
 ### Ops' own work
 
-- **Database work** (`src/domain/ops/`): `alerts`, `needs-a-hand`, `tasks`, `task-closures`, `task-owners`,
+- **Database work** (`src/domain/ops/`): `alerts`, `needs-a-hand`, `tasks`, `task-facts` (what each task turns on),
+  `task-reach` (whose cities each is in), `task-closures`, `task-owners`,
   `grievances`, `ops-settings`, `site-notices`, `audit`, `activity`, `staff`, `task-spans` (when each task opened and
   closed), `targets` (each month's plan, city by city)
 - **Rules** (`src/policy/`): `tasks`, `alerts`, `grievances`, `ops-settings`, `console-routes`, `access`,

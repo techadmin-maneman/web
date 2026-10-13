@@ -25,6 +25,7 @@ interface Consumable {
   unit_cost: number;
   reorder_kit: number | null;
   reorder_central: number | null;
+  reorder_store: number | null;
   retired_from: string | null;
   offered: boolean;
 }
@@ -43,7 +44,14 @@ interface Consumables {
 
 const listed = async (): Promise<Consumables> => (await request(ops, "/api/consumables")).json<Consumables>();
 
-const TAPE = { name: "Tape strips", unit: "strip", unit_cost: 1200, reorder_kit: 10, reorder_central: 100 };
+const TAPE = {
+  name: "Tape strips",
+  unit: "strip",
+  unit_cost: 1200,
+  reorder_kit: 10,
+  reorder_central: 100,
+  reorder_store: 30,
+};
 const SOLVENT = { name: "Solvent", unit: "ml", unit_cost: 50 };
 
 async function add(body: Record<string, unknown>): Promise<Consumables> {
@@ -74,6 +82,7 @@ describe("the catalogue", () => {
         unit_cost: 1200,
         reorder_kit: 10,
         reorder_central: 100,
+        reorder_store: 30,
         retired_from: null,
         offered: true,
         shelf_life_days: null,

@@ -94,6 +94,7 @@ test("closes a visit left partly done with a reason, and it leaves the list", as
           {
             id: "98000000-0000-4000-8000-000000000001",
             person: { id: "22000000-0000-4000-8000-000000000014", name: "Manish Tandon" },
+            facts: { group: "partial_visit", kind: "service", reason_code: "client_unwell", reason: "Client unwell" },
             detail: "service Client unwell",
             since: "2027-09-18T06:00:00.000Z",
             due: "2027-09-20T06:00:00.000Z",
@@ -102,6 +103,12 @@ test("closes a visit left partly done with a reason, and it leaves the list", as
           {
             id: "98000000-0000-4000-8000-000000000002",
             person: { id: "22000000-0000-4000-8000-000000000015", name: "Arjun Sood" },
+            facts: {
+              group: "partial_visit",
+              kind: "service",
+              reason_code: "piece_not_ready",
+              reason: "The piece was not ready",
+            },
             detail: "The piece was not ready",
             since: "2027-09-21T06:00:00.000Z",
             due: "2027-09-23T06:00:00.000Z",
@@ -156,6 +163,7 @@ test("records a call about a move from its row, and opens each of the board's ta
             id: MOVE,
             person: { id: "22000000-0000-4000-8000-000000000016", name: "Vikram Sethi", mobile: "+919810004418" },
             visit: { id: MOVED_VISIT, starts_at: "2027-09-24T06:30:00.000Z" },
+            facts: { group: "untold_move", starts_at: "2027-09-24T06:30:00.000Z", reason: "no_consent" },
             detail: "2027-09-24T06:30:00.000Z no_consent",
             since: "2027-09-22T04:00:00.000Z",
             due: "2027-09-22T08:00:00.000Z",
@@ -172,6 +180,7 @@ test("records a call about a move from its row, and opens each of the board's ta
             id: ON_LEAVE,
             person: { id: "22000000-0000-4000-8000-000000000017", name: "Kunal Mehta" },
             visit: { id: ON_LEAVE, starts_at: "2027-09-30T03:30:00.000Z" },
+            facts: { group: "leave_conflict", starts_at: "2027-09-30T03:30:00.000Z", technician: "Imran Qureshi" },
             detail: "2027-09-30T03:30:00.000Z Imran Qureshi",
             since: "2027-09-21T06:00:00.000Z",
             due: "2027-09-23T06:00:00.000Z",

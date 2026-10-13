@@ -4,7 +4,8 @@ import { putCounted, readMeter } from "../../../src/domain/platform/storage-mete
 import { erasePerson } from "../../../src/domain/privacy/erasure.ts";
 import { openSession } from "../../../src/domain/sign-in/sessions.ts";
 import { createLogger } from "../../../src/log.ts";
-import { CRON_JOBS, runCronJobs } from "../../../src/scheduled/cron.ts";
+import { CRON_JOBS } from "../../../src/scheduled/cron.ts";
+import { runCronJobs } from "../../../src/scheduled/cron-runner.ts";
 import { captureLogs, fakeDependencies, LOCAL_CONFIG, markDatabase, NOW } from "../helpers.ts";
 import { syntheticJpeg } from "../tryon-fixtures.ts";
 import {

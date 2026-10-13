@@ -15,6 +15,8 @@ const task = (group: TaskGroup, id: string, person: string | null): Task => ({
   group,
   person: person === null ? null : { id: person, name: "Rohit Malhotra", mobile: null },
   visit: null,
+  // A span reads none of what the task turns on.
+  facts: { group } as Task["facts"],
   detail: null,
   since: "2026-09-18T05:00:00.000Z",
   due: "2026-09-19T05:00:00.000Z",

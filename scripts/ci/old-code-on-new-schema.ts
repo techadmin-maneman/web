@@ -42,11 +42,13 @@ console.log(`${base}'s code, with this branch's migrations, in ${deployed}`);
 
 // Tests a newer schema rightly fails, so the deployed code skips them here; they still run on the branch's own code.
 // Two list every table, or every table triggers write to, and the branch adds its new one. One counts the rows a
-// visit's change of status wrote, which a newer trigger adds to; the code itself tells only none from some.
+// visit's change of status wrote, which a newer trigger adds to; the code itself tells only none from some. One gives
+// a client a stranger's number by hand, which a newer trigger links the chat to, as it would a real change of number.
 const NEWER_SCHEMA_TESTS = [
   "starts from a row in every table",
   "writes last the ones triggers write to",
   "moveVisit .+ from .+ ends ",
+  "never saves a number one of our people has",
 ];
 const skipNewerSchemaTests = `^(?!.*(${NEWER_SCHEMA_TESTS.join("|")})).*$`;
 

@@ -10,7 +10,6 @@ import { useState } from "react";
 import { api, type Task } from "../api.ts";
 import { tasks } from "../content.ts";
 import { useAccess } from "../lib/access.ts";
-import { owedLinkOf } from "./payment-link.ts";
 import styles from "./tasks.module.css";
 
 const copy = tasks.link;
@@ -22,7 +21,7 @@ export function PaymentLinkActions({ task, subject }: { task: Task; subject: str
   const [failed, setFailed] = useState<string | null>(null);
   const [busy, once] = useOneAtATime();
   const mayResend = useAccess().mayCall("POST /api/payment-links/{id}/resend");
-  const link = owedLinkOf(task.detail);
+  const link = task.facts.group === "payment_owed" ? task.facts : null;
   // A refused link, or one closed unpaid, is sent again from Razorpay's dashboard: there is nothing here to copy or resend.
   if (link === null || link.state === "refused" || link.state === "closed") return null;
   const { url } = link;

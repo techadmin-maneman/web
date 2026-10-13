@@ -81,7 +81,7 @@ The copies held with their looks are counted at the upload ceiling, for the look
 - **The teaser and the result screen still say** "Your photograph is deleted after thirty days" and "Deleted after fourteen days". They describe the try-on before any booking; counsel may want them to mention the copy (item 146).
 - **Tests.**
   - `test/node/policy/policy-kept-try-ons.test.ts`: the rule.
-  - `test/node/tooling/free-tier-budget.test.ts`: the budget.
+  - `test/node/tooling/usage-budget.test.ts`: the budget.
   - `test/node/database/migration-0045.test.ts`: the migration.
   - `test/worker/app/kept-try-ons.test.ts`: the copy's upload, the sweeper and erasure.
   - `test/worker/app/client-try-ons.test.ts`: what the app is sent.

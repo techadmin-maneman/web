@@ -39,7 +39,7 @@ export type FailureCode = (typeof FAILURE_CODES)[number];
 export const MAX_UPLOAD_BYTES = 5 * 1024 * 1024;
 /**
  * The largest result stored: WhatsApp takes images of 5 MB at most, and the cap
- * also sizes the R2 storage budget (docs/decisions/0009). A larger result, or one
+ * also sizes the R2 storage budget (docs/decisions/0194). A larger result, or one
  * that is not an image, fails the job at once with an alert (docs/decisions/0015).
  */
 export const MAX_RESULT_BYTES = 5 * 1024 * 1024;

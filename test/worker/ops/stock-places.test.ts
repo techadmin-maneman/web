@@ -43,7 +43,14 @@ const heldAt = async (place: string) =>
 beforeEach(async () => {
   await markDatabase();
   job = await working();
-  const consumable = { name: "Tape strips", unit: "strip", unit_cost: 1200, reorder_kit: 5, reorder_central: 20 };
+  const consumable = {
+    name: "Tape strips",
+    unit: "strip",
+    unit_cost: 1200,
+    reorder_kit: 5,
+    reorder_store: 20,
+    reorder_central: 10,
+  };
   expect((await job.opsPost("/api/consumables", consumable)).status).toBe(200);
   await job.opsPost("/api/stock/deliveries", { consumable_code: "tape_strips", quantity: 100 });
 });
@@ -131,7 +138,7 @@ describe("the tree", () => {
 });
 
 describe("a stockroom's stock", () => {
-  it("raises its own alert at the central level, by its name, and closes it once stocked again", async () => {
+  it("raises its own alert at the stores' level, by its name, and closes it once stocked again", async () => {
     const id = await room();
     await sendAndReceive(30, "central", id);
     await job.opsPost("/api/stock/write-offs", {
@@ -142,12 +149,12 @@ describe("a stockroom's stock", () => {
     });
     expect(await heldAt(id)).toMatchObject({ quantity: 15, low: true });
     expect(job.deps.alerts).toEqual([
-      expect.stringContaining("Stock is low in Gurgaon stockroom: Tape strips 15 strip (level 20)"),
+      expect.stringContaining("Tape strips is low in Gurgaon stockroom: 15 strip, at or below its level of 20."),
     ]);
 
     await sendAndReceive(10, "central", id);
     const alert = await env.DB.prepare("SELECT resolved_at FROM alerts WHERE key = ?1")
-      .bind(`low_stock:store:${id}`)
+      .bind(`low_stock:store:${id}:tape_strips`)
       .first<{ resolved_at: string | null }>();
     expect(alert?.resolved_at).not.toBeNull();
   });

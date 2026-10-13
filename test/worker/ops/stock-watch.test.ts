@@ -1,14 +1,16 @@
-// The morning look at the stock (src/domain/field/stock-watch.ts; docs/decisions/0159-stock-views-and-expiry.md). NOW
-// is Monday 21 September 2026, 12 noon in India; the look runs in the hour from 9 am.
+// The morning look at the stock (src/domain/field/stock-watch.ts; docs/decisions/0159-stock-views-and-expiry.md), as the
+// cron runs it. NOW is Monday 21 September 2026, 12 noon in India; the look is due each morning from 9 am.
 //
 // What these hold: a place holding a lot that expires within 30 days, or has expired, is told of once, naming each lot,
 // and a kit by its technician's ID alone; its alert closes once the place holds none of them; a transfer a week on its
-// way is told of, and closes once settled; and nothing is told outside the morning hour.
+// way is told of, and closes once settled; and a morning looked at once is not looked at again until the next.
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
-import { watchStock } from "../../../src/domain/field/stock-watch.ts";
-import { markDatabase } from "../helpers.ts";
+import { createLogger } from "../../../src/log.ts";
+import { CRON_JOBS } from "../../../src/scheduled/cron.ts";
+import { runCronJobs } from "../../../src/scheduled/cron-runner.ts";
+import { LOCAL_CONFIG, markDatabase } from "../helpers.ts";
 import { IMRAN, working, type Working } from "../job-fixtures.ts";
 
 let job: Working;
@@ -16,7 +18,10 @@ let job: Working;
 /** 9.30 am in India, `days` after NOW's day. */
 const morning = (days = 0) => new Date(Date.parse("2026-09-21T04:00:00.000Z") + days * 86_400_000);
 
-const look = (at: Date) => watchStock(env.DB, { ...job.deps, now: () => at });
+const MORNING_JOBS = CRON_JOBS.filter((each) => ["expiring_stock", "overdue_transfers"].includes(each.name));
+
+const look = (at: Date) =>
+  runCronJobs(MORNING_JOBS, { env, deps: { ...job.deps, now: () => at }, config: LOCAL_CONFIG, log: createLogger() });
 
 const open = () =>
   env.DB.prepare("SELECT key FROM alerts WHERE resolved_at IS NULL AND key NOT LIKE 'low_stock%' ORDER BY key").all();
@@ -66,9 +71,12 @@ describe("stock that expires soon", () => {
     expect((await open()).results).toEqual([{ key: "stock_expiring:central" }]);
   });
 
-  it("is looked at only in the hour from 9 am", async () => {
-    await look(new Date("2026-09-21T06:30:00.000Z"));
-    expect(job.deps.alerts).toEqual([]);
+  it("is looked at once a morning: a look later that day is not due until the next", async () => {
+    await look(morning());
+    const told = job.deps.alerts.length;
+    expect(told).toBeGreaterThan(0);
+    expect(await look(new Date("2026-09-21T06:30:00.000Z"))).toEqual([]);
+    expect(job.deps.alerts).toHaveLength(told);
   });
 });
 

@@ -49,9 +49,19 @@ Nothing here needs a release. The first two have dates.
 
 - [ ] **Production's AILabTools key** (item 153): `W secret put AILAB_API_KEY --env production`, with a key of production's own.
 - [ ] **Staging's refund account:** the owner's "Razorpay – staging test" ID as `BOOKS_REFUND_ACCOUNT_ID` in `env.staging.vars`, released through CI (item 10).
-- [ ] **The weekly backup** (RB, "Restoring D1", "From a weekly backup"): the key pair, its public key as staging's and production's `BACKUP_PUBLIC_KEY`, the private key in the owner's password manager. Production's `mm-prod-backups` bucket must exist before the next production release, which binds it.
+- [ ] **The weekly backup** (RB, "Restoring D1", "From a weekly backup"): the key pair made and its public key set as staging's and production's `BACKUP_PUBLIC_KEY`, and `mm-prod-backups` made, on 13 October 2026. Left: the private key in the owner's password manager, and its file deleted. Production's first backup is one by hand with `backup-now.ts` just before its first release.
+- [ ] **Old photographs to Infrequent Access, once production's pass the free 10 GB** (ADR 0194): R2's Infrequent Access class has no free allowance, so not before. Then a lifecycle rule on `mm-prod-client-photos` moving objects older than 90 days, and `scripts/lib/buckets.ts` taught to expect it.
 - [ ] **Error tracking** (RB, "The outside watchers", point 4): a Sentry project for staging and one for production, on the free plan, each DSN as that environment's `SENTRY_DSN`.
 - [ ] **Staging's cron heartbeat** (RB, "The outside watchers", point 1): a healthchecks.io check, its ping URL as staging's `HEARTBEAT_URL`; and Account Analytics: Read on `mm-ci-staging`, so each staging deploy reports mm-api's CPU time (provisioning, step 6).
+
+## Weekly releases before launch
+
+The owner's ruling of 13 October 2026: from Phase 3 of the fourth audit on, main goes to production each week, with the surfaces off (`ENABLED_SURFACES` is the public surface alone, which serves the placeholder), the providers `none` and the analytics copy off, so code and migrations go up in small steps rather than all at launch. Each release:
+
+1. **A backup first:** `node scripts/ops/backup-now.ts --env production --public-key <file>` (RB, "Restoring D1").
+2. **Rehearsed on a copy:** the migrations the release carries, applied to a database made from production's (RB, "Restoring D1", "Repairing from an earlier minute" makes the export), with `npm run check:migrations` passing.
+3. **The release** through `deploy-production.yml`, then `npm run apply-triggers -- --env production`, which attaches the cron and creates the Workflows, and `check-triggers.ts production --strict`.
+4. **The smoke suite** against production, and the placeholder still at `https://maneman.in/`.
 
 ## 2. Proofs on staging
 
@@ -71,6 +81,7 @@ Each is written up in `docs/verification.md` when it passes. The payment run is 
   11. Book and pay one for tomorrow's first window, then cancel: the payment is kept, and the app says so.
   12. Give the client a credit in the console and book a service visit: "Credit covers it"; cancel it more than 24 hours out and the credit comes back.
   13. Read every open alert (RB, "Alerts and the cron"), check Razorpay's webhook deliveries all succeeded, and list every Zoho record the run made, for item 19's clean-up.
+- [ ] **A restore drill** within the month before launch: the three ways back in RB, "Restoring D1", timed again on staging and written up beside the drill of 13 October 2026.
 - [ ] **A technician's writes** (item 57): one job each closed in the app as done, partial and no-show, and one reassignment, read back in the console; the done job's consumables out of his kit on the Stock page (ADR 0087).
 - [ ] **The field test** (item 72) with the first technician and the owner, on his own phone: it tunes the check-in radius (item 56).
 - [ ] **A try-on on a mid-range Android phone over mobile data**, and staging's `alerts` read after a day (item 91).
@@ -135,7 +146,7 @@ With self-serve booking off, a consultation booked on the site is a request: the
 
 **Open the doors:** delete the Access applications for `app.maneman.in` and `tech.maneman.in`; the ops console stays behind Access. Read the open alerts after the first day (RB, "Alerts and the cron").
 
-**The reporting copy** (ADR 0146): from this release production copies each night at 3 am India time into Supabase's `analytics` schema; its writer login, Hyperdrive config `mm-analytics` and `ANALYTICS_CLIENT_KEY` were set on 12 October 2026. The morning after its first night with real activity (`select max(ended_at) from analytics.load_run` and a count of `analytics.fact_visit`), point Zoho's views at it: in the Supabase SQL editor, run what `select 'create or replace view reporting.' || table_name || ' as select * from analytics.' || table_name || ';' from information_schema.views where table_schema = 'reporting'` prints. Zoho's 05:00 import then brings the real figures. The same with `sample` points them back.
+**The reporting copy** (ADR 0146, ADR 0196): production's `ANALYTICS_PROVIDER` is `none` until this release, so the copy the owner is looking at in Supabase's `analytics` schema stays. Once the owner says they are done with it, empty it, set `ANALYTICS_PROVIDER` to `supabase` in `env.production.vars`, and release; from then production copies each night at 3 am India time, as the `AnalyticsCopy` Workflow, which `apply-triggers` creates. Its writer login, Hyperdrive config `mm-analytics` and `ANALYTICS_CLIENT_KEY` were set on 12 October 2026, and `analytics.load_rows` made on 13 October. The morning after its first night with real activity (`select max(ended_at) from analytics.load_run` and a count of `analytics.fact_visit`), point Zoho's views at it: in the Supabase SQL editor, run what `select 'create or replace view reporting.' || table_name || ' as select * from analytics.' || table_name || ';' from information_schema.views where table_schema = 'reporting'` prints. Zoho's 05:00 import then brings the real figures. The same with `sample` points them back.
 
 ### The dashboards
 

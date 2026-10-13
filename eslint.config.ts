@@ -14,6 +14,18 @@ const SIZE = { fn: 80, lines: 400 } as const;
 /** The most code lines a test file holds before it is warned of. */
 const TEST_LINES = 500;
 
+/** A loader written inline is a new function every render, which useLoad and useAsync would run again on each one. */
+const INLINE_LOADER = {
+  selector: "CallExpression[callee.name=/^use(Load|LiveLoad|Async)$/] > :function",
+  message: "Give useLoad or useAsync a module's function, or one held in useCallback: an inline one runs every render.",
+};
+
+/** A part of a screen loads through lazyScreen, which loads the page again when a release has removed its file. */
+const BARE_LAZY = {
+  selector: "ImportDeclaration[source.value='react'] > ImportSpecifier[imported.name='lazy']",
+  message: "Load a part of a screen with lazyScreen (@maneman/ui/lazyScreen).",
+};
+
 /** A size rule at a level, counting code lines alone. */
 const sized = (level: "error" | "warn", max: number): Linter.RuleEntry => [
   level,
@@ -257,6 +269,10 @@ export default defineConfig(
   {
     // A screen that picks between three things says so in a function that returns early.
     files: ["apps/**/*.{ts,tsx}", "packages/**/*.{ts,tsx}", "site/src/**/*.{ts,tsx}"],
-    rules: { "no-nested-ternary": "error" },
+    rules: { "no-nested-ternary": "error", "no-restricted-syntax": ["error", INLINE_LOADER, BARE_LAZY] },
+  },
+  {
+    files: ["packages/ui/lazyScreen.ts"],
+    rules: { "no-restricted-syntax": ["error", INLINE_LOADER] },
   },
 );

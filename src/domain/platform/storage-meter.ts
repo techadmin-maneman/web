@@ -11,13 +11,16 @@
 // and a delete takes off only what a row says, so neither a retry nor two
 // deletes of one key at once can count an object twice. Every write to and
 // delete from those two buckets goes through here. When ops are told, and what
-// is refused, is src/policy/storage-share.ts.
+// is refused, is src/policy/storage-share.ts: never for a full share, only for uploads at a runaway rate.
 //
 // Beside it, the database's own size against D1's limit (src/policy/database-size.ts).
 
 import { DATABASE_LIMIT_BYTES, databaseMarkReached } from "../../policy/database-size.ts";
 import type { EnvironmentName } from "../../config/environments.ts";
-import { hasRoom, markReached, RUNAWAY_CEILING_BYTES, SHARE_BYTES, type Mark } from "../../policy/storage-share.ts";
+import { indiaDate } from "../../lib/india-time.ts";
+import type { RateLimitScope } from "../../policy/rate-limits.ts";
+import { markReached, SHARE_BYTES, UNUSUAL_DAILY_GROWTH_BYTES } from "../../policy/storage-share.ts";
+import { takeOne, type CountedAt } from "../sign-in/rate-limit.ts";
 import type { AlertOnce } from "../ops/alerts.ts";
 
 /** R2 deletes at most 1,000 keys a call. */
@@ -27,14 +30,20 @@ interface Meter {
   readonly bytes: number;
   /** The last mark ops were told of: 0 before the first. */
   readonly toldPercent: number;
+  /** The India day the day's growth is read from, and the figure as it began; null before the first. */
+  readonly growth: { readonly date: string; readonly fromBytes: number } | null;
 }
 
 export async function readMeter(db: D1Database): Promise<Meter> {
   const row = await db
-    .prepare("SELECT bytes, told_percent FROM storage_meter WHERE id = 1")
-    .first<{ bytes: number; told_percent: number }>();
+    .prepare("SELECT bytes, told_percent, growth_date, growth_from_bytes FROM storage_meter WHERE id = 1")
+    .first<{ bytes: number; told_percent: number; growth_date: string | null; growth_from_bytes: number | null }>();
   if (row === null) throw new Error("the storage meter has no row: migration 0055 has not run");
-  return { bytes: row.bytes, toldPercent: row.told_percent };
+  const growth =
+    row.growth_date === null || row.growth_from_bytes === null
+      ? null
+      : { date: row.growth_date, fromBytes: row.growth_from_bytes };
+  return { bytes: row.bytes, toldPercent: row.told_percent, growth };
 }
 
 /** Stores an object in one of the two buckets, and counts what it holds now: an object it replaces no longer counts. */
@@ -139,7 +148,12 @@ async function keysUnder(bucket: R2Bucket, prefix: string): Promise<string[]> {
 
 const gigabytes = (bytes: number) => (bytes / 1e9).toFixed(2);
 
-const OF_THE_SHARE: Readonly<Record<Mark, string>> = { 50: "half of", 80: "80% of", 100: "all of" };
+/** "half of", "80% of", "all of", then "twice", "3 times"… the share. */
+function ofTheShare(mark: number): string {
+  if (mark < 100) return mark === 50 ? "half of" : `${String(mark)}% of`;
+  if (mark === 100) return "all of";
+  return mark === 200 ? "twice" : `${String(mark / 100)} times`;
+}
 
 /** Settings › Rules, at The console, where the storage and database figures are. */
 const STORAGE_LINK = "/settings#console";
@@ -148,8 +162,14 @@ const STORAGE_LINK = "/settings#console";
  * Tells ops of the highest mark the figure has passed since they were last told, once. Each mark is told once for
  * good: should the figure fall back and pass it again, it is not told again (the runbook says how to reset it).
  */
-export async function tellOfStorage(db: D1Database, alertOnce: AlertOnce, environment: EnvironmentName): Promise<void> {
+export async function tellOfStorage(
+  db: D1Database,
+  alertOnce: AlertOnce,
+  environment: EnvironmentName,
+  now: Date,
+): Promise<void> {
   const meter = await readMeter(db);
+  await tellOfUnusualGrowth(db, alertOnce, meter, now);
   const share = SHARE_BYTES[environment];
   const mark = markReached(meter.bytes, share);
   if (mark === null || mark <= meter.toldPercent) return;
@@ -161,7 +181,7 @@ export async function tellOfStorage(db: D1Database, alertOnce: AlertOnce, enviro
   await alertOnce({
     key: `r2_share:${String(mark)}`,
     message:
-      `Photos and referral cards use ${gigabytes(meter.bytes)} GB, ${OF_THE_SHARE[mark]} their ` +
+      `Photos and referral cards use ${gigabytes(meter.bytes)} GB, ${ofTheShare(mark)} their ` +
       `${String(share / 1e9)} GB of free storage. Uploads go on past it, on paid storage.`,
     link: STORAGE_LINK,
   });
@@ -197,18 +217,45 @@ export async function tellOfDatabaseSize(db: D1Database, alertOnce: AlertOnce, h
 }
 
 /**
- * Whether `incomingBytes` more may be stored. Refused only past the runaway ceiling, and each refusal is told to ops,
- * then counted (ADR 0067).
+ * At the first look of an India day, how much the figure grew since the day before began, told to ops when more than
+ * a day's work could make; the new day is then read from where the figure stands.
  */
-export async function hasStorageRoom(db: D1Database, alertOnce: AlertOnce, incomingBytes: number): Promise<boolean> {
-  const { bytes } = await readMeter(db);
-  if (hasRoom(bytes, incomingBytes)) return true;
+async function tellOfUnusualGrowth(db: D1Database, alertOnce: AlertOnce, meter: Meter, now: Date): Promise<void> {
+  const today = indiaDate(now);
+  if (meter.growth?.date === today) return;
+  await db
+    .prepare("UPDATE storage_meter SET growth_date = ?1, growth_from_bytes = bytes WHERE id = 1")
+    .bind(today)
+    .run();
+  const grown = meter.growth === null ? 0 : meter.bytes - meter.growth.fromBytes;
+  if (grown <= UNUSUAL_DAILY_GROWTH_BYTES) return;
   await alertOnce({
-    key: "r2_runaway_ceiling",
+    key: `r2_growth:${today}`,
     message:
-      `Photos and referral cards use ${gigabytes(bytes)} GB, past the runaway ceiling of ` +
-      `${String(RUNAWAY_CEILING_BYTES / 1e9)} GB, so the technician app's photographs are refused and wait on the ` +
-      'phones. Find what is writing them (runbook, "R2 storage growing").',
+      `Photos and referral cards grew by ${gigabytes(grown)} GB since ${meter.growth?.date ?? ""}, more than a day's ` +
+      'work makes. Find what is writing them (runbook, "R2 storage growing").',
+    link: STORAGE_LINK,
+  });
+}
+
+/** What an upload of photographs is counted under: a technician's phone, or ops' stock photographs together. */
+interface Uploader extends CountedAt {
+  readonly scope: Extract<RateLimitScope, `photo_upload:${string}`>;
+  readonly key: string;
+}
+
+/**
+ * Whether the uploader may store one more photograph today. Past their day's limit it is refused, the photographs wait
+ * on the phone, and ops are told once (ADR 0067, 0194).
+ */
+export async function mayUpload(db: D1Database, alertOnce: AlertOnce, uploader: Uploader): Promise<boolean> {
+  if (await takeOne(db, uploader.scope, uploader.key, uploader)) return true;
+  await alertOnce({
+    key: `photo_uploads:${uploader.key}`,
+    message:
+      `${uploader.scope === "photo_upload:technician" ? "A technician's phone" : "The stock photographs"} reached ` +
+      "the day's limit of uploads, more than a day's work makes, so further photographs are refused and wait on the " +
+      `phone. Find what is sending them (runbook, "R2 storage growing"; ${uploader.key}).`,
     link: STORAGE_LINK,
   });
   return false;

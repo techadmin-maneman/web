@@ -28,6 +28,7 @@ const StockSchema = z
           hair_system: z.boolean().openapi({ description: "A hair system, whose pieces are each labelled." }),
           reorder_kit: z.union([z.number().int(), z.null()]),
           reorder_central: z.union([z.number().int(), z.null()]),
+          reorder_store: z.union([z.number().int(), z.null()]),
         })
         .strict(),
     ),

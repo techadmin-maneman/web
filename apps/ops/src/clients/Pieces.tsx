@@ -8,28 +8,22 @@
 // quiet. A piece that has failed has been replaced, so the brass falls on the
 // one that has not.
 
+import { lazyScreen } from "@maneman/ui/lazyScreen";
 import { classes } from "@maneman/ui/classes";
 import { Table } from "@maneman/ui/Table";
 import { useLoad } from "@maneman/ui/useLoad";
 import { fullDate, longDate } from "@maneman/web-kit/dates";
-import { lazy, Suspense, useCallback } from "react";
+import { Suspense, useCallback } from "react";
 import { api, type Piece } from "../api.ts";
 import { clients } from "../content.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import styles from "./clients.module.css";
-import { loadOrReload } from "@maneman/web-kit/load-or-reload";
 
-const HairProfile = lazy(() =>
-  loadOrReload(() => import("./HairProfile.tsx")).then((module) => ({ default: module.HairProfile })),
-);
+const HairProfile = lazyScreen(() => import("./HairProfile.tsx").then((module) => module.HairProfile));
 
-const StockMatch = lazy(() =>
-  loadOrReload(() => import("./StockMatch.tsx")).then((module) => ({ default: module.StockMatch })),
-);
+const StockMatch = lazyScreen(() => import("./StockMatch.tsx").then((module) => module.StockMatch));
 
-const CustomOrders = lazy(() =>
-  loadOrReload(() => import("./CustomOrders.tsx")).then((module) => ({ default: module.CustomOrders })),
-);
+const CustomOrders = lazyScreen(() => import("./CustomOrders.tsx").then((module) => module.CustomOrders));
 
 const copy = clients.pieces;
 

@@ -9,7 +9,8 @@ import { eraseBooksCustomers } from "../../../src/domain/books/books-erasure.ts"
 import { createCallBudget } from "../../../src/lib/call-budget.ts";
 import { createLogger } from "../../../src/log.ts";
 import { createStubBooks, type StubBooks } from "../../../src/providers/books/stub.ts";
-import { CRON_JOBS, runCronJobs } from "../../../src/scheduled/cron.ts";
+import { CRON_JOBS } from "../../../src/scheduled/cron.ts";
+import { runCronJobs } from "../../../src/scheduled/cron-runner.ts";
 import {
   appFor,
   fakeDependencies,

@@ -2,6 +2,7 @@
 // Each check returns a list of problems; an empty list means the config is
 // fine. See docs/decisions/0005-environment-isolation-in-wrangler-config.md.
 
+import { checkBindingCosts } from "./binding-costs.ts";
 import {
   ENABLED_SURFACES,
   EXPECTED_DATABASE_NAME,
@@ -60,30 +61,8 @@ const NON_INHERITABLE_KEYS: readonly BindingKey[] = [
   { key: "images", shape: "one", nameField: "binding" },
 ];
 
-/**
- * The only binding kinds mm-api may use: those that are free, or fail rather
- * than bill, on the Workers Free plan. See docs/decisions/0009-stay-inside-cloudflare-free-tier.md.
- */
-const FREE_TIER_KEYS: ReadonlySet<string> = new Set([
-  "vars",
-  "define",
-  "d1_databases",
-  "r2_buckets",
-  "queues.producers",
-  "queues.consumers",
-  // Refused past 5,000 transformations a month on the Free plan, never billed: a client's referral card.
-  "images",
-  "version_metadata",
-  // Within the Free plan's daily queries, and part of Workers Paid (docs/decisions/0112-workers-paid.md): the nightly
-  // reporting copy's connection to Supabase (docs/decisions/0146-the-nightly-analytics-copy.md).
-  "hyperdrive",
-]);
-
 /** Bindings only an environment that uses them declares: locally the copy runs on its stub, and staging keeps none. */
 const WHERE_USED_ONLY: ReadonlySet<string> = new Set(["hyperdrive"]);
-
-/** Config keys that only exist on paid plans, or that bypass wrangler's binding types. */
-const PAID_OR_UNCHECKED_KEYS = ["limits", "unsafe"] as const;
 
 /**
  * Config keys that wrangler DOES copy into every environment. For a remote
@@ -115,10 +94,10 @@ export interface CheckOptions {
 }
 
 /**
- * The Workers Free plan's limit on one Worker's vars and secrets together. A deploy past it is refused
- * (code 10055) before anything moves.
+ * Workers Paid's limit on one Worker's vars and secrets together. A deploy past it is refused (code 10055) before
+ * anything moves.
  */
-export const FREE_VARIABLE_LIMIT = 64;
+export const VARIABLE_LIMIT = 128;
 
 /** The names .dev.vars.example gives a value to: every secret an environment may hold. */
 export function secretNamesIn(devVarsExample: string): string[] {
@@ -325,31 +304,16 @@ export function apiRoutePatterns(environment: RemoteEnvironmentName): string[] {
   return ENABLED_SURFACES[environment].map((surface) => `${SURFACE_HOSTS[environment][surface]}/api/*`);
 }
 
-/** Only binding kinds that cannot bill on the Workers Free plan. */
-function checkFreeTier(block: JsonObject, label: string): string[] {
-  const problems: string[] = [];
-  for (const { key } of NON_INHERITABLE_KEYS) {
-    if (!FREE_TIER_KEYS.has(key) && read(block, key) !== undefined) {
-      problems.push(`${label}: ${key} is not on the free-tier allowlist (docs/decisions/0009)`);
-    }
-  }
-  for (const key of PAID_OR_UNCHECKED_KEYS) {
-    if (block[key] !== undefined)
-      problems.push(`${label}: ${key} is not allowed on the free tier (docs/decisions/0009)`);
-  }
-  return problems;
-}
-
-/** The environment's vars, and every secret it may hold beside them, within the free plan's limit. */
+/** The environment's vars, and every secret it may hold beside them, within the plan's limit. */
 function checkVariableLimit(block: JsonObject, secretNames: readonly string[], label: string): string[] {
   const vars = read(block, "vars");
   const varNames = isObject(vars) ? Object.keys(vars) : [];
   const secrets = secretNames.filter((name) => !varNames.includes(name));
   const total = varNames.length + secrets.length;
-  if (total <= FREE_VARIABLE_LIMIT) return [];
+  if (total <= VARIABLE_LIMIT) return [];
   return [
     `${label}: ${String(varNames.length)} vars and ${String(secrets.length)} secrets make ${String(total)}, ` +
-      `over the Workers Free limit of ${String(FREE_VARIABLE_LIMIT)} (docs/decisions/0009): put a fixed value in src/config instead`,
+      `over Workers Paid's limit of ${String(VARIABLE_LIMIT)}: put a fixed value in src/config instead`,
   ];
 }
 
@@ -390,7 +354,7 @@ export function checkApiConfig(config: JsonObject, options: CheckOptions = {}): 
     );
   }
   problems.push(...checkOwnResources(config, "local", "top level (local)"));
-  problems.push(...checkFreeTier(config, "top level (local)"));
+  problems.push(...checkBindingCosts(config, "top level (local)"));
 
   const localBindings = NON_INHERITABLE_KEYS.flatMap((bindingKey) => namesUnder(config, bindingKey) ?? []);
   for (const binding of REQUIRED_API_BINDINGS) {
@@ -408,7 +372,7 @@ export function checkApiConfig(config: JsonObject, options: CheckOptions = {}): 
     problems.push(...checkRoutes(block, apiRoutePatterns(environment), label));
     problems.push(...checkRedeclared(config, block, label));
     problems.push(...checkOwnResources(block, environment, label));
-    problems.push(...checkFreeTier(block, label));
+    problems.push(...checkBindingCosts(block, label));
     problems.push(...checkVariableLimit(block, options.secretNames ?? [], label));
     if (options.requireProvisioned === true && databaseIds(block).includes(PLACEHOLDER_DATABASE_ID)) {
       problems.push(`${label}: D1 database_id is a placeholder; provision it first`);

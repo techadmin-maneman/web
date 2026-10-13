@@ -17,7 +17,7 @@ import { SHARE_BYTES } from "../../../src/policy/storage-share.ts";
 
 /** Production's part of the share: 3.6 GB. */
 const SHARE = SHARE_BYTES.production;
-import { fakeDependencies, markDatabase, type TestDependencies } from "../helpers.ts";
+import { fakeDependencies, markDatabase, NOW, type TestDependencies } from "../helpers.ts";
 
 let deps: TestDependencies;
 
@@ -200,14 +200,14 @@ describe("counting what is stored", () => {
 describe("telling ops", () => {
   it("says nothing below half the share", async () => {
     await setMeter(SHARE / 2 - 1);
-    await tellOfStorage(env.DB, deps.alertOnce, "production");
+    await tellOfStorage(env.DB, deps.alertOnce, "production", NOW);
     expect(deps.alerts).toEqual([]);
   });
 
   it("tells once at half the share, and not again on the next run", async () => {
     await setMeter(SHARE / 2);
-    await tellOfStorage(env.DB, deps.alertOnce, "production");
-    await tellOfStorage(env.DB, deps.alertOnce, "production");
+    await tellOfStorage(env.DB, deps.alertOnce, "production", NOW);
+    await tellOfStorage(env.DB, deps.alertOnce, "production", NOW);
     expect(deps.alerts).toEqual([
       expect.stringContaining("Photos and referral cards use 1.80 GB, half of their 3.6 GB of free storage"),
     ]);
@@ -216,12 +216,12 @@ describe("telling ops", () => {
 
   it("tells again at 80%, and once more when the share is full, saying uploads go on", async () => {
     await setMeter(SHARE / 2);
-    await tellOfStorage(env.DB, deps.alertOnce, "production");
+    await tellOfStorage(env.DB, deps.alertOnce, "production", NOW);
     await setMeter(SHARE * 0.8);
-    await tellOfStorage(env.DB, deps.alertOnce, "production");
+    await tellOfStorage(env.DB, deps.alertOnce, "production", NOW);
     await setMeter(SHARE);
-    await tellOfStorage(env.DB, deps.alertOnce, "production");
-    await tellOfStorage(env.DB, deps.alertOnce, "production");
+    await tellOfStorage(env.DB, deps.alertOnce, "production", NOW);
+    await tellOfStorage(env.DB, deps.alertOnce, "production", NOW);
 
     expect(deps.alerts).toHaveLength(3);
     expect(deps.alerts[1]).toContain("80% of their 3.6 GB of free storage");
@@ -235,14 +235,42 @@ describe("telling ops", () => {
 
   it("tells only the highest mark passed since the last run", async () => {
     await setMeter(SHARE * 0.85);
-    await tellOfStorage(env.DB, deps.alertOnce, "production");
+    await tellOfStorage(env.DB, deps.alertOnce, "production", NOW);
     expect(deps.alerts).toEqual([expect.stringContaining("80% of their 3.6 GB of free storage")]);
+  });
+
+  it("tells again at each whole share past it, as R2 bills for it", async () => {
+    await setMeter(SHARE);
+    await tellOfStorage(env.DB, deps.alertOnce, "production", NOW);
+    await setMeter(SHARE * 2.2);
+    await tellOfStorage(env.DB, deps.alertOnce, "production", NOW);
+    expect(deps.alerts).toHaveLength(2);
+    expect(deps.alerts[1]).toContain("twice their 3.6 GB of free storage");
+    expect((await readMeter(env.DB)).toldPercent).toBe(200);
+  });
+
+  it("tells of a day in which the photographs grew past what a day's work makes, once that day", async () => {
+    await env.DB.prepare(
+      "UPDATE storage_meter SET bytes = 2.6e9, growth_date = '2026-09-20', growth_from_bytes = 0.4e9",
+    ).run();
+    await tellOfStorage(env.DB, deps.alertOnce, "production", NOW);
+    await tellOfStorage(env.DB, deps.alertOnce, "production", NOW);
+    expect(deps.alerts.filter((alert) => alert.includes("grew by 2.20 GB since 2026-09-20"))).toHaveLength(1);
+    expect((await readMeter(env.DB)).growth).toEqual({ date: "2026-09-21", fromBytes: 2.6e9 });
+  });
+
+  it("says nothing of a day's ordinary growth, nor on the first look", async () => {
+    await setMeter(0.1e9);
+    await tellOfStorage(env.DB, deps.alertOnce, "production", NOW);
+    await env.DB.prepare("UPDATE storage_meter SET bytes = 0.3e9, growth_date = '2026-09-20'").run();
+    await tellOfStorage(env.DB, deps.alertOnce, "production", NOW);
+    expect(deps.alerts).toEqual([]);
   });
 
   // The figure moved from the top of Settings to The console's section of Rules.
   it("links to where Settings shows the figure", async () => {
     await setMeter(SHARE / 2);
-    await tellOfStorage(env.DB, deps.alertOnce, "production");
+    await tellOfStorage(env.DB, deps.alertOnce, "production", NOW);
     await tellOfDatabaseSize(env.DB, deps.alertOnce, 5e9);
     expect(deps.alerts).toEqual([
       expect.stringMatching(/\/settings#console$/),

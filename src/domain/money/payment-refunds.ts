@@ -80,7 +80,9 @@ export async function refundPayment(
  * and the Razorpay payment, for ops to refund. It goes once a refund of the payment is made (migration 0096's indexes).
  */
 export const REFUND_OWED_LET_GO = `SELECT 'payment_to_refund' AS "group", p.id AS id, pe.id AS person_id, pe.name AS person_name,
-         'let_go ' || (p.amount - p.refunded_amount) || ' ' || p.razorpay_payment_id AS detail, h.updated_at AS since,
+         'let_go ' || (p.amount - p.refunded_amount) || ' ' || p.razorpay_payment_id AS detail,
+         json_object('why', 'let_go', 'amount', p.amount - p.refunded_amount, 'payment', p.razorpay_payment_id) AS facts,
+         h.updated_at AS since,
          NULL AS due_by, '' AS episode
     FROM payments p JOIN slot_holds h ON h.razorpay_order_id = p.razorpay_order_id
     JOIN people pe ON pe.id = h.person_id
@@ -89,7 +91,9 @@ export const REFUND_OWED_LET_GO = `SELECT 'payment_to_refund' AS "group", p.id A
 
 /** And a refund Razorpay failed, with nothing made since. */
 export const REFUND_OWED_FAILED = `SELECT 'payment_to_refund' AS "group", p.id AS id, pe.id AS person_id, pe.name AS person_name,
-         'refund_failed ' || r.amount || ' ' || p.razorpay_payment_id AS detail, r.updated_at AS since,
+         'refund_failed ' || r.amount || ' ' || p.razorpay_payment_id AS detail,
+         json_object('why', 'refund_failed', 'amount', r.amount, 'payment', p.razorpay_payment_id) AS facts,
+         r.updated_at AS since,
          NULL AS due_by, '' AS episode
     FROM refunds r JOIN payments p ON p.id = r.payment_id
     JOIN people pe ON pe.id = p.person_id

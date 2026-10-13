@@ -68,19 +68,7 @@ export async function personalDataStatements(
     db
       .prepare("UPDATE referral_attributions SET friend_first_name = NULL WHERE referred_person_id = ?1")
       .bind(personId),
-    // Their chats with the Care team: the words go, and the thread's number becomes nobody's
-    // (docs/decisions/0129-the-care-inbox.md).
-    db
-      .prepare(
-        "UPDATE chat_messages SET text = NULL WHERE conversation_id IN (SELECT id FROM conversations WHERE person_id = ?1)",
-      )
-      .bind(personId),
-    db.prepare("UPDATE conversations SET mobile_e164 = 'erased:' || id WHERE person_id = ?1").bind(personId),
-    // Nobody looks after an erased record, so it counts towards no one's clients (docs/decisions/0131-care-people.md).
-    db.prepare("DELETE FROM care_owners WHERE person_id = ?1").bind(personId),
-    // Care's words to the city team about them (docs/decisions/0135-city-matters.md).
-    db.prepare("UPDATE city_matters SET note = NULL WHERE person_id = ?1").bind(personId),
-    db.prepare("UPDATE remedies SET note = NULL WHERE person_id = ?1").bind(personId),
+    ...careRecords(db, personId),
     // And the client's own words to the technician on a visit (src/domain/clients/client-notes.ts), and why they disputed a
     // no-show's charge (src/domain/no-shows/no-show-disputes.ts).
     db.prepare("UPDATE appointments SET client_note = NULL, client_note_at = NULL WHERE person_id = ?1").bind(personId),
@@ -110,6 +98,32 @@ export async function personalDataStatements(
       )
       .bind(personId, at),
     ...withdrawals,
+  ];
+}
+
+/** What Care hold about them: their chats, who looks after them, and Care's words about them. */
+function careRecords(db: D1Database, personId: string): D1PreparedStatement[] {
+  return [
+    // Their chats with the Care team: the words go, and the thread's number becomes nobody's
+    // (docs/decisions/0129-the-care-inbox.md). A thread from their number not yet theirs, begun before they were a
+    // client, is made theirs first, while the person's row still holds the number.
+    db
+      .prepare(
+        `UPDATE conversations SET person_id = ?1
+       WHERE person_id IS NULL AND mobile_e164 = (SELECT mobile_e164 FROM people WHERE id = ?1)`,
+      )
+      .bind(personId),
+    db
+      .prepare(
+        "UPDATE chat_messages SET text = NULL WHERE conversation_id IN (SELECT id FROM conversations WHERE person_id = ?1)",
+      )
+      .bind(personId),
+    db.prepare("UPDATE conversations SET mobile_e164 = 'erased:' || id WHERE person_id = ?1").bind(personId),
+    // Nobody looks after an erased record, so it counts towards no one's clients (docs/decisions/0131-care-people.md).
+    db.prepare("DELETE FROM care_owners WHERE person_id = ?1").bind(personId),
+    // Care's words to the city team about them (docs/decisions/0135-city-matters.md).
+    db.prepare("UPDATE city_matters SET note = NULL WHERE person_id = ?1").bind(personId),
+    db.prepare("UPDATE remedies SET note = NULL WHERE person_id = ?1").bind(personId),
   ];
 }
 

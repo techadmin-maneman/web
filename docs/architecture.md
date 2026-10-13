@@ -4,15 +4,15 @@ mm-api's code stands in layers. A module imports its own layer and those below i
 imports itself back through others. `test/node/architecture/layers.test.ts` holds src/ to this: a new upward import or a new cycle
 fails it.
 
-| Layer                        | Folders                                                         | What it holds                                                                                                                       |
-| ---------------------------- | --------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
-| 1. lib                       | `lib/`, `log.ts`                                                | Small helpers with no business in them: India's time, durations, hashes, signed tokens, the logger.                                 |
-| 2. config                    | `config/`                                                       | Data: environments, settings, limits, the booking choices, notices, message texts and kinds, what the queues carry (`pipeline.ts`). |
-| 3. policy                    | `policy/`                                                       | The business rules, as pure functions over that data, and the register of what ops may set (`ops-settings.ts`).                     |
-| 4. domain and providers      | `domain/`, `providers/`                                         | What the rules act on, in D1 (bookings, visits, payments, invoices), and each vendor behind its interface, with its stub.           |
-| 5. wiring, requests and jobs | `dependencies.ts`, `guard.ts`, `http/`, `queues/`, `scheduled/` | What a request, a queue message or the cron carries, and the consumers and jobs that call the domain.                               |
-| 6. routes                    | `routes/`                                                       | One module per route or group of routes, zod schemas included.                                                                      |
-| 7. the app                   | `app.ts`, `index.ts`, `openapi.ts`                              | The Worker: requests by host, the queue consumers, the cron, and the OpenAPI documents.                                             |
+| Layer                        | Folders                                                                       | What it holds                                                                                                                       |
+| ---------------------------- | ----------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| 1. lib                       | `lib/`, `log.ts`                                                              | Small helpers with no business in them: India's time, durations, hashes, signed tokens, the logger.                                 |
+| 2. config                    | `config/`                                                                     | Data: environments, settings, limits, the booking choices, notices, message texts and kinds, what the queues carry (`pipeline.ts`). |
+| 3. policy                    | `policy/`                                                                     | The business rules, as pure functions over that data, and the register of what ops may set (`ops-settings.ts`).                     |
+| 4. domain and providers      | `domain/`, `providers/`                                                       | What the rules act on, in D1 (bookings, visits, payments, invoices), and each vendor behind its interface, with its stub.           |
+| 5. wiring, requests and jobs | `dependencies.ts`, `guard.ts`, `http/`, `queues/`, `scheduled/`, `workflows/` | What a request, a queue message, the cron or a Workflow carries, and the consumers and jobs that call the domain.                   |
+| 6. routes                    | `routes/`                                                                     | One module per route or group of routes, zod schemas included.                                                                      |
+| 7. the app                   | `app.ts`, `index.ts`, `openapi.ts`                                            | The Worker: requests by host, the queue consumers, the cron, and the OpenAPI documents.                                             |
 
 Within a layer, modules import each other freely, as long as no cycle forms.
 

@@ -4,6 +4,9 @@ import { answer, json, type OpsReply } from "./fixtures.ts";
 import { open, row, groupNames } from "./tasks-fixtures.ts";
 import * as opsCopy from "../../apps/ops/src/content.ts";
 
+/** What a task turns on, as the board answers it. */
+type Facts = OpsReply<"/api/tasks">["groups"][number]["tasks"][number]["facts"];
+
 // The board draws no consultation request, so it is left out of the fixture the
 // fidelity run reads and given its own answer here
 // (docs/decisions/0060-an-invited-friend-reaches-ops-and-the-crm.md).
@@ -22,6 +25,14 @@ test("names the day and window a consultation was asked for", async ({ page }) =
           {
             id: "96000000-0000-4000-8000-000000000001",
             person: { id: "22000000-0000-4000-8000-000000000007", name: "Neha Kapoor" },
+            facts: {
+              group: "consultation_request",
+              date: "2027-09-24",
+              window: "afternoon",
+              one_visit: false,
+              discount_code: null,
+              first_fit: null,
+            },
             detail: "2027-09-24 afternoon",
             since: "2027-09-21T06:00:00.000Z",
             due: "2027-09-23T06:00:00.000Z",
@@ -54,6 +65,14 @@ test("names an At-risk client's weeks since the last visit, a first fit to book,
           {
             id: "96000000-0000-4000-8000-000000000011",
             person: { id: "22000000-0000-4000-8000-000000000011", name: "Neha Kapoor" },
+            facts: {
+              group: "consultation_request",
+              date: "2027-09-24",
+              window: "afternoon",
+              one_visit: false,
+              discount_code: null,
+              first_fit: { window: "morning" },
+            },
             detail: "2027-09-24 afternoon first_fit morning",
             since: "2027-09-21T06:00:00.000Z",
             due: "2027-09-23T06:00:00.000Z",
@@ -69,6 +88,7 @@ test("names an At-risk client's weeks since the last visit, a first fit to book,
           {
             id: "22000000-0000-4000-8000-000000000012",
             person: { id: "22000000-0000-4000-8000-000000000012", name: "Sanjay Arora" },
+            facts: { group: "first_fit_to_book", consulted_at: "2027-09-10T08:00:00.000Z", fit_window: "afternoon" },
             detail: "2027-09-10T08:00:00.000Z afternoon",
             since: "2027-09-16T18:30:00.000Z",
             due: "2027-09-18T18:30:00.000Z",
@@ -84,6 +104,7 @@ test("names an At-risk client's weeks since the last visit, a first fit to book,
           {
             id: "96000000-0000-4000-8000-000000000013",
             person: { id: "22000000-0000-4000-8000-000000000013", name: "Deepak Rao" },
+            facts: { group: "at_risk_client", last_visit_at: "2027-07-21T04:30:00.000Z", due_on: "2027-08-20" },
             detail: "2027-07-21T04:30:00.000Z 2027-08-20",
             since: "2027-08-26T18:30:00.000Z",
             due: "2027-08-28T18:30:00.000Z",
@@ -123,6 +144,7 @@ test("names a draft invoice's visit", async ({ page }) => {
           {
             id: "96000000-0000-4000-8000-000000000002",
             person: { id: "22000000-0000-4000-8000-000000000008", name: "Sanjay Arora" },
+            facts: { group: "draft_invoice", invoice_id: "8229000000411007" },
             detail: "8229000000411007",
             since: "2027-09-20T07:30:00.000Z",
             due: "2027-09-22T07:30:00.000Z",
@@ -141,9 +163,10 @@ test("names a draft invoice's visit", async ({ page }) => {
 test("names a one visit asked for, and a fitted client's payment still owed, with its product and amount", async ({
   page,
 }) => {
-  const task = (id: string, name: string, detail: string) => ({
+  const task = (id: string, name: string, detail: string, facts: Facts) => ({
     id,
     person: { id: "22000000-0000-4000-8000-000000000020", name },
+    facts,
     detail,
     since: "2027-09-20T07:30:00.000Z",
     due: "2027-09-22T07:30:00.000Z",
@@ -159,7 +182,16 @@ test("names a one visit asked for, and a fitted client's payment still owed, wit
         group: "consultation_request",
         count: 1,
         closable: false,
-        tasks: [task("96000000-0000-4000-8000-000000000020", "Arjun Kapoor", "2027-09-24 morning one_visit")],
+        tasks: [
+          task("96000000-0000-4000-8000-000000000020", "Arjun Kapoor", "2027-09-24 morning one_visit", {
+            group: "consultation_request",
+            date: "2027-09-24",
+            window: "morning",
+            one_visit: true,
+            discount_code: null,
+            first_fit: null,
+          }),
+        ],
       },
       {
         group: "payment_owed",
@@ -170,10 +202,35 @@ test("names a one visit asked for, and a fitted client's payment still owed, wit
             "96000000-0000-4000-8000-000000000021",
             "Nikhil Suri",
             "sent 3500000 https://rzp.io/i/nat Mane Man Natural",
+            {
+              group: "payment_owed",
+              state: "sent",
+              amount: 3500000,
+              url: "https://rzp.io/i/nat",
+              product: "Mane Man Natural",
+            },
           ),
-          task("96000000-0000-4000-8000-000000000022", "Manoj Iyer", "unsent 2500000 - Mane Man Essential"),
-          task("96000000-0000-4000-8000-000000000023", "Ravi Menon", "refused 2500000 - Mane Man Essential"),
-          task("96000000-0000-4000-8000-000000000024", "Kabir Sethi", "closed 3500000 - Mane Man Natural"),
+          task("96000000-0000-4000-8000-000000000022", "Manoj Iyer", "unsent 2500000 - Mane Man Essential", {
+            group: "payment_owed",
+            state: "unsent",
+            amount: 2500000,
+            url: null,
+            product: "Mane Man Essential",
+          }),
+          task("96000000-0000-4000-8000-000000000023", "Ravi Menon", "refused 2500000 - Mane Man Essential", {
+            group: "payment_owed",
+            state: "refused",
+            amount: 2500000,
+            url: null,
+            product: "Mane Man Essential",
+          }),
+          task("96000000-0000-4000-8000-000000000024", "Kabir Sethi", "closed 3500000 - Mane Man Natural", {
+            group: "payment_owed",
+            state: "closed",
+            amount: 3500000,
+            url: null,
+            product: "Mane Man Natural",
+          }),
         ],
       },
     ],
@@ -206,9 +263,10 @@ test("names a one visit asked for, and a fitted client's payment still owed, wit
 test("lists each payment to refund, why, and what is owed back, and leads to the client's payments", async ({
   page,
 }) => {
-  const task = (id: string, name: string, detail: string) => ({
+  const task = (id: string, name: string, detail: string, facts: Facts) => ({
     id,
     person: { id: "22000000-0000-4000-8000-000000000030", name },
+    facts,
     detail,
     since: "2027-09-20T07:30:00.000Z",
     due: "2027-09-21T07:30:00.000Z",
@@ -225,8 +283,18 @@ test("lists each payment to refund, why, and what is owed back, and leads to the
         count: 2,
         closable: false,
         tasks: [
-          task("96000000-0000-4000-8000-000000000031", "Nikhil Suri", "let_go 200000 pay_Q1late"),
-          task("96000000-0000-4000-8000-000000000032", "Manoj Iyer", "refund_failed 3540000 pay_Q2fail"),
+          task("96000000-0000-4000-8000-000000000031", "Nikhil Suri", "let_go 200000 pay_Q1late", {
+            group: "payment_to_refund",
+            why: "let_go",
+            amount: 200000,
+            payment: "pay_Q1late",
+          }),
+          task("96000000-0000-4000-8000-000000000032", "Manoj Iyer", "refund_failed 3540000 pay_Q2fail", {
+            group: "payment_to_refund",
+            why: "refund_failed",
+            amount: 3540000,
+            payment: "pay_Q2fail",
+          }),
         ],
       },
     ],
@@ -255,10 +323,11 @@ test("names the client of a no-show, and leads to their visits and to the case",
 
 // A client's claim for money back once waited on No-shows alone: no row here, no count, no link.
 test("names a disputed charge and what it kept, and leads to the dispute in Payments", async ({ page }) => {
-  const dispute = (id: string, person: { id: string; name: string } | null, kept: string) => ({
+  const dispute = (id: string, person: { id: string; name: string } | null, kept: number) => ({
     id,
     person,
-    detail: kept,
+    facts: { group: "no_show_dispute" as const, kept },
+    detail: String(kept),
     since: "2027-09-21T06:00:00.000Z",
     due: "2027-09-23T06:00:00.000Z",
     owner: null,
@@ -277,9 +346,9 @@ test("names a disputed charge and what it kept, and leads to the dispute in Paym
           dispute(
             "dd000000-0000-4000-8000-000000000001",
             { id: "22000000-0000-4000-8000-000000000030", name: "Vikram Sethi" },
-            "236000",
+            236000,
           ),
-          dispute("dd000000-0000-4000-8000-000000000002", null, "0"),
+          dispute("dd000000-0000-4000-8000-000000000002", null, 0),
         ],
       },
     ],
@@ -347,6 +416,7 @@ test("counts an open grievance down, and leads to it in Grievances", async ({ pa
           {
             id: "97000000-0000-4000-8000-000000000001",
             person: { id: "22000000-0000-4000-8000-000000000007", name: "Neha Kapoor" },
+            facts: { group: "grievance" },
             detail: null,
             since: "2027-09-14T06:00:00.000Z",
             due: "2027-10-14T06:00:00.000Z",

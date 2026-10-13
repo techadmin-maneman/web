@@ -1464,6 +1464,28 @@ Evolution's delivery receipts (messages.update) for the WhatsApp messages we sen
 }
 ```
 
+### POST /api/hooks/msg91/{token}
+
+MSG91's WhatsApp webhook: delivery reports for the messages we sent, and the messages on our number, where a STOP stops our messages
+
+**204**: Taken, or ignored. Either way MSG91 need not send it again
+
+**401**: unauthorized: the token is wrong
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: MSG91 is not the messaging provider, or its webhook has no MSG91_WEBHOOK_TOKEN
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ### POST /api/hooks/razorpay
 
 Razorpay's webhook: payments and refunds

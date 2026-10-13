@@ -1,10 +1,11 @@
 // A whole-database restore as the runbook runs it: the database is exported, put back to <T>, and the carry-back file
-// built from the export is run on it, all on D1's own export and in one D1 batch. Every table holds rows at <T> and is
-// written to since, so a migration that adds a table or a trigger the carry-back cannot pass fails here.
+// built from D1's own export is run on it a statement at a time, since D1 loads a long file as several transactions and
+// checks foreign keys at the end of each. Every table holds rows at <T> and is written to since, so a migration that
+// adds a table or a trigger the carry-back cannot pass fails here.
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
-import { carryBack } from "../../../scripts/lib/restore-carry.ts";
+import { carryBack, type ForeignKey, type TableKeys } from "../../../scripts/lib/restore-carry.ts";
 import { markDatabase } from "../helpers.ts";
 import { ROWS_AT_T, WRITTEN_SINCE_T } from "./restore-fixtures.ts";
 
@@ -46,6 +47,21 @@ async function tableNames(): Promise<string[]> {
   return results.map((row) => row.name);
 }
 
+/** Each table's keys as D1 reads them; the runbook's script reads the same from the export (scripts/lib/schema-keys.ts). */
+async function keysOfDatabase(): Promise<Map<string, TableKeys>> {
+  const keys = new Map<string, TableKeys>();
+  for (const table of await tableNames()) {
+    const primary = await env.DB.prepare("SELECT name FROM pragma_table_info(?) WHERE pk > 0 ORDER BY pk")
+      .bind(table)
+      .all<{ name: string }>();
+    const foreignKeys = await env.DB.prepare(`SELECT "table", "from", "to" FROM pragma_foreign_key_list(?)`)
+      .bind(table)
+      .all<ForeignKey>();
+    keys.set(table, { primaryKey: primary.results.map((column) => column.name), foreignKeys: foreignKeys.results });
+  }
+  return keys;
+}
+
 /** Every row as it was at <T>, with the triggers in place, as Time Travel puts the database back. */
 async function goBackTo(atT: readonly string[]): Promise<void> {
   const tables = await tableNames();
@@ -67,10 +83,10 @@ async function restoreWholeDatabase(leave: readonly string[] = []) {
   const atT = await exportDatabase();
   await run([...WRITTEN_SINCE_T, MAINTENANCE_ON]);
   const now = await exportDatabase();
-  const carry = carryBack(asFile(now), leave);
+  const carry = carryBack(asFile(now), await keysOfDatabase(), leave);
   await goBackTo(atT);
   await run([MAINTENANCE_ON]);
-  await run(carry.statements);
+  for (const statement of carry.statements) await env.DB.prepare(statement).run();
   return { atT, now, carry, after: await exportDatabase() };
 }
 
@@ -127,6 +143,7 @@ describe("restoring the whole database", () => {
       "last_visits",
       "ops_settings_snapshot",
       "board_version",
+      "conversations",
       "stock_places",
       "stock_lot_balances",
     ]);

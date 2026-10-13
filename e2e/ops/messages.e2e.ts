@@ -24,7 +24,7 @@ const ARJUN: Conversation = {
 
 test("lists the chats waiting on us, and opens one with our automatic messages in it", async ({ page }) => {
   await answer(page, {
-    "GET /api/conversations": json({ conversations: [ARJUN] }),
+    "GET /api/conversations": json({ conversations: [ARJUN], next_before: null }),
     "GET /api/care-team": json({
       team: [
         {

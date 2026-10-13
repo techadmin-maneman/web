@@ -65,7 +65,13 @@ function Row({ consumable, may, onDo }: { consumable: Consumable; may: MayDo; on
         {name} <span className={own.unit}>{consumable.unit}</span>
       </th>
       <td className={styles.figure}>{rupees(consumable.unit_cost)}</td>
-      <td>{copy.levels(consumable.reorder_kit, consumable.reorder_central)}</td>
+      <td>
+        {copy.levels({
+          kit: consumable.reorder_kit,
+          store: consumable.reorder_store,
+          central: consumable.reorder_central,
+        })}
+      </td>
       <td className={own.actions}>
         <span className={consumable.offered ? undefined : own.quiet}>{stateWords(consumable)}</span>
         {may.change && (

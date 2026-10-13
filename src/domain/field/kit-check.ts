@@ -5,12 +5,15 @@
 //
 // A one visit's client is seldom known before the visit, so its kit carries the one-visit range
 // (docs/decisions/0184-the-one-visit-range.md): one of each of the hair systems its city's latest forecast expects most.
+// On the evening ops set, the check looks a week ahead for consumables (./kit-week.ts). What is on its way to a kit
+// counts as held, so a top-up approved is not proposed again in the next hour.
 
-import { addDays, indiaDate, indiaHour, indiaInstant } from "../../lib/india-time.ts";
+import { addDays, indiaDate, indiaHour, indiaInstant, weekdayOf } from "../../lib/india-time.ts";
 import { latestFits } from "../clients/hair-profiles.ts";
 import type { KitCheck } from "../../policy/kit-check.ts";
 import type { AlertOnce } from "../ops/alerts.ts";
 import { hairSystemSpecs, matchingCode } from "./hair-systems.ts";
+import { addTheWeek } from "./kit-week.ts";
 
 type UseRow = { technician_id: string; code: string; quantity: number };
 type FitRow = {
@@ -22,7 +25,7 @@ type FitRow = {
   city: string | null;
 };
 type HeldRow = { place: string; code: string; quantity: number };
-type KitSource = { kit: string; name: string; source: string | null; source_name: string | null };
+type KitSource = { kit: string; source: string | null; source_name: string | null };
 
 /** What each technician's visits tomorrow need, by kit and stock code. */
 async function neededTomorrow(
@@ -125,10 +128,12 @@ async function heldAtSources(db: D1Database, sources: readonly string[], codes: 
   return results;
 }
 
-/** Ops' line about a kit short for tomorrow: what it lacks, and what its source has none of either. */
+type Gap = { code: string; gap: number; have: number; needed: number; atSource: number };
+
+/** Ops' line about a kit short, by its technician's ID, which the console names: what it lacks, and what its source has none of either. */
 function shortLine(
-  kit: { readonly name: string; readonly sourceName: string | null },
-  gaps: readonly { readonly code: string; readonly gap: number; readonly atSource: number }[],
+  kit: { readonly id: string; readonly sourceName: string | null; readonly forTheWeek: boolean },
+  gaps: readonly Gap[],
 ): string {
   const lacks = gaps.map((gap) => `${String(gap.gap)} ${gap.code}`).join(", ");
   const nowhere = gaps.filter((gap) => gap.atSource < gap.gap).map((gap) => gap.code);
@@ -136,25 +141,12 @@ function shortLine(
     nowhere.length === 0
       ? ""
       : ` ${kit.sourceName ?? "Its stockroom"} can't cover ${nowhere.join(", ")}: order or move one.`;
-  return `${kit.name}'s kit is short for tomorrow: ${lacks}. A top-up waits on the Supply plan.${gapLine}`;
+  const span = kit.forTheWeek ? "the week" : "tomorrow";
+  return `Short for ${span} in technician ${kit.id}'s kit: ${lacks}. A top-up waits on the Supply plan.${gapLine}`;
 }
 
-/**
- * Each kit checked against its visits tomorrow, once the evening comes: its top-ups proposed on the supply plan, in
- * place of the evening's last, and ops told of each kit short, and of what its source cannot cover either. How many
- * kits are short.
- */
-export async function checkTomorrowsKits(
-  db: D1Database,
-  now: Date,
-  alertOnce: AlertOnce,
-  kitCheck: KitCheck,
-): Promise<number> {
-  if (Number(indiaHour(now).slice(11, 13)) < kitCheck.from_hour) return 0;
-  const tomorrow = addDays(indiaDate(now), 1);
-  const needs = await neededTomorrow(db, tomorrow, kitCheck.one_visit_range);
-  if (needs.size === 0) return 0;
-  const kits = JSON.stringify([...needs.keys()]);
+/** What each kit holds and has on its way of what it needs, and each kit's technician and the source of its top-ups. */
+async function kitsAndHoldings(db: D1Database, needs: ReadonlyMap<string, ReadonlyMap<string, number>>) {
   const pairs = JSON.stringify(
     [...needs].flatMap(([kit, kitNeeds]) => [...kitNeeds.keys()].map((code) => [code, kit])),
   );
@@ -163,56 +155,86 @@ export async function checkTomorrowsKits(
       .prepare(
         `SELECT place, consumable_code AS code, quantity FROM stock_balances
          WHERE (consumable_code, place) IN (SELECT json_extract(value, '$[0]'), json_extract(value, '$[1]') FROM json_each(?1))
-           AND quantity > 0`,
+           AND quantity > 0
+         UNION ALL
+         SELECT to_place, consumable_code, quantity FROM stock_transfers
+         WHERE state = 'in_transit'
+           AND (consumable_code, to_place) IN (SELECT json_extract(value, '$[0]'), json_extract(value, '$[1]') FROM json_each(?1))`,
       )
       .bind(pairs),
     db
       .prepare(
-        `SELECT t.id AS kit, t.name, s.id AS source, s.name AS source_name
+        `SELECT t.id AS kit, s.id AS source, s.name AS source_name
          FROM technicians t
            LEFT JOIN stock_places s ON s.id = COALESCE(
              (SELECT r.id FROM stock_places r WHERE r.kind = 'stockroom' AND r.city = t.city),
              (SELECT w.id FROM stock_places w WHERE w.kind = 'warehouse'))
          WHERE t.id IN (SELECT value FROM json_each(?1))`,
       )
-      .bind(kits),
+      .bind(JSON.stringify([...needs.keys()])),
   ]);
-  const heldRows = (held?.results ?? []) as HeldRow[];
   const placeRows = (places?.results ?? []) as KitSource[];
   const atSources = await heldAtSources(
     db,
     placeRows.flatMap((row) => row.source ?? []),
     [...needs.values()].flatMap((kitNeeds) => [...kitNeeds.keys()]),
   );
+  return { held: (held?.results ?? []) as HeldRow[], places: placeRows, atSources };
+}
+
+const sumOf = (rows: readonly HeldRow[], place: string, code: string) =>
+  rows.reduce((sum, row) => (row.place === place && row.code === code ? sum + row.quantity : sum), 0);
+
+/**
+ * Each kit checked against its visits tomorrow, once the evening comes, and on the evening ops set against the week's
+ * consumables too: its top-ups proposed on the supply plan, in place of the evening's last, and ops told of each kit
+ * short, and of what its source cannot cover either. How many kits are short.
+ */
+export async function checkTomorrowsKits(
+  db: D1Database,
+  now: Date,
+  alertOnce: AlertOnce,
+  kitCheck: KitCheck,
+): Promise<number> {
+  if (Number(indiaHour(now).slice(11, 13)) < kitCheck.from_hour) return 0;
+  const today = indiaDate(now);
+  const tomorrow = addDays(today, 1);
+  const needs = await neededTomorrow(db, tomorrow, kitCheck.one_visit_range);
+  const forTheWeek = weekdayOf(today) === kitCheck.top_up_weekday;
+  const levels = forTheWeek ? await addTheWeek(db, needs, tomorrow) : new Map<string, number>();
+  if (needs.size === 0) return 0;
+  const { held, places, atSources } = await kitsAndHoldings(db, needs);
   const run = `kit-check:${tomorrow}`;
   const at = now.toISOString();
   const lines: D1PreparedStatement[] = [];
   let short = 0;
   for (const [kit, kitNeeds] of needs) {
-    const place = placeRows.find((row) => row.kit === kit);
+    const place = places.find((row) => row.kit === kit);
     const source = place?.source ?? null;
     if (place === undefined || source === null) continue;
-    const gaps = [...kitNeeds].flatMap(([code, needed]) => {
-      const have = heldRows.find((row) => row.place === kit && row.code === code)?.quantity ?? 0;
-      const atSource = atSources.find((row) => row.place === source && row.code === code)?.quantity ?? 0;
-      return needed > have ? [{ code, gap: needed - have, have, needed, atSource }] : [];
+    const gaps = [...kitNeeds].flatMap(([code, needed]): Gap[] => {
+      const have = sumOf(held, kit, code);
+      return needed > have
+        ? [{ code, gap: needed - have, have, needed, atSource: sumOf(atSources, source, code) }]
+        : [];
     });
     if (gaps.length === 0) continue;
     short += 1;
     for (const gap of gaps) {
+      const level = levels.get(`${kit} ${gap.code}`) ?? 0;
       lines.push(
         db
           .prepare(
             `INSERT INTO plan_lines (id, run_id, kind, consumable_code, city, from_place, to_place, proposed, usable, need,
                safety, state, drafted_at)
-             SELECT ?1, ?2, 'transfer', ?3, t.city, ?4, ?5, ?6, ?7, ?8, 0, 'proposed', ?9 FROM technicians t WHERE t.id = ?5`,
+             SELECT ?1, ?2, 'transfer', ?3, t.city, ?4, ?5, ?6, ?7, ?8, ?10, 'proposed', ?9 FROM technicians t WHERE t.id = ?5`,
           )
-          .bind(crypto.randomUUID(), run, gap.code, source, kit, gap.gap, gap.have, gap.needed, at),
+          .bind(crypto.randomUUID(), run, gap.code, source, kit, gap.gap, gap.have, gap.needed - level, at, level),
       );
     }
     await alertOnce({
       key: `kit_short:${kit}:${tomorrow}`,
-      message: shortLine({ name: place.name, sourceName: place.source_name }, gaps),
+      message: shortLine({ id: kit, sourceName: place.source_name, forTheWeek }, gaps),
       link: "/supply-plan",
     });
   }

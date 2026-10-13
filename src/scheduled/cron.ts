@@ -1,11 +1,10 @@
-// The cron (wrangler.jsonc "triggers"): a run every minute, each running only the jobs due in that minute. CRON_JOBS
-// gives each how often it runs (`every`) and in which minute of that period (`at`).
+// The cron's jobs (wrangler.jsonc "triggers"): a run every minute, each running only the jobs due in that minute.
+// CRON_JOBS gives each how often it runs (`every`) and in which minute of that period (`at`), and a job that does a
+// day's or a week's work in one hour its `slot`, from which it is due until it has run well (./schedule.ts).
 //
-// A job that throws is logged as `cron_job_failed` and the next one runs anyway, so one failing job never stops the
-// others. Each job's failed runs in a row are counted in `cron_jobs`, and a job that fails three in a row alerts
-// (docs/decisions/0067-alerts-and-silent-failures.md). Each run is noted as it starts and as it finishes, so a run
-// Cloudflare stopped part-way is told by the next (src/domain/platform/cron-runs.ts), and an outside monitor is pinged every
-// five minutes, and at once when something is wrong (src/providers/heartbeat.ts).
+// ./cron-runner.ts runs them, each under its own lease, so one slow job holds only itself; a job that throws is
+// counted, and three in a row alert (docs/decisions/0067-alerts-and-silent-failures.md, 0195-the-cron-a-job-at-a-
+// time.md). A daily or weekly job that has not run well for its period and two hours more is told as missed.
 //
 // The jobs of a run share one budget of outside calls (CRON_CALLS, src/lib/call-budget.ts), which keeps the cron under
 // the vendors' own limits. Their statements to D1 are kept by each job's batch sizes, well under the 1,000 an
@@ -24,8 +23,15 @@ import { closeStaleLowStock } from "../domain/field/low-stock.ts";
 import { settleOwedRefunds } from "../domain/money/cancel-refunds.ts";
 import { settleOwedNoShowRefunds } from "../domain/no-shows/after-a-ruling.ts";
 import { retellUndelivered } from "../domain/ops/alerts.ts";
-import { watchStock } from "../domain/field/stock-watch.ts";
-import { finishRun, startRun, type RunStart } from "../domain/platform/cron-runs.ts";
+import { tellOfExpiring, tellOfOverdue } from "../domain/field/stock-watch.ts";
+import { refreshStockRisks } from "../domain/field/stock-risks.ts";
+import { measureLastForecast } from "../domain/field/forecast-accuracy.ts";
+import { runForecastIfDue } from "../domain/field/forecast.ts";
+import { draftPlan } from "../domain/field/supply-plan.ts";
+import { checkTomorrowsKits } from "../domain/field/kit-check.ts";
+import { raiseCountTasks } from "../domain/field/cycle-counts.ts";
+import { classDaysOf } from "../policy/cycle-counts.ts";
+import { jobsLastWell } from "../domain/platform/cron-runs.ts";
 import { alertAgedDeletions } from "../domain/privacy/deletion.ts";
 import { recordUtilisation } from "../domain/dispatch/dispatch-utilisation.ts";
 import { deleteLeftFiles } from "../domain/privacy/erasure-files.ts";
@@ -33,15 +39,13 @@ import { tellOfNewGrievances } from "../domain/ops/grievances.ts";
 import { queueCreditReminders } from "../domain/money/credit-reminders.ts";
 import { queueNextServiceReminders } from "../domain/visits/next-visit.ts";
 import { sendUnsentLinks } from "../domain/money/payment-links.ts";
-import { readOpsInputs, type OpsInputs } from "../domain/ops/ops-settings.ts";
+import type { OpsInputs } from "../domain/ops/ops-settings.ts";
 import { readDatabaseBytes, tellOfDatabaseSize, tellOfStorage } from "../domain/platform/storage-meter.ts";
 import { queueReminders } from "../domain/messages/visit-messages.ts";
 import type { StaticConfig } from "../guard.ts";
-import { createCallBudget, type CallBudget } from "../lib/call-budget.ts";
-import { meterDatabase, usageFields, usageSince, type MeteredDatabase } from "../lib/d1-meter.ts";
-import { failureReason, scrubString, type Logger } from "../log.ts";
-import { backupDueOn, deleteOldBackups, writeBackup } from "../domain/platform/backups.ts";
-import { pingHeartbeat } from "../providers/heartbeat.ts";
+import type { CallBudget } from "../lib/call-budget.ts";
+import type { MeteredDatabase } from "../lib/d1-meter.ts";
+import type { Logger } from "../log.ts";
 import { enqueue, enqueueBatch } from "../domain/platform/enqueue.ts";
 import { analyticsJob } from "./analytics.ts";
 import { razorpayCatchUpJob } from "./razorpay-catch-up.ts";
@@ -59,8 +63,10 @@ import {
   requeueMessages,
   requeueTryons,
 } from "./sweeper.ts";
-import { CRON_CALLS, type Timing } from "./schedule.ts";
+import { missedAfterMs, type Slot, type Timing } from "./schedule.ts";
+import { indiaDate } from "../lib/india-time.ts";
 import { checkWhatsAppBridge } from "./whatsapp-bridge.ts";
+import { startOrFollow } from "../workflows/steps.ts";
 import { type MessagingMessage } from "../config/pipeline.ts";
 import { tellOfUnassignedToday } from "../domain/dispatch/unassigned.ts";
 import { queueFollowUps } from "../domain/visits/follow-ups.ts";
@@ -75,13 +81,63 @@ export interface CronContext {
   readonly budget: CallBudget;
   /** The figures ops set, read once for the run by the first job that asks. */
   readonly inputs: () => Promise<OpsInputs>;
+  /** For a job held to a slot, the slot it runs for: when it began, and India's date then. */
+  readonly slot?: { readonly start: Date; readonly date: string } | undefined;
 }
 
-const stockWatch = ({ env, deps }: CronContext) => watchStock(env.DB, deps);
+/** The fits booked ahead with no hair system in reach, kept as tasks each hour (src/domain/field/stock-risks.ts). */
+async function stockRisksJob({ env, deps, inputs }: CronContext): Promise<void> {
+  const now = deps.now();
+  await refreshStockRisks(env.DB, indiaDate(now), now, (await inputs()).stockWatch.demand_days);
+}
+
+/** How right the last forecast was, once its first period has passed (src/domain/field/forecast-accuracy.ts). */
+const forecastAccuracyJob = ({ env, deps }: CronContext) =>
+  measureLastForecast(env.DB, deps.now(), indiaDate(deps.now()));
+
+/** Once each planning period: the demand forecast, and the supply plan drafted from it. */
+async function forecastJob({ env, deps, inputs }: CronContext): Promise<void> {
+  const now = deps.now();
+  const given = await inputs();
+  const run = await runForecastIfDue(env.DB, now, given);
+  if (run !== null) await draftPlan(env.DB, run, now, given.planningPeriodDays);
+}
+
+/** Each evening hour: tomorrow's kits, and their top-ups (src/domain/field/kit-check.ts). */
+const kitCheckJob = async ({ env, deps, inputs }: CronContext) =>
+  checkTomorrowsKits(env.DB, deps.now(), deps.alertOnce, (await inputs()).kitCheck);
+
+/** The morning's cycle counts (src/domain/field/cycle-counts.ts). */
+const cycleCountsJob = async ({ env, deps, inputs, slot }: CronContext) =>
+  raiseCountTasks(env.DB, slot?.date ?? indiaDate(deps.now()), deps.now(), classDaysOf((await inputs()).cycleCounts));
+
+/** The morning's stock that expires soon, and transfers long on their way (src/domain/field/stock-watch.ts). */
+const expiringStockJob = async ({ env, deps, inputs, slot }: CronContext) =>
+  tellOfExpiring(env.DB, deps, slot?.date ?? indiaDate(deps.now()), (await inputs()).stockWatch.expiry_warning_days);
+const overdueTransfersJob = async ({ env, deps, inputs }: CronContext) =>
+  tellOfOverdue(env.DB, deps, deps.now(), (await inputs()).stockWatch.transfer_overdue_days);
+
+/**
+ * A job held to a slot that has not run well for its period and two hours more, told once (./schedule.ts). Its next
+ * run that goes well closes it (./cron-runner.ts).
+ */
+async function missedJobsJob({ env, deps, config }: CronContext): Promise<void> {
+  const now = deps.now().getTime();
+  const lastWell = await jobsLastWell(env.DB);
+  for (const job of CRON_JOBS) {
+    if (job.slot === undefined || !isSwitchedOn(job.needs, config)) continue;
+    const since = lastWell.get(job.name);
+    if (since === undefined || now - Date.parse(since) <= missedAfterMs(job.slot)) continue;
+    await deps.alertOnce({
+      key: `cron_job_missed:${job.name}`,
+      message: `The cron's ${job.name} job has not run well since ${since}, past its time: runbook, "Alerts and the cron".`,
+    });
+  }
+}
 const unassignedToday = ({ env, deps }: CronContext) => tellOfUnassignedToday(env.DB, deps);
 
 /** What a run is given; the budget and the figures ops set are the run's own, shared by its jobs. */
-type CronRun = Omit<CronContext, "budget" | "inputs"> & {
+export type CronRun = Omit<CronContext, "budget" | "inputs" | "slot"> & {
   /**
    * The meter env.DB already reads through, which the run's dependencies were made with too. Without one the run
    * meters env.DB itself, and what its dependencies read (an alert raised or closed) goes uncounted.
@@ -91,12 +147,6 @@ type CronRun = Omit<CronContext, "budget" | "inputs"> & {
   readonly calls?: number;
 };
 
-/** A run starts no outside call after this, so it ends before the next minute's run starts. */
-export const CRON_CALLS_FOR_MS = 30_000;
-
-/** One failed run is a blip; three in a row is not. */
-const ALERT_AFTER_FAILED_RUNS = 3;
-
 /** What a job needs switched on in this environment before it runs. */
 type Needs = "nothing" | "books" | "messaging" | "payments";
 
@@ -104,15 +154,12 @@ type Needs = "nothing" | "books" | "messaging" | "payments";
 export interface CronJob extends Timing {
   readonly name: string;
   readonly needs: Needs;
+  /** For a job that does a day's or a week's work in one hour: due from then until it has run well. */
+  readonly slot?: Slot;
   readonly run: (context: CronContext) => Promise<unknown>;
 }
 
-interface CronOutcome {
-  readonly job: string;
-  readonly ok: boolean;
-}
-
-function isSwitchedOn(needs: Needs, config: StaticConfig): boolean {
+export function isSwitchedOn(needs: Needs, config: StaticConfig): boolean {
   switch (needs) {
     case "nothing":
       return true;
@@ -183,46 +230,27 @@ const grievanceAlertsJob = ({ env, deps, config }: CronContext) =>
 
 /** R2's share and the database fill over months, so an hourly look is enough. */
 async function storageMeterJob({ env, deps, config }: CronContext): Promise<void> {
-  await tellOfStorage(env.DB, deps.alertOnce, config.environment);
+  await tellOfStorage(env.DB, deps.alertOnce, config.environment, deps.now());
   await tellOfDatabaseSize(env.DB, deps.alertOnce, await readDatabaseBytes(env.DB));
 }
 
 /**
- * The weekly backup, in the hour from 3 am on Sundays in India: written, and backups past thirteen weeks deleted. It
- * runs once a week, so a failure, or no key to encrypt to outside a local run, alerts at once.
+ * The weekly backup, due from 3 am on Sundays in India: it starts the week's Workflow (src/workflows/backup.ts), named
+ * for the Sunday, or follows the one started, and is done once that has finished. No key to encrypt to, outside a
+ * local run, alerts at once.
  */
-async function backupJob({ env, deps, config, log }: CronContext): Promise<void> {
-  const now = deps.now();
-  if (backupDueOn(now) === null) return;
-  const publicKey = config.settings.backupPublicKey;
-  if (publicKey === null) {
+async function backupJob({ env, deps, config, slot }: CronContext): Promise<unknown> {
+  const date = slot?.date ?? indiaDate(deps.now());
+  if (config.settings.backupPublicKey === null) {
     if (config.environment !== "local") {
       await deps.alertOnce({
         key: "backup_not_configured",
         message: "No weekly backup was written: no backup key is set. The runbook, Restoring D1, says how to make one.",
       });
     }
-    return;
+    return undefined;
   }
-  try {
-    const written = await writeBackup({
-      db: env.DB,
-      bucket: env.BACKUPS,
-      publicKey,
-      environment: config.environment,
-      now,
-    });
-    const deleted = await deleteOldBackups(env.BACKUPS, now);
-    log.info("backup_written", { ...(written === "already" ? { already: true } : written), deleted });
-    await deps.resolveAlert("backup_failed");
-    await deps.resolveAlert("backup_not_configured");
-  } catch (error) {
-    log.error("backup_failed", { error });
-    await deps.alertOnce({
-      key: "backup_failed",
-      message: `The weekly backup failed: ${failureReason(error)}. It tries again next Sunday; RB "From a weekly backup".`,
-    });
-  }
+  return startOrFollow(env.BACKUP_RUN, { id: `backup-${date}`, params: { date } });
 }
 
 /** A low-stock alert whose consumable was retired since, or whose retirement came round, closes. */
@@ -350,23 +378,29 @@ export const CRON_JOBS: readonly CronJob[] = [
   { name: "ailab_credits", needs: "nothing", every: 60, at: 14, run: ailabCreditsJob },
   { name: "kept_looks", needs: "nothing", every: 60, at: 19, run: letKeptLooksGo },
   { name: "deletion_alerts", needs: "nothing", every: 60, at: 24, run: deletionAlertsJob },
-  // Stock that expires within a month, and transfers a week on their way, in the hour from 9 am in India.
-  // Stock that expires soon, and transfers long on their way, told each morning (src/domain/field/stock-watch.ts).
-  { name: "stock_watch", needs: "nothing", every: 60, at: 44, run: stockWatch },
+  // The stock, a step a job, so one that throws stops none of the others; the morning's from 9 am in India.
+  { name: "stock_risks", needs: "nothing", every: 60, at: 44, run: stockRisksJob },
+  { name: "forecast_accuracy", needs: "nothing", every: 60, at: 44, run: forecastAccuracyJob },
+  { name: "forecast", needs: "nothing", every: 60, at: 44, run: forecastJob },
+  { name: "kit_check", needs: "nothing", every: 60, at: 44, run: kitCheckJob },
+  { name: "cycle_counts", needs: "nothing", every: 60, at: 44, slot: { hour: 9 }, run: cycleCountsJob },
+  { name: "expiring_stock", needs: "nothing", every: 60, at: 44, slot: { hour: 9 }, run: expiringStockJob },
+  { name: "overdue_transfers", needs: "nothing", every: 60, at: 44, slot: { hour: 9 }, run: overdueTransfersJob },
+  { name: "missed_jobs", needs: "nothing", every: 60, at: 34, run: missedJobsJob },
   // The grievances raised in the hour, in one message, so one client cannot flood the chat.
   { name: "grievance_alerts", needs: "nothing", every: 60, at: 24, run: grievanceAlertsJob },
   { name: "housekeeping", needs: "nothing", every: 60, at: 28, run: deleteExpiredRecords },
   // An erased client's customer in Books, deleted, or blanked where an invoice names it.
   { name: "books_erasures", needs: "books", every: 60, at: 29, run: booksErasuresJob },
-  // What the account has used today of the free plan's daily allowances, told at 70%.
   // What the photographs and cards hold of R2, told at half, 80% and all of their share (docs/decisions/0093), and
   // the database against D1's limit, told at half, 80% and 95%.
   { name: "storage_meter", needs: "nothing", every: 60, at: 39, run: storageMeterJob },
-  { name: "backup", needs: "nothing", every: 60, at: 33, run: backupJob },
+  // Due from 3 am on Sundays in India, and caught up hourly until it is written.
+  { name: "backup", needs: "nothing", every: 60, at: 33, slot: { hour: 3, weekday: 0 }, run: backupJob },
   // The nightly copy Zoho Analytics reports from (docs/decisions/0146-the-nightly-analytics-copy.md).
-  { name: "analytics_nightly", needs: "nothing", every: 60, at: 31, run: analyticsJob },
+  { name: "analytics_nightly", needs: "nothing", every: 60, at: 31, slot: { hour: 3 }, run: analyticsJob },
   // When each task opened and closed, for the reporting copy (docs/decisions/0147-task-spans.md).
-  { name: "task_spans", needs: "nothing", every: 60, at: 26, run: taskSpansJob },
+  { name: "task_spans", needs: "nothing", every: 60, at: 26, slot: { hour: 23 }, run: taskSpansJob },
   // The operating figure behind the weekend-share assumption (src/policy/dispatch.ts): once a day, the day's board.
   { name: "dispatch_utilisation", needs: "nothing", every: 60, at: 43, run: utilisationJob },
   // A visit today with no technician, told each hour until someone is sent (src/domain/dispatch/unassigned.ts).
@@ -384,157 +418,3 @@ export const CRON_JOBS: readonly CronJob[] = [
   { name: "erased_files", needs: "nothing", every: 60, at: 59, run: erasedFilesJob },
   { name: "requeue_crm_erasures", needs: "nothing", every: 60, at: 59, run: requeueCrmErasures },
 ];
-
-/**
- * The figures ops set, read by the first job that asks and shared by the rest of the run, so a run reads the store
- * once however many jobs use it; the committed ones if it cannot be read, which is said once in the log.
- */
-function sharedInputs({ env, deps, log }: CronRun): () => Promise<OpsInputs> {
-  let read: Promise<OpsInputs> | undefined;
-  return () => {
-    read ??= readOpsInputs(env.DB, deps.now(), (error) => {
-      log.error("ops_settings_unreadable", { error });
-    });
-    return read;
-  };
-}
-
-/** What a run did, and when the run before it started if that one never finished. */
-interface RunResult {
-  readonly outcomes: CronOutcome[];
-  readonly cutShortAt: string | null;
-  /** Whether the run before was running still, so this one ran nothing and left the record to it. */
-  readonly skipped: boolean;
-}
-
-/**
- * Runs each job switched on here, in order, each under a logger named for it, on one budget of outside calls and one
- * read of the figures ops set. The run ends with one line saying what it cost D1, and what each job read of it.
- */
-export async function runCronJobs(jobs: readonly CronJob[], given: CronRun): Promise<CronOutcome[]> {
-  return (await runJobs(jobs, given)).outcomes;
-}
-
-async function runJobs(jobs: readonly CronJob[], given: CronRun): Promise<RunResult> {
-  const { run, meter } = metered(given);
-  const startedAt = run.deps.now();
-  const { runningSince, cutShortAt, failing } = await recordStart(run, startedAt.toISOString());
-  if (runningSince !== null) {
-    run.log.warn("cron_run_overlapping", { running_since: runningSince });
-    return { outcomes: [], cutShortAt: null, skipped: true };
-  }
-  const budget = createCallBudget(run.calls ?? CRON_CALLS, {
-    until: startedAt.getTime() + CRON_CALLS_FOR_MS,
-    now: () => run.deps.now().getTime(),
-  });
-  const inputs = sharedInputs(run);
-  const outcomes: CronOutcome[] = [];
-  const rowsReadByJob: Record<string, number> = {};
-  for (const job of jobs) {
-    if (!isSwitchedOn(job.needs, run.config)) continue;
-    const context = { ...run, log: run.log.child({ job: job.name }), budget, inputs };
-    const before = meter.usage();
-    try {
-      await job.run(context);
-      outcomes.push({ job: job.name, ok: true });
-      if (failing.has(job.name)) await countSuccess(context, job.name);
-    } catch (error) {
-      context.log.error("cron_job_failed", { error });
-      outcomes.push({ job: job.name, ok: false });
-      await countFailure(context, job.name, error);
-    }
-    rowsReadByJob[job.name] = usageSince(before, meter.usage()).rowsRead;
-  }
-  if (budget.ranOut()) run.log.warn("cron_calls_spent", { calls: run.calls ?? CRON_CALLS });
-  await recordFinish(run, startedAt.toISOString(), failedJobs(outcomes).length);
-  run.log.info("cron_run", {
-    failed_jobs: failedJobs(outcomes),
-    ...usageFields(meter.usage()),
-    d1_rows_read_by_job: rowsReadByJob,
-  });
-  return { outcomes, cutShortAt, skipped: false };
-}
-
-function metered(run: CronRun): { run: CronRun; meter: MeteredDatabase } {
-  if (run.meter !== undefined) return { run, meter: run.meter };
-  const meter = meterDatabase(run.env.DB);
-  return { run: { ...run, env: { ...run.env, DB: meter.db }, meter }, meter };
-}
-
-/**
- * A whole scheduled run: the jobs, then the heartbeat that tells the outside monitor the cron is running. It pings
- * /fail when a job failed, or when the run before never finished, saying so; with nothing wrong, it pings only when
- * `pingWhenWell` (pingsWhenWell, src/scheduled/schedule.ts). A run that ran nothing, the one before running still,
- * leaves the ping to that one.
- */
-export async function runCron(jobs: readonly CronJob[], run: CronRun, pingWhenWell = true): Promise<void> {
-  const { outcomes, cutShortAt, skipped } = await runJobs(jobs, run);
-  if (skipped) return;
-  const notFinished = cutShortAt === null ? [] : [`the run started at ${cutShortAt} never finished`];
-  const wrong = [...notFinished, ...failedJobs(outcomes)];
-  if (wrong.length === 0 && !pingWhenWell) return;
-  const heartbeat = { url: run.config.settings.heartbeatUrl, fetch: run.deps.fetch, log: run.log };
-  await pingHeartbeat(heartbeat, wrong);
-}
-
-function failedJobs(outcomes: readonly CronOutcome[]): string[] {
-  return outcomes.filter((outcome) => !outcome.ok).map((outcome) => outcome.job);
-}
-
-/**
- * Keeping the run record must never stop the jobs, so a failure to is only logged. The alert providers are made only
- * if a run was cut short: making them on every run cost each one CPU time.
- */
-async function recordStart({ env, deps, log }: CronRun, startedAt: string): Promise<RunStart> {
-  try {
-    return await startRun({ db: env.DB, alertOnce: (alert) => deps.alertOnce(alert) }, startedAt);
-  } catch (error) {
-    log.error("cron_run_not_recorded", { error });
-    return { runningSince: null, cutShortAt: null, failing: new Set() };
-  }
-}
-
-async function recordFinish({ env, deps, log }: CronRun, startedAt: string, failedJobCount: number): Promise<void> {
-  const run = { startedAt, completedAt: deps.now().toISOString(), failedJobs: failedJobCount };
-  try {
-    await finishRun({ db: env.DB, resolveAlert: (key) => deps.resolveAlert(key) }, run);
-  } catch (error) {
-    log.error("cron_run_not_recorded", { error });
-  }
-}
-
-/** A job that works again starts its count afresh, and its alert is closed. */
-async function countSuccess({ env, deps, log }: CronContext, job: string): Promise<void> {
-  try {
-    const recovered = await env.DB.prepare(
-      "UPDATE cron_jobs SET failed_runs = 0 WHERE job = ?1 AND failed_runs > 0 RETURNING job",
-    )
-      .bind(job)
-      .first();
-    if (recovered !== null) await deps.resolveAlert(`cron_job:${job}`);
-  } catch (error) {
-    log.error("cron_outcome_not_counted", { error });
-  }
-}
-
-async function countFailure({ env, deps, log }: CronContext, job: string, error: unknown): Promise<void> {
-  const reason = scrubString(error instanceof Error ? error.message : String(error)).slice(0, 300);
-  try {
-    const row = await env.DB.prepare(
-      `INSERT INTO cron_jobs (job, failed_runs, last_failed_at, last_error) VALUES (?1, 1, ?2, ?3)
-       ON CONFLICT (job) DO UPDATE SET failed_runs = failed_runs + 1, last_failed_at = excluded.last_failed_at,
-         last_error = excluded.last_error
-       RETURNING failed_runs`,
-    )
-      .bind(job, deps.now().toISOString(), reason)
-      .first<{ failed_runs: number }>();
-    const failedRuns = row?.failed_runs ?? 1;
-    if (failedRuns < ALERT_AFTER_FAILED_RUNS) return;
-    await deps.alertOnce({
-      key: `cron_job:${job}`,
-      message: `The cron's ${job} job has failed ${String(failedRuns)} runs in a row: ${reason}.`,
-    });
-  } catch (countingError) {
-    log.error("cron_outcome_not_counted", { error: countingError });
-  }
-}

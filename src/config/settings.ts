@@ -32,7 +32,7 @@ export interface TryonSettings {
   readonly resultMessageMobileDailyLimit: number;
   /**
    * Global ceilings per India day. The render ceiling caps AILabTools spend;
-   * all three cap R2 use (docs/decisions/0009-stay-inside-cloudflare-free-tier.md).
+   * all three cap R2 use, and so what it costs (docs/decisions/0194-the-build-on-workers-paid.md).
    */
   readonly renderDailyCeiling: number;
   readonly uploadDailyCeiling: number;

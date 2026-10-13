@@ -72,7 +72,7 @@ export function serviceOf(db: D1Database, kind: VisitType, tier: string): Promis
 /**
  * Every service, offered or retired, each with its price on a day, in the order the console lists them. The price is
  * the book's row in force that day, read with its rate in one lookup a service, since the hourly catalogue check
- * reads this inside the cron run's budget of rows (scripts/lib/free-tier-budget.ts).
+ * reads this inside the cron run's budget of rows (scripts/lib/usage-budget.ts).
  */
 export async function servicesOnDay(db: D1Database, on: string): Promise<ServiceOnDay[]> {
   const { results } = await db

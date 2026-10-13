@@ -24,6 +24,38 @@ export const CRON_CALLS = 40;
 /** The minute of each five the heartbeat says all is well in, one with no vendor call due. */
 const HEARTBEAT_AT = 2;
 
+/**
+ * A job that does a day's work, or a week's, in one hour of India's day: due from that hour until it has run well
+ * since, so a slot missed (the run cut short, the job failing, a deploy over it) is caught up by the next run.
+ */
+export interface Slot {
+  /** The hour of India's day, 0 to 23. */
+  readonly hour: number;
+  /** 0 for Sunday, for a weekly job; a daily job names none. */
+  readonly weekday?: number;
+}
+
+const IST_OFFSET_MS = 330 * 60_000;
+const DAY_MS = 24 * 60 * 60_000;
+
+/** When the slot last began, at or before `now`. */
+export function lastSlotStart(now: Date, slot: Slot): Date {
+  const india = new Date(now.getTime() + IST_OFFSET_MS);
+  const back = slot.weekday === undefined ? 0 : (india.getUTCDay() - slot.weekday + 7) % 7;
+  const start = Date.UTC(india.getUTCFullYear(), india.getUTCMonth(), india.getUTCDate() - back, slot.hour);
+  const begun = start <= india.getTime() ? start : start - (slot.weekday === undefined ? 1 : 7) * DAY_MS;
+  return new Date(begun - IST_OFFSET_MS);
+}
+
+/** How long a job held to a slot may go without running well before ops are told: its period, and two hours more. */
+export const missedAfterMs = (slot: Slot): number => (slot.weekday === undefined ? 1 : 7) * DAY_MS + 2 * 60 * 60_000;
+
+/**
+ * What a job answers when its work goes on elsewhere, in a Workflow it started or found running: neither a success nor
+ * a failure, so a job held to a slot stays due, and the next run looks again (src/scheduled/cron-runner.ts).
+ */
+export const STILL_RUNNING = "still_running";
+
 /** Whether a job runs in the minute of the hour given. */
 export function isDueAt(job: Timing, minute: number): boolean {
   return minute % job.every === job.at;

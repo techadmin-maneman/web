@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { readJsonc } from "../../../scripts/lib/jsonc.ts";
 import {
-  FREE_VARIABLE_LIMIT,
+  VARIABLE_LIMIT,
   PLACEHOLDER_DATABASE_ID,
   apiRoutePatterns,
   checkAccountsAgree,
@@ -22,14 +22,14 @@ describe("mm-api wrangler config", () => {
     expect(checkApiConfig(realApi)).toEqual([]);
   });
 
-  // The Workers Free plan refuses a deploy past 64 vars and secrets together (code 10055): staging, 26 September 2026.
+  // Cloudflare refuses a deploy past the plan's vars and secrets together (code 10055): 128 on Workers Paid.
   describe("the variable limit", () => {
     const secretNames = secretNamesIn(readFileSync(".dev.vars.example", "utf8"));
     /** The config with staging holding exactly `count` vars, and only the limit's problems of it. */
     const limitProblems = (count: number) => {
       const vars = Object.fromEntries(Array.from({ length: count }, (_, i) => [`VAR_${String(i)}`, "x"]));
       const problems = checkApiConfig(edited(realApi, ["env.staging.vars", vars]), { secretNames });
-      return problems.filter((problem) => problem.includes("Workers Free limit"));
+      return problems.filter((problem) => problem.includes("Workers Paid's limit"));
     };
 
     it("reads every secret .dev.vars.example names", () => {
@@ -41,10 +41,10 @@ describe("mm-api wrangler config", () => {
       expect(checkApiConfig(realApi, { secretNames })).toEqual([]);
     });
 
-    it("refuses an environment whose vars and secrets pass 64", () => {
-      const room = FREE_VARIABLE_LIMIT - secretNames.length;
+    it("refuses an environment whose vars and secrets pass 128", () => {
+      const room = VARIABLE_LIMIT - secretNames.length;
       expect(limitProblems(room)).toEqual([]);
-      expect(limitProblems(room + 1)).toEqual([expect.stringContaining("over the Workers Free limit of 64")]);
+      expect(limitProblems(room + 1)).toEqual([expect.stringContaining("over Workers Paid's limit of 128")]);
     });
   });
 
@@ -215,20 +215,22 @@ describe("mm-api wrangler config", () => {
   });
 
   it.each<[string, Edit, string]>([
-    ["local adds Workers AI", ["ai", { binding: "AI" }], "top level (local): ai is not on the free-tier allowlist"],
+    ["local adds Workers AI", ["ai", { binding: "AI" }], "top level (local): ai bills by its use"],
     [
       "production adds Browser Rendering",
       ["env.production.browser", { binding: "BROWSER" }],
-      "env.production: browser is not on the free-tier allowlist",
+      "env.production: browser",
     ],
-    [
-      "staging adds a KV namespace",
-      ["env.staging.kv_namespaces", [{ binding: "KV", id: "x" }]],
-      "env.staging: kv_namespaces is not on the free-tier allowlist",
-    ],
-    ["production sets a CPU limit", ["env.production.limits", { cpu_ms: 50 }], "env.production: limits is not allowed"],
-  ])("fails when %s, which can bill or needs a paid plan", (_label, edit, problem) => {
+    ["staging adds a KV namespace", ["env.staging.kv_namespaces", [{ binding: "KV", id: "x" }]], "env.staging: kv_n"],
+    ["production sets a memory limit", ["env.production.limits", { memory_mb: 256 }], "env.production: limits may"],
+    ["production asks for more CPU than the plan", ["env.production.limits", { cpu_ms: 600_000 }], "limits may set"],
+    ["staging bypasses the binding types", ["env.staging.unsafe", { bindings: [] }], "env.staging: unsafe is not"],
+  ])("fails when %s, until its cost is written down", (_label, edit, problem) => {
     expect(api(edit)).toContain(problem);
+  });
+
+  it("allows a CPU limit within Workers Paid's five minutes", () => {
+    expect(api(["env.production.limits", { cpu_ms: 60_000 }])).toBe("");
   });
 
   it("at deploy time, requires real database IDs", () => {

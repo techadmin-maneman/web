@@ -11,7 +11,8 @@ import { createLogger } from "../../../src/log.ts";
 import { creditExpiry } from "../../../src/policy/referral-reward.ts";
 import type { MessagingProvider } from "../../../src/providers/messaging/index.ts";
 import { sendMessage } from "../../../src/queues/messaging.ts";
-import { CRON_JOBS, runCronJobs } from "../../../src/scheduled/cron.ts";
+import { CRON_JOBS } from "../../../src/scheduled/cron.ts";
+import { runCronJobs } from "../../../src/scheduled/cron-runner.ts";
 import { captureLogs, fakeDependencies, fakeQueue, LOCAL_CONFIG, markDatabase, NOW } from "../helpers.ts";
 
 const PERSON = "11111111-1111-4111-8111-111111111111";

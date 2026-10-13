@@ -621,7 +621,7 @@ Made by `0049_consumables_and_stock.sql`.
 
 The consumables ops keep: name, unit, what one costs, the reorder levels, the day it is retired from, and FSM's part for it (ADR 0087).
 
-Made by `0049_consumables_and_stock.sql`; changed by `0135_stock_lots.sql`, `0154_cycle_counts.sql`.
+Made by `0049_consumables_and_stock.sql`; changed by `0135_stock_lots.sql`, `0154_cycle_counts.sql`, `0166_store_reorder_levels.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -639,6 +639,7 @@ Made by `0049_consumables_and_stock.sql`; changed by `0135_stock_lots.sql`, `015
 | `updated_at` | TEXT | no |  |  |
 | `shelf_life_days` | INTEGER | yes |  |  |
 | `count_class` | TEXT | yes |  |  |
+| `reorder_store` | INTEGER | yes |  |  |
 
 Indexes:
 
@@ -809,7 +810,7 @@ Triggers: `credit_ledger_no_delete`, `credit_ledger_no_update`.
 
 Each job of the cron, and how many runs in a row it has failed (ADR 0067).
 
-Made by `0038_alerts.sql`.
+Made by `0038_alerts.sql`; changed by `0165_cron_job_leases.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -817,6 +818,13 @@ Made by `0038_alerts.sql`.
 | `failed_runs` | INTEGER | no | `0` |  |
 | `last_failed_at` | TEXT | yes |  |  |
 | `last_error` | TEXT | yes |  |  |
+| `lease_until` | TEXT | yes |  |  |
+| `last_success_at` | TEXT | yes |  |  |
+| `first_seen_at` | TEXT | yes |  |  |
+
+Indexes:
+
+- `cron_jobs_failing`: on (`job`), where `failed_runs > 0`
 
 ## cron_runs
 
@@ -1755,7 +1763,7 @@ Triggers: `people_client_by_payment`, `people_client_by_payment_given`.
 
 One row per person, keyed by mobile number. D1 owns the identity; the CRM's and Books' IDs are only references (ADR 0011, ADR 0110).
 
-Made by `0002_lead_path.sql`; changed by `0004_erasure.sql`, `0011_fsm_mirror.sql`, `0023_dpdp.sql`, `0036_erased_files.sql`, `0037_cron_indexes.sql`, `0070_field_record_ours.sql`, `0076_books_without_fsm.sql`, `0077_books_customer_upkeep.sql`, `0099_retention.sql`, `0100_test_record_flag.sql`, `0103_crm_contact_erasure.sql`.
+Made by `0002_lead_path.sql`; changed by `0004_erasure.sql`, `0011_fsm_mirror.sql`, `0023_dpdp.sql`, `0036_erased_files.sql`, `0037_cron_indexes.sql`, `0070_field_record_ours.sql`, `0076_books_without_fsm.sql`, `0077_books_customer_upkeep.sql`, `0099_retention.sql`, `0100_test_record_flag.sql`, `0103_crm_contact_erasure.sql`, `0163_threads_found_their_client.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -1797,6 +1805,8 @@ Indexes:
 - `people_fsm_erasure_due`: on (`erased_at`), where `erased_at IS NOT NULL AND fsm_contact_id IS NOT NULL AND fsm_erased_at IS NULL`
 - `people_never_clients`: on (`created_at`), where `erased_at IS NULL AND client_since IS NULL`
 - A `UNIQUE` constraint: unique on (`mobile_e164`)
+
+Triggers: `conversations_linked_to_new_number`, `conversations_linked_to_new_person`.
 
 ## photo_sets
 
@@ -2786,7 +2796,7 @@ Indexes:
 
 What the apps' two buckets, client-photos and referral-cards, hold together: one row, the sum of `stored_objects` kept beside it, and the last mark of the share ops were told of (ADR 0093); and the last mark of the database's own size they were told of.
 
-Made by `0055_storage_meter.sql`; changed by `0072_database_size_told.sql`.
+Made by `0055_storage_meter.sql`; changed by `0072_database_size_told.sql`, `0164_storage_growth_by_day.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -2794,6 +2804,8 @@ Made by `0055_storage_meter.sql`; changed by `0072_database_size_told.sql`.
 | `bytes` | INTEGER | no |  |  |
 | `told_percent` | INTEGER | no | `0` |  |
 | `database_told_percent` | INTEGER | no | `0` |  |
+| `growth_date` | TEXT | yes |  |  |
+| `growth_from_bytes` | INTEGER | yes |  |  |
 
 ## stored_objects
 

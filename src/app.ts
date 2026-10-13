@@ -123,6 +123,7 @@ import { registerClientVisits } from "./routes/client/visits.ts";
 import { registerClientPhotos } from "./routes/client/photos.ts";
 import { registerDevVisits } from "./routes/dev-visits.ts";
 import { registerEvolutionHook } from "./routes/hooks/evolution.ts";
+import { registerMsg91Hook } from "./routes/hooks/msg91.ts";
 import { registerRazorpayHook } from "./routes/hooks/razorpay.ts";
 import { registerStopMessages } from "./routes/public/stop-messages.ts";
 import { registerHealth } from "./routes/health.ts";
@@ -175,6 +176,7 @@ const SURFACE_ROUTES: Readonly<Record<Surface, readonly ((app: App) => void)[]>>
     registerClientErrors,
     // Webhooks sit on the public host (ADR 0026).
     registerEvolutionHook,
+    registerMsg91Hook,
     registerRazorpayHook,
   ],
   client: [
@@ -379,9 +381,7 @@ export function createApp(
   app.notFound((c) => refuse(c, "not_found"));
   app.onError((error, c) => {
     // Hono raises a 400 for a body that is not valid JSON.
-    if (error instanceof HTTPException && error.status === 400) {
-      return refuse(c, "invalid_request", ["body"]);
-    }
+    if (error instanceof HTTPException && error.status === 400) return refuse(c, "invalid_request", ["body"]);
     // A read D1 failed for a reason that passes by itself, after its tries (src/lib/d1-retry.ts): try again shortly.
     if (c.req.method === "GET" && isTransientD1Error(error)) {
       c.var.log.warn("d1_unavailable", { error });

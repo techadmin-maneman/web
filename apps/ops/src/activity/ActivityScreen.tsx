@@ -8,7 +8,7 @@ import { Button } from "@maneman/ui/Button";
 import { Table } from "@maneman/ui/Table";
 import { useLoad } from "@maneman/ui/useLoad";
 import { indiaClock, longDate } from "@maneman/web-kit/dates";
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { api, type ActivityEntry } from "../api.ts";
 import { OpsLink, Shell } from "../components/Shell.tsx";
 import { activity } from "../content/activity.ts";
@@ -113,7 +113,7 @@ interface Older {
 
 /** The log as narrowed, a page at a time: older pages are added beneath as they are asked for. */
 function Log({ filters }: { filters: Filters }) {
-  const [loaded, retry] = useLoad(() => api.activity(askedOf(filters)));
+  const [loaded, retry] = useLoad(useCallback(() => api.activity(askedOf(filters)), [filters]));
   const [older, setOlder] = useState<Older | null>(null);
   const [loadingOlder, setLoadingOlder] = useState(false);
   if (loaded.state === "loading") return <Loading />;

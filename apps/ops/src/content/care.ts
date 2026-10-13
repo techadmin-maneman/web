@@ -8,6 +8,13 @@ export const care = {
   views: { mine: "My clients", open: "Waiting on us", waiting: "Waiting on the client", closed: "Closed", all: "All" },
   show: "Show",
   none: "No chats here.",
+  search: "Name or number",
+  find: "Find",
+  clear: "Clear",
+  /** More chats than one page holds. */
+  more: "Show older chats",
+  loadingMore: "Loading",
+  latest: (count: number) => `The latest ${String(count)}. Find a chat by name or number, or show older ones.`,
   columns: {
     client: "Client",
     number: "Number",

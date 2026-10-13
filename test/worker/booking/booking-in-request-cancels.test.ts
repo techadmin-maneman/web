@@ -18,7 +18,8 @@ import { createLogger } from "../../../src/log.ts";
 import { type PaymentsProvider } from "../../../src/providers/payments/index.ts";
 import { createStubPayments } from "../../../src/providers/payments/stub.ts";
 import { PaymentUnanswered } from "../../../src/providers/provider-error.ts";
-import { CRON_JOBS, runCronJobs } from "../../../src/scheduled/cron.ts";
+import { CRON_JOBS } from "../../../src/scheduled/cron.ts";
+import { runCronJobs } from "../../../src/scheduled/cron-runner.ts";
 import {
   captureLogs,
   failingAfterTheFirstBatch,

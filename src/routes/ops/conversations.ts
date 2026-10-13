@@ -1,5 +1,6 @@
 // The Care inbox, behind Access (Customer Care; docs/decisions/0129-the-care-inbox.md):
-//   GET /api/conversations?view=   the threads of a view, the latest first: mine (my clients'), open, waiting, closed or all
+//   GET /api/conversations?view=   the threads of a view, the latest first, a page at a time: mine (my clients'), open,
+//                                  waiting, closed or all; &search= a client's name or number
 //   GET /api/conversations/:id     one thread: what the client wrote, our replies and notes, and our automatic messages
 //   POST /api/conversations/:id/replies   a reply from our number, kept in the thread whether it went or not
 //   POST /api/conversations/:id/notes     a note for staff alone
@@ -14,7 +15,13 @@ import { actorOf, staffMemberOf } from "../../http/audit.ts";
 import { opsInputs } from "../../http/ops-inputs.ts";
 import { queueCrmContact } from "../../http/contact-sync.ts";
 import type { AppEnv } from "../../http/context.ts";
-import { conversationThread, INBOX_VIEWS, listConversations, type InboxContext } from "../../domain/care/inbox.ts";
+import {
+  conversationThread,
+  INBOX_VIEWS,
+  listConversations,
+  PAGE_THREADS,
+  type InboxContext,
+} from "../../domain/care/inbox.ts";
 import { coverOn } from "../../domain/care/cover.ts";
 import { indiaDate } from "../../lib/india-time.ts";
 import { addNote, CLOSE_REASONS, closeConversation, replyTo } from "../../domain/care/replies.ts";
@@ -80,14 +87,29 @@ const ThreadSchema = z
 const listRoute = createRoute({
   method: "get",
   path: "/api/conversations",
-  summary: "The Care inbox's threads of a view, the latest first",
-  request: { query: z.object({ view: z.enum(INBOX_VIEWS).default("open") }) },
+  summary: "The Care inbox's threads of a view, the latest first, a page at a time",
+  request: {
+    query: z.object({
+      view: z.enum(INBOX_VIEWS).default("open"),
+      search: z.string().trim().max(80).optional().openapi({
+        description: "A client's name, or a number, or part of either.",
+      }),
+      before: z.string().max(100).optional().openapi({ description: "The next page: next_before from the last one." }),
+    }),
+  },
   responses: {
     200: {
       description: "The threads",
       ...json(
         z
-          .object({ conversations: z.array(ConversationSchema) })
+          .object({
+            conversations: z
+              .array(ConversationSchema)
+              .openapi({ description: `At most ${String(PAGE_THREADS)}, the latest first.` }),
+            next_before: z
+              .union([z.string(), z.null()])
+              .openapi({ description: "Where the next page starts, for ?before=; null on the last page." }),
+          })
           .strict()
           .openapi("Conversations"),
       ),
@@ -207,8 +229,9 @@ export function registerOpsConversations(app: App): void {
   registerAnswers(app);
   app.openapi(listRoute, async (c) => {
     const me = staffMemberOf(c)?.id ?? "";
-    const conversations = await listConversations(c.env.DB, c.req.valid("query").view, me, await inboxContext(c));
-    return c.json({ conversations }, 200);
+    const { view, search, before } = c.req.valid("query");
+    const page = await listConversations(c.env.DB, { view, me, search, before }, await inboxContext(c));
+    return c.json({ conversations: page.conversations, next_before: page.nextBefore }, 200);
   });
 
   app.openapi(threadRoute, async (c) => {

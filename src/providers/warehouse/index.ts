@@ -19,14 +19,25 @@ export interface TableRows {
   readonly keepBefore?: { readonly column: string; readonly from: string };
 }
 
+/** A table as a night staged it: what names its rows, their columns, what it keeps of earlier nights, and how many. */
+export interface TableMeta extends Omit<TableRows, "rows"> {
+  readonly columns: readonly string[];
+  readonly rows: number;
+  /** Its amount column's total, to the paisa, for the check against D1; null for a table without one. */
+  readonly amountPaise: number | null;
+}
+
 export interface WarehouseProvider {
   /** Whether a run finished on this India date already. */
   ranOn(date: string): Promise<boolean>;
+  /** Holds a table's rows beside the copy for the run named, in place of any the run staged for it before. */
+  stage(run: string, table: TableRows): Promise<TableMeta>;
   /**
-   * Makes a table hold these rows: a new or changed row is written and stamped now, an unchanged one keeps its stamp,
-   * and a row no longer worked out is deleted. How many were written, and how many of them were new or changed.
+   * Makes each table hold what the run staged, all in one transaction, so a reader sees the copy as it was or as
+   * tonight's whole: a new or changed row written and stamped now, an unchanged one keeping its stamp, and a row not
+   * staged deleted. Then the run's staged rows go. How many were written, and how many of them were new or changed.
    */
-  replace(table: TableRows): Promise<{ readonly written: number; readonly changed: number }>;
+  swap(run: string, tables: readonly TableMeta[]): Promise<{ readonly written: number; readonly changed: number }>;
   /** A table's row count, and a column's total, for the check against D1. */
   count(table: string): Promise<number>;
   sum(table: string, column: string): Promise<number>;

@@ -23,6 +23,8 @@ export interface Consumable {
   readonly unitCost: number;
   readonly reorderKit: number | null;
   readonly reorderCentral: number | null;
+  /** A city stockroom or a hub is low at or below this; null tells nothing of a store. */
+  readonly reorderStore: number | null;
   /** The day in India it is no longer offered from; null while it is. */
   readonly retiredDate: string | null;
   /** Days from delivery to expiry, for a lot the supplier gives none; null for one that does not expire. */
@@ -36,11 +38,13 @@ interface ConsumableRow {
   unit_cost: number;
   reorder_kit: number | null;
   reorder_central: number | null;
+  reorder_store: number | null;
   retired_date: string | null;
   shelf_life_days: number | null;
 }
 
-const COLUMNS = "code, name, unit, unit_cost, reorder_kit, reorder_central, retired_date, shelf_life_days";
+const COLUMNS =
+  "code, name, unit, unit_cost, reorder_kit, reorder_central, reorder_store, retired_date, shelf_life_days";
 
 const consumableOf = (row: ConsumableRow): Consumable => ({
   code: row.code,
@@ -49,6 +53,7 @@ const consumableOf = (row: ConsumableRow): Consumable => ({
   unitCost: row.unit_cost,
   reorderKit: row.reorder_kit,
   reorderCentral: row.reorder_central,
+  reorderStore: row.reorder_store,
   retiredDate: row.retired_date,
   shelfLifeDays: row.shelf_life_days,
 });
@@ -97,6 +102,7 @@ interface NewConsumable {
   readonly unitCost: number;
   readonly reorderKit: number | null;
   readonly reorderCentral: number | null;
+  readonly reorderStore?: number | null;
   readonly shelfLifeDays?: number | null;
 }
 
@@ -126,6 +132,7 @@ export async function addConsumable(db: D1Database, added: NewConsumable, writte
       unit_cost: added.unitCost,
       reorder_kit: added.reorderKit,
       reorder_central: added.reorderCentral,
+      reorder_store: added.reorderStore ?? null,
       shelf_life_days: added.shelfLifeDays ?? null,
       created_at: at,
       updated_at: at,
@@ -143,6 +150,7 @@ interface ConsumableChange {
   readonly unitCost?: number | undefined;
   readonly reorderKit?: number | null | undefined;
   readonly reorderCentral?: number | null | undefined;
+  readonly reorderStore?: number | null | undefined;
   readonly shelfLifeDays?: number | null | undefined;
 }
 
@@ -168,6 +176,7 @@ export async function changeConsumable(
     unitCost: change.unitCost ?? was.unitCost,
     reorderKit: change.reorderKit === undefined ? was.reorderKit : change.reorderKit,
     reorderCentral: change.reorderCentral === undefined ? was.reorderCentral : change.reorderCentral,
+    reorderStore: change.reorderStore === undefined ? was.reorderStore : change.reorderStore,
     shelfLifeDays: change.shelfLifeDays === undefined ? was.shelfLifeDays : change.shelfLifeDays,
   };
   const detail: Record<string, string | number> = {};
@@ -184,6 +193,9 @@ export async function changeConsumable(
       reorder_central_from: was.reorderCentral ?? -1,
       reorder_central_to: now.reorderCentral ?? -1,
     });
+  }
+  if (now.reorderStore !== was.reorderStore) {
+    Object.assign(detail, { reorder_store_from: was.reorderStore ?? -1, reorder_store_to: now.reorderStore ?? -1 });
   }
   if (now.shelfLifeDays !== was.shelfLifeDays) {
     Object.assign(detail, { shelf_life_from: was.shelfLifeDays ?? -1, shelf_life_to: now.shelfLifeDays ?? -1 });
@@ -206,7 +218,7 @@ export async function changeConsumable(
     db
       .prepare(
         `UPDATE consumables SET name = ?2, unit = ?3, unit_cost = ?4, reorder_kit = ?5, reorder_central = ?6,
-           updated_at = ?7, shelf_life_days = ?8
+           updated_at = ?7, shelf_life_days = ?8, reorder_store = ?9
          WHERE code = ?1`,
       )
       .bind(
@@ -218,6 +230,7 @@ export async function changeConsumable(
         now.reorderCentral,
         written.now.toISOString(),
         now.shelfLifeDays,
+        now.reorderStore,
       ),
   ]);
   return { ok: true, consumable: now };
