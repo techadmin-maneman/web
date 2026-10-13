@@ -29,11 +29,7 @@ export function InlineMessage({
   readonly children: ReactNode;
 }) {
   return (
-    <p
-      className={messageLook({ tone, ground, className })}
-      role={ROLES[tone]}
-      id={id}
-    >
+    <p className={messageLook({ tone, ground, className })} role={ROLES[tone]} id={id}>
       {children}
     </p>
   );
