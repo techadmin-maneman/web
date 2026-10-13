@@ -170,6 +170,34 @@ const OFFLINE = { ok: false, status: 0, code: "offline", fields: [], moved: null
 /** A keyed write whose answer never came: it may have been done, and sending it again is answered, not done twice. */
 const UNCONFIRMED = { ok: false, status: 0, code: "unconfirmed", fields: [], moved: null, requestId: null } as const;
 
+/** How long a call waits: a read's patience, or a write's. */
+const patienceFor = (patience: Patience, method: string): number =>
+  method.toUpperCase() === "GET" ? patience.read : patience.write;
+
+/** The headers a call goes with: the caller's own, and JSON's where it sends JSON. */
+function headersOf(init: { readonly headers?: Readonly<Record<string, string>>; readonly json?: unknown }) {
+  const headers: Record<string, string> = { ...init.headers };
+  if (init.json !== undefined) headers["Content-Type"] = "application/json";
+  return headers;
+}
+
+/** A write's body as its key compares it: the JSON sent, or nothing for a body of another kind. */
+const textOf = (body: BodyInit | undefined): string => (typeof body === "string" ? body : "");
+
+/** The key a write goes with, set on its headers: the one it went with when its answer never came, else a new one. */
+function keyFor(unanswered: Map<string, string>, sent: string | null, headers: Record<string, string>): string | null {
+  if (sent === null) return null;
+  const key = headers["Idempotency-Key"] ?? unanswered.get(sent) ?? crypto.randomUUID();
+  headers["Idempotency-Key"] = key;
+  return key;
+}
+
+/** A keyed write kept while its answer never came, and let go once one does. */
+function heardOf(unanswered: Map<string, string>, write: { sent: string; key: string; answered: boolean }): void {
+  if (write.answered) unanswered.delete(write.sent);
+  else unanswered.set(write.sent, write.key);
+}
+
 const isSessionEnded = (response: Response) => response.status === 401;
 
 // ---- Asking ------------------------------------------------------------------
@@ -262,10 +290,6 @@ export function createClient<Paths, Code extends string = string>(options: Clien
   /** Each keyed write sent and never answered, by what it sent, with the key it went with. */
   const unanswered = new Map<string, string>();
 
-  function patienceFor(method: string): number {
-    return method.toUpperCase() === "GET" ? patience.read : patience.write;
-  }
-
   async function read<T>(response: Response, file: boolean): Promise<Answer<T, Code>> {
     if (response.ok) {
       const body = file ? await response.blob() : await bodyOf(response);
@@ -297,12 +321,10 @@ export function createClient<Paths, Code extends string = string>(options: Clien
   }
 
   async function request<T>(method: string, url: string, init: Asking = {}): Promise<Answer<T, Code>> {
-    const headers: Record<string, string> = { ...init.headers };
-    if (init.json !== undefined) headers["Content-Type"] = "application/json";
+    const headers = headersOf(init);
     const body = init.json === undefined ? init.body : JSON.stringify(init.json);
-    const sent = options.keyWrites === true && method !== "GET" ? `${method} ${url} ${String(body ?? "")}` : null;
-    const key = sent === null ? null : (headers["Idempotency-Key"] ?? unanswered.get(sent) ?? crypto.randomUUID());
-    if (key !== null) headers["Idempotency-Key"] = key;
+    const sent = options.keyWrites === true && method !== "GET" ? `${method} ${url} ${textOf(body)}` : null;
+    const key = keyFor(unanswered, sent, headers);
     const response = await reach(
       url,
       {
@@ -311,12 +333,9 @@ export function createClient<Paths, Code extends string = string>(options: Clien
         ...(body === undefined ? {} : { body }),
         ...(redirect === undefined ? {} : { redirect }),
       },
-      init.patience ?? patienceFor(method),
+      init.patience ?? patienceFor(patience, method),
     );
-    if (sent !== null && key !== null) {
-      if (response === null) unanswered.set(sent, key);
-      else unanswered.delete(sent);
-    }
+    if (sent !== null && key !== null) heardOf(unanswered, { sent, key, answered: response !== null });
     if (response === null) {
       options.onUnreached?.();
       return sent === null ? OFFLINE : UNCONFIRMED;

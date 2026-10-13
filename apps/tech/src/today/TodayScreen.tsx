@@ -210,12 +210,52 @@ function Tomorrow(props: Omit<Parameters<typeof Jobs>[0], "jobs"> & { readonly j
   );
 }
 
+/** Yesterday's jobs not yet closed, above today's, so their work can be finished and sent. */
+function LeftOpen(props: Omit<Parameters<typeof Jobs>[0], "jobs"> & { readonly date: string }) {
+  const [yesterday] = useDay(dayBefore(props.date));
+  const jobs = yesterday.state === "loaded" ? stillOpen(yesterday.value, props.queued) : [];
+  if (jobs.length === 0) return null;
+  return (
+    <section aria-labelledby="today-left-open">
+      <h2 className={capsLook(styles.leftOpen)} id="today-left-open">
+        {copy.leftOpen(jobs.length)}
+      </h2>
+      <Jobs jobs={jobs} names={props.names} queued={props.queued} heard={props.heard} />
+    </section>
+  );
+}
+
+/**
+ * What is still on the phone: the way to the queue while anything waits; and where the phone would not promise to keep
+ * its store and there is work in it, the warning, which is about this queue, not the phone (apps/tech/src/store/persist.ts).
+ */
+function OnThePhone(props: { readonly sending: number; readonly unsentSets: number; readonly atRisk: boolean }) {
+  const { sending, unsentSets } = props;
+  return (
+    <>
+      {(sending > 0 || unsentSets > 0) && (
+        <Link className={styles.waiting} to="/waiting">
+          <Icon d={APP_ICONS.uploadQueue} size={20} className={styles.waitingIcon} stroke={STROKE} />
+          <span className={styles.waitingLine}>
+            {unsentSets > 0 ? queueCopy.waiting(unsentSets) : queueCopy.events(sending)}
+          </span>
+        </Link>
+      )}
+      {props.atRisk && (
+        <div className={styles.atRisk} role="status">
+          <p className={styles.atRiskTitle}>{atRiskCopy.title}</p>
+          <p className={styles.atRiskBody}>{atRiskCopy.body}</p>
+        </div>
+      )}
+    </>
+  );
+}
+
 export function TodayScreen() {
   const { me, offline, atRisk, signOut } = useSession();
   const date = todayInIndia();
   const [day, retry] = useDay(date);
   const [tomorrow] = useDay(dayAfter(date));
-  const [yesterday] = useDay(dayBefore(date));
   const waiting = useOutbox();
   const [leaving, setLeaving] = useState<Leaving>(null);
 
@@ -233,7 +273,6 @@ export function TodayScreen() {
 
   const jobs = day.state === "loaded" ? day.value : [];
   const tomorrowJobs = tomorrow.state === "loaded" ? tomorrow.value : [];
-  const leftOpen = yesterday.state === "loaded" ? stillOpen(yesterday.value, waiting.events) : [];
   const names = useKeptCards(day, tomorrow);
 
   return (
@@ -270,40 +309,18 @@ export function TodayScreen() {
 
       {offline && <Offline />}
 
-      {(sending > 0 || unsentSets > 0) && (
-        <Link className={styles.waiting} to="/waiting">
-          <Icon d={APP_ICONS.uploadQueue} size={20} className={styles.waitingIcon} stroke={STROKE} />
-          <span className={styles.waitingLine}>
-            {unsentSets > 0 ? queueCopy.waiting(unsentSets) : queueCopy.events(sending)}
-          </span>
-        </Link>
-      )}
-
-      {/*
-        The phone would not promise to keep its store, and there is work in it.
-        Only worth saying when both are true: the warning is about this queue,
-        not about the phone (apps/tech/src/store/persist.ts).
-      */}
-      {atRisk && (waiting.events.length > 0 || waiting.frames.length > 0) && (
-        <div className={styles.atRisk} role="status">
-          <p className={styles.atRiskTitle}>{atRiskCopy.title}</p>
-          <p className={styles.atRiskBody}>{atRiskCopy.body}</p>
-        </div>
-      )}
+      <OnThePhone
+        sending={sending}
+        unsentSets={unsentSets}
+        atRisk={atRisk && waiting.events.length + waiting.frames.length > 0}
+      />
 
       {day.state === "loading" && <Loading />}
       {day.state === "failed" && (
         <Failed message={copy.failed} retry={copy.retry} onRetry={retry} requestId={day.requestId} />
       )}
 
-      {leftOpen.length > 0 && (
-        <section aria-labelledby="today-left-open">
-          <h2 className={capsLook(styles.leftOpen)} id="today-left-open">
-            {copy.leftOpen(leftOpen.length)}
-          </h2>
-          <Jobs jobs={leftOpen} names={names} queued={waiting.events} heard={heard} />
-        </section>
-      )}
+      <LeftOpen date={date} names={names} queued={waiting.events} heard={heard} />
       {day.state === "loaded" && jobs.length === 0 && <EmptyDay tomorrowJobs={tomorrowJobs} />}
       {jobs.length > 0 && <Jobs jobs={jobs} names={names} queued={waiting.events} heard={heard} />}
       {tomorrowJobs.length > 0 && <Tomorrow jobs={tomorrowJobs} names={names} queued={waiting.events} heard={heard} />}

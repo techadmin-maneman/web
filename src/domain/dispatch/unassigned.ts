@@ -11,10 +11,9 @@ const KEY = "unassigned_visit:";
 /** Today's visits with no technician, each told of once; those since given one, moved or called off, closed. */
 export async function tellOfUnassignedToday(
   db: D1Database,
-  deps: { readonly alertOnce: AlertOnce; readonly resolveAlert: ResolveAlert },
-  now: Date,
-): Promise<number> {
-  const today = indiaDate(now);
+  deps: { readonly alertOnce: AlertOnce; readonly resolveAlert: ResolveAlert; readonly now: () => Date },
+): Promise<void> {
+  const today = indiaDate(deps.now());
   const { results } = await db
     .prepare(
       `SELECT a.id, a.window_start FROM appointments a INDEXED BY appointments_by_technician
@@ -38,7 +37,6 @@ export async function tellOfUnassignedToday(
   for (const { key } of open) {
     if (!still.has(key.slice(KEY.length))) await deps.resolveAlert(key);
   }
-  return results.length;
 }
 
 /** Each technician's visits still to come and not begun, by their ID: what switching them off leaves with nobody. */
@@ -54,3 +52,28 @@ export async function visitsToComeBy(db: D1Database, now: Date): Promise<Readonl
     .all<{ technician_id: string; visits: number }>();
   return new Map(results.map((row) => [row.technician_id, row.visits]));
 }
+
+/**
+ * The Tasks board's visits with no technician, as a switch-off leaves its jobs: someone must be sent. Each waits from
+ * when it last changed, and falls due the day before it. `?1` is now.
+ */
+export const UNASSIGNED_VISITS = `SELECT 'unassigned_visit' AS "group", a.id AS id, pe.id AS person_id, pe.name AS person_name,
+         a.type || ' ' || a.window_start AS detail, a.synced_at AS since,
+         strftime('%Y-%m-%dT%H:%M:%fZ', a.window_start, '-1 day') AS due_by, '' AS episode
+    FROM appointments a INDEXED BY appointments_by_technician
+    LEFT JOIN people pe ON pe.id = a.person_id AND pe.erased_at IS NULL
+   WHERE a.technician_id IS NULL AND a.window_start >= ?1 AND a.deleted_at IS NULL
+     AND ${statusIn("a.status", VISIT_NOT_BEGUN)}`;
+
+/**
+ * The Tasks board's visits still open once their day is over in India: nobody came, or one was never closed. Each
+ * waits from the midnight after its day; a no-show is its own group. `?1` is the start of today.
+ */
+export const VISITS_LEFT_OPEN = `SELECT 'visit_left_open' AS "group", a.id AS id, pe.id AS person_id, pe.name AS person_name,
+         a.status || ' ' || a.window_start AS detail,
+         strftime('%Y-%m-%dT%H:%M:%fZ', date(a.window_start, '+330 minutes', '+1 day'), '-330 minutes') AS since,
+         NULL AS due_by, '' AS episode
+    FROM appointments a INDEXED BY appointments_live_by_start
+    LEFT JOIN people pe ON pe.id = a.person_id AND pe.erased_at IS NULL
+   WHERE a.status IN ('scheduled', 'dispatched', 'in_progress') AND a.deleted_at IS NULL AND a.window_start < ?1
+     AND NOT EXISTS (SELECT 1 FROM no_show_cases n WHERE n.appointment_id = a.id)`;

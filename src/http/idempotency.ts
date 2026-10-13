@@ -3,7 +3,7 @@
 // before the work starts, so two simultaneous retries cannot both do the work.
 
 import { z } from "@hono/zod-openapi";
-import type { Context } from "hono";
+import type { Context, MiddlewareHandler } from "hono";
 import type { ContentfulStatusCode } from "hono/utils/http-status";
 import type { AppEnv } from "./context.ts";
 import { errorBody, refuse, type ErrorCode } from "./errors.ts";
@@ -192,11 +192,11 @@ export function answerKeyed<Body, Refused extends KeyedRefusal>(
  * first one's answer never came, so a key seen before is answered as it was, its success kept for a day. A refusal,
  * or a throw, frees the key, as for the public forms. A write without a key just runs.
  */
-export async function keyedWrite(c: Context<AppEnv>, next: () => Promise<void>): Promise<Response | void> {
+export const keyedWrite: MiddlewareHandler<AppEnv> = async (c, next) => {
   const key = c.req.header("Idempotency-Key");
   if (c.req.method === "GET" || c.req.method === "HEAD" || key === undefined) {
     await next();
-    return;
+    return undefined;
   }
   if (key.length < 8 || key.length > 200) return refuse(c, "invalid_request", ["Idempotency-Key"]);
   const db = c.env.DB;
@@ -221,8 +221,9 @@ export async function keyedWrite(c: Context<AppEnv>, next: () => Promise<void>):
   const kept = res.ok && (res.headers.get("Content-Type") ?? "").includes("application/json");
   if (!kept) {
     await settleKey(c.var.log, record, () => abandonIdempotent(db, record));
-    return;
+    return undefined;
   }
   const body: unknown = await res.clone().json();
   await settleKey(c.var.log, record, () => finishIdempotent(db, record, body, res.status));
-}
+  return undefined;
+};

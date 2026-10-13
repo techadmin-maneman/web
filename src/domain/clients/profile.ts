@@ -226,8 +226,7 @@ export function firstAddressStatement(
   db: D1Database,
   personId: string,
   address: Address,
-  now: Date,
-  pin: AddressPin | null = null,
+  { now, pin }: { readonly now: Date; readonly pin: AddressPin | null },
 ): D1PreparedStatement {
   return db
     .prepare(

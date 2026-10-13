@@ -55,6 +55,7 @@ describe("a visit with no technician", () => {
     const told: string[] = [];
     const resolved: string[] = [];
     const deps = {
+      now: () => NOW,
       alertOnce: (alert: { key: string }) => {
         told.push(alert.key);
         return Promise.resolve();
@@ -64,7 +65,7 @@ describe("a visit with no technician", () => {
         return Promise.resolve();
       },
     };
-    expect(await tellOfUnassignedToday(env.DB, deps, NOW)).toBe(1);
+    await tellOfUnassignedToday(env.DB, deps);
     expect(told).toEqual([`unassigned_visit:${A}`]);
 
     await env.DB.prepare(
@@ -74,7 +75,7 @@ describe("a visit with no technician", () => {
       .bind(`unassigned_visit:${A}`, NOW.toISOString())
       .run();
     await env.DB.prepare("UPDATE appointments SET technician_id = ?1 WHERE id = ?2").bind(IMRAN, A).run();
-    expect(await tellOfUnassignedToday(env.DB, deps, NOW)).toBe(0);
+    await tellOfUnassignedToday(env.DB, deps);
     expect(resolved).toEqual([`unassigned_visit:${A}`]);
   });
 });

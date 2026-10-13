@@ -33,6 +33,8 @@ import { paidNotBooked } from "../booking/hold-stages.ts";
 import { STOCK_RISKS_OPEN } from "../field/stock-risks.ts";
 import { statusIn, statusNotIn, VISIT_CALLED_OFF, VISIT_LIVE, VISIT_NOT_BEGUN } from "../../config/statuses.ts";
 import type { SqlValue } from "../../lib/sql.ts";
+import { REFUND_OWED_FAILED, REFUND_OWED_LET_GO } from "../money/payment-refunds.ts";
+import { UNASSIGNED_VISITS, VISITS_LEFT_OPEN } from "../dispatch/unassigned.ts";
 
 /** A visit to come, by its id and its start. */
 interface TaskVisit {
@@ -250,31 +252,10 @@ const QUEUES: readonly Queue[] = [
    WHERE a.status = 'completed' AND a.invoice_issued_at IS NULL
      AND a.deleted_at IS NULL AND a.fsm_invoice_id IS NOT NULL AND pe.erased_at IS NULL`,
   },
-  // A visit with no technician, as a switch-off leaves its jobs: someone must be sent. It waits from when it last
-  // changed, and falls due the day before it.
-  {
-    sql: `SELECT 'unassigned_visit' AS "group", a.id AS id, pe.id AS person_id, pe.name AS person_name,
-         a.type || ' ' || a.window_start AS detail, a.synced_at AS since,
-         strftime('%Y-%m-%dT%H:%M:%fZ', a.window_start, '-1 day') AS due_by, '' AS episode
-    FROM appointments a INDEXED BY appointments_by_technician
-    LEFT JOIN people pe ON pe.id = a.person_id AND pe.erased_at IS NULL
-   WHERE a.technician_id IS NULL AND a.window_start >= ?1 AND a.deleted_at IS NULL
-     AND ${statusIn("a.status", VISIT_NOT_BEGUN)}`,
-    binds: (at) => [at.now],
-  },
-  // A visit still open once its day is over in India: nobody came, or it was never closed. It waits from the midnight
-  // after its day. A no-show is its own group.
-  {
-    sql: `SELECT 'visit_left_open' AS "group", a.id AS id, pe.id AS person_id, pe.name AS person_name,
-         a.status || ' ' || a.window_start AS detail,
-         strftime('%Y-%m-%dT%H:%M:%fZ', date(a.window_start, '+330 minutes', '+1 day'), '-330 minutes') AS since,
-         NULL AS due_by, '' AS episode
-    FROM appointments a INDEXED BY appointments_live_by_start
-    LEFT JOIN people pe ON pe.id = a.person_id AND pe.erased_at IS NULL
-   WHERE a.status IN ('scheduled', 'dispatched', 'in_progress') AND a.deleted_at IS NULL AND a.window_start < ?1
-     AND NOT EXISTS (SELECT 1 FROM no_show_cases n WHERE n.appointment_id = a.id)`,
-    binds: (at) => [at.todayStarts],
-  },
+  // A visit with no technician, due the day before it (src/domain/dispatch/unassigned.ts).
+  { sql: UNASSIGNED_VISITS, binds: (at) => [at.now] },
+  // A visit still open once its day is over (src/domain/dispatch/unassigned.ts).
+  { sql: VISITS_LEFT_OPEN, binds: (at) => [at.todayStarts] },
   // A job still booked on a day its technician is away: leave moves nothing, so ops move it. It waits from when the
   // leave was recorded, and falls due by the job. The client is named where there is one on our records.
   {
@@ -390,30 +371,9 @@ const QUEUES: readonly Queue[] = [
     LEFT JOIN people pe ON pe.id = d.person_id AND pe.erased_at IS NULL
    WHERE d.ruling IS NULL`,
   },
-  // A payment to refund: why ("let_go", a hold let go whose refund Razorpay would not make, or "refund_failed", a
-  // refund Razorpay failed), what is owed back in paise, and the Razorpay payment, for ops to refund from Razorpay's
-  // dashboard. It goes once a refund of the payment is made. Migration 0096's indexes read only those two sets.
-  {
-    sql: `SELECT 'payment_to_refund' AS "group", p.id AS id, pe.id AS person_id, pe.name AS person_name,
-         'let_go ' || (p.amount - p.refunded_amount) || ' ' || p.razorpay_payment_id AS detail, h.updated_at AS since,
-         NULL AS due_by, '' AS episode
-    FROM payments p JOIN slot_holds h ON h.razorpay_order_id = p.razorpay_order_id
-    JOIN people pe ON pe.id = h.person_id
-   WHERE p.status = 'captured' AND p.appointment_id IS NULL AND h.state = 'released' AND h.refunded_at IS NULL
-     AND pe.erased_at IS NULL`,
-  },
-  {
-    sql: `SELECT 'payment_to_refund' AS "group", p.id AS id, pe.id AS person_id, pe.name AS person_name,
-         'refund_failed ' || r.amount || ' ' || p.razorpay_payment_id AS detail, r.updated_at AS since,
-         NULL AS due_by, '' AS episode
-    FROM refunds r JOIN payments p ON p.id = r.payment_id
-    JOIN people pe ON pe.id = p.person_id
-   WHERE r.status = 'failed' AND p.status <> 'refunded' AND pe.erased_at IS NULL
-     AND NOT EXISTS (
-       SELECT 1 FROM refunds later
-        WHERE later.payment_id = r.payment_id AND later.status IN ('created', 'processed')
-          AND later.created_at > r.created_at)`,
-  },
+  // A payment to refund (src/domain/money/payment-refunds.ts): a hold let go, or a refund Razorpay failed.
+  { sql: REFUND_OWED_LET_GO },
+  { sql: REFUND_OWED_FAILED },
 ];
 
 interface Row {
