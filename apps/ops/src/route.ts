@@ -80,7 +80,7 @@ export type Section = (typeof SECTIONS)[number];
  * stocked, from counting it to buying it; Care's inbox, its own settings and its numbers; and the requests clients
  * make of their data. The entry opens on the first the person may open.
  */
-export const SECTION_GROUPS = [
+const SECTION_GROUPS = [
   {
     group: "inventory",
     pages: ["stock", "counts", "usage", "quality", "purchasing", "supply-plan", "items", "suppliers"],
