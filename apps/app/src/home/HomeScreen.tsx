@@ -14,11 +14,11 @@ import { TextLink, textLinkLook } from "@maneman/ui/TextLink";
 import { BookButton, BookNext, type ChangingVisit } from "../booking/index.ts";
 import { capsLook } from "@maneman/ui/Caps";
 import { ButtonLink } from "@maneman/ui/Button";
-import { lazy, Suspense } from "react";
+import { lazyScreen } from "@maneman/ui/lazyScreen";
+import { Suspense } from "react";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { indiaDate, listDate, monthInIndia, shortDate } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";
-import { loadOrReload } from "@maneman/web-kit/load-or-reload";
 import { documentUrl, type Me, type OneVisitPrice, type VisitSummary } from "../api.ts";
 import { BOOKING_URL, home, messages, ONE_VISIT, VISIT_TYPES, visits, windowText } from "../content.ts";
 import { apiNow } from "../lib/clock.ts";
@@ -41,9 +41,7 @@ import { RemakeCard } from "./RemakeCard.tsx";
 import styles from "./home.module.css";
 
 /** A custom order on its way, read apart from Home and loaded apart from it (./CustomOrderCard.tsx). */
-const CustomOrderCard = lazy(() =>
-  loadOrReload(() => import("./CustomOrderCard.tsx")).then((module) => ({ default: module.CustomOrderCard })),
-);
+const CustomOrderCard = lazyScreen(() => import("./CustomOrderCard.tsx").then((module) => module.CustomOrderCard));
 import { firstNameOf } from "@rules/lib/names.ts";
 
 export function HomeScreen() {

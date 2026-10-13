@@ -25,6 +25,13 @@ export const FAILED = "That didn't work. Try again.";
 /** Shown wherever a number would be, for a client erased since, whose number is gone. */
 export const ERASED_MOBILE = "Erased client";
 
+/** What stands in for a page that failed to draw (../states/ErrorBoundary.tsx). */
+export const broken = {
+  message: "This page didn't open.",
+  reload: "Reload",
+  home: "Open the console",
+} as const;
+
 export const states = {
   loading: "Loading",
   failed: "Couldn't load this.",

@@ -8,3 +8,10 @@
   padding: var(--sp-24);
   font-size: var(--fs-15);
 }
+
+/* A page that failed to draw: its reload, and the way in again. */
+.actions {
+  display: flex;
+  gap: var(--sp-12);
+  margin-top: var(--sp-16);
+}
