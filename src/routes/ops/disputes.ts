@@ -130,7 +130,7 @@ export function registerOpsDisputes(app: App): void {
     });
     if (ruled === null) return refuse(c, "not_found");
     const notify = (messageId: string) => queueMessage(c, messageId);
-    await afterRuling(c.env.DB, { ...c.var.deps, notify }, ruled);
+    await afterRuling(c.env.DB, { ...c.var.deps, log: c.var.log, notify }, ruled);
     return c.json({ ruled: true }, 200);
   });
 }

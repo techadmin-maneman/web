@@ -25,7 +25,7 @@ import {
   type PlainPage,
   type Route,
 } from "./route.ts";
-import { loadOrReload } from "./lib/load-or-reload.ts";
+import { loadOrReload } from "@maneman/web-kit/load-or-reload";
 import { TasksScreen } from "./tasks/TasksScreen.tsx";
 import { TechniciansScreen } from "./technicians/TechniciansScreen.tsx";
 

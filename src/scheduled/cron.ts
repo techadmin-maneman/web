@@ -22,6 +22,7 @@ import { syncBooks } from "../domain/books/books-sync.ts";
 import type { BooksSyncOptions } from "../domain/books/books-pass.ts";
 import { closeStaleLowStock } from "../domain/field/low-stock.ts";
 import { settleOwedRefunds } from "../domain/money/cancel-refunds.ts";
+import { settleOwedNoShowRefunds } from "../domain/no-shows/after-a-ruling.ts";
 import { retellUndelivered } from "../domain/ops/alerts.ts";
 import { watchStock } from "../domain/field/stock-watch.ts";
 import { finishRun, startRun, type RunStart } from "../domain/platform/cron-runs.ts";
@@ -144,9 +145,12 @@ async function unbookedHoldsJob({ env, deps, log, budget }: CronContext): Promis
   if (booked > 0) log.warn("unbooked_holds_booked", { count: booked });
 }
 
+/** Refunds a request owed and did not settle: a cancel's, then a no-show ruling's. */
 async function cancelRefundsJob({ env, deps, log, budget }: CronContext): Promise<void> {
   const settled = await settleOwedRefunds(env.DB, { ...deps, budget, log }, deps.now());
   if (settled > 0) log.warn("cancel_refunds_settled", { count: settled });
+  const noShows = await settleOwedNoShowRefunds(env.DB, { ...deps, budget }, deps.now());
+  if (noShows > 0) log.warn("no_show_refunds_settled", { count: noShows });
 }
 
 async function erasedFilesJob({ env, deps, log }: CronContext): Promise<void> {

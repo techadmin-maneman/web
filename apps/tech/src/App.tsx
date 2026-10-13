@@ -19,7 +19,9 @@
 // phone sends what it holds ./lib/useReplayTriggers.ts.
 
 import { CaptureScreen } from "./camera/CaptureScreen.tsx";
+import { UpdateReady } from "@maneman/ui/UpdateReady";
 import { Stopped, StorageFull } from "./components/Banners.tsx";
+import { update } from "./content.ts";
 import { JobScreen } from "./job/JobScreen.tsx";
 import { KitScreen } from "./kit/KitScreen.tsx";
 import { OutboxContext, useOutboxSubscription } from "./lib/useOutbox.ts";
@@ -79,6 +81,7 @@ function SignedIn({ session, path }: { session: Session; path: string }) {
     <SessionContext value={session}>
       <OutboxContext value={waiting}>
         <StorageFull />
+        <UpdateReady copy={update} resting={route.page === "today"} onInk />
         {/* A job's work stopped reaching us, said above every screen; the waiting screen says it job by job. */}
         {route.page !== "waiting" && <Stopped />}
         {/* Keyed by the path, so each screen opens at its top with its own data, and one that failed stays behind. */}

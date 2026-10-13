@@ -20,6 +20,8 @@
 // Every call is same-origin, so the session's cookie goes with it and the
 // Origin matches (docs/decisions/0026-hosts-and-surfaces.md).
 
+import { pageBuild } from "./build.ts";
+
 export type Method = "get" | "post" | "put" | "patch" | "delete";
 
 // ---- Reading a surface's document --------------------------------------------
@@ -178,6 +180,8 @@ const patienceFor = (patience: Patience, method: string): number =>
 function headersOf(init: { readonly headers?: Readonly<Record<string, string>>; readonly json?: unknown }) {
   const headers: Record<string, string> = { ...init.headers };
   if (init.json !== undefined) headers["Content-Type"] = "application/json";
+  const build = pageBuild();
+  if (build !== null) headers["X-Client-Version"] = build;
   return headers;
 }
 

@@ -43,6 +43,7 @@
     "./TextLink": "./TextLink.tsx",
     "./Tile": "./Tile.tsx",
     "./ToggleButton": "./ToggleButton.tsx",
+    "./UpdateReady": "./UpdateReady.tsx",
     "./useAsync": "./useAsync.ts",
     "./useFocusOnMount": "./useFocusOnMount.ts",
     "./useLoad": "./useLoad.ts",

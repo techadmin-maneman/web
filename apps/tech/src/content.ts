@@ -100,6 +100,13 @@ export const storage = {
   body: "Free up space by deleting photos or apps you don’t need, then try again.",
 } as const;
 
+/** A new version of the app, waiting to be taken (packages/web-kit/sw-update.ts). */
+export const update = {
+  // Neither file draws a new version.
+  line: "A new version is ready.",
+  action: "Update",
+} as const;
+
 /** A screen that failed to draw, which React would otherwise leave blank. */
 export const broken = {
   // Neither file draws a screen that failed.

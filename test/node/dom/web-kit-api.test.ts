@@ -106,6 +106,13 @@ describe("a call", () => {
     expect(answer).toMatchObject({ ok: true, status: 202, body: { challenge_id: "c" } });
   });
 
+  it("names the page's build, as its index.html does, so the API's logs can tell an old one", async () => {
+    const sent = answering(() => json(200, { id: "a" }));
+    vi.stubGlobal("document", { querySelector: () => ({ content: "7a782035b563" }) });
+    await createClient<Paths, Code>().get("/api/visits/{id}", { path: { id: "a" } });
+    expect(new Headers(sent[0]?.init.headers).get("X-Client-Version")).toBe("7a782035b563");
+  });
+
   it("answers null for a success with nothing in it", async () => {
     answering(() => new Response(null, { status: 204 }));
     expect(await createClient<Paths, Code>().post("/api/auth/logout")).toMatchObject({ ok: true, body: null });

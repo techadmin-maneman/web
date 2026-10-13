@@ -449,6 +449,8 @@ function requestContext({
       ...usageFields(meter.usage()),
       d1_trips: waits.trips,
       d1_wait_ms: waits.ms,
+      // The build of the app that called, so a page left open on an old one is told apart (packages/web-kit/build.ts).
+      client_version: c.req.header("X-Client-Version")?.slice(0, 40),
     });
   });
 }

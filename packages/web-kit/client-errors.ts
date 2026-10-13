@@ -5,6 +5,8 @@
 // A page sends each error once, and only a few in all, so one stuck in a loop cannot flood the API. Sending is best
 // effort: a report that does not arrive is let go.
 
+import { pageBuild } from "./build.ts";
+
 const PATH = "/api/client-errors";
 const MOST_PER_PAGE = 10;
 
@@ -40,8 +42,10 @@ export function reportClientError(error: ClientError): void {
 }
 
 function send(error: ClientError): void {
-  const report: ClientError & { path: string } = {
+  const build = pageBuild();
+  const report: ClientError & { path: string; version?: string } = {
     ...error,
+    ...(build === null ? {} : { version: build }),
     message: error.message.slice(0, LONGEST.message),
     ...(error.stack === undefined ? {} : { stack: error.stack.slice(0, LONGEST.stack) }),
     ...(error.source === undefined ? {} : { source: error.source.slice(0, LONGEST.source) }),

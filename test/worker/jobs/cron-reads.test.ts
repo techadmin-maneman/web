@@ -152,6 +152,8 @@ const HISTORY = [
      '${AGO}', 'nothing', '${AGO}' FROM n`,
   `INSERT INTO no_show_disputes (id, case_id, person_id, created_at, ruling, ruled_by, ruled_at)
    SELECT 'nd-' || i, 'ns-' || i, 'p-' || i, '${AGO}', 'upheld', 'ops@localhost', '${AGO}' FROM n`,
+  `INSERT INTO no_show_refunds (id, appointment_id, why, amount, created_at, asked_at, settled_at, razorpay_refund_id)
+   SELECT 'nr-' || i, 'a-' || i, 'waived', 200000, '${AGO}', '${AGO}', '${AGO}', 'rfnd_' || i FROM n`,
   `INSERT INTO job_events (id, appointment_id, event_id, technician_id, kind, body, occurred_at, received_at,
      fsm_write_state, updated_at)
    SELECT 'je-' || i, 'a-' || i, 'event-' || i, 't-history', 'outcome', '{}', '${AGO}', '${AGO}', 'written', '${AGO}'

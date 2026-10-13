@@ -20,6 +20,8 @@
     "./turnstile": "./turnstile.ts",
     "./names": "./names.ts",
     "./refusal": "./refusal.ts",
-    "./pwa": "./pwa.ts"
+    "./pwa": "./pwa.ts",
+    "./sw-update": "./sw-update.ts",
+    "./load-or-reload": "./load-or-reload.ts"
   }
 }

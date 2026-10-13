@@ -118,6 +118,8 @@ export const PURPOSES: Readonly<Record<string, string>> = {
     "The evidence a no-show is ruled on, the ruling, and what a charge cost the client (ADR 0065, ADR 0072, ADR 0096).",
   no_show_disputes:
     "A client's dispute of a no-show's charge, one a charge, and ops' ruling on it, refunded or upheld, with their reason (ADR 0096).",
+  no_show_refunds:
+    "What a no-show's ruling gives back of the visit's payment, kept as owed with the ruling until it is refunded or left to ops (ADR 0096).",
   number_change_requests:
     "A client's change of mobile number: the codes proven on both numbers, and what ops decided (ADR 0042, ADR 0078).",
   ops_settings:

@@ -21,6 +21,7 @@ const CRASH = {
   source: "https://app.maneman.in/assets/index.js",
   line: 1,
   column: 2048,
+  version: "7a782035b563255f34799b70ff97b9041afdb358",
 };
 
 function report(surface: "public" | "client" | "ops" | "tech", body: unknown, address = "203.0.113.20") {

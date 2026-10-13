@@ -14,7 +14,7 @@ import type { Ruled } from "./after-a-ruling.ts";
 import { caseMessage, messageStateOf, type MessageColumns, type MessageState } from "./no-shows.ts";
 import { CHARGE_TAKEN } from "./no-show-notes.ts";
 import { reachBinding, withinReach } from "../clients/places.ts";
-import { creditBack, rulingMessage, type RulingClaim } from "./ruling-claims.ts";
+import { creditBack, refundOwed, rulingMessage, type RulingClaim } from "./ruling-claims.ts";
 
 interface ChargedCase {
   id: string;
@@ -220,6 +220,14 @@ export async function ruleOnDispute(
           ruled,
         );
   const givesCreditBack = refunded && open.credit_spent === 1;
+  const owed =
+    refunded && open.kept_amount > 0
+      ? refundOwed(
+          db,
+          { appointmentId: open.appointment_id, why: "refunded on dispute", amount: open.kept_amount, now: input.now },
+          ruled,
+        )
+      : null;
   const [ruling] = await db.batch([
     db
       .prepare(
@@ -230,13 +238,14 @@ export async function ruleOnDispute(
     auditStatementIfRuled(db, input.audit, input.now, ruled),
     ...(message === null ? [] : [message.statement]),
     ...(givesCreditBack ? [creditBack(db, open.appointment_id, input.now, ruled)] : []),
+    ...(owed === null ? [] : [owed.statement]),
   ]);
   // Another member of staff ruled first: their ruling stands, and nothing of this one was written.
   if (ruling?.meta.changes !== 1) return null;
   const visit = { appointmentId: open.appointment_id, personId: open.person_id, why: "refunded on dispute" } as const;
   return {
     messageId: message?.id ?? null,
-    refund: refunded && open.kept_amount > 0 ? { ...visit, amount: open.kept_amount } : null,
+    refund: owed === null ? null : { ...visit, id: owed.id, amount: open.kept_amount },
     creditGivenBack: givesCreditBack ? visit : null,
   };
 }

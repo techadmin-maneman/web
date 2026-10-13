@@ -89,6 +89,15 @@ describe("a page's errors", () => {
     expect(posted).toHaveLength(10);
   });
 
+  it("names the page's build, as its index.html does", async () => {
+    const meta = Object.assign(document.createElement("meta"), { name: "mm-version", content: "7a782035b563" });
+    document.head.append(meta);
+    const { reportClientError } = await reporter();
+    reportClientError({ kind: "error", message: "on an old build" });
+    meta.remove();
+    expect(posted[0]?.report.version).toBe("7a782035b563");
+  });
+
   it("cuts a message and a stack to what the API takes", async () => {
     const { reportClientError } = await reporter();
     reportClientError({ kind: "error", message: "m".repeat(900), stack: "s".repeat(9000) });

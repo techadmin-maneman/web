@@ -1,5 +1,6 @@
 import { takeSignInMark } from "@maneman/web-kit/access";
 import { reportUncaughtErrors } from "@maneman/web-kit/client-errors";
+import { keepUpToDate } from "@maneman/web-kit/sw-update";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { App } from "./App.tsx";
@@ -29,10 +30,11 @@ createRoot(root).render(
   </StrictMode>,
 );
 
-// The service worker keeps the app and the last Home for offline use (apps/app/sw/sw.ts). A build
-// has one; Vite's development server does not.
+// The service worker keeps the app and the last Home for offline use (apps/app/sw/sw.ts), and a
+// new build waits for the app to take it (packages/web-kit/sw-update.ts). A build has one; Vite's
+// development server does not.
 if (import.meta.env.PROD && "serviceWorker" in navigator) {
-  navigator.serviceWorker.register("/sw.js").catch(() => {
+  keepUpToDate().catch(() => {
     // Without it the app still works, online only.
   });
 }

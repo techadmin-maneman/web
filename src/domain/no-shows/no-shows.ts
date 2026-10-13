@@ -38,7 +38,7 @@ import type { Ruled } from "./after-a-ruling.ts";
 import type { LatestArrival } from "../visits/check-ins.ts";
 import { reachBinding, withinReach } from "../clients/places.ts";
 import type { OpsInputs } from "../ops/ops-settings.ts";
-import { creditBack, rulingMessage, type RulingClaim } from "./ruling-claims.ts";
+import { creditBack, refundOwed, rulingMessage, type RulingClaim } from "./ruling-claims.ts";
 import { refundOf, termsInForce, termsOfVisit, visitPayment } from "../visits/visit-changes.ts";
 import { NO_VISITS_CONSENT } from "../messages/visit-message-text.ts";
 import { minutesBetween } from "../../lib/durations.ts";
@@ -403,6 +403,14 @@ export async function decideNoShow(
   const charged = input.decision === "charged" ? await chargeOf(db, open, input.terms) : null;
   const waiver = input.decision === "waived" ? input.waiver : null;
   const givenBack = charged ?? (await waiverOf(db, open.appointment_id, input.waiver));
+  const owed =
+    givenBack.refund > 0
+      ? refundOwed(
+          db,
+          { appointmentId: open.appointment_id, why: input.decision, amount: givenBack.refund, now: input.now },
+          ruled,
+        )
+      : null;
   const [ruling] = await db.batch([
     db
       .prepare(
@@ -428,13 +436,14 @@ export async function decideNoShow(
     auditStatementIfRuled(db, input.audit, input.now, ruled),
     ...(message === null ? [] : [message.statement]),
     ...(givenBack.creditBack ? [creditBack(db, open.appointment_id, input.now, ruled)] : []),
+    ...(owed === null ? [] : [owed.statement]),
   ]);
   // Another member of staff ruled first: their ruling stands, and nothing of this one was written.
   if (ruling?.meta.changes !== 1) return null;
   const visit = { appointmentId: open.appointment_id, personId: open.person_id, why: input.decision };
   return {
     messageId: message?.id ?? null,
-    refund: givenBack.refund > 0 ? { ...visit, amount: givenBack.refund } : null,
+    refund: owed === null ? null : { ...visit, id: owed.id, amount: givenBack.refund },
     creditGivenBack: givenBack.creditBack && open.paid_with_credit === 1 ? visit : null,
   };
 }
