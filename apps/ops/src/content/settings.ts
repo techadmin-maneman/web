@@ -431,8 +431,10 @@ export const settings = {
       retireFrom: "Hidden from",
       addTitle: (kind: string) => `New ${kind} service`,
       code: "Code",
-      /** A replacement priced for one hair system: clients who wear it are offered this one. */
-      replacementCode: "Give it the code of the hair system it replaces, and clients who wear that one are offered it.",
+      /** What a kind's code does beyond pricing it: a replacement under a hair system's code is offered to its wearers. */
+      codeHints: {
+        replacement: "Give it the code of the hair system it replaces, and clients who wear that one are offered it.",
+      } as Readonly<Partial<Record<string, string>>>,
       next: "Review",
       cancel: "Cancel",
     },

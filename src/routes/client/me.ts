@@ -30,7 +30,7 @@ import {
   type Asked,
   type ProposedBooking,
 } from "../../domain/booking/proposed-visits.ts";
-import { offeredAmong, replacementFor, servicesOnDay } from "../../domain/booking/services.ts";
+import { offeredAmong, servicesOnDay } from "../../domain/booking/services.ts";
 import { homePrompts, promptFacts, whatHomeOffers } from "../../domain/clients/home-prompt.ts";
 import { currentAddress, liveContact } from "../../domain/clients/profile.ts";
 import { spendableCredits } from "../../domain/money/credits.ts";
@@ -58,6 +58,7 @@ import { PriceSchema } from "../schemas/booking.ts";
 import { OwedPaymentSchema } from "./payments.ts";
 import { creditsBody, CreditsSchema } from "./refer.ts";
 import { wornProduct } from "../../domain/field/stock-gap.ts";
+import { replacementFor } from "../../policy/services.ts";
 
 const MeSchema = z
   .object({

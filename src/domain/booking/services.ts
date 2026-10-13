@@ -22,6 +22,7 @@ import {
 import { isServiceLength } from "../../policy/visit-length.ts";
 import { auditStatement, type AuditActor } from "../ops/audit.ts";
 import type { Price } from "../money/price-book.ts";
+import { replacementFor } from "../../policy/services.ts";
 
 /** A service, as the services table holds it. */
 interface Service {
@@ -132,33 +133,20 @@ export async function offeredServices(
  */
 export async function bookableService(
   db: D1Database,
-  kind: VisitType,
-  tier: string | undefined,
-  on: string,
-  wears: string | null = null,
+  wanted: {
+    readonly kind: VisitType;
+    readonly tier: string | undefined;
+    readonly on: string;
+    /** The product of the hair system the client wears, which a replacement naming no tier is priced for. */
+    readonly wears?: string | null;
+  },
 ): Promise<PricedService | null> {
-  const offered = await offeredServices(db, on, [kind]);
+  const { kind, tier } = wanted;
+  const offered = await offeredServices(db, wanted.on, [kind]);
   if (tier !== undefined) return offered.find((service) => service.tier === tier) ?? null;
   if (!hasStandardService(kind)) return null;
-  if (kind === "replacement") return replacementFor(offered, wears)[0] ?? null;
+  if (kind === "replacement") return replacementFor(offered, wanted.wears ?? null)[0] ?? null;
   return offered.find((service) => service.tier === STANDARD_TIER) ?? offered[0] ?? null;
-}
-
-/**
- * The replacement a client is offered: the one ops price for the hair system they wear, a replacement service under
- * that product's code, else the standard one, so a product ops have not priced yet costs the single price. Every
- * other kind's services pass as they are.
- */
-export function replacementFor<T extends { readonly kind: VisitType; readonly tier: string }>(
-  services: readonly T[],
-  wears: string | null,
-): T[] {
-  const replacements = services.filter((service) => service.kind === "replacement");
-  const theirs =
-    replacements.find((service) => service.tier === wears) ??
-    replacements.find((service) => service.tier === STANDARD_TIER) ??
-    replacements[0];
-  return services.filter((service) => service.kind !== "replacement" || service === theirs);
 }
 
 /** The hair systems a first fit is sold as on a day: the first-fit services offered and priced then, in ops' order. */

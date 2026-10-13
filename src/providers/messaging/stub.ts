@@ -15,7 +15,7 @@ export function createStubMessaging(log: Logger): MessagingProvider {
       return Promise.resolve({ ok: true, providerMessageId: `stub-${crypto.randomUUID()}` });
     },
     send: ({ template, params, media, stopLink, wording, appLink }) => {
-      if (renderWithStopLink(template, params, stopLink, wording, appLink) === null) {
+      if (renderWithStopLink(template, params, { stopLink, wording, appLink }) === null) {
         return Promise.resolve({ ok: false, transient: false, detail: `template ${template} is missing a param` });
       }
       log.info("messaging_stub_send", {

@@ -2975,6 +2975,34 @@
     "text": "WhatsApp · +91 90079 73247"
   },
   {
+    "key": "site:contact/consentBar.text",
+    "surface": "site",
+    "group": "Contact",
+    "where": "consentBar",
+    "text": "We'd like to measure visits and the ads that bring them, with cookies from Google and Meta. Nothing you type in a form goes to them."
+  },
+  {
+    "key": "site:contact/consentBar.privacy",
+    "surface": "site",
+    "group": "Contact",
+    "where": "consentBar",
+    "text": "How we use your details"
+  },
+  {
+    "key": "site:contact/consentBar.accept",
+    "surface": "site",
+    "group": "Contact",
+    "where": "consentBar",
+    "text": "Allow"
+  },
+  {
+    "key": "site:contact/consentBar.decline",
+    "surface": "site",
+    "group": "Contact",
+    "where": "consentBar",
+    "text": "No thanks"
+  },
+  {
     "key": "site:contact/islandFailed.message",
     "surface": "site",
     "group": "Contact",

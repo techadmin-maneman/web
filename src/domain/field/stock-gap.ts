@@ -18,6 +18,12 @@ export async function fitCode(db: D1Database, personId: string, product: string 
   return matchingCode(await hairSystemSpecs(db), product === null ? fit : { ...fit, product });
 }
 
+/** What a replacement naming no tier is priced for: the product the client wears; null for any other booking. */
+export const replacementWears = (
+  db: D1Database,
+  wanted: { kind: string; tier?: string | undefined; personId: string },
+) => (wanted.kind === "replacement" && wanted.tier === undefined ? wornProduct(db, wanted.personId) : null);
+
 /** The product of the hair system a client wears, as their latest hair profile names it; null with none. */
 export async function wornProduct(db: D1Database, personId: string): Promise<string | null> {
   return (await latestFits(db, [personId])).get(personId)?.product ?? null;

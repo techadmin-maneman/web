@@ -69,3 +69,20 @@ export function retireRefusal(
   if (!hasStandardService(kind)) return null;
   return others.some((other) => other.retiredDate === null && other.pricedBy) ? null : "last_of_kind";
 }
+
+/**
+ * The replacement a client is offered: the one ops price for the hair system they wear, a replacement service under
+ * that product's code, else the standard one, so a product ops have not priced yet costs the single price. Every
+ * other kind's services pass as they are.
+ */
+export function replacementFor<T extends { readonly kind: VisitType; readonly tier: string }>(
+  services: readonly T[],
+  wears: string | null,
+): T[] {
+  const replacements = services.filter((service) => service.kind === "replacement");
+  const theirs =
+    replacements.find((service) => service.tier === wears) ??
+    replacements.find((service) => service.tier === STANDARD_TIER) ??
+    replacements[0];
+  return services.filter((service) => service.kind !== "replacement" || service === theirs);
+}

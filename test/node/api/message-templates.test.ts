@@ -79,7 +79,7 @@ describe("the link that stops a message", () => {
   it("goes on a line of its own at the end of the text, and only when there is one", () => {
     const params = ["Arjun", "Sector 65", "https://maneman.in/book"];
     expect(renderWithStopLink("launch_alert_v1", params)).toBe(renderMessage("launch_alert_v1", params));
-    expect(renderWithStopLink("launch_alert_v1", params, "https://maneman.in/stop#t")).toBe(
+    expect(renderWithStopLink("launch_alert_v1", params, { stopLink: "https://maneman.in/stop#t" })).toBe(
       `${renderMessage("launch_alert_v1", params) ?? ""}\n\nStop these messages: https://maneman.in/stop#t`,
     );
   });
@@ -104,14 +104,17 @@ describe("a message that sends the client to the app", () => {
   it("ends with the app's address, before any stop line, and a message that names no app carries none", () => {
     const params = ["Rohit", "service visit", "Tue 22 Sep", "morning", "Imran"];
     expect(
-      renderWithStopLink("visit_reminder_v1", params, "https://maneman.in/stop#t", {}, "https://app.maneman.in"),
+      renderWithStopLink("visit_reminder_v1", params, {
+        stopLink: "https://maneman.in/stop#t",
+        appLink: "https://app.maneman.in",
+      }),
     ).toBe(
       `${renderMessage("visit_reminder_v1", params) ?? ""}
 Open the app: https://app.maneman.in
 
 Stop these messages: https://maneman.in/stop#t`,
     );
-    expect(renderWithStopLink("deletion_done_v1", ["Rohit"], undefined, {}, "https://app.maneman.in")).toBe(
+    expect(renderWithStopLink("deletion_done_v1", ["Rohit"], { appLink: "https://app.maneman.in" })).toBe(
       renderMessage("deletion_done_v1", ["Rohit"]),
     );
   });

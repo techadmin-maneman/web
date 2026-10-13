@@ -26,6 +26,14 @@ const WHEN_OFF: Partial<Record<ConsentPurpose, string>> = {
 /** Every visit is photographed for the client's record: a line in the list, never a switch. */
 const NO_SWITCH: readonly ConsentPurpose[] = ["photos_own_record"];
 
+function VisitPhotos() {
+  return (
+    <li className={styles.consent}>
+      <p className={styles.consentName}>{profile.visitPhotos}</p>
+    </li>
+  );
+}
+
 /** The consents as the profile holds them, which a switch the API recorded changes there. */
 export function ConsentList({
   consents,
@@ -58,9 +66,7 @@ export function ConsentList({
         {copy.agreed}
       </h2>
       <ul className={styles.consents}>
-        <li className={styles.consent}>
-          <p className={styles.consentName}>{copy.visitPhotos}</p>
-        </li>
+        <VisitPhotos />
         {consents
           .filter((consent) => !NO_SWITCH.includes(consent.purpose))
           .map((consent) => {

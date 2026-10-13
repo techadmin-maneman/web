@@ -178,9 +178,8 @@ async function alertsRetoldJob({ env, deps, config, log }: CronContext): Promise
 
 const deletionAlertsJob = ({ env, deps }: CronContext) => alertAgedDeletions(env.DB, deps.now(), deps.alertOnce);
 
-async function grievanceAlertsJob({ env, deps, config }: CronContext): Promise<void> {
-  await tellOfNewGrievances(env.DB, deps.alert, `${OPS_ORIGIN[config.environment]}/grievances`, deps.now());
-}
+const grievanceAlertsJob = ({ env, deps, config }: CronContext) =>
+  tellOfNewGrievances(env.DB, deps.alert, `${OPS_ORIGIN[config.environment]}/grievances`, deps.now());
 
 /** R2's share and the database fill over months, so an hourly look is enough. */
 async function storageMeterJob({ env, deps, config }: CronContext): Promise<void> {
@@ -260,9 +259,7 @@ async function nextServiceRemindersJob({ env, deps, log, inputs }: CronContext):
 /** What follows a visit, once a visit, from the reminder hour (src/domain/visits/follow-ups.ts). */
 async function followUpsJob({ env, deps, log, inputs }: CronContext): Promise<void> {
   const { checkInDays, reminderHour } = await inputs();
-  const queued = await queueFollowUps(env.DB, deps.now(), checkInDays, reminderHour);
-  await queueMessages({ env, log }, queued, "follow-ups");
-  if (queued.length > 0) log.info("follow_ups_queued", { count: queued.length });
+  await queueMessages({ env, log }, await queueFollowUps(env.DB, deps.now(), checkInDays, reminderHour), "follow-ups");
 }
 
 async function creditRemindersJob({ env, deps, log, inputs }: CronContext): Promise<void> {
@@ -315,9 +312,7 @@ async function booksJob({ env, deps, config, log, budget }: CronContext): Promis
   if (written > 0) log.info("books_synced", done);
 }
 
-async function ailabCreditsJob(context: CronContext): Promise<void> {
-  await checkAilabCredits(context, context.config.settings.tryon.creditFloor);
-}
+const ailabCreditsJob = (context: CronContext) => checkAilabCredits(context, context.config.settings.tryon.creditFloor);
 
 /**
  * Every job, and when it runs (src/scheduled/schedule.ts). Minutes by their place in the five: 1 the WhatsApp bridge, 2 the try-ons and the heartbeat, 3 the holds and Books, 4 the hourly jobs. A run's jobs

@@ -40,7 +40,7 @@ import { bookableService, offeredProducts, type PricedService } from "./services
 import { loadSlotSchedule } from "./slot-times.ts";
 import { termsInForce } from "../visits/visit-changes.ts";
 import { REMAKE_TERMS, remakeBookedStatement, remakesOwed, type Remake } from "./remakes.ts";
-import { wornProduct } from "../field/stock-gap.ts";
+import { replacementWears } from "../field/stock-gap.ts";
 
 /** What ops ask for. */
 export interface VisitAsked {
@@ -94,10 +94,8 @@ type Refused = { readonly ok: false; readonly refusal: Refusal };
 
 const refused = (refusal: Refusal): Refused => ({ ok: false, refusal });
 
-async function isClient(db: D1Database, personId: string): Promise<boolean> {
-  const row = await db.prepare("SELECT 1 FROM people WHERE id = ?1 AND erased_at IS NULL").bind(personId).first();
-  return row !== null;
-}
+const isClient = async (db: D1Database, personId: string): Promise<boolean> =>
+  (await db.prepare("SELECT 1 FROM people WHERE id = ?1 AND erased_at IS NULL").bind(personId).first()) !== null;
 
 /** The days ops may book on: from tomorrow to the horizon ops set. */
 export function bookableRange(now: Date, inputs: Pick<OpsInputs, "nextVisitDays">): { opens: string; last: string } {
@@ -226,8 +224,8 @@ export async function saleFor(
   if (asked.date < opens || asked.date > last) return refused({ status: 422, code: "not_bookable" });
   if (await alreadyToCome(db, asked, now)) return refused({ status: 409, code: "already_booked" });
 
-  const wears = asked.kind === "replacement" && asked.tier === undefined ? await wornProduct(db, asked.personId) : null;
-  const service = await bookableService(db, asked.kind, asked.tier, asked.date, wears);
+  const wears = await replacementWears(db, asked);
+  const service = await bookableService(db, { kind: asked.kind, tier: asked.tier, on: asked.date, wears });
   if (service === null) return refused({ status: 422, code: await noServiceRefusal(db, asked) });
   if (asked.covers !== undefined) {
     const covers = await remakeAsked(db, asked);

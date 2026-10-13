@@ -201,6 +201,13 @@ const PARAM = /\{\{(\d+)\}\}/g;
 /** Whether a message sends the client to the app, and so ends with the app's address. */
 export const sendsToApp = (name: TemplateName): boolean => TEMPLATES[name].includes("Mane Man app");
 
+/** What a message's text may end with, and the words set for it: the app's address, and the link that stops it. */
+export interface TextExtras {
+  readonly stopLink?: string | undefined;
+  readonly appLink?: string | undefined;
+  readonly wording?: Wording | undefined;
+}
+
 /**
  * The text, in the words set if any: then the app's address where it sends the client there, and the line that stops
  * it where the message carries a stop link.
@@ -208,16 +215,13 @@ export const sendsToApp = (name: TemplateName): boolean => TEMPLATES[name].inclu
 export function renderWithStopLink(
   name: TemplateName,
   params: readonly string[],
-  stopLink?: string,
-  wording: Wording = {},
-  appLink?: string,
+  { stopLink, appLink, wording = {} }: TextExtras = {},
 ): string | null {
   const text = renderMessage(name, params, wording.text);
   if (text === null) return null;
-  const withApp =
-    appLink === undefined || !sendsToApp(name) ? text : `${text}\n${renderMessage("app_link_v1", [appLink]) ?? ""}`;
-  if (stopLink === undefined) return withApp;
-  return `${withApp}\n\n${renderMessage("stop_link_v1", [stopLink], wording.stop) ?? ""}`;
+  const app = appLink === undefined || !sendsToApp(name) ? "" : `\n${renderMessage("app_link_v1", [appLink]) ?? ""}`;
+  const stop = stopLink === undefined ? "" : `\n\n${renderMessage("stop_link_v1", [stopLink], wording.stop) ?? ""}`;
+  return `${text}${app}${stop}`;
 }
 
 /**
