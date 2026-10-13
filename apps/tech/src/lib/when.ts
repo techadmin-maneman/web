@@ -8,6 +8,7 @@ import { addDays, indiaClock, todayInIndia as indiaToday } from "@maneman/web-ki
 export const todayInIndia = (now: Date = new Date()): string => indiaToday(now.getTime());
 
 export const dayAfter = (isoDate: string): string => addDays(isoDate, 1);
+export const dayBefore = (isoDate: string): string => addDays(isoDate, -1);
 
 /** "22 Aug", as the job card dates the last visit. */
 export { dayMonth } from "@maneman/web-kit/dates";

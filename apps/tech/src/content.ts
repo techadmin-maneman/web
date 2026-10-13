@@ -45,6 +45,8 @@ export const today = {
   jobs: (count: number) => `${String(count)} ${count === 1 ? "job" : "jobs"} today`,
   first: (time: string, sector: string) => `First at ${time} · ${sector}`,
   tomorrow: (count: number) => `Tomorrow · ${String(count)} ${count === 1 ? "job" : "jobs"}`,
+  /** Yesterday's jobs not yet closed, above today's, so their work can be finished and sent. */
+  leftOpen: (count: number) => `Still open from yesterday · ${String(count)}`,
   signOut: "Sign out",
   empty: {
     label: "No jobs",

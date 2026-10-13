@@ -31,7 +31,7 @@ import { rowState, type RowState } from "../lib/progress.ts";
 import { keepCards, useDay, useNames } from "../lib/useDay.ts";
 import { useOutbox } from "../lib/useOutbox.ts";
 import { useScreen } from "../lib/useScreen.ts";
-import { clock, dayAfter, todayInIndia, where } from "../lib/when.ts";
+import { clock, dayAfter, dayBefore, todayInIndia, where } from "../lib/when.ts";
 import { useSession } from "../session.ts";
 import { Failed, Loading } from "../states/States.tsx";
 import { keptStates } from "../store/jobs.ts";
@@ -52,6 +52,13 @@ function stateOf(job: JobSummary, queued: readonly Queued[], heard: ReadonlyMap<
   const state = rowState(job, queued, heard.get(job.id));
   return state === null ? null : ROW_STATES[state];
 }
+
+/** Yesterday's jobs not yet closed that the phone has work for: begun, or with steps still to send. */
+const stillOpen = (jobs: readonly JobSummary[], queued: readonly Queued[]): JobSummary[] =>
+  jobs.filter(
+    (job) =>
+      job.status === "dispatched" || job.status === "in_progress" || queued.some((event) => event.job_id === job.id),
+  );
 
 /** The client's name from the day's list, else from the card the phone kept, for a day kept before the list had names. */
 const clientOf = (job: JobSummary, kept: ReadonlyMap<string, string>): string | undefined =>
@@ -208,6 +215,7 @@ export function TodayScreen() {
   const date = todayInIndia();
   const [day, retry] = useDay(date);
   const [tomorrow] = useDay(dayAfter(date));
+  const [yesterday] = useDay(dayBefore(date));
   const waiting = useOutbox();
   const [leaving, setLeaving] = useState<Leaving>(null);
 
@@ -225,6 +233,7 @@ export function TodayScreen() {
 
   const jobs = day.state === "loaded" ? day.value : [];
   const tomorrowJobs = tomorrow.state === "loaded" ? tomorrow.value : [];
+  const leftOpen = yesterday.state === "loaded" ? stillOpen(yesterday.value, waiting.events) : [];
   const names = useKeptCards(day, tomorrow);
 
   return (
@@ -287,6 +296,14 @@ export function TodayScreen() {
         <Failed message={copy.failed} retry={copy.retry} onRetry={retry} requestId={day.requestId} />
       )}
 
+      {leftOpen.length > 0 && (
+        <section aria-labelledby="today-left-open">
+          <h2 className={capsLook(styles.leftOpen)} id="today-left-open">
+            {copy.leftOpen(leftOpen.length)}
+          </h2>
+          <Jobs jobs={leftOpen} names={names} queued={waiting.events} heard={heard} />
+        </section>
+      )}
       {day.state === "loaded" && jobs.length === 0 && <EmptyDay tomorrowJobs={tomorrowJobs} />}
       {jobs.length > 0 && <Jobs jobs={jobs} names={names} queued={waiting.events} heard={heard} />}
       {tomorrowJobs.length > 0 && <Tomorrow jobs={tomorrowJobs} names={names} queued={waiting.events} heard={heard} />}
