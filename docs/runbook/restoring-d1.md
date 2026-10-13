@@ -12,7 +12,7 @@ D1 Time Travel can put the database back to any minute in the last thirty days, 
 2. **Repair from an earlier minute**, when you need what the damaged rows held before: go back, copy the damaged tables, and come straight forward again. Every other table stays as it is now.
 3. **Restore the whole database**, only when the database itself is broken: tables dropped, or damage in more places than you can name. Everything since that minute is undone, and you carry back what can be trusted.
 
-The last two need `<T>`: the last good minute, in UTC, e.g. `2026-09-27T10:04:00Z`. `W d1 time-travel info maneman-<env> --env <env> --timestamp <T>` shows its bookmark. Work in `private/restore/`, which git ignores: what goes there holds personal data and the Zoho access tokens, and is deleted when you are done. `W d1 export` prints a link that downloads the whole database for an hour, so its output goes to `/dev/null`, as below, and never into a log or a chat.
+The last two need `<T>`: the last good minute, in UTC, e.g. `2026-09-27T10:04:00Z`. `W d1 time-travel info maneman-<env> --env <env> --timestamp <T>` shows its bookmark. Each `time-travel restore` below passes `--json`: without it the command asks to confirm, and run from a script it answers no for you, restores nothing and still succeeds. Work in `private/restore/`, which git ignores: what goes there holds personal data and the Zoho access tokens, and is deleted when you are done. `W d1 export` prints a link that downloads the whole database for an hour, so its output goes to `/dev/null`, as below, and never into a log or a chat.
 
 Both run the Workers on the earlier database for a minute or two, so:
 
@@ -42,13 +42,12 @@ Anything written while the Workers are on the earlier database is lost when you 
 ```sh
 mkdir -p private/restore
 # 1. Switch maintenance on, and pause the queues (above).
-# 2. Go back, and switch maintenance on again. Keep the bookmark it prints after "To undo this operation":
-#    it is the database as it is now.
-W d1 time-travel restore maneman-<env> --env <env> --timestamp <T> && W d1 execute maneman-<env> --env <env> --remote --command "$on"
+# 2. Go back, and switch maintenance on again. Keep the "previous_bookmark" it prints: it is the database as it is now.
+W d1 time-travel restore maneman-<env> --env <env> --timestamp <T> --json && W d1 execute maneman-<env> --env <env> --remote --command "$on"
 # 3. Copy the damaged tables as they were then.
 W d1 export maneman-<env> --env <env> --remote --no-schema --table <table> --table <table> --output private/restore/at-T.sql > /dev/null
 # 4. Come straight back. The switch is on there, as you set it in step 1.
-W d1 time-travel restore maneman-<env> --env <env> --bookmark <the bookmark from step 2>
+W d1 time-travel restore maneman-<env> --env <env> --bookmark <the bookmark from step 2> --json
 # 5. Switch maintenance off, and resume the queues.
 ```
 
@@ -89,8 +88,8 @@ mkdir -p private/restore
 W d1 export maneman-<env> --env <env> --remote --output private/restore/now.sql > /dev/null
 # 3. Build the carry-back file. Name each table the restore is for with --leave: it stays as it was at <T>.
 node scripts/release/restore-carry.ts private/restore/now.sql private/restore/carry.sql --leave <table>
-# 4. Go back, and switch maintenance on again. Keep the bookmark it prints: restoring to it undoes this.
-W d1 time-travel restore maneman-<env> --env <env> --timestamp <T> && W d1 execute maneman-<env> --env <env> --remote --command "$on"
+# 4. Go back, and switch maintenance on again. Keep the "previous_bookmark" it prints: restoring to it undoes this.
+W d1 time-travel restore maneman-<env> --env <env> --timestamp <T> --json && W d1 execute maneman-<env> --env <env> --remote --command "$on"
 # 5. Carry back what can be trusted.
 W d1 execute maneman-<env> --env <env> --remote --file private/restore/carry.sql
 # 6. Check the database is still this environment's.
@@ -98,15 +97,15 @@ node scripts/release/mark-database.ts <env> --check
 # 7. Switch maintenance off, resume the queues, and run the smoke suite.
 ```
 
-`scripts/release/restore-carry.ts` reads the tables and their triggers from the export itself, and prints how it treats each. Its file empties each table and fills it again as it was a moment ago, except that:
+`scripts/release/restore-carry.ts` reads the tables and their triggers from the export itself, and prints how it treats each. Its file makes each table as it was a moment ago: rows changed since `<T>` put back, rows added since added, rows gone since deleted. Except that:
 
 - a table that refuses a delete, such as `consents`, `audit_log`, `credit_ledger` or `hair_profiles`, only gains the rows it lacks, and its rows changed since are changed to match, so a hair profile an erasure blanked is blanked again;
-- a table triggers write to, such as `last_visits` or `stock_balances`, is written last, as the export had it;
+- a table triggers write to, such as `last_visits` or `stock_balances`, is matched again last, as the export had it;
 - `d1_migrations`, `deployment_identity` and the maintenance switch are never touched.
 
 `test/worker/platform/restore-carry.test.ts` runs the same steps on a row in every table, so a migration the carry-back cannot pass fails its pull request.
 
-A table dropped since `<T>` is not in `now.sql`, so it stays as it was at `<T>`, named or not. The file runs whole or not at all. It fails, and changes nothing, when a migration ran after `<T>`, as its rows then name tables or columns the restored database lacks (leave out the tables that migration changed), or when a table left at `<T>` points at a row a carried table no longer has (carry it too, or leave out the one it points at). Anything written between the restore and the carry-back is lost.
+A table dropped since `<T>` is not in `now.sql`, so it stays as it was at `<T>`, named or not. The file runs whole or not at all: D1 loads it as several transactions, checking foreign keys at the end of each, so each of its statements leaves them whole, and D1 rolls the file back if one fails. It fails, and changes nothing, when a migration ran after `<T>`, as its rows then name tables or columns the restored database lacks (leave out the tables that migration changed), or when a table left at `<T>` points at a row a carried table no longer has (carry it too, or leave out the one it points at). Anything written between the restore and the carry-back is lost.
 
 Then:
 
@@ -128,6 +127,8 @@ Every Sunday between 3 and 4 am in India, mm-api writes the whole database to th
 
 **The keys, once:** `node scripts/ops/backup-keys.ts --private private/backup-key.pem` prints the public key: `W secret put BACKUP_PUBLIC_KEY --env <env>` for each environment. Move the private key into the owner's password manager and delete the file. A key lost is every backup lost; a key leaked is every backup readable, so make a new pair and set the new public key.
 
+**A backup now,** the first once the key is set and one before each release: `node scripts/ops/backup-now.ts --env <env> --public-key <file>`, the file holding the public key. It runs the Sunday job's own code from your laptop, under today's date, in about two minutes on staging.
+
 **Reading one back,** with the private key saved to a file in `private/restore/` for the length of the job:
 
 ```sh
@@ -135,4 +136,4 @@ W r2 object list mm-prod-backups --remote            # the dates there are
 node scripts/ops/restore-backup.ts --env production --date <YYYY-MM-DD> --key private/restore/backup-key.pem --out private/restore/backup.sql
 ```
 
-The SQL builds every table as it was and fills it. Load it into an empty database, never over the live one: a new D1 (`W d1 create maneman-restore-<date>`, then `W d1 execute maneman-restore-<date> --remote --file private/restore/backup.sql`), or locally with `sqlite3 restore.db < private/restore/backup.sql`. Copy what you need from there into the live database as in "Repair from an earlier minute", above. Delete `private/restore/`, and the restore database, when you are done.
+The SQL builds every table as it was, fills it, each table after those it points at, then builds the indexes, triggers and views. Load it into an empty database, never over the live one: a new D1 (`W d1 create maneman-restore-<date>`, then `W d1 execute maneman-restore-<date> --remote --file private/restore/backup.sql`), or locally with `sqlite3 restore.db < private/restore/backup.sql`. Copy what you need from there into the live database as in "Repair from an earlier minute", above. Delete `private/restore/`, and the restore database, when you are done.

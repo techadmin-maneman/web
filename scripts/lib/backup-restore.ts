@@ -3,6 +3,9 @@
 
 import { gunzipSync } from "node:zlib";
 import { z } from "zod";
+import { parentsFirst } from "../../src/lib/parents-first.ts";
+import type { ForeignKey } from "./restore-carry.ts";
+import { keysOf } from "./schema-keys.ts";
 
 export const Manifest = z.object({
   format: z.literal(1),
@@ -10,6 +13,7 @@ export const Manifest = z.object({
   created_at: z.string(),
   wrapped_key: z.string(),
   schema: z.array(z.object({ name: z.string(), sql: z.string() })),
+  after_rows: z.array(z.object({ name: z.string(), sql: z.string() })).default([]),
   tables: z.array(z.object({ name: z.string(), rows: z.number(), object: z.string(), iv: z.string() })),
 });
 export type Manifest = z.infer<typeof Manifest>;
@@ -69,21 +73,50 @@ function literal(value: unknown): string {
   return `'${text.replaceAll("'", "''")}'`;
 }
 
+type Row = Readonly<Record<string, unknown>>;
+
+/** A table's rows, each after any row of the same table it points at. */
+function selfOrdered(rows: readonly Row[], keys: readonly ForeignKey[]): readonly Row[] {
+  if (keys.length === 0) return rows;
+  const targets = keys.map((key) => new Map(rows.map((row) => [row[key.to], row])));
+  const seen = new Set<Row>();
+  const ordered: Row[] = [];
+  const place = (row: Row): void => {
+    if (seen.has(row)) return;
+    seen.add(row);
+    keys.forEach((key, index) => {
+      const target = row[key.from] === null ? undefined : targets[index]?.get(row[key.from]);
+      if (target !== undefined) place(target);
+    });
+    ordered.push(row);
+  };
+  for (const row of rows) place(row);
+  return ordered;
+}
+
 /**
- * SQL that rebuilds the backup in an empty database: every table as it was made, then its rows. Foreign keys are
- * checked once the file has loaded, as in D1's own exports, since the tables come in name order rather than the order
- * they point at each other; D1 loads a file as one transaction.
+ * SQL that rebuilds the backup in an empty database: every table as it was made; the rows, each after the rows it
+ * points at, since D1 loads a long file as several transactions and checks foreign keys at the end of each; then the
+ * indexes, triggers and views, which a load would otherwise slow or set off.
  */
-export function sqlFor(manifest: Manifest, rows: ReadonlyMap<string, readonly Record<string, unknown>[]>): string {
+export function sqlFor(manifest: Manifest, rows: ReadonlyMap<string, readonly Row[]>): string {
+  const keys = new Map(
+    [...keysOf(manifest.schema.map((table) => table.sql))].map(([name, { foreignKeys }]) => [name, foreignKeys]),
+  );
+  const order = parentsFirst(
+    manifest.tables.map(({ name }) => ({ name, parents: (keys.get(name) ?? []).map((key) => key.table) })),
+  );
   const lines = ["PRAGMA defer_foreign_keys = TRUE;"];
   for (const table of manifest.schema) lines.push(`${table.sql};`);
-  for (const table of manifest.tables) {
-    for (const row of rows.get(table.name) ?? []) {
+  for (const name of order) {
+    const own = (keys.get(name) ?? []).filter((key) => key.table === name);
+    for (const row of selfOrdered(rows.get(name) ?? [], own)) {
       const columns = Object.keys(row);
       lines.push(
-        `INSERT INTO ${quoted(table.name)} (${columns.map(quoted).join(", ")}) VALUES (${columns.map((column) => literal(row[column])).join(", ")});`,
+        `INSERT INTO ${quoted(name)} (${columns.map(quoted).join(", ")}) VALUES (${columns.map((column) => literal(row[column])).join(", ")});`,
       );
     }
   }
+  for (const each of manifest.after_rows) lines.push(`${each.sql};`);
   return `${lines.join("\n")}\n`;
 }

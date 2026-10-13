@@ -49,7 +49,7 @@ Nothing here needs a release. The first two have dates.
 
 - [ ] **Production's AILabTools key** (item 153): `W secret put AILAB_API_KEY --env production`, with a key of production's own.
 - [ ] **Staging's refund account:** the owner's "Razorpay – staging test" ID as `BOOKS_REFUND_ACCOUNT_ID` in `env.staging.vars`, released through CI (item 10).
-- [ ] **The weekly backup** (RB, "Restoring D1", "From a weekly backup"): the key pair, its public key as staging's and production's `BACKUP_PUBLIC_KEY`, the private key in the owner's password manager. Production's `mm-prod-backups` bucket must exist before the next production release, which binds it.
+- [ ] **The weekly backup** (RB, "Restoring D1", "From a weekly backup"): the key pair made and its public key set as staging's and production's `BACKUP_PUBLIC_KEY`, and `mm-prod-backups` made, on 13 October 2026. Left: the private key in the owner's password manager, and its file deleted. Production's first backup is one by hand with `backup-now.ts` just before its first release.
 - [ ] **Error tracking** (RB, "The outside watchers", point 4): a Sentry project for staging and one for production, on the free plan, each DSN as that environment's `SENTRY_DSN`.
 - [ ] **Staging's cron heartbeat** (RB, "The outside watchers", point 1): a healthchecks.io check, its ping URL as staging's `HEARTBEAT_URL`; and Account Analytics: Read on `mm-ci-staging`, so each staging deploy reports mm-api's CPU time (provisioning, step 6).
 
@@ -71,6 +71,7 @@ Each is written up in `docs/verification.md` when it passes. The payment run is 
   11. Book and pay one for tomorrow's first window, then cancel: the payment is kept, and the app says so.
   12. Give the client a credit in the console and book a service visit: "Credit covers it"; cancel it more than 24 hours out and the credit comes back.
   13. Read every open alert (RB, "Alerts and the cron"), check Razorpay's webhook deliveries all succeeded, and list every Zoho record the run made, for item 19's clean-up.
+- [ ] **A restore drill** within the month before launch: the three ways back in RB, "Restoring D1", timed again on staging and written up beside the drill of 13 October 2026.
 - [ ] **A technician's writes** (item 57): one job each closed in the app as done, partial and no-show, and one reassignment, read back in the console; the done job's consumables out of his kit on the Stock page (ADR 0087).
 - [ ] **The field test** (item 72) with the first technician and the owner, on his own phone: it tunes the check-in radius (item 56).
 - [ ] **A try-on on a mid-range Android phone over mobile data**, and staging's `alerts` read after a day (item 91).

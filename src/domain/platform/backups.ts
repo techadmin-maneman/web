@@ -4,6 +4,7 @@
 // the manifest goes last, so a backup cut short is never taken for a whole one.
 
 import { addDays, indiaDate } from "../../lib/india-time.ts";
+import { parentsFirst } from "../../lib/parents-first.ts";
 
 const KEEP_WEEKS = 13;
 const PAGE_ROWS = 1000;
@@ -21,16 +22,30 @@ interface Table {
   readonly sql: string;
 }
 
-/** Every table of ours: Cloudflare's own and SQLite's left out. */
-async function tablesOf(db: D1Database): Promise<Table[]> {
+interface Schema {
+  /** In reading order: each table before those it points at, so every row read finds the row it points at still there. */
+  readonly tables: readonly Table[];
+  /** The indexes, triggers and views, built once the rows are in. */
+  readonly afterRows: readonly Table[];
+}
+
+/** Everything of ours in the database: Cloudflare's own and SQLite's left out. */
+async function schemaOf(db: D1Database): Promise<Schema> {
   const { results } = await db
     .prepare(
-      `SELECT name, sql FROM sqlite_master
-       WHERE type = 'table' AND name NOT LIKE 'sqlite\\_%' ESCAPE '\\' AND name NOT LIKE '\\_cf\\_%' ESCAPE '\\'
-       ORDER BY name`,
+      `SELECT m.type, m.name, m.sql, group_concat(f."table") AS parents
+       FROM sqlite_master m LEFT JOIN pragma_foreign_key_list(m.name) f
+       WHERE m.sql IS NOT NULL AND m.name NOT LIKE 'sqlite\\_%' ESCAPE '\\' AND m.name NOT LIKE '\\_cf\\_%' ESCAPE '\\'
+       GROUP BY m.rowid ORDER BY m.rowid`,
     )
-    .all<Table>();
-  return results;
+    .all<Table & { type: string; parents: string | null }>();
+  const tables = results.filter((each) => each.type === "table");
+  const byName = new Map(tables.map(({ name, sql }) => [name, { name, sql }]));
+  const order = parentsFirst(tables.map(({ name, parents }) => ({ name, parents: parents?.split(",") ?? [] })));
+  return {
+    tables: order.toReversed().flatMap((name) => byName.get(name) ?? []),
+    afterRows: results.filter((each) => each.type !== "table").map(({ name, sql }) => ({ name, sql })),
+  };
 }
 
 const quoted = (name: string): string => `"${name.replaceAll('"', '""')}"`;
@@ -100,7 +115,7 @@ export async function writeBackup(input: {
   if ((await bucket.head(`${prefix}${MANIFEST}`)) !== null) return "already";
   const key = await backupKey();
   const wrapped = await crypto.subtle.wrapKey("raw", key, await wrappingKey(input.publicKey), { name: "RSA-OAEP" });
-  const tables = await tablesOf(db);
+  const { tables, afterRows } = await schemaOf(db);
   const written: { name: string; rows: number; object: string; iv: string }[] = [];
   for (const table of tables) {
     const rows = await rowsOf(db, table);
@@ -118,6 +133,7 @@ export async function writeBackup(input: {
     encryption: "AES-256-GCM, its key wrapped by RSA-OAEP with SHA-256",
     wrapped_key: base64(wrapped),
     schema: tables,
+    after_rows: afterRows,
     tables: written,
   };
   await bucket.put(`${prefix}${MANIFEST}`, JSON.stringify(manifest, null, 2), {

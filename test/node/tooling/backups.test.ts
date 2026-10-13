@@ -64,6 +64,16 @@ describe("the weekly backup", () => {
     sqlite
       .prepare("INSERT INTO people (id, created_at, mobile_e164, name) VALUES ('p1', '2026-10-01', '+919810000001', ?)")
       .run("Rohit O'Brien");
+    // Rows that load only in the right order: an address, whose table sorts before the people it points at, and a
+    // kit pointing at another kit written after it.
+    sqlite.exec(`
+      INSERT INTO addresses (id, person_id, created_at, line1, locality, city, pincode)
+        VALUES ('a1', 'p1', '2026-10-01', '4 Lodhi Road', 'Lodhi Colony', 'Delhi', '110003');
+      INSERT INTO stock_places (id, kind, name, created_by, created_at)
+        VALUES ('w1', 'warehouse', 'Okhla', 'admin', '2026-10-01');
+      INSERT INTO stock_places (id, kind, parent_id, technician_id, created_by, created_at)
+        VALUES ('k1', 'kit', 'w1', 't1', 'admin', '2026-10-01'), ('k2', 'kit', 'w1', 't2', 'admin', '2026-10-01');
+      UPDATE stock_places SET parent_id = 'k2' WHERE id = 'k1';`);
     const { bucket, objects } = memoryBucket();
     const { publicKey, pem } = await keyPair();
 
@@ -93,11 +103,22 @@ describe("the weekly backup", () => {
     }
     expect(rows.get("people")).toEqual([expect.objectContaining({ id: "p1", name: "Rohit O'Brien" })]);
 
+    // Read children first: a row added while the backup runs cannot be missing the row it points at.
+    const read = manifest.tables.map((table) => table.name);
+    expect(read.indexOf("visits")).toBeLessThan(read.indexOf("people"));
+
+    // D1 loads a long file as several transactions; the strictest split checks every statement as it lands.
     const restored = new DatabaseSync(":memory:");
-    // As D1 loads a file: in one transaction, its foreign keys checked at the end.
-    restored.exec(`BEGIN;
-${sqlFor(manifest, rows)}COMMIT;`);
+    restored.exec(sqlFor(manifest, rows));
     expect(restored.prepare("SELECT name FROM people WHERE id = 'p1'").get()).toEqual({ name: "Rohit O'Brien" });
+    expect(restored.prepare("SELECT parent_id FROM stock_places WHERE id = 'k1'").get()).toEqual({ parent_id: "k2" });
+    const counts = (database: DatabaseSync) =>
+      database
+        .prepare(
+          "SELECT type, count(*) AS n FROM sqlite_master WHERE sql IS NOT NULL AND name NOT LIKE 'sqlite_%' GROUP BY type",
+        )
+        .all();
+    expect(counts(restored)).toEqual(counts(sqlite));
     const tables = (
       sqlite
         .prepare("SELECT count(*) AS n FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'")

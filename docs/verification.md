@@ -71,6 +71,29 @@ The runbook's "Rolling back a Worker version" on `mm-site-staging`, between two 
 
 `wrangler deployments list` records both, with their messages. What a release does when Cloudflare drops a reply (an upload that landed is not made twice; a split is checked before failing) needs Cloudflare to drop one, so it is proven against a fake account in `test/node/tooling/release.test.ts`, not live.
 
+### A restore drill on staging, 13 October 2026
+
+Each way back in the runbook's "Restoring D1", on `maneman-staging` (137 tables, 18,359 rows), with wrangler 4.149.0. Times are wall-clock from a laptop in India.
+
+| Drill                         | What was done                                                                                                                              | Time                                                         | Result                                                                                                                     |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------- |
+| The weekly backup             | `BACKUP_PUBLIC_KEY` set on staging and production; `backup-now.ts --env staging` wrote 137 tables to `mm-staging-backups/2026-10-13/`      | 1 min 56 s                                                   | **pass**                                                                                                                   |
+| A backup into a scratch D1    | `restore-backup.ts`, then the SQL loaded into a new D1, compared with staging and deleted                                                  | 58 s to decrypt, 14 s to load                                | **pass**: every table's rows as staging's; 220 indexes, 60 triggers and the view; no foreign key broken; migrations at 162 |
+| Repair from an earlier minute | A test client's name overwritten at 16:08:43 UTC; `people` copied from 16:08:37 and the name put back                                      | 70 s for the steps, about 35 s of it on the earlier database | **pass**: one row changed                                                                                                  |
+| Restore the whole database    | A test lead deleted at 16:12:33; back to 16:12:27 with `leads` left there, everything else carried back; identity checked; smoke suite run | 1 min 51 s, about 70 s of it on the earlier database         | **pass** at the second attempt: the lead back, every other table as the export had it                                      |
+
+What the drill found, each fixed with it:
+
+1. **A backup would not load.** D1 loads a long file as several transactions and checks foreign keys at the end of each, so `PRAGMA defer_foreign_keys` holds only within one: a 10 MB file whose one parent row came last failed, a five-line one passed. The restore SQL wrote tables in name order. It now writes each table after the tables it points at, and each row after any row of its own table it points at.
+2. **The whole restore's carry-back failed** for the same reason, and D1 rolled it back. Going forward to the bookmark the restore printed put staging back as it was. The carry-back emptied each table and filled it again; it now loads the export into bare copies, matches each table to its copy in single statements, parents first, then deletes the rows gone since, children first. Its test runs the file a statement at a time.
+3. **A backup lacked the indexes, triggers and views**, so a database rebuilt from one would have lost every unique index and every guard. The backup now carries them, and the restore builds them once the rows are in.
+4. **A backup read tables in name order** while the database was in use, so a row added during it could point at a row read earlier, before it existed. It now reads each table before the tables it points at.
+5. **`wrangler d1 time-travel restore` asks to confirm**, and away from a terminal takes the default, no: it restores nothing and exits 0. The runbook's commands pass `--json`, which restores without asking and prints the bookmark that undoes it.
+6. **A backup could be taken only by the Sunday job.** `scripts/ops/backup-now.ts` runs the job's own code from a laptop: the first backup once the key is set, and one before each release.
+7. **The decrypt stopped at a dropped connection**, which happened, after starting a wrangler process for each of the 137 tables. It now reads the bucket over one connection and tries each object three times.
+
+The next drill is a go-live gate (`docs/go-live.md`).
+
 ## M2: lead path
 
 Merged in PR #3. Fixes from the staging proof: PR #4 (Zoho call timing, 20-second timeout, a quick retry) and PR #5 (the checker confirms `D1_Person_ID` is unique).

@@ -1,7 +1,8 @@
 // How the carry-back reads an export's schema. test/worker/platform/restore-carry.test.ts runs it on the real one.
 
 import { describe, expect, it } from "vitest";
-import { carryBack } from "../../../scripts/lib/restore-carry.ts";
+import { carryBack as carryBackWith, createTablesIn } from "../../../scripts/lib/restore-carry.ts";
+import { keysOf } from "../../../scripts/lib/schema-keys.ts";
 
 const lines = (...statements: string[]) => statements.join("\n");
 
@@ -18,7 +19,7 @@ const EXPORT = lines(
   "  name TEXT NOT NULL",
   ");",
   `INSERT INTO "people" ("id","name") VALUES('p1',replace('Arjun\\nD''Souza','\\n',char(10)));`,
-  'CREATE TABLE IF NOT EXISTS "consents" (id TEXT PRIMARY KEY, person_id TEXT NOT NULL);',
+  'CREATE TABLE IF NOT EXISTS "consents" (id TEXT PRIMARY KEY, person_id TEXT NOT NULL REFERENCES people (id));',
   `INSERT INTO "consents" ("id","person_id") VALUES('c1','p1');`,
   "CREATE TABLE stock (code TEXT PRIMARY KEY, quantity INTEGER NOT NULL);",
   "CREATE TABLE balances (code TEXT PRIMARY KEY, quantity INTEGER NOT NULL);",
@@ -38,12 +39,16 @@ const EXPORT = lines(
   "END;",
 );
 
+/** The carry-back, with the keys the runbook's script reads from the export. */
+const carryBack = (exported: string, leave?: readonly string[]) =>
+  carryBackWith(exported, keysOf(createTablesIn(exported)), leave);
+
 describe("the carry-back file", () => {
   it("reads which tables refuse a delete and which a trigger writes to", () => {
     const carry = carryBack(EXPORT);
     expect(carry.addOnly).toEqual(["consents"]);
     expect(carry.writtenByTriggers).toEqual(["balances"]);
-    expect(carry.rewritten).toEqual(["people", "stock"]);
+    expect(carry.matched).toEqual(["people", "stock", "balances"]);
   });
 
   it("never touches the migrations, the database's identity, the maintenance switch or SQLite's own tables", () => {
@@ -53,16 +58,40 @@ describe("the carry-back file", () => {
     }
   });
 
-  it("empties and writes again, adds where a delete is refused, and writes the trigger-written tables last", () => {
-    expect(carryBack(EXPORT).statements).toEqual([
-      "PRAGMA defer_foreign_keys = true;",
-      'DELETE FROM "people";',
-      'DELETE FROM "stock";',
-      `INSERT INTO "people" ("id","name") VALUES('p1',replace('Arjun\\nD''Souza','\\n',char(10)));`,
-      `INSERT INTO "consents" ("id","person_id") VALUES('c1','p1') ON CONFLICT DO UPDATE SET "id" = excluded."id", ` +
-        `"person_id" = excluded."person_id" WHERE "id" IS NOT excluded."id" OR "person_id" IS NOT excluded."person_id";`,
-      'DELETE FROM "balances";',
-      `INSERT INTO "balances" ("code","quantity") VALUES('strip',100);`,
+  it("matches each table after those it points at, deletes what is gone, and matches trigger-written tables last", () => {
+    const statements = carryBack(EXPORT).statements;
+    const at = (start: string) => statements.findIndex((statement) => statement.startsWith(start));
+    // The rows land first in bare copies, which no key, check or trigger watches.
+    expect(statements.slice(0, 6)).toEqual([
+      'CREATE TABLE "restore_carry_people" AS SELECT * FROM "people" WHERE 0;',
+      'CREATE TABLE "restore_carry_consents" AS SELECT * FROM "consents" WHERE 0;',
+      'CREATE TABLE "restore_carry_balances" AS SELECT * FROM "balances" WHERE 0;',
+      `INSERT INTO "restore_carry_people" ("id","name") VALUES('p1',replace('Arjun\\nD''Souza','\\n',char(10)));`,
+      `INSERT INTO "restore_carry_consents" ("id","person_id") VALUES('c1','p1');`,
+      `INSERT INTO "restore_carry_balances" ("code","quantity") VALUES('strip',100);`,
+    ]);
+    // A table's rows changed to match, then added, in plain statements its triggers' own conflict handling still holds in.
+    expect(statements).toContain(
+      'UPDATE "people" SET "name" = copy."name" FROM "restore_carry_people" AS copy ' +
+        'WHERE "people"."id" = copy."id" AND ("people"."name" IS NOT copy."name");',
+    );
+    expect(statements).toContain(
+      'INSERT INTO "people" ("id", "name") SELECT "id", "name" FROM "restore_carry_people" AS copy ' +
+        'WHERE NOT EXISTS (SELECT 1 FROM "people" WHERE "people"."id" = copy."id");',
+    );
+    expect(at('INSERT INTO "people"')).toBeLessThan(at('INSERT INTO "consents"'));
+    // Gone since <T>: deleted, but never from a table that refuses a delete; a table the export has empty, emptied.
+    expect(statements).toContain('DELETE FROM "people" WHERE ("id") NOT IN (SELECT "id" FROM "restore_carry_people");');
+    expect(statements).toContain('DELETE FROM "stock";');
+    expect(statements.some((statement) => statement.startsWith('DELETE FROM "consents"'))).toBe(false);
+    // The tables triggers write to are matched again once every other table is.
+    expect(statements.findLastIndex((statement) => statement.startsWith('INSERT INTO "balances"'))).toBeGreaterThan(
+      at('DELETE FROM "people"'),
+    );
+    expect(statements.slice(-3)).toEqual([
+      'DROP TABLE "restore_carry_people";',
+      'DROP TABLE "restore_carry_consents";',
+      'DROP TABLE "restore_carry_balances";',
     ]);
   });
 
