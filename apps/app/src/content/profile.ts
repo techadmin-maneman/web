@@ -1,7 +1,8 @@
 // The profile: the address, what the client has agreed to, and the account.
 
 /** What every visit's photographs are. PLACEHOLDER: awaits counsel (docs/open-points.md, item 69). */
-export const VISIT_PHOTOS = "Photos at every visit: five angles, for your record. Only you and your technician see them.";
+export const VISIT_PHOTOS =
+  "Photos at every visit: five angles, for your record. Only you and your technician see them.";
 
 export const profile = {
   back: "Back",

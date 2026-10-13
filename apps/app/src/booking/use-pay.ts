@@ -50,9 +50,7 @@ async function showPriceInstead(holdId: string, context: Paying): Promise<void> 
 async function startPaying(hold: Hold, context: Paying, refs: Refs): Promise<Paid | null> {
   await context.beforeStarting();
   const started =
-    context.movingId === undefined
-      ? await api.book(hold.id)
-      : await api.startMove(context.movingId, hold.id);
+    context.movingId === undefined ? await api.book(hold.id) : await api.startMove(context.movingId, hold.id);
   if (!started.ok) {
     if (started.code === "hold_expired") context.dispatch({ kind: "lapsed" });
     else context.setProblem(booking.failedToStart);

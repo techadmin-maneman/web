@@ -88,7 +88,9 @@ describe("choosing a service", () => {
       .run();
     const homeReplacements = async () =>
       (
-        await (await request(app, "/api/me", { headers: { Cookie: rohit.cookie } })).json<{
+        await (
+          await request(app, "/api/me", { headers: { Cookie: rohit.cookie } })
+        ).json<{
           booking: { services: { type: string; tier: string }[] };
         }>()
       ).booking.services.filter((each) => each.type === "replacement");
