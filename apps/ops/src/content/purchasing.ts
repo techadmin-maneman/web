@@ -179,6 +179,7 @@ export const purchasing = {
     rupee_rate: "Give the rupee rate for this currency.",
     order_state: "That order has moved on. Reload.",
     same_approver: "You gave its first approval. Another Operations manager gives the second.",
+    custom_order: "A client's custom order is on this order. Cancel the custom order, which refunds them.",
     claim_state: "That claim has moved on. Reload.",
     return_settled: "That piece is settled already. Reload.",
     out_of_warranty: "Its warranty has ended. Write it off instead.",

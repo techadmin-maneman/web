@@ -292,6 +292,7 @@ export const written = (c: Context<AppEnv>) => ({
 export async function after(c: Context<AppEnv>, changed: Awaited<ReturnType<typeof markSent>>) {
   if (changed.ok) return c.json(await ordersAnswer(c), 200);
   if ("missing" in changed) return refuse(c, "not_found");
+  if ("customOrder" in changed) return refuse(c, "custom_order");
   return refuse(c, "sameApprover" in changed ? "same_approver" : "order_state");
 }
 

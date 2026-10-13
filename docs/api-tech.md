@@ -1232,6 +1232,7 @@ Request body:
             "transfer_settled",
             "order_state",
             "same_approver",
+            "custom_order",
             "claim_state",
             "return_settled",
             "out_of_warranty",

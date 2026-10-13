@@ -418,9 +418,11 @@ export const PERSONAL_COLUMNS: Readonly<Record<string, PersonalTable>> = {
       "consumable_code",
       "po_id",
       "raised_by",
+      "refund_asked_at",
+      "payment_checked_at",
     ],
     whyLeftOut:
-      "Our and Razorpay's keys, the supplier and what it charges us, the stock code and order it was bought on, and ops' note and who raised it, which are our own record.",
+      "Our and Razorpay's keys, the supplier and what it charges us, the stock code and order it was bought on, ops' note and who raised it, and when we asked Razorpay of its refund and its payment, which are our own record.",
     erasure: {
       blanks: ["note", "short_url"],
       why: "Ops' note and the payment link's address go; the order stays with the payment it took.",

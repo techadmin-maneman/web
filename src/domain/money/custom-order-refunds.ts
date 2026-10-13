@@ -8,7 +8,7 @@ import type { PaymentsProvider } from "../../providers/payments/index.ts";
 import { auditStatement } from "../ops/audit.ts";
 import { paymentsTab, type AlertOnce } from "../ops/alerts.ts";
 import type { Written } from "../field/stock.ts";
-import { askRefund, refundLeftToOps } from "./refunds.ts";
+import { askRefund, refundLeftToOps, refundReceipt } from "./refunds.ts";
 
 export const REFUND_REASONS = ["not_ordered", "late", "failed_check"] as const;
 export type RefundReason = (typeof REFUND_REASONS)[number];
@@ -26,6 +26,7 @@ type PaidRow = {
   promised_on: string | null;
   razorpay_payment_id: string | null;
   refunded_at: string | null;
+  refund_asked_at: string | null;
   po_id: string | null;
   po_state: string | null;
   failed_check: number;
@@ -49,7 +50,8 @@ export async function refundCustomOrder(
 ): Promise<CustomRefund> {
   const order = await db
     .prepare(
-      `SELECT k.number, k.person_id, k.amount, k.promised_on, k.razorpay_payment_id, k.refunded_at, k.po_id,
+      `SELECT k.number, k.person_id, k.amount, k.promised_on, k.razorpay_payment_id, k.refunded_at,
+         k.refund_asked_at, k.po_id,
          o.state AS po_state,
          EXISTS (SELECT 1 FROM po_lines l JOIN receipt_lines r ON r.po_line_id = l.id
                    JOIN supplier_claims c ON c.receipt_line_id = r.id
@@ -64,11 +66,23 @@ export async function refundCustomOrder(
   if (order.refunded_at !== null || !isDue(order, asked.reason, indiaDate(written.now), asked.graceDays)) {
     return { kind: "not_due" };
   }
-  const outcome = await askRefund(deps.payments, paymentId, {
-    amount: order.amount,
-    receipt: `co-${asked.orderId}`,
-    notes: { custom_order_id: asked.orderId },
-  });
+  // Claimed before Razorpay is asked: a second press, or one whose answer was lost, asks as for a refund that may
+  // have been made, so a refusal then is not taken as one.
+  const claimed = await db
+    .prepare("UPDATE custom_orders SET refund_asked_at = ?2 WHERE id = ?1 AND refund_asked_at IS NULL")
+    .bind(asked.orderId, written.now.toISOString())
+    .run();
+  const askedBefore = order.refund_asked_at !== null || claimed.meta.changes === 0;
+  const outcome = await askRefund(
+    deps.payments,
+    paymentId,
+    {
+      amount: order.amount,
+      receipt: refundReceipt({ kind: "custom_order", orderId: asked.orderId }),
+      notes: { custom_order_id: asked.orderId },
+    },
+    { askedBefore },
+  );
   const number = `CU-${String(order.number).padStart(4, "0")}`;
   if (outcome.kind !== "refunded") {
     await deps.alertOnce({

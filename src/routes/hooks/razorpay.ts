@@ -256,7 +256,8 @@ export function registerRazorpayHook(app: App): void {
       const hold = await holdOfLink(db, { razorpayLinkId: link.id, reference: link.reference_id ?? null });
       const customOrder = hold === null ? await customOrderOfLink(db, link) : null;
       if (customOrder !== null) {
-        await customOrderPaid(db, { orderId: customOrder, payment }, config.settings.ipHashSalt, now);
+        const paidDeps = { hashSalt: config.settings.ipHashSalt, alertOnce: deps.alertOnce };
+        await customOrderPaid(db, { orderId: customOrder, payment }, paidDeps, now);
         log.info("razorpay_hook_custom_order_paid", { custom_order_id: customOrder });
       } else if (hold === null) {
         const visit = await linkPaid(db, { link, payment }, config.settings.ipHashSalt, now);

@@ -830,7 +830,7 @@ Made by `0068_cron_runs.sql`.
 
 Each hair system made for one client to their exact spec: the spec, supplier and price, its payment link and payment, and the order it was bought on (ADR 0174).
 
-Made by `0147_custom_orders.sql`; changed by `0149_custom_refunds.sql`.
+Made by `0147_custom_orders.sql`; changed by `0149_custom_refunds.sql`, `0160_custom_order_money.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -863,9 +863,12 @@ Made by `0147_custom_orders.sql`; changed by `0149_custom_refunds.sql`.
 | `refund_reason` | TEXT | yes |  |  |
 | `razorpay_refund_id` | TEXT | yes |  |  |
 | `refunded_at` | TEXT | yes |  |  |
+| `refund_asked_at` | TEXT | yes |  |  |
+| `payment_checked_at` | TEXT | yes |  |  |
 
 Indexes:
 
+- `custom_orders_awaiting_payment`: on (`link_sent_at`), where `state = 'awaiting_payment' AND razorpay_link_id IS NOT NULL`
 - `custom_orders_by_person`: on (`person_id`)
 - `custom_orders_open`: on (`number`), where `state <> 'cancelled'`
 - A `UNIQUE` constraint: unique on (`number`)

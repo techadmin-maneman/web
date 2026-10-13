@@ -10,6 +10,9 @@
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import { createStubPayments, type StubPayments } from "../../../src/providers/payments/stub.ts";
+import { catchUpWithRazorpay } from "../../../src/domain/money/razorpay-catch-up.ts";
+import { createCallBudget } from "../../../src/lib/call-budget.ts";
+import { createLogger } from "../../../src/log.ts";
 import { asClient, signedIn } from "../clients.ts";
 import { captureLogs, deliverRazorpay, markDatabase, NOW, request } from "../helpers.ts";
 import { IMRAN, JOB, PERSON, working, type Working } from "../job-fixtures.ts";
@@ -161,6 +164,71 @@ describe("a custom order", () => {
   });
 });
 
+describe("a custom order's money, wherever it goes", () => {
+  const linkOf = async (orderId: string) => ({
+    id: (await env.DB.prepare("SELECT razorpay_link_id FROM custom_orders").first<string>("razorpay_link_id")) ?? "",
+    reference_id: orderId,
+  });
+  const alertKeys = async () =>
+    (
+      await env.DB.prepare("SELECT key FROM alerts WHERE resolved_at IS NULL ORDER BY key").all<{ key: string }>()
+    ).results.map((row) => row.key);
+
+  it("paid on its link after it was cancelled, is ops' to give back, and orders nothing", async () => {
+    const [order] = (await (await raise()).json<Orders>()).orders;
+    const id = order?.id ?? "";
+    await job.opsPost(`/api/custom-orders/${id}/cancel`);
+    expect((await deliverRazorpay(linkPaid(await linkOf(id)), { deps: job.deps })).status).toBe(200);
+
+    expect((await orders()).orders[0]?.status).toBe("cancelled");
+    expect(await env.DB.prepare("SELECT COUNT(*) AS n FROM purchase_orders").first<number>("n")).toBe(0);
+    expect(await alertKeys()).toContain("custom_order_payment_stranded:pay_custom_1");
+  });
+
+  it("is never stranded by cancelling its purchase order alone", async () => {
+    const [order] = (await (await raise()).json<Orders>()).orders;
+    await deliverRazorpay(linkPaid(await linkOf(order?.id ?? "")), { deps: job.deps });
+    const po = (await env.DB.prepare("SELECT id FROM purchase_orders").first<string>("id")) ?? "";
+    const cancelled = await job.opsPost(`/api/purchase-orders/${po}/cancel`, { reason: "Supplier closed" });
+    expect(cancelled.status).toBe(409);
+    expect((await codeOf(cancelled)).code).toBe("custom_order");
+    expect(await env.DB.prepare("SELECT state FROM purchase_orders").first<string>("state")).toBe("drafted");
+  });
+
+  it("paid while Razorpay's word never came, is found by the hourly catch-up and its order drafted", async () => {
+    const [order] = (await (await raise()).json<Orders>()).orders;
+    const link = await linkOf(order?.id ?? "");
+    const payment = linkPaid(link).payload.payment.entity;
+    payments.linksNow.set(link.id, {
+      id: link.id,
+      status: "paid",
+      reference_id: link.reference_id,
+      order_id: "order_custom_1",
+    });
+    payments.paymentsOn.set("order_custom_1", [payment]);
+    const told: string[] = [];
+    const deps = {
+      payments,
+      alertOnce: (alert: { message: string }) => {
+        told.push(alert.message);
+        return Promise.resolve();
+      },
+      log: createLogger(),
+      hashSalt: "salt",
+      book: () => Promise.resolve(),
+    };
+    const found = await catchUpWithRazorpay(
+      env.DB,
+      deps,
+      createCallBudget(10),
+      new Date(NOW.getTime() + 2 * 3_600_000),
+    );
+    expect(found).toBe(1);
+    expect((await orders()).orders[0]).toMatchObject({ status: "paid", po_number: 1 });
+    expect(told).toHaveLength(1);
+  });
+});
+
 describe("a custom order's piece", () => {
   const OTHER = "66666666-6666-4666-8666-666666666661";
 
@@ -251,6 +319,10 @@ describe("a paid custom order's refund", () => {
     expect(payments.made.refunds).toEqual([{ paymentId: "pay_custom_1", amount: 4_500_000 }]);
     expect(await env.DB.prepare("SELECT state FROM purchase_orders").first<string>("state")).toBe("cancelled");
     expect([(await refund(id, "not_ordered")).status, payments.made.refunds.length]).toEqual([409, 1]);
+    // Claimed before Razorpay was asked, so a press whose answer is lost asks again as for one that may be made.
+    expect(await env.DB.prepare("SELECT refund_asked_at FROM custom_orders").first<string>("refund_asked_at")).toBe(
+      NOW.toISOString(),
+    );
   });
 
   it("is due once the order has gone only when the supplier is late past the grace, or the piece failed its check", async () => {

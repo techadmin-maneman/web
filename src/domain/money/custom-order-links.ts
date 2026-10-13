@@ -14,6 +14,8 @@ import { draftCustomOrderPo } from "../field/custom-order-po.ts";
 import { paymentsTab } from "../ops/alerts.ts";
 import type { LinkDeps } from "./payment-links.ts";
 import { recordPayment } from "./payments.ts";
+import { rupees } from "@maneman/web-kit/money";
+import type { AlertOnce } from "../ops/alerts.ts";
 
 export type CustomLinkSent = "sent" | "already_sent" | "unavailable";
 
@@ -108,23 +110,34 @@ export async function customOrderOfLink(db: D1Database, link: RazorpayPaymentLin
 export async function customOrderPaid(
   db: D1Database,
   paid: { readonly orderId: string; readonly payment: RazorpayPayment },
-  hashSalt: string,
+  deps: { readonly hashSalt: string; readonly alertOnce: AlertOnce },
   now: Date,
 ): Promise<void> {
   const order = await db
-    .prepare("SELECT person_id FROM custom_orders WHERE id = ?1")
+    .prepare("SELECT person_id, number, razorpay_payment_id FROM custom_orders WHERE id = ?1")
     .bind(paid.orderId)
-    .first<{ person_id: string }>();
+    .first<{ person_id: string; number: number; razorpay_payment_id: string | null }>();
   if (order === null) return;
   const notes = { custom_order_id: paid.orderId, person_id: order.person_id };
-  await recordPayment({ db, payment: { ...paid.payment, notes }, status: "captured", hashSalt, now });
-  await db
+  await recordPayment({ db, payment: { ...paid.payment, notes }, status: "captured", hashSalt: deps.hashSalt, now });
+  const taken = await db
     .prepare(
       `UPDATE custom_orders SET state = 'paid', razorpay_payment_id = ?2, paid_at = ?3, updated_at = ?3
        WHERE id = ?1 AND state = 'awaiting_payment'`,
     )
     .bind(paid.orderId, paid.payment.id, now.toISOString())
     .run();
+  if (taken.meta.changes === 0 && order.razorpay_payment_id !== paid.payment.id) {
+    // Cancelled, or paid already by another payment: nothing is ordered for this one, so it goes back to the client.
+    await deps.alertOnce({
+      key: `custom_order_payment_stranded:${paid.payment.id}`,
+      message:
+        `Payment ${paid.payment.id} of ${rupees(paid.payment.amount)} came in for custom order ` +
+        `${numberOf(order.number)}, which was cancelled or already paid. Refund it from the client's Payments.`,
+      link: paymentsTab(order.person_id),
+    });
+    return;
+  }
   await draftCustomOrderPo(db, paid.orderId, {
     actor: { kind: "system", id: "custom-order" },
     requestId: `custom-order:${paid.orderId}`,

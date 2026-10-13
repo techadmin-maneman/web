@@ -166,6 +166,8 @@ export const ERROR_CODES = [
   "order_state",
   // The second approval of an order asked by the manager who gave its first.
   "same_approver",
+  // A purchase order carrying a client's custom order, cancelled on its own rather than through the custom order.
+  "custom_order",
   // A claim on a supplier past the step asked; a returned piece settled already; one that may not be claimed.
   "claim_state",
   "return_settled",
@@ -312,6 +314,7 @@ export const ERROR_STATUS = {
   transfer_settled: 409,
   order_state: 409,
   same_approver: 409,
+  custom_order: 409,
   claim_state: 409,
   return_settled: 409,
   out_of_warranty: 409,

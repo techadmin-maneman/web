@@ -19,6 +19,7 @@ import type { PaymentsProvider } from "../../providers/payments/index.ts";
 import type { RazorpayPayment, RazorpayPaymentLink } from "../../providers/payments/razorpay.ts";
 import { paymentsTab, type AlertOnce } from "../ops/alerts.ts";
 import { recordBookingConsents } from "../privacy/booking-consents.ts";
+import { customOrderPaid } from "./custom-order-links.ts";
 import { linkPaid } from "./payment-links-paid.ts";
 import { recordPayment } from "./payments.ts";
 import { ASKS } from "./refunds.ts";
@@ -49,6 +50,7 @@ const REQUEST_ID = "razorpay-catch-up";
 /** What follows a payment found, as ops read it: for a hold, and for a one visit's link. */
 const BOOKING_FOLLOWS = "It is recorded now, and the visit is booked, or refunded if its time has gone.";
 const RECORDED = "It is recorded now as the visit's payment.";
+const CUSTOM_ORDER_FOLLOWS = "It is recorded now, and the supplier's order drafted.";
 
 interface CatchUpDeps {
   readonly payments: PaymentsProvider;
@@ -71,6 +73,12 @@ interface LinkToAsk {
   readonly id: string;
   readonly appointment_id: string;
   readonly person_id: string | null;
+  readonly razorpay_link_id: string;
+}
+
+interface CustomOrderToAsk {
+  readonly id: string;
+  readonly person_id: string;
   readonly razorpay_link_id: string;
 }
 
@@ -102,22 +110,27 @@ export async function catchUpWithRazorpay(
     calls: CALLS_PER_LINK,
     ask: () => askAboutLink(db, deps, link, now),
   }));
+  const aboutCustomOrders = (await customOrdersToAsk(db, now)).map((order): Question => ({
+    calls: CALLS_PER_LINK,
+    ask: () => askAboutCustomOrder(db, deps, order, now),
+  }));
   let found = 0;
-  for (const question of takingTurns(aboutHolds, aboutLinks)) {
+  for (const question of takingTurns(aboutHolds, aboutLinks, aboutCustomOrders)) {
     if (!budget.spend(question.calls)) return found;
     if (await question.ask()) found += 1;
   }
   return found;
 }
 
-/** A hold, then a link, and so on, so that neither kind takes every call of a run while the other waits. */
-function takingTurns(first: readonly Question[], second: readonly Question[]): Question[] {
+/** A hold, then a link, then a custom order, and so on, so that no kind takes every call of a run while the rest wait. */
+function takingTurns(...kinds: readonly (readonly Question[])[]): Question[] {
   const turns: Question[] = [];
-  for (let index = 0; index < Math.max(first.length, second.length); index += 1) {
-    const fromFirst = first[index];
-    const fromSecond = second[index];
-    if (fromFirst !== undefined) turns.push(fromFirst);
-    if (fromSecond !== undefined) turns.push(fromSecond);
+  const longest = Math.max(0, ...kinds.map((kind) => kind.length));
+  for (let index = 0; index < longest; index += 1) {
+    for (const kind of kinds) {
+      const question = kind[index];
+      if (question !== undefined) turns.push(question);
+    }
   }
   return turns;
 }
@@ -167,6 +180,44 @@ async function linksToAsk(db: D1Database, now: Date): Promise<LinkToAsk[]> {
     .bind(before(now, LINK_ASKED_FOR_MS), before(now, LINK_WAIT_MS), before(now, ASKED_EVERY_MS), CHECKS_PER_PASS)
     .all<LinkToAsk>();
   return results;
+}
+
+/** Custom orders whose link is sent and unpaid, those never asked about first, then the least lately asked. */
+async function customOrdersToAsk(db: D1Database, now: Date): Promise<CustomOrderToAsk[]> {
+  const { results } = await db
+    .prepare(
+      `SELECT k.id, k.person_id, k.razorpay_link_id FROM custom_orders k INDEXED BY custom_orders_awaiting_payment
+       WHERE k.state = 'awaiting_payment' AND k.razorpay_link_id IS NOT NULL
+         AND k.link_sent_at > ?1 AND k.link_sent_at <= ?2
+         AND (k.payment_checked_at IS NULL OR k.payment_checked_at <= ?3)
+       ORDER BY k.payment_checked_at IS NOT NULL, k.payment_checked_at, k.link_sent_at
+       LIMIT ?4`,
+    )
+    .bind(before(now, LINK_ASKED_FOR_MS), before(now, LINK_WAIT_MS), before(now, ASKED_EVERY_MS), CHECKS_PER_PASS)
+    .all<CustomOrderToAsk>();
+  return results;
+}
+
+/** Asks about one custom order's link, marked as asked first; the order is paid, and its supplier's order drafted. */
+async function askAboutCustomOrder(
+  db: D1Database,
+  deps: CatchUpDeps,
+  order: CustomOrderToAsk,
+  now: Date,
+): Promise<boolean> {
+  await db
+    .prepare("UPDATE custom_orders SET payment_checked_at = ?2 WHERE id = ?1")
+    .bind(order.id, now.toISOString())
+    .run();
+  const paid = await paidLink(deps.payments, order.razorpay_link_id);
+  if (paid === null) return false;
+  const heard = await heardCaptured(db, paid.payment.id);
+  await customOrderPaid(db, { orderId: order.id, payment: paid.payment }, deps, now);
+  if (!heard) {
+    const paidFor = `custom order ${order.id}`;
+    await tellFound(deps, { payment: paid.payment, paidFor, personId: order.person_id, next: CUSTOM_ORDER_FOLLOWS });
+  }
+  return true;
 }
 
 /**
