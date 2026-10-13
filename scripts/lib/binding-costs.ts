@@ -20,8 +20,12 @@ const BILLED_BY_USE: readonly string[] = [
   "browser",
 ];
 
-/** What each billed kind in use costs, and the record that took it on: none is used yet. */
-const COST_NOTES: Readonly<Record<string, string>> = {};
+/** What each billed kind in use costs, and the record that took it on. */
+const COST_NOTES: Readonly<Record<string, string>> = {
+  workflows:
+    "Workers requests and CPU time a step, and each run's state stored past the plan's gigabyte: a night's copy " +
+    "and a week's backup together, a few hundred steps, cost well under a cent a month (ADR 0196)",
+};
 
 /** The config key that bypasses wrangler's binding types. */
 const UNCHECKED_KEY = "unsafe";

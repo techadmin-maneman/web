@@ -7,7 +7,7 @@
 import { readFileSync, writeFileSync } from "node:fs";
 import { parseArgs } from "node:util";
 import { backupBindings, retried } from "../lib/backup-bindings.ts";
-import { assertBackupOf, backupKeyOf, Manifest, privateKeyOf, rowsIn, sqlFor } from "../lib/backup-restore.ts";
+import { assertBackupOf, Manifest, privateKeyOf, rowsIn, sqlFor, tableKeyOf } from "../lib/backup-restore.ts";
 
 const { values } = parseArgs({
   options: { env: { type: "string" }, date: { type: "string" }, key: { type: "string" }, out: { type: "string" } },
@@ -33,10 +33,10 @@ const fetched = (object: string): Promise<Uint8Array> =>
 try {
   const manifest = Manifest.parse(JSON.parse(new TextDecoder().decode(await fetched(`${date}/manifest.json`))));
   assertBackupOf(manifest, env);
-  const backupKey = await backupKeyOf(manifest, await privateKeyOf(readFileSync(key, "utf8")));
+  const privateKey = await privateKeyOf(readFileSync(key, "utf8"));
   const rows = new Map<string, Record<string, unknown>[]>();
   for (const table of manifest.tables) {
-    const read = await rowsIn(backupKey, table.iv, await fetched(table.object));
+    const read = await rowsIn(await tableKeyOf(manifest, table, privateKey), table.iv, await fetched(table.object));
     if (read.length !== table.rows)
       throw new Error(`${table.name}: ${String(read.length)} rows, the manifest says ${String(table.rows)}`);
     rows.set(table.name, read);

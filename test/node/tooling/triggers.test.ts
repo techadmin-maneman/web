@@ -110,6 +110,14 @@ const STAGING_ON_4_OCTOBER = ok([
   liveQueue("mm-render-staging", { batch_size: 5, max_retries: 100, max_wait_time_ms: 1000, retry_delay: 0 }),
 ]);
 
+const WORKFLOWS = "/workflows?per_page=100";
+
+/** Staging's Workflows as the account lists them once an operator has applied the triggers. */
+const STAGING_WORKFLOWS = ok([
+  { name: "mm-analytics-copy-staging", script_name: "mm-api-staging" },
+  { name: "mm-backup-staging", script_name: "mm-api-staging" },
+]);
+
 async function check(answers: Record<string, Answer>): Promise<Finding[]> {
   return checkTriggers({
     environment: "staging",
@@ -119,7 +127,7 @@ async function check(answers: Record<string, Answer>): Promise<Finding[]> {
       { name: "mm-api", config: API },
       { name: "mm-app", config: APP },
     ],
-    fetch: account(answers),
+    fetch: account({ [WORKFLOWS]: STAGING_WORKFLOWS, ...answers }),
   });
 }
 
@@ -138,6 +146,7 @@ describe("the live account against the configs", () => {
       "mm-api-staging cron schedules: matches",
       "mm-api-staging queue consumers: matches",
       "mm-api-staging queue consumer settings: matches",
+      "mm-api-staging workflows: matches",
       "mm-app-staging cron schedules: matches",
       "mm-app-staging queue consumers: matches",
     ]);
@@ -183,6 +192,20 @@ describe("the live account against the configs", () => {
     expect(findings[0]?.outcome).toBe("differs");
     expect(findings[0]?.detail).toContain("configured but not attached: * * * * *");
     expect(findings[0]?.detail).toContain("attached but not configured: */5 * * * *");
+  });
+
+  // A version uploaded binds a Workflow it never creates; only applying the triggers does (cloudflare/workers-sdk#16001).
+  it("names a Workflow the config binds that the account does not have yet", async () => {
+    const findings = await check({
+      [QUEUES]: queuesConsumedBy("mm-api-staging", CONSUMERS),
+      [WORKFLOWS]: ok([{ name: "mm-analytics-copy-staging", script_name: "mm-api-staging" }]),
+      "/workers/scripts/mm-api-staging/schedules": cron,
+      "/workers/scripts/mm-app-staging/schedules": ok({ schedules: [] }),
+    });
+    const workflows = findings.find((finding) => finding.subject === "mm-api-staging workflows");
+    expect(workflows?.outcome).toBe("differs");
+    expect(workflows?.detail).toContain("configured but not attached: mm-backup-staging");
+    expect(workflows?.detail).toContain("npm run apply-triggers -- --env staging");
   });
 
   it("says plainly what it could not read, rather than calling it a match or a failure", async () => {

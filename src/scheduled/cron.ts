@@ -45,8 +45,7 @@ import { queueReminders } from "../domain/messages/visit-messages.ts";
 import type { StaticConfig } from "../guard.ts";
 import type { CallBudget } from "../lib/call-budget.ts";
 import type { MeteredDatabase } from "../lib/d1-meter.ts";
-import { failureReason, type Logger } from "../log.ts";
-import { deleteOldBackups, writeBackup } from "../domain/platform/backups.ts";
+import type { Logger } from "../log.ts";
 import { enqueue, enqueueBatch } from "../domain/platform/enqueue.ts";
 import { analyticsJob } from "./analytics.ts";
 import { razorpayCatchUpJob } from "./razorpay-catch-up.ts";
@@ -67,6 +66,7 @@ import {
 import { missedAfterMs, type Slot, type Timing } from "./schedule.ts";
 import { indiaDate } from "../lib/india-time.ts";
 import { checkWhatsAppBridge } from "./whatsapp-bridge.ts";
+import { startOrFollow } from "../workflows/steps.ts";
 import { type MessagingMessage } from "../config/pipeline.ts";
 import { tellOfUnassignedToday } from "../domain/dispatch/unassigned.ts";
 import { queueFollowUps } from "../domain/visits/follow-ups.ts";
@@ -235,43 +235,22 @@ async function storageMeterJob({ env, deps, config }: CronContext): Promise<void
 }
 
 /**
- * The weekly backup, due from 3 am on Sundays in India: written under the Sunday's date, and backups past thirteen
- * weeks deleted. A failure, or no key to encrypt to outside a local run, alerts at once; a failure is tried again on
- * the next hour's run.
+ * The weekly backup, due from 3 am on Sundays in India: it starts the week's Workflow (src/workflows/backup.ts), named
+ * for the Sunday, or follows the one started, and is done once that has finished. No key to encrypt to, outside a
+ * local run, alerts at once.
  */
-async function backupJob({ env, deps, config, log, slot }: CronContext): Promise<void> {
-  const now = deps.now();
-  const publicKey = config.settings.backupPublicKey;
-  if (publicKey === null) {
+async function backupJob({ env, deps, config, slot }: CronContext): Promise<unknown> {
+  const date = slot?.date ?? indiaDate(deps.now());
+  if (config.settings.backupPublicKey === null) {
     if (config.environment !== "local") {
       await deps.alertOnce({
         key: "backup_not_configured",
         message: "No weekly backup was written: no backup key is set. The runbook, Restoring D1, says how to make one.",
       });
     }
-    return;
+    return undefined;
   }
-  try {
-    const written = await writeBackup({
-      db: env.DB,
-      bucket: env.BACKUPS,
-      publicKey,
-      environment: config.environment,
-      now,
-      date: slot?.date ?? indiaDate(now),
-    });
-    const deleted = await deleteOldBackups(env.BACKUPS, now);
-    log.info("backup_written", { ...(written === "already" ? { already: true } : written), deleted });
-    await deps.resolveAlert("backup_failed");
-    await deps.resolveAlert("backup_not_configured");
-  } catch (error) {
-    log.error("backup_failed", { error });
-    await deps.alertOnce({
-      key: "backup_failed",
-      message: `The weekly backup failed: ${failureReason(error)}. It tries again within the hour; RB "From a weekly backup".`,
-    });
-    throw error;
-  }
+  return startOrFollow(env.BACKUP_RUN, { id: `backup-${date}`, params: { date } });
 }
 
 /** A low-stock alert whose consumable was retired since, or whose retirement came round, closes. */

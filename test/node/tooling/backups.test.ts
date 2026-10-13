@@ -6,11 +6,11 @@ import { describe, expect, it } from "vitest";
 import { deleteOldBackups, writeBackup } from "../../../src/domain/platform/backups.ts";
 import {
   assertBackupOf,
-  backupKeyOf,
   Manifest,
   privateKeyOf,
   rowsIn,
   sqlFor,
+  tableKeyOf,
   toBase64,
 } from "../../../scripts/lib/backup-restore.ts";
 import { asD1, migratedDatabase } from "../d1-over-sqlite.ts";
@@ -95,12 +95,13 @@ describe("the weekly backup", () => {
     }
 
     const manifest = Manifest.parse(JSON.parse(new TextDecoder().decode(objects.get("2026-10-11/manifest.json"))));
-    const key = await backupKeyOf(manifest, await privateKeyOf(pem));
+    expect(manifest.format).toBe(2);
+    const privateKey = await privateKeyOf(pem);
     const rows = new Map<string, Record<string, unknown>[]>();
     for (const table of manifest.tables) {
       const body = objects.get(table.object);
       if (body === undefined) throw new Error(`${table.object} is in the bucket`);
-      rows.set(table.name, await rowsIn(key, table.iv, body));
+      rows.set(table.name, await rowsIn(await tableKeyOf(manifest, table, privateKey), table.iv, body));
     }
     expect(rows.get("people")).toEqual([expect.objectContaining({ id: "p1", name: "Rohit O'Brien" })]);
 

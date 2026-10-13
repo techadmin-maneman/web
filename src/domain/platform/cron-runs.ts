@@ -141,6 +141,11 @@ export async function jobRanWell(db: D1Database, job: string, now: Date): Promis
     .run();
 }
 
+/** The job's work goes on elsewhere: its lease let go, and nothing noted. */
+export async function jobLetGo(db: D1Database, job: string): Promise<void> {
+  await db.prepare("UPDATE cron_jobs SET lease_until = NULL WHERE job = ?1").bind(job).run();
+}
+
 /** The job failed: its lease let go, and the failure counted. How many in a row it has failed now. */
 export async function jobFailed(db: D1Database, job: string, failure: { at: Date; reason: string }): Promise<number> {
   const row = await db

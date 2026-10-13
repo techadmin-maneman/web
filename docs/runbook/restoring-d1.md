@@ -123,7 +123,7 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 
 ## From a weekly backup
 
-Every Sunday between 3 and 4 am in India, mm-api writes the whole database to the environment's backups bucket (`mm-staging-backups`, `mm-prod-backups`), under that day's date: each table gzipped and encrypted, the key to it wrapped by the owner's public key, `BACKUP_PUBLIC_KEY`, and `manifest.json` last. Backups past thirteen weeks are deleted. A backup that fails alerts `backup_failed`; with no key set, `backup_not_configured`. Only the owner's private key reads one.
+Every Sunday from 3 am in India, mm-api writes the whole database to the environment's backups bucket (`mm-staging-backups`, `mm-prod-backups`), under that day's date, as the `WeeklyBackup` Workflow, a step a table (ADR 0196): each table gzipped and encrypted under a key of its own, each key wrapped by the owner's public key, `BACKUP_PUBLIC_KEY`, and `manifest.json` last. A backup cut short is taken up again within the hour. Backups past thirteen weeks are deleted. A backup that fails alerts `backup_failed`; with no key set, `backup_not_configured`. Only the owner's private key reads one.
 
 **The keys, once:** `node scripts/ops/backup-keys.ts --private private/backup-key.pem` prints the public key: `W secret put BACKUP_PUBLIC_KEY --env <env>` for each environment. Move the private key into the owner's password manager and delete the file. A key lost is every backup lost; a key leaked is every backup readable, so make a new pair and set the new public key.
 

@@ -54,6 +54,15 @@ Nothing here needs a release. The first two have dates.
 - [ ] **Error tracking** (RB, "The outside watchers", point 4): a Sentry project for staging and one for production, on the free plan, each DSN as that environment's `SENTRY_DSN`.
 - [ ] **Staging's cron heartbeat** (RB, "The outside watchers", point 1): a healthchecks.io check, its ping URL as staging's `HEARTBEAT_URL`; and Account Analytics: Read on `mm-ci-staging`, so each staging deploy reports mm-api's CPU time (provisioning, step 6).
 
+## Weekly releases before launch
+
+The owner's ruling of 13 October 2026: from Phase 3 of the fourth audit on, main goes to production each week, with the surfaces off (`ENABLED_SURFACES` is the public surface alone, which serves the placeholder), the providers `none` and the analytics copy off, so code and migrations go up in small steps rather than all at launch. Each release:
+
+1. **A backup first:** `node scripts/ops/backup-now.ts --env production --public-key <file>` (RB, "Restoring D1").
+2. **Rehearsed on a copy:** the migrations the release carries, applied to a database made from production's (RB, "Restoring D1", "Repairing from an earlier minute" makes the export), with `npm run check:migrations` passing.
+3. **The release** through `deploy-production.yml`, then `npm run apply-triggers -- --env production`, which attaches the cron and creates the Workflows, and `check-triggers.ts production --strict`.
+4. **The smoke suite** against production, and the placeholder still at `https://maneman.in/`.
+
 ## 2. Proofs on staging
 
 Each is written up in `docs/verification.md` when it passes. The payment run is what item 8 waits on before self-serve booking goes on in production.
@@ -137,7 +146,7 @@ With self-serve booking off, a consultation booked on the site is a request: the
 
 **Open the doors:** delete the Access applications for `app.maneman.in` and `tech.maneman.in`; the ops console stays behind Access. Read the open alerts after the first day (RB, "Alerts and the cron").
 
-**The reporting copy** (ADR 0146): from this release production copies each night at 3 am India time into Supabase's `analytics` schema; its writer login, Hyperdrive config `mm-analytics` and `ANALYTICS_CLIENT_KEY` were set on 12 October 2026. The morning after its first night with real activity (`select max(ended_at) from analytics.load_run` and a count of `analytics.fact_visit`), point Zoho's views at it: in the Supabase SQL editor, run what `select 'create or replace view reporting.' || table_name || ' as select * from analytics.' || table_name || ';' from information_schema.views where table_schema = 'reporting'` prints. Zoho's 05:00 import then brings the real figures. The same with `sample` points them back.
+**The reporting copy** (ADR 0146, ADR 0196): production's `ANALYTICS_PROVIDER` is `none` until this release, so the copy the owner is looking at in Supabase's `analytics` schema stays. Once the owner says they are done with it, empty it, set `ANALYTICS_PROVIDER` to `supabase` in `env.production.vars`, and release; from then production copies each night at 3 am India time, as the `AnalyticsCopy` Workflow, which `apply-triggers` creates. Its writer login, Hyperdrive config `mm-analytics` and `ANALYTICS_CLIENT_KEY` were set on 12 October 2026, and `analytics.load_rows` made on 13 October. The morning after its first night with real activity (`select max(ended_at) from analytics.load_run` and a count of `analytics.fact_visit`), point Zoho's views at it: in the Supabase SQL editor, run what `select 'create or replace view reporting.' || table_name || ' as select * from analytics.' || table_name || ';' from information_schema.views where table_schema = 'reporting'` prints. Zoho's 05:00 import then brings the real figures. The same with `sample` points them back.
 
 ### The dashboards
 

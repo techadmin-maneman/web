@@ -1,5 +1,6 @@
-// Reading a weekly backup back (src/domain/platform/backups.ts): the private key unwraps the backup's AES key,
-// which decrypts each table, and the tables become SQL that loads into an empty database.
+// Reading a weekly backup back (src/domain/platform/backups.ts): the private key unwraps each table's AES key, or the
+// one key of a backup in the first format, which decrypts the table; and the tables become SQL that loads into an
+// empty database.
 
 import { gunzipSync } from "node:zlib";
 import { z } from "zod";
@@ -7,16 +8,21 @@ import { parentsFirst } from "../../src/lib/parents-first.ts";
 import type { ForeignKey } from "./restore-carry.ts";
 import { keysOf } from "./schema-keys.ts";
 
-export const Manifest = z.object({
-  format: z.literal(1),
+const Written = z.object({ name: z.string(), rows: z.number(), object: z.string(), iv: z.string() });
+const Common = {
   environment: z.string(),
   created_at: z.string(),
-  wrapped_key: z.string(),
   schema: z.array(z.object({ name: z.string(), sql: z.string() })),
   after_rows: z.array(z.object({ name: z.string(), sql: z.string() })).default([]),
-  tables: z.array(z.object({ name: z.string(), rows: z.number(), object: z.string(), iv: z.string() })),
-});
+};
+
+/** The first format had one key for the whole backup; the second has a key a table, so each is written apart. */
+export const Manifest = z.discriminatedUnion("format", [
+  z.object({ format: z.literal(1), ...Common, wrapped_key: z.string(), tables: z.array(Written) }),
+  z.object({ format: z.literal(2), ...Common, tables: z.array(Written.extend({ wrapped_key: z.string() })) }),
+]);
 export type Manifest = z.infer<typeof Manifest>;
+type WrittenTable = Manifest["tables"][number];
 
 /** Refuses a backup another environment wrote: restoring it would carry that environment's rows here. */
 export function assertBackupOf(manifest: Manifest, environment: string): void {
@@ -43,17 +49,13 @@ export function privateKeyOf(pem: string): Promise<CryptoKey> {
   ]);
 }
 
-/** The backup's AES key, unwrapped. */
-export function backupKeyOf(manifest: Manifest, privateKey: CryptoKey): Promise<CryptoKey> {
-  return crypto.subtle.unwrapKey(
-    "raw",
-    fromBase64(manifest.wrapped_key),
-    privateKey,
-    { name: "RSA-OAEP" },
-    "AES-GCM",
-    false,
-    ["decrypt"],
-  );
+/** A table's AES key, unwrapped: its own, or the whole backup's in the first format. */
+export function tableKeyOf(manifest: Manifest, table: WrittenTable, privateKey: CryptoKey): Promise<CryptoKey> {
+  const own = "wrapped_key" in table ? table.wrapped_key : "";
+  const wrapped = manifest.format === 1 ? manifest.wrapped_key : own;
+  return crypto.subtle.unwrapKey("raw", fromBase64(wrapped), privateKey, { name: "RSA-OAEP" }, "AES-GCM", false, [
+    "decrypt",
+  ]);
 }
 
 /** One table's object, decrypted and unzipped, as its rows. */

@@ -50,6 +50,12 @@ export function lastSlotStart(now: Date, slot: Slot): Date {
 /** How long a job held to a slot may go without running well before ops are told: its period, and two hours more. */
 export const missedAfterMs = (slot: Slot): number => (slot.weekday === undefined ? 1 : 7) * DAY_MS + 2 * 60 * 60_000;
 
+/**
+ * What a job answers when its work goes on elsewhere, in a Workflow it started or found running: neither a success nor
+ * a failure, so a job held to a slot stays due, and the next run looks again (src/scheduled/cron-runner.ts).
+ */
+export const STILL_RUNNING = "still_running";
+
 /** Whether a job runs in the minute of the hour given. */
 export function isDueAt(job: Timing, minute: number): boolean {
   return minute % job.every === job.at;

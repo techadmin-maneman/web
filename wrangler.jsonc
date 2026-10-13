@@ -37,6 +37,11 @@
   ],
   // Draws a client's referral card from their photographs (src/providers/cards.ts): free, refused past the plan.
   "images": { "binding": "IMAGES" },
+  // The nightly reporting copy and the weekly backup, each a step at a time (docs/decisions/0196-long-work-in-workflows.md).
+  "workflows": [
+    { "binding": "ANALYTICS_COPY", "name": "mm-analytics-copy-local", "class_name": "AnalyticsCopy" },
+    { "binding": "BACKUP_RUN", "name": "mm-backup-local", "class_name": "WeeklyBackup" }
+  ],
   "queues": {
     "producers": [
       { "binding": "RENDER_QUEUE", "queue": "mm-render-local" },
@@ -153,6 +158,11 @@
       ],
       // Draws a client's referral card from their photographs (src/providers/cards.ts): free, refused past the plan.
       "images": { "binding": "IMAGES" },
+      // The nightly reporting copy and the weekly backup, each a step at a time (docs/decisions/0196-long-work-in-workflows.md).
+      "workflows": [
+        { "binding": "ANALYTICS_COPY", "name": "mm-analytics-copy-staging", "class_name": "AnalyticsCopy" },
+        { "binding": "BACKUP_RUN", "name": "mm-backup-staging", "class_name": "WeeklyBackup" }
+      ],
       "queues": {
         "producers": [
           { "binding": "RENDER_QUEUE", "queue": "mm-render-staging" },
@@ -266,6 +276,11 @@
       ],
       // Draws a client's referral card from their photographs (src/providers/cards.ts): free, refused past the plan.
       "images": { "binding": "IMAGES" },
+      // The nightly reporting copy and the weekly backup, each a step at a time (docs/decisions/0196-long-work-in-workflows.md).
+      "workflows": [
+        { "binding": "ANALYTICS_COPY", "name": "mm-analytics-copy-prod", "class_name": "AnalyticsCopy" },
+        { "binding": "BACKUP_RUN", "name": "mm-backup-prod", "class_name": "WeeklyBackup" }
+      ],
       "queues": {
         "producers": [
           { "binding": "RENDER_QUEUE", "queue": "mm-render-prod" },
@@ -325,8 +340,9 @@
         // Razorpay stays off until Phase 2's release (docs/open-points.md, item 6).
         "PAYMENTS_PROVIDER": "none",
         "GEOCODE_PROVIDER": "none",
-        // The nightly copy for Zoho Analytics; its client-key secret is set (docs/decisions/0146-the-nightly-analytics-copy.md).
-        "ANALYTICS_PROVIDER": "supabase",
+        // The nightly copy for Zoho Analytics, off until launch so the copy Zoho reads stays as it is; its client-key
+        // secret is set (docs/decisions/0146-the-nightly-analytics-copy.md; docs/go-live.md).
+        "ANALYTICS_PROVIDER": "none",
         "ROUTES_PROVIDER": "none",
         "SELF_SERVE_BOOKING": "false",
         "REFERRER_NAME_ON_INVITE": "true",

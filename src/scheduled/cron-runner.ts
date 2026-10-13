@@ -8,6 +8,7 @@
 import {
   finishRun,
   jobFailed,
+  jobLetGo,
   jobRanWell,
   startRun,
   takeJobLease,
@@ -20,7 +21,7 @@ import { meterDatabase, usageFields, usageSince, type MeteredDatabase } from "..
 import { scrubString } from "../log.ts";
 import { pingHeartbeat } from "../providers/heartbeat.ts";
 import { isSwitchedOn, type CronContext, type CronJob, type CronRun } from "./cron.ts";
-import { CRON_CALLS, lastSlotStart } from "./schedule.ts";
+import { CRON_CALLS, lastSlotStart, STILL_RUNNING } from "./schedule.ts";
 
 /** A run starts no outside call after this, so it ends before the next minute's run starts. */
 export const CRON_CALLS_FOR_MS = 30_000;
@@ -76,17 +77,27 @@ async function runJobs(jobs: readonly CronJob[], given: CronRun): Promise<RunRes
   return { outcomes, cutShortAt };
 }
 
-/** Runs one job, and counts how it went; true when it ran well. */
+/** Runs one job, and counts how it went; true unless it failed. A job whose work goes on elsewhere counts as nothing. */
 async function runOne(job: CronJob, context: CronContext, wasFailing: boolean): Promise<boolean> {
+  let answer: unknown;
   try {
-    await job.run(context);
+    answer = await job.run(context);
   } catch (error) {
     context.log.error("cron_job_failed", { error });
     await countFailure(context, job.name, error);
     return false;
   }
-  await countSuccess(context, job, wasFailing);
+  if (answer === STILL_RUNNING) await letGo(context, job.name);
+  else await countSuccess(context, job, wasFailing);
   return true;
+}
+
+async function letGo({ env, log }: CronContext, job: string): Promise<void> {
+  try {
+    await jobLetGo(env.DB, job);
+  } catch (error) {
+    log.error("cron_outcome_not_counted", { error });
+  }
 }
 
 function metered(run: CronRun): { run: CronRun; meter: MeteredDatabase } {
