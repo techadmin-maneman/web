@@ -809,7 +809,7 @@ Triggers: `credit_ledger_no_delete`, `credit_ledger_no_update`.
 
 Each job of the cron, and how many runs in a row it has failed (ADR 0067).
 
-Made by `0038_alerts.sql`.
+Made by `0038_alerts.sql`; changed by `0165_cron_job_leases.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -817,6 +817,13 @@ Made by `0038_alerts.sql`.
 | `failed_runs` | INTEGER | no | `0` |  |
 | `last_failed_at` | TEXT | yes |  |  |
 | `last_error` | TEXT | yes |  |  |
+| `lease_until` | TEXT | yes |  |  |
+| `last_success_at` | TEXT | yes |  |  |
+| `first_seen_at` | TEXT | yes |  |  |
+
+Indexes:
+
+- `cron_jobs_failing`: on (`job`), where `failed_runs > 0`
 
 ## cron_runs
 

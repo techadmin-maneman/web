@@ -46,9 +46,11 @@ export const PHOTO_ALLOWANCE = {
  * tomorrow's visits and the next services falling due, however long the tables grow. Every query on the cron's path
  * searches an index that holds only the rows still waiting (test/node/database/query-plans.test.ts), and
  * test/worker/jobs/cron-reads.test.ts measures every job against a history, and against twice that history. Taken as
- * 150, so a statement added to the cron is not failed for the one row it reads.
+ * 150, so a statement added to the cron is not failed for the one row it reads; and beside it, each job's own record,
+ * its lease taken and its outcome noted, and the hour's look for a job missed: about four rows a job, whatever the
+ * history (docs/decisions/0195-the-cron-a-job-at-a-time.md).
  */
-export const CRON_ROWS_READ_PER_QUIET_RUN = 150;
+export const cronRowsReadPerQuietRun = (jobs: number): number => 150 + 4 * jobs;
 /**
  * The most statements one minute's run may send D1, its own record's included: a fifth of the 1,000 an invocation may
  * send (docs/decisions/0112-workers-paid.md), so a job that loops over a table fails here before it fails in a run.

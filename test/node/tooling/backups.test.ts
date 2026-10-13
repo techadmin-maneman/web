@@ -3,7 +3,7 @@
 
 import { DatabaseSync } from "node:sqlite";
 import { describe, expect, it } from "vitest";
-import { backupDueOn, deleteOldBackups, writeBackup } from "../../../src/domain/platform/backups.ts";
+import { deleteOldBackups, writeBackup } from "../../../src/domain/platform/backups.ts";
 import {
   assertBackupOf,
   backupKeyOf,
@@ -52,13 +52,6 @@ async function keyPair() {
 const SUNDAY_3_30_IST = new Date("2026-10-10T22:00:00Z");
 
 describe("the weekly backup", () => {
-  it("is due in the hour from 3 am in India on Sundays, and at no other time", () => {
-    expect(backupDueOn(SUNDAY_3_30_IST)).toBe("2026-10-11");
-    expect(backupDueOn(new Date("2026-10-10T22:31:00Z"))).toBeNull();
-    expect(backupDueOn(new Date("2026-10-03T22:00:00Z"))).toBe("2026-10-04");
-    expect(backupDueOn(new Date("2026-10-09T22:00:00Z"))).toBeNull();
-  });
-
   it("is read back, decrypted with the owner's key, into the same rows in an empty database", async () => {
     const sqlite = migratedDatabase();
     sqlite
@@ -83,10 +76,18 @@ describe("the weekly backup", () => {
       publicKey,
       environment: "staging",
       now: SUNDAY_3_30_IST,
+      date: "2026-10-11",
     });
     expect(written).toMatchObject({ prefix: "2026-10-11/" });
     expect(
-      await writeBackup({ db: asD1(sqlite), bucket, publicKey, environment: "staging", now: SUNDAY_3_30_IST }),
+      await writeBackup({
+        db: asD1(sqlite),
+        bucket,
+        publicKey,
+        environment: "staging",
+        now: SUNDAY_3_30_IST,
+        date: "2026-10-11",
+      }),
     ).toBe("already");
     // Nothing of a client's is readable in what is stored.
     for (const [key, body] of objects) {

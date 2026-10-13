@@ -7,6 +7,7 @@
 import { readFileSync } from "node:fs";
 import { parseArgs } from "node:util";
 import { writeBackup } from "../../src/domain/platform/backups.ts";
+import { indiaDate } from "../../src/lib/india-time.ts";
 import { backupBindings } from "../lib/backup-bindings.ts";
 
 const { values } = parseArgs({ options: { env: { type: "string" }, "public-key": { type: "string" } } });
@@ -19,7 +20,8 @@ if ((env !== "staging" && env !== "production") || keyFile === undefined) {
 const { db, bucket, bucketName, close } = await backupBindings(env);
 try {
   const publicKey = readFileSync(keyFile, "utf8").trim();
-  const written = await writeBackup({ db, bucket, publicKey, environment: env, now: new Date() });
+  const now = new Date();
+  const written = await writeBackup({ db, bucket, publicKey, environment: env, now, date: indiaDate(now) });
   console.log(
     written === "already"
       ? "Today's backup is there already."

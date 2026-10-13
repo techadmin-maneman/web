@@ -1,27 +1,15 @@
-// What the stock needs a person for, told each morning (docs/decisions/0159-stock-views-and-expiry.md): each place
-// holding a lot that expires within ops' warning days (`stock_watch`), or has expired, in one alert for the place naming
-// each lot; and each transfer still on its way past ops' overdue days after it was sent. An alert closes once what it was about is
-// gone: the lots used, moved or written off, the transfer received or sent back.
+// What the stock needs a person for, told each morning by the cron's stock jobs (src/scheduled/cron.ts;
+// docs/decisions/0159-stock-views-and-expiry.md): each place holding a lot that expires within ops' warning days
+// (`stock_watch`), or has expired, in one alert for the place naming each lot; and each transfer still on its way past
+// ops' overdue days after it was sent. An alert closes once what it was about is gone: the lots used, moved or written
+// off, the transfer received or sent back.
 
 import { MINUTE_MS } from "../../lib/durations.ts";
-import { addDays, indiaDate, indiaHour } from "../../lib/india-time.ts";
+import { addDays, indiaDate } from "../../lib/india-time.ts";
 import type { AlertOnce, ResolveAlert } from "../ops/alerts.ts";
-import { classDaysOf } from "../../policy/cycle-counts.ts";
-import { readOpsInputs } from "../ops/ops-settings.ts";
-import { runForecastIfDue } from "./forecast.ts";
-import { measureLastForecast } from "./forecast-accuracy.ts";
-import { raiseCountTasks } from "./cycle-counts.ts";
-import { checkTomorrowsKits } from "./kit-check.ts";
-import { draftPlan } from "./supply-plan.ts";
-import { refreshStockRisks } from "./stock-risks.ts";
 
 const EXPIRING_KEY = "stock_expiring:";
 const OVERDUE_KEY = "transfer_overdue:";
-
-/** India's date in the hour from 9 am, when the stock is looked at; null in every other hour. */
-function stockWatchDueOn(now: Date): string | null {
-  return indiaHour(now).endsWith("T09") ? indiaDate(now) : null;
-}
 
 interface ExpiringRow {
   readonly place: string;
@@ -39,7 +27,7 @@ const placeWords = (row: ExpiringRow) =>
   row.kind === "kit" ? `technician ${row.place}'s kit` : (row.name ?? row.place);
 
 /** One alert for each place holding stock that expires soon, or has; closes those whose places hold none now. */
-async function tellOfExpiring(
+export async function tellOfExpiring(
   db: D1Database,
   deps: { readonly alertOnce: AlertOnce; readonly resolveAlert: ResolveAlert },
   today: string,
@@ -80,7 +68,7 @@ const PLACE_WORDS = (alias: string) =>
   `CASE WHEN ${alias}.kind = 'kit' THEN 'technician ' || ${alias}.id || '''s kit' ELSE ${alias}.name END`;
 
 /** One alert for each transfer on its way too long; closes those received or sent back. */
-async function tellOfOverdue(
+export async function tellOfOverdue(
   db: D1Database,
   deps: { readonly alertOnce: AlertOnce; readonly resolveAlert: ResolveAlert },
   now: Date,
@@ -126,28 +114,4 @@ async function closeTheRest(db: D1Database, resolveAlert: ResolveAlert, prefix: 
   for (const { key } of results) {
     if (!still.has(key.slice(prefix.length))) await resolveAlert(key);
   }
-}
-
-/** The morning look at the stock: what expires soon, and what is long on its way. */
-export async function watchStock(
-  db: D1Database,
-  deps: { readonly alertOnce: AlertOnce; readonly resolveAlert: ResolveAlert; readonly now: () => Date },
-): Promise<void> {
-  const now = deps.now();
-  const inputs = await readOpsInputs(db, now);
-  // Each hour: the fits booked ahead with no hair system in reach, kept as tasks (./stock-risks.ts).
-  await refreshStockRisks(db, indiaDate(now), now, inputs.stockWatch.demand_days);
-  // Once a run's first period has passed: how right it was (./forecast-accuracy.ts).
-  await measureLastForecast(db, now, indiaDate(now));
-  // Once each planning period: the demand forecast (./forecast.ts), and the supply plan drafted from it.
-  const run = await runForecastIfDue(db, now, inputs);
-  if (run !== null) await draftPlan(db, run, now, inputs.planningPeriodDays);
-  // Each evening hour: tomorrow's kits, and their top-ups (./kit-check.ts).
-  await checkTomorrowsKits(db, now, deps.alertOnce, inputs.kitCheck);
-  const today = stockWatchDueOn(now);
-  if (today === null) return;
-  // Each morning: the cycle counts come round (./cycle-counts.ts).
-  await raiseCountTasks(db, today, now, classDaysOf(inputs.cycleCounts));
-  await tellOfExpiring(db, deps, today, inputs.stockWatch.expiry_warning_days);
-  await tellOfOverdue(db, deps, now, inputs.stockWatch.transfer_overdue_days);
 }

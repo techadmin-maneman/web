@@ -9,14 +9,6 @@ import { parentsFirst } from "../../lib/parents-first.ts";
 const KEEP_WEEKS = 13;
 const PAGE_ROWS = 1000;
 const MANIFEST = "manifest.json";
-const IST_OFFSET_MS = 330 * 60_000;
-
-/** The India date of the backup due now: on Sundays, in the hour from 3 am in India; else null. */
-export function backupDueOn(now: Date): string | null {
-  const india = new Date(now.getTime() + IST_OFFSET_MS);
-  return india.getUTCDay() === 0 && india.getUTCHours() === 3 ? indiaDate(now) : null;
-}
-
 interface Table {
   readonly name: string;
   readonly sql: string;
@@ -102,16 +94,17 @@ async function backupKey(): Promise<CryptoKey> {
 /** What a backup wrote: its folder, tables and rows; or that this week's was written already. */
 type BackupOutcome = { readonly prefix: string; readonly tables: number; readonly rows: number } | "already";
 
-/** Writes this week's backup into `bucket`, under its India date, unless it is there already. */
+/** Writes the backup of `date`, an India date, into `bucket` under it, unless it is there already. */
 export async function writeBackup(input: {
   readonly db: D1Database;
   readonly bucket: R2Bucket;
   readonly publicKey: string;
   readonly environment: string;
   readonly now: Date;
+  readonly date: string;
 }): Promise<BackupOutcome> {
   const { db, bucket, now } = input;
-  const prefix = `${indiaDate(now)}/`;
+  const prefix = `${input.date}/`;
   if ((await bucket.head(`${prefix}${MANIFEST}`)) !== null) return "already";
   const key = await backupKey();
   const wrapped = await crypto.subtle.wrapKey("raw", key, await wrappingKey(input.publicKey), { name: "RSA-OAEP" });

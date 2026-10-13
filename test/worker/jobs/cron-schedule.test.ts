@@ -6,14 +6,8 @@ import { CALLS_PER_VISIT as BOOKS_CALLS_PER_VISIT } from "../../../src/domain/bo
 import { startRun } from "../../../src/domain/platform/cron-runs.ts";
 import type { StaticConfig } from "../../../src/guard.ts";
 import { createLogger } from "../../../src/log.ts";
-import {
-  CRON_CALLS_FOR_MS,
-  CRON_JOBS,
-  booksSyncOptions,
-  runCron,
-  runCronJobs,
-  type CronJob,
-} from "../../../src/scheduled/cron.ts";
+import { CRON_JOBS, booksSyncOptions, type CronJob } from "../../../src/scheduled/cron.ts";
+import { CRON_CALLS_FOR_MS, runCron, runCronJobs } from "../../../src/scheduled/cron-runner.ts";
 import { CRON_CALLS, EVERY_MINUTE, isDueAt, jobsDue, pingsWhenWell } from "../../../src/scheduled/schedule.ts";
 import { LOCAL_CONFIG, NOW, captureLogs, fakeDependencies, fakeFetch } from "../helpers.ts";
 import { MINUTE_MS, job, recorder } from "./cron-fixtures.ts";

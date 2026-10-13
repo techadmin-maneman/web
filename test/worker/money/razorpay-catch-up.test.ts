@@ -7,7 +7,8 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { createLogger } from "../../../src/log.ts";
 import { createStubPayments, type StubPayments } from "../../../src/providers/payments/stub.ts";
 import type { RazorpayPayment } from "../../../src/providers/payments/razorpay.ts";
-import { CRON_JOBS, runCronJobs } from "../../../src/scheduled/cron.ts";
+import { CRON_JOBS } from "../../../src/scheduled/cron.ts";
+import { runCronJobs } from "../../../src/scheduled/cron-runner.ts";
 import {
   captureLogs,
   fakeDependencies,

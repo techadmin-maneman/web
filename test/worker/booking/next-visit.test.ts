@@ -15,7 +15,8 @@ import { createLogger } from "../../../src/log.ts";
 import { NEXT_VISIT_DAYS, type NextVisitDays } from "../../../src/policy/next-visit.ts";
 import type { MessagingProvider } from "../../../src/providers/messaging/index.ts";
 import { sendMessage } from "../../../src/queues/messaging.ts";
-import { CRON_JOBS, runCronJobs } from "../../../src/scheduled/cron.ts";
+import { CRON_JOBS } from "../../../src/scheduled/cron.ts";
+import { runCronJobs } from "../../../src/scheduled/cron-runner.ts";
 import {
   appFor,
   captureLogs,

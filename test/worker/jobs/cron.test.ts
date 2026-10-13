@@ -1,9 +1,16 @@
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { CUT_SHORT_ALERT, finishRun, lastCompletedAt, startRun } from "../../../src/domain/platform/cron-runs.ts";
+import {
+  CUT_SHORT_ALERT,
+  finishRun,
+  lastCompletedAt,
+  startRun,
+  takeJobLease,
+} from "../../../src/domain/platform/cron-runs.ts";
 import type { StaticConfig } from "../../../src/guard.ts";
 import { createLogger } from "../../../src/log.ts";
-import { CRON_JOBS, runCronJobs, type CronJob } from "../../../src/scheduled/cron.ts";
+import { CRON_JOBS, type CronJob } from "../../../src/scheduled/cron.ts";
+import { runCronJobs } from "../../../src/scheduled/cron-runner.ts";
 import { LOCAL_CONFIG, NOW, captureLogs, fakeDependencies } from "../helpers.ts";
 import { MINUTE_MS, job, recorder } from "./cron-fixtures.ts";
 
@@ -123,7 +130,7 @@ describe("a job that keeps failing", () => {
   });
 
   // Every job's count was written on every run, sixteen writes a run for counts that were almost never set.
-  it("reads which jobs are failing once a run, rather than writing each working job's count", async () => {
+  it("reads which jobs are failing once a run, and takes each job's lease and notes how it went", async () => {
     const { job } = recorder();
     const prepared = vi.spyOn(env.DB, "prepare");
 
@@ -135,7 +142,19 @@ describe("a job that keeps failing", () => {
     });
 
     const countStatements = prepared.mock.calls.filter(([sql]) => sql.includes("cron_jobs"));
-    expect(countStatements).toEqual([["SELECT job FROM cron_jobs WHERE failed_runs > 0"]]);
+    // The look at the failing jobs, then for each job its lease and its success.
+    expect(countStatements).toHaveLength(1 + 3 * 2);
+    const { results } = await env.DB.prepare(
+      "SELECT job, lease_until, last_success_at, failed_runs FROM cron_jobs ORDER BY job",
+    ).all();
+    expect(results).toEqual(
+      ["first", "second", "third"].map((name) => ({
+        job: name,
+        lease_until: null,
+        last_success_at: NOW.toISOString(),
+        failed_runs: 0,
+      })),
+    );
   });
 });
 
@@ -216,19 +235,22 @@ describe("the run record", () => {
   });
 
   // Two runs at once could each queue the same reminder.
-  it("runs nothing while the run before is still running, and leaves the record and the alert to it", async () => {
+  it("runs beside a run still running, but no job the run before holds, and leaves the record and the alert to it", async () => {
     await cutShortAt(0);
+    // The run before is part-way through its slow job, under that job's lease.
+    await takeJobLease(env.DB, "slow", { now: at(0), dueSince: null });
     const { ran, job } = recorder();
     const told: string[] = [];
-    await runAt(1, told, [job("first", "nothing")]);
-    await runAt(2, told, [job("first", "nothing")]);
-    expect(ran).toEqual([]);
+    await runAt(1, told, [job("slow", "nothing"), job("quick", "nothing")]);
+    await runAt(2, told, [job("slow", "nothing"), job("quick", "nothing")]);
+    expect(ran).toEqual(["quick", "quick"]);
     expect(told).toEqual([]);
     expect(await record()).toMatchObject({ started_at: at(0).toISOString(), completed_at: null });
     expect(logs.lines().filter((line) => line.event === "cron_run_overlapping")).toHaveLength(2);
 
-    await runAt(3, told, [job("first", "nothing")]);
-    expect(ran).toEqual(["first"]);
+    // Past the leases: the run before was cut short, and its slow job runs again.
+    await runAt(3, told, [job("slow", "nothing")]);
+    expect(ran).toEqual(["quick", "quick", "slow"]);
     expect(told).toHaveLength(1);
   });
 

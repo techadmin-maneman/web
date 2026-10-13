@@ -13,7 +13,8 @@ import { pingHeartbeat } from "./providers/heartbeat.ts";
 import { handleCrmSyncBatch } from "./queues/crm-sync.ts";
 import { handleMessagingBatch } from "./queues/messaging.ts";
 import { handleRenderBatch } from "./queues/render.ts";
-import { CRON_JOBS, runCron } from "./scheduled/cron.ts";
+import { CRON_JOBS } from "./scheduled/cron.ts";
+import { runCron } from "./scheduled/cron-runner.ts";
 import { jobsDue, pingsWhenWell } from "./scheduled/schedule.ts";
 
 // Runs at module load. A Worker without a valid ENVIRONMENT, missing a secret

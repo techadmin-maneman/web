@@ -2,7 +2,7 @@
 
 Every decision this repository was built on, oldest first. A record says what was decided and why, and is not rewritten to say something else: a later record changes it, and says so in its own header (ADR 0001). **Changed by** gathers those later records, from either side, so an old record's reader knows to read on.
 
-This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. A record names its topic in its header, `- Topic:` and one of the headings below, and the test fails on one that does not. The next free number is 0195.
+This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. A record names its topic in its header, `- Topic:` and one of the headings below, and the test fails on one that does not. The next free number is 0196.
 
 ## By topic
 
@@ -37,6 +37,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 - [0151](0151-retention-figures.md) Retention figures
 - [0153](0153-supply-and-credits-in-the-copy.md) Supply and credits in the copy
 - [0194](0194-the-build-on-workers-paid.md) The build on Workers Paid
+- [0195](0195-the-cron-a-job-at-a-time.md) The cron a job at a time
 
 ### Booking and visits
 
@@ -298,7 +299,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0064](0064-converting-a-request.md) | Converting a Request by API | 2026-09-24 | superseded by 0110 on 4 October 2026: no booking becomes an FSM work order | [0101](0101-phase-1s-path-into-fsm-removed.md), [0110](0110-field-work-without-fsm.md) |
 | [0065](0065-a-technicians-writes-reach-fsm.md) | A technician's writes reach FSM, in order, on a clock we can hold him to | 2026-09-25 | accepted | [0087](0087-consumables-and-stock.md) |
 | [0066](0066-erasure-all-or-nothing.md) | Erasure is all or nothing | 2026-09-25 | accepted | [0094](0094-where-a-consent-was-given.md) |
-| [0067](0067-alerts-and-silent-failures.md) | A failure that needs a person reaches one, once, with the IDs to act on | 2026-09-25 | accepted |  |
+| [0067](0067-alerts-and-silent-failures.md) | A failure that needs a person reaches one, once, with the IDs to act on | 2026-09-25 | accepted | [0195](0195-the-cron-a-job-at-a-time.md) |
 | [0068](0068-a-paid-hold-is-kept.md) | A paid hold is kept | 2026-09-25 | accepted | [0095](0095-a-booking-fsm-refuses-is-held.md) |
 | [0069](0069-dispatch-under-concurrency.md) | Dispatch under concurrency | 2026-09-25 | accepted |  |
 | [0070](0070-vendor-correctness.md) | What we write to Zoho is right, written once, and asked for sparingly | 2026-09-25 | accepted | [0104](0104-the-try-ons-look-on-whatsapp-only.md) |
@@ -424,3 +425,4 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0192](0192-free-remakes.md) | Free remakes | 2026-10-13 | accepted |  |
 | [0193](0193-the-rest-of-the-rules-in-the-console.md) | The rest of the rules in the console | 2026-10-13 | accepted |  |
 | [0194](0194-the-build-on-workers-paid.md) | The build on Workers Paid | 2026-10-13 | accepted |  |
+| [0195](0195-the-cron-a-job-at-a-time.md) | The cron a job at a time | 2026-10-13 | accepted |  |

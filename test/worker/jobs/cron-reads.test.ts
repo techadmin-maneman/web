@@ -13,13 +13,14 @@ import {
   BOARD_ROWS_READ_FIXED,
   BOARD_ROWS_READ_PER_VISIT,
   BOARD_VERSION_ROWS_READ,
-  CRON_ROWS_READ_PER_QUIET_RUN,
+  cronRowsReadPerQuietRun,
   CRON_STATEMENTS_PER_RUN,
 } from "../../../scripts/lib/usage-budget.ts";
 import type { StaticConfig } from "../../../src/guard.ts";
 import { meterDatabase } from "../../../src/lib/d1-meter.ts";
 import { createLogger } from "../../../src/log.ts";
-import { CRON_JOBS, runCronJobs } from "../../../src/scheduled/cron.ts";
+import { CRON_JOBS } from "../../../src/scheduled/cron.ts";
+import { runCronJobs } from "../../../src/scheduled/cron-runner.ts";
 import { EVERY_MINUTE, jobsDue } from "../../../src/scheduled/schedule.ts";
 import {
   LOCAL_CONFIG,
@@ -343,7 +344,7 @@ describe("one cron run", () => {
     const after = await rowsReadByOneRun();
 
     expect({ before, after }).toEqual({ before, after: before });
-    expect(after).toBeLessThanOrEqual(CRON_ROWS_READ_PER_QUIET_RUN);
+    expect(after).toBeLessThanOrEqual(cronRowsReadPerQuietRun(CRON_JOBS.length));
   });
 
   // The next service's reminders run from the evening's reminder hour and read the week of last visits they cover,
@@ -363,7 +364,7 @@ describe("one cron run", () => {
     const after = await rowsReadByOneRun(EVENING);
 
     expect({ before, after }).toEqual({ before, after: before });
-    expect(after).toBeLessThanOrEqual(CRON_ROWS_READ_PER_QUIET_RUN);
+    expect(after).toBeLessThanOrEqual(cronRowsReadPerQuietRun(CRON_JOBS.length));
     const reminders = await env.DB.prepare(
       "SELECT COUNT(*) AS n FROM outbound_messages WHERE kind = 'next_service_reminder'",
     ).first<{ n: number }>();

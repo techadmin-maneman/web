@@ -3,7 +3,7 @@
 // Each table is made to hold exactly tonight's rows, an unchanged row keeping its stamp so Zoho fetches only what
 // changed. The copy's totals are then checked against what was sent, and the run logged in the copy itself.
 
-import { addDays, indiaDate, indiaHour } from "../../lib/india-time.ts";
+import { addDays } from "../../lib/india-time.ts";
 import { LOST_AFTER_DAYS, type StandingDays } from "../../policy/client-standing.ts";
 import { NEXT_VISIT_DAYS } from "../../policy/next-visit.ts";
 import type { RunLog, TableRows, WarehouseProvider } from "../../providers/warehouse/index.ts";
@@ -33,11 +33,6 @@ const COMMITTED_STANDING: StandingDays = {
 
 /** The calendar runs a year past tonight, so a visit booked months ahead has its week and quarter. */
 const DAYS_AHEAD = 365;
-
-/** India's date in the hour from 3 am, when the copy is due; null in every other hour. */
-export function nightlyDueOn(now: Date): string | null {
-  return indiaHour(now).endsWith("T03") ? indiaDate(now) : null;
-}
 
 const total = (table: TableRows, column: string) =>
   Math.round(table.rows.reduce((sum, row) => sum + Number(row[column] ?? 0), 0) * 100);

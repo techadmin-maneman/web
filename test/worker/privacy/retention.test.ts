@@ -5,7 +5,8 @@ import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import { blankOldCoordinates, dormantPeople, dropLaunchedWaitlist } from "../../../src/domain/privacy/retention.ts";
 import { createLogger } from "../../../src/log.ts";
-import { CRON_JOBS, runCronJobs } from "../../../src/scheduled/cron.ts";
+import { CRON_JOBS } from "../../../src/scheduled/cron.ts";
+import { runCronJobs } from "../../../src/scheduled/cron-runner.ts";
 import { fakeDependencies, fakeQueue, LOCAL_CONFIG, markDatabase, NOW } from "../helpers.ts";
 
 const LONG_AGO = "2025-08-01T06:30:00.000Z";

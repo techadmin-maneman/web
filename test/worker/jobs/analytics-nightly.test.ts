@@ -4,7 +4,7 @@
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import { clientKeys } from "../../../src/domain/analytics/client-key.ts";
-import { copyTonight, nightlyDueOn } from "../../../src/domain/analytics/nightly.ts";
+import { copyTonight } from "../../../src/domain/analytics/nightly.ts";
 import { createStubWarehouse } from "../../../src/providers/warehouse/stub.ts";
 import { client, IMRAN, technician } from "../clients.ts";
 import { NOW } from "../helpers.ts";
@@ -45,11 +45,6 @@ beforeEach(async () => {
 });
 
 describe("the nightly reporting copy", () => {
-  it("is due in the hour from 3 am in India and no other", () => {
-    expect(nightlyDueOn(new Date("2026-09-20T21:45:00Z"))).toBe("2026-09-21");
-    expect(nightlyDueOn(new Date("2026-09-20T22:30:00Z"))).toBeNull();
-  });
-
   it("copies visits and payments under a client key, leaving test records out", async () => {
     const warehouse = createStubWarehouse();
     const run = await copyTonight(env.DB, warehouse, night);
