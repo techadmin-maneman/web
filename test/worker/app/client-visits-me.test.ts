@@ -191,6 +191,15 @@ describe("GET /api/me's prompt and invoice line", () => {
     expect(await prompt()).toBeNull();
   });
 
+  it("offers no replacement for a piece another has taken the place of", async () => {
+    await seed([done("ap-done", "2026-09-10"), booked("ap-next")]);
+    await signIn();
+    await giveAddress();
+    await fitPiece("2026-10-05");
+    await env.DB.prepare("UPDATE pieces SET replaced_at = ?1").bind(NOW.toISOString()).run();
+    expect(await prompt()).toBeNull();
+  });
+
   it("leads with the next visit, and keeps the invoice as a second line for 14 days", async () => {
     const ids = await seed([done("ap-done", "2026-09-10")]);
     await signIn();

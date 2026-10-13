@@ -32,7 +32,7 @@ export const EXPORT_QUERIES = {
       use_credit, pay_by_link, change_notice_hours, late_change_charge, no_show_charge, consents_shown, state,
       auto_refund_reason, created_at, confirmed_at
     FROM slot_holds h WHERE person_id = ?1 ORDER BY created_at`,
-  hair_systems: `SELECT piece_code, base, fitted_at, replacement_due_at, failed_at, failure_reason FROM pieces
+  hair_systems: `SELECT piece_code, base, fitted_at, replacement_due_at, failed_at, failure_reason, replaced_at FROM pieces
     WHERE person_id = ?1 AND deleted_at IS NULL ORDER BY fitted_at`,
   payments: `SELECT reference, kind, amount, amount_ex_gst, gst_percent, method, card_network, status, refunded_amount,
       created_at, captured_at

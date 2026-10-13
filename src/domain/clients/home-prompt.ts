@@ -60,7 +60,8 @@ interface HomePrompts {
 const PROMPT = `SELECT
   EXISTS (SELECT 1 FROM addresses WHERE person_id = ?1 AND replaced_at IS NULL) AS has_address,
   (SELECT MIN(replacement_due_at) FROM pieces
-     WHERE person_id = ?1 AND deleted_at IS NULL AND failed_at IS NULL AND replacement_due_at IS NOT NULL) AS due_on,
+     WHERE person_id = ?1 AND deleted_at IS NULL AND failed_at IS NULL AND replaced_at IS NULL
+       AND replacement_due_at IS NOT NULL) AS due_on,
   (EXISTS (SELECT 1 FROM appointments r WHERE r.person_id = ?1 AND r.deleted_at IS NULL AND r.type = 'replacement'
       AND ${statusIn("r.status", VISIT_LIVE)})
     OR EXISTS (SELECT 1 FROM slot_holds h WHERE h.person_id = ?1 AND h.type = 'replacement' AND ${paidNotBooked("h")}))

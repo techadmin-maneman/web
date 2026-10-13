@@ -104,7 +104,7 @@ export async function recallDetail(db: D1Database, id: string): Promise<RecallDe
       .prepare(
         `SELECT p.piece_code AS code, p.person_id, pe.name AS person, p.replacement_due_at AS due_on
          FROM stock_units u JOIN pieces p ON p.piece_code = u.code JOIN people pe ON pe.id = p.person_id
-         WHERE u.lot_id = ?1 AND u.state = 'fitted' AND p.deleted_at IS NULL AND p.failed_at IS NULL
+         WHERE u.lot_id = ?1 AND u.state = 'fitted' AND p.deleted_at IS NULL AND p.failed_at IS NULL AND p.replaced_at IS NULL
            AND pe.erased_at IS NULL
          ORDER BY pe.name COLLATE NOCASE`,
       )
@@ -151,7 +151,8 @@ export async function raiseRecall(
       .prepare(
         `INSERT INTO recall_pieces (recall_id, piece_id, due_before)
          SELECT ?1, p.id, p.replacement_due_at FROM stock_units u JOIN pieces p ON p.piece_code = u.code
-         WHERE u.lot_id = ?2 AND u.state = 'fitted' AND p.deleted_at IS NULL AND p.failed_at IS NULL`,
+         WHERE u.lot_id = ?2 AND u.state = 'fitted' AND p.deleted_at IS NULL AND p.failed_at IS NULL
+           AND p.replaced_at IS NULL`,
       )
       .bind(id, input.lotId),
     db

@@ -16,6 +16,8 @@ export interface Piece {
   readonly replacement_due_at: string | null;
   readonly failed_at: string | null;
   readonly failure_reason: string | null;
+  /** When a later piece was fitted in its place; a piece that failed is not also replaced. */
+  readonly replaced_at: string | null;
 }
 
 interface PieceRow {
@@ -27,10 +29,11 @@ interface PieceRow {
   replacement_due_at: string | null;
   failed_at: string | null;
   failure_reason: string | null;
+  replaced_at: string | null;
 }
 
 const SELECT_PIECE = `SELECT id, piece_code, base, supplier_lot, fitted_at, replacement_due_at, failed_at,
-  failure_reason FROM pieces WHERE deleted_at IS NULL`;
+  failure_reason, replaced_at FROM pieces WHERE deleted_at IS NULL`;
 
 /** A client's pieces, newest fit first. */
 export async function piecesOf(db: D1Database, personId: string): Promise<Piece[]> {
@@ -48,8 +51,8 @@ export async function pieceWithOwner(
 ): Promise<{ piece: Piece; personId: string | null } | null> {
   const row = await db
     .prepare(
-      `SELECT id, piece_code, base, supplier_lot, fitted_at, replacement_due_at, failed_at, failure_reason, person_id
-       FROM pieces WHERE deleted_at IS NULL AND piece_code = ?1 LIMIT 1`,
+      `SELECT id, piece_code, base, supplier_lot, fitted_at, replacement_due_at, failed_at, failure_reason, replaced_at,
+         person_id FROM pieces WHERE deleted_at IS NULL AND piece_code = ?1 LIMIT 1`,
     )
     .bind(code)
     .first<PieceRow & { person_id: string | null }>();
@@ -172,4 +175,22 @@ export function failedPieceStatement(
        WHERE piece_code = ?1 AND person_id = ?2 AND deleted_at IS NULL`,
     )
     .bind(failure.pieceCode, failure.personId, failure.now.toISOString(), failure.reason);
+}
+
+/**
+ * Marks replaced the client's pieces still worn when another is fitted on a visit: a client wears one at a time, so
+ * the piece that came off is retired even where the technician did not name it. Pieces of the same visit, and one named
+ * as failed in the same step, are left as they are.
+ */
+export function replacedPiecesStatement(
+  db: D1Database,
+  fitted: { readonly personId: string; readonly appointmentId: string; readonly pieceCode: string; readonly now: Date },
+): D1PreparedStatement {
+  return db
+    .prepare(
+      `UPDATE pieces SET replaced_at = ?4, synced_at = ?4
+       WHERE person_id = ?1 AND piece_code <> ?2 AND deleted_at IS NULL AND failed_at IS NULL AND replaced_at IS NULL
+         AND fitted_at IS NOT NULL AND (appointment_id IS NULL OR appointment_id <> ?3)`,
+    )
+    .bind(fitted.personId, fitted.pieceCode, fitted.appointmentId, fitted.now.toISOString());
 }

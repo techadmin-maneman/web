@@ -161,6 +161,7 @@ const PIECE = {
   replacement_due_at: "2030-12-29",
   failed_at: null,
   failure_reason: null,
+  replaced_at: null,
 };
 
 /** A 1×1 grey PNG for board A3's last visit: no photograph of anyone is used. */
@@ -458,6 +459,7 @@ async function steps(browser: Browser, design: Page): Promise<void> {
           replacement_due_at: null,
           failed_at: null,
           failure_reason: null,
+          replaced_at: null,
         },
         belongs_to_this_job: true,
       }),

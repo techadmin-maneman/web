@@ -1843,7 +1843,7 @@ Indexes:
 
 Each piece fitted, its base and lot, the day it was fitted and the day it falls due, and a failure with its reason. `fsm_id` is FSM's ID for a piece mirrored from FSM, otherwise the row's own (ADR 0032, ADR 0110).
 
-Made by `0027_pieces_and_zones.sql`; changed by `0060_flat_task_reads.sql`, `0151_forecast.sql`.
+Made by `0027_pieces_and_zones.sql`; changed by `0060_flat_task_reads.sql`, `0151_forecast.sql`, `0157_pieces_replaced.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -1861,6 +1861,7 @@ Made by `0027_pieces_and_zones.sql`; changed by `0060_flat_task_reads.sql`, `015
 | `synced_at` | TEXT | no |  |  |
 | `deleted_at` | TEXT | yes |  |  |
 | `replacement_booked` | INTEGER | no | `0` |  |
+| `replaced_at` | TEXT | yes |  |  |
 
 Indexes:
 

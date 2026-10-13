@@ -45,6 +45,7 @@ export function registerOpsClientPieces(app: App): void {
           replacement_due_at: piece.replacement_due_at === null ? null : piece.replacement_due_at.slice(0, 10),
           failed_at: piece.failed_at,
           failure_reason: piece.failure_reason,
+          replaced_at: piece.replaced_at,
         })),
       },
       200,

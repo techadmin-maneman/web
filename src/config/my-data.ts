@@ -146,6 +146,7 @@ export const MY_DATA = {
         replacement_due_at: day("Replacement due"),
         failed_at: day("Failed"),
         failure_reason: text("Why it failed"),
+        replaced_at: day("Replaced"),
       },
     },
     payments: {

@@ -199,8 +199,8 @@ const QUEUES: readonly Queue[] = [
          p.piece_code || ' ' || p.replacement_due_at AS detail, date(p.replacement_due_at, ?1) AS since,
          p.replacement_due_at AS due_by, '' AS episode
     FROM pieces p INDEXED BY pieces_to_replace JOIN people pe ON pe.id = p.person_id
-   WHERE p.replacement_booked = 0 AND p.deleted_at IS NULL AND p.failed_at IS NULL AND pe.erased_at IS NULL
-     AND p.replacement_due_at IS NOT NULL AND p.replacement_due_at <= date(?2, ?3)`,
+   WHERE p.replacement_booked = 0 AND p.deleted_at IS NULL AND p.failed_at IS NULL AND p.replaced_at IS NULL
+     AND pe.erased_at IS NULL AND p.replacement_due_at IS NOT NULL AND p.replacement_due_at <= date(?2, ?3)`,
     binds: (at) => [
       `-${String(at.days.replacement_order_lead)} days`,
       at.today,

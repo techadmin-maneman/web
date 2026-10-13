@@ -2688,6 +2688,18 @@ Request body:
           "type": "null"
         }
       ]
+    },
+    "replaced_at": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date-time"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "When a later piece was fitted in its place."
     }
   },
   "required": [
@@ -2697,7 +2709,8 @@ Request body:
     "fitted_at",
     "replacement_due_at",
     "failed_at",
-    "failure_reason"
+    "failure_reason",
+    "replaced_at"
   ],
   "additionalProperties": false
 }

@@ -31,9 +31,11 @@ export interface PieceForm {
 export const given = (text: string): boolean => text.trim() !== "";
 
 /** A piece still to be fitted, which is the new one on a first fit or a replacement. */
-export const toFit = (piece: ClientPiece): boolean => piece.fitted_at === null && piece.failed_at === null;
+export const toFit = (piece: ClientPiece): boolean =>
+  piece.fitted_at === null && piece.failed_at === null && piece.replaced_at === null;
 /** A piece on the client's head now, which is the one a replacement takes off. */
-export const onTheHead = (piece: ClientPiece): boolean => piece.fitted_at !== null && piece.failed_at === null;
+export const onTheHead = (piece: ClientPiece): boolean =>
+  piece.fitted_at !== null && piece.failed_at === null && piece.replaced_at === null;
 
 /** The product a piece is fitted as: chosen on a one visit, paid for on a first fit, the profile's on a replacement. */
 function productFitted(job: Pick<Job, "profile" | "service" | "one_visit" | "type">, choice: Choice): string | null {

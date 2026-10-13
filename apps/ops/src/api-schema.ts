@@ -16249,6 +16249,8 @@ export interface components {
             replacement_due_at: string | null;
             failed_at: string | null;
             failure_reason: string | null;
+            /** @description When a later piece was fitted in its place. */
+            replaced_at: string | null;
         };
         Technicians: {
             technicians: {

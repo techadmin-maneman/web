@@ -515,10 +515,12 @@ export const clients = {
       fitted: "Fitted",
       lot: "Supplier lot",
       due: "Replace due",
-      failure: "Failed · reason",
+      failure: "Came off",
     },
     /** A piece that has failed, as the board writes it: "24 Jun · base split at crown". */
     failed: (date: string, reason: string | null) => (reason === null ? date : `${date} · ${reason}`),
+    /** A piece another took the place of: "Replaced 24 Jun". */
+    replaced: (date: string) => `Replaced ${date}`,
     // The board draws no client without a piece, and every client has none until they are fitted.
     empty: "No hair system fitted yet.",
   },
