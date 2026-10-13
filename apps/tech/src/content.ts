@@ -178,6 +178,8 @@ const stopped: Readonly<Record<string, string>> = {
   too_early_to_arrive: "Too early for this job. Tap again from the time on its card.",
   already_started: "This job was started, so it can’t close as a no-show.",
   photo_rejected: "The photos wouldn’t upload.",
+  // Failed at our end after several tries: nothing is wrong with what was done.
+  stuck: "This couldn’t reach us after several tries. Send it again.",
   not_found: "This job is no longer on your list, so what it holds can’t reach us.",
   already_closed: "This job is closed, so what it holds can’t reach us.",
   piece_code: "The piece’s label wasn’t accepted.",

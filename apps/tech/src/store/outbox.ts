@@ -28,12 +28,25 @@ import {
   keptStartAtCheckIn,
 } from "./jobs.ts";
 import type { Frame } from "./records.ts";
-import { account, nextToSend, type EventState, type JobAccount, type Queued } from "./replay.ts";
+import {
+  account,
+  MOST_TRIES,
+  nextToSend,
+  nextTryAt,
+  STUCK_AFTER_MS,
+  waitBeforeTry,
+  type EventState,
+  type JobAccount,
+  type Queued,
+} from "./replay.ts";
 import { uuidv7 } from "./uuidv7.ts";
 import { classify, type Verdict } from "./verdict.ts";
 
 export type { EventKind, Frame, JobAccount, Queued };
 export { account, checkInRefusedAsEarly, refusedAsEarly } from "./replay.ts";
+
+/** The note of a write the API kept failing at its end until it stopped: sent again from the Waiting screen. */
+export const STUCK = "stuck";
 
 /** Why a replay stopped short, so the screen can say it plainly. */
 type Stopped = "offline" | "signed-out" | null;
@@ -267,7 +280,57 @@ async function keepEarly(event: Queued, code: string): Promise<void> {
   await markAs({ event, state: "early", note: code, fields: [] });
 }
 
+/**
+ * A write the API failed at its end: it waits longer each time, its job with it, while the other jobs go on; after
+ * MOST_TRIES, or a day on the phone, it stops as stuck, reported once, for the technician to send again.
+ */
+async function waitOrStick(event: Queued, answer: Refusal["answer"]): Promise<void> {
+  const attempts = (event.attempts ?? 0) + 1;
+  const now = Date.now();
+  if (attempts >= MOST_TRIES || now - event.queued_at >= STUCK_AFTER_MS) {
+    await giveUp(event, { kind: "refused", note: STUCK, fields: [], answer });
+    return;
+  }
+  const current = await get("outbox", event.seq);
+  if (current === null) return;
+  await put("outbox", { ...current, attempts, next_at: now + waitBeforeTry(attempts, Math.random()) });
+}
+
+/** A stuck job's write sent again at once, its tries counted afresh. */
+export async function sendAgain(jobId: string): Promise<void> {
+  for (const event of await events()) {
+    if (event.job_id !== jobId || event.note !== STUCK) continue;
+    await put("outbox", {
+      ...event,
+      state: "waiting",
+      note: null,
+      fields: [],
+      request_id: null,
+      attempts: 0,
+      next_at: null,
+    });
+  }
+  changed();
+  await replay();
+}
+
 let running: Promise<Replayed> | null = null;
+let wake: ReturnType<typeof setTimeout> | null = null;
+
+/** The next round, while the app is in front, for when the earliest write waiting out a failure may go again. */
+async function wakeForNextTry(): Promise<void> {
+  if (wake !== null) clearTimeout(wake);
+  wake = null;
+  const at = nextTryAt(await events());
+  if (at === null) return;
+  wake = setTimeout(
+    () => {
+      wake = null;
+      if (document.visibilityState === "visible") void replay();
+    },
+    Math.max(0, at - Date.now()),
+  );
+}
 
 /**
  * Sends everything waiting, oldest first, one at a time so a job's own writes
@@ -278,6 +341,7 @@ export function replay(): Promise<Replayed> {
   running ??= run().finally(() => {
     running = null;
     changed();
+    void wakeForNextTry();
   });
   return running;
 }
@@ -390,6 +454,7 @@ async function run(): Promise<Replayed> {
     const verdict = await send(event);
     if (verdict === null) round.sent += 1;
     else if (verdict.kind === "retry_later") return { ...round, stopped: "offline" };
+    else if (verdict.kind === "failed_there") await waitOrStick(event, verdict.answer);
     else if (verdict.kind === "signed_out") return { ...round, stopped: "signed-out" };
     else if (verdict.kind === "too_early") await keepEarly(event, verdict.code);
     else if (verdict.kind === "superseded") {

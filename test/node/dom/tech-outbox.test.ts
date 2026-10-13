@@ -3,7 +3,15 @@
 // (docs/decisions/0053-the-technician-app-offline.md).
 
 import { describe, expect, it } from "vitest";
-import { account, nextToSend, sendable, stoppedJobs, type Queued } from "../../../apps/tech/src/store/replay.ts";
+import {
+  account,
+  nextToSend,
+  nextTryAt,
+  sendable,
+  stoppedJobs,
+  waitBeforeTry,
+  type Queued,
+} from "../../../apps/tech/src/store/replay.ts";
 import { queuedAt, uuidv7 } from "../../../apps/tech/src/store/uuidv7.ts";
 
 const UUID_V7 = /^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
@@ -61,6 +69,20 @@ describe("what the outbox sends, and in what order", () => {
     const queue = [event(1, "a", { state: "refused", note: "not_found" }), event(2, "a")];
     expect(sendable(queue)).toEqual([]);
     expect(nextToSend(queue)).toBeNull();
+  });
+
+  it("holds back a job whose write the API failed until its wait is up, and lets the other jobs go on", () => {
+    const queue = [event(1, "a", { attempts: 2, next_at: 5_000 }), event(2, "a"), event(3, "b")];
+    expect(sendable(queue, 4_999).map((held) => held.seq)).toEqual([3]);
+    expect(sendable(queue, 5_000).map((held) => held.seq)).toEqual([1, 2, 3]);
+    expect(nextTryAt(queue)).toBe(5_000);
+  });
+
+  it("waits half a minute, then twice as long each time, to half an hour at most, a fifth either way", () => {
+    expect([1, 2, 3].map((tries) => waitBeforeTry(tries, 0.5))).toEqual([30_000, 60_000, 120_000]);
+    expect(waitBeforeTry(12, 0.5)).toBe(30 * 60_000);
+    expect(waitBeforeTry(1, 0)).toBe(24_000);
+    expect(waitBeforeTry(1, 1)).toBe(36_000);
   });
 
   it("has nothing to send when the queue is empty", () => {

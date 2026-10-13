@@ -25,7 +25,7 @@ import { useScreen } from "../lib/useScreen.ts";
 import { clock } from "../lib/when.ts";
 import { go, STEP_PATHS, stepPath, type InJobStep } from "../route.ts";
 import { useSession } from "../session.ts";
-import { account, forget, replay, type EventKind, type JobAccount } from "../store/outbox.ts";
+import { account, forget, replay, sendAgain, STUCK, type EventKind, type JobAccount } from "../store/outbox.ts";
 import { Progress } from "./Progress.tsx";
 import { IN_A_SET, photoSets, sentOf, type PhotoSet } from "../lib/sets.ts";
 import frame from "../components/frame.module.css";
@@ -37,7 +37,7 @@ const isInJobStep = (kind: EventKind): kind is InJobStep => kind in STEP_PATHS;
 
 /** A refused step the technician can open again and put right on its own screen; null for any other stop. */
 function correctable(stopped: JobAccount["stopped"]): InJobStep | null {
-  if (stopped?.state !== "refused") return null;
+  if (stopped?.state !== "refused" || stopped.note === STUCK) return null;
   return isInJobStep(stopped.kind) ? stopped.kind : null;
 }
 
@@ -155,6 +155,16 @@ export function WaitingScreen() {
                         <ErrorRef requestId={stopped.requestId} words={reference} className={styles.reference} />
                       )}
                       <div className={styles.buttons}>
+                        {stopped.note === STUCK && (
+                          <Button
+                            variant="outlineOnInk"
+                            size="small"
+                            className={styles.button}
+                            onClick={() => void sendAgain(id)}
+                          >
+                            {copy.retry}
+                          </Button>
+                        )}
                         {toCorrect !== null && (
                           <Button
                             variant="outlineOnInk"
