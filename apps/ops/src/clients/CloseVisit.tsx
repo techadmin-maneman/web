@@ -83,7 +83,6 @@ function Form({ visitId, date, onClosed }: { visitId: string; date: string; onCl
           {(control) => (
             <TextInput
               {...control}
-              className={styles.text}
               type="time"
               value={started}
               disabled={busy}
@@ -97,7 +96,6 @@ function Form({ visitId, date, onClosed }: { visitId: string; date: string; onCl
           {(control) => (
             <TextInput
               {...control}
-              className={styles.text}
               type="time"
               value={ended}
               disabled={busy}
