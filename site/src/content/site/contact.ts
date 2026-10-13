@@ -11,6 +11,18 @@ export const whatsapp = {
   label: `WhatsApp · ${WHATSAPP_DISPLAY}`,
 };
 
+/**
+ * The bar that asks for consent to the ad and measurement tags (site/src/components/ConsentBar.astro): our words,
+ * which counsel has still to see, so the bar is switched off until they approve (CONSENT_BAR_SHOWN).
+ */
+export const consentBar = {
+  publish: true,
+  text: "We'd like to measure visits and the ads that bring them, with cookies from Google and Meta. Nothing you type in a form goes to them.",
+  privacy: "How we use your details",
+  accept: "Allow",
+  decline: "No thanks",
+};
+
 /** The booking form or the try-on, when it failed to draw: the way to us instead. */
 export const islandFailed = {
   publish: true,

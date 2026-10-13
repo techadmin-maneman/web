@@ -8,5 +8,5 @@
 // new card needs a new version here. test/node/site/site-content.test.ts fails if
 // the file changes and this does not.
 
-export const HOUSE_CARD_VERSION = 2;
+export const HOUSE_CARD_VERSION = 3;
 export const HOUSE_CARD = `/images/invite-house.jpg?v=${String(HOUSE_CARD_VERSION)}`;

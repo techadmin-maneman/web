@@ -111,12 +111,39 @@ function reportedAddress(address: string): string {
 /** Where the visitor's answer to the site's ad and measurement cookies is kept, "granted" once they agree. */
 const CONSENT_KEY = "mm-ad-consent";
 
-/** Whether the visitor has agreed to the ad tags. Storage refused, as in a private window, is no agreement. */
-function consented(): boolean {
+/** The visitor's answer to the ad tags: granted, denied, or null while they have not answered. */
+export function consentAnswer(): "granted" | "denied" | null {
   try {
-    return localStorage.getItem(CONSENT_KEY) === "granted";
+    const kept = localStorage.getItem(CONSENT_KEY);
+    return kept === "granted" || kept === "denied" ? kept : null;
   } catch {
-    return false;
+    // Storage refused, as in a private window: no answer kept.
+    return null;
+  }
+}
+
+const consented = (): boolean => consentAnswer() === "granted";
+
+/**
+ * The visitor's answer, kept, and the tags told: Google's consent updated, and the Meta Pixel started once they agree.
+ * Nothing is kept where storage is refused, and the bar asks again on the next page.
+ */
+export function answerConsent(answer: "granted" | "denied"): void {
+  try {
+    localStorage.setItem(CONSENT_KEY, answer);
+  } catch {
+    // Not kept; the tags are told for this page alone.
+  }
+  gtag("consent", "update", {
+    ad_storage: answer,
+    ad_user_data: answer,
+    ad_personalization: answer,
+    analytics_storage: answer,
+  });
+  const ids = ANALYTICS_IDS[ENVIRONMENT];
+  const onInvite = INVITE_PATH_IN_URL.test(location.pathname);
+  if (answer === "granted" && ids.metaPixel !== null && !onInvite && window.fbq === undefined) {
+    startMetaPixel(ids.metaPixel);
   }
 }
 

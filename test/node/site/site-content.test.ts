@@ -439,6 +439,8 @@ describe("site helpers", () => {
       1: "3becedf10d96f13d6bb0c144ed904f4d81b5ffb835523e5c9e7f43609a2d6302",
       // The referral card's gilt rule and lockup (scripts/build/make-house-card.ts).
       2: "d40596cbd613caf7083f6bee3ecf8f399b932fb3f4088ab4d8a91e485d89aa5a",
+      // One field of the deep ink with the mark and wordmark at its centre, with no photographs to wait for.
+      3: "8a2fb1e218698abce3ad056efd570369884a99df508da47f5379e05fc9280893",
     };
     const file = createHash("sha256").update(readFileSync("site/public/images/invite-house.jpg")).digest("hex");
     expect(file, "invite-house.jpg changed: raise HOUSE_CARD_VERSION and record the new file here").toBe(

@@ -6,6 +6,8 @@
 import "../styles/global.css";
 import Footer from "../components/Footer.astro";
 import LegalFooter from "../components/LegalFooter.astro";
+import ConsentBar from "../components/ConsentBar.astro";
+import { CONSENT_BAR_SHOWN } from "../lib/flags.ts";
 import Header from "../components/Header.astro";
 import Sprite from "../components/Sprite.astro";
 import StickyBar from "../components/StickyBar.astro";
@@ -98,6 +100,7 @@ const ogImage = new URL(image.path, SITE_ORIGIN).href;
       <slot />
     </main>
     {home ? <Footer /> : <LegalFooter />}
+    {CONSENT_BAR_SHOWN && <ConsentBar />}
     {home && <StickyBar />}
     <script>
       // Every script error and promise nobody caught reported, as the apps' are
