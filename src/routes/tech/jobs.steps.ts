@@ -376,7 +376,8 @@ async function profileRecorded(
  * the queue drops, the sweeper sends; the check-in has landed either way.
  */
 async function tellOfArrival(c: Ctx, input: { personId: string; appointmentId: string; arrivedAt: Date }) {
-  const messageId = await arrivalNotice(c.env.DB, { ...input, now: c.var.deps.now() });
+  const { arrivalNoticeMin } = await opsInputs(c);
+  const messageId = await arrivalNotice(c.env.DB, { ...input, now: c.var.deps.now(), withinMin: arrivalNoticeMin });
   if (messageId === null) return;
   await queueMessage(c, messageId);
 }

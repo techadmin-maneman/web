@@ -105,10 +105,9 @@ export function visitMessageOnChange(
  */
 export async function arrivalNotice(
   db: D1Database,
-  input: { personId: string; appointmentId: string; arrivedAt: Date; now: Date },
+  input: { personId: string; appointmentId: string; arrivedAt: Date; now: Date; withinMin: number },
 ): Promise<string | null> {
-  const { arrivalNoticeMin } = await readOpsInputs(db, input.now);
-  const late = input.now.getTime() - input.arrivedAt.getTime() > arrivalNoticeMin * MINUTE_MS;
+  const late = input.now.getTime() - input.arrivedAt.getTime() > input.withinMin * MINUTE_MS;
   const id = crypto.randomUUID();
   const at = input.now.toISOString();
   const written = await db
