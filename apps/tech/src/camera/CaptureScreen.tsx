@@ -166,9 +166,8 @@ export function CaptureScreen({ id, phase }: { id: string; phase: Phase }) {
         size="action"
         className={styles.take}
         disabled={!all && !canCapture}
-        aria-disabled={!settled}
+        settling={!settled}
         onClick={() => {
-          if (!settled) return;
           if (all) void finish({ phase });
           else void take();
         }}

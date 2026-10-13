@@ -27,7 +27,7 @@
   }
 
   .button:disabled,
-  .button[aria-disabled="true"] {
+  .button[aria-disabled="true"]:not([data-settling]) {
     cursor: default;
   }
 
@@ -81,7 +81,7 @@
   }
 
   .primary:disabled,
-  .primary[aria-disabled="true"] {
+  .primary[aria-disabled="true"]:not([data-settling]) {
     background: var(--paper-shade);
     color: var(--text-quiet);
   }
@@ -96,7 +96,7 @@
   }
 
   .light:disabled,
-  .light[aria-disabled="true"] {
+  .light[aria-disabled="true"]:not([data-settling]) {
     background: var(--ink-disabled);
     color: var(--ink-tag);
   }
@@ -111,7 +111,7 @@
   }
 
   .gold:disabled,
-  .gold[aria-disabled="true"] {
+  .gold[aria-disabled="true"]:not([data-settling]) {
     background: var(--ink-disabled);
     color: var(--ink-tag);
   }
@@ -126,7 +126,7 @@
   }
 
   .destructive:disabled,
-  .destructive[aria-disabled="true"] {
+  .destructive[aria-disabled="true"]:not([data-settling]) {
     background: var(--paper-shade);
     color: var(--text-quiet);
   }
@@ -151,9 +151,9 @@
   }
 
   .outline:disabled,
-  .outline[aria-disabled="true"],
+  .outline[aria-disabled="true"]:not([data-settling]),
   .danger:disabled,
-  .danger[aria-disabled="true"] {
+  .danger[aria-disabled="true"]:not([data-settling]) {
     border-color: var(--paper-line);
     color: var(--text-quiet);
   }
@@ -168,7 +168,7 @@
   }
 
   .outlineOnInk:disabled,
-  .outlineOnInk[aria-disabled="true"] {
+  .outlineOnInk[aria-disabled="true"]:not([data-settling]) {
     border-color: var(--ink-disabled);
     background: var(--ink-disabled);
     color: var(--ink-tag);

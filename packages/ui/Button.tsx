@@ -60,6 +60,11 @@ type ButtonProps = Look &
   Omit<ButtonHTMLAttributes<HTMLButtonElement>, "className"> & {
     /** Working on what the tap asked for: drawn dimmed, said to a screen reader, and a second tap does nothing. */
     readonly busy?: boolean;
+    /**
+     * Its screen still arriving: a tap meant for the screen before is ignored, and a screen reader hears it
+     * unavailable, but it is not drawn dim, since it is about to be ready.
+     */
+    readonly settling?: boolean;
     readonly ref?: Ref<HTMLButtonElement>;
   };
 
@@ -68,6 +73,7 @@ export function Button({
   size,
   className,
   busy = false,
+  settling = false,
   type = "button",
   icon,
   iconSize = 15,
@@ -77,7 +83,7 @@ export function Button({
 }: ButtonProps) {
   const click = (event: MouseEvent<HTMLButtonElement>) => {
     // Cancelled, a busy submit button does not send its form again.
-    if (busy) {
+    if (busy || settling) {
       event.preventDefault();
       return;
     }
@@ -89,6 +95,7 @@ export function Button({
       type={type}
       className={buttonLook({ variant, size, className })}
       aria-busy={busy ? true : undefined}
+      {...(settling ? { "aria-disabled": true, "data-settling": true } : {})}
       onClick={click}
     >
       {icon !== undefined && <Icon d={icon} size={iconSize} />}
