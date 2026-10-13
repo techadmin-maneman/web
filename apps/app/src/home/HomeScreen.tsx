@@ -51,9 +51,13 @@ export function HomeScreen() {
   // A Home the phone kept from an earlier release has no invoice line, nor any payment owed.
   const invoice = me.invoice ?? null;
   const owed = me.payment_owed ?? null;
+  // A recall leads Home above whatever else is booked, until its replacement is; with nothing booked it is Home.
+  const booked = me.next_visit !== null || me.consultation !== null || me.being_booked !== null;
+  const recallFirst = me.remake?.why === "recall" && booked ? me.remake : null;
   return (
     <Shell header={{ kind: "home" }} tab="/" kept>
       <div className={styles.home}>
+        {recallFirst !== null && <RemakeCard remake={recallFirst} />}
         <HomeBody me={me} offline={offline} />
         {owed !== null && <PaymentOwed owed={owed} />}
         {me.credits !== null && <CreditTile credits={me.credits} />}

@@ -2547,7 +2547,7 @@ Request body:
           "type": "null"
         }
       ],
-      "description": "Null when none, and while a visit is booked."
+      "description": "Null when none; a partly done visit's while another visit is booked, a recall's never."
     },
     "payment_owed": {
       "anyOf": [

@@ -36,7 +36,7 @@ export async function siteVisit(db: D1Database, plan: Plan, date: string): Promi
       terms: ONE_VISIT_TERMS,
     };
   }
-  const consultation = await bookableService(db, "consultation", undefined, date);
+  const consultation = await bookableService(db, { kind: "consultation", tier: undefined, on: date });
   if (consultation?.price.amount !== 0) return null;
   return {
     service: { type: "consultation", tier: consultation.tier, minutes: consultation.minutes },

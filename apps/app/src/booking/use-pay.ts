@@ -3,7 +3,7 @@
 // on it, and the API lets it go once its grace ends.
 
 import { useEffect, useRef, type Dispatch, type RefObject } from "react";
-import { api, type BookingConsent, type Hold } from "../api.ts";
+import { api, type Hold } from "../api.ts";
 import { booking } from "../content.ts";
 import { apiNow } from "../lib/clock.ts";
 import { loadCheckout, type Paid } from "./checkout.ts";
@@ -21,7 +21,6 @@ interface Paying {
   /** The visit being moved; undefined for a new one. */
   readonly movingId: string | undefined;
   /** The photograph purposes booking a new visit also agrees to. */
-  readonly undecided: readonly BookingConsent[];
   /** What the client asked for on the pay step before the booking starts: their reminders switched on. */
   readonly beforeStarting: () => Promise<void>;
   readonly setBusy: (busy: boolean) => void;
@@ -51,9 +50,7 @@ async function showPriceInstead(holdId: string, context: Paying): Promise<void> 
 async function startPaying(hold: Hold, context: Paying, refs: Refs): Promise<Paid | null> {
   await context.beforeStarting();
   const started =
-    context.movingId === undefined
-      ? await api.book(hold.id, context.undecided)
-      : await api.startMove(context.movingId, hold.id);
+    context.movingId === undefined ? await api.book(hold.id) : await api.startMove(context.movingId, hold.id);
   if (!started.ok) {
     if (started.code === "hold_expired") context.dispatch({ kind: "lapsed" });
     else context.setProblem(booking.failedToStart);

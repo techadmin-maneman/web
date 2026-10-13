@@ -118,7 +118,7 @@ const nextServiceOf = (offer: NextOffer | null): NextService | null =>
  * a remake is owed, which ops book free (remakeOf).
  */
 function replacementMonthInReach(row: PromptFacts, tomorrow: string, days: NextVisitDays): string | null {
-  if (row.due_on === null || row.replacement_booked === 1 || remakeOf(row) !== null) return null;
+  if (row.due_on === null || row.replacement_booked === 1 || remakeOf(row, false) !== null) return null;
   const month = monthOf(row.due_on);
   return `${month}-01` <= lastBookableDay(tomorrow, days) ? month : null;
 }
@@ -138,13 +138,17 @@ export function whatHomeOffers(
   row: PromptFacts | null,
   next: NextOffer | null,
 ): { readonly remake: RemakeOwed | null; readonly offer: NextOffer | null } {
-  const remake = booked ? null : remakeOf(row);
+  const remake = remakeOf(row, booked);
   return { remake, offer: booked || remake !== null ? null : next };
 }
 
-function remakeOf(row: PromptFacts | null): RemakeOwed | null {
+/**
+ * The visit owed free: a partly done visit's while nothing else is booked, and a recall's whatever is, until its
+ * replacement is booked, since the client must hear of it.
+ */
+function remakeOf(row: PromptFacts | null, booked: boolean): RemakeOwed | null {
   if (row === null) return null;
-  if (row.remake_partial !== null) return { type: row.remake_partial, why: "partial" };
+  if (row.remake_partial !== null && !booked) return { type: row.remake_partial, why: "partial" };
   return row.remake_recall === 1 ? { type: "replacement", why: "recall" } : null;
 }
 

@@ -198,7 +198,7 @@ export const tryOnTeaser = {
   eyebrow: "Try-on",
   title: "See yourself with hair before anyone comes to your home.",
   // The look on WhatsApp only is ADR 0104's.
-  body: "One photograph, one look from six, sent privately to your WhatsApp. A simulation, not a photograph of a result. Your photograph is deleted within the hour.",
+  body: "One photograph, one look from six, sent privately to your WhatsApp. A simulation, not a photograph of a result. Your photograph is deleted within the hour; a small copy stays with your look for up to 14 days.",
   start: "Start the try-on",
   before: "Before",
   after: "After",
@@ -466,11 +466,14 @@ export const faq = {
     },
     {
       q: "What if I do not like it at the fit?",
-      a: GUARANTEE,
+      a: `Say so before it's fitted and you pay nothing. Once it's fitted: ${GUARANTEE.charAt(0).toLowerCase()}${GUARANTEE.slice(1)}`,
     },
     {
       q: "Which cities do you cover?",
-      a: "All of Delhi NCR: Gurgaon, Delhi, Noida, Faridabad and Ghaziabad. Mumbai and Bengaluru are next. Leave your number and we will tell you when a technician is working in your city.",
+      // As built, naming no city; the site's Worker writes in the cities ops serve (site/src/lib/cities.ts).
+      a: "We come by pincode. Check yours on the booking page; if we're not there yet, leave your number and we'll tell you when we are.",
+      cities:
+        "We're in {cities}, by pincode. Check yours on the booking page; if we're not there yet, leave your number and we'll tell you when we are.",
     },
     {
       q: "What does it cost?",

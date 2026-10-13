@@ -199,7 +199,10 @@ const QUEUES: readonly Queue[] = [
   // within it; a piece is read only while no replacement is booked for it, `replacement_booked`.
   {
     sql: `SELECT 'replacement_order' AS "group", p.id AS id, p.person_id AS person_id, pe.name AS person_name,
-         p.piece_code || ' ' || p.replacement_due_at AS detail, date(p.replacement_due_at, ?1) AS since,
+         p.piece_code || ' ' || p.replacement_due_at AS detail,
+         COALESCE((SELECT MAX(r.raised_at) FROM recall_pieces rp INDEXED BY recall_pieces_by_piece
+                   JOIN recalls r ON r.id = rp.recall_id WHERE rp.piece_id = p.id AND r.closed_at IS NULL),
+                  date(p.replacement_due_at, ?1)) AS since,
          p.replacement_due_at AS due_by, '' AS episode
     FROM pieces p INDEXED BY pieces_to_replace JOIN people pe ON pe.id = p.person_id
    WHERE p.replacement_booked = 0 AND p.deleted_at IS NULL AND p.failed_at IS NULL AND p.replaced_at IS NULL
@@ -209,6 +212,16 @@ const QUEUES: readonly Queue[] = [
       at.today,
       daysOn(at.days.replacement_order_lead),
     ],
+  },
+  // A client wearing a piece of an open recall, whose replacement is not booked: Care calls them, from the recall on.
+  {
+    sql: `SELECT 'recall_call' AS "group", pe.id AS id, pe.id AS person_id, pe.name AS person_name,
+         GROUP_CONCAT(p.piece_code, ' ') AS detail, MIN(r.raised_at) AS since, NULL AS due_by, '' AS episode
+    FROM recalls r JOIN recall_pieces rp ON rp.recall_id = r.id JOIN pieces p ON p.id = rp.piece_id
+    JOIN people pe ON pe.id = p.person_id
+   WHERE r.closed_at IS NULL AND p.replacement_booked = 0 AND p.replaced_at IS NULL AND p.deleted_at IS NULL
+     AND pe.erased_at IS NULL
+   GROUP BY pe.id`,
   },
   // A fit booked ahead whose hair system its city does not hold, found each hour (../field/stock-risks.ts).
   { sql: STOCK_RISKS_OPEN },
@@ -516,6 +529,7 @@ const TASK_RECORDS: Readonly<Record<TaskGroup, PlacedRecord>> = {
   consultation_request: "consultation_request",
   first_fit_to_book: "client",
   replacement_order: "piece",
+  recall_call: "client",
   stock_at_risk: "visit",
   at_risk_client: "visit",
   partial_visit: "visit",

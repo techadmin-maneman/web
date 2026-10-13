@@ -4,12 +4,13 @@ import { CODE } from "./signed-in.ts";
 import { loggedIn } from "./profile-fixtures.ts";
 import * as appCopy from "../../apps/app/src/content.ts";
 
-test("lists the five consents off, and switches one on with its date and off again", async ({ page }) => {
+test("lists the four consents off, and switches one on with its date and off again", async ({ page }) => {
   await loggedIn(page);
   const switches = page.getByRole("switch");
-  await expect(switches).toHaveCount(5);
+  await expect(switches).toHaveCount(4);
+  // Every visit is photographed for the client's record: a line, not a switch.
+  await expect(page.getByText(appCopy.profile.visitPhotos)).toBeVisible();
   for (const name of [
-    "Photographs taken for your visit record",
     "Photographs on referral cards",
     "Photographs in our marketing",
     "WhatsApp about your visits",
@@ -17,10 +18,9 @@ test("lists the five consents off, and switches one on with its date and off aga
   ]) {
     await expect(page.getByRole("switch", { name })).toHaveAttribute("aria-checked", "false");
   }
-  // Visit messages off, the client is told what that means; and that visits are photographed all the same.
+  // Visit messages off, the client is told what that means.
   const visitsOff = page.getByText(appCopy.profile.visitsOff);
   await expect(visitsOff).toBeVisible();
-  await expect(page.getByText(appCopy.profile.ownRecordOff)).toBeVisible();
 
   const visits = page.getByRole("switch", { name: appCopy.profile.purposes.whatsapp_visits });
   const switched = page.waitForRequest("**/api/consents/whatsapp_visits");

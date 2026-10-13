@@ -164,7 +164,7 @@ test("the whole try-on: uploaded during the choices, the number given before the
     mobile: "9810000000",
     number_code_id: CODE_ID,
     stage: "crown",
-    notice_version: "gate-v4",
+    notice_version: "gate-v5",
     attribution: { landing_path: "/try" },
   });
   expect(await claim?.headerValue("idempotency-key")).toMatch(/^[0-9a-f-]{36}$/);

@@ -3171,7 +3171,7 @@ export interface components {
                 /** @description Whether the client is told on WhatsApp once it is booked: always for a payment, whose receipt goes whatever their consent, else only with their consent to WhatsApp about visits. */
                 told: boolean;
             } | null;
-            /** @description Null when none, and while a visit is booked. */
+            /** @description Null when none; a partly done visit's while another visit is booked, a recall's never. */
             remake: components["schemas"]["Remake"] | null;
             /** @description The oldest payment the client owes: a consultation and fit in one visit they were fitted at, paid by the link Razorpay texted. Null when nothing is owed. */
             payment_owed: components["schemas"]["OwedPayment"] | null;

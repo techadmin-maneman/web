@@ -683,7 +683,7 @@
     "surface": "site",
     "group": "Home",
     "where": "tryOnTeaser",
-    "text": "One photograph, one look from six, sent privately to your WhatsApp. A simulation, not a photograph of a result. Your photograph is deleted within the hour."
+    "text": "One photograph, one look from six, sent privately to your WhatsApp. A simulation, not a photograph of a result. Your photograph is deleted within the hour; a small copy stays with your look for up to 14 days."
   },
   {
     "key": "site:home/tryOnTeaser.start",
@@ -1789,7 +1789,7 @@
     "surface": "site",
     "group": "Home",
     "where": "faq",
-    "text": "If the fit isn't right, tell us within 14 days. We'll refit it free or refund you in full."
+    "text": "Say so before it's fitted and you pay nothing. Once it's fitted: if the fit isn't right, tell us within 14 days. We'll refit it free or refund you in full."
   },
   {
     "key": "site:home/faq.items.7.q",
@@ -1803,7 +1803,7 @@
     "surface": "site",
     "group": "Home",
     "where": "faq",
-    "text": "All of Delhi NCR: Gurgaon, Delhi, Noida, Faridabad and Ghaziabad. Mumbai and Bengaluru are next. Leave your number and we will tell you when a technician is working in your city."
+    "text": "We come by pincode. Check yours on the booking page; if we're not there yet, leave your number and we'll tell you when we are."
   },
   {
     "key": "site:home/faq.items.8.q",
@@ -2125,7 +2125,7 @@
     "surface": "site",
     "group": "Page titles",
     "where": "pageDescriptions",
-    "text": "One photograph, one look from six, sent privately to your WhatsApp. A simulation, not a photograph of a result. Your photograph is deleted within the hour."
+    "text": "One photograph, one look from six, sent privately to your WhatsApp. A simulation, not a photograph of a result. Your photograph is deleted within the hour; a small copy stays with your look for up to 14 days."
   },
   {
     "key": "site:pages/pageDescriptions.book",
@@ -2975,6 +2975,48 @@
     "text": "WhatsApp · +91 90079 73247"
   },
   {
+    "key": "site:contact/consentBar.text",
+    "surface": "site",
+    "group": "Contact",
+    "where": "consentBar",
+    "text": "We'd like to measure visits and the ads that bring them, with cookies from Google and Meta. Nothing you type in a form goes to them."
+  },
+  {
+    "key": "site:contact/consentBar.privacy",
+    "surface": "site",
+    "group": "Contact",
+    "where": "consentBar",
+    "text": "How we use your details"
+  },
+  {
+    "key": "site:contact/consentBar.accept",
+    "surface": "site",
+    "group": "Contact",
+    "where": "consentBar",
+    "text": "Allow"
+  },
+  {
+    "key": "site:contact/consentBar.decline",
+    "surface": "site",
+    "group": "Contact",
+    "where": "consentBar",
+    "text": "No thanks"
+  },
+  {
+    "key": "site:contact/islandFailed.message",
+    "surface": "site",
+    "group": "Contact",
+    "where": "islandFailed",
+    "text": "This didn't load. Message us on WhatsApp and we'll help you from there."
+  },
+  {
+    "key": "site:contact/islandFailed.action",
+    "surface": "site",
+    "group": "Contact",
+    "where": "islandFailed",
+    "text": "Message us on WhatsApp"
+  },
+  {
     "key": "site:guides/guidesPage.title",
     "surface": "site",
     "group": "Guides",
@@ -3462,7 +3504,7 @@
     "surface": "site",
     "group": "Areas",
     "where": "areasPage",
-    "text": "Hair systems fitted at home across Delhi NCR: Gurgaon, Delhi, Noida, Faridabad and Ghaziabad."
+    "text": "Hair systems fitted at home by a trained technician, in the cities we serve."
   },
   {
     "key": "site:guides/areasPage.title",
@@ -3476,7 +3518,7 @@
     "surface": "site",
     "group": "Areas",
     "where": "areasPage",
-    "text": "Your technician comes to your home, anywhere we serve in Delhi NCR."
+    "text": "Your technician comes to your home, wherever we serve."
   },
   {
     "key": "site:guides/areasPage.streets",
@@ -3490,7 +3532,7 @@
     "surface": "site",
     "group": "Areas",
     "where": "areasPage",
-    "text": "Mumbai and Bengaluru are next. Leave your number on the booking page, and we'll tell you when we reach your city."
+    "text": "Not there yet? Leave your number on the booking page, and we'll tell you when we reach your city."
   },
   {
     "key": "site:guides/areasPage.check",
@@ -4200,6 +4242,41 @@
     "text": "We need this to contact you."
   },
   {
+    "key": "site:referral/referral.form.legal.before",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "Our "
+  },
+  {
+    "key": "site:referral/referral.form.legal.terms",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "terms"
+  },
+  {
+    "key": "site:referral/referral.form.legal.between",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": " and "
+  },
+  {
+    "key": "site:referral/referral.form.legal.privacy",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "privacy notice"
+  },
+  {
+    "key": "site:referral/referral.form.legal.after",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": " apply."
+  },
+  {
     "key": "site:referral/referral.form.marked",
     "surface": "site",
     "group": "Invite page",
@@ -4879,6 +4956,41 @@
     "text": "Hi {{1}}, we haven't deleted your Mane Man account.\nOur reason: {{2}} Message us if you disagree."
   },
   {
+    "key": "message:consultation_follow_up_v1",
+    "surface": "message",
+    "group": "Messages",
+    "where": "consultation_follow_up_v1",
+    "text": "Hi {{1}}, thank you for your time today.\nYour technician's recommendation is in the Mane Man app, with your fit to book when you're ready. Or reply here and we'll arrange it."
+  },
+  {
+    "key": "message:fit_aftercare_v1",
+    "surface": "message",
+    "group": "Messages",
+    "where": "fit_aftercare_v1",
+    "text": "Hi {{1}}, thank you for today.\nHow to look after your hair system: {{2}}\nAny question at all, reply here."
+  },
+  {
+    "key": "message:first_check_in_v1",
+    "surface": "message",
+    "group": "Messages",
+    "where": "first_check_in_v1",
+    "text": "Hi {{1}}, how are you finding it so far?\nIf anything feels off, reply here and we'll put it right."
+  },
+  {
+    "key": "message:second_check_in_v1",
+    "surface": "message",
+    "group": "Messages",
+    "where": "second_check_in_v1",
+    "text": "Hi {{1}}, a few weeks on: how is everything?\nIf anything needs a look, reply here. Your next service visit is in the Mane Man app."
+  },
+  {
+    "key": "message:recall_notice_v1",
+    "surface": "message",
+    "group": "Messages",
+    "where": "recall_notice_v1",
+    "text": "Hi {{1}}, we're recalling a batch we supplied, and yours is one of them.\nWe'll replace your hair system free, at a time that suits you. Book it in the Mane Man app, or reply here and we'll arrange it."
+  },
+  {
     "key": "message:concern_answered_v1",
     "surface": "message",
     "group": "Messages",
@@ -4898,6 +5010,13 @@
     "group": "Messages",
     "where": "stop_link_v1",
     "text": "Stop these messages: {{1}}"
+  },
+  {
+    "key": "message:app_link_v1",
+    "surface": "message",
+    "group": "Messages",
+    "where": "app_link_v1",
+    "text": "Open the app: {{1}}"
   },
   {
     "key": "message:messages_stopped_v1",

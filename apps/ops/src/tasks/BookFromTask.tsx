@@ -39,7 +39,7 @@ function prefillOf(group: Group, task: Task): Prefill | null {
     const fitIn = parts[1];
     return { choice: "first_fit", ...(isWindow(fitIn) ? { window: fitIn } : {}) };
   }
-  if (group === "replacement_order") return { choice: "replacement" };
+  if (group === "replacement_order" || group === "recall_call") return { choice: "replacement" };
   // The visit's kind leads; a first fit or replacement left partly done is made good, free.
   const kind = parts[0];
   if (group === "partial_visit" && (kind === "first_fit" || kind === "replacement")) {

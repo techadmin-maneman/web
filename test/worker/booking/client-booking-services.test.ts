@@ -65,14 +65,41 @@ describe("choosing a service", () => {
       booking: { types: string[]; services: { type: string; tier: string; name: string; minutes: number }[] };
     }>();
 
-    // A fitted client books service visits and replacements, and sees every one of either kind: not the first
-    // fit, which is not theirs to book, nor the service retired from tomorrow.
+    // A fitted client books service visits and replacements, and sees every service visit: not the first fit,
+    // which is not theirs to book, nor the service retired from tomorrow. Of replacements, the one priced for the
+    // hair system they wear, or else the standard one: they wear no premium hair system.
     expect(me.booking.types).toEqual(["service", "replacement"]);
     expect(me.booking.services).toEqual([
       expect.objectContaining({ type: "service", tier: "standard", name: "Service visit", minutes: 90 }),
       expect.objectContaining({ type: "replacement", tier: "standard", name: "Replacement", minutes: 135 }),
-      expect.objectContaining({ type: "replacement", tier: "premium", name: "Premium replacement", minutes: 150 }),
     ]);
+  });
+
+  // A replacement is priced by the hair system the client wears, once ops price one under its product's code; a
+  // product ops have not priced costs the single replacement price.
+  it("offers and holds the replacement priced for the hair system the client wears", async () => {
+    const rohit = await client();
+    await env.DB.prepare(
+      `INSERT INTO hair_profiles (id, person_id, staff, created_at, product, base_width_in, base_length_in, colour,
+         grey_percent, density_percent)
+       VALUES ('hp-premium', ?1, 'ops@localhost', ?2, 'premium', 8, 10, '1B', 20, 100)`,
+    )
+      .bind(rohit.id, NOW.toISOString())
+      .run();
+    const homeReplacements = async () =>
+      (
+        await (
+          await request(app, "/api/me", { headers: { Cookie: rohit.cookie } })
+        ).json<{
+          booking: { services: { type: string; tier: string }[] };
+        }>()
+      ).booking.services.filter((each) => each.type === "replacement");
+    expect(await homeReplacements()).toEqual([expect.objectContaining({ tier: "standard" })]);
+
+    await service("replacement", "premium", "Premium replacement", 150, 3_000_000);
+    expect(await homeReplacements()).toEqual([expect.objectContaining({ tier: "premium" })]);
+    const held = await hold(rohit, { type: "replacement", date: "2026-09-22", window: "morning" });
+    expect(await held.json()).toMatchObject({ service: { tier: "premium" }, price: { amount_ex_gst: 3_000_000 } });
   });
 
   it("offers a longer service only where its half-slots fit, and holds it for its own length and price", async () => {

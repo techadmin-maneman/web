@@ -99,7 +99,7 @@ describe("content", () => {
   // ADR 0104: the look goes to WhatsApp only, never to the site, so every build shows the notices that say so, which
   // await counsel and still keep a client's try-on (ADR 0084).
   it("says on every page of the try-on that the look goes to WhatsApp only, and never promises it on screen", () => {
-    expect([site.notices.photo.version, site.notices.gate.version]).toEqual(["photo-v4", "gate-v4"]);
+    expect([site.notices.photo.version, site.notices.gate.version]).toEqual(["photo-v4", "gate-v5"]);
     expect([site.notices.photo.approved, site.notices.gate.approved]).toEqual([false, false]);
     expect(site.tryOnSendsCopy).toBe(true);
     const privacy = textOf(site.legalPages.privacy);
@@ -257,11 +257,13 @@ describe("the second copy round", () => {
     ]);
   });
 
-  // The site promised a refit or a refund within 14 days; the app's pay step, that the technician stops.
+  // The site promised a refit or a refund within 14 days; the app's pay step, that the technician stops. The FAQ says
+  // first that a client who decides against it before the fit pays nothing, as the one visit's flow has it.
   it("gives the guarantee in one sentence on the home page, in the FAQ and at the app's pay step", () => {
-    const answer = site.faq.items.find((item) => item.q === "What if I do not like it at the fit?")?.a;
+    const answer = site.faq.items.find((item) => item.q === "What if I do not like it at the fit?")?.a ?? "";
     expect(site.guarantee.text).toBe(GUARANTEE);
-    expect(answer).toBe(GUARANTEE);
+    expect(answer.startsWith("Say so before it's fitted and you pay nothing. Once it's fitted: ")).toBe(true);
+    expect(answer.toLowerCase().endsWith(GUARANTEE.toLowerCase())).toBe(true);
     expect(appBooking.pay.guarantee).toBe(GUARANTEE);
   });
 
@@ -330,7 +332,7 @@ describe("the publish gate", () => {
   it("stops production on what awaits counsel alone: every published block is real", () => {
     expect(publishProblems()).toEqual([
       "the photo notice (photo-v4) is not approved",
-      "the gate notice (gate-v4) is not approved",
+      "the gate notice (gate-v5) is not approved",
       "the privacy page's wording is not approved",
       "the terms page's wording is not approved",
     ]);
@@ -437,6 +439,8 @@ describe("site helpers", () => {
       1: "3becedf10d96f13d6bb0c144ed904f4d81b5ffb835523e5c9e7f43609a2d6302",
       // The referral card's gilt rule and lockup (scripts/build/make-house-card.ts).
       2: "d40596cbd613caf7083f6bee3ecf8f399b932fb3f4088ab4d8a91e485d89aa5a",
+      // One field of the deep ink with the mark and wordmark at its centre, with no photographs to wait for.
+      3: "8a2fb1e218698abce3ad056efd570369884a99df508da47f5379e05fc9280893",
     };
     const file = createHash("sha256").update(readFileSync("site/public/images/invite-house.jpg")).digest("hex");
     expect(file, "invite-house.jpg changed: raise HOUSE_CARD_VERSION and record the new file here").toBe(

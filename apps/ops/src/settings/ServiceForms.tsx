@@ -507,7 +507,7 @@ export function AddForm(props: {
             />
           )}
         </Field>
-        <Field label={form.code} className={styles.field}>
+        <Field label={form.code} hint={form.codeHints[kind]} className={styles.field}>
           {(control) => (
             <TextInput
               {...control}

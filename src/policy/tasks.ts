@@ -80,6 +80,7 @@ export const TASK_GROUPS = [
   "move_unanswered",
   "visit_left_open",
   "unassigned_visit",
+  "recall_call",
   "unanswered_chat",
   "city_matter",
   "remedy_approval",
@@ -121,6 +122,8 @@ export const TASK_SLA_HOURS: Slas = {
   visit_left_open: 24,
   // A visit with no technician: never later than the day before it (src/domain/ops/tasks.ts).
   unassigned_visit: 24,
+  // A client wearing a recalled piece: Care calls them within the day of the recall.
+  recall_call: 24,
   // Due by the reply clock (src/policy/care-hours.ts), which always comes first; a day bounds it.
   unanswered_chat: 24,
   // A client waiting on their city: within the day.

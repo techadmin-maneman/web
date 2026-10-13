@@ -1,5 +1,9 @@
 // The profile: the address, what the client has agreed to, and the account.
 
+/** What every visit's photographs are. PLACEHOLDER: awaits counsel (docs/open-points.md, item 69). */
+export const VISIT_PHOTOS =
+  "Photos at every visit: five angles, for your record. Only you and your technician see them.";
+
 export const profile = {
   back: "Back",
   where: "Where we come",
@@ -58,9 +62,8 @@ export const profile = {
   notGiven: "Not given",
   // What switching off visit messages means, since ops then call instead.
   visitsOff: "No visit updates on WhatsApp. We’ll call you about any change.",
-  // PLACEHOLDER until counsel rules what this switch means (docs/open-points.md, item 69): switched off, visits are
-  // photographed all the same.
-  ownRecordOff: "Each visit is still photographed for your visit record.",
+  // Every visit is photographed for the client's record, so there is no switch for it, only this line.
+  visitPhotos: VISIT_PHOTOS,
   // A switch the API did not answer stays as it was.
   switchFailed: "That didn’t go through, so nothing has changed. Try again.",
   /**

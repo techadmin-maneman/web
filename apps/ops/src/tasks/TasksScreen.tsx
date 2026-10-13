@@ -136,6 +136,7 @@ function subOf(group: Group, task: Task, now: Date): string {
     return copy.first_fit_to_book(shortDate(indiaDate(consulted)), fitWindow(fitIn));
   }
   if (group === "unassigned_visit" || group === "visit_left_open") return visitNobodyHas(group, task);
+  if (group === "recall_call") return task.detail === null ? copy.unknown : copy.recall_call(task.detail);
   if (group === "stock_at_risk") return copy.stock_at_risk(task.detail ?? "");
   if (group === "at_risk_client") {
     // The last visit's start, and the day its next service fell due.

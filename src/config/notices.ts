@@ -168,6 +168,18 @@ export const NOTICES = [
       "No password, no account, no marketing. Your photograph is deleted within the hour. If you book a visit, a small copy stays in your Mane Man account as your before photo, and the simulation until your first fit is photographed.",
     ],
   },
+  // gate-v4's words with what stays of the photograph for one who books nothing: a small copy, with the look, for
+  // fourteen days at most, as photo-v4 says. PLACEHOLDER: awaits counsel (docs/open-points.md, item 146).
+  {
+    version: "gate-v5",
+    purpose: "result_delivery",
+    text: [
+      "Your simulation is sent to your WhatsApp, and only there: for your privacy, it is never shown on this site.",
+      "Where should we send it?",
+      "We make your simulation once we have your number, and send it there on WhatsApp.",
+      "No password, no account, no marketing. Your photograph is deleted within the hour; a small copy stays with your look for up to 14 days. If you book a visit in that time, the copy stays in your Mane Man account as your before photo, and the simulation until your first fit is photographed.",
+    ],
+  },
   // The five consents (docs/prompts/phase2-backend.md, "Consents"), as the client app's profile names them.
   // Counsel's sign-off is outstanding.
   {
@@ -295,7 +307,7 @@ export type ToldNotice = (typeof TOLD_NOTICES)[keyof typeof TOLD_NOTICES];
 export const CURRENT_NOTICE: Readonly<Record<NoticePurpose, NoticeVersion>> = {
   contact: "booking-v1",
   tryon_photo: "photo-v4",
-  result_delivery: "gate-v4",
+  result_delivery: "gate-v5",
   photos_own_record: "photos-own-record-v2",
   photos_referral_cards: "photos-referral-cards-v2",
   photos_marketing: "photos-marketing-v1",

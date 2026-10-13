@@ -1,11 +1,13 @@
 // Recalls (docs/decisions/0187-recalls.md): a lot blocked everywhere in one action. Its pieces leave the technicians'
 // piece lists, its stock is taken last by every deduction and goes back with a kit's expired stock, and each piece of
-// it a client wears is made due for replacement that day, so the Tasks board asks for its order. Where its stock is
-// and who wears it are read from the ledger and the pieces; no client is messaged from here.
+// it a client wears is made due for replacement that day, so the Tasks board asks for its order, dated from the recall.
+// Each client wearing it is told, and Care calls them until the replacement is booked. Where its stock is and who
+// wears it are read from the ledger and the pieces.
 
 import { auditStatement } from "../ops/audit.ts";
 import type { Place } from "./stock-places.ts";
 import type { Written } from "./stock.ts";
+import { queueMessage } from "../messages/queued-messages.ts";
 
 export interface Recall {
   readonly id: string;
@@ -138,7 +140,10 @@ export async function raiseRecall(
   db: D1Database,
   input: { readonly lotId: string; readonly reason: string; readonly today: string },
   written: Written,
-): Promise<{ readonly ok: true; readonly id: string } | { readonly ok: false; readonly fields: string[] }> {
+): Promise<
+  | { readonly ok: true; readonly id: string; readonly messageIds: readonly string[] }
+  | { readonly ok: false; readonly fields: string[] }
+> {
   const lot = await db
     .prepare("SELECT recalled_at FROM stock_lots WHERE id = ?1")
     .bind(input.lotId)
@@ -182,7 +187,27 @@ export async function raiseRecall(
       written.now,
     ),
   ]);
-  return { ok: true, id };
+  return { ok: true, id, messageIds: await tellWearers(db, id, written.now) };
+}
+
+/** Each client who wears the recalled lot, told once: one message each, however many of its pieces they wear. */
+async function tellWearers(db: D1Database, recallId: string, now: Date): Promise<string[]> {
+  const { results } = await db
+    .prepare(
+      `SELECT DISTINCT p.person_id FROM recall_pieces rp JOIN pieces p ON p.id = rp.piece_id
+       JOIN people pe ON pe.id = p.person_id WHERE rp.recall_id = ?1 AND pe.erased_at IS NULL`,
+    )
+    .bind(recallId)
+    .all<{ person_id: string }>();
+  const messages = results.map((row) => ({ id: crypto.randomUUID(), personId: row.person_id }));
+  if (messages.length === 0) return [];
+  const at = now.toISOString();
+  await db.batch(
+    messages.map((message) =>
+      queueMessage(db, { ...message, kind: "recall_notice", subject: { kind: "recall", id: recallId }, at }),
+    ),
+  );
+  return messages.map((message) => message.id);
 }
 
 /** A recall closed once its stock and pieces are dealt with; the lot stays blocked. Whether there was one open. */

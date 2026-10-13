@@ -99,10 +99,8 @@ test("offers no day at an address we do not come to, but the address to change a
   await expect(where.getByRole("link", { name: "Join the waitlist" })).toHaveAttribute("href", /\/book$/);
 });
 
-// Booking agrees to the photograph purposes never decided on, and what it agrees to sits one tap away beneath Pay.
-test("puts Pay above what booking also agrees to, one tap away, while neither is decided, and sends both", async ({
-  page,
-}) => {
+// Every visit is photographed for the client's record, said one tap away beneath Pay; booking agrees to no consent.
+test("puts Pay above what every visit's photographs are, one tap away, and sends no consent", async ({ page }) => {
   await fakeCheckout(page, "paid");
   await confirmedByRazorpay(page);
   await profileAs(page, { reminders: true, undecided: PHOTOS });
@@ -110,53 +108,24 @@ test("puts Pay above what booking also agrees to, one tap away, while neither is
   await toPayment(page);
   const pay = page.getByRole("dialog", { name: appCopy.booking.pay.title });
   const payButton = pay.getByRole("button", { name: "Pay Rs. 2,000" });
-  const agrees = pay.getByText("What booking agrees to");
-  const first = pay.getByText(
-    "By booking this visit, you also agree to photographs taken for your visit record and used on referral cards.",
-  );
-  // On a 390 px phone the notice's six lines pushed Pay off the screen.
+  const photos = pay.getByText(appCopy.booking.pay.photos.open);
+  const line = pay.getByText(appCopy.profile.visitPhotos);
   await expect(payButton).toBeInViewport();
-  await expect(agrees).toBeInViewport();
-  expect(await bottomOf(payButton)).toBeLessThanOrEqual(await topOf(agrees));
-  await expect(first).toBeHidden();
+  await expect(photos).toBeInViewport();
+  expect(await bottomOf(payButton)).toBeLessThanOrEqual(await topOf(photos));
+  await expect(line).toBeHidden();
 
-  await agrees.click();
-  await expect(first).toBeVisible();
-  await expect(pay.getByText("Anyone you send this card to can see your photographs.")).toBeVisible();
-  await expect(pay.getByText("Your first name appears on your invite.")).toBeVisible();
-  await expect(pay.getByText("You can switch either off in Profile.")).toBeVisible();
+  await photos.click();
+  await expect(line).toBeVisible();
+  // Referral cards are the client's choice when they share an invite, never booking's.
+  await expect(pay.getByText("Anyone you send this card to can see your photographs.")).toHaveCount(0);
+  await expect(pay.getByText(/^By booking this visit/)).toHaveCount(0);
   await scanOf(page);
 
   await payButton.click();
   await expect(page.getByRole("dialog").getByRole("status").getByText(appCopy.booking.confirmed.label)).toBeVisible();
-  expect(sent).toMatchObject([{ consents: PHOTOS }]);
-});
-
-test("sends what booking agrees to with Pay, whether or not the client opened it", async ({ page }) => {
-  await fakeCheckout(page, "paid");
-  await profileAs(page, { reminders: true, undecided: PHOTOS });
-  const sent = bookingsSent(page);
-  await toPayment(page);
-  const pay = page.getByRole("dialog", { name: appCopy.booking.pay.title });
-  await expect(pay.getByText("What booking agrees to")).toBeVisible();
-  await pay.getByRole("button", { name: "Pay Rs. 2,000" }).click();
-  await expect.poll(() => sent).toMatchObject([{ consents: PHOTOS }]);
-});
-
-test("shows only the line of a purpose still undecided, and sends only that one", async ({ page }) => {
-  await fakeCheckout(page, "paid");
-  await profileAs(page, { reminders: true, undecided: ["photos_own_record"] });
-  const sent = bookingsSent(page);
-  await toPayment(page);
-  const pay = page.getByRole("dialog", { name: appCopy.booking.pay.title });
-  await pay.getByText("What booking agrees to").click();
-  await expect(
-    pay.getByText("By booking this visit, you also agree to photographs taken for your visit record."),
-  ).toBeVisible();
-  await expect(pay.getByText("You can switch it off in Profile.")).toBeVisible();
-  await expect(pay.getByText("Your first name appears on your invite.")).toHaveCount(0);
-  await pay.getByRole("button", { name: "Pay Rs. 2,000" }).click();
-  await expect.poll(() => sent).toMatchObject([{ consents: ["photos_own_record"] }]);
+  expect(sent).toHaveLength(1);
+  expect(sent[0]).not.toHaveProperty("consents");
 });
 
 /** Where an element begins down the page; NaN for one not drawn, which no comparison passes. */

@@ -160,15 +160,17 @@ describe("the site Worker on a page that shows a price", () => {
     const down: Api = () => Response.json({ error: { code: "unavailable" } }, { status: 503 });
     const asked = async () => (await visit("/", down, worker)).asked.filter(isPriceRequest).length;
 
+    const pricesLogged = () => logged(warn).filter((line) => line.asked === "prices");
+
     expect(await asked()).toBe(1);
-    expect(logged(warn)).toEqual([
+    expect(pricesLogged()).toEqual([
       { level: "warn", event: "mm_api_failed", worker: "mm-site", asked: "prices", status: 503, reason: "refused" },
     ]);
     now = 9_000;
     expect(await asked()).toBe(0);
     now = 11_000;
     expect(await asked()).toBe(1);
-    expect(warn).toHaveBeenCalledTimes(2);
+    expect(pricesLogged()).toHaveLength(2);
   });
 
   it("asks for the built file whole, and gives the browser nothing to keep old figures by", async () => {

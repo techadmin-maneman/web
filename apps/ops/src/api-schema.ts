@@ -7846,7 +7846,7 @@ export interface paths {
                 query?: never;
                 header?: never;
                 path: {
-                    group: "untold_move" | "move_unanswered" | "visit_left_open" | "unassigned_visit" | "unanswered_chat" | "city_matter" | "remedy_approval" | "leave_conflict" | "address_to_confirm" | "consultation_request" | "first_fit_to_book" | "replacement_order" | "stock_at_risk" | "at_risk_client" | "partial_visit" | "referral_review" | "no_show_decision" | "no_show_dispute" | "number_change" | "erasure_request" | "grievance" | "draft_invoice" | "payment_owed" | "payment_to_refund";
+                    group: "untold_move" | "move_unanswered" | "visit_left_open" | "unassigned_visit" | "recall_call" | "unanswered_chat" | "city_matter" | "remedy_approval" | "leave_conflict" | "address_to_confirm" | "consultation_request" | "first_fit_to_book" | "replacement_order" | "stock_at_risk" | "at_risk_client" | "partial_visit" | "referral_review" | "no_show_decision" | "no_show_dispute" | "number_change" | "erasure_request" | "grievance" | "draft_invoice" | "payment_owed" | "payment_to_refund";
                     id: string;
                 };
                 cookie?: never;
@@ -9115,7 +9115,7 @@ export interface paths {
                 query?: never;
                 header?: never;
                 path: {
-                    name: "checkin_radius_m" | "no_show_wait_min" | "change_notice_hours" | "late_change_charge" | "no_show_charge" | "no_show_waiver" | "address_unlock_hour" | "reminder_hour" | "phone_clock" | "task_sla_hours" | "piece_cycle_days" | "payment_hold" | "dispute_window_days" | "technician_work" | "booking_days" | "referral_reward" | "care_hours" | "remedy_limit" | "lost_after_days" | "payment_links" | "arrival_notice_min" | "move_proposal_hours" | "credit_reminder_days" | "referral_monthly_cap" | "tryon_look_days" | "stock_watch" | "stock_usage" | "stock_quality" | "cycle_counts" | "kit_check" | "scorecard_days" | "po_second_approval_above_rupees" | "po_rupees_to_one" | "custom_order_grace_days" | "planning_period_days" | "planning_horizon_periods" | "forecast_assumptions";
+                    name: "checkin_radius_m" | "no_show_wait_min" | "change_notice_hours" | "late_change_charge" | "no_show_charge" | "no_show_waiver" | "address_unlock_hour" | "reminder_hour" | "phone_clock" | "task_sla_hours" | "piece_cycle_days" | "payment_hold" | "dispute_window_days" | "technician_work" | "booking_days" | "referral_reward" | "care_hours" | "remedy_limit" | "lost_after_days" | "payment_links" | "arrival_notice_min" | "move_proposal_hours" | "credit_reminder_days" | "check_in_days" | "referral_monthly_cap" | "tryon_look_days" | "stock_watch" | "stock_usage" | "stock_quality" | "cycle_counts" | "kit_check" | "scorecard_days" | "po_second_approval_above_rupees" | "po_rupees_to_one" | "custom_order_grace_days" | "planning_period_days" | "planning_horizon_periods" | "forecast_assumptions";
                 };
                 cookie?: never;
             };
@@ -16639,7 +16639,7 @@ export interface components {
             low_stock_places: number;
             groups: {
                 /** @enum {string} */
-                group: "untold_move" | "move_unanswered" | "visit_left_open" | "unassigned_visit" | "unanswered_chat" | "city_matter" | "remedy_approval" | "leave_conflict" | "address_to_confirm" | "consultation_request" | "first_fit_to_book" | "replacement_order" | "stock_at_risk" | "at_risk_client" | "partial_visit" | "referral_review" | "no_show_decision" | "no_show_dispute" | "number_change" | "erasure_request" | "grievance" | "draft_invoice" | "payment_owed" | "payment_to_refund";
+                group: "untold_move" | "move_unanswered" | "visit_left_open" | "unassigned_visit" | "recall_call" | "unanswered_chat" | "city_matter" | "remedy_approval" | "leave_conflict" | "address_to_confirm" | "consultation_request" | "first_fit_to_book" | "replacement_order" | "stock_at_risk" | "at_risk_client" | "partial_visit" | "referral_review" | "no_show_decision" | "no_show_dispute" | "number_change" | "erasure_request" | "grievance" | "draft_invoice" | "payment_owed" | "payment_to_refund";
                 /** @description How many are waiting in the group in the caller's cities, all of them. */
                 count: number;
                 /** @description Ops may close a task of the group without doing its thing, with a reason. */
@@ -16921,7 +16921,7 @@ export interface components {
         OpsSetting: components["schemas"]["NumberRule"] | components["schemas"]["ChoiceRule"];
         NumberRule: {
             /** @enum {string} */
-            name: "checkin_radius_m" | "no_show_wait_min" | "change_notice_hours" | "late_change_charge" | "no_show_charge" | "no_show_waiver" | "address_unlock_hour" | "reminder_hour" | "phone_clock" | "task_sla_hours" | "piece_cycle_days" | "payment_hold" | "dispute_window_days" | "technician_work" | "booking_days" | "referral_reward" | "care_hours" | "remedy_limit" | "lost_after_days" | "payment_links" | "arrival_notice_min" | "move_proposal_hours" | "credit_reminder_days" | "referral_monthly_cap" | "tryon_look_days" | "stock_watch" | "stock_usage" | "stock_quality" | "cycle_counts" | "kit_check" | "scorecard_days" | "po_second_approval_above_rupees" | "po_rupees_to_one" | "custom_order_grace_days" | "planning_period_days" | "planning_horizon_periods" | "forecast_assumptions";
+            name: "checkin_radius_m" | "no_show_wait_min" | "change_notice_hours" | "late_change_charge" | "no_show_charge" | "no_show_waiver" | "address_unlock_hour" | "reminder_hour" | "phone_clock" | "task_sla_hours" | "piece_cycle_days" | "payment_hold" | "dispute_window_days" | "technician_work" | "booking_days" | "referral_reward" | "care_hours" | "remedy_limit" | "lost_after_days" | "payment_links" | "arrival_notice_min" | "move_proposal_hours" | "credit_reminder_days" | "check_in_days" | "referral_monthly_cap" | "tryon_look_days" | "stock_watch" | "stock_usage" | "stock_quality" | "cycle_counts" | "kit_check" | "scorecard_days" | "po_second_approval_above_rupees" | "po_rupees_to_one" | "custom_order_grace_days" | "planning_period_days" | "planning_horizon_periods" | "forecast_assumptions";
             title: string;
             note: string;
             set_by: string | null;
@@ -16954,7 +16954,7 @@ export interface components {
         };
         ChoiceRule: {
             /** @enum {string} */
-            name: "checkin_radius_m" | "no_show_wait_min" | "change_notice_hours" | "late_change_charge" | "no_show_charge" | "no_show_waiver" | "address_unlock_hour" | "reminder_hour" | "phone_clock" | "task_sla_hours" | "piece_cycle_days" | "payment_hold" | "dispute_window_days" | "technician_work" | "booking_days" | "referral_reward" | "care_hours" | "remedy_limit" | "lost_after_days" | "payment_links" | "arrival_notice_min" | "move_proposal_hours" | "credit_reminder_days" | "referral_monthly_cap" | "tryon_look_days" | "stock_watch" | "stock_usage" | "stock_quality" | "cycle_counts" | "kit_check" | "scorecard_days" | "po_second_approval_above_rupees" | "po_rupees_to_one" | "custom_order_grace_days" | "planning_period_days" | "planning_horizon_periods" | "forecast_assumptions";
+            name: "checkin_radius_m" | "no_show_wait_min" | "change_notice_hours" | "late_change_charge" | "no_show_charge" | "no_show_waiver" | "address_unlock_hour" | "reminder_hour" | "phone_clock" | "task_sla_hours" | "piece_cycle_days" | "payment_hold" | "dispute_window_days" | "technician_work" | "booking_days" | "referral_reward" | "care_hours" | "remedy_limit" | "lost_after_days" | "payment_links" | "arrival_notice_min" | "move_proposal_hours" | "credit_reminder_days" | "check_in_days" | "referral_monthly_cap" | "tryon_look_days" | "stock_watch" | "stock_usage" | "stock_quality" | "cycle_counts" | "kit_check" | "scorecard_days" | "po_second_approval_above_rupees" | "po_rupees_to_one" | "custom_order_grace_days" | "planning_period_days" | "planning_horizon_periods" | "forecast_assumptions";
             title: string;
             note: string;
             set_by: string | null;

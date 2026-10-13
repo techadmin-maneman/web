@@ -52,9 +52,9 @@ this map, or when the map names something that no longer exists.
 ### A visit, and changing it
 
 - **Database work** (`src/domain/visits/`): `visit-status`, `visit-times`, `visit-changes`, `visit-cancel`, `visit-facts`,
-  `visit-begun`, `client-visits`, `client-history`, `check-ins`, `next-visit`, `consultation-recap`, `one-visit`,
+  `visit-begun`, `client-visits`, `client-history`, `check-ins`, `next-visit`, `follow-ups`, `consultation-recap`, `one-visit`,
   `hand-close`, `lost-reasons` (why a client is not going ahead after a consultation)
-- **Rules** (`src/policy/`): `check-in`, `next-visit`, `one-visit`
+- **Rules** (`src/policy/`): `check-in`, `next-visit`, `follow-ups`, `one-visit`
 - **Routes** (`src/routes/`): `client/visits`, `ops/visits`, `ops/visit-changes`, `ops/visit-lost-reason`
 - **Screens:** `apps/app/src/visits/`, `apps/ops/src/clients/`
 - **Tests:** `test/worker/booking/visit-*`, `test/worker/booking/next-visit.test.ts`, `e2e/app/changes.e2e.ts`,
@@ -83,7 +83,7 @@ this map, or when the map names something that no longer exists.
 ### The technician's work in the field
 
 - **Database work** (`src/domain/field/`): `tech-jobs`, `job-card`, `workable-job`, `job-events`, `job-event-bodies`, `job-record`, `job-use`, `piece-use`,
-  `job-sheet-settings`, `tech-photos`, `visit-photos`, `photo-views`, `pieces`, `stock`, `stock-places`, `stock-lots`, `stock-transit`, `stock-units`, `stock-view`, `piece-returns`, `kit`, `suppliers`, `purchase-orders`, `receipts`, `supplier-claims`, `returned-pieces`, `custom-orders`, `custom-order-po`, `stock-photos`, `supplier-scorecard`, `stock-match`, `stock-risks`, `forecast`, `forecast-layers`, `forecast-accuracy`, `supply-plan`, `supply-plan-lines`, `kit-check`, `demand-events`, `cycle-counts`, `count-tasks`, `count-labels`, `stock-usage`, `recalls`, `stock-quality`, `stock-watch`, `stock-demand`, `stock-gap`, `low-stock`,
+  `job-sheet-settings`, `tech-photos`, `visit-photos`, `photo-views`, `pieces`, `stock`, `stock-places`, `stock-lots`, `stock-transit`, `stock-units`, `stock-view`, `piece-returns`, `kit`, `suppliers`, `purchase-orders`, `receipts`, `supplier-claims`, `returned-pieces`, `custom-orders`, `custom-order-po`, `stock-photos`, `supplier-scorecard`, `stock-match`, `stock-risks`, `forecast`, `forecast-layers`, `forecast-accuracy`, `supply-plan`, `supply-plan-lines`, `kit-check`, `demand-events`, `cycle-counts`, `count-tasks`, `count-labels`, `stock-usage`, `recalls`, `recall-notice`, `stock-quality`, `stock-watch`, `stock-demand`, `stock-gap`, `low-stock`,
   `consumables`, `hair-systems`
 - **Rules** (`src/policy/`): `in-job-steps`, `piece-step`, `job-visibility`, `phone-clock`, `stock`
 - **Data** (`src/config/`): `job-sheet`, `pieces`, `consumables`

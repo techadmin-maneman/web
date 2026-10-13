@@ -20,9 +20,19 @@ export type Consent = Profile["consents"][number];
 
 /** What switching each of these off means, said while it is off. */
 const WHEN_OFF: Partial<Record<ConsentPurpose, string>> = {
-  photos_own_record: profile.ownRecordOff,
   whatsapp_visits: profile.visitsOff,
 };
+
+/** Every visit is photographed for the client's record: a line in the list, never a switch. */
+const NO_SWITCH: readonly ConsentPurpose[] = ["photos_own_record"];
+
+function VisitPhotos() {
+  return (
+    <li className={styles.consent}>
+      <p className={styles.consentName}>{profile.visitPhotos}</p>
+    </li>
+  );
+}
 
 /** The consents as the profile holds them, which a switch the API recorded changes there. */
 export function ConsentList({
@@ -56,74 +66,78 @@ export function ConsentList({
         {copy.agreed}
       </h2>
       <ul className={styles.consents}>
-        {consents.map((consent) => {
-          const name = copy.purposes[consent.purpose];
-          return (
-            <li key={consent.purpose} className={styles.consent}>
-              <div className={styles.consentRow}>
-                <div>
-                  <p className={styles.consentName} id={`consent-${consent.purpose}`}>
-                    {name}
-                  </p>
-                  <p className={styles.consentWhen}>
-                    {consent.granted && consent.since !== null ? copy.given(longDate(consent.since)) : copy.notGiven}
-                  </p>
-                </div>
-                <Switch
-                  checked={consent.granted}
-                  labelledBy={`consent-${consent.purpose}`}
-                  onToggle={() => {
-                    setFailed(null);
-                    if (!consent.granted && consent.purpose === "photos_referral_cards") setConfirming(consent.purpose);
-                    else void switchTo(consent.purpose, !consent.granted);
-                  }}
-                />
-              </div>
-              {WHEN_OFF[consent.purpose] !== undefined && (
-                // Always in the page, so a screen reader hears the line come and go with the switch.
-                <div role="status">
-                  {!consent.granted && <p className={styles.consequence}>{WHEN_OFF[consent.purpose]}</p>}
-                </div>
-              )}
-              {failed === consent.purpose && (
-                <p className={styles.error} role="alert">
-                  {copy.switchFailed}
-                </p>
-              )}
-              {confirming === consent.purpose && (
-                <div className={styles.confirm}>
-                  <ul className={styles.lines}>
-                    {copy.referralCards.lines.map((line) => (
-                      <li key={line}>{line}</li>
-                    ))}
-                  </ul>
-                  <div className={styles.row}>
-                    <Button
-                      variant="primary"
-                      size="control"
-                      className={styles.primary}
-                      disabled={busy}
-                      onClick={() => void switchTo(consent.purpose, true)}
-                    >
-                      {copy.referralCards.confirm}
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="control"
-                      className={styles.secondary}
-                      onClick={() => {
-                        setConfirming(null);
-                        setFailed(null);
-                      }}
-                    >
-                      {copy.referralCards.cancel}
-                    </Button>
+        <VisitPhotos />
+        {consents
+          .filter((consent) => !NO_SWITCH.includes(consent.purpose))
+          .map((consent) => {
+            const name = copy.purposes[consent.purpose];
+            return (
+              <li key={consent.purpose} className={styles.consent}>
+                <div className={styles.consentRow}>
+                  <div>
+                    <p className={styles.consentName} id={`consent-${consent.purpose}`}>
+                      {name}
+                    </p>
+                    <p className={styles.consentWhen}>
+                      {consent.granted && consent.since !== null ? copy.given(longDate(consent.since)) : copy.notGiven}
+                    </p>
                   </div>
+                  <Switch
+                    checked={consent.granted}
+                    labelledBy={`consent-${consent.purpose}`}
+                    onToggle={() => {
+                      setFailed(null);
+                      if (!consent.granted && consent.purpose === "photos_referral_cards")
+                        setConfirming(consent.purpose);
+                      else void switchTo(consent.purpose, !consent.granted);
+                    }}
+                  />
                 </div>
-              )}
-            </li>
-          );
-        })}
+                {WHEN_OFF[consent.purpose] !== undefined && (
+                  // Always in the page, so a screen reader hears the line come and go with the switch.
+                  <div role="status">
+                    {!consent.granted && <p className={styles.consequence}>{WHEN_OFF[consent.purpose]}</p>}
+                  </div>
+                )}
+                {failed === consent.purpose && (
+                  <p className={styles.error} role="alert">
+                    {copy.switchFailed}
+                  </p>
+                )}
+                {confirming === consent.purpose && (
+                  <div className={styles.confirm}>
+                    <ul className={styles.lines}>
+                      {copy.referralCards.lines.map((line) => (
+                        <li key={line}>{line}</li>
+                      ))}
+                    </ul>
+                    <div className={styles.row}>
+                      <Button
+                        variant="primary"
+                        size="control"
+                        className={styles.primary}
+                        disabled={busy}
+                        onClick={() => void switchTo(consent.purpose, true)}
+                      >
+                        {copy.referralCards.confirm}
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="control"
+                        className={styles.secondary}
+                        onClick={() => {
+                          setConfirming(null);
+                          setFailed(null);
+                        }}
+                      >
+                        {copy.referralCards.cancel}
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </li>
+            );
+          })}
       </ul>
     </section>
   );

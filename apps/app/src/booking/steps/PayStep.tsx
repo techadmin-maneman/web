@@ -6,12 +6,12 @@ import { Button } from "@maneman/ui/Button";
 import { indiaClock, indiaDate, shortDate } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";
 import { useState } from "react";
-import type { BookingConsent, Hold, MoveTerms } from "../../api.ts";
+import type { Hold, MoveTerms } from "../../api.ts";
 import { booking, change, WINDOW_HOURS } from "../../content.ts";
 import { apiNow } from "../../lib/clock.ts";
 import { priceFigures } from "../../lib/money.ts";
 import { CodeBox } from "../CodeBox.tsx";
-import { consentLines } from "../consents.ts";
+import { photoLines } from "../consents.ts";
 import { atStake, insideNotice, type AtStake } from "../late-change.ts";
 import styles from "../booking.module.css";
 import { firstNameOf } from "@rules/lib/names.ts";
@@ -104,16 +104,11 @@ function ChangeTerms(props: { hold: Hold; moving: MoveTerms | undefined; stake: 
   );
 }
 
-/**
- * What booking also agrees to, one tap away beneath Pay: the notice the consent is recorded on, word for word.
- * Nothing when the client has decided both purposes.
- */
-function AgreedByBooking({ consents }: { consents: readonly BookingConsent[] }) {
-  const lines = consentLines(consents);
-  if (lines.length === 0) return null;
+/** What every visit's photographs are, one tap away beneath Pay. */
+function VisitPhotos() {
   return (
-    <Disclosure className={styles.consents} summaryClassName={styles.consentsOpen} summary={booking.pay.consents.open}>
-      {lines.map((line) => (
+    <Disclosure className={styles.consents} summaryClassName={styles.consentsOpen} summary={booking.pay.photos.open}>
+      {photoLines().map((line) => (
         <p key={line}>{line}</p>
       ))}
     </Disclosure>
@@ -128,8 +123,6 @@ export function PayStep(props: {
   problem: string | null;
   /** Whether to ask to remind the client the day before: not when they have already switched it on. */
   askToRemind: boolean;
-  /** The photograph purposes booking also agrees to. */
-  consents: readonly BookingConsent[];
   remind: boolean;
   onRemind: (remind: boolean) => void;
   onPay: () => void;
@@ -212,7 +205,7 @@ export function PayStep(props: {
       {stake.kind === "credit" && !late && (
         <p className={styles.creditNote}>{copy.credit.note(hold.change_notice_hours)}</p>
       )}
-      <AgreedByBooking consents={props.consents} />
+      <VisitPhotos />
     </>
   );
 }

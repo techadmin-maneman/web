@@ -23,6 +23,7 @@ import { errorResponse, refuse } from "../../http/errors.ts";
 import { json } from "../../http/openapi.ts";
 import { indiaDate } from "../../lib/india-time.ts";
 import { MAX_NOTE } from "../../config/consumables.ts";
+import { queueMessage } from "../../http/queue-message.ts";
 
 const RecallSchema = z.object({
   id: z.string(),
@@ -180,6 +181,7 @@ export function registerOpsRecalls(app: App): void {
       written(c),
     );
     if (!raised.ok) return refuse(c, "invalid_request", raised.fields);
+    for (const id of raised.messageIds) await queueMessage(c, id);
     return detailAnswer(c, raised.id);
   });
 

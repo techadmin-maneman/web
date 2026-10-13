@@ -3,6 +3,7 @@
 import { GUARANTEE } from "@maneman/web-kit/guarantee";
 import { visitLength } from "./common.ts";
 import { PAID_IN, TOLD_WHEN_BOOKED } from "./home.ts";
+import { VISIT_PHOTOS } from "./profile.ts";
 
 /** Booking in the app, while self-serve booking is on. */
 export const booking = {
@@ -105,16 +106,9 @@ export const booking = {
      * decided on, one tap away beneath Pay. With the referral card's lines (profile.referralCards), they are the
      * notice each consent is recorded under, word for word (src/config/notices.ts; booking/consents.ts).
      */
-    consents: {
-      open: "What booking agrees to",
-      both: "By booking this visit, you also agree to photographs taken for your visit record and used on referral cards.",
-      alone: {
-        photos_own_record: "By booking this visit, you also agree to photographs taken for your visit record.",
-        photos_referral_cards: "By booking this visit, you also agree to photographs on referral cards.",
-      },
-      switchEither: "You can switch either off in Profile.",
-      switchIt: "You can switch it off in Profile.",
-    },
+    // Every visit is photographed for the client's record, which booking says and agrees to nothing more: referral
+    // cards are their choice when they first share an invite. PLACEHOLDER: awaits counsel (docs/open-points.md, 69).
+    photos: { open: "Photos at your visits", lines: [VISIT_PHOTOS] },
     /**
      * Our words, all of them: no board draws a discount code (docs/decisions/0108-discount-codes.md).
      * A code that does not apply is told only that, whatever the reason.

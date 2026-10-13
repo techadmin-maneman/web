@@ -23,6 +23,7 @@ import { type SoldTerms, LATE_FEES } from "../policy/moving-a-visit.ts";
 import { bookHold } from "./book-hold.ts";
 import type { AppEnv } from "./context.ts";
 import { opsInputs } from "./ops-inputs.ts";
+import { replacementWears } from "../domain/field/stock-gap.ts";
 
 /**
  * The terms for moving one of the client's visits of this type now, and the visit as a move sees it; null if it
@@ -95,9 +96,10 @@ export async function bookable(
   on: string,
 ): Promise<PricedService | "no_product" | "not_bookable"> {
   const db = c.env.DB;
+  const wears = await replacementWears(db, { kind: wanted.type, tier: wanted.tier, personId });
   const [types, service] = await Promise.all([
     bookableTypes(db, personId),
-    bookableService(db, wanted.type, wanted.tier, on),
+    bookableService(db, { kind: wanted.type, tier: wanted.tier, on, wears }),
   ]);
   if (!types.includes(wanted.type)) return "not_bookable";
   if (service !== null) return service;

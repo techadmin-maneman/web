@@ -132,6 +132,7 @@ import { registerOpsVisitChanges } from "./routes/ops/visit-changes.ts";
 import { registerOpsVisits } from "./routes/ops/visits.ts";
 import { registerOpsWhoami } from "./routes/ops/whoami.ts";
 import { registerPublishedPrices } from "./routes/public/published-prices.ts";
+import { registerServedCities } from "./routes/public/served-cities.ts";
 import { registerSiteWords } from "./routes/public/site-words.ts";
 import { registerReferralReward } from "./routes/public/referral-reward.ts";
 import { registerTechAuth } from "./routes/tech/auth.ts";
@@ -154,6 +155,7 @@ const SURFACE_ROUTES: Readonly<Record<Surface, readonly ((app: App) => void)[]>>
   public: [
     registerHealth,
     registerPublishedPrices,
+    registerServedCities,
     registerSiteWords,
     // A WhatsApp code that proves a number before /book's one visit or /try's gate acts on it.
     registerNumberCodes,
@@ -169,6 +171,8 @@ const SURFACE_ROUTES: Readonly<Record<Surface, readonly ((app: App) => void)[]>>
     registerTryonResult,
     // The page a reminder's or alert's link opens, which stops them without signing in.
     registerStopMessages,
+    // A script error on the site's own pages, the booking form's and the try-on's.
+    registerClientErrors,
     // Webhooks sit on the public host (ADR 0026).
     registerEvolutionHook,
     registerRazorpayHook,

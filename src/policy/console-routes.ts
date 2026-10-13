@@ -312,6 +312,7 @@ export const TASK_DEPARTMENTS: Readonly<Record<TaskGroup, Department>> = {
   move_unanswered: "operations",
   visit_left_open: "operations",
   unassigned_visit: "operations",
+  recall_call: "customer_care",
   unanswered_chat: "customer_care",
   city_matter: "operations",
   remedy_approval: "customer_care",

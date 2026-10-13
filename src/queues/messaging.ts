@@ -27,8 +27,14 @@
 // it again once the bridge is open, and fails it if it is still unsent a day on
 // (src/scheduled/unsent-messages.ts).
 
-import { PUBLIC_ORIGIN } from "../config/environments.ts";
-import { messageClass, stopLinkPurpose, type TemplateName, type Wording } from "../config/message-templates.ts";
+import { CLIENT_ORIGIN, PUBLIC_ORIGIN } from "../config/environments.ts";
+import {
+  messageClass,
+  sendsToApp,
+  stopLinkPurpose,
+  type TemplateName,
+  type Wording,
+} from "../config/message-templates.ts";
 import { messageWording } from "../domain/words/message-wording.ts";
 import type { ImageType } from "../lib/image-bytes.ts";
 import { MAX_SEND_ATTEMPTS } from "../config/pipeline.ts";
@@ -65,6 +71,8 @@ import { MINUTE_MS } from "../lib/durations.ts";
 import { isOneOf } from "../lib/one-of.ts";
 import { MessagingMessageSchema } from "../config/pipeline.ts";
 import { runConsumer, type Settle } from "./consumer.ts";
+import { composeRecallNotice } from "../domain/field/recall-notice.ts";
+import { composeFollowUp } from "../domain/visits/follow-ups.ts";
 
 const RETRY_DELAY_SECONDS = 30;
 /** A send claimed longer ago than this is taken to have died, and may be claimed again. */
@@ -240,6 +248,18 @@ async function contentOf(db: D1Database, config: StaticConfig, row: MessageRow, 
       return composeDeletionRejected(db, row.subject_id, row.person_id);
     case "concern_answered":
       return composeConcernAnswered(db, row.subject_id, row.person_id);
+    case "recall_notice":
+      return composeRecallNotice(db, row.subject_id, row.person_id);
+    case "consultation_follow_up":
+    case "fit_aftercare":
+    case "first_check_in":
+    case "second_check_in":
+      return composeFollowUp(db, {
+        kind: row.kind,
+        visitId: row.subject_id,
+        personId: row.person_id,
+        origin: PUBLIC_ORIGIN[config.environment],
+      });
     case "messages_stopped":
       return composeMessagesStopped(db, row.person_id);
     case "move_proposed":
@@ -305,6 +325,7 @@ export async function sendMessage({
   const result = await sendContent(deps, row.mobile_e164, {
     ...content,
     stopLink,
+    ...(sendsToApp(content.template) ? { appLink: CLIENT_ORIGIN[config.environment] } : {}),
     ...(wording === undefined ? {} : { wording }),
   });
 

@@ -38,7 +38,6 @@ export type Availability = Schemas["Availability"];
 export type Hold = Schemas["Hold"];
 export type Price = Schemas["Price"];
 export type Booking = Schemas["Booking"];
-export type BookingConsent = NonNullable<Schemas["BookingStart"]["consents"]>[number];
 export type MoveTerms = Schemas["MoveTerms"];
 export type CancelTerms = Schemas["CancelTerms"];
 export type Refer = Schemas["Refer"];
@@ -175,10 +174,10 @@ export const api = {
   enterCode: (holdId: string, code: string) =>
     client.post("/api/holds/{id}/discount-code", { path: { id: holdId }, body: { code } }),
   removeCode: (holdId: string) => client.delete("/api/holds/{id}/discount-code", { path: { id: holdId } }),
-  /** `consents`: the photograph purposes whose lines the pay step showed, which the tap agrees to (ADR 0080). */
-  book: (holdId: string, consents: readonly BookingConsent[]) =>
+  /** Booking agrees to no photograph consent; an earlier build sent those whose lines it showed (ADR 0080). */
+  book: (holdId: string) =>
     client.post("/api/bookings", {
-      body: { hold_id: holdId, ...(consents.length === 0 ? {} : { consents: [...consents] }) },
+      body: { hold_id: holdId },
     }),
   moveTerms: (visitId: string) => client.get("/api/appointments/{id}/reschedule", { path: { id: visitId } }),
   startMove: (visitId: string, holdId: string) =>

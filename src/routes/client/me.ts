@@ -57,6 +57,8 @@ import {
 import { PriceSchema } from "../schemas/booking.ts";
 import { OwedPaymentSchema } from "./payments.ts";
 import { creditsBody, CreditsSchema } from "./refer.ts";
+import { wornProduct } from "../../domain/field/stock-gap.ts";
+import { replacementFor } from "../../policy/services.ts";
 
 const MeSchema = z
   .object({
@@ -111,7 +113,9 @@ const MeSchema = z
         "The soonest visit paid for, or booked free, that is not booked yet: neither booked nor refunded. It is " +
         "on its way, and becomes a visit once it is booked (ADR 0068).",
     }),
-    remake: z.union([RemakeSchema, z.null()]).openapi({ description: "Null when none, and while a visit is booked." }),
+    remake: z.union([RemakeSchema, z.null()]).openapi({
+      description: "Null when none; a partly done visit's while another visit is booked, a recall's never.",
+    }),
     payment_owed: z.union([OwedPaymentSchema, z.null()]).openapi({
       description:
         "The oldest payment the client owes: a consultation and fit in one visit they were fitted at, paid by the " +
@@ -360,7 +364,7 @@ export function registerClientMe(app: App): void {
 
     // Each read is a trip to D1 and back, so the reads that need nothing from each other go together.
     const nameOnInvite = c.var.config.settings.referrerNameOnInvite;
-    const [person, upcoming, underWay, credits, fitted, form, types, services, home, invite, owed, recap] =
+    const [person, upcoming, underWay, credits, fitted, form, types, services, home, invite, owed, recap, wears] =
       await Promise.all([
         liveContact(db, personId),
         nextVisit(db, personId, now),
@@ -374,6 +378,7 @@ export function registerClientMe(app: App): void {
         pendingInviteOf(db, personId, now, nameOnInvite),
         owedPayments(db, personId),
         consultationRecap(db, personId),
+        wornProduct(db, personId),
       ]);
     if (person === null) return refuse(c, "session_required");
 
@@ -382,7 +387,8 @@ export function registerClientMe(app: App): void {
     // A form's consultation counts as booked while it stands, asked for or held.
     const booked = home.next.booked || upcoming !== null || form.proposal !== null;
     const { remake, offer } = whatHomeOffers(booked, home.prompt, home.next.offer);
-    const offered = offeredAmong(services, tomorrow, types).map((service) => ({
+    // A replacement is the one priced for the hair system they wear, or else the single price.
+    const offered = replacementFor(offeredAmong(services, tomorrow, types), wears).map((service) => ({
       type: service.kind,
       tier: service.tier,
       name: service.name,

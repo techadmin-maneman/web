@@ -38,6 +38,13 @@ export const MESSAGE_KINDS = [
   // Ops kept the account the client asked us to delete, with their reason (src/domain/privacy/deletion.ts).
   "deletion_rejected",
   "concern_answered", // ops answered a concern the client raised about their data (src/routes/ops/grievances.ts)
+  "recall_notice", // a lot the client wears was recalled: replaced free (src/domain/field/recalls.ts)
+  // What follows a visit (src/domain/visits/follow-ups.ts): the technician's recommendation after a consultation,
+  // the care guide after a fit or a replacement, and the two check-ins after it.
+  "consultation_follow_up",
+  "fit_aftercare",
+  "first_check_in",
+  "second_check_in",
   "messages_stopped", // the answer to a STOP reply (src/domain/messages/stop-messages.ts)
 ] as const;
 export type MessageKind = (typeof MESSAGE_KINDS)[number];

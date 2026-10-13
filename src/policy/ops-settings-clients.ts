@@ -3,6 +3,7 @@
 
 import { ARRIVAL_NOTICE_MIN } from "./check-in.ts";
 import { CREDIT_REMINDER_DAYS, CREDIT_REMINDER_KEYS, creditReminderConflicts } from "./credit-reminders.ts";
+import { CHECK_IN_DAYS, CHECK_IN_KEYS, checkInConflicts } from "./follow-ups.ts";
 import { MOVE_PROPOSAL_HOURS } from "./dispatch.ts";
 import { REFERRAL_MONTHLY_CAP } from "./fraud-holds.ts";
 import type { OpsSetting } from "./ops-settings.ts";
@@ -61,6 +62,22 @@ export const CLIENT_SETTINGS = [
     },
     fallback: CREDIT_REMINDER_DAYS,
     conflicts: (value) => creditReminderConflicts(value),
+  },
+  {
+    // What follows a fit or a replacement on WhatsApp (src/domain/visits/follow-ups.ts).
+    name: "check_in_days",
+    title: "Check-ins after a fit",
+    note: "Days after a fit or a replacement that the client is asked how it is, first and second.",
+    unit: "days",
+    min: 1,
+    max: 90,
+    keys: CHECK_IN_KEYS,
+    bounds: {
+      first: { min: 1, max: 14 },
+      second: { min: 2, max: 90 },
+    },
+    fallback: CHECK_IN_DAYS,
+    conflicts: (value) => checkInConflicts(value),
   },
   {
     name: "referral_monthly_cap",

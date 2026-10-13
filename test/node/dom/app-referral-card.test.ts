@@ -78,7 +78,7 @@ describe("the house card", () => {
     expect(readFileSync("apps/app/src/refer/invite-house.jpg").equals(site)).toBe(true);
   });
 
-  it("is a 1200 x 630 JPEG under WhatsApp's 300 KB, with the gilt rule and the lockup of board A1", async () => {
+  it("is a 1200 x 630 JPEG under WhatsApp's 300 KB: one field of the deep ink, the lockup at its centre", async () => {
     const image = sharp(site);
     expect(await image.metadata()).toMatchObject({ format: "jpeg", width: 1200, height: 630 });
     expect(site.byteLength).toBeLessThan(300 * 1024);
@@ -89,14 +89,21 @@ describe("the house card", () => {
     };
     const near = (rgb: number[], hex: string) =>
       rgb.every((value, index) => Math.abs(value - Number.parseInt(hex.slice(1 + index * 2, 3 + index * 2), 16)) < 24);
-    expect(near(pixel(599, 315), COLOURS.gilt)).toBe(true);
-    expect(near(pixel(600, 315), COLOURS.gilt)).toBe(true);
+    // The deep ink to its corners and either side of the lockup: no rule and no empty panel waiting for photographs.
+    for (const [x, y] of [
+      [10, 10],
+      [1190, 620],
+      [250, 315],
+      [950, 315],
+    ] as const) {
+      expect(near(pixel(x, y), token("--ink-deep")), `${String(x)}, ${String(y)}`).toBe(true);
+    }
     // Somewhere in the mark's box, gilt; somewhere in the wordmark's, paper.
     const anyIn = (left: number, top: number, width: number, height: number, hex: string) =>
       Array.from({ length: width * height }, (_, index) =>
         pixel(left + (index % width), top + Math.floor(index / width)),
       ).some((rgb) => near(rgb, hex));
-    expect(anyIn(958, 548, 44, 48, COLOURS.gilt)).toBe(true);
-    expect(anyIn(1020, 560, 140, 23, COLOURS.paper)).toBe(true);
+    expect(anyIn(530, 190, 140, 145, COLOURS.gilt)).toBe(true);
+    expect(anyIn(380, 380, 440, 60, COLOURS.paper)).toBe(true);
   });
 });

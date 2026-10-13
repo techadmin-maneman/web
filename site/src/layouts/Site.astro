@@ -5,6 +5,9 @@
 // production's host, Open Graph and X cards, and any structured data.
 import "../styles/global.css";
 import Footer from "../components/Footer.astro";
+import LegalFooter from "../components/LegalFooter.astro";
+import ConsentBar from "../components/ConsentBar.astro";
+import { CONSENT_BAR_SHOWN } from "../lib/flags.ts";
 import Header from "../components/Header.astro";
 import Sprite from "../components/Sprite.astro";
 import StickyBar from "../components/StickyBar.astro";
@@ -96,15 +99,20 @@ const ogImage = new URL(image.path, SITE_ORIGIN).href;
     <main>
       <slot />
     </main>
-    {home && <Footer />}
+    {home ? <Footer /> : <LegalFooter />}
+    {CONSENT_BAR_SHOWN && <ConsentBar />}
     {home && <StickyBar />}
     <script>
-      // Where this visit came from, kept for the booking or the try-on to send,
-      // read before the analytics tags tidy the address; and an invite this
-      // browser has remembered for more than thirty days, taken away.
+      // Every script error and promise nobody caught reported, as the apps' are
+      // (packages/web-kit/client-errors.ts). Where this visit came from, kept
+      // for the booking or the try-on to send, read before the analytics tags
+      // tidy the address; and an invite this browser has remembered for more
+      // than thirty days, taken away.
+      import { reportUncaughtErrors } from "@maneman/web-kit/client-errors";
       import { startAnalytics } from "../lib/analytics.ts";
       import { forgetStaleInvite } from "../lib/remembered-invite.ts";
       import { captureAttribution } from "../lib/visit.ts";
+      reportUncaughtErrors();
       captureAttribution();
       forgetStaleInvite();
       startAnalytics();

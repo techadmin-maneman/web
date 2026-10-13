@@ -94,6 +94,42 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/served-cities": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The cities the site says it comes to. Cacheable for a minute. */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The cities */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ServedCities"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/site-words": {
         parameters: {
             query?: never;
@@ -1842,6 +1878,62 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/client-errors": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Report an error in the app's own page */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["ClientErrorReport"];
+                };
+            };
+            responses: {
+                /** @description Logged */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description invalid_request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description rate_limited: this address has sent its reports for the hour, or every address has */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/hooks/evolution/{token}": {
         parameters: {
             query?: never;
@@ -2032,6 +2124,10 @@ export interface components {
             name: string;
             minutes: number;
             price: components["schemas"]["Price"];
+        };
+        ServedCities: {
+            /** @description Each city with a pincode ops serve, in the console's order. */
+            cities: string[];
         };
         SiteWords: {
             /** @description The publish; null before any. */
@@ -2301,7 +2397,7 @@ export interface components {
             stage: "crown" | "receding" | "advanced";
             /**
              * @description The gate's notice the page showed: the current one, the only one a claim may record, when left out (docs/decisions/0104-the-try-ons-look-on-whatsapp-only.md).
-             * @example gate-v4
+             * @example gate-v5
              */
             notice_version?: string;
             attribution?: components["schemas"]["Attribution"];
@@ -2342,6 +2438,28 @@ export interface components {
         };
         StopMessagesRequest: {
             token: string;
+        };
+        ClientErrorReport: {
+            /** @enum {string} */
+            kind: "error" | "unhandled_rejection" | "render" | "outbox_gave_up";
+            message: string;
+            /** @description The page's path, with no query or fragment. */
+            path: string;
+            /** @description The build the page runs, as its mm-version. */
+            version?: string;
+            stack?: string;
+            /** @description The script the error was thrown in. */
+            source?: string;
+            line?: number;
+            column?: number;
+            /** @description outbox_gave_up: the write's kind, as `checklist`. */
+            step?: string;
+            /** @description outbox_gave_up: the code the API refused it with. */
+            code?: string;
+            /** @description outbox_gave_up: the refusal's HTTP status. */
+            status?: number;
+            /** @description outbox_gave_up: the refusal's request ID, which its own log lines carry. */
+            request_id?: string;
         };
     };
     responses: never;

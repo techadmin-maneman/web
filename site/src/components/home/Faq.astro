@@ -50,7 +50,11 @@ const link = isShown(whatsapp) ? whatsappChat(whatsapp.number) : null;
             <path class={ruled.upright} d="M12 6 V18" />
           </svg>
         </summary>
-        <p data-price={priceTemplate(item.a)}>{asBuilt(item.a)}</p>
+        {"cities" in item ? (
+          <p data-cities={item.cities}>{item.a}</p>
+        ) : (
+          <p data-price={priceTemplate(item.a)}>{asBuilt(item.a)}</p>
+        )}
       </details>
     ))}
   </div>

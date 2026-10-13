@@ -52,6 +52,7 @@ import { useLandingData } from "./useLandingData.ts";
 import { useLatest } from "../useLatest.ts";
 import { Waitlist } from "./Waitlist.tsx";
 import { CARD_HEIGHT, CARD_WIDTH } from "@rules/config/referral-cards.ts";
+import { IslandBoundary } from "../IslandBoundary.tsx";
 
 interface Props {
   turnstileSiteKey: string;
@@ -97,7 +98,7 @@ function inviteHeading(invite: InviteAnswer | null): string {
   return referral.arrival.title;
 }
 
-export default function Invite(props: Props) {
+function InviteForm(props: Props) {
   const invited = (props.mode ?? "invited") === "invited";
   const landing = useLandingData(invited);
   const { invite, prices } = landing;
@@ -288,5 +289,14 @@ export default function Invite(props: Props) {
         </div>
       </div>
     </section>
+  );
+}
+
+/** The island as the page mounts it: a throw while it draws is reported, and the way to us shown in its place. */
+export default function Invite(props: Props) {
+  return (
+    <IslandBoundary>
+      <InviteForm {...props} />
+    </IslandBoundary>
   );
 }

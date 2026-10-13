@@ -29,6 +29,7 @@ const pathOf = (link: string): string => link.replace(/^https?:\/\/[^/]+\//, "")
 /** What a button's address ends with for this message; null when the message lacks it. */
 function buttonValue(button: ApprovedButton, message: OutboundMessage): string | null {
   if (button.kind === "copy_code") return message.params[0] ?? null;
+  if (button.kind === "app") return "";
   const link = button.kind === "stop" ? message.stopLink : message.params[button.param - 1];
   return link === undefined ? null : pathOf(link);
 }
@@ -50,6 +51,8 @@ function componentsOf(
   for (const [index, button] of template.buttons.entries()) {
     const value = buttonValue(button, message);
     if (value === null) return null;
+    // The app's button has its whole address in the template, with nothing for a message to add.
+    if (button.kind === "app") continue;
     components[`button_${String(index + 1)}`] = { subtype: "url", type: "text", value };
   }
   return components;

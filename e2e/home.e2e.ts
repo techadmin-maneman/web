@@ -70,11 +70,15 @@ test.describe("sticky bar and footer: the home page only", () => {
     await expect(page.locator('footer a[href="/book"]')).toHaveCount(1);
   });
 
+  // Elsewhere the foot is the company, its privacy notice and its terms alone.
   for (const path of ["/try", "/book", "/privacy"]) {
-    test(`are absent from ${path}`, async ({ page }) => {
+    test(`are absent from ${path}, which keeps the legal foot`, async ({ page }) => {
       await page.goto(path);
       await expect(page.getByRole("link", { name: siteCopy.stickyBar.whatsappLabel })).toHaveCount(0);
-      await expect(page.locator("footer")).toHaveCount(0);
+      await expect(page.locator("footer")).toHaveCount(1);
+      await expect(page.locator("footer")).not.toContainText(siteCopy.footer.area);
+      await expect(page.locator("footer")).toContainText(siteCopy.footer.entity);
+      await expect(page.locator('footer a[href="/terms"]')).toHaveCount(1);
     });
   }
 

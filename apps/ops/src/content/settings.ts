@@ -225,6 +225,7 @@ export const settings = {
         pay_within_days: "Link after a visit open for",
       },
       credit_reminder_days: { first: "First reminder", last: "Last reminder" },
+      check_in_days: { first: "First check-in", second: "Second check-in" },
       stock_watch: {
         expiry_warning_days: "Expiry flagged within",
         demand_days: "Demand read ahead",
@@ -430,6 +431,10 @@ export const settings = {
       retireFrom: "Hidden from",
       addTitle: (kind: string) => `New ${kind} service`,
       code: "Code",
+      /** What a kind's code does beyond pricing it: a replacement under a hair system's code is offered to its wearers. */
+      codeHints: {
+        replacement: "Give it the code of the hair system it replaces, and clients who wear that one are offered it.",
+      } as Readonly<Partial<Record<string, string>>>,
       next: "Review",
       cancel: "Cancel",
     },

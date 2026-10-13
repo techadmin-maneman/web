@@ -77,7 +77,10 @@ describe("a message's words", () => {
 
     const sent = await sentAlert();
     expect(sent?.wording).toEqual({ text: alert, stop: "To stop these: {{1}}" });
-    const text = renderWithStopLink("launch_alert_v1", sent?.params ?? [], sent?.stopLink, sent?.wording);
+    const text = renderWithStopLink("launch_alert_v1", sent?.params ?? [], {
+      stopLink: sent?.stopLink,
+      wording: sent?.wording,
+    });
     expect(text).toContain("Hi Karan, we now come to Gurgaon.");
     expect(text).toMatch(/\n\nTo stop these: http/);
   });

@@ -63,6 +63,8 @@ describe("tasks", () => {
       visit_left_open: 24,
       // A visit with no technician falls due the day before it in any case.
       unassigned_visit: 24,
+      // A client wearing a recalled piece: Care calls them within the day.
+      recall_call: 24,
       // A chat falls due by the reply clock, which comes first; a day bounds it (ADR 0132).
       unanswered_chat: 24,
       // A client waiting on their city: within the day (ADR 0135).

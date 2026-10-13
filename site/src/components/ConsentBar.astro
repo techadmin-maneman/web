@@ -1,0 +1,72 @@
+---
+// The bar that asks for consent to the ad and measurement tags (site/src/lib/analytics.ts), at the foot of every page
+// until the visitor answers. Switched off until counsel approves its words (CONSENT_BAR_SHOWN); hidden until the
+// page's script finds no answer kept, so a visitor who answered never sees it flash.
+import { buttonLook } from "@maneman/ui/Button";
+import { textLinkLook } from "@maneman/ui/TextLink";
+import { consentBar as words } from "../content/site.ts";
+---
+
+<div class="bar on-ink" data-consent-bar role="region" aria-label={words.privacy} hidden>
+  <p class="text">
+    {words.text}
+    <a class={textLinkLook({ tone: "ink", inline: true })} href="/privacy">
+      {words.privacy}
+    </a>
+  </p>
+  <div class="actions">
+    <button type="button" class={buttonLook({ variant: "light", size: "small" })} data-consent="granted">
+      {words.accept}
+    </button>
+    <button type="button" class={buttonLook({ variant: "outlineOnInk", size: "small" })} data-consent="denied">
+      {words.decline}
+    </button>
+  </div>
+</div>
+
+<script>
+  import { answerConsent, consentAnswer } from "../lib/analytics.ts";
+
+  const bar = document.querySelector<HTMLElement>("[data-consent-bar]");
+  if (bar !== null && consentAnswer() === null) {
+    bar.hidden = false;
+    for (const button of bar.querySelectorAll<HTMLButtonElement>("[data-consent]")) {
+      button.addEventListener("click", () => {
+        answerConsent(button.dataset.consent === "granted" ? "granted" : "denied");
+        bar.hidden = true;
+      });
+    }
+  }
+</script>
+
+<style>
+  .bar {
+    position: fixed;
+    inset: auto var(--gutter) var(--sp-16);
+    z-index: 30;
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-16);
+    align-items: center;
+    justify-content: space-between;
+    max-width: var(--page-max);
+    margin: 0 auto;
+    padding: var(--sp-16) var(--sp-20);
+    background: var(--ink-deep);
+    border: var(--hairline) solid var(--ink-rule);
+  }
+  .bar[hidden] {
+    display: none;
+  }
+  .text {
+    flex: 1 1 auto;
+    margin: 0;
+    font-size: var(--fs-14);
+    line-height: var(--lh-160);
+    color: var(--ink-soft);
+  }
+  .actions {
+    display: flex;
+    gap: var(--sp-12);
+  }
+</style>

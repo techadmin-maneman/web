@@ -32,6 +32,7 @@ Nothing here needs a release. The first two have dates.
 - [ ] **Books:** delete the receipt `4242595000000065003`, which a proof seeded for a payment that never happened (item 19); add a bank account "Razorpay – staging test" and give its ID to ops for staging's `BOOKS_REFUND_ACCOUNT_ID` (item 10).
 - [ ] **Staging's invite previews:** in Cloudflare Zero Trust, an Access application for `staging.maneman.in` with a Bypass / Everyone policy on the paths `r/`, `images/` and `api/og/`, so WhatsApp can fetch an invite's page and card (provisioning, step 10b, with the check that WhatsApp's crawler gets through; provisioning, step 10 has the same for `api/result/`).
 - [ ] **Material and words:** the home page's cleared material (items 73 to 81); the house referral card, 1200 x 630 under 300 KB (item 52); the Grievance Officer's name and address for the privacy page (item 51); the GA4 and Meta Pixel IDs (item 84); your wording in the texts file (items 39, 41, 42 and 45).
+- [ ] **Staff sign in with Google Workspace** (provisioning, step 3, "Staff sign in with their maneman.in Google accounts"): create the OAuth client in Google Cloud, enforce 2-Step Verification in the Google Admin console, and send the client ID and secret to whoever sets up Access.
 - [ ] **Counsel and the CA:** send each their brief (counsel: items 22, 23, 40, 41, 44, 55, 63, 69, 146, 148 and 149; the CA: items 2, 3, 9, 14, 16 and 17).
 
 **Ops, or a developer with the Cloudflare account**

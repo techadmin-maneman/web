@@ -304,6 +304,8 @@ export const referral = {
     mobilePlaceholder: "Your number",
     mobileError: "Enter a valid 10-digit mobile number.",
     consentError: "We need this to contact you.",
+    /** Beneath the agreement on every form that takes a name and number: what binds the visitor, and to read it. */
+    legal: { before: "Our ", terms: "terms", between: " and ", privacy: "privacy notice", after: " apply." },
     // Not drawn: by the button once three or more fields are marked.
     marked: "Check the {count} fields marked above.",
   },

@@ -9,6 +9,7 @@ import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import { markDatabase, NOW, request } from "../helpers.ts";
 import { IMRAN, JOB, PERSON, working, type Working } from "../job-fixtures.ts";
+import { composeRecallNotice } from "../../../src/domain/field/recall-notice.ts";
 
 interface Detail {
   id: string;
@@ -104,6 +105,34 @@ describe("a recall", () => {
     const closed = await job.opsPost(`/api/recalls/${detail.id}/close`, {});
     expect((await closed.json<Detail>()).closed_at).not.toBeNull();
     expect((await job.opsPost(`/api/recalls/${detail.id}/close`, {})).status).toBe(404);
+  });
+
+  it("tells each client who wears it, gives Care a call, and dates the order from the recall", async () => {
+    const raised = await (await job.opsPost("/api/recalls", { lot_id: lot, reason: "Shedding" })).json<Detail>();
+    const told = await env.DB.prepare(
+      "SELECT person_id, kind, subject_kind, subject_id FROM outbound_messages WHERE kind = 'recall_notice'",
+    ).all();
+    expect(told.results).toEqual([
+      { person_id: PERSON, kind: "recall_notice", subject_kind: "recall", subject_id: raised.id },
+    ]);
+    expect(await composeRecallNotice(env.DB, raised.id, PERSON)).toEqual({
+      template: "recall_notice_v1",
+      params: ["Rohit"],
+    });
+
+    const board = await (
+      await request(job.ops, "/api/tasks")
+    ).json<{ groups: { group: string; tasks: { id: string; detail: string | null; since: string }[] }[] }>();
+    const tasksOf = (group: string) => board.groups.find((each) => each.group === group)?.tasks ?? [];
+    expect(tasksOf("recall_call")).toEqual([expect.objectContaining({ id: PERSON, detail: worn })]);
+    // Ordered from the day of the recall, not born a lead time overdue.
+    expect(tasksOf("replacement_order")[0]?.since).toBe(NOW.toISOString());
+
+    // Booked, the call and the notice are done with.
+    await env.DB.prepare("UPDATE pieces SET replacement_booked = 1").run();
+    expect(await composeRecallNotice(env.DB, raised.id, PERSON)).toEqual({
+      skip: "the recall is closed, or its replacement is booked",
+    });
   });
 
   it("leaves a recalled lot to go last when stock is sent on", async () => {

@@ -44,6 +44,7 @@ import type { StockUsage } from "../../policy/stock-usage.ts";
 import { auditStatement, type AuditActor } from "./audit.ts";
 import { MINUTE_MS } from "../../lib/durations.ts";
 import { createLogger } from "../../log.ts";
+import type { CheckInDays } from "../../policy/follow-ups.ts";
 
 /** How long an isolate holds the store before reading it again. The staleness window. */
 export const SETTINGS_TTL_MS = MINUTE_MS;
@@ -89,6 +90,8 @@ export interface OpsInputs {
   /** Hours a move to another day waits for the client (src/policy/dispatch.ts). */
   readonly moveProposalHours: number;
   readonly creditReminderDays: CreditReminderDays;
+  /** Days after a fit that the client's check-ins go (src/policy/follow-ups.ts). */
+  readonly checkInDays: CheckInDays;
   /** Fits a month before a referrer's next grant is held (src/policy/fraud-holds.ts). */
   readonly referralMonthlyCap: number;
   /** Days between one number's try-on looks (src/policy/tryon-delivery.ts). */
@@ -144,6 +147,7 @@ function shape(values: OpsValues): OpsInputs {
     arrivalNoticeMin: values.arrival_notice_min,
     moveProposalHours: values.move_proposal_hours,
     creditReminderDays: values.credit_reminder_days,
+    checkInDays: values.check_in_days,
     referralMonthlyCap: values.referral_monthly_cap,
     tryonLookDays: values.tryon_look_days,
     stockWatch: values.stock_watch,

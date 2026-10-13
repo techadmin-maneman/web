@@ -340,6 +340,22 @@
         ],
         "additionalProperties": false
       },
+      "ServedCities": {
+        "type": "object",
+        "properties": {
+          "cities": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Each city with a pincode ops serve, in the console's order."
+          }
+        },
+        "required": [
+          "cities"
+        ],
+        "additionalProperties": false
+      },
       "SiteWords": {
         "type": "object",
         "properties": {
@@ -1286,7 +1302,7 @@
             "type": "string",
             "minLength": 1,
             "maxLength": 40,
-            "example": "gate-v4",
+            "example": "gate-v5",
             "description": "The gate's notice the page showed: the current one, the only one a claim may record, when left out (docs/decisions/0104-the-try-ons-look-on-whatsapp-only.md)."
           },
           "attribution": {
@@ -1421,6 +1437,76 @@
           "token"
         ],
         "additionalProperties": false
+      },
+      "ClientErrorReport": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "error",
+              "unhandled_rejection",
+              "render",
+              "outbox_gave_up"
+            ]
+          },
+          "message": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "path": {
+            "type": "string",
+            "maxLength": 300,
+            "description": "The page's path, with no query or fragment."
+          },
+          "version": {
+            "type": "string",
+            "maxLength": 40,
+            "description": "The build the page runs, as its mm-version."
+          },
+          "stack": {
+            "type": "string",
+            "maxLength": 4000
+          },
+          "source": {
+            "type": "string",
+            "maxLength": 500,
+            "description": "The script the error was thrown in."
+          },
+          "line": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "column": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "step": {
+            "type": "string",
+            "maxLength": 40,
+            "description": "outbox_gave_up: the write's kind, as `checklist`."
+          },
+          "code": {
+            "type": "string",
+            "maxLength": 60,
+            "description": "outbox_gave_up: the code the API refused it with."
+          },
+          "status": {
+            "type": "integer",
+            "description": "outbox_gave_up: the refusal's HTTP status."
+          },
+          "request_id": {
+            "type": "string",
+            "maxLength": 64,
+            "description": "outbox_gave_up: the refusal's request ID, which its own log lines carry."
+          }
+        },
+        "required": [
+          "kind",
+          "message",
+          "path"
+        ],
+        "additionalProperties": false
       }
     },
     "parameters": {}
@@ -1473,6 +1559,23 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/served-cities": {
+      "get": {
+        "summary": "The cities the site says it comes to. Cacheable for a minute.",
+        "responses": {
+          "200": {
+            "description": "The cities",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServedCities"
                 }
               }
             }
@@ -3333,6 +3436,46 @@
           },
           "404": {
             "description": "not_found: the link is not ours, or has expired",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/client-errors": {
+      "post": {
+        "summary": "Report an error in the app's own page",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClientErrorReport"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Logged"
+          },
+          "400": {
+            "description": "invalid_request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "rate_limited: this address has sent its reports for the hour, or every address has",
             "content": {
               "application/json": {
                 "schema": {

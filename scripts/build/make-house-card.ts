@@ -1,11 +1,9 @@
 // The house referral card (design/phase2/Referral and Waitlist, A2): the 1200 x 630 image an invite shows when a
-// client has not made their own, or has taken theirs down. It has the referral card's layout, from the figures in
-// apps/app/src/refer/card-layout.ts: a gilt rule 2 px wide down the middle, and the mark and the wordmark's small cut
-// in the bottom right corner. The same rule and lockup, alone on a clear ground, are the overlay the API draws over
-// a client's two photographs to make their own card (src/providers/cards.ts).
-//
-// PLACEHOLDER: where the design has photographs, the two halves are the ink blocks it draws a card with, until
-// licensed ones are supplied (open point 52).
+// client has not made their own, or has taken theirs down. With no photographs to show, it is one field of the deep
+// ink with the brand's mark and wordmark at its centre: a finished card, never the two empty halves that wait for
+// photographs. The referral card's own layout, from the figures in apps/app/src/refer/card-layout.ts (a gilt rule
+// 2 px wide down the middle, and the mark and the wordmark's small cut in the bottom right corner), alone on a clear
+// ground, is the overlay the API draws over a client's two photographs to make their own card (src/providers/cards.ts).
 //
 //   node scripts/build/make-house-card.ts
 //
@@ -25,7 +23,7 @@ import {
   RULE_WIDTH,
   type Place,
 } from "../../apps/app/src/refer/card-layout.ts";
-import { MARK, WORDMARK_SMALL, type Drawing } from "../../packages/brand/marks.ts";
+import { MARK, WORDMARK, WORDMARK_SMALL, type Drawing } from "../../packages/brand/marks.ts";
 
 const OUTPUTS = ["site/public/images/invite-house.jpg", "apps/app/src/refer/invite-house.jpg"];
 const OVERLAY_MODULE = "src/config/card-overlay.ts";
@@ -45,10 +43,22 @@ const svg = (inside: string) =>
   ${inside}
 </svg>`;
 
-const card = svg(`<rect width="${String(HALF_WIDTH)}" height="${String(CARD_HEIGHT)}" fill="${token("--ink-frame")}"/>
-  <rect x="${String(HALF_WIDTH + RULE_WIDTH)}" width="${String(HALF_WIDTH)}" height="${String(CARD_HEIGHT)}"
-     fill="${token("--ink-raised")}"/>
-  ${marks}`);
+/** The mark above the wordmark, both at the card's centre: the house card's whole picture. */
+const MARK_HEIGHT = 150;
+const WORDMARK_WIDTH = 440;
+const GAP = 40;
+const markWidth = Math.round((MARK_HEIGHT * 200) / 217.4);
+const wordmarkHeight = Math.round((WORDMARK_WIDTH * 108) / 741);
+const top = Math.round((CARD_HEIGHT - MARK_HEIGHT - GAP - wordmarkHeight) / 2);
+const centred = (width: number) => Math.round((CARD_WIDTH - width) / 2);
+const card = svg(`<rect width="${String(CARD_WIDTH)}" height="${String(CARD_HEIGHT)}" fill="${token("--ink-deep")}"/>
+  ${drawing(MARK, { left: centred(markWidth), top, width: markWidth, height: MARK_HEIGHT }, token("--gilt"), "evenodd")}
+  ${drawing(
+    WORDMARK,
+    { left: centred(WORDMARK_WIDTH), top: top + MARK_HEIGHT + GAP, width: WORDMARK_WIDTH, height: wordmarkHeight },
+    token("--paper"),
+    "nonzero",
+  )}`);
 
 // Full colour resolution: halved, as JPEG usually stores it, a rule 2 px wide comes out grey.
 const jpeg = await sharp(new TextEncoder().encode(card)).jpeg({ quality: 82, chromaSubsampling: "4:4:4" }).toBuffer();
