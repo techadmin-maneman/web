@@ -107,5 +107,6 @@ Each writes **test records**, named "Staging test", on staging or in the owner's
 ## fidelity/
 
 `fidelity.ts` is the harness for the public site; `fidelity-app.ts`, `fidelity-ops.ts`, `fidelity-tech.ts` and
-`fidelity-refer.ts` shoot each app's screens beside their boards into `docs/fidelity/` (`npm run fidelity:<app>`).
-They write only those images.
+`fidelity-refer.ts` shoot each app's screens beside their boards into `docs/fidelity/` (`npm run fidelity:<app>`), and
+`fidelity-kit.ts` shoots the console's kit, every shared part in its states, after the console's pairs. They write
+only those images.
