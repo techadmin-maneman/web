@@ -12,8 +12,9 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { runForecastIfDue } from "../../../src/domain/field/forecast.ts";
 import { NOW, markDatabase, request } from "../helpers.ts";
 import { IMRAN, working, type Working } from "../job-fixtures.ts";
+import { FORECAST_ASSUMPTIONS } from "../../../src/policy/forecast.ts";
 
-const SETTINGS = { planningPeriodDays: 7, planningHorizonPeriods: 4 };
+const SETTINGS = { planningPeriodDays: 7, planningHorizonPeriods: 4, forecastAssumptions: FORECAST_ASSUMPTIONS };
 const FITTED = "77777777-7777-4777-8777-777777777771";
 const DUE = "77777777-7777-4777-8777-777777777772";
 

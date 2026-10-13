@@ -12,6 +12,12 @@
  */
 export const CHECKIN_RADIUS_M = 200;
 
+/**
+ * How long after the technician arrived the client may still be told of it. A check-in that reaches us later, from a
+ * phone that had no signal, is past the point: they have been at the door, or gone. Ops set it in Settings.
+ */
+export const ARRIVAL_NOTICE_MIN = 10;
+
 /** Where the phone or the address is, in degrees. */
 export interface Point {
   readonly lat: number;

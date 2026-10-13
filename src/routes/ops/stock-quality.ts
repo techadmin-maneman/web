@@ -10,11 +10,11 @@ import { createRoute, z } from "@hono/zod-openapi";
 import { placesWithin } from "../../domain/field/stock-places.ts";
 import { expiryRisk, failureRates, type FailureGroup } from "../../domain/field/stock-quality.ts";
 import type { App } from "../../http/context.ts";
+import { opsInputs } from "../../http/ops-inputs.ts";
 import { errorResponse } from "../../http/errors.ts";
 import { json } from "../../http/openapi.ts";
 import { routeReach } from "../../http/staff-access.ts";
 import { addDays, indiaDate, indiaInstant } from "../../lib/india-time.ts";
-import { FAILURE_DAYS, PACE_DAYS } from "../../policy/stock-quality.ts";
 
 const Group = z.object({
   name: z.string(),
@@ -88,7 +88,7 @@ const groupJson = (group: FailureGroup) => ({
 
 export function registerOpsStockQuality(app: App): void {
   app.openapi(failuresRoute, async (c) => {
-    const since = addDays(indiaDate(c.var.deps.now()), -FAILURE_DAYS);
+    const since = addDays(indiaDate(c.var.deps.now()), -(await opsInputs(c)).stockQuality.failure_days);
     const rates = await failureRates(c.env.DB, since);
     return c.json(
       {
@@ -104,9 +104,10 @@ export function registerOpsStockQuality(app: App): void {
 
   app.openapi(riskRoute, async (c) => {
     const today = indiaDate(c.var.deps.now());
-    const since = indiaInstant(addDays(today, -PACE_DAYS), "00:00").toISOString();
+    const paceDays = (await opsInputs(c)).stockQuality.pace_days;
+    const since = indiaInstant(addDays(today, -paceDays), "00:00").toISOString();
     const within = await placesWithin(c.env.DB, await routeReach(c));
-    const lots = await expiryRisk(c.env.DB, { today, since, paceDays: PACE_DAYS }, within);
+    const lots = await expiryRisk(c.env.DB, { today, since, paceDays }, within);
     return c.json(
       {
         total_value: lots.reduce((total, lot) => total + lot.value, 0),

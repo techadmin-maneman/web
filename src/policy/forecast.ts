@@ -5,21 +5,30 @@
 export const PLANNING_PERIOD_DAYS = 7;
 export const PLANNING_HORIZON_PERIODS = 12;
 
-/** How many past periods of use the baseline averages. */
-export const BASELINE_PERIODS = 8;
+export const FORECAST_ASSUMPTION_KEYS = [
+  "baseline_periods",
+  "learning_days",
+  "enough_to_learn",
+  "due_booking_percent",
+  "consultation_fit_percent",
+  "consultation_to_fit_days",
+] as const;
+/**
+ * How many past periods of use the baseline averages; how far back the learned rates look, in days, and how many past
+ * cases they need before they are learned; before then, the share of clients fallen due taken to book their
+ * replacement, and the share of consultations taken to become a first fit, with the days between. Ops set them in
+ * Settings.
+ */
+export type ForecastAssumptions = Readonly<Record<(typeof FORECAST_ASSUMPTION_KEYS)[number], number>>;
 
-/** How far back the learned rates look, in days. */
-export const LEARNING_DAYS = 180;
-
-/** Before enough clients have fallen due, the share of them taken to book their replacement. */
-export const DUE_BOOKING_RATE = 0.8;
-
-/** Before enough consultations have been held, the share taken to become a first fit, and the days between. */
-export const CONSULTATION_FIT_RATE = 0.5;
-export const CONSULTATION_TO_FIT_DAYS = 14;
-
-/** Fewer past cases than this, and a rate falls back to its default. */
-const ENOUGH_TO_LEARN = 10;
+export const FORECAST_ASSUMPTIONS: ForecastAssumptions = {
+  baseline_periods: 8,
+  learning_days: 180,
+  enough_to_learn: 10,
+  due_booking_percent: 80,
+  consultation_fit_percent: 50,
+  consultation_to_fit_days: 14,
+};
 
 /** What each layer expects of one stock code in one city in one period. */
 export interface Layers {
@@ -44,9 +53,12 @@ export function highOf(expected: number): number {
   return tenths(expected + 1.65 * Math.sqrt(expected));
 }
 
-/** A rate learned from `outOf` past cases of which `happened` came to pass; the default before there are enough. */
-export function learnedRate(happened: number, outOf: number, fallback: number): number {
-  if (outOf < ENOUGH_TO_LEARN) return fallback;
+/**
+ * A rate learned from `outOf` past cases of which `happened` came to pass; the default, a percentage, before there
+ * are `enough`.
+ */
+export function learnedRate(happened: number, outOf: number, fallbackPercent: number, enough: number): number {
+  if (outOf < enough) return fallbackPercent / 100;
   return Math.min(1, happened / outOf);
 }
 

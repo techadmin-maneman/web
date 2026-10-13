@@ -12,6 +12,7 @@ import { checkTomorrowsKits } from "../../../src/domain/field/kit-check.ts";
 import { draftPlan } from "../../../src/domain/field/supply-plan.ts";
 import { NOW, markDatabase, request } from "../helpers.ts";
 import { IMRAN, working, type Working } from "../job-fixtures.ts";
+import { KIT_CHECK } from "../../../src/policy/kit-check.ts";
 
 const CLIENT = "88888888-8888-4888-8888-888888888881";
 const EVENING = new Date(NOW.getTime() + 6 * 60 * 60 * 1000);
@@ -84,9 +85,9 @@ beforeEach(async () => {
 
 describe("tomorrow's kits", () => {
   it("are checked from the evening, each shortfall proposed as a top-up from the city's stockroom, and ops told", async () => {
-    expect(await checkTomorrowsKits(env.DB, NOW, alertOnce)).toBe(0);
-    expect(await checkTomorrowsKits(env.DB, EVENING, alertOnce)).toBe(1);
-    expect(await checkTomorrowsKits(env.DB, EVENING, alertOnce)).toBe(1);
+    expect(await checkTomorrowsKits(env.DB, NOW, alertOnce, KIT_CHECK)).toBe(0);
+    expect(await checkTomorrowsKits(env.DB, EVENING, alertOnce, KIT_CHECK)).toBe(1);
+    expect(await checkTomorrowsKits(env.DB, EVENING, alertOnce, KIT_CHECK)).toBe(1);
     const lines = await env.DB.prepare(
       "SELECT consumable_code, from_place, to_place, proposed FROM plan_lines ORDER BY consumable_code",
     ).all();
@@ -116,7 +117,7 @@ describe("tomorrow's kits", () => {
          VALUES ('one-visit', 'one-visit', NULL, 'first_fit', NULL, 'scheduled', ?1, ?1, ?2, 'Gurgaon', ?3, 'booked')`,
       ).bind(TOMORROW, IMRAN, at),
     ]);
-    await checkTomorrowsKits(env.DB, EVENING, alertOnce);
+    await checkTomorrowsKits(env.DB, EVENING, alertOnce, KIT_CHECK);
     const pieces = await env.DB.prepare("SELECT proposed FROM plan_lines WHERE consumable_code = ?1")
       .bind(code)
       .first();
@@ -124,7 +125,7 @@ describe("tomorrow's kits", () => {
   });
 
   it("sends an approved top-up to wait for the technician's scan, and outlasts the plan's own redraft", async () => {
-    await checkTomorrowsKits(env.DB, EVENING, alertOnce);
+    await checkTomorrowsKits(env.DB, EVENING, alertOnce, KIT_CHECK);
     const solvent = await env.DB.prepare("SELECT id FROM plan_lines WHERE consumable_code = 'solvent'").first<string>(
       "id",
     );

@@ -8,14 +8,9 @@
 
 import { addDays, indiaDate, indiaHour, indiaInstant } from "../../lib/india-time.ts";
 import { latestFits } from "../clients/hair-profiles.ts";
+import type { KitCheck } from "../../policy/kit-check.ts";
 import type { AlertOnce } from "../ops/alerts.ts";
 import { hairSystemSpecs, matchingCode } from "./hair-systems.ts";
-
-/** The hour, in India, from which the evening's check runs, each hour until the day ends. */
-const KIT_CHECK_HOUR = 17;
-
-/** How many hair systems a kit with a one visit tomorrow carries, one of each. */
-const ONE_VISIT_RANGE = 5;
 
 type UseRow = { technician_id: string; code: string; quantity: number };
 type FitRow = {
@@ -29,7 +24,11 @@ type FitRow = {
 type HeldRow = { place: string; code: string; quantity: number };
 
 /** What each technician's visits tomorrow need, by kit and stock code. */
-async function neededTomorrow(db: D1Database, tomorrow: string): Promise<Map<string, Map<string, number>>> {
+async function neededTomorrow(
+  db: D1Database,
+  tomorrow: string,
+  range: number,
+): Promise<Map<string, Map<string, number>>> {
   const from = indiaInstant(tomorrow, "00:00").toISOString();
   const to = indiaInstant(addDays(tomorrow, 1), "00:00").toISOString();
   const [used, fits] = await db.batch<UseRow | FitRow>([
@@ -78,6 +77,7 @@ async function neededTomorrow(db: D1Database, tomorrow: string): Promise<Map<str
   const ranges = await oneVisitRanges(
     db,
     unknown.flatMap((fit) => fit.city ?? []),
+    range,
   );
   for (const kit of new Set(unknown.map((fit) => fit.technician_id))) {
     const city = unknown.find((fit) => fit.technician_id === kit)?.city ?? "";
@@ -87,7 +87,11 @@ async function neededTomorrow(db: D1Database, tomorrow: string): Promise<Map<str
 }
 
 /** Each city's one-visit range: the hair systems its latest forecast expects most over the horizon. */
-async function oneVisitRanges(db: D1Database, cities: readonly string[]): Promise<Map<string, string[]>> {
+async function oneVisitRanges(
+  db: D1Database,
+  cities: readonly string[],
+  range: number,
+): Promise<Map<string, string[]>> {
   if (cities.length === 0) return new Map();
   const { results } = await db
     .prepare(
@@ -101,8 +105,8 @@ async function oneVisitRanges(db: D1Database, cities: readonly string[]): Promis
     .all<{ city: string; code: string }>();
   const ranges = new Map<string, string[]>();
   for (const row of results) {
-    const range = ranges.get(row.city) ?? [];
-    if (range.length < ONE_VISIT_RANGE) ranges.set(row.city, [...range, row.code]);
+    const held = ranges.get(row.city) ?? [];
+    if (held.length < range) ranges.set(row.city, [...held, row.code]);
   }
   return ranges;
 }
@@ -111,10 +115,15 @@ async function oneVisitRanges(db: D1Database, cities: readonly string[]): Promis
  * Each kit checked against its visits tomorrow, once the evening comes: its top-ups proposed on the supply plan, in
  * place of the evening's last, and ops told of each kit short. How many kits are short.
  */
-export async function checkTomorrowsKits(db: D1Database, now: Date, alertOnce: AlertOnce): Promise<number> {
-  if (Number(indiaHour(now).slice(11, 13)) < KIT_CHECK_HOUR) return 0;
+export async function checkTomorrowsKits(
+  db: D1Database,
+  now: Date,
+  alertOnce: AlertOnce,
+  kitCheck: KitCheck,
+): Promise<number> {
+  if (Number(indiaHour(now).slice(11, 13)) < kitCheck.from_hour) return 0;
   const tomorrow = addDays(indiaDate(now), 1);
-  const needs = await neededTomorrow(db, tomorrow);
+  const needs = await neededTomorrow(db, tomorrow, kitCheck.one_visit_range);
   if (needs.size === 0) return 0;
   const kits = JSON.stringify([...needs.keys()]);
   const pairs = JSON.stringify(

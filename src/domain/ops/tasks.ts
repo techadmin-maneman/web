@@ -132,7 +132,7 @@ interface ReadAt {
   readonly atRiskBefore: string;
   /** The first moment after the last day a first fit to book's consultation can have been done on. */
   readonly toBookBefore: string;
-  /** The latest a payment link can have been sent and be closed now. */
+  /** The latest a payment link with no close of its own can have been sent and be closed now. */
   readonly linksClosedIfSentBy: string;
 }
 
@@ -347,13 +347,13 @@ const QUEUES: readonly Queue[] = [
   {
     sql: `SELECT 'payment_owed' AS "group", l.id AS id, a.person_id AS person_id, pe.name AS person_name,
          CASE WHEN l.refused_at IS NOT NULL THEN 'refused' WHEN l.sent_at IS NULL THEN 'unsent'
-              WHEN l.sent_at <= ?1 THEN 'closed' ELSE 'sent' END
+              WHEN COALESCE(l.closes_at <= ?2, l.sent_at <= ?1) THEN 'closed' ELSE 'sent' END
            || ' ' || l.amount || ' ' || COALESCE(l.short_url, '-') || ' ' || COALESCE(s.name, l.tier) AS detail,
          l.created_at AS since, NULL AS due_by, '' AS episode
     FROM payment_links l JOIN appointments a ON a.id = l.appointment_id JOIN people pe ON pe.id = a.person_id
     LEFT JOIN services s ON s.kind = 'first_fit' AND s.tier = l.tier
    WHERE l.paid_at IS NULL AND pe.erased_at IS NULL`,
-    binds: (at) => [at.linksClosedIfSentBy],
+    binds: (at) => [at.linksClosedIfSentBy, at.now],
   },
   // A client's dispute of a no-show's charge, still to rule on: what the charge kept, in paise. It waits from when the
   // client raised it. The index on the open disputes reads only those.

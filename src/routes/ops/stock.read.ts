@@ -7,11 +7,11 @@
 import { createRoute, z } from "@hono/zod-openapi";
 import { stockDemand } from "../../domain/field/stock-demand.ts";
 import type { App } from "../../http/context.ts";
+import { opsInputs } from "../../http/ops-inputs.ts";
 import { errorResponse } from "../../http/errors.ts";
 import { json } from "../../http/openapi.ts";
 import { reachOf } from "../../http/staff-access.ts";
 import { indiaDate } from "../../lib/india-time.ts";
-import { DEMAND_DAYS } from "../../policy/stock.ts";
 
 const DemandSchema = z
   .object({
@@ -59,10 +59,11 @@ export function registerOpsStockDemand(app: App): void {
     const reached = await reachOf(c, "operations", "view");
     const within = (city: string | null) =>
       reached.kind === "everywhere" || (city !== null && reached.cities.has(city));
-    const { demand, atRisk } = await stockDemand(c.env.DB, indiaDate(c.var.deps.now()));
+    const days = (await opsInputs(c)).stockWatch.demand_days;
+    const { demand, atRisk } = await stockDemand(c.env.DB, indiaDate(c.var.deps.now()), days);
     return c.json(
       {
-        days: DEMAND_DAYS,
+        days,
         demand: demand
           .filter((row) => within(row.city))
           .map((row) => ({ consumable_code: row.code, city: row.city, expected: row.expected, held: row.held })),

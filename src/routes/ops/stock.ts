@@ -29,6 +29,7 @@ import { inTransit, sendStock } from "../../domain/field/stock-transit.ts";
 import { stockView } from "../../domain/field/stock-view.ts";
 import { isPlaceWithin, placeAreas, placesWithin, WAREHOUSE, type Place } from "../../domain/field/stock-places.ts";
 import { actorOf } from "../../http/audit.ts";
+import { opsInputs } from "../../http/ops-inputs.ts";
 import type { App, AppEnv } from "../../http/context.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
 import { json } from "../../http/openapi.ts";
@@ -210,6 +211,7 @@ export async function stockAnswer(c: Context<AppEnv>) {
       note: movement.note,
     })),
     today,
+    expiry_warning_days: (await opsInputs(c)).stockWatch.expiry_warning_days,
     max_quantity: CONSUMABLE_BOUNDS.maxQuantity,
     in_transit: (await inTransit(c.env.DB))
       .filter((transfer) => isPlaceWithin(within, transfer.from) || isPlaceWithin(within, transfer.to))

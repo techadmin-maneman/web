@@ -8,14 +8,15 @@
 // always explains the number. The database keeps that sum in stock_balances as
 // each row is written, so it is read without the rows (migration 0053).
 
-/** A lot held anywhere is told of this many days before it expires, and every day after while it is still held. */
-export const EXPIRY_WARNING_DAYS = 30;
+export const STOCK_WATCH_KEYS = ["expiry_warning_days", "demand_days", "transfer_overdue_days"] as const;
+/**
+ * How many days before it expires a lot held anywhere is told of, and every day after while it is still held; how
+ * far ahead the demand preview reads the visits booked; and how long a transfer may be on its way before it is told
+ * of (docs/decisions/0158). Ops set them in Settings.
+ */
+export type StockWatch = Readonly<Record<(typeof STOCK_WATCH_KEYS)[number], number>>;
 
-/** How far ahead the demand preview reads the visits booked: four weeks. */
-export const DEMAND_DAYS = 28;
-
-/** A transfer still on its way this many days after it was sent is told of (docs/decisions/0158). */
-export const TRANSFER_OVERDUE_DAYS = 7;
+export const STOCK_WATCH: StockWatch = { expiry_warning_days: 30, demand_days: 28, transfer_overdue_days: 7 };
 
 /** A place is low at or below its reorder level; a place with no level set is never low. */
 export const isLow = (held: number, level: number | null): boolean => level !== null && held <= level;

@@ -1,13 +1,18 @@
 // Cycle counts come round (docs/decisions/0185-cycle-counts.md): each morning a count task is raised for each place
 // and class whose period has passed since its last, and which the place holds. Counting them is ./count-tasks.ts.
 
-import { CLASS_DAYS } from "../../policy/cycle-counts.ts";
+import type { CountClass } from "../../policy/cycle-counts.ts";
 
 /**
  * Today's count tasks raised: one for each standing place and class it holds whose last count was done longer ago
  * than the class's period, and has none still open. How many were raised.
  */
-export async function raiseCountTasks(db: D1Database, today: string, now: Date): Promise<number> {
+export async function raiseCountTasks(
+  db: D1Database,
+  today: string,
+  now: Date,
+  classDays: Readonly<Record<CountClass, number>>,
+): Promise<number> {
   const raised = await db
     .prepare(
       `INSERT INTO count_tasks (id, place_id, count_class, due_on, state, raised_at)
@@ -26,7 +31,7 @@ export async function raiseCountTasks(db: D1Database, today: string, now: Date):
                      WHERE b.place = p.id AND b.quantity > 0
                        AND COALESCE(i.count_class, CASE WHEN h.code IS NULL THEN 'quarterly' ELSE 'weekly' END) = json_each.key)`,
     )
-    .bind(today, now.toISOString(), JSON.stringify(CLASS_DAYS))
+    .bind(today, now.toISOString(), JSON.stringify(classDays))
     .run();
   return raised.meta.changes;
 }

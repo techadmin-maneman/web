@@ -6,7 +6,7 @@
 
 /**
  * One look per WhatsApp number every thirty days. The number is known before the look is made, so it is the number, not only the browser's cookie, that is
- * held to it. A look counts once its render was asked for and did not fail.
+ * held to it. A look counts once its render was asked for and did not fail. Ops set the days in Settings.
  */
 export const LOOK_PER_NUMBER_DAYS = 30;
 

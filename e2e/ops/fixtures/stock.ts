@@ -211,6 +211,7 @@ export const STOCK = {
     },
   ],
   today: "2027-09-21",
+  expiry_warning_days: 30,
   max_quantity: 100_000,
   in_transit: [],
   zones: ["NCR"],

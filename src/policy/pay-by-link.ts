@@ -8,22 +8,25 @@ import { HOUR_MS, MINUTE_MS } from "../lib/durations.ts";
 // - What Book a visit in the console covers: every kind, consultation, first fit, one visit, service, replacement. A
 //   paid visit goes out as a payment link; a free or credit visit books at once.
 
-/** The longest a link keeps the slot. PLACEHOLDER. */
-const LINK_OPEN_HOURS = 24;
+export const PAYMENT_LINK_KEYS = ["holds_hours", "closes_before_hours", "pay_within_days"] as const;
+/**
+ * The longest a console link keeps its slot; how long before the visit it closes at the latest, so the technician
+ * knows of the visit in time; and how long a one visit's link takes payment once it is made. Ops set them in Settings.
+ */
+export type PaymentLinks = Readonly<Record<(typeof PAYMENT_LINK_KEYS)[number], number>>;
 
-/** A link closes this long before the visit at the latest, so the technician knows of the visit in time. PLACEHOLDER. */
-const LINK_CLOSES_BEFORE_VISIT_HOURS = 2;
+export const PAYMENT_LINKS: PaymentLinks = { holds_hours: 24, closes_before_hours: 2, pay_within_days: 14 };
 
 /** Razorpay takes no link that closes sooner than this after it is made. */
 const SHORTEST_LINK_MINUTES = 15;
 
 /**
- * When the link stops taking payment and the slot is let go: a day on, or two hours before the visit, whichever comes
- * first. Null for a visit too close for a link.
+ * When the link stops taking payment and the slot is let go: the hold's end, or its close before the visit,
+ * whichever comes first. Null for a visit too close for a link.
  */
-export function linkOpenUntil(now: Date, visitStart: Date): Date | null {
-  const dayOn = now.getTime() + LINK_OPEN_HOURS * HOUR_MS;
-  const beforeVisit = visitStart.getTime() - LINK_CLOSES_BEFORE_VISIT_HOURS * HOUR_MS;
+export function linkOpenUntil(now: Date, visitStart: Date, links: PaymentLinks = PAYMENT_LINKS): Date | null {
+  const dayOn = now.getTime() + links.holds_hours * HOUR_MS;
+  const beforeVisit = visitStart.getTime() - links.closes_before_hours * HOUR_MS;
   const until = Math.min(dayOn, beforeVisit);
   if (until < now.getTime() + SHORTEST_LINK_MINUTES * MINUTE_MS) return null;
   return new Date(until);

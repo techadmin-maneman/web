@@ -399,7 +399,7 @@ export function registerOpsVisits(app: App): void {
       return c.json(errorBody(refusal.code, c.var.requestId), refusal.status);
     }
     const { sale } = checked;
-    const closesAt = sale.pays === "link" ? await linkClosesAt(db, asked, now) : null;
+    const closesAt = sale.pays === "link" ? await linkClosesAt(db, asked, now, inputs.paymentLinks) : null;
     if (sale.pays === "link" && closesAt === null) return refuse(c, "not_bookable");
 
     const by = { actor: actorOf(c), requestId: c.var.requestId };

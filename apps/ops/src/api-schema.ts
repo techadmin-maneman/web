@@ -9064,7 +9064,7 @@ export interface paths {
                 query?: never;
                 header?: never;
                 path: {
-                    name: "checkin_radius_m" | "no_show_wait_min" | "change_notice_hours" | "late_change_charge" | "no_show_charge" | "no_show_waiver" | "address_unlock_hour" | "reminder_hour" | "phone_clock" | "task_sla_hours" | "piece_cycle_days" | "payment_hold" | "dispute_window_days" | "technician_work" | "booking_days" | "referral_reward" | "care_hours" | "remedy_limit" | "lost_after_days" | "po_second_approval_above_rupees" | "po_rupees_to_one" | "custom_order_grace_days" | "planning_period_days" | "planning_horizon_periods";
+                    name: "checkin_radius_m" | "no_show_wait_min" | "change_notice_hours" | "late_change_charge" | "no_show_charge" | "no_show_waiver" | "address_unlock_hour" | "reminder_hour" | "phone_clock" | "task_sla_hours" | "piece_cycle_days" | "payment_hold" | "dispute_window_days" | "technician_work" | "booking_days" | "referral_reward" | "care_hours" | "remedy_limit" | "lost_after_days" | "payment_links" | "arrival_notice_min" | "move_proposal_hours" | "credit_reminder_days" | "referral_monthly_cap" | "tryon_look_days" | "stock_watch" | "stock_usage" | "stock_quality" | "cycle_counts" | "kit_check" | "scorecard_days" | "po_second_approval_above_rupees" | "po_rupees_to_one" | "custom_order_grace_days" | "planning_period_days" | "planning_horizon_periods" | "forecast_assumptions";
                 };
                 cookie?: never;
             };
@@ -16833,7 +16833,7 @@ export interface components {
         OpsSetting: components["schemas"]["NumberRule"] | components["schemas"]["ChoiceRule"];
         NumberRule: {
             /** @enum {string} */
-            name: "checkin_radius_m" | "no_show_wait_min" | "change_notice_hours" | "late_change_charge" | "no_show_charge" | "no_show_waiver" | "address_unlock_hour" | "reminder_hour" | "phone_clock" | "task_sla_hours" | "piece_cycle_days" | "payment_hold" | "dispute_window_days" | "technician_work" | "booking_days" | "referral_reward" | "care_hours" | "remedy_limit" | "lost_after_days" | "po_second_approval_above_rupees" | "po_rupees_to_one" | "custom_order_grace_days" | "planning_period_days" | "planning_horizon_periods";
+            name: "checkin_radius_m" | "no_show_wait_min" | "change_notice_hours" | "late_change_charge" | "no_show_charge" | "no_show_waiver" | "address_unlock_hour" | "reminder_hour" | "phone_clock" | "task_sla_hours" | "piece_cycle_days" | "payment_hold" | "dispute_window_days" | "technician_work" | "booking_days" | "referral_reward" | "care_hours" | "remedy_limit" | "lost_after_days" | "payment_links" | "arrival_notice_min" | "move_proposal_hours" | "credit_reminder_days" | "referral_monthly_cap" | "tryon_look_days" | "stock_watch" | "stock_usage" | "stock_quality" | "cycle_counts" | "kit_check" | "scorecard_days" | "po_second_approval_above_rupees" | "po_rupees_to_one" | "custom_order_grace_days" | "planning_period_days" | "planning_horizon_periods" | "forecast_assumptions";
             title: string;
             note: string;
             set_by: string | null;
@@ -16866,7 +16866,7 @@ export interface components {
         };
         ChoiceRule: {
             /** @enum {string} */
-            name: "checkin_radius_m" | "no_show_wait_min" | "change_notice_hours" | "late_change_charge" | "no_show_charge" | "no_show_waiver" | "address_unlock_hour" | "reminder_hour" | "phone_clock" | "task_sla_hours" | "piece_cycle_days" | "payment_hold" | "dispute_window_days" | "technician_work" | "booking_days" | "referral_reward" | "care_hours" | "remedy_limit" | "lost_after_days" | "po_second_approval_above_rupees" | "po_rupees_to_one" | "custom_order_grace_days" | "planning_period_days" | "planning_horizon_periods";
+            name: "checkin_radius_m" | "no_show_wait_min" | "change_notice_hours" | "late_change_charge" | "no_show_charge" | "no_show_waiver" | "address_unlock_hour" | "reminder_hour" | "phone_clock" | "task_sla_hours" | "piece_cycle_days" | "payment_hold" | "dispute_window_days" | "technician_work" | "booking_days" | "referral_reward" | "care_hours" | "remedy_limit" | "lost_after_days" | "payment_links" | "arrival_notice_min" | "move_proposal_hours" | "credit_reminder_days" | "referral_monthly_cap" | "tryon_look_days" | "stock_watch" | "stock_usage" | "stock_quality" | "cycle_counts" | "kit_check" | "scorecard_days" | "po_second_approval_above_rupees" | "po_rupees_to_one" | "custom_order_grace_days" | "planning_period_days" | "planning_horizon_periods" | "forecast_assumptions";
             title: string;
             note: string;
             set_by: string | null;
@@ -17391,6 +17391,8 @@ export interface components {
             }[];
             /** Format: date */
             today: string;
+            /** @description How many days before it expires a lot is listed as expiring, as ops set it. */
+            expiry_warning_days: number;
             max_quantity: number;
             /** @description Transfers on their way, the oldest first: those either end of which is within reach. */
             in_transit: {

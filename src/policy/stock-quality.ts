@@ -1,11 +1,11 @@
 // Failure rates and value at risk (docs/decisions/0188-failure-rates-and-value-at-risk.md): how often fitted pieces
 // fail, and how much of a lot its place will not use before it expires.
 
-/** Days of fits the failure rates count. */
-export const FAILURE_DAYS = 365;
+export const STOCK_QUALITY_KEYS = ["failure_days", "pace_days"] as const;
+/** The days of fits the failure rates count, and the days of use a place's pace is read over. Ops set them in Settings. */
+export type StockQuality = Readonly<Record<(typeof STOCK_QUALITY_KEYS)[number], number>>;
 
-/** Days of use a place's pace is read over. */
-export const PACE_DAYS = 28;
+export const STOCK_QUALITY: StockQuality = { failure_days: 365, pace_days: 28 };
 
 /** The share of pieces fitted that failed, to a tenth. Null with none fitted. */
 export function failureRatePercent(failed: number, fitted: number): number | null {

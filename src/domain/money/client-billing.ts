@@ -43,7 +43,7 @@ interface InvoiceRow {
 const ONE_VISIT_LINKS = `SELECT l.id, COALESCE(s.name, l.tier) AS product,
     a.window_start AS visit_start, NULL AS visit_date,
     l.amount, l.reference, l.short_url, l.created_at, l.sent_at, l.paid_at, l.refused_at,
-    COALESCE(l.sent_at <= ?2, 0) AS lapsed
+    COALESCE(l.closes_at <= ?3, l.sent_at <= ?2, 0) AS lapsed
   FROM payment_links l
   JOIN appointments a ON a.id = l.appointment_id
   LEFT JOIN services s ON s.kind = 'first_fit' AND s.tier = l.tier
@@ -94,7 +94,7 @@ const linkOf = (row: LinkRow) => ({
 /** Every payment link the client was sent or is owed, the newest first. */
 export async function paymentLinksOf(db: D1Database, personId: string, now: Date) {
   const [oneVisit, booking] = await Promise.all([
-    db.prepare(ONE_VISIT_LINKS).bind(personId, closedIfSentBy(now).toISOString()).all<LinkRow>(),
+    db.prepare(ONE_VISIT_LINKS).bind(personId, closedIfSentBy(now).toISOString(), now.toISOString()).all<LinkRow>(),
     db.prepare(BOOKING_LINKS).bind(personId).all<LinkRow>(),
   ]);
   return [...oneVisit.results, ...booking.results].sort((a, b) => b.created_at.localeCompare(a.created_at)).map(linkOf);

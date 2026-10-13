@@ -2,7 +2,7 @@
 // See docs/decisions/0014-try-on-api.md.
 
 import { LOSS_EXTENTS } from "./booking.ts";
-import { DAY_MS, HOUR_MS, MINUTE_MS } from "../lib/durations.ts";
+import { HOUR_MS, MINUTE_MS } from "../lib/durations.ts";
 
 /** The three hair-loss stages the try-on asks about: the booking form's loss extents. */
 export const TRYON_STAGES = LOSS_EXTENTS;
@@ -62,7 +62,6 @@ export const COPY_LONG_EDGE_PX = 1600;
 export const TRYON_UPLOAD_LINK_TTL_MS = 5 * MINUTE_MS;
 /** One look per visitor: the browser remembers for 30 days that it has had its look. */
 export const LOOK_COOKIE = "mm_look";
-export const LOOK_COOKIE_TTL_MS = 30 * DAY_MS;
 /**
  * The link a WhatsApp message carries, minted at send time: the only link to a look there is, since the look goes to
  * WhatsApp only (docs/decisions/0104-the-try-ons-look-on-whatsapp-only.md).

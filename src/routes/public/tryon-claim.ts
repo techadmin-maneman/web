@@ -21,12 +21,13 @@ import { hadLookSince, leadOfOwnClaim, recordClaim, reserveJob } from "../../dom
 import { errorResponse, type ErrorCode } from "../../http/errors.ts";
 import { answerKeyed, IdempotencyKeyHeaderSchema, onceForKey } from "../../http/idempotency.ts";
 import { provedNumber } from "../../http/number-proof.ts";
+import { opsInputs } from "../../http/ops-inputs.ts";
 import { PersonNameSchema } from "../../http/openapi.ts";
 import { visitorOf } from "../../http/visitor.ts";
 import { mobileHashOf } from "../../domain/clients/number-codes.ts";
 import { DAY_MS } from "../../lib/durations.ts";
 import { INDIAN_MOBILE_PATTERN, toE164 } from "../../lib/mobile.ts";
-import { LOOK_PER_NUMBER_DAYS, undelivered } from "../../policy/tryon-delivery.ts";
+import { undelivered } from "../../policy/tryon-delivery.ts";
 import { enqueue } from "../../domain/platform/enqueue.ts";
 import { messageHeldBack } from "../../queues/messaging.ts";
 import { NumberCodeIdSchema } from "./number-codes.ts";
@@ -148,7 +149,8 @@ async function claim(c: Context<AppEnv>, request: z.infer<typeof ClaimRequestSch
   if (job === null) return { ok: false, status: 404, code: "not_found" };
   if (job.lead_id !== null) return claimAgain(c, job, mobileE164);
   if (!claimable(job)) return { ok: false, status: 409, code: "job_not_claimable" };
-  if (await hadLookSince(db, mobileE164, new Date(now.getTime() - LOOK_PER_NUMBER_DAYS * DAY_MS))) {
+  const { tryonLookDays } = await opsInputs(c);
+  if (await hadLookSince(db, mobileE164, new Date(now.getTime() - tryonLookDays * DAY_MS))) {
     return { ok: false, status: 403, code: "look_limit_reached" };
   }
 

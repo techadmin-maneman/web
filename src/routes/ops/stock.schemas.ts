@@ -96,6 +96,10 @@ const StockSchema = z
       )
       .openapi({ description: "The latest movements, newest first." }),
     today: z.iso.date(),
+    expiry_warning_days: z
+      .number()
+      .int()
+      .openapi({ description: "How many days before it expires a lot is listed as expiring, as ops set it." }),
     max_quantity: z.number().int(),
     in_transit: z
       .array(

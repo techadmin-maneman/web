@@ -20,9 +20,10 @@ import { chooseRender } from "../../domain/try-on/render-choice.ts";
 import { failJob, loadJob, type JobRow, type RenderChoice } from "../../domain/try-on/tryon.ts";
 import { errorBody, errorResponse, refuse } from "../../http/errors.ts";
 import { setLookCookie } from "../../http/look-cookie.ts";
+import { opsInputs } from "../../http/ops-inputs.ts";
 import { visitorOf } from "../../http/visitor.ts";
 import { DAY_MS } from "../../lib/durations.ts";
-import { LOOK_PER_NUMBER_DAYS, tryOnRuns } from "../../policy/tryon-delivery.ts";
+import { tryOnRuns } from "../../policy/tryon-delivery.ts";
 import { enqueue } from "../../domain/platform/enqueue.ts";
 import type { RenderMessage } from "../../queues/render.ts";
 
@@ -133,7 +134,7 @@ async function startFirstLook(c: Context<AppEnv>, job: JobRow, choice: RenderCho
 
   // One look per number: another of its jobs asked for since its claim's window opened refuses this one, in the
   // statement that queues it, so jobs claimed together cannot each start one.
-  const since = new Date(now.getTime() - LOOK_PER_NUMBER_DAYS * DAY_MS).toISOString();
+  const since = new Date(now.getTime() - (await opsInputs(c)).tryonLookDays * DAY_MS).toISOString();
   const queued = await db
     .prepare(
       `UPDATE tryon_jobs SET stage = ?2, preset = ?3, hair_color = ?4, endpoint = ?5, provider_color = ?6,

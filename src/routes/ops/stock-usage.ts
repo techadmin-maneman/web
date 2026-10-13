@@ -8,11 +8,11 @@ import { createRoute, z } from "@hono/zod-openapi";
 import { placesWithin } from "../../domain/field/stock-places.ts";
 import { shrinkage, usageAgainstExpected } from "../../domain/field/stock-usage.ts";
 import type { App } from "../../http/context.ts";
+import { opsInputs } from "../../http/ops-inputs.ts";
 import { errorResponse } from "../../http/errors.ts";
 import { json } from "../../http/openapi.ts";
 import { routeReach } from "../../http/staff-access.ts";
 import { addDays, indiaDate, indiaInstant } from "../../lib/india-time.ts";
-import { USAGE_DAYS } from "../../policy/stock-usage.ts";
 
 const Percent = z.number().nullable();
 const Paise = z.number().openapi({ description: "In paise, at each item's cost." });
@@ -68,11 +68,12 @@ const usageRoute = createRoute({
 
 export function registerOpsStockUsage(app: App): void {
   app.openapi(usageRoute, async (c) => {
-    const since = addDays(indiaDate(c.var.deps.now()), -USAGE_DAYS);
+    const { stockUsage } = await opsInputs(c);
+    const since = addDays(indiaDate(c.var.deps.now()), -stockUsage.days);
     const within = await placesWithin(c.env.DB, await routeReach(c));
     const [technicians, places] = await Promise.all([
-      usageAgainstExpected(c.env.DB, since, within),
-      shrinkage(c.env.DB, indiaInstant(since, "00:00").toISOString(), within),
+      usageAgainstExpected(c.env.DB, since, within, stockUsage),
+      shrinkage(c.env.DB, indiaInstant(since, "00:00").toISOString(), within, stockUsage),
     ]);
     return c.json(
       {

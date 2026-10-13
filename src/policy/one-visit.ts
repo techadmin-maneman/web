@@ -9,15 +9,16 @@
 import { FIRST_FIT_WINDOWS, type BookingWindow } from "../config/scheduling.ts";
 import { DAY_MS } from "../lib/durations.ts";
 import { FREE_CHANGE_NOTICE_HOURS, type SoldTerms } from "./moving-a-visit.ts";
+import { PAYMENT_LINKS } from "./pay-by-link.ts";
 
-/** How long a one visit's payment link takes payment, from when Razorpay makes it. */
-const PAYMENT_LINK_OPEN_DAYS = 14;
+/** When a payment link Razorpay makes at this moment stops taking payment, open for ops' days (`payment_links`). */
+export const paymentLinkClosesAt = (madeAt: Date, days: number): Date => new Date(madeAt.getTime() + days * DAY_MS);
 
-/** When a payment link Razorpay makes at this moment stops taking payment. */
-export const paymentLinkClosesAt = (madeAt: Date): Date => new Date(madeAt.getTime() + PAYMENT_LINK_OPEN_DAYS * DAY_MS);
-
-/** The latest a link can have been sent and be closed by `now`. */
-export const closedIfSentBy = (now: Date): Date => new Date(now.getTime() - PAYMENT_LINK_OPEN_DAYS * DAY_MS);
+/**
+ * The latest a link with no closing time of its own can have been sent and be closed by `now`: one made before links
+ * kept their closing time was open the committed days.
+ */
+export const closedIfSentBy = (now: Date): Date => new Date(now.getTime() - PAYMENT_LINKS.pay_within_days * DAY_MS);
 
 /** What the site's form books: the consultation alone, or the consultation and the fit in one visit. */
 export const PLANS = ["consultation", "one_visit"] as const;

@@ -2,7 +2,7 @@
 // supplier's orders, receipts and claims: how often an order came on time and in full, how long orders took against
 // what was promised, how much arrived damaged or failed its check, and how claims went.
 
-/** How far back the scorecard reads. */
+/** How far back the scorecard reads, in days, until ops set their own in Settings. */
 export const SCORECARD_DAYS = 365;
 
 /** One order sent to the supplier, as the scorecard reads it; every day is India's. */

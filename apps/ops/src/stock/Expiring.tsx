@@ -1,8 +1,7 @@
-// Stock · Expiring (docs/decisions/0159-stock-views-and-expiry.md): every lot within reach that expires within
-// EXPIRY_WARNING_DAYS, or has, soonest first, with where it is and how much is there. The morning alert says the same
+// Stock · Expiring (docs/decisions/0159-stock-views-and-expiry.md): every lot within reach that expires within ops'
+// warning days (`stock_watch`), or has, soonest first, with where it is and how much is there. The morning alert says the same
 // in the chat; here ops act on it, moving the stock or writing it off by its lot.
 
-import { EXPIRY_WARNING_DAYS } from "@rules/policy/stock.ts";
 import { Table } from "@maneman/ui/Table";
 import { fullDate } from "@maneman/web-kit/dates";
 import type { Stock } from "../api.ts";
@@ -13,7 +12,7 @@ import styles from "./stock.module.css";
 
 /** The lots that expire by the warning's end, soonest first, each where it is held. */
 export function expiringLots(book: Stock) {
-  const until = new Date(Date.parse(`${book.today}T00:00:00Z`) + EXPIRY_WARNING_DAYS * 86_400_000)
+  const until = new Date(Date.parse(`${book.today}T00:00:00Z`) + book.expiry_warning_days * 86_400_000)
     .toISOString()
     .slice(0, 10);
   return book.holdings
@@ -33,7 +32,7 @@ export function Expiring({ book }: { book: Stock }) {
           {words.title}
         </h2>
       </div>
-      <p className={form.note}>{words.intro(EXPIRY_WARNING_DAYS)}</p>
+      <p className={form.note}>{words.intro(book.expiry_warning_days)}</p>
       <div className={styles.scroll}>
         <Table className={form.table}>
           <thead>

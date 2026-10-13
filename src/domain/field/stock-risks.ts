@@ -14,8 +14,8 @@ export const STOCK_RISKS_OPEN = `SELECT 'stock_at_risk' AS "group", r.appointmen
   WHERE r.cleared_at IS NULL AND (pe.id IS NULL OR pe.erased_at IS NULL)`;
 
 /** The fits at risk today kept, each once, and those no longer at risk cleared. How many are open now. */
-export async function refreshStockRisks(db: D1Database, today: string, now: Date): Promise<number> {
-  const atRisk = await fitsAtRisk(db, today);
+export async function refreshStockRisks(db: D1Database, today: string, now: Date, demandDays: number): Promise<number> {
+  const atRisk = await fitsAtRisk(db, today, demandDays);
   const at = now.toISOString();
   const open = JSON.stringify(atRisk.map((fit) => fit.appointmentId));
   await db.batch([

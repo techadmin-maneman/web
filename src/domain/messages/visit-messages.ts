@@ -13,6 +13,7 @@ import type { MessageKind } from "../../config/message-kinds.ts";
 import { MINUTE_MS } from "../../lib/durations.ts";
 import { statusIn, VISIT_NOT_BEGUN } from "../../config/statuses.ts";
 import { queueMessage } from "./queued-messages.ts";
+import { readOpsInputs } from "../ops/ops-settings.ts";
 
 export const VISIT_MESSAGE_KINDS = [
   "consultation_confirmation",
@@ -35,12 +36,6 @@ export const VISIT_MESSAGE_KINDS = [
 ] as const satisfies readonly MessageKind[];
 
 export type VisitMessageKind = (typeof VISIT_MESSAGE_KINDS)[number];
-
-/**
- * How long after the technician arrived the client may still be told of it. A check-in that reaches us later, from
- * a phone that had no signal, is past the point: they have been at the door, or gone.
- */
-const ARRIVAL_NOTICE_WITHIN_MINUTES = 10;
 
 /** Why an arrival notice was not sent: the no-show evidence reads it back. */
 const ARRIVAL_TOO_LATE = "the check-in reached us too late to tell the client";
@@ -110,9 +105,9 @@ export function visitMessageOnChange(
  */
 export async function arrivalNotice(
   db: D1Database,
-  input: { personId: string; appointmentId: string; arrivedAt: Date; now: Date },
+  input: { personId: string; appointmentId: string; arrivedAt: Date; now: Date; withinMin: number },
 ): Promise<string | null> {
-  const late = input.now.getTime() - input.arrivedAt.getTime() > ARRIVAL_NOTICE_WITHIN_MINUTES * MINUTE_MS;
+  const late = input.now.getTime() - input.arrivedAt.getTime() > input.withinMin * MINUTE_MS;
   const id = crypto.randomUUID();
   const at = input.now.toISOString();
   const written = await db
@@ -155,15 +150,16 @@ export async function isMessageStale({
   writtenAt: Date;
   now: Date;
 }): Promise<string | null> {
-  if (kind === "arrival_notice") return arrivalTooLate(writtenAt, now);
+  if (kind === "arrival_notice") return arrivalTooLate(writtenAt, now, (await readOpsInputs(db, now)).arrivalNoticeMin);
   if (kind === "visit_reminder") return reminderOutdated(db, appointmentId, writtenAt, now);
   if (MOVE_KINDS.includes(kind)) return laterMoveTold(db, appointmentId, writtenAt);
   return null;
 }
 
-function arrivalTooLate(writtenAt: Date, now: Date): string | null {
+/** Past ops' minutes after the technician arrived (src/policy/check-in.ts), the client is no longer told. */
+function arrivalTooLate(writtenAt: Date, now: Date, withinMin: number): string | null {
   const minutesWaited = (now.getTime() - writtenAt.getTime()) / MINUTE_MS;
-  if (minutesWaited > ARRIVAL_NOTICE_WITHIN_MINUTES) return "too late to tell the client the technician had arrived";
+  if (minutesWaited > withinMin) return "too late to tell the client the technician had arrived";
   return null;
 }
 

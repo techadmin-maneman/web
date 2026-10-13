@@ -3,7 +3,6 @@
 
 import { addDays, indiaDate } from "../../lib/india-time.ts";
 import {
-  SCORECARD_DAYS,
   scorecardOf,
   type ArrivedUnits,
   type ClaimCounts,
@@ -46,8 +45,8 @@ function scoredOrder(row: OrderRow): ScoredOrder {
 }
 
 /** Every supplier not retired, and any retired one with orders this year, each with its scorecard. */
-export async function supplierScores(db: D1Database, now: Date): Promise<SupplierScore[]> {
-  const since = new Date(now.getTime() - SCORECARD_DAYS * 24 * 60 * 60 * 1000).toISOString();
+export async function supplierScores(db: D1Database, now: Date, days: number): Promise<SupplierScore[]> {
+  const since = new Date(now.getTime() - days * 24 * 60 * 60 * 1000).toISOString();
   const [suppliers, orders, arrived, claims] = await db.batch<SupplierRow | OrderRow | ArrivedRow | ClaimRow>([
     db.prepare("SELECT id, name, currency FROM suppliers WHERE retired_at IS NULL OR retired_at >= ?1").bind(since),
     db

@@ -14,6 +14,12 @@
 
 import { WINDOW_SLOT_MAP, type BookingWindow } from "../config/scheduling.ts";
 
+/**
+ * How long a move to another day waits for the client's answer, or until the visit's own start if that is sooner
+ * (docs/decisions/0115-a-move-to-another-day-waits-for-the-client.md). Ops set it in Settings.
+ */
+export const MOVE_PROPOSAL_HOURS = 48;
+
 /** A block's size on the board, in slots, from the half-slots it holds: 1, 1, 1.5 and 2 for the kinds' own lengths. */
 export const slotsFor = (units: number): number => units / 2;
 
