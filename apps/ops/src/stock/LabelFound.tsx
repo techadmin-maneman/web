@@ -2,7 +2,7 @@
 // where it is now, and every change to it, oldest first.
 
 import { ScanField } from "@maneman/ui/ScanField";
-import { indiaClock, indiaDate, shortDate } from "@maneman/web-kit/dates";
+import { fullDate, indiaClock, indiaDate, shortDate } from "@maneman/web-kit/dates";
 import { useState } from "react";
 import { client, type Stock } from "../api.ts";
 import type { paths } from "../api-schema.ts";
@@ -34,7 +34,7 @@ function Found(props: {
       <p className={form.note}>
         <strong>{unit.code}</strong> · {named(unit.consumable_code)}
         {unit.lot_code !== null && ` · ${unit.lot_code}`}
-        {unit.expires_on !== null && ` · ${copy.expires(shortDate(unit.expires_on))}`}
+        {unit.expires_on !== null && ` · ${copy.expires(fullDate(unit.expires_on))}`}
       </p>
       <p className={form.note}>{copy.where(state(unit.state), place(unit.place_id))}</p>
       <ul className={styles.history} aria-label={copy.history}>

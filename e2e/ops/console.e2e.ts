@@ -229,8 +229,8 @@ test("reaches mm-api as the ops surface, on its own host", async ({ page }) => {
     );
     return { health: health?.status, board: board?.status, me: me?.status };
   });
-  // /api/me belongs to the client surface, so it does not exist on this host.
-  expect(statuses).toEqual({ health: 200, board: 200, me: 404 });
+  // /api/me belongs to the client surface: no route of this host answers it, so the Staff list refuses it.
+  expect(statuses).toEqual({ health: 200, board: 200, me: 403 });
 });
 
 test("moves between sections without a reload, and back", async ({ page }) => {
