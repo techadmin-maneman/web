@@ -121,7 +121,9 @@ test("drafts an order from a supplier's list, its total shown first", async ({ p
   expect(await axeViolations(page)).toEqual([]);
 });
 
-test("questions a price far above what Settings say an item costs, and clears the form once drafted", async ({ page }) => {
+test("questions a price far above what Settings say an item costs, and clears the form once drafted", async ({
+  page,
+}) => {
   const cheap = { ...BOOK, consumables: [{ code: "solvent", name: "Solvent", unit: "ml", unit_cost: 450 }] };
   await open(page, { "GET /api/purchase-orders": json(cheap), "POST /api/purchase-orders": json(cheap) });
   const draft = page.getByRole("region", { name: copy.draft.title });

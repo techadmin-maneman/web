@@ -105,12 +105,7 @@ function ItemBoxes(props: {
 }
 
 /** "Solvent · USD 12.50 per ml · Pack 12 ml · Minimum 24 ml · 21 days" */
-const itemLine = (
-  name: string,
-  unit: string,
-  item: Omit<Item, "consumable_code" | "their_code">,
-  currency: string,
-) =>
+const itemLine = (name: string, unit: string, item: Omit<Item, "consumable_code" | "their_code">, currency: string) =>
   `${name} · ${words.perUnit(inCurrency(item.unit_price, currency), unit)} · ${words.packOf(words.amount(item.pack_size, unit))} · ` +
   `${words.minimum} ${words.amount(item.minimum_order, unit)} · ${words.days(item.lead_time_days)}`;
 

@@ -36,7 +36,8 @@ function LineBoxes(props: {
   const listed = consumable(line.code);
   const unit = listed?.unit ?? "";
   const named = (code: string) => consumable(code)?.name ?? code;
-  const times = item === undefined || listed === undefined || listed.unit_cost === 0 ? 0 : item.unit_price / listed.unit_cost;
+  const times =
+    item === undefined || listed === undefined || listed.unit_cost === 0 ? 0 : item.unit_price / listed.unit_cost;
   const questioned = currency === "INR" && times >= FAR_ABOVE && item !== undefined && listed !== undefined;
   return (
     <div className={styles.line}>

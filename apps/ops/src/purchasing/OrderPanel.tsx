@@ -18,21 +18,25 @@ import type { Order, Orders } from "./types.ts";
 
 type Answer = Awaited<ReturnType<typeof client.post<"/api/purchase-orders/{id}/send">>>;
 
-/** The steps the order can take now, and who may take them. */
-function Steps({ order, onAnswer }: { order: Order; onAnswer: (answer: Answer, said: string) => void }) {
+/** Whether the person signed in may approve the order now: not where they gave its first approval already. */
+function useApprovable(order: Order): boolean {
   const access = useAccess();
   const [signedIn] = useLoad(whoami);
   const me = signedIn.state === "loaded" ? signedIn.value.signed_in_as.toLowerCase() : null;
-  // The manager who gave the first approval may not give the second, so is not offered it.
   const approvedByMe = order.approved_by !== null && order.approved_by.toLowerCase() === me;
+  return order.state === "drafted" && !approvedByMe && access.mayCall("POST /api/purchase-orders/{id}/approve");
+}
+
+/** The steps the order can take now, and who may take them. */
+function Steps({ order, onAnswer }: { order: Order; onAnswer: (answer: Answer, said: string) => void }) {
+  const access = useAccess();
+  const approvable = useApprovable(order);
   const [cancelling, setCancelling] = useState(false);
   const [reason, setReason] = useState("");
   const path = { path: { id: order.id } };
   const step = async (to: "approve" | "send", said: string) => {
     onAnswer(await client.post(`/api/purchase-orders/{id}/${to}`, path), said);
   };
-  const approvable =
-    order.state === "drafted" && !approvedByMe && access.mayCall("POST /api/purchase-orders/{id}/approve");
   const cancellable =
     ["drafted", "approved", "sent"].includes(order.state) && access.mayCall("POST /api/purchase-orders/{id}/cancel");
   return (
