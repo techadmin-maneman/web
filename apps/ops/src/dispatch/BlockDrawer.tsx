@@ -14,7 +14,7 @@
 // check-in. A visit still ahead can be cancelled for the client here, and one
 // whose time has come closed by hand, each in its own panel.
 
-import { capsLook } from "@maneman/ui/Caps";
+import { badgeLook } from "@maneman/ui/Caps";
 import { Icon } from "@maneman/ui/Icon";
 import { ICONS } from "@maneman/brand/icons";
 import { Button, ButtonLink, buttonLook } from "@maneman/ui/Button";
@@ -85,7 +85,7 @@ export function BlockDrawer(props: Props) {
       titleId="drawer-title"
       title={person?.name ?? nameOf(job)}
       sub={copy.when(shortDate(job.date), dispatch.windowHours[block.window] ?? dispatch.unknown, job.technician.name)}
-      aside={<span className={capsLook(styles.badge)}>{copy.badges[block.badge] ?? block.badge}</span>}
+      aside={<span className={badgeLook("brass", styles.badge)}>{copy.badges[block.badge] ?? block.badge}</span>}
       canClose
       onDismiss={onClose}
     >

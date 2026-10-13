@@ -557,12 +557,9 @@
 
 /* ---- The drawer ---------------------------------------------------------- */
 
-/* "Prepaid", in brass small capitals at the drawer's head. */
+/* "Prepaid", the badge at the drawer's head, which keeps its width beside a long name. */
 .badge {
   flex-shrink: 0;
-  letter-spacing: var(--tracking-12);
-  font-size: var(--fs-14);
-  color: var(--brass-text);
 }
 
 .rows {

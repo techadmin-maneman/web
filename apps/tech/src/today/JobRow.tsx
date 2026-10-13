@@ -3,7 +3,7 @@
 // has begun. No amount, anywhere. The client is named from the day before the
 // visit, when the job unlocks.
 
-import { capsLook } from "@maneman/ui/Caps";
+import { badgeLook, capsLook } from "@maneman/ui/Caps";
 import { GLYPHS } from "@maneman/brand/icons";
 import { Icon } from "@maneman/ui/Icon";
 import { Link } from "@maneman/ui/router";
@@ -35,9 +35,9 @@ export function JobRow({
           <span className={capsLook(styles.type)}>{kindName(job)}</span>
           {/* The one visit's badge is too long to share a line: it takes its own, with no dot to start it. */}
           {job.badge === "at_visit" ? (
-            <span className={capsLook(styles.badgeLine)}>{badges.at_visit}</span>
+            <span className={badgeLook("muted", styles.badgeLine)}>{badges.at_visit}</span>
           ) : (
-            <span className={capsLook(styles.badge)}>· {badges[job.badge]}</span>
+            <span className={badgeLook("muted")}>· {badges[job.badge]}</span>
           )}
         </span>
         {client !== undefined && <span className={styles.who}>{client}</span>}

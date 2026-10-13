@@ -36,10 +36,6 @@
   flex-shrink: 0;
   align-self: flex-start;
   margin-left: auto;
-  letter-spacing: var(--tracking-12);
-  font-size: var(--fs-15);
-  white-space: nowrap;
-  color: var(--paper);
 }
 
 .body {

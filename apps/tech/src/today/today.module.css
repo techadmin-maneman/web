@@ -204,13 +204,8 @@
   align-items: center;
 }
 
-.type,
-.badge,
-.badgeLine {
-  letter-spacing: var(--tracking-12);
-}
-
 .type {
+  letter-spacing: var(--tracking-12);
   font-size: var(--fs-15);
   color: var(--ink-soft);
 }
@@ -220,17 +215,9 @@
   color: var(--paper);
 }
 
-.badge {
-  font-size: var(--fs-14);
-  white-space: nowrap;
-  color: var(--ink-muted);
-}
-
 /* The one visit's badge, on a line of its own under the kind. */
 .badgeLine {
   flex-basis: 100%;
-  font-size: var(--fs-14);
-  color: var(--ink-muted);
 }
 
 .who {

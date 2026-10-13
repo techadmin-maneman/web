@@ -3,7 +3,7 @@
 // details, the block drawer's two ways to the client, and Assign, which takes
 // the job up as a drag from the tray does.
 
-import { capsLook } from "@maneman/ui/Caps";
+import { badgeLook } from "@maneman/ui/Caps";
 import { Icon } from "@maneman/ui/Icon";
 import { ICONS } from "@maneman/brand/icons";
 import { Button, ButtonLink, buttonLook } from "@maneman/ui/Button";
@@ -46,7 +46,7 @@ export function TrayDrawer({ each, onAssign, onClose }: Props) {
           {askedWord(each)} · {dispatch.tray.offered(offeredWord(each.date, each.offered_window))}
         </>
       }
-      aside={<span className={capsLook(styles.badge)}>{copy.badges[each.badge] ?? each.badge}</span>}
+      aside={<span className={badgeLook("brass", styles.badge)}>{copy.badges[each.badge] ?? each.badge}</span>}
       canClose
       onDismiss={onClose}
     >
