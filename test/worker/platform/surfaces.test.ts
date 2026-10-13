@@ -123,10 +123,13 @@ describe("byHost, on staging", () => {
 });
 
 /** The public app's routes other than the health check, with a placeholder for each path parameter. */
+/** The routes every surface answers: its health, and the report of its own page's errors. */
+const ON_EVERY_SURFACE = new Set(["/api/health", "/api/client-errors"]);
+
 function publicRoutes(): { method: string; path: string }[] {
   const seen = new Set<string>();
   return appFor()
-    .routes.filter((route) => route.method !== "ALL" && route.path !== "/api/health")
+    .routes.filter((route) => route.method !== "ALL" && !ON_EVERY_SURFACE.has(route.path))
     .map((route) => ({ method: route.method, path: route.path.replace(/:[^/]+/g, "x") }))
     .filter((route) => {
       const key = `${route.method} ${route.path}`;
