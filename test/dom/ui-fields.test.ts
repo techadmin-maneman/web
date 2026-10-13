@@ -75,6 +75,6 @@ describe("the fields' look", () => {
   });
 
   it("draws its focus ring inside the box, where a panel's edge cannot cut it", () => {
-    expect(css).toMatch(/outline-offset: calc\(-1 \* var\(--focus-width\)\)/);
+    expect(css).toMatch(/outline-offset: var\(--focus-inset\)/);
   });
 });
