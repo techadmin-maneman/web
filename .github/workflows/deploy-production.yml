@@ -246,3 +246,18 @@ jobs:
       - name: The cron schedules and queue consumers live match every Worker's config
         continue-on-error: true
         run: node scripts/release/check-triggers.ts production
+
+  tell:
+    name: page whoever is on call
+    needs: [eligible, release]
+    if: ${{ failure() }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: A push to the urgent topic (docs/runbook/alerts.md)
+        env:
+          URGENT_PUSH_URL: ${{ secrets.URGENT_PUSH_URL }}
+          RUN: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          if [ -z "$URGENT_PUSH_URL" ]; then echo "No URGENT_PUSH_URL: nobody to page"; exit 0; fi
+          curl -fsS -H "Title: Production release failed" -H "Priority: urgent" -H "Tags: rotating_light" -H "Click: $RUN" -d "Production release failed: $RUN" "$URGENT_PUSH_URL"

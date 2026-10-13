@@ -66,6 +66,7 @@ export async function addVendor(pass: Pass, supplierId: string): Promise<boolean
       gstin: supplier.gstin,
       currency: supplier.currency,
       inIndia: supplier.country === "IN",
+      gstOn: pass.options.gst.gstin !== null,
       email: supplier.contact_email,
       phone: supplier.contact_phone,
       paymentTermsDays: supplier.payment_terms_days,

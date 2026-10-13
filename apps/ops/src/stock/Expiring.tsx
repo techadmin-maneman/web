@@ -4,7 +4,7 @@
 
 import { EXPIRY_WARNING_DAYS } from "@rules/policy/stock.ts";
 import { Table } from "@maneman/ui/Table";
-import { shortDate } from "@maneman/web-kit/dates";
+import { fullDate } from "@maneman/web-kit/dates";
 import type { Stock } from "../api.ts";
 import { stockViews } from "../content/stock-views.ts";
 import form from "../components/forms.module.css";
@@ -60,7 +60,7 @@ export function Expiring({ book }: { book: Stock }) {
                     {lot.quantity} {consumable?.unit ?? ""}
                   </td>
                   <td>
-                    {shortDate(lot.expires_on ?? book.today)}
+                    {fullDate(lot.expires_on ?? book.today)}
                     {expired && <span className={styles.low}>{words.expired}</span>}
                   </td>
                 </tr>

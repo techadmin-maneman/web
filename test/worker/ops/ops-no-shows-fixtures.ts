@@ -24,6 +24,7 @@ export interface Case {
   person: { id: string; name: string } | null;
   message_state: string;
   message_delivered_at: string | null;
+  let_in: { by: string; reason: string | null } | null;
   opened_at: string;
   due: string;
   decision: string;

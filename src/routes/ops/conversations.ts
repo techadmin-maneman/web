@@ -172,7 +172,7 @@ const changeOf = (c: Context<AppEnv>, conversationId: string) => ({
 function registerAnswers(app: App): void {
   app.openapi(replyRoute, async (c) => {
     const { id } = c.req.valid("param");
-    const replied = await replyTo(c.env.DB, c.var.deps.messaging, {
+    const replied = await replyTo(c.env.DB, c.var.deps.messaging, c.var.config.settings.messaging, {
       ...changeOf(c, id),
       text: c.req.valid("json").text,
     });

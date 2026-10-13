@@ -106,6 +106,24 @@ describe("GET /api/no-shows", () => {
     expect((await cases())[0]?.person).toBeNull();
   });
 
+  it("is ruled on once the client has been erased, with nothing sent to them", async () => {
+    await env.DB.prepare("UPDATE people SET erased_at = ?1").bind(NOW.toISOString()).run();
+    expect((await rule({ decision: "waived", reason: "Traffic on the expressway." })).status).toBe(200);
+    expect(await env.DB.prepare("SELECT decision FROM no_show_cases").first()).toEqual({ decision: "waived" });
+    expect(await env.DB.prepare("SELECT COUNT(*) AS n FROM outbound_messages").first()).toEqual({ n: 0 });
+  });
+
+  it("says who let the check-in in, and why", async () => {
+    await env.DB.prepare("UPDATE checkins SET waived_by = 'ops@maneman.test'").run();
+    await env.DB.prepare("UPDATE appointments SET checkin_waived_reason = 'GPS lost in the basement'").run();
+    expect((await cases())[0]?.let_in).toEqual({ by: "ops@maneman.test", reason: "GPS lost in the basement" });
+  });
+
+  it("is not closed early while its wait still runs", async () => {
+    await env.DB.prepare("UPDATE no_show_cases SET closed_at = NULL").run();
+    expect((await cases())[0]).toMatchObject({ closed_at: null, closed_early: false });
+  });
+
   // The audit's B13: a 4 pm visit checked in at 11:31, closed at 11:36 and charged, with nothing to say so.
   it("flags a case whose wait ran from a check-in before the booked start", async () => {
     expect((await cases())[0]).toMatchObject({ minutes_late: 309, closed_early: false });

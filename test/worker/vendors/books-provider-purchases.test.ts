@@ -13,6 +13,7 @@ const VENDOR: NewBooksVendor = {
   gstin: null,
   currency: "USD",
   inIndia: false,
+  gstOn: true,
   email: "orders@lumina.example",
   phone: null,
   paymentTermsDays: 30,
@@ -80,6 +81,20 @@ describe("Books: a supplier's vendor", () => {
     expect(made[0]).not.toHaveProperty("currency_id");
     expect(made[0]).not.toHaveProperty("contact_persons");
     expect(booksCalls(calls).some((call) => call.url.includes("/settings/currencies"))).toBe(false);
+  });
+
+  it("is made with no GST treatment while GST is off in the org, which Books would refuse", async () => {
+    const made: unknown[] = [];
+    const { books } = zohoBooks({
+      [ZOHO_TOKEN_URL]: () => tokenIssued(),
+      [`${BOOKS_API}/contacts`]: (call) => {
+        if (call.method !== "POST") return vendorsFound([]);
+        made.push(JSON.parse(call.body));
+        return json({ code: 0, contact: { contact_id: "v-1" } });
+      },
+    });
+    await books.upsertVendor({ ...VENDOR, currency: "INR", inIndia: true, gstOn: false });
+    expect(made[0]).not.toHaveProperty("gst_treatment");
   });
 });
 

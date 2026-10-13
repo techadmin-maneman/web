@@ -6,7 +6,7 @@ import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import { ROUTE_NEEDS } from "../../../src/policy/console-routes.ts";
 import type { AccessIdentity } from "../../../src/providers/cloudflare-access.ts";
-import { captureLogs, markDatabase, request } from "../helpers.ts";
+import { appFor, captureLogs, fakeDependencies, markDatabase, request } from "../helpers.ts";
 import { allowToken, enforce, listStaff, opsAs, person, post, token } from "./staff-fixtures.ts";
 
 const CASE = "6a000000-0000-4000-8000-000000000001";
@@ -39,6 +39,23 @@ describe("while the Staff list is not enforced", () => {
     await listStaff("care@maneman.in", ["customer_care:view:national"]);
     expect((await request(opsAs(person("care@maneman.in")), "/api/grievances")).status).toBe(200);
     expect(logs.lines().filter((line) => line.event === "staff_access_would_refuse")).toEqual([]);
+  });
+});
+
+describe("where the list starts", () => {
+  it("is enforced on a database that has no switch at all", async () => {
+    await env.DB.prepare("DELETE FROM staff_access_mode").run();
+    expect((await request(opsAs(person("stranger@maneman.in")), "/api/grievances")).status).toBe(403);
+  });
+
+  it("lets a bootstrap admin into every department, listed or not, once it is enforced", async () => {
+    await enforce();
+    const founder: AccessIdentity = person("founder@maneman.in");
+    const access = { verify: () => Promise.resolve({ ok: true as const, identity: founder }) };
+    const ops = appFor("local", fakeDependencies({ access }), { staffBootstrapAdmins: ["founder@maneman.in"] }, "ops");
+    expect((await request(ops, "/api/grievances")).status).toBe(200);
+    expect((await request(ops, "/api/staff")).status).toBe(200);
+    expect((await request(opsAs(person("stranger@maneman.in")), "/api/staff")).status).toBe(403);
   });
 });
 

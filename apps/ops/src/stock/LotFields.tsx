@@ -4,7 +4,7 @@
 // that expire soonest.
 
 import { Field, Select, TextInput } from "@maneman/ui/Field";
-import { shortDate } from "@maneman/web-kit/dates";
+import { fullDate } from "@maneman/web-kit/dates";
 import type { Stock } from "../api.ts";
 import { stock as copy } from "../content.ts";
 import form from "../components/forms.module.css";
@@ -76,7 +76,7 @@ export function LotFields({
             <option value="">{copy.record.soonest}</option>
             {lots.map((lot) => (
               <option key={lot.id} value={lot.id}>
-                {copy.record.lotLine(lot.lot_code, lot.expires_on === null ? null : shortDate(lot.expires_on))}
+                {copy.record.lotLine(lot.lot_code, lot.expires_on === null ? null : fullDate(lot.expires_on))}
               </option>
             ))}
           </Select>

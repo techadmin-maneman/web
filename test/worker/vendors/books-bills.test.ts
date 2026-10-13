@@ -142,6 +142,7 @@ describe("a receipt in Books", () => {
         gstin: null,
         currency: "USD",
         inIndia: false,
+        gstOn: false,
         email: "orders@lumina.example",
         phone: null,
         paymentTermsDays: 30,

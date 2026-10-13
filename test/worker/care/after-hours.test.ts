@@ -30,11 +30,11 @@ const messaging = (): MessagingProvider => ({
   },
 });
 
-/** A message to our number at an India time, as the bridge posts it. */
-const written = (text: string, date: string, time: string) =>
+/** A message to our number at an India time, as the bridge posts it; `settings` changes messaging's own. */
+const written = (text: string, date: string, time: string, settings: Partial<Settings["messaging"]> = {}) =>
   request(
     appFor("local", fakeDependencies({ messaging: messaging(), now: () => indiaInstant(date, time) }), {
-      messaging: { ...LOCAL_SETTINGS.messaging, evolution: EVOLUTION },
+      messaging: { ...LOCAL_SETTINGS.messaging, evolution: EVOLUTION, ...settings },
     }),
     `/api/hooks/evolution/${TOKEN}`,
     {
@@ -83,6 +83,18 @@ describe("the after-hours answer", () => {
     await written("Thanks!", "2026-10-13", "12:00");
     await written("One more thing", "2026-10-13", "21:30");
     expect(sent).toHaveLength(2);
+  });
+
+  it("sends nothing while messaging is off", async () => {
+    await written("Is tomorrow still on?", "2026-10-12", "22:10", { enabled: false });
+    expect(sent).toEqual([]);
+  });
+
+  it("is held back, as every automatic message is, from a number off staging's allowlist", async () => {
+    await written("Is tomorrow still on?", "2026-10-12", "22:10", { allowlist: ["+919810000099"] });
+    expect(sent).toEqual([]);
+    await written("Still there?", "2026-10-12", "22:40", { allowlist: ["+919810000001"] });
+    expect(sent).toEqual([{ to: "+919810000001", text: ANSWER }]);
   });
 
   it("leaves a STOP to its own answer", async () => {

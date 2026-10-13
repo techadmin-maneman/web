@@ -66,6 +66,7 @@ function ItemBoxes(props: {
   onPick: () => void;
 }) {
   const { book, supplier, draft, onDraft, edit, onPick } = props;
+  const unit = book.consumables.find((each) => each.code === draft.code)?.unit ?? "";
   return (
     <>
       <div className={styles.fields}>
@@ -92,10 +93,10 @@ function ItemBoxes(props: {
           )}
         </Field>
         <Entry label={words.theirCode} value={draft.theirCode} onChange={edit("theirCode")} />
-        <Entry label={words.price(supplier.currency)} value={draft.price} onChange={edit("price")} />
+        <Entry label={words.price(supplier.currency, unit)} value={draft.price} onChange={edit("price")} />
       </div>
       <div className={styles.fields}>
-        <Entry label={words.pack} value={draft.pack} onChange={edit("pack")} />
+        <Entry label={words.pack(unit)} value={draft.pack} onChange={edit("pack")} />
         <Entry label={words.minimum} value={draft.minimum} onChange={edit("minimum")} />
         <Entry label={words.lead} value={draft.lead} onChange={edit("lead")} />
       </div>
@@ -103,10 +104,10 @@ function ItemBoxes(props: {
   );
 }
 
-/** "Solvent · USD 12.50 · Pack 12 · Minimum 24 · 21 days" */
-const itemLine = (name: string, item: Omit<Item, "consumable_code" | "their_code">, currency: string) =>
-  `${name} · ${inCurrency(item.unit_price, currency)} · ${words.pack} ${String(item.pack_size)} · ` +
-  `${words.minimum} ${String(item.minimum_order)} · ${words.days(item.lead_time_days)}`;
+/** "Solvent · USD 12.50 per ml · Pack 12 ml · Minimum 24 ml · 21 days" */
+const itemLine = (name: string, unit: string, item: Omit<Item, "consumable_code" | "their_code">, currency: string) =>
+  `${name} · ${words.perUnit(inCurrency(item.unit_price, currency), unit)} · ${words.packOf(words.amount(item.pack_size, unit))} · ` +
+  `${words.minimum} ${words.amount(item.minimum_order, unit)} · ${words.days(item.lead_time_days)}`;
 
 function ItemForm({
   book,
@@ -145,9 +146,11 @@ function ItemForm({
     setDraft({ ...draft, [field]: text });
     steps.edit();
   };
-  const name = book.consumables.find((each) => each.code === draft.code)?.name ?? draft.code;
-  const line = itemLine(name, body, supplier.currency);
-  const before = was === null ? null : itemLine(name, was, supplier.currency);
+  const listed = book.consumables.find((each) => each.code === draft.code);
+  const name = listed?.name ?? draft.code;
+  const unit = listed?.unit ?? "";
+  const line = itemLine(name, unit, body, supplier.currency);
+  const before = was === null ? null : itemLine(name, unit, was, supplier.currency);
   return (
     <SettingForm
       title={words.title(supplier.name)}
@@ -185,6 +188,7 @@ export function SupplierItems({
 }) {
   const access = useAccess();
   const named = (code: string) => book.consumables.find((each) => each.code === code)?.name ?? code;
+  const unitOf = (code: string) => book.consumables.find((each) => each.code === code)?.unit ?? "";
   const remove = async (code: string) => {
     const answer = await client.post("/api/suppliers/{id}/items/{code}/remove", { path: { id: supplier.id, code } });
     if (answer.ok) onSaved(answer.body, words.removed);
@@ -217,9 +221,11 @@ export function SupplierItems({
                   {named(item.consumable_code)}
                 </th>
                 <td>{item.their_code ?? ""}</td>
-                <td className={styles.figure}>{inCurrency(item.unit_price, supplier.currency)}</td>
-                <td className={styles.figure}>{item.pack_size}</td>
-                <td className={styles.figure}>{item.minimum_order}</td>
+                <td className={styles.figure}>
+                  {words.perUnit(inCurrency(item.unit_price, supplier.currency), unitOf(item.consumable_code))}
+                </td>
+                <td className={styles.figure}>{words.amount(item.pack_size, unitOf(item.consumable_code))}</td>
+                <td className={styles.figure}>{words.amount(item.minimum_order, unitOf(item.consumable_code))}</td>
                 <td className={styles.figure}>{words.days(item.lead_time_days)}</td>
                 <td>
                   {access.mayCall("POST /api/suppliers/{id}/items/{code}/remove") && (

@@ -128,6 +128,8 @@ export interface NewBooksVendor {
   readonly currency: string;
   /** Whether it is in India, which decides its GST treatment. */
   readonly inIndia: boolean;
+  /** Whether GST is on in the org: Books refuses a GST treatment while it is off, as for customers. */
+  readonly gstOn: boolean;
   readonly email: string | null;
   readonly phone: string | null;
   readonly paymentTermsDays: number;

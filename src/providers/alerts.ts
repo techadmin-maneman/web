@@ -29,6 +29,24 @@ export function createLeadNotice(options: ChatOptions): LeadNotice {
   return createChatPost(options, "info", "lead_notice");
 }
 
+/**
+ * The post each kind of webhook reads. An ntfy topic (a phone push, for the urgent space) takes the text as its body
+ * at urgent priority, which sounds through Do Not Disturb; Discord reads "content"; Slack and Google Chat read "text"
+ * (and Google Chat rejects unknown keys).
+ */
+function postOf(webhookUrl: string, text: string, environment: string): RequestInit {
+  const host = new URL(webhookUrl).hostname;
+  if (host === "ntfy.sh" || host.startsWith("ntfy.")) {
+    return {
+      method: "POST",
+      headers: { Title: `Mane Man ${environment}`, Priority: "urgent", Tags: "rotating_light" },
+      body: text,
+    };
+  }
+  const body = host.endsWith("discord.com") ? { content: text } : { text };
+  return { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) };
+}
+
 function createChatPost(options: ChatOptions, level: LogLevel, event: string): (message: string) => Promise<boolean> {
   const { webhookUrl, environment, fetch, log } = options;
 
@@ -38,13 +56,11 @@ function createChatPost(options: ChatOptions, level: LogLevel, event: string): (
     // With no chat to post to, the log line is all there is to tell.
     if (webhookUrl === null) return true;
 
-    // Discord reads "content"; Slack and Google Chat read "text" (and Google Chat rejects unknown keys).
-    const body = new URL(webhookUrl).hostname.endsWith("discord.com") ? { content: text } : { text };
     const response = await vendorFetch(
       { fetch, log },
       { vendor: "chat-webhook", step: event, timeoutMs: TIMEOUT_MS },
       webhookUrl,
-      { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) },
+      postOf(webhookUrl, text, environment),
     );
     if (response instanceof VendorUnreachable) {
       log.error(`${event}_not_delivered`, { error: response });

@@ -14,6 +14,7 @@ import { Offline } from "../components/Banners.tsx";
 import { kit as copy, steps } from "../content.ts";
 import { STROKE } from "../icons.ts";
 import { useScreen } from "../lib/useScreen.ts";
+import { fullDate, indiaDate } from "@maneman/web-kit/dates";
 import { dayMonth } from "../lib/when.ts";
 import { go } from "../route.ts";
 import { useSession } from "../session.ts";
@@ -104,7 +105,7 @@ function TopUp({ topUp, offline, onKit }: { topUp: Coming; offline: boolean; onK
       <p className={styles.line}>
         {topUp.name} · {topUp.quantity} {topUp.unit}
       </p>
-      <p className={styles.note}>{copy.coming.from(topUp.from, dayMonth(topUp.sent_at.slice(0, 10)))}</p>
+      <p className={styles.note}>{copy.coming.from(topUp.from, dayMonth(indiaDate(topUp.sent_at)))}</p>
       {pieces && (
         <>
           <ScanLabel
@@ -159,7 +160,7 @@ function Held({ kit }: { kit: Kit }) {
               {item.lots
                 .filter((lot) => lot.expires_on !== null)
                 .map((lot) => {
-                  const on = dayMonth(lot.expires_on ?? kit.today);
+                  const on = fullDate(lot.expires_on ?? kit.today);
                   const gone = (lot.expires_on ?? kit.today) < kit.today;
                   return (
                     <p className={gone ? styles.expired : styles.note} key={lot.lot_code}>
@@ -196,7 +197,7 @@ function HandBack({ kit, offline, onKit }: { kit: Kit; offline: boolean; onKit: 
       <ul className={styles.list}>
         {kit.returned.map((piece) => (
           <li className={styles.line} key={piece.piece_code}>
-            {copy.returned.line(piece.piece_code, dayMonth(piece.returned_at.slice(0, 10)))}
+            {copy.returned.line(piece.piece_code, dayMonth(indiaDate(piece.returned_at)))}
           </li>
         ))}
       </ul>

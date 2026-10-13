@@ -83,10 +83,10 @@ test("shows what a supplier supplies, and sets a price old beside new", async ({
   await page.getByRole("button", { name: copy.itemsLabel("Lumina Hair Co") }).click();
   const items = page.getByRole("region", { name: copy.item.title("Lumina Hair Co") });
   const solvent = items.getByRole("row").filter({ has: page.getByRole("rowheader", { name: "Solvent" }) });
-  await expect(solvent).toContainText("USD 12.50");
+  await expect(solvent).toContainText("USD 12.50 per ml");
 
   await items.getByLabel(copy.item.consumable).selectOption({ label: "Solvent" });
-  await items.getByLabel(copy.item.price("USD")).fill("13");
+  await items.getByLabel(copy.item.price("USD", "ml")).fill("13");
   await items.getByRole("button", { name: copy.item.set }).click();
   await expect(items).toContainText("USD 12.50");
   await expect(items).toContainText("USD 13.00");

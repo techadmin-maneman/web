@@ -77,8 +77,12 @@ export default defineConfig({
               "src/providers/payments/razorpay.ts": { lines: 95, branches: 95 },
               "src/domain/money/payments.ts": { lines: 90, branches: 90 },
               // Where money is taken, held, owed back or given as credit: a branch untested there is money lost unseen.
-              "src/domain/{payment-links,discount-code-holds,discount-code-uses,holds,bookings,credits,refunds,no-shows}.ts":
-                { lines: 90, branches: 90 },
+              "src/domain/money/{payment-links,discount-code-holds,discount-code-uses,credits,refunds}.ts": {
+                lines: 90,
+                branches: 90,
+              },
+              "src/domain/booking/{holds,bookings}.ts": { lines: 90, branches: 90 },
+              "src/domain/no-shows/no-shows.ts": { lines: 90, branches: 90 },
               // Its one branch untaken is a hold with no client, which every hold has.
               "src/http/book-hold.ts": { lines: 90, branches: 85 },
               "src/routes/hooks/razorpay.ts": { lines: 90, branches: 90 },

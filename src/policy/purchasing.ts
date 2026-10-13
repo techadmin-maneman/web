@@ -9,18 +9,28 @@ import { addDays, indiaDate } from "../lib/india-time.ts";
  */
 export const PO_SECOND_APPROVAL_ABOVE_RUPEES = 0;
 
+/**
+ * Rupees to one unit of a supplier's currency, as ops set them for approvals, by currency code. Nought, or no rate,
+ * is a currency whose worth in rupees is not known before it is received: such an order always needs two approvers.
+ */
+export const PO_RUPEES_TO_ONE: Readonly<Record<string, number>> = { default: 0 };
+
 export const PO_STATES = ["drafted", "approved", "sent", "part_received", "received", "closed", "cancelled"] as const;
 export type PoState = (typeof PO_STATES)[number];
 
 /**
- * Whether an order needs a second approver: one in rupees worth more than the amount ops set, and any in another
- * currency, whose worth in rupees is known only once it is received.
+ * Whether an order needs a second approver: one worth more in rupees than the amount ops set, an order in another
+ * currency judged at the rate ops set for it, and one in a currency with no rate set always.
  */
 export function needsSecondApproval(
   order: { readonly currency: string; readonly total: number },
   aboveRupees: number,
+  rupeesToOne: Readonly<Record<string, number>> = PO_RUPEES_TO_ONE,
 ): boolean {
-  return order.currency !== "INR" || order.total > aboveRupees * 100;
+  if (order.currency === "INR") return order.total > aboveRupees * 100;
+  const rate = rupeesToOne[order.currency] ?? rupeesToOne.default ?? 0;
+  // The total is in the currency's hundredths, so the rate in rupees makes it paise.
+  return rate <= 0 || order.total * rate > aboveRupees * 100;
 }
 
 /**

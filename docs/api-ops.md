@@ -8063,7 +8063,7 @@ An approval: the first, or a second by another manager
 }
 ```
 
-**409**: order_state: the order is past the step asked, or the approver approved it already
+**409**: order_state: the order is past the step asked; same_approver: the manager who gave the first approval asked for the second
 
 ```json
 {
@@ -8099,7 +8099,7 @@ An approved order marked sent
 }
 ```
 
-**409**: order_state: the order is past the step asked, or the approver approved it already
+**409**: order_state: the order is past the step asked; same_approver: the manager who gave the first approval asked for the second
 
 ```json
 {
@@ -8143,7 +8143,7 @@ Request body:
 }
 ```
 
-**409**: order_state: the order is past the step asked, or the approver approved it already
+**409**: order_state: the order is past the step asked; same_approver: the manager who gave the first approval asked for the second
 
 ```json
 {
@@ -9130,6 +9130,7 @@ Request body:
             "figures_conflict",
             "transfer_settled",
             "order_state",
+            "same_approver",
             "claim_state",
             "return_settled",
             "out_of_warranty",
@@ -12598,6 +12599,7 @@ Request body:
             "figures_conflict",
             "transfer_settled",
             "order_state",
+            "same_approver",
             "claim_state",
             "return_settled",
             "out_of_warranty",
@@ -21859,6 +21861,7 @@ Request body:
         "remedy_limit",
         "lost_after_days",
         "po_second_approval_above_rupees",
+        "po_rupees_to_one",
         "custom_order_grace_days",
         "planning_period_days",
         "planning_horizon_periods"
@@ -22033,6 +22036,7 @@ Request body:
         "remedy_limit",
         "lost_after_days",
         "po_second_approval_above_rupees",
+        "po_rupees_to_one",
         "custom_order_grace_days",
         "planning_period_days",
         "planning_horizon_periods"
@@ -25795,12 +25799,17 @@ Request body:
           },
           "unit": {
             "type": "string"
+          },
+          "unit_cost": {
+            "type": "integer",
+            "description": "What Settings say one unit costs, in paise."
           }
         },
         "required": [
           "code",
           "name",
-          "unit"
+          "unit",
+          "unit_cost"
         ],
         "additionalProperties": false
       }

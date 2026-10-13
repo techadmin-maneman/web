@@ -12,7 +12,7 @@ import { EXPIRY_WARNING_DAYS } from "@rules/policy/stock.ts";
 import { Field, Select } from "@maneman/ui/Field";
 import { Table } from "@maneman/ui/Table";
 import { useLoad } from "@maneman/ui/useLoad";
-import { indiaClock, indiaDate, shortDate } from "@maneman/web-kit/dates";
+import { fullDate, indiaClock, indiaDate, shortDate } from "@maneman/web-kit/dates";
 import { lazy, Suspense, useState } from "react";
 import { api, type Stock } from "../api.ts";
 import { OpsLink, Shell } from "../components/Shell.tsx";
@@ -94,7 +94,7 @@ function Held({ book, code, place }: { book: Stock; code: string; place: string 
       {holding?.counted_at !== null && holding?.counted_at !== undefined && (
         <span className={styles.counted}>{copy.counted(shortDate(indiaDate(holding.counted_at)))}</span>
       )}
-      {soonest !== null && <span className={styles.counted}>{copy.expires(shortDate(soonest))}</span>}
+      {soonest !== null && <span className={styles.counted}>{copy.expires(fullDate(soonest))}</span>}
     </td>
   );
 }

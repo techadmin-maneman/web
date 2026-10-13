@@ -91,19 +91,28 @@ function zoneMap(rows: readonly CityRow[]): ZoneOfCity {
   return zoneOf;
 }
 
+/** The switch as set; a database without its row is enforced, so a new environment starts with the list on. */
 const modeOf = (row: ModeRow | undefined): AccessMode =>
   row === undefined
-    ? { enforced: false, setBy: null, setAt: null }
+    ? { enforced: true, setBy: null, setAt: null }
     : { enforced: row.enforced === 1, setBy: row.set_by, setAt: row.set_at };
 
 const MODE = "SELECT enforced, set_by, set_at FROM staff_access_mode WHERE id = 1";
 const ZONED_CITIES = "SELECT name, zone FROM cities WHERE zone IS NOT NULL";
 
+/** Every department at its highest level, nationally: what a bootstrap admin holds. */
+const EVERYTHING: Grant[] = DEPARTMENTS.map((department) => ({ department, level: "manage", place: NATIONAL }));
+
 /**
- * Who the caller is to the Staff list, with the switch and the zones. Three reads side by side, not a batch: a route's
- * first batch is its own change, which tests that fail the database once it commits count on.
+ * Who the caller is to the Staff list, with the switch and the zones. A bootstrap admin (STAFF_BOOTSTRAP_ADMINS)
+ * holds everything whatever the list says. Three reads side by side, not a batch: a route's first batch is its own
+ * change, which tests that fail the database once it commits count on.
  */
-export async function callerAccessOf(db: D1Database, identity: AccessIdentity): Promise<CallerAccess> {
+export async function callerAccessOf(
+  db: D1Database,
+  identity: AccessIdentity,
+  bootstrapAdmins: readonly string[] = [],
+): Promise<CallerAccess> {
   const listed =
     identity.kind === "staff"
       ? db
@@ -122,6 +131,9 @@ export async function callerAccessOf(db: D1Database, identity: AccessIdentity): 
   const enforced = modeOf(mode ?? undefined).enforced;
   const zoneOf = zoneMap(cities.results);
   if (identity.kind === "service") return { enforced, zoneOf, caller: { kind: "service", allowed: found.length > 0 } };
+  if (bootstrapAdmins.includes(identity.email.toLowerCase())) {
+    return { enforced, zoneOf, caller: { kind: "person", active: true, grants: EVERYTHING } };
+  }
   const active = found[0]?.active === 1;
   return { enforced, zoneOf, caller: { kind: "person", active, grants: grantsOf(heldGrants(found)) } };
 }

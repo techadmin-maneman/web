@@ -144,12 +144,12 @@ test("says when the soonest lot a place holds expires, and writes off the lot na
   const tape = onHand(page)
     .getByRole("row")
     .filter({ has: page.getByRole("rowheader", { name: "Tape strips" }) });
-  await expect(tape.getByRole("cell").nth(0)).toContainText("Expires Sun 31 Oct");
+  await expect(tape.getByRole("cell").nth(0)).toContainText("Expires 31 Oct 2027");
 
   const form = recording(page);
   await form.getByLabel("Loss").check();
   await form.getByLabel("Consumable").selectOption({ label: "Tape strips" });
-  await form.getByLabel(opsCopy.stock.record.lostLot).selectOption({ label: "TS-0901 · expires Sun 31 Oct" });
+  await form.getByLabel(opsCopy.stock.record.lostLot).selectOption({ label: "TS-0901 · expires 31 Oct 2027" });
   await form.getByLabel("How many").fill("20");
   await form.getByLabel(opsCopy.stock.record.lossNote).fill("Past its date");
   await form.getByRole("button", { name: "Review" }).click();
@@ -450,8 +450,8 @@ test("opens a hair system's labels after its delivery, the latest batch ticked, 
   await expect
     .poll(printed)
     .toEqual([
-      `MM-ESS-0000003-D${HAIR.name}HS-1 · Exp Fri 31 Mar`,
-      `MM-ESS-0000002-C${HAIR.name}HS-1 · Exp Fri 31 Mar`,
+      `MM-ESS-0000003-D${HAIR.name}HS-1 · Exp 31 Mar 2028`,
+      `MM-ESS-0000002-C${HAIR.name}HS-1 · Exp 31 Mar 2028`,
     ]);
   expect(await axeViolations(page)).toEqual([]);
 });
@@ -484,7 +484,7 @@ test("prints a lot's label for each of its boxes", async ({ page }) => {
   await labels.getByRole("button", { name: stockLabels.print(3) }).click();
   await expect
     .poll(printed)
-    .toEqual(Array.from({ length: 3 }, () => "MM-LT-0000001-BTape stripsTS-0901 · Exp Sun 31 Oct"));
+    .toEqual(Array.from({ length: 3 }, () => "MM-LT-0000001-BTape stripsTS-0901 · Exp 31 Oct 2027"));
 });
 
 test("names a hair system's pieces by their labels, as a scanner types them, and counts them", async ({ page }) => {
@@ -565,7 +565,7 @@ test("finds the piece a label names, where it is and its history", async ({ page
   await find.fill("MM-ESS-0000001-B");
   await find.press("Enter");
   const status = labels.getByRole("status");
-  await expect(status).toContainText(`MM-ESS-0000001-B · ${HAIR.name} · HS-1 · Exp Fri 31 Mar`);
+  await expect(status).toContainText(`MM-ESS-0000001-B · ${HAIR.name} · HS-1 · Exp 31 Mar 2028`);
   await expect(status).toContainText(stockLabels.where("Held", "Imran Qureshi"));
   await expect(labels.getByRole("list", { name: stockLabels.history }).getByRole("listitem")).toHaveCount(2);
   expect(await axeViolations(page)).toEqual([]);

@@ -106,7 +106,16 @@ const OrdersSchema = z
         description:
           "Every supplier, retired ones too, so an order names its supplier; only active ones are drafted to.",
       }),
-    consumables: z.array(z.object({ code: Text, name: Text, unit: Text }).strict()),
+    consumables: z.array(
+      z
+        .object({
+          code: Text,
+          name: Text,
+          unit: Text,
+          unit_cost: z.number().int().openapi({ description: "What Settings say one unit costs, in paise." }),
+        })
+        .strict(),
+    ),
     second_approval_above_rupees: z.number().int(),
   })
   .strict()
@@ -116,7 +125,9 @@ export const ORDERS = { description: "The purchase orders", ...json(OrdersSchema
 export const orderPath = { params: z.object({ id: z.string().min(1).max(64) }) };
 const ACCESS = errorResponse("access_required");
 const MISSING = errorResponse("not_found: no such order");
-const STATE = errorResponse("order_state: the order is past the step asked, or the approver approved it already");
+const STATE = errorResponse(
+  "order_state: the order is past the step asked; same_approver: the manager who gave the first approval asked for the second",
+);
 
 const listRoute = createRoute({
   method: "get",
@@ -197,10 +208,11 @@ export async function ordersAnswer(c: Context<AppEnv>) {
   const [orders, suppliers, consumables, inputs] = await Promise.all([
     purchaseOrders(c.env.DB),
     allSuppliers(c.env.DB),
-    c.env.DB.prepare("SELECT code, name, unit FROM consumables ORDER BY name COLLATE NOCASE").all<{
+    c.env.DB.prepare("SELECT code, name, unit, unit_cost FROM consumables ORDER BY name COLLATE NOCASE").all<{
       code: string;
       name: string;
       unit: string;
+      unit_cost: number;
     }>(),
     opsInputs(c),
   ]);
@@ -232,7 +244,7 @@ export async function ordersAnswer(c: Context<AppEnv>) {
       second_approved_by: order.secondApprovedBy,
       sent_at: order.sentAt,
       cancel_reason: order.cancelReason,
-      needs_second_approval: needsSecondApproval(order, above),
+      needs_second_approval: needsSecondApproval(order, above, inputs.poRupeesToOne),
       receipts: receipts
         .filter((receipt) => receipt.poId === order.id)
         .map((receipt) => ({
@@ -278,8 +290,9 @@ export const written = (c: Context<AppEnv>) => ({
 });
 
 export async function after(c: Context<AppEnv>, changed: Awaited<ReturnType<typeof markSent>>) {
-  if (!changed.ok) return "missing" in changed ? refuse(c, "not_found") : refuse(c, "order_state");
-  return c.json(await ordersAnswer(c), 200);
+  if (changed.ok) return c.json(await ordersAnswer(c), 200);
+  if ("missing" in changed) return refuse(c, "not_found");
+  return refuse(c, "sameApprover" in changed ? "same_approver" : "order_state");
 }
 
 export function registerOpsPurchasing(app: App): void {
@@ -299,8 +312,9 @@ export function registerOpsPurchasing(app: App): void {
   });
 
   app.openapi(stepRoute("approve", "An approval: the first, or a second by another manager"), async (c) => {
-    const { poSecondApprovalAboveRupees } = await opsInputs(c);
-    return after(c, await approveOrder(c.env.DB, c.req.valid("param").id, poSecondApprovalAboveRupees, written(c)));
+    const { poSecondApprovalAboveRupees, poRupeesToOne } = await opsInputs(c);
+    const rule = { aboveRupees: poSecondApprovalAboveRupees, rupeesToOne: poRupeesToOne };
+    return after(c, await approveOrder(c.env.DB, c.req.valid("param").id, rule, written(c)));
   });
 
   app.openapi(stepRoute("send", "An approved order marked sent"), async (c) =>
