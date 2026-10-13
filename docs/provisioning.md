@@ -107,6 +107,17 @@ In production only the ops console (`ops.maneman.in`) stays behind Access. Its C
 
 `app.maneman.in` and `tech.maneman.in` are behind Access only until go-live. Clients and technicians sign in with their own codes, so at go-live their Access applications are deleted.
 
+### Staff sign in with their maneman.in Google accounts
+
+Care, dispatch and city staff sign in to the console with Google Workspace, never with a Cloudflare account of their own. Do it for `ops-staging.maneman.in` first, then `ops.maneman.in`.
+
+1. **The owner, in Google Cloud** (the project under the maneman.in organisation): APIs & Services → OAuth consent screen → **Internal**. Then Credentials → Create credentials → OAuth client ID → **Web application**, named `Cloudflare Access`, with the authorised redirect URI `https://<team>.cloudflareaccess.com/cdn-cgi/access/callback` (the team name is in Zero Trust → Settings → Custom pages). Send the client ID and secret to whoever sets up Access, through the password manager.
+2. **Zero Trust → Settings → Authentication → Login methods → Add new → Google Workspace.** Paste the client ID and secret, and the domain `maneman.in`. Test it: the test signs in a maneman.in account and shows its email.
+3. **Make it the only way in for staff:** on each console application, under Login methods, tick Google Workspace alone and turn on **Instant Auth**, so the login page goes straight to Google. Service Auth for the CI token stays as it is.
+4. **MFA and the session:** in the Google Admin console, Security → 2-Step Verification → **Enforce** for every maneman.in account. On each console application set **Session duration** to **24 hours**, and on the policy that admits staff add the rule **Require: Login methods — Google Workspace**.
+5. **Who gets in:** the Allow policy names the staff by their maneman.in emails, or a Google group, never `@maneman.in` as a whole. The console's own Staff list ([ADR 0189](decisions/0189-the-staff-list-on-by-default.md)) still decides what each can do once in.
+6. **Check:** in a private window, open the console: Google's sign-in comes up at once, a personal Gmail is refused, and a maneman.in account without 2-Step Verification cannot finish signing in.
+
 ## 4. Database
 
 ```sh
