@@ -19,6 +19,14 @@
     color: var(--paper);
   }
 
+  .onPaper:has(.input[aria-invalid="true"]) {
+    border-color: var(--error-on-paper);
+  }
+
+  .onInk:has(.input[aria-invalid="true"]) {
+    border-color: var(--error-on-ink);
+  }
+
   .field:focus-within {
     outline: var(--focus-width) solid var(--focus-colour);
     outline-offset: var(--focus-offset);

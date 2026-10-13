@@ -440,7 +440,7 @@ test("Back from the gate offers every look again, and nothing has been made", as
 
   await screenIs(page, "looks");
   await expect(page.getByRole("radio", { name: /^Light density Natural/ })).toBeChecked();
-  await page.getByText("Full density").first().click();
+  await page.getByRole("radio", { name: /^Full density/ }).first().check();
   await expect(page.getByRole("radio", { name: /^Full density Natural/ })).toBeChecked();
   await page.getByRole("button", { name: "Continue" }).click();
   await screenIs(page, "gate");

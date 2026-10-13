@@ -1,3 +1,6 @@
+import "../refs-as-props.ts";
+import { FileInput } from "@maneman/ui/Field";
+import { Button } from "@maneman/ui/Button";
 import { useRef } from "preact/hooks";
 import { tryOn } from "../../content/site.ts";
 import { Title, type HeadingRef } from "./Title.tsx";
@@ -35,27 +38,27 @@ export function Upload(props: { photo: string | null; heading: HeadingRef; onCho
           ))}
         </ol>
         <div class={styles.actions}>
-          <button
-            type="button"
-            class="btn btn--lg btn--paper"
+          <Button
+            variant="light"
+            size="action"
             onClick={() => {
               fileInput.current?.click();
             }}
           >
             {tryOn.upload.choose}
-          </button>
-          <button
-            type="button"
-            class="btn btn--lg btn--line-on-ink"
+          </Button>
+          <Button
+            variant="outlineOnInk"
+            size="action"
             onClick={() => {
               cameraInput.current?.click();
             }}
           >
             {tryOn.upload.camera}
-          </button>
+          </Button>
         </div>
-        <input ref={fileInput} type="file" accept="image/jpeg,image/png" hidden onChange={chosen} />
-        <input ref={cameraInput} type="file" accept="image/*" capture="user" hidden onChange={chosen} />
+        <FileInput ref={fileInput} accept="image/jpeg,image/png" hidden onChange={chosen} />
+        <FileInput ref={cameraInput} accept="image/*" capture="user" hidden onChange={chosen} />
       </div>
       <div class={styles.preview}>
         {props.photo === null ? (

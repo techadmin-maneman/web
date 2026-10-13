@@ -17,6 +17,7 @@ const EDGES: Readonly<Record<string, readonly string[]>> = {
   "--ink-line-strong": ["--ink", "--ink-deep"],
   // A control chosen, or refused.
   "--ink": ["--paper", "--white"],
+  "--paper": ["--ink", "--ink-deep"],
   "--error-on-paper": ["--paper", "--white"],
   "--error-on-ink": ["--ink", "--ink-deep"],
 };

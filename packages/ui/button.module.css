@@ -18,7 +18,6 @@
     align-items: center;
     justify-content: center;
     gap: var(--sp-8);
-    padding: 0 var(--sp-16);
     border: var(--filled-edge) solid transparent;
     background: transparent;
     font: inherit;
@@ -27,7 +26,8 @@
     cursor: pointer;
   }
 
-  .button:disabled {
+  .button:disabled,
+  .button[aria-disabled="true"] {
     cursor: default;
   }
 
@@ -36,7 +36,7 @@
   }
 
   /* A phone shows no cursor, so a busy button still usable is dimmed. A disabled one already looks it. */
-  .button[aria-busy="true"]:not(:disabled) {
+  .button[aria-busy="true"]:not(:disabled):not([aria-disabled="true"]) {
     opacity: var(--busy-opacity);
   }
 
@@ -44,16 +44,19 @@
 
   .action {
     min-height: var(--action-height);
+    padding: 0 var(--action-pad);
     font-size: var(--action-text);
   }
 
   .control {
     min-height: var(--control-height);
+    padding: 0 var(--control-pad);
     font-size: var(--control-text);
   }
 
   .small {
     min-height: var(--small-height);
+    padding: 0 var(--small-pad);
     font-size: var(--small-text);
   }
 
@@ -73,11 +76,12 @@
     color: var(--paper);
   }
 
-  .primary:active:not(:disabled) {
+  .primary:active:not(:disabled):not([aria-disabled="true"]) {
     background: var(--ink-deep);
   }
 
-  .primary:disabled {
+  .primary:disabled,
+  .primary[aria-disabled="true"] {
     background: var(--paper-shade);
     color: var(--text-quiet);
   }
@@ -87,11 +91,12 @@
     color: var(--ink);
   }
 
-  .light:active:not(:disabled) {
+  .light:active:not(:disabled):not([aria-disabled="true"]) {
     background: var(--paper-shade);
   }
 
-  .light:disabled {
+  .light:disabled,
+  .light[aria-disabled="true"] {
     background: var(--ink-disabled);
     color: var(--ink-tag);
   }
@@ -101,11 +106,12 @@
     color: var(--ink-deep);
   }
 
-  .gold:active:not(:disabled) {
+  .gold:active:not(:disabled):not([aria-disabled="true"]) {
     box-shadow: inset 0 0 0 var(--rule-strong) var(--ink-deep);
   }
 
-  .gold:disabled {
+  .gold:disabled,
+  .gold[aria-disabled="true"] {
     background: var(--ink-disabled);
     color: var(--ink-tag);
   }
@@ -115,11 +121,12 @@
     color: var(--paper);
   }
 
-  .destructive:active:not(:disabled) {
+  .destructive:active:not(:disabled):not([aria-disabled="true"]) {
     box-shadow: inset 0 0 0 var(--rule-strong) var(--ink-night);
   }
 
-  .destructive:disabled {
+  .destructive:disabled,
+  .destructive[aria-disabled="true"] {
     background: var(--paper-shade);
     color: var(--text-quiet);
   }
@@ -138,13 +145,15 @@
     color: var(--text);
   }
 
-  .outline:active:not(:disabled),
-  .danger:active:not(:disabled) {
+  .outline:active:not(:disabled):not([aria-disabled="true"]),
+  .danger:active:not(:disabled):not([aria-disabled="true"]) {
     background: var(--paper-shade);
   }
 
   .outline:disabled,
-  .danger:disabled {
+  .outline[aria-disabled="true"],
+  .danger:disabled,
+  .danger[aria-disabled="true"] {
     border-color: var(--paper-line);
     color: var(--text-quiet);
   }
@@ -154,11 +163,12 @@
     color: var(--paper);
   }
 
-  .outlineOnInk:active:not(:disabled) {
+  .outlineOnInk:active:not(:disabled):not([aria-disabled="true"]) {
     background: var(--ink-raised);
   }
 
-  .outlineOnInk:disabled {
+  .outlineOnInk:disabled,
+  .outlineOnInk[aria-disabled="true"] {
     border-color: var(--ink-disabled);
     background: var(--ink-disabled);
     color: var(--ink-tag);
@@ -172,28 +182,28 @@
   /* ---- A pointer resting on it: at a desk, never a finger's lingering tap ----- */
 
   @media (hover: hover) {
-    .primary:hover:not(:disabled) {
+    .primary:hover:not(:disabled):not([aria-disabled="true"]) {
       background: var(--ink-deep);
     }
 
-    .light:hover:not(:disabled) {
+    .light:hover:not(:disabled):not([aria-disabled="true"]) {
       background: var(--paper-shade);
     }
 
-    .gold:hover:not(:disabled) {
+    .gold:hover:not(:disabled):not([aria-disabled="true"]) {
       box-shadow: inset 0 0 0 var(--hairline) var(--ink-deep);
     }
 
-    .destructive:hover:not(:disabled) {
+    .destructive:hover:not(:disabled):not([aria-disabled="true"]) {
       box-shadow: inset 0 0 0 var(--hairline) var(--ink-night);
     }
 
-    .outline:hover:not(:disabled),
-    .danger:hover:not(:disabled) {
+    .outline:hover:not(:disabled):not([aria-disabled="true"]),
+    .danger:hover:not(:disabled):not([aria-disabled="true"]) {
       background: var(--paper-shade);
     }
 
-    .outlineOnInk:hover:not(:disabled) {
+    .outlineOnInk:hover:not(:disabled):not([aria-disabled="true"]) {
       background: var(--ink-raised);
     }
   }

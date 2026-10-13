@@ -1,3 +1,6 @@
+import { Button } from "@maneman/ui/Button";
+import { ChoiceCard } from "@maneman/ui/ChoiceCard";
+import { Fieldset } from "@maneman/ui/Field";
 import { stageOptions, tryOn } from "../../content/site.ts";
 import { StageDrawing } from "../Drawings.tsx";
 import { Title, type HeadingRef } from "./Title.tsx";
@@ -14,30 +17,32 @@ export function Stage(props: {
     <div class={styles.medium}>
       <Title heading={props.heading}>{tryOn.stage.title}</Title>
       <p class={styles.body}>{tryOn.stage.body}</p>
-      <fieldset class={`${styles.choices} ${styles.stageGrid}`}>
-        <legend class="visually-hidden">{tryOn.stage.title}</legend>
+      <Fieldset legend={tryOn.stage.title} legendLook="hidden" className={styles.stageGrid}>
         {stageOptions.map((option, index) => (
-          <label key={option.id} class={`${styles.stage} ${props.stage === index ? styles.picked : ""}`}>
-            <input
-              type="radio"
-              name="stage"
-              class="visually-hidden"
-              checked={props.stage === index}
-              onChange={() => {
-                props.onChoose(index);
-              }}
-            />
-            <StageDrawing hair={option.hair} zone={option.zone} size="large" />
-            <span>
-              <span class={styles.stageTitle}>{option.title}</span>
-              <span class={styles.stageSub}>{option.sub}</span>
-            </span>
-          </label>
+          <ChoiceCard
+            key={option.id}
+            name="stage"
+            look="picture"
+            onInk
+            className={styles.stage}
+            checked={props.stage === index}
+            onChange={() => {
+              props.onChoose(index);
+            }}
+          >
+            <>
+              <StageDrawing hair={option.hair} zone={option.zone} size="large" />
+              <span>
+                <span class={styles.stageTitle}>{option.title}</span>
+                <span class={styles.stageSub}>{option.sub}</span>
+              </span>
+            </>
+          </ChoiceCard>
         ))}
-      </fieldset>
-      <button type="button" class={`${styles.next} ${styles.nextOn} ${styles.nextSpaced}`} onClick={props.onDone}>
+      </Fieldset>
+      <Button variant="light" size="action" className={`${styles.next} ${styles.nextSpaced}`} onClick={props.onDone}>
         {tryOn.stage.continue}
-      </button>
+      </Button>
     </div>
   );
 }

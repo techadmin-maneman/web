@@ -1,12 +1,13 @@
 ---
 // The closing band.
+import { buttonLook } from "@maneman/ui/Button";
 import { closing } from "../../content/site.ts";
 ---
 
 <section class="container closing" data-section="closing">
   <div class="box on-ink">
     <h2>{closing.title}</h2>
-    <a class="btn btn--lg btn--paper book" href="/book">
+    <a class={buttonLook({ variant: "light", size: "action", className: "book" })} href="/book">
       {closing.book}
     </a>
   </div>

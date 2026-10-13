@@ -60,6 +60,22 @@
     text-decoration-color: currentcolor;
   }
 
+  .inline {
+    display: inline;
+    min-height: 0;
+    color: inherit;
+  }
+
+  .quiet {
+    text-decoration-line: none;
+  }
+
+  @media (hover: hover) {
+    .quiet:hover {
+      text-decoration-line: underline;
+    }
+  }
+
   .words:active:not(:disabled) {
     text-decoration-thickness: var(--rule-strong);
   }

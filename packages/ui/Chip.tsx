@@ -14,7 +14,7 @@ export function Chip({
   /** The remove button's name, which says what it takes off. */
   readonly removeLabel: string;
   readonly onRemove: () => void;
-  readonly className?: string;
+  readonly className?: string | undefined;
 }) {
   return (
     <span className={classes(styles.chip, className)}>

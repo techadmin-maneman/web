@@ -22,6 +22,7 @@ import {
   type SelectHTMLAttributes,
   type TextareaHTMLAttributes,
 } from "react";
+import { GLYPHS } from "@maneman/brand/icons";
 import { capsLook } from "./Caps.tsx";
 import { Icon } from "./Icon.tsx";
 import { classes } from "./classes.ts";
@@ -57,7 +58,7 @@ export function Field({
   /** On the ink, as every technician app screen is: its words in the ink's own muted tone. */
   readonly onInk?: boolean;
   /** The field's place on its screen. */
-  readonly className?: string;
+  readonly className?: string | undefined;
   readonly children: (control: FieldControl) => ReactNode;
 }) {
   const id = useId();
@@ -168,7 +169,7 @@ export function Label({
 }: {
   readonly htmlFor: string;
   readonly onInk?: boolean;
-  readonly className?: string;
+  readonly className?: string | undefined;
   readonly children: ReactNode;
 }) {
   return (
@@ -184,23 +185,31 @@ export function TextArea({ className, ...rest }: TextareaHTMLAttributes<HTMLText
 }
 
 /**
- * A box to tick, with the words that name it beside it; or, with no `label`, the box alone, named by its aria-label,
- * as in a table's row.
+ * A box to tick, drawn, with the browser's own box unseen over it, so a tap, the keyboard and a screen reader work as
+ * they do with any. The words that name it stand beside it; with no `label`, the box stands alone, named by its
+ * aria-label, as in a table's row. On the ink, its edge and its fill are the ink's.
  */
 export function Checkbox({
   label,
+  onInk = false,
   className,
   ...rest
-}: Omit<InputHTMLAttributes<HTMLInputElement>, "type" | "id"> & { readonly label?: ReactNode }) {
-  const id = useId();
-  if (label === undefined) return <input {...rest} className={classes(styles.check, className)} type="checkbox" />;
+}: Omit<InputHTMLAttributes<HTMLInputElement>, "type" | "id"> & {
+  readonly label?: ReactNode;
+  readonly onInk?: boolean;
+}) {
+  const box = (
+    <span className={classes(styles.tick, onInk && styles.tickOnInk, label === undefined && className)}>
+      <input {...rest} className={styles.tickInput} type="checkbox" />
+      <Icon className={styles.tickMark} d={GLYPHS.check} size={13} />
+    </span>
+  );
+  if (label === undefined) return box;
   return (
-    <div className={classes(styles.checkLine, className)}>
-      <input {...rest} className={styles.check} type="checkbox" id={id} />
-      <label className={styles.checkLabel} htmlFor={id}>
-        {label}
-      </label>
-    </div>
+    <label className={classes(styles.checkLine, className)}>
+      {box}
+      <span className={styles.checkLabel}>{label}</span>
+    </label>
   );
 }
 
@@ -244,7 +253,7 @@ export function Fieldset({
   readonly legend: ReactNode;
   readonly legendLook?: LegendLook;
   readonly disabled?: boolean;
-  readonly className?: string;
+  readonly className?: string | undefined;
   readonly children: ReactNode;
 }) {
   return (
@@ -274,7 +283,7 @@ export function ChoiceGroup({
   readonly inline?: boolean;
   readonly hint?: ReactNode;
   readonly disabled?: boolean;
-  readonly className?: string;
+  readonly className?: string | undefined;
   readonly children: ReactNode;
 }) {
   const id = useId();
@@ -300,7 +309,14 @@ export function FileInput({ className, ...rest }: Omit<InputHTMLAttributes<HTMLI
   return <input {...rest} type="file" className={classes(styles.box, styles.file, className)} />;
 }
 
-/** A value along a scale, as how much of a photograph to show. */
-export function RangeInput({ className, ...rest }: Omit<InputHTMLAttributes<HTMLInputElement>, "type">) {
-  return <input {...rest} type="range" className={classes(styles.range, className)} />;
+/**
+ * A value along a scale, as how much of a photograph to show. `over` lays it unseen across what it moves, as the
+ * site's before-and-after draws its own handle, so a drag anywhere on the picture moves it.
+ */
+export function RangeInput({
+  over = false,
+  className,
+  ...rest
+}: Omit<InputHTMLAttributes<HTMLInputElement>, "type"> & { readonly over?: boolean }) {
+  return <input {...rest} type="range" className={classes(over ? styles.rangeOver : styles.range, className)} />;
 }

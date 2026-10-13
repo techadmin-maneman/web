@@ -7,7 +7,11 @@
     "lib": ["ES2024", "DOM", "DOM.Iterable"],
     "jsx": "react-jsx",
     "jsxImportSource": "preact",
-    "types": ["astro/client"]
+    "types": ["astro/client"],
+    "paths": {
+      "@rules/*": ["../src/*"],
+      "react": ["../node_modules/preact/compat"]
+    }
   },
   "include": [".astro/types.d.ts", "src/**/*", "astro.config.ts", "../src/config/**/*.ts"],
   // src/worker.ts runs in the Workers runtime: tsconfig.worker.json checks it.

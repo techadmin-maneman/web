@@ -172,7 +172,8 @@ describe("what the stylesheets use", () => {
     expect(used.texts.size).toBeGreaterThanOrEqual(6);
     expect(used.both.length).toBeGreaterThanOrEqual(5);
     expect(used.both).toContainEqual([".gold", "--ink-deep", "--gilt"]);
-    expect(used.both).toContainEqual([".outlineOnInk:disabled", "--ink-tag", "--ink-disabled"]);
+    const firstSelector = used.both.map(([selector, text, ground]) => [selector.split(",")[0], text, ground]);
+    expect(firstSelector).toContainEqual([".outlineOnInk:disabled", "--ink-tag", "--ink-disabled"]);
   });
 
   it("sets no text colour the pairings do not list", () => {

@@ -81,18 +81,6 @@
   color: var(--text-muted);
 }
 
-/* A field's edge is --paper-control, 3:1 against paper and white (WCAG 1.4.11; ADR 0025, item 36). */
-.input {
-  height: var(--btn-lg);
-  padding: 0 var(--sp-16);
-  border: var(--hairline) solid var(--paper-control);
-  background: var(--white);
-  font: inherit;
-  font-size: var(--fs-16);
-  color: var(--text);
-}
-
-.input:focus,
 .numberField {
   margin-top: var(--sp-16);
 }
@@ -140,13 +128,6 @@ a.secondary {
 
 .card > a.secondary + .secondary {
   margin-top: var(--sp-8);
-}
-
-textarea.input {
-  height: auto;
-  padding: var(--sp-12) var(--sp-16);
-  line-height: var(--lh-145);
-  resize: vertical;
 }
 
 /* The client's latest concerns, newest first: the day and where it stands, their words, then our answer. */
@@ -317,54 +298,4 @@ textarea.input {
   display: flex;
   flex-direction: column;
   gap: var(--sp-8);
-}
-
-.suggestions {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  border: var(--hairline) solid var(--paper-line);
-  border-top: none;
-  background: var(--white);
-}
-
-.suggestion,
-.suggestionActive {
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp-2);
-  min-height: var(--tap-row);
-  justify-content: center;
-  padding: var(--sp-8) var(--sp-16);
-  border-bottom: var(--hairline) solid var(--paper-line);
-  cursor: pointer;
-}
-
-.suggestion:last-child,
-.suggestionActive:last-child {
-  border-bottom: none;
-}
-
-/* The keyboard's place in the list. Not colour alone: the rule on the left
-   carries it for anyone who cannot tell the two backgrounds apart. */
-.suggestionActive {
-  background: var(--paper-light);
-  box-shadow: inset var(--rule-strong) 0 0 0 var(--ink);
-}
-
-.suggestionName {
-  font-size: var(--fs-16);
-  color: var(--text);
-}
-
-.suggestionWhere {
-  font-size: var(--fs-14);
-  color: var(--text-muted);
-}
-
-/* Google's condition for showing their suggestions without a Google map. */
-.attribution {
-  margin: var(--sp-8) 0 0;
-  font-size: var(--fs-13);
-  color: var(--text-muted);
 }

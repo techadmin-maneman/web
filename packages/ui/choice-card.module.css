@@ -56,6 +56,33 @@
     border-color: var(--ink);
   }
 
+  /* Its own padding and spacing are the screen's, as a drawing or a photograph needs. */
+  .picture {
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: flex-start;
+    gap: 0;
+    padding: 0;
+    color: var(--text-muted);
+  }
+
+  .picture:has(.radio:checked) {
+    border-color: var(--ink);
+    color: var(--text);
+  }
+
+  .onInk {
+    border-color: var(--ink-line-strong);
+    background: transparent;
+    color: var(--ink-soft);
+  }
+
+  .onInk:has(.radio:checked) {
+    border-color: var(--paper);
+    background: var(--ink);
+    color: var(--paper);
+  }
+
   .card:has(.radio:disabled) {
     border-color: var(--paper-shade);
     background: var(--paper-shade);

@@ -223,7 +223,7 @@ export function LabelField(props: {
         <TextInput
           onInk
           icon={TAG}
-          className={styles.input}
+          className={styles.labelInput}
           id="piece-code"
           value={code}
           placeholder={copy.piece.placeholder}

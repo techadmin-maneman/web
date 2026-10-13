@@ -15,7 +15,7 @@ export function Switch({
   /** The id of the words that name it. */
   readonly labelledBy: string;
   readonly disabled?: boolean;
-  readonly className?: string;
+  readonly className?: string | undefined;
 }) {
   return (
     <button

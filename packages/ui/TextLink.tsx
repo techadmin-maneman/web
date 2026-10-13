@@ -13,11 +13,28 @@ interface Look {
   readonly tone?: TextTone;
   /** As tall as a table row allows, where it sits in one. */
   readonly compact?: boolean;
-  readonly className?: string;
+  /** In a sentence: the line's own height, and the sentence's colour, the tone's underline beneath it. */
+  readonly inline?: boolean;
+  /** A way about the site, in its header or footer: underlined only when pointed at. */
+  readonly quiet?: boolean;
+  readonly className?: string | undefined;
 }
 
-export const textLinkLook = ({ tone = "plain", compact = false, className }: Look = {}): string =>
-  classes(styles.words, styles[tone], compact && styles.compact, className);
+export const textLinkLook = ({
+  tone = "plain",
+  compact = false,
+  inline = false,
+  quiet = false,
+  className,
+}: Look = {}): string =>
+  classes(
+    styles.words,
+    styles[tone],
+    compact && styles.compact,
+    inline && styles.inline,
+    quiet && styles.quiet,
+    className,
+  );
 
 type LinkProps = Look &
   Omit<AnchorHTMLAttributes<HTMLAnchorElement>, "className" | "target" | "rel"> & {
@@ -26,10 +43,10 @@ type LinkProps = Look &
     readonly ref?: Ref<HTMLAnchorElement>;
   };
 
-export function TextLink({ tone, compact, className, newTab = false, children, ...rest }: LinkProps) {
+export function TextLink({ tone, compact, inline, className, newTab = false, children, ...rest }: LinkProps) {
   const beside = newTab ? { target: "_blank", rel: "noopener noreferrer" } : { rel: "noopener" };
   return (
-    <a {...rest} {...beside} className={textLinkLook({ tone, compact, className })}>
+    <a {...rest} {...beside} className={textLinkLook({ tone, compact, inline, className })}>
       {children}
     </a>
   );
@@ -42,7 +59,16 @@ type ButtonProps = Look &
     readonly ref?: Ref<HTMLButtonElement>;
   };
 
-export function TextButton({ tone, compact, className, busy = false, type = "button", onClick, ...rest }: ButtonProps) {
+export function TextButton({
+  tone,
+  compact,
+  inline,
+  className,
+  busy = false,
+  type = "button",
+  onClick,
+  ...rest
+}: ButtonProps) {
   const click = (event: MouseEvent<HTMLButtonElement>) => {
     if (busy) {
       event.preventDefault();
@@ -54,7 +80,7 @@ export function TextButton({ tone, compact, className, busy = false, type = "but
     <button
       {...rest}
       type={type}
-      className={textLinkLook({ tone, compact, className })}
+      className={textLinkLook({ tone, compact, inline, className })}
       aria-busy={busy ? true : undefined}
       onClick={click}
     />

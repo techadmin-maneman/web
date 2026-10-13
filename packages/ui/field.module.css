@@ -129,12 +129,86 @@
     border-color: var(--error-on-paper);
   }
 
+  .onInk[aria-invalid="true"] {
+    border-color: var(--error-on-ink);
+  }
+
   /* ---- A box to tick ------------------------------------------------------- */
 
   .checkLine {
     display: flex;
     align-items: flex-start;
-    gap: var(--sp-8);
+    gap: var(--sp-12);
+    cursor: pointer;
+  }
+
+  .tick {
+    position: relative;
+    display: grid;
+    flex-shrink: 0;
+    place-items: center;
+    width: var(--sp-20);
+    height: var(--sp-20);
+    border: var(--hairline) solid var(--paper-control);
+    background: var(--white);
+    color: var(--paper);
+  }
+
+  .tickInput {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    opacity: 0;
+    cursor: pointer;
+  }
+
+  .tickMark {
+    visibility: hidden;
+    pointer-events: none;
+  }
+
+  .tick:has(.tickInput:checked) {
+    border-color: var(--ink);
+    background: var(--ink);
+  }
+
+  .tick:has(.tickInput:checked) .tickMark {
+    visibility: visible;
+  }
+
+  .tick:has(.tickInput:focus-visible) {
+    outline: var(--focus-width) solid var(--focus-colour);
+    outline-offset: var(--focus-offset);
+  }
+
+  .tick:has(.tickInput:disabled) {
+    border-color: var(--paper-shade);
+    background: var(--paper-light);
+  }
+
+  .tickInput:disabled {
+    cursor: default;
+  }
+
+  .tickOnInk {
+    border-color: var(--ink-line-strong);
+    background: transparent;
+    color: var(--ink);
+  }
+
+  .tickOnInk:has(.tickInput:checked) {
+    border-color: var(--paper);
+    background: var(--paper);
+  }
+
+  .tick:has(.tickInput[aria-invalid="true"]) {
+    border-color: var(--error-on-paper);
+  }
+
+  .tickOnInk:has(.tickInput[aria-invalid="true"]) {
+    border-color: var(--error-on-ink);
   }
 
   .check {
@@ -148,6 +222,10 @@
   .checkLabel {
     font-size: var(--fs-14);
     line-height: var(--lh-145);
+  }
+
+  .tickOnInk + .checkLabel {
+    color: var(--paper);
   }
 
   /* ---- Choices that answer one question ------------------------------------- */
@@ -218,5 +296,21 @@
     width: 100%;
     margin: 0;
     accent-color: var(--ink);
+  }
+
+  .rangeOver {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    opacity: 0;
+    background: transparent;
+    appearance: none;
+    cursor: ew-resize;
+  }
+
+  .rangeOver:focus-visible {
+    outline: none;
   }
 }

@@ -1,3 +1,4 @@
+import { ButtonLink } from "@maneman/ui/Button";
 import { ICONS } from "@maneman/brand/icons";
 import { tryOn } from "../../content/site.ts";
 import { Icon } from "../Drawings.tsx";
@@ -30,12 +31,12 @@ export function Sent(props: { mobile: string; returning: boolean; heading: Headi
       )}
       <div class={styles.disclaimer}>{sent.disclaimer}</div>
       <div class={styles.noticeActions}>
-        <a class="btn btn--lg btn--paper" href="/book">
+        <ButtonLink variant="light" size="action" href="/book">
           {sent.book}
-        </a>
-        <a class="btn btn--lg btn--line-on-ink" href="/">
+        </ButtonLink>
+        <ButtonLink variant="outlineOnInk" size="action" href="/">
           {sent.home}
-        </a>
+        </ButtonLink>
       </div>
     </div>
   );

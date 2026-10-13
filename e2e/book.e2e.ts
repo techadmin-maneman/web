@@ -313,7 +313,7 @@ test("a served pincode books, and sends where the hair loss is", async ({ page }
 
   await toAddress(page);
   await fillAddress(page);
-  await page.getByText("Receding front", { exact: true }).click();
+  await page.getByRole("radio", { name: "Receding front", exact: true }).check();
   await page.getByRole("button", { name: referralCopy.referral.consultation.submit }).click();
 
   await expect(page.getByText(referralCopy.referral.booked.label, { exact: true })).toBeVisible();
@@ -343,7 +343,7 @@ test("offers the consultation and fit in one visit, and says what it holds", asy
 
   const plan = page.getByRole("group", { name: referralCopy.referral.consultation.plan.legend });
   await expect(plan.getByRole("radio")).toHaveCount(2);
-  await plan.getByText("Consultation and fit · three hours").click();
+  await plan.getByRole("radio", { name: "Consultation and fit · three hours" }).check();
   await expect(plan.getByRole("radio", { name: "Consultation and fit · three hours" })).toBeChecked();
   await expect(page.getByText(/^Starts in the morning or the afternoon\./)).toBeVisible();
   // The page's heading follows what it books.
@@ -379,8 +379,8 @@ test("books the one visit only with the right WhatsApp code", async ({ page }) =
   await openForm(page);
   await page
     .getByRole("group", { name: referralCopy.referral.consultation.plan.legend })
-    .getByText("Consultation and fit · three hours")
-    .click();
+    .getByRole("radio", { name: "Consultation and fit · three hours" })
+    .check();
   await toAddress(page);
   await fillAddress(page);
   await page.getByRole("button", { name: referralCopy.referral.consultation.submitOneVisit }).click();
@@ -405,8 +405,8 @@ async function bookOneVisitWithCode(page: Page, code: string): Promise<void> {
   await openForm(page);
   await page
     .getByRole("group", { name: referralCopy.referral.consultation.plan.legend })
-    .getByText("Consultation and fit · three hours")
-    .click();
+    .getByRole("radio", { name: "Consultation and fit · three hours" })
+    .check();
   await toAddress(page);
   await page.getByLabel(referralCopy.referral.consultation.code.label).fill(code);
   await fillAddress(page);
@@ -475,14 +475,14 @@ test("offers the one visit the morning and the afternoon, never the evening, and
   await openForm(page);
   const plan = page.getByRole("group", { name: referralCopy.referral.consultation.plan.legend });
   const windows = page.getByRole("group", { name: referralCopy.referral.consultation.window });
-  await windows.getByText("Evening").click();
+  await windows.getByRole("radio", { name: /Evening/ }).check();
 
-  await plan.getByText("Consultation and fit · three hours").click();
+  await plan.getByRole("radio", { name: "Consultation and fit · three hours" }).check();
   await expect(windows.getByRole("radio")).toHaveCount(2);
   await expect(windows.getByText("Evening")).toHaveCount(0);
   await expect(windows.getByRole("radio", { name: /Morning/ })).toBeChecked();
 
-  await plan.getByText("Consultation · an hour", { exact: true }).click();
+  await plan.getByRole("radio", { name: "Consultation · an hour", exact: true }).check();
   await expect(windows.getByRole("radio")).toHaveCount(3);
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("Book a free consultation");
 
@@ -597,7 +597,7 @@ test("a booking and a waitlist are both counted, with nothing personal", async (
   await openForm(page);
   await toAddress(page);
   await fillAddress(page);
-  await page.getByText("Receding front", { exact: true }).click();
+  await page.getByRole("radio", { name: "Receding front", exact: true }).check();
   await page.getByRole("button", { name: referralCopy.referral.consultation.submit }).click();
   await expect(page.getByText(referralCopy.referral.booked.label, { exact: true })).toBeVisible();
   expect(await analyticsEvents(page)).toEqual([
@@ -926,8 +926,8 @@ test("asks again for one visit, whose three hours may not fit where a consultati
 
   await page
     .getByRole("group", { name: referralCopy.referral.consultation.plan.legend })
-    .getByText("Consultation and fit · three hours")
-    .click();
+    .getByRole("radio", { name: "Consultation and fit · three hours" })
+    .check();
 
   await expect(days.nth(0)).toBeDisabled();
   await expect(days.nth(1)).toBeChecked();
@@ -997,7 +997,10 @@ test("Back steps back through the page, and Forward returns to the confirmation"
   await page.goForward();
   await expect(page.getByRole("heading", { name: "We come to Sector 65" })).toBeFocused();
 
-  await page.getByRole("group", { name: referralCopy.referral.consultation.window }).getByText("Afternoon").click();
+  await page
+    .getByRole("group", { name: referralCopy.referral.consultation.window })
+    .getByRole("radio", { name: /Afternoon/ })
+    .check();
   await toAddress(page);
   await page.goBack();
   await expect(

@@ -6,7 +6,7 @@
 // another city while a visit is booked, which offers a message to ops.
 
 import { TextLink } from "@maneman/ui/TextLink";
-import { AddressFields, type AddressFieldsClasses } from "@maneman/ui/AddressFields";
+import { AddressFields } from "@maneman/ui/AddressFields";
 import { Button } from "@maneman/ui/Button";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { useState } from "react";
@@ -40,13 +40,6 @@ const ERROR_ID = "address-error";
 const ADDRESS_WORDS = {
   labels: { ...profile.form, access_notes: profile.form.accessNotes },
   hints: { access_notes: profile.form.accessHint },
-};
-
-const ADDRESS_CLASSES: AddressFieldsClasses = {
-  field: styles.formField,
-  label: styles.formLabel,
-  input: styles.input,
-  hint: styles.muted,
 };
 
 /** The site's /book, where a pincode we do not come to joins the waitlist. */
@@ -156,7 +149,7 @@ export function AddressForm({
           setEditing((draft) => ({ ...draft, [part]: value }));
         }}
         words={ADDRESS_WORDS}
-        classes={ADDRESS_CLASSES}
+        fieldClassName={styles.formField}
       />
       {problem !== null && (
         <p className={styles.error} id={ERROR_ID} role="alert">

@@ -21,7 +21,7 @@ export function SelectCard({
   readonly value: string;
   readonly options: readonly { readonly value: string; readonly label: string }[];
   readonly onInk?: boolean;
-  readonly className?: string;
+  readonly className?: string | undefined;
   readonly onChange: (value: string) => void;
 }) {
   return (

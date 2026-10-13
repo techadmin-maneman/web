@@ -185,10 +185,6 @@
 
 /* The label's field, typed though the board draws "Scan the piece": 64 px, all of it the input, edged in paper. */
 
-.input {
-  flex: 1;
-}
-
 .hint {
   margin: var(--sp-8) 0 0;
   font-size: var(--fs-17);
@@ -358,4 +354,14 @@
 
 .chip {
   min-width: var(--tech-stepper);
+}
+
+/* A stepper's minus and plus: the shared IconButton, at the stepper's square. */
+.step {
+  --icon-button-size: var(--tech-stepper);
+}
+
+/* The label's field: the primary's height, so a gloved tap lands in it. */
+.labelInput {
+  height: var(--tech-primary);
 }

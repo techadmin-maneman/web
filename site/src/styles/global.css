@@ -7,71 +7,88 @@
 @import "@maneman/brand/tokens.css";
 @import "./tokens-site.css";
 @import "@maneman/brand/fonts.css";
+@import "@maneman/ui/base.css";
 
-*,
-*::before,
-*::after {
-  box-sizing: border-box;
-}
+/*
+ * The page's own defaults for bare elements, in the base layer beneath the shared components
+ * (@maneman/ui), whose looks must win over them.
+ */
+@layer base {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
 
-html {
-  scroll-behavior: smooth;
-  /* Whatever the page scrolls to, a section or a focused control, stops below the fixed header. */
-  scroll-padding-top: var(--header-h);
-}
-@media (prefers-reduced-motion: reduce) {
   html {
-    scroll-behavior: auto;
+    scroll-behavior: smooth;
+    /* Whatever the page scrolls to, a section or a focused control, stops below the fixed header. */
+    scroll-padding-top: var(--header-h);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+  }
+
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--text);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  a {
+    color: var(--text);
+    text-decoration: none;
+  }
+  a:hover {
+    color: var(--ink);
+  }
+
+  input,
+  select,
+  button,
+  textarea {
+    font-family: inherit;
+    font-size: inherit;
+    color: inherit;
+  }
+  ::placeholder {
+    color: var(--paper-hint);
+    opacity: 1;
+  }
+  .on-ink ::placeholder {
+    color: var(--ink-muted);
+  }
+  select {
+    appearance: none;
+  }
+
+  /* Keyboard focus: the design has none, so it follows the surface's text colour. */
+  :focus-visible {
+    outline: var(--focus-width) solid var(--focus-colour, var(--ink));
+    outline-offset: var(--focus-offset);
+  }
+  .on-ink {
+    --focus-colour: var(--paper);
+  }
+
+  /* A heading focused by the page, to say where a step has moved to, is not a control and draws no ring. */
+  [tabindex="-1"]:focus {
+    outline: none;
   }
 }
 
-body {
-  margin: 0;
-  background: var(--paper);
-  color: var(--text);
-  font-family: var(--font-sans);
-  -webkit-font-smoothing: antialiased;
-}
-
-a {
-  color: var(--text);
-  text-decoration: none;
-}
-a:hover {
-  color: var(--ink);
-}
-
-input,
-select,
-button,
-textarea {
-  font-family: inherit;
-  font-size: inherit;
-  color: inherit;
-}
-::placeholder {
-  color: var(--paper-hint);
-  opacity: 1;
-}
-.on-ink ::placeholder {
-  color: var(--ink-muted);
-}
-select {
-  appearance: none;
-}
-
-/* Keyboard focus: the design has none, so it follows the surface's text colour. */
-:focus-visible {
-  outline: var(--focus-width) solid var(--focus-colour, var(--ink));
-  outline-offset: var(--focus-offset);
-}
-.on-ink {
-  --focus-colour: var(--paper);
-}
-
-/* A heading focused by the page, to say where a step has moved to, is not a control and draws no ring. */
-[tabindex="-1"]:focus {
-  outline: none;
+/* The site's buttons are wider than the apps', the words further from the edges, and its fields as tall as its
+   buttons (packages/ui/base.css). */
+:root {
+  --action-pad: var(--sp-32);
+  --control-pad: var(--sp-24);
+  --small-pad: var(--sp-20);
+  --field-height: var(--btn-lg);
+  --field-text: var(--fs-16);
 }
 
 .visually-hidden {
@@ -136,73 +153,6 @@ select {
   color: var(--text-soft);
   max-width: var(--measure-lead);
   text-wrap: pretty;
-}
-
-/* ---- Buttons (links styled as buttons navigate; buttons act) -------------- */
-
-.btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--sp-12);
-  border: 0;
-  font-weight: var(--weight-medium);
-  cursor: pointer;
-  text-decoration: none;
-  transition:
-    background-color var(--duration-quick) var(--ease-house),
-    border-color var(--duration-quick) var(--ease-house);
-}
-.btn--lg {
-  height: var(--btn-lg);
-  padding: 0 var(--sp-32);
-  font-size: var(--fs-16);
-}
-.btn--md {
-  height: var(--btn-md);
-  padding: 0 var(--sp-24);
-  font-size: var(--fs-15);
-}
-.btn--sm {
-  height: var(--tap);
-  padding: 0 var(--sp-20);
-  font-size: var(--fs-15);
-}
-
-/* Paper on ink: the primary button on dark grounds. */
-.btn--paper,
-.btn--paper:hover {
-  background: var(--paper);
-  color: var(--ink);
-}
-.btn--paper:hover {
-  background: var(--white);
-}
-
-/* An outline on ink. */
-.btn--line-on-ink,
-.btn--line-on-ink:hover {
-  background: transparent;
-  color: var(--paper);
-  border: var(--hairline) solid var(--ink-line);
-}
-.btn--line-on-ink:hover {
-  border-color: var(--paper);
-}
-
-/* Ink on paper: the primary button on light grounds. */
-.btn--ink,
-.btn--ink:hover {
-  background: var(--ink);
-  color: var(--paper);
-}
-
-/* An outline on paper. */
-.btn--line-on-paper,
-.btn--line-on-paper:hover {
-  background: transparent;
-  color: var(--ink);
-  border: var(--hairline) solid var(--ink);
 }
 
 /* ---- Labels on images: tags, numerals, Before and After ---------------- */

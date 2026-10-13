@@ -42,7 +42,6 @@ function ScanLabel({ onLabel }: { onLabel: (label: string) => void }) {
           <TextInput
             {...control}
             onInk
-            className={styles.input}
             value={typed}
             autoCapitalize="characters"
             autoComplete="off"

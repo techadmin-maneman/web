@@ -24,7 +24,7 @@ export function Panel({
   readonly headingRef?: RefObject<HTMLHeadingElement | null>;
   /** What the head holds beside the title: a way to download the list, say. */
   readonly actions?: ReactNode;
-  readonly className?: string;
+  readonly className?: string | undefined;
   readonly children: ReactNode;
 }) {
   return (

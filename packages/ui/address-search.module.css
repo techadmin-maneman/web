@@ -1,0 +1,56 @@
+/* The building search (./AddressSearch.tsx): the shared field, and Google's suggestions in a list beneath it. */
+
+@layer base, ui;
+
+@layer ui {
+  .field {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .suggestions {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    border: var(--hairline) solid var(--paper-line);
+    border-top: none;
+    background: var(--white);
+  }
+
+  .suggestion {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: var(--sp-2);
+    min-height: var(--tap-row);
+    padding: var(--sp-8) var(--sp-16);
+    border-bottom: var(--hairline) solid var(--paper-line);
+    cursor: pointer;
+  }
+
+  .suggestion:last-child {
+    border-bottom: none;
+  }
+
+  .active {
+    background: var(--paper-light);
+    box-shadow: inset var(--rule-strong) 0 0 0 var(--ink);
+  }
+
+  .name {
+    font-size: var(--fs-16);
+    color: var(--text);
+  }
+
+  .where {
+    font-size: var(--fs-14);
+    color: var(--text-muted);
+  }
+
+  .attribution,
+  .hint {
+    margin: var(--sp-8) 0 0;
+    font-size: var(--fs-13);
+    color: var(--text-muted);
+  }
+}

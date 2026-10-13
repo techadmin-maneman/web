@@ -4,6 +4,7 @@
 // picked, the details go to the number on WhatsApp, and the client app shows them once its owner signs in with a code.
 // It also says whether the discount code sent with it stands (ADR 0108).
 
+import { ButtonLink } from "@maneman/ui/Button";
 import { ICONS } from "@maneman/brand/icons";
 import { rupees } from "@maneman/web-kit/money";
 import { googleCalendarLink, icsHref, type CalendarEntry } from "@rules/lib/calendar.ts";
@@ -57,7 +58,17 @@ function Expired(props: { reward: ReferralReward | null }) {
  * Opens the app's sign-in with the number filled in. The number is added only as the link is followed, so no
  * analytics tag that reads the page's links ever sees it. A click asking for a new tab opens the plain sign-in.
  */
-function openApp(event: MouseEvent, appOrigin: string, mobile: string): void {
+/** A click as both Preact and the shared link hand it over. */
+interface Click {
+  readonly button: number;
+  readonly metaKey: boolean;
+  readonly ctrlKey: boolean;
+  readonly shiftKey: boolean;
+  readonly altKey: boolean;
+  preventDefault(): void;
+}
+
+function openApp(event: Click, appOrigin: string, mobile: string): void {
   const plainClick = event.button === 0 && !event.metaKey && !event.ctrlKey && !event.shiftKey && !event.altKey;
   if (!plainClick) return;
   event.preventDefault();
@@ -97,12 +108,12 @@ function AddToCalendar(props: { result: Booking["result"]; ready: string }) {
     <div class={styles.calendar}>
       <p class={`caps ${styles.calendarLabel}`}>{calendar.label}</p>
       <div class={styles.doneActions}>
-        <a class="btn btn--sm btn--line-on-paper" href={googleCalendarLink(entry)} target="_blank" rel="noopener">
+        <ButtonLink variant="outline" size="small" href={googleCalendarLink(entry)} target="_blank" rel="noopener">
           {calendar.google}
-        </a>
-        <a class="btn btn--sm btn--line-on-paper" href={icsHref(entry, new Date())} download={calendar.fileName}>
+        </ButtonLink>
+        <ButtonLink variant="outline" size="small" href={icsHref(entry, new Date())} download={calendar.fileName}>
           {calendar.file}
-        </a>
+        </ButtonLink>
       </div>
     </div>
   );
@@ -142,19 +153,20 @@ export function Booked(props: { booking: Booking; reward: ReferralReward | null;
         {app !== null && <p class={styles.doneNote}>{referral.booked.appHint}</p>}
         <div class={styles.doneActions}>
           {app !== null && (
-            <a
-              class="btn btn--lg btn--ink"
+            <ButtonLink
+              variant="primary"
+              size="action"
               href={app}
               onClick={(event) => {
                 openApp(event, app, mobile);
               }}
             >
               {referral.booked.app}
-            </a>
+            </ButtonLink>
           )}
-          <a class="btn btn--lg btn--line-on-paper" href="/">
+          <ButtonLink variant="outline" size="action" href="/">
             {referral.booked.back}
-          </a>
+          </ButtonLink>
         </div>
       </div>
     </section>
@@ -191,12 +203,12 @@ export function Listed(props: {
       <div class={styles.doneAfter}>
         {invite === "expired" && <Expired reward={props.reward} />}
         <div class={styles.doneActions}>
-          <a class="btn btn--lg btn--ink" href="/try">
+          <ButtonLink variant="primary" size="action" href="/try">
             {listed.tryOn}
-          </a>
-          <a class="btn btn--lg btn--line-on-paper" href="/">
+          </ButtonLink>
+          <ButtonLink variant="outline" size="action" href="/">
             {listed.back}
-          </a>
+          </ButtonLink>
         </div>
       </div>
     </section>

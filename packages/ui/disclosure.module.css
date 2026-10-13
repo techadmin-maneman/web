@@ -29,4 +29,37 @@
   .disclosure[open] > .summary {
     margin-bottom: var(--sp-8);
   }
+
+  /* ---- A ruled list's entry: the site's questions, and what a hair system is made of ---------------------------- */
+
+  .ruled {
+    border-bottom: var(--hairline) solid var(--paper-line);
+  }
+
+  .ruledSummary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--sp-20);
+    padding: var(--sp-24) 0;
+    list-style: none;
+    cursor: pointer;
+  }
+
+  .ruledSummary::-webkit-details-marker {
+    display: none;
+  }
+
+  .sign {
+    flex-shrink: 0;
+    color: var(--text-muted);
+  }
+
+  .ruled[open] .sign {
+    color: var(--text);
+  }
+
+  .ruled[open] .upright {
+    display: none;
+  }
 }

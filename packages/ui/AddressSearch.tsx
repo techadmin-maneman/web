@@ -8,7 +8,10 @@
 // always be typed into the fields below it.
 
 import { useEffect, useId, useRef, useState, type KeyboardEvent } from "react";
+import { Label, TextInput } from "./Field.tsx";
 import { VisuallyHidden } from "./VisuallyHidden.tsx";
+import { classes } from "./classes.ts";
+import styles from "./address-search.module.css";
 
 /** Waited out before asking Google, so a typed word is one session, not eight. */
 const TYPING_PAUSE_MS = 300;
@@ -35,25 +38,6 @@ export interface AddressSearchWords {
   /** Google's name against suggestions shown without a Google map, which their terms require. */
   readonly attribution: string;
   readonly found: (count: number) => string;
-}
-
-/** A class from an app's stylesheet, as a CSS module hands it over. */
-type ClassName = string | undefined;
-
-/** Each app's own look for the search: its field's, its list's and its lines'. */
-export interface AddressSearchClasses {
-  readonly field: ClassName;
-  readonly label: ClassName;
-  /** Where the label's words sit in a span of their own inside it. */
-  readonly labelText?: ClassName;
-  readonly input: ClassName;
-  readonly suggestions: ClassName;
-  readonly suggestion: ClassName;
-  readonly suggestionActive: ClassName;
-  readonly name?: ClassName;
-  readonly where: ClassName;
-  readonly hint: ClassName;
-  readonly attribution: ClassName;
 }
 
 /** The search's state and what each keystroke, answer and choice does to it. */
@@ -144,9 +128,10 @@ export function AddressSearch(props: {
   readonly onType: (typed: string) => void;
   readonly onChoose: (chosen: AddressSuggestion) => void;
   readonly words: AddressSearchWords;
-  readonly classes: AddressSearchClasses;
+  /** The search's place in its form. */
+  readonly className?: string | undefined;
 }) {
-  const { words, classes } = props;
+  const { words } = props;
   const listId = useId();
   const optionId = useId();
   const { suggestions, active, state, shown, searchAfterTyping, choose, onKeyDown } = useSuggestions(
@@ -156,14 +141,10 @@ export function AddressSearch(props: {
   const hint = state === "unavailable" ? words.unavailable : words.hint;
 
   return (
-    <div className={classes.field}>
-      <label className={classes.label} htmlFor={`${listId}-input`}>
-        {"labelText" in classes ? <span className={classes.labelText}>{words.label}</span> : words.label}
-      </label>
-      <input
+    <div className={classes(styles.field, props.className)}>
+      <Label htmlFor={`${listId}-input`}>{words.label}</Label>
+      <TextInput
         id={`${listId}-input`}
-        className={classes.input}
-        type="text"
         role="combobox"
         autoComplete="off"
         aria-expanded={shown}
@@ -179,12 +160,12 @@ export function AddressSearch(props: {
         }}
       />
       {shown && (
-        <ul className={classes.suggestions} id={listId} role="listbox" aria-label={words.label}>
+        <ul className={styles.suggestions} id={listId} role="listbox" aria-label={words.label}>
           {suggestions.map((suggestion, index) => (
             <li
               key={suggestion.place_id}
               id={`${optionId}-${String(index)}`}
-              className={index === active ? classes.suggestionActive : classes.suggestion}
+              className={classes(styles.suggestion, index === active && styles.active)}
               role="option"
               aria-selected={index === active}
               // A listbox option is not a button; the input keeps the focus.
@@ -193,15 +174,15 @@ export function AddressSearch(props: {
                 choose(index);
               }}
             >
-              <span className={classes.name}>{suggestion.primary}</span>
-              <span className={classes.where}>{suggestion.secondary}</span>
+              <span className={styles.name}>{suggestion.primary}</span>
+              <span className={styles.where}>{suggestion.secondary}</span>
             </li>
           ))}
         </ul>
       )}
-      {shown && <p className={classes.attribution}>{words.attribution}</p>}
+      {shown && <p className={styles.attribution}>{words.attribution}</p>}
       {hint !== null && (
-        <p className={classes.hint} id={`${listId}-hint`}>
+        <p className={styles.hint} id={`${listId}-hint`}>
           {hint}
         </p>
       )}
