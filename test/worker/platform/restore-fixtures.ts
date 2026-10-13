@@ -139,6 +139,7 @@ export const ROWS_AT_T: readonly string[] = [
   `INSERT INTO no_show_cases (id, checkin_id, appointment_id, wait_started_at, wait_ends_at, created_at)
      VALUES ('ns1', 'ci1', 'ap1', '${AT}', '${AT}', '${AT}')`,
   `INSERT INTO no_show_disputes (id, case_id, person_id, reason, created_at) VALUES ('nd1', 'ns1', 'p1', 'I was home.', '${AT}')`,
+  `INSERT INTO no_show_refunds (id, appointment_id, why, amount, created_at) VALUES ('nr1', 'ap1', 'waived', 200000, '${AT}')`,
   `INSERT INTO job_events (id, appointment_id, event_id, technician_id, device_id, kind, body, occurred_at, received_at,
      updated_at)
      VALUES ('je1', 'ap1', 'e1', 't1', 'd1', 'outcome', '{"outcome":"partial"}', '${AT}', '${AT}', '${AT}')`,
