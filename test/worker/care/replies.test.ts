@@ -5,7 +5,8 @@
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { MessagingProvider, SendResult } from "../../../src/providers/messaging/index.ts";
-import { appFor, captureLogs, fakeDependencies, fakeQueue, markDatabase, NOW, request } from "../helpers.ts";
+import type { Settings } from "../../../src/config/settings.ts";
+import { appFor, captureLogs, fakeDependencies, fakeQueue, LOCAL_SETTINGS, markDatabase, NOW, request } from "../helpers.ts";
 import { insertPerson } from "../tryon-fixtures.ts";
 
 const THREAD = "8c1d9f4b-5e6a-4b7c-9d8e-3f4a5b6c7d8e";
@@ -35,9 +36,9 @@ function provider(result: SendResult = { ok: true, providerMessageId: "wa-9" }, 
 
 let crmQueue: ReturnType<typeof fakeQueue>;
 
-const post = (messaging: MessagingProvider, path: string, body: unknown) =>
+const post = (messaging: MessagingProvider, path: string, body: unknown, settings: Partial<Settings["messaging"]> = {}) =>
   request(
-    appFor("local", fakeDependencies({ messaging }), {}, "ops"),
+    appFor("local", fakeDependencies({ messaging }), { messaging: { ...LOCAL_SETTINGS.messaging, ...settings } }, "ops"),
     path,
     {
       method: "POST",
@@ -83,6 +84,23 @@ describe("a reply", () => {
     expect(thread.items).toEqual([expect.objectContaining({ kind: "out", delivery: "failed" })]);
     const row = await env.DB.prepare("SELECT failure FROM chat_messages").first();
     expect(row).toEqual({ failure: "HTTP 400 not on WhatsApp" });
+  });
+
+  it("is kept unsent, with why, while messaging is off", async () => {
+    const { messaging, sent } = provider();
+    await post(messaging, `/api/conversations/${THREAD}/replies`, { text: "Hello" }, { enabled: false });
+    expect(sent).toEqual([]);
+    const row = await env.DB.prepare("SELECT delivery, failure FROM chat_messages").first();
+    expect(row).toEqual({ delivery: "failed", failure: "Not sent: messaging is off." });
+  });
+
+  it("is held back to a test record off staging's allowlist, and goes to one on it", async () => {
+    await env.DB.prepare("UPDATE people SET test_record = 1 WHERE id = 'p1'").run();
+    const { messaging, sent } = provider();
+    await post(messaging, `/api/conversations/${THREAD}/replies`, { text: "Hello" }, { allowlist: ["+919810000099"] });
+    expect(sent).toEqual([]);
+    await post(messaging, `/api/conversations/${THREAD}/replies`, { text: "Hello again" }, { allowlist: ["+919810000001"] });
+    expect(sent).toEqual([{ to: "+919810000001", text: "Hello again" }]);
   });
 
   it("cannot go where the provider sends no free text, or to an erased client's thread", async () => {

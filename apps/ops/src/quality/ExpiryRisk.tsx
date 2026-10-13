@@ -9,6 +9,7 @@ import type { paths } from "../api-schema.ts";
 import form from "../components/forms.module.css";
 import { quality as copy } from "../content/quality.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
+import { fullDate } from "@maneman/web-kit/dates";
 
 type Risk = paths["/api/stock/expiry-risk"]["get"]["responses"][200]["content"]["application/json"];
 type Lot = Risk["lots"][number];
@@ -45,7 +46,7 @@ function Lots({ risk }: { risk: Risk }) {
               </th>
               <td>{lot.name}</td>
               <td>{lot.lot_code}</td>
-              <td>{lot.expires_on}</td>
+              <td>{fullDate(lot.expires_on)}</td>
               <td className={form.figure}>{quantity(lot.quantity)}</td>
               <td className={form.figure}>{rupees(lot.value)}</td>
               <td>{todo(lot)}</td>

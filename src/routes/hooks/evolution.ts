@@ -145,7 +145,9 @@ async function takeReplies(c: Context<AppEnv>, body: unknown): Promise<void> {
     filed += from === null ? 0 : 1;
     const mobileE164 = stopReplyFrom(message);
     if (mobileE164 === null) {
-      if (from !== null) await answerAfterHours(c.env.DB, deps.messaging, await afterHours(c, from));
+      if (from !== null) {
+        await answerAfterHours(c.env.DB, deps.messaging, c.var.config.settings.messaging, await afterHours(c, from));
+      }
       continue;
     }
     const answerId = await stopByReply(c.env.DB, { mobileE164, requestId, now: deps.now() });

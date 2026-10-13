@@ -2,7 +2,9 @@
 // sent from our number and kept in the thread whether it went or not; a note only staff see; and a thread closed
 // with what it was about. Each is audited by the thread's ID, never its words.
 
-import type { MessagingProvider } from "../../providers/messaging/index.ts";
+import type { MessagingSettings } from "../../config/settings.ts";
+import { isMessageHeldBack } from "../../policy/staging-test-records.ts";
+import type { MessagingProvider, SendResult } from "../../providers/messaging/index.ts";
 import { auditStatement, type AuditActor } from "../ops/audit.ts";
 
 /** What a chat was about, as Care close it. */
@@ -26,17 +28,27 @@ interface Change {
   readonly now: Date;
 }
 
-/** The thread's number, or why nothing can be sent to it. */
+/** The thread's number and whether its client is a test record, or why nothing can be sent to it. */
 async function numberOf(
   db: D1Database,
   conversationId: string,
-): Promise<{ readonly to: string } | "not_found" | "erased"> {
+): Promise<{ readonly to: string; readonly testRecord: boolean } | "not_found" | "erased"> {
   const row = await db
-    .prepare("SELECT mobile_e164 FROM conversations WHERE id = ?1")
+    .prepare(
+      `SELECT c.mobile_e164, COALESCE(p.test_record, 0) AS test_record
+       FROM conversations c LEFT JOIN people p ON p.id = c.person_id WHERE c.id = ?1`,
+    )
     .bind(conversationId)
-    .first<{ mobile_e164: string }>();
+    .first<{ mobile_e164: string; test_record: number }>();
   if (row === null) return "not_found";
-  return row.mobile_e164.startsWith("+") ? { to: row.mobile_e164 } : "erased";
+  return row.mobile_e164.startsWith("+") ? { to: row.mobile_e164, testRecord: row.test_record === 1 } : "erased";
+}
+
+/** Why a reply is kept unsent: messaging is off, or it is to a test record the allowlist holds back. */
+function heldBecause(settings: MessagingSettings, number: { readonly to: string; readonly testRecord: boolean }) {
+  if (!settings.enabled) return "Not sent: messaging is off.";
+  const held = isMessageHeldBack(settings, { automatic: false, testRecord: number.testRecord, mobileE164: number.to });
+  return held ? "Not sent: a test record, held back." : null;
 }
 
 export type Replied = "sent" | "failed" | "not_found" | "erased" | "unavailable";
@@ -48,12 +60,15 @@ export type Replied = "sent" | "failed" | "not_found" | "erased" | "unavailable"
 export async function replyTo(
   db: D1Database,
   messaging: MessagingProvider,
+  settings: MessagingSettings,
   change: Change & { readonly text: string },
 ): Promise<Replied> {
   const number = await numberOf(db, change.conversationId);
   if (number === "not_found" || number === "erased") return number;
   if (messaging.reply === undefined) return "unavailable";
-  const result = await messaging.reply(number.to, change.text);
+  const held = heldBecause(settings, number);
+  const result: SendResult =
+    held === null ? await messaging.reply(number.to, change.text) : { ok: false, transient: false, detail: held };
   const at = change.now.toISOString();
   await db.batch([
     db

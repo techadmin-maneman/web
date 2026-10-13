@@ -71,7 +71,7 @@ export function purchaseCalls(api: BooksApi): Pick<BooksProvider, PurchaseCalls>
           body: {
             contact_name: vendor.name,
             contact_type: "vendor",
-            gst_treatment: gstTreatment(vendor),
+            ...(vendor.gstOn ? { gst_treatment: gstTreatment(vendor) } : {}),
             ...(vendor.gstin === null ? {} : { gst_no: vendor.gstin }),
             ...(currency === null ? {} : { currency_id: currency }),
             payment_terms: vendor.paymentTermsDays,

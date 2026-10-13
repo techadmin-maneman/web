@@ -3,7 +3,9 @@
 // as automatic, and never counts as Care answering: the chat still waits on us, and its reply clock still runs.
 
 import { renderMessage } from "../../config/message-templates.ts";
+import type { MessagingSettings } from "../../config/settings.ts";
 import { careIsOn, lastClosed, type CareHours } from "../../policy/care-hours.ts";
+import { isMessageHeldBack } from "../../policy/staging-test-records.ts";
 import type { MessagingProvider } from "../../providers/messaging/index.ts";
 import { messageWording } from "../words/message-wording.ts";
 
@@ -21,24 +23,27 @@ function hourWords(hour: number): string {
 
 /**
  * Answers a message written at `at` from `mobileE164`, where Care are off and the chat has had no answer since they
- * last closed. Nothing where the provider sends no free text, or the chat is not ours.
+ * last closed. Nothing where the provider sends no free text, the chat is not ours, messaging is off, or the reply,
+ * being automatic, is one the allowlist holds back like every other automatic message.
  */
 export async function answerAfterHours(
   db: D1Database,
   messaging: MessagingProvider,
+  settings: MessagingSettings,
   written: { readonly mobileE164: string; readonly at: Date; readonly hours: CareHours },
 ): Promise<"sent" | "failed" | "none"> {
   const { mobileE164, at, hours } = written;
-  if (careIsOn(at, hours) || messaging.reply === undefined) return "none";
+  if (careIsOn(at, hours) || messaging.reply === undefined || !settings.enabled) return "none";
   const thread = await db
     .prepare(
       `SELECT c.id, (SELECT MAX(m.sent_at) FROM chat_messages m WHERE m.conversation_id = c.id AND m.author = ?2)
-         AS last_answered
-       FROM conversations c WHERE c.mobile_e164 = ?1`,
+         AS last_answered, COALESCE(p.test_record, 0) AS test_record
+       FROM conversations c LEFT JOIN people p ON p.id = c.person_id WHERE c.mobile_e164 = ?1`,
     )
     .bind(mobileE164, AUTO_REPLY)
-    .first<{ id: string; last_answered: string | null }>();
+    .first<{ id: string; last_answered: string | null; test_record: number }>();
   if (thread === null || (thread.last_answered ?? "") >= lastClosed(at, hours).toISOString()) return "none";
+  if (isMessageHeldBack(settings, { automatic: true, testRecord: thread.test_record === 1, mobileE164 })) return "none";
   const wording = await messageWording(db, TEMPLATE, false);
   const text = renderMessage(TEMPLATE, [hourWords(hours.opens), hourWords(hours.answered_by)], wording?.text) ?? "";
   const result = await messaging.reply(mobileE164, text);

@@ -6,7 +6,7 @@
 import { Button } from "@maneman/ui/Button";
 import { Field, NumberInput, Select } from "@maneman/ui/Field";
 import { useLoad } from "@maneman/ui/useLoad";
-import { indiaClock, indiaDate, shortDate } from "@maneman/web-kit/dates";
+import { fullDate, indiaClock, indiaDate, shortDate } from "@maneman/web-kit/dates";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { client, type Stock, type StockUnits } from "../api.ts";
 import { stockLabels as copy } from "../content/stock-labels.ts";
@@ -26,7 +26,7 @@ export interface LabelsFor {
 
 const lotLine = (lotCode: string | null, expiresOn: string | null): string | null => {
   if (lotCode === null) return null;
-  return expiresOn === null ? lotCode : `${lotCode} · ${copy.expires(shortDate(expiresOn))}`;
+  return expiresOn === null ? lotCode : `${lotCode} · ${copy.expires(fullDate(expiresOn))}`;
 };
 
 type Unit = StockUnits["units"][number];
