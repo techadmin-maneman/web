@@ -106,7 +106,16 @@ const OrdersSchema = z
         description:
           "Every supplier, retired ones too, so an order names its supplier; only active ones are drafted to.",
       }),
-    consumables: z.array(z.object({ code: Text, name: Text, unit: Text }).strict()),
+    consumables: z.array(
+      z
+        .object({
+          code: Text,
+          name: Text,
+          unit: Text,
+          unit_cost: z.number().int().openapi({ description: "What Settings say one unit costs, in paise." }),
+        })
+        .strict(),
+    ),
     second_approval_above_rupees: z.number().int(),
   })
   .strict()
@@ -197,10 +206,11 @@ export async function ordersAnswer(c: Context<AppEnv>) {
   const [orders, suppliers, consumables, inputs] = await Promise.all([
     purchaseOrders(c.env.DB),
     allSuppliers(c.env.DB),
-    c.env.DB.prepare("SELECT code, name, unit FROM consumables ORDER BY name COLLATE NOCASE").all<{
+    c.env.DB.prepare("SELECT code, name, unit, unit_cost FROM consumables ORDER BY name COLLATE NOCASE").all<{
       code: string;
       name: string;
       unit: string;
+      unit_cost: number;
     }>(),
     opsInputs(c),
   ]);

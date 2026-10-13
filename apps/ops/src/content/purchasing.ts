@@ -45,7 +45,12 @@ export const purchasing = {
     quantity: "Quantity",
     addLine: "Add a line",
     removeLine: (name: string) => `Remove ${name}`,
-    minimum: (minimum: number, pack: number) => `Minimum ${String(minimum)}, packs of ${String(pack)}`,
+    /** "Minimum 1000 ml, packs of 250 ml · Rs. 5 per ml" */
+    minimum: (minimum: number, pack: number, unit: string, price: string) =>
+      `Minimum ${String(minimum)} ${unit}, packs of ${String(pack)} ${unit} · ${price} per ${unit}`,
+    /** A price far above what Settings say the item costs: most often a pack's price typed as one unit's. */
+    farAbove: (price: string, unit: string, times: number, cost: string) =>
+      `${price} per ${unit} is ${String(times)} times what Settings say one costs (${cost}). Check the supplier's price is per ${unit}, not per pack.`,
     expected: "Expected on (optional)",
     note: "Note (optional)",
     total: (total: string) => `Total ${total}`,

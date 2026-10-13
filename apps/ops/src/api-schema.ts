@@ -17558,6 +17558,8 @@ export interface components {
                 code: string;
                 name: string;
                 unit: string;
+                /** @description What Settings say one unit costs, in paise. */
+                unit_cost: number;
             }[];
             second_approval_above_rupees: number;
         };

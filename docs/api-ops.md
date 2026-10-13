@@ -25795,12 +25795,17 @@ Request body:
           },
           "unit": {
             "type": "string"
+          },
+          "unit_cost": {
+            "type": "integer",
+            "description": "What Settings say one unit costs, in paise."
           }
         },
         "required": [
           "code",
           "name",
-          "unit"
+          "unit",
+          "unit_cost"
         ],
         "additionalProperties": false
       }

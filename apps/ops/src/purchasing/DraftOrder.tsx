@@ -20,15 +20,24 @@ interface Line {
 
 const WHOLE = /^\d{1,7}$/;
 
+/** How many times over Settings' cost a supplier's price must be to be questioned. */
+const FAR_ABOVE = 5;
+
 function LineBoxes(props: {
   line: Line;
   items: Orders["suppliers"][number]["items"];
-  named: (code: string) => string;
+  currency: string;
+  consumable: (code: string) => Orders["consumables"][number] | undefined;
   onLine: (line: Line) => void;
   onRemove: () => void;
 }) {
-  const { line, items, named } = props;
+  const { line, items, currency, consumable } = props;
   const item = items.find((each) => each.consumable_code === line.code);
+  const listed = consumable(line.code);
+  const unit = listed?.unit ?? "";
+  const named = (code: string) => consumable(code)?.name ?? code;
+  const times = item === undefined || listed === undefined || listed.unit_cost === 0 ? 0 : item.unit_price / listed.unit_cost;
+  const questioned = currency === "INR" && times >= FAR_ABOVE && item !== undefined && listed !== undefined;
   return (
     <div className={styles.line}>
       <Field label={copy.draft.item} className={form.field}>
@@ -51,7 +60,11 @@ function LineBoxes(props: {
       </Field>
       <Field
         label={copy.draft.quantity}
-        hint={item === undefined ? undefined : copy.draft.minimum(item.minimum_order, item.pack_size)}
+        hint={
+          item === undefined
+            ? undefined
+            : copy.draft.minimum(item.minimum_order, item.pack_size, unit, inCurrency(item.unit_price, currency))
+        }
         className={form.field}
       >
         {(control) => (
@@ -75,6 +88,16 @@ function LineBoxes(props: {
       >
         ×
       </button>
+      {questioned && (
+        <p className={form.error} role="status">
+          {copy.draft.farAbove(
+            inCurrency(item.unit_price, currency),
+            unit,
+            Math.round(times),
+            inCurrency(listed.unit_cost, "INR"),
+          )}
+        </p>
+      )}
     </div>
   );
 }
@@ -112,10 +135,10 @@ function SupplierPick(props: { stocked: readonly Supplier[]; supplierId: string;
 function LinesEditor(props: {
   supplier: Supplier;
   lines: readonly Line[];
-  named: (code: string) => string;
+  consumable: (code: string) => Orders["consumables"][number] | undefined;
   onLines: (lines: readonly Line[]) => void;
 }) {
-  const { supplier, lines, named, onLines } = props;
+  const { supplier, lines, consumable, onLines } = props;
   return (
     <>
       <div className={styles.lines}>
@@ -124,7 +147,8 @@ function LinesEditor(props: {
             key={`${line.code}-${String(index)}`}
             line={line}
             items={supplier.items}
-            named={named}
+            currency={supplier.currency}
+            consumable={consumable}
             onLine={(next) => {
               onLines(lines.map((each, at) => (at === index ? next : each)));
             }}
@@ -207,7 +231,7 @@ export function DraftOrder({ book, onDrafted }: { book: Orders; onDrafted: (book
     setSupplierId(id);
     setLines(item === undefined ? [] : [{ code: item.consumable_code, quantity: String(item.minimum_order) }]);
   };
-  const named = (code: string) => book.consumables.find((each) => each.code === code)?.name ?? code;
+  const consumable = (code: string) => book.consumables.find((each) => each.code === code);
   const priceOf = (code: string) => supplier.items.find((each) => each.consumable_code === code)?.unit_price ?? 0;
   const total = lines.reduce((sum, line) => sum + priceOf(line.code) * Number(line.quantity), 0);
   const ready =
@@ -220,8 +244,15 @@ export function DraftOrder({ book, onDrafted }: { book: Orders; onDrafted: (book
       note: note.trim() === "" ? null : note.trim(),
     };
     const answer = await client.post("/api/purchase-orders", { body });
-    if (answer.ok) onDrafted(answer.body, copy.draft.drafted);
-    else setFailure({ code: answer.code, fields: answer.fields });
+    if (!answer.ok) {
+      setFailure({ code: answer.code, fields: answer.fields });
+      return;
+    }
+    // A drafted order clears the form, so the same lines are not drafted twice.
+    pick(supplier.id);
+    setExpected("");
+    setNote("");
+    onDrafted(answer.body, copy.draft.drafted);
   };
   return (
     <section className={form.panel} aria-labelledby="draft-order">
@@ -231,7 +262,7 @@ export function DraftOrder({ book, onDrafted }: { book: Orders; onDrafted: (book
         </h2>
       </div>
       <SupplierPick stocked={stocked} supplierId={supplierId} onPick={pick} />
-      <LinesEditor supplier={supplier} lines={lines} named={named} onLines={setLines} />
+      <LinesEditor supplier={supplier} lines={lines} consumable={consumable} onLines={setLines} />
       <WhenAndNote expected={expected} note={note} onExpected={setExpected} onNote={setNote} />
       <p className={form.note}>{copy.draft.total(inCurrency(total, supplier.currency))}</p>
       <div className={form.actions}>

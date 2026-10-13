@@ -511,12 +511,19 @@ export const settings = {
     },
     item: {
       title: (name: string) => `What ${name} supplies`,
-      columns: ["Item", "Their code", "Price each", "Pack", "Minimum", "Lead time"],
+      columns: ["Item", "Their code", "Price", "Pack", "Minimum", "Lead time"],
       none: "Nothing listed yet.",
       consumable: "Item",
       theirCode: "Their code (optional)",
-      price: (currency: string) => `Price each, ${currency}`,
-      pack: "Pack size",
+      /** "Price per ml, INR": the price of one unit, never of a pack. */
+      price: (currency: string, unit: string) => `Price per ${unit}, ${currency}`,
+      pack: (unit: string) => `Pack size, ${unit}`,
+      /** "INR 5.00 per ml" */
+      perUnit: (price: string, unit: string) => `${price} per ${unit}`,
+      /** "250 ml" */
+      amount: (figure: number, unit: string) => `${String(figure)} ${unit}`,
+      /** "Pack 250 ml", as the line under review reads it. */
+      packOf: (amount: string) => `Pack ${amount}`,
       minimum: "Minimum order",
       lead: "Lead time, days",
       days: (days: number) => `${String(days)} days`,

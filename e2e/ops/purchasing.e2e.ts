@@ -37,7 +37,7 @@ const BOOK = {
       items: [{ consumable_code: "solvent", unit_price: 4500, pack_size: 12, minimum_order: 24, lead_time_days: 7 }],
     },
   ],
-  consumables: [{ code: "solvent", name: "Solvent", unit: "ml" }],
+  consumables: [{ code: "solvent", name: "Solvent", unit: "ml", unit_cost: 4000 }],
   second_approval_above_rupees: 0,
 } satisfies OpsReply<"/api/purchase-orders">;
 
@@ -104,6 +104,18 @@ test("drafts an order from a supplier's list, its total shown first", async ({ p
     note: null,
   });
   expect(await axeViolations(page)).toEqual([]);
+});
+
+test("questions a price far above what Settings say an item costs, and clears the form once drafted", async ({ page }) => {
+  const cheap = { ...BOOK, consumables: [{ code: "solvent", name: "Solvent", unit: "ml", unit_cost: 450 }] };
+  await open(page, { "GET /api/purchase-orders": json(cheap), "POST /api/purchase-orders": json(cheap) });
+  const draft = page.getByRole("region", { name: copy.draft.title });
+  await expect(draft).toContainText(copy.draft.farAbove("Rs. 45", "ml", 10, "Rs. 4.50"));
+  await draft.getByLabel(copy.draft.quantity).fill("36");
+  await draft.getByLabel(copy.draft.note).fill("Rush");
+  await draft.getByRole("button", { name: copy.draft.send }).click();
+  await expect(draft.getByLabel(copy.draft.quantity)).toHaveValue("24");
+  await expect(draft.getByLabel(copy.draft.note)).toHaveValue("");
 });
 
 test("receives what arrived of a sent order, and lists the receipt with its landed cost", async ({ page }) => {
