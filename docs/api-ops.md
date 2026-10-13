@@ -20099,6 +20099,10 @@ Request body:
             "type": "boolean",
             "description": "Trained to fit: only such a technician is offered or given a first fit (ADR 0119)."
           },
+          "visits_to_come": {
+            "type": "integer",
+            "description": "Their visits still to come and not begun, which switching them off leaves with nobody."
+          },
           "sign_in_stopped_at": {
             "anyOf": [
               {
@@ -20175,6 +20179,7 @@ Request body:
           "city",
           "mobile",
           "fits_trained",
+          "visits_to_come",
           "sign_in_stopped_at",
           "devices",
           "leave"
@@ -20229,6 +20234,10 @@ Request body:
           "fits_trained": {
             "type": "boolean",
             "description": "Trained to fit: only such a technician is offered or given a first fit (ADR 0119)."
+          },
+          "visits_to_come": {
+            "type": "integer",
+            "description": "Their visits still to come and not begun, which switching them off leaves with nobody."
           }
         },
         "required": [
@@ -20237,7 +20246,8 @@ Request body:
           "zone",
           "city",
           "mobile",
-          "fits_trained"
+          "fits_trained",
+          "visits_to_come"
         ],
         "additionalProperties": false
       },

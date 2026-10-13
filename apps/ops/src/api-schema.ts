@@ -16370,6 +16370,8 @@ export interface components {
                 mobile: string | null;
                 /** @description Trained to fit: only such a technician is offered or given a first fit (ADR 0119). */
                 fits_trained: boolean;
+                /** @description Their visits still to come and not begun, which switching them off leaves with nobody. */
+                visits_to_come: number;
                 /** @description When revoking a phone of his stopped him signing in; null while he may. Ops let him again. */
                 sign_in_stopped_at: string | null;
                 devices: {
@@ -16396,6 +16398,8 @@ export interface components {
                 mobile: string | null;
                 /** @description Trained to fit: only such a technician is offered or given a first fit (ADR 0119). */
                 fits_trained: boolean;
+                /** @description Their visits still to come and not begun, which switching them off leaves with nobody. */
+                visits_to_come: number;
             }[];
             /** @description The cities the caller may give a technician, those their Operations MANAGE reaches, in display order. */
             cities: string[];

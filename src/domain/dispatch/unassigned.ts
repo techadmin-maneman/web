@@ -1,5 +1,6 @@
 // A visit today with no technician: the Tasks board raised it the day before; on its day ops are told, once, until
-// someone is sent or the visit is moved or called off.
+// someone is sent or the visit is moved or called off. And each technician's visits to come, which switching them off
+// would leave with nobody.
 
 import { indiaDate, indiaInstant, addDays } from "../../lib/india-time.ts";
 import { statusIn, VISIT_NOT_BEGUN } from "../../config/statuses.ts";
@@ -38,4 +39,18 @@ export async function tellOfUnassignedToday(
     if (!still.has(key.slice(KEY.length))) await deps.resolveAlert(key);
   }
   return results.length;
+}
+
+/** Each technician's visits still to come and not begun, by their ID: what switching them off leaves with nobody. */
+export async function visitsToComeBy(db: D1Database, now: Date): Promise<ReadonlyMap<string, number>> {
+  const { results } = await db
+    .prepare(
+      `SELECT technician_id, COUNT(*) AS visits FROM appointments INDEXED BY appointments_by_technician
+       WHERE technician_id IS NOT NULL AND window_start >= ?1 AND deleted_at IS NULL
+         AND ${statusIn("status", VISIT_NOT_BEGUN)}
+       GROUP BY technician_id`,
+    )
+    .bind(now.toISOString())
+    .all<{ technician_id: string; visits: number }>();
+  return new Map(results.map((row) => [row.technician_id, row.visits]));
 }

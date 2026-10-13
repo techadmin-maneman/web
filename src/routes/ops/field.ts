@@ -22,6 +22,7 @@ import { json } from "../../http/openapi.ts";
 import { reachOf, routeReach } from "../../http/staff-access.ts";
 import { indiaDate } from "../../lib/india-time.ts";
 import { reachesCity } from "../../policy/access.ts";
+import { visitsToComeBy } from "../../domain/dispatch/unassigned.ts";
 
 const LeaveSchema = z
   .object({
@@ -44,6 +45,11 @@ const FITS_TRAINED = z
   .boolean()
   .openapi({ description: "Trained to fit: only such a technician is offered or given a first fit (ADR 0119)." });
 
+const VISITS_TO_COME = z
+  .number()
+  .int()
+  .openapi({ description: "Their visits still to come and not begun, which switching them off leaves with nobody." });
+
 const TechniciansSchema = z
   .object({
     technicians: z.array(
@@ -56,6 +62,7 @@ const TechniciansSchema = z
           city: CITY,
           mobile: MOBILE,
           fits_trained: FITS_TRAINED,
+          visits_to_come: VISITS_TO_COME,
           sign_in_stopped_at: z.union([z.iso.datetime(), z.null()]).openapi({
             description: "When revoking a phone of his stopped him signing in; null while he may. Ops let him again.",
           }),
@@ -89,6 +96,7 @@ const TechniciansSchema = z
             city: CITY,
             mobile: MOBILE,
             fits_trained: FITS_TRAINED,
+            visits_to_come: VISITS_TO_COME,
           })
           .strict(),
       )
@@ -117,13 +125,14 @@ const techniciansRoute = createRoute({
 export function registerOpsField(app: App): void {
   app.openapi(techniciansRoute, async (c) => {
     // The phones and the leave are one read each for the whole roster, not one per technician.
-    const [roll, devices, leave, cities, reach, managed] = await Promise.all([
+    const [roll, devices, leave, cities, reach, managed, toCome] = await Promise.all([
       roster(c.env.DB),
       devicesByTechnician(c.env.DB, c.var.deps.now()),
       leaveFrom(c.env.DB, indiaDate(c.var.deps.now())),
       listCities(c.env.DB),
       routeReach(c),
       reachOf(c, "operations", "manage"),
+      visitsToComeBy(c.env.DB, c.var.deps.now()),
     ]);
     const everyone = roll.filter((technician) => reachesCity(reach, technician.city));
     const given = cities.map((city) => city.name).filter((city) => reachesCity(managed, city));
@@ -134,6 +143,7 @@ export function registerOpsField(app: App): void {
       city: technician.city,
       mobile: technician.mobile,
       fits_trained: technician.fitsTrained,
+      visits_to_come: toCome.get(technician.id) ?? 0,
     });
     const technicians = everyone
       .filter((technician) => technician.active)

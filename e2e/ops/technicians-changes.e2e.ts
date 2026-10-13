@@ -147,7 +147,8 @@ test("switches a technician off only once asked, and lists the visits he no long
   const main = await pageOf(page, "Imran Qureshi");
 
   await main.getByRole("button", { name: "Switch off Imran Qureshi" }).click();
-  await expect(main.getByText(opsCopy.technicians.switchOff.warning)).toBeVisible();
+  // Said before it is confirmed: the visits it leaves with nobody.
+  await expect(main.getByText(opsCopy.technicians.switchOff.warning(2))).toBeVisible();
   await main.getByRole("button", { name: "Cancel" }).click();
   await main.getByRole("button", { name: "Switch off Imran Qureshi" }).click();
 
@@ -162,6 +163,7 @@ test("switches a technician off only once asked, and lists the visits he no long
         city: "Gurgaon",
         mobile: "+919810000001",
         fits_trained: true,
+        visits_to_come: 0,
       },
     ],
   };

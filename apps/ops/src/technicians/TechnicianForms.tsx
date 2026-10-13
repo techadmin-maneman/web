@@ -362,7 +362,7 @@ function SwitchOff({
   }
   return (
     <div className={styles.asking}>
-      <p className={styles.warning}>{copy.warning}</p>
+      <p className={styles.warning}>{copy.warning(technician.visits_to_come)}</p>
       <div className={styles.actions}>
         <Button variant="danger" size="small" className={styles.revoke} disabled={sending} onClick={() => void send()}>
           {sending ? copy.sending : copy.confirm}

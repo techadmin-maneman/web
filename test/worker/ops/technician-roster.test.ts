@@ -475,7 +475,15 @@ describe("the roster", () => {
 
     expect(body.technicians).toEqual([expect.objectContaining({ id: IMRAN, mobile: "+919810000009" })]);
     expect(body.switched_off).toEqual([
-      { id: SAMEER, name: "Sameer Bhatt", zone: "Sec 1–39", city: null, mobile: "+919810000008", fits_trained: false },
+      {
+        id: SAMEER,
+        name: "Sameer Bhatt",
+        zone: "Sec 1–39",
+        city: null,
+        mobile: "+919810000008",
+        fits_trained: false,
+        visits_to_come: 0,
+      },
     ]);
   });
 

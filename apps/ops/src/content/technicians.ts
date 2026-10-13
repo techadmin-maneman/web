@@ -171,7 +171,11 @@ export const technicians = {
   switchOff: {
     open: "Switch off",
     openLabel: (name: string) => `Switch off ${name}`,
-    warning: "Signs them out. Upcoming visits go back to the dispatch board.",
+    /** Said before they are switched off: what it leaves with nobody, which Tasks then raises. */
+    warning: (visits: number) =>
+      visits === 0
+        ? "Signs them out. Nothing is booked on them."
+        : `Signs them out. ${String(visits)} upcoming ${visits === 1 ? "visit goes" : "visits go"} back to the dispatch board with nobody, each on Tasks until someone is sent.`,
     confirm: "Switch off",
     sending: "Switching off",
     cancel: "Cancel",
