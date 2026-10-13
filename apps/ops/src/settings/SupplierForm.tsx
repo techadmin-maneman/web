@@ -191,14 +191,6 @@ export function SupplierForm({
       title={supplier === null ? form.addTitle : form.changeTitle(supplier.name)}
       steps={steps}
       ready={ready}
-      words={{
-        next: supplier === null ? form.add : form.save,
-        cancel: form.cancel,
-        checkTitle: form.confirm.title,
-        send: form.confirm.send,
-        saving: form.saving,
-        back: form.confirm.back,
-      }}
       errors={copy.errors}
       onCancel={onCancel}
       sendable={lines.length > 0}

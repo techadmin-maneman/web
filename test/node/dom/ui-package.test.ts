@@ -113,6 +113,33 @@ describe.each(APPS)("%s", (app) => {
   });
 });
 
+// The site's islands render the shared package's parts through Preact, so they keep no copy of them either.
+describe("site/src", () => {
+  const sources = filesUnder("site/src");
+  const code = sources.filter((path) => /\.(tsx?|astro)$/.test(path));
+  const styles = sources.filter((path) => path.endsWith(".css"));
+
+  it("keeps no icon, mark, field wrapper, code field, empty state or error line of its own", () => {
+    const copies = code.filter((path) =>
+      /\bfunction (Icon|Mark|Field|Box|CodeField|CodeBoxes|EmptyState|InlineMessage|Drawer|useCountdown)\b/.test(
+        read(path),
+      ),
+    );
+    expect(copies).toEqual([]);
+  });
+
+  it("keeps no small-caps or hidden-words recipe of its own", () => {
+    const recipes = styles.filter((path) =>
+      /font-variant-caps:\s*all-small-caps|clip:\s*rect\(0|clip-path:\s*inset\(50%\)/.test(read(path)),
+    );
+    expect(recipes).toEqual([]);
+  });
+
+  it("draws no icon from the set by hand", () => {
+    expect(code.filter((path) => read(path).includes("<path d={ICONS."))).toEqual([]);
+  });
+});
+
 // A service worker is registered as a classic script, which cannot import: built with a module the app's own pages
 // import too, it would load the app's chunk with an import statement and fail to install. So it takes nothing from the
 // packages but the workers' own kit, which imports nothing and which nothing but a worker imports, so it is bundled into

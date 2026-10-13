@@ -1,6 +1,7 @@
 // The /stop page, which the link at the foot of a reminder or the launch alert opens. The link's token is in the
 // address's fragment, so no server or log sees it until the tap sends it.
 
+import { messageLook } from "@maneman/ui/InlineMessage";
 import { TextLink } from "@maneman/ui/TextLink";
 import { Button } from "@maneman/ui/Button";
 import { whatsappChat } from "@maneman/web-kit/whatsapp";
@@ -110,7 +111,9 @@ export default function StopMessages() {
       >
         {words.ask.button}
       </Button>
-      <div aria-live="polite">{screen.offline && <p class={styles.failure}>{words.offline}</p>}</div>
+      <div aria-live="polite">
+        {screen.offline && <p class={messageLook({ tone: "error", className: styles.failure })}>{words.offline}</p>}
+      </div>
     </section>
   );
 }

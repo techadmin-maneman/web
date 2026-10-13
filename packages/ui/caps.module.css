@@ -9,4 +9,23 @@
     font-variant-caps: all-small-caps;
     letter-spacing: var(--tracking-14);
   }
+
+  /* A badge: a state named in small capitals beside what it is about, a little closer set and in its tone. */
+  .badge {
+    letter-spacing: var(--tracking-12);
+    font-size: var(--fs-14);
+    white-space: nowrap;
+  }
+
+  .brass {
+    color: var(--brass-text);
+  }
+
+  .muted {
+    color: var(--ink-muted);
+  }
+
+  .onInk {
+    color: var(--paper);
+  }
 }

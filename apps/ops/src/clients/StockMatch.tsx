@@ -2,6 +2,7 @@
 // stock.md): the stock code made exactly to their profile and where its pieces are, their city first; what the profile
 // lacks; or that theirs is a custom order.
 
+import { Panel } from "@maneman/ui/Panel";
 import { useLoad } from "@maneman/ui/useLoad";
 import { useCallback } from "react";
 import { client } from "../api.ts";
@@ -34,15 +35,10 @@ export function StockMatch({ clientId }: { clientId: string }) {
   const load = useCallback(() => client.get("/api/clients/{id}/stock-match", { path: { id: clientId } }), [clientId]);
   const [loaded, retry] = useLoad(load);
   return (
-    <section className={form.panel} aria-labelledby="stock-match">
-      <div className={form.panelHead}>
-        <h2 className={form.panelTitle} id="stock-match">
-          {copy.title}
-        </h2>
-      </div>
+    <Panel titleId="stock-match" title={copy.title}>
       {loaded.state === "loading" && <Loading />}
       {loaded.state === "failed" && <PanelFailed onRetry={retry} requestId={loaded.requestId} />}
       {loaded.state === "loaded" && <Lines match={loaded.value} />}
-    </section>
+    </Panel>
   );
 }

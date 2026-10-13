@@ -14,6 +14,8 @@ interface Props {
   readonly value: string;
   readonly label: string;
   readonly invalid?: boolean;
+  /** The id of the line that says what is wrong, read with the field. */
+  readonly describedBy?: string | undefined;
   readonly disabled?: boolean;
   /** Whether the keyboard starts in it, as it does on a screen that asks for nothing else. */
   readonly autoFocus?: boolean;
@@ -23,7 +25,8 @@ interface Props {
   readonly ref?: Ref<HTMLInputElement>;
 }
 
-export function CodeField({ value, label, invalid = false, disabled, autoFocus, className, onChange, ref }: Props) {
+export function CodeField(props: Props) {
+  const { value, label, invalid = false, describedBy, disabled, autoFocus, className, onChange, ref } = props;
   return (
     <div className={classes(styles.field, className)} data-invalid={invalid}>
       <input
@@ -39,6 +42,7 @@ export function CodeField({ value, label, invalid = false, disabled, autoFocus, 
         maxLength={ONE_TIME_CODE.digits}
         aria-label={label}
         aria-invalid={invalid}
+        aria-describedby={describedBy}
         autoFocus={autoFocus}
       />
       <div className={styles.boxes} aria-hidden="true">

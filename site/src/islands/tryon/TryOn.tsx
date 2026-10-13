@@ -16,6 +16,7 @@
 // and no API calls, for the fidelity screenshots and the browser tests
 // (machine.ts lists the kinds each screen takes).
 
+import { capsLook } from "@maneman/ui/Caps";
 import { TextButton } from "@maneman/ui/TextLink";
 import { useEffect, useReducer, useRef } from "preact/hooks";
 import { ICONS } from "@maneman/brand/icons";
@@ -25,7 +26,7 @@ import { track } from "../../lib/analytics.ts";
 import { preparePhoto, type PreparedPhoto } from "../../lib/photo.ts";
 import { onArrival, startUpload, type Arrival, type Outcome, type Uploaded } from "../../lib/tryon.ts";
 import type { Failure } from "../../lib/tryon-errors.ts";
-import { Icon } from "../Drawings.tsx";
+import { Icon } from "@maneman/ui/Icon";
 import { Consent } from "./Consent.tsx";
 import { Failed } from "./Failed.tsx";
 import { Gate } from "./Gate.tsx";
@@ -157,10 +158,10 @@ function TryOnFlow(props: Props) {
       <div class={styles.inner}>
         <div class={styles.topline}>
           <TextButton tone="ink" className={styles.back} onClick={back}>
-            <Icon path={ICONS.back} size={17} />
+            <Icon d={ICONS.back} size={17} />
             {backFrom(screen) === "home" ? tryOn.backToSite : tryOn.back}
           </TextButton>
-          <span class={`caps ${styles.stepLabel}`}>
+          <span class={capsLook(styles.stepLabel)}>
             {screen === "error" ? tryOn.error.kinds[state.errorKind].step : tryOn.stepLabels[screen]}
           </span>
         </div>

@@ -77,12 +77,6 @@
   overflow-wrap: anywhere;
 }
 
-.empty {
-  margin: 0;
-  font-size: var(--fs-15);
-  color: var(--text-muted);
-}
-
 .older {
   align-self: flex-start;
 }

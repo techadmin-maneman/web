@@ -57,6 +57,27 @@ const bookedOn = (where: string) => `(SELECT COUNT(*) FROM appointments a
     AND a.window_start >= strftime('%Y-%m-%dT%H:%M:%fZ', b.date, '-330 minutes')
     AND a.window_start < strftime('%Y-%m-%dT%H:%M:%fZ', b.date, '+1 day', '-330 minutes'))`;
 
+/**
+ * The visits still booked from `from` to `to` in India, in one city or, with null, every city: what closing those days
+ * would leave for ops to move, said before they are closed.
+ */
+export async function bookedBetween(
+  db: D1Database,
+  period: { readonly from: string; readonly to: string; readonly city: string | null },
+): Promise<number> {
+  const row = await db
+    .prepare(
+      `SELECT COUNT(*) AS booked FROM appointments a
+       WHERE a.deleted_at IS NULL AND ${statusIn("a.status", VISIT_NOT_BEGUN)}
+         AND (?3 IS NULL OR a.service_city = ?3)
+         AND a.window_start >= strftime('%Y-%m-%dT%H:%M:%fZ', ?1, '-330 minutes')
+         AND a.window_start < strftime('%Y-%m-%dT%H:%M:%fZ', ?2, '+1 day', '-330 minutes')`,
+    )
+    .bind(period.from, period.to, period.city)
+    .first<{ booked: number }>();
+  return row?.booked ?? 0;
+}
+
 /** Every date from `from` to `to`, both ends included. */
 function datesBetween(from: string, to: string): string[] {
   const dates: string[] = [];

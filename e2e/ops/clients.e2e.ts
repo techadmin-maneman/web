@@ -224,10 +224,9 @@ test("lists what waits on Tasks for the client under the head, each with a way t
   await expect(rows).toHaveCount(2);
   await expect(rows.nth(0)).toContainText("Replacement order3 days overdue");
   await expect(rows.nth(1)).toContainText("Number change1 day left");
-  await expect(openForClient(page).getByRole("link", { name: "Go to Hair · Replacement order" })).toHaveAttribute(
-    "href",
-    `/clients/${CLIENT.id}/pieces`,
-  );
+  await expect(
+    openForClient(page).getByRole("link", { name: "Go to Hair systems · Replacement order" }),
+  ).toHaveAttribute("href", `/clients/${CLIENT.id}/pieces`);
   await expect(
     openForClient(page).getByRole("link", { name: "Decide in Number changes · Number change" }),
   ).toHaveAttribute("href", "/number-changes#change-94000000-0000-4000-8000-000000000009");
@@ -260,7 +259,7 @@ test("opens on the visits, with the invite on a Referrals tab of its own", async
   await openClient(page, `/clients/${CLIENT.id}`);
   await expect(page.getByRole("navigation", { name: CLIENT.name }).getByRole("link")).toHaveText([
     "Visits",
-    "Hair",
+    "Hair systems",
     "Payments",
     "Referrals",
     "Consents",

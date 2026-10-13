@@ -4,7 +4,7 @@
 
 @layer ui {
   .panel {
-    border: var(--hairline) solid var(--paper-line);
+    border: var(--hairline) solid var(--border-subtle);
   }
 
   .head {
@@ -13,19 +13,16 @@
     justify-content: space-between;
     gap: var(--sp-16);
     padding: var(--sp-16) var(--sp-20);
-    border-bottom: var(--hairline) solid var(--text);
+    border-bottom: var(--hairline) solid var(--on-surface);
   }
 
   .title {
     margin: 0;
-    font-family: var(--font-serif);
-    font-weight: var(--weight-regular);
-    font-size: var(--fs-22);
   }
 
   .count {
     font-size: var(--fs-14);
-    color: var(--text-muted);
+    color: var(--on-surface-muted);
     font-variant-numeric: tabular-nums;
   }
 }

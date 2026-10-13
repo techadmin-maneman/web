@@ -50,8 +50,7 @@ type InviteAttachment = Sent<paths["/api/clients/{id}/referral"]["post"]>;
 export type PhotoVisit = Body<paths["/api/clients/{id}/photos"]["get"]>["visits"][number];
 export type Photo = PhotoVisit["photos"][number];
 export type PhotoView = Body<paths["/api/clients/{id}/photos/view"]["post"]>;
-type Consents = Body<paths["/api/clients/{id}/consents"]["get"]>;
-export type Consent = Consents["consents"][number];
+export type Consent = Body<paths["/api/clients/{id}/consents"]["get"]>["consents"][number];
 export type Piece = Body<paths["/api/clients/{id}/pieces"]["get"]>["pieces"][number];
 /** The client's hair profile, and every version of it (ADR 0106). */
 export type ClientHairProfile = Body<paths["/api/clients/{id}/hair-profile"]["get"]>;
@@ -65,8 +64,7 @@ export type Task = TaskGroup["tasks"][number];
 /** The groups ops may close a task of without doing its thing (docs/decisions/0092-task-owners.md). */
 export type ClosableGroup = paths["/api/tasks/{group}/{id}/close"]["post"]["parameters"]["path"]["group"];
 /** The alerts on Tasks' "Needs a hand". */
-type OpenAlerts = Body<paths["/api/alerts"]["get"]>;
-export type OpenAlert = OpenAlerts["alerts"][number];
+export type OpenAlert = Body<paths["/api/alerts"]["get"]>["alerts"][number];
 /** An address a client gives ops on the phone, as the page sends it. */
 export type AddressGiven = Sent<paths["/api/clients/{id}/address"]["post"]>;
 
@@ -310,8 +308,8 @@ export const api = {
   /** Either decision needs a reason, which the server keeps with it (src/policy/decision-reasons.ts). */
   decideReferral: (id: string, decision: "approve" | "reject", reason: string) =>
     client.post("/api/referrals/{id}/decision", { path: { id }, body: { decision, reason } }),
-  /** A page of referrers, the busiest first, from `offset`. */
-  referrers: (offset: number) => client.get("/api/referrers", { query: { offset } }),
+  /** A page of referrers, the busiest first: the first, or the one `cursor` names. */
+  referrers: (cursor?: string) => client.get("/api/referrers", { query: { cursor } }),
   waitlist: () => client.get("/api/waitlist"),
   /** Without confirm, what a launch would send; with it, the launch itself, from the day given or today. */
   launch: (pincode: string, confirm: boolean, launchOn: string | null = null) =>
@@ -394,17 +392,14 @@ export const api = {
   noShows: () => client.get("/api/no-shows", { query: { decision: "undecided" } }),
   /** A day's money, as the Payments page heads it: India's date, or today with null. */
   dayMoney: (date: string | null) => client.get("/api/payments", { query: setOnly({ date }) }),
-  /**
-   * Charge the visit or waive it, with the reason either way. A charge costs
-   * what the booking was sold to cost a no-show, and gives back the rest.
-   */
+  /** Charge the visit or waive it, with the reason either way: a charge keeps what the booking sold a no-show at. */
   decideNoShow: (id: string, decision: "charged" | "waived", reason: string) =>
     client.post("/api/no-shows/{id}/decision", { path: { id }, body: { decision, reason } }),
-  /** The disputed charges still to rule on (docs/decisions/0096-a-no-shows-charge-and-its-dispute.md). */
   /** What charging the case would keep of the visit's payment and refund, read before the charge is sent. */
   chargePreview: (id: string) => client.get("/api/no-shows/{id}/charge", { path: { id } }),
   /** The cases ruled on today, the latest first, each with its ruling. */
   decidedNoShows: () => client.get("/api/no-shows/decided"),
+  /** The disputed charges still to rule on (docs/decisions/0096-a-no-shows-charge-and-its-dispute.md). */
   disputes: () => client.get("/api/no-shows/disputes"),
   ruleOnDispute: (id: string, ruling: DisputeRuling, reason: string) =>
     client.post("/api/no-shows/disputes/{id}/ruling", { path: { id }, body: { ruling, reason } }),
@@ -523,6 +518,8 @@ export const api = {
   setPayGradeOf: (technicianId: string, gradeId: string | null) =>
     client.post("/api/technician-pay/technicians/{id}", { path: { id: technicianId }, body: { grade_id: gradeId } }),
   blackouts: () => client.get("/api/blackouts"),
+  /** The visits still booked on the days from the first to the last, which closing them strands. */
+  blackoutsBooked: (period: BlackoutRemove) => client.get("/api/blackouts/booked", { query: period }),
   /** Every day from the first to the last, both included. A day already blacked out takes this reason. */
   addBlackouts: (period: BlackoutAdd) => client.post("/api/blackouts", { body: period }),
   /** The days from the first to the last are offered again. */

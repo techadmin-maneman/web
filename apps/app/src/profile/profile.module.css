@@ -87,9 +87,6 @@
 
 .error {
   margin: var(--sp-8) 0 0;
-  font-size: var(--fs-15);
-  line-height: var(--lh-160);
-  color: var(--error-on-paper);
 }
 
 .row {

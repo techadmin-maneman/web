@@ -1,6 +1,7 @@
 // Growth · Spend (docs/decisions/0150-spend.md): a month's offline spend, for a city or national, by channel, which the
 // nightly reporting copy counts beside the ad accounts' own. An entry is added whole, and taken off rather than changed.
 
+import { whoWords } from "../lib/who.ts";
 import { Button, RowButton } from "@maneman/ui/Button";
 import { Field, Select, TextInput } from "@maneman/ui/Field";
 import { Panel } from "@maneman/ui/Panel";
@@ -170,7 +171,7 @@ function SpendTable(props: { entries: readonly SpendEntry[]; mayRemove: boolean;
             </td>
             <td>{rupees(entry.amount)}</td>
             <td>{entry.note ?? ""}</td>
-            <td>{entry.entered_by}</td>
+            <td>{whoWords(entry.entered_by)}</td>
             {props.mayRemove && (
               <td>
                 <RowButton

@@ -6,6 +6,7 @@
 // would tell the client something untrue about their data. Where switching a
 // purpose off leaves something as it was, a line says so.
 
+import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { Switch } from "@maneman/ui/Switch";
 import { capsLook } from "@maneman/ui/Caps";
 import { Button } from "@maneman/ui/Button";
@@ -100,9 +101,9 @@ export function ConsentList({
                   </div>
                 )}
                 {failed === consent.purpose && (
-                  <p className={styles.error} role="alert">
+                  <InlineMessage tone="error" className={styles.error}>
                     {copy.switchFailed}
-                  </p>
+                  </InlineMessage>
                 )}
                 {confirming === consent.purpose && (
                   <div className={styles.confirm}>

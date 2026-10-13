@@ -2,7 +2,11 @@
 // its minimum, at the price it lists; the total shown before it is drafted. Drafting sends nothing to the supplier: an
 // order goes out only once approved and marked sent.
 
-import { Button, RowButton } from "@maneman/ui/Button";
+import { ICONS } from "@maneman/brand/icons";
+import { IconButton } from "@maneman/ui/IconButton";
+import { InlineMessage } from "@maneman/ui/InlineMessage";
+import { Panel } from "@maneman/ui/Panel";
+import { Button } from "@maneman/ui/Button";
 import { Field, Select, TextInput } from "@maneman/ui/Field";
 import { errorText, type Failure } from "@maneman/web-kit/refusal";
 import { inCurrency } from "@maneman/web-kit/money";
@@ -81,18 +85,16 @@ function LineBoxes(props: {
           />
         )}
       </Field>
-      <RowButton className={form.inline} aria-label={copy.draft.removeLine(named(line.code))} onClick={props.onRemove}>
-        ×
-      </RowButton>
+      <IconButton d={ICONS.cross} size={16} label={copy.draft.removeLine(named(line.code))} onClick={props.onRemove} />
       {questioned && (
-        <p className={form.error} role="status">
+        <InlineMessage tone="error" className={form.error}>
           {copy.draft.farAbove(
             inCurrency(item.unit_price, currency),
             unit,
             Math.round(times),
             inCurrency(listed.unit_cost, "INR"),
           )}
-        </p>
+        </InlineMessage>
       )}
     </div>
   );
@@ -251,12 +253,7 @@ export function DraftOrder({ book, onDrafted }: { book: Orders; onDrafted: (book
     onDrafted(answer.body, copy.draft.drafted);
   };
   return (
-    <section className={form.panel} aria-labelledby="draft-order">
-      <div className={form.panelHead}>
-        <h2 className={form.panelTitle} id="draft-order">
-          {copy.draft.title}
-        </h2>
-      </div>
+    <Panel titleId="draft-order" title={copy.draft.title}>
       <SupplierPick stocked={stocked} supplierId={supplierId} onPick={pick} />
       <LinesEditor supplier={supplier} lines={lines} consumable={consumable} onLines={setLines} />
       <WhenAndNote expected={expected} note={note} onExpected={setExpected} onNote={setNote} />
@@ -267,10 +264,10 @@ export function DraftOrder({ book, onDrafted }: { book: Orders; onDrafted: (book
         </Button>
       </div>
       {failure !== null && (
-        <p className={form.error} role="alert">
+        <InlineMessage tone="error" className={form.error}>
           {errorText(copy.errors, failure)}
-        </p>
+        </InlineMessage>
       )}
-    </section>
+    </Panel>
   );
 }

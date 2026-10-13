@@ -422,8 +422,6 @@
 .error,
 .failure {
   margin-top: var(--sp-8);
-  font-size: var(--fs-14);
-  color: var(--error-on-paper);
 }
 
 .submit {

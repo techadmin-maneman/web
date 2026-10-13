@@ -47,7 +47,7 @@
 
   .number {
     font-family: var(--font-serif);
-    font-size: var(--fs-19);
+    font-size: var(--fs-18);
     font-variant-numeric: lining-nums;
   }
 

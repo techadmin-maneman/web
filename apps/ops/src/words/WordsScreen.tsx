@@ -1,6 +1,8 @@
 // Growth · Words (docs/decisions/0126-the-words-page.md): every line of the site and every WhatsApp message to a
 // client, found by page or by what it says, each changed in its row, with its history beneath it.
 
+import { whoWords } from "../lib/who.ts";
+import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { Button, RowButton } from "@maneman/ui/Button";
 import { Panel } from "@maneman/ui/Panel";
 import { Table } from "@maneman/ui/Table";
@@ -107,7 +109,9 @@ function WordRows({ word, ...row }: { word: Word } & RowProps) {
         <td className={own.text}>
           {word.now}
           {word.changed !== null && (
-            <span className={own.changed}>{copy.changed(word.changed.by, shortDate(indiaDate(word.changed.at)))}</span>
+            <span className={own.changed}>
+              {copy.changed(whoWords(word.changed.by), shortDate(indiaDate(word.changed.at)))}
+            </span>
           )}
           {word.on_site === false && <span className={own.changed}>{copy.notOnSite}</span>}
         </td>
@@ -216,9 +220,9 @@ function Words() {
         />
       )}
       {said !== null && (
-        <p className={styles.saved} role="status">
+        <InlineMessage tone="saved" className={styles.saved}>
           {said}
-        </p>
+        </InlineMessage>
       )}
       <WordsTable view={view} row={row} />
     </Panel>

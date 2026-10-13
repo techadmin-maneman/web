@@ -5,14 +5,15 @@
 // phone's back gesture says no; a tap beside it says nothing. It opens on the
 // safe answer, so a stray Enter or a tap already on its way keeps the work.
 //
-// Neither answer is gold: the screen's one primary action is behind it.
+// Neither answer is gold: the screen's one primary action is behind it. It is drawn on the ink-night ground, as the
+// technician app draws its questions.
 
-import { Button } from "@maneman/ui/Button";
-import { Sheet } from "@maneman/ui/Sheet";
 import { useId, useLayoutEffect, useRef } from "react";
-import styles from "./sheet.module.css";
+import { Button } from "./Button.tsx";
+import { Sheet } from "./Sheet.tsx";
+import styles from "./confirm-sheet.module.css";
 
-export function Confirm({
+export function ConfirmSheet({
   title,
   body,
   yes,

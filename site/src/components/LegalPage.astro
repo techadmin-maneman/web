@@ -1,5 +1,6 @@
 ---
 // A long-form text page in the site layout, a heading per topic.
+import { capsLook } from "@maneman/ui/Caps";
 import { textLinkLook } from "@maneman/ui/TextLink";
 import { whatsappChat } from "@maneman/web-kit/whatsapp";
 import { placeholderTag, whatsapp, type LegalPage } from "../content/site.ts";
@@ -20,7 +21,7 @@ const chat = whatsappChat(whatsapp.number);
 
 <Site title={pageTitle} description={description}>
   <article class="page">
-    {SHOW_PLACEHOLDER_TAGS && !page.publish && <div class="label tag">{placeholderTag}</div>}
+    {SHOW_PLACEHOLDER_TAGS && !page.publish && <div class={capsLook("label tag")}>{placeholderTag}</div>}
     <h1 class="section-title">{page.title}</h1>
     {page.sections.map((section) => (
       <section>

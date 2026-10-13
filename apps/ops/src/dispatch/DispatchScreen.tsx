@@ -21,6 +21,7 @@
 // technician's leave and blackout days do; the visit's drawer opens. The address
 // keeps all four as ops change them (./address.ts).
 
+import { EmptyState } from "@maneman/ui/EmptyState";
 import { useCallback, useMemo, useRef, useState } from "react";
 import type { BoardQuery } from "../api.ts";
 import { Shell } from "../components/Shell.tsx";
@@ -146,9 +147,9 @@ export function DispatchScreen() {
           {board !== null && (
             <>
               <div className={styles.scroll}>
-                {board.technicians.length === 0 && <p className={styles.empty}>{dispatch.board.empty}</p>}
+                {board.technicians.length === 0 && <EmptyState look="panel" line={dispatch.board.empty} />}
                 {board.technicians.length > 0 && rows.length === 0 && (
-                  <p className={styles.empty}>{dispatch.tools.nothingFound(find.trim())}</p>
+                  <EmptyState look="panel" line={dispatch.tools.nothingFound(find.trim())} />
                 )}
                 {rows.length > 0 && (
                   <Grid

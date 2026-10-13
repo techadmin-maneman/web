@@ -3,6 +3,7 @@
 // statement sent to the partner, records the month's payment from the payout tool, or deletes one recorded by
 // mistake; the month's file goes to the payout tool.
 
+import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { Button, RowButton } from "@maneman/ui/Button";
 import { Field, Select } from "@maneman/ui/Field";
 import { Panel } from "@maneman/ui/Panel";
@@ -272,9 +273,9 @@ export function PartnerCommission() {
     >
       <MonthChoice book={book} onMonth={choose} />
       {said !== null && (
-        <p className={styles.saved} role="status">
+        <InlineMessage tone="saved" className={styles.saved}>
           {said}
-        </p>
+        </InlineMessage>
       )}
       {book.statements.length === 0 ? <p className={styles.note}>{copy.none}</p> : <StatementsTable {...row} />}
     </Panel>

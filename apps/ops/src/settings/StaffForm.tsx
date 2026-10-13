@@ -1,13 +1,14 @@
 // Adding a member of staff, or changing their grants and whether they are let in. The whole list of grants is sent
 // and replaces theirs; the check names each grant given or taken away before anything is saved.
 
+import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { Checkbox, Fieldset, Label, Select, TextInput } from "@maneman/ui/Field";
-import { errorText, type Failure } from "@maneman/web-kit/refusal";
+import { errorText } from "@maneman/web-kit/refusal";
 import { Button } from "@maneman/ui/Button";
 import { useState } from "react";
 import { api, type StaffBook, type StaffGrant, type StaffPerson, type StaffSave } from "../api.ts";
 import { settings } from "../content/settings.ts";
-import { CheckPanel } from "../components/CheckPanel.tsx";
+import { review } from "../content/common.ts";
 import {
   alreadyListed,
   departmentOf,
@@ -21,6 +22,7 @@ import {
 } from "../lib/grants.ts";
 import styles from "../components/forms.module.css";
 import staffStyles from "./staff.module.css";
+import { SettingForm, sentOf, useSteps } from "./SettingForm.tsx";
 
 const copy = settings.staff;
 
@@ -29,11 +31,6 @@ interface Draft {
   readonly active: boolean;
   readonly grants: readonly StaffGrant[];
 }
-
-type Step =
-  | { readonly step: "editing" }
-  | { readonly step: "checking" | "sending"; readonly sent: StaffSave }
-  | { readonly step: "failed"; readonly failure: Failure };
 
 const NEW_GRANT: StaffGrant = { department: "operations", level: "view", geography: "national", place: null };
 
@@ -152,64 +149,39 @@ export function StaffForm(props: {
 }) {
   const { book, person, onSaved, onCancel } = props;
   const [draft, setDraft] = useState<Draft>(draftOf(person));
-  const [step, setStep] = useState<Step>({ step: "editing" });
+  const sent: StaffSave = { email: draft.email.trim(), active: draft.active, grants: [...draft.grants] };
+  const steps = useSteps(
+    async () => sentOf(await api.saveStaff(sent), (next) => ({ next })),
+    (done) => {
+      onSaved(done.next);
+    },
+  );
+  // Someone already on the list is changed from their own row, never added twice.
+  const listed = person === null && alreadyListed(book.people, draft.email);
 
   const edit = (change: Partial<Draft>) => {
     setDraft({ ...draft, ...change });
-    setStep({ step: "editing" });
+    steps.edit();
   };
   const editGrant = (index: number, grant: StaffGrant) => {
     edit({ grants: draft.grants.map((each, at) => (at === index ? grant : each)) });
   };
-
-  const send = async (sent: StaffSave) => {
-    setStep({ step: "sending", sent });
-    const answer = await api.saveStaff(sent);
-    if (!answer.ok) {
-      setStep({ step: "failed", failure: { code: answer.code, fields: answer.fields } });
-      return;
-    }
-    onSaved(answer.body);
-  };
-
-  if (step.step === "checking" || step.step === "sending") {
-    const lines = checkLines(person, step.sent);
-    return (
-      <div className={styles.group}>
-        <CheckPanel
-          title={copy.confirm.title}
-          lines={lines.length === 0 ? [copy.confirm.nothing] : lines}
-          ready={lines.length > 0}
-          send={copy.confirm.send}
-          sending={copy.confirm.sending}
-          back={copy.confirm.back}
-          busy={step.step === "sending"}
-          onSend={() => void send(step.sent)}
-          onBack={() => {
-            setStep({ step: "editing" });
-          }}
-        />
-      </div>
-    );
-  }
+  const lines = steps.step === "editing" ? [] : checkLines(person, sent);
 
   return (
-    <form
-      className={styles.group}
-      aria-label={person === null ? copy.form.addTitle : copy.form.changeTitle(person.email)}
-      onSubmit={(event) => {
-        event.preventDefault();
-        if (person === null && alreadyListed(book.people, draft.email)) {
-          setStep({ step: "failed", failure: { code: "already_listed", fields: [] } });
-          return;
-        }
-        setStep({
-          step: "checking",
-          sent: { email: draft.email.trim(), active: draft.active, grants: [...draft.grants] },
-        });
-      }}
+    <SettingForm
+      title={person === null ? copy.form.addTitle : copy.form.changeTitle(person.email)}
+      steps={steps}
+      ready={draft.email.trim() !== "" && !listed}
+      errors={copy.errors}
+      onCancel={onCancel}
+      sendable={lines.length > 0}
+      checking={(lines.length === 0 ? [review.nothing] : lines).map((line) => (
+        <p className={styles.checkLine} key={line}>
+          {line}
+        </p>
+      ))}
     >
-      <p className={styles.ruleTitle}>{person === null ? copy.form.addTitle : copy.form.changeTitle(person.email)}</p>
       <div className={styles.fields}>
         <div className={styles.field}>
           <Label htmlFor="staff-email">{copy.form.email}</Label>
@@ -265,25 +237,11 @@ export function StaffForm(props: {
           {copy.form.addGrant}
         </Button>
       </div>
-      <div className={styles.actions}>
-        <Button
-          type="submit"
-          variant="primary"
-          size="small"
-          className={styles.save}
-          disabled={draft.email.trim() === ""}
-        >
-          {copy.form.review}
-        </Button>
-        <Button variant="outline" size="small" className={styles.quiet} onClick={onCancel}>
-          {copy.form.cancel}
-        </Button>
-      </div>
-      {step.step === "failed" && (
-        <p className={styles.error} role="alert">
-          {errorText(copy.errors, step.failure)}
-        </p>
+      {listed && (
+        <InlineMessage tone="error" className={styles.error}>
+          {errorText(copy.errors, { code: "already_listed" })}
+        </InlineMessage>
       )}
-    </form>
+    </SettingForm>
   );
 }

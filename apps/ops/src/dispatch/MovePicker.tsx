@@ -20,6 +20,7 @@ import { REASON_MAX_CHARS } from "@rules/policy/decision-reasons.ts";
 import { classes } from "@maneman/ui/classes";
 import { Button } from "@maneman/ui/Button";
 import { Dialog } from "@maneman/ui/Dialog";
+import { drawerFrame } from "@maneman/ui/Drawer";
 import { ChoiceGroup, Field, Radio, TextArea } from "@maneman/ui/Field";
 import { indiaClock, shortDate } from "@maneman/web-kit/dates";
 import { useState } from "react";
@@ -118,7 +119,7 @@ export function MovePicker({ job, to, landsAt, blackout, sending, clearingCheckI
 
   return (
     <Dialog
-      className={classes(styles.panel, styles.picker)}
+      className={classes(drawerFrame, styles.picker)}
       labelledBy="move-title"
       canClose={!sending}
       onDismiss={onCancel}

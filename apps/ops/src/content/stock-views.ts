@@ -9,7 +9,7 @@ export const stockViews = {
   },
   demand: {
     title: "Next 4 weeks",
-    columns: ["Consumable", "City", "Booked visits use", "Held there"],
+    columns: ["Item", "City", "Booked visits use", "Held there"],
     none: "Nothing booked in the next four weeks uses stock.",
     noCity: "No city",
     noProfile: "No hair profile to match",
@@ -21,7 +21,7 @@ export const stockViews = {
   expiring: {
     title: "Expiring",
     intro: (days: number) => `Lots expiring within ${String(days)} days, soonest first. Use them first or move them.`,
-    columns: ["Consumable", "Lot", "Place", "How many", "Expires"],
+    columns: ["Item", "Lot", "Place", "How many", "Expires"],
     expired: "Expired",
   },
 };

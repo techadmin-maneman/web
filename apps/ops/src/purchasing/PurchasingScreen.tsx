@@ -2,6 +2,9 @@
 // opened beneath the list to approve, mark sent, cancel or print; a new order drafted from a supplier's list; and the
 // claims on suppliers, with the returned pieces to settle (./Claims.tsx); and each supplier's scorecard.
 
+import { fullDate } from "@maneman/web-kit/dates";
+import { InlineMessage } from "@maneman/ui/InlineMessage";
+import { Panel } from "@maneman/ui/Panel";
 import { RowButton } from "@maneman/ui/Button";
 import { Table } from "@maneman/ui/Table";
 import { useLoad } from "@maneman/ui/useLoad";
@@ -52,7 +55,7 @@ function OrdersTable({ book, onOpen }: { book: Orders; onOpen: (id: string) => v
             <td>{supplierOf(order.supplier_id)}</td>
             <td>{copy.states[order.state] ?? order.state}</td>
             <td className={form.figure}>{inCurrency(order.total, order.currency)}</td>
-            <td>{order.expected_on ?? ""}</td>
+            <td>{order.expected_on === null ? "" : fullDate(order.expected_on)}</td>
           </tr>
         ))}
       </tbody>
@@ -78,19 +81,14 @@ export function PurchasingScreen() {
       {loaded.state === "failed" && <PanelFailed onRetry={retry} requestId={loaded.requestId} />}
       {current !== null && (
         <div className={form.screen}>
-          <section className={form.panel} aria-labelledby="orders">
-            <div className={form.panelHead}>
-              <h2 className={form.panelTitle} id="orders">
-                {copy.orders}
-              </h2>
-            </div>
+          <Panel titleId="orders" title={copy.orders}>
             <OrdersTable book={current} onOpen={setOpen} />
             {said !== null && (
-              <p className={form.saved} role="status">
+              <InlineMessage tone="saved" className={form.saved}>
                 {said}
-              </p>
+              </InlineMessage>
             )}
-          </section>
+          </Panel>
           {opened !== null && <OrderPanel key={opened.id} book={current} order={opened} onChanged={changed} />}
           {access.mayCall("POST /api/purchase-orders") && (
             <DraftOrder

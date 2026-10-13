@@ -11,6 +11,8 @@ export interface Stock {
     city: string | null;
     active: boolean;
   }[];
+  /** The places the movements name that places does not hold. */
+  other_places: Stock["places"];
   holdings: {
     consumable_code: string;
     place_id: string;

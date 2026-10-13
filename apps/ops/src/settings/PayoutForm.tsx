@@ -8,19 +8,10 @@ import { paiseFromRupees, rupees } from "@maneman/web-kit/money";
 import { useState } from "react";
 import { api, type PartnerStatement, type PartnerStatements } from "../api.ts";
 import { partnerCommission } from "../content/partner-commission.ts";
-import { SettingForm, sentOf, useSteps, type FormWords } from "./SettingForm.tsx";
+import { SettingForm, sentOf, useSteps } from "./SettingForm.tsx";
 import styles from "../components/forms.module.css";
 
 const { form, check, errors } = partnerCommission;
-
-const WORDS: FormWords = {
-  next: form.next,
-  cancel: form.cancel,
-  checkTitle: check.title,
-  send: check.send,
-  saving: check.saving,
-  back: check.back,
-};
 
 interface Draft {
   readonly amount: string;
@@ -116,7 +107,6 @@ export function PayoutForm(props: {
       title={form.title(statement.name, props.monthName)}
       steps={steps}
       ready={ready}
-      words={WORDS}
       errors={errors}
       onCancel={props.onCancel}
       checking={

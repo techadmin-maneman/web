@@ -5,7 +5,7 @@ import { FAILED, NOT_PERMITTED, OFFLINE, UNCONFIRMED } from "./common.ts";
 
 export const stockTransit = {
   title: "In transit",
-  columns: ["Consumable", "How many", "From", "To", "Sent", ""],
+  columns: ["Item", "How many", "From", "To", "Sent", ""],
   receive: "Receive",
   receiveLabel: (what: string, to: string) => `Receive ${what} at ${to}`,
   sendBack: "Send back",

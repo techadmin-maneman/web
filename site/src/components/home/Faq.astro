@@ -2,11 +2,10 @@
 // Questions: ten disclosures, the first open, one open at a time. <details>
 // sharing a `name` behave as one group, so this needs no script.
 import { textLinkLook } from "@maneman/ui/TextLink";
-import { ruledDisclosureLook as ruled } from "@maneman/ui/Disclosure";
+import { DisclosureSign, ruledDisclosureLook as ruled } from "@maneman/ui/Disclosure";
 import { faq, whatsapp } from "../../content/site.ts";
 import { isShown } from "../../lib/build.ts";
 import { asBuilt, priceTemplate } from "../../lib/prices.ts";
-import { ICONS } from "@maneman/brand/icons";
 import { whatsappChat } from "@maneman/web-kit/whatsapp";
 
 // One expression, so no line break can put a space before the full stop.
@@ -35,20 +34,7 @@ const link = isShown(whatsapp) ? whatsappChat(whatsapp.number) : null;
       <details name="faq" open={index === 0} class={ruled.details}>
         <summary class={ruled.summary}>
           <span>{item.q}</span>
-          <svg
-            class={ruled.sign}
-            viewBox="0 0 24 24"
-            width="17"
-            height="17"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="1.6"
-            stroke-linecap="round"
-            aria-hidden="true"
-          >
-            <path d={ICONS.minus} />
-            <path class={ruled.upright} d="M12 6 V18" />
-          </svg>
+          <DisclosureSign />
         </summary>
         {"cities" in item ? (
           <p data-cities={item.cities}>{item.a}</p>

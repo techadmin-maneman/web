@@ -2,6 +2,7 @@
 // Finance names the grades, sets a rate per grade and kind of visit, for every city or one, from a date, and gives
 // each technician a grade. No board draws it, so its panels are laid out as Settings' are.
 
+import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { RowButton } from "@maneman/ui/Button";
 import { Panel } from "@maneman/ui/Panel";
 import { Table } from "@maneman/ui/Table";
@@ -94,9 +95,9 @@ function PayTechnicians({ pay, maySet, onChanged }: { pay: Pay; maySet: boolean;
   return (
     <Panel titleId="pay-technicians" title={copy.title} className={styles.panel}>
       {saved && (
-        <p className={styles.saved} role="status">
+        <InlineMessage tone="saved" className={styles.saved}>
           {technicianPay.done.saved}
-        </p>
+        </InlineMessage>
       )}
       {pay.technicians.length === 0 ? (
         <p className={styles.note}>{copy.none}</p>

@@ -19,6 +19,9 @@ export const OFFLINE = "You're offline. Reconnect and try again.";
 /** A change whose answer never came: it may have gone through, and the same change sent again is not made twice. */
 export const UNCONFIRMED = "We couldn't confirm that went through. Check before trying again.";
 
+/** Beneath a list that stops at its first so many. */
+export const firstShown = (count: number) => `Showing the first ${String(count)}`;
+
 /** A refusal with no words of its own. */
 export const FAILED = "That didn't work. Try again.";
 
@@ -58,4 +61,19 @@ export const deleting = {
   confirm: "Delete permanently",
   sending: "Deleting",
   cancel: "Cancel",
+} as const;
+
+/**
+ * The one way a change is sent (docs/decisions/0071-what-ops-see-before-a-setting-changes.md): boxes, then Review,
+ * then the change beside what it was, sent only by Confirm. A one-press action asks its question instead, and its
+ * Cancel closes it. A change line reads "Field: was → now", with no full stop; a sentence keeps its own.
+ */
+export const review = {
+  next: "Review",
+  title: "Review the change",
+  send: "Confirm",
+  sending: "Saving",
+  edit: "Edit",
+  cancel: "Cancel",
+  nothing: "No changes.",
 } as const;

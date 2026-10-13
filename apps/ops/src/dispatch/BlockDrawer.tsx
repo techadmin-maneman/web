@@ -14,11 +14,11 @@
 // check-in. A visit still ahead can be cancelled for the client here, and one
 // whose time has come closed by hand, each in its own panel.
 
-import { capsLook } from "@maneman/ui/Caps";
+import { badgeLook } from "@maneman/ui/Caps";
 import { Icon } from "@maneman/ui/Icon";
 import { ICONS } from "@maneman/brand/icons";
 import { Button, ButtonLink, buttonLook } from "@maneman/ui/Button";
-import { Dialog } from "@maneman/ui/Dialog";
+import { Drawer } from "@maneman/ui/Drawer";
 import { shortDate } from "@maneman/web-kit/dates";
 import { whatsappChat } from "@maneman/web-kit/whatsapp";
 import { OpsLink } from "../components/Shell.tsx";
@@ -81,121 +81,108 @@ export function BlockDrawer(props: Props) {
   const warning = warningOf(job);
 
   return (
-    <Dialog className={styles.panel} labelledBy="drawer-title" canClose onDismiss={onClose}>
-      <div className={styles.drawerHead}>
-        <div>
-          <h2 className={styles.drawerTitle} id="drawer-title">
-            {person?.name ?? nameOf(job)}
-          </h2>
-          <p className={styles.drawerWhen}>
-            {copy.when(
-              shortDate(job.date),
-              dispatch.windowHours[block.window] ?? dispatch.unknown,
-              job.technician.name,
-            )}
-          </p>
-        </div>
-        <span className={capsLook(styles.badge)}>{copy.badges[block.badge] ?? block.badge}</span>
-      </div>
-      <div className={styles.drawerBody}>
-        <dl className={styles.rows}>
-          {rows.map((row) => (
-            <div className={styles.row} key={row.key}>
-              <dt>{row.key}</dt>
-              <dd>{row.value}</dd>
-            </div>
-          ))}
-        </dl>
-        {block.untold !== null && person !== null && (
-          <div className={styles.untold}>
-            <p className={styles.untoldLine}>{copy.untold[block.untold.reason](movedTo, phoneWords(person.mobile))}</p>
-            {onTold !== null && (
-              <Button
-                variant="outline"
-                size="small"
-                onClick={() => {
-                  if (block.untold !== null) onTold(block.untold.move_id);
-                }}
-              >
-                {dispatch.landing.told}
-              </Button>
-            )}
+    <Drawer
+      titleId="drawer-title"
+      title={person?.name ?? nameOf(job)}
+      sub={copy.when(shortDate(job.date), dispatch.windowHours[block.window] ?? dispatch.unknown, job.technician.name)}
+      aside={<span className={badgeLook("brass", styles.badge)}>{copy.badges[block.badge] ?? block.badge}</span>}
+      canClose
+      onDismiss={onClose}
+    >
+      <dl className={styles.rows}>
+        {rows.map((row) => (
+          <div className={styles.row} key={row.key}>
+            <dt>{row.key}</dt>
+            <dd>{row.value}</dd>
           </div>
-        )}
-        {block.proposal !== null && (
-          <div className={styles.untold}>
-            <p className={styles.untoldLine}>
-              {copy.proposal(
-                person === null ? nameOf(job) : firstNameOf(person.name),
-                `${shortDate(block.proposal.date)}, ${windowWord(block.proposal.window)}`,
-              )}
-            </p>
-            {onWithdraw !== null && (
-              <Button
-                variant="outline"
-                size="small"
-                onClick={() => {
-                  if (block.proposal !== null) onWithdraw(block.proposal.id);
-                }}
-              >
-                {copy.withdraw}
-              </Button>
-            )}
-          </div>
-        )}
-        {warning !== null && <p className={styles.untoldLine}>{warning}</p>}
-        <div className={styles.drawerActions}>
-          {person !== null && (
-            <>
-              <ButtonLink
-                variant="outline"
-                size="small"
-                href={whatsappChat(person.mobile)}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                <Icon d={ICONS.whatsapp} size={16} className={styles.icon} />
-                {copy.whatsapp(firstNameOf(person.name))}
-              </ButtonLink>
-              <OpsLink
-                className={buttonLook({ variant: "outline", size: "small" })}
-                to={clientPath(person.id, "visits")}
-              >
-                {copy.openClient}
-              </OpsLink>
-            </>
-          )}
-          {isMovable(block) && onMove !== null && (
-            <Button variant="outline" size="small" onClick={onMove}>
-              {copy.move}
-            </Button>
-          )}
-          {movesIfCheckInCleared(block) && onMoveAnyway !== null && (
-            <Button variant="outline" size="small" onClick={onMoveAnyway}>
-              {copy.moveAnyway}
-            </Button>
-          )}
-          {change !== null && (
+        ))}
+      </dl>
+      {block.untold !== null && person !== null && (
+        <div className={styles.untold}>
+          <p className={styles.untoldLine}>{copy.untold[block.untold.reason](movedTo, phoneWords(person.mobile))}</p>
+          {onTold !== null && (
             <Button
               variant="outline"
               size="small"
               onClick={() => {
-                onChange(change);
+                if (block.untold !== null) onTold(block.untold.move_id);
               }}
             >
-              {change === "cancel" ? copy.cancel : copy.closeByHand}
+              {dispatch.landing.told}
             </Button>
           )}
-          {onLetIn !== null && (
-            <Button variant="outline" size="small" onClick={onLetIn}>
-              {copy.letIn}
-            </Button>
-          )}
-          <Button variant="outline" size="small" onClick={onClose}>
-            {copy.close}
-          </Button>
         </div>
+      )}
+      {block.proposal !== null && (
+        <div className={styles.untold}>
+          <p className={styles.untoldLine}>
+            {copy.proposal(
+              person === null ? nameOf(job) : firstNameOf(person.name),
+              `${shortDate(block.proposal.date)}, ${windowWord(block.proposal.window)}`,
+            )}
+          </p>
+          {onWithdraw !== null && (
+            <Button
+              variant="outline"
+              size="small"
+              onClick={() => {
+                if (block.proposal !== null) onWithdraw(block.proposal.id);
+              }}
+            >
+              {copy.withdraw}
+            </Button>
+          )}
+        </div>
+      )}
+      {warning !== null && <p className={styles.untoldLine}>{warning}</p>}
+      <div className={styles.drawerActions}>
+        {person !== null && (
+          <>
+            <ButtonLink
+              variant="outline"
+              size="small"
+              href={whatsappChat(person.mobile)}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <Icon d={ICONS.whatsapp} size={16} className={styles.icon} />
+              {copy.whatsapp(firstNameOf(person.name))}
+            </ButtonLink>
+            <OpsLink className={buttonLook({ variant: "outline", size: "small" })} to={clientPath(person.id, "visits")}>
+              {copy.openClient}
+            </OpsLink>
+          </>
+        )}
+        {isMovable(block) && onMove !== null && (
+          <Button variant="outline" size="small" onClick={onMove}>
+            {copy.move}
+          </Button>
+        )}
+        {movesIfCheckInCleared(block) && onMoveAnyway !== null && (
+          <Button variant="outline" size="small" onClick={onMoveAnyway}>
+            {copy.moveAnyway}
+          </Button>
+        )}
+        {change !== null && (
+          <Button
+            variant="outline"
+            size="small"
+            onClick={() => {
+              onChange(change);
+            }}
+          >
+            {change === "cancel" ? copy.cancel : copy.closeByHand}
+          </Button>
+        )}
+        {onLetIn !== null && (
+          <Button variant="outline" size="small" onClick={onLetIn}>
+            {copy.letIn}
+          </Button>
+        )}
+        <Button variant="outline" size="small" onClick={onClose}>
+          {copy.close}
+        </Button>
       </div>
-    </Dialog>
+    </Drawer>
   );
 }

@@ -2,6 +2,8 @@
 // last published, and the check before the next publish, which says how many lines changed since and when the site
 // shows them. Only its second press publishes.
 
+import { whoWords } from "../lib/who.ts";
+import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { indiaDate, shortDate } from "@maneman/web-kit/dates";
 import { errorText, type Failure } from "@maneman/web-kit/refusal";
 import { useState } from "react";
@@ -16,7 +18,7 @@ const { publish } = copy;
 export function LastPublished({ published }: { published: WordsPublish | null }) {
   return (
     <p className={styles.note}>
-      {published === null ? publish.never : publish.last(shortDate(indiaDate(published.at)), published.by)}
+      {published === null ? publish.never : publish.last(shortDate(indiaDate(published.at)), whoWords(published.by))}
     </p>
   );
 }
@@ -41,20 +43,17 @@ export function PublishCheck(props: {
   return (
     <>
       <CheckPanel
-        title={publish.title}
+        question={publish.title}
         lines={props.unpublished === 0 ? [publish.none] : [publish.changed(props.unpublished), when]}
-        send={publish.send}
-        sending={publish.sending}
-        back={publish.back}
         busy={step === "sending"}
         ready={props.unpublished > 0}
         onSend={() => void send()}
         onBack={props.onBack}
       />
       {typeof step === "object" && (
-        <p className={styles.error} role="alert">
+        <InlineMessage tone="error" className={styles.error}>
           {errorText(copy.errors, step)}
-        </p>
+        </InlineMessage>
       )}
     </>
   );

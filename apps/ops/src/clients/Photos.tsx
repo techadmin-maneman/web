@@ -9,6 +9,8 @@
 // asked for, since a client of some years has a great many. The opening is held
 // by the client's page, so leaving this tab and coming back is the same view.
 
+import { InlineMessage } from "@maneman/ui/InlineMessage";
+import { EmptyState } from "@maneman/ui/EmptyState";
 import { errorText } from "@maneman/web-kit/refusal";
 import { capsLook } from "@maneman/ui/Caps";
 import { Button } from "@maneman/ui/Button";
@@ -212,7 +214,7 @@ export function Photos({ photos, name }: { photos: ReturnType<typeof usePhotos>;
   if (state.step === "none") {
     return (
       <section className={styles.photos} aria-label={copy.title(name)}>
-        <p className={styles.empty}>{copy.empty}</p>
+        <EmptyState look="panel" line={copy.empty} />
       </section>
     );
   }
@@ -243,9 +245,9 @@ export function Photos({ photos, name }: { photos: ReturnType<typeof usePhotos>;
         </Button>
       )}
       {state.step === "failed" && (
-        <p className={styles.error} role="alert">
+        <InlineMessage tone="error" className={styles.error}>
           {errorText(copy.errors, { code: state.code })}
-        </p>
+        </InlineMessage>
       )}
     </section>
   );

@@ -1,12 +1,5 @@
 /* A decision queue (./DecisionQueue.tsx): its rows, the line when none wait, and the note beneath. */
 
-.empty {
-  margin: 0;
-  padding: var(--sp-16) var(--sp-20);
-  font-size: var(--fs-15);
-  color: var(--text-muted);
-}
-
 /* What the last decision did, above the rows it left. */
 .done {
   margin: 0;
@@ -37,7 +30,13 @@
 .row:focus-visible,
 .targeted:focus-visible {
   outline: var(--focus-width) solid var(--ink);
-  outline-offset: calc(-1 * var(--focus-width));
+  outline-offset: var(--focus-inset);
+}
+
+/* Beneath a queue that holds the first so many of more. */
+.first {
+  margin: 0;
+  padding: var(--sp-16) var(--sp-20);
 }
 
 .note {

@@ -8,7 +8,7 @@ import { FAILED, NOT_PERMITTED, OFFLINE, UNCONFIRMED } from "./common.ts";
  * no-show cases to rule on.
  */
 export const noShows = {
-  title: "Payments",
+  title: "Charges",
   /**
    * The first card: the day's money, over the charges it was kept on.
    * The card carries no heading on the board and names no day, so both are

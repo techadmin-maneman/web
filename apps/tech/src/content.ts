@@ -480,7 +480,7 @@ export const steps = {
     addOne: (name: string) => `Add ${name}`,
     none: "None used",
     // The console holds no consumables yet (docs/decisions/0087-consumables-and-stock.md).
-    nothingOffered: "No consumables listed yet. Ops add them in the console.",
+    nothingOffered: "No consumables to record. Tell ops if you used any.",
   },
   piece: {
     // A label is scanned by its QR code, or typed (docs/decisions/0163-pieces-scanned-from-the-kit.md).
@@ -536,7 +536,7 @@ export const steps = {
     choose: "Choose Done or Partial",
     pickReason: "Pick a reason to continue",
     done: "Done",
-    partial: "Partial · pick a reason",
+    partial: "Partly done · pick a reason",
     // After a consultation: whether the client is going ahead with a fit, and why not (docs/decisions/0149-lost-reasons.md).
     goingAhead: "Going ahead with a fit?",
     yes: "Yes",
@@ -761,7 +761,7 @@ export const kit = {
     receive: "Receive all",
     receiveScanned: (count: number) => `Receive ${String(count)} scanned`,
     scanned: (count: number, of: number) => `${String(count)} of ${String(of)} scanned`,
-    notOnIt: "That label isn’t on this top-up.",
+    notOnIt: "That label isn’t on this transfer.",
     settled: "Already received or sent back.",
   },
   scan: { label: "Scan or type each label", add: "Add", camera: "Scan", stop: "Stop scanning" },

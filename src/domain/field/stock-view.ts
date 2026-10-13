@@ -39,6 +39,8 @@ interface StockView {
   readonly holdings: readonly Holding[];
   /** The latest movements, newest first. */
   readonly movements: readonly StockMovement[];
+  /** The places those movements name that `places` does not hold: a kit of a technician who left, a closed room. */
+  readonly otherPlaces: readonly StockPlace[];
 }
 
 /** How many of the latest movements the screen holds beneath the table, to sort and narrow there. */
@@ -125,5 +127,8 @@ export async function stockView(
     by: row.actor,
     note: row.note,
   }));
-  return { consumables, places, holdings, movements };
+  const listed = new Set(places.map((place) => place.id));
+  const named = new Set(recent.results.flatMap((row) => [row.place, row.actor]));
+  const otherPlaces = every.filter((place) => !listed.has(place.id) && named.has(place.id));
+  return { consumables, places, holdings, movements, otherPlaces };
 }

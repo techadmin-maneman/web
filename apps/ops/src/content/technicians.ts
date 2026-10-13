@@ -47,7 +47,7 @@ export const technicians = {
     open: "Open on the board",
   },
   kit: {
-    columns: ["Consumable", "Held", "Last counted"],
+    columns: ["Item", "Held", "Last counted"],
     none: "Kit is empty.",
     stock: "Record a movement in Stock",
   },
@@ -116,7 +116,7 @@ export const technicians = {
     // Leave recorded over jobs already booked moves none of them.
     stranded: {
       title: (count: number) =>
-        `${String(count)} ${count === 1 ? "job is" : "jobs are"} still booked on these days. Move ${count === 1 ? "it" : "them"} on the board.`,
+        `${String(count)} ${count === 1 ? "visit is" : "visits are"} still booked on these days. Move ${count === 1 ? "it" : "them"} on the dispatch board.`,
       job: (when: string, client: string) => `${when} · ${client}`,
       noClient: "No client",
       show: "Show on board",

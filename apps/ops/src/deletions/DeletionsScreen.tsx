@@ -17,6 +17,7 @@
 // The API refuses while the client has a visit booked or a payment held, and
 // the refusal's copy says which, with a link to the client's tab that settles it.
 
+import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { REASON_MAX_CHARS } from "@rules/policy/decision-reasons.ts";
 import { useFocusOnMount } from "@maneman/ui/useFocusOnMount";
 import { errorText } from "@maneman/web-kit/refusal";
@@ -82,16 +83,10 @@ function ConfirmDelete({
         }}
       />
       <div className={styles.actions}>
-        <Button
-          variant="destructive"
-          size="small"
-          className={styles.delete}
-          disabled={sending || !checked}
-          onClick={onDelete}
-        >
+        <Button variant="destructive" size="small" disabled={sending || !checked} onClick={onDelete}>
           {sending ? copy.deleting : copy.confirm}
         </Button>
-        <Button variant="outline" size="small" className={styles.quiet} disabled={sending} onClick={onCancel}>
+        <Button variant="outline" size="small" disabled={sending} onClick={onCancel}>
           {copy.cancel}
         </Button>
       </div>
@@ -169,7 +164,6 @@ function Request({ request, now, mayDecide, onDecided }: RequestProps) {
             <Button
               variant="outline"
               size="small"
-              className={styles.quiet}
               disabled={sending || reason.trim() === ""}
               onClick={() => void decide("reject")}
             >
@@ -178,7 +172,6 @@ function Request({ request, now, mayDecide, onDecided }: RequestProps) {
             <Button
               variant="outline"
               size="small"
-              className={styles.quiet}
               disabled={sending}
               onClick={() => {
                 listed("reject");
@@ -195,7 +188,6 @@ function Request({ request, now, mayDecide, onDecided }: RequestProps) {
             variant="destructive"
             size="small"
             ref={openers.delete}
-            className={styles.delete}
             aria-label={copy.deleteLabel(request.name)}
             onClick={() => {
               setDeciding({ step: "asking", choice: "delete" });
@@ -207,7 +199,6 @@ function Request({ request, now, mayDecide, onDecided }: RequestProps) {
             variant="outline"
             size="small"
             ref={openers.reject}
-            className={styles.quiet}
             aria-label={copy.rejectLabel(request.name)}
             onClick={() => {
               setDeciding({ step: "asking", choice: "reject" });
@@ -218,10 +209,10 @@ function Request({ request, now, mayDecide, onDecided }: RequestProps) {
         </div>
       )}
       {deciding.step === "failed" && (
-        <p className={styles.error} role="alert">
+        <InlineMessage tone="error" className={styles.error}>
           {errorText(copy.errors, { code: deciding.code })}
           <SettleOn personId={request.person_id} code={deciding.code} />
-        </p>
+        </InlineMessage>
       )}
     </>
   );

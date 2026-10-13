@@ -1,6 +1,8 @@
 // Operations · Purchasing, its claims (docs/decisions/0169-supplier-claims.md): every open claim on a supplier and the
 // latest settled, each opened beneath the list for its next step; then the returned pieces handed in to settle.
 
+import { InlineMessage } from "@maneman/ui/InlineMessage";
+import { Panel } from "@maneman/ui/Panel";
 import { TextLink } from "@maneman/ui/TextLink";
 import { RowButton } from "@maneman/ui/Button";
 import { Table } from "@maneman/ui/Table";
@@ -93,12 +95,7 @@ export function Claims({ orders }: { orders: Orders }) {
   if (current === null) return null;
   return (
     <>
-      <section className={form.panel} aria-labelledby="claims">
-        <div className={form.panelHead}>
-          <h2 className={form.panelTitle} id="claims">
-            {copy.claims.title}
-          </h2>
-        </div>
+      <Panel titleId="claims" title={copy.claims.title}>
         <ClaimsTable book={current} supplierOf={supplierOf} onOpen={setOpen} />
         {opened !== null && (
           <div className={form.group}>
@@ -117,24 +114,19 @@ export function Claims({ orders }: { orders: Orders }) {
           </div>
         )}
         {said !== null && (
-          <p className={form.saved} role="status">
+          <InlineMessage tone="saved" className={form.saved}>
             {said}
-          </p>
+          </InlineMessage>
         )}
         {failure !== null && (
-          <p className={form.error} role="alert">
+          <InlineMessage tone="error" className={form.error}>
             {errorText(copy.errors, failure)}
-          </p>
+          </InlineMessage>
         )}
-      </section>
-      <section className={form.panel} aria-labelledby="returned-pieces">
-        <div className={form.panelHead}>
-          <h2 className={form.panelTitle} id="returned-pieces">
-            {copy.returns.title}
-          </h2>
-        </div>
+      </Panel>
+      <Panel titleId="returned-pieces" title={copy.returns.title}>
         <ReturnedPieces pieces={current.returns} onAnswer={answered} />
-      </section>
+      </Panel>
     </>
   );
 }

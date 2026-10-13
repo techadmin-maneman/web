@@ -1,6 +1,9 @@
 // One purchase order beneath the list (docs/decisions/0166-purchase-orders.md): its lines and total, and what can be
 // done with it now: approved, by a second manager where it needs one; marked sent; cancelled with why; printed.
 
+import { fullDate } from "@maneman/web-kit/dates";
+import { InlineMessage } from "@maneman/ui/InlineMessage";
+import { Panel } from "@maneman/ui/Panel";
 import { Button } from "@maneman/ui/Button";
 import { Field, TextInput } from "@maneman/ui/Field";
 import { Table } from "@maneman/ui/Table";
@@ -158,16 +161,11 @@ export function OrderPanel({
     } else setFailure({ code: answer.code, fields: answer.fields });
   };
   return (
-    <section className={form.panel} aria-labelledby="order-panel">
-      <div className={form.panelHead}>
-        <h2 className={form.panelTitle} id="order-panel">
-          {copy.number(order.number)} · {supplier}
-        </h2>
-      </div>
+    <Panel titleId="order-panel" title={`${copy.number(order.number)} · ${supplier}`}>
       <p className={form.note}>
         {copy.states[order.state] ?? order.state}
         {order.state === "drafted" && order.approved_by !== null && ` · ${copy.awaitingSecond}`}
-        {order.expected_on !== null && ` · ${copy.order.expected(order.expected_on)}`}
+        {order.expected_on !== null && ` · ${copy.order.expected(fullDate(order.expected_on))}`}
         {order.cancel_reason !== null && ` · ${copy.order.cancelledWhy(order.cancel_reason)}`}
       </p>
       <LinesTable order={order} named={named} />
@@ -188,9 +186,9 @@ export function OrderPanel({
         </Button>
       </div>
       {failure !== null && (
-        <p className={form.error} role="alert">
+        <InlineMessage tone="error" className={form.error}>
           {errorText(copy.errors, failure)}
-        </p>
+        </InlineMessage>
       )}
       {printing && (
         <OrderSheet
@@ -201,6 +199,6 @@ export function OrderPanel({
           }}
         />
       )}
-    </section>
+    </Panel>
   );
 }

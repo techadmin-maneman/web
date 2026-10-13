@@ -2,6 +2,7 @@ import type { Page } from "@playwright/test";
 import { expect, test } from "../support.ts";
 import { DISCOUNT_CODES, empty, fails, json } from "./fixtures.ts";
 import { open, posted } from "./settings-fixtures.ts";
+import { review } from "../../apps/ops/src/content/common.ts";
 import { settings as settingsCopy } from "../../apps/ops/src/content/settings.ts";
 
 // Discount codes (docs/decisions/0108-discount-codes.md), which no board draws.
@@ -12,7 +13,7 @@ test.describe("the discount codes", () => {
   /** Make codes is shut until asked for. */
   const makeForm = async (page: Page) => {
     await page.getByRole("button", { name: settingsCopy.discountCodes.make }).click();
-    return page.getByRole("form", { name: settingsCopy.discountCodes.make });
+    return page.getByRole("group", { name: settingsCopy.discountCodes.make });
   };
 
   test("heads the page with what every code has come to", async ({ page }) => {
@@ -95,7 +96,7 @@ test.describe("the discount codes", () => {
     await form.getByLabel("Service visits").check();
     await check.click();
 
-    const panel = page.getByRole("group", { name: settingsCopy.discountCodes.checkTitle });
+    const panel = page.getByRole("group", { name: review.title });
     await expect(panel).toContainText("Code DIWALI");
     await expect(panel).toContainText("10% (max Rs. 1,500) off before GST");
     await expect(panel).toContainText("On Service visits");
@@ -124,7 +125,7 @@ test.describe("the discount codes", () => {
     // A batch's codes are single-use: there is no total to set.
     await expect(form.getByLabel("Total uses")).toHaveCount(0);
     await form.getByRole("button", { name: "Review" }).click();
-    const panel = page.getByRole("group", { name: settingsCopy.discountCodes.checkTitle });
+    const panel = page.getByRole("group", { name: review.title });
     await expect(panel).toContainText("2 single-use codes");
     await expect(panel).toContainText("Rs. 1,000 off before GST");
     const request = posted(page, "/api/discount-codes");
@@ -179,7 +180,7 @@ test.describe("the discount codes", () => {
     const panel = page.getByRole("group", { name: "Switch off WEDDNG25?" });
     await expect(panel).toContainText("It can't be used again. 3 bookings keep it.");
     const request = posted(page, `/api/discount-codes/${wedding.id}/off`);
-    await panel.getByRole("button", { name: "Switch off" }).click();
+    await panel.getByRole("button", { name: review.send }).click();
     await request;
   });
 });

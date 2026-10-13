@@ -1,6 +1,7 @@
 // Failure rates on the Quality page (docs/decisions/0188-failure-rates-and-value-at-risk.md): the pieces fitted in the
 // last year and how many failed, grouped one way at a time.
 
+import { Panel } from "@maneman/ui/Panel";
 import { Field, Select } from "@maneman/ui/Field";
 import { Table } from "@maneman/ui/Table";
 import { useLoad } from "@maneman/ui/useLoad";
@@ -74,16 +75,11 @@ function Groups({ rates }: { rates: Rates }) {
 export function FailuresPanel() {
   const [loaded, retry] = useLoad(loadRates);
   return (
-    <section className={form.panel} aria-labelledby="quality-failures">
-      <div className={form.panelHead}>
-        <h2 className={form.panelTitle} id="quality-failures">
-          {copy.failures}
-        </h2>
-      </div>
+    <Panel titleId="quality-failures" title={copy.failures}>
       <p className={form.note}>{copy.failuresNote}</p>
       {loaded.state === "loading" && <Loading />}
       {loaded.state === "failed" && <PanelFailed onRetry={retry} requestId={loaded.requestId} />}
       {loaded.state === "loaded" && <Groups rates={loaded.value} />}
-    </section>
+    </Panel>
   );
 }

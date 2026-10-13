@@ -1,6 +1,7 @@
 // A label scanned on the Stock page (docs/decisions/0162-scanning-labels.md): the piece it names, its lot and expiry,
 // where it is now, and every change to it, oldest first.
 
+import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { ScanField } from "@maneman/ui/ScanField";
 import { fullDate, indiaClock, indiaDate, shortDate } from "@maneman/web-kit/dates";
 import { useState } from "react";
@@ -68,9 +69,9 @@ export function LabelFound({ book }: { book: Stock }) {
         onScan={(label) => void find(label)}
       />
       {looked.state === "missing" && (
-        <p className={form.error} role="alert">
+        <InlineMessage tone="error" className={form.error}>
           {copy.notFound}
-        </p>
+        </InlineMessage>
       )}
       {looked.state === "found" && <Found unit={looked.unit} named={named} place={place} state={state} by={by} />}
     </div>

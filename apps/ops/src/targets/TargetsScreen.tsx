@@ -1,6 +1,7 @@
 // Admin · Targets (docs/decisions/0154-targets-and-reporting-access.md): each month's plan, city by city, by measure,
 // which the nightly reporting copy carries for every scorecard to set beside the actual.
 
+import { whoWords } from "../lib/who.ts";
 import { Button, RowButton } from "@maneman/ui/Button";
 import { Field, Select, TextInput } from "@maneman/ui/Field";
 import { Panel } from "@maneman/ui/Panel";
@@ -141,7 +142,7 @@ function TargetTable({ list, onSaved }: { list: Targets; onSaved: (list: Targets
               <td>{target.city}</td>
               <td>{copy.measures[target.measure]}</td>
               <td>{target.target.toLocaleString("en-IN")}</td>
-              <td>{target.set_by}</td>
+              <td>{whoWords(target.set_by)}</td>
               {mayRemove && (
                 <td>
                   <RowButton

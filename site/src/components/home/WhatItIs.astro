@@ -1,5 +1,6 @@
 ---
 // "What it is": the full-bleed plate of the membrane, then a narrow column.
+import { capsLook } from "@maneman/ui/Caps";
 import { placeholderTag, whatItIs, whatPlate } from "../../content/site.ts";
 import { SHOW_PLACEHOLDER_TAGS, isShown } from "../../lib/build.ts";
 import DesignPicture from "../DesignPicture.astro";
@@ -14,7 +15,7 @@ import DesignPicture from "../DesignPicture.astro";
         sizes="100vw"
         widths={[640, 1024, 1440, 1920]}
       />
-      {SHOW_PLACEHOLDER_TAGS && <div class="label tag">{placeholderTag}</div>}
+      {SHOW_PLACEHOLDER_TAGS && <div class={capsLook("label tag")}>{placeholderTag}</div>}
     </div>
   )}
   <div class="column">

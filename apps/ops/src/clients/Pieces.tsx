@@ -8,6 +8,7 @@
 // quiet. A piece that has failed has been replaced, so the brass falls on the
 // one that has not.
 
+import { EmptyState } from "@maneman/ui/EmptyState";
 import { lazyScreen } from "@maneman/ui/lazyScreen";
 import { classes } from "@maneman/ui/classes";
 import { Table } from "@maneman/ui/Table";
@@ -75,9 +76,9 @@ function PieceTable({ clientId }: { clientId: string }) {
 
   const { pieces } = loaded.value;
   return (
-    <section className={styles.pieces} aria-label={copy.title}>
+    <section aria-label={copy.title}>
       {pieces.length === 0 ? (
-        <p className={styles.empty}>{copy.empty}</p>
+        <EmptyState look="panel" line={copy.empty} />
       ) : (
         <Table className={styles.table}>
           <thead>

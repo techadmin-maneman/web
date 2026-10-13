@@ -2,6 +2,7 @@
 // link, what its friend gets, its commission per fit, and what has come through it. Each row edits the partner or
 // pauses it, shown before it is sent (docs/decisions/0071-what-ops-see-before-a-setting-changes.md).
 
+import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { TextLink } from "@maneman/ui/TextLink";
 import { Button, RowButton } from "@maneman/ui/Button";
 import { Panel } from "@maneman/ui/Panel";
@@ -56,19 +57,16 @@ function PauseCheck({ partner, onDone, onBack }: { partner: Partner; onDone: Row
   return (
     <>
       <CheckPanel
-        title={paused ? copy.check.resumeTitle(partner.name) : copy.check.pauseTitle(partner.name)}
+        question={paused ? copy.check.resumeTitle(partner.name) : copy.check.pauseTitle(partner.name)}
         lines={[paused ? copy.check.resumeLine : copy.check.pauseLine]}
-        send={copy.check.send}
-        sending={copy.check.saving}
-        back={copy.check.back}
         busy={step === "sending"}
         onSend={() => void send()}
         onBack={onBack}
       />
       {typeof step === "object" && (
-        <p className={styles.error} role="alert">
+        <InlineMessage tone="error" className={styles.error}>
           {errorText(copy.errors, step)}
-        </p>
+        </InlineMessage>
       )}
     </>
   );
@@ -258,9 +256,9 @@ export function Partners() {
         />
       )}
       {said !== null && (
-        <p className={styles.saved} role="status">
+        <InlineMessage tone="saved" className={styles.saved}>
           {said}
-        </p>
+        </InlineMessage>
       )}
       {list.channels.length === 0 ? (
         <p className={styles.note}>{copy.none}</p>

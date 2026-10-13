@@ -4,6 +4,7 @@
 //
 // A correction is the whole profile as it now stands, sent as a new version, so the form starts from the latest.
 
+import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { Disclosure } from "@maneman/ui/Disclosure";
 import { capsLook } from "@maneman/ui/Caps";
 import { Button } from "@maneman/ui/Button";
@@ -137,7 +138,6 @@ function Versions({ versions }: { versions: readonly HairProfileVersion[] }) {
           <li key={version.id}>
             <Disclosure
               className={styles.version}
-              summaryClassName={styles.versionLine}
               summary={copy.version(longDate(version.recorded_at), byWhom(version))}
             >
               <ProfileRows profile={version} />
@@ -328,9 +328,9 @@ function CorrectionForm({
         </Field>
       </ChoiceGroup>
       {problem !== null && (
-        <p className={styles.error} role="alert">
+        <InlineMessage tone="error" className={styles.error}>
           {problem}
-        </p>
+        </InlineMessage>
       )}
       <div className={styles.actions}>
         <Button variant="primary" size="small" type="submit" busy={busy}>
@@ -372,9 +372,9 @@ export function HairProfile({ clientId }: { clientId: string }) {
         {copy.title}
       </h3>
       {moved && (
-        <p className={styles.error} role="alert">
+        <InlineMessage tone="error" className={styles.error}>
           {copy.moved}
-        </p>
+        </InlineMessage>
       )}
       {page.latest === null ? <p className={styles.hint}>{copy.none}</p> : <ProfileRows profile={page.latest} />}
       {correcting && (

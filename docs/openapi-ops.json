@@ -375,9 +375,16 @@
               "additionalProperties": false
             }
           },
-          "more": {
-            "type": "boolean",
-            "description": "Another page of 50 follows."
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The next page of 50; null on the last."
           },
           "cities": {
             "type": "array",
@@ -389,7 +396,7 @@
         },
         "required": [
           "clients",
-          "more",
+          "next_cursor",
           "cities"
         ],
         "additionalProperties": false
@@ -6990,7 +6997,7 @@
             },
             "description": "At most 50, the latest first."
           },
-          "next_before": {
+          "next_cursor": {
             "anyOf": [
               {
                 "type": "string"
@@ -6999,12 +7006,12 @@
                 "type": "null"
               }
             ],
-            "description": "Where the next page starts, for ?before=; null on the last page."
+            "description": "Asked as `cursor`, the next page; null on the last."
           }
         },
         "required": [
           "conversations",
-          "next_before"
+          "next_cursor"
         ],
         "additionalProperties": false
       },
@@ -9949,6 +9956,10 @@
               "$ref": "#/components/schemas/NoShowCase"
             }
           },
+          "more": {
+            "type": "boolean",
+            "description": "More than 200 match: these are the first 200."
+          },
           "waiver": {
             "type": "object",
             "properties": {
@@ -9977,6 +9988,7 @@
         },
         "required": [
           "cases",
+          "more",
           "waiver"
         ],
         "additionalProperties": false
@@ -12093,6 +12105,10 @@
               "$ref": "#/components/schemas/OpsCharge"
             },
             "description": "No-shows and late cancellations, the earliest first."
+          },
+          "more": {
+            "type": "boolean",
+            "description": "More than 200 match: these are the first 200."
           }
         },
         "required": [
@@ -12101,7 +12117,8 @@
           "refunds_processing",
           "refunded",
           "charged",
-          "charges"
+          "charges",
+          "more"
         ],
         "additionalProperties": false,
         "description": "Derived at read time from the payments themselves; no total is kept."
@@ -13740,6 +13757,18 @@
         ],
         "additionalProperties": false
       },
+      "BlackoutBooked": {
+        "type": "object",
+        "properties": {
+          "booked": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "booked"
+        ],
+        "additionalProperties": false
+      },
       "BlackoutAdd": {
         "type": "object",
         "properties": {
@@ -15103,6 +15132,82 @@
             },
             "description": "Every open place down the tree, the warehouse first, and any closed one still holding stock: those in the caller's cities, a hub with every city of its zone, and the warehouse only with a national grant."
           },
+          "other_places": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 64,
+                  "description": "A place by its ID: central for the warehouse, a kit by its technician's ID."
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "warehouse",
+                    "hub",
+                    "stockroom",
+                    "kit"
+                  ]
+                },
+                "name": {
+                  "type": "string",
+                  "description": "A kit's is its technician's name."
+                },
+                "parent_id": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 64,
+                      "description": "A place by its ID: central for the warehouse, a kit by its technician's ID."
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "description": "The place it hangs from; null for the warehouse."
+                },
+                "zone": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "city": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "active": {
+                  "type": "boolean",
+                  "description": "Open; a kit is open while its technician is."
+                }
+              },
+              "required": [
+                "id",
+                "kind",
+                "name",
+                "parent_id",
+                "zone",
+                "city",
+                "active"
+              ],
+              "additionalProperties": false
+            },
+            "description": "The places the latest movements name that places does not hold: a kit of a technician who left, or a closed room, so each movement says where it was."
+          },
           "holdings": {
             "type": "array",
             "items": {
@@ -15322,6 +15427,7 @@
         "required": [
           "consumables",
           "places",
+          "other_places",
           "holdings",
           "movements",
           "today",
@@ -18070,17 +18176,13 @@
           },
           {
             "schema": {
-              "type": [
-                "integer",
-                "null"
-              ],
-              "minimum": 0,
-              "maximum": 10000,
-              "description": "From 0."
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]{1,200}$",
+              "description": "The next page: `next_cursor` from the last one. Left out, the first."
             },
             "required": false,
-            "description": "From 0.",
-            "name": "page",
+            "description": "The next page: `next_cursor` from the last one. Left out, the first.",
+            "name": "cursor",
             "in": "query"
           }
         ],
@@ -18096,7 +18198,7 @@
             }
           },
           "400": {
-            "description": "invalid_request",
+            "description": "invalid_request: a cursor this list did not give",
             "content": {
               "application/json": {
                 "schema": {
@@ -21828,12 +21930,12 @@
           {
             "schema": {
               "type": "string",
-              "maxLength": 100,
-              "description": "The next page: next_before from the last one."
+              "pattern": "^[A-Za-z0-9_-]{1,200}$",
+              "description": "The next page: `next_cursor` from the last one. Left out, the first."
             },
             "required": false,
-            "description": "The next page: next_before from the last one.",
-            "name": "before",
+            "description": "The next page: `next_cursor` from the last one. Left out, the first.",
+            "name": "cursor",
             "in": "query"
           }
         ],
@@ -21844,6 +21946,16 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Conversations"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid_request: a cursor this list did not give",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -23866,10 +23978,15 @@
                         ],
                         "additionalProperties": false
                       }
+                    },
+                    "more": {
+                      "type": "boolean",
+                      "description": "More than 200 match: these are the first 200."
                     }
                   },
                   "required": [
-                    "grievances"
+                    "grievances",
+                    "more"
                   ],
                   "additionalProperties": false
                 }
@@ -24184,13 +24301,13 @@
           },
           {
             "schema": {
-              "type": "integer",
-              "exclusiveMinimum": 0,
-              "description": "The page after the one whose `next_before` this is."
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]{1,200}$",
+              "description": "The next page: `next_cursor` from the last one. Left out, the first."
             },
             "required": false,
-            "description": "The page after the one whose `next_before` this is.",
-            "name": "before",
+            "description": "The next page: `next_cursor` from the last one. Left out, the first.",
+            "name": "cursor",
             "in": "query"
           },
           {
@@ -24221,19 +24338,33 @@
                         "$ref": "#/components/schemas/ActivityEntry"
                       }
                     },
-                    "next_before": {
-                      "type": [
-                        "integer",
-                        "null"
+                    "next_cursor": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
                       ],
-                      "description": "Asked as `before`, the next page; null when this one reaches the log's start."
+                      "description": "Asked as `cursor`, the next page; null on the last."
                     }
                   },
                   "required": [
                     "entries",
-                    "next_before"
+                    "next_cursor"
                   ],
                   "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid_request: a cursor this list did not give",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -24461,17 +24592,13 @@
         "parameters": [
           {
             "schema": {
-              "type": [
-                "integer",
-                "null"
-              ],
-              "minimum": 0,
-              "default": 0,
-              "description": "How many to skip: 0, then 50 on."
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]{1,200}$",
+              "description": "The next page: `next_cursor` from the last one. Left out, the first."
             },
             "required": false,
-            "description": "How many to skip: 0, then 50 on.",
-            "name": "offset",
+            "description": "The next page: `next_cursor` from the last one. Left out, the first.",
+            "name": "cursor",
             "in": "query"
           }
         ],
@@ -24529,16 +24656,33 @@
                         "additionalProperties": false
                       }
                     },
-                    "more": {
-                      "type": "boolean",
-                      "description": "Another page follows this one."
+                    "next_cursor": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Asked as `cursor`, the next page; null on the last."
                     }
                   },
                   "required": [
                     "referrers",
-                    "more"
+                    "next_cursor"
                   ],
                   "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid_request: a cursor this list did not give",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -25724,10 +25868,15 @@
                       "items": {
                         "$ref": "#/components/schemas/NoShowDecided"
                       }
+                    },
+                    "more": {
+                      "type": "boolean",
+                      "description": "More than 200 match: these are the first 200."
                     }
                   },
                   "required": [
-                    "cases"
+                    "cases",
+                    "more"
                   ],
                   "additionalProperties": false
                 }
@@ -25763,10 +25912,15 @@
                       "items": {
                         "$ref": "#/components/schemas/NoShowDispute"
                       }
+                    },
+                    "more": {
+                      "type": "boolean",
+                      "description": "More than 50 match: these are the first 50."
                     }
                   },
                   "required": [
-                    "disputes"
+                    "disputes",
+                    "more"
                   ],
                   "additionalProperties": false
                 }
@@ -27782,6 +27936,79 @@
           },
           "400": {
             "description": "invalid_request: fields names from when it is before today, to when it is before from or more than a month on, city when it is not one of ours, and reason when there is none or it is not one a list can hold",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "access_required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/blackouts/booked": {
+      "get": {
+        "summary": "How many visits are still booked on days ops are about to close, in one city or every city",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "date",
+              "description": "The first day, today or later."
+            },
+            "required": true,
+            "description": "The first day, today or later.",
+            "name": "from",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "date",
+              "description": "The last day, the first included; a month on at most when adding."
+            },
+            "required": true,
+            "description": "The last day, the first included; a month on at most when adding.",
+            "name": "to",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 60,
+              "description": "One of the cities the list names."
+            },
+            "required": false,
+            "description": "One of the cities the list names.",
+            "name": "city",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The visits closing the days would leave to move",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BlackoutBooked"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid_request: fields names from, to or city as for adding the days",
             "content": {
               "application/json": {
                 "schema": {

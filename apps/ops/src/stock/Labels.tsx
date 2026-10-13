@@ -3,6 +3,8 @@
 // consumable lot's label, for its boxes, in as many copies as there are boxes. Any label scanned here finds its piece
 // (docs/decisions/0162-scanning-labels.md).
 
+import { InlineMessage } from "@maneman/ui/InlineMessage";
+import { Panel } from "@maneman/ui/Panel";
 import { Button } from "@maneman/ui/Button";
 import { Checkbox, ChoiceGroup, Field, NumberInput, Select } from "@maneman/ui/Field";
 import { useLoad } from "@maneman/ui/useLoad";
@@ -136,9 +138,9 @@ function PieceLabels({ name, at }: { name: string; at: LabelsFor }) {
         </p>
       )}
       {labelling === "failed" && (
-        <p className={form.error} role="alert">
+        <InlineMessage tone="error" className={form.error}>
           {copy.notLabelled}
-        </p>
+        </InlineMessage>
       )}
       <Batches key={String(after?.times ?? 0)} units={units.units} name={name} />
     </>
@@ -204,9 +206,9 @@ function LotLabels({ book, name, at }: { book: Stock; name: string; at: LabelsFo
         </Field>
       </div>
       {failed && (
-        <p className={form.error} role="alert">
+        <InlineMessage tone="error" className={form.error}>
           {copy.noLabel}
-        </p>
+        </InlineMessage>
       )}
       <div className={form.actions}>
         <Button
@@ -270,12 +272,7 @@ export function Labels({ book, focus }: { book: Stock; focus: LabelsFor | null }
   const at = { code, place };
   const access = useAccess();
   return (
-    <section className={form.panel} aria-labelledby="stock-labels" ref={panel}>
-      <div className={form.panelHead}>
-        <h2 className={form.panelTitle} id="stock-labels">
-          {copy.title}
-        </h2>
-      </div>
+    <Panel titleId="stock-labels" title={copy.title} ref={panel}>
       {access.mayCall("GET /api/stock/units/{code}") && <LabelFound book={book} />}
       <div className={form.fields}>
         <Choice
@@ -296,6 +293,6 @@ export function Labels({ book, focus }: { book: Stock; focus: LabelsFor | null }
       ) : (
         <LotLabels key={`${code}:${place}`} book={book} name={consumable?.name ?? code} at={at} />
       )}
-    </section>
+    </Panel>
   );
 }

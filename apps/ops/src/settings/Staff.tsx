@@ -2,8 +2,9 @@
 // in. No board draws it, so it is laid out as the other Settings panels are. The API narrows the list to the places
 // its viewer may see, and refuses a change beyond their own.
 
+import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { Label, TextInput } from "@maneman/ui/Field";
-import { errorText, type Failure } from "@maneman/web-kit/refusal";
+import { errorText } from "@maneman/web-kit/refusal";
 import { Panel } from "@maneman/ui/Panel";
 import { Button } from "@maneman/ui/Button";
 import { Table } from "@maneman/ui/Table";
@@ -17,17 +18,13 @@ import { useAccess, whoami } from "../lib/access.ts";
 import { DeleteAction } from "../components/DeleteAction.tsx";
 import { whoWords } from "../lib/who.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
-import { CheckPanel } from "../components/CheckPanel.tsx";
 import { grantWords } from "../lib/grants.ts";
+import { ActionCheck, SettingForm, sentOf, useSteps } from "./SettingForm.tsx";
 import { StaffForm } from "./StaffForm.tsx";
 import styles from "../components/forms.module.css";
 import staffStyles from "./staff.module.css";
 
 const copy = settings.staff;
-
-type Confirming = "idle" | "checking" | "sending" | Failure;
-
-const isChecking = (step: Confirming): boolean => step === "checking" || step === "sending";
 
 interface PanelProps {
   readonly book: StaffBook;
@@ -36,21 +33,8 @@ interface PanelProps {
 
 function Enforcement({ book, onChanged }: PanelProps) {
   const words = copy.enforcement;
-  const [step, setStep] = useState<Confirming>("idle");
   const on = book.enforced.on;
   const { set_by: setBy, set_at: setAt } = book.enforced;
-
-  const send = async () => {
-    setStep("sending");
-    const answer = await api.setEnforcement(!on);
-    if (!answer.ok) {
-      setStep({ code: answer.code, fields: answer.fields });
-      return;
-    }
-    setStep("idle");
-    onChanged(answer.body);
-  };
-
   return (
     <Panel titleId="staff-enforcement" title={words.title} className={styles.panel}>
       <p className={styles.note}>{on ? words.on : words.off}</p>
@@ -58,40 +42,19 @@ function Enforcement({ book, onChanged }: PanelProps) {
         <p className={styles.note}>{words.setBy(whoWords(setBy), longDate(setAt))}</p>
       )}
       {!book.may_run_access && <p className={styles.note}>{words.onlyNational}</p>}
-      {book.may_run_access && isChecking(step) && (
-        <div className={styles.group}>
-          <CheckPanel
-            title={on ? words.stopTitle : words.startTitle}
-            lines={[on ? words.stopLine : words.startLine]}
-            send={on ? words.stop : words.start}
-            sending={words.sending}
-            back={words.back}
-            busy={step === "sending"}
-            onSend={() => void send()}
-            onBack={() => {
-              setStep("idle");
-            }}
-          />
-        </div>
-      )}
-      {book.may_run_access && !isChecking(step) && (
-        <div className={styles.actions}>
-          <Button
-            variant={on ? "outline" : "primary"}
-            size="small"
-            className={on ? styles.quiet : styles.save}
-            onClick={() => {
-              setStep("checking");
-            }}
-          >
-            {on ? words.stop : words.start}
-          </Button>
-        </div>
-      )}
-      {typeof step === "object" && (
-        <p className={styles.error} role="alert">
-          {errorText(words.errors, step)}
-        </p>
+      {book.may_run_access && (
+        <ActionCheck
+          key={String(on)}
+          label={on ? words.stop : words.start}
+          primary={!on}
+          question={on ? words.stopTitle : words.startTitle}
+          lines={[on ? words.stopLine : words.startLine]}
+          send={async () => sentOf(await api.setEnforcement(!on), (next) => ({ next }))}
+          onDone={(sent) => {
+            onChanged(sent.next);
+          }}
+          errors={words.errors}
+        />
       )}
     </Panel>
   );
@@ -209,9 +172,9 @@ function People({ book, onChanged }: PanelProps) {
         </div>
       )}
       {said !== null && (
-        <p className={styles.saved} role="status">
+        <InlineMessage tone="saved" className={styles.saved}>
           {said}
-        </p>
+        </InlineMessage>
       )}
     </Panel>
   );
@@ -226,56 +189,23 @@ interface TokenRowProps {
 
 function TokenRow({ token, removable, onChanged }: TokenRowProps) {
   const words = copy.tokens;
-  const [step, setStep] = useState<Confirming>("idle");
-
-  const remove = async () => {
-    setStep("sending");
-    const answer = await api.removeServiceToken(token.client_id);
-    if (!answer.ok) {
-      setStep({ code: answer.code, fields: answer.fields });
-      return;
-    }
-    onChanged(answer.body);
-  };
-
   return (
     <li className={styles.rule}>
       <p className={styles.period}>{token.label}</p>
       <p className={styles.set}>{token.client_id}</p>
-      <p className={styles.set}>{words.addedBy(token.added_by, longDate(token.added_at))}</p>
-      {removable && isChecking(step) && (
-        <CheckPanel
-          title={words.removeTitle(token.label)}
+      <p className={styles.set}>{words.addedBy(whoWords(token.added_by), longDate(token.added_at))}</p>
+      {removable && (
+        <ActionCheck
+          label={words.remove}
+          ariaLabel={words.removeLabel(token.label)}
+          question={words.removeTitle(token.label)}
           lines={[words.removeLine]}
-          send={words.remove}
-          sending={words.removing}
-          back={words.back}
-          busy={step === "sending"}
-          onSend={() => void remove()}
-          onBack={() => {
-            setStep("idle");
+          send={async () => sentOf(await api.removeServiceToken(token.client_id), (next) => ({ next }))}
+          onDone={(sent) => {
+            onChanged(sent.next);
           }}
+          errors={words.errors}
         />
-      )}
-      {removable && !isChecking(step) && (
-        <div className={styles.actions}>
-          <Button
-            variant="outline"
-            size="small"
-            className={styles.quiet}
-            aria-label={words.removeLabel(token.label)}
-            onClick={() => {
-              setStep("checking");
-            }}
-          >
-            {words.remove}
-          </Button>
-        </div>
-      )}
-      {typeof step === "object" && (
-        <p className={styles.error} role="alert">
-          {errorText(words.errors, step)}
-        </p>
       )}
     </li>
   );
@@ -285,32 +215,25 @@ function TokenForm({ onChanged }: { onChanged: (book: StaffBook) => void }) {
   const words = copy.tokens;
   const [clientId, setClientId] = useState("");
   const [label, setLabel] = useState("");
-  const [sending, setSending] = useState(false);
-  const [failure, setFailure] = useState<Failure | null>(null);
   const ready = clientId.trim() !== "" && label.trim() !== "";
-
-  const send = async () => {
-    setSending(true);
-    const answer = await api.addServiceToken({ client_id: clientId.trim(), label: label.trim() });
-    setSending(false);
-    if (!answer.ok) {
-      setFailure({ code: answer.code, fields: answer.fields });
-      return;
-    }
-    setClientId("");
-    setLabel("");
-    setFailure(null);
-    onChanged(answer.body);
-  };
-
+  const steps = useSteps(
+    async () =>
+      sentOf(await api.addServiceToken({ client_id: clientId.trim(), label: label.trim() }), (next) => ({ next })),
+    (sent) => {
+      setClientId("");
+      setLabel("");
+      steps.edit();
+      onChanged(sent.next);
+    },
+  );
   return (
-    <form
-      className={styles.group}
-      aria-label={words.add}
-      onSubmit={(event) => {
-        event.preventDefault();
-        void send();
-      }}
+    <SettingForm
+      title={words.addTitle}
+      steps={steps}
+      ready={ready}
+      errors={words.errors}
+      onCancel={null}
+      checking={<p className={styles.checkLine}>{words.adding(label.trim(), clientId.trim())}</p>}
     >
       <div className={styles.fields}>
         <div className={styles.field}>
@@ -323,7 +246,7 @@ function TokenForm({ onChanged }: { onChanged: (book: StaffBook) => void }) {
             value={clientId}
             onChange={(event) => {
               setClientId(event.target.value);
-              setFailure(null);
+              steps.edit();
             }}
           />
         </div>
@@ -336,22 +259,12 @@ function TokenForm({ onChanged }: { onChanged: (book: StaffBook) => void }) {
             value={label}
             onChange={(event) => {
               setLabel(event.target.value);
-              setFailure(null);
+              steps.edit();
             }}
           />
         </div>
       </div>
-      <div className={styles.actions}>
-        <Button type="submit" variant="outline" size="small" className={styles.quiet} disabled={!ready || sending}>
-          {sending ? words.adding : words.add}
-        </Button>
-      </div>
-      {failure !== null && (
-        <p className={styles.error} role="alert">
-          {errorText(words.errors, failure)}
-        </p>
-      )}
-    </form>
+    </SettingForm>
   );
 }
 

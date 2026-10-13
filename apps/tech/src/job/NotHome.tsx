@@ -25,7 +25,7 @@ import { useAsync, valueOr } from "@maneman/ui/useAsync";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { useCallback, useEffect, useState, type ReactNode } from "react";
 import type { Job } from "../api.ts";
-import { Confirm } from "../components/Confirm.tsx";
+import { ConfirmSheet } from "@maneman/ui/ConfirmSheet";
 import { notHome as copy, job as jobCopy } from "../content.ts";
 import { STROKE } from "../icons.ts";
 import { checkedIn, theWait } from "../lib/progress.ts";
@@ -260,7 +260,7 @@ export function NotHome({ job, queued, card }: { job: Job; queued: readonly Queu
       )}
 
       {confirming && (
-        <Confirm
+        <ConfirmSheet
           title={copy.confirm.title}
           body={copy.confirm.body}
           yes={copy.confirm.yes}

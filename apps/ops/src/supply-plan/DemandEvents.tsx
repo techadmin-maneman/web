@@ -1,6 +1,8 @@
 // The events calendar on the Supply plan (docs/decisions/0182-the-events-calendar.md): the events still to end, each
 // taken off with a press, and one added with its city, its days and how much it lifts or drops demand.
 
+import { InlineMessage } from "@maneman/ui/InlineMessage";
+import { Panel } from "@maneman/ui/Panel";
 import { Button } from "@maneman/ui/Button";
 import { Field, Select, TextInput } from "@maneman/ui/Field";
 import { Table } from "@maneman/ui/Table";
@@ -68,7 +70,7 @@ function AddEvent({ cities, onAnswer }: { cities: readonly string[]; onAnswer: (
   };
   return (
     <div className={form.group}>
-      <h3 className={form.panelTitle}>{copy.add}</h3>
+      <h3 className={form.ruleTitle}>{copy.add}</h3>
       <Entry label={copy.name} value={draft.name} onChange={edit("name")} />
       <Field label={copy.city} className={form.field}>
         {(control) => (
@@ -155,12 +157,7 @@ export function EventsPanel({ calendar }: { calendar: Calendar }) {
   };
   const mayRemove = access.mayCall("POST /api/demand-events/{id}/remove");
   return (
-    <section className={form.panel} aria-labelledby="plan-events">
-      <div className={form.panelHead}>
-        <h2 className={form.panelTitle} id="plan-events">
-          {copy.title}
-        </h2>
-      </div>
+    <Panel titleId="plan-events" title={copy.title}>
       <p className={form.note}>{copy.note}</p>
       {book.events.length === 0 ? (
         <p className={form.note}>{copy.none}</p>
@@ -184,15 +181,15 @@ export function EventsPanel({ calendar }: { calendar: Calendar }) {
       )}
       {access.mayCall("POST /api/demand-events") && <AddEvent cities={book.cities} onAnswer={answered(copy.added)} />}
       {said !== null && (
-        <p className={form.saved} role="status">
+        <InlineMessage tone="saved" className={form.saved}>
           {said}
-        </p>
+        </InlineMessage>
       )}
       {failure !== null && (
-        <p className={form.error} role="alert">
+        <InlineMessage tone="error" className={form.error}>
           {errorText(copy.errors, failure)}
-        </p>
+        </InlineMessage>
       )}
-    </section>
+    </Panel>
   );
 }

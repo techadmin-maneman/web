@@ -3,6 +3,8 @@
 // another, or closed once it is empty and nothing open is under it. A technician's kit comes with them, and is only
 // moved.
 
+import { InlineMessage } from "@maneman/ui/InlineMessage";
+import { Panel } from "@maneman/ui/Panel";
 import { Button, RowButton } from "@maneman/ui/Button";
 import { Field, Select, TextInput } from "@maneman/ui/Field";
 import { Table } from "@maneman/ui/Table";
@@ -89,9 +91,9 @@ function NameBox({ value, onChange }: { value: string; onChange: (value: string)
 function Refusal({ failure }: { failure: Failure | null }) {
   if (failure === null) return null;
   return (
-    <p className={form.error} role="alert">
+    <InlineMessage tone="error" className={form.error}>
       {errorText(copy.errors, failure)}
-    </p>
+    </InlineMessage>
   );
 }
 
@@ -135,7 +137,7 @@ function AddPlace({ book, onChanged }: { book: Stock; onChanged: (book: Stock) =
   };
   return (
     <div className={form.group}>
-      <h3 className={form.panelTitle}>{copy.add.title}</h3>
+      <h3 className={form.ruleTitle}>{copy.add.title}</h3>
       <div className={form.fields}>
         <Choice
           label={copy.add.kind}
@@ -188,7 +190,7 @@ function ChangePlace(props: { book: Stock; place: Place; onChanged: (book: Stock
   const closable = place.kind === "hub" || place.kind === "stockroom";
   return (
     <div className={form.group}>
-      <h3 className={form.panelTitle}>{copy.editLabel(placeName(book, place.id))}</h3>
+      <h3 className={form.ruleTitle}>{copy.editLabel(placeName(book, place.id))}</h3>
       <div className={form.fields}>
         {place.kind !== "kit" && <NameBox value={name} onChange={setName} />}
         {place.kind !== "warehouse" && (
@@ -263,12 +265,7 @@ export function PlacesPanel({ book, onChanged }: { book: Stock; onChanged: (book
   const [editing, setEditing] = useState<string | null>(null);
   const place = book.places.find((each) => each.id === editing);
   return (
-    <section className={form.panel} aria-labelledby="stock-places">
-      <div className={form.panelHead}>
-        <h2 className={form.panelTitle} id="stock-places">
-          {copy.title}
-        </h2>
-      </div>
+    <Panel titleId="stock-places" title={copy.title}>
       <p className={form.note}>{copy.intro}</p>
       <div className={styles.scroll}>
         <PlaceRows book={book} onEdit={setEditing} />
@@ -286,6 +283,6 @@ export function PlacesPanel({ book, onChanged }: { book: Stock; onChanged: (book
           }}
         />
       )}
-    </section>
+    </Panel>
   );
 }

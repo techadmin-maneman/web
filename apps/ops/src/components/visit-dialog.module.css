@@ -1,47 +1,5 @@
 /* Booking a visit for a client: a panel over the page, as a technician's details open on the roster. */
 
-.drawer {
-  position: fixed;
-  inset: var(--header-h) 0 auto auto;
-  width: var(--ops-panel);
-  max-width: 100%;
-  max-height: calc(100dvh - var(--header-h));
-  margin: 0;
-  padding: 0;
-  overflow-y: auto;
-  border: var(--hairline) solid var(--paper-line);
-  background: var(--paper);
-  color: var(--text);
-}
-
-.drawer::backdrop {
-  background: transparent;
-}
-
-.drawer:focus {
-  outline: none;
-}
-
-.head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--sp-16);
-  padding: var(--sp-12) var(--sp-20);
-  border-bottom: var(--hairline) solid var(--text);
-}
-
-.title {
-  margin: 0;
-  font-family: var(--font-serif);
-  font-weight: var(--weight-regular);
-  font-size: var(--fs-22);
-}
-
-.body {
-  padding: var(--sp-8) var(--sp-20) var(--sp-20);
-}
-
 .field {
   margin-top: var(--sp-16);
 }
@@ -104,8 +62,6 @@
 
 .error {
   margin: var(--sp-12) 0 0;
-  font-size: var(--fs-14);
-  color: var(--error-on-paper);
 }
 
 /* Cancelling a visit, or closing one by hand, in the same panel: why, and a closed job's times side by side. */

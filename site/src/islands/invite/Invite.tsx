@@ -27,6 +27,7 @@
 // docs/decisions/0116-book-asks-for-the-name-and-number-first.md). The invite's
 // page, which the design draws, asks for everything in one form.
 
+import { capsLook } from "@maneman/ui/Caps";
 import { useEffect, useRef, useState } from "preact/hooks";
 import { inviteReward, referral } from "../../content/referral.ts";
 import { booking } from "../../content/site.ts";
@@ -206,7 +207,7 @@ function InviteForm(props: Props) {
     <section class={styles.arrival}>
       <div class={`${styles.inner} ${styles.grid}`}>
         <div class={styles.lead}>
-          {invited && !unknown && <div class={`caps ${styles.from}`}>{fromLine(name, invite?.partner ?? null)}</div>}
+          {invited && !unknown && <div class={capsLook(styles.from)}>{fromLine(name, invite?.partner ?? null)}</div>}
           <h1 ref={heading} tabIndex={-1} class={styles.title}>
             {invited ? inviteHeading(invite) : bookingTitle(answer, plan)}
           </h1>

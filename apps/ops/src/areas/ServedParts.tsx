@@ -1,6 +1,7 @@
 // The Served tab's parts (./Served.tsx): the city tabs with their bulk pair, one pincode's row, who a save would
 // message, what sits beneath Save, and a file read with its changes shown before they go into the table.
 
+import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { Checkbox, DateInput, Fieldset, FileInput, Label, TextInput } from "@maneman/ui/Field";
 import { errorText } from "@maneman/web-kit/refusal";
 import { Button } from "@maneman/ui/Button";
@@ -130,16 +131,16 @@ function FilePreview({
   const describe = (row: Row) => copy.upload.state(row.served, row.launch_on);
   if (rows.length === 0) {
     return (
-      <p className={styles.saved} role="status">
+      <InlineMessage tone="saved" className={styles.saved}>
         {copy.upload.none}
-      </p>
+      </InlineMessage>
     );
   }
   return (
     <div className={styles.uploaded}>
-      <p className={styles.saved} role="status">
+      <InlineMessage tone="saved" className={styles.saved}>
         {copy.upload.read(rows.length)}
-      </p>
+      </InlineMessage>
       <Table className={styles.table}>
         <thead>
           <tr>
@@ -164,7 +165,7 @@ function FilePreview({
         </tbody>
       </Table>
       <div className={styles.actions}>
-        <Button variant="primary" size="small" className={styles.save} onClick={onApply}>
+        <Button variant="primary" size="small" onClick={onApply}>
           {copy.upload.apply}
         </Button>
         <Button variant="outline" size="small" className={styles.quiet} onClick={onCancel}>
@@ -215,14 +216,14 @@ export function UploadFile({
         />
       )}
       {upload?.step === "applied" && (
-        <p className={styles.saved} role="status">
+        <InlineMessage tone="saved" className={styles.saved}>
           {copy.upload.applied}
-        </p>
+        </InlineMessage>
       )}
       {upload?.step === "failed" && (
-        <p className={styles.error} role="alert">
+        <InlineMessage tone="error" className={styles.error}>
           {upload.says}
-        </p>
+        </InlineMessage>
       )}
     </Fieldset>
   );
@@ -303,25 +304,25 @@ export function SaveNotes({
   return (
     <>
       {badName !== undefined && (
-        <p className={styles.error} role="alert">
+        <InlineMessage tone="error" className={styles.error}>
           {copy.badName(badName.pincode)}
-        </p>
+        </InlineMessage>
       )}
       {later !== undefined && (
-        <p className={styles.error} role="alert">
+        <InlineMessage tone="error" className={styles.error}>
           {copy.later(later.pincode)}
-        </p>
+        </InlineMessage>
       )}
       {mayChange && changes.length === 0 && saving.step === "editing" && <p className={styles.hint}>{copy.nothing}</p>}
       {saving.step === "saved" && (
-        <p className={styles.saved} role="status">
+        <InlineMessage tone="saved" className={styles.saved}>
           {copy.saved(saving.changed, saving.alerted)}
-        </p>
+        </InlineMessage>
       )}
       {saving.step === "failed" && (
-        <p className={styles.error} role="alert">
+        <InlineMessage tone="error" className={styles.error}>
           {errorText(copy.errors, { code: saving.code })}
-        </p>
+        </InlineMessage>
       )}
     </>
   );

@@ -9,6 +9,8 @@
 // counts once the technician scans it in, unless handed over in person
 // (docs/decisions/0164-the-kit-screen.md).
 
+import { InlineMessage } from "@maneman/ui/InlineMessage";
+import { Panel } from "@maneman/ui/Panel";
 import { errorText, type Failure } from "@maneman/web-kit/refusal";
 import { Checkbox, ChoiceGroup, Field, Label, NumberInput, Radio, Select, TextInput } from "@maneman/ui/Field";
 import { Button } from "@maneman/ui/Button";
@@ -48,7 +50,7 @@ const WHOLE = /^\d{1,6}$/;
 
 /** A place by name: a kit by its technician's, marked once they left, and a hub or a stockroom marked once closed. */
 export function placeName(book: Stock, id: string): string {
-  const place = book.places.find((each) => each.id === id);
+  const place = [...book.places, ...book.other_places].find((each) => each.id === id);
   if (place === undefined) return id;
   if (place.active) return place.name;
   return place.kind === "kit" ? copy.left(place.name) : copy.closed(place.name);
@@ -311,12 +313,7 @@ export function StockForm({
   };
 
   return (
-    <section className={form.panel} aria-labelledby="stock-record">
-      <div className={form.panelHead}>
-        <h2 className={form.panelTitle} id="stock-record">
-          {copy.record.title}
-        </h2>
-      </div>
+    <Panel titleId="stock-record" title={copy.record.title}>
       <div className={form.group}>
         <ChoiceGroup className={styles.kinds} legend={copy.record.what} inline>
           {kinds.map((kind) => (
@@ -371,12 +368,8 @@ export function StockForm({
         </div>
         {checking ? (
           <CheckPanel
-            title={copy.confirm.title}
             lines={effect.lines}
             warnings={effect.warnings}
-            send={copy.confirm.send}
-            sending={copy.confirm.send}
-            back={copy.confirm.back}
             busy={step.step === "saving"}
             onSend={() => void send()}
             onBack={() => {
@@ -398,16 +391,16 @@ export function StockForm({
           </div>
         )}
         {step.step === "recorded" && (
-          <p className={form.saved} role="status">
+          <InlineMessage tone="saved" className={form.saved}>
             {copy.recorded}
-          </p>
+          </InlineMessage>
         )}
         {step.step === "failed" && (
-          <p className={form.error} role="alert">
+          <InlineMessage tone="error" className={form.error}>
             {errorText(copy.errors, step)}
-          </p>
+          </InlineMessage>
         )}
       </div>
-    </section>
+    </Panel>
   );
 }

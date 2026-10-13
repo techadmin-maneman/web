@@ -2,6 +2,7 @@
 // its boxes, then a check of what it is now beside what it will be, and only the second press sends it. A refusal
 // shows beneath, with the check still up to send again or go back to the boxes.
 
+import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { Fieldset } from "@maneman/ui/Field";
 import { Button } from "@maneman/ui/Button";
 import type { Answer } from "@maneman/web-kit/api";
@@ -9,6 +10,7 @@ import { errorText, type Failure } from "@maneman/web-kit/refusal";
 import { useState, type ReactNode } from "react";
 import { CheckPanel } from "../components/CheckPanel.tsx";
 import styles from "../components/forms.module.css";
+import { review } from "../content/common.ts";
 
 /** What a send came to: what to hand on, or the refusal with the boxes it names. */
 export type Sent<T> = ({ readonly ok: true } & T) | ({ readonly ok: false } & Failure);
@@ -27,9 +29,13 @@ interface Steps {
   readonly go: () => void;
 }
 
-/** A form's two steps, its boxes and then the check, and what sending it came to. */
-export function useSteps<T>(send: () => Promise<Sent<T>>, onDone: (sent: { readonly ok: true } & T) => void): Steps {
-  const [step, setStep] = useState<Steps["step"]>("editing");
+/** A form's two steps, its boxes and then the check, and what sending it came to; one opened asking starts checking. */
+export function useSteps<T>(
+  send: () => Promise<Sent<T>>,
+  onDone: (sent: { readonly ok: true } & T) => void,
+  first: "editing" | "checking" = "editing",
+): Steps {
+  const [step, setStep] = useState<Steps["step"]>(first);
   const [failed, setFailed] = useState<Failure | null>(null);
   const edit = () => {
     setStep("editing");
@@ -56,23 +62,61 @@ export function useSteps<T>(send: () => Promise<Sent<T>>, onDone: (sent: { reado
   };
 }
 
-/** The words of a form's buttons and its check. */
-export interface FormWords {
-  readonly next: string;
-  readonly cancel: string;
-  readonly checkTitle: string;
-  readonly send: string;
-  readonly saving: string;
-  readonly back: string;
-}
-
 /** The line a refused send leaves beneath its form. */
 export function Refused(props: { readonly failed: Failure | null; readonly errors: Readonly<Record<string, string>> }) {
   if (props.failed === null) return null;
   return (
-    <p className={styles.error} role="alert">
+    <InlineMessage tone="error" className={styles.error}>
       {errorText(props.errors, props.failed)}
-    </p>
+    </InlineMessage>
+  );
+}
+
+/**
+ * A one-press action: its button, then its question, sent only by Confirm; Cancel puts the button back. One a row's
+ * own button opened starts asking, and its Cancel closes it.
+ */
+export function ActionCheck<T>(props: {
+  /** The button, and what it says to a screen reader where the row names more. */
+  readonly label: string;
+  readonly ariaLabel?: string;
+  readonly question: string;
+  readonly lines?: readonly string[];
+  readonly warnings?: readonly string[];
+  readonly send: () => Promise<Sent<T>>;
+  readonly onDone: (sent: { readonly ok: true } & T) => void;
+  readonly errors: Readonly<Record<string, string>>;
+  readonly onCancel?: () => void;
+  /** The page's main action, as switching access control on is: its button primary, not quiet. */
+  readonly primary?: boolean;
+}) {
+  const steps = useSteps(props.send, props.onDone, props.onCancel === undefined ? "editing" : "checking");
+  return (
+    <>
+      {steps.step === "editing" ? (
+        <div className={styles.actions}>
+          <Button
+            variant={props.primary === true ? "primary" : "outline"}
+            size="small"
+            className={props.primary === true ? undefined : styles.quiet}
+            aria-label={props.ariaLabel}
+            onClick={steps.check}
+          >
+            {props.label}
+          </Button>
+        </div>
+      ) : (
+        <CheckPanel
+          question={props.question}
+          lines={props.lines}
+          warnings={props.warnings}
+          busy={steps.step === "saving"}
+          onSend={steps.go}
+          onBack={props.onCancel ?? steps.edit}
+        />
+      )}
+      <Refused failed={steps.failed} errors={props.errors} />
+    </>
   );
 }
 
@@ -81,7 +125,6 @@ export function SettingForm(props: {
   readonly steps: Steps;
   /** Whether the boxes hold something worth checking. */
   readonly ready: boolean;
-  readonly words: FormWords;
   readonly errors: Readonly<Record<string, string>>;
   /** Null where there is nothing to go back to, as on the form for a list's first item. */
   readonly onCancel: (() => void) | null;
@@ -91,40 +134,38 @@ export function SettingForm(props: {
   readonly sendable?: boolean;
   /** What stands above the boxes, such as the setting as it is now. */
   readonly above?: ReactNode;
+  /** What the last send came to, for a form that stays open after it: "Saved." */
+  readonly said?: string | null;
   /** The boxes. */
   readonly children: ReactNode;
 }) {
-  const { steps, words } = props;
+  const { steps } = props;
   return (
     <Fieldset className={styles.group} legend={props.title} legendLook="title">
       {props.above}
       {props.children}
       {steps.step === "editing" ? (
         <div className={styles.actions}>
-          <Button variant="primary" size="small" className={styles.save} disabled={!props.ready} onClick={steps.check}>
-            {words.next}
+          <Button variant="primary" size="small" disabled={!props.ready} onClick={steps.check}>
+            {review.next}
           </Button>
           {props.onCancel !== null && (
             <Button variant="outline" size="small" className={styles.quiet} onClick={props.onCancel}>
-              {words.cancel}
+              {review.cancel}
             </Button>
           )}
         </div>
       ) : (
-        <CheckPanel
-          title={words.checkTitle}
-          send={words.send}
-          sending={words.saving}
-          back={words.back}
-          busy={steps.step === "saving"}
-          ready={props.sendable ?? true}
-          onSend={steps.go}
-          onBack={steps.edit}
-        >
+        <CheckPanel busy={steps.step === "saving"} ready={props.sendable ?? true} onSend={steps.go} onBack={steps.edit}>
           {props.checking}
         </CheckPanel>
       )}
       <Refused failed={steps.failed} errors={props.errors} />
+      {props.said !== undefined && props.said !== null && (
+        <InlineMessage tone="saved" className={styles.saved}>
+          {props.said}
+        </InlineMessage>
+      )}
     </Fieldset>
   );
 }

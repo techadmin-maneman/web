@@ -82,22 +82,14 @@
 }
 
 /* The site's buttons are wider than the apps', the words further from the edges, and its fields as tall as its
-   buttons (packages/ui/base.css). */
+   buttons (packages/ui/base.css); its lines of what went wrong are in its 14 px small size. */
 :root {
   --action-pad: var(--sp-32);
   --control-pad: var(--sp-24);
   --small-pad: var(--sp-20);
   --field-height: var(--btn-lg);
   --field-text: var(--fs-16);
-}
-
-.visually-hidden {
-  position: absolute;
-  width: var(--sr-only-size);
-  height: var(--sr-only-size);
-  overflow: hidden;
-  clip-path: inset(50%);
-  white-space: nowrap;
+  --message-size: var(--fs-14);
 }
 
 /* ---- Layout ------------------------------------------------------------- */
@@ -131,13 +123,6 @@
   font-family: var(--font-serif);
 }
 
-/* Small capitals in the serif: the design's labels, tags and eyebrows. */
-.caps {
-  font-family: var(--font-serif);
-  font-variant-caps: all-small-caps;
-  letter-spacing: var(--tracking-14);
-}
-
 .section-title {
   margin: 0;
   font-family: var(--font-serif);
@@ -160,9 +145,6 @@
 .label {
   background: var(--ink-night);
   padding: var(--sp-8) var(--sp-12);
-  font-family: var(--font-serif);
-  font-variant-caps: all-small-caps;
-  letter-spacing: var(--tracking-14);
   font-size: var(--fs-13);
   color: var(--ink-tag);
   white-space: nowrap;

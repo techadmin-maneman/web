@@ -18,7 +18,7 @@ let ops: App;
 
 interface Listed {
   clients: { id: string; name: string; state: string; city: string | null; next_visit: string | null }[];
-  more: boolean;
+  next_cursor: string | null;
   cities: string[];
 }
 
@@ -67,7 +67,7 @@ describe("GET /api/clients", () => {
       { name: "Anil Kapoor", state: "nothing_booked", city: null },
     ]);
     expect(page.clients[0]?.next_visit).toBe("2026-09-24T04:30:00.000Z");
-    expect(page.more).toBe(false);
+    expect(page.next_cursor).toBeNull();
     expect(page.cities).toContain("Gurgaon");
   });
 
@@ -90,9 +90,9 @@ describe("GET /api/clients", () => {
     );
     const first = await list();
     expect(first.clients).toHaveLength(CLIENTS_PER_PAGE);
-    expect(first.more).toBe(true);
-    const second = await list("?page=1");
+    expect(first.next_cursor).not.toBeNull();
+    const second = await list(`?cursor=${first.next_cursor ?? ""}`);
     expect(second.clients).toHaveLength(4);
-    expect(second.more).toBe(false);
+    expect(second.next_cursor).toBeNull();
   });
 });

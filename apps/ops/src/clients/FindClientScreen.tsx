@@ -10,6 +10,7 @@
 // before any search, the clients opened this session are offered
 // (lib/client-search.ts), and beneath them every client (./ClientList.tsx).
 
+import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { Label, TextInput } from "@maneman/ui/Field";
 import { errorText } from "@maneman/web-kit/refusal";
 import { Button } from "@maneman/ui/Button";
@@ -147,9 +148,9 @@ export function FindClientScreen() {
           {finding.step === "finding" ? copy.finding : copy.submit}
         </Button>
         {finding.step === "failed" && (
-          <p className={styles.error} role="alert">
+          <InlineMessage tone="error" className={styles.error}>
             {errorText(copy.errors, { code: finding.code })}
-          </p>
+          </InlineMessage>
         )}
       </form>
       {finding.step === "found" && <Found text={finding.text} found={finding.found} />}

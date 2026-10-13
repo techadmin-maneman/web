@@ -2,14 +2,14 @@
 // base size, colour, grey and density kept, counted in pieces in the stock ledger beside the consumables. Its name is
 // made from its spec; its cost and levels change in the list above, as any consumable's do.
 
-import { Button } from "@maneman/ui/Button";
 import { Field, NumberInput, Select } from "@maneman/ui/Field";
 import { Panel } from "@maneman/ui/Panel";
-import { errorText, type Failure } from "@maneman/web-kit/refusal";
+import { rupees } from "@maneman/web-kit/money";
 import { useState } from "react";
 import { api, client, type Consumables as Book } from "../api.ts";
 import { settings } from "../content/settings.ts";
 import styles from "../components/forms.module.css";
+import { SettingForm, useSteps } from "./SettingForm.tsx";
 
 const copy = settings.consumables.hairSystems;
 
@@ -140,7 +140,7 @@ function SpecFields({
 }
 
 /** What the API takes for a draft. */
-const sentOf = (draft: Draft) => ({
+const bodyOf = (draft: Draft) => ({
   product: draft.product,
   base_width_in: Number(draft.width),
   base_length_in: Number(draft.length),
@@ -152,6 +152,18 @@ const sentOf = (draft: Draft) => ({
   reorder_store: level(draft.store),
   reorder_central: level(draft.central),
 });
+
+/** What the check says will be added: the spec the code is made to, what one costs, and its levels. */
+function checkLines(draft: Draft, productName: string): string[] {
+  const level = (text: string) => (text.trim() === "" ? null : Number(text));
+  return [
+    copy.adding(
+      `${productName} ${draft.width}x${draft.length} ${draft.colour}, ${draft.grey}% grey, ${draft.density}%`,
+      rupees(Math.round(Number(draft.cost) * 100)),
+    ),
+    settings.consumables.levels({ kit: level(draft.kit), store: level(draft.store), central: level(draft.central) }),
+  ];
+}
 
 export function HairSystemForm({ book, onSaved }: { book: Book; onSaved: (book: Book, said: string) => void }) {
   const products = book.services.filter((each) => each.visit_type === "first_fit" && each.retired_date === null);
@@ -168,44 +180,46 @@ export function HairSystemForm({ book, onSaved }: { book: Book; onSaved: (book: 
     central: "",
   };
   const [draft, setDraft] = useState<Draft>(blank);
-  const [failure, setFailure] = useState<Failure | null>(null);
-  const [busy, setBusy] = useState(false);
+  const steps = useSteps(
+    async () => {
+      const added = await client.post("/api/hair-systems", { body: bodyOf(draft) });
+      // The list is read again, with the new code in it.
+      const answer = added.ok ? await api.consumables() : added;
+      return answer.ok
+        ? { ok: true as const, book: answer.body }
+        : { ok: false as const, code: answer.code, fields: answer.fields };
+    },
+    (sent) => {
+      setDraft(blank);
+      steps.edit();
+      onSaved(sent.book, copy.added);
+    },
+  );
   const edit = (field: keyof Draft) => (value: string) => {
     setDraft({ ...draft, [field]: value });
-    setFailure(null);
+    steps.edit();
   };
-  const add = async () => {
-    setBusy(true);
-    const added = await client.post("/api/hair-systems", { body: sentOf(draft) });
-    // The list is read again, with the new code in it.
-    const answer = added.ok ? await api.consumables() : added;
-    setBusy(false);
-    if (!answer.ok) {
-      setFailure({ code: answer.code, fields: answer.fields });
-      return;
-    }
-    setDraft(blank);
-    onSaved(answer.body, copy.added);
-  };
+  const productName = products.find((each) => each.tier === draft.product)?.name ?? draft.product;
   return (
     <Panel titleId="hair-systems" title={copy.title} className={styles.panel}>
       <p className={styles.note}>{copy.intro}</p>
       {products.length === 0 ? (
         <p className={styles.note}>{copy.noProducts}</p>
       ) : (
-        <div className={styles.group}>
-          <SpecFields products={products.map((each) => [each.tier, each.name] as const)} draft={draft} edit={edit} />
-          <div className={styles.actions}>
-            <Button variant="primary" size="small" disabled={busy || !readyOf(draft)} onClick={() => void add()}>
-              {copy.add}
-            </Button>
-          </div>
-          {failure !== null && (
-            <p className={styles.error} role="alert">
-              {errorText(copy.errors, failure)}
+        <SettingForm
+          title={copy.formTitle}
+          steps={steps}
+          ready={readyOf(draft)}
+          errors={copy.errors}
+          onCancel={null}
+          checking={checkLines(draft, productName).map((line) => (
+            <p className={styles.checkLine} key={line}>
+              {line}
             </p>
-          )}
-        </div>
+          ))}
+        >
+          <SpecFields products={products.map((each) => [each.tier, each.name] as const)} draft={draft} edit={edit} />
+        </SettingForm>
       )}
     </Panel>
   );

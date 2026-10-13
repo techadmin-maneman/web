@@ -77,7 +77,6 @@ export function MoveBar({ inHand, checking, rows, dates, onLand, onStop, ref }: 
             <Label htmlFor="dispatch-destination">{copy.list}</Label>
             <Select
               id="dispatch-destination"
-              className={styles.select}
               value={chosen}
               onChange={(event) => {
                 setChosen(event.currentTarget.value);

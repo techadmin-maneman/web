@@ -6,10 +6,10 @@ import * as opsCopy from "../../apps/ops/src/content.ts";
 const DISPUTES_QUEUE = "Disputed charges";
 
 // The money sat under "No-shows", only ever today's.
-test("is the console's Payments, at the address No-shows had", async ({ page }) => {
+test("is the console's Charges, at the address No-shows had", async ({ page }) => {
   await open(page);
-  await expect(page.getByRole("heading", { level: 1, name: "Payments" })).toBeVisible();
-  await expect(page.getByRole("navigation").getByRole("link", { name: "Payments" })).toHaveAttribute(
+  await expect(page.getByRole("heading", { level: 1, name: "Charges" })).toBeVisible();
+  await expect(page.getByRole("navigation").getByRole("link", { name: "Charges" })).toHaveAttribute(
     "aria-current",
     "page",
   );
@@ -124,7 +124,7 @@ test("says beside a disputed check-in when the bounds moved the phone's time", a
   await answer(page, {
     "GET /api/payments": json(DAY_MONEY),
     "GET /api/no-shows": json(NO_SHOWS),
-    "GET /api/no-shows/disputes": json({ disputes: [moved] }),
+    "GET /api/no-shows/disputes": json({ disputes: [moved], more: false }),
     "GET /api/no-shows/decided": json(DECIDED),
   });
   await page.goto("/payments");
@@ -160,7 +160,7 @@ test("says on a disputed charge that the reminder never went, where it was not s
   await answer(page, {
     "GET /api/payments": json(DAY_MONEY),
     "GET /api/no-shows": json(NO_SHOWS),
-    "GET /api/no-shows/disputes": json({ disputes }),
+    "GET /api/no-shows/disputes": json({ disputes, more: false }),
     "GET /api/no-shows/decided": json(DECIDED),
   });
   await page.clock.setFixedTime(TASKS_READ_ON);
@@ -181,7 +181,10 @@ test("offers Refund and Uphold only once the note is written, and sends the ruli
 
   const sent = page.waitForRequest((request) => request.url().includes("/ruling") && request.method() === "POST");
   // Read again once ruled, as the board does: the dispute has gone.
-  await answer(page, { "GET /api/no-shows/disputes": json({ disputes: [] }), [RULE]: json({ ruled: true }) });
+  await answer(page, {
+    "GET /api/no-shows/disputes": json({ disputes: [], more: false }),
+    [RULE]: json({ ruled: true }),
+  });
   await card.getByRole("button", { name: "Refund" }).click();
   expect((await sent).postDataJSON()).toEqual({ ruling: "refunded", reason: "The bell was broken that week" });
   await expect(page.getByText(DISPUTED)).toBeHidden();

@@ -5,6 +5,7 @@ import { act, createElement } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Word } from "../../apps/ops/src/api.ts";
+import { review } from "../../apps/ops/src/content/common.ts";
 import { words as copy } from "../../apps/ops/src/content/words.ts";
 import { WordsScreen } from "../../apps/ops/src/words/WordsScreen.tsx";
 
@@ -169,7 +170,7 @@ describe("the Words page", () => {
     expect(page.textContent).toContain(copy.notOnSite);
     await press(copy.publish.open);
     expect(page.textContent).toContain(copy.publish.changed(1));
-    await press(copy.publish.send);
+    await press(review.send);
     expect(page.querySelector('[role="status"]')?.textContent).toBe(copy.publish.done);
   });
 });

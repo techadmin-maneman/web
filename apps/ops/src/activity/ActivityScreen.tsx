@@ -3,6 +3,8 @@
 // to lives in the page's address (./filters.ts), so a client's whole record, linked from their History tab, opens
 // already narrowed. The design draws no board for it; it is built as Areas' tables are.
 
+import { ROUTE_NEEDS } from "@rules/policy/console-routes.ts";
+import { EmptyState } from "@maneman/ui/EmptyState";
 import { Chip } from "@maneman/ui/Chip";
 import { Button } from "@maneman/ui/Button";
 import { Table } from "@maneman/ui/Table";
@@ -41,10 +43,20 @@ function Who({ actor, surface }: Pick<ActivityEntry, "actor" | "surface">) {
   );
 }
 
-/** What the entry was, and for a call the method and path it made, IDs only. */
+const TEMPLATES = Object.keys(ROUTE_NEEDS).map((key) => {
+  const [method = "", template = ""] = key.split(" ");
+  return { method, template, pattern: new RegExp(`^${template.replace(/\{[^}]+\}/g, "[^/]+")}$`) };
+});
+
+/** A call's path as the route it reached, "/api/stock/lots/{id}": the record it touched is named beside it. */
+const routeOf = (method: string, path: string): string =>
+  TEMPLATES.find((each) => each.method === method && each.pattern.test(path))?.template ??
+  path.replace(/[0-9a-f-]{36}/g, "{id}");
+
+/** What the entry was, and for a call the method and the route it reached, never an ID. */
 function What({ action, detail }: Pick<ActivityEntry, "action" | "detail">) {
-  const path = typeof detail?.path === "string" ? detail.path : null;
   const method = typeof detail?.method === "string" ? detail.method : null;
+  const path = typeof detail?.path === "string" ? routeOf(method ?? "", detail.path) : null;
   // The log keeps actions an earlier build wrote under names this one no longer has words for.
   const said = Object.hasOwn(copy.actions, action) ? copy.actions[action] : action;
   return (
@@ -108,7 +120,7 @@ function Rows({ entries }: { entries: readonly ActivityEntry[] }) {
 
 interface Older {
   readonly entries: readonly ActivityEntry[];
-  readonly next: number | null;
+  readonly next: string | null;
 }
 
 /** The log as narrowed, a page at a time: older pages are added beneath as they are asked for. */
@@ -120,15 +132,15 @@ function Log({ filters }: { filters: Filters }) {
   if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
 
   const entries = [...loaded.value.entries, ...(older?.entries ?? [])];
-  const next = older === null ? loaded.value.next_before : older.next;
-  const showOlder = async (before: number) => {
+  const next = older === null ? loaded.value.next_cursor : older.next;
+  const showOlder = async (cursor: string) => {
     setLoadingOlder(true);
-    const answer = await api.activity(askedOf(filters, before));
+    const answer = await api.activity(askedOf(filters, cursor));
     setLoadingOlder(false);
     if (!answer.ok) return;
-    setOlder({ entries: [...(older?.entries ?? []), ...answer.body.entries], next: answer.body.next_before });
+    setOlder({ entries: [...(older?.entries ?? []), ...answer.body.entries], next: answer.body.next_cursor });
   };
-  if (entries.length === 0) return <p className={styles.empty}>{copy.empty}</p>;
+  if (entries.length === 0) return <EmptyState look="panel" line={copy.empty} />;
   return (
     <>
       <Rows entries={entries} />

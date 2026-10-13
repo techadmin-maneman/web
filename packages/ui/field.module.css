@@ -99,7 +99,7 @@
   }
 
   .box:focus-visible {
-    outline-offset: calc(-1 * var(--focus-width));
+    outline-offset: var(--focus-inset);
   }
 
   .box:disabled {

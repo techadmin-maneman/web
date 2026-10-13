@@ -4,13 +4,13 @@
 //
 // The API keeps one row a day. The list shows the days run together where they
 // follow one another for the same reason, added by the same press, so each run
-// names who added all of it; offering them again sends that run of days back. Blacking out a day moves nothing already booked on it, so
-// each run says how many visits are still booked on it, and opens the dispatch board on its first day to move them.
+// names who added all of it; offering them again sends that run of days back. Closing a day moves nothing already
+// booked on it, so the check before it says how many visits the days strand, and each run says how many are still
+// booked on it and opens the dispatch board on its first day to move them.
 
 import { DateInput, Label, Select, TextInput } from "@maneman/ui/Field";
-import { errorText, type Failure } from "@maneman/web-kit/refusal";
 import { Panel } from "@maneman/ui/Panel";
-import { Button, buttonLook } from "@maneman/ui/Button";
+import { buttonLook } from "@maneman/ui/Button";
 import { useLoad } from "@maneman/ui/useLoad";
 import { addDays, longDate, shortDate } from "@maneman/web-kit/dates";
 import { useState } from "react";
@@ -22,6 +22,7 @@ import { whoWords } from "../lib/who.ts";
 import { dispatchPath } from "../route.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import styles from "../components/forms.module.css";
+import { ActionCheck, SettingForm, sentOf, useSteps } from "./SettingForm.tsx";
 
 const copy = settings.blackouts;
 
@@ -80,42 +81,69 @@ type Draft = { readonly from: string; readonly to: string; readonly city: string
 
 const EMPTY: Draft = { from: "", to: "", city: "", reason: "" };
 
+/** The days a draft or a run names, as the API takes them: no city for every city. */
+const periodOf = (period: { from: string; to: string; city: string | null }) => ({
+  from: period.from,
+  to: period.to,
+  ...(period.city === null || period.city === "" ? {} : { city: period.city }),
+});
+
 function AddForm(props: { today: string; cities: readonly string[]; onAdded: (days: readonly Blackout[]) => void }) {
   const { today, onAdded } = props;
   const [draft, setDraft] = useState<Draft>(EMPTY);
-  const [sending, setSending] = useState(false);
-  const [outcome, setOutcome] = useState<"added" | Failure | null>(null);
+  /** The visits the days would leave booked, counted as the check opens; null where they could not be. */
+  const [booked, setBooked] = useState<number | null>(0);
+  const [added, setAdded] = useState(false);
   const ready = draft.from !== "" && draft.to !== "" && draft.reason.trim() !== "";
-
-  const send = async () => {
-    setSending(true);
-    const answer = await api.addBlackouts({
-      from: draft.from,
-      to: draft.to,
-      reason: draft.reason.trim(),
-      ...(draft.city === "" ? {} : { city: draft.city }),
-    });
-    setSending(false);
-    if (!answer.ok) {
-      setOutcome({ code: answer.code, fields: answer.fields });
-      return;
-    }
-    setDraft(EMPTY);
-    setOutcome("added");
-    onAdded(answer.body.blackouts);
+  const steps = useSteps(
+    async () =>
+      sentOf(await api.addBlackouts({ ...periodOf(draft), reason: draft.reason.trim() }), (body) => ({
+        days: body.blackouts,
+      })),
+    (sent) => {
+      setDraft(EMPTY);
+      setAdded(true);
+      steps.edit();
+      onAdded(sent.days);
+    },
+  );
+  const review = {
+    ...steps,
+    check: () => {
+      void api.blackoutsBooked(periodOf(draft)).then((answer) => {
+        setBooked(answer.ok ? answer.body.booked : null);
+        steps.check();
+      });
+    },
   };
   const edit = (field: keyof Draft, value: string) => {
     setDraft({ ...draft, [field]: value });
-    setOutcome(null);
+    setAdded(false);
+    steps.edit();
   };
 
   return (
-    <form
-      className={styles.group}
-      onSubmit={(event) => {
-        event.preventDefault();
-        void send();
-      }}
+    <SettingForm
+      said={added ? copy.added : null}
+      title={copy.formTitle}
+      steps={review}
+      ready={ready}
+      errors={copy.errors}
+      onCancel={null}
+      checking={
+        <>
+          <p className={styles.checkLine}>
+            {copy.closing(
+              ready ? periodWords(draft) : "",
+              draft.city === "" ? copy.everyCity : draft.city,
+              draft.reason.trim(),
+            )}
+          </p>
+          {booked !== 0 && (
+            <p className={styles.checkWarning}>{booked === null ? copy.uncounted : copy.stranded(booked)}</p>
+          )}
+        </>
+      }
     >
       <div className={styles.fields}>
         <div className={styles.field}>
@@ -173,22 +201,7 @@ function AddForm(props: { today: string; cities: readonly string[]; onAdded: (da
           />
         </div>
       </div>
-      <div className={styles.actions}>
-        <Button type="submit" variant="primary" size="small" className={styles.save} disabled={!ready || sending}>
-          {sending ? copy.adding : copy.add}
-        </Button>
-      </div>
-      {outcome === "added" && (
-        <p className={styles.saved} role="status">
-          {copy.added}
-        </p>
-      )}
-      {outcome !== null && outcome !== "added" && (
-        <p className={styles.error} role="alert">
-          {errorText(copy.errors, outcome)}
-        </p>
-      )}
-    </form>
+    </SettingForm>
   );
 }
 
@@ -202,25 +215,7 @@ interface PeriodRowProps {
 }
 
 function PeriodRow({ period, mayRemove, mayShow, onRemoved }: PeriodRowProps) {
-  const [sending, setSending] = useState(false);
-  const [failure, setFailure] = useState<Failure | null>(null);
   const words = periodWords(period);
-
-  const remove = async () => {
-    setSending(true);
-    const answer = await api.removeBlackouts({
-      from: period.from,
-      to: period.to,
-      ...(period.city === null ? {} : { city: period.city }),
-    });
-    setSending(false);
-    if (!answer.ok) {
-      setFailure({ code: answer.code, fields: answer.fields });
-      return;
-    }
-    onRemoved(answer.body.blackouts);
-  };
-
   return (
     <li className={styles.rule}>
       <p className={styles.period}>
@@ -240,23 +235,16 @@ function PeriodRow({ period, mayRemove, mayShow, onRemoved }: PeriodRowProps) {
         </div>
       )}
       {mayRemove && (
-        <div className={styles.actions}>
-          <Button
-            variant="outline"
-            size="small"
-            className={styles.quiet}
-            disabled={sending}
-            aria-label={copy.removeLabel(words)}
-            onClick={() => void remove()}
-          >
-            {sending ? copy.removing : copy.remove}
-          </Button>
-        </div>
-      )}
-      {failure !== null && (
-        <p className={styles.error} role="alert">
-          {errorText(copy.errors, failure)}
-        </p>
+        <ActionCheck
+          label={copy.remove}
+          ariaLabel={copy.removeLabel(words)}
+          question={copy.reopen(words)}
+          send={async () => sentOf(await api.removeBlackouts(periodOf(period)), (body) => ({ days: body.blackouts }))}
+          onDone={(sent) => {
+            onRemoved(sent.days);
+          }}
+          errors={copy.errors}
+        />
       )}
     </li>
   );

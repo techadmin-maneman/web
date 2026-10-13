@@ -6,6 +6,7 @@
 // a payment held or a payment link unpaid; ops may then erase all the same, saying they will settle it by hand today.
 // From then on the client's page shows only what is kept of them.
 
+import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { useFocusOnMount } from "@maneman/ui/useFocusOnMount";
 import { errorText } from "@maneman/web-kit/refusal";
 import { capsLook } from "@maneman/ui/Caps";
@@ -165,9 +166,9 @@ export function Erase({ clientId, name, requested, onErased }: EraseProps) {
         </div>
       )}
       {erasing.step === "failed" && (
-        <p className={deletionStyles.error} role="alert">
+        <InlineMessage tone="error" className={deletionStyles.error}>
           {errorText(copy.errors, { code: erasing.code })}
-        </p>
+        </InlineMessage>
       )}
     </section>
   );

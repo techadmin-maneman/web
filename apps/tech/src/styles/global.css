@@ -8,6 +8,7 @@
 
 @import "@maneman/brand/tokens.css";
 @import "@maneman/brand/tokens-apps.css";
+@import "./tokens.css";
 @import "@maneman/brand/fonts.css";
 @import "@maneman/ui/base.css";
 
@@ -29,6 +30,7 @@ body {
   --edge-on-ink: var(--ink-line-strong);
   --field-height: var(--tech-stepper);
   --field-text: var(--fs-18);
+  --message-size: var(--fs-16);
 
   background: var(--ink-deep);
   color: var(--paper);

@@ -1,3 +1,4 @@
+import { capsLook } from "@maneman/ui/Caps";
 import { referral } from "../../content/referral.ts";
 import styles from "./Invite.module.css";
 
@@ -5,7 +6,7 @@ import styles from "./Invite.module.css";
 export function HowItWorks() {
   return (
     <div class={styles.steps}>
-      <h2 class={`caps ${styles.stepsTitle}`}>{referral.howItWorks.title}</h2>
+      <h2 class={capsLook(styles.stepsTitle)}>{referral.howItWorks.title}</h2>
       <ol class={styles.stepList}>
         {referral.howItWorks.steps.map((step) => (
           <li key={step.n} class={styles.step}>

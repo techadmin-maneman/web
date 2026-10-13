@@ -1,16 +1,11 @@
 /* The Supply plan's forecast: one row an item, one column a period, scrolled sideways on a narrow screen. */
 
-/* This panel's own size, which nothing else draws (ADR 0077, as amended). */
-:root {
-  --local-forecast-table: 960px; /* the narrowest the table goes before it scrolls */
-}
-
 .scroll {
   overflow-x: auto;
 }
 
 .forecast {
-  min-width: var(--local-forecast-table);
+  min-width: var(--ops-table-min);
 }
 
 /* The high case, beneath each period's expected use. */

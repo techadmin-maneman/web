@@ -316,13 +316,13 @@ test("names the client of a no-show, and leads to their visits and to the case",
     "href",
     "/clients/22000000-0000-4000-8000-000000000010/visits",
   );
-  await noShow.getByRole("link", { name: /^Decide in Payments/ }).click();
+  await noShow.getByRole("link", { name: /^Decide in Charges/ }).click();
   expect(new URL(page.url()).pathname).toBe("/payments");
   expect(new URL(page.url()).hash).toBe("#case-66000000-0000-4000-8000-000000000001");
 });
 
 // A client's claim for money back once waited on No-shows alone: no row here, no count, no link.
-test("names a disputed charge and what it kept, and leads to the dispute in Payments", async ({ page }) => {
+test("names a disputed charge and what it kept, and leads to the dispute in Charges", async ({ page }) => {
   const dispute = (id: string, person: { id: string; name: string } | null, kept: number) => ({
     id,
     person,
@@ -360,14 +360,14 @@ test("names a disputed charge and what it kept, and leads to the dispute in Paym
     "href",
     "/clients/22000000-0000-4000-8000-000000000030/visits",
   );
-  await expect(vikram.getByRole("link", { name: "Decide in Payments · Vikram Sethi", exact: true })).toHaveAttribute(
+  await expect(vikram.getByRole("link", { name: "Decide in Charges · Vikram Sethi", exact: true })).toHaveAttribute(
     "href",
     "/payments#dispute-dd000000-0000-4000-8000-000000000001",
   );
   // A client since erased still has their charge ruled on.
   await expect(row(page, "Erased client")).toContainText("Disputes a charge: a free service visit");
   await expect(
-    page.getByRole("navigation", { name: opsCopy.shell.title }).getByRole("link", { name: /^Payments, 2 waiting/ }),
+    page.getByRole("navigation", { name: opsCopy.shell.title }).getByRole("link", { name: /^Charges, 2 waiting/ }),
   ).toBeVisible();
 });
 

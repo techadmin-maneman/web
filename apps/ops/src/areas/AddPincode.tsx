@@ -1,6 +1,7 @@
 // Adding a pincode the service area does not hold: its number, what messages call its area, and its city, one of
 // ours. It goes in unserved, so adding one messages nobody; marking it live is the launch panel's.
 
+import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { Label, Select, TextInput } from "@maneman/ui/Field";
 import { errorText } from "@maneman/web-kit/refusal";
 import { Button } from "@maneman/ui/Button";
@@ -132,9 +133,9 @@ export function AddPincode({ pincode, cities, onAdded, onCancel }: Props) {
         {cancel}
       </div>
       {code !== null && (
-        <p className={styles.error} role="alert">
+        <InlineMessage tone="error" className={styles.error}>
           {errorText(copy.errors, { code })}
-        </p>
+        </InlineMessage>
       )}
     </div>
   );

@@ -2,10 +2,11 @@
 // reached us. Ops say how it went, when the work began and ended on the visit's own day, and how they know
 // (src/routes/ops/visit-changes.ts). No board draws it.
 
+import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { REASON_MAX_CHARS } from "@rules/policy/decision-reasons.ts";
 import { errorText } from "@maneman/web-kit/refusal";
 import { Button } from "@maneman/ui/Button";
-import { Dialog } from "@maneman/ui/Dialog";
+import { Drawer } from "@maneman/ui/Drawer";
 import { ChoiceGroup, Field, Radio, TextArea, TextInput } from "@maneman/ui/Field";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { useId, useState } from "react";
@@ -128,9 +129,9 @@ function Form({ visitId, date, onClosed }: { visitId: string; date: string; onCl
         </Button>
       </div>
       {failed !== null && (
-        <p className={styles.error} role="alert">
+        <InlineMessage tone="error" className={styles.error}>
           {failed}
-        </p>
+        </InlineMessage>
       )}
     </form>
   );
@@ -154,24 +155,24 @@ export function CloseVisit({
     onClose(closed !== null);
   };
   return (
-    <Dialog className={styles.drawer} labelledBy="close-visit-title" canClose onDismiss={dismiss}>
-      <div className={styles.head}>
-        <h2 className={styles.title} id="close-visit-title">
-          {copy.title(name)}
-        </h2>
+    <Drawer
+      titleId="close-visit-title"
+      title={copy.title(name)}
+      aside={
         <Button variant="outline" size="small" className={styles.quiet} onClick={dismiss}>
           {copy.close}
         </Button>
-      </div>
-      <div className={styles.body}>
-        {closed === null ? (
-          <Form visitId={visitId} date={date} onClosed={setClosed} />
-        ) : (
-          <p className={styles.done} role="status">
-            {copy.done[closed]}
-          </p>
-        )}
-      </div>
-    </Dialog>
+      }
+      canClose
+      onDismiss={dismiss}
+    >
+      {closed === null ? (
+        <Form visitId={visitId} date={date} onClosed={setClosed} />
+      ) : (
+        <p className={styles.done} role="status">
+          {copy.done[closed]}
+        </p>
+      )}
+    </Drawer>
   );
 }

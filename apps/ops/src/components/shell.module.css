@@ -86,7 +86,7 @@
 
 .section:focus-visible {
   outline: var(--focus-width) solid var(--paper);
-  outline-offset: calc(-1 * var(--focus-width));
+  outline-offset: var(--focus-inset);
 }
 
 /* How many tasks wait in a section; filled where any of them is overdue. */

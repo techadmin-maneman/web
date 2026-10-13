@@ -1,6 +1,7 @@
 // The account's data card: a copy of the client's data, and a concern raised and answered
 // (docs/decisions/0049-dpdp.md).
 
+import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { Field, TextArea } from "@maneman/ui/Field";
 import { capsLook } from "@maneman/ui/Caps";
 import { GRIEVANCE_MAX_CHARS } from "@rules/policy/grievances.ts";
@@ -113,9 +114,9 @@ export function DataCard({ grievances, onRaised }: { grievances: Profile["grieva
       >
         <GrievanceField text={text} onText={setText} />
         {(state === "failed" || state === "limited") && (
-          <p className={styles.error} role="alert">
+          <InlineMessage tone="error" className={styles.error}>
             {state === "limited" ? copy.limited : copy.failed}
-          </p>
+          </InlineMessage>
         )}
         <div className={styles.row}>
           <Button

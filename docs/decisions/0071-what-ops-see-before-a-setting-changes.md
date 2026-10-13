@@ -58,3 +58,14 @@ ADR 0061 gave ops the console's Settings section. The audit of 24 September 2026
 - **Migration 0043** only adds a column, so the Worker already deployed is unaffected. `scripts/ops/import-pincodes.ts` needs it: run migrations before the import, as the runbook already says.
 - **A save that serves many pincodes writes many statements in one batch**, two for each person told, as the waitlist's launch always has. Serving a whole city with a long waitlist is the largest such batch.
 - **What is still owed the owner**: every word of Settings, the header's identity and the lapsed-session line is a placeholder in `apps/ops/src/content.ts`, as the rest of the console's copy is (`docs/open-points.md`, item 42); the departures from board A1's header are recorded in ADR 0025, item 49.
+
+## Amended 14 October 2026: one way to send
+
+The console's panels had drifted into several contracts: a "Save X" button that only opened a check, a "Check before saving" variant, and changes made in one press, closing days for every city among them. There is now one rule, held by `test/node/apps/ops/ops-settings-writes.test.ts`:
+
+- **A change made in boxes** is a `SettingForm`: its first button is **Review**, its check is titled **Review the change**, and its buttons are **Confirm** and **Edit**. The form owns these words (`review`, `apps/ops/src/content/common.ts`); no form names its own.
+- **A one-press action**, such as pausing a partner, switching off a code, reopening days or restoring a supplier, is an `ActionCheck`: its button, then its question, sent by **Confirm**; **Cancel** puts the button back.
+- **A removal for good** is a `DeleteAction`, which asks once.
+- **Nothing else writes from Settings.** Every API write there is sent from `useSteps`, or through the `send` of `ActionCheck`, `ListEditor` or `DeleteAction`.
+- **A change line** reads "Field: was → now" with no full stop; a sentence keeps its own.
+- **Closing days** now says, in its check, how many booked visits the days would strand (`GET /api/blackouts/booked`), before anything is closed.

@@ -5,6 +5,7 @@
 // The position reaches CSS as --position. The starting value comes from a
 // class, so the server-rendered HTML carries no inline style.
 
+import { capsLook } from "@maneman/ui/Caps";
 import { RangeInput } from "@maneman/ui/Field";
 import type { ComponentChildren } from "preact";
 import { useEffect, useRef, useState } from "preact/hooks";
@@ -39,9 +40,9 @@ export default function BeforeAfter(props: Props) {
     <div ref={frame} class={`${styles.frame} ${styles.teaser} ${styles.from46}`}>
       <div class={styles.layer}>{props.after}</div>
       <div class={`${styles.layer} ${styles.before}`}>{props.before}</div>
-      <span class={`label ${styles.corner} ${styles.left}`}>{props.beforeLabel}</span>
-      <span class={`label ${styles.corner} ${styles.right}`}>{props.afterLabel}</span>
-      {props.tag !== undefined && <span class={`label ${styles.tag}`}>{props.tag}</span>}
+      <span class={capsLook(`label ${styles.corner} ${styles.left}`)}>{props.beforeLabel}</span>
+      <span class={capsLook(`label ${styles.corner} ${styles.right}`)}>{props.afterLabel}</span>
+      {props.tag !== undefined && <span class={capsLook(`label ${styles.tag}`)}>{props.tag}</span>}
       <div class={styles.line} />
       <div class={styles.handle}>
         {[ICONS.handleLeft, ICONS.handleRight].map((path) => (

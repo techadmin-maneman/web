@@ -7,6 +7,7 @@
 // to it, with its prices still to come and its earlier ones. One action is open at a time, and each shows what it
 // changes before it is sent (./ServiceForms.tsx).
 
+import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { RowButton } from "@maneman/ui/Button";
 import { Panel } from "@maneman/ui/Panel";
 import { Table } from "@maneman/ui/Table";
@@ -177,9 +178,9 @@ function OpenAction({ opened, where }: { opened: Opened; where: string }) {
 function Outcome({ opened, where }: { opened: Opened; where: string }) {
   if (opened.outcome?.where !== where) return null;
   return (
-    <p className={styles.saved} role="status">
+    <InlineMessage tone="saved" className={styles.saved}>
       {opened.outcome.said}
-    </p>
+    </InlineMessage>
   );
 }
 

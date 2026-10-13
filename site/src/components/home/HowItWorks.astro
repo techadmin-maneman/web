@@ -1,5 +1,6 @@
 ---
 // How it works: three numbered steps, each with a photograph.
+import { capsLook } from "@maneman/ui/Caps";
 import { howItWorks, placeholderTag, stepPhotos } from "../../content/site.ts";
 import { SHOW_PLACEHOLDER_TAGS, isShown } from "../../lib/build.ts";
 import { asBuilt, priceTemplate } from "../../lib/prices.ts";
@@ -21,7 +22,7 @@ const steps = howItWorks.steps.map((step, index) => ({ ...step, photo: stepPhoto
           <div>
             <h3>{step.title}</h3>
             <p>{step.body}</p>
-            <div class="meta caps" data-price={priceTemplate(step.meta)}>
+            <div class={capsLook("meta")} data-price={priceTemplate(step.meta)}>
               {asBuilt(step.meta)}
             </div>
           </div>
@@ -34,7 +35,7 @@ const steps = howItWorks.steps.map((step, index) => ({ ...step, photo: stepPhoto
               sizes="(min-width: 761px) 50vw, 100vw"
               widths={[390, 780, 1200]}
             />
-            {SHOW_PLACEHOLDER_TAGS && <div class="label tag">{placeholderTag}</div>}
+            {SHOW_PLACEHOLDER_TAGS && <div class={capsLook("label tag")}>{placeholderTag}</div>}
           </div>
         )}
       </li>

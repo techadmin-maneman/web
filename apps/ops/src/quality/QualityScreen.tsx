@@ -1,6 +1,9 @@
 // Operations · Quality (docs/decisions/0187-recalls.md, 0188-failure-rates-and-value-at-risk.md): every recall, each
 // opened to where its lot is and who wears it, and a lot recalled with why; failure rates; and the value at risk.
 
+import { longDate } from "@maneman/web-kit/dates";
+import { InlineMessage } from "@maneman/ui/InlineMessage";
+import { Panel } from "@maneman/ui/Panel";
 import { Button } from "@maneman/ui/Button";
 import { Table } from "@maneman/ui/Table";
 import { useLoad } from "@maneman/ui/useLoad";
@@ -39,7 +42,7 @@ function Recalls({ book, onOpen }: { book: Book; onOpen: (id: string) => void })
             </th>
             <td>{recall.name}</td>
             <td>{recall.lot_code}</td>
-            <td>{recall.raised_at.slice(0, 10)}</td>
+            <td>{longDate(recall.raised_at)}</td>
             <td>{recall.closed_at === null ? copy.open : copy.closed}</td>
             <td>
               <Button
@@ -94,25 +97,20 @@ export function QualityScreen() {
       {loaded.state === "failed" && <PanelFailed onRetry={retry} requestId={loaded.requestId} />}
       {current !== null && (
         <div className={form.screen}>
-          <section className={form.panel} aria-labelledby="quality-recalls">
-            <div className={form.panelHead}>
-              <h2 className={form.panelTitle} id="quality-recalls">
-                {copy.recalls}
-              </h2>
-            </div>
+          <Panel titleId="quality-recalls" title={copy.recalls}>
             <Recalls book={current} onOpen={open} />
             {access.mayCall("POST /api/recalls") && <RaiseRecall book={current} onAnswer={answered} />}
             {said !== null && (
-              <p className={form.saved} role="status">
+              <InlineMessage tone="saved" className={form.saved}>
                 {said}
-              </p>
+              </InlineMessage>
             )}
             {failure !== null && (
-              <p className={form.error} role="alert">
+              <InlineMessage tone="error" className={form.error}>
                 {errorText(copy.errors, failure)}
-              </p>
+              </InlineMessage>
             )}
-          </section>
+          </Panel>
           {opened !== null && <RecallDetail key={opened.id} recall={opened} onAnswer={answered} />}
           <FailuresPanel />
           {access.mayCall("GET /api/stock/expiry-risk") && <ExpiryRiskPanel />}

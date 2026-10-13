@@ -132,10 +132,17 @@ for (const worker of WORKERS) {
       ? "allowed"
       : `denied (HTTP ${String(result.status)}): add it to the token's Specified Workers (provisioning, step 6)`,
   );
-  expectDenied(
-    `reads ${worker.name}-${otherEnvironment}`,
-    await readDeployments(`${worker.name}-${otherEnvironment}`),
-    "the token should only reach its own environment's Workers",
+}
+
+// The upload checks each Workflow the API binds is its own, which only an account-wide Workers permission may read.
+for (const workflow of ["mm-analytics-copy", "mm-backup"]) {
+  const result = await cloudflare(`/accounts/${own.accountId}/workflows/${workflow}-${environment}`);
+  report(
+    result.ok || result.status === 404 ? "PASS" : "FAIL",
+    `reads the Workflow ${workflow}-${environment}`,
+    result.ok || result.status === 404
+      ? "allowed"
+      : `denied (HTTP ${String(result.status)}): add Account → Workers Scripts → Read (provisioning, step 6)`,
   );
 }
 

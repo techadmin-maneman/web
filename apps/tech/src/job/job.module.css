@@ -36,10 +36,6 @@
   flex-shrink: 0;
   align-self: flex-start;
   margin-left: auto;
-  letter-spacing: var(--tracking-12);
-  font-size: var(--fs-15);
-  white-space: nowrap;
-  color: var(--paper);
 }
 
 .body {
@@ -231,7 +227,7 @@
 
 .changedLine {
   margin: 0 0 var(--sp-12);
-  font-size: var(--fs-19);
+  font-size: var(--fs-18);
   line-height: var(--lh-145);
   color: var(--paper);
 }
@@ -277,7 +273,7 @@
 
 .failedLine {
   margin: 0 0 var(--sp-12);
-  font-size: var(--fs-19);
+  font-size: var(--fs-18);
   line-height: var(--lh-145);
   color: var(--paper);
 }

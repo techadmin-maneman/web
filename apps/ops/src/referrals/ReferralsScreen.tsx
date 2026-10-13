@@ -6,6 +6,8 @@
 // Each name in a held pair is a way to that client's page, and each grant says
 // how long it has been held, as the board writes it.
 
+import { InlineMessage } from "@maneman/ui/InlineMessage";
+import { EmptyState } from "@maneman/ui/EmptyState";
 import { lazyScreen } from "@maneman/ui/lazyScreen";
 import { REASON_MAX_CHARS } from "@rules/policy/decision-reasons.ts";
 import { errorText } from "@maneman/web-kit/refusal";
@@ -129,7 +131,6 @@ function HeldGrant({ grant, now, mayDecide, onDecided }: HeldGrantProps) {
             <Button
               variant="outline"
               size="small"
-              className={styles.quiet}
               disabled={sending}
               onClick={() => {
                 keepHeld(asking.choice);
@@ -146,7 +147,6 @@ function HeldGrant({ grant, now, mayDecide, onDecided }: HeldGrantProps) {
             variant="primary"
             size="small"
             ref={openers.approve}
-            className={styles.approve}
             onClick={() => {
               setDecision({ step: "asking", choice: "approve" });
             }}
@@ -157,7 +157,6 @@ function HeldGrant({ grant, now, mayDecide, onDecided }: HeldGrantProps) {
             variant="danger"
             size="small"
             ref={openers.reject}
-            className={styles.reject}
             onClick={() => {
               setDecision({ step: "asking", choice: "reject" });
             }}
@@ -167,9 +166,9 @@ function HeldGrant({ grant, now, mayDecide, onDecided }: HeldGrantProps) {
         </div>
       )}
       {decision.step === "failed" && (
-        <p className={styles.error} role="alert">
+        <InlineMessage tone="error" className={styles.error}>
           {errorText(copy.errors, { code: decision.code })}
-        </p>
+        </InlineMessage>
       )}
     </>
   );
@@ -208,7 +207,8 @@ type Pages =
   | {
       readonly state: "loaded";
       readonly referrers: readonly Referrer[];
-      readonly more: boolean;
+      /** The next page's cursor; null on the last. */
+      readonly next: string | null;
       readonly fetching: boolean;
     };
 
@@ -222,11 +222,11 @@ function useReferrers(version: number) {
 
   useEffect(() => {
     let current = true;
-    void api.referrers(0).then((answer) => {
+    void api.referrers().then((answer) => {
       if (!current) return;
       setPages(
         answer.ok
-          ? { state: "loaded", referrers: answer.body.referrers, more: answer.body.more, fetching: false }
+          ? { state: "loaded", referrers: answer.body.referrers, next: answer.body.next_cursor, fetching: false }
           : { state: "failed", requestId: answer.requestId },
       );
     });
@@ -237,7 +237,7 @@ function useReferrers(version: number) {
 
   const more = async (shown: Extract<Pages, { state: "loaded" }>) => {
     setPages({ ...shown, fetching: true });
-    const answer = await api.referrers(shown.referrers.length);
+    const answer = await api.referrers(shown.next ?? undefined);
     if (!answer.ok) {
       setPages({ ...shown, fetching: false });
       return;
@@ -245,7 +245,7 @@ function useReferrers(version: number) {
     setPages({
       state: "loaded",
       referrers: [...shown.referrers, ...answer.body.referrers],
-      more: answer.body.more,
+      next: answer.body.next_cursor,
       fetching: false,
     });
   };
@@ -290,7 +290,7 @@ function ReferrersTable({ version }: { version: number }) {
           {copy.title}
         </VisuallyHidden>
         {pages.referrers.length === 0 ? (
-          <p className={styles.empty}>{copy.empty}</p>
+          <EmptyState look="panel" line={copy.empty} />
         ) : (
           <>
             <Narrowing view={view} label={copy.narrow} className={styles.narrow} />
@@ -320,15 +320,9 @@ function ReferrersTable({ version }: { version: number }) {
             <TableEnd view={view} />
           </>
         )}
-        {pages.more && (
+        {pages.next !== null && (
           <div className={styles.actions}>
-            <Button
-              variant="outline"
-              size="small"
-              className={styles.quiet}
-              disabled={pages.fetching}
-              onClick={() => void more(pages)}
-            >
+            <Button variant="outline" size="small" disabled={pages.fetching} onClick={() => void more(pages)}>
               {pages.fetching ? copy.loading : copy.more}
             </Button>
           </div>

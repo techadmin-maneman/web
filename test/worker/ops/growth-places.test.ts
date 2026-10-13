@@ -220,7 +220,7 @@ describe("a grant of Growth in one city", () => {
           redeemed: 0,
         },
       ],
-      more: false,
+      next_cursor: null,
     });
   });
 

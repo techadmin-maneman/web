@@ -3,11 +3,11 @@
 // details, the block drawer's two ways to the client, and Assign, which takes
 // the job up as a drag from the tray does.
 
-import { capsLook } from "@maneman/ui/Caps";
+import { badgeLook } from "@maneman/ui/Caps";
 import { Icon } from "@maneman/ui/Icon";
 import { ICONS } from "@maneman/brand/icons";
 import { Button, ButtonLink, buttonLook } from "@maneman/ui/Button";
-import { Dialog } from "@maneman/ui/Dialog";
+import { Drawer } from "@maneman/ui/Drawer";
 import { whatsappChat } from "@maneman/web-kit/whatsapp";
 import type { Unassigned } from "../api.ts";
 import { OpsLink } from "../components/Shell.tsx";
@@ -38,61 +38,56 @@ export function TrayDrawer({ each, onAssign, onClose }: Props) {
   ];
 
   return (
-    <Dialog className={styles.panel} labelledBy="tray-drawer-title" canClose onDismiss={onClose}>
-      <div className={styles.drawerHead}>
-        <div>
-          <h2 className={styles.drawerTitle} id="tray-drawer-title">
-            {person?.name ?? nameOf({ kind: "unassigned", job: each })}
-          </h2>
-          <p className={styles.drawerWhen}>
-            {askedWord(each)} · {dispatch.tray.offered(offeredWord(each.date, each.offered_window))}
-          </p>
-        </div>
-        <span className={capsLook(styles.badge)}>{copy.badges[each.badge] ?? each.badge}</span>
-      </div>
-      <div className={styles.drawerBody}>
-        <dl className={styles.rows}>
-          {rows.map((row) => (
-            <div className={styles.row} key={row.key}>
-              <dt>{row.key}</dt>
-              <dd>{row.value}</dd>
-            </div>
-          ))}
-        </dl>
-        {each.was_technician !== null && (
-          <p className={styles.untoldLine}>{dispatch.tray.was(each.was_technician.name)}</p>
-        )}
-        <div className={styles.drawerActions}>
-          {onAssign !== null && (
-            <Button variant="outline" size="small" onClick={onAssign}>
-              {copy.assign}
-            </Button>
-          )}
-          {person !== null && (
-            <>
-              <ButtonLink
-                variant="outline"
-                size="small"
-                href={whatsappChat(person.mobile)}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                <Icon d={ICONS.whatsapp} size={16} className={styles.icon} />
-                {copy.whatsapp(firstNameOf(person.name))}
-              </ButtonLink>
-              <OpsLink
-                className={buttonLook({ variant: "outline", size: "small" })}
-                to={clientPath(person.id, "visits")}
-              >
-                {copy.openClient}
-              </OpsLink>
-            </>
-          )}
-          <Button variant="outline" size="small" onClick={onClose}>
-            {copy.close}
+    <Drawer
+      titleId="tray-drawer-title"
+      title={person?.name ?? nameOf({ kind: "unassigned", job: each })}
+      sub={
+        <>
+          {askedWord(each)} · {dispatch.tray.offered(offeredWord(each.date, each.offered_window))}
+        </>
+      }
+      aside={<span className={badgeLook("brass", styles.badge)}>{copy.badges[each.badge] ?? each.badge}</span>}
+      canClose
+      onDismiss={onClose}
+    >
+      <dl className={styles.rows}>
+        {rows.map((row) => (
+          <div className={styles.row} key={row.key}>
+            <dt>{row.key}</dt>
+            <dd>{row.value}</dd>
+          </div>
+        ))}
+      </dl>
+      {each.was_technician !== null && (
+        <p className={styles.untoldLine}>{dispatch.tray.was(each.was_technician.name)}</p>
+      )}
+      <div className={styles.drawerActions}>
+        {onAssign !== null && (
+          <Button variant="outline" size="small" onClick={onAssign}>
+            {copy.assign}
           </Button>
-        </div>
+        )}
+        {person !== null && (
+          <>
+            <ButtonLink
+              variant="outline"
+              size="small"
+              href={whatsappChat(person.mobile)}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <Icon d={ICONS.whatsapp} size={16} className={styles.icon} />
+              {copy.whatsapp(firstNameOf(person.name))}
+            </ButtonLink>
+            <OpsLink className={buttonLook({ variant: "outline", size: "small" })} to={clientPath(person.id, "visits")}>
+              {copy.openClient}
+            </OpsLink>
+          </>
+        )}
+        <Button variant="outline" size="small" onClick={onClose}>
+          {copy.close}
+        </Button>
       </div>
-    </Dialog>
+    </Drawer>
   );
 }

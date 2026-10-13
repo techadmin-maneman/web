@@ -1,6 +1,7 @@
 // Every wording a line has had, newest first (docs/decisions/0126-the-words-page.md), and the code's own: each can be
 // used again, which opens the line's form with it to review.
 
+import { whoWords } from "../lib/who.ts";
 import { Button, RowButton } from "@maneman/ui/Button";
 import { useLoad } from "@maneman/ui/useLoad";
 import { indiaDate, shortDate } from "@maneman/web-kit/dates";
@@ -44,7 +45,7 @@ export function WordHistory(props: {
           const text = version.text ?? word.text;
           return (
             <li key={version.id} className={own.version}>
-              <span className={own.when}>{versions.by(version.set_by, day)}</span>
+              <span className={own.when}>{versions.by(whoWords(version.set_by), day)}</span>
               <span className={own.said}>{version.text ?? versions.inCode}</span>
               {props.mayChange && text !== word.now && (
                 <UseButton

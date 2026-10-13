@@ -25,18 +25,18 @@ function queryOf(search: string): ClientListQuery {
   const asked = new URLSearchParams(search);
   const state = STATES.find((each) => each === asked.get("state"));
   const city = asked.get("city")?.trim() ?? "";
-  const page = Number(asked.get("page") ?? "0");
+  const cursor = asked.get("cursor") ?? "";
   return {
     ...(state === undefined ? {} : { state }),
     ...(city === "" ? {} : { city }),
-    ...(Number.isInteger(page) && page > 0 ? { page } : {}),
+    ...(/^[\w-]{1,200}$/.test(cursor) ? { cursor } : {}),
   };
 }
 
 /** The address of the list narrowed so, kept in this history entry without a reload. */
 function keep(query: ClientListQuery): void {
   const asked = new URLSearchParams();
-  for (const [name, value] of Object.entries(query)) asked.set(name, String(value));
+  for (const [name, value] of Object.entries(query)) asked.set(name, value);
   const search = asked.toString();
   history.replaceState(history.state, "", search === "" ? location.pathname : `${location.pathname}?${search}`);
 }
@@ -138,12 +138,21 @@ function Rows({ listed }: { listed: Listed }) {
 
 export function ClientList() {
   const [query, setQuery] = useState(() => queryOf(location.search));
+  // The pages before this one, by their cursors, for Previous: the first page's is undefined. A list opened at a page
+  // from its address has none, and its Previous goes to the first.
+  const [trail, setTrail] = useState<readonly (string | undefined)[]>([]);
   const [loaded, retry] = useLoad(useCallback(() => api.clientList(query), [query]));
-  const change = (next: ClientListQuery) => {
+  const change = (next: ClientListQuery, earlier: readonly (string | undefined)[] = []) => {
     keep(next);
     setQuery(next);
+    setTrail(earlier);
   };
-  const page = query.page ?? 0;
+  const at = (cursor: string | undefined): ClientListQuery => {
+    const { cursor: _, ...first } = query;
+    return cursor === undefined ? first : { ...first, cursor };
+  };
+  const later = query.cursor !== undefined;
+  const page = later && trail.length === 0 ? null : trail.length + 1;
   return (
     <section className={styles.list} aria-labelledby="all-clients">
       <h2 className={styles.foundTitle} id="all-clients">
@@ -155,25 +164,26 @@ export function ClientList() {
         <>
           <Narrow query={query} cities={loaded.value.cities} onQuery={change} />
           <Rows listed={loaded.value} />
-          {(page > 0 || loaded.value.more) && (
+          {(later || loaded.value.next_cursor !== null) && (
             <div className={styles.listPages}>
               <Button
                 variant="outline"
                 size="small"
-                disabled={page === 0}
+                disabled={!later}
                 onClick={() => {
-                  change({ ...query, page: page - 1 });
+                  change(at(trail.at(-1)), trail.slice(0, -1));
                 }}
               >
                 {copy.previous}
               </Button>
-              <span className={styles.listPage}>{copy.page(page + 1)}</span>
+              {page !== null && <span className={styles.listPage}>{copy.page(page)}</span>}
               <Button
                 variant="outline"
                 size="small"
-                disabled={!loaded.value.more}
+                disabled={loaded.value.next_cursor === null}
                 onClick={() => {
-                  change({ ...query, page: page + 1 });
+                  const next = loaded.value.next_cursor;
+                  if (next !== null) change(at(next), [...trail, query.cursor]);
                 }}
               >
                 {copy.next}

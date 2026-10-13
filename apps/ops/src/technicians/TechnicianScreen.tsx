@@ -3,6 +3,7 @@
 // what they show as they open. A technician switched off has no phone signed in and no leave to record, so their page
 // is their details alone.
 
+import { EmptyState } from "@maneman/ui/EmptyState";
 import { buttonLook } from "@maneman/ui/Button";
 import { Tabs, TAB } from "@maneman/ui/Tabs";
 import { failedRequestId, useLoad } from "@maneman/ui/useLoad";
@@ -131,7 +132,7 @@ function TechnicianPage({
 function NotOnRoster() {
   return (
     <div className={styles.page}>
-      <p className={styles.empty}>{technicians.page.notFound}</p>
+      <EmptyState look="panel" line={technicians.page.notFound} />
       <OpsLink className={styles.back} to="/technicians">
         {technicians.page.back}
       </OpsLink>

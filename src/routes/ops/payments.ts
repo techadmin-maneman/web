@@ -15,6 +15,7 @@ import type { App } from "../../http/context.ts";
 import { dayMoney } from "../../domain/money/day-money.ts";
 import { errorResponse } from "../../http/errors.ts";
 import { json } from "../../http/openapi.ts";
+import { capped, More } from "../../http/paging.ts";
 import { routeReach } from "../../http/staff-access.ts";
 import { indiaDate } from "../../lib/india-time.ts";
 
@@ -59,6 +60,7 @@ const DayMoneySchema = z
       'Kept from the client on the day: "Charges and no-shows", each late cancellation and charged no-show by what it kept.',
     ),
     charges: z.array(ChargeSchema).openapi({ description: "No-shows and late cancellations, the earliest first." }),
+    more: More(LIMIT),
   })
   .strict()
   .openapi("OpsDayMoney", { description: "Derived at read time from the payments themselves; no total is kept." });
@@ -82,7 +84,8 @@ const dayRoute = createRoute({
 export function registerOpsPayments(app: App): void {
   app.openapi(dayRoute, async (c) => {
     const { date } = c.req.valid("query");
-    const money = await dayMoney(c.env.DB, date ?? indiaDate(c.var.deps.now()), LIMIT, await routeReach(c));
-    return c.json(money, 200);
+    const money = await dayMoney(c.env.DB, date ?? indiaDate(c.var.deps.now()), LIMIT + 1, await routeReach(c));
+    const { rows: charges, more } = capped(money.charges, LIMIT);
+    return c.json({ ...money, charges, more }, 200);
   });
 }

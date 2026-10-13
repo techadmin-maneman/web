@@ -2,6 +2,8 @@
 // supplier, each with the figures behind it, approved at a quantity or rejected with why; and the plan drafted again
 // from the latest forecast. Beneath, the forecast itself and the events calendar it reads.
 
+import { InlineMessage } from "@maneman/ui/InlineMessage";
+import { Panel } from "@maneman/ui/Panel";
 import { Button } from "@maneman/ui/Button";
 import { Table } from "@maneman/ui/Table";
 import { useLoad } from "@maneman/ui/useLoad";
@@ -31,12 +33,7 @@ function Lines({
   const columns = kind === "transfer" ? copy.transferColumns : copy.orderColumns;
   if (shown.length === 0) return null;
   return (
-    <section className={form.panel} aria-labelledby={`plan-${kind}`}>
-      <div className={form.panelHead}>
-        <h2 className={form.panelTitle} id={`plan-${kind}`}>
-          {kind === "transfer" ? copy.transfers : copy.orders}
-        </h2>
-      </div>
+    <Panel titleId={`plan-${kind}`} title={kind === "transfer" ? copy.transfers : copy.orders}>
       <Table className={form.table}>
         <thead>
           <tr>
@@ -71,7 +68,7 @@ function Lines({
           ))}
         </tbody>
       </Table>
-    </section>
+    </Panel>
   );
 }
 
@@ -99,14 +96,14 @@ export function SupplyPlanScreen() {
           <Lines lines={current.lines} kind="transfer" onAnswer={answered} />
           <Lines lines={current.lines} kind="order" onAnswer={answered} />
           {said !== null && (
-            <p className={form.saved} role="status">
+            <InlineMessage tone="saved" className={form.saved}>
               {said}
-            </p>
+            </InlineMessage>
           )}
           {failure !== null && (
-            <p className={form.error} role="alert">
+            <InlineMessage tone="error" className={form.error}>
               {errorText(copy.errors, failure)}
-            </p>
+            </InlineMessage>
           )}
           {access.mayCall("POST /api/supply-plan/draft") && (
             <div className={form.actions}>

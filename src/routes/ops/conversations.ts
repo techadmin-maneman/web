@@ -10,6 +10,7 @@ import { createRoute, z } from "@hono/zod-openapi";
 import type { App } from "../../http/context.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
 import { json } from "../../http/openapi.ts";
+import { CursorQuery, cursorOf, NextCursor, placeOf } from "../../http/paging.ts";
 import type { Context } from "hono";
 import { actorOf, staffMemberOf } from "../../http/audit.ts";
 import { opsInputs } from "../../http/ops-inputs.ts";
@@ -94,7 +95,7 @@ const listRoute = createRoute({
       search: z.string().trim().max(80).optional().openapi({
         description: "A client's name, or a number, or part of either.",
       }),
-      before: z.string().max(100).optional().openapi({ description: "The next page: next_before from the last one." }),
+      cursor: CursorQuery,
     }),
   },
   responses: {
@@ -106,17 +107,19 @@ const listRoute = createRoute({
             conversations: z
               .array(ConversationSchema)
               .openapi({ description: `At most ${String(PAGE_THREADS)}, the latest first.` }),
-            next_before: z
-              .union([z.string(), z.null()])
-              .openapi({ description: "Where the next page starts, for ?before=; null on the last page." }),
+            next_cursor: NextCursor,
           })
           .strict()
           .openapi("Conversations"),
       ),
     },
+    400: errorResponse("invalid_request: a cursor this list did not give"),
     403: errorResponse("access_required"),
   },
 });
+
+/** A thread's place in the list, as the inbox gives it: when it last moved, and its id. */
+const THREAD_PLACE = /^[^_]+_[^_]+$/;
 
 const threadRoute = createRoute({
   method: "get",
@@ -229,9 +232,12 @@ export function registerOpsConversations(app: App): void {
   registerAnswers(app);
   app.openapi(listRoute, async (c) => {
     const me = staffMemberOf(c)?.id ?? "";
-    const { view, search, before } = c.req.valid("query");
+    const { view, search, cursor } = c.req.valid("query");
+    const before = cursor === undefined ? undefined : placeOf(cursor);
+    if (before === null || (before !== undefined && !THREAD_PLACE.test(before))) return refuse(c, "invalid_request");
     const page = await listConversations(c.env.DB, { view, me, search, before }, await inboxContext(c));
-    return c.json({ conversations: page.conversations, next_before: page.nextBefore }, 200);
+    const next = page.nextBefore === null ? null : cursorOf(page.nextBefore);
+    return c.json({ conversations: page.conversations, next_cursor: next }, 200);
   });
 
   app.openapi(threadRoute, async (c) => {

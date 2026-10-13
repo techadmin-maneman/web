@@ -2,6 +2,7 @@
 // A city with no rate of its own shows every city's, marked; a rate set to start later shows beneath the one in force.
 // Each grade's row sets a rate, renames the grade, or, while no technician holds it, deletes it.
 
+import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { Button, RowButton } from "@maneman/ui/Button";
 import { Field, Select } from "@maneman/ui/Field";
 import { Panel } from "@maneman/ui/Panel";
@@ -240,9 +241,9 @@ export function PayRates(props: { pay: TechnicianPay; may: May; onChanged: (pay:
         />
       )}
       {said !== null && (
-        <p className={styles.saved} role="status">
+        <InlineMessage tone="saved" className={styles.saved}>
           {said}
-        </p>
+        </InlineMessage>
       )}
       {pay.grades.length === 0 ? (
         <p className={styles.note}>{copy.none}</p>

@@ -1,3 +1,4 @@
+import { capsLook } from "@maneman/ui/Caps";
 import { Button } from "@maneman/ui/Button";
 import { Checkbox } from "@maneman/ui/Field";
 import { TextLink } from "@maneman/ui/TextLink";
@@ -21,7 +22,7 @@ export function Consent(props: {
       <dl class={styles.rows}>
         {words.rows.map((row) => (
           <div key={row.k} class={styles.row}>
-            <dt class={`caps ${styles.rowKey}`}>{row.k}</dt>
+            <dt class={capsLook(styles.rowKey)}>{row.k}</dt>
             <dd class={styles.rowValue}>{row.v}</dd>
           </div>
         ))}

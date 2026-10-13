@@ -21,7 +21,7 @@ const BOTTOMS = [
     "Next, Capture and Retake, the close-out's Next job, I have arrived and Start job",
   ],
   ["apps/tech/src/login/login.module.css", ".screen", "Send the code and Sign in"],
-  ["apps/tech/src/components/sheet.module.css", ".sheet", "a question's two answers"],
+  ["packages/ui/confirm-sheet.module.css", ".sheet", "a question's two answers"],
   ["apps/tech/src/today/today.module.css", ".screen", "the last job of the day"],
   ["apps/tech/src/waiting/waiting.module.css", ".screen", "the last thing waiting to send"],
   [

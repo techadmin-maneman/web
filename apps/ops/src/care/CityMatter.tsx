@@ -1,6 +1,7 @@
 // Sending a matter from a chat to the client's city (docs/decisions/0135-city-matters.md): what the city team need to
 // know, which waits on their Tasks as a City matter until they close it.
 
+import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { REASON_MAX_CHARS } from "@rules/policy/decision-reasons.ts";
 import { Button } from "@maneman/ui/Button";
 import { Field, TextArea } from "@maneman/ui/Field";
@@ -36,9 +37,9 @@ export function CityMatter({ conversationId }: { readonly conversationId: string
   return (
     <div className={own.closing}>
       {sentTo !== null && (
-        <p className={styles.saved} role="status">
+        <InlineMessage tone="saved" className={styles.saved}>
           {copy.sent(sentTo)}
-        </p>
+        </InlineMessage>
       )}
       {open ? (
         <>

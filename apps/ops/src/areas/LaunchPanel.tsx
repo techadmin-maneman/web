@@ -2,6 +2,7 @@
 // the press that sends it. Nothing is sent before that press
 // (docs/decisions/0071-what-ops-see-before-a-setting-changes.md).
 
+import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { useFocusOnMount } from "@maneman/ui/useFocusOnMount";
 import { capsLook } from "@maneman/ui/Caps";
 import { Button } from "@maneman/ui/Button";
@@ -73,9 +74,9 @@ export function LaunchPanel(props: Props) {
         </div>
       )}
       {error !== null && (
-        <p className={styles.error} role="alert">
+        <InlineMessage tone="error" className={styles.error}>
           {error}
-        </p>
+        </InlineMessage>
       )}
       {note !== null && <p className={styles.note}>{note}</p>}
     </section>

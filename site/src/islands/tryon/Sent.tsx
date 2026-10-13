@@ -1,7 +1,8 @@
+import { capsLook } from "@maneman/ui/Caps";
 import { ButtonLink } from "@maneman/ui/Button";
 import { ICONS } from "@maneman/brand/icons";
 import { tryOn } from "../../content/site.ts";
-import { Icon } from "../Drawings.tsx";
+import { Icon } from "@maneman/ui/Icon";
 import { Title, type HeadingRef } from "./Title.tsx";
 import styles from "./TryOn.module.css";
 
@@ -14,8 +15,8 @@ export function Sent(props: { mobile: string; returning: boolean; heading: Headi
   return (
     <div class={styles.notice}>
       <div class={styles.noticeFrame}>
-        <Icon path={ICONS.whatsapp} size={28} stroke={1.5} />
-        <div class="caps">{sent.frame}</div>
+        <Icon d={ICONS.whatsapp} size={28} stroke={1.5} />
+        <div class={capsLook()}>{sent.frame}</div>
       </div>
       <Title heading={props.heading} className={styles.noticeTitle}>
         {props.returning ? sent.returning.title : sent.title}

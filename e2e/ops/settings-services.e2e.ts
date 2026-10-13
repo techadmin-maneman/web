@@ -13,6 +13,7 @@ import { expect, test } from "../support.ts";
 import { fails, json, PRICE_ROWS, SERVICES } from "./fixtures.ts";
 import { open, posted } from "./settings-fixtures.ts";
 import { settings as settingsCopy } from "../../apps/ops/src/content/settings.ts";
+import { review } from "../../apps/ops/src/content/common.ts";
 
 // The services clients book, a table a kind (docs/decisions/0085-services-ops-can-edit.md). A price is still a row
 // from its day: the one in force and the next show in the row, and a row's Edit opens the rest; a service is added,
@@ -104,12 +105,12 @@ test.describe("the services and their prices", () => {
 
     const check = page.getByRole("group", { name: "Review the change" });
     await expect(check).toBeFocused();
-    await expect(check).toContainText("Service visit: Rs. 2,000 + 18% GST → Rs. 2,500 + 0% GST, from 1 Nov 2027.");
-    await expect(check).toContainText("GST: 18% → 0%.");
+    await expect(check).toContainText("Service visit: Rs. 2,000 + 18% GST → Rs. 2,500 + 0% GST, from 1 Nov 2027");
+    await expect(check).toContainText("GST: 18% → 0%");
     expect(sent).toBe(0);
 
     const request = posted(page, "/api/prices");
-    await check.getByRole("button", { name: settingsCopy.services.form.setPrice }).click();
+    await check.getByRole("button", { name: review.send }).click();
     expect((await request).postDataJSON()).toEqual({
       item: "service",
       tier: "standard",
@@ -125,7 +126,7 @@ test.describe("the services and their prices", () => {
     await edit(page, "Service visit");
     await page.getByRole("button", { name: "Change the price of Service visit" }).click();
     await page.getByRole("button", { name: "Review" }).click();
-    await page.getByRole("button", { name: "Back" }).click();
+    await page.getByRole("group", { name: review.title }).getByRole("button", { name: review.edit }).click();
     await expect(page.getByRole("group", { name: "Review the change" })).toHaveCount(0);
     await expect(page.getByRole("button", { name: "Review" })).toBeEnabled();
   });
@@ -149,10 +150,7 @@ test.describe("the services and their prices", () => {
     await edit(page, "Service visit");
     await page.getByRole("button", { name: "Change the price of Service visit" }).click();
     await page.getByRole("button", { name: "Review" }).click();
-    await page
-      .getByRole("group", { name: "Review the change" })
-      .getByRole("button", { name: settingsCopy.services.form.setPrice })
-      .click();
+    await page.getByRole("group", { name: "Review the change" }).getByRole("button", { name: review.send }).click();
     await expect(page.getByRole("alert")).toContainText("starts tomorrow at the earliest");
   });
 
@@ -161,7 +159,7 @@ test.describe("the services and their prices", () => {
     await edit(page, "Premium");
     await page.getByRole("button", { name: "Change the price of Premium" }).click();
     await page.getByRole("button", { name: "Review" }).click();
-    await page.getByRole("button", { name: settingsCopy.services.form.setPrice }).click();
+    await page.getByRole("button", { name: review.send }).click();
     await expect(page.getByRole("alert")).toContainText("It's retired by then");
   });
 
@@ -174,7 +172,7 @@ test.describe("the services and their prices", () => {
     await expect(asked).toBeFocused();
 
     const request = posted(page, "/api/prices/withdraw");
-    await asked.getByRole("button", { name: settingsCopy.services.check.takeBackConfirm }).click();
+    await asked.getByRole("button", { name: review.send }).click();
     expect((await request).postDataJSON()).toEqual({ item: "service", tier: "standard", valid_from: "2027-10-01" });
     await expect(row(page, "Service visit")).not.toContainText("Rs. 2,500");
     await expect(page.getByRole("status").filter({ hasText: settingsCopy.services.done.takenBack })).toBeVisible();
@@ -189,11 +187,11 @@ test.describe("the services and their prices", () => {
     await page.getByLabel(settingsCopy.services.form.from).fill("2027-10-05");
     await page.getByRole("button", { name: "Review" }).click();
     await expect(page.getByRole("group", { name: "Review the change" })).toContainText(
-      "Service visit: Rs. 2,500 + 18% GST from 1 Oct 2027 → Rs. 2,500 + 18% GST from 5 Oct 2027.",
+      "Service visit: Rs. 2,500 + 18% GST from 1 Oct 2027 → Rs. 2,500 + 18% GST from 5 Oct 2027",
     );
 
     const request = posted(page, "/api/prices/correct");
-    await page.getByRole("button", { name: settingsCopy.services.form.setPrice }).click();
+    await page.getByRole("button", { name: review.send }).click();
     expect((await request).postDataJSON()).toEqual({
       item: "service",
       tier: "standard",
@@ -242,7 +240,7 @@ test.describe("the services and their prices", () => {
     await page.getByLabel("Name", { exact: true }).fill("Premium first fit");
     await page.getByRole("button", { name: "Review" }).click();
     await expect(page.getByRole("group", { name: "Review the change" })).toContainText(
-      "Premium → Premium first fit. The code stays premium",
+      "Premium → Premium first fit (code stays premium)",
     );
     const request = posted(page, "/api/services/first_fit/premium/name");
     await page.getByRole("button", { name: "Confirm" }).click();
@@ -272,7 +270,7 @@ test.describe("the services and their prices", () => {
     await expect(page.getByLabel(settingsCopy.services.form.minutes)).toHaveAttribute("max", "360");
     await page.getByLabel(settingsCopy.services.form.minutes).fill("300");
     await page.getByRole("button", { name: "Review" }).click();
-    await expect(page.getByRole("group", { name: "Review the change" })).toContainText("Premium: 240 → 300 minutes.");
+    await expect(page.getByRole("group", { name: "Review the change" })).toContainText("Premium: 240 → 300 minutes");
     const request = posted(page, "/api/services/first_fit/premium/length");
     await page.getByRole("button", { name: "Confirm" }).click();
     expect((await request).postDataJSON()).toEqual({ minutes: 300 });
@@ -313,7 +311,7 @@ test.describe("the services and their prices", () => {
     await expect(page.getByRole("button", { name: "Move First fit up" })).toHaveCount(0);
     await edit(page, "Premium");
     await page.getByRole("button", { name: "Move Premium up" }).click();
-    const asked = page.getByRole("group", { name: "First fit: First fit, Premium → Premium, First fit." });
+    const asked = page.getByRole("group", { name: review.title });
     await expect(asked).toBeFocused();
     const request = posted(page, "/api/services/first_fit/order");
     await asked.getByRole("button", { name: "Confirm" }).click();
@@ -340,7 +338,9 @@ test("takes a hair system's cost in whole rupees, from today", async ({ page }) 
   const box = page.getByRole("textbox", { name: copy.costLabel("First fit · Mane Man Natural") });
   await box.fill("6000");
   const sent = posted(page, "/api/standard-costs");
-  await page.getByRole("button", { name: copy.save }).click();
+  await page.getByRole("button", { name: copy.reviewLabel("First fit · Mane Man Natural") }).click();
+  await expect(page.getByText(copy.change("First fit · Mane Man Natural", copy.notSet, "6,000"))).toBeVisible();
+  await page.getByRole("button", { name: review.send }).click();
   expect((await sent).postDataJSON()).toEqual({ item: "first_fit", tier: "standard", cost: 600000 });
   await expect(page.getByRole("cell", { name: "21 Sep" })).toBeVisible();
 });

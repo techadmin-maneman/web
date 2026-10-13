@@ -1,7 +1,7 @@
 // A day on the road, opened from a column's head (ADR 0120): the map of each technician's route in their colour, and
 // beneath it each one's visits in order with the drive between each two, a drive longer than the gap called out.
 
-import { Dialog } from "@maneman/ui/Dialog";
+import { Drawer } from "@maneman/ui/Drawer";
 import { indiaClock, shortDate } from "@maneman/web-kit/dates";
 import { useEffect, useState } from "react";
 import { api, type DispatchDay } from "../api.ts";
@@ -87,28 +87,21 @@ export function DayRoutes({ date, city, onClose }: { date: string; city: string 
   }, [date, city]);
 
   return (
-    <Dialog className={styles.panel} labelledBy="day-routes-title" canClose onDismiss={onClose}>
-      <div className={styles.drawerHead}>
-        <h2 className={styles.drawerTitle} id="day-routes-title">
-          {copy.title(day)}
-        </h2>
-      </div>
-      <div className={styles.drawerBody}>
-        {map !== null && <img className={styles.routeMap} src={map} alt={copy.mapAlt(day)} width={640} height={400} />}
-        {loaded.state === "loading" && <p className={styles.untoldLine}>{copy.loading}</p>}
-        {loaded.state === "failed" && <p className={styles.untoldLine}>{copy.failed}</p>}
-        {loaded.state === "loaded" && (
-          <>
-            {loaded.day.drive_times !== "shown" && (
-              <p className={styles.untoldLine}>{copy.driveTimes[loaded.day.drive_times]}</p>
-            )}
-            {loaded.day.technicians.length === 0 && <p className={styles.untoldLine}>{copy.none}</p>}
-            {loaded.day.technicians.map((technician) => (
-              <TechnicianRoute key={technician.technician_id} technician={technician} />
-            ))}
-          </>
-        )}
-      </div>
-    </Dialog>
+    <Drawer titleId="day-routes-title" title={copy.title(day)} canClose onDismiss={onClose}>
+      {map !== null && <img className={styles.routeMap} src={map} alt={copy.mapAlt(day)} width={640} height={400} />}
+      {loaded.state === "loading" && <p className={styles.untoldLine}>{copy.loading}</p>}
+      {loaded.state === "failed" && <p className={styles.untoldLine}>{copy.failed}</p>}
+      {loaded.state === "loaded" && (
+        <>
+          {loaded.day.drive_times !== "shown" && (
+            <p className={styles.untoldLine}>{copy.driveTimes[loaded.day.drive_times]}</p>
+          )}
+          {loaded.day.technicians.length === 0 && <p className={styles.untoldLine}>{copy.none}</p>}
+          {loaded.day.technicians.map((technician) => (
+            <TechnicianRoute key={technician.technician_id} technician={technician} />
+          ))}
+        </>
+      )}
+    </Drawer>
   );
 }

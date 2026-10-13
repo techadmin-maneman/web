@@ -7,7 +7,7 @@ import { act, createElement } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Conversation } from "../../apps/ops/src/care/care-api.ts";
-import { MessagesScreen } from "../../apps/ops/src/care/MessagesScreen.tsx";
+import { CareSettingsScreen, MessagesScreen } from "../../apps/ops/src/care/MessagesScreen.tsx";
 import { care as copy } from "../../apps/ops/src/content/care.ts";
 import { shortDate } from "../../packages/web-kit/dates.ts";
 
@@ -200,6 +200,14 @@ async function show() {
   await settle();
 }
 
+/** Care settings, the tab beside the inbox: the team, the remedies and the quick replies. */
+async function showSettings() {
+  act(() => {
+    root.render(createElement(CareSettingsScreen));
+  });
+  await settle();
+}
+
 describe("the Messages page", () => {
   it("lists the chats waiting on us, a number we don't know by that", async () => {
     await show();
@@ -299,7 +307,7 @@ describe("the Messages page", () => {
   });
 
   it("keeps the quick replies, adding one", async () => {
-    await show();
+    await showSettings();
     const list = page.querySelector('[aria-labelledby="quick-replies"]') ?? page;
     expect(list.textContent).toContain(LATE.title);
     const title = page.querySelector<HTMLInputElement>('input[maxlength="60"]');
@@ -354,7 +362,7 @@ describe("the Messages page", () => {
   });
 
   it("lets a manager approve a remedy awaiting them", async () => {
-    await show();
+    await showSettings();
     const panel = page.querySelector('[aria-labelledby="remedies"]') ?? page;
     expect(panel.textContent).toContain(copy.remedy.states.awaiting);
     await act(async () => {
@@ -449,7 +457,7 @@ describe("the Messages page", () => {
   });
 
   it("lists the Care team with their days off and leave", async () => {
-    await show();
+    await showSettings();
     const team = page.querySelector('[aria-labelledby="care-team"]') ?? page;
     expect(team.textContent).toContain("ravi@maneman.test");
     expect(team.textContent).toContain(copy.team.weekdays[0]);
@@ -459,7 +467,7 @@ describe("the Messages page", () => {
   });
 
   it("moves every client of one member to another", async () => {
-    await show();
+    await showSettings();
     await act(async () => {
       page
         .querySelector<HTMLButtonElement>(`button[aria-label="${copy.team.moveAllLabel("ravi@maneman.test")}"]`)
@@ -477,7 +485,7 @@ describe("the Messages page", () => {
   });
 
   it("takes the signed-in member off shift", async () => {
-    await show();
+    await showSettings();
     await act(async () => {
       [...page.querySelectorAll("button")].find((each) => each.textContent.trim() === copy.team.goOff)?.click();
       await new Promise((resolve) => setTimeout(resolve, 0));
@@ -486,7 +494,7 @@ describe("the Messages page", () => {
   });
 
   it("sets the name clients know a member by", async () => {
-    await show();
+    await showSettings();
     await act(async () => {
       page
         .querySelector<HTMLButtonElement>(`button[aria-label="${copy.team.editNameLabel("ravi@maneman.test")}"]`)
@@ -509,7 +517,7 @@ describe("the Messages page", () => {
   });
 
   it("sets a member's days off, adds leave and takes it back", async () => {
-    await show();
+    await showSettings();
     const click = async (element: Element | null | undefined) => {
       await act(async () => {
         (element as HTMLElement | null | undefined)?.click();

@@ -118,7 +118,7 @@ const DRAWN_BY_A_BOARD = new Set([
   "apps/app/src/profile/profile.module.css .logout",
   "apps/app/src/photos/photos.module.css .close",
   // The technician's answer that can cost the client, edged in the error's colour.
-  "apps/tech/src/components/sheet.module.css .yes",
+  "packages/ui/confirm-sheet.module.css .yes",
 ]);
 
 function sourceFiles(dir: string): string[] {

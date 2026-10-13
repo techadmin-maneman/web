@@ -355,8 +355,6 @@
   max-width: var(--measure-form);
 }
 .error {
-  font-size: var(--fs-14);
-  color: var(--error-on-ink);
   margin-top: var(--sp-8);
 }
 .gateFailure {

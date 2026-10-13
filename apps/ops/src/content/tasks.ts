@@ -28,8 +28,8 @@ const DECIDE: Readonly<Partial<Record<Group, string>>> = {
   remedy_approval: "Decide in Messages",
   leave_conflict: "Move in Dispatch",
   referral_review: "Decide in Referrals",
-  no_show_decision: "Decide in Payments",
-  no_show_dispute: "Decide in Payments",
+  no_show_decision: "Decide in Charges",
+  no_show_dispute: "Decide in Charges",
   number_change: "Decide in Number changes",
   erasure_request: "Decide in Deletion requests",
   grievance: "Answer in Concerns",
@@ -68,7 +68,7 @@ export const tasks = {
     // Not drawn: a remedy above the limit, for a manager (docs/decisions/0143-remedies.md).
     remedy_approval: "Remedy to approve",
     // Two groups the board does not draw (docs/decisions/0074-hand-offs-and-messages.md).
-    leave_conflict: "Job on a day off",
+    leave_conflict: "Visit on a day off",
     address_to_confirm: "Address to confirm",
     consultation_request: "Consultation request",
     // A group the board does not draw (docs/decisions/0086-the-next-visit-is-offered.md).

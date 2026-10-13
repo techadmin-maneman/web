@@ -1,15 +1,16 @@
 ---
 // The guarantee, then the founder's note with the mark, in a narrow column.
+import { capsLook } from "@maneman/ui/Caps";
 import { founderNote, guarantee } from "../../content/site.ts";
 import { isShown } from "../../lib/build.ts";
 ---
 
 <section class="column" data-section="guarantee">
-  <h2 class="label-title caps">{guarantee.label}</h2>
+  <h2 class={capsLook("label-title")}>{guarantee.label}</h2>
   <p class="guarantee">{guarantee.text}</p>
   {isShown(founderNote) && (
     <div data-section="founder">
-      <h2 class="label-title caps founder">{founderNote.label}</h2>
+      <h2 class={capsLook("label-title founder")}>{founderNote.label}</h2>
       {founderNote.paragraphs.map((paragraph) => (
         <p class="note">{paragraph}</p>
       ))}

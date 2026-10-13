@@ -1,6 +1,7 @@
 // What waits on Tasks for this client, under the head of their page: each task's group, how long it has left, and a
 // way to where it is done. No board draws it.
 
+import { EmptyState } from "@maneman/ui/EmptyState";
 import { capsLook } from "@maneman/ui/Caps";
 import { useLoad, whenLoaded } from "@maneman/ui/useLoad";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
@@ -35,7 +36,7 @@ function Row({ group, task, clientId, now }: { group: Group; task: Task; clientI
     <li className={styles.openTask}>
       <span className={styles.openTaskName}>{name}</span>
       <Left due={task.due} now={now} />
-      <OpsLink className={styles.metaLink} to={way.to}>
+      <OpsLink to={way.to}>
         {way.words}
         <VisuallyHidden>{` · ${name}`}</VisuallyHidden>
       </OpsLink>
@@ -46,7 +47,7 @@ function Row({ group, task, clientId, now }: { group: Group; task: Task; clientI
 function List({ board, clientId }: { board: Tasks; clientId: string }) {
   const now = new Date();
   const rows = board.groups.flatMap((group) => group.tasks.map((task) => ({ group: group.group, task })));
-  if (rows.length === 0) return <p className={styles.openNone}>{copy.none}</p>;
+  if (rows.length === 0) return <EmptyState look="panel" line={copy.none} />;
   return (
     <ul className={styles.openTasks}>
       {rows.map(({ group, task }) => (

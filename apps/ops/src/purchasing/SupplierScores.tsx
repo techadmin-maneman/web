@@ -1,6 +1,7 @@
 // Operations · Purchasing, the supplier scorecard (docs/decisions/0172-supplier-scorecard.md): each supplier's last
 // twelve months, on time in full, lead time against promised, what arrived damaged or failed its check, and claims.
 
+import { Panel } from "@maneman/ui/Panel";
 import { Table } from "@maneman/ui/Table";
 import { useLoad } from "@maneman/ui/useLoad";
 import { inCurrency } from "@maneman/web-kit/money";
@@ -14,12 +15,7 @@ const loadScores = () => client.get("/api/supplier-scorecard");
 export function SupplierScores() {
   const [loaded, retry] = useLoad(loadScores);
   return (
-    <section className={form.panel} aria-labelledby="supplier-scores">
-      <div className={form.panelHead}>
-        <h2 className={form.panelTitle} id="supplier-scores">
-          {copy.scorecard.title}
-        </h2>
-      </div>
+    <Panel titleId="supplier-scores" title={copy.scorecard.title}>
       <p className={form.note}>{copy.scorecard.note}</p>
       {loaded.state === "loading" && <Loading />}
       {loaded.state === "failed" && <PanelFailed onRetry={retry} requestId={loaded.requestId} />}
@@ -55,6 +51,6 @@ export function SupplierScores() {
           </tbody>
         </Table>
       )}
-    </section>
+    </Panel>
   );
 }

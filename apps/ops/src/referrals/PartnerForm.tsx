@@ -7,19 +7,10 @@ import { paiseFromRupees, rupees } from "@maneman/web-kit/money";
 import { useState } from "react";
 import { api, type Partner, type Partners, type PartnerTerms } from "../api.ts";
 import { partners as copy } from "../content/partners.ts";
-import { SettingForm, sentOf, useSteps, type FormWords } from "../settings/index.ts";
+import { SettingForm, sentOf, useSteps } from "../settings/index.ts";
 import styles from "../components/forms.module.css";
 
 const { form, check } = copy;
-
-const WORDS: FormWords = {
-  next: form.next,
-  cancel: form.cancel,
-  checkTitle: check.title,
-  send: check.send,
-  saving: check.saving,
-  back: check.back,
-};
 
 interface Draft {
   readonly name: string;
@@ -188,7 +179,6 @@ export function PartnerForm(props: {
       title={partner === null ? form.addTitle : form.editTitle(partner.name)}
       steps={steps}
       ready={withinLimits(terms, props.limits)}
-      words={WORDS}
       errors={copy.errors}
       onCancel={props.onCancel}
       sendable={lines.length > 0}

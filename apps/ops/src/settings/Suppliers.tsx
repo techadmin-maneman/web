@@ -1,6 +1,7 @@
 // Settings, Suppliers (docs/decisions/0165-suppliers.md): who we buy stock from, on what terms, each retired rather
 // than deleted; and beneath, what the supplier picked supplies, with their price, pack, minimum and lead time.
 
+import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { RowButton } from "@maneman/ui/Button";
 import { Panel } from "@maneman/ui/Panel";
 import { Table } from "@maneman/ui/Table";
@@ -13,6 +14,7 @@ import { Loading, PanelFailed } from "../states/States.tsx";
 import styles from "../components/forms.module.css";
 import { SupplierForm, type Supplier, type Suppliers as Book } from "./SupplierForm.tsx";
 import { SupplierItems } from "./SupplierItems.tsx";
+import { ActionCheck, sentOf } from "./SettingForm.tsx";
 
 const copy = settings.suppliers;
 
@@ -30,11 +32,7 @@ function Actions(props: {
   const access = useAccess();
   const { supplier } = props;
   const retired = supplier.retired_at !== null;
-  const retirement = async () => {
-    const path = retired ? "/api/suppliers/{id}/restore" : "/api/suppliers/{id}/retire";
-    const answer = await client.post(path, { path: { id: supplier.id } });
-    if (answer.ok) props.onRetired(answer.body, retired ? copy.restoredSaid : copy.retiredSaid);
-  };
+  const [asking, setAsking] = useState(false);
   return (
     <td>
       <span>{retired ? copy.retired : copy.active}</span>{" "}
@@ -46,14 +44,38 @@ function Actions(props: {
           {copy.change}
         </RowButton>
       )}
-      {access.mayCall("POST /api/suppliers/{id}/retire") && (
+      {access.mayCall("POST /api/suppliers/{id}/retire") && !asking && (
         <RowButton
           className={styles.inline}
           aria-label={retired ? copy.restoreLabel(supplier.name) : copy.retireLabel(supplier.name)}
-          onClick={() => void retirement()}
+          onClick={() => {
+            setAsking(true);
+          }}
         >
           {retired ? copy.restore : copy.retire}
         </RowButton>
+      )}
+      {asking && (
+        <ActionCheck
+          label={retired ? copy.restore : copy.retire}
+          question={retired ? copy.restoreQuestion(supplier.name) : copy.retireQuestion(supplier.name)}
+          send={async () =>
+            sentOf(
+              await client.post(retired ? "/api/suppliers/{id}/restore" : "/api/suppliers/{id}/retire", {
+                path: { id: supplier.id },
+              }),
+              (book) => ({ book }),
+            )
+          }
+          onDone={(sent) => {
+            setAsking(false);
+            props.onRetired(sent.book, retired ? copy.restoredSaid : copy.retiredSaid);
+          }}
+          errors={copy.errors}
+          onCancel={() => {
+            setAsking(false);
+          }}
+        />
       )}
     </td>
   );
@@ -139,9 +161,9 @@ export function Suppliers() {
           onRetired={saved}
         />
         {said !== null && (
-          <p className={styles.saved} role="status">
+          <InlineMessage tone="saved" className={styles.saved}>
             {said}
-          </p>
+          </InlineMessage>
         )}
         {changing !== undefined ? (
           <SupplierForm

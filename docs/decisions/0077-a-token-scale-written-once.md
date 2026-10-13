@@ -52,3 +52,11 @@ The audit of 2 October (CQ-72, UX-43) found the shared brand package holding siz
 - **The bar's colour** is named by its token in `index.html` (`content="--ink"`), and the build writes in the value (`themeColor()`, `packages/web-kit/pwa.ts`).
 - **A stroke width** written as a number is a raw value. The capture guide's two lines, in the drawing's own units, are local sizes.
 - **Still waiting for a design need:** the role layer (`--text-body`, `--text-label` and so on) and the site's single-use sizes. The site's build would change for no change on screen.
+
+## Amended 14 October 2026: one scale, named styles, roles and each app's own sizes
+
+- **One type scale**, in `packages/brand/tokens.css`, which every surface loads: 13 to 18, then 22, 24, 26, 28, 30, 32, 34, 40 and 56. The steps a single place drew (19, 20, 21, 25) went to their neighbours; the site's landing sizes and the apps' role sizes point at the scale. Body text has its leading (`--lh-145`), and bold is the weight the fonts load.
+- **Named text styles** (`packages/ui/type.module.css`, `typeLook("title-3")`): display, title 1 to 3, body large, body, label, caption and figure, each a size with its leading, tracking and family. The console's panel and drawer titles are title 3.
+- **Colour roles** (`--surface`, `--on-surface`, `--on-surface-muted`, `--border-subtle`, `--status-error`, `--status-saved`, `--status-note`) are aliases of the palette, redefined under `[data-ground="ink"]`; the shared panel, drawer, empty state and inline message read them. The role layer this record left waiting is begun, with the parts that every surface shares.
+- **Each app's own sizes** are its own file: `apps/ops/src/styles/tokens.css` and `apps/tech/src/styles/tokens.css`. A shared part reads its room from a property each app may set (`--drawer-width`, `--table-row-height`, `--check-row-height`, `--check-box-size`, defaults in `packages/ui/base.css`). The console's wide tables share `--ops-table-min`.
+- **A size is written once** in the files a surface loads together; another name for it is an alias (`test/node/dom/token-values.test.ts`, `type-scale.test.ts`).

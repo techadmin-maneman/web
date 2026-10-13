@@ -88,7 +88,7 @@ export async function tellUnapplied(
     key: `books_unapplied:${payment.id}`,
     message:
       `Payment ${payment.id} (Books ${payment.books_payment_id}) has nothing to be set against: ${why}. ` +
-      "It stays in Books as credit owed to the client until it is settled by hand.",
+      "It stays in Books as credit owed to the client.",
     link: paymentsTab(payment.person_id),
   });
 }

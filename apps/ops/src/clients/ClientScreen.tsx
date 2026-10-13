@@ -57,10 +57,7 @@ function InvitedBy({ invite }: { invite: ClientInvite }) {
   if (invite.referrer === null) return `${clients.invite.erased} ${code}`;
   return (
     <>
-      <OpsLink className={styles.metaLink} to={clientPath(invite.referrer.id, "visits")}>
-        {invite.referrer.name}
-      </OpsLink>{" "}
-      {code}
+      <OpsLink to={clientPath(invite.referrer.id, "visits")}>{invite.referrer.name}</OpsLink> {code}
     </>
   );
 }
@@ -90,16 +87,16 @@ function Head({ record, credits, invite }: { record: ClientRecord; credits: Cred
       </div>
       <dl className={styles.meta}>
         {meta.map((each) => (
-          <div className={styles.metaItem} key={each.key}>
+          <div key={each.key}>
             <dt className={styles.metaKey}>{each.key}</dt>
             <dd className={styles.metaValue}>{each.value}</dd>
           </div>
         ))}
-        <div className={styles.metaItem}>
+        <div>
           <dt className={styles.metaKey}>{clients.meta.replacement}</dt>
           <dd className={classes(styles.metaValue, styles.metaBrass)}>{replacementDueOf(record.history)}</dd>
         </div>
-        <div className={styles.metaItem}>
+        <div>
           <dt className={styles.metaKey}>{clients.meta.mobile}</dt>
           <dd className={styles.metaValue}>
             <TextLink href={`tel:${record.mobile}`} aria-label={clients.callLabel(record.name, mobile)}>
@@ -108,7 +105,7 @@ function Head({ record, credits, invite }: { record: ClientRecord; credits: Cred
           </dd>
         </div>
         {invite !== null && (
-          <div className={styles.metaItem}>
+          <div>
             <dt className={styles.metaKey}>{clients.meta.invitedBy}</dt>
             <dd className={styles.metaValue}>
               <InvitedBy invite={invite} />

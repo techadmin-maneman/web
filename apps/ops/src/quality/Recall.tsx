@@ -1,6 +1,8 @@
 // One recall (docs/decisions/0187-recalls.md): where its lot's stock is, who wears its pieces, and its close once dealt
 // with; and a lot recalled, with why.
 
+import { fullDate } from "@maneman/web-kit/dates";
+import { Panel } from "@maneman/ui/Panel";
 import { Button } from "@maneman/ui/Button";
 import { Field, Select, TextInput } from "@maneman/ui/Field";
 import { Table } from "@maneman/ui/Table";
@@ -98,7 +100,7 @@ function WornRows({ worn, mayBook }: { worn: readonly Worn[]; mayBook: boolean }
               {each.person}
             </th>
             <td>{each.piece_code}</td>
-            <td>{each.due_on ?? ""}</td>
+            <td>{each.due_on === null ? "" : fullDate(each.due_on)}</td>
             <td>{mayBook && <BookFree worn={each} />}</td>
           </tr>
         ))}
@@ -117,14 +119,9 @@ export function RecallDetail({
   const access = useAccess();
   const title = `${copy.number(recall.number)} · ${copy.lotLabel(recall.name, recall.lot_code)}`;
   return (
-    <section className={form.panel} aria-labelledby="recall-detail">
-      <div className={form.panelHead}>
-        <h2 className={form.panelTitle} id="recall-detail">
-          {title}
-        </h2>
-      </div>
+    <Panel titleId="recall-detail" title={title}>
       <p className={form.note}>{recall.reason}</p>
-      <h3 className={form.panelTitle}>{copy.held}</h3>
+      <h3 className={form.ruleTitle}>{copy.held}</h3>
       {recall.held.length === 0 ? (
         <p className={form.note}>{copy.noneHeld}</p>
       ) : (
@@ -133,7 +130,7 @@ export function RecallDetail({
           rows={recall.held.map((each) => [each.place, String(each.quantity)] as const)}
         />
       )}
-      <h3 className={form.panelTitle}>{copy.worn}</h3>
+      <h3 className={form.ruleTitle}>{copy.worn}</h3>
       {recall.worn.length === 0 ? (
         <p className={form.note}>{copy.noneWorn}</p>
       ) : (
@@ -154,7 +151,7 @@ export function RecallDetail({
           </Button>
         </div>
       )}
-    </section>
+    </Panel>
   );
 }
 
@@ -164,7 +161,7 @@ export function RaiseRecall({ book, onAnswer }: { book: Book; onAnswer: (answer:
   if (book.lots.length === 0) return null;
   return (
     <div className={form.group}>
-      <h3 className={form.panelTitle}>{copy.raise}</h3>
+      <h3 className={form.ruleTitle}>{copy.raise}</h3>
       <Field label={copy.lot} className={form.field}>
         {(control) => (
           <Select

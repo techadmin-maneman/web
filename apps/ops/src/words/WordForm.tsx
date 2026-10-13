@@ -6,20 +6,11 @@ import { Field, TextArea } from "@maneman/ui/Field";
 import { useState } from "react";
 import { api, type Word } from "../api.ts";
 import { words as copy } from "../content/words.ts";
-import { SettingForm, sentOf, useSteps, type FormWords } from "../settings/index.ts";
+import { SettingForm, sentOf, useSteps } from "../settings/index.ts";
 import styles from "../components/forms.module.css";
 import own from "./words.module.css";
 
 const { form, check } = copy;
-
-const WORDS: FormWords = {
-  next: form.next,
-  cancel: form.cancel,
-  checkTitle: check.title,
-  send: check.send,
-  saving: check.saving,
-  back: check.back,
-};
 
 /** What the page or the sender fills: "{city}", "{{2}}". */
 const holesOf = (text: string): string[] => [...new Set(text.match(/\{\{\d+\}\}|\{[a-zA-Z]+\}/g) ?? [])];
@@ -52,7 +43,6 @@ export function WordForm(props: {
       title={form.title(placeOf(word))}
       steps={steps}
       ready={text.trim() !== "" && text !== word.now}
-      words={WORDS}
       errors={copy.errors}
       onCancel={props.onCancel}
       above={<p className={own.code}>{form.inCode(word.text)}</p>}

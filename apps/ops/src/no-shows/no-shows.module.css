@@ -21,13 +21,6 @@
   border: var(--hairline) solid var(--paper-line);
 }
 
-.empty {
-  margin: 0;
-  padding: var(--sp-16) var(--sp-20);
-  font-size: var(--fs-15);
-  color: var(--text-muted);
-}
-
 /* ---- The day's money, and the charges beneath it --------------------------- */
 
 /* The day the figures are for, and the field that asks for another, across from it. */
@@ -119,6 +112,12 @@
   list-style: none;
 }
 
+/* Beneath a list that holds the first so many of more. */
+.first {
+  margin: 0;
+  padding: var(--sp-12) var(--sp-20);
+}
+
 /* Named apart from .charge, which is the queue's button and stands on ink. */
 .chargeRow {
   padding: var(--sp-12) var(--sp-20);
@@ -190,11 +189,11 @@
   margin-top: var(--sp-16);
 }
 
-/* The 80 px the design draws its note at. */
+/* The note box at the 80 px the design draws it. */
 .reasonField {
   display: block;
   width: 100%;
-  height: calc(var(--field-h) + var(--sp-28));
+  height: var(--note-h);
   margin-top: var(--sp-8);
   resize: none;
 }
@@ -278,8 +277,6 @@
 
 .error {
   margin: var(--sp-12) 0 0;
-  font-size: var(--fs-14);
-  color: var(--error-on-paper);
 }
 
 /* ---- A disputed charge, the Payments page's second card, one a row of its queue */

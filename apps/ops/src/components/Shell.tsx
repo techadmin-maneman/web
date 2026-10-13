@@ -15,11 +15,13 @@ import { shell } from "../content.ts";
 import { useMayCall, whoami } from "../lib/access.ts";
 import { useLapsed } from "../lib/session.ts";
 import { useTaskBoard } from "../lib/waiting.ts";
-import { mayOpen, SECTION_NAMES, SECTIONS, type MayCall, type Section, type SectionPath } from "../route.ts";
+import { mayOpen, SECTIONS, type MayCall, type SectionPath } from "../route.ts";
 import { DEPARTMENTS, type Department } from "../lib/grants.ts";
 import { waitingIn, type Waiting } from "../tasks/decided.ts";
 import { Account } from "./Account.tsx";
 import { ClientFinder } from "./ClientFinder.tsx";
+import { CommandPalette } from "./CommandPalette.tsx";
+import { GroupTabs, navEntries, type NavEntry } from "./SectionGroups.tsx";
 import styles from "./shell.module.css";
 
 /** A link within the console: the shared one, which leaves a click asking for a new tab to the browser. */
@@ -61,8 +63,7 @@ function NotListed() {
   );
 }
 
-function SectionLink({ section, current, waiting }: { section: Section; current: boolean; waiting?: Waiting }) {
-  const name = SECTION_NAMES[section.page];
+function SectionLink({ section, name, current, waiting }: Omit<NavEntry, "key">) {
   if (waiting === undefined) {
     return (
       <Link className={styles.section} to={section.path} current={current}>
@@ -98,6 +99,7 @@ interface DepartmentProps {
 function DepartmentSections({ department, current, mayCall, waiting }: DepartmentProps) {
   const sections = SECTIONS.filter((each) => each.department === department && mayOpen(mayCall, each.page));
   if (sections.length === 0) return null;
+  const entries = navEntries(sections, current, waiting);
   const nameId = `nav-${department}`;
   return (
     <div className={styles.department}>
@@ -105,9 +107,9 @@ function DepartmentSections({ department, current, mayCall, waiting }: Departmen
         {shell.departments[department]}
       </p>
       <ul className={styles.sections} aria-labelledby={nameId}>
-        {sections.map((each) => (
-          <li key={each.page}>
-            <SectionLink section={each} current={each.path === current} waiting={waiting.get(each.path)} />
+        {entries.map(({ key, ...entry }) => (
+          <li key={key}>
+            <SectionLink {...entry} />
           </li>
         ))}
       </ul>
@@ -185,6 +187,7 @@ export function Shell({ section, title, sub, flush, finder = true, children }: P
         {shell.skip}
       </SkipLink>
       <Navigation current={section} />
+      <CommandPalette />
       <div className={styles.body}>
         <header className={styles.header}>
           <div className={styles.heading}>
@@ -199,6 +202,7 @@ export function Shell({ section, title, sub, flush, finder = true, children }: P
         {lapsed && <Lapsed />}
         <NotListed />
         <main id="content" ref={main} tabIndex={-1} className={flush === true ? styles.flushPage : styles.page}>
+          <GroupTabs section={section} />
           {children}
         </main>
       </div>

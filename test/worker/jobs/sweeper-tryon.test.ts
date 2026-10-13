@@ -149,9 +149,7 @@ describe("sweeper: try-on", () => {
       { id: "hours-old", state: "queued", last_error: null },
     ]);
     expect(queues.messages.sent).toEqual([{ message_id: "hours-old", request_id: "sweeper" }]);
-    expect(deps.alerts).toEqual([
-      expect.stringContaining("1 on this run, day-old (tryon_result) among them") as string,
-    ]);
+    expect(deps.alerts).toEqual([expect.stringContaining("1 message queued over a day ago never sent.") as string]);
 
     await queuedMessage("also-day-old", 24 * 60 + 2).run();
     await sweep(bindings, deps, createLogger(), OPTIONS);

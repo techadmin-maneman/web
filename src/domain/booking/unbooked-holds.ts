@@ -82,7 +82,7 @@ async function bookUnbookedHold(
       key: unbookedAlertKey(hold.id),
       message:
         `Booking ${hold.id} was paid for, or booked free, and is neither booked nor refunded half an hour on: ` +
-        `${reason}. It is tried again every half hour.`,
+        `${reason}.`,
       link: `/clients/${hold.person_id}`,
     });
     return null;

@@ -10,6 +10,7 @@
 // somebody else already holds is refused by the API, and said so here. Each
 // change says how long it has left, counted as the Tasks board counts it.
 
+import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { Label, TextArea } from "@maneman/ui/Field";
 import { REASON_MAX_CHARS } from "@rules/policy/decision-reasons.ts";
 import { errorText } from "@maneman/web-kit/refusal";
@@ -100,7 +101,6 @@ function Change({ change, now, mayDecide, onDecided }: ChangeProps) {
             <Button
               variant="outline"
               size="small"
-              className={styles.quiet}
               disabled={sending || reason.trim() === ""}
               onClick={() => void decide("reject")}
             >
@@ -109,7 +109,6 @@ function Change({ change, now, mayDecide, onDecided }: ChangeProps) {
             <Button
               variant="outline"
               size="small"
-              className={styles.quiet}
               disabled={sending}
               onClick={() => {
                 setDeciding({ step: "open" });
@@ -125,20 +124,13 @@ function Change({ change, now, mayDecide, onDecided }: ChangeProps) {
       {!asking && mayDecide && (
         <div className={styles.decide}>
           <div className={styles.actions}>
-            <Button
-              variant="primary"
-              size="small"
-              className={styles.confirm}
-              disabled={sending}
-              onClick={() => void decide("confirm")}
-            >
+            <Button variant="primary" size="small" disabled={sending} onClick={() => void decide("confirm")}>
               {sending ? copy.deciding : copy.confirm}
             </Button>
             <Button
               variant="outline"
               size="small"
               ref={rejectButton}
-              className={styles.quiet}
               disabled={sending}
               onClick={() => {
                 setDeciding({ step: "asking" });
@@ -150,9 +142,9 @@ function Change({ change, now, mayDecide, onDecided }: ChangeProps) {
         </div>
       )}
       {deciding.step === "failed" && (
-        <p className={styles.error} role="alert">
+        <InlineMessage tone="error" className={styles.error}>
           {errorText(copy.errors, { code: deciding.code })}
-        </p>
+        </InlineMessage>
       )}
     </>
   );

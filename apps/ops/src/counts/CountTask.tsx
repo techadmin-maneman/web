@@ -1,6 +1,8 @@
 // One count task (docs/decisions/0185-cycle-counts.md): counted blind, item by item; what differed counted again; and
 // a recount that still differs signed off by a manager, who alone sees what the ledger held.
 
+import { InlineMessage } from "@maneman/ui/InlineMessage";
+import { Panel } from "@maneman/ui/Panel";
 import { Button } from "@maneman/ui/Button";
 import { Field, TextInput } from "@maneman/ui/Field";
 import { Table } from "@maneman/ui/Table";
@@ -208,38 +210,30 @@ export function CountTaskPanel({ id, onChanged }: { id: string; onChanged: () =>
     setFailure(null);
     onChanged();
   };
+  if (current === null) {
+    return loaded.state === "failed" ? <PanelFailed onRetry={retry} requestId={loaded.requestId} /> : <Loading />;
+  }
   return (
-    <section className={form.panel} aria-labelledby="count-task">
-      {loaded.state === "loading" && <Loading />}
-      {loaded.state === "failed" && <PanelFailed onRetry={retry} requestId={loaded.requestId} />}
-      {current !== null && (
-        <>
-          <div className={form.panelHead}>
-            <h2 className={form.panelTitle} id="count-task">
-              {copy.heading(current.task.place, whatOf(current.task))}
-            </h2>
-          </div>
-          <Step task={current} onAnswer={answered} />
-          {current.items.map(
-            (item) =>
-              item.unknown_labels.length > 0 && (
-                <p className={form.note} key={item.consumable_code}>
-                  {item.name}: {copy.notHeld(item.unknown_labels)}
-                </p>
-              ),
-          )}
-        </>
+    <Panel titleId="count-task" title={copy.heading(current.task.place, whatOf(current.task))}>
+      <Step task={current} onAnswer={answered} />
+      {current.items.map(
+        (item) =>
+          item.unknown_labels.length > 0 && (
+            <p className={form.note} key={item.consumable_code}>
+              {item.name}: {copy.notHeld(item.unknown_labels)}
+            </p>
+          ),
       )}
       {said !== null && (
-        <p className={form.saved} role="status">
+        <InlineMessage tone="saved" className={form.saved}>
           {said}
-        </p>
+        </InlineMessage>
       )}
       {failure !== null && (
-        <p className={form.error} role="alert">
+        <InlineMessage tone="error" className={form.error}>
           {errorText(copy.errors, failure)}
-        </p>
+        </InlineMessage>
       )}
-    </section>
+    </Panel>
   );
 }

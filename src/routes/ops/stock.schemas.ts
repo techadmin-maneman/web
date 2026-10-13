@@ -52,6 +52,26 @@ const StockSchema = z
         description:
           "Every open place down the tree, the warehouse first, and any closed one still holding stock: those in the caller's cities, a hub with every city of its zone, and the warehouse only with a national grant.",
       }),
+    other_places: z
+      .array(
+        z
+          .object({
+            id: PlaceId,
+            kind: z.enum(PLACE_KINDS),
+            name: z.string().openapi({ description: "A kit's is its technician's name." }),
+            parent_id: z
+              .union([PlaceId, z.null()])
+              .openapi({ description: "The place it hangs from; null for the warehouse." }),
+            zone: z.union([z.string(), z.null()]),
+            city: z.union([z.string(), z.null()]),
+            active: z.boolean().openapi({ description: "Open; a kit is open while its technician is." }),
+          })
+          .strict(),
+      )
+      .openapi({
+        description:
+          "The places the latest movements name that places does not hold: a kit of a technician who left, or a closed room, so each movement says where it was.",
+      }),
     holdings: z.array(
       z
         .object({

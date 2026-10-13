@@ -9,8 +9,11 @@
 // address names -- a task on the Tasks board links to it -- is scrolled to,
 // focused and marked, as the board marks a selection.
 
+import { EmptyState } from "@maneman/ui/EmptyState";
+import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { Panel } from "@maneman/ui/Panel";
 import { useRef, useState, type ReactNode } from "react";
+import { firstShown } from "../content.ts";
 import { rowId, useTargetRow } from "../lib/target.ts";
 import styles from "./queue.module.css";
 
@@ -21,6 +24,7 @@ export function DecisionQueue<T extends { readonly id: string }>({
   rowKind,
   empty,
   note,
+  more = false,
   done = null,
   children,
 }: {
@@ -32,6 +36,8 @@ export function DecisionQueue<T extends { readonly id: string }>({
   /** Said when nothing waits. */
   readonly empty: string;
   readonly note?: ReactNode;
+  /** Whether more wait than the list holds: said beneath the rows. */
+  readonly more?: boolean;
   /** What the last decision did, said above the rows once it is made. */
   readonly done?: string | null;
   /** A row's content and its decision; `decided` takes the row out of the queue. */
@@ -66,7 +72,12 @@ export function DecisionQueue<T extends { readonly id: string }>({
           {done}
         </p>
       )}
-      {waiting.length === 0 ? <p className={styles.empty}>{empty}</p> : rows}
+      {waiting.length === 0 ? <EmptyState look="panel" line={empty} /> : rows}
+      {more && (
+        <InlineMessage tone="note" className={styles.first}>
+          {firstShown(items.length)}
+        </InlineMessage>
+      )}
       {note !== undefined && <p className={styles.note}>{note}</p>}
     </Panel>
   );

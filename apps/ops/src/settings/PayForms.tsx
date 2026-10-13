@@ -10,19 +10,10 @@ import { useState } from "react";
 import { api, type PayKind, type TechnicianPay } from "../api.ts";
 import { technicianPay } from "../content/technician-pay.ts";
 import { rateNow } from "./pay-rates.ts";
-import { SettingForm, sentOf, useSteps, type FormWords } from "./SettingForm.tsx";
+import { SettingForm, sentOf, useSteps } from "./SettingForm.tsx";
 import styles from "../components/forms.module.css";
 
 const { form, check, errors } = technicianPay;
-
-const WORDS: FormWords = {
-  next: form.next,
-  cancel: form.cancel,
-  checkTitle: check.title,
-  send: check.send,
-  saving: check.saving,
-  back: check.back,
-};
 
 type Grade = TechnicianPay["grades"][number];
 type PayTechnician = TechnicianPay["technicians"][number];
@@ -66,7 +57,6 @@ export function AddGradeForm({ onDone, onCancel }: FormProps) {
       title={form.addTitle}
       steps={steps}
       ready={name.trim() !== ""}
-      words={WORDS}
       errors={errors}
       onCancel={onCancel}
       checking={<p className={styles.checkLine}>{check.add(name.trim())}</p>}
@@ -95,7 +85,6 @@ export function RenameGradeForm({ grade, onDone, onCancel }: FormProps & { reado
       title={form.renameTitle(grade.name)}
       steps={steps}
       ready={name.trim() !== "" && name.trim() !== grade.name}
-      words={WORDS}
       errors={errors}
       onCancel={onCancel}
       checking={<p className={styles.checkLine}>{check.rename(grade.name, name.trim())}</p>}
@@ -260,7 +249,6 @@ export function SetRateForm(props: FormProps & { readonly grade: Grade; readonly
       title={form.rateTitle(grade.name)}
       steps={steps}
       ready={amountOk && draft.from >= pay.today}
-      words={WORDS}
       errors={errors}
       onCancel={props.onCancel}
       checking={<p className={styles.checkLine}>{check.rate(where, was, now, shortDate(draft.from))}</p>}
@@ -286,7 +274,6 @@ export function GradeOfForm(props: FormProps & { readonly technician: PayTechnic
       title={form.gradeTitle(technician.name)}
       steps={steps}
       ready={grade !== (technician.grade_id ?? "")}
-      words={WORDS}
       errors={errors}
       onCancel={props.onCancel}
       checking={

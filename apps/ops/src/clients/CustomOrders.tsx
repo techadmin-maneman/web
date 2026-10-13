@@ -2,6 +2,8 @@
 // with its spec, price and where it stands, its payment link sent again or the order cancelled while unpaid; and a new
 // one raised.
 
+import { InlineMessage } from "@maneman/ui/InlineMessage";
+import { Panel } from "@maneman/ui/Panel";
 import { TextLink } from "@maneman/ui/TextLink";
 import { Button } from "@maneman/ui/Button";
 import { Field, Select } from "@maneman/ui/Field";
@@ -167,12 +169,7 @@ export function CustomOrders({ clientId }: { clientId: string }) {
     else setFailure({ code: answer.code, fields: answer.fields });
   };
   return (
-    <section className={form.panel} aria-labelledby="custom-orders">
-      <div className={form.panelHead}>
-        <h2 className={form.panelTitle} id="custom-orders">
-          {copy.title}
-        </h2>
-      </div>
+    <Panel titleId="custom-orders" title={copy.title}>
       {loaded.state === "loading" && <Loading />}
       {loaded.state === "failed" && <PanelFailed onRetry={retry} requestId={loaded.requestId} />}
       {current !== null && <OrdersTable book={current} onAnswer={answered} />}
@@ -200,15 +197,15 @@ export function CustomOrders({ clientId }: { clientId: string }) {
         </div>
       )}
       {said !== null && (
-        <p className={form.saved} role="status">
+        <InlineMessage tone="saved" className={form.saved}>
           {said}
-        </p>
+        </InlineMessage>
       )}
       {failure !== null && (
-        <p className={form.error} role="alert">
+        <InlineMessage tone="error" className={form.error}>
           {errorText(copy.errors, failure)}
-        </p>
+        </InlineMessage>
       )}
-    </section>
+    </Panel>
   );
 }

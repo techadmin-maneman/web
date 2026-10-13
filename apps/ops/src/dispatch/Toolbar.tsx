@@ -65,7 +65,6 @@ export function Toolbar({ board, query, onQuery, find, onFind }: Props) {
         <Label htmlFor="dispatch-city">{copy.city}</Label>
         <Select
           id="dispatch-city"
-          className={styles.select}
           value={query.city ?? ""}
           onChange={(event) => {
             onQuery({ ...query, city: event.currentTarget.value === "" ? null : event.currentTarget.value });
@@ -83,7 +82,6 @@ export function Toolbar({ board, query, onQuery, find, onFind }: Props) {
         <Label htmlFor="dispatch-find">{copy.find}</Label>
         <TextInput
           id="dispatch-find"
-          className={styles.input}
           type="search"
           value={find}
           onChange={(event) => {

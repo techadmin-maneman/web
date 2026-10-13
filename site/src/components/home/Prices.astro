@@ -3,6 +3,8 @@
 // all of them the price book's (docs/decisions/0073-prices-from-the-price-book.md).
 // The first fit's is the cheapest hair system ops offer, which mm-site's Worker
 // writes in; the page is built without one.
+import { hiddenLook } from "@maneman/ui/VisuallyHidden";
+import { capsLook } from "@maneman/ui/Caps";
 import { textLinkLook } from "@maneman/ui/TextLink";
 import { buttonLook } from "@maneman/ui/Button";
 import { prices } from "../../content/site.ts";
@@ -10,10 +12,10 @@ import { asBuilt, priceTemplate } from "../../lib/prices.ts";
 ---
 
 <section id="prices" class="container prices" data-section="prices">
-  <h2 class="label-title caps">{prices.label}</h2>
+  <h2 class={capsLook("label-title")}>{prices.label}</h2>
   <p class="lead intro">{prices.intro}</p>
   <div class="table" role="table" aria-label={prices.label}>
-    <div class="visually-hidden" role="row">
+    <div class={hiddenLook} role="row">
       <div role="columnheader">{prices.label}</div>
       <div role="columnheader">{prices.column}</div>
     </div>

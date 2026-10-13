@@ -2,10 +2,11 @@
 // what the cancel gives back before anything changes: free to the client, unless ops tick the client's own late terms.
 // It goes only with a reason, which is kept with the cancel (src/routes/ops/visit-changes.ts). No board draws it.
 
+import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { REASON_MAX_CHARS } from "@rules/policy/decision-reasons.ts";
 import { errorText } from "@maneman/web-kit/refusal";
 import { Button } from "@maneman/ui/Button";
-import { Dialog } from "@maneman/ui/Dialog";
+import { Drawer } from "@maneman/ui/Drawer";
 import { Checkbox, Field, TextArea } from "@maneman/ui/Field";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { rupees } from "@maneman/web-kit/money";
@@ -119,9 +120,9 @@ function Form({
         </Button>
       </div>
       {failed !== null && (
-        <p className={styles.error} role="alert">
+        <InlineMessage tone="error" className={styles.error}>
           {failed}
-        </p>
+        </InlineMessage>
       )}
     </form>
   );
@@ -168,9 +169,9 @@ function Body({ visitId, onCancelled }: { visitId: string; onCancelled: (gives: 
     const unreadable = unreadableOf(terms.code);
     return (
       <div>
-        <p className={styles.error} role="alert">
+        <InlineMessage tone="error" className={styles.error}>
           {unreadable.said}
-        </p>
+        </InlineMessage>
         {!unreadable.final && (
           <Button variant="outline" size="small" className={styles.quiet} onClick={readAgain}>
             {copy.retry}
@@ -182,9 +183,9 @@ function Body({ visitId, onCancelled }: { visitId: string; onCancelled: (gives: 
   return (
     <>
       {changed && (
-        <p className={styles.error} role="alert">
+        <InlineMessage tone="error" className={styles.error}>
           {copy.termsChanged}
-        </p>
+        </InlineMessage>
       )}
       <Form
         terms={terms.value}
@@ -213,24 +214,24 @@ export function CancelVisit({
     onClose(cancelled !== null);
   };
   return (
-    <Dialog className={styles.drawer} labelledBy="cancel-visit-title" canClose onDismiss={close}>
-      <div className={styles.head}>
-        <h2 className={styles.title} id="cancel-visit-title">
-          {copy.title(name)}
-        </h2>
+    <Drawer
+      titleId="cancel-visit-title"
+      title={copy.title(name)}
+      aside={
         <Button variant="outline" size="small" className={styles.quiet} onClick={close}>
           {copy.close}
         </Button>
-      </div>
-      <div className={styles.body}>
-        {cancelled === null ? (
-          <Body visitId={visitId} onCancelled={setCancelled} />
-        ) : (
-          <p className={styles.done} role="status">
-            {copy.done(cancelled)}
-          </p>
-        )}
-      </div>
-    </Dialog>
+      }
+      canClose
+      onDismiss={close}
+    >
+      {cancelled === null ? (
+        <Body visitId={visitId} onCancelled={setCancelled} />
+      ) : (
+        <p className={styles.done} role="status">
+          {copy.done(cancelled)}
+        </p>
+      )}
+    </Drawer>
   );
 }

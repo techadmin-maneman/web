@@ -1,6 +1,7 @@
 // The account's change of mobile number: both numbers proved by a code each, then ops decide. The design
 // draws the card's first state; the ones after it are written in the same card, with placeholder words.
 
+import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { TextButton } from "@maneman/ui/TextLink";
 import { MobileInput } from "@maneman/ui/MobileInput";
 import { capsLook } from "@maneman/ui/Caps";
@@ -53,9 +54,9 @@ function Withdrawal({ problem, busy, onWithdraw }: { problem: string | null; bus
   return (
     <>
       {problem !== null && (
-        <p className={styles.error} role="alert">
+        <InlineMessage tone="error" className={styles.error}>
           {problem}
-        </p>
+        </InlineMessage>
       )}
       <TextButton className={styles.withdraw} disabled={busy} onClick={onWithdraw}>
         {copy.withdraw}
@@ -105,15 +106,16 @@ function ProvingCodes({
               label={which === "old" ? copy.oldCode : copy.newCode(change.new_mobile)}
               value={codes[which]}
               invalid={notes[which] !== null}
+              describedBy={notes[which] === null ? undefined : `${which}-code-error`}
               onChange={(digits) => {
                 onCode(which, digits);
               }}
             />
           )}
           {!proven(which) && notes[which] !== null && (
-            <span className={styles.error} role="alert">
+            <InlineMessage tone="error" className={styles.error} id={`${which}-code-error`}>
               {notes[which]}
-            </span>
+            </InlineMessage>
           )}
         </div>
       ))}
@@ -157,15 +159,17 @@ function StartChange({
         prefix={copy.prefix}
         placeholder={copy.placeholder}
         aria-label={copy.placeholder}
+        aria-invalid={problem !== null}
+        aria-describedby={problem === null ? undefined : "new-number-error"}
         value={typed}
         onChange={(event) => {
           onTyped(event.target.value);
         }}
       />
       {problem !== null && (
-        <p className={styles.error} role="alert">
+        <InlineMessage tone="error" className={styles.error} id="new-number-error">
           {problem}
-        </p>
+        </InlineMessage>
       )}
       <Button variant="primary" size="control" className={styles.primary} type="submit" disabled={busy}>
         {copy.start}

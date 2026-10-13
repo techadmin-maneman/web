@@ -40,6 +40,6 @@ describe("Activity's filters", () => {
   });
 
   it("ask the API with only what is set, and the page to go on from", () => {
-    expect(askedOf({ person: CLIENT, actor: undefined }, 120)).toEqual({ person: CLIENT, before: 120 });
+    expect(askedOf({ person: CLIENT, actor: undefined }, "MTIw")).toEqual({ person: CLIENT, cursor: "MTIw" });
   });
 });

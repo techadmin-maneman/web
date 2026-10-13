@@ -35,7 +35,6 @@ export function TellClient({ job }: { job: Job }) {
           <ToggleButton
             key={each}
             onInk
-            className={styles.minute}
             pressed={each === minutes}
             onClick={() => {
               setMinutes(each);

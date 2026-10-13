@@ -29,15 +29,18 @@ export const shell = {
     quality: "Quality",
     purchasing: "Purchasing",
     "supply-plan": "Supply plan",
+    items: "Items",
+    suppliers: "Suppliers",
     clients: "Clients",
     messages: "Messages",
+    "care-settings": "Care settings",
     "care-numbers": "Care numbers",
     spend: "Spend",
     targets: "Targets",
     grievances: "Concerns",
     "number-changes": "Number changes",
     "deletion-requests": "Deletion requests",
-    payments: "Payments",
+    payments: "Charges",
     prices: "Prices",
     "discount-codes": "Discount codes",
     "technician-pay": "Technician pay",
@@ -49,6 +52,17 @@ export const shell = {
     staff: "Staff",
     activity: "Activity",
   },
+  /** Go to anything, by Ctrl K or ⌘K (../components/CommandPalette.tsx). */
+  palette: {
+    title: "Go to",
+    label: "A page, or a client",
+    hint: "A page's name, or a client's name or four digits of their number. Enter goes to the first.",
+    found: "Found",
+    none: "Nothing matches.",
+    client: (name: string, mobile: string) => `${name} · ${mobile}`,
+  },
+  /** A group of sections, as the navigation names its one entry (../route.ts, SECTION_GROUPS). */
+  groups: { inventory: "Inventory", care: "Care", "data-requests": "Data requests" },
   /** A section's name in the navigation, read out with the count of tasks waiting in it. */
   waiting: (section: string, count: number, overdue: boolean) =>
     overdue ? `${section}, ${String(count)} waiting, some overdue` : `${section}, ${String(count)} waiting`,

@@ -353,10 +353,10 @@ async function tellHeld({
       "Check the draft in Books and send it there.",
     paid_with_credit:
       "the visit was paid with a referral credit, and how such a visit is invoiced waits for the accountant. " +
-      "Leave the draft until then: nothing here sends it.",
+      "Leave the draft until then.",
     credit_missing:
-      "the visit was booked on a referral credit the client no longer had, so nothing paid for it. Once ops decide " +
-      "whether to charge, send or delete the draft in Books: nothing here sends it.",
+      "the visit was booked on a referral credit the client no longer had, so nothing paid for it. Decide whether to " +
+      "charge, send or delete the draft in Books.",
   };
   await pass.deps.alertOnce({ key: `invoice_draft:${visit.id}`, message: `${held} ${why[hold]}`, link: linkTo(visit) });
 }

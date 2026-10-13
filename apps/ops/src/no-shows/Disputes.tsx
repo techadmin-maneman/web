@@ -4,6 +4,7 @@
 // gives back what the charge took; the client is told the ruling either way, never the note. A dispute waits on the
 // Tasks board too, whose link opens its row here.
 
+import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { Label, TextArea } from "@maneman/ui/Field";
 import { REASON_MAX_CHARS } from "@rules/policy/decision-reasons.ts";
 import { errorText } from "@maneman/web-kit/refusal";
@@ -160,29 +161,22 @@ function Dispute({ each, now, may, onRuled }: DisputeProps) {
               <Button
                 variant="primary"
                 size="small"
-                className={styles.charge}
                 disabled={sending || noReason}
                 onClick={() => void rule("refunded")}
               >
                 {copy.refund}
               </Button>
             )}
-            <Button
-              variant="outline"
-              size="small"
-              className={styles.waive}
-              disabled={sending || noReason}
-              onClick={() => void rule("upheld")}
-            >
+            <Button variant="outline" size="small" disabled={sending || noReason} onClick={() => void rule("upheld")}>
               {copy.uphold}
             </Button>
           </div>
         </>
       )}
       {step.kind === "failed" && (
-        <p className={styles.error} role="alert">
+        <InlineMessage tone="error" className={styles.error}>
           {errorText(copy.errors, { code: step.code })}
-        </p>
+        </InlineMessage>
       )}
     </section>
   );
@@ -203,6 +197,7 @@ export function Disputes({ onRuled }: { onRuled: () => void }) {
       titleId="disputes"
       title={copy.queueTitle}
       items={loaded.value.disputes}
+      more={loaded.value.more}
       rowKind="dispute"
       empty={copy.none}
     >

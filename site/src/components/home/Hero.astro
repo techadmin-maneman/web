@@ -5,6 +5,7 @@
 // Over it the opening line shows one phrase at a time, once,
 // and settles on the last; a screen reader hears the whole line once, and
 // reduced motion shows the last phrase alone.
+import { capsLook } from "@maneman/ui/Caps";
 import { buttonLook } from "@maneman/ui/Button";
 import { hero, heroFootage } from "../../content/site.ts";
 import { SHOW_PLACEHOLDER_TAGS, isShown } from "../../lib/build.ts";
@@ -38,7 +39,7 @@ const showFootage = isShown(heroFootage);
   <div class="scrim"></div>
   <div class="scrim scrim--up"></div>
   <div class="scrim scrim--side"></div>
-  {SHOW_PLACEHOLDER_TAGS && showFootage && <div class="label tag">{heroFootage.tag}</div>}
+  {SHOW_PLACEHOLDER_TAGS && showFootage && <div class={capsLook("label tag")}>{heroFootage.tag}</div>}
   {showFootage && poster !== undefined && (
     <button
       type="button"

@@ -81,7 +81,7 @@ export function AccuracyPart({ city }: { city: string }) {
   const [loaded, retry] = useLoad(load);
   return (
     <div className={form.group}>
-      <h3 className={form.panelTitle}>{copy.title}</h3>
+      <h3 className={form.ruleTitle}>{copy.title}</h3>
       {loaded.state === "loading" && <Loading />}
       {loaded.state === "failed" && <PanelFailed onRetry={retry} requestId={loaded.requestId} />}
       {loaded.state === "loaded" && <Measured accuracy={loaded.value} />}

@@ -25,9 +25,23 @@ export function ratio(first: string, second: string): number {
   return ((lighter ?? 0) + 0.05) / ((darker ?? 0) + 0.05);
 }
 
-/** WCAG's contrast ratio between two of the brand's tokens, given by name. */
+/** The colour roles (packages/brand/tokens.css), each as the palette token it aliases on paper and on the ink. */
+function rolesIn(selector: string): Map<string, string> {
+  const css = readFileSync("packages/brand/tokens.css", "utf8");
+  const start = css.lastIndexOf(`${selector} {`);
+  const block = css.slice(start, css.indexOf("}", start));
+  return new Map(
+    [...block.matchAll(/(--[\w-]+):\s*var\((--[\w-]+)\)/g)].map(([, role = "", token = ""]) => [role, token]),
+  );
+}
+
+const ROLES = { paper: rolesIn(":root"), ink: rolesIn('[data-ground="ink"]') };
+const INK_GROUNDS = new Set(["--ink", "--ink-deep", "--ink-night"]);
+
+/** WCAG's contrast ratio between two of the brand's tokens, given by name; a role is read as it is on that ground. */
 export function tokenRatio(first: string, second: string): number {
-  const firstHex = TOKENS.get(first);
+  const roles = INK_GROUNDS.has(second) ? ROLES.ink : ROLES.paper;
+  const firstHex = TOKENS.get(roles.get(first) ?? first);
   const secondHex = TOKENS.get(second);
   if (firstHex === undefined || secondHex === undefined) throw new Error(`${first} or ${second} is no token`);
   return ratio(firstHex, secondHex);

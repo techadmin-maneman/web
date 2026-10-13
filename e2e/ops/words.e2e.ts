@@ -3,6 +3,7 @@
 import type { Page, Route } from "@playwright/test";
 import { expect, test } from "../support.ts";
 import { answer, json, type OpsReply } from "./answer.ts";
+import { review } from "../../apps/ops/src/content/common.ts";
 import { words as copy } from "../../apps/ops/src/content/words.ts";
 
 type Word = OpsReply<"/api/words">["words"][number];
@@ -143,7 +144,7 @@ test("publishes the site's changed words once confirmed", async ({ page }) => {
   await page.getByRole("button", { name: copy.publish.open }).click();
   await expect(page.getByText(copy.publish.changed(1))).toBeVisible();
   expect(published).toBe(false);
-  await page.getByRole("button", { name: copy.publish.send, exact: true }).click();
+  await page.getByRole("button", { name: review.send, exact: true }).click();
   await expect(page.getByRole("status")).toHaveText(copy.publish.done);
   expect(published).toBe(true);
 });

@@ -1,8 +1,8 @@
 /*
  * The console's table (./Table.tsx), at the boards' density: each row
- * --ops-row high, its rule included, since the apps size boxes border-box.
- * A cell's padding above and below is what lets a 14 px line fit inside that:
- * 7 px does, and 8 or 9, which the tables used before, made every row 35.
+ * --table-row-height high (the console's --ops-row), its rule included, since the apps size boxes border-box.
+ * A cell's padding above and below, with the table's own close leading, is what lets a 14 px line fit inside that;
+ * the body's leading would make every row 40.
  * A row grows past 34 px only when its words wrap. A screen's own
  * class sets a column's width and its padding at the sides.
  */
@@ -14,6 +14,7 @@
     width: 100%;
     border-collapse: collapse;
     font-size: var(--fs-14);
+    line-height: var(--lh-115);
   }
 
   .plain {
@@ -22,7 +23,7 @@
 
   .table th,
   .table td {
-    height: var(--ops-row);
+    height: var(--table-row-height);
     padding-block: var(--sp-8);
     border-bottom: var(--hairline) solid var(--paper-line);
     font-weight: var(--weight-regular);

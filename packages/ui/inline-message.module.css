@@ -1,0 +1,31 @@
+/* A line saying what just happened, where it happened (./InlineMessage.tsx), on paper or on ink, at the app's
+   --message-size (./base.css). The screen places it. */
+
+@layer base, ui;
+
+@layer ui {
+  .message {
+    margin: var(--sp-8) 0 0;
+    font-size: var(--message-size);
+    line-height: var(--lh-160);
+  }
+
+  .error {
+    color: var(--status-error);
+  }
+
+  .saved {
+    color: var(--status-saved);
+  }
+
+  .note {
+    color: var(--status-note);
+  }
+
+  /* Its ground, for a line the screen around it does not mark as ink: the site's islands. */
+  .onInk {
+    --status-error: var(--error-on-ink);
+    --status-saved: var(--paper);
+    --status-note: var(--ink-muted);
+  }
+}

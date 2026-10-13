@@ -1,3 +1,5 @@
+import { capsLook } from "@maneman/ui/Caps";
+import { messageLook } from "@maneman/ui/InlineMessage";
 import { Label, TextInput } from "@maneman/ui/Field";
 import { MobileInput } from "@maneman/ui/MobileInput";
 import { Button } from "@maneman/ui/Button";
@@ -34,7 +36,7 @@ function FieldError(props: { id: string; text: string | null }) {
   return (
     <div aria-live="polite">
       {props.text !== null && (
-        <div id={props.id} class={styles.error}>
+        <div id={props.id} class={messageLook({ tone: "error", ground: "ink", className: styles.error })}>
           {props.text}
         </div>
       )}
@@ -71,7 +73,7 @@ export function Gate(props: {
         <div class={styles.gateFrame}>
           <div class={styles.gateLeft} />
           <div class={styles.gateRight} />
-          <span class={`caps ${styles.gateFrameLabel}`}>{tryOn.gate.frame}</span>
+          <span class={capsLook(styles.gateFrameLabel)}>{tryOn.gate.frame}</span>
         </div>
         <p class={styles.gateCaption}>{words.caption}</p>
       </div>
@@ -132,7 +134,11 @@ export function Gate(props: {
           )}
         </div>
         <div aria-live="polite">
-          {props.failure !== null && <div class={`${styles.error} ${styles.gateFailure}`}>{props.failure}</div>}
+          {props.failure !== null && (
+            <div class={messageLook({ tone: "error", ground: "ink", className: styles.gateFailure })}>
+              {props.failure}
+            </div>
+          )}
         </div>
         <Button
           variant="light"

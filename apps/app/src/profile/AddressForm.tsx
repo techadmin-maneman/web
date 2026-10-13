@@ -5,6 +5,7 @@
 // error, and given the focus. The API refuses a pincode we do not come to, which offers the waitlist, and a move to
 // another city while a visit is booked, which offers a message to ops.
 
+import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { TextLink } from "@maneman/ui/TextLink";
 import { AddressFields } from "@maneman/ui/AddressFields";
 import { Button } from "@maneman/ui/Button";
@@ -152,9 +153,9 @@ export function AddressForm({
         fieldClassName={styles.formField}
       />
       {problem !== null && (
-        <p className={styles.error} id={ERROR_ID} role="alert">
+        <InlineMessage tone="error" className={styles.error} id={ERROR_ID}>
           {problem}
-        </p>
+        </InlineMessage>
       )}
       {refused === "not_served" && (
         <TextLink className={styles.link} href={WAITLIST_URL}>

@@ -40,10 +40,10 @@
     align-items: center;
     justify-content: center;
     height: var(--code-box-height);
-    border: var(--hairline) solid var(--ink-line-strong);
+    border: var(--hairline) solid var(--border-control);
     font-size: var(--fs-24);
     font-variant-numeric: tabular-nums;
-    color: var(--paper);
+    color: var(--on-surface);
   }
 
   .field:focus-within .box[data-next="true"] {
@@ -51,14 +51,14 @@
   }
 
   .field[data-invalid="true"] .box {
-    border-color: var(--error-on-ink);
+    border-color: var(--status-error);
   }
 
   .caret {
     display: none;
     width: var(--hairline);
     height: var(--sp-24);
-    background: var(--paper);
+    background: var(--on-surface);
   }
 
   .field:focus-within .caret {

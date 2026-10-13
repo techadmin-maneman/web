@@ -2,10 +2,11 @@
 // far from its door (src/routes/ops/visit-changes.ts). Ops say why; the reason stays with the visit and is shown with a
 // no-show's evidence. No board draws it.
 
+import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { REASON_MAX_CHARS } from "@rules/policy/decision-reasons.ts";
 import { errorText } from "@maneman/web-kit/refusal";
 import { Button } from "@maneman/ui/Button";
-import { Dialog } from "@maneman/ui/Dialog";
+import { Drawer } from "@maneman/ui/Drawer";
 import { Field, TextArea } from "@maneman/ui/Field";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { useState } from "react";
@@ -62,9 +63,9 @@ function Form({ visitId, onLetIn }: { visitId: string; onLetIn: () => void }) {
         </Button>
       </div>
       {failed !== null && (
-        <p className={styles.error} role="alert">
+        <InlineMessage tone="error" className={styles.error}>
           {failed}
-        </p>
+        </InlineMessage>
       )}
     </form>
   );
@@ -85,29 +86,29 @@ export function LetIn({
     onClose(done);
   };
   return (
-    <Dialog className={styles.drawer} labelledBy="let-in-title" canClose onDismiss={dismiss}>
-      <div className={styles.head}>
-        <h2 className={styles.title} id="let-in-title">
-          {copy.title(technician)}
-        </h2>
+    <Drawer
+      titleId="let-in-title"
+      title={copy.title(technician)}
+      aside={
         <Button variant="outline" size="small" className={styles.quiet} onClick={dismiss}>
           {copy.close}
         </Button>
-      </div>
-      <div className={styles.body}>
-        {done ? (
-          <p className={styles.done} role="status">
-            {copy.done(technician)}
-          </p>
-        ) : (
-          <Form
-            visitId={visitId}
-            onLetIn={() => {
-              setDone(true);
-            }}
-          />
-        )}
-      </div>
-    </Dialog>
+      }
+      canClose
+      onDismiss={dismiss}
+    >
+      {done ? (
+        <p className={styles.done} role="status">
+          {copy.done(technician)}
+        </p>
+      ) : (
+        <Form
+          visitId={visitId}
+          onLetIn={() => {
+            setDone(true);
+          }}
+        />
+      )}
+    </Drawer>
   );
 }

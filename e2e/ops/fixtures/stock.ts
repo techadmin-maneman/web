@@ -220,6 +220,7 @@ export const STOCK = {
   expiry_warning_days: 30,
   max_quantity: 100_000,
   in_transit: [],
+  other_places: [],
   zones: ["NCR"],
   cities: ["Gurgaon", "Delhi"],
 } satisfies OpsReply<"/api/stock">;
