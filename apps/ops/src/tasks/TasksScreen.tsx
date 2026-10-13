@@ -134,9 +134,9 @@ function subOf(group: Group, task: Task, now: Date): string {
     return copy.replacement_order(piece, fullDate(indiaDate(task.due)), fullDate(due));
   }
   if (group === "partial_visit") {
-    // The technician's reason, in the job sheet's words, and the day they closed the visit.
-    const reason = task.detail ?? copy.noReason;
-    return copy.partial_visit(reason, shortDate(indiaDate(task.since)));
+    // The visit's kind, then the technician's reason in the job sheet's words; and the day they closed the visit.
+    const reason = task.detail?.split(" ").slice(1).join(" ") ?? "";
+    return copy.partial_visit(reason === "" ? copy.noReason : reason, shortDate(indiaDate(task.since)));
   }
   if (group === "referral_review") return SIGNALS[task.detail ?? ""] ?? copy.unknown;
   if (group === "no_show_decision") return task.detail === null ? copy.unknown : copy.no_show_decision(task.detail);

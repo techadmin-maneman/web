@@ -283,12 +283,12 @@ describe("the partial reasons ops save", () => {
     await closed("piece_not_ready");
     expect(await partialTask()).toMatchObject({
       person: { id: PERSON },
-      detail: "Hair system not ready",
+      detail: "service Hair system not ready",
     });
 
     await job.opsPost("/api/job-sheet/partial-reasons", { items: REASONS });
-    expect((await partialTask())?.detail).toBe("The piece was not ready");
+    expect((await partialTask())?.detail).toBe("service The piece was not ready");
     await closed("client_unwell");
-    expect((await partialTask())?.detail).toBe("Client unwell");
+    expect((await partialTask())?.detail).toBe("service Client unwell");
   });
 });

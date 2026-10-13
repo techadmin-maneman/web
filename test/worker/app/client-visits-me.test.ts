@@ -191,6 +191,25 @@ describe("GET /api/me's prompt and invoice line", () => {
     expect(await prompt()).toBeNull();
   });
 
+  it("says a first fit left partly done is being rebooked, and offers none to pay for", async () => {
+    await seed([
+      done("ap-consulted", "2026-09-01", { type: "consultation" }),
+      done("ap-fit", "2026-09-19", { type: "first_fit", status: "terminated" }),
+    ]);
+    await signIn();
+    const me = await (await get("/api/me")).json<{ remake: unknown; booking: { next: unknown } }>();
+    expect(me).toMatchObject({ remake: { type: "first_fit", why: "partial" }, booking: { next: null } });
+  });
+
+  it("offers no replacement for a piece another has taken the place of", async () => {
+    await seed([done("ap-done", "2026-09-10"), booked("ap-next")]);
+    await signIn();
+    await giveAddress();
+    await fitPiece("2026-10-05");
+    await env.DB.prepare("UPDATE pieces SET replaced_at = ?1").bind(NOW.toISOString()).run();
+    expect(await prompt()).toBeNull();
+  });
+
   it("leads with the next visit, and keeps the invoice as a second line for 14 days", async () => {
     const ids = await seed([done("ap-done", "2026-09-10")]);
     await signIn();

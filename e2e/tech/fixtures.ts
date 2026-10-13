@@ -264,6 +264,7 @@ export const ROHITS_PIECE: Piece = {
   replacement_due_at: "2030-12-29",
   failed_at: null,
   failure_reason: null,
+  replaced_at: null,
 };
 
 /** Rohit's hair profile as their consultation took it, their history with it. */

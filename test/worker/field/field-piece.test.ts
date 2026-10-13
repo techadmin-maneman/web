@@ -79,6 +79,38 @@ describe("the piece", () => {
     ]);
   });
 
+  it("takes the worn piece off as replaced, not failed, where the old piece is not named", async () => {
+    await upToThePiece(minutesAfterStart(60));
+    const answer = await postAt(
+      minutesAfterStart(60),
+      `/api/tech/jobs/${REPLACEMENT}/piece`,
+      { piece_code: "MM-STD-5520-A", base: "Standard base" },
+      uuidv7At(50),
+    );
+    expect(answer.status).toBe(202);
+
+    const pieces = await env.DB.prepare(
+      "SELECT piece_code, failed_at, replaced_at IS NOT NULL AS replaced FROM pieces ORDER BY piece_code",
+    ).all();
+    expect(pieces.results).toEqual([
+      { piece_code: "MM-STD-4417-B", failed_at: null, replaced: 1 },
+      { piece_code: "MM-STD-5520-A", failed_at: null, replaced: 0 },
+    ]);
+  });
+
+  it("leaves a piece named as failed unmarked as replaced", async () => {
+    await upToThePiece(minutesAfterStart(60));
+    await postAt(
+      minutesAfterStart(60),
+      `/api/tech/jobs/${REPLACEMENT}/piece`,
+      { piece_code: "MM-STD-5520-A", old_piece: { piece_code: "MM-STD-4417-B", failure_reason: "Torn at the crown" } },
+      uuidv7At(50),
+    );
+
+    const old = await env.DB.prepare("SELECT failure_reason, replaced_at FROM pieces WHERE id = 'piece-old'").first();
+    expect(old).toEqual({ failure_reason: "Torn at the crown", replaced_at: null });
+  });
+
   it("refuses a label that is not a piece's, for the old piece as for the new", async () => {
     await upToThePiece(minutesAfterStart(60));
     const answer = await postAt(

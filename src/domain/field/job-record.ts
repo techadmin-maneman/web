@@ -5,7 +5,7 @@ import { cycleDaysFor, type Cycles } from "../../config/pieces.ts";
 import { addDays, indiaDate } from "../../lib/india-time.ts";
 import type { JobEventKind } from "../../policy/in-job-steps.ts";
 import { storedOutcomeOf } from "./job-event-bodies.ts";
-import { failedPieceStatement, fittedPieceStatement, pieceStepOf } from "./pieces.ts";
+import { failedPieceStatement, fittedPieceStatement, pieceStepOf, replacedPiecesStatement } from "./pieces.ts";
 import { closeVisit, moveVisit } from "../visits/visit-status.ts";
 
 export interface LandingStep {
@@ -69,8 +69,8 @@ async function startedAtOf(db: D1Database, appointmentId: string): Promise<strin
 }
 
 /**
- * The piece fitted, due a cycle of its base from the day in India the phone fitted it, and each that failed. A visit
- * with no client of ours has nobody to record a piece for.
+ * The piece fitted, due a cycle of its base from the day in India the phone fitted it, each that failed, and the one
+ * it took the place of. A visit with no client of ours has nobody to record a piece for.
  */
 function pieceStatements(db: D1Database, step: LandingStep): D1PreparedStatement[] {
   const personId = step.visit.personId;
@@ -92,5 +92,11 @@ function pieceStatements(db: D1Database, step: LandingStep): D1PreparedStatement
     replacementDue: addDays(fittedOn, cycleDaysFor(pieces.fitted.base, step.cycles)),
     now: step.now,
   });
-  return [...failed, fitted];
+  const replaced = replacedPiecesStatement(db, {
+    personId,
+    appointmentId: step.visit.id,
+    pieceCode: pieces.fitted.code,
+    now: step.now,
+  });
+  return [...failed, replaced, fitted];
 }

@@ -1843,7 +1843,7 @@ Indexes:
 
 Each piece fitted, its base and lot, the day it was fitted and the day it falls due, and a failure with its reason. `fsm_id` is FSM's ID for a piece mirrored from FSM, otherwise the row's own (ADR 0032, ADR 0110).
 
-Made by `0027_pieces_and_zones.sql`; changed by `0060_flat_task_reads.sql`, `0151_forecast.sql`.
+Made by `0027_pieces_and_zones.sql`; changed by `0060_flat_task_reads.sql`, `0151_forecast.sql`, `0156_pieces_replaced.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -1861,6 +1861,7 @@ Made by `0027_pieces_and_zones.sql`; changed by `0060_flat_task_reads.sql`, `015
 | `synced_at` | TEXT | no |  |  |
 | `deleted_at` | TEXT | yes |  |  |
 | `replacement_booked` | INTEGER | no | `0` |  |
+| `replaced_at` | TEXT | yes |  |  |
 
 Indexes:
 
@@ -2004,13 +2005,17 @@ Made by `0014_payments.sql`.
 
 Each fitted piece a recall made due for replacement, and the day it was due before (ADR 0187).
 
-Made by `0155_recalls.sql`.
+Made by `0155_recalls.sql`; changed by `0156_pieces_replaced.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
 | `recall_id` | TEXT | no |  | primary key; → `recalls.id` |
 | `piece_id` | TEXT | no |  | primary key |
 | `due_before` | TEXT | yes |  |  |
+
+Indexes:
+
+- `recall_pieces_by_piece`: on (`piece_id`)
 
 ## recalls
 

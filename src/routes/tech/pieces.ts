@@ -19,6 +19,9 @@ export const PieceSchema = z
     replacement_due_at: z.union([z.iso.date(), z.null()]),
     failed_at: z.union([z.iso.datetime(), z.null()]),
     failure_reason: z.union([z.string(), z.null()]),
+    replaced_at: z
+      .union([z.iso.datetime(), z.null()])
+      .openapi({ description: "When a later piece was fitted in its place." }),
   })
   .strict()
   .openapi("Piece");
@@ -72,6 +75,7 @@ function normalise(piece: {
   replacement_due_at: string | null;
   failed_at: string | null;
   failure_reason: string | null;
+  replaced_at: string | null;
 }) {
   return {
     piece_code: piece.piece_code,
@@ -81,5 +85,6 @@ function normalise(piece: {
     replacement_due_at: piece.replacement_due_at === null ? null : piece.replacement_due_at.slice(0, 10),
     failed_at: piece.failed_at,
     failure_reason: piece.failure_reason,
+    replaced_at: piece.replaced_at,
   };
 }

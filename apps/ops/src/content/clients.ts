@@ -244,7 +244,16 @@ export const clients = {
       later: "Later days",
       noDays: "No one is free on these days.",
       code: "Discount code (optional)",
+      /** What a visit may make good, free (docs/decisions/0192-free-remakes.md). */
+      covers: "Free, to make good",
+      chargeAsUsual: "Nothing: charge as usual",
+      owed: {
+        partial: (date: string) => `Left partly done ${date}`,
+        recall: (piece: string | null) => `${piece ?? "Hair system"}, recalled`,
+        failed: (piece: string | null, date: string) => `${piece ?? "Hair system"}, failed ${date}`,
+      },
       pays: {
+        covered: "Free. No late fee.",
         nothing: "Nothing to pay.",
         oneVisit: "Nothing to pay now.",
         credit: (left: number) => `Uses a free service visit. ${String(left)} left.`,
@@ -270,6 +279,7 @@ export const clients = {
         not_bookable: "That day or service can't be booked.",
         no_product: "No hair system on sale that day.",
         code_not_applicable: "That code doesn't apply to this visit.",
+        invalid_request: "Already made good, or not owed. Close and look again.",
         code_off: "That code is switched off.",
         terms_changed: "Their credit was just used. Try again.",
         unavailable: "Razorpay couldn't create the link. Try again in a minute.",
@@ -408,6 +418,21 @@ export const clients = {
     // A discount code on a payment, which no board draws (docs/decisions/0108-discount-codes.md).
     /** "Code AUDTEST, Rs. 1,000 off", beneath what the payment was for. */
     code: (applied: string) => `Code ${applied}`,
+    /** A payment refunded by ops, with why: one made twice (docs/decisions/0192-free-remakes.md). */
+    refundOpen: "Refund",
+    refundLabel: (amount: string) => `Refund ${amount} of this payment`,
+    refundReason: "Why",
+    refundConfirm: (amount: string) => `Refund ${amount}`,
+    refundAsked: (amount: string) => `Refund of ${amount} on its way.`,
+    refundErrors: {
+      refund_not_due: "Already refunded, or a refund is on its way.",
+      unavailable: "Razorpay didn't make the refund. Make it by hand in Razorpay, once.",
+      invalid_request: "Say why.",
+      not_found: "This payment can't be refunded here.",
+      not_permitted: NOT_PERMITTED,
+      offline: OFFLINE,
+      unknown: FAILED,
+    } as Readonly<Record<string, string>>,
   },
   /* Our words, all of them: the payment links Razorpay texted the client, and an open one's address to send again. */
   links: {
@@ -515,10 +540,12 @@ export const clients = {
       fitted: "Fitted",
       lot: "Supplier lot",
       due: "Replace due",
-      failure: "Failed · reason",
+      failure: "Came off",
     },
     /** A piece that has failed, as the board writes it: "24 Jun · base split at crown". */
     failed: (date: string, reason: string | null) => (reason === null ? date : `${date} · ${reason}`),
+    /** A piece another took the place of: "Replaced 24 Jun". */
+    replaced: (date: string) => `Replaced ${date}`,
     // The board draws no client without a piece, and every client has none until they are fitted.
     empty: "No hair system fitted yet.",
   },

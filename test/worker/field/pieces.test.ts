@@ -120,6 +120,7 @@ describe("the label the technician scans", () => {
         replacement_due_at: "2026-12-28",
         failed_at: null,
         failure_reason: null,
+        replaced_at: null,
       },
       belongs_to_this_job: true,
     });
@@ -169,6 +170,7 @@ describe("GET /api/clients/:id/pieces", () => {
           replacement_due_at: "2026-12-28",
           failed_at: null,
           failure_reason: null,
+          replaced_at: null,
         },
       ],
     });

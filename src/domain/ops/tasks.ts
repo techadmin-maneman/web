@@ -199,8 +199,8 @@ const QUEUES: readonly Queue[] = [
          p.piece_code || ' ' || p.replacement_due_at AS detail, date(p.replacement_due_at, ?1) AS since,
          p.replacement_due_at AS due_by, '' AS episode
     FROM pieces p INDEXED BY pieces_to_replace JOIN people pe ON pe.id = p.person_id
-   WHERE p.replacement_booked = 0 AND p.deleted_at IS NULL AND p.failed_at IS NULL AND pe.erased_at IS NULL
-     AND p.replacement_due_at IS NOT NULL AND p.replacement_due_at <= date(?2, ?3)`,
+   WHERE p.replacement_booked = 0 AND p.deleted_at IS NULL AND p.failed_at IS NULL AND p.replaced_at IS NULL
+     AND pe.erased_at IS NULL AND p.replacement_due_at IS NOT NULL AND p.replacement_due_at <= date(?2, ?3)`,
     binds: (at) => [
       `-${String(at.days.replacement_order_lead)} days`,
       at.today,
@@ -281,8 +281,8 @@ const QUEUES: readonly Queue[] = [
   // migration 0044 stored as partial is left out too.
   {
     sql: `SELECT 'partial_visit' AS "group", a.id AS id, a.person_id AS person_id, pe.name AS person_name,
-         COALESCE((SELECT r.label FROM partial_reasons r WHERE r.code = v.partial_reason), v.partial_reason,
-           v.close_reason) AS detail,
+         a.type || ' ' || COALESCE((SELECT r.label FROM partial_reasons r WHERE r.code = v.partial_reason),
+           v.partial_reason, v.close_reason, '') AS detail,
          COALESCE(v.ended_at, a.window_end, v.updated_at) AS since, NULL AS due_by, '' AS episode
     FROM visits v JOIN appointments a ON a.id = v.appointment_id JOIN people pe ON pe.id = a.person_id
    WHERE v.outcome = 'partial' AND v.followed_up = 0 AND COALESCE(v.partial_reason, '') <> 'no_show'
@@ -420,7 +420,7 @@ function consultedWithWindow(consultedStart: string, schedule: SlotSchedule): st
 }
 
 /**
- * The one fact a task turns on, as ops read it. A partial visit's is the
+ * The one fact a task turns on, as ops read it. A partial visit's is its kind, then the
  * technician's reason in the words ops gave it: the statement reads them from
  * the reasons ops saved, and a reason from the committed list, which stands
  * until they save one, is named here (docs/decisions/0087-consumables-and-stock.md).
@@ -428,8 +428,11 @@ function consultedWithWindow(consultedStart: string, schedule: SlotSchedule): st
 function detailOf(row: Row, schedule: SlotSchedule): string | null {
   if (row.group === "referral_review") return firstSignal(row.detail);
   if (row.group === "first_fit_to_book" && row.detail !== null) return consultedWithWindow(row.detail, schedule);
-  if (row.group !== "partial_visit") return row.detail;
-  return PARTIAL_REASONS.find((reason) => reason.id === row.detail)?.label ?? row.detail;
+  if (row.group !== "partial_visit" || row.detail === null) return row.detail;
+  // The visit's kind, then the reason.
+  const [kind = "", ...words] = row.detail.split(" ");
+  const reason = words.join(" ");
+  return `${kind} ${PARTIAL_REASONS.find((each) => each.id === reason)?.label ?? reason}`;
 }
 
 /** A replacement is due on a calendar date; everything else waits from an instant. */

@@ -161,6 +161,7 @@ const PIECE = {
   replacement_due_at: "2030-12-29",
   failed_at: null,
   failure_reason: null,
+  replaced_at: null,
 };
 
 /** A 1×1 grey PNG for board A3's last visit: no photograph of anyone is used. */
@@ -449,16 +450,9 @@ async function steps(browser: Browser, design: Page): Promise<void> {
     `/jobs/${replacement.id}/piece`,
     {
       ...jobApi(replacement.id, { ...started, steps_done: [...started.steps_done, "checklist", "consumables"] }),
+      // Board A3's piece, new to the client: not yet fitted, so not yet due.
       "/api/tech/pieces/lookup": json({
-        piece: {
-          piece_code: "MM-STD-4417-B",
-          base: "Mono",
-          supplier_lot: "LOT-4417",
-          fitted_at: null,
-          replacement_due_at: null,
-          failed_at: null,
-          failure_reason: null,
-        },
+        piece: { ...PIECE, fitted_at: null, replacement_due_at: null },
         belongs_to_this_job: true,
       }),
     },

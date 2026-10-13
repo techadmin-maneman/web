@@ -27,6 +27,7 @@ import {
 import { clients } from "../content.ts";
 import { useAccess } from "../lib/access.ts";
 import styles from "./clients.module.css";
+import { RefundPayment } from "./RefundPayment.tsx";
 
 type Credits = ClientRecord["credits"];
 type Reason = CreditAdjustment["reason"];
@@ -98,7 +99,10 @@ function PaymentTable({ payments }: { payments: readonly ClientPayment[] }) {
               <CodeLine entry={entry} />
             </td>
             <td className={styles.figureCell}>{rupees(entry.amount)}</td>
-            <td className={styles.quietCell}>{stateOf(entry)}</td>
+            <td className={styles.quietCell}>
+              {stateOf(entry)}
+              <RefundPayment entry={entry} />
+            </td>
           </tr>
         ))}
       </tbody>

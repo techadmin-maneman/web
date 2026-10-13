@@ -8,6 +8,7 @@ import { useState } from "react";
 import { client } from "../api.ts";
 import type { paths } from "../api-schema.ts";
 import form from "../components/forms.module.css";
+import { BookVisit } from "../clients/index.ts";
 import { quality as copy } from "../content/quality.ts";
 import { useAccess } from "../lib/access.ts";
 
@@ -47,6 +48,65 @@ function Rows({ columns, rows }: { columns: readonly string[]; rows: readonly (r
   );
 }
 
+type Worn = Detail["worn"][number];
+
+/** A worn piece's replacement, booked free from the recall (docs/decisions/0192-free-remakes.md). */
+function BookFree({ worn }: { worn: Worn }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <Button
+        variant="outline"
+        size="small"
+        aria-label={copy.bookFreeLabel(worn.person)}
+        onClick={() => {
+          setOpen(true);
+        }}
+      >
+        {copy.bookFree}
+      </Button>
+      {open && (
+        <BookVisit
+          clientId={worn.person_id}
+          name={worn.person}
+          prefill={{ choice: "replacement", covers: worn.piece_id }}
+          onClose={() => {
+            setOpen(false);
+          }}
+        />
+      )}
+    </>
+  );
+}
+
+function WornRows({ worn, mayBook }: { worn: readonly Worn[]; mayBook: boolean }) {
+  return (
+    <Table className={form.table}>
+      <thead>
+        <tr>
+          {copy.wornColumns.map((column, index) => (
+            <th key={index} scope="col">
+              {column}
+            </th>
+          ))}
+        </tr>
+      </thead>
+      <tbody>
+        {worn.map((each) => (
+          <tr key={each.piece_id}>
+            <th scope="row" className={form.rowHead}>
+              {each.person}
+            </th>
+            <td>{each.piece_code}</td>
+            <td>{each.due_on ?? ""}</td>
+            <td>{mayBook && <BookFree worn={each} />}</td>
+          </tr>
+        ))}
+      </tbody>
+    </Table>
+  );
+}
+
 export function RecallDetail({
   recall,
   onAnswer,
@@ -77,10 +137,7 @@ export function RecallDetail({
       {recall.worn.length === 0 ? (
         <p className={form.note}>{copy.noneWorn}</p>
       ) : (
-        <Rows
-          columns={copy.wornColumns}
-          rows={recall.worn.map((each) => [each.person, each.piece_code, each.due_on ?? ""] as const)}
-        />
+        <WornRows worn={recall.worn} mayBook={recall.closed_at === null && access.mayCall("POST /api/visits")} />
       )}
       {recall.closed_at === null && access.mayCall("POST /api/recalls/{id}/close") && (
         <div className={form.actions}>

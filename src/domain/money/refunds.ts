@@ -17,7 +17,9 @@ type RefundFor =
       readonly kind: "no_show";
       readonly why: "waived" | "charged" | "refunded on dispute";
       readonly appointmentId: string;
-    };
+    }
+  /** What is left of a payment, refunded by ops (./payment-refunds.ts). */
+  | { readonly kind: "payment"; readonly paymentId: string };
 
 const NO_SHOW_RECEIPTS = { waived: "nw", charged: "nc", "refunded on dispute": "nd" } as const;
 
@@ -30,6 +32,8 @@ export function refundReceipt(refund: RefundFor): string {
       return `c-${refund.appointmentId}`;
     case "no_show":
       return `${NO_SHOW_RECEIPTS[refund.why]}-${refund.appointmentId}`;
+    case "payment":
+      return `p-${refund.paymentId}`;
   }
 }
 

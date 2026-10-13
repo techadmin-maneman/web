@@ -55,6 +55,7 @@ interface CardPiece {
   readonly replacement_due_at: string | null;
   readonly failed_at: string | null;
   readonly failure_reason: string | null;
+  readonly replaced_at: string | null;
 }
 
 /** The client's visit before this one that has after photographs: the job card's "Last visit, after. 22 Aug, Imran." */
@@ -237,6 +238,7 @@ function cardPiece(piece: Piece): CardPiece {
     replacement_due_at: piece.replacement_due_at === null ? null : piece.replacement_due_at.slice(0, 10),
     failed_at: piece.failed_at,
     failure_reason: piece.failure_reason,
+    replaced_at: piece.replaced_at,
   };
 }
 

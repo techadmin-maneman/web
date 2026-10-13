@@ -35,6 +35,7 @@ import {
   type NotingVisit,
 } from "./VisitCard.tsx";
 import { ProposedMove } from "./ProposedMove.tsx";
+import { RemakeCard } from "./RemakeCard.tsx";
 import styles from "./home.module.css";
 
 /** A custom order on its way, read apart from Home and loaded apart from it (./CustomOrderCard.tsx). */
@@ -99,6 +100,7 @@ function HomeBody({ me, offline }: { me: Me; offline: boolean }) {
     const { date, window } = me.being_booked;
     return <Consultation date={date} when={windowText(window)} place="" changing={null} noting={null} price={price} />;
   }
+  if (me.remake !== null) return <RemakeCard remake={me.remake} />;
   if (me.state !== "fitted" && me.consulted !== null && me.booking.types.includes("first_fit")) {
     return <Consulted consulted={me.consulted} services={me.booking.services} />;
   }

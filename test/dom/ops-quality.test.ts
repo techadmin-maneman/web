@@ -22,7 +22,15 @@ const RECALL = {
 const DETAIL = {
   ...RECALL,
   held: [{ place_id: "central", place: "Warehouse", quantity: 2 }],
-  worn: [{ piece_code: "MM-ESS-0000001-A", person_id: "p-1", person: "Rohit Malhotra", due_on: "2026-09-21" }],
+  worn: [
+    {
+      piece_id: "piece-1",
+      piece_code: "MM-ESS-0000001-A",
+      person_id: "p-1",
+      person: "Rohit Malhotra",
+      due_on: "2026-09-21",
+    },
+  ],
 };
 const BOOK = {
   recalls: [RECALL],

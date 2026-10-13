@@ -35,6 +35,7 @@ const WINDOWS = {
   service: { tier: "standard", name: "Service visit", minutes: 90 },
   pays: "link",
   credits: 0,
+  owed: [],
   days: [
     {
       date: "2027-09-23",
@@ -193,6 +194,86 @@ test("books a consultation asked for from its Tasks row, on the day and window a
     { client: CLIENT.id, kind: "consultation", tier: "standard", date: "2027-09-24", window: "morning" },
   ]);
 
+  await booking.getByRole("button", { name: "Close" }).click();
+  await expect(tasks.getByRole("listitem")).toHaveCount(0);
+});
+
+// A first fit left partly done once offered only "Close without follow-up", and the console priced the refit again.
+test("books a first fit left partly done again, free, from its Tasks row, and the task goes", async ({ page }) => {
+  const FIT = "98000000-0000-4000-8000-000000000009";
+  const partly = {
+    ...TASKS,
+    groups: [
+      {
+        group: "partial_visit",
+        count: 1,
+        closable: true,
+        tasks: [
+          {
+            id: FIT,
+            person: { id: CLIENT.id, name: CLIENT.name },
+            detail: "first_fit Hair system not ready",
+            since: "2027-09-19T06:00:00.000Z",
+            due: "2027-09-21T06:00:00.000Z",
+            owner: null,
+          },
+        ],
+      },
+    ],
+  } satisfies OpsReply<"/api/tasks">;
+  const natural = { tier: "natural", name: "Mane Man Natural", minutes: 180 };
+  const firstFit = {
+    ...WINDOWS,
+    kind: "first_fit",
+    services: [{ ...natural, price: { amount_ex_gst: 4_500_000, amount: 4_500_000, gst_percent: 0 } }],
+    service: natural,
+    owed: [{ id: FIT, why: "partial", piece_code: null, since: "2027-09-19T04:30:00.000Z" }],
+  } satisfies OpsReply<"/api/visits/availability">;
+  const sent: unknown[] = [];
+  await page.clock.setFixedTime(TASKS_READ_ON);
+  await answer(page, {
+    "GET /api/tasks": json(partly),
+    [AVAILABILITY]: json(firstFit),
+    [BOOK]: async (route) => {
+      sent.push(route.request().postDataJSON());
+      await json(
+        {
+          ...LINK_SENT,
+          outcome: "booked",
+          visit_id: "33000000-0000-4000-8000-000000000010",
+          pays: "nothing",
+          service: natural,
+          price: { amount_ex_gst: 0, amount: 0, gst_percent: 0 },
+          link: null,
+        },
+        201,
+      )(route);
+    },
+  });
+  await page.goto("/tasks");
+  const tasks = page.getByRole("region", { name: /^\d+ open$/ });
+  await expect(tasks).toContainText("Hair system not ready");
+  await tasks.getByRole("button", { name: `${opsCopy.tasks.bookFree} · ${CLIENT.name}` }).click();
+  const booking = panel(page);
+  const book = opsCopy.clients.visits.book;
+  await expect(booking.getByLabel(book.kind, { exact: true })).toHaveValue("first_fit");
+  await expect(booking.getByLabel(book.covers, { exact: true })).toHaveValue(FIT);
+  await expect(booking).toContainText(book.pays.covered);
+  await expect(booking.getByLabel(book.code, { exact: true })).toHaveCount(0);
+  expect(await axeViolations(page, (axe) => axe.include("dialog"))).toEqual([]);
+
+  await booking.getByRole("button", { name: book.book }).click();
+  await expect(booking.getByRole("status")).toContainText("Booked.");
+  expect(sent).toEqual([
+    {
+      client: CLIENT.id,
+      kind: "first_fit",
+      tier: "natural",
+      date: "2027-09-23",
+      window: "afternoon",
+      covers: FIT,
+    },
+  ]);
   await booking.getByRole("button", { name: "Close" }).click();
   await expect(tasks.getByRole("listitem")).toHaveCount(0);
 });

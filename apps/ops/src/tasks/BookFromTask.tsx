@@ -1,6 +1,7 @@
-// A task done by booking the client a visit: a consultation asked for, a first fit to book, and a replacement due
-// (src/policy/tasks.ts). The row opens the panel the client's page books from, started from what the task holds; the
-// task leaves the board once the visit is booked, and stays while a payment link for it waits to be paid.
+// A task done by booking the client a visit: a consultation asked for, a first fit to book, a replacement due, and a
+// first fit or replacement left partly done, booked again free (src/policy/tasks.ts). The row opens the panel the
+// client's page books from, started from what the task holds; the task leaves the board once the visit is booked, and
+// stays while a payment link for it waits to be paid.
 
 import { BookVisit, type Prefill } from "../clients/index.ts";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
@@ -29,8 +30,8 @@ function consultationAsked(detail: readonly string[]): Prefill {
 }
 
 /** What the booking starts from, by the task's group and the one fact it holds; null for a group not done so. */
-function prefillOf(group: Group, detail: string | null): Prefill | null {
-  const parts = detail?.split(" ") ?? [];
+function prefillOf(group: Group, task: Task): Prefill | null {
+  const parts = task.detail?.split(" ") ?? [];
   if (group === "consultation_request") return consultationAsked(parts);
   if (group === "first_fit_to_book") {
     // The consultation's start, then the window the fit is offered in.
@@ -38,6 +39,11 @@ function prefillOf(group: Group, detail: string | null): Prefill | null {
     return { choice: "first_fit", ...(isWindow(fitIn) ? { window: fitIn } : {}) };
   }
   if (group === "replacement_order") return { choice: "replacement" };
+  // The visit's kind leads; a first fit or replacement left partly done is made good, free.
+  const kind = parts[0];
+  if (group === "partial_visit" && (kind === "first_fit" || kind === "replacement")) {
+    return { choice: kind, covers: task.id };
+  }
   return null;
 }
 
@@ -57,7 +63,7 @@ export function BookFromTask({
   const [open, setOpen] = useState(false);
   const opener = useRef<HTMLButtonElement>(null);
   const mayBook = useAccess().mayCall("POST /api/visits");
-  const prefill = prefillOf(group, task.detail);
+  const prefill = prefillOf(group, task);
   const person = task.person;
   if (!mayBook || prefill === null || person === null) return null;
   return (
@@ -71,7 +77,7 @@ export function BookFromTask({
           setOpen(true);
         }}
       >
-        {tasks.book}
+        {prefill.covers === undefined ? tasks.book : tasks.bookFree}
         <VisuallyHidden>{` · ${subject}`}</VisuallyHidden>
       </button>
       {open && (

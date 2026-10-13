@@ -266,6 +266,7 @@ export const PIECES = {
       replacement_due_at: "2028-03-01",
       failed_at: null,
       failure_reason: null,
+      replaced_at: null,
     },
     {
       piece_code: "MM-STD-4417-B",
@@ -275,6 +276,7 @@ export const PIECES = {
       replacement_due_at: "2027-06-01",
       failed_at: "2027-06-24T06:00:00.000Z",
       failure_reason: "base split at crown",
+      replaced_at: null,
     },
     {
       piece_code: "MM-STD-4417-A",
@@ -284,6 +286,7 @@ export const PIECES = {
       replacement_due_at: null,
       failed_at: "2026-11-16T06:00:00.000Z",
       failure_reason: "rejected at fit, refunded",
+      replaced_at: null,
     },
   ],
 } satisfies OpsReply<"/api/clients/{id}/pieces">;

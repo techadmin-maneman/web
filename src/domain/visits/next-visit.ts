@@ -86,7 +86,7 @@ const FACTS = `SELECT
      AND a.type = 'consultation' AND a.deleted_at IS NULL ORDER BY a.window_start DESC LIMIT 1) AS consulted_start,
   ${BOOKED} AS booked,
   (SELECT MIN(replacement_due_at) FROM pieces WHERE person_id = ?1 AND deleted_at IS NULL AND failed_at IS NULL
-     AND replacement_due_at IS NOT NULL) AS piece_due`;
+     AND replaced_at IS NULL AND replacement_due_at IS NOT NULL) AS piece_due`;
 
 interface FactsRow {
   last_start: string | null;
@@ -273,7 +273,7 @@ export async function composeNextServiceReminder(
     .prepare(
       `SELECT a.window_start, p.name,
          (SELECT MIN(replacement_due_at) FROM pieces WHERE person_id = ?1 AND deleted_at IS NULL AND failed_at IS NULL
-            AND replacement_due_at IS NOT NULL) AS piece_due,
+            AND replaced_at IS NULL AND replacement_due_at IS NOT NULL) AS piece_due,
          ${BOOKED_SINCE} AS booked
        FROM appointments a JOIN people p ON p.id = a.person_id
        WHERE a.id = ?2 AND a.person_id = ?1 AND ${DONE}`,

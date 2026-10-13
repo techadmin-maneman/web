@@ -66,10 +66,10 @@ const HISTORY = `SELECT
   (SELECT COALESCE(SUM(amount - refunded_amount), 0) FROM payments
      WHERE person_id = ?1 AND captured_at IS NOT NULL) AS spend,
   (SELECT MIN(replacement_due_at) FROM pieces
-     WHERE person_id = ?1 AND deleted_at IS NULL AND failed_at IS NULL
+     WHERE person_id = ?1 AND deleted_at IS NULL AND failed_at IS NULL AND replaced_at IS NULL
        AND replacement_due_at IS NOT NULL) AS due_on,
   (SELECT piece_code FROM pieces
-     WHERE person_id = ?1 AND deleted_at IS NULL AND failed_at IS NULL
+     WHERE person_id = ?1 AND deleted_at IS NULL AND failed_at IS NULL AND replaced_at IS NULL
        AND replacement_due_at IS NOT NULL
      ORDER BY replacement_due_at, piece_code LIMIT 1) AS due_piece`;
 

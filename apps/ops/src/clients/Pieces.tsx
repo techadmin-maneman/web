@@ -38,8 +38,13 @@ const COLUMNS = ["code", "base", "fitted", "lot", "due", "failure"] as const;
 
 const dateOf = (isoDate: string | null) => (isoDate === null ? clients.unknown : fullDate(isoDate));
 
+function cameOff(piece: Piece): string {
+  if (piece.failed_at !== null) return copy.failed(longDate(piece.failed_at), piece.failure_reason);
+  return piece.replaced_at === null ? clients.unknown : copy.replaced(longDate(piece.replaced_at));
+}
+
 function PieceRow({ piece }: { piece: Piece }) {
-  const live = piece.failed_at === null;
+  const live = piece.failed_at === null && piece.replaced_at === null;
   return (
     <tr>
       <th scope="row" className={styles.code}>
@@ -49,9 +54,7 @@ function PieceRow({ piece }: { piece: Piece }) {
       <td className={styles.fitted}>{dateOf(piece.fitted_at)}</td>
       <td className={styles.lot}>{piece.supplier_lot ?? clients.unknown}</td>
       <td className={classes(styles.due, live && styles.dueSoon)}>{dateOf(piece.replacement_due_at)}</td>
-      <td className={styles.failure}>
-        {piece.failed_at === null ? clients.unknown : copy.failed(longDate(piece.failed_at), piece.failure_reason)}
-      </td>
+      <td className={styles.failure}>{cameOff(piece)}</td>
     </tr>
   );
 }

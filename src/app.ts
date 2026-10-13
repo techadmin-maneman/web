@@ -74,6 +74,7 @@ import { registerOpsJobSheet } from "./routes/ops/job-sheet.ts";
 import { registerOpsPaymentLinks } from "./routes/ops/payment-links.ts";
 import { registerOpsNoShowRulings } from "./routes/ops/no-show-rulings.ts";
 import { registerOpsPayments } from "./routes/ops/payments.ts";
+import { registerOpsPaymentRefunds } from "./routes/ops/payment-refunds.ts";
 import { registerOpsReferrals } from "./routes/ops/referrals.ts";
 import { registerOpsPartnerStatements } from "./routes/ops/partner-statements.ts";
 import { registerOpsCarePeople } from "./routes/ops/care-people.ts";
@@ -268,6 +269,7 @@ const SURFACE_ROUTES: Readonly<Record<Surface, readonly ((app: App) => void)[]>>
     // The alerts on Tasks' "Needs a hand".
     registerOpsAlerts,
     registerOpsPayments,
+    registerOpsPaymentRefunds,
     // A one visit's payment link texted to the client again.
     registerOpsPaymentLinks,
     registerOpsTechnicians,

@@ -3169,6 +3169,8 @@ export interface components {
                 /** @description Whether the client is told on WhatsApp once it is booked: always for a payment, whose receipt goes whatever their consent, else only with their consent to WhatsApp about visits. */
                 told: boolean;
             } | null;
+            /** @description Null when none, and while a visit is booked. */
+            remake: components["schemas"]["Remake"] | null;
             /** @description The oldest payment the client owes: a consultation and fit in one visit they were fitted at, paid by the link Razorpay texted. Null when nothing is owed. */
             payment_owed: components["schemas"]["OwedPayment"] | null;
             /** @description The credit tile: balance and earliest expiry; null with none left. */
@@ -3328,6 +3330,13 @@ export interface components {
             technician: components["schemas"]["Technician"] | null;
             /** @description The tier of the first-fit service the technician recommended, as the hair profile records it; null for none. booking.next offers the first fit as it, while it is offered. */
             recommended: string | null;
+        };
+        /** @description A first fit or replacement owed again, free, which ops call to book: one left partly done, or a hair system of a recalled lot (docs/decisions/0192-free-remakes.md). */
+        Remake: {
+            /** @enum {string} */
+            type: "first_fit" | "replacement";
+            /** @enum {string} */
+            why: "partial" | "recall";
         };
         OwedPayment: {
             /** Format: uuid */

@@ -123,7 +123,7 @@ export async function dueLayer(db: D1Database, horizon: Horizon): Promise<{ laye
        LEFT JOIN appointments a ON a.id = p.appointment_id
        LEFT JOIN technicians t ON t.id = a.technician_id
        LEFT JOIN serviceable_pincodes sp ON sp.pincode = a.service_pincode
-       WHERE p.replacement_booked = 0 AND p.deleted_at IS NULL AND p.failed_at IS NULL
+       WHERE p.replacement_booked = 0 AND p.deleted_at IS NULL AND p.failed_at IS NULL AND p.replaced_at IS NULL
          AND p.replacement_due_at IS NOT NULL AND p.replacement_due_at >= ?1 AND p.replacement_due_at < ?2
          AND pe.erased_at IS NULL`,
     )

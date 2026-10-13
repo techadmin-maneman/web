@@ -372,7 +372,7 @@ describe("POST /api/visits/:id/close", () => {
     const waiting = (await outstandingTasks(env.DB, NOW, TASK_SLA_HOURS)).tasks.filter(
       (task) => task.group === "partial_visit",
     );
-    expect(waiting).toMatchObject([{ id: VISIT, detail: reason }]);
+    expect(waiting).toMatchObject([{ id: VISIT, detail: `service ${reason}` }]);
   });
 
   it("closes a one visit as done on the product chosen at its piece step, and sends its payment link", async () => {

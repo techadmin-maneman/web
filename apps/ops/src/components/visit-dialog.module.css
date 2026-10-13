@@ -61,6 +61,11 @@
   color: var(--text);
 }
 
+/* Room for the arrow the shared Select draws. */
+.select {
+  padding-right: var(--sp-32);
+}
+
 .select:focus-visible,
 .text:focus-visible {
   outline: var(--focus-width) solid var(--ink);
