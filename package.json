@@ -59,7 +59,7 @@
     "fidelity": "node scripts/fidelity/fidelity.ts",
     "fidelity:refer": "node scripts/fidelity/fidelity-refer.ts",
     "fidelity:app": "node scripts/fidelity/fidelity-app.ts",
-    "fidelity:ops": "node scripts/fidelity/fidelity-ops.ts",
+    "fidelity:ops": "node scripts/fidelity/fidelity-ops.ts && node scripts/fidelity/fidelity-kit.ts",
     "fidelity:tech": "node scripts/fidelity/fidelity-tech.ts",
     "test:e2e": "playwright test --project=390 --project=1440 --project=app --project=ops --project=tech --project=tech-live --project=tech-ios",
     "test:tech-ios": "playwright test --project=tech-ios",
