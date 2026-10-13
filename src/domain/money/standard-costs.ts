@@ -2,7 +2,7 @@
 // first fit and replacement product, until stock lots carry what was paid for each. A figure stands from the day it is
 // set; a new one starts from today and never rewrites the past. Each change is audited with codes and the amount.
 
-import { auditStatement, type AuditActor } from "../ops/audit.ts";
+import { auditStatement, type AuditActor } from "../platform/audit.ts";
 
 export const COSTED_KINDS = ["first_fit", "replacement"] as const;
 export type CostedKind = (typeof COSTED_KINDS)[number];

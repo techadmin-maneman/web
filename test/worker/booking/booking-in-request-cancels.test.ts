@@ -12,7 +12,7 @@ import {
   termsInForce,
 } from "../../../src/domain/visits/visit-changes.ts";
 import { cancelVisit, type OpsCancel } from "../../../src/domain/visits/visit-cancel.ts";
-import { readOpsInputs } from "../../../src/domain/ops/ops-settings.ts";
+import { readOpsInputs } from "../../../src/domain/platform/ops-settings.ts";
 import { createCallBudget } from "../../../src/lib/call-budget.ts";
 import { createLogger } from "../../../src/log.ts";
 import { type PaymentsProvider } from "../../../src/providers/payments/index.ts";

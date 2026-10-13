@@ -10,7 +10,7 @@ import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import { syncBooks } from "../../../src/domain/books/books-sync.ts";
 import { RECHECK_AFTER_MS } from "../../../src/domain/books/vendor-pass.ts";
-import { createAlertOnce, createResolveAlert } from "../../../src/domain/ops/alerts.ts";
+import { createAlertOnce, createResolveAlert } from "../../../src/domain/platform/alerts.ts";
 import { createCallBudget } from "../../../src/lib/call-budget.ts";
 import { createLogger } from "../../../src/log.ts";
 import { createStubBooks, type StubBooks } from "../../../src/providers/books/stub.ts";

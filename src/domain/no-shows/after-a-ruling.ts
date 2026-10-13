@@ -5,7 +5,7 @@
 // Razorpay at once, and the cron's refund job asks again for any it did not settle.
 
 import type { PaymentsProvider } from "../../providers/payments/index.ts";
-import { paymentsTab, type AlertOnce } from "../ops/alerts.ts";
+import { paymentsTab, type AlertOnce } from "../platform/alerts.ts";
 import type { CallBudget } from "../../lib/call-budget.ts";
 import { MINUTE_MS } from "../../lib/durations.ts";
 import type { Logger } from "../../log.ts";

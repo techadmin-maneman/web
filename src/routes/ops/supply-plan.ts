@@ -10,8 +10,8 @@
 import { createRoute, z } from "@hono/zod-openapi";
 import type { Context } from "hono";
 import { MAX_NOTE } from "../../config/consumables.ts";
-import { draftPlan } from "../../domain/field/supply-plan.ts";
-import { approvePlanLine, planLines, rejectPlanLine, type Decided } from "../../domain/field/supply-plan-lines.ts";
+import { draftPlan } from "../../domain/purchasing/supply-plan.ts";
+import { approvePlanLine, planLines, rejectPlanLine, type Decided } from "../../domain/purchasing/supply-plan-lines.ts";
 import { actorOf } from "../../http/audit.ts";
 import type { App, AppEnv } from "../../http/context.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";

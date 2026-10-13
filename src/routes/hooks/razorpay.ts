@@ -17,7 +17,7 @@
 import { createRoute, z } from "@hono/zod-openapi";
 import type { Context } from "hono";
 import type { App, AppEnv } from "../../http/context.ts";
-import { paymentsTab, type AlertOnce } from "../../domain/ops/alerts.ts";
+import { paymentsTab, type AlertOnce } from "../../domain/platform/alerts.ts";
 import { recordBookingConsents } from "../../domain/privacy/booking-consents.ts";
 import { rupees } from "@maneman/web-kit/money";
 import {

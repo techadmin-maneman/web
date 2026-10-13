@@ -6,7 +6,7 @@
 // Their own orders alone, never what the supplier charges us.
 
 import { z } from "@hono/zod-openapi";
-import { customOrdersOf } from "../../domain/field/custom-orders.ts";
+import { customOrdersOf } from "../../domain/purchasing/custom-orders.ts";
 import { clientOf } from "../../http/client-session.ts";
 import type { App } from "../../http/context.ts";
 import { clientRoute, signedIn } from "../../http/session-routes.ts";

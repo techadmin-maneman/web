@@ -3,7 +3,7 @@
 import type { BookingWindow } from "../../config/scheduling.ts";
 import type { VisitType } from "../../config/visit-types.ts";
 import { type Logger } from "../../log.ts";
-import { type AlertOnce } from "../ops/alerts.ts";
+import { type AlertOnce } from "../platform/alerts.ts";
 import type { PaymentsProvider } from "../../providers/payments/index.ts";
 import { PAYMENT_HELD, statusIn } from "../../config/statuses.ts";
 import type { HoldState } from "./hold-stages.ts";
@@ -21,7 +21,7 @@ export interface BookingContext extends BookingBasis, ConfirmOptions {}
 export interface ConfirmOptions {
   /** Queues a message about the visit once its row is written (src/domain/messages/visit-messages.ts). */
   readonly notify?: (messageId: string) => Promise<unknown>;
-  /** Tells ops, once, of something they must put right by hand (src/domain/ops/alerts.ts). */
+  /** Tells ops, once, of something they must put right by hand (src/domain/platform/alerts.ts). */
   readonly alertOnce?: AlertOnce;
   readonly log: Logger;
 }

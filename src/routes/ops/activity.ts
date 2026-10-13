@@ -6,7 +6,7 @@
 import { createRoute, z } from "@hono/zod-openapi";
 import { SURFACES } from "../../config/environments.ts";
 import { activity } from "../../domain/ops/activity.ts";
-import { AUDIT_ACTIONS, type AuditActor } from "../../domain/ops/audit.ts";
+import { AUDIT_ACTIONS, type AuditActor } from "../../domain/platform/audit.ts";
 import type { App } from "../../http/context.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
 import { json } from "../../http/openapi.ts";

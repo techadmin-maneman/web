@@ -6,8 +6,8 @@ import type { BookingWindow } from "../../config/scheduling.ts";
 import { HOUR_MS } from "../../lib/durations.ts";
 import { indiaDate } from "../../lib/india-time.ts";
 import { queueMessage } from "../messages/queued-messages.ts";
-import { auditStatement, type AuditEntry } from "../ops/audit.ts";
-import { readOpsInputs } from "../ops/ops-settings.ts";
+import { auditStatement, type AuditEntry } from "../platform/audit.ts";
+import { readOpsInputs } from "../platform/ops-settings.ts";
 import { agreedToVisitMessages, moveJob, planMove, type MoveInput } from "./dispatch.ts";
 
 type Refusal = Exclude<Awaited<ReturnType<typeof planMove>>, { readonly kind: "planned" }>;

@@ -57,7 +57,7 @@ import {
 import { PriceSchema } from "../schemas/booking.ts";
 import { OwedPaymentSchema } from "./payments.ts";
 import { creditsBody, CreditsSchema } from "./refer.ts";
-import { wornProduct } from "../../domain/field/stock-gap.ts";
+import { wornProduct } from "../../domain/inventory/stock-gap.ts";
 import { replacementFor } from "../../policy/services.ts";
 
 const MeSchema = z

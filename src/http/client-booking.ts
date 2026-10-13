@@ -10,7 +10,7 @@ import { checkoutHold } from "../domain/booking/holds.ts";
 import type { Moving } from "../domain/booking/occupancy.ts";
 import { type PricedService, bookableService, offeredProducts, serviceOf } from "../domain/booking/services.ts";
 import { type Price, lateFeeOn } from "../domain/money/price-book.ts";
-import type { OpsInputs } from "../domain/ops/ops-settings.ts";
+import type { OpsInputs } from "../domain/platform/ops-settings.ts";
 import { bookableDays } from "../domain/visits/next-visit.ts";
 import {
   type ChangeableVisit,
@@ -23,7 +23,7 @@ import { type SoldTerms, LATE_FEES } from "../policy/moving-a-visit.ts";
 import { bookHold } from "./book-hold.ts";
 import type { AppEnv } from "./context.ts";
 import { opsInputs } from "./ops-inputs.ts";
-import { replacementWears } from "../domain/field/stock-gap.ts";
+import { replacementWears } from "../domain/inventory/stock-gap.ts";
 
 /**
  * The terms for moving one of the client's visits of this type now, and the visit as a move sees it; null if it

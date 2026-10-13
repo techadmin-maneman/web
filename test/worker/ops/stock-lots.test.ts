@@ -1,4 +1,4 @@
-// Lots and expiry (src/domain/field/stock-lots.ts; docs/decisions/0157-lots-and-expiry.md). NOW is Monday 21 September
+// Lots and expiry (src/domain/inventory/stock-lots.ts; docs/decisions/0157-lots-and-expiry.md). NOW is Monday 21 September
 // 2026, 12 noon in India.
 //
 // What these hold: a delivery brings a lot, named by the supplier or by its day, expiring when the supplier says or

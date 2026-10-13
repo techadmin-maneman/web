@@ -9,16 +9,16 @@
 
 import { z } from "@hono/zod-openapi";
 import type { Context } from "hono";
-import { handBack, kitView } from "../../domain/field/kit.ts";
-import { tellOfLowStock } from "../../domain/field/stock.ts";
-import { receiveTransfer } from "../../domain/field/stock-transit.ts";
+import { handBack, kitView } from "../../domain/inventory/kit.ts";
+import { tellOfLowStock } from "../../domain/inventory/stock.ts";
+import { receiveTransfer } from "../../domain/inventory/stock-transit.ts";
 import type { App, AppEnv } from "../../http/context.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
 import { json } from "../../http/openapi.ts";
 import { techRoute } from "../../http/session-routes.ts";
 import { technicianOf } from "../../http/technician-session.ts";
 import { isPieceCode } from "../../config/pieces.ts";
-import { MAX_LABELLED } from "../../domain/field/stock-units.ts";
+import { MAX_LABELLED } from "../../domain/inventory/stock-units.ts";
 import { indiaDate } from "../../lib/india-time.ts";
 
 /** A hair system's pieces by their labels, as scanned. */

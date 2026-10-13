@@ -6,7 +6,7 @@
 import { DAY_MS } from "../../lib/durations.ts";
 import { withinLimit, type RemedyLimit, type RemedyReason } from "../../policy/remedies.ts";
 import { grantCredits } from "../money/credits.ts";
-import { auditStatement, type AuditAction, type AuditActor } from "../ops/audit.ts";
+import { auditStatement, type AuditAction, type AuditActor } from "../platform/audit.ts";
 
 interface Change {
   readonly actor: AuditActor;

@@ -4,7 +4,7 @@
 import type { CallBudget } from "../../lib/call-budget.ts";
 import { failureReason, type Logger } from "../../log.ts";
 import type { PaymentsProvider } from "../../providers/payments/index.ts";
-import { type AlertOnce, type ResolveAlert } from "../ops/alerts.ts";
+import { type AlertOnce, type ResolveAlert } from "../platform/alerts.ts";
 import { MINUTE_MS } from "../../lib/durations.ts";
 import { paidNotBooked } from "./hold-stages.ts";
 import { type Confirmed } from "./booked-hold.ts";

@@ -8,7 +8,7 @@
 import { createRoute, z } from "@hono/zod-openapi";
 import { BOOKING_WINDOWS } from "../../config/scheduling.ts";
 import { VISIT_TYPES } from "../../config/visit-types.ts";
-import type { AuditEntry } from "../../domain/ops/audit.ts";
+import type { AuditEntry } from "../../domain/platform/audit.ts";
 import {
   eraseAndQueue,
   erasureBlockers,

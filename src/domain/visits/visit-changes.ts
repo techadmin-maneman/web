@@ -41,7 +41,7 @@ import {
 import { NO_SHOW_CHARGES } from "../../policy/no-show.ts";
 import { ONE_VISIT_TERMS } from "../../policy/one-visit.ts";
 import { loadSlotSchedule, type SlotSchedule } from "../booking/slot-times.ts";
-import type { OpsInputs } from "../ops/ops-settings.ts";
+import type { OpsInputs } from "../platform/ops-settings.ts";
 import { lateFeeOn, priceOf, type Price } from "../money/price-book.ts";
 import { bookedMinutes } from "../booking/occupancy.ts";
 import { windowTimesOf } from "../../policy/slot-times.ts";

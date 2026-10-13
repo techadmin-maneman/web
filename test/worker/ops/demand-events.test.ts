@@ -1,4 +1,4 @@
-// The events calendar (src/domain/field/demand-events.ts, src/routes/ops/demand-events.ts;
+// The events calendar (src/domain/purchasing/demand-events.ts, src/routes/ops/demand-events.ts;
 // docs/decisions/0182-the-events-calendar.md). NOW is Monday 21 September 2026, 12 noon in India.
 //
 // What these hold: an event is added in a served city or every city and listed until it ends; one ending before it

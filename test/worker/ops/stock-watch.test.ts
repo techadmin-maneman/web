@@ -1,4 +1,4 @@
-// The morning look at the stock (src/domain/field/stock-watch.ts; docs/decisions/0159-stock-views-and-expiry.md), as the
+// The morning look at the stock (src/domain/inventory/stock-watch.ts; docs/decisions/0159-stock-views-and-expiry.md), as the
 // cron runs it. NOW is Monday 21 September 2026, 12 noon in India; the look is due each morning from 9 am.
 //
 // What these hold: a place holding a lot that expires within 30 days, or has expired, is told of once, naming each lot,

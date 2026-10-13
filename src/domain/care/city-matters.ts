@@ -3,7 +3,7 @@
 // Tasks (src/domain/ops/tasks.ts). The city closes it with what was done, as a closable task. Each one sent is audited.
 
 import { cityOf } from "../clients/places.ts";
-import { auditStatement, type AuditActor } from "../ops/audit.ts";
+import { auditStatement, type AuditActor } from "../platform/audit.ts";
 
 /** Every City matter not yet closed, as the board reads its queues; the note is its detail. */
 export const CITY_MATTERS_OPEN = `SELECT 'city_matter' AS "group", m.id AS id, m.person_id AS person_id,

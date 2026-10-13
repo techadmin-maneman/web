@@ -1,4 +1,4 @@
-// The pieces tab and the technician's label lookup (src/domain/field/pieces.ts), and the utilisation the board writes to
+// The pieces tab and the technician's label lookup (src/domain/inventory/pieces.ts), and the utilisation the board writes to
 // events. NOW is Monday 21 September 2026, 12 noon in India. Every code is made up.
 
 import { env } from "cloudflare:workers";
@@ -10,7 +10,7 @@ import {
   fittedPieceStatement,
   piecesOf,
   type FittedPiece,
-} from "../../../src/domain/field/pieces.ts";
+} from "../../../src/domain/inventory/pieces.ts";
 import { openTechnicianSession } from "../../../src/domain/dispatch/technicians.ts";
 import { appFor, fakeDependencies, markDatabase, NOW, request } from "../helpers.ts";
 

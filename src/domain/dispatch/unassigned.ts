@@ -4,7 +4,7 @@
 
 import { indiaDate, indiaInstant, addDays } from "../../lib/india-time.ts";
 import { statusIn, VISIT_NOT_BEGUN } from "../../config/statuses.ts";
-import type { AlertOnce, ResolveAlert } from "../ops/alerts.ts";
+import type { AlertOnce, ResolveAlert } from "../platform/alerts.ts";
 
 const KEY = "unassigned_visit:";
 

@@ -6,14 +6,14 @@
 import { STANDARD_TIER, type VisitType } from "../../config/visit-types.ts";
 import { indiaDate } from "../../lib/india-time.ts";
 import { FITTED } from "../clients/fitted.ts";
-import { openProposalJson, openProposalOf } from "../dispatch/open-proposals.ts";
+import { openProposalJson, openProposalOf } from "./open-proposals.ts";
 import { signToken } from "../../lib/signed-token.ts";
 import type { OneVisitState } from "../../policy/one-visit.ts";
 import { namesMoreThanItsKind } from "../../policy/services.ts";
 import type { AppointmentStatus, VisitOutcome } from "./visit-status.ts";
 import { tickedItemsOf } from "../field/job-event-bodies.ts";
 import { jobSheet } from "../field/job-sheet-settings.ts";
-import { noShowNotes, type NoShowNote } from "../no-shows/no-show-notes.ts";
+import { noShowNotes, type NoShowNote } from "./no-show-notes.ts";
 import { oneVisitPrice, type OneVisitPrice } from "../money/one-visit-money.ts";
 import { priceOf } from "../money/price-book.ts";
 import { currentAddress } from "../clients/profile.ts";

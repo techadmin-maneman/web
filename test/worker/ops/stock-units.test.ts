@@ -1,4 +1,4 @@
-// Pieces as units (src/domain/field/stock-units.ts; docs/decisions/0161-pieces-as-units.md). NOW is Monday 21 September
+// Pieces as units (src/domain/inventory/stock-units.ts; docs/decisions/0161-pieces-as-units.md). NOW is Monday 21 September
 // 2026, 12 noon in India.
 //
 // What these hold: a label's check letter catches a digit mistyped or two swapped; a hair system's delivery labels
@@ -10,7 +10,7 @@
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import { isPieceCode } from "../../../src/config/pieces.ts";
-import { labelOf, productSegment } from "../../../src/domain/field/stock-units.ts";
+import { labelOf, productSegment } from "../../../src/domain/inventory/stock-units.ts";
 import { markDatabase, NOW, request } from "../helpers.ts";
 import { IMRAN, JOB, working, type Working } from "../job-fixtures.ts";
 

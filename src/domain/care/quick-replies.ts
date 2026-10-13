@@ -2,7 +2,7 @@
 // them; Care pick one in a chat, and the console fills in {name} and {next_visit} before it is sent. Each change is
 // audited.
 
-import { auditStatement, type AuditActor } from "../ops/audit.ts";
+import { auditStatement, type AuditActor } from "../platform/audit.ts";
 
 export interface QuickReply {
   readonly id: string;

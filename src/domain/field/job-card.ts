@@ -15,7 +15,7 @@ import { latestProfile, profileTakenAt, type HairProfile } from "../clients/hair
 import { codeOnVisit, type VisitCode } from "../money/discount-code-uses.ts";
 import { decisionAtVisit } from "../visits/one-visit.ts";
 import { evidenceMessage, messageStateOf } from "../no-shows/no-shows.ts";
-import { piecesOf, type Piece } from "./pieces.ts";
+import { piecesOf, type Piece } from "../inventory/pieces.ts";
 import { SELECT_JOB, listingOf, stateOf, type JobRow, type JobState, type JobSummary } from "./tech-jobs.ts";
 import type { VisitType } from "../../config/visit-types.ts";
 import { latestArrival } from "../visits/check-ins.ts";

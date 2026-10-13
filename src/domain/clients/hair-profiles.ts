@@ -21,7 +21,7 @@ import {
   type Remedy,
   type Wave,
 } from "../../policy/hair-profile.ts";
-import { auditStatementIfWritten, type AuditEntry } from "../ops/audit.ts";
+import { auditStatementIfWritten, type AuditEntry } from "../platform/audit.ts";
 import { serviceOf } from "../booking/services.ts";
 
 export interface FitSpec {
@@ -224,7 +224,7 @@ export interface FitToMatch {
 
 /**
  * Each client's latest fit, of the clients named, for matching the hair system their fit needs (the stock demand,
- * src/domain/field/stock-demand.ts): the spec alone, never the history or who took it.
+ * src/domain/purchasing/stock-demand.ts): the spec alone, never the history or who took it.
  */
 export async function latestFits(db: D1Database, people: readonly string[]): Promise<Map<string, FitToMatch>> {
   const { results } = await db

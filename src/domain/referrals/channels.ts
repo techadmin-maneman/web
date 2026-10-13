@@ -3,7 +3,7 @@
 // commission; the code opens the same invite page a client's does, naming the partner. A person comes through one
 // invite only, a client's or a partner's, whichever they used first.
 
-import { auditStatement, type AuditActor } from "../ops/audit.ts";
+import { auditStatement, type AuditActor } from "../platform/audit.ts";
 import type { DiscountKind, DiscountTerms } from "../../policy/discount-codes.ts";
 import { inviteLapsed } from "../../policy/invites.ts";
 import { OWED } from "./partner-statements.ts";

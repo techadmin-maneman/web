@@ -5,7 +5,7 @@
 // consumables, and its cost, levels and retirement change as any consumable's do.
 
 import { createRoute, z } from "@hono/zod-openapi";
-import { addHairSystem } from "../../domain/field/hair-systems.ts";
+import { addHairSystem } from "../../domain/inventory/hair-systems.ts";
 import { actorOf } from "../../http/audit.ts";
 import type { App } from "../../http/context.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";

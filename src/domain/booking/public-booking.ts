@@ -31,7 +31,7 @@
 // of a hold made in the app. They give every number the same answer
 // (src/policy/site-booking.ts): a number with a consultation still to happen, or
 // past consultations, books nothing, and its owner is told why on WhatsApp
-// (src/domain/ops/site-notices.ts). A visit goes to the address already on the
+// (src/domain/booking/site-notices.ts). A visit goes to the address already on the
 // account, so that address's pincode is the one checked and booked; where we do
 // not come to it, nothing is booked, and its owner is told so on WhatsApp too. A
 // number joining a waitlist is told of its invite as a new number would be. The

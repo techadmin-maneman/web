@@ -22,7 +22,7 @@
 // it, and never for an event that did not land.
 
 import { checkIn, type Point } from "../../policy/check-in.ts";
-import { auditStatement, type AuditEntry } from "../ops/audit.ts";
+import { auditStatement, type AuditEntry } from "../platform/audit.ts";
 
 /** How far the phone was from the visit's address, and whether that is near enough. */
 export interface Measured {

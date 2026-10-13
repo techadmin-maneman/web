@@ -6,7 +6,7 @@
 // (src/domain/field/job-sheet-settings.ts). Every label the design does not draw is a placeholder (open point 28).
 //
 // Consumables are not here: ops keep their catalogue, and what each service is
-// expected to use, in the console (src/domain/field/consumables.ts).
+// expected to use, in the console (src/domain/inventory/consumables.ts).
 
 import type { VisitType } from "./visit-types.ts";
 

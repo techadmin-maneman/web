@@ -1,12 +1,12 @@
 // The technician's reads (./jobs.ts): the day's jobs, one job's card, and the client's last visit.
 
 import type { App } from "../../http/context.ts";
-import { reservedForOthers } from "../../domain/field/custom-orders.ts";
-import { recalledIn } from "../../domain/field/recalls.ts";
+import { reservedForOthers } from "../../domain/purchasing/custom-orders.ts";
+import { recalledIn } from "../../domain/inventory/recalls.ts";
 import { type VisitType } from "../../config/visit-types.ts";
-import { offeredForJob, serviceOfJob } from "../../domain/field/consumables.ts";
-import { kitHairSystems } from "../../domain/field/hair-systems.ts";
-import { kitUnits } from "../../domain/field/stock-units.ts";
+import { offeredForJob, serviceOfJob } from "../../domain/inventory/consumables.ts";
+import { kitHairSystems } from "../../domain/inventory/hair-systems.ts";
+import { kitUnits } from "../../domain/inventory/stock-units.ts";
 import { checklistOf, declinedChecklistOf, jobSheet } from "../../domain/field/job-sheet-settings.ts";
 import { jobsOn } from "../../domain/field/tech-jobs.ts";
 import { jobDetail, lastVisitPhoto } from "../../domain/field/job-card.ts";

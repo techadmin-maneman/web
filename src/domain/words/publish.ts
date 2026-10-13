@@ -2,7 +2,7 @@
 // Words page, as it stands, kept as one publish, which each build of this environment's site lays over its copy until
 // the next. Staging rebuilds its site within minutes of a publish; production takes its words with its next release.
 
-import { auditStatement, type AuditActor } from "../ops/audit.ts";
+import { auditStatement, type AuditActor } from "../platform/audit.ts";
 import { listWords } from "./words.ts";
 
 /** What the site's builds lay over the copy: each changed line's key and words. */

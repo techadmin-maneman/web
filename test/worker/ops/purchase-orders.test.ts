@@ -1,4 +1,4 @@
-// Purchase orders (src/routes/ops/purchasing.ts, src/domain/field/purchase-orders.ts;
+// Purchase orders (src/routes/ops/purchasing.ts, src/domain/purchasing/purchase-orders.ts;
 // docs/decisions/0166-purchase-orders.md). NOW is Monday 21 September 2026, 12 noon in India.
 //
 // What these hold: an order is drafted from an active supplier's list at its prices, at least its minimum of each; it

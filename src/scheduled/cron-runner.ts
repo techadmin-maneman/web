@@ -14,7 +14,7 @@ import {
   takeJobLease,
   type RunStart,
 } from "../domain/platform/cron-runs.ts";
-import { readOpsInputs, type OpsInputs } from "../domain/ops/ops-settings.ts";
+import { readOpsInputs, type OpsInputs } from "../domain/platform/ops-settings.ts";
 import { indiaDate } from "../lib/india-time.ts";
 import { createCallBudget } from "../lib/call-budget.ts";
 import { meterDatabase, usageFields, usageSince, type MeteredDatabase } from "../lib/d1-meter.ts";

@@ -5,7 +5,7 @@
 // It keeps to the caller's cities: a city reached, and visits of no city found only with a national grant.
 
 import { createRoute, z } from "@hono/zod-openapi";
-import { stockDemand } from "../../domain/field/stock-demand.ts";
+import { stockDemand } from "../../domain/purchasing/stock-demand.ts";
 import type { App } from "../../http/context.ts";
 import { opsInputs } from "../../http/ops-inputs.ts";
 import { errorResponse } from "../../http/errors.ts";

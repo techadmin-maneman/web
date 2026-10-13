@@ -13,7 +13,7 @@ import type { MessageKind } from "../../config/message-kinds.ts";
 import { MINUTE_MS } from "../../lib/durations.ts";
 import { statusIn, VISIT_NOT_BEGUN } from "../../config/statuses.ts";
 import { queueMessage } from "./queued-messages.ts";
-import { readOpsInputs } from "../ops/ops-settings.ts";
+import { readOpsInputs } from "../platform/ops-settings.ts";
 
 export const VISIT_MESSAGE_KINDS = [
   "consultation_confirmation",

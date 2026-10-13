@@ -1,4 +1,4 @@
-// A client matched to stock (src/routes/ops/stock-match.ts, src/domain/field/stock-match.ts;
+// A client matched to stock (src/routes/ops/stock-match.ts, src/domain/inventory/stock-match.ts;
 // docs/decisions/0173-matching-a-client-to-stock.md). NOW is Monday 21 September 2026, 12 noon in India.
 //
 // What these hold: a client's latest profile matches a stock code only when its product, base size, colour, grey and

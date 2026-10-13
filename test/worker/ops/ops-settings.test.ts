@@ -11,7 +11,7 @@
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { App } from "../../../src/http/context.ts";
-import { COMMITTED, createCachedOpsInputs, readOpsInputs } from "../../../src/domain/ops/ops-settings.ts";
+import { COMMITTED, createCachedOpsInputs, readOpsInputs } from "../../../src/domain/platform/ops-settings.ts";
 import { NEXT_VISIT_DAY_BOUNDS, NEXT_VISIT_DAYS } from "../../../src/policy/next-visit.ts";
 import { REFERRAL_REWARD } from "../../../src/policy/referral-reward.ts";
 import { appFor, fakeDependencies, markDatabase, NOW, request } from "../helpers.ts";

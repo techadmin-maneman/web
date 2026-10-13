@@ -16,7 +16,7 @@ import {
   recalls,
   type Recall,
   type RecallDetail,
-} from "../../domain/field/recalls.ts";
+} from "../../domain/inventory/recalls.ts";
 import { actorOf } from "../../http/audit.ts";
 import type { App, AppEnv } from "../../http/context.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";

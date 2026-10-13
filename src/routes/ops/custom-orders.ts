@@ -16,7 +16,7 @@ import {
   customOrdersOf,
   raiseCustomOrder,
   type CustomOrder,
-} from "../../domain/field/custom-orders.ts";
+} from "../../domain/purchasing/custom-orders.ts";
 import { sendCustomOrderLink } from "../../domain/money/custom-order-links.ts";
 import { REFUND_REASONS, refundCustomOrder } from "../../domain/money/custom-order-refunds.ts";
 import { opsInputs } from "../../http/ops-inputs.ts";
@@ -27,7 +27,7 @@ import { clientInReach } from "../../http/staff-access.ts";
 import { WAVES } from "../../policy/hair-profile.ts";
 import { MAX_NOTE } from "../../config/consumables.ts";
 import { actorOf } from "../../http/audit.ts";
-import { paymentsTab } from "../../domain/ops/alerts.ts";
+import { paymentsTab } from "../../domain/platform/alerts.ts";
 
 const Note = z
   .string()

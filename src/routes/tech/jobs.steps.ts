@@ -7,7 +7,7 @@ import {
   recordFailedArrival,
   type ArrivalInput,
 } from "../../domain/visits/check-ins.ts";
-import { allConsumables } from "../../domain/field/consumables.ts";
+import { allConsumables } from "../../domain/inventory/consumables.ts";
 import { profileLanded, recordAtVisit } from "../../domain/clients/hair-profiles.ts";
 import {
   answerBeforeLanding,
@@ -16,12 +16,12 @@ import {
   jobChangesSince,
   type EventInput,
 } from "../../domain/field/job-events.ts";
-import { pieceLabelTaken, pieceStepOf } from "../../domain/field/pieces.ts";
+import { pieceLabelTaken, pieceStepOf } from "../../domain/inventory/pieces.ts";
 import { checklistOf, jobSheet, knownCodes } from "../../domain/field/job-sheet-settings.ts";
-import { hairSystemSpecs } from "../../domain/field/hair-systems.ts";
+import { hairSystemSpecs } from "../../domain/inventory/hair-systems.ts";
 import { recordJobUse } from "../../domain/field/job-use.ts";
-import { recordPieceUse } from "../../domain/field/piece-use.ts";
-import { tellOfLowStock } from "../../domain/field/stock.ts";
+import { recordPieceUse } from "../../domain/inventory/piece-use.ts";
+import { tellOfLowStock } from "../../domain/inventory/stock.ts";
 import { noShowReadiness, openNoShowCase } from "../../domain/no-shows/no-shows.ts";
 import { closeOneVisit } from "../../domain/visits/one-visit.ts";
 import { progressOf } from "../../domain/field/job-card.ts";

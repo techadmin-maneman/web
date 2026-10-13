@@ -28,6 +28,32 @@ Within a layer, modules import each other freely, as long as no cycle forms.
 - **A vendor's error** is `providers/provider-error.ts`, which the domain reads without naming the vendor.
 - **What a domain function works with**, the database, the clock, a provider and the logger, comes as one context object, the request's logger always among them: booking and giving back a hold take `BookingContext` (`domain/booked-hold.ts`). A module takes one when it is next changed; nothing makes its own logger.
 
+## The domain's folders
+
+Each folder of `domain/` is a module: the work it holds, and the core tables it alone writes.
+
+| Folder        | What it holds                                                                         | Writes                                      |
+| ------------- | ------------------------------------------------------------------------------------- | ------------------------------------------- |
+| `booking/`    | Holds and slots, booking a visit, the site's booking and its notices                  | `slot_holds`, `slot_claims`                 |
+| `visits/`     | A visit's life: its status, times, changes, check-ins, close and follow-ups           | `appointments`, `visits`                    |
+| `money/`      | Payments, refunds, payment links, discount codes, the price book, credits             | `payments`; `credit_ledger` by `credits.ts` |
+| `messages/`   | Every message we send, and what comes back                                            | `outbound_messages`                         |
+| `clients/`    | People, their addresses and profiles, the places a member of staff reaches            | `people`                                    |
+| `dispatch/`   | Technicians, their days and cities, and the board                                     | `technicians`                               |
+| `field/`      | The technician's job: its card, events, photos, job sheet and pay                     |                                             |
+| `inventory/`  | What we hold and where: places, lots, units, counts, kits, pieces, recalls            |                                             |
+| `purchasing/` | Suppliers, orders, receipts and claims, the forecast and the supply plan              |                                             |
+| `platform/`   | What every folder uses and none owns: the audit log, alerts, the Rules, cron, backups |                                             |
+
+The rest (`analytics/`, `books/`, `care/`, `leads/`, `no-shows/`, `ops/`, `privacy/`, `referrals/`, `sign-in/`,
+`try-on/`, `words/`) are named for their work, and own their own tables.
+
+- A write to a core table goes through its folder's functions. `test/node/architecture/table-writers.test.ts` lists the
+  writes made elsewhere today, and the list only shrinks: move one into its owner when its file is next changed.
+- A folder imports only the folders `test/node/architecture/domain-folders-baseline.ts` lists, and that list only
+  shrinks too. Two folders that import each other are a knot: untie one when you are in it, by moving what both need
+  to the folder that needs nothing back (as the audit log, alerts and Rules moved to `platform/`).
+
 ## Providers
 
 A capability with more than one way to run has a folder: `providers/books/`, `crm/`, `geocode/`, `image/`,

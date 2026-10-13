@@ -1,4 +1,4 @@
-// The technician's kit (src/routes/tech/kit.ts, src/domain/field/kit.ts; docs/decisions/0164-the-kit-screen.md). NOW is
+// The technician's kit (src/routes/tech/kit.ts, src/domain/inventory/kit.ts; docs/decisions/0164-the-kit-screen.md). NOW is
 // Monday 21 September 2026, 12 noon in India.
 //
 // What these hold: a top-up sent to wait for the technician's scan arrives only when they receive it, of the pieces

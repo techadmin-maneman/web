@@ -4,7 +4,7 @@
 // are its own plus everything drawn on it. Ops put a balance right by hand with adjustCredits.
 
 import { creditExpiry } from "../../policy/referral-reward.ts";
-import { auditStatement, type AuditEntry } from "../ops/audit.ts";
+import { auditStatement, type AuditEntry } from "../platform/audit.ts";
 import { paidNotBooked } from "../booking/hold-stages.ts";
 import { creditSpentOn } from "../visits/visit-facts.ts";
 
@@ -130,6 +130,96 @@ export function grantCredits(
       expiresAt.toISOString(),
       input.now.toISOString(),
     );
+}
+
+/**
+ * A condition on the rest of a batch, which a ledger row leans on: SQL over its own ?1 to ?n, and their values. The row
+ * is written only where it holds, so a write that lost a race earlier in the batch adds nothing to the ledger.
+ */
+export interface BatchGuard {
+  readonly sql: string;
+  readonly values: readonly (string | number | null)[];
+}
+
+/** The placeholder `k` places after a guard's own. */
+const after = (guard: BatchGuard, k: number): string => `?${String(guard.values.length + k)}`;
+
+/** grantCredits, written only where `guard` holds: a referral's grant, in the batch that settled it. */
+export function grantCreditsIf(
+  db: D1Database,
+  input: { personId: string; visits: number; source: CreditSource; sourceId: string; now: Date; expiresAt?: Date },
+  guard: BatchGuard,
+): D1PreparedStatement {
+  const at = (k: number) => after(guard, k);
+  const expiresAt = input.expiresAt ?? creditExpiry(input.now);
+  return db
+    .prepare(
+      `INSERT INTO credit_ledger (id, person_id, kind, visits, source_kind, source_id, expires_at, created_at)
+       SELECT ${at(1)}, ${at(2)}, 'grant', ${at(3)}, ${at(4)}, ${at(5)}, ${at(6)}, ${at(7)} WHERE ${guard.sql}
+       ON CONFLICT DO NOTHING`,
+    )
+    .bind(
+      ...guard.values,
+      crypto.randomUUID(),
+      input.personId,
+      input.visits,
+      input.source,
+      input.sourceId,
+      expiresAt.toISOString(),
+      input.now.toISOString(),
+    );
+}
+
+/**
+ * A visit's credit given back to the grant it came from, by a free cancel, written only where `guard` holds. A
+ * clawback of the grant since stops it coming back.
+ */
+export function restoreCreditIf(
+  db: D1Database,
+  input: { personId: string; grantId: string; appointmentId: string; now: Date },
+  guard: BatchGuard,
+): D1PreparedStatement {
+  const at = (k: number) => after(guard, k);
+  return db
+    .prepare(
+      `INSERT INTO credit_ledger (id, person_id, kind, visits, grant_id, source_kind, source_id, created_at)
+       SELECT ${at(1)}, ${at(2)}, 'restore', 1, ${at(3)}, 'appointment', ${at(4)}, ${at(5)}
+       WHERE NOT EXISTS (SELECT 1 FROM credit_ledger WHERE grant_id = ${at(3)} AND kind = 'clawback')
+         AND ${guard.sql}`,
+    )
+    .bind(
+      ...guard.values,
+      crypto.randomUUID(),
+      input.personId,
+      input.grantId,
+      input.appointmentId,
+      input.now.toISOString(),
+    );
+}
+
+/**
+ * The credit a visit redeemed, back in its grant, written only where `guard` holds: once (the ledger's one-use
+ * index), and only to a grant that can still take it, neither clawed back nor expired.
+ */
+export function restoreRedeemedIf(
+  db: D1Database,
+  appointmentId: string,
+  now: Date,
+  guard: BatchGuard,
+): D1PreparedStatement {
+  const at = (k: number) => after(guard, k);
+  return db
+    .prepare(
+      `INSERT INTO credit_ledger (id, person_id, kind, visits, grant_id, source_kind, source_id, created_at)
+       SELECT ${at(1)}, r.person_id, 'restore', 1, r.grant_id, 'appointment', r.source_id, ${at(3)}
+       FROM credit_ledger r JOIN credit_ledger g ON g.id = r.grant_id
+       WHERE r.kind = 'redeem' AND r.source_id = ${at(2)}
+         AND NOT EXISTS (SELECT 1 FROM credit_ledger c WHERE c.grant_id = r.grant_id AND c.kind = 'clawback')
+         AND (g.expires_at IS NULL OR g.expires_at > ${at(3)})
+         AND ${guard.sql}
+       ON CONFLICT DO NOTHING`,
+    )
+    .bind(...guard.values, crypto.randomUUID(), appointmentId, now.toISOString());
 }
 
 /**

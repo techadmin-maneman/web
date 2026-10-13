@@ -7,9 +7,9 @@
 
 import type { VisitType } from "../../config/visit-types.ts";
 import { useStillToRecord } from "../../policy/stock.ts";
-import { allConsumables, serviceOfJob, type Consumable } from "./consumables.ts";
-import { hairSystemSpecs } from "./hair-systems.ts";
-import { givenBackToLots, lotMoves, soonestFirst, type LotTake } from "./stock-lots.ts";
+import { allConsumables, serviceOfJob, type Consumable } from "../inventory/consumables.ts";
+import { hairSystemSpecs } from "../inventory/hair-systems.ts";
+import { givenBackToLots, lotMoves, soonestFirst, type LotTake } from "../inventory/stock-lots.ts";
 import { usedLinesOf, type UsedLine } from "./job-event-bodies.ts";
 
 /**
@@ -57,7 +57,7 @@ async function expectedOf(
 
 /**
  * The job's latest step of a kind from the technician, each named by the placeholder its statement binds it to: the
- * consumables step here, the piece step for the hair system fitted (src/domain/field/piece-use.ts).
+ * consumables step here, the piece step for the hair system fitted (src/domain/inventory/piece-use.ts).
  */
 export function latestStep(
   placeholders: { readonly job: string; readonly technician: string },
@@ -93,7 +93,7 @@ export async function takenFor(
  * The kit's rows for what a step still owes the job, each written only while the step is still the job's latest of
  * its kind, and once for each step and stock code; each answers its quantity when it is written. Then each row's
  * lots: what the kit gives leaves from the lots that expire soonest, and what a correction gives back goes to the lots
- * the job took from (src/domain/field/stock-lots.ts), unless `lotsOf` says, as the pieces a piece step moved do. Each
+ * the job took from (src/domain/inventory/stock-lots.ts), unless `lotsOf` says, as the pieces a piece step moved do. Each
  * row's ID is answered by its stock code.
  */
 export async function takenFromKit(
@@ -174,7 +174,7 @@ export async function recordJobUse(
     .first<{ id: string; body: string }>();
   if (latest === null) return { lowered: false };
 
-  // A hair system is the piece step's to take (src/domain/field/piece-use.ts), never this step's.
+  // A hair system is the piece step's to take (src/domain/inventory/piece-use.ts), never this step's.
   const hairSystems = await hairSystemSpecs(db);
   const consumables = (await allConsumables(db)).filter((consumable) => !hairSystems.has(consumable.code));
   const used = usedIn(JSON.parse(latest.body), consumables);

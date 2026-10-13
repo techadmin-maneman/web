@@ -3,7 +3,7 @@
 // from a date. Finance sets them in the console; the payroll provider will read them. Each change is one batch with
 // its audit entry, which keeps IDs, codes and amounts, never a grade's name.
 
-import { auditStatement, type AuditActor } from "../ops/audit.ts";
+import { auditStatement, type AuditActor } from "../platform/audit.ts";
 
 export const VISIT_PAY_KINDS = ["consultation", "one_visit", "first_fit", "service", "replacement", "no_show"] as const;
 type VisitPayKind = (typeof VISIT_PAY_KINDS)[number];

@@ -2,7 +2,7 @@
 
 import { rupees } from "@maneman/web-kit/money";
 import type { Context } from "hono";
-import { paymentsTab } from "../domain/ops/alerts.ts";
+import { paymentsTab } from "../domain/platform/alerts.ts";
 import { confirmBooking } from "../domain/booking/bookings.ts";
 import { RefundRefused, RefundUnanswered } from "../domain/booking/give-back.ts";
 import { failureReason } from "../log.ts";

@@ -50,13 +50,13 @@ import { composeDeletionRejected } from "../domain/privacy/deletion.ts";
 import { composeConcernAnswered } from "../domain/ops/grievances.ts";
 import { composeNextServiceReminder } from "../domain/visits/next-visit.ts";
 import { composeLinkPaid } from "../domain/money/payment-links-paid.ts";
-import { readOpsInputs } from "../domain/ops/ops-settings.ts";
+import { readOpsInputs } from "../domain/platform/ops-settings.ts";
 import {
   composeFriendCredited,
   composeFriendFitted,
   composeReferralRejected,
 } from "../domain/referrals/referral-messages.ts";
-import { composeSiteNotice, isSiteNoticeKind } from "../domain/ops/site-notices.ts";
+import { composeSiteNotice, isSiteNoticeKind } from "../domain/booking/site-notices.ts";
 import { composeMessagesStopped, stopLink } from "../domain/messages/stop-messages.ts";
 import { composeLaunchAlert, composeWaitlistConfirmation } from "../domain/booking/waitlist.ts";
 import { isMessageStale, VISIT_MESSAGE_KINDS, type VisitMessageKind } from "../domain/messages/visit-messages.ts";
@@ -71,7 +71,7 @@ import { MINUTE_MS } from "../lib/durations.ts";
 import { isOneOf } from "../lib/one-of.ts";
 import { MessagingMessageSchema } from "../config/pipeline.ts";
 import { runConsumer, type Settle } from "./consumer.ts";
-import { composeRecallNotice } from "../domain/field/recall-notice.ts";
+import { composeRecallNotice } from "../domain/inventory/recall-notice.ts";
 import { composeFollowUp } from "../domain/visits/follow-ups.ts";
 
 const RETRY_DELAY_SECONDS = 30;

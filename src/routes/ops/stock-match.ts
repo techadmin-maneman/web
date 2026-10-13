@@ -5,7 +5,7 @@
 // Read as their hair profile is, within the reader's places.
 
 import { createRoute, z } from "@hono/zod-openapi";
-import { MATCHED_FIELDS, stockMatch } from "../../domain/field/stock-match.ts";
+import { MATCHED_FIELDS, stockMatch } from "../../domain/inventory/stock-match.ts";
 import type { App } from "../../http/context.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
 import { json } from "../../http/openapi.ts";

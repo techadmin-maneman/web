@@ -4,7 +4,7 @@
 import type { GstRegistration } from "../../config/gst.ts";
 import { failureReason, type Logger } from "../../log.ts";
 import type { BooksProvider } from "../../providers/books/index.ts";
-import { paymentsTab, type AlertOnce, type ResolveAlert } from "../ops/alerts.ts";
+import { paymentsTab, type AlertOnce, type ResolveAlert } from "../platform/alerts.ts";
 import type { BillAccounts } from "./books-bills.ts";
 import { tellFailure as tellPassFailure, FAILURES_BEFORE_ALERT } from "./vendor-pass.ts";
 

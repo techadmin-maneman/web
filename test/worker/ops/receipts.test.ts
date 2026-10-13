@@ -1,4 +1,4 @@
-// Receipts against purchase orders (src/routes/ops/purchasing.receipts.ts, src/domain/field/receipts.ts;
+// Receipts against purchase orders (src/routes/ops/purchasing.receipts.ts, src/domain/purchasing/receipts.ts;
 // docs/decisions/0167-receipts-and-landed-cost.md). NOW is Monday 21 September 2026, 12 noon in India.
 //
 // What these hold: what arrives of an order sent goes into the warehouse in its lot, the damaged and those that failed

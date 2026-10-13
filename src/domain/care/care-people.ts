@@ -2,7 +2,7 @@
 // national Customer Care grant of Act or Manage; a client is given, at their first chat, the one with the fewest
 // clients, and a Customer Care manager can move a client to another. Each move is audited.
 
-import { auditStatement, type AuditActor } from "../ops/audit.ts";
+import { auditStatement, type AuditActor } from "../platform/audit.ts";
 
 /** The Care team, by e-mail: active staff with a national Customer Care grant that can answer, Act or Manage. */
 const CARE_TEAM = `SELECT s.email FROM staff s

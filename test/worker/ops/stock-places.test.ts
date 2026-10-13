@@ -1,4 +1,4 @@
-// The places stock is kept, as a tree (src/routes/ops/stock.places.ts, src/domain/field/stock-places.ts;
+// The places stock is kept, as a tree (src/routes/ops/stock.places.ts, src/domain/inventory/stock-places.ts;
 // docs/decisions/0155-the-stock-place-tree.md). NOW is Monday 21 September 2026, 12 noon in India.
 //
 // What these hold: a hub hangs from the warehouse and a stockroom from either, and a kit from any of them; stock moves

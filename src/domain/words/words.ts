@@ -3,7 +3,7 @@
 // key, never its words. Going back to an earlier wording, or to the code's, is a change like any other.
 
 import { longestOf, wordRefusal, type WordRefusal } from "../../policy/word-checks.ts";
-import { auditStatement, type AuditActor } from "../ops/audit.ts";
+import { auditStatement, type AuditActor } from "../platform/audit.ts";
 import { WORD_LINES, wordLine, type WordLine } from "./catalogue.ts";
 
 export interface Word extends WordLine {

@@ -1,4 +1,4 @@
-// What the weeks ahead will use (src/domain/field/stock-demand.ts), and opening counts with a lot
+// What the weeks ahead will use (src/domain/purchasing/stock-demand.ts), and opening counts with a lot
 // (docs/decisions/0160-demand-and-opening-counts.md). NOW is Monday 21 September 2026, 12 noon in India.
 //
 // What these hold: the visits booked in the next four weeks expect their services' use, by city, beside what the city
@@ -7,7 +7,7 @@
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
-import { refreshStockRisks } from "../../../src/domain/field/stock-risks.ts";
+import { refreshStockRisks } from "../../../src/domain/inventory/stock-risks.ts";
 import { NOW, markDatabase, request } from "../helpers.ts";
 import { IMRAN, working, type Working } from "../job-fixtures.ts";
 import { STOCK_WATCH } from "../../../src/policy/stock.ts";

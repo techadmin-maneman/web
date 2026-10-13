@@ -8,7 +8,7 @@ import { DAY_MS } from "../../lib/durations.ts";
 import { firstNameOf } from "../../lib/names.ts";
 import { signToken, verifyToken } from "../../lib/signed-token.ts";
 import { isMessagePurpose, MESSAGE_PURPOSES, type ConsentSource, type MessagePurpose } from "../../policy/consents.ts";
-import { auditStatementIfWritten } from "../ops/audit.ts";
+import { auditStatementIfWritten } from "../platform/audit.ts";
 import { recordConsent } from "../privacy/consents.ts";
 import { queueMessage } from "./queued-messages.ts";
 

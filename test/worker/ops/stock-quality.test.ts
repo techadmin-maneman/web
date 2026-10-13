@@ -1,4 +1,4 @@
-// Failure rates and value at risk (src/domain/field/stock-quality.ts, src/routes/ops/stock-quality.ts;
+// Failure rates and value at risk (src/domain/inventory/stock-quality.ts, src/routes/ops/stock-quality.ts;
 // docs/decisions/0188-failure-rates-and-value-at-risk.md). NOW is Monday 21 September 2026, 12 noon in India.
 //
 // What these hold: the pieces fitted from labelled stock are counted with those that failed, by stock code, lot and

@@ -4,7 +4,7 @@
 import { rupees } from "@maneman/web-kit/money";
 import { indiaDate } from "../../lib/india-time.ts";
 import { isRefusal } from "../../providers/provider-error.ts";
-import { paymentsTab } from "../ops/alerts.ts";
+import { paymentsTab } from "../platform/alerts.ts";
 import { tellUnapplied } from "./books-kept.ts";
 import { type Pass, claimToRecord, tellFailure, closeFailures, claimToApply, markApplied } from "./books-pass.ts";
 import { type PaymentPaidFor, supplyOf } from "./receipt-supply.ts";

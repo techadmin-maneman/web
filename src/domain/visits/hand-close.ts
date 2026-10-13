@@ -9,7 +9,7 @@ import type { VisitType } from "../../config/visit-types.ts";
 import type { Waits } from "../../policy/no-show.ts";
 import { noShowReadiness, openNoShowCase } from "../no-shows/no-shows.ts";
 import { latestArrival } from "./check-ins.ts";
-import { auditStatementIfClosed, type AuditEntry } from "../ops/audit.ts";
+import { auditStatementIfClosed, type AuditEntry } from "../platform/audit.ts";
 import { closeOneVisit } from "./one-visit.ts";
 import type { LinkDeps } from "../money/payment-links.ts";
 import { landedOutcome } from "./visit-begun.ts";

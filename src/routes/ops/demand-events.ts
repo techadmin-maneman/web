@@ -7,7 +7,7 @@
 
 import { createRoute, z } from "@hono/zod-openapi";
 import type { Context } from "hono";
-import { addEvent, removeEvent, upcomingEvents } from "../../domain/field/demand-events.ts";
+import { addEvent, removeEvent, upcomingEvents } from "../../domain/purchasing/demand-events.ts";
 import { actorOf } from "../../http/audit.ts";
 import type { App, AppEnv } from "../../http/context.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";

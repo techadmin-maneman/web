@@ -124,7 +124,7 @@ const ALLOWED = [
   {
     // A custom order's purchase order, drafted once: the guard reads the custom order by its key. The scan is SQLite's
     // look for custom orders pointing at the new purchase order, which it skips while no foreign key is broken.
-    file: "src/domain/field/custom-order-po.ts",
+    file: "src/domain/purchasing/custom-order-po.ts",
     sql: "WHERE NOT EXISTS (SELECT 1 FROM custom_orders WHERE id = ?8 AND po_id IS NOT NULL)",
   },
   {
@@ -135,7 +135,7 @@ const ALLOWED = [
   },
   // The console's own lists, in modules the cron imports for something else; the cron never runs them.
   // The Stock page's demand, every code's stock by city; the hourly risks read only the codes they need.
-  { file: "src/domain/field/stock-demand.ts", sql: "WHERE b.quantity > 0 GROUP BY 1, 2" },
+  { file: "src/domain/purchasing/stock-demand.ts", sql: "WHERE b.quantity > 0 GROUP BY 1, 2" },
   { file: "src/domain/booking/waitlist.ts", sql: "FROM waitlist_entries w LEFT JOIN serviceable_pincodes p" },
   {
     file: "src/domain/booking/waitlist.ts",
@@ -179,11 +179,11 @@ const UNPLANNED = [
   { file: "src/domain/platform/backups.ts", source: "SELECT * FROM ${quoted(table.name)}" },
   { file: "src/domain/platform/backups.ts", source: "SELECT rowid AS backup_rowid, * FROM ${quoted(table.name)}" },
   // An entry written only if the row it is about was: that row, by its key.
-  { file: "src/domain/ops/audit.ts", source: "SELECT 1 FROM ${written.table} WHERE id = ?10" },
-  { file: "src/domain/ops/audit.ts", source: "SELECT 1 FROM ${deleted.table} WHERE ${deleted.column} = ?10" },
-  { file: "src/domain/ops/audit.ts", source: "SELECT 1 FROM ${ruled.table} WHERE id = ?10 AND ruling_id = ?11" },
+  { file: "src/domain/platform/audit.ts", source: "SELECT 1 FROM ${written.table} WHERE id = ?10" },
+  { file: "src/domain/platform/audit.ts", source: "SELECT 1 FROM ${deleted.table} WHERE ${deleted.column} = ?10" },
+  { file: "src/domain/platform/audit.ts", source: "SELECT 1 FROM ${ruled.table} WHERE id = ?10 AND ruling_id = ?11" },
   {
-    file: "src/domain/ops/audit.ts",
+    file: "src/domain/platform/audit.ts",
     source: "SELECT 1 FROM ${stamped.table} WHERE id = ?10 AND ${stamped.column} = ?1",
   },
   {
@@ -410,11 +410,11 @@ describe("the cron's path, followed from cron.ts", () => {
     expect(CRON_PATH).toEqual(
       expect.arrayContaining([
         "src/scheduled/sweeper.ts",
-        "src/domain/ops/ops-settings.ts",
+        "src/domain/platform/ops-settings.ts",
         "src/config/message-kinds.ts",
         "src/domain/booking/slot-times.ts",
         "src/domain/money/price-book.ts",
-        "src/domain/ops/audit.ts",
+        "src/domain/platform/audit.ts",
       ]),
     );
   });

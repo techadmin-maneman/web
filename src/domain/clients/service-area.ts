@@ -21,7 +21,7 @@
 import { indiaDate, indiaInstant } from "../../lib/india-time.ts";
 import { isLaunchInFuture } from "../../policy/launch.ts";
 import { namedArea } from "./area-names.ts";
-import { auditStatement, type AuditActor, type AuditEntry } from "../ops/audit.ts";
+import { auditStatement, type AuditActor, type AuditEntry } from "../platform/audit.ts";
 import { isActiveCity } from "../dispatch/cities.ts";
 import {
   launchPreview,

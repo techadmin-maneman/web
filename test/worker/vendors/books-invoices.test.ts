@@ -4,7 +4,7 @@
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import { NO_GST, type GstRegistration } from "../../../src/config/gst.ts";
-import { createAlertOnce, createResolveAlert } from "../../../src/domain/ops/alerts.ts";
+import { createAlertOnce, createResolveAlert } from "../../../src/domain/platform/alerts.ts";
 import {
   CALLS_PER_VISIT,
   raiseBooksInvoices,

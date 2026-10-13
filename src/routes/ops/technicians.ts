@@ -24,7 +24,7 @@ import { createRoute, z } from "@hono/zod-openapi";
 import type { Context } from "hono";
 import { isActiveCity } from "../../domain/dispatch/cities.ts";
 import { VISIT_TYPES } from "../../config/visit-types.ts";
-import type { AuditAction, AuditEntry } from "../../domain/ops/audit.ts";
+import type { AuditAction, AuditEntry } from "../../domain/platform/audit.ts";
 import {
   addTechnician,
   changeTechnician,

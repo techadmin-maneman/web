@@ -1,11 +1,11 @@
-// The Tasks board's "Needs a hand": the alerts still open that ops have been told of (src/domain/ops/alerts.ts), and
+// The Tasks board's "Needs a hand": the alerts still open that ops have been told of (src/domain/platform/alerts.ts), and
 // what ops do with one there. Marking it done closes it, under whoever did. Sending it again puts back the message,
 // the lead to the CRM or the erasure there that the alert gave up on, and closes the alert: if it fails again, that
 // is a new alert, and ops are told again.
 
 import type { Logger } from "../../log.ts";
 import { alertKind, alertSubject, type SentAgainKind } from "../../policy/alerts.ts";
-import { auditStatement, type AuditEntry } from "./audit.ts";
+import { auditStatement, type AuditEntry } from "../platform/audit.ts";
 import { type CrmSyncMessage, type MessagingMessage } from "../../config/pipeline.ts";
 
 /** The most open alerts one look reads: far more than ever wait at once, so the list is whole below it. */

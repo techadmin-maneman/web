@@ -7,9 +7,9 @@
 
 import { createRoute, z } from "@hono/zod-openapi";
 import type { Context } from "hono";
-import { tellOfLowStock } from "../../domain/field/stock.ts";
-import { placesWithin, isPlaceWithin } from "../../domain/field/stock-places.ts";
-import { receiveTransfer, sendBack, type Settled } from "../../domain/field/stock-transit.ts";
+import { tellOfLowStock } from "../../domain/inventory/stock.ts";
+import { placesWithin, isPlaceWithin } from "../../domain/inventory/stock-places.ts";
+import { receiveTransfer, sendBack, type Settled } from "../../domain/inventory/stock-transit.ts";
 import { actorOf } from "../../http/audit.ts";
 import type { App, AppEnv } from "../../http/context.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";

@@ -12,7 +12,7 @@ import { type NotBookedFromSite, notBookedFromSite, typedAddress } from "../../p
 import { type Address, currentAddress, firstAddressStatement } from "../clients/profile.ts";
 import { testRecordAtCreation } from "../../policy/staging-test-records.ts";
 import { pincodeOf, type Pincode } from "../clients/service-area.ts";
-import { siteNotice, type SiteNoticeKind } from "../ops/site-notices.ts";
+import { siteNotice, type SiteNoticeKind } from "./site-notices.ts";
 import { type OneVisitCode, useOnNewHold, codeOnHold, checkForOneVisit } from "../money/discount-code-holds.ts";
 import type { LeadAttribution } from "../leads/leads.ts";
 import type { InviteState } from "../referrals/referrals.ts";

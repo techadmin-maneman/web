@@ -5,7 +5,7 @@
 // Read with Operations VIEW.
 
 import { createRoute, z } from "@hono/zod-openapi";
-import { supplierScores } from "../../domain/field/supplier-scorecard.ts";
+import { supplierScores } from "../../domain/purchasing/supplier-scorecard.ts";
 import type { App } from "../../http/context.ts";
 import { opsInputs } from "../../http/ops-inputs.ts";
 import { errorResponse } from "../../http/errors.ts";

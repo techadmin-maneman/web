@@ -17,7 +17,7 @@ import { DAY_MS, HOUR_MS, MINUTE_MS } from "../../lib/durations.ts";
 import { failureReason, type Logger } from "../../log.ts";
 import type { PaymentsProvider } from "../../providers/payments/index.ts";
 import type { RazorpayPayment, RazorpayPaymentLink } from "../../providers/payments/razorpay.ts";
-import { paymentsTab, type AlertOnce } from "../ops/alerts.ts";
+import { paymentsTab, type AlertOnce } from "../platform/alerts.ts";
 import { recordBookingConsents } from "../privacy/booking-consents.ts";
 import { customOrderPaid } from "./custom-order-links.ts";
 import { linkPaid } from "./payment-links-paid.ts";

@@ -4,7 +4,7 @@
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
-import { auditStatement, type AuditEntry } from "../../../src/domain/ops/audit.ts";
+import { auditStatement, type AuditEntry } from "../../../src/domain/platform/audit.ts";
 import type { App } from "../../../src/http/context.ts";
 import { appFor, fakeDependencies, markDatabase, NOW, request } from "../helpers.ts";
 

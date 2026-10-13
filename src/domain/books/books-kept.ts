@@ -3,7 +3,7 @@
 // and closes the alert once the payment has gone back in full.
 
 import { rupees } from "@maneman/web-kit/money";
-import { paymentsTab, type AlertOnce } from "../ops/alerts.ts";
+import { paymentsTab, type AlertOnce } from "../platform/alerts.ts";
 import { PER_PASS } from "./vendor-pass.ts";
 
 interface KeptRow {

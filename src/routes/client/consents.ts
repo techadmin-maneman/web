@@ -4,7 +4,7 @@
 import { z } from "@hono/zod-openapi";
 import { switchNotice } from "../../config/notices.ts";
 import { consentsOf } from "../../domain/clients/profile.ts";
-import { auditStatementIfWritten } from "../../domain/ops/audit.ts";
+import { auditStatementIfWritten } from "../../domain/platform/audit.ts";
 import { recordConsent } from "../../domain/privacy/consents.ts";
 import { revokeCard } from "../../domain/referrals/referral-cards.ts";
 import { clientAudit } from "../../http/audit.ts";

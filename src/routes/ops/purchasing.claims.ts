@@ -11,8 +11,8 @@
 
 import { createRoute, z } from "@hono/zod-openapi";
 import type { Context } from "hono";
-import { stockPhotoExists } from "../../domain/field/stock-photos.ts";
-import { returnedPieces, claimReturn, writeOffReturn, type Settled } from "../../domain/field/returned-pieces.ts";
+import { stockPhotoExists } from "../../domain/inventory/stock-photos.ts";
+import { returnedPieces, claimReturn, writeOffReturn, type Settled } from "../../domain/inventory/returned-pieces.ts";
 import {
   CLAIM_OUTCOMES,
   CLAIM_REASONS,
@@ -23,7 +23,7 @@ import {
   withdrawClaim,
   type ClaimAnswer,
   type ClaimChanged,
-} from "../../domain/field/supplier-claims.ts";
+} from "../../domain/purchasing/supplier-claims.ts";
 import type { App, AppEnv } from "../../http/context.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
 import { json } from "../../http/openapi.ts";

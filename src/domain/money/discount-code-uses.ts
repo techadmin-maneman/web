@@ -22,7 +22,7 @@ import {
   type DiscountKind,
   type DiscountTerms,
 } from "../../policy/discount-codes.ts";
-import { type AuditActor } from "../ops/audit.ts";
+import { type AuditActor } from "../platform/audit.ts";
 import { spendableCredits } from "./credits.ts";
 import { CODE_COLUMNS, coversOf, standing, termsOf, type CodeRow } from "./discount-codes.ts";
 import { type Price } from "./price-book.ts";

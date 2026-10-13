@@ -8,7 +8,7 @@
 // wrote one for every image, ten for a visit and ten more on every return to
 // the tab, and the console lettered the browser's clock as the time logged.
 
-import { recordAudit, type AuditActor } from "../ops/audit.ts";
+import { recordAudit, type AuditActor } from "../platform/audit.ts";
 import { MINUTE_MS } from "../../lib/durations.ts";
 
 /** How long one logged opening covers the photographs shown in it. */

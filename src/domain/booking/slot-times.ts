@@ -11,7 +11,7 @@ import {
   windowAt,
   type SlotTimes,
 } from "../../policy/slot-times.ts";
-import { auditStatementIfWritten, type AuditEntry } from "../ops/audit.ts";
+import { auditStatementIfWritten, type AuditEntry } from "../platform/audit.ts";
 import { statusIn, VISIT_LIVE } from "../../config/statuses.ts";
 
 /** A change of times, from the day it applies. */

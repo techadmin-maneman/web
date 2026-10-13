@@ -4,9 +4,9 @@
 import { z } from "@hono/zod-openapi";
 import { CONSUMABLE_BOUNDS, MAX_NOTE } from "../../config/consumables.ts";
 import { isPieceCode } from "../../config/pieces.ts";
-import { MOVEMENT_REASONS } from "../../domain/field/stock.ts";
-import { PLACE_KINDS } from "../../domain/field/stock-places.ts";
-import { MAX_LABELLED } from "../../domain/field/stock-units.ts";
+import { MOVEMENT_REASONS } from "../../domain/inventory/stock.ts";
+import { PLACE_KINDS } from "../../domain/inventory/stock-places.ts";
+import { MAX_LABELLED } from "../../domain/inventory/stock-units.ts";
 import { json } from "../../http/openapi.ts";
 
 /** A place, by its ID: "central" for the warehouse, a technician's ID for their kit. */

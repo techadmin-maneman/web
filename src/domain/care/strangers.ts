@@ -4,7 +4,7 @@
 // which the CRM hears of as any lead, marked to be answered in the chat and never chased: they only wrote to us.
 
 import { personByMobile } from "../clients/people.ts";
-import { auditStatement, type AuditActor } from "../ops/audit.ts";
+import { auditStatement, type AuditActor } from "../platform/audit.ts";
 import type { ChannelCode } from "../../policy/channels.ts";
 import { giveCarePerson } from "./care-people.ts";
 

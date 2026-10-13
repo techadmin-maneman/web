@@ -4,7 +4,7 @@
 
 import type { VisitType } from "../../config/visit-types.ts";
 import { addDays } from "../../lib/india-time.ts";
-import { auditStatement, type AuditEntry } from "../ops/audit.ts";
+import { auditStatement, type AuditEntry } from "../platform/audit.ts";
 import { statusIn, VISIT_NOT_BEGUN } from "../../config/statuses.ts";
 
 /** One period, both ends inclusive, as ops recorded it. */
@@ -127,7 +127,7 @@ export async function standingLeave(db: D1Database, technicianId: string, today:
 }
 
 /**
- * Records leave, with its audit entry in the same batch (src/domain/ops/audit.ts). Days already recorded are left as
+ * Records leave, with its audit entry in the same batch (src/domain/platform/audit.ts). Days already recorded are left as
  * they are rather than refused: two overlapping periods keep the technician away on the same days, and ops should not
  * have to unpick their own entries to add a day.
  */

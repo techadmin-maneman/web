@@ -1,5 +1,5 @@
 // An audited action and its audit entry happen together or not at all
-// (docs/decisions/0031-access-and-audit.md, src/domain/ops/audit.ts). Each route
+// (docs/decisions/0031-access-and-audit.md, src/domain/platform/audit.ts). Each route
 // here is made to fail on writing its entry, and each must then leave nothing
 // changed: an action the log does not record did not happen. NOW is Monday
 // 21 September 2026, 12 noon in India. Every name and number is made up.

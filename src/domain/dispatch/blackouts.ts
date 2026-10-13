@@ -14,7 +14,7 @@
 // closes nowhere else (docs/decisions/0119-blackouts-by-city-and-trained-fitters.md).
 
 import { addDays } from "../../lib/india-time.ts";
-import { auditStatement, type AuditActor } from "../ops/audit.ts";
+import { auditStatement, type AuditActor } from "../platform/audit.ts";
 import { statusIn, VISIT_NOT_BEGUN } from "../../config/statuses.ts";
 
 /** The most days one press blacks out: a month, so a typed year cannot close the diary. */

@@ -21,7 +21,7 @@ import { discounted } from "../../policy/discount-codes.ts";
 import { invoiceHold, type InvoiceHold, type SoldVisit } from "../../policy/prepayment.ts";
 import type { BooksInvoice, BooksProvider, NewBooksInvoice } from "../../providers/books/index.ts";
 import { FAILURES_BEFORE_ALERT, PER_PASS, RECHECK_AFTER_MS, tellFailure as tellPassFailure } from "./vendor-pass.ts";
-import { paymentsTab, type AlertOnce, type ResolveAlert } from "../ops/alerts.ts";
+import { paymentsTab, type AlertOnce, type ResolveAlert } from "../platform/alerts.ts";
 import { customerFor } from "./books-customers.ts";
 import { codeOnVisit, priceAfterCode } from "../money/discount-code-uses.ts";
 import { priceOf, type Price } from "../money/price-book.ts";

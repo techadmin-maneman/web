@@ -6,7 +6,7 @@
 // once at a time while every other job goes on, when it last ran well, and its failures in a row.
 
 import { HOUR_MS, MINUTE_MS } from "../../lib/durations.ts";
-import type { AlertOnce, ResolveAlert } from "../ops/alerts.ts";
+import type { AlertOnce, ResolveAlert } from "./alerts.ts";
 
 export const CUT_SHORT_ALERT = "cron_run_cut_short";
 

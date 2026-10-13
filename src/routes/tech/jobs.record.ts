@@ -17,7 +17,7 @@ import {
   type Superseding,
 } from "../../domain/field/job-events.ts";
 import { jobRecordOf, type LandingStep } from "../../domain/field/job-record.ts";
-import { type PieceField } from "../../domain/field/pieces.ts";
+import { type PieceField } from "../../domain/inventory/pieces.ts";
 import { progressOf } from "../../domain/field/job-card.ts";
 import { workableJob, type WorkableJob } from "../../domain/field/workable-job.ts";
 import { errorBody, type ErrorResponse, refuse } from "../../http/errors.ts";

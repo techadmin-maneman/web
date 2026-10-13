@@ -2,7 +2,7 @@
 
 import { createRoute, z } from "@hono/zod-openapi";
 import { json } from "../../http/openapi.ts";
-import { piecesOf } from "../../domain/field/pieces.ts";
+import { piecesOf } from "../../domain/inventory/pieces.ts";
 import type { App } from "../../http/context.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
 import { withinRouteReach } from "../../http/staff-access.ts";

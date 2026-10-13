@@ -3,7 +3,7 @@
 // the client tells them, or clear it.
 
 import { jobSheet, knownCodes } from "../field/job-sheet-settings.ts";
-import { auditStatement, type AuditActor } from "../ops/audit.ts";
+import { auditStatement, type AuditActor } from "../platform/audit.ts";
 
 /** The reason kept with each of these visits that has one, by visit. */
 export async function lostReasonsOf(db: D1Database, appointmentIds: readonly string[]): Promise<Map<string, string>> {

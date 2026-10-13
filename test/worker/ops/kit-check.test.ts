@@ -1,4 +1,4 @@
-// Tomorrow's kits (src/domain/field/kit-check.ts; docs/decisions/0181-tomorrows-kits.md). NOW is Monday 21 September
+// Tomorrow's kits (src/domain/inventory/kit-check.ts; docs/decisions/0181-tomorrows-kits.md). NOW is Monday 21 September
 // 2026, 12 noon in India; the evening's check runs from 5 pm.
 //
 // What these hold: from the evening, each kit is checked against its visits tomorrow, a service's consumables by its
@@ -8,8 +8,8 @@
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
-import { checkTomorrowsKits } from "../../../src/domain/field/kit-check.ts";
-import { draftPlan } from "../../../src/domain/field/supply-plan.ts";
+import { checkTomorrowsKits } from "../../../src/domain/inventory/kit-check.ts";
+import { draftPlan } from "../../../src/domain/purchasing/supply-plan.ts";
 import { NOW, markDatabase, request } from "../helpers.ts";
 import { IMRAN, SAMEER, working, type Working } from "../job-fixtures.ts";
 import { KIT_CHECK } from "../../../src/policy/kit-check.ts";

@@ -13,7 +13,7 @@
 
 import type { VisitType } from "../../config/visit-types.ts";
 import { initialsOf } from "../../lib/names.ts";
-import { auditStatement, auditStatementIfDeleted, auditStatementIfWritten, type AuditEntry } from "../ops/audit.ts";
+import { auditStatement, auditStatementIfDeleted, auditStatementIfWritten, type AuditEntry } from "../platform/audit.ts";
 import { visitBegun } from "../visits/visit-begun.ts";
 import { statusIn, VISIT_NOT_BEGUN } from "../../config/statuses.ts";
 

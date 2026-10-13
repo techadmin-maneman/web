@@ -5,8 +5,8 @@
 // Read with Operations MANAGE in the caller's places: it values stock at cost.
 
 import { createRoute, z } from "@hono/zod-openapi";
-import { placesWithin } from "../../domain/field/stock-places.ts";
-import { shrinkage, usageAgainstExpected } from "../../domain/field/stock-usage.ts";
+import { placesWithin } from "../../domain/inventory/stock-places.ts";
+import { shrinkage, usageAgainstExpected } from "../../domain/inventory/stock-usage.ts";
 import type { App } from "../../http/context.ts";
 import { opsInputs } from "../../http/ops-inputs.ts";
 import { errorResponse } from "../../http/errors.ts";

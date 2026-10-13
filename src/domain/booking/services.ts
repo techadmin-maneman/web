@@ -20,7 +20,7 @@ import {
   PRICE_TIER,
 } from "../../policy/services.ts";
 import { isServiceLength } from "../../policy/visit-length.ts";
-import { auditStatement, type AuditActor } from "../ops/audit.ts";
+import { auditStatement, type AuditActor } from "../platform/audit.ts";
 import type { Price } from "../money/price-book.ts";
 import { replacementFor } from "../../policy/services.ts";
 

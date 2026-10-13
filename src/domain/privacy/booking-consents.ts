@@ -6,7 +6,7 @@
 
 import { BOOKING_NOTICES } from "../../config/notices.ts";
 import { agreedByBooking, GIVEN_BY_BOOKING, type GivenByBooking } from "../../policy/booking.ts";
-import { auditStatementIfWritten } from "../ops/audit.ts";
+import { auditStatementIfWritten } from "../platform/audit.ts";
 import { recordConsent } from "./consents.ts";
 import { consentRecordsOf } from "../clients/profile.ts";
 import { graceEnds } from "../booking/hold-stages.ts";

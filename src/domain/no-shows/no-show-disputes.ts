@@ -9,10 +9,10 @@
 import type { PlacesReached } from "../../policy/access.ts";
 import { isDisputable, withinDisputeWindow, type DisputeRuling } from "../../policy/no-show.ts";
 import type { Charge } from "../../policy/moving-a-visit.ts";
-import { auditStatementIfRuled, auditStatementIfWritten, type AuditEntry } from "../ops/audit.ts";
+import { auditStatementIfRuled, auditStatementIfWritten, type AuditEntry } from "../platform/audit.ts";
 import type { Ruled } from "./after-a-ruling.ts";
 import { caseMessage, messageStateOf, type MessageColumns, type MessageState } from "./no-shows.ts";
-import { CHARGE_TAKEN } from "./no-show-notes.ts";
+import { CHARGE_TAKEN } from "../visits/no-show-notes.ts";
 import { reachBinding, withinReach } from "../clients/places.ts";
 import { creditBack, refundOwed, rulingMessage, type RulingClaim } from "./ruling-claims.ts";
 

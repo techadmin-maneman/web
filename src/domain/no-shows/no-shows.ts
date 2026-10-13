@@ -33,11 +33,11 @@ import {
   type Waiver,
   type Waits,
 } from "../../policy/no-show.ts";
-import { auditStatementIfRuled, type AuditEntry } from "../ops/audit.ts";
+import { auditStatementIfRuled, type AuditEntry } from "../platform/audit.ts";
 import type { Ruled } from "./after-a-ruling.ts";
 import type { LatestArrival } from "../visits/check-ins.ts";
 import { reachBinding, withinReach } from "../clients/places.ts";
-import type { OpsInputs } from "../ops/ops-settings.ts";
+import type { OpsInputs } from "../platform/ops-settings.ts";
 import { creditBack, refundOwed, rulingMessage, type RulingClaim } from "./ruling-claims.ts";
 import { refundOf, termsInForce, termsOfVisit, visitPayment } from "../visits/visit-changes.ts";
 import { NO_VISITS_CONSENT } from "../messages/visit-message-text.ts";

@@ -16,7 +16,7 @@ import { type NoShowDecision, type DisputeRuling, WAIVER_GIVES_BACK, type Waiver
 import { creditSpentOn } from "../visits/visit-facts.ts";
 import { latestArrival } from "../visits/check-ins.ts";
 import { consentGiven } from "../privacy/consents.ts";
-import { readOpsInputs } from "../ops/ops-settings.ts";
+import { readOpsInputs } from "../platform/ops-settings.ts";
 import { codeOnVisit } from "../money/discount-code-uses.ts";
 import { type SlotSchedule, loadSlotSchedule } from "../booking/slot-times.ts";
 import { windowTimesOf } from "../../policy/slot-times.ts";

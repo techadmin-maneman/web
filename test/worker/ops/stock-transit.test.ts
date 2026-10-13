@@ -1,4 +1,4 @@
-// Transfers in transit (src/domain/field/stock-transit.ts; docs/decisions/0158-transfers-in-transit.md). NOW is Monday
+// Transfers in transit (src/domain/inventory/stock-transit.ts; docs/decisions/0158-transfers-in-transit.md). NOW is Monday
 // 21 September 2026, 12 noon in India.
 //
 // What these hold: stock sent to a stockroom leaves its place at once and arrives when received, of the same lots, in

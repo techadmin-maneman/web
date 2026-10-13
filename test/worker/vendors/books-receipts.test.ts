@@ -4,7 +4,7 @@
 import { env } from "cloudflare:workers";
 import { beforeEach, expect, it } from "vitest";
 import { NO_GST } from "../../../src/config/gst.ts";
-import { createAlertOnce, createResolveAlert } from "../../../src/domain/ops/alerts.ts";
+import { createAlertOnce, createResolveAlert } from "../../../src/domain/platform/alerts.ts";
 import { syncBooks } from "../../../src/domain/books/books-sync.ts";
 import { createCallBudget } from "../../../src/lib/call-budget.ts";
 import { createLogger } from "../../../src/log.ts";

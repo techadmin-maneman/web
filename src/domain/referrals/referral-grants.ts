@@ -17,11 +17,11 @@
 
 import { indiaDate, monthOf } from "../../lib/india-time.ts";
 import { FRAUD_SIGNALS, type FraudSignal } from "../../policy/fraud-holds.ts";
-import { readOpsInputs } from "../ops/ops-settings.ts";
+import { readOpsInputs } from "../platform/ops-settings.ts";
 import { inviteLapsed } from "../../policy/invites.ts";
 import { creditExpiry, type ReferralReward } from "../../policy/referral-reward.ts";
-import { auditStatementIfStamped, type AuditEntry } from "../ops/audit.ts";
-import { clawBack } from "../money/credits.ts";
+import { auditStatementIfStamped, type AuditEntry } from "../platform/audit.ts";
+import { clawBack, grantCreditsIf } from "../money/credits.ts";
 import type { MessageKind } from "../../config/message-kinds.ts";
 import { firstNameOf } from "../../lib/names.ts";
 import { PAYMENT_HELD, statusIn } from "../../config/statuses.ts";
@@ -141,22 +141,18 @@ function referralCredits(
   input: { personId: string; visits: number; attributionId: string; expiresAt: Date; now: Date },
   settled: Settled,
 ): D1PreparedStatement {
-  return db
-    .prepare(
-      `INSERT INTO credit_ledger (id, person_id, kind, visits, source_kind, source_id, expires_at, created_at)
-       SELECT ?4, ?5, 'grant', ?6, 'referral', ?1, ?7, ?8 WHERE ${SETTLED_HERE}
-       ON CONFLICT DO NOTHING`,
-    )
-    .bind(
-      input.attributionId,
-      settled.state,
-      settled.at,
-      crypto.randomUUID(),
-      input.personId,
-      input.visits,
-      input.expiresAt.toISOString(),
-      input.now.toISOString(),
-    );
+  return grantCreditsIf(
+    db,
+    {
+      personId: input.personId,
+      visits: input.visits,
+      source: "referral",
+      sourceId: input.attributionId,
+      now: input.now,
+      expiresAt: input.expiresAt,
+    },
+    { sql: SETTLED_HERE, values: [input.attributionId, settled.state, settled.at] },
+  );
 }
 
 /**
@@ -384,7 +380,7 @@ export async function decideHeldReferral(
     decision: "approve" | "reject";
     staff: string;
     reason: string | null;
-    /** Written in the same batch as the decision (src/domain/ops/audit.ts). */
+    /** Written in the same batch as the decision (src/domain/platform/audit.ts). */
     audit: AuditEntry;
     rewardNow: ReferralReward;
     now: Date;

@@ -14,7 +14,7 @@ import {
 import type { RazorpaySettings, Settings } from "../../src/config/settings.ts";
 import { saltedHash } from "../../src/lib/hash.ts";
 import type { Dependencies } from "../../src/dependencies.ts";
-import { createAlertOnce, createResolveAlert } from "../../src/domain/ops/alerts.ts";
+import { createAlertOnce, createResolveAlert } from "../../src/domain/platform/alerts.ts";
 import { erasePerson, personWithMobile, type ErasureSummary } from "../../src/domain/privacy/erasure.ts";
 import { mobileHashOf } from "../../src/domain/clients/number-codes.ts";
 import { CODE_TTL_MS } from "../../src/policy/one-time-code.ts";

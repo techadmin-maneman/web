@@ -5,7 +5,7 @@ import { cycleDaysFor, type Cycles } from "../../config/pieces.ts";
 import { addDays, indiaDate } from "../../lib/india-time.ts";
 import type { JobEventKind } from "../../policy/in-job-steps.ts";
 import { storedOutcomeOf } from "./job-event-bodies.ts";
-import { failedPieceStatement, fittedPieceStatement, pieceStepOf, replacedPiecesStatement } from "./pieces.ts";
+import { failedPieceStatement, fittedPieceStatement, pieceStepOf, replacedPiecesStatement } from "../inventory/pieces.ts";
 import { closeVisit, moveVisit } from "../visits/visit-status.ts";
 
 export interface LandingStep {

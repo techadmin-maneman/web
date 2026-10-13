@@ -19,7 +19,7 @@ import { STANDARD_TIER, VISIT_TYPES, type VisitType } from "../../config/visit-t
 import { indiaDate } from "../../lib/india-time.ts";
 import { firstPriceDay } from "../../policy/prices.ts";
 import { isOffered } from "../../policy/services.ts";
-import { auditStatement, type AuditActor, type AuditEntry } from "../ops/audit.ts";
+import { auditStatement, type AuditActor, type AuditEntry } from "../platform/audit.ts";
 import { serviceOf } from "../booking/services.ts";
 
 /** What the book prices: each kind of visit, by its services' tiers, and the two late fees. */

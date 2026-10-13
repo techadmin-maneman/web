@@ -6,7 +6,7 @@
 
 import { inviteLapsed } from "../../policy/invites.ts";
 import { creditExpiry } from "../../policy/referral-reward.ts";
-import { clawBack } from "../money/credits.ts";
+import { clawBack, grantCreditsIf } from "../money/credits.ts";
 import { FIRST_FIT_COUNTS } from "./referral-grants.ts";
 
 /** How many partners' friends one pass settles. */
@@ -53,20 +53,18 @@ function grantStatements(db: D1Database, row: Pending, now: Date) {
   ];
   if (row.friend_visits === 0) return { statements, messageId: null };
   statements.push(
-    db
-      .prepare(
-        `INSERT INTO credit_ledger (id, person_id, kind, visits, source_kind, source_id, expires_at, created_at)
-         SELECT ?3, ?4, 'grant', ?5, 'referral', ?1, ?6, ?2 WHERE ${GRANTED_HERE}
-         ON CONFLICT DO NOTHING`,
-      )
-      .bind(
-        row.id,
-        at,
-        crypto.randomUUID(),
-        row.referred_person_id,
-        row.friend_visits,
-        creditExpiry(now, row.valid_days).toISOString(),
-      ),
+    grantCreditsIf(
+      db,
+      {
+        personId: row.referred_person_id,
+        visits: row.friend_visits,
+        source: "referral",
+        sourceId: row.id,
+        now,
+        expiresAt: creditExpiry(now, row.valid_days),
+      },
+      { sql: GRANTED_HERE, values: [row.id, at] },
+    ),
     db
       .prepare(
         `INSERT INTO outbound_messages (id, created_at, person_id, kind, subject_kind, subject_id, state, queued_at)

@@ -18,7 +18,7 @@ import {
 } from "./discount-code-uses.ts";
 import { type Price, priceOf } from "./price-book.ts";
 import { amountOff } from "../../policy/discount-codes.ts";
-import { auditStatementIfWritten, type AuditEntry, auditStatementIfStamped } from "../ops/audit.ts";
+import { auditStatementIfWritten, type AuditEntry, auditStatementIfStamped } from "../platform/audit.ts";
 import { termsOf } from "./discount-codes.ts";
 import { typedForVisit } from "./requested-codes.ts";
 

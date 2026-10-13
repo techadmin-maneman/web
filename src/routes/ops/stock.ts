@@ -23,11 +23,11 @@
 import { createRoute, z } from "@hono/zod-openapi";
 import type { Context } from "hono";
 import { CONSUMABLE_BOUNDS } from "../../config/consumables.ts";
-import { count, receiveStock, tellOfLowStock, writeOff, type Moved } from "../../domain/field/stock.ts";
-import { hairSystemSpecs } from "../../domain/field/hair-systems.ts";
-import { inTransit, sendStock } from "../../domain/field/stock-transit.ts";
-import { stockView } from "../../domain/field/stock-view.ts";
-import { isPlaceWithin, placeAreas, placesWithin, WAREHOUSE, type Place } from "../../domain/field/stock-places.ts";
+import { count, receiveStock, tellOfLowStock, writeOff, type Moved } from "../../domain/inventory/stock.ts";
+import { hairSystemSpecs } from "../../domain/inventory/hair-systems.ts";
+import { inTransit, sendStock } from "../../domain/inventory/stock-transit.ts";
+import { stockView } from "../../domain/inventory/stock-view.ts";
+import { isPlaceWithin, placeAreas, placesWithin, WAREHOUSE, type Place } from "../../domain/inventory/stock-places.ts";
 import { actorOf } from "../../http/audit.ts";
 import { opsInputs } from "../../http/ops-inputs.ts";
 import type { App, AppEnv } from "../../http/context.ts";

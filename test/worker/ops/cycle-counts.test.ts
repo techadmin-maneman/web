@@ -1,4 +1,4 @@
-// Cycle counts (src/domain/field/cycle-counts.ts, src/routes/ops/count-tasks.ts; docs/decisions/0185-cycle-counts.md).
+// Cycle counts (src/domain/inventory/cycle-counts.ts, src/routes/ops/count-tasks.ts; docs/decisions/0185-cycle-counts.md).
 // NOW is Monday 21 September 2026, 12 noon in India.
 //
 // What these hold: a task is raised for each class a place holds once its period comes round, and none while one is
@@ -8,7 +8,7 @@
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
-import { raiseCountTasks } from "../../../src/domain/field/cycle-counts.ts";
+import { raiseCountTasks } from "../../../src/domain/inventory/cycle-counts.ts";
 import { NOW, markDatabase, request } from "../helpers.ts";
 import { IMRAN, working, type Working } from "../job-fixtures.ts";
 import { classDaysOf, CYCLE_COUNTS } from "../../../src/policy/cycle-counts.ts";

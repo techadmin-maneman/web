@@ -23,13 +23,13 @@ import { takesCredit } from "../../policy/referral-reward.ts";
 import { windowTimesOf } from "../../policy/slot-times.ts";
 import type { MadeLink, PaymentsProvider } from "../../providers/payments/index.ts";
 import type { RazorpayPayment } from "../../providers/payments/razorpay.ts";
-import { auditStatement, type AuditActor } from "../ops/audit.ts";
+import { auditStatement, type AuditActor } from "../platform/audit.ts";
 import { spendableCredits } from "../money/credits.ts";
 import { checkForOneVisit, codeOnHold } from "../money/discount-code-holds.ts";
 import { checkDiscountCode, useStatement } from "../money/discount-code-uses.ts";
 import { termsOf } from "../money/discount-codes.ts";
 import { typedOnWaitingRequest } from "../money/requested-codes.ts";
-import type { OpsInputs } from "../ops/ops-settings.ts";
+import type { OpsInputs } from "../platform/ops-settings.ts";
 import { recordPayment, referenceHold } from "../money/payments.ts";
 import { lateFeeOn, type Price } from "../money/price-book.ts";
 import { currentAddress } from "../clients/profile.ts";
@@ -40,7 +40,7 @@ import { bookableService, offeredProducts, type PricedService } from "./services
 import { loadSlotSchedule } from "./slot-times.ts";
 import { termsInForce } from "../visits/visit-changes.ts";
 import { REMAKE_TERMS, remakeBookedStatement, remakesOwed, type Remake } from "./remakes.ts";
-import { replacementWears } from "../field/stock-gap.ts";
+import { replacementWears } from "../inventory/stock-gap.ts";
 
 /** What ops ask for. */
 export interface VisitAsked {

@@ -34,7 +34,7 @@ import {
 } from "../../domain/booking/visit-booking.ts";
 import { isWithin, techniciansWithin } from "../../domain/clients/places.ts";
 import { spendableCredits } from "../../domain/money/credits.ts";
-import { auditStatement } from "../../domain/ops/audit.ts";
+import { auditStatement } from "../../domain/platform/audit.ts";
 import { actorOf } from "../../http/audit.ts";
 import { bookHold } from "../../http/book-hold.ts";
 import type { App, AppEnv } from "../../http/context.ts";
