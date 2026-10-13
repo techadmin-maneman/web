@@ -298,14 +298,20 @@ export function registerOpsCountTasks(app: App): void {
     const { id } = c.req.valid("param");
     if ((await taskInReach(c, id)) === null) return refuse(c, "not_found");
     const { cycleCounts } = await opsInputs(c);
-    return after(c, await submitCounts(c.env.DB, id, linesOf(c.req.valid("json")), written(c), cycleCounts));
+    return after(
+      c,
+      await submitCounts(c.env.DB, id, { lines: linesOf(c.req.valid("json")), counts: cycleCounts }, written(c)),
+    );
   });
 
   app.openapi(recountsRoute, async (c) => {
     const { id } = c.req.valid("param");
     if ((await taskInReach(c, id)) === null) return refuse(c, "not_found");
     const { cycleCounts } = await opsInputs(c);
-    return after(c, await submitRecounts(c.env.DB, id, linesOf(c.req.valid("json")), written(c), cycleCounts));
+    return after(
+      c,
+      await submitRecounts(c.env.DB, id, { lines: linesOf(c.req.valid("json")), counts: cycleCounts }, written(c)),
+    );
   });
 
   app.openapi(signOffRoute, async (c) => {

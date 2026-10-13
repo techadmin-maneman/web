@@ -1638,7 +1638,7 @@ Indexes:
 
 The Razorpay payment link a consultation and fit in one visit is paid by once the client is fitted: one a visit, the product and its price, when Razorpay made and texted it, and the payment that paid it (ADR 0105).
 
-Made by `0061_one_visit.sql`; changed by `0080_payment_link_references.sql`, `0091_razorpay_catch_up.sql`.
+Made by `0061_one_visit.sql`; changed by `0080_payment_link_references.sql`, `0091_razorpay_catch_up.sql`, `0157_payment_link_closes.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -1660,6 +1660,7 @@ Made by `0061_one_visit.sql`; changed by `0080_payment_link_references.sql`, `00
 | `reference_year` | INTEGER | yes |  |  |
 | `reference_number` | INTEGER | yes |  |  |
 | `payment_checked_at` | TEXT | yes |  |  |
+| `closes_at` | TEXT | yes |  |  |
 
 Indexes:
 

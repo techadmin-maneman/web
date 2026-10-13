@@ -24,7 +24,11 @@ interface PaidVisit {
   readonly appointmentId: string;
   readonly personId: string | null;
   /** The link the close made, by Razorpay's ID for it, and when Razorpay made it; null where none was made. */
-  readonly ownLink: { readonly razorpayLinkId: string; readonly sentAt: string } | null;
+  readonly ownLink: {
+    readonly razorpayLinkId: string;
+    readonly sentAt: string;
+    readonly closesAt: string | null;
+  } | null;
 }
 
 /**

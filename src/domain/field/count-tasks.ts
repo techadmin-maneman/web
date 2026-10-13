@@ -222,10 +222,13 @@ async function claim(
 export async function submitCounts(
   db: D1Database,
   id: string,
-  lines: readonly { readonly code: string; readonly counted: number }[],
+  sent: {
+    readonly lines: readonly { readonly code: string; readonly counted: number }[];
+    readonly counts: CycleCounts;
+  },
   written: Written,
-  counts: CycleCounts,
 ): Promise<Stepped> {
+  const { lines, counts } = sent;
   const task = await countTask(db, id);
   if (task?.state === "open") {
     const listed = (await itemsToCount(db, task)).map((item) => item.code);
@@ -278,10 +281,13 @@ export async function submitCounts(
 export async function submitRecounts(
   db: D1Database,
   id: string,
-  lines: readonly { readonly code: string; readonly counted: number }[],
+  sent: {
+    readonly lines: readonly { readonly code: string; readonly counted: number }[];
+    readonly counts: CycleCounts;
+  },
   written: Written,
-  counts: CycleCounts,
 ): Promise<Stepped> {
+  const { lines, counts } = sent;
   const task = await countTask(db, id);
   if (task?.state === "recount") {
     const waiting = (await countItems(db, task)).filter((item) => item.state === "recount").map((item) => item.code);

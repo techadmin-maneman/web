@@ -89,7 +89,7 @@ export const STOCK_SETTINGS = [
       recount_above_percent: { min: 0, max: 100, unit: "per cent" },
     },
     fallback: CYCLE_COUNTS,
-    conflicts: (value) => countConflicts(value as CycleCounts),
+    conflicts: (value) => countConflicts(value),
   },
   {
     // Tomorrow's kits (docs/decisions/0181-tomorrows-kits.md, 0184-the-one-visit-range.md).

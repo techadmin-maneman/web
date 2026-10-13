@@ -2,7 +2,7 @@
 // See docs/decisions/0014-try-on-api.md.
 
 import { LOSS_EXTENTS } from "./booking.ts";
-import { DAY_MS, HOUR_MS, MINUTE_MS } from "../lib/durations.ts";
+import { HOUR_MS, MINUTE_MS } from "../lib/durations.ts";
 
 /** The three hair-loss stages the try-on asks about: the booking form's loss extents. */
 export const TRYON_STAGES = LOSS_EXTENTS;

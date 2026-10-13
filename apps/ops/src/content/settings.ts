@@ -139,8 +139,10 @@ export const settings = {
       field: "Visits in the field",
       reminders: "Reminders and replacements",
       referrals: "Referrals",
+      tryon: "Try-on",
       care: "Customer Care",
       reports: "Reports",
+      stock: "Stock",
       purchasing: "Purchasing",
       supply_plan: "Supply plan",
       console: "The console",
@@ -215,6 +217,40 @@ export const settings = {
       },
       // Remedies (docs/decisions/0143-remedies.md).
       remedy_limit: { visits: "Free visits", days: "Over" },
+      // The rest of the rules (docs/decisions/0193-the-rest-of-the-rules-in-the-console.md).
+      payment_links: {
+        holds_hours: "Holds the slot for",
+        closes_before_hours: "Closes before the visit",
+        pay_within_days: "Link after a visit open for",
+      },
+      credit_reminder_days: { first: "First reminder", last: "Last reminder" },
+      stock_watch: {
+        expiry_warning_days: "Expiry flagged within",
+        demand_days: "Demand read ahead",
+        transfer_overdue_days: "Transfer overdue after",
+      },
+      stock_usage: {
+        days: "Usage read over",
+        over_percent: "Technician flagged above",
+        min_visits: "Across at least",
+        write_offs: "Kit flagged at",
+      },
+      stock_quality: { failure_days: "Failure rates over", pace_days: "Pace read over" },
+      cycle_counts: {
+        weekly: "Weekly items, every",
+        monthly: "Monthly items, every",
+        quarterly: "Quarterly items, every",
+        recount_above_percent: "Recount a difference above",
+      },
+      kit_check: { from_hour: "Check from", one_visit_range: "One-visit range" },
+      forecast_assumptions: {
+        baseline_periods: "Baseline averages",
+        learning_days: "Rates learned over",
+        enough_to_learn: "Learned from",
+        due_booking_percent: "Due clients who book",
+        consultation_fit_percent: "Consultations that fit",
+        consultation_to_fit_days: "Consultation to fit",
+      },
       // The reply clock (docs/decisions/0132-the-reply-clock.md).
       care_hours: {
         opens: "Care opens",

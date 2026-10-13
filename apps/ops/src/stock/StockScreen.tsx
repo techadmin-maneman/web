@@ -8,7 +8,6 @@
 // rest here. A place at or below its level is marked Low in words, and raises
 // one alert (src/domain/field/stock.ts), which is why there is no Tasks group for it.
 
-import { EXPIRY_WARNING_DAYS } from "@rules/policy/stock.ts";
 import { Field, Select } from "@maneman/ui/Field";
 import { Table } from "@maneman/ui/Table";
 import { useLoad } from "@maneman/ui/useLoad";
@@ -41,7 +40,7 @@ const Labels = lazy(() => import("./Labels.tsx").then((module) => ({ default: mo
 
 /** Whether any lot within reach expires within the warning, so the Expiring panel is worth loading. */
 function anyExpiring(book: Stock): boolean {
-  const until = new Date(Date.parse(`${book.today}T00:00:00Z`) + EXPIRY_WARNING_DAYS * 86_400_000).toISOString();
+  const until = new Date(Date.parse(`${book.today}T00:00:00Z`) + book.expiry_warning_days * 86_400_000).toISOString();
   return book.holdings.some((holding) =>
     holding.lots.some((lot) => lot.expires_on !== null && lot.expires_on <= until.slice(0, 10)),
   );

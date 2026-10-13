@@ -22035,11 +22035,24 @@ Request body:
         "care_hours",
         "remedy_limit",
         "lost_after_days",
+        "payment_links",
+        "arrival_notice_min",
+        "move_proposal_hours",
+        "credit_reminder_days",
+        "referral_monthly_cap",
+        "tryon_look_days",
+        "stock_watch",
+        "stock_usage",
+        "stock_quality",
+        "cycle_counts",
+        "kit_check",
+        "scorecard_days",
         "po_second_approval_above_rupees",
         "po_rupees_to_one",
         "custom_order_grace_days",
         "planning_period_days",
-        "planning_horizon_periods"
+        "planning_horizon_periods",
+        "forecast_assumptions"
       ]
     },
     "title": {
@@ -22210,11 +22223,24 @@ Request body:
         "care_hours",
         "remedy_limit",
         "lost_after_days",
+        "payment_links",
+        "arrival_notice_min",
+        "move_proposal_hours",
+        "credit_reminder_days",
+        "referral_monthly_cap",
+        "tryon_look_days",
+        "stock_watch",
+        "stock_usage",
+        "stock_quality",
+        "cycle_counts",
+        "kit_check",
+        "scorecard_days",
         "po_second_approval_above_rupees",
         "po_rupees_to_one",
         "custom_order_grace_days",
         "planning_period_days",
-        "planning_horizon_periods"
+        "planning_horizon_periods",
+        "forecast_assumptions"
       ]
     },
     "title": {
@@ -24548,6 +24574,10 @@ Request body:
       "type": "string",
       "format": "date"
     },
+    "expiry_warning_days": {
+      "type": "integer",
+      "description": "How many days before it expires a lot is listed as expiring, as ops set it."
+    },
     "max_quantity": {
       "type": "integer"
     },
@@ -24619,6 +24649,7 @@ Request body:
     "holdings",
     "movements",
     "today",
+    "expiry_warning_days",
     "max_quantity",
     "in_transit",
     "zones",

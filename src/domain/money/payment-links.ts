@@ -335,7 +335,7 @@ async function askRazorpay({
   } catch (error) {
     const reason = failureReason(error);
     deps.log.warn("payment_link_failed", { appointment_id: visit.appointmentId, reason });
-    if (isRefusal(error)) return refusedOrMadeBefore(db, deps, { link, visit, reason }, now);
+    if (isRefusal(error)) return refusedOrMadeBefore(db, deps, { link, visit, reason, closesAt }, now);
     await tellFailure(deps, visit, reason);
     return "unavailable";
   }
@@ -349,10 +349,10 @@ async function askRazorpay({
 async function refusedOrMadeBefore(
   db: D1Database,
   deps: LinkDeps,
-  refused: { readonly link: LinkRow; readonly visit: FittedVisit; readonly reason: string },
+  refused: { readonly link: LinkRow; readonly visit: FittedVisit; readonly reason: string; readonly closesAt: Date },
   now: Date,
 ): Promise<Extract<LinkSent, "sent" | "refused" | "unavailable">> {
-  const { link, visit, reason } = refused;
+  const { link, visit, reason, closesAt } = refused;
   let madeBefore: { id: string; shortUrl: string } | null;
   try {
     madeBefore = await deps.payments.findPaymentLink(referenceOf(link, visit));
@@ -361,7 +361,7 @@ async function refusedOrMadeBefore(
     return "unavailable";
   }
   if (madeBefore !== null) {
-    await keepLink(db, deps, { link, visit, made: madeBefore }, now);
+    await keepLink(db, deps, { link, visit, made: madeBefore, closesAt }, now);
     return "sent";
   }
   await db

@@ -10,6 +10,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { refreshStockRisks } from "../../../src/domain/field/stock-risks.ts";
 import { NOW, markDatabase, request } from "../helpers.ts";
 import { IMRAN, working, type Working } from "../job-fixtures.ts";
+import { STOCK_WATCH } from "../../../src/policy/stock.ts";
 
 let job: Working;
 
@@ -120,7 +121,7 @@ describe("stock at risk", () => {
       .run();
     await fitBooked("fit-2", "44444444-4444-4444-8444-444444444442");
 
-    for (let run = 0; run < 2; run += 1) await refreshStockRisks(env.DB, "2026-09-21", NOW);
+    for (let run = 0; run < 2; run += 1) await refreshStockRisks(env.DB, "2026-09-21", NOW, STOCK_WATCH.demand_days);
     expect(await tasks()).toEqual([
       expect.objectContaining({ id: "fit-1", detail: code }),
       expect.objectContaining({ id: "fit-2", detail: "" }),
@@ -128,7 +129,7 @@ describe("stock at risk", () => {
 
     await job.opsPost("/api/stock/deliveries", { consumable_code: code, quantity: 1 });
     await job.opsPost("/api/stock/transfers", { consumable_code: code, quantity: 1, from: "central", to: IMRAN });
-    await refreshStockRisks(env.DB, "2026-09-21", NOW);
+    await refreshStockRisks(env.DB, "2026-09-21", NOW, STOCK_WATCH.demand_days);
     expect((await tasks()).map((task) => task.id)).toEqual(["fit-2"]);
   });
 });

@@ -10,6 +10,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { raiseCountTasks } from "../../../src/domain/field/cycle-counts.ts";
 import { NOW, markDatabase, request } from "../helpers.ts";
 import { IMRAN, working, type Working } from "../job-fixtures.ts";
+import { classDaysOf, CYCLE_COUNTS } from "../../../src/policy/cycle-counts.ts";
 
 interface Tasks {
   tasks: { id: string; count_class: string; state: string }[];
@@ -58,8 +59,8 @@ beforeEach(async () => {
 
 describe("cycle counts", () => {
   it("are raised for each class a place holds once its period comes round, and not while one is open", async () => {
-    expect(await raiseCountTasks(env.DB, "2026-09-21", NOW)).toBe(2);
-    expect(await raiseCountTasks(env.DB, "2026-09-22", NOW)).toBe(0);
+    expect(await raiseCountTasks(env.DB, "2026-09-21", NOW, classDaysOf(CYCLE_COUNTS))).toBe(2);
+    expect(await raiseCountTasks(env.DB, "2026-09-22", NOW, classDaysOf(CYCLE_COUNTS))).toBe(0);
     const listed = await tasks();
     expect(listed.tasks.map((task) => task.count_class).sort()).toEqual(["quarterly", "weekly"]);
     expect(listed.classes).toEqual(
@@ -71,7 +72,7 @@ describe("cycle counts", () => {
   });
 
   it("count blind, take what agrees, count again what differs, and leave what stands to a manager", async () => {
-    await raiseCountTasks(env.DB, "2026-09-21", NOW);
+    await raiseCountTasks(env.DB, "2026-09-21", NOW, classDaysOf(CYCLE_COUNTS));
     const listed = await tasks();
     const weekly = listed.tasks.find((task) => task.count_class === "weekly")?.id ?? "";
     const quarterly = listed.tasks.find((task) => task.count_class === "quarterly")?.id ?? "";
@@ -129,7 +130,7 @@ describe("cycle counts", () => {
     expect((await job.opsPost("/api/count-tasks/nothing/recounts", lines(1))).status).toBe(404);
     expect((await job.opsPost("/api/count-tasks/nothing/sign-off", { note: "None" })).status).toBe(404);
 
-    await raiseCountTasks(env.DB, "2026-09-21", NOW);
+    await raiseCountTasks(env.DB, "2026-09-21", NOW, classDaysOf(CYCLE_COUNTS));
     const weekly = (await tasks()).tasks.find((task) => task.count_class === "weekly")?.id ?? "";
     expect((await job.opsPost(`/api/count-tasks/${weekly}/recounts`, lines(2))).status).toBe(409);
     expect((await job.opsPost(`/api/count-tasks/${weekly}/sign-off`, { note: "Too soon" })).status).toBe(409);

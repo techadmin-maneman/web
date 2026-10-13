@@ -56,7 +56,7 @@ describe("a consultation and fit in one visit", () => {
   it("closes the payment link 14 days after it is made", () => {
     const made = new Date("2026-09-21T06:30:00.000Z");
     const closes = new Date("2026-10-05T06:30:00.000Z");
-    expect(paymentLinkClosesAt(made)).toEqual(closes);
+    expect(paymentLinkClosesAt(made, 14)).toEqual(closes);
     // A link sent at `made` has closed by `closes`, and not a moment before.
     expect(closedIfSentBy(closes)).toEqual(made);
     expect(closedIfSentBy(new Date(closes.getTime() - 1)).getTime()).toBeLessThan(made.getTime());

@@ -14,10 +14,11 @@ describe("the forecast", () => {
     expect(highOf(0)).toBe(0);
   });
 
-  it("learns a rate from enough cases, and falls back before there are", () => {
-    expect(learnedRate(18, 24, 0.8)).toBe(0.75);
-    expect(learnedRate(2, 3, 0.8)).toBe(0.8);
-    expect(learnedRate(30, 20, 0.5)).toBe(1);
+  it("learns a rate from enough cases, and falls back to its percentage before there are", () => {
+    expect(learnedRate(18, 24, 80, 10)).toBe(0.75);
+    expect(learnedRate(2, 3, 80, 10)).toBe(0.8);
+    expect(learnedRate(30, 20, 50, 10)).toBe(1);
+    expect(learnedRate(2, 3, 80, 3)).toBeCloseTo(0.667, 3);
   });
 
   it("puts a day in its period of the horizon, and none outside it", () => {

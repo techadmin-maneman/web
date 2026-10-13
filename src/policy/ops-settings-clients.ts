@@ -2,12 +2,7 @@
 // table of ./ops-settings.ts.
 
 import { ARRIVAL_NOTICE_MIN } from "./check-in.ts";
-import {
-  CREDIT_REMINDER_DAYS,
-  CREDIT_REMINDER_KEYS,
-  creditReminderConflicts,
-  type CreditReminderDays,
-} from "./credit-reminders.ts";
+import { CREDIT_REMINDER_DAYS, CREDIT_REMINDER_KEYS, creditReminderConflicts } from "./credit-reminders.ts";
 import { MOVE_PROPOSAL_HOURS } from "./dispatch.ts";
 import { REFERRAL_MONTHLY_CAP } from "./fraud-holds.ts";
 import type { OpsSetting } from "./ops-settings.ts";
@@ -65,7 +60,7 @@ export const CLIENT_SETTINGS = [
       last: { min: 1, max: 60 },
     },
     fallback: CREDIT_REMINDER_DAYS,
-    conflicts: (value) => creditReminderConflicts(value as CreditReminderDays),
+    conflicts: (value) => creditReminderConflicts(value),
   },
   {
     name: "referral_monthly_cap",
