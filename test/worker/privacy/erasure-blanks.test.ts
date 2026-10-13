@@ -290,7 +290,7 @@ describe("erasure and the export reach a chat begun before the client was one", 
     expect(await thread("thread-1")).toMatchObject({ person_id: null });
 
     const exported = await readPersonData(env.DB, PERSON);
-    expect(exported["chats"]).toEqual([expect.objectContaining({ text: "Is the Delhi studio open on Sunday?" })]);
+    expect(exported.chats).toEqual([expect.objectContaining({ text: "Is the Delhi studio open on Sunday?" })]);
 
     expect(await statusOf(PERSON)).toBe(200);
     expect(await thread("thread-1")).toEqual({ person_id: PERSON, mobile_e164: "erased:thread-1", text: null });
