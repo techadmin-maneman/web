@@ -31,7 +31,7 @@ import {
   type ProposedBooking,
 } from "../../domain/booking/proposed-visits.ts";
 import { offeredAmong, servicesOnDay } from "../../domain/booking/services.ts";
-import { homePrompts, promptFacts } from "../../domain/clients/home-prompt.ts";
+import { homePrompts, promptFacts, whatHomeOffers } from "../../domain/clients/home-prompt.ts";
 import { currentAddress, liveContact } from "../../domain/clients/profile.ts";
 import { spendableCredits } from "../../domain/money/credits.ts";
 import { heldOneVisitPrice, owedPayments, requestedOneVisitPrice } from "../../domain/money/one-visit-money.ts";
@@ -47,7 +47,13 @@ import { clientRoute } from "../../http/session-routes.ts";
 import { addDays, indiaDate } from "../../lib/india-time.ts";
 import { firstNameOf, initialsOf } from "../../lib/names.ts";
 import { ReferralRewardSchema } from "../public/referral-reward.ts";
-import { ConsultedSchema, OneVisitPriceSchema, VisitSummarySchema } from "../schemas/visits.ts";
+import {
+  BeingBookedSchema,
+  ConsultedSchema,
+  OneVisitPriceSchema,
+  RemakeSchema,
+  VisitSummarySchema,
+} from "../schemas/visits.ts";
 import { PriceSchema } from "../schemas/booking.ts";
 import { OwedPaymentSchema } from "./payments.ts";
 import { creditsBody, CreditsSchema } from "./refer.ts";
@@ -100,33 +106,12 @@ const MeSchema = z
       description:
         "The latest consultation done, while the client is not yet fitted. Null before one, and once fitted.",
     }),
-    being_booked: z
-      .union([
-        z
-          .object({
-            type: z.enum(VISIT_TYPES),
-            date: z.iso.date(),
-            window: z.enum(BOOKING_WINDOWS),
-            paid: z.boolean().openapi({ description: "Paid for in money, rather than free or covered by a credit." }),
-            one_visit: z.union([OneVisitPriceSchema, z.null()]).openapi({
-              description:
-                "A consultation and fit in one visit, booked on /book: what it costs once fitted, after the code " +
-                "entered there. Null for any other visit.",
-            }),
-            told: z.boolean().openapi({
-              description:
-                "Whether the client is told on WhatsApp once it is booked: always for a payment, whose receipt goes " +
-                "whatever their consent, else only with their consent to WhatsApp about visits.",
-            }),
-          })
-          .strict(),
-        z.null(),
-      ])
-      .openapi({
-        description:
-          "The soonest visit paid for, or booked free, that is not booked yet: neither booked nor refunded. It is " +
-          "on its way, and becomes a visit once it is booked (ADR 0068).",
-      }),
+    being_booked: z.union([BeingBookedSchema, z.null()]).openapi({
+      description:
+        "The soonest visit paid for, or booked free, that is not booked yet: neither booked nor refunded. It is " +
+        "on its way, and becomes a visit once it is booked (ADR 0068).",
+    }),
+    remake: z.union([RemakeSchema, z.null()]).openapi({ description: "Null when none, and while a visit is booked." }),
     payment_owed: z.union([OwedPaymentSchema, z.null()]).openapi({
       description:
         "The oldest payment the client owes: a consultation and fit in one visit they were fitted at, paid by the " +
@@ -396,7 +381,7 @@ export function registerClientMe(app: App): void {
     const state = clientStateOf(fitted, upcoming !== null || form.booking !== null);
     // A form's consultation counts as booked while it stands, asked for or held.
     const booked = home.next.booked || upcoming !== null || form.proposal !== null;
-    const offer = booked ? null : home.next.offer;
+    const { remake, offer } = whatHomeOffers(booked, home.prompt, home.next.offer);
     const offered = offeredAmong(services, tomorrow, types).map((service) => ({
       type: service.kind,
       tier: service.tier,
@@ -427,6 +412,7 @@ export function registerClientMe(app: App): void {
         consulted: fitted ? null : recap,
         being_booked: await beingBookedBody(db, underWay),
         payment_owed: owed[0] ?? null,
+        remake,
         credits: credits.visits > 0 ? creditsBody(credits) : null,
         prompt,
         invoice,

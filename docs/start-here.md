@@ -39,7 +39,7 @@ this map, or when the map names something that no longer exists.
   `technician-choice`, `technician-rotation`, `hold-slot`, `holds`, `hold-stages`, `booked-hold`, `unbooked-holds`,
   `give-back`, `bookings`, `visit-booking`, `move-in-place`, `public-booking`, `public-consultation`,
   `public-waitlist`, `public-lead`, `site-visit`, `form-person`, `proposed-visits`,
-  `waitlist`, `services`
+  `waitlist`, `services`, `remakes`
 - **Rules** (`src/policy/`): `booking`, `slot-times`, `site-booking`, `moving-a-visit`, `prepayment`, `services`,
   `visit-length`
 - **Data** (`src/config/`): `booking`, `scheduling`, `visit-types`
@@ -110,7 +110,8 @@ this map, or when the map names something that no longer exists.
 - **Database work** (`src/domain/money/`): `payments`, `payment-links`, `payment-links-paid`, `client-payments`,
   `client-billing`, `refunds`, `auto-refunds`, `cancel-refunds`, `credits`, `credit-reminders`, `discount-codes`,
   `discount-code-holds`, `discount-code-uses`, `discount-code-visits`, `discount-code-figures`, `requested-codes`,
-  `day-money`, `one-visit-money`, `price-book`, `razorpay-catch-up`, `custom-order-links`, `custom-order-refunds`
+  `day-money`, `one-visit-money`, `price-book`, `razorpay-catch-up`, `custom-order-links`, `custom-order-refunds`,
+  `payment-refunds`
 - **Rules** (`src/policy/`): `prices`, `prepayment`, `pay-by-link`, `discount-codes`, `credit-reminders`,
   `fraud-holds`
 - **Data** (`src/config/`): `gst`

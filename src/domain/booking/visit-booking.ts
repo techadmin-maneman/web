@@ -39,6 +39,7 @@ import { liveVisitOf, ONE_AT_A_TIME } from "./availability.ts";
 import { bookableService, offeredProducts, type PricedService } from "./services.ts";
 import { loadSlotSchedule } from "./slot-times.ts";
 import { termsInForce } from "../visits/visit-changes.ts";
+import { REMAKE_TERMS, remakeBookedStatement, remakesOwed, type Remake } from "./remakes.ts";
 
 /** What ops ask for. */
 export interface VisitAsked {
@@ -53,6 +54,8 @@ export interface VisitAsked {
   /** A consultation and fit in one visit: a first fit, with nothing paid until the client is fitted. */
   readonly oneVisit: boolean;
   readonly code: string | undefined;
+  /** What the visit makes good, free: a visit left partly done, or a piece recalled or failed (./remakes.ts). */
+  readonly covers: string | undefined;
 }
 
 export const PAYS = ["nothing", "credit", "link"] as const;
@@ -76,6 +79,7 @@ export interface Sale {
   readonly terms: SoldTerms;
   readonly pays: Pays;
   readonly code: AppliedCode | null;
+  readonly covers: Remake | null;
 }
 
 /** Why a booking was refused, as the route answers it. */
@@ -173,6 +177,27 @@ async function codeFor(
 /** Nothing paid at booking, with the service's GST kept for the record. */
 const nothingPaid = (price: Price): Price => ({ amount: 0, amount_ex_gst: 0, gst_percent: price.gst_percent });
 
+/**
+ * The remake ops asked to book, owed the client and of the kind asked; false for one not owed, or asked with a one
+ * visit or a code, which a remake has no use for.
+ */
+async function remakeAsked(db: D1Database, asked: VisitAsked): Promise<Remake | false> {
+  if (asked.oneVisit || asked.code !== undefined) return false;
+  const owed = await remakesOwed(db, asked.personId);
+  return owed.find((each) => each.id === asked.covers && each.kind === asked.kind) ?? false;
+}
+
+/** A remake: nothing to pay, no late fee, and free to move. */
+const remakeSale = (service: PricedService, covers: Remake): Sale => ({
+  service,
+  price: nothingPaid(service.price),
+  lateFee: null,
+  terms: REMAKE_TERMS,
+  pays: "nothing",
+  code: null,
+  covers,
+});
+
 /** How it is paid: nothing at booking for a one visit or a free one, a credit where one pays, else a link. */
 export function paysFor(oneVisit: boolean, onCredit: boolean, price: Price): Pays {
   if (oneVisit || price.amount === 0) return "nothing";
@@ -202,6 +227,11 @@ export async function saleFor(
 
   const service = await bookableService(db, asked.kind, asked.tier, asked.date);
   if (service === null) return refused({ status: 422, code: await noServiceRefusal(db, asked) });
+  if (asked.covers !== undefined) {
+    const covers = await remakeAsked(db, asked);
+    if (covers === false) return refused({ status: 400, code: "invalid_request", fields: ["covers"] });
+    return { ok: true, sale: remakeSale(service, covers) };
+  }
   const onCredit = !asked.oneVisit && (await paysByCredit(db, asked.personId, asked.kind, now));
   const code = await codeFor(db, asked, { onCredit, priceExGst: service.price.amount_ex_gst }, now);
   if (code === false) return refused({ status: 422, code: "code_not_applicable" });
@@ -210,7 +240,8 @@ export async function saleFor(
   const lateFeeItem = LATE_FEES[asked.kind];
   const lateFee = asked.oneVisit || lateFeeItem === undefined ? null : await lateFeeOn(db, lateFeeItem, asked.date);
   const terms = asked.oneVisit ? ONE_VISIT_TERMS : termsInForce(inputs, asked.kind);
-  return { ok: true, sale: { service, price, lateFee, terms, pays: paysFor(asked.oneVisit, onCredit, price), code } };
+  const pays = paysFor(asked.oneVisit, onCredit, price);
+  return { ok: true, sale: { service, price, lateFee, terms, pays, code, covers: null } };
 }
 
 /** When the window starts on its day, by the times in force then: the earliest the visit can start. */
@@ -250,6 +281,10 @@ function bookingAudit(db: D1Database, booked: Booked, now: Date): D1PreparedStat
     pays: sale.pays,
   };
   if (asked.code !== undefined) detail.code = asked.code.toUpperCase();
+  if (sale.covers !== null) {
+    detail.covers = sale.covers.id;
+    detail.covers_why = sale.covers.why;
+  }
   const typedAt = sale.code?.typedAt ?? null;
   if (typedAt !== null) detail.code_typed_at = typedAt.toISOString();
   const entry = {
@@ -330,6 +365,7 @@ export async function holdForSale({
       ...(asked.technicianId === undefined ? {} : { technicianId: asked.technicianId }),
       afterHold: (holdId) => [
         ...(sale.code === null ? [] : [codeUse({ db, asked, code: sale.code, holdId, by: hold.by, now })]),
+        ...remakeClosing(db, sale, hold.by, now),
         bookingAudit(db, { asked, sale, holdId, by: hold.by }, now),
       ],
     },
@@ -337,6 +373,11 @@ export async function holdForSale({
     holdSeconds,
     graceSeconds: hold.graceSeconds,
   });
+}
+
+function remakeClosing(db: D1Database, sale: Sale, by: BookedBy, now: Date): D1PreparedStatement[] {
+  const closing = sale.covers === null ? null : remakeBookedStatement(db, sale.covers, { actor: by.actor.id, now });
+  return closing === null ? [] : [closing];
 }
 
 /** Whether the code ops typed stands on the hold: another booking may have taken its last use a moment before. */

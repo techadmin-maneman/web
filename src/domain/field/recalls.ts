@@ -22,6 +22,7 @@ export interface Recall {
 export interface RecallDetail extends Recall {
   readonly held: { readonly placeId: Place; readonly place: string; readonly quantity: number }[];
   readonly worn: {
+    readonly pieceId: string;
     readonly pieceCode: string;
     readonly personId: string;
     readonly person: string;
@@ -102,10 +103,10 @@ export async function recallDetail(db: D1Database, id: string): Promise<RecallDe
       .bind(row.lot_id),
     db
       .prepare(
-        `SELECT p.piece_code AS code, p.person_id, pe.name AS person, p.replacement_due_at AS due_on
+        `SELECT p.id, p.piece_code AS code, p.person_id, pe.name AS person, p.replacement_due_at AS due_on
          FROM stock_units u JOIN pieces p ON p.piece_code = u.code JOIN people pe ON pe.id = p.person_id
-         WHERE u.lot_id = ?1 AND u.state = 'fitted' AND p.deleted_at IS NULL AND p.failed_at IS NULL AND p.replaced_at IS NULL
-           AND pe.erased_at IS NULL
+         WHERE u.lot_id = ?1 AND u.state = 'fitted' AND p.deleted_at IS NULL AND p.failed_at IS NULL
+           AND p.replaced_at IS NULL AND pe.erased_at IS NULL
          ORDER BY pe.name COLLATE NOCASE`,
       )
       .bind(row.lot_id),
@@ -117,9 +118,15 @@ export async function recallDetail(db: D1Database, id: string): Promise<RecallDe
       place: each.name ?? each.place,
       quantity: each.quantity,
     })),
-    worn: ((worn?.results ?? []) as { code: string; person_id: string; person: string; due_on: string | null }[]).map(
-      (each) => ({ pieceCode: each.code, personId: each.person_id, person: each.person, dueOn: each.due_on }),
-    ),
+    worn: (
+      (worn?.results ?? []) as { id: string; code: string; person_id: string; person: string; due_on: string | null }[]
+    ).map((each) => ({
+      pieceId: each.id,
+      pieceCode: each.code,
+      personId: each.person_id,
+      person: each.person,
+      dueOn: each.due_on,
+    })),
   };
 }
 

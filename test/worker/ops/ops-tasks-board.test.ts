@@ -140,7 +140,7 @@ describe("GET /api/tasks", () => {
         {
           id: VISIT,
           person: { id: PERSON, name: "Rohit Malhotra" },
-          detail: "Hair system not ready",
+          detail: "service Hair system not ready",
           since: "2026-09-20T05:40:00.000Z",
           due: "2026-09-22T05:40:00.000Z",
           owner: null,

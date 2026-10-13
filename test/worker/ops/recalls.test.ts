@@ -89,7 +89,7 @@ describe("a recall", () => {
       ["central", 2],
     ]);
     expect(detail.worn).toEqual([
-      { piece_code: worn, person_id: PERSON, person: "Rohit Malhotra", due_on: "2026-09-21" },
+      { piece_id: "piece-1", piece_code: worn, person_id: PERSON, person: "Rohit Malhotra", due_on: "2026-09-21" },
     ]);
     const kept = await env.DB.prepare("SELECT due_before FROM recall_pieces").first();
     expect(kept).toEqual({ due_before: "2027-03-01" });

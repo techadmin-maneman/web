@@ -221,6 +221,10 @@ const HISTORY = [
   `INSERT INTO stock_lots (id, consumable_code, lot_code, expires_on, received_at)
    SELECT 'lot-' || i, 'history_tape', 'L-' || i, '2025-01-01', '${AGO}' FROM n`,
   `INSERT INTO stock_lot_balances (lot_id, place, quantity) SELECT 'lot-' || i, 'central', 0 FROM n`,
+  // Recalls closed long ago, each of a lot and a piece a client wore: what a client is owed free reads only open ones.
+  `INSERT INTO recalls (id, number, lot_id, reason, raised_by, raised_at, closed_by, closed_at)
+   SELECT 'rc-' || i, i, 'lot-' || i, 'Shedding', 'ops@localhost', '${AGO}', 'ops@localhost', '${AGO}' FROM n`,
+  `INSERT INTO recall_pieces (recall_id, piece_id, due_before) SELECT 'rc-' || i, 'pc-' || i, '${AGO}' FROM n`,
   `INSERT INTO stock_transfers (id, consumable_code, quantity, from_place, to_place, state, received_quantity, sent_by,
      sent_at, settled_by, settled_at, settlement_id)
    SELECT 'st-' || i, 'history_tape', 1, 'central', 'central', 'received', 1, 'ops@localhost', '${AGO}',

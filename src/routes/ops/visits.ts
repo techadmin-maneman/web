@@ -10,11 +10,12 @@
 import { createRoute, z } from "@hono/zod-openapi";
 import type { Context } from "hono";
 import { BOOKING_DAYS, BOOKING_WINDOWS } from "../../config/scheduling.ts";
-import { isAFitting, VISIT_TYPES } from "../../config/visit-types.ts";
+import { isAFitting, VISIT_TYPES, type VisitType } from "../../config/visit-types.ts";
 import { freeTechnicians } from "../../domain/booking/availability.ts";
 import { confirmUnpaid } from "../../domain/booking/bookings.ts";
 import { giveBack } from "../../domain/booking/give-back.ts";
 import type { Hold } from "../../domain/booking/hold-slot.ts";
+import { remakesOwed, type Remake } from "../../domain/booking/remakes.ts";
 import { offeredServices, type PricedService } from "../../domain/booking/services.ts";
 import { loadSlotSchedule } from "../../domain/booking/slot-times.ts";
 import {
@@ -69,6 +70,20 @@ const PaysSchema = z.enum(PAYS).openapi({
     "once fitted), a service-visit credit, or a payment link Razorpay texts the client.",
 });
 
+const OwedSchema = z
+  .object({
+    id: z
+      .string()
+      .openapi({ description: "The visit left partly done, or the piece to replace: what `covers` names." }),
+    why: z.enum(["partial", "recall", "failed"]).openapi({
+      description: "Left partly done, a piece of a recalled lot, or a piece that failed with none fitted since.",
+    }),
+    piece_code: z.union([z.string(), z.null()]),
+    since: z.string().openapi({ description: "When it became owed: the visit's start, the recall, or the failure." }),
+  })
+  .strict()
+  .openapi("OwedRemake");
+
 const OpsAvailabilitySchema = z
   .object({
     kind: z.enum(VISIT_TYPES),
@@ -76,6 +91,11 @@ const OpsAvailabilitySchema = z
     service: ServiceSchema.openapi({ description: "The service the windows are for: the one asked, else the first." }),
     pays: PaysSchema,
     credits: z.number().int().openapi({ description: "The service-visit credits the client has to spend." }),
+    owed: z.array(OwedSchema).openapi({
+      description:
+        "What a visit of this kind may make good for the client, free and with no late fee, oldest first " +
+        "(docs/decisions/0192-free-remakes.md).",
+    }),
     days: z.array(
       z
         .object({
@@ -175,6 +195,10 @@ const VisitToBookSchema = z
       .optional()
       .openapi({ description: "A consultation and fit in one visit: a first fit, morning or afternoon." }),
     code: z.string().min(1).max(40).optional().openapi({ description: "A discount code the client gave." }),
+    covers: z.string().min(1).max(64).optional().openapi({
+      description:
+        "One of availability's `owed`, which the visit makes good: free, with no late fee. Not with a one visit or a code.",
+    }),
   })
   .strict()
   .openapi("VisitToBook");
@@ -186,7 +210,9 @@ const bookRoute = createRoute({
   request: { body: { required: true, ...json(VisitToBookSchema) } },
   responses: {
     201: { description: "Booked, on its way, or waiting for the link to be paid", ...json(OpsBookingSchema) },
-    400: errorResponse("invalid_request: a one visit that is not a first fit, or in the evening"),
+    400: errorResponse(
+      "invalid_request: a one visit that is not a first fit, or in the evening; covers for nothing owed of the kind, or with a one visit or a code",
+    ),
     403: errorResponse("access_required"),
     404: errorResponse("not_found: no such client in the caller's cities, or one who has been erased"),
     409: errorResponse(
@@ -298,7 +324,14 @@ const askedOf = (body: z.infer<typeof VisitToBookSchema>): VisitAsked => ({
   window: body.window,
   oneVisit: body.one_visit === true,
   code: body.code,
+  covers: body.covers,
 });
+
+/** What a visit of the kind may make good, as availability answers it. */
+const owedOf = (owed: readonly Remake[], kind: VisitType) =>
+  owed
+    .filter((each) => each.kind === kind)
+    .map((each) => ({ id: each.id, why: each.why, piece_code: each.pieceCode, since: each.since }));
 
 /** Whether the client is on our records, not erased, and in the caller's cities. */
 async function isClientInReach(c: Context<AppEnv>, client: string): Promise<boolean> {
@@ -332,10 +365,11 @@ export function registerOpsVisits(app: App): void {
       return c.json(errorBody(refusal, c.var.requestId), 422);
     }
     const reached = await techniciansWithin(db, await routeReach(c));
-    const [strip, credits, onCredit] = await Promise.all([
+    const [strip, credits, onCredit, owed] = await Promise.all([
       windowsOffered({ db, clientId: client, service, days: { start, range }, reached, now }),
       spendableCredits(db, client, now),
       paysByCredit(db, client, kind, now),
+      remakesOwed(db, client),
     ]);
     return c.json(
       {
@@ -344,6 +378,7 @@ export function registerOpsVisits(app: App): void {
         service: serviceBody(service),
         pays: paysFor(false, onCredit, service.price),
         credits: credits.visits,
+        owed: owedOf(owed, kind),
         days: strip,
       },
       200,

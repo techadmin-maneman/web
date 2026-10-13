@@ -450,17 +450,9 @@ async function steps(browser: Browser, design: Page): Promise<void> {
     `/jobs/${replacement.id}/piece`,
     {
       ...jobApi(replacement.id, { ...started, steps_done: [...started.steps_done, "checklist", "consumables"] }),
+      // Board A3's piece, new to the client: not yet fitted, so not yet due.
       "/api/tech/pieces/lookup": json({
-        piece: {
-          piece_code: "MM-STD-4417-B",
-          base: "Mono",
-          supplier_lot: "LOT-4417",
-          fitted_at: null,
-          replacement_due_at: null,
-          failed_at: null,
-          failure_reason: null,
-          replaced_at: null,
-        },
+        piece: { ...PIECE, fitted_at: null, replacement_due_at: null },
         belongs_to_this_job: true,
       }),
     },

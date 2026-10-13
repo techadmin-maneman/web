@@ -257,6 +257,7 @@ describe("the card", () => {
         replacement_due_at: "2026-12-29",
         failed_at: null,
         failure_reason: null,
+        replaced_at: null,
       },
       {
         piece_code: "MM-STD-1001-A",
@@ -266,6 +267,7 @@ describe("the card", () => {
         replacement_due_at: "2026-07-09",
         failed_at: "2026-07-01T05:00:00.000Z",
         failure_reason: "Lifted at the front",
+        replaced_at: null,
       },
     ]);
     // A job further out has no client yet, and so no pieces.

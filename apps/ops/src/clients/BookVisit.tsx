@@ -21,6 +21,7 @@ import {
 } from "../api.ts";
 import { clients, dispatch } from "../content.ts";
 import styles from "../components/visit-dialog.module.css";
+import { Choose, CoverChoice } from "./book-choices.tsx";
 
 const copy = clients.visits.book;
 
@@ -35,6 +36,8 @@ export interface Prefill {
   readonly date?: string;
   readonly window?: BookingWindow;
   readonly code?: string;
+  /** What the visit makes good, free: one of availability's `owed`. */
+  readonly covers?: string;
 }
 
 /** How many days the API offers at a time. */
@@ -55,7 +58,8 @@ const openWindows = (day: Day, choice: Choice): Window[] =>
 /** "Wed 23 Sep, 9 am": when the link closes. */
 const whenOf = (instant: string) => `${shortDate(indiaDate(instant))}, ${indiaClock(instant)}`;
 
-function payLine(choice: Choice, offered: VisitAvailability): string {
+function payLine(choice: Choice, offered: VisitAvailability, covered: boolean): string {
+  if (covered) return copy.pays.covered;
   if (choice === "one_visit") return copy.pays.oneVisit;
   if (offered.pays === "credit") return copy.pays.credit(offered.credits - 1);
   if (offered.pays === "nothing") return copy.pays.nothing;
@@ -102,7 +106,10 @@ function Unreadable({ onRetry }: { onRetry: () => void }) {
   );
 }
 
-/** The visit as the API books it: the technician only where ops chose one, and a code only where the kind takes one. */
+/**
+ * The visit as the API books it: the technician only where ops chose one, what it makes good where it makes good
+ * something, else a code where the kind takes one.
+ */
 function visitOf(chosen: {
   clientId: string;
   choice: Choice;
@@ -111,8 +118,9 @@ function visitOf(chosen: {
   window: BookingWindow;
   technician: string;
   code: string;
+  covers: string;
 }): VisitToBook {
-  const takesCode = kindOf(chosen.choice) !== "consultation";
+  const takesCode = kindOf(chosen.choice) !== "consultation" && chosen.covers === "";
   return {
     client: chosen.clientId,
     kind: kindOf(chosen.choice),
@@ -122,38 +130,8 @@ function visitOf(chosen: {
     ...(chosen.technician === "" ? {} : { technician: chosen.technician }),
     ...(chosen.choice === "one_visit" ? { one_visit: true } : {}),
     ...(takesCode && chosen.code.trim() !== "" ? { code: chosen.code.trim() } : {}),
+    ...(chosen.covers === "" ? {} : { covers: chosen.covers }),
   };
-}
-
-/** A labelled list to choose from, as each of the form's choices is. */
-function Choose(props: {
-  readonly label: string;
-  readonly value: string;
-  readonly options: readonly { readonly value: string; readonly label: string }[];
-  readonly busy: boolean;
-  readonly onChoose: (value: string) => void;
-}) {
-  return (
-    <Field className={styles.field} label={props.label}>
-      {(control) => (
-        <select
-          {...control}
-          className={styles.select}
-          value={props.value}
-          disabled={props.busy}
-          onChange={(event) => {
-            props.onChoose(event.currentTarget.value);
-          }}
-        >
-          {props.options.map((each) => (
-            <option key={each.value} value={each.value}>
-              {each.label}
-            </option>
-          ))}
-        </select>
-      )}
-    </Field>
-  );
 }
 
 /** The fortnight before the one shown, and the one after. */
@@ -211,6 +189,21 @@ function slotOf(offered: VisitAvailability, choice: Choice, picked: Picked) {
   return { days, day, windows, window, technicians, technician };
 }
 
+/** The fortnight's windows for what is being booked, read again as any of it changes. */
+function useAvailability(clientId: string, choice: Choice, tier: string | undefined, from: string | undefined) {
+  const load = useCallback(
+    () =>
+      api.visitAvailability({
+        client: clientId,
+        kind: kindOf(choice),
+        ...(tier === undefined ? {} : { tier }),
+        ...(from === undefined ? {} : { from }),
+      }),
+    [clientId, choice, tier, from],
+  );
+  return useLoad(load);
+}
+
 function Form({
   clientId,
   prefill,
@@ -229,19 +222,10 @@ function Form({
     technician: "",
   });
   const [code, setCode] = useState(prefill.code ?? "");
+  const [covers, setCovers] = useState(prefill.covers ?? "");
   const [failed, setFailed] = useState<string | null>(null);
   const [busy, once] = useOneAtATime();
-  const load = useCallback(
-    () =>
-      api.visitAvailability({
-        client: clientId,
-        kind: kindOf(choice),
-        ...(picked.tier === undefined ? {} : { tier: picked.tier }),
-        ...(from === undefined ? {} : { from }),
-      }),
-    [clientId, choice, picked.tier, from],
-  );
-  const [loaded, retry] = useLoad(load);
+  const [loaded, retry] = useAvailability(clientId, choice, picked.tier, from);
 
   const choose = (next: Partial<Picked>) => {
     setFailed(null);
@@ -254,7 +238,8 @@ function Form({
   const offered = loaded.value;
   const { days, day, windows, window, technicians, technician } = slotOf(offered, choice, picked);
   const firstDay = offered.days[0]?.date;
-  const takesCode = kindOf(choice) !== "consultation";
+  const cover = offered.owed.some((each) => each.id === covers) ? covers : "";
+  const takesCode = kindOf(choice) !== "consultation" && cover === "";
 
   const book = () =>
     once(async () => {
@@ -269,6 +254,7 @@ function Form({
           window: window.window,
           technician,
           code,
+          covers: cover,
         }),
       );
       if (answer.ok) onBooked(answer.body);
@@ -343,6 +329,7 @@ function Form({
         </>
       )}
       <StripButtons busy={busy} from={from} firstDay={firstDay} onFrom={setFrom} />
+      <CoverChoice owed={offered.owed} value={cover} busy={busy} onChoose={setCovers} />
       {takesCode && (
         <Field className={styles.field} label={copy.code}>
           {(control) => (
@@ -362,7 +349,7 @@ function Form({
           )}
         </Field>
       )}
-      <p className={styles.pays}>{payLine(choice, offered)}</p>
+      <p className={styles.pays}>{payLine(choice, offered, cover !== "")}</p>
       <div className={styles.actions}>
         <Button
           variant="primary"

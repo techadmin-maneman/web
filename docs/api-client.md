@@ -2531,6 +2531,17 @@ Request body:
       ],
       "description": "The soonest visit paid for, or booked free, that is not booked yet: neither booked nor refunded. It is on its way, and becomes a visit once it is booked (ADR 0068)."
     },
+    "remake": {
+      "anyOf": [
+        {
+          "$ref": "#/components/schemas/Remake"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Null when none, and while a visit is booked."
+    },
     "payment_owed": {
       "anyOf": [
         {
@@ -2848,6 +2859,7 @@ Request body:
     "next_visit",
     "consulted",
     "being_booked",
+    "remake",
     "payment_owed",
     "credits",
     "prompt",
@@ -3179,6 +3191,36 @@ Request body:
   ],
   "additionalProperties": false,
   "description": "A consultation done: its day, who came, and the hair system recommended there."
+}
+```
+
+### Remake
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "type": {
+      "type": "string",
+      "enum": [
+        "first_fit",
+        "replacement"
+      ]
+    },
+    "why": {
+      "type": "string",
+      "enum": [
+        "partial",
+        "recall"
+      ]
+    }
+  },
+  "required": [
+    "type",
+    "why"
+  ],
+  "additionalProperties": false,
+  "description": "A first fit or replacement owed again, free, which ops call to book: one left partly done, or a hair system of a recalled lot (docs/decisions/0192-free-remakes.md)."
 }
 ```
 

@@ -42,7 +42,13 @@ const DETAIL = {
     RecallSchema.extend({
       held: z.array(z.object({ place_id: z.string(), place: z.string(), quantity: z.number().int() })),
       worn: z.array(
-        z.object({ piece_code: z.string(), person_id: z.string(), person: z.string(), due_on: z.string().nullable() }),
+        z.object({
+          piece_id: z.string().openapi({ description: "What a replacement booked free names as `covers`." }),
+          piece_code: z.string(),
+          person_id: z.string(),
+          person: z.string(),
+          due_on: z.string().nullable(),
+        }),
       ),
     }).openapi("Recall"),
   ),
@@ -138,6 +144,7 @@ const detailJson = (recall: RecallDetail) => ({
   ...recallJson(recall),
   held: recall.held.map((each) => ({ place_id: each.placeId, place: each.place, quantity: each.quantity })),
   worn: recall.worn.map((each) => ({
+    piece_id: each.pieceId,
     piece_code: each.pieceCode,
     person_id: each.personId,
     person: each.person,

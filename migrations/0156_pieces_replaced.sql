@@ -1,7 +1,10 @@
 -- A piece taken off at a replacement is marked replaced, apart from one that failed, so it no longer reads as worn;
 -- a worn piece with a later one fitted for the same client is marked replaced as that one was recorded
--- (docs/decisions/0191-a-replaced-piece-comes-off.md).
+-- (docs/decisions/0191-a-replaced-piece-comes-off.md). A piece's recalls are found by the piece, for what a client
+-- is owed free (docs/decisions/0192-free-remakes.md).
 ALTER TABLE pieces ADD COLUMN replaced_at TEXT;
+
+CREATE INDEX recall_pieces_by_piece ON recall_pieces (piece_id);
 
 UPDATE pieces SET replaced_at = (
   SELECT MIN(n.synced_at) FROM pieces n

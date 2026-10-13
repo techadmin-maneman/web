@@ -25,7 +25,10 @@ export const quality = {
   heldColumns: ["Place", "Quantity"],
   noneHeld: "None held anywhere.",
   worn: "Who wears it",
-  wornColumns: ["Client", "Piece", "Due"],
+  wornColumns: ["Client", "Piece", "Due", ""],
+  /** A worn piece's replacement, booked at no charge; the button's whole name says whose. */
+  bookFree: "Book, free",
+  bookFreeLabel: (person: string) => `Book ${person}'s replacement, free`,
   noneWorn: "No client wears it.",
   close: "Close recall",
   closedSaid: "Closed. The lot stays blocked.",

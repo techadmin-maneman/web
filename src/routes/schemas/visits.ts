@@ -2,6 +2,7 @@
 // (src/routes/client/visits.ts), which their home, payments and the console's client record answer in too.
 
 import { z } from "@hono/zod-openapi";
+import { BOOKING_WINDOWS } from "../../config/scheduling.ts";
 import { VISIT_TYPES } from "../../config/visit-types.ts";
 import { ANGLES } from "../../domain/field/visit-photos.ts";
 import { DISPUTE_RULINGS, NO_SHOW_DECISIONS } from "../../policy/no-show.ts";
@@ -10,6 +11,15 @@ const TechnicianSchema = z
   .object({ name: z.string(), initials: z.string() })
   .strict()
   .openapi("Technician", { description: "Display name and initials only." });
+
+export const RemakeSchema = z
+  .object({ type: z.enum(["first_fit", "replacement"]), why: z.enum(["partial", "recall"]) })
+  .strict()
+  .openapi("Remake", {
+    description:
+      "A first fit or replacement owed again, free, which ops call to book: one left partly done, or a hair system " +
+      "of a recalled lot (docs/decisions/0192-free-remakes.md).",
+  });
 
 export const ConsultedSchema = z
   .object({
@@ -168,3 +178,23 @@ export const HISTORY_FIGURES = {
     .int()
     .openapi({ description: "In paise: every payment captured, less what has gone back. A credit adds nothing." }),
 };
+
+/** A visit paid for, or booked free, on its way to being booked (ADR 0068): GET /api/me's `being_booked`. */
+export const BeingBookedSchema = z
+  .object({
+    type: z.enum(VISIT_TYPES),
+    date: z.iso.date(),
+    window: z.enum(BOOKING_WINDOWS),
+    paid: z.boolean().openapi({ description: "Paid for in money, rather than free or covered by a credit." }),
+    one_visit: z.union([OneVisitPriceSchema, z.null()]).openapi({
+      description:
+        "A consultation and fit in one visit, booked on /book: what it costs once fitted, after the code " +
+        "entered there. Null for any other visit.",
+    }),
+    told: z.boolean().openapi({
+      description:
+        "Whether the client is told on WhatsApp once it is booked: always for a payment, whose receipt goes " +
+        "whatever their consent, else only with their consent to WhatsApp about visits.",
+    }),
+  })
+  .strict();

@@ -394,7 +394,7 @@ Request body:
 }
 ```
 
-**400**: invalid_request: a one visit that is not a first fit, or in the evening
+**400**: invalid_request: a one visit that is not a first fit, or in the evening; covers for nothing owed of the kind, or with a one visit or a code
 
 ```json
 {
@@ -5341,6 +5341,66 @@ A day's money in the caller's cities: what was collected, what went back, and ea
 ```
 
 **403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/payments/{id}/refund
+
+What is left of a captured payment refunded, with why: one the client made twice
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/PaymentRefund"
+}
+```
+
+**200**: Asked of Razorpay; it shows on the Payments tab once processed
+
+```json
+{
+  "$ref": "#/components/schemas/PaymentRefunded"
+}
+```
+
+**400**: invalid_request: no reason given
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no captured payment, or the client is outside the caller's cities
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**409**: refund_not_due: the payment is refunded already, or its refund is on its way
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**503**: unavailable: Razorpay did not make the refund; ops are told to make it by hand
 
 ```json
 {
@@ -11904,6 +11964,13 @@ Request body:
       "type": "integer",
       "description": "The service-visit credits the client has to spend."
     },
+    "owed": {
+      "type": "array",
+      "items": {
+        "$ref": "#/components/schemas/OwedRemake"
+      },
+      "description": "What a visit of this kind may make good for the client, free and with no late fee, oldest first (docs/decisions/0192-free-remakes.md)."
+    },
     "days": {
       "type": "array",
       "items": {
@@ -11965,6 +12032,7 @@ Request body:
     "service",
     "pays",
     "credits",
+    "owed",
     "days"
   ],
   "additionalProperties": false
@@ -12052,6 +12120,50 @@ Request body:
   ],
   "additionalProperties": false,
   "description": "The service the windows are for: the one asked, else the first."
+}
+```
+
+### OwedRemake
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string",
+      "description": "The visit left partly done, or the piece to replace: what `covers` names."
+    },
+    "why": {
+      "type": "string",
+      "enum": [
+        "partial",
+        "recall",
+        "failed"
+      ],
+      "description": "Left partly done, a piece of a recalled lot, or a piece that failed with none fitted since."
+    },
+    "piece_code": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "since": {
+      "type": "string",
+      "description": "When it became owed: the visit's start, the recall, or the failure."
+    }
+  },
+  "required": [
+    "id",
+    "why",
+    "piece_code",
+    "since"
+  ],
+  "additionalProperties": false
 }
 ```
 
@@ -12237,6 +12349,12 @@ Request body:
       "minLength": 1,
       "maxLength": 40,
       "description": "A discount code the client gave."
+    },
+    "covers": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "description": "One of availability's `owed`, which the visit makes good: free, with no late fee. Not with a one visit or a code."
     }
   },
   "required": [
@@ -15098,6 +15216,10 @@ Request body:
       "items": {
         "type": "object",
         "properties": {
+          "piece_id": {
+            "type": "string",
+            "description": "What a replacement booked free names as `covers`."
+          },
           "piece_code": {
             "type": "string"
           },
@@ -15115,6 +15237,7 @@ Request body:
           }
         },
         "required": [
+          "piece_id",
           "piece_code",
           "person_id",
           "person",
@@ -18209,6 +18332,7 @@ Request body:
         "custom_order.raise",
         "custom_order.cancel",
         "custom_order.refund",
+        "payment.refund",
         "plan_line.approve",
         "plan_line.reject",
         "demand_event.add",
@@ -21197,6 +21321,44 @@ Request body:
     "visit_started_at",
     "change",
     "technician"
+  ],
+  "additionalProperties": false
+}
+```
+
+### PaymentRefunded
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "amount": {
+      "type": "integer",
+      "description": "In paise: what was asked back."
+    }
+  },
+  "required": [
+    "amount"
+  ],
+  "additionalProperties": false
+}
+```
+
+### PaymentRefund
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "reason": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200,
+      "pattern": "^[^\\p{Cc}]+$/u"
+    }
+  },
+  "required": [
+    "reason"
   ],
   "additionalProperties": false
 }

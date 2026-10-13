@@ -56,6 +56,7 @@ const ME = {
   consulted: null,
   being_booked: null,
   payment_owed: null,
+  remake: null,
   credits: null,
   prompt: null,
   invoice: null,

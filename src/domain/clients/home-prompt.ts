@@ -20,6 +20,7 @@ import { serviceToOffer } from "../booking/services.ts";
 import { DAY_MS } from "../../lib/durations.ts";
 import { paidNotBooked } from "../booking/hold-stages.ts";
 import { statusIn, VISIT_LIVE } from "../../config/statuses.ts";
+import { PARTIAL_OWED, PIECES_OWED } from "../booking/remakes.ts";
 
 type HomePrompt =
   | { readonly kind: "address" }
@@ -66,6 +67,8 @@ const PROMPT = `SELECT
       AND ${statusIn("r.status", VISIT_LIVE)})
     OR EXISTS (SELECT 1 FROM slot_holds h WHERE h.person_id = ?1 AND h.type = 'replacement' AND ${paidNotBooked("h")}))
     AS replacement_booked,
+  (SELECT kind FROM (${PARTIAL_OWED}) ORDER BY since LIMIT 1) AS remake_partial,
+  EXISTS (SELECT 1 FROM (${PIECES_OWED}) WHERE why = 'recall') AS remake_recall,
   invoiced.id AS invoiced_id, invoiced.type AS invoiced_type, invoiced.window_start AS invoiced_start
   FROM (SELECT 1) LEFT JOIN (
     SELECT id, type, window_start FROM appointments
@@ -78,6 +81,10 @@ interface PromptFacts {
   readonly has_address: number;
   readonly due_on: string | null;
   readonly replacement_booked: number;
+  /** The kind of the oldest first fit or replacement left partly done that ops have not closed; null for none. */
+  readonly remake_partial: "first_fit" | "replacement" | null;
+  /** Whether the client wears a piece of a recalled lot, with no replacement on its way. */
+  readonly remake_recall: number;
   readonly invoiced_id: string | null;
   readonly invoiced_type: VisitType | null;
   readonly invoiced_start: string | null;
@@ -106,11 +113,39 @@ type NextService = NextOffer & { readonly type: "service" | "replacement" };
 const nextServiceOf = (offer: NextOffer | null): NextService | null =>
   offer !== null && offer.type !== "first_fit" ? { ...offer, type: offer.type } : null;
 
-/** The month the piece in wear falls due, while no replacement is booked and that month may be booked now. */
+/**
+ * The month the piece in wear falls due, while no replacement is booked and that month may be booked now; none while
+ * a remake is owed, which ops book free (remakeOf).
+ */
 function replacementMonthInReach(row: PromptFacts, tomorrow: string, days: NextVisitDays): string | null {
-  if (row.due_on === null || row.replacement_booked === 1) return null;
+  if (row.due_on === null || row.replacement_booked === 1 || remakeOf(row) !== null) return null;
   const month = monthOf(row.due_on);
   return `${month}-01` <= lastBookableDay(tomorrow, days) ? month : null;
+}
+
+/** A first fit or replacement owed again, free, which ops call to book (src/domain/booking/remakes.ts). */
+export interface RemakeOwed {
+  readonly type: "first_fit" | "replacement";
+  readonly why: "partial" | "recall";
+}
+
+/**
+ * The remake owed, and the next visit the app offers: none while a visit is booked, and none while a remake is owed,
+ * which is ops' to book free.
+ */
+export function whatHomeOffers(
+  booked: boolean,
+  row: PromptFacts | null,
+  next: NextOffer | null,
+): { readonly remake: RemakeOwed | null; readonly offer: NextOffer | null } {
+  const remake = booked ? null : remakeOf(row);
+  return { remake, offer: booked || remake !== null ? null : next };
+}
+
+function remakeOf(row: PromptFacts | null): RemakeOwed | null {
+  if (row === null) return null;
+  if (row.remake_partial !== null) return { type: row.remake_partial, why: "partial" };
+  return row.remake_recall === 1 ? { type: "replacement", why: "recall" } : null;
 }
 
 function invoiceOf(row: PromptFacts): InvoiceReady | null {

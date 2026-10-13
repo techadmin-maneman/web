@@ -164,6 +164,15 @@ export const home = {
     recommends: (technician: string | null, product: string) =>
       `${technician ?? "Your technician"} recommends ${product}.`,
   },
+  /**
+   * Not drawn: a first fit or replacement we owe the client again, free, which we call to book
+   * (docs/decisions/0192-free-remakes.md).
+   */
+  remake: {
+    label: { first_fit: "Your first fit", replacement: "Your replacement" },
+    partial: "We'll call you to set a new day.",
+    recall: "We're replacing your hair system, at no cost. We'll call you to set a day.",
+  },
   nothing: {
     title: "Nothing booked",
     book: "Book a free consultation",

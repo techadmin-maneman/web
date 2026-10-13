@@ -2,7 +2,7 @@
 
 Every decision this repository was built on, oldest first. A record says what was decided and why, and is not rewritten to say something else: a later record changes it, and says so in its own header (ADR 0001). **Changed by** gathers those later records, from either side, so an old record's reader knows to read on.
 
-This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. A record names its topic in its header, `- Topic:` and one of the headings below, and the test fails on one that does not. The next free number is 0192.
+This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. A record names its topic in its header, `- Topic:` and one of the headings below, and the test fails on one that does not. The next free number is 0193.
 
 ## By topic
 
@@ -133,6 +133,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 - [0168](0168-bills-in-books.md) Bills in Books
 - [0171](0171-vendor-credits.md) Vendor credits
 - [0176](0176-custom-order-refunds.md) Custom order refunds
+- [0192](0192-free-remakes.md) Free remakes
 
 ### Privacy and accounts
 
@@ -418,3 +419,4 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0189](0189-the-staff-list-on-by-default.md) | The Staff list on by default | 2026-10-13 | accepted |  |
 | [0190](0190-foreign-orders-judged-at-a-rate.md) | Foreign orders judged at a rate | 2026-10-13 | accepted |  |
 | [0191](0191-a-replaced-piece-comes-off.md) | A replaced piece comes off | 2026-10-13 | accepted |  |
+| [0192](0192-free-remakes.md) | Free remakes | 2026-10-13 | accepted |  |

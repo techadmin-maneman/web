@@ -22,7 +22,15 @@ const DETAIL = {
   raised_at: "2026-09-21T06:30:00.000Z",
   closed_at: null,
   held: [{ place_id: "central", place: "Warehouse", quantity: 2 }],
-  worn: [{ piece_code: "MM-ESS-0000001-A", person_id: "p-1", person: "Rohit Malhotra", due_on: "2026-09-21" }],
+  worn: [
+    {
+      piece_id: "piece-1",
+      piece_code: "MM-ESS-0000001-A",
+      person_id: "p-1",
+      person: "Rohit Malhotra",
+      due_on: "2026-09-21",
+    },
+  ],
 } satisfies OpsReply<"/api/recalls/{id}">;
 
 const GROUP = { name: "Essential 8x10", fitted: 8, failed: 1, rate_percent: 12.5 };

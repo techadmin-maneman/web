@@ -105,6 +105,8 @@ export const tasks = {
   fewer: "Show fewer",
   /** What a consultation asked for, a first fit to book and a replacement due are done with. */
   book: "Book a visit",
+  /** A first fit or replacement left partly done, booked again at no charge. */
+  bookFree: "Book again, free",
   /** A move the client has not heard of, settled from its row. */
   call: {
     call: (mobile: string) => `Call ${mobile}`,

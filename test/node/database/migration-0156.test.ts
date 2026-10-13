@@ -1,11 +1,11 @@
-// Migration 0157: a worn piece with a later one fitted for the same client is marked replaced; one that failed is not.
+// Migration 0156: a worn piece with a later one fitted for the same client is marked replaced; one that failed is not.
 
 import { describe, expect, it } from "vitest";
 import { apply, databaseBefore, migrationNamed } from "./migrations.ts";
 
 const THIS = migrationNamed("_pieces_replaced.sql");
 
-describe("migration 0157", () => {
+describe("migration 0156", () => {
   it("marks replaced each worn piece a later fit took the place of, as that fit was recorded", () => {
     expect(THIS).not.toBe("");
     const db = databaseBefore(THIS);

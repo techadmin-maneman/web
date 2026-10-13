@@ -78,6 +78,7 @@ describe("the session", () => {
       // Nothing paid for or booked in the app is waiting for FSM (docs/decisions/0095-a-booking-fsm-refuses-is-held.md).
       being_booked: null,
       payment_owed: null,
+      remake: null,
       credits: null,
       // A consultation is booked and no address given: the design's prompt asks for one.
       prompt: { kind: "address" },
