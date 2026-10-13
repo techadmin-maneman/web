@@ -33,6 +33,14 @@ import type { PhoneClock } from "../../policy/phone-clock.ts";
 import type { ReferralReward } from "../../policy/referral-reward.ts";
 import type { Slas } from "../../policy/tasks.ts";
 import type { TechnicianWorkFigures } from "../../policy/technician-work.ts";
+import type { CreditReminderDays } from "../../policy/credit-reminders.ts";
+import type { CycleCounts } from "../../policy/cycle-counts.ts";
+import type { ForecastAssumptions } from "../../policy/forecast.ts";
+import type { KitCheck } from "../../policy/kit-check.ts";
+import type { PaymentLinks } from "../../policy/pay-by-link.ts";
+import type { StockWatch } from "../../policy/stock.ts";
+import type { StockQuality } from "../../policy/stock-quality.ts";
+import type { StockUsage } from "../../policy/stock-usage.ts";
 import { auditStatement, type AuditActor } from "./audit.ts";
 import { MINUTE_MS } from "../../lib/durations.ts";
 import { createLogger } from "../../log.ts";
@@ -74,6 +82,25 @@ export interface OpsInputs {
   readonly planningPeriodDays: number;
   readonly planningHorizonPeriods: number;
   readonly referralReward: ReferralReward;
+  /** How long a payment link holds, closes and takes payment (src/policy/pay-by-link.ts). */
+  readonly paymentLinks: PaymentLinks;
+  /** Minutes after arriving the client may still be told (src/policy/check-in.ts). */
+  readonly arrivalNoticeMin: number;
+  /** Hours a move to another day waits for the client (src/policy/dispatch.ts). */
+  readonly moveProposalHours: number;
+  readonly creditReminderDays: CreditReminderDays;
+  /** Fits a month before a referrer's next grant is held (src/policy/fraud-holds.ts). */
+  readonly referralMonthlyCap: number;
+  /** Days between one number's try-on looks (src/policy/tryon-delivery.ts). */
+  readonly tryonLookDays: number;
+  readonly stockWatch: StockWatch;
+  readonly stockUsage: StockUsage;
+  readonly stockQuality: StockQuality;
+  readonly cycleCounts: CycleCounts;
+  readonly kitCheck: KitCheck;
+  /** Days of a supplier's history the scorecard reads (src/policy/supplier-scorecard.ts). */
+  readonly scorecardDays: number;
+  readonly forecastAssumptions: ForecastAssumptions;
 }
 
 /** What one input is at this moment, and whether anybody set it. */
@@ -113,6 +140,19 @@ function shape(values: OpsValues): OpsInputs {
     paymentHold: values.payment_hold,
     technicianWork: values.technician_work,
     referralReward: values.referral_reward,
+    paymentLinks: values.payment_links,
+    arrivalNoticeMin: values.arrival_notice_min,
+    moveProposalHours: values.move_proposal_hours,
+    creditReminderDays: values.credit_reminder_days,
+    referralMonthlyCap: values.referral_monthly_cap,
+    tryonLookDays: values.tryon_look_days,
+    stockWatch: values.stock_watch,
+    stockUsage: values.stock_usage,
+    stockQuality: values.stock_quality,
+    cycleCounts: values.cycle_counts,
+    kitCheck: values.kit_check,
+    scorecardDays: values.scorecard_days,
+    forecastAssumptions: values.forecast_assumptions,
     careHours: values.care_hours,
     remedyLimit: values.remedy_limit,
     lostAfterDays: values.lost_after_days,

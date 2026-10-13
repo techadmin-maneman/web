@@ -3,7 +3,7 @@
 // past it, it is counted again, and a recount that still differs waits for a manager's sign-off, which is the case it
 // makes, with why.
 
-import { classOf, needsRecount, type CountClass } from "../../policy/cycle-counts.ts";
+import { classOf, needsRecount, type CountClass, type CycleCounts } from "../../policy/cycle-counts.ts";
 import { auditStatement } from "../ops/audit.ts";
 import type { Place } from "./stock-places.ts";
 import { count, type Written } from "./stock.ts";
@@ -224,6 +224,7 @@ export async function submitCounts(
   id: string,
   lines: readonly { readonly code: string; readonly counted: number }[],
   written: Written,
+  counts: CycleCounts,
 ): Promise<Stepped> {
   const task = await countTask(db, id);
   if (task?.state === "open") {
@@ -245,7 +246,7 @@ export async function submitCounts(
     const rows: { code: string; held: number; counted: number; state: "settled" | "recount" }[] = [];
     for (const line of lines) {
       const had = held.get(line.code) ?? 0;
-      const again = needsRecount(line.counted, had, pieces.has(line.code));
+      const again = needsRecount(line.counted, had, pieces.has(line.code), counts);
       if (!again) await settle(db, claimed, line, written);
       rows.push({ code: line.code, held: had, counted: line.counted, state: again ? "recount" : "settled" });
     }
@@ -279,6 +280,7 @@ export async function submitRecounts(
   id: string,
   lines: readonly { readonly code: string; readonly counted: number }[],
   written: Written,
+  counts: CycleCounts,
 ): Promise<Stepped> {
   const task = await countTask(db, id);
   if (task?.state === "recount") {
@@ -299,7 +301,7 @@ export async function submitRecounts(
     );
     const rows: { code: string; recounted: number; state: "settled" | "sign_off" }[] = [];
     for (const line of lines) {
-      const stands = needsRecount(line.counted, held.get(line.code) ?? 0, pieces.has(line.code));
+      const stands = needsRecount(line.counted, held.get(line.code) ?? 0, pieces.has(line.code), counts);
       if (!stands) await settle(db, claimed, line, written);
       rows.push({ code: line.code, recounted: line.counted, state: stands ? "sign_off" : "settled" });
     }

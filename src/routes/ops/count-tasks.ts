@@ -28,6 +28,7 @@ import {
 } from "../../domain/field/count-tasks.ts";
 import { isPlaceWithin, placesWithin } from "../../domain/field/stock-places.ts";
 import { actorOf } from "../../http/audit.ts";
+import { opsInputs } from "../../http/ops-inputs.ts";
 import type { App, AppEnv } from "../../http/context.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
 import { json } from "../../http/openapi.ts";
@@ -296,13 +297,15 @@ export function registerOpsCountTasks(app: App): void {
   app.openapi(countsRoute, async (c) => {
     const { id } = c.req.valid("param");
     if ((await taskInReach(c, id)) === null) return refuse(c, "not_found");
-    return after(c, await submitCounts(c.env.DB, id, linesOf(c.req.valid("json")), written(c)));
+    const { cycleCounts } = await opsInputs(c);
+    return after(c, await submitCounts(c.env.DB, id, linesOf(c.req.valid("json")), written(c), cycleCounts));
   });
 
   app.openapi(recountsRoute, async (c) => {
     const { id } = c.req.valid("param");
     if ((await taskInReach(c, id)) === null) return refuse(c, "not_found");
-    return after(c, await submitRecounts(c.env.DB, id, linesOf(c.req.valid("json")), written(c)));
+    const { cycleCounts } = await opsInputs(c);
+    return after(c, await submitRecounts(c.env.DB, id, linesOf(c.req.valid("json")), written(c), cycleCounts));
   });
 
   app.openapi(signOffRoute, async (c) => {

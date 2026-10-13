@@ -4,7 +4,7 @@
 // learning days are let go.
 
 import { addDays, indiaDate } from "../../lib/india-time.ts";
-import { expectedOf, highOf, LEARNING_DAYS } from "../../policy/forecast.ts";
+import { expectedOf, highOf, type ForecastAssumptions } from "../../policy/forecast.ts";
 import { baselineLayer, bookedLayer, dueLayer, pipelineLayer, type Horizon } from "./forecast-layers.ts";
 
 /** How many lines one statement writes. */
@@ -53,20 +53,29 @@ async function linesOf(db: D1Database, horizon: Horizon) {
 export async function runForecastIfDue(
   db: D1Database,
   now: Date,
-  settings: { readonly planningPeriodDays: number; readonly planningHorizonPeriods: number },
+  settings: {
+    readonly planningPeriodDays: number;
+    readonly planningHorizonPeriods: number;
+    readonly forecastAssumptions: ForecastAssumptions;
+  },
 ): Promise<string | null> {
   const today = indiaDate(now);
   const last = await db
     .prepare("SELECT run_on FROM forecast_runs INDEXED BY forecast_runs_by_day ORDER BY run_on DESC LIMIT 1")
     .first<string>("run_on");
   if (last !== null && addDays(last, settings.planningPeriodDays) > today) return null;
-  const horizon = { today, periodDays: settings.planningPeriodDays, horizonPeriods: settings.planningHorizonPeriods };
+  const horizon = {
+    today,
+    periodDays: settings.planningPeriodDays,
+    horizonPeriods: settings.planningHorizonPeriods,
+    assumptions: settings.forecastAssumptions,
+  };
   const { lines, dueRate, fitRate } = await linesOf(db, horizon);
   const id = crypto.randomUUID();
   const chunks = Array.from({ length: Math.ceil(lines.length / LINES_A_STATEMENT) }, (_, index) =>
     lines.slice(index * LINES_A_STATEMENT, (index + 1) * LINES_A_STATEMENT),
   );
-  const forgotten = addDays(today, -LEARNING_DAYS);
+  const forgotten = addDays(today, -settings.forecastAssumptions.learning_days);
   await db.batch([
     db
       .prepare(

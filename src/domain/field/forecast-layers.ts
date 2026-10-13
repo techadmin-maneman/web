@@ -9,21 +9,15 @@
 
 import { latestFits } from "../clients/hair-profiles.ts";
 import { addDays } from "../../lib/india-time.ts";
-import {
-  BASELINE_PERIODS,
-  CONSULTATION_FIT_RATE,
-  CONSULTATION_TO_FIT_DAYS,
-  DUE_BOOKING_RATE,
-  LEARNING_DAYS,
-  learnedRate,
-  periodOf,
-} from "../../policy/forecast.ts";
+import { learnedRate, periodOf, type ForecastAssumptions } from "../../policy/forecast.ts";
 import { hairSystemSpecs, matchingCode } from "./hair-systems.ts";
 
 export interface Horizon {
   readonly today: string;
   readonly periodDays: number;
   readonly horizonPeriods: number;
+  /** What the layers learn from and assume, as ops set it (`forecast_assumptions`). */
+  readonly assumptions: ForecastAssumptions;
 }
 
 export type LayerMap = Map<string, number>;
@@ -108,9 +102,10 @@ async function dueRate(db: D1Database, horizon: Horizon): Promise<number> {
       `SELECT COUNT(*) AS due, COALESCE(SUM(replacement_booked), 0) AS booked FROM pieces INDEXED BY pieces_by_due
        WHERE date(replacement_due_at) >= ?1 AND date(replacement_due_at) < ?2 AND deleted_at IS NULL`,
     )
-    .bind(addDays(horizon.today, -LEARNING_DAYS), horizon.today)
+    .bind(addDays(horizon.today, -horizon.assumptions.learning_days), horizon.today)
     .first<{ due: number; booked: number }>();
-  return learnedRate(row?.booked ?? 0, row?.due ?? 0, DUE_BOOKING_RATE);
+  const { due_booking_percent: fallback, enough_to_learn: enough } = horizon.assumptions;
+  return learnedRate(row?.booked ?? 0, row?.due ?? 0, fallback, enough);
 }
 
 /** The pieces falling due in the horizon, each the hair system made to its client, weighted by the rate learned. */
@@ -154,7 +149,7 @@ async function cityMix(db: D1Database, horizon: Horizon): Promise<Map<string, { 
        JOIN technicians t ON t.id = COALESCE(m.technician_id, m.place_id)
        WHERE m.reason = 'used' AND m.created_at >= ?1 GROUP BY 1, 2`,
     )
-    .bind(addDays(horizon.today, -LEARNING_DAYS))
+    .bind(addDays(horizon.today, -horizon.assumptions.learning_days))
     .all<{ code: string; city: string | null; used: number }>();
   const totals = new Map<string, number>();
   for (const row of results) totals.set(row.city ?? "", (totals.get(row.city ?? "") ?? 0) + row.used);
@@ -177,9 +172,10 @@ async function fitRate(db: D1Database, horizon: Horizon): Promise<number> {
        FROM appointments c WHERE c.window_start >= ?1 AND c.window_start < ?2 AND c.type = 'consultation'
          AND c.status = 'completed'`,
     )
-    .bind(addDays(horizon.today, -LEARNING_DAYS), horizon.today)
+    .bind(addDays(horizon.today, -horizon.assumptions.learning_days), horizon.today)
     .first<{ consulted: number; fitted: number }>();
-  return learnedRate(row?.fitted ?? 0, row?.consulted ?? 0, CONSULTATION_FIT_RATE);
+  const { consultation_fit_percent: fallback, enough_to_learn: enough } = horizon.assumptions;
+  return learnedRate(row?.fitted ?? 0, row?.consulted ?? 0, fallback, enough);
 }
 
 /** The consultations booked in the horizon, as the first fits they are likely to become, spread by each city's mix. */
@@ -197,7 +193,7 @@ export async function pipelineLayer(db: D1Database, horizon: Horizon): Promise<{
     .all<{ window_start: string; city: string | null }>();
   const layer: LayerMap = new Map();
   for (const row of results) {
-    const period = periodIn(horizon, addDays(dayOf(row.window_start), CONSULTATION_TO_FIT_DAYS));
+    const period = periodIn(horizon, addDays(dayOf(row.window_start), horizon.assumptions.consultation_to_fit_days));
     if (period === null) continue;
     for (const { code, share } of mix.get(row.city ?? "") ?? [])
       add(layer, keyOf(code, row.city, period), rate * share);
@@ -224,7 +220,7 @@ export async function baselineLayer(db: D1Database, horizon: Horizon): Promise<L
          LEFT JOIN technicians t ON t.id = COALESCE(m.technician_id, m.place_id)
          WHERE m.reason = 'used' AND m.created_at >= ?1 GROUP BY 1, 2`,
       )
-      .bind(addDays(horizon.today, -BASELINE_PERIODS * horizon.periodDays)),
+      .bind(addDays(horizon.today, -horizon.assumptions.baseline_periods * horizon.periodDays)),
     db
       .prepare(
         `SELECT city, starts_on, ends_on, uplift_percent FROM demand_events INDEXED BY demand_events_by_end
@@ -239,7 +235,7 @@ export async function baselineLayer(db: D1Database, horizon: Horizon): Promise<L
     for (let period = 0; period < horizon.horizonPeriods; period += 1) {
       const start = addDays(horizon.today, period * horizon.periodDays);
       const lift = upliftOf(eventRows, row.city, start, addDays(start, horizon.periodDays));
-      add(layer, keyOf(row.code, row.city, period), (row.used / BASELINE_PERIODS) * lift);
+      add(layer, keyOf(row.code, row.city, period), (row.used / horizon.assumptions.baseline_periods) * lift);
     }
   }
   return layer;

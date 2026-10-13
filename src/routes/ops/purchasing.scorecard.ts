@@ -7,6 +7,7 @@
 import { createRoute, z } from "@hono/zod-openapi";
 import { supplierScores } from "../../domain/field/supplier-scorecard.ts";
 import type { App } from "../../http/context.ts";
+import { opsInputs } from "../../http/ops-inputs.ts";
 import { errorResponse } from "../../http/errors.ts";
 import { json } from "../../http/openapi.ts";
 
@@ -43,7 +44,7 @@ const scorecardRoute = createRoute({
 
 export function registerOpsScorecard(app: App): void {
   app.openapi(scorecardRoute, async (c) => {
-    const scores = await supplierScores(c.env.DB, c.var.deps.now());
+    const scores = await supplierScores(c.env.DB, c.var.deps.now(), (await opsInputs(c)).scorecardDays);
     return c.json(
       {
         suppliers: scores.map((score) => ({

@@ -6,6 +6,7 @@
 import { onAllowlist } from "../../config/settings.ts";
 import { failureReason } from "../../log.ts";
 import { paymentLinkClosesAt } from "../../policy/one-visit.ts";
+import { readOpsInputs } from "../ops/ops-settings.ts";
 import type { RazorpayPayment, RazorpayPaymentLink } from "../../providers/payments/razorpay.ts";
 import { isRefusal } from "../../providers/provider-error.ts";
 import { serviceOf } from "../booking/services.ts";
@@ -69,7 +70,7 @@ export async function sendCustomOrderLink(
       description: `${product}, made for you · ${numberOf(order.number)}`,
       customer: { name: order.name, contact: order.mobile_e164 },
       notes: { custom_order_id: order.id, person_id: order.person_id },
-      closesAt: paymentLinkClosesAt(now),
+      closesAt: paymentLinkClosesAt(now, (await readOpsInputs(db, now)).paymentLinks.pay_within_days),
       notify,
     });
     await keep(db, order.id, made, now);

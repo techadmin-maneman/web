@@ -3,14 +3,12 @@
 // with those checks run again; withdrawn by ops; or moot once the visit has moved since, by ops or by the client.
 
 import type { BookingWindow } from "../../config/scheduling.ts";
-import { DAY_MS } from "../../lib/durations.ts";
+import { HOUR_MS } from "../../lib/durations.ts";
 import { indiaDate } from "../../lib/india-time.ts";
 import { queueMessage } from "../messages/queued-messages.ts";
 import { auditStatement, type AuditEntry } from "../ops/audit.ts";
+import { readOpsInputs } from "../ops/ops-settings.ts";
 import { agreedToVisitMessages, moveJob, planMove, type MoveInput } from "./dispatch.ts";
-
-/** How long a proposal stays open: two days, or until the visit's own start if that is sooner. */
-const OPEN_FOR_MS = 2 * DAY_MS;
 
 type Refusal = Exclude<Awaited<ReturnType<typeof planMove>>, { readonly kind: "planned" }>;
 
@@ -45,7 +43,9 @@ export async function proposeMove(
   if (move.date === indiaDate(new Date(job.window_start))) return { kind: "same_day" };
   const id = crypto.randomUUID();
   const at = now.toISOString();
-  const expiresAt = new Date(Math.min(now.getTime() + OPEN_FOR_MS, Date.parse(job.window_start))).toISOString();
+  // Open for ops' hours (src/policy/dispatch.ts), or until the visit's own start if that is sooner.
+  const openFor = (await readOpsInputs(db, now)).moveProposalHours * HOUR_MS;
+  const expiresAt = new Date(Math.min(now.getTime() + openFor, Date.parse(job.window_start))).toISOString();
   const personId = job.person_id;
   const messageId = (await agreedToVisitMessages(db, job.id)) ? crypto.randomUUID() : null;
   await db.batch([

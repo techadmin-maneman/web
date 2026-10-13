@@ -260,7 +260,8 @@ async function nextServiceRemindersJob({ env, deps, log, inputs }: CronContext):
 }
 
 async function creditRemindersJob({ env, deps, log, inputs }: CronContext): Promise<void> {
-  const reminders = await queueCreditReminders(env.DB, deps.now(), (await inputs()).reminderHour);
+  const { reminderHour, creditReminderDays } = await inputs();
+  const reminders = await queueCreditReminders(env.DB, deps.now(), reminderHour, creditReminderDays);
   await queueMessages({ env, log }, reminders, "credit-reminders");
   if (reminders.length > 0) log.info("credit_reminders_queued", { count: reminders.length });
 }

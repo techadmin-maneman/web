@@ -4,11 +4,21 @@
 export const COUNT_CLASSES = ["weekly", "monthly", "quarterly"] as const;
 export type CountClass = (typeof COUNT_CLASSES)[number];
 
-/** Days between one count of a class at a place and the next. */
-export const CLASS_DAYS: Readonly<Record<CountClass, number>> = { weekly: 7, monthly: 30, quarterly: 90 };
+export const CYCLE_COUNT_KEYS = [...COUNT_CLASSES, "recount_above_percent"] as const;
+/**
+ * The days between one count of each class at a place and the next, and the share of what was held past which a
+ * consumable's difference is counted again. Ops set them in Settings.
+ */
+export type CycleCounts = Readonly<Record<(typeof CYCLE_COUNT_KEYS)[number], number>>;
 
-/** A consumable's difference past this share of what was held is counted again. */
-const RECOUNT_ABOVE_PERCENT = 5;
+export const CYCLE_COUNTS: CycleCounts = { weekly: 7, monthly: 30, quarterly: 90, recount_above_percent: 5 };
+
+/** Each class's days, as the counts due read them. */
+export const classDaysOf = (counts: CycleCounts): Readonly<Record<CountClass, number>> => ({
+  weekly: counts.weekly,
+  monthly: counts.monthly,
+  quarterly: counts.quarterly,
+});
 
 /** An item's class: the one ops set, or its kind's own, a hair system weekly and the rest quarterly. */
 export function classOf(set: CountClass | null, hairSystem: boolean): CountClass {
@@ -16,9 +26,14 @@ export function classOf(set: CountClass | null, hairSystem: boolean): CountClass
 }
 
 /** Whether a count's difference is counted again first: any piece, or more of a consumable than the tolerance. */
-export function needsRecount(counted: number, held: number, hairSystem: boolean): boolean {
+export function needsRecount(
+  counted: number,
+  held: number,
+  hairSystem: boolean,
+  counts: CycleCounts = CYCLE_COUNTS,
+): boolean {
   const difference = Math.abs(counted - held);
   if (difference === 0) return false;
   if (hairSystem) return true;
-  return difference > Math.max(1, (held * RECOUNT_ABOVE_PERCENT) / 100);
+  return difference > Math.max(1, (held * counts.recount_above_percent) / 100);
 }

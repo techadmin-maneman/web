@@ -7,7 +7,7 @@ import { fullDate } from "@maneman/web-kit/dates";
 import { serviceVisits } from "../../config/message-templates.ts";
 import { addDays, indiaDate, indiaInstant, indiaTime } from "../../lib/india-time.ts";
 import { firstNameOf } from "../../lib/names.ts";
-import { CREDIT_REMINDER_DAYS, creditReminderOwed } from "../../policy/credit-reminders.ts";
+import { CREDIT_REMINDER_DAYS, creditReminderOwed, type CreditReminderDays } from "../../policy/credit-reminders.ts";
 import { DAY_BEFORE_REMINDER_HOUR } from "../../policy/job-visibility.ts";
 import { GRANT_REMAINING } from "./credits.ts";
 import { consentGiven } from "../privacy/consents.ts";
@@ -55,13 +55,14 @@ export async function queueCreditReminders(
   db: D1Database,
   now: Date,
   hour: number = DAY_BEFORE_REMINDER_HOUR,
+  days: CreditReminderDays = CREDIT_REMINDER_DAYS,
 ): Promise<string[]> {
   if (indiaTime(now) < remindersFrom(hour)) return [];
   const today = indiaDate(now);
   // Visits whose last day is further off than the first reminder's lead have no reminder due yet.
-  const tooFarOff = indiaInstant(addDays(today, CREDIT_REMINDER_DAYS[0] + 1), "00:00");
+  const tooFarOff = indiaInstant(addDays(today, days.first + 1), "00:00");
   const { results } = await db.prepare(ENDING).bind(now.toISOString(), tooFarOff.toISOString()).all<EndingVisits>();
-  const owed = results.filter((visits) => creditReminderOwed(daysOf(visits), today)).slice(0, REMINDERS_PER_PASS);
+  const owed = results.filter((visits) => creditReminderOwed(daysOf(visits), today, days)).slice(0, REMINDERS_PER_PASS);
   if (owed.length === 0) return [];
   const at = now.toISOString();
   const messages = owed.map((visits) => ({

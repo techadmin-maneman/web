@@ -10,7 +10,7 @@
 //   - the mobile numbers match
 // - Held grants appear in the review queue. Ops approve or reject each one.
 
-/** Fits a referrer may have granted in a calendar month in India before the next is held: 5, as ruled. */
+/** Fits a referrer may have granted in a calendar month in India before the next is held: 5, as ruled; ops set it in Settings. */
 export const REFERRAL_MONTHLY_CAP = 5;
 
 /** Each rule a grant can meet, in the order above. The card fingerprint is not given to us (ADR 0025, item 21). */

@@ -24,6 +24,7 @@ import type { CallBudget } from "../../lib/call-budget.ts";
 import { indiaDate } from "../../lib/india-time.ts";
 import { failureReason, type Logger } from "../../log.ts";
 import { paymentLinkClosesAt } from "../../policy/one-visit.ts";
+import { readOpsInputs } from "../ops/ops-settings.ts";
 import type { PaymentsProvider } from "../../providers/payments/index.ts";
 import { isRefusal } from "../../providers/provider-error.ts";
 import { paymentsTab, type AlertOnce, type ResolveAlert } from "../ops/alerts.ts";
@@ -317,6 +318,7 @@ async function askRazorpay({
   const product = await serviceOf(db, "first_fit", visit.tier);
   const contact = client?.mobile_e164 ?? "";
   const notify = onAllowlist(deps.messagingSettings, contact);
+  const closesAt = paymentLinkClosesAt(now, (await readOpsInputs(db, now)).paymentLinks.pay_within_days);
   try {
     const made = await deps.payments.createPaymentLink({
       amount: link.amount,
@@ -324,11 +326,11 @@ async function askRazorpay({
       description: `${hairSystemName(product?.name)} · fitted ${shortDate(visit.day)}`,
       customer: { name: client?.name ?? "", contact },
       notes: { appointment_id: visit.appointmentId, person_id: visit.personId },
-      closesAt: paymentLinkClosesAt(now),
+      closesAt,
       notify,
     });
     if (!notify) deps.log.info("payment_link_not_texted", { appointment_id: visit.appointmentId });
-    await keepLink(db, deps, { link, visit, made }, now);
+    await keepLink(db, deps, { link, visit, made, closesAt }, now);
     return "sent";
   } catch (error) {
     const reason = failureReason(error);
@@ -381,14 +383,20 @@ async function refusedOrMadeBefore(
 async function keepLink(
   db: D1Database,
   deps: LinkDeps,
-  kept: { readonly link: LinkRow; readonly visit: FittedVisit; readonly made: { id: string; shortUrl: string } },
+  kept: {
+    readonly link: LinkRow;
+    readonly visit: FittedVisit;
+    readonly made: { id: string; shortUrl: string };
+    readonly closesAt: Date;
+  },
   now: Date,
 ): Promise<void> {
   await db
     .prepare(
-      "UPDATE payment_links SET razorpay_link_id = ?2, short_url = ?3, sent_at = ?4, updated_at = ?4 WHERE id = ?1",
+      `UPDATE payment_links SET razorpay_link_id = ?2, short_url = ?3, sent_at = ?4, updated_at = ?4, closes_at = ?5
+       WHERE id = ?1`,
     )
-    .bind(kept.link.id, kept.made.id, kept.made.shortUrl, now.toISOString())
+    .bind(kept.link.id, kept.made.id, kept.made.shortUrl, now.toISOString(), kept.closesAt.toISOString())
     .run();
   await deps.resolveAlert(failedKey(kept.visit.appointmentId));
   deps.log.info("payment_link_sent", { appointment_id: kept.visit.appointmentId });

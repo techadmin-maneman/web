@@ -18,7 +18,7 @@ import { amountOff, discounted } from "../../policy/discount-codes.ts";
 import { LATE_FEES, type SoldTerms } from "../../policy/moving-a-visit.ts";
 import { lastBookableDay } from "../../policy/next-visit.ts";
 import { ONE_VISIT_TERMS, ONE_VISIT_WINDOWS } from "../../policy/one-visit.ts";
-import { linkOpenUntil } from "../../policy/pay-by-link.ts";
+import { linkOpenUntil, type PaymentLinks } from "../../policy/pay-by-link.ts";
 import { takesCredit } from "../../policy/referral-reward.ts";
 import { windowTimesOf } from "../../policy/slot-times.ts";
 import type { MadeLink, PaymentsProvider } from "../../providers/payments/index.ts";
@@ -251,8 +251,13 @@ async function windowStart(db: D1Database, date: string, window: BookingWindow):
 }
 
 /** When a paid visit's link closes and its slot is let go; null for a visit too close for a link. */
-export async function linkClosesAt(db: D1Database, asked: VisitAsked, now: Date): Promise<Date | null> {
-  return linkOpenUntil(now, await windowStart(db, asked.date, asked.window));
+export async function linkClosesAt(
+  db: D1Database,
+  asked: VisitAsked,
+  now: Date,
+  links: PaymentLinks,
+): Promise<Date | null> {
+  return linkOpenUntil(now, await windowStart(db, asked.date, asked.window), links);
 }
 
 /** Who booked it, and the request, for the audit entry written with the hold. */

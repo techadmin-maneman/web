@@ -9,6 +9,7 @@ import {
   overPercent,
   shrinkagePercent,
   technicianFlagged,
+  type StockUsage,
 } from "../../policy/stock-usage.ts";
 import { allPlaces, type Place } from "./stock-places.ts";
 
@@ -54,6 +55,7 @@ export async function usageAgainstExpected(
   db: D1Database,
   since: string,
   within: ReadonlySet<Place> | null,
+  flags: StockUsage,
 ): Promise<TechnicianUsage[]> {
   const [visits, usage, used, items, technicians] = await db.batch<
     VisitRow | UseRow | UsedRow | ItemRow | { id: string; name: string }
@@ -91,7 +93,9 @@ export async function usageAgainstExpected(
   );
   return [...counted]
     .filter(([technician]) => within === null || within.has(technician))
-    .map(([technicianId, tallied]) => usageOf(technicianId, nameOf.get(technicianId) ?? technicianId, tallied, itemOf))
+    .map(([technicianId, tallied]) =>
+      usageOf(technicianId, nameOf.get(technicianId) ?? technicianId, { tallied, itemOf, flags }),
+    )
     .sort(
       (a, b) => Number(b.flagged) - Number(a.flagged) || (b.overPercent ?? -Infinity) - (a.overPercent ?? -Infinity),
     );
@@ -133,8 +137,7 @@ function tally(visits: readonly VisitRow[], uses: readonly UseRow[], used: reado
 function usageOf(
   technicianId: string,
   name: string,
-  tallied: Tallied,
-  itemOf: ReadonlyMap<string, ItemRow>,
+  { tallied, itemOf, flags }: { tallied: Tallied; itemOf: ReadonlyMap<string, ItemRow>; flags: StockUsage },
 ): TechnicianUsage {
   const valueOf = (amounts: ReadonlyMap<string, number>) =>
     [...amounts].reduce((total, [code, quantity]) => total + quantity * (itemOf.get(code)?.unit_cost ?? 0), 0);
@@ -149,7 +152,7 @@ function usageOf(
     expectedValue,
     usedValue,
     overPercent: over,
-    flagged: technicianFlagged(over, tallied.visits),
+    flagged: technicianFlagged(over, tallied.visits, flags),
     items: codes
       .map((code) => ({
         code,
@@ -170,6 +173,7 @@ export async function shrinkage(
   db: D1Database,
   since: string,
   within: ReadonlySet<Place> | null,
+  flags: StockUsage,
 ): Promise<PlaceLoss[]> {
   const [left, counts] = await db.batch<LeftRow | CountedRow>([
     db
@@ -210,7 +214,7 @@ export async function shrinkage(
           writeOffs,
           shrinkagePercent: shrinkagePercent(lostValue, leftValue),
           countAccuracyPercent: countAccuracyPercent(counted?.right ?? 0, counted?.lines ?? 0),
-          flagged: kitFlagged(place.kind, writeOffs),
+          flagged: kitFlagged(place.kind, writeOffs, flags),
         },
       ];
     })

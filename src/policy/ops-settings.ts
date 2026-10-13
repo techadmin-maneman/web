@@ -14,6 +14,7 @@
 import { CARE_HOURS, CARE_HOURS_KEYS, careHoursConflicts } from "./care-hours.ts";
 import { CHECKIN_RADIUS_M } from "./check-in.ts";
 import { LOST_AFTER_DAYS } from "./client-standing.ts";
+import { CLIENT_SETTINGS } from "./ops-settings-clients.ts";
 import { STOCK_SETTINGS } from "./ops-settings-stock.ts";
 import { MOST_REMEDY_VISITS, REMEDY_LIMIT, REMEDY_LIMIT_KEYS } from "./remedies.ts";
 import { DAY_BEFORE_REMINDER_HOUR, UNLOCK_HOUR } from "./job-visibility.ts";
@@ -328,6 +329,7 @@ export const OPS_SETTINGS = [
     keys: null,
     fallback: LOST_AFTER_DAYS,
   },
+  ...CLIENT_SETTINGS,
   ...STOCK_SETTINGS,
 ] as const satisfies readonly OpsSetting[];
 

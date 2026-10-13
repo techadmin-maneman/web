@@ -1,12 +1,12 @@
 // What the stock needs a person for, told each morning (docs/decisions/0159-stock-views-and-expiry.md): each place
-// holding a lot that expires within EXPIRY_WARNING_DAYS, or has expired, in one alert for the place naming each lot;
-// and each transfer still on its way TRANSFER_OVERDUE_DAYS after it was sent. An alert closes once what it was about is
+// holding a lot that expires within ops' warning days (`stock_watch`), or has expired, in one alert for the place naming
+// each lot; and each transfer still on its way past ops' overdue days after it was sent. An alert closes once what it was about is
 // gone: the lots used, moved or written off, the transfer received or sent back.
 
 import { MINUTE_MS } from "../../lib/durations.ts";
 import { addDays, indiaDate, indiaHour } from "../../lib/india-time.ts";
-import { EXPIRY_WARNING_DAYS, TRANSFER_OVERDUE_DAYS } from "../../policy/stock.ts";
 import type { AlertOnce, ResolveAlert } from "../ops/alerts.ts";
+import { classDaysOf } from "../../policy/cycle-counts.ts";
 import { readOpsInputs } from "../ops/ops-settings.ts";
 import { runForecastIfDue } from "./forecast.ts";
 import { measureLastForecast } from "./forecast-accuracy.ts";
@@ -43,6 +43,7 @@ async function tellOfExpiring(
   db: D1Database,
   deps: { readonly alertOnce: AlertOnce; readonly resolveAlert: ResolveAlert },
   today: string,
+  warningDays: number,
 ): Promise<void> {
   const { results } = await db
     .prepare(
@@ -54,7 +55,7 @@ async function tellOfExpiring(
        WHERE l.expires_on IS NOT NULL AND l.expires_on <= ?1 AND b.quantity > 0
        ORDER BY b.place, l.expires_on`,
     )
-    .bind(addDays(today, EXPIRY_WARNING_DAYS))
+    .bind(addDays(today, warningDays))
     .all<ExpiringRow>();
   const byPlace = Map.groupBy(results, (row) => row.place);
   for (const [place, rows] of byPlace) {
@@ -67,7 +68,7 @@ async function tellOfExpiring(
     );
     await deps.alertOnce({
       key: `${EXPIRING_KEY}${place}`,
-      message: `Stock in ${placeWords(first)} expires within ${String(EXPIRY_WARNING_DAYS)} days: ${lots.join("; ")}. Use it first, move it, or write it off on the Stock page.`,
+      message: `Stock in ${placeWords(first)} expires within ${String(warningDays)} days: ${lots.join("; ")}. Use it first, move it, or write it off on the Stock page.`,
       link: "/stock",
     });
   }
@@ -83,8 +84,9 @@ async function tellOfOverdue(
   db: D1Database,
   deps: { readonly alertOnce: AlertOnce; readonly resolveAlert: ResolveAlert },
   now: Date,
+  overdueDays: number,
 ): Promise<void> {
-  const sentBy = new Date(now.getTime() - TRANSFER_OVERDUE_DAYS * 24 * 60 * MINUTE_MS).toISOString();
+  const sentBy = new Date(now.getTime() - overdueDays * 24 * 60 * MINUTE_MS).toISOString();
   const { results } = await db
     .prepare(
       `SELECT t.id, c.name AS item, c.unit, t.quantity, t.sent_at, ${PLACE_WORDS("f")} AS from_place,
@@ -132,20 +134,20 @@ export async function watchStock(
   deps: { readonly alertOnce: AlertOnce; readonly resolveAlert: ResolveAlert; readonly now: () => Date },
 ): Promise<void> {
   const now = deps.now();
+  const inputs = await readOpsInputs(db, now);
   // Each hour: the fits booked ahead with no hair system in reach, kept as tasks (./stock-risks.ts).
-  await refreshStockRisks(db, indiaDate(now), now);
+  await refreshStockRisks(db, indiaDate(now), now, inputs.stockWatch.demand_days);
   // Once a run's first period has passed: how right it was (./forecast-accuracy.ts).
   await measureLastForecast(db, now, indiaDate(now));
   // Once each planning period: the demand forecast (./forecast.ts), and the supply plan drafted from it.
-  const inputs = await readOpsInputs(db, now);
   const run = await runForecastIfDue(db, now, inputs);
   if (run !== null) await draftPlan(db, run, now, inputs.planningPeriodDays);
   // Each evening hour: tomorrow's kits, and their top-ups (./kit-check.ts).
-  await checkTomorrowsKits(db, now, deps.alertOnce);
+  await checkTomorrowsKits(db, now, deps.alertOnce, inputs.kitCheck);
   const today = stockWatchDueOn(now);
   if (today === null) return;
   // Each morning: the cycle counts come round (./cycle-counts.ts).
-  await raiseCountTasks(db, today, now);
-  await tellOfExpiring(db, deps, today);
-  await tellOfOverdue(db, deps, now);
+  await raiseCountTasks(db, today, now, classDaysOf(inputs.cycleCounts));
+  await tellOfExpiring(db, deps, today, inputs.stockWatch.expiry_warning_days);
+  await tellOfOverdue(db, deps, now, inputs.stockWatch.transfer_overdue_days);
 }

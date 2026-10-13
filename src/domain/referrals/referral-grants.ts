@@ -16,7 +16,8 @@
 // (docs/decisions/0108-discount-codes.md).
 
 import { indiaDate, monthOf } from "../../lib/india-time.ts";
-import { FRAUD_SIGNALS, REFERRAL_MONTHLY_CAP, type FraudSignal } from "../../policy/fraud-holds.ts";
+import { FRAUD_SIGNALS, type FraudSignal } from "../../policy/fraud-holds.ts";
+import { readOpsInputs } from "../ops/ops-settings.ts";
 import { inviteLapsed } from "../../policy/invites.ts";
 import { creditExpiry, type ReferralReward } from "../../policy/referral-reward.ts";
 import { auditStatementIfStamped, type AuditEntry } from "../ops/audit.ts";
@@ -42,7 +43,11 @@ interface ReferralAttribution {
 }
 
 /** Which of the fraud rules a grant meets. */
-async function fraudSignals(db: D1Database, attribution: ReferralAttribution): Promise<FraudSignal[]> {
+async function fraudSignals(
+  db: D1Database,
+  attribution: ReferralAttribution,
+  monthlyCap: number,
+): Promise<FraudSignal[]> {
   const { referrerId, referredId } = attribution;
   const met = new Set<FraudSignal>();
   const sharedAddress = await db
@@ -72,7 +77,7 @@ async function fraudSignals(db: D1Database, attribution: ReferralAttribution): P
     .bind(attribution.code, attribution.id)
     .all<{ window_start: string }>();
   const thisMonth = results.filter((fit) => monthOf(indiaDate(new Date(fit.window_start))) === month).length;
-  if (thisMonth >= REFERRAL_MONTHLY_CAP) met.add("monthly_cap");
+  if (thisMonth >= monthlyCap) met.add("monthly_cap");
   // A number belongs to one person at a time, and nobody is attributed to their own invite
   // (src/domain/referrals/referrals.ts), so the two can only share a number through a change of number:
   // one of them holds, or once held, a number the other holds or once held.
@@ -308,6 +313,8 @@ export async function settleReferrals(
 ): Promise<{ granted: number; held: number; expired: number; messageIds: string[] }> {
   const { results } = await db.prepare(PENDING_SETTLEMENTS).bind(PER_PASS).all<AttributionRow>();
   const outcome = { granted: 0, held: 0, expired: 0, messageIds: [] as string[] };
+  if (results.length === 0) return outcome;
+  const { referralMonthlyCap } = await readOpsInputs(db, now);
   const at = now.toISOString();
   const settled = new Set<string>();
   for (const row of results) {
@@ -326,7 +333,7 @@ export async function settleReferrals(
       continue;
     }
     const attribution = attributionFrom(row);
-    const signals = await fraudSignals(db, attribution);
+    const signals = await fraudSignals(db, attribution, referralMonthlyCap);
     if (signals.length > 0) {
       await db
         .prepare(

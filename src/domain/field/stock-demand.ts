@@ -4,7 +4,6 @@
 // in its city holds, or whose client has no profile to match, is at risk: it is shown, and nothing is blocked.
 
 import { addDays, indiaInstant } from "../../lib/india-time.ts";
-import { DEMAND_DAYS } from "../../policy/stock.ts";
 import { latestFits, type FitToMatch } from "../clients/hair-profiles.ts";
 import { hairSystemSpecs, matchingCode, type HairSystemSpec } from "./hair-systems.ts";
 
@@ -117,27 +116,28 @@ function risksOf(coded: readonly { fit: FitRow; code: string | null }[], held: R
   return atRisk;
 }
 
-/** The weeks ahead from `today`, as the bounds of its booked visits. */
-const weeksAhead = (today: string) => ({
+/** The days ahead from `today` that ops read demand over (`stock_watch`), as the bounds of its booked visits. */
+const weeksAhead = (today: string, days: number) => ({
   from: indiaInstant(today, "00:00").toISOString(),
-  to: indiaInstant(addDays(today, DEMAND_DAYS), "00:00").toISOString(),
+  to: indiaInstant(addDays(today, days), "00:00").toISOString(),
 });
 
-/** The fits at risk in the weeks ahead from `today`, reading only the stock of the codes they need. */
-export async function fitsAtRisk(db: D1Database, today: string): Promise<AtRisk[]> {
-  const { from, to } = weeksAhead(today);
+/** The fits at risk in the days ahead from `today`, reading only the stock of the codes they need. */
+export async function fitsAtRisk(db: D1Database, today: string, days: number): Promise<AtRisk[]> {
+  const { from, to } = weeksAhead(today, days);
   const { results } = await fitsStatement(db, from, to).all<FitRow>();
   const coded = await codedFits(db, results);
   const codes = [...new Set(coded.flatMap((each) => each.code ?? []))];
   return risksOf(coded, await heldByCity(db, codes));
 }
 
-/** The weeks ahead from `today`: every stock code's expected use by city, and the fits at risk. */
+/** The days ahead from `today`: every stock code's expected use by city, and the fits at risk. */
 export async function stockDemand(
   db: D1Database,
   today: string,
+  days: number,
 ): Promise<{ readonly demand: Demand[]; readonly atRisk: AtRisk[] }> {
-  const { from, to } = weeksAhead(today);
+  const { from, to } = weeksAhead(today, days);
   const [used, fits] = await db.batch<{ code: string; city: string | null; expected: number } | FitRow>([
     db
       .prepare(

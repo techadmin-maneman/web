@@ -42,7 +42,7 @@ async function visitOfLink(db: D1Database, link: PaidLink): Promise<PaidVisit | 
   if (appointmentId === null) return null;
   const visit = await db
     .prepare(
-      `SELECT a.id, a.person_id, l.id AS link_id, l.razorpay_link_id, l.sent_at FROM appointments a
+      `SELECT a.id, a.person_id, l.id AS link_id, l.razorpay_link_id, l.sent_at, l.closes_at FROM appointments a
        LEFT JOIN payment_links l ON l.appointment_id = a.id
        WHERE a.id = ?1`,
     )
@@ -58,12 +58,17 @@ interface VisitOfLinkRow {
   link_id: string | null;
   razorpay_link_id: string | null;
   sent_at: string | null;
+  closes_at: string | null;
 }
 
 function ownLinkOf(row: VisitOfLinkRow): PaidVisit["ownLink"] {
   if (row.razorpay_link_id === null || row.sent_at === null) return null;
-  return { razorpayLinkId: row.razorpay_link_id, sentAt: row.sent_at };
+  return { razorpayLinkId: row.razorpay_link_id, sentAt: row.sent_at, closesAt: row.closes_at };
 }
+
+/** Whether a link has stopped taking payment: by its own close, or, made before links kept one, the committed days. */
+const linkClosed = (link: { readonly sentAt: string; readonly closesAt: string | null }, now: Date): boolean =>
+  link.closesAt === null ? link.sentAt <= closedIfSentBy(now).toISOString() : link.closesAt <= now.toISOString();
 
 /**
  * The visit's own link, cancelled once the visit is paid by another, as one ops made by hand, so that it neither
@@ -79,7 +84,7 @@ export async function cancelLinkPaidElsewhere(
   const { visit } = paid;
   const own = visit.ownLink;
   if (own === null || own.razorpayLinkId === paid.razorpayLinkId) return;
-  if (own.sentAt <= closedIfSentBy(now).toISOString()) return;
+  if (linkClosed(own, now)) return;
   try {
     await deps.payments.cancelPaymentLink(own.razorpayLinkId);
     deps.log.info("payment_link_cancelled", { appointment_id: visit.appointmentId });
