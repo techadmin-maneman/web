@@ -1,6 +1,8 @@
 // The hair profile's fields (./Profile.tsx): a field's choices as one group named by its title, a figure typed with
 // the range it must be in, and the base in centimetres beside its inches.
 
+import { Label, TextInput } from "@maneman/ui/Field";
+import { ToggleButton } from "@maneman/ui/ToggleButton";
 import { capsLook } from "@maneman/ui/Caps";
 import type { Typed } from "@maneman/web-kit/hair-profile";
 import { useId, type KeyboardEvent } from "react";
@@ -56,17 +58,18 @@ export function Chips<T extends string | number>({
         {options.map((option) => {
           const on = isChosen(option.id);
           return (
-            <button
+            <ToggleButton
               key={option.id}
-              className={on ? styles.chipOn : styles.chip}
-              type="button"
-              {...(many ? { "aria-pressed": on } : { role: "radio", "aria-checked": on })}
+              onInk
+              asRadio={!many}
+              className={styles.chip}
+              pressed={on}
               onClick={() => {
                 onChoose(option.id);
               }}
             >
               {option.label}
-            </button>
+            </ToggleButton>
           );
         })}
       </div>
@@ -100,10 +103,11 @@ export function Figure({
   const id = useId();
   return (
     <div className={styles.figure}>
-      <label className={styles.fieldLabel} htmlFor={id}>
+      <Label onInk className={styles.fieldLabel} htmlFor={id}>
         {label}
-      </label>
-      <input
+      </Label>
+      <TextInput
+        onInk
         className={styles.box64}
         id={id}
         value={value}

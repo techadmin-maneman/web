@@ -150,7 +150,7 @@
   }
 
   .outlineOnInk {
-    border-color: var(--ink-line);
+    border-color: var(--edge-on-ink);
     color: var(--paper);
   }
 

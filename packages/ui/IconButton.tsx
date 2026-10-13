@@ -15,10 +15,13 @@ export function IconButton({
   label,
   size,
   stroke,
+  edged = false,
   className,
   type = "button",
   ...rest
 }: Omit<ButtonHTMLAttributes<HTMLButtonElement>, "aria-label" | "children"> & {
+  /** Edged on the ink, as a stepper's minus and plus are. */
+  readonly edged?: boolean;
   /** The icon's path, from @maneman/brand/icons. */
   readonly d: string;
   /** What it does, for a screen reader: "Back". */
@@ -27,7 +30,12 @@ export function IconButton({
   readonly stroke?: number;
 }) {
   return (
-    <button {...rest} type={type} className={iconButtonLook(className)} aria-label={label}>
+    <button
+      {...rest}
+      type={type}
+      className={iconButtonLook(classes(edged && styles.edged, className))}
+      aria-label={label}
+    >
       <Icon d={d} size={size} stroke={stroke} />
     </button>
   );

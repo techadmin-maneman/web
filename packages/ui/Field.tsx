@@ -17,11 +17,13 @@
 import {
   useId,
   type InputHTMLAttributes,
+  type Ref,
   type ReactNode,
   type SelectHTMLAttributes,
   type TextareaHTMLAttributes,
 } from "react";
 import { capsLook } from "./Caps.tsx";
+import { Icon } from "./Icon.tsx";
 import { classes } from "./classes.ts";
 import { VisuallyHidden } from "./VisuallyHidden.tsx";
 import list from "./choice-list.module.css";
@@ -44,6 +46,7 @@ export function Field({
   label,
   hint,
   error,
+  onInk = false,
   className,
   children,
 }: {
@@ -51,6 +54,8 @@ export function Field({
   readonly hint?: ReactNode;
   /** What is wrong with the value, said once it is; null or absent while nothing is. */
   readonly error?: ReactNode;
+  /** On the ink, as every technician app screen is: its words in the ink's own muted tone. */
+  readonly onInk?: boolean;
   /** The field's place on its screen. */
   readonly className?: string;
   readonly children: (control: FieldControl) => ReactNode;
@@ -59,7 +64,7 @@ export function Field({
   const hintId = hint === undefined ? null : `${id}-hint`;
   const errorId = error === undefined || error === null ? null : `${id}-error`;
   return (
-    <div className={className}>
+    <div className={classes(onInk && styles.inkWords, className)}>
       <label className={styles.label} htmlFor={id}>
         {label}
       </label>
@@ -82,16 +87,35 @@ export function Field({
   );
 }
 
-/** A box's height: the tap's, or compact inside a table row, which keeps the row at its height. */
+/**
+ * A box's height, which each app sets (--field-height, ./base.css): the tap's, or compact inside a table row, which
+ * keeps the row at its height. On the ink, as the technician app's screens are, its edge and words are the ink's.
+ */
 interface Sized {
   readonly compact?: boolean;
+  readonly onInk?: boolean;
 }
 
-const lineOf = (compact: boolean | undefined) => (compact === true ? styles.compact : styles.line);
+const lineOf = ({ compact, onInk }: Sized) =>
+  classes(compact === true ? styles.compact : styles.line, onInk === true && styles.onInk);
 
-/** A line of text to type, the tap's height; its width is the caller's. */
-export function TextInput({ className, compact, ...rest }: InputHTMLAttributes<HTMLInputElement> & Sized) {
-  return <input {...rest} className={classes(styles.box, lineOf(compact), className)} />;
+/** A line of text to type, the app's height; its width is the caller's. An icon may stand at its start. */
+export function TextInput({
+  className,
+  compact,
+  onInk,
+  icon,
+  ref,
+  ...rest
+}: InputHTMLAttributes<HTMLInputElement> & Sized & { readonly icon?: string; readonly ref?: Ref<HTMLInputElement> }) {
+  const input = <input {...rest} ref={ref} className={classes(styles.box, lineOf({ compact, onInk }), className)} />;
+  if (icon === undefined) return input;
+  return (
+    <div className={styles.withIcon}>
+      <Icon className={styles.icon} d={icon} size={21} />
+      {input}
+    </div>
+  );
 }
 
 /**
@@ -102,37 +126,53 @@ export function NumberInput({
   className,
   type = "number",
   compact,
+  onInk,
   ...rest
 }: InputHTMLAttributes<HTMLInputElement> & Sized) {
-  return <input {...rest} type={type} className={classes(styles.box, lineOf(compact), styles.figure, className)} />;
+  return (
+    <input
+      {...rest}
+      type={type}
+      className={classes(styles.box, lineOf({ compact, onInk }), styles.figure, className)}
+    />
+  );
 }
 
 /** A day to pick, the whole date shown beside the picker's button. */
 export function DateInput({
   className,
   compact,
+  onInk,
   ...rest
 }: Omit<InputHTMLAttributes<HTMLInputElement>, "type"> & Sized) {
-  return <input {...rest} type="date" className={classes(styles.box, lineOf(compact), styles.figure, className)} />;
+  return (
+    <input
+      {...rest}
+      type="date"
+      className={classes(styles.box, lineOf({ compact, onInk }), styles.figure, className)}
+    />
+  );
 }
 
 /** One of a few, with the one arrow every select in the apps draws. */
-export function Select({ className, compact, ...rest }: SelectHTMLAttributes<HTMLSelectElement> & Sized) {
-  return <select {...rest} className={classes(styles.box, lineOf(compact), styles.select, className)} />;
+export function Select({ className, compact, onInk, ...rest }: SelectHTMLAttributes<HTMLSelectElement> & Sized) {
+  return <select {...rest} className={classes(styles.box, lineOf({ compact, onInk }), styles.select, className)} />;
 }
 
 /** A label of its own, for a control a `Field` cannot hold: one beside another in a row, or named by a table's head. */
 export function Label({
   htmlFor,
+  onInk = false,
   className,
   children,
 }: {
   readonly htmlFor: string;
+  readonly onInk?: boolean;
   readonly className?: string;
   readonly children: ReactNode;
 }) {
   return (
-    <label className={classes(styles.label, className)} htmlFor={htmlFor}>
+    <label className={classes(styles.label, onInk && styles.labelOnInk, className)} htmlFor={htmlFor}>
       {children}
     </label>
   );

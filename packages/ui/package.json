@@ -11,6 +11,7 @@
     "./base.css": "./base.css",
     "./Button": "./Button.tsx",
     "./Caps": "./Caps.tsx",
+    "./CheckRow": "./CheckRow.tsx",
     "./Chip": "./Chip.tsx",
     "./ChoiceCard": "./ChoiceCard.tsx",
     "./classes": "./classes.ts",

@@ -3,6 +3,7 @@
 // board draws it. It is asked of the API at once, not queued in the outbox: the technician must hear whether it
 // applies while the client is there. No amount is shown: none reaches the phone, and the link carries it.
 
+import { Label, TextInput } from "@maneman/ui/Field";
 import { Button } from "@maneman/ui/Button";
 import { useState } from "react";
 import { api } from "../api.ts";
@@ -43,10 +44,11 @@ export function DiscountCode({ jobId, onChecking }: { jobId: string; onChecking:
 
   return (
     <div className={styles.field}>
-      <label className={styles.fieldLabel} htmlFor="discount-code">
+      <Label onInk className={styles.fieldLabel} htmlFor="discount-code">
         {copy.label}
-      </label>
-      <input
+      </Label>
+      <TextInput
+        onInk
         className={styles.box64}
         id="discount-code"
         value={typed}

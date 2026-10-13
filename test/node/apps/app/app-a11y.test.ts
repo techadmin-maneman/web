@@ -30,10 +30,11 @@ describe("the client app", () => {
     expect(field?.[1]).not.toContain("--gilt");
   });
 
+  // The app's own boxes, and the shared number field it draws on paper.
   it("writes every placeholder in the hint's colour, which reads at 5:1 on white", () => {
-    const placeholders = stylesheets("apps/app/src")
+    const placeholders = [...stylesheets("apps/app/src"), "packages/ui/mobile-input.module.css"]
       .flatMap(rulesOf)
-      .filter(([selector]) => selector.includes("::placeholder"));
+      .filter(([selector]) => selector.includes("::placeholder") && !selector.includes("onInk"));
     expect(placeholders.length).toBeGreaterThan(0);
     for (const [, body] of placeholders) expect(body).toContain("color: var(--paper-hint)");
   });

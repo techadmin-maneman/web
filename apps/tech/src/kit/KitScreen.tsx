@@ -2,6 +2,7 @@
 // system's pieces scanned one by one; what it holds, each lot's expiry beside it; and the pieces that came off clients
 // and any expired stock, handed back to the stockroom. Never a cost. Its writes need signal, and say so without it.
 
+import { Field, TextInput } from "@maneman/ui/Field";
 import { ICONS } from "@maneman/brand/icons";
 import { Button } from "@maneman/ui/Button";
 import { IconButton } from "@maneman/ui/IconButton";
@@ -36,24 +37,27 @@ function ScanLabel({ onLabel }: { onLabel: (label: string) => void }) {
   };
   return (
     <>
-      <label className={styles.fieldLabel}>
-        {copy.scan.label}
-        <input
-          className={styles.input}
-          value={typed}
-          autoCapitalize="characters"
-          autoComplete="off"
-          spellCheck={false}
-          onChange={(event) => {
-            setTyped(event.target.value);
-          }}
-          onKeyDown={(event) => {
-            if (event.key !== "Enter") return;
-            event.preventDefault();
-            add(typed);
-          }}
-        />
-      </label>
+      <Field onInk className={styles.fieldLabel} label={copy.scan.label}>
+        {(control) => (
+          <TextInput
+            {...control}
+            onInk
+            className={styles.input}
+            value={typed}
+            autoCapitalize="characters"
+            autoComplete="off"
+            spellCheck={false}
+            onChange={(event) => {
+              setTyped(event.target.value);
+            }}
+            onKeyDown={(event) => {
+              if (event.key !== "Enter") return;
+              event.preventDefault();
+              add(typed);
+            }}
+          />
+        )}
+      </Field>
       <div className={styles.buttons}>
         <Button
           variant="outlineOnInk"

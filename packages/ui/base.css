@@ -38,6 +38,11 @@
     --control-weight: var(--weight-medium);
     --small-height: var(--tap);
     --small-text: var(--fs-15);
+    /* An outline's edge on the ink: the boards' line, which the technician app strengthens for the sun. */
+    --edge-on-ink: var(--ink-line);
+    /* A field's box: the tap's height, which the technician app raises on its body. */
+    --field-height: var(--tap);
+    --field-text: var(--fs-15);
     /* Inside a table row, which keeps the row at the console's row height. */
     --compact-height: var(--sp-28);
     --compact-text: var(--fs-13);

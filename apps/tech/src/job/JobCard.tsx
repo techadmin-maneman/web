@@ -12,6 +12,7 @@
 // The last visit's photograph is fetched each time the card is open and never
 // kept: the API answers it `no-store`, and the service worker leaves it alone.
 
+import { ButtonLink } from "@maneman/ui/Button";
 import { capsLook } from "@maneman/ui/Caps";
 import { Icon } from "@maneman/ui/Icon";
 import { whatsappChat } from "@maneman/web-kit/whatsapp";
@@ -174,23 +175,31 @@ export function JobCard({ job }: { job: Job }) {
           <p className={styles.access}>{copy.clientNote(firstNameOf(client.name), clientNote)}</p>
         )}
         {/* A new tab, so a technician who has taken the route back still has the app open behind it. */}
-        <a className={styles.navigate} href={wayTo(job.address)} target="_blank" rel="noopener noreferrer">
+        <ButtonLink
+          variant="outlineOnInk"
+          size="control"
+          className={styles.navigate}
+          href={wayTo(job.address)}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
           <Icon d={PIN} size={21} stroke={STROKE} />
           <span>{copy.navigate}</span>
-        </a>
+        </ButtonLink>
         {client !== null && (
           <div className={styles.reach}>
-            <a className={styles.reachLink} href={callLink(client.mobile)}>
+            <ButtonLink variant="outlineOnInk" size="control" href={callLink(client.mobile)}>
               {copy.call(firstNameOf(client.name))}
-            </a>
-            <a
-              className={styles.reachLink}
+            </ButtonLink>
+            <ButtonLink
+              variant="outlineOnInk"
+              size="control"
               href={whatsappChat(client.mobile)}
               target="_blank"
               rel="noopener noreferrer"
             >
               {copy.whatsApp(firstNameOf(client.name))}
-            </a>
+            </ButtonLink>
           </div>
         )}
         <TellClient job={job} />

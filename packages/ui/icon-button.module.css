@@ -19,4 +19,9 @@
     color: inherit;
     cursor: pointer;
   }
+
+  .edged {
+    border: var(--hairline) solid var(--ink-line);
+    color: var(--paper);
+  }
 }
