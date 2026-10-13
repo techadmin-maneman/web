@@ -266,13 +266,7 @@ export function StaffForm(props: {
         </Button>
       </div>
       <div className={styles.actions}>
-        <Button
-          type="submit"
-          variant="primary"
-          size="small"
-          className={styles.save}
-          disabled={draft.email.trim() === ""}
-        >
+        <Button type="submit" variant="primary" size="small" disabled={draft.email.trim() === ""}>
           {copy.form.review}
         </Button>
         <Button variant="outline" size="small" className={styles.quiet} onClick={onCancel}>

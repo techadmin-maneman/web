@@ -174,7 +174,7 @@ function AddForm(props: { today: string; cities: readonly string[]; onAdded: (da
         </div>
       </div>
       <div className={styles.actions}>
-        <Button type="submit" variant="primary" size="small" className={styles.save} disabled={!ready || sending}>
+        <Button type="submit" variant="primary" size="small" disabled={!ready || sending}>
           {sending ? copy.adding : copy.add}
         </Button>
       </div>

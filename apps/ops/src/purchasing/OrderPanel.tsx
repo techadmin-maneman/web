@@ -1,6 +1,7 @@
 // One purchase order beneath the list (docs/decisions/0166-purchase-orders.md): its lines and total, and what can be
 // done with it now: approved, by a second manager where it needs one; marked sent; cancelled with why; printed.
 
+import { Panel } from "@maneman/ui/Panel";
 import { Button } from "@maneman/ui/Button";
 import { Field, TextInput } from "@maneman/ui/Field";
 import { Table } from "@maneman/ui/Table";
@@ -158,12 +159,7 @@ export function OrderPanel({
     } else setFailure({ code: answer.code, fields: answer.fields });
   };
   return (
-    <section className={form.panel} aria-labelledby="order-panel">
-      <div className={form.panelHead}>
-        <h2 className={form.panelTitle} id="order-panel">
-          {copy.number(order.number)} · {supplier}
-        </h2>
-      </div>
+    <Panel titleId="order-panel" title={`${copy.number(order.number)} · ${supplier}`}>
       <p className={form.note}>
         {copy.states[order.state] ?? order.state}
         {order.state === "drafted" && order.approved_by !== null && ` · ${copy.awaitingSecond}`}
@@ -201,6 +197,6 @@ export function OrderPanel({
           }}
         />
       )}
-    </section>
+    </Panel>
   );
 }

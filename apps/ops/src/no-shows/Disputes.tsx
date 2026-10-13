@@ -160,20 +160,13 @@ function Dispute({ each, now, may, onRuled }: DisputeProps) {
               <Button
                 variant="primary"
                 size="small"
-                className={styles.charge}
                 disabled={sending || noReason}
                 onClick={() => void rule("refunded")}
               >
                 {copy.refund}
               </Button>
             )}
-            <Button
-              variant="outline"
-              size="small"
-              className={styles.waive}
-              disabled={sending || noReason}
-              onClick={() => void rule("upheld")}
-            >
+            <Button variant="outline" size="small" disabled={sending || noReason} onClick={() => void rule("upheld")}>
               {copy.uphold}
             </Button>
           </div>

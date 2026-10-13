@@ -2,6 +2,7 @@
 // warning days (`stock_watch`), or has, soonest first, with where it is and how much is there. The morning alert says the same
 // in the chat; here ops act on it, moving the stock or writing it off by its lot.
 
+import { Panel } from "@maneman/ui/Panel";
 import { Table } from "@maneman/ui/Table";
 import { fullDate } from "@maneman/web-kit/dates";
 import type { Stock } from "../api.ts";
@@ -26,12 +27,7 @@ export function expiringLots(book: Stock) {
 export function Expiring({ book }: { book: Stock }) {
   const words = stockViews.expiring;
   return (
-    <section className={form.panel} aria-labelledby="stock-expiring">
-      <div className={form.panelHead}>
-        <h2 className={form.panelTitle} id="stock-expiring">
-          {words.title}
-        </h2>
-      </div>
+    <Panel titleId="stock-expiring" title={words.title}>
       <p className={form.note}>{words.intro(book.expiry_warning_days)}</p>
       <div className={styles.scroll}>
         <Table className={form.table}>
@@ -68,6 +64,6 @@ export function Expiring({ book }: { book: Stock }) {
           </tbody>
         </Table>
       </div>
-    </section>
+    </Panel>
   );
 }

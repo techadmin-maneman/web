@@ -101,7 +101,7 @@ export function SettingForm(props: {
       {props.children}
       {steps.step === "editing" ? (
         <div className={styles.actions}>
-          <Button variant="primary" size="small" className={styles.save} disabled={!props.ready} onClick={steps.check}>
+          <Button variant="primary" size="small" disabled={!props.ready} onClick={steps.check}>
             {words.next}
           </Button>
           {props.onCancel !== null && (

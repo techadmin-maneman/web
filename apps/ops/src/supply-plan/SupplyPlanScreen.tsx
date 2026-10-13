@@ -2,6 +2,7 @@
 // supplier, each with the figures behind it, approved at a quantity or rejected with why; and the plan drafted again
 // from the latest forecast. Beneath, the forecast itself and the events calendar it reads.
 
+import { Panel } from "@maneman/ui/Panel";
 import { Button } from "@maneman/ui/Button";
 import { Table } from "@maneman/ui/Table";
 import { useLoad } from "@maneman/ui/useLoad";
@@ -31,12 +32,7 @@ function Lines({
   const columns = kind === "transfer" ? copy.transferColumns : copy.orderColumns;
   if (shown.length === 0) return null;
   return (
-    <section className={form.panel} aria-labelledby={`plan-${kind}`}>
-      <div className={form.panelHead}>
-        <h2 className={form.panelTitle} id={`plan-${kind}`}>
-          {kind === "transfer" ? copy.transfers : copy.orders}
-        </h2>
-      </div>
+    <Panel titleId={`plan-${kind}`} title={kind === "transfer" ? copy.transfers : copy.orders}>
       <Table className={form.table}>
         <thead>
           <tr>
@@ -71,7 +67,7 @@ function Lines({
           ))}
         </tbody>
       </Table>
-    </section>
+    </Panel>
   );
 }
 

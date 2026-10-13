@@ -1,6 +1,7 @@
 // The forecast on the Supply plan (docs/decisions/0182-the-events-calendar.md): one city at a time, each item's expected
 // use in each period of the latest run, with its high case; and beneath, how right the forecasts before it were.
 
+import { Panel } from "@maneman/ui/Panel";
 import { Field, Select } from "@maneman/ui/Field";
 import { Table } from "@maneman/ui/Table";
 import { useLoad } from "@maneman/ui/useLoad";
@@ -87,12 +88,7 @@ export function ForecastPanel({ cities }: { cities: readonly string[] }) {
   const load = useCallback(() => client.get("/api/stock/forecast", { query: { city } }), [city]);
   const [loaded, retry] = useLoad(load);
   return (
-    <section className={form.panel} aria-labelledby="plan-forecast">
-      <div className={form.panelHead}>
-        <h2 className={form.panelTitle} id="plan-forecast">
-          {copy.title}
-        </h2>
-      </div>
+    <Panel titleId="plan-forecast" title={copy.title}>
       <Field label={copy.city} className={form.field}>
         {(control) => (
           <Select
@@ -115,6 +111,6 @@ export function ForecastPanel({ cities }: { cities: readonly string[] }) {
       {loaded.state === "failed" && <PanelFailed onRetry={retry} requestId={loaded.requestId} />}
       {loaded.state === "loaded" && <Periods forecast={loaded.value} city={city} />}
       <AccuracyPart city={city} />
-    </section>
+    </Panel>
   );
 }

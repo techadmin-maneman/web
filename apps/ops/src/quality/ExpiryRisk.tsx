@@ -1,6 +1,7 @@
 // Value at risk on the Quality page (docs/decisions/0188-failure-rates-and-value-at-risk.md): each lot that will not
 // all be used before it expires at its place's pace, valued at its landed cost, with what to do about it.
 
+import { Panel } from "@maneman/ui/Panel";
 import { Table } from "@maneman/ui/Table";
 import { useLoad } from "@maneman/ui/useLoad";
 import { rupees } from "@maneman/web-kit/money";
@@ -61,15 +62,10 @@ function Lots({ risk }: { risk: Risk }) {
 export function ExpiryRiskPanel() {
   const [loaded, retry] = useLoad(loadRisk);
   return (
-    <section className={form.panel} aria-labelledby="quality-risk">
-      <div className={form.panelHead}>
-        <h2 className={form.panelTitle} id="quality-risk">
-          {copy.risk}
-        </h2>
-      </div>
+    <Panel titleId="quality-risk" title={copy.risk}>
       {loaded.state === "loading" && <Loading />}
       {loaded.state === "failed" && <PanelFailed onRetry={retry} requestId={loaded.requestId} />}
       {loaded.state === "loaded" && <Lots risk={loaded.value} />}
-    </section>
+    </Panel>
   );
 }

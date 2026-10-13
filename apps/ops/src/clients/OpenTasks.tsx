@@ -35,7 +35,7 @@ function Row({ group, task, clientId, now }: { group: Group; task: Task; clientI
     <li className={styles.openTask}>
       <span className={styles.openTaskName}>{name}</span>
       <Left due={task.due} now={now} />
-      <OpsLink className={styles.metaLink} to={way.to}>
+      <OpsLink to={way.to}>
         {way.words}
         <VisuallyHidden>{` · ${name}`}</VisuallyHidden>
       </OpsLink>

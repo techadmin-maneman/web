@@ -83,7 +83,6 @@ function Open({ each, now, mayAnswer, onAnswered }: OpenProps) {
             <Button
               variant="primary"
               size="small"
-              className={styles.send}
               disabled={sending || response.trim() === ""}
               onClick={() => void send()}
             >

@@ -79,7 +79,7 @@ function Enforcement({ book, onChanged }: PanelProps) {
           <Button
             variant={on ? "outline" : "primary"}
             size="small"
-            className={on ? styles.quiet : styles.save}
+            className={on ? styles.quiet : undefined}
             onClick={() => {
               setStep("checking");
             }}

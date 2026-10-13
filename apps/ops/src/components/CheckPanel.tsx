@@ -62,7 +62,7 @@ export function CheckPanel({
         </p>
       ))}
       <div className={styles.actions}>
-        <Button variant="primary" size="small" className={styles.save} disabled={busy || !ready} onClick={onSend}>
+        <Button variant="primary" size="small" disabled={busy || !ready} onClick={onSend}>
           {busy ? sending : send}
         </Button>
         <Button variant="outline" size="small" className={styles.quiet} disabled={busy} onClick={onBack}>

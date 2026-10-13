@@ -121,9 +121,7 @@ export function ServiceUsage({ book, onSaved }: { book: Consumables; onSaved: (b
           <ul className={own.uses}>
             {listed.map((each) => (
               <li className={own.use} key={each.code}>
-                <Label className={own.useLabel} htmlFor={`usage-${each.code}`}>
-                  {words.quantity(each.name, each.unit)}
-                </Label>
+                <Label htmlFor={`usage-${each.code}`}>{words.quantity(each.name, each.unit)}</Label>
                 <TextInput
                   className={styles.number}
                   id={`usage-${each.code}`}

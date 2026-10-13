@@ -3,6 +3,7 @@
 // left can send it back before it arrives. A hair system's pieces that arrived are scanned, and those not scanned
 // went missing on the way (docs/decisions/0162-scanning-labels.md).
 
+import { Panel } from "@maneman/ui/Panel";
 import { Button, RowButton } from "@maneman/ui/Button";
 import { Field, NumberInput, TextInput } from "@maneman/ui/Field";
 import { Table } from "@maneman/ui/Table";
@@ -146,12 +147,7 @@ export function InTransit({ book, onChanged }: { book: Stock; onChanged: (book: 
     else setFailure({ code: answer.code, fields: answer.fields });
   };
   return (
-    <section className={form.panel} aria-labelledby="stock-in-transit">
-      <div className={form.panelHead}>
-        <h2 className={form.panelTitle} id="stock-in-transit">
-          {copy.title}
-        </h2>
-      </div>
+    <Panel titleId="stock-in-transit" title={copy.title}>
       <div className={styles.scroll}>
         <Table className={form.table}>
           <thead>
@@ -194,6 +190,6 @@ export function InTransit({ book, onChanged }: { book: Stock; onChanged: (book: 
           {errorText(copy.errors, failure)}
         </p>
       )}
-    </section>
+    </Panel>
   );
 }

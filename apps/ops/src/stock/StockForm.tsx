@@ -9,6 +9,7 @@
 // counts once the technician scans it in, unless handed over in person
 // (docs/decisions/0164-the-kit-screen.md).
 
+import { Panel } from "@maneman/ui/Panel";
 import { errorText, type Failure } from "@maneman/web-kit/refusal";
 import { Checkbox, ChoiceGroup, Field, Label, NumberInput, Radio, Select, TextInput } from "@maneman/ui/Field";
 import { Button } from "@maneman/ui/Button";
@@ -311,12 +312,7 @@ export function StockForm({
   };
 
   return (
-    <section className={form.panel} aria-labelledby="stock-record">
-      <div className={form.panelHead}>
-        <h2 className={form.panelTitle} id="stock-record">
-          {copy.record.title}
-        </h2>
-      </div>
+    <Panel titleId="stock-record" title={copy.record.title}>
       <div className={form.group}>
         <ChoiceGroup className={styles.kinds} legend={copy.record.what} inline>
           {kinds.map((kind) => (
@@ -408,6 +404,6 @@ export function StockForm({
           </p>
         )}
       </div>
-    </section>
+    </Panel>
   );
 }

@@ -288,16 +288,10 @@ function ConfirmCharge({ each, onCharge, onBack }: { each: NoShowCase; onCharge:
         {copy.confirm.who(each.person?.name ?? copy.erased, day)}
       </p>
       <div className={styles.actions}>
-        <Button
-          variant="primary"
-          size="small"
-          className={styles.charge}
-          disabled={preview.state !== "loaded"}
-          onClick={onCharge}
-        >
+        <Button variant="primary" size="small" disabled={preview.state !== "loaded"} onClick={onCharge}>
           {copy.confirmCharge}
         </Button>
-        <Button variant="outline" size="small" className={styles.waive} onClick={onBack}>
+        <Button variant="outline" size="small" onClick={onBack}>
           {copy.back}
         </Button>
       </div>
@@ -389,7 +383,6 @@ function Case({ each, now, may, onDecided }: CaseProps) {
             variant="primary"
             size="small"
             ref={chargeButton}
-            className={styles.charge}
             disabled={sending || noReason}
             onClick={() => {
               setRuling({ step: "confirming" });
@@ -398,13 +391,7 @@ function Case({ each, now, may, onDecided }: CaseProps) {
             {sending ? copy.deciding : copy.charge}
           </Button>
           {may.waive && (
-            <Button
-              variant="outline"
-              size="small"
-              className={styles.waive}
-              disabled={sending || noReason}
-              onClick={() => void decide("waived")}
-            >
+            <Button variant="outline" size="small" disabled={sending || noReason} onClick={() => void decide("waived")}>
               {copy.waive}
             </Button>
           )}

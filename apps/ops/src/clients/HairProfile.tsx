@@ -137,7 +137,6 @@ function Versions({ versions }: { versions: readonly HairProfileVersion[] }) {
           <li key={version.id}>
             <Disclosure
               className={styles.version}
-              summaryClassName={styles.versionLine}
               summary={copy.version(longDate(version.recorded_at), byWhom(version))}
             >
               <ProfileRows profile={version} />

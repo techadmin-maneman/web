@@ -75,7 +75,7 @@ function PieceTable({ clientId }: { clientId: string }) {
 
   const { pieces } = loaded.value;
   return (
-    <section className={styles.pieces} aria-label={copy.title}>
+    <section aria-label={copy.title}>
       {pieces.length === 0 ? (
         <p className={styles.empty}>{copy.empty}</p>
       ) : (

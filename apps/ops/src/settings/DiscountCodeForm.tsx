@@ -284,7 +284,7 @@ export function DiscountCodeForm({
       <Limits draft={draft} today={today} edit={edit} />
 
       <div className={styles.actions}>
-        <Button type="submit" variant="primary" size="small" className={styles.save} disabled={!isReady(draft)}>
+        <Button type="submit" variant="primary" size="small" disabled={!isReady(draft)}>
           {copy.check}
         </Button>
         <Button variant="outline" size="small" className={styles.quiet} onClick={onClose}>

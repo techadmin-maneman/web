@@ -552,7 +552,6 @@ function GroupSection({ section, allowed, onSaved, children }: GroupSectionProps
           <Button
             variant="primary"
             size="small"
-            className={styles.save}
             disabled={changes.length === 0}
             onClick={() => {
               setSaving({ step: "checking", changes });

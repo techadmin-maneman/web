@@ -61,7 +61,6 @@ function GiveForm({
         {(control) => (
           <Select
             {...control}
-            className={styles.select}
             // The list stands where the button that asked for it stood, so the keyboard goes to it.
             autoFocus
             value={chosen}

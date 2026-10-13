@@ -8,6 +8,7 @@
 // rest here. A place at or below its level is marked Low in words, and raises
 // one alert (src/domain/field/stock.ts), which is why there is no Tasks group for it.
 
+import { Panel } from "@maneman/ui/Panel";
 import { lazyScreen } from "@maneman/ui/lazyScreen";
 import { Field, Select } from "@maneman/ui/Field";
 import { Table } from "@maneman/ui/Table";
@@ -211,12 +212,7 @@ function Movements({ book }: { book: Stock }) {
     sorted: { column: 0, direction: "descending" },
   });
   return (
-    <section className={form.panel} aria-labelledby="stock-movements">
-      <div className={form.panelHead}>
-        <h2 className={form.panelTitle} id="stock-movements">
-          {words.title}
-        </h2>
-      </div>
+    <Panel titleId="stock-movements" title={words.title}>
       {book.movements.length === 0 ? (
         <p className={form.note}>{words.none}</p>
       ) : (
@@ -248,7 +244,7 @@ function Movements({ book }: { book: Stock }) {
           <TableEnd view={view} />
         </>
       )}
-    </section>
+    </Panel>
   );
 }
 
@@ -268,12 +264,7 @@ export function StockScreen() {
       {loaded.state === "failed" && <PanelFailed onRetry={retry} requestId={loaded.requestId} />}
       {loaded.state === "loaded" && (
         <div className={styles.screen}>
-          <section className={form.panel} aria-labelledby="stock-on-hand">
-            <div className={form.panelHead}>
-              <h2 className={form.panelTitle} id="stock-on-hand">
-                {copy.onHand}
-              </h2>
-            </div>
+          <Panel titleId="stock-on-hand" title={copy.onHand}>
             <Grouping by={by} onBy={setBy} />
             {by === "place" ? (
               <OnHand book={book ?? loaded.value} />
@@ -282,7 +273,7 @@ export function StockScreen() {
                 <Totals book={book ?? loaded.value} by={by} />
               </Suspense>
             )}
-          </section>
+          </Panel>
           {anyExpiring(book ?? loaded.value) && (
             <Suspense fallback={<Loading />}>
               <Expiring book={book ?? loaded.value} />

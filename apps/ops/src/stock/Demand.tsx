@@ -2,6 +2,7 @@
 // use, by city, beside what each city holds, a shortfall marked; and the fits whose hair system is not in their city,
 // each a link to its visit's day on the board. Nothing here blocks a booking.
 
+import { Panel } from "@maneman/ui/Panel";
 import { Table } from "@maneman/ui/Table";
 import { useLoad } from "@maneman/ui/useLoad";
 import { indiaDate, shortDate } from "@maneman/web-kit/dates";
@@ -20,12 +21,7 @@ export function Demand({ book }: { book: Stock }) {
     code === null ? words.noProfile : (book.consumables.find((each) => each.code === code)?.name ?? code);
   const unit = (code: string) => book.consumables.find((each) => each.code === code)?.unit ?? "";
   return (
-    <section className={form.panel} aria-labelledby="stock-demand">
-      <div className={form.panelHead}>
-        <h2 className={form.panelTitle} id="stock-demand">
-          {words.title}
-        </h2>
-      </div>
+    <Panel titleId="stock-demand" title={words.title}>
       {loaded.state === "loading" && <Loading />}
       {loaded.state === "failed" && <PanelFailed onRetry={retry} requestId={loaded.requestId} />}
       {loaded.state === "loaded" && (
@@ -66,7 +62,7 @@ export function Demand({ book }: { book: Stock }) {
           )}
           {loaded.value.at_risk.length > 0 && (
             <>
-              <h3 className={form.panelTitle}>{words.atRisk}</h3>
+              <h3 className={form.ruleTitle}>{words.atRisk}</h3>
               <ul className={form.note}>
                 {loaded.value.at_risk.map((fit) => (
                   <li key={fit.appointment_id}>
@@ -82,6 +78,6 @@ export function Demand({ book }: { book: Stock }) {
           )}
         </>
       )}
-    </section>
+    </Panel>
   );
 }

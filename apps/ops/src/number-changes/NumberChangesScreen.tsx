@@ -100,7 +100,6 @@ function Change({ change, now, mayDecide, onDecided }: ChangeProps) {
             <Button
               variant="outline"
               size="small"
-              className={styles.quiet}
               disabled={sending || reason.trim() === ""}
               onClick={() => void decide("reject")}
             >
@@ -109,7 +108,6 @@ function Change({ change, now, mayDecide, onDecided }: ChangeProps) {
             <Button
               variant="outline"
               size="small"
-              className={styles.quiet}
               disabled={sending}
               onClick={() => {
                 setDeciding({ step: "open" });
@@ -125,20 +123,13 @@ function Change({ change, now, mayDecide, onDecided }: ChangeProps) {
       {!asking && mayDecide && (
         <div className={styles.decide}>
           <div className={styles.actions}>
-            <Button
-              variant="primary"
-              size="small"
-              className={styles.confirm}
-              disabled={sending}
-              onClick={() => void decide("confirm")}
-            >
+            <Button variant="primary" size="small" disabled={sending} onClick={() => void decide("confirm")}>
               {sending ? copy.deciding : copy.confirm}
             </Button>
             <Button
               variant="outline"
               size="small"
               ref={rejectButton}
-              className={styles.quiet}
               disabled={sending}
               onClick={() => {
                 setDeciding({ step: "asking" });

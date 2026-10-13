@@ -1,6 +1,7 @@
 // Operations · Usage (docs/decisions/0186-usage-and-shrinkage.md): over the last weeks, each technician's consumables
 // against what their visits were expected to use, each opened to its items; and each place's losses, the flagged first.
 
+import { Panel } from "@maneman/ui/Panel";
 import { Button } from "@maneman/ui/Button";
 import { Table } from "@maneman/ui/Table";
 import { useLoad } from "@maneman/ui/useLoad";
@@ -58,12 +59,7 @@ function Technicians({ usage }: { usage: Usage }) {
   const [open, setOpen] = useState<string | null>(null);
   const opened = usage.technicians.find((technician) => technician.technician_id === open);
   return (
-    <section className={form.panel} aria-labelledby="usage-technicians">
-      <div className={form.panelHead}>
-        <h2 className={form.panelTitle} id="usage-technicians">
-          {copy.technicians}
-        </h2>
-      </div>
+    <Panel titleId="usage-technicians" title={copy.technicians}>
       <p className={form.note}>{copy.techniciansNote}</p>
       {usage.technicians.length === 0 ? (
         <p className={form.note}>{copy.noTechnicians}</p>
@@ -100,22 +96,17 @@ function Technicians({ usage }: { usage: Usage }) {
       )}
       {opened !== undefined && (
         <div className={form.group}>
-          <h3 className={form.panelTitle}>{copy.items(opened.name)}</h3>
+          <h3 className={form.ruleTitle}>{copy.items(opened.name)}</h3>
           <Items technician={opened} />
         </div>
       )}
-    </section>
+    </Panel>
   );
 }
 
 function Places({ usage }: { usage: Usage }) {
   return (
-    <section className={form.panel} aria-labelledby="usage-places">
-      <div className={form.panelHead}>
-        <h2 className={form.panelTitle} id="usage-places">
-          {copy.places}
-        </h2>
-      </div>
+    <Panel titleId="usage-places" title={copy.places}>
       <p className={form.note}>{copy.placesNote}</p>
       {usage.places.length === 0 ? (
         <p className={form.note}>{copy.noPlaces}</p>
@@ -139,7 +130,7 @@ function Places({ usage }: { usage: Usage }) {
           </tbody>
         </Table>
       )}
-    </section>
+    </Panel>
   );
 }
 

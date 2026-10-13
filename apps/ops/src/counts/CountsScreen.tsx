@@ -1,6 +1,7 @@
 // Operations · Counts (docs/decisions/0185-cycle-counts.md): the count tasks in the caller's places, each opened to be
 // counted, counted again or signed off; and each item's count class.
 
+import { Panel } from "@maneman/ui/Panel";
 import { Button } from "@maneman/ui/Button";
 import { Table } from "@maneman/ui/Table";
 import { useLoad } from "@maneman/ui/useLoad";
@@ -75,14 +76,9 @@ export function CountsScreen() {
       {loaded.state === "failed" && <PanelFailed onRetry={retry} requestId={loaded.requestId} />}
       {current !== null && (
         <div className={form.screen}>
-          <section className={form.panel} aria-labelledby="count-tasks">
-            <div className={form.panelHead}>
-              <h2 className={form.panelTitle} id="count-tasks">
-                {copy.tasks}
-              </h2>
-            </div>
+          <Panel titleId="count-tasks" title={copy.tasks}>
             <Tasks book={current} onOpen={setOpen} />
-          </section>
+          </Panel>
           {access.mayCall("POST /api/count-tasks") && (
             <StartCount
               book={current}

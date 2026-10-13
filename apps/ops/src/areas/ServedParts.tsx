@@ -164,7 +164,7 @@ function FilePreview({
         </tbody>
       </Table>
       <div className={styles.actions}>
-        <Button variant="primary" size="small" className={styles.save} onClick={onApply}>
+        <Button variant="primary" size="small" onClick={onApply}>
           {copy.upload.apply}
         </Button>
         <Button variant="outline" size="small" className={styles.quiet} onClick={onCancel}>

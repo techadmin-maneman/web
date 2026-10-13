@@ -2,6 +2,7 @@
 // its minimum, at the price it lists; the total shown before it is drafted. Drafting sends nothing to the supplier: an
 // order goes out only once approved and marked sent.
 
+import { Panel } from "@maneman/ui/Panel";
 import { Button, RowButton } from "@maneman/ui/Button";
 import { Field, Select, TextInput } from "@maneman/ui/Field";
 import { errorText, type Failure } from "@maneman/web-kit/refusal";
@@ -251,12 +252,7 @@ export function DraftOrder({ book, onDrafted }: { book: Orders; onDrafted: (book
     onDrafted(answer.body, copy.draft.drafted);
   };
   return (
-    <section className={form.panel} aria-labelledby="draft-order">
-      <div className={form.panelHead}>
-        <h2 className={form.panelTitle} id="draft-order">
-          {copy.draft.title}
-        </h2>
-      </div>
+    <Panel titleId="draft-order" title={copy.draft.title}>
       <SupplierPick stocked={stocked} supplierId={supplierId} onPick={pick} />
       <LinesEditor supplier={supplier} lines={lines} consumable={consumable} onLines={setLines} />
       <WhenAndNote expected={expected} note={note} onExpected={setExpected} onNote={setNote} />
@@ -271,6 +267,6 @@ export function DraftOrder({ book, onDrafted }: { book: Orders; onDrafted: (book
           {errorText(copy.errors, failure)}
         </p>
       )}
-    </section>
+    </Panel>
   );
 }

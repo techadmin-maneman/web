@@ -129,7 +129,6 @@ function HeldGrant({ grant, now, mayDecide, onDecided }: HeldGrantProps) {
             <Button
               variant="outline"
               size="small"
-              className={styles.quiet}
               disabled={sending}
               onClick={() => {
                 keepHeld(asking.choice);
@@ -146,7 +145,6 @@ function HeldGrant({ grant, now, mayDecide, onDecided }: HeldGrantProps) {
             variant="primary"
             size="small"
             ref={openers.approve}
-            className={styles.approve}
             onClick={() => {
               setDecision({ step: "asking", choice: "approve" });
             }}
@@ -157,7 +155,6 @@ function HeldGrant({ grant, now, mayDecide, onDecided }: HeldGrantProps) {
             variant="danger"
             size="small"
             ref={openers.reject}
-            className={styles.reject}
             onClick={() => {
               setDecision({ step: "asking", choice: "reject" });
             }}
@@ -322,13 +319,7 @@ function ReferrersTable({ version }: { version: number }) {
         )}
         {pages.more && (
           <div className={styles.actions}>
-            <Button
-              variant="outline"
-              size="small"
-              className={styles.quiet}
-              disabled={pages.fetching}
-              onClick={() => void more(pages)}
-            >
+            <Button variant="outline" size="small" disabled={pages.fetching} onClick={() => void more(pages)}>
               {pages.fetching ? copy.loading : copy.more}
             </Button>
           </div>

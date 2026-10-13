@@ -2,6 +2,7 @@
 // their currency, the pack it comes in, the least they take, and the lead time they promise. Setting an item shows the
 // old beside the new before it is sent (ADR 0071); removing one takes it off their list.
 
+import { Panel } from "@maneman/ui/Panel";
 import { RowButton } from "@maneman/ui/Button";
 import { Field, Select, TextInput } from "@maneman/ui/Field";
 import { Table } from "@maneman/ui/Table";
@@ -195,12 +196,7 @@ export function SupplierItems({
     if (answer.ok) onSaved(answer.body, words.removed);
   };
   return (
-    <section className={styles.panel} aria-labelledby="supplier-items">
-      <div className={styles.panelHead}>
-        <h2 className={styles.panelTitle} id="supplier-items">
-          {words.title(supplier.name)}
-        </h2>
-      </div>
+    <Panel titleId="supplier-items" title={words.title(supplier.name)}>
       {supplier.items.length === 0 ? (
         <p className={styles.note}>{words.none}</p>
       ) : (
@@ -247,6 +243,6 @@ export function SupplierItems({
       {access.mayCall("POST /api/suppliers/{id}/items") && (
         <ItemForm key={supplier.id} book={book} supplier={supplier} onSaved={onSaved} />
       )}
-    </section>
+    </Panel>
   );
 }

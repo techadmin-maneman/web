@@ -1,6 +1,7 @@
 // A count of one item at one place, started now rather than waiting for the morning's tasks
 // (docs/decisions/0185-cycle-counts.md).
 
+import { Panel } from "@maneman/ui/Panel";
 import { Button } from "@maneman/ui/Button";
 import { Field, Select } from "@maneman/ui/Field";
 import { errorText, type Failure } from "@maneman/web-kit/refusal";
@@ -22,12 +23,7 @@ export function StartCount({ book, onStarted }: { book: Book; onStarted: (id: st
     } else setFailure({ code: answer.code, fields: answer.fields });
   };
   return (
-    <section className={form.panel} aria-labelledby="count-now">
-      <div className={form.panelHead}>
-        <h2 className={form.panelTitle} id="count-now">
-          {copy.startTitle}
-        </h2>
-      </div>
+    <Panel titleId="count-now" title={copy.startTitle}>
       <div className={form.group}>
         <Field label={copy.place} className={form.field}>
           {(control) => (
@@ -76,6 +72,6 @@ export function StartCount({ book, onStarted }: { book: Book; onStarted: (id: st
           {errorText(copy.errors, failure)}
         </p>
       )}
-    </section>
+    </Panel>
   );
 }

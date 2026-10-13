@@ -53,7 +53,6 @@ export function Narrowing<Row>({
           {(control) => (
             <TextInput
               {...control}
-              className={styles.search}
               type="search"
               value={view.search}
               onChange={(event) => {

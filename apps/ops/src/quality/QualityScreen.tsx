@@ -1,6 +1,7 @@
 // Operations · Quality (docs/decisions/0187-recalls.md, 0188-failure-rates-and-value-at-risk.md): every recall, each
 // opened to where its lot is and who wears it, and a lot recalled with why; failure rates; and the value at risk.
 
+import { Panel } from "@maneman/ui/Panel";
 import { Button } from "@maneman/ui/Button";
 import { Table } from "@maneman/ui/Table";
 import { useLoad } from "@maneman/ui/useLoad";
@@ -94,12 +95,7 @@ export function QualityScreen() {
       {loaded.state === "failed" && <PanelFailed onRetry={retry} requestId={loaded.requestId} />}
       {current !== null && (
         <div className={form.screen}>
-          <section className={form.panel} aria-labelledby="quality-recalls">
-            <div className={form.panelHead}>
-              <h2 className={form.panelTitle} id="quality-recalls">
-                {copy.recalls}
-              </h2>
-            </div>
+          <Panel titleId="quality-recalls" title={copy.recalls}>
             <Recalls book={current} onOpen={open} />
             {access.mayCall("POST /api/recalls") && <RaiseRecall book={current} onAnswer={answered} />}
             {said !== null && (
@@ -112,7 +108,7 @@ export function QualityScreen() {
                 {errorText(copy.errors, failure)}
               </p>
             )}
-          </section>
+          </Panel>
           {opened !== null && <RecallDetail key={opened.id} recall={opened} onAnswer={answered} />}
           <FailuresPanel />
           {access.mayCall("GET /api/stock/expiry-risk") && <ExpiryRiskPanel />}

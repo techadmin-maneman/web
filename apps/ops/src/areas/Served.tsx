@@ -189,7 +189,6 @@ function Area({ pincodes: loadedPincodes, cities }: { pincodes: readonly ServedP
           <Button
             variant="primary"
             size="small"
-            className={styles.save}
             disabled={busy || changes.length === 0 || badName !== undefined || later !== undefined}
             onClick={pressSave}
           >
