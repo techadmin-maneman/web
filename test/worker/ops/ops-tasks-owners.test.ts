@@ -22,7 +22,6 @@ import {
   person,
   grievance,
 } from "./ops-tasks-fixtures.ts";
-import { relax } from "./staff-fixtures.ts";
 
 let ops: App;
 
@@ -48,7 +47,6 @@ beforeEach(async () => {
   captureLogs();
   ops = appFor("local", fakeDependencies(), {}, "ops");
   await markDatabase();
-  await relax();
   await person(PERSON, "Rohit Malhotra", "+919810000001");
   await person(REFERRED, "Vikram Sethi", "+919810000002");
 });

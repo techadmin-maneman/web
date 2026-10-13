@@ -7,7 +7,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { ROUTE_NEEDS } from "../../../src/policy/console-routes.ts";
 import type { AccessIdentity } from "../../../src/providers/cloudflare-access.ts";
 import { appFor, captureLogs, fakeDependencies, markDatabase, request } from "../helpers.ts";
-import { allowToken, enforce, listStaff, opsAs, person, post, token, relax } from "./staff-fixtures.ts";
+import { allowToken, enforce, listStaff, opsAs, person, post, token } from "./staff-fixtures.ts";
 
 const CASE = "6a000000-0000-4000-8000-000000000001";
 
@@ -16,7 +16,6 @@ let logs: ReturnType<typeof captureLogs>;
 beforeEach(async () => {
   logs = captureLogs();
   await markDatabase();
-  await relax();
 });
 
 const errorCode = async (res: Response) => (await res.json<{ error: { code: string } }>()).error.code;

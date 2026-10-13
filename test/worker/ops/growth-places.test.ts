@@ -7,7 +7,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import type { App } from "../../../src/http/context.ts";
 import { captureLogs, fakeQueue, markDatabase, NOW, request } from "../helpers.ts";
 import { aTechnicianInEveryCity } from "../clients.ts";
-import { enforce, listStaff, opsAs, person, type GrantCode, relax } from "./staff-fixtures.ts";
+import { enforce, listStaff, opsAs, person, type GrantCode } from "./staff-fixtures.ts";
 
 interface Client {
   readonly id: string;
@@ -316,7 +316,6 @@ describe("Growth's reach", () => {
   });
 
   it("narrows nothing while the Staff list is not enforced", async () => {
-    await relax();
     await listStaff("delhi@maneman.in", ["growth:view:city:Delhi"]);
     const delhi = opsAs(person("delhi@maneman.in"));
 

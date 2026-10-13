@@ -7,7 +7,6 @@ import { beforeEach, describe, expect, it } from "vitest";
 import type { App } from "../../../src/http/context.ts";
 import { openSession } from "../../../src/domain/sign-in/sessions.ts";
 import { appFor, captureLogs, fakeDependencies, fakeQueue, markDatabase, NOW, request } from "../helpers.ts";
-import { relax } from "./staff-fixtures.ts";
 
 const PERSON = "11111111-1111-4111-8111-111111111111";
 const UNKNOWN = "99999999-9999-4999-8999-999999999999";
@@ -49,7 +48,6 @@ const current = () =>
 beforeEach(async () => {
   captureLogs();
   await markDatabase();
-  await relax();
   ops = appFor("local", fakeDependencies(), {}, "ops");
   queues = { CRM_QUEUE: fakeQueue() };
   await env.DB.prepare(
