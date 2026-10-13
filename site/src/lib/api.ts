@@ -22,6 +22,7 @@ type TryOnAvailability = Schemas["TryOnAvailability"];
 type Look = Schemas["Look"];
 export type Invite = Schemas["Invite"];
 export type PincodeAnswer = Schemas["PincodeAnswer"];
+export type BuildingSuggestions = Schemas["AddressSuggestions"];
 export type OpenWindows = Schemas["OpenWindows"];
 export type PublishedPrices = Schemas["PublishedPrices"];
 export type ReferralReward = Schemas["ReferralReward"];
@@ -145,6 +146,11 @@ export function fetchPublishedPrices(): Promise<Answer<PublishedPrices>> {
 /** What a referral earns, where the mm-site Worker did not write it into the page (local dev). */
 export function fetchReferralReward(): Promise<Answer<ReferralReward>> {
   return call<ReferralReward>("/api/referral-reward");
+}
+
+/** The buildings matching what was typed into /book's address search, in one billed session. */
+export function suggestBuildings(q: string, session: string): Promise<Answer<BuildingSuggestions>> {
+  return post<BuildingSuggestions>("/api/buildings/suggestions", { q, session });
 }
 
 export function checkPincode(pincode: string): Promise<Answer<PincodeAnswer>> {

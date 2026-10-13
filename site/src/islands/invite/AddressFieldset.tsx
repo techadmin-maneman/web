@@ -6,10 +6,12 @@
 
 import { Fieldset } from "@maneman/ui/Field";
 import { AddressFields } from "@maneman/ui/AddressFields";
+import { AddressSearch } from "@maneman/ui/AddressSearch";
 import type { AddressPart } from "@maneman/web-kit/address";
 import { useEffect, useRef, useState } from "preact/hooks";
 import { referral } from "../../content/referral.ts";
 import type { AddressFields as Address, RequiredPart } from "../../lib/address.ts";
+import { suggestBuildings } from "../../lib/api.ts";
 import styles from "./Invite.module.css";
 
 const copy = referral.address;
@@ -52,7 +54,23 @@ export function AddressFieldset(props: {
   return (
     <Fieldset legend={copy.legend} legendLook="caps">
       <div class={styles.fields}>
+        <AddressSearch
+          value={address.building}
+          search={async (query) => {
+            const answer = await suggestBuildings(query, address.session);
+            return answer.ok ? { ok: true, suggestions: answer.body.suggestions } : { ok: false };
+          }}
+          onType={(typed) => {
+            // A building typed stands as words: the address books without a pin.
+            props.onChange({ ...address, building: typed, placeId: "" });
+          }}
+          onChoose={(chosen) => {
+            props.onChange({ ...address, building: chosen.primary, placeId: chosen.place_id });
+          }}
+          words={copy.building}
+        />
         <AddressFields
+          without={address.building.trim() === "" ? [] : ["line1"]}
           idPrefix={`${idPrefix}-address`}
           valueOf={(part) => {
             const key = keyOf(part);

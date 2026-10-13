@@ -52,7 +52,7 @@ import { errorResponse, refuse } from "../../http/errors.ts";
 import { IdempotencyKeyHeaderSchema } from "../../http/idempotency.ts";
 import { PersonNameSchema } from "../../http/openapi.ts";
 import { addressOf } from "../schemas/address.ts";
-import { AddressSchema, RequiredFlatSchema } from "../schemas/address.ts";
+import { AddressSaveSchema, RequiredFlatSchema } from "../schemas/address.ts";
 import { AttributionSchema } from "../schemas/attribution.ts";
 import { bookedWithCode, bookFromForm, joinWaitlistFromForm } from "./forms.ts";
 
@@ -101,11 +101,10 @@ export const InviteStateSchema = z.enum(["valid", "expired", "unknown"]).openapi
 export const CreditsSchema = z.boolean().openapi({ description: "Whether the invite's service visits apply." });
 
 /**
- * The address a consultation is at: the app's, typed in full, without a building chosen from Google's
- * suggestions, which the site does not offer. Its pincode is the one booked at.
+ * The address a consultation is at: the app's, with the building chosen from Google's suggestions where one was, and
+ * the search's session. Its pincode is the one booked at.
  */
-export const TypedAddressSchema = AddressSchema.omit({ building: true, place_id: true })
-  .extend({ flat: RequiredFlatSchema })
+export const TypedAddressSchema = AddressSaveSchema.extend({ flat: RequiredFlatSchema })
   .strict()
   .openapi("TypedAddress");
 
@@ -347,6 +346,7 @@ export function registerConsultations(app: App): void {
         mobile: body.mobile,
         pincode: body.pincode,
         address: addressOf(body.address),
+        addressSession: body.address.session_token ?? null,
         date: body.date,
         window: body.window,
         lossExtent: body.loss_extent ?? null,

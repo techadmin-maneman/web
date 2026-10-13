@@ -9,6 +9,7 @@ import { isTestNumber } from "../domain/platform/test-records.ts";
 import { mobileHashOf } from "../domain/clients/number-codes.ts";
 import { toE164 } from "../lib/mobile.ts";
 import { skipsAddressLimits } from "../policy/staging-test-records.ts";
+import { pinFor } from "./address-save.ts";
 import { bookHold } from "./book-hold.ts";
 import { queueContactSync } from "./contact-sync.ts";
 import type { AppEnv } from "./context.ts";
@@ -47,6 +48,7 @@ export function formRequest(c: Context<AppEnv>): FormRequest {
     selfServeBooking: c.var.config.settings.selfServeBooking,
     checkPerson: (mobile, token, name) => checkPerson(c, mobile, token, name),
     provedNumber: (codeId, mobileE164) => provedNumber(c, codeId, mobileE164),
+    pinOf: (placeId, session) => pinFor(c, placeId, session),
     syncContact: (personId) => queueContactSync(c, personId),
     bookHold: (holdId) => bookHold(c, holdId),
   };

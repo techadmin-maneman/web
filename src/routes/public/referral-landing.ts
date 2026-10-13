@@ -376,6 +376,7 @@ function registerReferralForms(app: App): void {
         mobile: body.mobile,
         pincode: body.pincode,
         address: addressOf(body.address),
+        addressSession: body.address.session_token ?? null,
         date: body.date,
         window: body.window,
         lossExtent: null, // an invited friend is not asked where the hair loss is

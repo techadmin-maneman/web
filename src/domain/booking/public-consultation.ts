@@ -9,7 +9,7 @@ import { bookingNeedsProof } from "../../policy/number-proof.ts";
 import type { ConsentSource } from "../../policy/consents.ts";
 import { addDays, indiaDate } from "../../lib/india-time.ts";
 import { type NotBookedFromSite, notBookedFromSite, typedAddress } from "../../policy/site-booking.ts";
-import { type Address, currentAddress, firstAddressStatement } from "../clients/profile.ts";
+import { type Address, type AddressPin, currentAddress, firstAddressStatement } from "../clients/profile.ts";
 import { testRecordAtCreation } from "../../policy/staging-test-records.ts";
 import { pincodeOf, type Pincode } from "../clients/service-area.ts";
 import { siteNotice, type SiteNoticeKind } from "../ops/site-notices.ts";
@@ -102,6 +102,8 @@ export interface ConsultationRequest {
   readonly pincode: string;
   /** Where the consultation is, typed in full; it must be in the pincode, and is written only if the person has none. */
   readonly address: Address;
+  /** The building search's session, which the building's Place Details call closes; null where none ran. */
+  readonly addressSession: string | null;
   readonly date: string;
   readonly window: BookingWindow;
   readonly lossExtent: LossExtent | null;
@@ -196,11 +198,13 @@ function bookingPerson(
     knownId,
     checked,
     hasSavedAddress,
+    pin,
   }: {
     request: ConsultationRequest;
     knownId: string | null;
     checked: { mobile: string; ipHash: string };
     hasSavedAddress: boolean;
+    pin: AddressPin | null;
   },
 ) {
   const { db, now } = form;
@@ -221,7 +225,7 @@ function bookingPerson(
     address === "on_account" ? siteNotice(db, { personId: person.id, kind: "address_on_account", now }) : null;
   const alongside = [
     ...person.statements,
-    ...(address === "saved" ? [firstAddressStatement(db, person.id, request.address, now)] : []),
+    ...(address === "saved" ? [firstAddressStatement(db, person.id, request.address, now, pin)] : []),
     ...(addressNotice === null ? [] : [addressNotice.statement]),
   ];
   return { person, address, addressNotice, alongside };
@@ -354,11 +358,14 @@ export async function bookConsultation(form: FormRequest, request: ConsultationR
   const visitPincode = savedPincode ?? pincode;
   const code = await oneVisitCode(form, request, knownId, oneVisit);
   if (code?.ok === false) return code;
+  // The building chosen is pinned only where the typed address is the one written, and only once the checks pass.
+  const pin = saved === null ? await form.pinOf(request.address.placeId, request.addressSession) : null;
   const { person, address, addressNotice, alongside } = bookingPerson(form, {
     request,
     knownId,
     checked,
     hasSavedAddress: saved !== null,
+    pin,
   });
   const placed = await holdOrRequest(form, {
     request,

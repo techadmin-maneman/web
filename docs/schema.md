@@ -1912,7 +1912,7 @@ Indexes:
 
 Each line of a purchase order: the stock code, how many, the price it was ordered at, and how many have arrived (ADR 0166).
 
-Made by `0141_purchase_orders.sql`; changed by `0147_custom_orders.sql`.
+Made by `0141_purchase_orders.sql`; changed by `0147_custom_orders.sql`, `0159_receipts_held_to_the_order.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -1927,6 +1927,8 @@ Made by `0141_purchase_orders.sql`; changed by `0147_custom_orders.sql`.
 Indexes:
 
 - `po_lines_by_order`: on (`po_id`)
+
+Triggers: `po_lines_not_over_received`.
 
 ## price_book
 
@@ -2069,7 +2071,7 @@ Indexes:
 
 Each receipt against a purchase order at the warehouse: who received it, the supplier's invoice, the rupee rate and the freight, duty and clearing (ADR 0167).
 
-Made by `0142_receipts.sql`; changed by `0143_books_bills.sql`.
+Made by `0142_receipts.sql`; changed by `0143_books_bills.sql`, `0159_receipts_held_to_the_order.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -2090,6 +2092,8 @@ Indexes:
 
 - `receipts_by_order`: on (`po_id`)
 - `receipts_to_bill`: on (`received_at`), where `books_bill_id IS NULL`
+
+Triggers: `receipts_invoice_once`.
 
 ## referral_attributions
 

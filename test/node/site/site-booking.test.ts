@@ -95,6 +95,9 @@ describe("the address a consultation is at", () => {
       accessNotes: "  ",
     };
     expect(addressToSend(typed, "122018")).toEqual({
+      building: null,
+      place_id: null,
+      session_token: typed.session,
       flat: "Flat 402",
       floor: null,
       tower: null,
@@ -105,6 +108,22 @@ describe("the address a consultation is at", () => {
       city: "Gurgaon",
       pincode: "122018",
       access_notes: null,
+    });
+  });
+
+  it("takes the building chosen from the search as its first line, with its Place ID", () => {
+    const chosen = {
+      ...emptyAddress("Gurgaon"),
+      building: "Palm Grove Society",
+      placeId: "place-palm-grove",
+      flat: "402",
+      locality: "Sector 65",
+    };
+    expect(missingParts(chosen)).toEqual([]);
+    expect(addressToSend(chosen, "122018")).toMatchObject({
+      building: "Palm Grove Society",
+      place_id: "place-palm-grove",
+      line1: "Palm Grove Society",
     });
   });
 });

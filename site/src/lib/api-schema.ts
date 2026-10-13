@@ -599,6 +599,64 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/buildings/suggestions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Buildings matching what a visitor has typed, for the address on /book */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["BuildingSuggestionsAsk"];
+                };
+            };
+            responses: {
+                /** @description The suggestions, which may be empty */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["AddressSuggestions"];
+                    };
+                };
+                /** @description invalid_request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description busy: the visitor's or the day's address-lookup ceiling is reached; unavailable: Google could not be reached */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/lead": {
         parameters: {
             query?: never;
@@ -2066,10 +2124,15 @@ export interface components {
             pincode: string;
             /** @description For the technician, from the day before the visit: gate code, parking. */
             access_notes: string | null;
+            /** @description The building as chosen from the suggestions; null if typed. */
+            building?: string | null;
             flat: string;
             floor?: string | null;
             tower?: string | null;
             landmark?: string | null;
+            /** @description Google's Place ID for the building, if one was chosen. */
+            place_id?: string | null;
+            session_token?: string | null;
         };
         Waitlist: {
             /** @description Null until ops have named the area, and for a pincode we do not know. */
@@ -2081,6 +2144,21 @@ export interface components {
              * @enum {string}
              */
             invite: "valid" | "expired" | "unknown";
+        };
+        AddressSuggestions: {
+            suggestions: {
+                place_id: string;
+                primary: string;
+                secondary: string;
+            }[];
+            /** @enum {string} */
+            attribution: "Google Maps";
+        };
+        BuildingSuggestionsAsk: {
+            /** @description What the visitor has typed so far. */
+            q: string;
+            /** @description One token for the whole search, sent again with the booking. */
+            session: string;
         };
         LeadLeft: Record<string, never>;
         Invite: {

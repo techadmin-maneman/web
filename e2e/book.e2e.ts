@@ -518,6 +518,10 @@ test("a booking without the address is stopped at the form, each part it needs m
   await page.getByRole("button", { name: referralCopy.referral.consultation.submit }).click();
   await expect(page.getByText(referralCopy.referral.booked.label, { exact: true })).toBeVisible();
   expect((requests[0]?.postDataJSON() as Record<string, unknown>).address).toEqual({
+    // Typed in full, with no building chosen from the search: it books without a pin.
+    building: null,
+    place_id: null,
+    session_token: expect.any(String),
     flat: "Flat 402",
     floor: null,
     tower: null,

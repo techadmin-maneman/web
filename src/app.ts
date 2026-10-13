@@ -114,6 +114,7 @@ import { registerOpsScorecard } from "./routes/ops/purchasing.scorecard.ts";
 import { registerOpsReceipts } from "./routes/ops/purchasing.receipts.ts";
 import { registerOpsWaitlist } from "./routes/ops/waitlist.ts";
 import { registerConsultations } from "./routes/public/consultations.ts";
+import { registerBuildingSuggestions } from "./routes/public/building-suggestions.ts";
 import { registerLead } from "./routes/public/lead.ts";
 import { registerNumberCodes } from "./routes/public/number-codes.ts";
 import { registerReferralLanding } from "./routes/public/referral-landing.ts";
@@ -156,6 +157,7 @@ const SURFACE_ROUTES: Readonly<Record<Surface, readonly ((app: App) => void)[]>>
     // A WhatsApp code that proves a number before /book's one visit or /try's gate acts on it.
     registerNumberCodes,
     registerConsultations,
+    registerBuildingSuggestions,
     registerLead,
     registerReferralLanding,
     // What a referral earns, for the invite's page and /book (docs/decisions/0107-referral-rewards-in-the-console.md).

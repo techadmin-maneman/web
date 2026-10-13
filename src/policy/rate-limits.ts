@@ -47,6 +47,8 @@ export const RATE_LIMITS = {
   "tryon_image:person": { per: "day", limit: 200 },
   address_suggest: { per: "day", limit: SUGGESTIONS_PER_DAY },
   ops_address_suggest: { per: "day", limit: SUGGESTIONS_PER_DAY },
+  // A visitor to the site's booking form, by their address's salted hash.
+  site_address_suggest: { per: "day", limit: SUGGESTIONS_PER_DAY },
   // A discount code checked, right or wrong, so none can be found by guessing (docs/decisions/0108-discount-codes.md).
   "discount_code:ip": { per: "hour", limit: CODE_CHECKS.perAddressHourly },
   "discount_code:person": { per: "day", limit: CODE_CHECKS.perNumberDaily },

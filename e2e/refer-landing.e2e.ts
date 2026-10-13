@@ -513,9 +513,9 @@ test("a keyboard user sees which day, window and agreement has focus", async ({ 
   await page.keyboard.press("Tab"); // the windows
   await expect(page.getByRole("radio", { name: /Morning/ })).toBeFocused();
   expect(await outlineOf(page, "label")).toBe("solid 2px");
-  // The address: flat, the button that unfolds the floor, tower and landmark, building, street, area, city and
-  // access notes.
-  for (let field = 0; field < 7; field += 1) await page.keyboard.press("Tab");
+  // The address: the building search, flat, the button that unfolds the floor, tower and landmark, building, street,
+  // area, city and access notes.
+  for (let field = 0; field < 8; field += 1) await page.keyboard.press("Tab");
   await expect(page.getByLabel(referralCopy.referral.address.labels.accessNotes)).toBeFocused();
   await page.keyboard.press("Tab"); // name
   await page.keyboard.press("Tab"); // mobile

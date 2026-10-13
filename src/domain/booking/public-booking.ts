@@ -67,6 +67,7 @@ import { saveBookingLead, type LeadAttribution } from "../leads/leads.ts";
 import { type Pincode } from "../clients/service-area.ts";
 import { inviteLapsed } from "../../policy/invites.ts";
 import { type MessagingMessage } from "../../config/pipeline.ts";
+import type { AddressPin } from "../clients/profile.ts";
 
 /**
  * Why a submission was refused, in the codes the routes answer with. Each route
@@ -109,6 +110,8 @@ export interface FormRequest {
   readonly checkPerson: (mobile: string, turnstileToken: string, name: string) => Promise<Checked>;
   /** Whether the WhatsApp code `codeId` proved this number (src/policy/number-proof.ts). */
   readonly provedNumber: (codeId: string | null, mobileE164: string) => Promise<boolean>;
+  /** The coordinate of a building chosen from the suggestions, or none (src/http/address-save.ts). */
+  readonly pinOf: (placeId: string | null, session: string | null) => Promise<AddressPin | null>;
   /** Sends a person's first address on to their Books customer and CRM lead, as saving it in the app does. */
   readonly syncContact: (personId: string) => Promise<void>;
   /** Books the free hold the form made (src/http/book-hold.ts). It never throws, so the lead is recorded whatever comes of it. */
