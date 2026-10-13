@@ -120,6 +120,13 @@ export const OPS_ORIGIN: Readonly<Record<EnvironmentName, string>> = {
   production: `https://${SURFACE_HOSTS.production.ops}`,
 };
 
+/** Where the client app answers, for the messages that send a client to it. Locally, where the browser tests serve it. */
+export const CLIENT_ORIGIN: Readonly<Record<EnvironmentName, string>> = {
+  local: "http://app.localhost:4322",
+  staging: `https://${SURFACE_HOSTS.staging.client}`,
+  production: `https://${SURFACE_HOSTS.production.client}`,
+};
+
 /**
  * Where links in messages point, e.g. a WhatsApp copy's result link or an invite. Locally the site is on :4321
  * (npm run dev:all, and the browser tests), which serves /r/:code and passes /api/* to mm-api; mm-api's own :8787

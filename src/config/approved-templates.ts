@@ -3,7 +3,7 @@
 // message ("{{5}} is at your door for your {{2}}"). So each is renumbered here, and a send maps our params onto it.
 // A link a text ends with becomes a button, since a template may not end on a variable.
 
-import { TEMPLATES, type TemplateName } from "./message-templates.ts";
+import { sendsToApp, TEMPLATES, type TemplateName } from "./message-templates.ts";
 
 /** How WhatsApp prices and polices a template: a login code, or a message about something the person has. */
 type TemplateCategory = "authentication" | "utility";
@@ -15,6 +15,8 @@ type TemplateCategory = "authentication" | "utility";
 export type ApprovedButton =
   | { readonly kind: "link"; readonly label: string; readonly param: number }
   | { readonly kind: "stop"; readonly label: string }
+  /** The client app's own address, the same for every message: the button a message that sends them there has. */
+  | { readonly kind: "app"; readonly label: string }
   | { readonly kind: "copy_code" };
 
 export interface ApprovedTemplate {
@@ -30,6 +32,7 @@ export interface ApprovedTemplate {
 }
 
 const STOP: ApprovedButton = { kind: "stop", label: "Stop these messages" };
+const APP: ApprovedButton = { kind: "app", label: "Open the Mane Man app" };
 
 /**
  * Where the approved form differs from the text the bridge sends: a closing link turned into a button, and the stop
@@ -56,6 +59,7 @@ const DIFFERS: Partial<Record<TemplateName, { readonly text?: string; readonly b
  */
 const NOT_SUBMITTED: ReadonlySet<TemplateName> = new Set([
   "stop_link_v1",
+  "app_link_v1",
   "messages_stopped_v1",
   "care_after_hours_v1",
 ]);
@@ -88,7 +92,8 @@ function approved(name: TemplateName): ApprovedTemplate {
     body,
     takes,
     imageHeader: name === "tryon_result_v1",
-    buttons: differs?.buttons ?? [],
+    // A message that sends the client to the app has its button, after any of its own.
+    buttons: [...(differs?.buttons ?? []), ...(sendsToApp(name) ? [APP] : [])],
   };
 }
 

@@ -146,6 +146,16 @@ export const TEMPLATES = {
   // client reads it.
   deletion_rejected_v1:
     "Hi {{1}}, we haven't deleted your Mane Man account.\nOur reason: {{2}} Message us if you disagree.",
+  // What follows a visit (src/domain/visits/follow-ups.ts). {{2}} the care guide's address. The first lines name no
+  // hair system: a lock screen shows them.
+  consultation_follow_up_v1:
+    "Hi {{1}}, thank you for your time today.\nYour technician's recommendation is in the Mane Man app, with your fit to book when you're ready. Or reply here and we'll arrange it.",
+  fit_aftercare_v1:
+    "Hi {{1}}, thank you for today.\nHow to look after your hair system: {{2}}\nAny question at all, reply here.",
+  first_check_in_v1:
+    "Hi {{1}}, how are you finding it so far?\nIf anything feels off, reply here and we'll put it right.",
+  second_check_in_v1:
+    "Hi {{1}}, a few weeks on: how is everything?\nIf anything needs a look, reply here. Your next service visit is in the Mane Man app.",
   // A lot the client wears was recalled: what happens, and that it's free. Care calls each client too.
   recall_notice_v1:
     "Hi {{1}}, we're recalling a batch we supplied, and yours is one of them.\nWe'll replace your hair system free, at a time that suits you. Book it in the Mane Man app, or reply here and we'll arrange it.",
@@ -156,6 +166,8 @@ export const TEMPLATES = {
     "Hi {{1}}, as you asked, we've deleted your Mane Man account.\nYour invoices are kept for eight years, as the law requires.",
   // The line a reminder or alert ends with, {{1}} the link that stops them (STOP_LINKS below).
   stop_link_v1: "Stop these messages: {{1}}",
+  // The line every message that sends the client to the app ends with, {{1}} the app's address (sendsToApp below).
+  app_link_v1: "Open the app: {{1}}",
   // The answer to a STOP reply, once it has withdrawn something.
   messages_stopped_v1: "Done, {{1}}. We won't message you here about your visits, or when we come to a new area.",
   // The answer to a message sent outside Customer Care's hours (src/domain/care/after-hours.ts): {{1}} when Care open,
@@ -186,16 +198,26 @@ export function renderMessage(name: TemplateName, params: readonly string[], wor
 
 const PARAM = /\{\{(\d+)\}\}/g;
 
-/** The text, ending with the line that stops it when the message carries a stop link; in the words set, if any. */
+/** Whether a message sends the client to the app, and so ends with the app's address. */
+export const sendsToApp = (name: TemplateName): boolean => TEMPLATES[name].includes("Mane Man app");
+
+/**
+ * The text, in the words set if any: then the app's address where it sends the client there, and the line that stops
+ * it where the message carries a stop link.
+ */
 export function renderWithStopLink(
   name: TemplateName,
   params: readonly string[],
   stopLink?: string,
   wording: Wording = {},
+  appLink?: string,
 ): string | null {
   const text = renderMessage(name, params, wording.text);
-  if (text === null || stopLink === undefined) return text;
-  return `${text}\n\n${renderMessage("stop_link_v1", [stopLink], wording.stop) ?? ""}`;
+  if (text === null) return null;
+  const withApp =
+    appLink === undefined || !sendsToApp(name) ? text : `${text}\n${renderMessage("app_link_v1", [appLink]) ?? ""}`;
+  if (stopLink === undefined) return withApp;
+  return `${withApp}\n\n${renderMessage("stop_link_v1", [stopLink], wording.stop) ?? ""}`;
 }
 
 /**
@@ -268,6 +290,10 @@ export const MESSAGE_CLASSES: Readonly<Record<MessageKind, MessageClass>> = {
   deletion_rejected: "automatic", // ops' ruling
   concern_answered: "answering", // the answer to their own concern
   recall_notice: "automatic", // ops' recall
+  consultation_follow_up: "automatic",
+  fit_aftercare: "automatic",
+  first_check_in: "automatic",
+  second_check_in: "automatic",
   messages_stopped: "answering", // their own STOP reply
 };
 

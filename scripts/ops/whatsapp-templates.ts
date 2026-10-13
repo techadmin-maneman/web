@@ -6,6 +6,7 @@
 
 import { parseArgs } from "node:util";
 import { APPROVED_TEMPLATES, type ApprovedButton } from "../../src/config/approved-templates.ts";
+import { CLIENT_ORIGIN } from "../../src/config/environments.ts";
 import { MSG91_TEMPLATE_LANGUAGE } from "../../src/config/msg91.ts";
 
 const { values } = parseArgs({ options: { origin: { type: "string", default: "https://maneman.in" } } });
@@ -14,6 +15,7 @@ const origin = values.origin.replace(/\/+$/, "");
 /** A button as the dashboard asks for it. */
 function describe(button: ApprovedButton): string {
   if (button.kind === "copy_code") return "Copy code (WhatsApp's own)";
+  if (button.kind === "app") return `URL "${button.label}": ${CLIENT_ORIGIN.production} (static)`;
   return `URL "${button.label}": ${origin}/{{1}}`;
 }
 

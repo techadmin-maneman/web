@@ -99,6 +99,24 @@ const SECOND_IS_NOT_THE_VISIT: ReadonlySet<string> = new Set([
 ]);
 
 // A phone shows a message's first line on its lock screen, to anyone near it.
+// The app is named with its address, before the line that stops a reminder.
+describe("a message that sends the client to the app", () => {
+  it("ends with the app's address, before any stop line, and a message that names no app carries none", () => {
+    const params = ["Rohit", "service visit", "Tue 22 Sep", "morning", "Imran"];
+    expect(
+      renderWithStopLink("visit_reminder_v1", params, "https://maneman.in/stop#t", {}, "https://app.maneman.in"),
+    ).toBe(
+      `${renderMessage("visit_reminder_v1", params) ?? ""}
+Open the app: https://app.maneman.in
+
+Stop these messages: https://maneman.in/stop#t`,
+    );
+    expect(renderWithStopLink("deletion_done_v1", ["Rohit"], undefined, {}, "https://app.maneman.in")).toBe(
+      renderMessage("deletion_done_v1", ["Rohit"]),
+    );
+  });
+});
+
 describe("a message's first line", () => {
   it("names no hair system, no fitting and no visit", () => {
     for (const [name, text] of Object.entries(TEMPLATES)) {

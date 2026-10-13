@@ -4928,6 +4928,34 @@
     "text": "Hi {{1}}, we haven't deleted your Mane Man account.\nOur reason: {{2}} Message us if you disagree."
   },
   {
+    "key": "message:consultation_follow_up_v1",
+    "surface": "message",
+    "group": "Messages",
+    "where": "consultation_follow_up_v1",
+    "text": "Hi {{1}}, thank you for your time today.\nYour technician's recommendation is in the Mane Man app, with your fit to book when you're ready. Or reply here and we'll arrange it."
+  },
+  {
+    "key": "message:fit_aftercare_v1",
+    "surface": "message",
+    "group": "Messages",
+    "where": "fit_aftercare_v1",
+    "text": "Hi {{1}}, thank you for today.\nHow to look after your hair system: {{2}}\nAny question at all, reply here."
+  },
+  {
+    "key": "message:first_check_in_v1",
+    "surface": "message",
+    "group": "Messages",
+    "where": "first_check_in_v1",
+    "text": "Hi {{1}}, how are you finding it so far?\nIf anything feels off, reply here and we'll put it right."
+  },
+  {
+    "key": "message:second_check_in_v1",
+    "surface": "message",
+    "group": "Messages",
+    "where": "second_check_in_v1",
+    "text": "Hi {{1}}, a few weeks on: how is everything?\nIf anything needs a look, reply here. Your next service visit is in the Mane Man app."
+  },
+  {
     "key": "message:recall_notice_v1",
     "surface": "message",
     "group": "Messages",
@@ -4954,6 +4982,13 @@
     "group": "Messages",
     "where": "stop_link_v1",
     "text": "Stop these messages: {{1}}"
+  },
+  {
+    "key": "message:app_link_v1",
+    "surface": "message",
+    "group": "Messages",
+    "where": "app_link_v1",
+    "text": "Open the app: {{1}}"
   },
   {
     "key": "message:messages_stopped_v1",

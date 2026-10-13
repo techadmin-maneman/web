@@ -44,7 +44,20 @@ describe("the templates submitted to WhatsApp", () => {
     expect(approvedTemplate("stop_link_v1")).toBeNull();
     expect(approvedTemplate("messages_stopped_v1")).toBeNull();
     expect(approvedTemplate("care_after_hours_v1")).toBeNull();
-    expect(APPROVED_TEMPLATES).toHaveLength(Object.keys(TEMPLATES).length - 3);
+    expect(approvedTemplate("app_link_v1")).toBeNull();
+    expect(APPROVED_TEMPLATES).toHaveLength(Object.keys(TEMPLATES).length - 4);
+  });
+
+  // The app is named with no address in 19 texts; WhatsApp takes no more than two address buttons a template.
+  it("give every message that sends the client to the app a button to it, and none more than two address buttons", () => {
+    for (const template of APPROVED_TEMPLATES) {
+      const toApp = template.buttons.some((button) => button.kind === "app");
+      expect(toApp, template.name).toBe(TEMPLATES[template.name].includes("Mane Man app"));
+      expect(
+        template.buttons.filter((button) => button.kind !== "copy_code").length,
+        template.name,
+      ).toBeLessThanOrEqual(2);
+    }
   });
 
   it("give every reminder sent with a stop link a button to stop it", () => {

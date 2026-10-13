@@ -225,6 +225,7 @@ export const settings = {
         pay_within_days: "Link after a visit open for",
       },
       credit_reminder_days: { first: "First reminder", last: "Last reminder" },
+      check_in_days: { first: "First check-in", second: "Second check-in" },
       stock_watch: {
         expiry_warning_days: "Expiry flagged within",
         demand_days: "Demand read ahead",

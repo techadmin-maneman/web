@@ -36,6 +36,8 @@ export interface OutboundMessage {
   readonly media?: { readonly url: string; readonly type: ImageType };
   /** The link that stops messages of this kind, which the text ends with. */
   readonly stopLink?: string;
+  /** The client app's address, which a message that sends the client there ends with. */
+  readonly appLink?: string;
   /**
    * The words the Words page set for the text and its stop line. The bridge sends plain text, so they go at once;
    * MSG91 sends only templates WhatsApp approved, by name, so it keeps the code's until one is approved.

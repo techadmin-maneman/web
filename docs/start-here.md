@@ -52,9 +52,9 @@ this map, or when the map names something that no longer exists.
 ### A visit, and changing it
 
 - **Database work** (`src/domain/visits/`): `visit-status`, `visit-times`, `visit-changes`, `visit-cancel`, `visit-facts`,
-  `visit-begun`, `client-visits`, `client-history`, `check-ins`, `next-visit`, `consultation-recap`, `one-visit`,
+  `visit-begun`, `client-visits`, `client-history`, `check-ins`, `next-visit`, `follow-ups`, `consultation-recap`, `one-visit`,
   `hand-close`, `lost-reasons` (why a client is not going ahead after a consultation)
-- **Rules** (`src/policy/`): `check-in`, `next-visit`, `one-visit`
+- **Rules** (`src/policy/`): `check-in`, `next-visit`, `follow-ups`, `one-visit`
 - **Routes** (`src/routes/`): `client/visits`, `ops/visits`, `ops/visit-changes`, `ops/visit-lost-reason`
 - **Screens:** `apps/app/src/visits/`, `apps/ops/src/clients/`
 - **Tests:** `test/worker/booking/visit-*`, `test/worker/booking/next-visit.test.ts`, `e2e/app/changes.e2e.ts`,

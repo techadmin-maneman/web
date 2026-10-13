@@ -63,6 +63,7 @@ import { CRON_CALLS, type Timing } from "./schedule.ts";
 import { checkWhatsAppBridge } from "./whatsapp-bridge.ts";
 import { type MessagingMessage } from "../config/pipeline.ts";
 import { tellOfUnassignedToday } from "../domain/dispatch/unassigned.ts";
+import { queueFollowUps } from "../domain/visits/follow-ups.ts";
 
 export interface CronContext {
   readonly env: Env;
@@ -256,6 +257,14 @@ async function nextServiceRemindersJob({ env, deps, log, inputs }: CronContext):
   if (reminders.length > 0) log.info("next_service_reminders_queued", { count: reminders.length });
 }
 
+/** What follows a visit, once a visit, from the reminder hour (src/domain/visits/follow-ups.ts). */
+async function followUpsJob({ env, deps, log, inputs }: CronContext): Promise<void> {
+  const { checkInDays, reminderHour } = await inputs();
+  const queued = await queueFollowUps(env.DB, deps.now(), checkInDays, reminderHour);
+  await queueMessages({ env, log }, queued, "follow-ups");
+  if (queued.length > 0) log.info("follow_ups_queued", { count: queued.length });
+}
+
 async function creditRemindersJob({ env, deps, log, inputs }: CronContext): Promise<void> {
   const { reminderHour, creditReminderDays } = await inputs();
   const reminders = await queueCreditReminders(env.DB, deps.now(), reminderHour, creditReminderDays);
@@ -370,6 +379,7 @@ export const CRON_JOBS: readonly CronJob[] = [
   { name: "low_stock", needs: "nothing", every: 60, at: 50, run: lowStockJob },
   // The next service falling due with nothing booked (docs/decisions/0086-the-next-visit-is-offered.md).
   { name: "next_service_reminders", needs: "messaging", every: 60, at: 44, run: nextServiceRemindersJob },
+  { name: "follow_ups", needs: "messaging", every: 60, at: 47, run: followUpsJob },
   // Free service visits running out: a month, then a week, before their last day.
   { name: "credit_reminders", needs: "messaging", every: 60, at: 49, run: creditRemindersJob },
   // What the retention periods let go of: dormant people who never became clients, old check-in coordinates, and the
