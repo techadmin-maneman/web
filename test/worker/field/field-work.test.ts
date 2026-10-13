@@ -146,6 +146,20 @@ describe("a technician's steps", () => {
     expect(await writeStatesOf(TODAY_JOB)).toEqual(["written"]);
   });
 
+  it("take a visit the phone worked with no signal and sent days later, and close it as it was done", async () => {
+    // Worked from 13:02 with no signal at all, and sent two days later, when the phone found it again.
+    const sentAt = minutesAfterStart(2 * 24 * 60 + 90);
+    await work(sentAt, TODAY_JOB, [
+      ["checkin", AT_THE_DOOR, 2],
+      ["start", undefined, 5],
+    ]);
+    await work(sentAt, TODAY_JOB, UP_TO_THE_OUTCOME.slice(2));
+    const closed = await postAt(sentAt, `/api/tech/jobs/${TODAY_JOB}/outcome`, { outcome: "done" }, uuidv7At(80));
+
+    expect(closed.status).toBe(202);
+    expect(await statusOf(TODAY_JOB)).toBe("completed");
+  });
+
   it("close a partial job as terminated, with the technician's reason", async () => {
     const sentAt = minutesAfterStart(90);
     await work(sentAt, TODAY_JOB, UP_TO_THE_OUTCOME);

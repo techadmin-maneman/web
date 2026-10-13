@@ -59,3 +59,20 @@ export function boundedPhoneTime(
 
 /** Whether a check-in or a start falls on the visit's own date, in India. */
 export const isOnVisitDay = (at: Date, visitStart: Date): boolean => indiaDate(at) === indiaDate(visitStart);
+
+/**
+ * How long a phone that worked a whole visit with no signal may take to send it and still have the day it says it
+ * was done on believed. Its time is still held to the bounds above; only its day is taken.
+ */
+export const LATE_SEND_DAYS = 7;
+
+/**
+ * When a check-in or a start was done, for the day it falls on: what the phone said, where it held the write past the
+ * bounds and sends it within LATE_SEND_DAYS; else its time within the bounds.
+ */
+export function doneOn(write: { claimedAt: Date | null; occurredAt: Date; now: Date }): Date {
+  const { claimedAt, occurredAt, now } = write;
+  if (claimedAt === null || claimedAt.getTime() >= occurredAt.getTime()) return occurredAt;
+  const sentWithin = now.getTime() - claimedAt.getTime() <= LATE_SEND_DAYS * 24 * HOUR_MS;
+  return sentWithin ? claimedAt : occurredAt;
+}

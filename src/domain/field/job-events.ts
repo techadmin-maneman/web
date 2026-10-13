@@ -24,7 +24,7 @@
 import { firstNameOf } from "../../lib/names.ts";
 import { isNoShow, landsAfterClose, stepBefore, type JobEventKind } from "../../policy/in-job-steps.ts";
 import { namesTheOtherTechnician } from "../../policy/job-visibility.ts";
-import { earliestCheckIn, isOnVisitDay, tooEarlyToArrive, type PhoneClock } from "../../policy/phone-clock.ts";
+import { earliestCheckIn, doneOn, isOnVisitDay, tooEarlyToArrive, type PhoneClock } from "../../policy/phone-clock.ts";
 import type { WorkableJob } from "./workable-job.ts";
 
 /** As job_events.fsm_write_state holds it: "written" once landed, "rejected" when superseded. */
@@ -146,7 +146,7 @@ async function answeredWith(
   if (closed !== null && !landsAfterClose(input.kind, closed, input.now)) return { kind: "already_closed" };
 
   const startsTheDay = input.kind === "check_in" || input.kind === "start";
-  if (startsTheDay && !isOnVisitDay(input.occurredAt, input.job.windowStart)) return { kind: "not_today" };
+  if (startsTheDay && !isOnVisitDay(doneOn(input), input.job.windowStart)) return { kind: "not_today" };
   if (startsTheDay && tooEarlyToArrive(input.now, input.job.windowStart, input.phoneClock)) {
     return { kind: "too_early", earliest: earliestCheckIn(input.job.windowStart, input.phoneClock) };
   }
