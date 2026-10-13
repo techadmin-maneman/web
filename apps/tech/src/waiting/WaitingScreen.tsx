@@ -41,6 +41,47 @@ function correctable(stopped: JobAccount["stopped"]): InJobStep | null {
   return isInJobStep(stopped.kind) ? stopped.kind : null;
 }
 
+/** What stopped a job, the Ref to quote, and what can be done: send it again, put it right, or let it go. */
+function Stopped(props: {
+  readonly jobId: string;
+  readonly stopped: NonNullable<JobAccount["stopped"]>;
+  readonly startsAt: string | null;
+  readonly onForget: () => void;
+}) {
+  const { jobId, stopped } = props;
+  const toCorrect = correctable(stopped);
+  return (
+    <div className={styles.stopped} role="alert">
+      <p className={styles.stoppedLine}>{whatStopped(stopped, new Date(), props.startsAt)}</p>
+      {stopped.requestId !== null && (
+        <ErrorRef requestId={stopped.requestId} words={reference} className={styles.reference} />
+      )}
+      <div className={styles.buttons}>
+        {stopped.note === STUCK && (
+          <Button variant="outlineOnInk" size="small" className={styles.button} onClick={() => void sendAgain(jobId)}>
+            {copy.retry}
+          </Button>
+        )}
+        {toCorrect !== null && (
+          <Button
+            variant="outlineOnInk"
+            size="small"
+            className={styles.button}
+            onClick={() => {
+              go(stepPath(jobId, toCorrect));
+            }}
+          >
+            {PHOTO_STEPS.has(toCorrect) ? copy.retake : copy.correct}
+          </Button>
+        )}
+        <Button variant="outlineOnInk" size="small" className={styles.button} onClick={props.onForget}>
+          {copy.forget.open}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 /** Where a job's work stands: stopped, waiting for signal, or on its way. */
 function stateOf(stopped: boolean, offline: boolean): string {
   if (stopped) return copy.states.failed;
@@ -127,7 +168,6 @@ export function WaitingScreen() {
               const line = held.find((entry) => entry.job_id === id);
               const stopped = line?.stopped ?? null;
               const taken = since(id);
-              const toCorrect = correctable(stopped);
               return (
                 <li className={styles.job} key={id}>
                   <div className={styles.jobTop}>
@@ -147,48 +187,14 @@ export function WaitingScreen() {
                   {/* How long it has been on the phone, which is how much an eviction would take. */}
                   {taken !== null && <p className={styles.count}>{copy.since(clock(new Date(taken).toISOString()))}</p>}
                   {stopped !== null && (
-                    <div className={styles.stopped} role="alert">
-                      <p className={styles.stoppedLine}>
-                        {whatStopped(stopped, new Date(), kept.get(id)?.starts_at ?? null)}
-                      </p>
-                      {stopped.requestId !== null && (
-                        <ErrorRef requestId={stopped.requestId} words={reference} className={styles.reference} />
-                      )}
-                      <div className={styles.buttons}>
-                        {stopped.note === STUCK && (
-                          <Button
-                            variant="outlineOnInk"
-                            size="small"
-                            className={styles.button}
-                            onClick={() => void sendAgain(id)}
-                          >
-                            {copy.retry}
-                          </Button>
-                        )}
-                        {toCorrect !== null && (
-                          <Button
-                            variant="outlineOnInk"
-                            size="small"
-                            className={styles.button}
-                            onClick={() => {
-                              go(stepPath(id, toCorrect));
-                            }}
-                          >
-                            {PHOTO_STEPS.has(toCorrect) ? copy.retake : copy.correct}
-                          </Button>
-                        )}
-                        <Button
-                          variant="outlineOnInk"
-                          size="small"
-                          className={styles.button}
-                          onClick={() => {
-                            setForgetting(id);
-                          }}
-                        >
-                          {copy.forget.open}
-                        </Button>
-                      </div>
-                    </div>
+                    <Stopped
+                      jobId={id}
+                      stopped={stopped}
+                      startsAt={kept.get(id)?.starts_at ?? null}
+                      onForget={() => {
+                        setForgetting(id);
+                      }}
+                    />
                   )}
                   {stopped === null && !offline && (
                     <Button
