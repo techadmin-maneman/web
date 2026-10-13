@@ -235,18 +235,6 @@
   min-width: 0;
 }
 
-.panel .label {
-  color: var(--paper);
-}
-
-.panel .input {
-  background: transparent;
-  border-color: var(--ink-line-strong);
-  color: var(--paper);
-  font-size: var(--fs-17);
-  font-variant-numeric: tabular-nums;
-}
-
 .check {
   flex: none;
   width: var(--landing-check-w);
@@ -350,49 +338,7 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* "Change": a way back to the pincode, in the sentence it belongs to, as large a target as any button. */
-.change,
-.more {
-  min-width: var(--tap);
-  min-height: var(--tap);
-  padding: 0;
-  border: 0;
-  background: none;
-  color: var(--ink);
-  text-decoration: underline;
-  text-underline-offset: var(--sp-4);
-  cursor: pointer;
-}
-
-/* "Add floor, tower or landmark": the address's folded parts, asked for beneath the flat. */
-.more {
-  justify-self: start;
-  margin-top: calc(-1 * var(--sp-8));
-  font-size: var(--fs-15);
-  text-align: left;
-}
-
 /* A fieldset's margin is the form's spacing (.form > * + *). */
-.group {
-  padding: 0;
-  border: 0;
-  /* A fieldset does not shrink below its content unless told to. */
-  min-width: 0;
-}
-
-.legend {
-  padding: 0;
-  margin-bottom: var(--sp-12);
-  font-size: var(--fs-15);
-  color: var(--text-muted);
-}
-
-.label {
-  display: block;
-  margin-bottom: var(--sp-8);
-  font-size: var(--fs-14);
-  color: var(--text-muted);
-}
 
 /* The month or months the dates fall in, above them: the tiles name only the weekday and the day. */
 .months {
@@ -401,108 +347,17 @@
   color: var(--text-soft);
 }
 
-/* The dates: two weeks from tomorrow, a week to a row. */
-.dates {
-  display: grid;
-  grid-template-columns: repeat(7, minmax(0, 1fr));
-  gap: var(--sp-4);
-}
-
-/* Each hidden radio sits inside its own label, positioned against it rather than against the page. */
-.day,
-.window,
-.extent,
-.consent {
-  position: relative;
-}
-
-.day {
-  aspect-ratio: 1 / 1.2;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: var(--sp-4);
-  background: var(--white);
-  border: var(--hairline) solid var(--paper-line);
-  cursor: pointer;
-}
-
-.dayOn {
-  background: var(--ink);
-  border-color: var(--ink);
-}
-
-.dayName {
-  font-size: var(--fs-13);
-  color: var(--text-muted);
-}
-
-.dayOn .dayName {
-  color: var(--ink-soft);
-}
-
-.dayNumber {
-  font-family: var(--font-serif);
-  font-size: var(--fs-18);
-  font-variant-numeric: lining-nums;
-}
-
-.dayOn .dayNumber {
-  color: var(--paper);
-}
-
 .windows {
   display: grid;
   gap: var(--sp-8);
 }
 
 .window {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: var(--sp-12);
   min-height: var(--btn-lg);
-  padding-inline: var(--sp-16);
-  background: var(--white);
-  border: var(--hairline) solid var(--paper-line);
-  cursor: pointer;
-}
-
-.windowOn {
-  background: var(--ink);
-  border-color: var(--ink);
-  color: var(--paper);
 }
 
 .windowLabel {
   font-size: var(--fs-16);
-}
-
-.windowHours {
-  font-size: var(--fs-15);
-  color: var(--text-soft);
-}
-
-.windowOn .windowHours {
-  color: var(--ink-soft);
-}
-
-/* A day or window nobody can be booked in: drawn, but not to be chosen. */
-.day:has(input:disabled),
-.window:has(input:disabled) {
-  border-style: dashed;
-  color: var(--paper-hint);
-  cursor: not-allowed;
-}
-
-.day:has(input:disabled) .dayName,
-.window:has(input:disabled) .windowHours {
-  color: var(--paper-hint);
-}
-
-.day:has(input:disabled) .dayNumber {
-  text-decoration: line-through;
 }
 
 /* Beneath what to book: how the first fit asked for is booked and paid (ADR 0086). */
@@ -521,36 +376,15 @@
 }
 
 .extent {
-  background: var(--white);
-  padding: var(--sp-16) var(--sp-8);
-  display: flex;
-  flex-direction: column;
   align-items: center;
   gap: var(--sp-8);
-  cursor: pointer;
-  border: var(--hairline) solid var(--paper-line);
-  color: var(--text-muted);
-  transition: border-color var(--duration-quick) var(--ease-house);
-}
-
-.extentOn {
-  border-color: var(--ink);
-  color: var(--ink);
+  padding: var(--sp-16) var(--sp-8);
 }
 
 .extentText {
   font-size: var(--fs-13);
   text-align: center;
   line-height: var(--lh-130);
-}
-
-/* The radios are hidden and drawn, so is their keyboard focus (as the try-on's are). */
-.day:has(input:focus-visible),
-.window:has(input:focus-visible),
-.extent:has(input:focus-visible),
-.consent:has(input:focus-visible) .box {
-  outline: var(--focus-width) solid var(--ink);
-  outline-offset: var(--focus-offset);
 }
 
 /* One column as wide as the form, never as wide as its widest field's content: a 320 px screen scrolls nothing. */
@@ -561,75 +395,14 @@
   min-width: 0;
 }
 
-.input {
-  width: 100%;
-  height: var(--btn-lg);
-  padding: 0 var(--sp-16);
-  background: var(--white);
-  border: var(--hairline) solid var(--paper-control);
-  font-size: var(--fs-16);
-}
-
-.bad {
-  border-color: var(--error-on-paper);
-}
-
-.mobile {
-  display: flex;
-  align-items: stretch;
-  height: var(--btn-lg);
-  background: var(--white);
-  border: var(--hairline) solid var(--paper-control);
-}
-
-.prefix {
-  display: flex;
-  align-items: center;
-  padding-inline: var(--sp-16);
-  border-right: var(--hairline) solid var(--paper-line);
-  color: var(--text-muted);
-  font-variant-numeric: tabular-nums;
-}
-
-.mobileInput {
-  flex: 1 1 auto;
-  min-width: 0;
-  padding: 0 var(--sp-16);
-  border: 0;
-  background: transparent;
-  font-size: var(--fs-16);
-  font-variant-numeric: tabular-nums;
-}
-
 .consent {
-  display: flex;
-  gap: var(--sp-12);
-  align-items: flex-start;
   min-height: var(--tap);
   padding-top: var(--sp-4);
-  cursor: pointer;
-}
-
-.box {
-  flex: none;
-  width: var(--sp-20);
-  height: var(--sp-20);
-  margin-top: var(--sp-2);
-  display: grid;
-  place-items: center;
-  background: var(--white);
-  border: var(--hairline) solid var(--paper-control);
-  color: var(--ink);
 }
 
 /* The waitlist's optional launch alert sits closer beneath the agreement. */
 .form > .consent ~ .consent {
   margin-top: var(--sp-16);
-}
-
-/* The agreement the form needs is edged in ink, as C2 and C3 draw it. */
-.boxRequired {
-  border-color: var(--ink);
 }
 
 .consentText {
@@ -657,13 +430,6 @@
   width: 100%;
 }
 
-/* The address's pincode: the one the page checked, shown where the field would be, and not typed again. */
-.addressPincode {
-  margin: 0;
-  font-size: var(--fs-16);
-  font-variant-numeric: tabular-nums;
-}
-
 .hint {
   margin: var(--sp-8) 0 0;
   font-size: var(--fs-14);
@@ -686,10 +452,6 @@
 
 .remembered .told {
   margin: 0;
-}
-
-.remembered .change {
-  font-size: var(--fs-15);
 }
 
 /* ---- The confirmations ------------------------------------------------ */

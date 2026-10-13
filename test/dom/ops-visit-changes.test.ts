@@ -97,7 +97,7 @@ function button(name: string): HTMLButtonElement {
 /** The control a label names, as a screen reader finds it. */
 function field(label: string): HTMLElement {
   const found = [...page.querySelectorAll("label")].find((each) => each.textContent.trim() === label);
-  const control = found === undefined ? null : document.getElementById(found.htmlFor);
+  const control = found?.control ?? null;
   if (control === null) throw new Error(`No field "${label}" in: ${text()}`);
   return control;
 }

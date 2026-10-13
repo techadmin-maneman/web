@@ -16,6 +16,7 @@
 // and no API calls, for the fidelity screenshots and the browser tests
 // (machine.ts lists the kinds each screen takes).
 
+import { TextButton } from "@maneman/ui/TextLink";
 import { useEffect, useReducer, useRef } from "preact/hooks";
 import { ICONS } from "@maneman/brand/icons";
 import { turnstileWidget, type TurnstileWidget } from "@maneman/web-kit/turnstile";
@@ -154,10 +155,10 @@ export default function TryOn(props: Props) {
       </div>
       <div class={styles.inner}>
         <div class={styles.topline}>
-          <button type="button" class={styles.back} onClick={back}>
+          <TextButton tone="ink" className={styles.back} onClick={back}>
             <Icon path={ICONS.back} size={17} />
             {backFrom(screen) === "home" ? tryOn.backToSite : tryOn.back}
-          </button>
+          </TextButton>
           <span class={`caps ${styles.stepLabel}`}>
             {screen === "error" ? tryOn.error.kinds[state.errorKind].step : tryOn.stepLabels[screen]}
           </span>

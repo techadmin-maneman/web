@@ -6,6 +6,7 @@
 // not reached us, it offers to send it. With no signal the session stays open
 // and nothing is wiped, and it says so (apps/tech/src/App.tsx).
 
+import { Tile } from "@maneman/ui/Tile";
 import { capsLook } from "@maneman/ui/Caps";
 import { ICONS, APP_ICONS } from "@maneman/brand/icons";
 import { Button } from "@maneman/ui/Button";
@@ -187,9 +188,8 @@ function Tomorrow(props: Omit<Parameters<typeof Jobs>[0], "jobs"> & { readonly j
   const [open, setOpen] = useState(false);
   return (
     <>
-      <button
+      <Tile
         className={styles.tomorrow}
-        type="button"
         aria-expanded={open}
         onClick={() => {
           setOpen((was) => !was);
@@ -197,7 +197,7 @@ function Tomorrow(props: Omit<Parameters<typeof Jobs>[0], "jobs"> & { readonly j
       >
         <span>{copy.tomorrow(props.jobs.length)}</span>
         <Icon className={styles.tomorrowIcon} d={ICONS.selectArrow} size={19} stroke={STROKE} />
-      </button>
+      </Tile>
       {open && <Jobs {...props} />}
     </>
   );

@@ -5,7 +5,8 @@
 // error, and given the focus. The API refuses a pincode we do not come to, which offers the waitlist, and a move to
 // another city while a visit is booked, which offers a message to ops.
 
-import { AddressFields, type AddressFieldsClasses } from "@maneman/ui/AddressFields";
+import { TextLink } from "@maneman/ui/TextLink";
+import { AddressFields } from "@maneman/ui/AddressFields";
 import { Button } from "@maneman/ui/Button";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { useState } from "react";
@@ -39,13 +40,6 @@ const ERROR_ID = "address-error";
 const ADDRESS_WORDS = {
   labels: { ...profile.form, access_notes: profile.form.accessNotes },
   hints: { access_notes: profile.form.accessHint },
-};
-
-const ADDRESS_CLASSES: AddressFieldsClasses = {
-  field: styles.formField,
-  label: styles.formLabel,
-  input: styles.input,
-  hint: styles.muted,
 };
 
 /** The site's /book, where a pincode we do not come to joins the waitlist. */
@@ -155,7 +149,7 @@ export function AddressForm({
           setEditing((draft) => ({ ...draft, [part]: value }));
         }}
         words={ADDRESS_WORDS}
-        classes={ADDRESS_CLASSES}
+        fieldClassName={styles.formField}
       />
       {problem !== null && (
         <p className={styles.error} id={ERROR_ID} role="alert">
@@ -163,14 +157,14 @@ export function AddressForm({
         </p>
       )}
       {refused === "not_served" && (
-        <a className={styles.link} href={WAITLIST_URL}>
-          <span>{copy.form.waitlist}</span>
-        </a>
+        <TextLink className={styles.link} href={WAITLIST_URL}>
+          {copy.form.waitlist}
+        </TextLink>
       )}
       {refused === "visit_booked" && (
-        <a className={styles.link} href={whatsappWith(messages.moveCity)} rel="noopener">
-          <span>{copy.form.message}</span>
-        </a>
+        <TextLink className={styles.link} href={whatsappWith(messages.moveCity)}>
+          {copy.form.message}
+        </TextLink>
       )}
       <div className={styles.row}>
         <Button variant="primary" size="control" className={styles.primary} type="submit" disabled={busy}>

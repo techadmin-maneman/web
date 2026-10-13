@@ -1,5 +1,7 @@
 // Paying, with what the hold costs, what changing it later costs, and what the booking agrees to.
 
+import { Checkbox } from "@maneman/ui/Field";
+import { Disclosure } from "@maneman/ui/Disclosure";
 import { Button } from "@maneman/ui/Button";
 import { indiaClock, indiaDate, shortDate } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";
@@ -110,12 +112,11 @@ function AgreedByBooking({ consents }: { consents: readonly BookingConsent[] }) 
   const lines = consentLines(consents);
   if (lines.length === 0) return null;
   return (
-    <details className={styles.consents}>
-      <summary className={styles.consentsOpen}>{booking.pay.consents.open}</summary>
+    <Disclosure className={styles.consents} summaryClassName={styles.consentsOpen} summary={booking.pay.consents.open}>
       {lines.map((line) => (
         <p key={line}>{line}</p>
       ))}
-    </details>
+    </Disclosure>
   );
 }
 
@@ -183,16 +184,14 @@ export function PayStep(props: {
       </div>
       {takesACode && <CodeBox hold={hold} busy={props.busy} onHold={props.onHold} onSending={setCodeSending} />}
       {props.askToRemind && (
-        <label className={styles.remind}>
-          <input
-            type="checkbox"
-            checked={props.remind}
-            onChange={(event) => {
-              props.onRemind(event.target.checked);
-            }}
-          />
-          <span>{copy.remind}</span>
-        </label>
+        <Checkbox
+          className={styles.remind}
+          label={copy.remind}
+          checked={props.remind}
+          onChange={(event) => {
+            props.onRemind(event.target.checked);
+          }}
+        />
       )}
       {props.problem !== null && (
         <p className={styles.problem} role="alert">

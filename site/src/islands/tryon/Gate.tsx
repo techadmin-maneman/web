@@ -1,22 +1,17 @@
+import { Label, TextInput } from "@maneman/ui/Field";
+import { MobileInput } from "@maneman/ui/MobileInput";
+import { Button } from "@maneman/ui/Button";
 import { ICONS } from "@maneman/brand/icons";
 import { formatMobileField } from "@maneman/web-kit/mobile";
 import { MOST_NAME_LENGTH } from "@maneman/web-kit/names";
 import { gateCopy, numberCode as numberCodeWords, tryOn, type Notice } from "../../content/site.ts";
-import { Icon } from "../Drawings.tsx";
 import { NumberCodeField, type CodeFieldClasses } from "../NumberCodeField.tsx";
 import type { FormRef } from "../useInvalidFocus.ts";
 import { Title, type HeadingRef } from "./Title.tsx";
 import styles from "./TryOn.module.css";
 
 /** The WhatsApp code's field, on the gate's ink. */
-const CODE_FIELD: CodeFieldClasses = {
-  label: styles.fieldLabel,
-  input: styles.input,
-  bad: styles.inputBad,
-  hint: styles.codeHint,
-  error: styles.error,
-  again: styles.codeAgain,
-};
+const CODE_FIELD: CodeFieldClasses = { hint: styles.codeHint, error: styles.error, again: styles.codeAgain };
 
 /** The code sent to the number typed, while it waits to be entered. */
 export interface GateCode {
@@ -32,6 +27,19 @@ function submitLabel(code: GateCode | null, sending: boolean): string {
   if (code?.checking === true) return numberCodeWords.checking;
   if (sending) return tryOn.gate.sending;
   return code === null ? tryOn.gate.submit : tryOn.gate.confirm;
+}
+
+/** What is wrong with a field, said as it is marked. */
+function FieldError(props: { id: string; text: string | null }) {
+  return (
+    <div aria-live="polite">
+      {props.text !== null && (
+        <div id={props.id} class={styles.error}>
+          {props.text}
+        </div>
+      )}
+    </div>
+  );
 }
 
 /**
@@ -72,12 +80,12 @@ export function Gate(props: {
         <p class={styles.body}>{words.body}</p>
         <div class={styles.fields}>
           <div>
-            <label class={styles.fieldLabel} for="gate-name">
+            <Label htmlFor="gate-name" onInk>
               {tryOn.gate.name}
-            </label>
-            <input
+            </Label>
+            <TextInput
+              onInk
               id="gate-name"
-              class={`${styles.input} ${nameBad ? styles.inputBad : ""}`}
               value={props.name}
               placeholder={tryOn.gate.namePlaceholder}
               autocomplete="name"
@@ -89,42 +97,26 @@ export function Gate(props: {
                 props.onName(event.currentTarget.value);
               }}
             />
-            <div aria-live="polite">
-              {nameBad && (
-                <div id="gate-name-error" class={styles.error}>
-                  {tryOn.gate.nameError}
-                </div>
-              )}
-            </div>
+            <FieldError id="gate-name-error" text={nameBad ? tryOn.gate.nameError : null} />
           </div>
           <div>
-            <label class={styles.fieldLabel} for="gate-mobile">
+            <Label htmlFor="gate-mobile" onInk>
               {tryOn.gate.mobile}
-            </label>
-            <div class={`${styles.mobile} ${mobileBad ? styles.inputBad : ""}`}>
-              <span class={styles.prefix}>+91</span>
-              <input
-                id="gate-mobile"
-                class={styles.mobileInput}
-                value={props.mobile}
-                placeholder={tryOn.gate.mobilePlaceholder}
-                inputMode="numeric"
-                autocomplete="tel-national"
-                aria-required="true"
-                aria-invalid={mobileBad}
-                aria-describedby={mobileBad ? "gate-mobile-error" : undefined}
-                onInput={(event) => {
-                  props.onMobile(formatMobileField(event.currentTarget.value));
-                }}
-              />
-            </div>
-            <div aria-live="polite">
-              {mobileBad && (
-                <div id="gate-mobile-error" class={styles.error}>
-                  {tryOn.gate.mobileError}
-                </div>
-              )}
-            </div>
+            </Label>
+            <MobileInput
+              onInk
+              prefix="+91"
+              id="gate-mobile"
+              value={props.mobile}
+              placeholder={tryOn.gate.mobilePlaceholder}
+              aria-required="true"
+              aria-invalid={mobileBad}
+              aria-describedby={mobileBad ? "gate-mobile-error" : undefined}
+              onInput={(event) => {
+                props.onMobile(formatMobileField(event.currentTarget.value));
+              }}
+            />
+            <FieldError id="gate-mobile-error" text={mobileBad ? tryOn.gate.mobileError : null} />
           </div>
           {code !== null && (
             <NumberCodeField
@@ -132,6 +124,7 @@ export function Gate(props: {
               mobile={props.mobile}
               code={code.value}
               failure={code.failure}
+              onInk
               classes={CODE_FIELD}
               onInput={code.onInput}
               onAgain={code.onAgain}
@@ -141,10 +134,16 @@ export function Gate(props: {
         <div aria-live="polite">
           {props.failure !== null && <div class={`${styles.error} ${styles.gateFailure}`}>{props.failure}</div>}
         </div>
-        <button type="submit" class={`btn btn--lg btn--paper ${styles.gateSubmit}`} aria-disabled={busy}>
-          {busy && <Icon path={ICONS.sending} size={15} stroke={1.7} />}
+        <Button
+          variant="light"
+          size="action"
+          className={styles.gateSubmit}
+          type="submit"
+          aria-disabled={busy}
+          icon={busy ? ICONS.sending : undefined}
+        >
           {submitLabel(code, props.sending)}
-        </button>
+        </Button>
         <div class={styles.reassurance}>{words.reassurance}</div>
       </form>
     </div>

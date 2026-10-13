@@ -9,6 +9,7 @@
 // technicians here (./TechnicianForms.tsx); those switched off are listed
 // beneath the table.
 
+import { Table } from "@maneman/ui/Table";
 import { capsLook } from "@maneman/ui/Caps";
 import { Button } from "@maneman/ui/Button";
 import { failedRequestId, useLoad } from "@maneman/ui/useLoad";
@@ -117,7 +118,7 @@ function RosterTable({
   return (
     <>
       <Narrowing view={view} label={technicians.narrow} className={styles.narrow} />
-      <table className={styles.table}>
+      <Table className={styles.table}>
         <thead>
           <tr>
             <SortHeads view={view} className={styles.head} />
@@ -143,7 +144,7 @@ function RosterTable({
             </tr>
           ))}
         </tbody>
-      </table>
+      </Table>
       <TableEnd view={view} />
     </>
   );

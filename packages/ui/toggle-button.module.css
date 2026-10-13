@@ -1,0 +1,49 @@
+/* A toggle (./ToggleButton.tsx): an edged word, pressed in the words' full ink. */
+
+@layer base, ui;
+
+@layer ui {
+  /* The app's control height and words (./base.css): the technician app's are larger. */
+  .toggle {
+    min-height: var(--control-height);
+    padding: 0 var(--sp-12);
+    background: none;
+    font: inherit;
+    font-size: var(--control-text);
+    cursor: pointer;
+  }
+
+  .onInk {
+    border: var(--hairline) solid var(--edge-on-ink);
+    color: var(--ink-muted);
+  }
+
+  .onInk[aria-pressed="true"],
+  .onInk[aria-checked="true"] {
+    border: var(--rule-strong) solid var(--paper);
+    background: var(--ink-raised);
+    color: var(--paper);
+    font-weight: var(--weight-medium);
+  }
+
+  .onPaper {
+    border: var(--hairline) solid var(--paper-control);
+    color: var(--text-muted);
+  }
+
+  .onPaper[aria-pressed="true"],
+  .onPaper[aria-checked="true"] {
+    border-color: var(--ink);
+    color: var(--text);
+  }
+
+  @media (hover: hover) {
+    .onInk:hover {
+      color: var(--paper);
+    }
+
+    .onPaper:hover {
+      color: var(--text);
+    }
+  }
+}

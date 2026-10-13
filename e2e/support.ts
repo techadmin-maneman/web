@@ -165,7 +165,10 @@ export async function throughToGate(page: Page): Promise<void> {
   await reach("stage");
   await page.getByRole("button", { name: "Continue" }).click();
   await reach("looks");
-  await page.getByText("Light density").first().click();
+  await page
+    .getByRole("radio", { name: /Light density/ })
+    .first()
+    .check();
   await page.getByRole("button", { name: "Continue" }).click();
   await reach("gate");
 }

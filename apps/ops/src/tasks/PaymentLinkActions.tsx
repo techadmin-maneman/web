@@ -2,6 +2,7 @@
 // Razorpay text it to the client again, or make it now where it never did. A link Razorpay refused is sent from its
 // dashboard, so it offers neither.
 
+import { TextButton } from "@maneman/ui/TextLink";
 import { errorText } from "@maneman/web-kit/refusal";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
@@ -50,16 +51,16 @@ export function PaymentLinkActions({ task, subject }: { task: Task; subject: str
     <>
       <span className={styles.acts}>
         {url !== null && (
-          <button type="button" className={styles.act} onClick={() => void copyLink(url)}>
+          <TextButton tone="muted" compact onClick={() => void copyLink(url)}>
             {copy.copy}
             <VisuallyHidden>{` · ${subject}`}</VisuallyHidden>
-          </button>
+          </TextButton>
         )}
         {mayResend && (
-          <button type="button" className={styles.act} disabled={busy} onClick={() => void resend()}>
+          <TextButton tone="muted" compact disabled={busy} onClick={() => void resend()}>
             {busy ? copy.sending : copy.resend}
             <VisuallyHidden>{` · ${subject}`}</VisuallyHidden>
-          </button>
+          </TextButton>
         )}
       </span>
       <span className={styles.said} role="status">

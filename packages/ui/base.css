@@ -24,6 +24,11 @@
     margin: 0;
   }
 
+  /* An element hidden stays hidden, whatever display its component gives it: a file chooser opened by a button. */
+  [hidden] {
+    display: none !important;
+  }
+
   /*
    * Each app's sizes for a button, by what it is for (./Button.tsx): the
    * screen's primary action, any other, and a small one inline. These are the
@@ -38,6 +43,18 @@
     --control-weight: var(--weight-medium);
     --small-height: var(--tap);
     --small-text: var(--fs-15);
+    /* A button's words from its edges: the apps' 16 px, which the site widens for its own pages. */
+    --action-pad: var(--sp-16);
+    --control-pad: var(--sp-16);
+    --small-pad: var(--sp-16);
+    /* An outline's edge on the ink: the boards' line, which the technician app strengthens for the sun. */
+    --edge-on-ink: var(--ink-line);
+    /* A field's box: the tap's height, which the technician app raises on its body. */
+    --field-height: var(--tap);
+    --field-text: var(--fs-15);
+    /* Inside a table row, which keeps the row at the console's row height. */
+    --compact-height: var(--sp-28);
+    --compact-text: var(--fs-13);
     /* A filled button's edge: none, unless the app draws its filled buttons edged as its outlined ones are. */
     --filled-edge: 0;
     /* The column at its widest, which a sheet matches: the design's, unless the app grows it on a larger phone. */

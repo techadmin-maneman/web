@@ -4,6 +4,8 @@
 // (docs/fidelity-method.md). Finding narrows the rows only: the figures at each
 // column's head stay the day's own.
 
+import { Label, Select, TextInput } from "@maneman/ui/Field";
+import { Button } from "@maneman/ui/Button";
 import { classes } from "@maneman/ui/classes";
 import type { Board, BoardQuery } from "../api.ts";
 import { dispatch } from "../content.ts";
@@ -28,42 +30,40 @@ export function Toolbar({ board, query, onQuery, find, onFind }: Props) {
   return (
     <div className={styles.tools} role="group" aria-label={copy.label}>
       <div className={styles.weeks}>
-        <button
-          className={styles.tool}
-          type="button"
+        <Button
+          variant="outline"
+          size="compact"
           disabled={board === null}
           onClick={() => {
             shift(-7);
           }}
         >
           {copy.previous}
-        </button>
-        <button
-          className={styles.tool}
-          type="button"
+        </Button>
+        <Button
+          variant="outline"
+          size="compact"
           disabled={query.from === null}
           onClick={() => {
             onQuery({ ...query, from: null });
           }}
         >
           {copy.thisWeek}
-        </button>
-        <button
-          className={styles.tool}
-          type="button"
+        </Button>
+        <Button
+          variant="outline"
+          size="compact"
           disabled={board === null}
           onClick={() => {
             shift(7);
           }}
         >
           {copy.next}
-        </button>
+        </Button>
       </div>
       <div className={styles.field}>
-        <label className={styles.fieldLabel} htmlFor="dispatch-city">
-          {copy.city}
-        </label>
-        <select
+        <Label htmlFor="dispatch-city">{copy.city}</Label>
+        <Select
           id="dispatch-city"
           className={styles.select}
           value={query.city ?? ""}
@@ -77,13 +77,11 @@ export function Toolbar({ board, query, onQuery, find, onFind }: Props) {
               {city}
             </option>
           ))}
-        </select>
+        </Select>
       </div>
       <div className={classes(styles.field, styles.find)}>
-        <label className={styles.fieldLabel} htmlFor="dispatch-find">
-          {copy.find}
-        </label>
-        <input
+        <Label htmlFor="dispatch-find">{copy.find}</Label>
+        <TextInput
           id="dispatch-find"
           className={styles.input}
           type="search"

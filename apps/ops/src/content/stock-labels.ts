@@ -13,6 +13,8 @@ export const stockLabels = {
   notLabelled: "Those pieces weren't labelled. Try again.",
   /** "Labelled 21 Sep, 12:00 · 3 pieces" */
   batch: (when: string, count: number) => `Labelled ${when} · ${pieces(count)}`,
+  /** Said to a screen reader: the batches to print labels for. */
+  batchesLegend: "Batches to print",
   noUnits: "No labelled pieces here.",
   print: (count: number) => `Print ${String(count)} ${count === 1 ? "label" : "labels"}`,
   printing: "Printing…",

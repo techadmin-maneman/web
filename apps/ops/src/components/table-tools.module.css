@@ -24,30 +24,7 @@
 }
 
 .clear {
-  padding: 0;
-  border: 0;
-  background: transparent;
-  color: var(--text);
-  font: inherit;
-  text-decoration: underline;
-  text-underline-offset: var(--sp-4);
-  cursor: pointer;
-}
-
-.sort {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--sp-4);
-  padding: 0;
-  border: 0;
-  background: transparent;
-  color: inherit;
-  font: inherit;
-  cursor: pointer;
-}
-
-.sort:hover {
-  color: var(--text);
+  margin-left: var(--sp-8);
 }
 
 .figure {

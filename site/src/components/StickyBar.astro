@@ -5,16 +5,22 @@ import { stickyBar, whatsapp } from "../content/site.ts";
 import { isShown } from "../lib/build.ts";
 import { whatsappChat } from "@maneman/web-kit/whatsapp";
 import Icon from "./Icon.astro";
+import { buttonLook } from "@maneman/ui/Button";
+import { iconButtonLook } from "@maneman/ui/IconButton";
 ---
 
 <nav class="bar on-ink" aria-label={stickyBar.label}>
   <div class="row">
     {isShown(whatsapp) && (
-      <a class="whatsapp" href={whatsappChat(whatsapp.number)} aria-label={stickyBar.whatsappLabel}>
+      <a
+        class={iconButtonLook("whatsapp", true)}
+        href={whatsappChat(whatsapp.number)}
+        aria-label={stickyBar.whatsappLabel}
+      >
         <Icon name="whatsapp" size={22} />
       </a>
     )}
-    <a class="btn book" href="/book">
+    <a class={buttonLook({ variant: "light", size: "control", className: "book" })} href="/book">
       {stickyBar.book}
     </a>
   </div>
@@ -46,23 +52,10 @@ import Icon from "./Icon.astro";
     align-items: center;
     gap: var(--sp-12);
   }
-  .whatsapp,
-  .whatsapp:hover {
-    width: var(--btn-md);
-    height: var(--btn-md);
-    border: var(--hairline) solid var(--ink-line);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-    color: var(--paper);
+  .whatsapp {
+    --icon-button-size: var(--btn-md);
   }
-  .book,
-  .book:hover {
+  .book {
     flex: 1;
-    height: var(--btn-md);
-    background: var(--paper);
-    color: var(--ink);
-    font-size: var(--fs-15);
   }
 </style>

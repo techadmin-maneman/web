@@ -4,7 +4,7 @@
 // (docs/decisions/0162-scanning-labels.md).
 
 import { Button } from "@maneman/ui/Button";
-import { Field, NumberInput, Select } from "@maneman/ui/Field";
+import { Checkbox, ChoiceGroup, Field, NumberInput, Select } from "@maneman/ui/Field";
 import { useLoad } from "@maneman/ui/useLoad";
 import { fullDate, indiaClock, indiaDate, shortDate } from "@maneman/web-kit/dates";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -56,21 +56,18 @@ function Batches({ units, name }: { units: readonly Unit[]; name: string }) {
   };
   return (
     <>
-      <fieldset className={styles.batches}>
+      <ChoiceGroup className={styles.batches} legend={copy.batchesLegend} legendLook="hidden">
         {batches.map((batch) => (
-          <label className={styles.batch} key={batch.at}>
-            <input
-              className={styles.tick}
-              type="checkbox"
-              checked={ticked.has(batch.at)}
-              onChange={() => {
-                toggle(batch.at);
-              }}
-            />
-            {copy.batch(`${shortDate(indiaDate(batch.at))}, ${indiaClock(batch.at)}`, batch.units.length)}
-          </label>
+          <Checkbox
+            key={batch.at}
+            label={copy.batch(`${shortDate(indiaDate(batch.at))}, ${indiaClock(batch.at)}`, batch.units.length)}
+            checked={ticked.has(batch.at)}
+            onChange={() => {
+              toggle(batch.at);
+            }}
+          />
         ))}
-      </fieldset>
+      </ChoiceGroup>
       {toPrint.length > 0 && (
         <div className={form.actions}>
           <Button

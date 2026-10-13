@@ -3,7 +3,7 @@
 // statement sent to the partner, records the month's payment from the payout tool, or deletes one recorded by
 // mistake; the month's file goes to the payout tool.
 
-import { Button } from "@maneman/ui/Button";
+import { Button, RowButton } from "@maneman/ui/Button";
 import { Field, Select } from "@maneman/ui/Field";
 import { Panel } from "@maneman/ui/Panel";
 import { Table } from "@maneman/ui/Table";
@@ -65,9 +65,8 @@ function RowActions({ statement, book, mayPay, acting, onAct }: { statement: Par
     onAct({ id: statement.channel_id, kind });
   };
   const offer = (kind: NonNullable<Acting>["kind"], words: string, label: string) => (
-    <button
+    <RowButton
       className={styles.inline}
-      type="button"
       aria-label={label}
       disabled={acting !== null}
       onClick={() => {
@@ -75,13 +74,12 @@ function RowActions({ statement, book, mayPay, acting, onAct }: { statement: Par
       }}
     >
       {words}
-    </button>
+    </RowButton>
   );
   return (
     <td className={own.actions}>
-      <button
+      <RowButton
         className={styles.inline}
-        type="button"
         aria-label={copy.statementLabel(statement.name)}
         onClick={() => {
           saveFile(
@@ -92,7 +90,7 @@ function RowActions({ statement, book, mayPay, acting, onAct }: { statement: Par
         }}
       >
         {copy.statement}
-      </button>
+      </RowButton>
       {mayPay &&
         book.month < book.this_month &&
         statement.payout === null &&

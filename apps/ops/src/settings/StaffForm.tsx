@@ -1,8 +1,8 @@
 // Adding a member of staff, or changing their grants and whether they are let in. The whole list of grants is sent
 // and replaces theirs; the check names each grant given or taken away before anything is saved.
 
+import { Checkbox, Fieldset, Label, Select, TextInput } from "@maneman/ui/Field";
 import { errorText, type Failure } from "@maneman/web-kit/refusal";
-import { classes } from "@maneman/ui/classes";
 import { Button } from "@maneman/ui/Button";
 import { useState } from "react";
 import { api, type StaffBook, type StaffGrant, type StaffPerson, type StaffSave } from "../api.ts";
@@ -71,10 +71,8 @@ function GrantRow(props: {
   return (
     <li className={staffStyles.grantRow}>
       <div className={styles.field}>
-        <label className={styles.fieldLabel} htmlFor={id("department")}>
-          {copy.form.department}
-        </label>
-        <select
+        <Label htmlFor={id("department")}>{copy.form.department}</Label>
+        <Select
           id={id("department")}
           className={styles.select}
           value={grant.department}
@@ -87,13 +85,11 @@ function GrantRow(props: {
               {copy.departments[department]}
             </option>
           ))}
-        </select>
+        </Select>
       </div>
       <div className={styles.field}>
-        <label className={styles.fieldLabel} htmlFor={id("level")}>
-          {copy.form.level}
-        </label>
-        <select
+        <Label htmlFor={id("level")}>{copy.form.level}</Label>
+        <Select
           id={id("level")}
           className={styles.select}
           value={grant.level}
@@ -106,13 +102,11 @@ function GrantRow(props: {
               {copy.levels[level]}
             </option>
           ))}
-        </select>
+        </Select>
       </div>
       <div className={styles.field}>
-        <label className={styles.fieldLabel} htmlFor={id("place")}>
-          {copy.form.place}
-        </label>
-        <select
+        <Label htmlFor={id("place")}>{copy.form.place}</Label>
+        <Select
           id={id("place")}
           className={styles.select}
           value={whereValue(grant)}
@@ -135,7 +129,7 @@ function GrantRow(props: {
               </option>
             ))}
           </optgroup>
-        </select>
+        </Select>
       </div>
       <Button
         variant="outline"
@@ -218,10 +212,8 @@ export function StaffForm(props: {
       <p className={styles.ruleTitle}>{person === null ? copy.form.addTitle : copy.form.changeTitle(person.email)}</p>
       <div className={styles.fields}>
         <div className={styles.field}>
-          <label className={styles.fieldLabel} htmlFor="staff-email">
-            {copy.form.email}
-          </label>
-          <input
+          <Label htmlFor="staff-email">{copy.form.email}</Label>
+          <TextInput
             id="staff-email"
             className={styles.text}
             type="email"
@@ -235,19 +227,15 @@ export function StaffForm(props: {
           />
         </div>
       </div>
-      <label className={classes(styles.fieldRow, styles.once)}>
-        <input
-          className={styles.box}
-          type="checkbox"
-          checked={draft.active}
-          onChange={(event) => {
-            edit({ active: event.target.checked });
-          }}
-        />
-        {copy.form.letIn}
-      </label>
-      <fieldset className={styles.choices}>
-        <legend className={styles.fieldLabel}>{copy.form.access}</legend>
+      <Checkbox
+        className={styles.once}
+        label={copy.form.letIn}
+        checked={draft.active}
+        onChange={(event) => {
+          edit({ active: event.target.checked });
+        }}
+      />
+      <Fieldset className={styles.choices} legend={copy.form.access}>
         <ul className={staffStyles.grants}>
           {draft.grants.map((grant, index) => (
             <GrantRow
@@ -264,7 +252,7 @@ export function StaffForm(props: {
             />
           ))}
         </ul>
-      </fieldset>
+      </Fieldset>
       <div className={styles.actions}>
         <Button
           variant="outline"

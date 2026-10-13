@@ -1,6 +1,7 @@
 ---
 // The footer, on the home page only (as v2). The wordmark here is 132 px wide,
 // so it is the display cut (design/brand/README.md); v2 drew the small cut.
+import { textLinkLook } from "@maneman/ui/TextLink";
 import { areasPage, guides, guidesPage } from "../content/guides.ts";
 import { business, footer, whatsapp } from "../content/site.ts";
 import { isShown } from "../lib/build.ts";
@@ -31,7 +32,7 @@ const more = [
         <div class="column">
           <span class="title caps">{service.title}</span>
           {[...service.links, ...more].map((link) => (
-            <a class="item" href={link.href}>
+            <a class={textLinkLook({ tone: "ink", quiet: true, className: "item" })} href={link.href}>
               {link.label}
             </a>
           ))}
@@ -39,7 +40,10 @@ const more = [
         {showWhatsapp && (
           <div class="column">
             <span class="title caps">{reach.title}</span>
-            <a class="item number" href={whatsappChat(whatsapp.number)}>
+            <a
+              class={textLinkLook({ tone: "ink", quiet: true, className: "item number" })}
+              href={whatsappChat(whatsapp.number)}
+            >
               {whatsapp.label}
             </a>
           </div>
@@ -47,7 +51,7 @@ const more = [
         <div class="column">
           <span class="title caps">{legal.title}</span>
           {legal.links.map((link) => (
-            <a class="item" href={link.href}>
+            <a class={textLinkLook({ tone: "ink", quiet: true, className: "item" })} href={link.href}>
               {link.label}
             </a>
           ))}
@@ -107,13 +111,8 @@ const more = [
     display: flex;
     align-items: center;
   }
-  .item,
-  .item:hover {
+  .item {
     font-size: var(--fs-15);
-    color: var(--ink-soft);
-    min-height: var(--tap);
-    display: flex;
-    align-items: center;
   }
   .number {
     font-variant-numeric: tabular-nums;

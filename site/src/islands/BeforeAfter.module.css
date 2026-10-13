@@ -79,21 +79,7 @@
 }
 
 /* The input covers the frame, invisible; its focus ring moves to the handle. */
-.input {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  margin: 0;
-  opacity: 0;
-  cursor: ew-resize;
-  appearance: none;
-  background: transparent;
-}
-.input:focus-visible {
-  outline: none;
-}
-.frame:has(.input:focus-visible) .handle {
+.frame:has(input:focus-visible) .handle {
   outline: var(--focus-width) solid var(--paper);
   outline-offset: var(--focus-offset);
 }

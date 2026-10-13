@@ -1,6 +1,7 @@
 ---
 // Where we come (src/content/guides.ts): the cities, at /areas. Built for staging under the design's "Placeholder" tag
 // until its wording is approved; production builds it only then.
+import { buttonLook } from "@maneman/ui/Button";
 import { areasPage } from "../../content/guides.ts";
 import { placeholderTag } from "../../content/site.ts";
 import Site from "../../layouts/Site.astro";
@@ -23,7 +24,7 @@ export function getStaticPaths() {
     </ul>
     <p>{areasPage.streets}</p>
     <p>{areasPage.next}</p>
-    <a class="btn btn--lg btn--ink book" href="/book">
+    <a class={buttonLook({ variant: "primary", size: "action", className: "book" })} href="/book">
       {areasPage.check}
     </a>
   </article>

@@ -1,0 +1,41 @@
+/* The day's windows (./WindowChoice.tsx), each a filled card. */
+
+@layer base, ui;
+
+@layer ui {
+  .options {
+    display: grid;
+    gap: var(--sp-8);
+  }
+
+  .text {
+    min-width: 0;
+  }
+
+  .name,
+  .hours {
+    display: block;
+  }
+
+  .name {
+    font-size: var(--fs-17);
+  }
+
+  .hours {
+    margin-top: var(--sp-4);
+    font-size: var(--fs-14);
+  }
+
+  .full {
+    font-size: var(--fs-14);
+  }
+
+  /* A change this close to the visit is charged: said in oxblood, in the paper's colour once the card is the ink. */
+  .late {
+    color: var(--error-on-paper);
+  }
+
+  label:has(input:checked) .late {
+    color: var(--paper);
+  }
+}

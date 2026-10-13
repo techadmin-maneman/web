@@ -246,18 +246,7 @@
 }
 
 .promptLink {
-  display: inline-flex;
-  align-items: center;
-  min-height: var(--tap);
   margin-top: var(--sp-12);
-  font-size: var(--fs-16);
-  color: var(--text);
-  text-decoration: none;
-}
-
-.promptLink span:first-child {
-  padding-bottom: var(--sp-4);
-  border-bottom: var(--hairline) solid var(--brass);
 }
 
 /* The prompt's ways on, side by side where they fit: a booking, and what a replacement involves (ADR 0086). */
@@ -268,18 +257,6 @@
 }
 
 /* A way on that opens the booking sheet is a button, drawn as the prompt's link. */
-.promptLink:is(button) {
-  padding: 0;
-  border: 0;
-  background: none;
-  font-family: inherit;
-  cursor: pointer;
-}
-
-.promptLink:is(button):disabled {
-  color: var(--text-quiet);
-  cursor: default;
-}
 
 /* The page on what a replacement involves: its one action, across the foot. */
 .footerBook {

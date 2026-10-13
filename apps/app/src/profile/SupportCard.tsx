@@ -1,5 +1,6 @@
 // The account's support card: WhatsApp, where the team answers, and the client's Care person by name.
 
+import { ButtonLink } from "@maneman/ui/Button";
 import { capsLook } from "@maneman/ui/Caps";
 import { ICONS } from "@maneman/brand/icons";
 import { Icon } from "@maneman/ui/Icon";
@@ -21,10 +22,16 @@ export function SupportCard({
       <h2 className={capsLook(styles.cardLabel)} id="support">
         {copy.label}
       </h2>
-      <a className={styles.whatsapp} href={whatsappChat(whatsapp.number)} rel="noopener">
+      <ButtonLink
+        variant="outline"
+        size="action"
+        className={styles.whatsapp}
+        href={whatsappChat(whatsapp.number)}
+        rel="noopener"
+      >
         <Icon d={ICONS.whatsapp} size={21} />
         <span>{copy.message}</span>
-      </a>
+      </ButtonLink>
       {carePerson !== null && <p className={styles.cardHint}>{copy.carePerson(carePerson, open)}</p>}
       <p className={styles.cardHint}>{copy.hint}</p>
     </section>

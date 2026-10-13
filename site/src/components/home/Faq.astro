@@ -1,6 +1,8 @@
 ---
 // Questions: ten disclosures, the first open, one open at a time. <details>
 // sharing a `name` behave as one group, so this needs no script.
+import { textLinkLook } from "@maneman/ui/TextLink";
+import { ruledDisclosureLook as ruled } from "@maneman/ui/Disclosure";
 import { faq, whatsapp } from "../../content/site.ts";
 import { isShown } from "../../lib/build.ts";
 import { asBuilt, priceTemplate } from "../../lib/prices.ts";
@@ -14,14 +16,27 @@ const link = isShown(whatsapp) ? whatsappChat(whatsapp.number) : null;
 <section id="faq" class="container faq" data-section="faq">
   <div class="intro">
     <h2 class="section-title">{faq.title}</h2>
-    <p>{[faq.intro.before, link === null ? faq.intro.link : <a href={link}>{faq.intro.link}</a>, faq.intro.after]}</p>
+    <p>
+      {[
+        faq.intro.before,
+        link === null ? (
+          faq.intro.link
+        ) : (
+          <a class={textLinkLook({ inline: true })} href={link}>
+            {faq.intro.link}
+          </a>
+        ),
+        faq.intro.after,
+      ]}
+    </p>
   </div>
   <div class="list">
     {faq.items.map((item, index) => (
-      <details name="faq" open={index === 0}>
-        <summary>
+      <details name="faq" open={index === 0} class={ruled.details}>
+        <summary class={ruled.summary}>
           <span>{item.q}</span>
           <svg
+            class={ruled.sign}
             viewBox="0 0 24 24"
             width="17"
             height="17"
@@ -32,7 +47,7 @@ const link = isShown(whatsapp) ? whatsappChat(whatsapp.number) : null;
             aria-hidden="true"
           >
             <path d={ICONS.minus} />
-            <path class="vertical" d="M12 6 V18" />
+            <path class={ruled.upright} d="M12 6 V18" />
           </svg>
         </summary>
         <p data-price={priceTemplate(item.a)}>{asBuilt(item.a)}</p>
@@ -59,41 +74,12 @@ const link = isShown(whatsapp) ? whatsappChat(whatsapp.number) : null;
     color: var(--text-muted);
     text-wrap: pretty;
   }
-  /* The WhatsApp link is in the sentence's own colour, so it is underlined to be seen as a link (WCAG 1.4.1). */
-  .intro a {
-    color: inherit;
-    text-decoration: underline;
-    text-underline-offset: var(--sp-4);
-  }
   .list {
     border-top: var(--hairline) solid var(--text);
   }
-  details {
-    border-bottom: var(--hairline) solid var(--paper-line);
-  }
   summary {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: var(--sp-20);
-    padding: var(--sp-24) 0;
-    cursor: pointer;
     font-size: var(--fs-lead);
     line-height: var(--lh-145);
-    list-style: none;
-  }
-  summary::-webkit-details-marker {
-    display: none;
-  }
-  summary svg {
-    flex-shrink: 0;
-    color: var(--text-muted);
-  }
-  details[open] summary svg {
-    color: var(--text);
-  }
-  details[open] .vertical {
-    display: none;
   }
   details p {
     margin: 0 0 var(--sp-24);

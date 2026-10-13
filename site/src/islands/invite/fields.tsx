@@ -1,6 +1,11 @@
 // The parts both forms are made of: the pincode they are for, where the hair loss is, the person's fields, the
 // invite /book remembers, and the button that sends them; and /book's steps, with the name and number it kept first.
 
+import { Button } from "@maneman/ui/Button";
+import { ChoiceCard } from "@maneman/ui/ChoiceCard";
+import { Checkbox, Fieldset, Label, TextInput } from "@maneman/ui/Field";
+import { MobileInput } from "@maneman/ui/MobileInput";
+import { TextButton } from "@maneman/ui/TextLink";
 import { useEffect, useRef } from "preact/hooks";
 import { ICONS } from "@maneman/brand/icons";
 import { formatMobileField } from "@maneman/web-kit/mobile";
@@ -10,7 +15,7 @@ import { referral } from "../../content/referral.ts";
 import { booking, stageOptions } from "../../content/site.ts";
 import type { PincodeAnswer, ReferralReward } from "../../lib/api.ts";
 import { fill } from "../../lib/text.ts";
-import { Icon, StageDrawing } from "../Drawings.tsx";
+import { StageDrawing } from "../Drawings.tsx";
 import styles from "./Invite.module.css";
 import type { PersonField, PersonFields } from "./useTurnstileForm.ts";
 
@@ -34,9 +39,9 @@ export function ForPincode(props: { text: string; onChange: () => void }) {
     <p class={styles.forPincode}>
       {props.text}
       {" · "}
-      <button type="button" class={styles.change} aria-label={referral.pincode.changeLabel} onClick={props.onChange}>
+      <TextButton aria-label={referral.pincode.changeLabel} onClick={props.onChange}>
         {referral.pincode.change}
-      </button>
+      </TextButton>
     </p>
   );
 }
@@ -48,26 +53,27 @@ export function ForPincode(props: { text: string; onChange: () => void }) {
  */
 export function ExtentFieldset(props: { extent: LossExtent | null; onChange: (extent: LossExtent) => void }) {
   return (
-    <fieldset class={styles.group}>
-      <legend class={`caps ${styles.legend}`}>{booking.extent}</legend>
+    <Fieldset legend={booking.extent} legendLook="caps">
       <div class={styles.extents}>
         {stageOptions.map((option) => (
-          <label key={option.id} class={`${styles.extent} ${props.extent === option.id ? styles.extentOn : ""}`}>
-            <input
-              type="radio"
-              name="extent"
-              class="visually-hidden"
-              checked={props.extent === option.id}
-              onChange={() => {
-                props.onChange(option.id);
-              }}
-            />
-            <StageDrawing hair={option.hair} zone={option.zone} size="small" />
-            <span class={styles.extentText}>{option.short}</span>
-          </label>
+          <ChoiceCard
+            key={option.id}
+            name="extent"
+            look="picture"
+            className={styles.extent}
+            checked={props.extent === option.id}
+            onChange={() => {
+              props.onChange(option.id);
+            }}
+          >
+            <>
+              <StageDrawing hair={option.hair} zone={option.zone} size="small" />
+              <span class={styles.extentText}>{option.short}</span>
+            </>
+          </ChoiceCard>
         ))}
       </div>
-    </fieldset>
+    </Fieldset>
   );
 }
 
@@ -87,12 +93,9 @@ export function PersonFieldset(props: {
     <>
       <div class={styles.fields}>
         <div>
-          <label class={styles.label} for={`${idPrefix}-name`}>
-            {referral.form.name}
-          </label>
-          <input
+          <Label htmlFor={`${idPrefix}-name`}>{referral.form.name}</Label>
+          <TextInput
             id={`${idPrefix}-name`}
-            class={`${styles.input} ${nameBad ? styles.bad : ""}`}
             value={fields.name}
             placeholder={referral.form.namePlaceholder}
             autocomplete="name"
@@ -114,26 +117,19 @@ export function PersonFieldset(props: {
         </div>
 
         <div>
-          <label class={styles.label} for={`${idPrefix}-mobile`}>
-            {referral.form.mobile}
-          </label>
-          <div class={`${styles.mobile} ${mobileBad ? styles.bad : ""}`}>
-            <span class={styles.prefix}>+91</span>
-            <input
-              id={`${idPrefix}-mobile`}
-              class={styles.mobileInput}
-              value={fields.mobile}
-              placeholder={referral.form.mobilePlaceholder}
-              inputMode="numeric"
-              autocomplete="tel-national"
-              aria-required="true"
-              aria-invalid={mobileBad}
-              aria-describedby={mobileBad ? `${idPrefix}-mobile-error` : undefined}
-              onInput={(event) => {
-                props.onChange({ ...fields, mobile: formatMobileField(event.currentTarget.value) });
-              }}
-            />
-          </div>
+          <Label htmlFor={`${idPrefix}-mobile`}>{referral.form.mobile}</Label>
+          <MobileInput
+            prefix="+91"
+            id={`${idPrefix}-mobile`}
+            value={fields.mobile}
+            placeholder={referral.form.mobilePlaceholder}
+            aria-required="true"
+            aria-invalid={mobileBad}
+            aria-describedby={mobileBad ? `${idPrefix}-mobile-error` : undefined}
+            onInput={(event) => {
+              props.onChange({ ...fields, mobile: formatMobileField(event.currentTarget.value) });
+            }}
+          />
           <div aria-live="polite">
             {mobileBad && (
               <div id={`${idPrefix}-mobile-error`} class={styles.error}>
@@ -170,26 +166,22 @@ export function ConsentBox(props: {
   const { bad, idPrefix } = props;
   return (
     <>
-      <label class={styles.consent}>
-        <input
-          type="checkbox"
-          class="visually-hidden"
-          checked={props.checked}
-          aria-required="true"
-          aria-invalid={bad}
-          aria-describedby={bad ? `${idPrefix}-consent-error` : undefined}
-          onChange={(event) => {
-            props.onChange(event.currentTarget.checked);
-          }}
-        />
-        <span class={`${styles.box} ${styles.boxRequired} ${bad ? styles.bad : ""}`} aria-hidden="true">
-          {props.checked && <Icon path={ICONS.tick} size={13} stroke={1.7} />}
-        </span>
-        <span class={styles.consentText}>
-          {props.label}
-          {props.note !== "" && <span class={styles.consentNote}>{` ${props.note}`}</span>}
-        </span>
-      </label>
+      <Checkbox
+        className={styles.consent}
+        checked={props.checked}
+        aria-required="true"
+        aria-invalid={bad}
+        aria-describedby={bad ? `${idPrefix}-consent-error` : undefined}
+        onChange={(event) => {
+          props.onChange(event.currentTarget.checked);
+        }}
+        label={
+          <span class={styles.consentText}>
+            {props.label}
+            {props.note !== "" && <span class={styles.consentNote}>{` ${props.note}`}</span>}
+          </span>
+        }
+      />
       <div aria-live="polite">
         {bad && (
           <div id={`${idPrefix}-consent-error`} class={styles.error}>
@@ -226,9 +218,9 @@ export function BookingFor(props: { person: PersonFields; onChange: () => void }
     <p class={styles.forPincode}>
       {fill(booking.bookingFor, { name: props.person.name.trim(), mobile: props.person.mobile })}
       {" · "}
-      <button type="button" class={styles.change} aria-label={booking.changeYouLabel} onClick={props.onChange}>
+      <TextButton aria-label={booking.changeYouLabel} onClick={props.onChange}>
         {booking.changeYou}
-      </button>
+      </TextButton>
     </p>
   );
 }
@@ -252,10 +244,16 @@ export function Send(props: {
   return (
     <>
       <div aria-live="polite">{line !== null && <div class={styles.failure}>{line}</div>}</div>
-      <button type="submit" class={`btn btn--lg btn--ink ${styles.submit}`} aria-disabled={props.sending}>
-        {props.sending && <Icon path={ICONS.sending} size={15} stroke={1.7} />}
+      <Button
+        variant="primary"
+        size="action"
+        className={styles.submit}
+        type="submit"
+        aria-disabled={props.sending}
+        icon={props.sending ? ICONS.sending : undefined}
+      >
         {props.sending ? props.sendingLabel : props.label}
-      </button>
+      </Button>
     </>
   );
 }
@@ -268,9 +266,7 @@ export function RememberedInvite(props: { line: string; without: string; onWitho
   return (
     <div class={styles.remembered}>
       <p class={styles.told}>{props.line}</p>
-      <button type="button" class={styles.change} onClick={props.onWithout}>
-        {props.without}
-      </button>
+      <TextButton onClick={props.onWithout}>{props.without}</TextButton>
     </div>
   );
 }

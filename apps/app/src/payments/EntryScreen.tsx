@@ -6,6 +6,8 @@
 // "Ask us for it", which asks ops on WhatsApp until the app can tell the
 // client itself. A refund past its working days says it is late.
 
+import { ButtonLink } from "@maneman/ui/Button";
+import { DocumentButton, DocumentLink } from "@maneman/ui/DocumentLink";
 import { capsLook } from "@maneman/ui/Caps";
 import { ICONS } from "@maneman/brand/icons";
 import { Icon } from "@maneman/ui/Icon";
@@ -44,18 +46,16 @@ function Document(props: { name: string; href: string | null; missing: Missing; 
   const icon = <Icon className={styles.documentIcon} d={ICONS.download} size={18} />;
   if (props.href !== null) {
     return (
-      <a className={styles.document} href={props.href} target="_blank" rel="noopener">
+      <DocumentLink href={props.href}>
         <span>{props.name}</span>
         <VisuallyHidden>{payments.newTab}</VisuallyHidden>
         {icon}
-      </a>
+      </DocumentLink>
     );
   }
   return (
     <>
-      <button
-        className={styles.document}
-        type="button"
+      <DocumentButton
         aria-expanded={asked}
         onClick={() => {
           setAsked(true);
@@ -63,13 +63,19 @@ function Document(props: { name: string; href: string | null; missing: Missing; 
       >
         <span>{props.name}</span>
         {icon}
-      </button>
+      </DocumentButton>
       {asked && (
         <div className={styles.unavailable} role="status">
           <p>{payments.unavailable[props.missing]}</p>
-          <a className={styles.notify} href={whatsappWith(messages.document(props.name, props.entry))} rel="noopener">
+          <ButtonLink
+            variant="outline"
+            size="small"
+            className={styles.notify}
+            href={whatsappWith(messages.document(props.name, props.entry))}
+            rel="noopener"
+          >
             {payments.unavailable.notify}
-          </a>
+          </ButtonLink>
         </div>
       )}
     </>
@@ -148,13 +154,15 @@ function Detail({ entry }: { entry: EntryDetail }) {
         )}
       </dl>
       {late && (
-        <a
+        <ButtonLink
+          variant="outline"
+          size="small"
           className={styles.notify}
           href={whatsappWith(messages.lateRefund(entryWhat(entry), fullDate(entry.date)))}
           rel="noopener"
         >
           {payments.message}
-        </a>
+        </ButtonLink>
       )}
       <h2 className={capsLook(styles.label)}>{payments.documents}</h2>
       <div className={styles.documents}>

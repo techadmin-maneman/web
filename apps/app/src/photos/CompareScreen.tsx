@@ -4,6 +4,8 @@
 // cross-fades both sides together. It opens on the first visit with
 // photographs against the latest.
 
+import { ToggleButton } from "@maneman/ui/ToggleButton";
+import { SelectCard } from "@maneman/ui/SelectCard";
 import { iconButtonLook } from "@maneman/ui/IconButton";
 import { classes } from "@maneman/ui/classes";
 import { ICONS } from "@maneman/brand/icons";
@@ -60,26 +62,18 @@ export function CompareScreen() {
 
 function Picker(props: { label: string; visits: readonly Visit[]; chosen: Visit; onChoose: (visit: Visit) => void }) {
   return (
-    <label className={styles.picker}>
-      <span className={styles.pickerLabel}>{props.label}</span>
-      <span className={styles.pickerValue} aria-hidden="true">
-        {fullDate(props.chosen.date)}
-      </span>
-      <select
-        aria-label={props.label}
-        value={props.chosen.visit_id}
-        onChange={(event) => {
-          const visit = props.visits.find((each) => each.visit_id === event.target.value);
-          if (visit !== undefined) props.onChoose(visit);
-        }}
-      >
-        {props.visits.map((visit) => (
-          <option key={visit.visit_id} value={visit.visit_id}>
-            {fullDate(visit.date)}
-          </option>
-        ))}
-      </select>
-    </label>
+    <SelectCard
+      onInk
+      className={styles.picker}
+      label={props.label}
+      shown={fullDate(props.chosen.date)}
+      value={props.chosen.visit_id}
+      options={props.visits.map((visit) => ({ value: visit.visit_id, label: fullDate(visit.date) }))}
+      onChange={(value) => {
+        const visit = props.visits.find((each) => each.visit_id === value);
+        if (visit !== undefined) props.onChoose(visit);
+      }}
+    />
   );
 }
 
@@ -209,11 +203,11 @@ function Compare({ visits, earliest, latest }: { visits: readonly Visit[]; earli
         </div>
         <div className={styles.angles}>
           {COMPARE_ANGLES.map((each) => (
-            <button
+            <ToggleButton
+              onInk
+              pressed={each === angle}
               key={each}
               className={styles.angle}
-              type="button"
-              aria-pressed={each === angle}
               onClick={() => {
                 if (each === angle) return;
                 setLeaving(angle);
@@ -221,7 +215,7 @@ function Compare({ visits, earliest, latest }: { visits: readonly Visit[]; earli
               }}
             >
               {photos.compareAngles[each]}
-            </button>
+            </ToggleButton>
           ))}
         </div>
       </main>

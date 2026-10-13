@@ -29,13 +29,6 @@
   color: var(--text-muted);
 }
 
-.link {
-  color: var(--text);
-  text-decoration: underline;
-  text-decoration-color: var(--paper-line);
-  text-underline-offset: var(--sp-4);
-}
-
 .figure {
   font-variant-numeric: tabular-nums;
   white-space: nowrap;

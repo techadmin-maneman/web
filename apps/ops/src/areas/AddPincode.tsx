@@ -1,6 +1,7 @@
 // Adding a pincode the service area does not hold: its number, what messages call its area, and its city, one of
 // ours. It goes in unserved, so adding one messages nobody; marking it live is the launch panel's.
 
+import { Label, Select, TextInput } from "@maneman/ui/Field";
 import { errorText } from "@maneman/web-kit/refusal";
 import { Button } from "@maneman/ui/Button";
 import { useState } from "react";
@@ -76,13 +77,10 @@ export function AddPincode({ pincode, cities, onAdded, onCancel }: Props) {
     <div className={styles.addForm}>
       {pincode === null && (
         <div className={styles.field}>
-          <label className={styles.fieldLabel} htmlFor="add-pincode">
-            {copy.pincode}
-          </label>
-          <input
+          <Label htmlFor="add-pincode">{copy.pincode}</Label>
+          <TextInput
             className={styles.box}
             id="add-pincode"
-            type="text"
             inputMode="numeric"
             maxLength={6}
             value={typed}
@@ -93,13 +91,10 @@ export function AddPincode({ pincode, cities, onAdded, onCancel }: Props) {
         </div>
       )}
       <div className={styles.field}>
-        <label className={styles.fieldLabel} htmlFor="add-area">
-          {copy.area}
-        </label>
-        <input
+        <Label htmlFor="add-area">{copy.area}</Label>
+        <TextInput
           className={styles.box}
           id="add-area"
-          type="text"
           maxLength={40}
           value={area}
           onChange={(event) => {
@@ -108,10 +103,8 @@ export function AddPincode({ pincode, cities, onAdded, onCancel }: Props) {
         />
       </div>
       <div className={styles.field}>
-        <label className={styles.fieldLabel} htmlFor="add-city">
-          {copy.city}
-        </label>
-        <select
+        <Label htmlFor="add-city">{copy.city}</Label>
+        <Select
           className={styles.box}
           id="add-city"
           value={city}
@@ -125,7 +118,7 @@ export function AddPincode({ pincode, cities, onAdded, onCancel }: Props) {
               {each}
             </option>
           ))}
-        </select>
+        </Select>
       </div>
       {refusals.map((refusal) => (
         <p key={refusal} className={styles.error} role="alert">

@@ -38,22 +38,6 @@
   line-height: var(--lh-145);
 }
 
-.table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: var(--fs-14);
-}
-
-.table th,
-.table td {
-  height: var(--ops-row);
-  border-bottom: var(--hairline) solid var(--paper-line);
-}
-
-.table thead th {
-  border-bottom-color: var(--text);
-}
-
 .head {
   padding: var(--sp-8) var(--sp-8) var(--sp-8) 0;
   font-size: var(--fs-13);
@@ -266,18 +250,6 @@
   display: block;
   width: 100%;
   margin-top: var(--sp-8);
-  padding: var(--sp-12) var(--sp-16);
-  border: var(--hairline) solid var(--paper-control);
-  border-radius: 0;
-  background: var(--white);
-  font: inherit;
-  font-size: var(--fs-15);
-  color: var(--text);
-}
-
-.select:focus-visible {
-  outline: var(--focus-width) solid var(--ink);
-  outline-offset: calc(-1 * var(--focus-width));
 }
 
 /* ---- The panel over the roster: adding a technician --------------------- */
@@ -496,21 +468,6 @@
 .label {
   font-size: var(--fs-13);
   color: var(--text-muted);
-}
-
-.input {
-  min-height: var(--tap);
-  padding: 0 var(--sp-8);
-  border: var(--hairline) solid var(--paper-control);
-  background: var(--paper);
-  font: inherit;
-  font-size: var(--fs-14);
-  color: var(--text);
-}
-
-.input:focus-visible {
-  outline: var(--focus-width) solid var(--ink);
-  outline-offset: calc(-1 * var(--focus-width));
 }
 
 /* ---- His kit, as the stock ledger counts it ------------------------------ */

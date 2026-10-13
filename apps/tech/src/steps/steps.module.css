@@ -85,48 +85,7 @@
 
 /* ---- The checklist ---------------------------------------------- */
 
-.check {
-  display: flex;
-  gap: var(--sp-16);
-  align-items: center;
-  width: 100%;
-  min-height: var(--tech-row);
-  padding: var(--sp-20);
-  border: 0;
-  border-bottom: var(--hairline) solid var(--ink-rule);
-  background: transparent;
-  font: inherit;
-  text-align: left;
-  cursor: pointer;
-}
-
-.box,
-.boxDone {
-  display: flex;
-  flex-shrink: 0;
-  align-items: center;
-  justify-content: center;
-  width: var(--tech-box);
-  height: var(--tech-box);
-  border: var(--rule-strong) solid var(--ink-line-strong);
-}
-
-.boxDone {
-  border-color: var(--paper);
-  background: var(--paper);
-  color: var(--ink-deep);
-}
-
-.checkLabel,
-.checkDone {
-  font-size: var(--fs-19);
-  color: var(--paper);
-}
-
 /* Done, and quiet: the board dims what is behind you. */
-.checkDone {
-  color: var(--ink-muted);
-}
 
 /* ---- The consumables' steppers ---------------------------------- */
 
@@ -155,18 +114,6 @@
 .stepper {
   display: flex;
   align-items: center;
-}
-
-.step {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: var(--tech-stepper);
-  height: var(--tech-stepper);
-  border: var(--hairline) solid var(--ink-line);
-  background: transparent;
-  color: var(--paper);
-  cursor: pointer;
 }
 
 .number {
@@ -217,8 +164,6 @@
 .fieldLabel {
   display: block;
   margin-bottom: var(--sp-8);
-  font-size: var(--fs-16);
-  color: var(--ink-muted);
 }
 
 .box64 + .fieldLabel,
@@ -239,46 +184,6 @@
 }
 
 /* The label's field, typed though the board draws "Scan the piece": 64 px, all of it the input, edged in paper. */
-.labelField {
-  display: flex;
-  gap: var(--sp-12);
-  align-items: stretch;
-  min-height: var(--tech-primary);
-  padding: 0 var(--sp-16);
-  border: var(--hairline) solid var(--paper);
-}
-
-.labelIcon {
-  flex-shrink: 0;
-  align-self: center;
-  color: var(--paper);
-}
-
-.input,
-.box64 {
-  min-width: 0;
-  border: 0;
-  background: transparent;
-  font: inherit;
-  font-size: var(--fs-18);
-  font-variant-numeric: tabular-nums;
-  color: var(--paper);
-}
-
-.input {
-  flex: 1;
-}
-
-.box64 {
-  min-height: var(--tech-stepper);
-  padding: 0 var(--sp-16);
-  border: var(--hairline) solid var(--ink-line-strong);
-}
-
-.input::placeholder,
-.box64::placeholder {
-  color: var(--ink-muted);
-}
 
 .hint {
   margin: var(--sp-8) 0 0;
@@ -309,17 +214,8 @@
 }
 
 .pick {
+  justify-content: flex-start;
   width: 100%;
-  min-height: var(--tech-stepper);
-  padding: 0 var(--sp-16);
-  border: var(--hairline) solid var(--ink-line-strong);
-  background: transparent;
-  font: inherit;
-  font-size: var(--fs-17);
-  font-variant-numeric: tabular-nums;
-  text-align: left;
-  color: var(--paper);
-  cursor: pointer;
 }
 
 .rows {
@@ -357,27 +253,7 @@
   padding: var(--sp-20);
 }
 
-.choice,
-.choiceOn {
-  display: flex;
-  align-items: center;
-  min-height: var(--tech-primary);
-  padding: 0 var(--sp-16);
-  border: var(--hairline) solid var(--ink-line);
-  background: transparent;
-  font: inherit;
-  font-size: var(--fs-18);
-  text-align: left;
-  color: var(--paper);
-  cursor: pointer;
-}
-
 /* Chosen: the board's heavier edge, in paper rather than its gold, which is Next's alone (ADR 0025, item 59). */
-.choiceOn {
-  border: var(--rule-strong) solid var(--paper);
-  background: var(--ink-raised);
-  font-weight: var(--weight-medium);
-}
 
 .reasons {
   display: flex;
@@ -389,27 +265,6 @@
   list-style: none;
 }
 
-.reason,
-.reasonOn {
-  display: flex;
-  align-items: center;
-  width: 100%;
-  min-height: var(--tech-stepper);
-  padding: 0 var(--sp-16);
-  border: var(--hairline) solid var(--ink-line);
-  background: transparent;
-  font: inherit;
-  font-size: var(--fs-17);
-  text-align: left;
-  color: var(--ink-soft);
-  cursor: pointer;
-}
-
-.reasonOn {
-  border-color: var(--paper);
-  color: var(--paper);
-}
-
 /* ---- The hair profile, which no board draws (ADR 0106) --------------------- */
 
 /* Short choices, a stage or a colour code, sit side by side and wrap: 56 px each, the outcome's edge when chosen. */
@@ -417,26 +272,6 @@
   display: flex;
   flex-wrap: wrap;
   gap: var(--sp-8);
-}
-
-.chip,
-.chipOn {
-  min-width: var(--tech-stepper);
-  min-height: var(--tech-stepper);
-  padding: 0 var(--sp-16);
-  border: var(--hairline) solid var(--ink-line);
-  background: transparent;
-  font: inherit;
-  font-size: var(--fs-17);
-  font-variant-numeric: lining-nums;
-  color: var(--paper);
-  cursor: pointer;
-}
-
-.chipOn {
-  border: var(--rule-strong) solid var(--paper);
-  background: var(--ink-raised);
-  font-weight: var(--weight-medium);
 }
 
 /* The head's four figures and the base's two, two to a row. */
@@ -500,12 +335,33 @@
 /* ---- The one action, bottom of every screen, clear of an iPhone's home indicator ---- */
 
 /* A full-width row inside the scrolling body draws its ring inside itself, so the body's edge never cuts it. */
-.check:focus-visible,
-.labelField:focus-within {
-  outline: var(--focus-width) solid var(--paper);
-  outline-offset: calc(-1 * var(--focus-width));
+
+/* The choices and reasons are the shared ToggleButton; these place them: a choice the primary's height, a reason
+   across the column, a chip at least a stepper wide. */
+.choice {
+  display: flex;
+  align-items: center;
+  min-height: var(--tech-primary);
+  text-align: left;
 }
 
-.input:focus-visible {
-  outline: none;
+.reason {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  text-align: left;
+}
+
+.chip {
+  min-width: var(--tech-stepper);
+}
+
+/* A stepper's minus and plus: the shared IconButton, at the stepper's square. */
+.step {
+  --icon-button-size: var(--tech-stepper);
+}
+
+/* The label's field: the primary's height, so a gloved tap lands in it. */
+.labelInput {
+  height: var(--tech-primary);
 }

@@ -23,6 +23,7 @@
 // code they give is taken first, unless one is on the visit already
 // (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md, 0108-discount-codes.md).
 
+import { ToggleButton } from "@maneman/ui/ToggleButton";
 import { useState } from "react";
 import type { EventBody, Job, PartialReason } from "../api.ts";
 import { job as jobCopy, oneVisit, steps as copy } from "../content.ts";
@@ -90,17 +91,17 @@ function Pair<T extends string | boolean>(props: {
   return (
     <div className={styles.choices}>
       {props.options.map((option) => (
-        <button
+        <ToggleButton
           key={String(option.value)}
-          className={props.chosen === option.value ? styles.choiceOn : styles.choice}
-          type="button"
-          aria-pressed={props.chosen === option.value}
+          onInk
+          className={styles.choice}
+          pressed={props.chosen === option.value}
           onClick={() => {
             props.onChoose(option.value);
           }}
         >
           {option.label}
-        </button>
+        </ToggleButton>
       ))}
     </div>
   );
@@ -112,16 +113,16 @@ function ReasonList(props: { reasons: Job["partial_reasons"]; picked: string | n
     <ul className={styles.reasons}>
       {props.reasons.map((one) => (
         <li key={one.id}>
-          <button
-            className={props.picked === one.id ? styles.reasonOn : styles.reason}
-            type="button"
-            aria-pressed={props.picked === one.id}
+          <ToggleButton
+            onInk
+            className={styles.reason}
+            pressed={props.picked === one.id}
             onClick={() => {
               props.onPick(one.id);
             }}
           >
             {one.label}
-          </button>
+          </ToggleButton>
         </li>
       ))}
     </ul>

@@ -6,6 +6,7 @@
 // list is sent at once, and the check shows each consumable whose figure
 // changes, old beside new (ADR 0071). An empty box is none.
 
+import { Fieldset, Label, Select, TextInput } from "@maneman/ui/Field";
 import { errorText, type Failure } from "@maneman/web-kit/refusal";
 import { Panel } from "@maneman/ui/Panel";
 import { Button } from "@maneman/ui/Button";
@@ -84,13 +85,14 @@ export function ServiceUsage({ book, onSaved }: { book: Consumables; onSaved: (b
   const checking = step.step === "checking" || step.step === "saving";
   return (
     <Panel titleId="service-usage" title={words.title} className={styles.panel}>
-      <fieldset className={styles.group}>
-        <legend className={styles.ruleTitle}>{service === undefined ? words.title : serviceName(service)}</legend>
+      <Fieldset
+        className={styles.group}
+        legend={service === undefined ? words.title : serviceName(service)}
+        legendLook="title"
+      >
         <div className={styles.field}>
-          <label className={styles.fieldLabel} htmlFor="usage-service">
-            {words.service}
-          </label>
-          <select
+          <Label htmlFor="usage-service">{words.service}</Label>
+          <Select
             className={styles.select}
             id="usage-service"
             value={chosen}
@@ -111,7 +113,7 @@ export function ServiceUsage({ book, onSaved }: { book: Consumables; onSaved: (b
                   ))}
               </optgroup>
             ))}
-          </select>
+          </Select>
         </div>
         {listed.length === 0 ? (
           <p className={styles.note}>{words.noneOffered}</p>
@@ -119,13 +121,12 @@ export function ServiceUsage({ book, onSaved }: { book: Consumables; onSaved: (b
           <ul className={own.uses}>
             {listed.map((each) => (
               <li className={own.use} key={each.code}>
-                <label className={own.useLabel} htmlFor={`usage-${each.code}`}>
+                <Label className={own.useLabel} htmlFor={`usage-${each.code}`}>
                   {words.quantity(each.name, each.unit)}
-                </label>
-                <input
+                </Label>
+                <TextInput
                   className={styles.number}
                   id={`usage-${each.code}`}
-                  type="text"
                   inputMode="numeric"
                   maxLength={3}
                   readOnly={!mayChange}
@@ -178,7 +179,7 @@ export function ServiceUsage({ book, onSaved }: { book: Consumables; onSaved: (b
             {errorText(copy.errors, step)}
           </p>
         )}
-      </fieldset>
+      </Fieldset>
     </Panel>
   );
 }

@@ -4,9 +4,10 @@
 //
 // A correction is the whole profile as it now stands, sent as a new version, so the form starts from the latest.
 
+import { Disclosure } from "@maneman/ui/Disclosure";
 import { capsLook } from "@maneman/ui/Caps";
 import { Button } from "@maneman/ui/Button";
-import { Checkbox, Field, TextInput } from "@maneman/ui/Field";
+import { Checkbox, ChoiceGroup, Field, Select, TextInput } from "@maneman/ui/Field";
 import { useLoad } from "@maneman/ui/useLoad";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { longDate, yearInIndia } from "@maneman/web-kit/dates";
@@ -134,12 +135,13 @@ function Versions({ versions }: { versions: readonly HairProfileVersion[] }) {
       <ol className={styles.versionList}>
         {versions.map((version) => (
           <li key={version.id}>
-            <details className={styles.version}>
-              <summary className={styles.versionLine}>
-                {copy.version(longDate(version.recorded_at), byWhom(version))}
-              </summary>
+            <Disclosure
+              className={styles.version}
+              summaryClassName={styles.versionLine}
+              summary={copy.version(longDate(version.recorded_at), byWhom(version))}
+            >
               <ProfileRows profile={version} />
-            </details>
+            </Disclosure>
           </li>
         ))}
       </ol>
@@ -215,7 +217,7 @@ function CorrectionForm({
   const select = (field: Code, options: readonly { value: string; label: string }[]) => (
     <Field label={copy.rows[field]} error={refused.includes(field) ? copy.invalid : null} key={field}>
       {(control) => (
-        <select
+        <Select
           {...control}
           className={styles.select}
           value={String(draft.fit.choices[field] ?? "")}
@@ -231,7 +233,7 @@ function CorrectionForm({
               {option.label}
             </option>
           ))}
-        </select>
+        </Select>
       )}
     </Field>
   );
@@ -276,8 +278,7 @@ function CorrectionForm({
           return select(field, field === "product" ? products : listOf(field));
         })}
       </div>
-      <fieldset className={styles.history}>
-        <legend className={capsLook(styles.subtitle)}>{copy.history}</legend>
+      <ChoiceGroup className={styles.history} legend={copy.history} legendLook="caps">
         {REMEDIES.map((remedy) => (
           <Checkbox
             key={remedy}
@@ -325,7 +326,7 @@ function CorrectionForm({
             />
           )}
         </Field>
-      </fieldset>
+      </ChoiceGroup>
       {problem !== null && (
         <p className={styles.error} role="alert">
           {problem}

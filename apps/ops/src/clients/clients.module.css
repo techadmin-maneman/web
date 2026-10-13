@@ -26,27 +26,12 @@
 
 .findLabel {
   display: block;
-  font-size: var(--fs-14);
-  color: var(--text-muted);
 }
 
 .findField {
   display: block;
   width: 100%;
-  height: var(--field-h);
   margin-top: var(--sp-8);
-  padding: 0 var(--sp-16);
-  border: var(--hairline) solid var(--paper-control);
-  background: var(--white);
-  font: inherit;
-  font-size: var(--fs-15);
-  letter-spacing: var(--tracking-number);
-  color: var(--text);
-}
-
-.findField:focus-visible {
-  outline: var(--focus-width) solid var(--ink);
-  outline-offset: calc(-1 * var(--focus-width));
 }
 
 .findHint {
@@ -90,23 +75,7 @@
 }
 
 .whatsapp {
-  display: inline-flex;
   flex-shrink: 0;
-  align-items: center;
-  gap: var(--sp-8);
-  min-height: var(--tap);
-  padding: 0 var(--sp-16);
-  border: var(--hairline) solid var(--ink);
-  font-size: var(--fs-14);
-  font-weight: var(--weight-medium);
-  color: var(--text);
-  text-decoration: none;
-}
-
-.whatsapp:focus-visible,
-.metaLink:focus-visible {
-  outline: var(--focus-width) solid var(--ink);
-  outline-offset: var(--focus-offset-wide);
 }
 
 /* The brand's WhatsApp glyph is a line, drawn as the dispatch board's drawer draws it. */
@@ -115,12 +84,6 @@
 }
 
 /* The number, which calls the client from a phone and reads as the rest of the line elsewhere. */
-.metaLink {
-  color: var(--text);
-  text-decoration: underline;
-  text-decoration-color: var(--paper-line);
-  text-underline-offset: var(--sp-4);
-}
 
 .meta {
   display: flex;
@@ -434,53 +397,13 @@
 .numberField {
   display: block;
   width: var(--local-piece-column);
-  height: var(--field-h);
   margin-top: var(--sp-8);
-  padding: 0 var(--sp-16);
-  border: var(--hairline) solid var(--paper-control);
-  background: var(--white);
-  font: inherit;
-  font-size: var(--fs-15);
   font-variant-numeric: tabular-nums;
-  color: var(--text);
-}
-
-.numberField:focus-visible {
-  outline: var(--focus-width) solid var(--ink);
-  outline-offset: calc(-1 * var(--focus-width));
 }
 
 /* The reasons, set as a move's are: a square that fills with ink when chosen. */
 .reasons {
-  margin: 0;
-  padding: 0;
-  border: 0;
-}
-
-.reasonOption {
-  display: flex;
-  align-items: center;
-  gap: var(--sp-16);
-  min-height: var(--tap);
-  border-bottom: var(--hairline) solid var(--paper-line);
-  font-size: var(--fs-15);
-  cursor: pointer;
-}
-
-.radio {
-  flex-shrink: 0;
-  width: var(--sp-16);
-  height: var(--sp-16);
-  margin: 0;
-  border: var(--hairline) solid var(--paper-control);
-  background: transparent;
-  appearance: none;
-  cursor: pointer;
-}
-
-.radio:checked {
-  border-color: var(--ink);
-  background: var(--ink);
+  margin-top: var(--sp-16);
 }
 
 .done {
@@ -785,19 +708,7 @@
 
 .codeInput {
   width: var(--local-piece-column);
-  height: var(--field-h);
-  padding: 0 var(--sp-8);
-  border: var(--hairline) solid var(--paper-control);
-  background: var(--white);
-  font: inherit;
-  font-size: var(--fs-15);
   text-transform: uppercase;
-  color: var(--text);
-}
-
-.codeInput:focus-visible {
-  outline: var(--focus-width) solid var(--ink);
-  outline-offset: calc(-1 * var(--focus-width));
 }
 
 .codeError {

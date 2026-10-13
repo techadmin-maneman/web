@@ -27,10 +27,58 @@
     color: var(--text);
   }
 
-  /* One line: a text, a figure, a date or a choice, the tap's height. */
+  /* One line: a text, a figure, a date or a choice, at the app's height (./base.css). */
   .line {
-    height: var(--tap);
+    height: var(--field-height);
     padding: 0 var(--sp-8);
+    font-size: var(--field-text);
+  }
+
+  /* On the ink: the box's edge and its words in the ink's own tones, its ground the ink beneath. */
+  .onInk {
+    border-color: var(--ink-line-strong);
+    background: transparent;
+    color: var(--paper);
+  }
+
+  .onInk::placeholder {
+    color: var(--ink-muted);
+  }
+
+  .labelOnInk,
+  .inkWords .label,
+  .inkWords .hint {
+    color: var(--ink-muted);
+  }
+
+  .inkWords .error {
+    color: var(--error-on-ink);
+  }
+
+  .withIcon {
+    position: relative;
+    margin-top: var(--sp-8);
+  }
+
+  .withIcon .icon {
+    position: absolute;
+    top: 50%;
+    left: var(--sp-16);
+    transform: translateY(-50%);
+    pointer-events: none;
+  }
+
+  .withIcon .box {
+    margin-top: 0;
+    padding-left: var(--sp-48);
+  }
+
+  /* The same line inside a table row, as tall as the row allows. */
+  .compact {
+    height: var(--compact-height);
+    margin-top: 0;
+    padding: 0 var(--sp-8);
+    font-size: var(--fs-14);
   }
 
   .figure {
@@ -81,12 +129,86 @@
     border-color: var(--error-on-paper);
   }
 
+  .onInk[aria-invalid="true"] {
+    border-color: var(--error-on-ink);
+  }
+
   /* ---- A box to tick ------------------------------------------------------- */
 
   .checkLine {
     display: flex;
     align-items: flex-start;
-    gap: var(--sp-8);
+    gap: var(--sp-12);
+    cursor: pointer;
+  }
+
+  .tick {
+    position: relative;
+    display: grid;
+    flex-shrink: 0;
+    place-items: center;
+    width: var(--sp-20);
+    height: var(--sp-20);
+    border: var(--hairline) solid var(--paper-control);
+    background: var(--white);
+    color: var(--paper);
+  }
+
+  .tickInput {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    opacity: 0;
+    cursor: pointer;
+  }
+
+  .tickMark {
+    visibility: hidden;
+    pointer-events: none;
+  }
+
+  .tick:has(.tickInput:checked) {
+    border-color: var(--ink);
+    background: var(--ink);
+  }
+
+  .tick:has(.tickInput:checked) .tickMark {
+    visibility: visible;
+  }
+
+  .tick:has(.tickInput:focus-visible) {
+    outline: var(--focus-width) solid var(--focus-colour);
+    outline-offset: var(--focus-offset);
+  }
+
+  .tick:has(.tickInput:disabled) {
+    border-color: var(--paper-shade);
+    background: var(--paper-light);
+  }
+
+  .tickInput:disabled {
+    cursor: default;
+  }
+
+  .tickOnInk {
+    border-color: var(--ink-line-strong);
+    background: transparent;
+    color: var(--ink);
+  }
+
+  .tickOnInk:has(.tickInput:checked) {
+    border-color: var(--paper);
+    background: var(--paper);
+  }
+
+  .tick:has(.tickInput[aria-invalid="true"]) {
+    border-color: var(--error-on-paper);
+  }
+
+  .tickOnInk:has(.tickInput[aria-invalid="true"]) {
+    border-color: var(--error-on-ink);
   }
 
   .check {
@@ -100,5 +222,95 @@
   .checkLabel {
     font-size: var(--fs-14);
     line-height: var(--lh-145);
+  }
+
+  .tickOnInk + .checkLabel {
+    color: var(--paper);
+  }
+
+  /* ---- Choices that answer one question ------------------------------------- */
+
+  .group {
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+  }
+
+  .legend {
+    margin-bottom: var(--sp-8);
+    padding: 0;
+    font-size: var(--fs-14);
+    color: var(--text-muted);
+  }
+
+  .choices {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-8);
+    margin-top: var(--sp-8);
+  }
+
+  .legendTitle {
+    margin-bottom: var(--sp-8);
+    padding: 0;
+    font-family: var(--font-serif);
+    font-size: var(--fs-18);
+  }
+
+  .legendCaps {
+    margin-bottom: var(--sp-8);
+    padding: 0;
+  }
+
+  .inline {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: var(--sp-8) var(--sp-20);
+  }
+
+  /* ---- A file, and a value along a scale ------------------------------------ */
+
+  .file {
+    padding: 0;
+    border: 0;
+    background: none;
+    font-size: var(--fs-14);
+    color: var(--text-muted);
+  }
+
+  .file::file-selector-button {
+    min-height: var(--tap);
+    margin-right: var(--sp-12);
+    padding: 0 var(--sp-16);
+    border: var(--hairline) solid var(--ink);
+    background: transparent;
+    color: var(--text);
+    font: inherit;
+    font-size: var(--fs-15);
+    font-weight: var(--weight-medium);
+    cursor: pointer;
+  }
+
+  .range {
+    width: 100%;
+    margin: 0;
+    accent-color: var(--ink);
+  }
+
+  .rangeOver {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    opacity: 0;
+    background: transparent;
+    appearance: none;
+    cursor: ew-resize;
+  }
+
+  .rangeOver:focus-visible {
+    outline: none;
   }
 }

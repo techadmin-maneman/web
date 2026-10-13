@@ -1,5 +1,5 @@
+import { Checkbox } from "@maneman/ui/Field";
 import { useState } from "preact/hooks";
-import { ICONS } from "@maneman/brand/icons";
 import type { LossExtent } from "@rules/config/booking.ts";
 import { referral } from "../../content/referral.ts";
 import { booking } from "../../content/site.ts";
@@ -7,7 +7,6 @@ import { track } from "../../lib/analytics.ts";
 import { joinPublicWaitlist, joinWaitlist } from "../../lib/api.ts";
 import { forgetInvite, rememberedInvite } from "../../lib/remembered-invite.ts";
 import { fill } from "../../lib/text.ts";
-import { Icon } from "../Drawings.tsx";
 import type { Listing } from "./Done.tsx";
 import {
   ConsentBox,
@@ -111,23 +110,19 @@ export function Waitlist(props: FormProps & { person: PersonFields | null; onLis
         />
       )}
 
-      <label class={styles.consent}>
-        <input
-          type="checkbox"
-          class="visually-hidden"
-          checked={alert}
-          onChange={(event) => {
-            setAlert(event.currentTarget.checked);
-          }}
-        />
-        <span class={styles.box} aria-hidden="true">
-          {alert && <Icon path={ICONS.tick} size={13} stroke={1.7} />}
-        </span>
-        <span class={styles.consentText}>
-          {waitlist.launchAlert}
-          <span class={styles.consentNote}>{` ${waitlist.optional}`}</span>
-        </span>
-      </label>
+      <Checkbox
+        className={styles.consent}
+        checked={alert}
+        onChange={(event) => {
+          setAlert(event.currentTarget.checked);
+        }}
+        label={
+          <span class={styles.consentText}>
+            {waitlist.launchAlert}
+            <span class={styles.consentNote}>{` ${waitlist.optional}`}</span>
+          </span>
+        }
+      />
 
       {remembered !== null && (
         <RememberedInvite

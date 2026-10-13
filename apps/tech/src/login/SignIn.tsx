@@ -23,6 +23,7 @@
 // installed app has its own cookie jar, so this is a second sign-in on a phone
 // already signed in, and saying nothing would read as a lost account.
 
+import { MobileInput } from "@maneman/ui/MobileInput";
 import { useSecondsLeft } from "@maneman/ui/useSecondsLeft";
 import { CodeField } from "@maneman/ui/CodeField";
 import { ONE_TIME_CODE } from "@rules/policy/one-time-code.ts";
@@ -145,27 +146,24 @@ export function SignIn({ why, onSignedIn }: { why: Out; onSignedIn: () => void }
       <Mark className={styles.mark} />
       <h1 className={styles.title}>{copy.title}</h1>
 
-      <div className={styles.mobile}>
-        <span className={styles.prefix}>{copy.prefix}</span>
-        <input
-          ref={number}
-          className={styles.number}
-          value={mobile}
-          onChange={(event) => {
-            setMobile(fieldDigits(event.target.value));
-            setError(null);
-            setLeft(false);
-          }}
-          onBlur={() => {
-            setLeft(true);
-          }}
-          inputMode="numeric"
-          autoComplete="tel-national"
-          placeholder={copy.mobilePlaceholder}
-          aria-label={copy.mobileLabel}
-          disabled={challenge !== null}
-        />
-      </div>
+      <MobileInput
+        onInk
+        ref={number}
+        className={styles.mobile}
+        prefix={copy.prefix}
+        value={mobile}
+        onChange={(event) => {
+          setMobile(fieldDigits(event.target.value));
+          setError(null);
+          setLeft(false);
+        }}
+        onBlur={() => {
+          setLeft(true);
+        }}
+        placeholder={copy.mobilePlaceholder}
+        aria-label={copy.mobileLabel}
+        disabled={challenge !== null}
+      />
 
       <div className={styles.codeBlock}>
         <div className={styles.label}>{copy.codeLabel}</div>

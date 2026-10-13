@@ -1,6 +1,7 @@
-import { ICONS } from "@maneman/brand/icons";
+import { Button } from "@maneman/ui/Button";
+import { Checkbox } from "@maneman/ui/Field";
+import { TextLink } from "@maneman/ui/TextLink";
 import { consentCopy, tryOn, type Notice } from "../../content/site.ts";
-import { Icon } from "../Drawings.tsx";
 import { Title, type HeadingRef } from "./Title.tsx";
 import styles from "./TryOn.module.css";
 
@@ -25,33 +26,23 @@ export function Consent(props: {
           </div>
         ))}
       </dl>
-      <label class={styles.agree}>
-        <input
-          type="checkbox"
-          class="visually-hidden"
-          checked={consent}
-          onChange={(event) => {
-            props.onTick(event.currentTarget.checked);
-          }}
-        />
-        <span class={`${styles.box} ${consent ? styles.boxOn : ""}`} aria-hidden="true">
-          {consent && <Icon path={ICONS.tick} size={14} stroke={1.7} />}
-        </span>
-        <span>{words.agreement}</span>
-      </label>
-      <button
-        type="button"
-        class={`${styles.next} ${consent ? styles.nextOn : styles.nextOff}`}
-        aria-disabled={!consent}
-        onClick={props.onAgree}
-      >
+      <Checkbox
+        onInk
+        className={styles.agree}
+        checked={consent}
+        onChange={(event) => {
+          props.onTick(event.currentTarget.checked);
+        }}
+        label={<span class={styles.agreeText}>{words.agreement}</span>}
+      />
+      <Button variant="light" size="action" className={styles.next} aria-disabled={!consent} onClick={props.onAgree}>
         {tryOn.consent.continue}
-      </button>
+      </Button>
       <p class={styles.small}>
         {tryOn.consent.privacy.before}
-        <a class={styles.inlineLink} href="/privacy">
+        <TextLink tone="ink" inline href="/privacy">
           {tryOn.consent.privacy.link}
-        </a>
+        </TextLink>
         {tryOn.consent.privacy.after}
       </p>
     </div>

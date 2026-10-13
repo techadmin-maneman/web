@@ -18,6 +18,26 @@
     background: none;
   }
 
+  /* The way out (SheetClose), above the panel, on the dark ground. */
+  .close {
+    flex-shrink: 0;
+    align-self: flex-end;
+    min-width: var(--tap);
+    min-height: var(--tap);
+    margin-right: var(--sp-8);
+    padding: 0 var(--sp-12);
+    border: 0;
+    background: none;
+    font: inherit;
+    font-size: var(--fs-15);
+    color: var(--paper);
+    cursor: pointer;
+  }
+
+  .closeQuiet {
+    color: var(--ink-soft);
+  }
+
   /* Only while open: a closed dialog stays hidden as the browser hides it. */
   .frame[open] {
     display: flex;

@@ -53,22 +53,7 @@
 }
 
 .link {
-  display: inline-flex;
-  align-items: center;
-  min-height: var(--tap);
   margin-top: var(--sp-12);
-  padding: 0;
-  border: 0;
-  background: none;
-  font: inherit;
-  font-size: var(--fs-15);
-  color: var(--text);
-  cursor: pointer;
-}
-
-.link span {
-  padding-bottom: var(--sp-4);
-  border-bottom: var(--hairline) solid var(--paper-line);
 }
 
 .form {
@@ -96,54 +81,8 @@
   color: var(--text-muted);
 }
 
-/* A field's edge is --paper-control, 3:1 against paper and white (WCAG 1.4.11; ADR 0025, item 36). */
-.input,
-.numberInput {
-  height: var(--btn-lg);
-  padding: 0 var(--sp-16);
-  border: var(--hairline) solid var(--paper-control);
-  background: var(--white);
-  font: inherit;
-  font-size: var(--fs-16);
-  color: var(--text);
-}
-
-.input:focus,
-.numberField:focus-within {
-  outline: var(--focus-width) solid var(--ink);
-  outline-offset: calc(-1 * var(--focus-width));
-}
-
 .numberField {
-  display: flex;
-  height: var(--btn-lg);
   margin-top: var(--sp-16);
-  border: var(--hairline) solid var(--paper-control);
-  background: var(--white);
-}
-
-.prefix {
-  display: flex;
-  align-items: center;
-  padding: 0 var(--sp-16);
-  border-right: var(--hairline) solid var(--paper-line);
-  font-size: var(--fs-16);
-  font-variant-numeric: tabular-nums;
-  color: var(--text-muted);
-}
-
-.numberInput {
-  flex: 1;
-  min-width: 0;
-  height: auto;
-  border: 0;
-  background: none;
-  outline: none;
-  font-variant-numeric: tabular-nums;
-}
-
-.numberInput::placeholder {
-  color: var(--paper-hint);
 }
 
 .error {
@@ -189,13 +128,6 @@ a.secondary {
 
 .card > a.secondary + .secondary {
   margin-top: var(--sp-8);
-}
-
-textarea.input {
-  height: auto;
-  padding: var(--sp-12) var(--sp-16);
-  line-height: var(--lh-145);
-  resize: vertical;
 }
 
 /* The client's latest concerns, newest first: the day and where it stands, their words, then our answer. */
@@ -292,42 +224,6 @@ textarea.input {
  * The switch, square as the design draws it: ink with a paper knob when on, white with a line knob when off,
  * edged in --paper-control (WCAG 1.4.11). Drawn 26 px tall, it answers a tap 44 px tall, the brief's smallest target.
  */
-.switch {
-  position: relative;
-  display: flex;
-  flex-shrink: 0;
-  align-items: center;
-  justify-content: flex-start;
-  width: var(--switch-width);
-  height: var(--sp-24);
-  padding: var(--sp-2);
-  border: var(--hairline) solid var(--paper-control);
-  background: var(--white);
-  cursor: pointer;
-}
-
-.switch::after {
-  content: "";
-  position: absolute;
-  /* Measured from inside the border, which the 26 px includes. */
-  inset: calc((var(--sp-24) - var(--tap)) / 2 - var(--hairline)) 0;
-}
-
-.knob {
-  width: var(--sp-20);
-  height: var(--sp-20);
-  background: var(--paper-line);
-}
-
-.switch[aria-checked="true"] {
-  justify-content: flex-end;
-  border-color: var(--ink);
-  background: var(--ink);
-}
-
-.switch[aria-checked="true"] .knob {
-  background: var(--paper);
-}
 
 .confirm {
   margin-top: var(--sp-16);
@@ -369,19 +265,8 @@ textarea.input {
 }
 
 .whatsapp {
-  display: flex;
-  align-items: center;
+  justify-content: flex-start;
   gap: var(--sp-16);
-  min-height: var(--btn-lg);
-  padding: 0 var(--sp-16);
-  border: var(--hairline) solid var(--ink);
-  font-size: var(--fs-16);
-  color: var(--text);
-  text-decoration: none;
-}
-
-.whatsapp svg {
-  color: var(--ink);
 }
 
 .logout {
@@ -402,19 +287,7 @@ textarea.input {
 
 /* Taking a number change back, before ops decide it: a quiet way, beneath the card's own action. */
 .withdraw {
-  display: inline-flex;
-  align-items: center;
-  min-height: var(--tap);
   margin-top: var(--sp-8);
-  padding: 0;
-  border: 0;
-  background: none;
-  font: inherit;
-  font-size: var(--fs-15);
-  color: var(--text);
-  text-decoration: underline;
-  text-underline-offset: var(--sp-4);
-  cursor: pointer;
 }
 
 /* The building search (docs/decisions/0054-address-capture.md). The list sits
@@ -425,54 +298,4 @@ textarea.input {
   display: flex;
   flex-direction: column;
   gap: var(--sp-8);
-}
-
-.suggestions {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  border: var(--hairline) solid var(--paper-line);
-  border-top: none;
-  background: var(--white);
-}
-
-.suggestion,
-.suggestionActive {
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp-2);
-  min-height: var(--tap-row);
-  justify-content: center;
-  padding: var(--sp-8) var(--sp-16);
-  border-bottom: var(--hairline) solid var(--paper-line);
-  cursor: pointer;
-}
-
-.suggestion:last-child,
-.suggestionActive:last-child {
-  border-bottom: none;
-}
-
-/* The keyboard's place in the list. Not colour alone: the rule on the left
-   carries it for anyone who cannot tell the two backgrounds apart. */
-.suggestionActive {
-  background: var(--paper-light);
-  box-shadow: inset var(--rule-strong) 0 0 0 var(--ink);
-}
-
-.suggestionName {
-  font-size: var(--fs-16);
-  color: var(--text);
-}
-
-.suggestionWhere {
-  font-size: var(--fs-14);
-  color: var(--text-muted);
-}
-
-/* Google's condition for showing their suggestions without a Google map. */
-.attribution {
-  margin: var(--sp-8) 0 0;
-  font-size: var(--fs-13);
-  color: var(--text-muted);
 }

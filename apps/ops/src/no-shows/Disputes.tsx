@@ -4,6 +4,7 @@
 // gives back what the charge took; the client is told the ruling either way, never the note. A dispute waits on the
 // Tasks board too, whose link opens its row here.
 
+import { Label, TextArea } from "@maneman/ui/Field";
 import { REASON_MAX_CHARS } from "@rules/policy/decision-reasons.ts";
 import { errorText } from "@maneman/web-kit/refusal";
 import { capsLook } from "@maneman/ui/Caps";
@@ -140,10 +141,10 @@ function Dispute({ each, now, may, onRuled }: DisputeProps) {
       <Evidence each={each} />
       {may.uphold && (
         <>
-          <label className={styles.reasonLabel} htmlFor={`ruling-${each.id}`}>
+          <Label className={styles.reasonLabel} htmlFor={`ruling-${each.id}`}>
             {copy.reason.label}
-          </label>
-          <textarea
+          </Label>
+          <TextArea
             id={`ruling-${each.id}`}
             className={styles.reasonField}
             maxLength={REASON_MAX_CHARS}

@@ -158,7 +158,10 @@ test.describe("stage and looks", () => {
     await expect(page.locator("[data-screen] fieldset img")).toHaveCount(0);
     const next = page.getByRole("button", { name: siteCopy.tryOn.looks.choose });
     await expect(next).toHaveAttribute("aria-disabled", "true");
-    await page.getByText("Light density").first().click();
+    await page
+      .getByRole("radio", { name: /Light density/ })
+      .first()
+      .check();
     const onward = page.getByRole("button", { name: "Continue" });
     await expect(onward).toHaveAttribute("aria-disabled", "false");
     await onward.click();

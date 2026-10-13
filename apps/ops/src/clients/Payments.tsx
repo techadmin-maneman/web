@@ -8,6 +8,7 @@
 // the visits and the reason, and the server writes the ledger's entry and its
 // audit entry together; the balance it answers is shown, and heads the page.
 
+import { ChoiceGroup, Label, Radio, TextInput } from "@maneman/ui/Field";
 import { errorText } from "@maneman/web-kit/refusal";
 import { capsLook } from "@maneman/ui/Caps";
 import { Button } from "@maneman/ui/Button";
@@ -270,13 +271,10 @@ function CreditForm({
             if (visits !== null && reason !== "") void send({ visits, reason });
           }}
         >
-          <label className={styles.fieldLabel} htmlFor="credit-visits">
-            {creditCopy.change}
-          </label>
-          <input
+          <Label htmlFor="credit-visits">{creditCopy.change}</Label>
+          <TextInput
             id="credit-visits"
             className={styles.numberField}
-            type="text"
             inputMode="numeric"
             autoComplete="off"
             value={typed}
@@ -285,24 +283,20 @@ function CreditForm({
               setTyped(event.target.value);
             }}
           />
-          <fieldset className={styles.reasons} disabled={sending}>
-            <legend className={styles.fieldLabel}>{creditCopy.reason}</legend>
+          <ChoiceGroup className={styles.reasons} legend={creditCopy.reason} disabled={sending} ruled>
             {creditCopy.reasons.map((each) => (
-              <label className={styles.reasonOption} key={each.reason}>
-                <input
-                  className={styles.radio}
-                  type="radio"
-                  name="credit-reason"
-                  value={each.reason}
-                  checked={reason === each.reason}
-                  onChange={() => {
-                    setReason(each.reason);
-                  }}
-                />
-                <span>{each.label}</span>
-              </label>
+              <Radio
+                key={each.reason}
+                label={each.label}
+                name="credit-reason"
+                value={each.reason}
+                checked={reason === each.reason}
+                onChange={() => {
+                  setReason(each.reason);
+                }}
+              />
             ))}
-          </fieldset>
+          </ChoiceGroup>
           <Button
             variant="primary"
             size="small"

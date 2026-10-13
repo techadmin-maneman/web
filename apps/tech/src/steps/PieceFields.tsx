@@ -2,14 +2,15 @@
 // the label with its lookup and the client's pieces to pick from, the base and the lot, and on a replacement the piece
 // that came off.
 
+import { Label, TextInput } from "@maneman/ui/Field";
+import { ToggleButton } from "@maneman/ui/ToggleButton";
 import { capsLook } from "@maneman/ui/Caps";
 import { Button } from "@maneman/ui/Button";
-import { Icon } from "@maneman/ui/Icon";
 import { QrCamera } from "@maneman/ui/ScanField";
 import { useState } from "react";
 import type { Job, PieceLookup } from "../api.ts";
 import { job as jobCopy, oneVisit, steps as copy } from "../content.ts";
-import { STROKE, TAG } from "../icons.ts";
+import { TAG } from "../icons.ts";
 import { paidFor, profileNamesAnother } from "../lib/paid-for.ts";
 import { dayMonth } from "../lib/when.ts";
 import { asLabel, isLabel } from "./label.ts";
@@ -46,17 +47,17 @@ export function ChoiceList({
       {products.length === 0 && <p className={styles.note}>{oneVisit.noProducts}</p>}
       <div className={styles.choiceList}>
         {options.map((option) => (
-          <button
+          <ToggleButton
             key={option.id}
-            className={choice === option.id ? styles.choiceOn : styles.choice}
-            type="button"
-            aria-pressed={choice === option.id}
+            onInk
+            className={styles.choice}
+            pressed={choice === option.id}
             onClick={() => {
               onChoose(option.id);
             }}
           >
             {option.label}
-          </button>
+          </ToggleButton>
         ))}
       </div>
       {choice === DECLINED && <p className={styles.note}>{oneVisit.declinedNote}</p>}
@@ -85,18 +86,18 @@ export function KitPieces({
       </h2>
       <div className={styles.choiceList}>
         {choices.map(({ hairSystem, matches }) => (
-          <button
+          <ToggleButton
             key={hairSystem.code}
-            className={stock === hairSystem.code ? styles.choiceOn : styles.choice}
-            type="button"
-            aria-pressed={stock === hairSystem.code}
+            onInk
+            className={styles.choice}
+            pressed={stock === hairSystem.code}
             onClick={() => {
               onStock(stock === hairSystem.code ? null : hairSystem.code);
             }}
           >
             {hairSystem.name} · {copy.piece.kit.held(hairSystem.held)}
             {matches && <span className={styles.note}> · {copy.piece.kit.matches}</span>}
-          </button>
+          </ToggleButton>
         ))}
       </div>
     </section>
@@ -128,15 +129,16 @@ function PieceList({ pieces, onPick }: { pieces: readonly ClientPiece[]; onPick:
     <ul className={styles.picks}>
       {pieces.map((piece) => (
         <li key={piece.piece_code}>
-          <button
+          <Button
+            variant="outlineOnInk"
+            size="control"
             className={styles.pick}
-            type="button"
             onClick={() => {
               onPick(piece);
             }}
           >
             {copy.piece.listed(piece.piece_code, piece.fitted_at === null ? null : dayMonth(piece.fitted_at))}
-          </button>
+          </Button>
         </li>
       ))}
     </ul>
@@ -215,25 +217,25 @@ export function LabelField(props: {
   return (
     <>
       <div className={styles.field}>
-        <label className={styles.fieldLabel} htmlFor="piece-code">
+        <Label onInk className={styles.fieldLabel} htmlFor="piece-code">
           {copy.piece.label}
-        </label>
-        <div className={styles.labelField}>
-          <Icon className={styles.labelIcon} d={TAG} size={21} stroke={STROKE} />
-          <input
-            className={styles.input}
-            id="piece-code"
-            value={code}
-            placeholder={copy.piece.placeholder}
-            autoCapitalize="characters"
-            autoComplete="off"
-            spellCheck={false}
-            aria-describedby={malformed ? "piece-code-format" : undefined}
-            onChange={(event) => {
-              props.onCode(asLabel(event.target.value));
-            }}
-          />
-        </div>
+        </Label>
+        <TextInput
+          onInk
+          icon={TAG}
+          className={styles.labelInput}
+          id="piece-code"
+          value={code}
+          placeholder={copy.piece.placeholder}
+          autoCapitalize="characters"
+          autoComplete="off"
+          spellCheck={false}
+          aria-describedby={malformed ? "piece-code-format" : undefined}
+          onChange={(event) => {
+            props.onCode(asLabel(event.target.value));
+          }}
+        />
+
         {malformed && (
           <p className={styles.hint} id="piece-code-format">
             {copy.piece.malformed}
@@ -285,10 +287,11 @@ export function BaseAndLot(props: {
 }) {
   return (
     <div className={styles.field}>
-      <label className={styles.fieldLabel} htmlFor="piece-base">
+      <Label onInk className={styles.fieldLabel} htmlFor="piece-base">
         {copy.piece.base}
-      </label>
-      <input
+      </Label>
+      <TextInput
+        onInk
         className={styles.box64}
         id="piece-base"
         value={props.base}
@@ -298,10 +301,11 @@ export function BaseAndLot(props: {
           props.onBase(event.target.value);
         }}
       />
-      <label className={styles.fieldLabel} htmlFor="piece-lot">
+      <Label onInk className={styles.fieldLabel} htmlFor="piece-lot">
         {copy.piece.lot}
-      </label>
-      <input
+      </Label>
+      <TextInput
+        onInk
         className={styles.box64}
         id="piece-lot"
         value={props.lot}
@@ -332,10 +336,11 @@ export function OldPiece(props: {
       <h2 className={capsLook(styles.fieldTitle)} id="old-piece-title">
         {copy.piece.old.title}
       </h2>
-      <label className={styles.fieldLabel} htmlFor="old-piece-code">
+      <Label onInk className={styles.fieldLabel} htmlFor="old-piece-code">
         {copy.piece.old.label}
-      </label>
-      <input
+      </Label>
+      <TextInput
+        onInk
         className={styles.box64}
         id="old-piece-code"
         value={props.code}
@@ -348,10 +353,11 @@ export function OldPiece(props: {
         }}
       />
       <Picker pieces={props.pieces} open={props.picking} onToggle={props.onTogglePicking} onPick={props.onPick} />
-      <label className={styles.fieldLabel} htmlFor="old-piece-reason">
+      <Label onInk className={styles.fieldLabel} htmlFor="old-piece-reason">
         {copy.piece.old.reason}
-      </label>
-      <input
+      </Label>
+      <TextInput
+        onInk
         className={styles.box64}
         id="old-piece-reason"
         value={props.reason}

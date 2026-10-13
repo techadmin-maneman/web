@@ -26,20 +26,6 @@
 }
 
 /* Out of sight until the keyboard reaches it, first on every page. */
-.skip {
-  position: absolute;
-  top: var(--sp-8);
-  left: var(--sp-8);
-  z-index: 4;
-  padding: var(--sp-8) var(--sp-16);
-  background: var(--paper);
-  color: var(--text);
-  transform: translateY(-200%);
-}
-
-.skip:focus {
-  transform: none;
-}
 
 .department {
   padding-top: var(--sp-16);
@@ -174,18 +160,6 @@
 .finderField {
   width: 100%;
   max-width: var(--local-finder);
-  height: var(--tap);
-  padding: 0 var(--sp-12);
-  border: var(--hairline) solid var(--paper-control);
-  background: var(--white);
-  font: inherit;
-  font-size: var(--fs-14);
-  color: var(--text);
-}
-
-.finderField:focus-visible {
-  outline: var(--focus-width) solid var(--ink);
-  outline-offset: calc(-1 * var(--focus-width));
 }
 
 .account {
@@ -206,10 +180,6 @@
   border: var(--hairline) solid var(--paper-line);
   background: var(--paper-light);
   font-family: var(--font-serif);
-  color: var(--text);
-}
-
-.signOut {
   color: var(--text);
 }
 

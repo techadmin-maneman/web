@@ -1,5 +1,6 @@
 ---
 // A long-form text page in the site layout, a heading per topic.
+import { textLinkLook } from "@maneman/ui/TextLink";
 import { whatsappChat } from "@maneman/web-kit/whatsapp";
 import { placeholderTag, whatsapp, type LegalPage } from "../content/site.ts";
 import Site from "../layouts/Site.astro";
@@ -26,9 +27,14 @@ const chat = whatsappChat(whatsapp.number);
         <h2>{section.heading}</h2>
         {section.paragraphs.map((paragraph) => (
           <p>
-            {paragraph
-              .split(WHATSAPP_HOLE)
-              .map((text, index) => [index > 0 && <a href={chat}>{whatsapp.display}</a>, text])}
+            {paragraph.split(WHATSAPP_HOLE).map((text, index) => [
+              index > 0 && (
+                <a class={textLinkLook({ inline: true, className: "chat" })} href={chat}>
+                  {whatsapp.display}
+                </a>
+              ),
+              text,
+            ])}
           </p>
         ))}
       </section>
@@ -61,10 +67,7 @@ const chat = whatsappChat(whatsapp.number);
     text-wrap: pretty;
   }
   /* In the sentence's own colour, so underlined to be seen as a link. */
-  a {
-    color: inherit;
-    text-decoration: underline;
-    text-underline-offset: var(--sp-4);
+  .chat {
     white-space: nowrap;
   }
 </style>

@@ -8,6 +8,7 @@
 // Until ops save a list, the committed one stands (src/config/job-sheet.ts),
 // and the panel says so.
 
+import { Label, Select } from "@maneman/ui/Field";
 import { Panel } from "@maneman/ui/Panel";
 import { useLoad } from "@maneman/ui/useLoad";
 import { useState } from "react";
@@ -55,10 +56,8 @@ export function JobSheet() {
     <Panel titleId="job-sheet" title={copy.title} className={styles.panel}>
       <div className={styles.group}>
         <div className={styles.field}>
-          <label className={styles.fieldLabel} htmlFor="job-sheet-kind">
-            {copy.kind}
-          </label>
-          <select
+          <Label htmlFor="job-sheet-kind">{copy.kind}</Label>
+          <Select
             className={styles.select}
             id="job-sheet-kind"
             value={kind}
@@ -72,7 +71,7 @@ export function JobSheet() {
                 {typeName(each.visit_type)}
               </option>
             ))}
-          </select>
+          </Select>
         </div>
       </div>
       {checklist !== undefined && !mayChangeChecklists && (

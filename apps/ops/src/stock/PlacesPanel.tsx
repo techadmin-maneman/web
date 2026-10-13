@@ -3,7 +3,7 @@
 // another, or closed once it is empty and nothing open is under it. A technician's kit comes with them, and is only
 // moved.
 
-import { Button } from "@maneman/ui/Button";
+import { Button, RowButton } from "@maneman/ui/Button";
 import { Field, Select, TextInput } from "@maneman/ui/Field";
 import { Table } from "@maneman/ui/Table";
 import { errorText, type Failure } from "@maneman/web-kit/refusal";
@@ -242,16 +242,15 @@ function PlaceRows({ book, onEdit }: { book: Stock; onEdit: (id: string) => void
             </td>
             <td>{place.kind === "hub" ? place.zone : place.city}</td>
             <td>
-              <button
+              <RowButton
                 className={form.inline}
-                type="button"
                 aria-label={copy.editLabel(placeName(book, place.id))}
                 onClick={() => {
                   onEdit(place.id);
                 }}
               >
                 {copy.edit}
-              </button>
+              </RowButton>
             </td>
           </tr>
         ))}

@@ -4,6 +4,7 @@
 // Whether an invite was opened is the friend's business, so it is never shown here. Empty, it offers the invite;
 // the revoke of the client's own card sits at the foot.
 
+import { TextButton } from "@maneman/ui/TextLink";
 import { capsLook } from "@maneman/ui/Caps";
 import { Button } from "@maneman/ui/Button";
 import { useLoad } from "@maneman/ui/useLoad";
@@ -45,15 +46,14 @@ function RevokeCard({ onRevoked }: { onRevoked: () => void }) {
 
   if (!asking) {
     return (
-      <button
+      <TextButton
         className={styles.quiet}
-        type="button"
         onClick={() => {
           setAsking(true);
         }}
       >
-        <span>{copy.open}</span>
-      </button>
+        {copy.open}
+      </TextButton>
     );
   }
   return (

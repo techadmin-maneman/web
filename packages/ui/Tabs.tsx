@@ -6,7 +6,7 @@
 //     <OpsLink className={TAB} to={path} current={chosen}>{name}</OpsLink>
 //   </Tabs>
 
-import type { ReactNode } from "react";
+import type { ButtonHTMLAttributes, ReactNode } from "react";
 import { classes } from "./classes.ts";
 import styles from "./tabs.module.css";
 
@@ -20,3 +20,19 @@ export function Tabs({ label, className, children }: { label: string; className?
 
 /** One tab's look; the chosen tab carries aria-current="page". */
 export const TAB = styles.tab;
+
+/** A tab that changes what is shown in place, rather than going to a page: the chosen one is `current`. */
+export function TabButton({
+  current,
+  className,
+  ...rest
+}: Omit<ButtonHTMLAttributes<HTMLButtonElement>, "type"> & { readonly current: boolean }) {
+  return (
+    <button
+      {...rest}
+      type="button"
+      className={classes(styles.tab, styles.tabButton, className)}
+      aria-current={current ? "true" : undefined}
+    />
+  );
+}

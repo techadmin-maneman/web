@@ -1,7 +1,7 @@
 // Every wording a line has had, newest first (docs/decisions/0126-the-words-page.md), and the code's own: each can be
 // used again, which opens the line's form with it to review.
 
-import { Button } from "@maneman/ui/Button";
+import { Button, RowButton } from "@maneman/ui/Button";
 import { useLoad } from "@maneman/ui/useLoad";
 import { indiaDate, shortDate } from "@maneman/web-kit/dates";
 import { useCallback } from "react";
@@ -16,9 +16,9 @@ const versions = copy.versions;
 
 function UseButton({ label, onUse }: { label: string; onUse: () => void }) {
   return (
-    <button className={styles.inline} type="button" aria-label={label} onClick={onUse}>
+    <RowButton className={styles.inline} aria-label={label} onClick={onUse}>
       {versions.use}
-    </button>
+    </RowButton>
   );
 }
 

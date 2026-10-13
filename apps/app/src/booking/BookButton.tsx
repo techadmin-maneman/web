@@ -11,6 +11,7 @@
 // way on. A first fit while ops offer no hair system is not bookable at all,
 // and says so in place of the button.
 
+import { TextButton, TextLink } from "@maneman/ui/TextLink";
 import { Button, ButtonLink } from "@maneman/ui/Button";
 import { useState } from "react";
 import type { BookableType, Me } from "../api.ts";
@@ -58,16 +59,15 @@ export function BookButton({
   const kind = type ?? me.booking.types[0];
   const services =
     type === undefined ? me.booking.services : me.booking.services.filter((service) => service.type === type);
-  const words = quiet ? <span>{label}</span> : label;
   if (kind === "first_fit" && !services.some((service) => service.type === "first_fit")) {
     return <p>{booking.firstFitNotYet}</p>;
   }
   // A sheet already open stays open when the connection drops, with its hold and any payment under way.
   if (offline && !open) {
     return quiet ? (
-      <button type="button" className={className} disabled>
-        {words}
-      </button>
+      <TextButton tone="brass" className={className} disabled>
+        {label}
+      </TextButton>
     ) : (
       <Button variant="primary" size="action" className={className} disabled>
         {label}
@@ -76,9 +76,9 @@ export function BookButton({
   }
   if (!me.booking.self_serve || kind === undefined) {
     return quiet ? (
-      <a className={className} href={whatsappWith(message)} rel="noopener">
-        {words}
-      </a>
+      <TextLink tone="brass" className={className} href={whatsappWith(message)}>
+        {label}
+      </TextLink>
     ) : (
       <ButtonLink variant="primary" size="action" className={className} href={whatsappWith(message)} rel="noopener">
         {label}
@@ -91,9 +91,9 @@ export function BookButton({
   return (
     <>
       {quiet ? (
-        <button type="button" className={className} onClick={onClick}>
-          {words}
-        </button>
+        <TextButton tone="brass" className={className} onClick={onClick}>
+          {label}
+        </TextButton>
       ) : (
         <Button variant="primary" size="action" className={className} onClick={onClick}>
           {label}

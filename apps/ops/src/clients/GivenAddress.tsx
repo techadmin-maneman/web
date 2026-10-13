@@ -10,7 +10,7 @@ import { capsLook } from "@maneman/ui/Caps";
 import { Button } from "@maneman/ui/Button";
 import { Field, TextInput } from "@maneman/ui/Field";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
-import { AddressSearch, type AddressSearchClasses, type AddressSuggestion } from "@maneman/ui/AddressSearch";
+import { AddressSearch, type AddressSuggestion } from "@maneman/ui/AddressSearch";
 import { useId, useRef, useState } from "react";
 import { ADDRESS_FIELDS, given, missingParts, type AddressField, type AddressPart } from "@maneman/web-kit/address";
 import { api, type AddressGiven, type ClientRecord } from "../api.ts";
@@ -40,18 +40,6 @@ const EMPTY: Draft = {
 
 /** A part left blank is none, as the API holds it. */
 const orNull = (part: string | null | undefined): string | null => (given(part) ? part.trim() : null);
-
-const SEARCH_CLASSES: AddressSearchClasses = {
-  field: styles.search,
-  label: styles.label,
-  input: styles.input,
-  suggestions: styles.suggestions,
-  suggestion: styles.suggestion,
-  suggestionActive: styles.suggestionActive,
-  where: styles.where,
-  hint: styles.hint,
-  attribution: styles.hint,
-};
 
 /** The building search: the shared one (@maneman/ui/AddressSearch), in the console's words and on its form's look. */
 function BuildingSearch({
@@ -85,7 +73,7 @@ function BuildingSearch({
         attribution: searchCopy.attribution,
         found: searchCopy.found,
       }}
-      classes={SEARCH_CLASSES}
+      className={styles.search}
     />
   );
 }

@@ -1,13 +1,13 @@
 // A long table's heads that sort, the bar above it that narrows it, and the button beneath it that shows the next
 // page (./useTableView.ts). A head sorts on a press and reverses on the next; aria-sort says which way it runs.
 
+import { TextButton } from "@maneman/ui/TextLink";
 import { Field, Select, TextInput } from "@maneman/ui/Field";
+import { SortButton } from "@maneman/ui/Table";
 import { classes } from "@maneman/ui/classes";
 import { tables as copy } from "../content.ts";
 import type { TableView } from "./useTableView.ts";
 import styles from "./table-tools.module.css";
-
-const ARROW = { ascending: "↑", descending: "↓" } as const;
 
 /** The table's column heads, each that sorts a button. The caller puts them in its row, with any of its own. */
 export function SortHeads<Row>({ view, className }: { view: TableView<Row>; className?: string }) {
@@ -23,16 +23,14 @@ export function SortHeads<Row>({ view, className }: { view: TableView<Row>; clas
     const direction = view.sorted?.column === at ? view.sorted.direction : undefined;
     return (
       <th key={column.label} scope="col" className={head} aria-sort={direction ?? "none"}>
-        <button
-          className={styles.sort}
-          type="button"
-          onClick={() => {
+        <SortButton
+          direction={direction}
+          onSort={() => {
             view.sortBy(at);
           }}
         >
           {column.label}
-          {direction !== undefined && <span aria-hidden="true">{ARROW[direction]}</span>}
-        </button>
+        </SortButton>
       </th>
     );
   });
@@ -91,9 +89,9 @@ export function Narrowing<Row>({
       {view.narrowed && (
         <p className={styles.count}>
           {copy.count(view.matching, view.total)}
-          <button className={styles.clear} type="button" onClick={view.clear}>
+          <TextButton tone="muted" compact className={styles.clear} onClick={view.clear}>
             {copy.clear}
-          </button>
+          </TextButton>
         </p>
       )}
     </div>
@@ -106,9 +104,9 @@ export function TableEnd<Row>({ view, className }: { view: TableView<Row>; class
   if (view.more === null) return null;
   return (
     <p className={classes(styles.end, className)}>
-      <button className={styles.clear} type="button" onClick={view.more}>
+      <TextButton tone="muted" compact onClick={view.more}>
         {copy.more}
-      </button>
+      </TextButton>
     </p>
   );
 }

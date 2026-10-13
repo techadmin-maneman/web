@@ -6,9 +6,44 @@ import type { ReactNode } from "react";
 import { classes } from "./classes.ts";
 import styles from "./table.module.css";
 
-export function Table({ className, children }: { className?: string; children: ReactNode }) {
-  return <table className={classes(styles.table, className)}>{children}</table>;
+/**
+ * `plain` keeps a table's meaning and none of the console's look, for a table that is a drawing of its own: the
+ * dispatch board's week, or a sheet printed for a supplier.
+ */
+export function Table({
+  className,
+  plain = false,
+  children,
+}: {
+  className?: string;
+  plain?: boolean;
+  children: ReactNode;
+}) {
+  return <table className={classes(plain ? styles.plain : styles.table, className)}>{children}</table>;
 }
 
 /** A column of figures, right aligned, as every board sets a count or an amount. */
 export const FIGURE = styles.figure;
+
+const ARROWS = { ascending: "↑", descending: "↓" } as const;
+
+/**
+ * A column head's name as the button that sorts by it, with the arrow of the order it sorts in. Its `th` carries
+ * aria-sort, which a screen reader reads.
+ */
+export function SortButton({
+  direction,
+  onSort,
+  children,
+}: {
+  readonly direction: "ascending" | "descending" | undefined;
+  readonly onSort: () => void;
+  readonly children: ReactNode;
+}) {
+  return (
+    <button type="button" className={styles.sort} onClick={onSort}>
+      {children}
+      {direction !== undefined && <span aria-hidden="true">{ARROWS[direction]}</span>}
+    </button>
+  );
+}

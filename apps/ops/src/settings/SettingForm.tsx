@@ -2,6 +2,7 @@
 // its boxes, then a check of what it is now beside what it will be, and only the second press sends it. A refusal
 // shows beneath, with the check still up to send again or go back to the boxes.
 
+import { Fieldset } from "@maneman/ui/Field";
 import { Button } from "@maneman/ui/Button";
 import type { Answer } from "@maneman/web-kit/api";
 import { errorText, type Failure } from "@maneman/web-kit/refusal";
@@ -95,8 +96,7 @@ export function SettingForm(props: {
 }) {
   const { steps, words } = props;
   return (
-    <fieldset className={styles.group}>
-      <legend className={styles.ruleTitle}>{props.title}</legend>
+    <Fieldset className={styles.group} legend={props.title} legendLook="title">
       {props.above}
       {props.children}
       {steps.step === "editing" ? (
@@ -125,6 +125,6 @@ export function SettingForm(props: {
         </CheckPanel>
       )}
       <Refused failed={steps.failed} errors={props.errors} />
-    </fieldset>
+    </Fieldset>
   );
 }

@@ -9,6 +9,7 @@
 // systems are listed with them, counted in pieces, and added by spec beneath
 // (docs/decisions/0156-hair-systems-in-stock.md).
 
+import { RowButton } from "@maneman/ui/Button";
 import { Panel } from "@maneman/ui/Panel";
 import { Table } from "@maneman/ui/Table";
 import { useLoad } from "@maneman/ui/useLoad";
@@ -68,52 +69,48 @@ function Row({ consumable, may, onDo }: { consumable: Consumable; may: MayDo; on
       <td className={own.actions}>
         <span className={consumable.offered ? undefined : own.quiet}>{stateWords(consumable)}</span>
         {may.change && (
-          <button
+          <RowButton
             className={styles.inline}
-            type="button"
             aria-label={copy.changeLabel(name)}
             onClick={() => {
               onDo({ kind: "change", code });
             }}
           >
             {copy.change}
-          </button>
+          </RowButton>
         )}
         {notRetired && may.retire && (
-          <button
+          <RowButton
             className={styles.inline}
-            type="button"
             aria-label={copy.retireLabel(name)}
             onClick={() => {
               onDo({ kind: "retire", code });
             }}
           >
             {copy.retire}
-          </button>
+          </RowButton>
         )}
         {!notRetired && may.restore && (
-          <button
+          <RowButton
             className={styles.inline}
-            type="button"
             aria-label={copy.restoreLabel(name)}
             onClick={() => {
               onDo({ kind: "restore", code });
             }}
           >
             {copy.restore}
-          </button>
+          </RowButton>
         )}
         {may.delete && (
-          <button
+          <RowButton
             className={styles.inline}
-            type="button"
             aria-label={deleting.label(name)}
             onClick={() => {
               onDo({ kind: "delete", code });
             }}
           >
             {deleting.open}
-          </button>
+          </RowButton>
         )}
       </td>
     </tr>

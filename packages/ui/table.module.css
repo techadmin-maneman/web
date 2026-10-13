@@ -16,6 +16,10 @@
     font-size: var(--fs-14);
   }
 
+  .plain {
+    border-collapse: collapse;
+  }
+
   .table th,
   .table td {
     height: var(--ops-row);
@@ -34,5 +38,24 @@
   .table .figure {
     font-variant-numeric: tabular-nums;
     text-align: right;
+  }
+
+  /* A column head that sorts: its name, in the head's own look, and the arrow of its order. */
+  .sort {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--sp-4);
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    cursor: pointer;
+  }
+
+  @media (hover: hover) {
+    .sort:hover {
+      color: var(--text);
+    }
   }
 }

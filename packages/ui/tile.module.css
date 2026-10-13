@@ -1,0 +1,22 @@
+/* A tile (./Tile.tsx): no look of its own, so the screen's class draws it. */
+
+@layer base, ui;
+
+@layer ui {
+  .tile {
+    display: block;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: inherit;
+    font: inherit;
+    text-align: inherit;
+    text-decoration: none;
+    cursor: pointer;
+  }
+
+  .tile:disabled {
+    cursor: default;
+  }
+}

@@ -9,8 +9,7 @@
 
 import { errorText, type Failure } from "@maneman/web-kit/refusal";
 import { Button } from "@maneman/ui/Button";
-import { classes } from "@maneman/ui/classes";
-import { DateInput, Field, NumberInput, Select, TextInput } from "@maneman/ui/Field";
+import { Checkbox, ChoiceGroup, DateInput, Field, NumberInput, Select, TextInput } from "@maneman/ui/Field";
 import { useState } from "react";
 import { CODE_LENGTH } from "@rules/policy/discount-codes.ts";
 import { api, type DiscountCodesNew } from "../api.ts";
@@ -158,22 +157,18 @@ function Covers({ draft, edit }: { draft: Draft; edit: Edit }) {
     edit({ covers: covered ? draft.covers.filter((each) => each !== kind) : [...draft.covers, kind] });
   };
   return (
-    <fieldset className={styles.choices}>
-      <legend className={styles.fieldLabel}>{copy.covers}</legend>
+    <ChoiceGroup className={styles.choices} legend={copy.covers}>
       {COVERS.map((kind) => (
-        <label key={kind} className={styles.fieldRow}>
-          <input
-            className={styles.box}
-            type="checkbox"
-            checked={draft.covers.includes(kind)}
-            onChange={() => {
-              toggle(kind);
-            }}
-          />
-          {copy.coverNames[kind]}
-        </label>
+        <Checkbox
+          key={kind}
+          label={copy.coverNames[kind]}
+          checked={draft.covers.includes(kind)}
+          onChange={() => {
+            toggle(kind);
+          }}
+        />
       ))}
-    </fieldset>
+    </ChoiceGroup>
   );
 }
 
@@ -212,17 +207,14 @@ function Limits({ draft, today, edit }: { draft: Draft; today: string; edit: Edi
         )}
       </div>
 
-      <label className={classes(styles.fieldRow, styles.once)}>
-        <input
-          className={styles.box}
-          type="checkbox"
-          checked={draft.oncePerClient}
-          onChange={(event) => {
-            edit({ oncePerClient: event.target.checked });
-          }}
-        />
-        {copy.oncePerClient}
-      </label>
+      <Checkbox
+        className={styles.once}
+        label={copy.oncePerClient}
+        checked={draft.oncePerClient}
+        onChange={(event) => {
+          edit({ oncePerClient: event.target.checked });
+        }}
+      />
     </>
   );
 }

@@ -62,6 +62,8 @@ export default defineConfig(
           "./tsconfig.json",
           "./tsconfig.node.json",
           "./tsconfig.browser.json",
+          // Before the site's, which compiles the shared parts it imports with Preact's types in React's place.
+          "./packages/ui/tsconfig.json",
           "./site/tsconfig.json",
           "./site/tsconfig.worker.json",
           "./apps/app/tsconfig.json",
@@ -69,7 +71,6 @@ export default defineConfig(
           "./apps/ops/tsconfig.json",
           "./apps/tech/tsconfig.json",
           "./apps/tech/sw/tsconfig.json",
-          "./packages/ui/tsconfig.json",
         ],
         tsconfigRootDir: import.meta.dirname,
       },

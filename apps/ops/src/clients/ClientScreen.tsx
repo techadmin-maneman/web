@@ -9,6 +9,8 @@
 // view and not a second entry in the log. A client erased since has no tabs:
 // their page keeps only their visits and money (Erase.tsx).
 
+import { TextLink } from "@maneman/ui/TextLink";
+import { ButtonLink } from "@maneman/ui/Button";
 import { Icon } from "@maneman/ui/Icon";
 import { classes } from "@maneman/ui/classes";
 import { ICONS } from "@maneman/brand/icons";
@@ -73,7 +75,9 @@ function Head({ record, credits, invite }: { record: ClientRecord; credits: Cred
     <div className={styles.head}>
       <div className={styles.headLine}>
         <h2 className={styles.name}>{record.name}</h2>
-        <a
+        <ButtonLink
+          variant="outline"
+          size="small"
           className={styles.whatsapp}
           href={whatsappChat(record.mobile)}
           target="_blank"
@@ -82,7 +86,7 @@ function Head({ record, credits, invite }: { record: ClientRecord; credits: Cred
         >
           <Icon d={ICONS.whatsapp} size={16} className={styles.icon} />
           {clients.whatsapp}
-        </a>
+        </ButtonLink>
       </div>
       <dl className={styles.meta}>
         {meta.map((each) => (
@@ -98,13 +102,9 @@ function Head({ record, credits, invite }: { record: ClientRecord; credits: Cred
         <div className={styles.metaItem}>
           <dt className={styles.metaKey}>{clients.meta.mobile}</dt>
           <dd className={styles.metaValue}>
-            <a
-              className={styles.metaLink}
-              href={`tel:${record.mobile}`}
-              aria-label={clients.callLabel(record.name, mobile)}
-            >
+            <TextLink href={`tel:${record.mobile}`} aria-label={clients.callLabel(record.name, mobile)}>
               {mobile}
-            </a>
+            </TextLink>
           </dd>
         </div>
         {invite !== null && (

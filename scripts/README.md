@@ -53,6 +53,7 @@ checkout: a database, an org, Cloudflare or GitHub. A script that reads a secret
 | `check-wrangler-config.ts`  | every environment redeclares its bindings, within the limits              | `npm run check:config`, `ci.yml` | no     |
 | `ci-gate.ts`                | fails the gate job unless every job it waits on passed                    | `ci.yml`                         | no     |
 | `lighthouse.ts`             | Lighthouse on the built site and the client app                           | `npm run lighthouse`, CI         | no     |
+| `lint.ts`                   | ESLint in four runs, each holding its own part's TypeScript projects      | `npm run lint`, CI               | no     |
 | `old-code-on-new-schema.ts` | the deployed code's Worker tests against the new migrations               | `ci.yml`                         | no     |
 | `pr-size.ts`                | warns when a pull request changes more by hand than one review reads well | `ci.yml`                         | no     |
 

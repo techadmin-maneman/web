@@ -22,7 +22,7 @@
     "pay:local": "node scripts/dev/local.ts pay",
     "close:local": "node scripts/dev/local.ts close",
     "typecheck": "tsc -b tsconfig.check.json && npm run check:site",
-    "lint": "eslint .",
+    "lint": "node scripts/ci/lint.ts",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "test": "vitest run",

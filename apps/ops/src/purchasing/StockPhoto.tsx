@@ -1,6 +1,7 @@
 // A photograph of stock for a write-off or a claim (docs/decisions/0170-stock-photos.md): taken or chosen, made small
 // in the browser as the technician's camera makes its photographs, stored, and shown once stored.
 
+import { FileInput, Label } from "@maneman/ui/Field";
 import { Button } from "@maneman/ui/Button";
 import { errorText } from "@maneman/web-kit/refusal";
 import { smallJpeg } from "@maneman/web-kit/small-jpeg";
@@ -51,14 +52,11 @@ export function StockPhoto({
   };
   return (
     <div className={form.field}>
-      <label className={form.fieldLabel} htmlFor={inputId}>
-        {label}
-      </label>
+      <Label htmlFor={inputId}>{label}</Label>
       {photoId === null ? (
-        <input
+        <FileInput
           className={form.file}
           id={inputId}
-          type="file"
           accept="image/jpeg,image/png,image/heic,image/webp"
           capture="environment"
           disabled={busy}

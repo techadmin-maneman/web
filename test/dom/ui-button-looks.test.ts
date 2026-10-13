@@ -77,7 +77,9 @@ describe("a busy button", () => {
   });
 
   it("looks busy on a phone, which shows no cursor", () => {
-    expect(declarationsOf('.button[aria-busy="true"]:not(:disabled)')).toContain("opacity: var(--busy-opacity)");
+    expect(declarationsOf('.button[aria-busy="true"]:not(:disabled):not([aria-disabled="true"])')).toContain(
+      "opacity: var(--busy-opacity)",
+    );
   });
 
   it("says nothing of it when it is not", () => {

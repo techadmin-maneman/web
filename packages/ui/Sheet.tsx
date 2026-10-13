@@ -35,8 +35,34 @@ function useBackCloses(dialog: RefObject<HTMLDialogElement | null>, onCancel: ((
  * The sheet itself, on paper, as the client app's boards draw it: it scrolls when it is taller than the screen, and
  * keeps clear of the phone's home bar. A sheet's own class sets what its steps hold.
  */
-export function SheetPanel({ className, children }: { readonly className?: string; readonly children: ReactNode }) {
+export function SheetPanel({
+  className,
+  children,
+}: {
+  readonly className?: string | undefined;
+  readonly children: ReactNode;
+}) {
   return <div className={classes(styles.panel, className)}>{children}</div>;
+}
+
+/**
+ * The way out of a sheet, in words above its panel: in the paper's own colour on the dark ground around a sheet, or
+ * quieter on a screen of ink.
+ */
+export function SheetClose({
+  onClose,
+  quiet = false,
+  children,
+}: {
+  readonly onClose: () => void;
+  readonly quiet?: boolean;
+  readonly children: ReactNode;
+}) {
+  return (
+    <button type="button" className={classes(styles.close, quiet && styles.closeQuiet)} onClick={onClose}>
+      {children}
+    </button>
+  );
 }
 
 export function Sheet({
@@ -55,7 +81,7 @@ export function Sheet({
   /** The id of the sheet's heading, which names it. */
   readonly labelledBy: string;
   /** The caller's own class for the frame: the focus ring's colour over the dark ground, say. */
-  readonly className?: string;
+  readonly className?: string | undefined;
   /** Working on what was asked, as a card being made: said to a screen reader. */
   readonly busy?: boolean;
   /** False for a sheet that is simply there, as the technician app's questions are: its board draws no motion. */

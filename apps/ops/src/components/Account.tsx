@@ -1,6 +1,7 @@
 // Who is signed in, at the header's right where the design draws "AK" in a box,
 // and the way out, which the board does not draw.
 
+import { TextLink } from "@maneman/ui/TextLink";
 import { useLoad } from "@maneman/ui/useLoad";
 import { shell } from "../content.ts";
 import { whoami } from "../lib/access.ts";
@@ -27,9 +28,9 @@ export function Account() {
         {initialsOf(who)}
       </span>
       {signOut !== null && (
-        <a className={styles.signOut} href={signOut} onClick={forgetClients}>
+        <TextLink href={signOut} onClick={forgetClients}>
           {shell.account.signOut}
-        </a>
+        </TextLink>
       )}
     </div>
   );

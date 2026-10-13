@@ -1,0 +1,74 @@
+/* A mobile number's field (./MobileInput.tsx). */
+
+@layer base, ui;
+
+@layer ui {
+  .field {
+    display: flex;
+    height: var(--btn-lg);
+  }
+
+  .onPaper {
+    border: var(--hairline) solid var(--paper-control);
+    background: var(--white);
+    color: var(--text);
+  }
+
+  .onInk {
+    border: var(--hairline) solid var(--ink-line-strong);
+    color: var(--paper);
+  }
+
+  .onPaper:has(.input[aria-invalid="true"]) {
+    border-color: var(--error-on-paper);
+  }
+
+  .onInk:has(.input[aria-invalid="true"]) {
+    border-color: var(--error-on-ink);
+  }
+
+  .field:focus-within {
+    outline: var(--focus-width) solid var(--focus-colour);
+    outline-offset: var(--focus-offset);
+  }
+
+  .prefix {
+    display: flex;
+    align-items: center;
+    padding: 0 var(--sp-16);
+    border-right: var(--hairline) solid;
+    font-size: var(--fs-16);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .onPaper .prefix {
+    border-right-color: var(--paper-line);
+    color: var(--text-muted);
+  }
+
+  .onInk .prefix {
+    border-right-color: var(--ink-line);
+    color: var(--ink-muted);
+  }
+
+  .input {
+    flex: 1;
+    min-width: 0;
+    padding: 0 var(--sp-16);
+    border: 0;
+    background: transparent;
+    font: inherit;
+    font-size: var(--fs-16);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: var(--tracking-number);
+    color: inherit;
+  }
+
+  .input:focus-visible {
+    outline: none;
+  }
+
+  .onPaper .input::placeholder {
+    color: var(--paper-hint);
+  }
+}

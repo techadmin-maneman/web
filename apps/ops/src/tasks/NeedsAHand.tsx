@@ -2,6 +2,7 @@
 // about (src/routes/ops/alerts.ts). Each says what happened and links to where to act; ops mark one done, or send
 // again the message, lead or CRM erasure it gave up on. Each person sees their own departments' kinds.
 
+import { TextButton } from "@maneman/ui/TextLink";
 import { errorText } from "@maneman/web-kit/refusal";
 import { Panel } from "@maneman/ui/Panel";
 import { useLoad } from "@maneman/ui/useLoad";
@@ -62,16 +63,16 @@ function AlertRow({ alert, maySend, mayMarkDone, onClosed }: RowProps) {
             </OpsLink>
           )}
           {maySend && alert.send_again && (
-            <button type="button" className={styles.act} disabled={busy} onClick={() => void act("send")}>
+            <TextButton tone="muted" compact disabled={busy} onClick={() => void act("send")}>
               {acting === "send" ? copy.sending : copy.sendAgain}
               <VisuallyHidden>{` · ${title}`}</VisuallyHidden>
-            </button>
+            </TextButton>
           )}
           {mayMarkDone && (
-            <button type="button" className={styles.act} disabled={busy} onClick={() => void act("done")}>
+            <TextButton tone="muted" compact disabled={busy} onClick={() => void act("done")}>
               {acting === "done" ? copy.closing : copy.done}
               <VisuallyHidden>{` · ${title}`}</VisuallyHidden>
-            </button>
+            </TextButton>
           )}
         </span>
         {failed !== null && (

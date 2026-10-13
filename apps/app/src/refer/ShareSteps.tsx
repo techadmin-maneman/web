@@ -1,17 +1,18 @@
 // The share sheet's three steps, drawn from its flow (./share-flow.ts): which card, the lines its own
 // photographs need agreeing to, and the invite's preview with the ways to send it.
 
+import { ChoiceCard, TickBox } from "@maneman/ui/ChoiceCard";
 import { capsLook } from "@maneman/ui/Caps";
-import { SheetPanel } from "@maneman/ui/Sheet";
+import { SheetClose, SheetPanel } from "@maneman/ui/Sheet";
 import { IconButton } from "@maneman/ui/IconButton";
 import { classes } from "@maneman/ui/classes";
 import { ICONS } from "@maneman/brand/icons";
-import { Button } from "@maneman/ui/Button";
+import { Button, ButtonLink } from "@maneman/ui/Button";
 import { Icon } from "@maneman/ui/Icon";
 import { whatsappShare } from "@maneman/web-kit/whatsapp";
 import type { Refer } from "../api.ts";
 import { profile, refer } from "../content.ts";
-import { CHECK, COPY_LINK, OTHER_APPS } from "../icons.ts";
+import { COPY_LINK, OTHER_APPS } from "../icons.ts";
 import { useSession } from "../session.ts";
 import { CardPreview, type Shown } from "./CardPreview.tsx";
 import { rewardOf } from "./reward.ts";
@@ -39,19 +40,16 @@ function Problem({ line, className }: { line: string | null; className: string |
 function Choice(props: { which: Which; chosen: boolean; shown: Shown; onChoose: () => void }) {
   const { which, chosen } = props;
   return (
-    <label className={chosen ? `${styles.choice} ${styles.chosen}` : styles.choice}>
-      <input className={styles.radio} type="radio" name="refer-card" checked={chosen} onChange={props.onChoose} />
+    <ChoiceCard look="ticked" name="refer-card" checked={chosen} onChange={props.onChoose}>
       <CardPreview shown={props.shown} />
       <span className={styles.choiceText}>
         <span>
           <span className={styles.choiceName}>{refer.card[which].name}</span>
           <span className={styles.choiceNote}>{refer.card[which].note}</span>
         </span>
-        <span className={styles.box} aria-hidden="true">
-          {chosen && <Icon d={CHECK} size={13} />}
-        </span>
+        <TickBox checked={chosen} />
       </span>
-    </label>
+    </ChoiceCard>
   );
 }
 
@@ -110,9 +108,7 @@ export function ChoiceStep({ flow, onClose }: StepProps) {
 export function ConsentStep({ flow, onClose }: StepProps) {
   return (
     <>
-      <button className={styles.close} type="button" onClick={onClose}>
-        {refer.close}
-      </button>
+      <SheetClose onClose={onClose}>{refer.close}</SheetClose>
       <SheetPanel className={styles.sheet}>
         <h2 className={styles.sheetTitle} id={TITLE_ID}>
           {refer.consent.title}
@@ -179,9 +175,9 @@ export function ShareStep({ flow, onClose }: StepProps) {
   const { shareFailed, file, message } = flow;
   return (
     <div className={classes(styles.screen, styles.inkScreen)}>
-      <button className={styles.inkClose} type="button" onClick={onClose}>
+      <SheetClose quiet onClose={onClose}>
         {refer.close}
-      </button>
+      </SheetClose>
       <div className={styles.screenBody}>
         <h2 className={capsLook(styles.eyebrow)} id={TITLE_ID}>
           {refer.preview.title}
@@ -192,9 +188,14 @@ export function ShareStep({ flow, onClose }: StepProps) {
           <div className={styles.failed} role="alert">
             <p className={capsLook(styles.failedLabel)}>{refer.preview.failed.label}</p>
             <p>{refer.preview.failed.line}</p>
-            <button className={styles.retry} type="button" onClick={() => void flow.sharing(shareFailed)}>
+            <Button
+              variant="outline"
+              size="small"
+              className={styles.retry}
+              onClick={() => void flow.sharing(shareFailed)}
+            >
               {refer.preview.failed.retry}
-            </button>
+            </Button>
           </div>
         )}
         <section className={styles.via} aria-labelledby="share-via">
@@ -202,8 +203,10 @@ export function ShareStep({ flow, onClose }: StepProps) {
             {refer.preview.via}
           </h3>
           <div className={styles.ways}>
-            <a
-              className={classes(styles.way, styles.whatsapp)}
+            <ButtonLink
+              variant="gold"
+              size="action"
+              className={styles.way}
               href={whatsappShare(message)}
               rel="noopener"
               target="_blank"
@@ -217,15 +220,25 @@ export function ShareStep({ flow, onClose }: StepProps) {
             >
               <Icon d={ICONS.whatsapp} size={21} />
               <span>{refer.preview.whatsapp}</span>
-            </a>
-            <button className={styles.way} type="button" onClick={() => void flow.sharing(flow.otherApps)}>
+            </ButtonLink>
+            <Button
+              variant="outlineOnInk"
+              size="action"
+              className={styles.way}
+              onClick={() => void flow.sharing(flow.otherApps)}
+            >
               <Icon d={OTHER_APPS} size={21} />
               <span>{refer.preview.other}</span>
-            </button>
-            <button className={styles.way} type="button" onClick={() => void flow.sharing(flow.copyLink)}>
+            </Button>
+            <Button
+              variant="outlineOnInk"
+              size="action"
+              className={styles.way}
+              onClick={() => void flow.sharing(flow.copyLink)}
+            >
               <Icon d={COPY_LINK} size={21} />
               <span>{flow.copied ? refer.preview.copied : refer.preview.copy}</span>
-            </button>
+            </Button>
           </div>
         </section>
       </div>
