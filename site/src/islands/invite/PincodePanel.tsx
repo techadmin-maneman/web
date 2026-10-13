@@ -6,7 +6,7 @@ import { ICONS } from "@maneman/brand/icons";
 import { referral } from "../../content/referral.ts";
 import type { PincodeAnswer } from "../../lib/api.ts";
 import { fill } from "../../lib/text.ts";
-import { Icon } from "../Drawings.tsx";
+import { Icon } from "@maneman/ui/Icon";
 import styles from "./Invite.module.css";
 import type { PincodeCheck } from "./usePincode.ts";
 
@@ -19,7 +19,7 @@ function PincodeAnswerBlock(props: { answer: PincodeAnswer; heading: { current: 
   if (answer.served) {
     return (
       <h2 ref={props.heading} tabIndex={-1} class={styles.answer}>
-        <Icon path={ICONS.tick} size={21} stroke={1.7} />
+        <Icon d={ICONS.tick} size={21} stroke={1.7} />
         {fill(referral.consultation.served, { area: placeOf(answer) })}
       </h2>
     );

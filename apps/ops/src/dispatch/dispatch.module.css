@@ -283,7 +283,7 @@
 
 .block:focus-visible {
   outline: var(--focus-width) solid var(--ink);
-  outline-offset: calc(-1 * var(--focus-width));
+  outline-offset: var(--focus-inset);
 }
 
 .fit:focus-visible {
@@ -319,7 +319,7 @@
 
 .target:focus-visible {
   outline: var(--focus-width) solid var(--ink);
-  outline-offset: calc(-1 * var(--focus-width));
+  outline-offset: var(--focus-inset);
 }
 
 /* A day the job in hand has no room on: nothing to drop on, and it says so. */
@@ -506,7 +506,7 @@
 
 .trayJob:focus-visible {
   outline: var(--focus-width) solid var(--ink);
-  outline-offset: calc(-1 * var(--focus-width));
+  outline-offset: var(--focus-inset);
 }
 
 /* ---- The panels a job opens, each a modal dialog ------------------------- */

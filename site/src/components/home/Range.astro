@@ -1,5 +1,6 @@
 ---
 // The range: the four hair systems, each named, with its line and what it is made of.
+import { capsLook } from "@maneman/ui/Caps";
 import { range } from "../../content/site.ts";
 ---
 
@@ -9,7 +10,7 @@ import { range } from "../../content/site.ts";
   <ul class="products">
     {range.products.map((product) => (
       <li class="product">
-        <h3 class="caps">{product.name}</h3>
+        <h3 class={capsLook()}>{product.name}</h3>
         <p class="tagline">
           {product.tagline.split(/(?<=\.)\s+/).map((sentence) => (
             <span class="sentence">{sentence}</span>

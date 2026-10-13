@@ -92,15 +92,6 @@
   --message-size: var(--fs-14);
 }
 
-.visually-hidden {
-  position: absolute;
-  width: var(--sr-only-size);
-  height: var(--sr-only-size);
-  overflow: hidden;
-  clip-path: inset(50%);
-  white-space: nowrap;
-}
-
 /* ---- Layout ------------------------------------------------------------- */
 
 .container {
@@ -132,13 +123,6 @@
   font-family: var(--font-serif);
 }
 
-/* Small capitals in the serif: the design's labels, tags and eyebrows. */
-.caps {
-  font-family: var(--font-serif);
-  font-variant-caps: all-small-caps;
-  letter-spacing: var(--tracking-14);
-}
-
 .section-title {
   margin: 0;
   font-family: var(--font-serif);
@@ -161,9 +145,6 @@
 .label {
   background: var(--ink-night);
   padding: var(--sp-8) var(--sp-12);
-  font-family: var(--font-serif);
-  font-variant-caps: all-small-caps;
-  letter-spacing: var(--tracking-14);
   font-size: var(--fs-13);
   color: var(--ink-tag);
   white-space: nowrap;

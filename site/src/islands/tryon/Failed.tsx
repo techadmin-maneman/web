@@ -1,8 +1,9 @@
+import { capsLook } from "@maneman/ui/Caps";
 import { Button, ButtonLink } from "@maneman/ui/Button";
 import { ICONS } from "@maneman/brand/icons";
 import { tryOn } from "../../content/site.ts";
 import type { ErrorKind } from "../../lib/tryon-errors.ts";
-import { Icon } from "../Drawings.tsx";
+import { Icon } from "@maneman/ui/Icon";
 import { Title, type HeadingRef } from "./Title.tsx";
 import styles from "./TryOn.module.css";
 
@@ -12,8 +13,8 @@ export function Failed(props: { kind: ErrorKind; heading: HeadingRef; onAgain: (
   return (
     <div class={styles.notice}>
       <div class={styles.noticeFrame}>
-        <Icon path={ICONS.noPhoto} size={28} stroke={1.5} />
-        <div class="caps">{copy.frame}</div>
+        <Icon d={ICONS.noPhoto} size={28} stroke={1.5} />
+        <div class={capsLook()}>{copy.frame}</div>
       </div>
       <Title heading={props.heading} className={styles.noticeTitle}>
         {copy.title}

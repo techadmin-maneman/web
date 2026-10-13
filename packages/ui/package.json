@@ -16,6 +16,7 @@
     "./ChoiceCard": "./ChoiceCard.tsx",
     "./classes": "./classes.ts",
     "./CodeField": "./CodeField.tsx",
+    "./ConfirmSheet": "./ConfirmSheet.tsx",
     "./cssToken": "./cssToken.ts",
     "./DateStrip": "./DateStrip.tsx",
     "./Dialog": "./Dialog.tsx",

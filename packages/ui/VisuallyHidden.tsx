@@ -1,6 +1,9 @@
 import type { ReactNode } from "react";
 import styles from "./visually-hidden.module.css";
 
+/** The class alone, for an Astro page that draws its own element: a table's hidden header row. */
+export const hiddenLook = styles.hidden;
+
 /**
  * Words for a screen reader alone: a heading the design does not draw, a
  * status line read out as it changes, a legend for a group of choices.

@@ -1,3 +1,4 @@
+import { capsLook } from "@maneman/ui/Caps";
 import { messageLook } from "@maneman/ui/InlineMessage";
 import { Label, TextInput } from "@maneman/ui/Field";
 import { MobileInput } from "@maneman/ui/MobileInput";
@@ -72,7 +73,7 @@ export function Gate(props: {
         <div class={styles.gateFrame}>
           <div class={styles.gateLeft} />
           <div class={styles.gateRight} />
-          <span class={`caps ${styles.gateFrameLabel}`}>{tryOn.gate.frame}</span>
+          <span class={capsLook(styles.gateFrameLabel)}>{tryOn.gate.frame}</span>
         </div>
         <p class={styles.gateCaption}>{words.caption}</p>
       </div>

@@ -97,7 +97,7 @@
 /* A rule a link led to takes focus, its ring inside the rule so the panel's edge never cuts it. */
 .rule:focus-visible {
   outline: var(--focus-width) solid var(--ink);
-  outline-offset: calc(-1 * var(--focus-width));
+  outline-offset: var(--focus-inset);
 }
 
 /* A rule's fields are one question, so they are grouped and the rule names the group. */

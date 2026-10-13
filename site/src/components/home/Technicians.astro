@@ -2,6 +2,7 @@
 // Who comes to your home: three technician cards, each with their years and
 // fits. Placeholder people until the block is published; in production an
 // unpublished block shows nothing.
+import { capsLook } from "@maneman/ui/Caps";
 import { placeholderTag, technicians } from "../../content/site.ts";
 import { SHOW_PLACEHOLDER_TAGS, isShown } from "../../lib/build.ts";
 import DesignPicture from "../DesignPicture.astro";
@@ -21,7 +22,7 @@ import DesignPicture from "../DesignPicture.astro";
               widths={[390, 780]}
               class="focus-technician"
             />
-            {SHOW_PLACEHOLDER_TAGS && <div class="label tag">{placeholderTag}</div>}
+            {SHOW_PLACEHOLDER_TAGS && <div class={capsLook("label tag")}>{placeholderTag}</div>}
           </div>
           <div class="body">
             <h3>{person.name}</h3>

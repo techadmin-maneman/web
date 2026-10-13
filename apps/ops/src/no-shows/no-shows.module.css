@@ -183,11 +183,11 @@
   margin-top: var(--sp-16);
 }
 
-/* The 80 px the design draws its note at. */
+/* The note box at the 80 px the design draws it. */
 .reasonField {
   display: block;
   width: 100%;
-  height: calc(var(--field-h) + var(--sp-28));
+  height: var(--note-h);
   margin-top: var(--sp-8);
   resize: none;
 }

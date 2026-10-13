@@ -1,5 +1,6 @@
 ---
 // What clients say: three cards on ink. Placeholder quotes until published.
+import { capsLook } from "@maneman/ui/Caps";
 import { placeholderTag, testimonials } from "../../content/site.ts";
 import { SHOW_PLACEHOLDER_TAGS, isShown } from "../../lib/build.ts";
 import DesignPicture from "../DesignPicture.astro";
@@ -21,7 +22,7 @@ import DesignPicture from "../DesignPicture.astro";
                 widths={[390, 780]}
                 class="focus-client"
               />
-              {SHOW_PLACEHOLDER_TAGS && <div class="label tag">{placeholderTag}</div>}
+              {SHOW_PLACEHOLDER_TAGS && <div class={capsLook("label tag")}>{placeholderTag}</div>}
             </div>
             <figure class="body">
               <blockquote>

@@ -106,15 +106,16 @@ function ProvingCodes({
               label={which === "old" ? copy.oldCode : copy.newCode(change.new_mobile)}
               value={codes[which]}
               invalid={notes[which] !== null}
+              describedBy={notes[which] === null ? undefined : `${which}-code-error`}
               onChange={(digits) => {
                 onCode(which, digits);
               }}
             />
           )}
           {!proven(which) && notes[which] !== null && (
-            <span className={styles.error} role="alert">
+            <InlineMessage tone="error" className={styles.error} id={`${which}-code-error`}>
               {notes[which]}
-            </span>
+            </InlineMessage>
           )}
         </div>
       ))}
@@ -158,13 +159,15 @@ function StartChange({
         prefix={copy.prefix}
         placeholder={copy.placeholder}
         aria-label={copy.placeholder}
+        aria-invalid={problem !== null}
+        aria-describedby={problem === null ? undefined : "new-number-error"}
         value={typed}
         onChange={(event) => {
           onTyped(event.target.value);
         }}
       />
       {problem !== null && (
-        <InlineMessage tone="error" className={styles.error}>
+        <InlineMessage tone="error" className={styles.error} id="new-number-error">
           {problem}
         </InlineMessage>
       )}

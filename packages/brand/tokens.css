@@ -117,10 +117,11 @@
   --focus-width: 2px;
   --focus-offset: 2px;
   --focus-offset-wide: 3px; /* a ring clear of a link's underline, or of an edged control's own edge */
+  --focus-inset: calc(-1 * var(--focus-width)); /* a ring drawn inside a row or a cell, which would clip one outside */
   --tap: 44px; /* the smallest touch target; also the small button's height */
   --btn-lg: 56px;
   --btn-md: 48px;
-  --field-h: 52px;
+  --note-h: 80px; /* a short note's box, as a no-show's reason is drawn */
   --busy-opacity: 0.6; /* a button working on what was asked */
 
   /* ---- Motion: how long, and the one curve, apart ------------------------ */

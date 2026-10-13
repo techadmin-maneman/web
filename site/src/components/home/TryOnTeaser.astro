@@ -1,5 +1,6 @@
 ---
 // The try-on teaser: copy on the left, a before/after pair on the right.
+import { capsLook } from "@maneman/ui/Caps";
 import { buttonLook } from "@maneman/ui/Button";
 import BeforeAfter from "../../islands/BeforeAfter.tsx";
 import { placeholderTag, teaserPair, tryOnTeaser } from "../../content/site.ts";
@@ -13,7 +14,7 @@ const widths = [390, 780, 1200];
 <section class="teaser on-ink" data-section="teaser">
   <div class="container inner">
     <div>
-      <div class="eyebrow caps">{tryOnTeaser.eyebrow}</div>
+      <div class={capsLook("eyebrow")}>{tryOnTeaser.eyebrow}</div>
       <h2>{tryOnTeaser.title}</h2>
       <p>{tryOnTeaser.body}</p>
       <a class={buttonLook({ variant: "light", size: "action", className: "start" })} href="/try">

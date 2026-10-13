@@ -29,7 +29,7 @@ import { Button } from "@maneman/ui/Button";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { useState } from "react";
 import { api, unreachable, type EventBody, type Job } from "../api.ts";
-import { Confirm } from "../components/Confirm.tsx";
+import { ConfirmSheet } from "@maneman/ui/ConfirmSheet";
 import { job as jobCopy, steps as copy } from "../content.ts";
 import { Failed, Loading } from "../states/States.tsx";
 import type { Queued } from "../store/outbox.ts";
@@ -85,7 +85,7 @@ function CannotFit({ onClose }: { onClose: (why: typeof CANNOT_FIT_TODAY) => voi
         {words.action}
       </Button>
       {asking && (
-        <Confirm
+        <ConfirmSheet
           title={words.title}
           body={words.body}
           yes={words.yes}

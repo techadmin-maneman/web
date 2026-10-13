@@ -2,6 +2,7 @@
 // The guides (src/content/guides.ts): their list at /guides and each at /guides/<slug>. A guide whose wording is not yet
 // approved is built for staging under the design's "Placeholder" tag, and production builds no page for it;
 // with none approved, production has no /guides at all.
+import { capsLook } from "@maneman/ui/Caps";
 import { textLinkLook } from "@maneman/ui/TextLink";
 import { buttonLook } from "@maneman/ui/Button";
 import { guides, guidesPage, type Guide } from "../../content/guides.ts";
@@ -46,7 +47,7 @@ const shown = guides.filter(isShown);
 ) : (
   <Site title={`${guide.title} · Mane Man`} description={guide.description}>
     <article class="page">
-      {SHOW_PLACEHOLDER_TAGS && !guide.publish && <div class="label tag">{placeholderTag}</div>}
+      {SHOW_PLACEHOLDER_TAGS && !guide.publish && <div class={capsLook("label tag")}>{placeholderTag}</div>}
       <h1 class="section-title">{guide.title}</h1>
       <p class="lead">{guide.lead}</p>
       {guide.sections.map((section) => (

@@ -30,7 +30,7 @@
 .row:focus-visible,
 .targeted:focus-visible {
   outline: var(--focus-width) solid var(--ink);
-  outline-offset: calc(-1 * var(--focus-width));
+  outline-offset: var(--focus-inset);
 }
 
 .note {

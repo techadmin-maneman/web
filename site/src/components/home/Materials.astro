@@ -1,10 +1,10 @@
 ---
 // Materials and construction: what a hair system is made of, group by group. Every group is closed until it is
 // opened, and each opens on its own.
-import { ruledDisclosureLook as ruled } from "@maneman/ui/Disclosure";
+import { capsLook } from "@maneman/ui/Caps";
+import { DisclosureSign, ruledDisclosureLook as ruled } from "@maneman/ui/Disclosure";
 import { materials, placeholderTag } from "../../content/site.ts";
 import { SHOW_PLACEHOLDER_TAGS, isShown } from "../../lib/build.ts";
-import { ICONS } from "@maneman/brand/icons";
 import DesignPicture from "../DesignPicture.astro";
 ---
 
@@ -16,20 +16,7 @@ import DesignPicture from "../DesignPicture.astro";
       <details class={ruled.details}>
         <summary class={ruled.summary}>
           <span>{group.title}</span>
-          <svg
-            class={ruled.sign}
-            viewBox="0 0 24 24"
-            width="17"
-            height="17"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="1.6"
-            stroke-linecap="round"
-            aria-hidden="true"
-          >
-            <path d={ICONS.minus} />
-            <path class={ruled.upright} d="M12 6 V18" />
-          </svg>
+          <DisclosureSign />
         </summary>
         <div class="group">
           {group.lead !== undefined && <p class="group-lead">{group.lead}</p>}
@@ -38,7 +25,7 @@ import DesignPicture from "../DesignPicture.astro";
               {group.photos.images.map((photo) => (
                 <div class="frame photo">
                   <DesignPicture file={photo.file} alt={photo.alt} sizes="50vw" widths={[390, 780]} />
-                  {SHOW_PLACEHOLDER_TAGS && <div class="label tag">{placeholderTag}</div>}
+                  {SHOW_PLACEHOLDER_TAGS && <div class={capsLook("label tag")}>{placeholderTag}</div>}
                 </div>
               ))}
             </div>

@@ -4,6 +4,7 @@
 // picked, the details go to the number on WhatsApp, and the client app shows them once its owner signs in with a code.
 // It also says whether the discount code sent with it stands (ADR 0108).
 
+import { capsLook } from "@maneman/ui/Caps";
 import { ButtonLink } from "@maneman/ui/Button";
 import { ICONS } from "@maneman/brand/icons";
 import { rupees } from "@maneman/web-kit/money";
@@ -15,7 +16,7 @@ import { clientAppOrigin, signInLink } from "../../lib/app-link.ts";
 import { ENVIRONMENT } from "../../lib/build.ts";
 import { longDay } from "../../lib/dates.ts";
 import { fill } from "../../lib/text.ts";
-import { Icon } from "../Drawings.tsx";
+import { Icon } from "@maneman/ui/Icon";
 import styles from "./Invite.module.css";
 
 type HeadingRef = { current: HTMLHeadingElement | null };
@@ -47,7 +48,7 @@ function Expired(props: { reward: ReferralReward | null }) {
   const { expired } = referral;
   return (
     <div class={styles.doneFrame}>
-      <div class={`caps ${styles.doneLabel}`}>{expired.label}</div>
+      <div class={capsLook(styles.doneLabel)}>{expired.label}</div>
       <h2 class={styles.frameTitle}>{expired.title}</h2>
       <p class={styles.frameBody}>{expired.body(props.reward)}</p>
     </div>
@@ -106,7 +107,7 @@ function AddToCalendar(props: { result: Booking["result"]; ready: string }) {
   };
   return (
     <div class={styles.calendar}>
-      <p class={`caps ${styles.calendarLabel}`}>{calendar.label}</p>
+      <p class={capsLook(styles.calendarLabel)}>{calendar.label}</p>
       <div class={styles.doneActions}>
         <ButtonLink variant="outline" size="small" href={googleCalendarLink(entry)} target="_blank" rel="noopener">
           {calendar.google}
@@ -137,8 +138,8 @@ export function Booked(props: { booking: Booking; reward: ReferralReward | null;
   return (
     <section class={styles.done}>
       <div class={`${styles.doneBlock} on-ink`}>
-        <div class={`caps ${styles.doneBlockLabel}`}>{copy.label}</div>
-        <Icon path={ICONS.tick} size={26} stroke={1.7} />
+        <div class={capsLook(styles.doneBlockLabel)}>{copy.label}</div>
+        <Icon d={ICONS.tick} size={26} stroke={1.7} />
         <h1 ref={props.heading} tabIndex={-1} class={styles.doneBlockTitle}>
           {copy.title}
         </h1>
@@ -194,7 +195,7 @@ export function Listed(props: {
   return (
     <section class={styles.done}>
       <div class={styles.doneFrame}>
-        <div class={`caps ${styles.doneLabel}`}>{listed.label}</div>
+        <div class={capsLook(styles.doneLabel)}>{listed.label}</div>
         <h1 ref={props.heading} tabIndex={-1} class={styles.frameTitle}>
           {area === null ? listed.titleUnknown : fill(listed.title, { area })}
         </h1>

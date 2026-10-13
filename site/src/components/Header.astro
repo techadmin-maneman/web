@@ -1,6 +1,7 @@
 ---
 // The fixed header. Below 760 px the section links and the area tag hide; v2
 // has no menu button there, so there is none.
+import { capsLook } from "@maneman/ui/Caps";
 import { textLinkLook } from "@maneman/ui/TextLink";
 import { buttonLook } from "@maneman/ui/Button";
 import { header } from "../content/site.ts";
@@ -28,7 +29,7 @@ const booking = path === "/book" || path.startsWith("/r/") || path === "/r";
         </a>
       ))}
     </nav>
-    <span class="area caps wide-only">{header.area}</span>
+    <span class={capsLook("area wide-only")}>{header.area}</span>
     {!booking && (
       <a class={buttonLook({ variant: "outlineOnInk", size: "small" })} href="/book">
         {header.book}

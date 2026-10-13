@@ -1,6 +1,7 @@
 // The parts both forms are made of: the pincode they are for, where the hair loss is, the person's fields, the
 // invite /book remembers, and the button that sends them; and /book's steps, with the name and number it kept first.
 
+import { capsLook } from "@maneman/ui/Caps";
 import { messageLook } from "@maneman/ui/InlineMessage";
 import { Button } from "@maneman/ui/Button";
 import { ChoiceCard } from "@maneman/ui/ChoiceCard";
@@ -226,7 +227,7 @@ export function StepLine(props: { at: number; of: number; name: string; focus: b
     line.current?.scrollIntoView({ block: "start" });
   }, [props.focus]);
   return (
-    <p ref={line} tabIndex={-1} class={`caps ${styles.step}`}>
+    <p ref={line} tabIndex={-1} class={capsLook(styles.step)}>
       {fill(booking.step, { at: String(props.at), of: String(props.of), name: props.name })}
     </p>
   );

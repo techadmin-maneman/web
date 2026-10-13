@@ -15,7 +15,7 @@ import { ErrorRef } from "@maneman/ui/ErrorRef";
 import { Icon } from "@maneman/ui/Icon";
 import { useState } from "react";
 import { Offline } from "../components/Banners.tsx";
-import { Confirm } from "../components/Confirm.tsx";
+import { ConfirmSheet } from "@maneman/ui/ConfirmSheet";
 import { atRisk as atRiskCopy, queue as copy, reference, whatStopped } from "../content.ts";
 import { STROKE } from "../icons.ts";
 import { jobLabel } from "../lib/kind.ts";
@@ -218,7 +218,7 @@ export function WaitingScreen() {
       <p className={styles.never}>{copy.never}</p>
 
       {forgetting !== null && (
-        <Confirm
+        <ConfirmSheet
           title={copy.forget.title}
           body={`${copy.forget.what(photosOf(forgetting), actionsOf(forgetting))} ${copy.forget.body}`}
           yes={copy.forget.delete}

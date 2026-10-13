@@ -1,6 +1,7 @@
 ---
 // The Norwood scale: stages I–II (nothing to fit) and III–VII (we fit). The
 // photographs are placeholders; content can switch to v2's line drawings.
+import { capsLook } from "@maneman/ui/Caps";
 import { buttonLook } from "@maneman/ui/Button";
 import { norwood, norwoodPhotos, placeholderTag, type NorwoodStage } from "../../content/site.ts";
 import { SHOW_PLACEHOLDER_TAGS, isShown } from "../../lib/build.ts";
@@ -30,7 +31,7 @@ function cards(stages: readonly NorwoodStage[], offset: number) {
 
     {groups.map((group) => (
       <div class:list={["group", { late: group.fits }]}>
-        <div class="group-label caps">{group.label}</div>
+        <div class={capsLook("group-label")}>{group.label}</div>
         <ul class:list={["cards", group.fits ? "flow" : "early"]}>
           {cards(group.stages, group.offset).map(({ stage, photo }) => (
             <li class="card">
@@ -49,13 +50,15 @@ function cards(stages: readonly NorwoodStage[], offset: number) {
                       <path d={stage.bald} />
                     </svg>
                   )}
-                  <div class="label numeral">{stage.numeral}</div>
-                  {SHOW_PLACEHOLDER_TAGS && showPhotos && <div class="label placeholder">{placeholderTag}</div>}
+                  <div class={capsLook("label numeral")}>{stage.numeral}</div>
+                  {SHOW_PLACEHOLDER_TAGS && showPhotos && (
+                    <div class={capsLook("label placeholder")}>{placeholderTag}</div>
+                  )}
                 </div>
               )}
               <div class="head">
                 <span class="name">{stage.name}</span>
-                <span class="tag caps">{stage.tag}</span>
+                <span class={capsLook("tag")}>{stage.tag}</span>
               </div>
               <div class="description">{stage.description}</div>
             </li>

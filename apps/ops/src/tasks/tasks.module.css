@@ -135,7 +135,7 @@
 .task:focus-visible,
 .marked:focus-visible {
   outline: var(--focus-width) solid var(--ink);
-  outline-offset: calc(-1 * var(--focus-width));
+  outline-offset: var(--focus-inset);
 }
 
 /* An alert on "Needs a hand" (NeedsAHand.tsx): what went wrong, then how often and since when. */

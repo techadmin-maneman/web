@@ -2,6 +2,8 @@
 // Why choose a hair system: against a transplant and medication. A table to
 // assistive technology; to the eye, v2's grid. Below 760 px each row's label moves above it and the
 // columns go to three, as v2 does.
+import { hiddenLook } from "@maneman/ui/VisuallyHidden";
+import { capsLook } from "@maneman/ui/Caps";
 import { comparison, type ComparisonCell } from "../../content/site.ts";
 import { asBuilt, priceTemplate } from "../../lib/prices.ts";
 import Icon from "../Icon.astro";
@@ -19,7 +21,7 @@ function isMark(cell: ComparisonCell): cell is boolean {
   <div class="table" role="table" aria-label={comparison.title}>
     <div class="row head" role="row">
       <div class="label-cell corner" role="columnheader">
-        <span class="visually-hidden">{comparison.title}</span>
+        <span class={hiddenLook}>{comparison.title}</span>
       </div>
       {columns.map((column) => (
         <div class="cell column-head" role="columnheader">
@@ -29,11 +31,11 @@ function isMark(cell: ComparisonCell): cell is boolean {
     </div>
     {comparison.rows.map((row) => (
       <div class="entry" role="rowgroup">
-        <div class="label-above caps" aria-hidden="true">
+        <div class={capsLook("label-above")} aria-hidden="true">
           {row.label}
         </div>
         <div class="row" role="row">
-          <div class="label-cell row-label caps" role="rowheader">
+          <div class={capsLook("label-cell row-label")} role="rowheader">
             {row.label}
           </div>
           {row.cells.map((cell) => (
@@ -41,7 +43,7 @@ function isMark(cell: ComparisonCell): cell is boolean {
               {isMark(cell) ? (
                 <>
                   <Icon name={cell ? "tick" : "cross"} size={19} stroke={1.65} class={cell ? "yes" : "no"} />
-                  <span class="visually-hidden">{cell ? comparison.yes : comparison.no}</span>
+                  <span class={hiddenLook}>{cell ? comparison.yes : comparison.no}</span>
                 </>
               ) : (
                 <span data-price={priceTemplate(cell)}>{asBuilt(cell)}</span>

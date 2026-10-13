@@ -1,25 +1,7 @@
-// Small drawings the islands share: a line icon, and the stage drawing (a head
-// with the hair and the thinning zone) used by the try-on and the booking form.
+// The stage drawing the islands share: a head with the hair and the thinning zone, used by the try-on and the
+// booking form. A line icon is the shared Icon's (@maneman/ui/Icon).
 
 import { HEAD_OUTLINE } from "@maneman/brand/icons";
-
-export function Icon({ path, size, stroke = 1.6 }: { path: string; size: number; stroke?: number }) {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      width={size}
-      height={size}
-      fill="none"
-      stroke="currentColor"
-      stroke-width={stroke}
-      stroke-linecap="round"
-      stroke-linejoin="round"
-      aria-hidden="true"
-    >
-      <path d={path} />
-    </svg>
-  );
-}
 
 export function StageDrawing({ hair, zone, size }: { hair: string; zone: string; size: "large" | "small" }) {
   const [width, height] = size === "large" ? [52, 60] : [44, 50];
