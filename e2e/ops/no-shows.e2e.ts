@@ -181,7 +181,10 @@ test("offers Refund and Uphold only once the note is written, and sends the ruli
 
   const sent = page.waitForRequest((request) => request.url().includes("/ruling") && request.method() === "POST");
   // Read again once ruled, as the board does: the dispute has gone.
-  await answer(page, { "GET /api/no-shows/disputes": json({ disputes: [], more: false }), [RULE]: json({ ruled: true }) });
+  await answer(page, {
+    "GET /api/no-shows/disputes": json({ disputes: [], more: false }),
+    [RULE]: json({ ruled: true }),
+  });
   await card.getByRole("button", { name: "Refund" }).click();
   expect((await sent).postDataJSON()).toEqual({ ruling: "refunded", reason: "The bell was broken that week" });
   await expect(page.getByText(DISPUTED)).toBeHidden();
