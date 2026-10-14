@@ -44,11 +44,14 @@ console.log(`${base}'s code, with this branch's migrations, in ${deployed}`);
 // Two list every table, or every table triggers write to, and the branch adds its new one. One counts the rows a
 // visit's change of status wrote, which a newer trigger adds to; the code itself tells only none from some. One gives
 // a client a stranger's number by hand, which a newer trigger links the chat to, as it would a real change of number.
+// One upserts a visit's outcome by hand, which the view of the outcome table's old name cannot take; the code writes
+// it without one.
 const NEWER_SCHEMA_TESTS = [
   "starts from a row in every table",
   "writes last the ones triggers write to",
   "moveVisit .+ from .+ ends ",
   "never saves a number one of our people has",
+  "name a partial visit's task on the Tasks board in ops' words",
 ];
 const skipNewerSchemaTests = `^(?!.*(${NEWER_SCHEMA_TESTS.join("|")})).*$`;
 
