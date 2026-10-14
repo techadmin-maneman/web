@@ -197,6 +197,22 @@ test("the page introduces itself, with no invite and no card", async ({ page }) 
   await expect(page.locator("img[width='1200']")).toHaveCount(0);
 });
 
+// Each step's Turnstile widget started its challenge as the page loaded, before anyone had typed.
+test("asks Cloudflare for nothing until the visitor starts on the form", async ({ page }) => {
+  await mockApi(page);
+  const challenges: string[] = [];
+  page.on("request", (request) => {
+    if (new URL(request.url()).hostname === "challenges.cloudflare.com") challenges.push(request.url());
+  });
+  await visit(page, "/book");
+  await expect(page.getByLabel(siteCopy.tryOn.gate.name)).toBeVisible();
+  await page.waitForLoadState("networkidle");
+  expect(challenges).toEqual([]);
+
+  await page.getByLabel(siteCopy.tryOn.gate.name).fill("Test Visitor");
+  await expect.poll(() => challenges.length).toBeGreaterThan(0);
+});
+
 // Twelve fields stood between the visitor and the button, the name and number last, so anyone who stopped halfway
 // left nothing behind (docs/decisions/0116-book-asks-for-the-name-and-number-first.md).
 test("keeps the name and number first, then asks for the area, the visit and the address, a step at a time", async ({

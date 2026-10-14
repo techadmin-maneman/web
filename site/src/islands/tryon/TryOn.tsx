@@ -32,7 +32,7 @@ import { Failed } from "./Failed.tsx";
 import { Gate } from "./Gate.tsx";
 import { useReleased, useRenderWatch } from "./hooks.ts";
 import { Looks } from "./Looks.tsx";
-import { backFrom, screenNamed, START, step } from "./machine.ts";
+import { backFrom, screenNamed, START, step, type Screen } from "./machine.ts";
 import { Sent } from "./Sent.tsx";
 import { Stage } from "./Stage.tsx";
 import styles from "./TryOn.module.css";
@@ -48,13 +48,32 @@ interface Props {
   lookThumbnails: readonly string[] | null;
 }
 
+/**
+ * The page's Turnstile widget: made once a photograph is chosen, not as the page loads, so its token is ready by the
+ * time the consent is read and no challenge runs for a page only looked at; it goes with the page.
+ */
+function usePhotoWidget(screen: Screen, siteKey: string) {
+  const box = useRef<HTMLDivElement>(null);
+  const widget = useRef<TurnstileWidget | null>(null);
+  useEffect(() => {
+    if (screen === "upload" || widget.current !== null || box.current === null) return;
+    widget.current = turnstileWidget(box.current, siteKey);
+  }, [screen, siteKey]);
+  useEffect(
+    () => () => {
+      void widget.current?.remove();
+    },
+    [],
+  );
+  return { box, widget };
+}
+
 function TryOnFlow(props: Props) {
   const [state, send] = useReducer(step, START);
   const { screen, demo, mobile } = state;
   const heading = useRef<HTMLHeadingElement>(null);
   const firstRender = useRef(true);
-  const turnstileBox = useRef<HTMLDivElement>(null);
-  const turnstile = useRef<TurnstileWidget | null>(null);
+  const { box: turnstileBox, widget: turnstile } = usePhotoWidget(screen, props.turnstileSiteKey);
   // The current photograph's work. Each is replaced when a new photograph is chosen.
   const preparing = useRef<Promise<PreparedPhoto> | null>(null);
   const uploading = useRef<Promise<Outcome<Uploaded>> | null>(null);
@@ -75,9 +94,8 @@ function TryOnFlow(props: Props) {
 
   const gate = useGate({ state, send, uploading, jobId, turnstile, fail, refused });
 
-  // ?state= opens a screen with stand-ins, outside production. Otherwise Turnstile is readied, and the API asked
-  // whether this browser has had its look and whether the try-on runs, so the visitor is not asked for a photograph
-  // the API would refuse.
+  // ?state= opens a screen with stand-ins, outside production. Otherwise the API is asked whether this browser has
+  // had its look and whether the try-on runs, so the visitor is not asked for a photograph the API would refuse.
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const wanted = screenNamed(props.allowStateSwitch ? params.get("state") : null);
@@ -93,19 +111,6 @@ function TryOnFlow(props: Props) {
       if (arrival === "unavailable") send({ type: "failed", kind: "unavailable" });
     });
   }, [props.allowStateSwitch]);
-
-  // The widget, and the challenge it runs, start once a photograph is chosen, not as the page loads; its token is
-  // ready by the time the consent is read. It goes with the page.
-  useEffect(() => {
-    if (state.screen === "upload" || turnstile.current !== null || turnstileBox.current === null) return;
-    turnstile.current = turnstileWidget(turnstileBox.current, props.turnstileSiteKey);
-  }, [state.screen, props.turnstileSiteKey]);
-  useEffect(
-    () => () => {
-      void turnstile.current?.remove();
-    },
-    [],
-  );
 
   // Each new screen starts at the top, with its heading focused for screen readers.
   useEffect(() => {
