@@ -41,6 +41,7 @@ export const FOLDER_EDGES: readonly string[] = [
   "dispatch -> sign-in",
   "dispatch -> visits",
   "field -> booking",
+  "field -> cities",
   "field -> clients",
   "field -> inventory",
   "field -> money",

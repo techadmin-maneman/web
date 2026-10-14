@@ -82,7 +82,8 @@ const HANDLED: Readonly<Record<string, string>> = {
   "consumable_usage.consumable_code -> consumables":
     "src/domain/inventory/consumables.ts deletes each service's use of it first",
   "hair_systems.code -> consumables": "src/domain/inventory/consumables.ts deletes a hair system's spec first",
-  "stock_movements.consumable_code -> consumables": "src/domain/inventory/consumables.ts refuses to delete one it names",
+  "stock_movements.consumable_code -> consumables":
+    "src/domain/inventory/consumables.ts refuses to delete one it names",
   "stock_balances.consumable_code -> consumables": "src/domain/inventory/consumables.ts refuses to delete one it names",
   "stock_transfers.consumable_code -> consumables":
     "src/domain/inventory/consumables.ts refuses to delete one a movement names, and a transfer comes only with one",
@@ -92,7 +93,8 @@ const HANDLED: Readonly<Record<string, string>> = {
     "src/domain/inventory/consumables.ts refuses to delete one a count line names: the foreign key refuses its batch, answered in_use",
   "plan_lines.consumable_code -> consumables":
     "src/domain/inventory/consumables.ts refuses to delete one a plan line names: the foreign key refuses its batch, answered in_use",
-  "forecast_lines.run_id -> forecast_runs": "src/domain/purchasing/forecast.ts deletes an old run's lines before the run",
+  "forecast_lines.run_id -> forecast_runs":
+    "src/domain/purchasing/forecast.ts deletes an old run's lines before the run",
   "custom_orders.consumable_code -> consumables":
     "src/domain/inventory/consumables.ts refuses to delete one an order names, and a custom order's code is named by its order's line",
   "supplier_claims.consumable_code -> consumables":
@@ -103,7 +105,8 @@ const HANDLED: Readonly<Record<string, string>> = {
     "src/domain/inventory/consumables.ts refuses to delete one a movement names, and a unit comes only with stock that moved",
   "stock_lots.consumable_code -> consumables":
     "src/domain/inventory/consumables.ts refuses to delete one a movement names, and a lot comes only with a delivery",
-  "consumables_used.consumable_code -> consumables": "src/domain/inventory/consumables.ts refuses to delete one it names",
+  "consumables_used.consumable_code -> consumables":
+    "src/domain/inventory/consumables.ts refuses to delete one it names",
   // A discount code made by mistake, and never once a booking has taken it.
   "discount_code_uses.code_id -> discount_codes":
     "src/domain/money/discount-codes.ts refuses to delete a code a use names",

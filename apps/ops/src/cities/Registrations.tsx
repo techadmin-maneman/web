@@ -69,9 +69,30 @@ function RegistrationForm({ onSaved }: { onSaved: () => void }) {
       checking={<p className={styles.checkLine}>{copy.adding(body.state_code, body.gstin)}</p>}
     >
       <div className={styles.fields}>
-        <Entry label={copy.stateCode} value={draft.stateCode} max={2} onChange={(stateCode) => { edit({ stateCode }); }} />
-        <Entry label={copy.gstin} value={draft.gstin} max={15} onChange={(gstin) => { edit({ gstin }); }} />
-        <Entry label={copy.branch} value={draft.branch} max={40} onChange={(branch) => { edit({ branch }); }} />
+        <Entry
+          label={copy.stateCode}
+          value={draft.stateCode}
+          max={2}
+          onChange={(stateCode) => {
+            edit({ stateCode });
+          }}
+        />
+        <Entry
+          label={copy.gstin}
+          value={draft.gstin}
+          max={15}
+          onChange={(gstin) => {
+            edit({ gstin });
+          }}
+        />
+        <Entry
+          label={copy.branch}
+          value={draft.branch}
+          max={40}
+          onChange={(branch) => {
+            edit({ branch });
+          }}
+        />
       </div>
     </SettingForm>
   );

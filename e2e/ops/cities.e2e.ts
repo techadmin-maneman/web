@@ -67,10 +67,10 @@ test("lists each city with its state, zone and status, and meets WCAG 2.2 AA", a
 test("adds a city once checked, and sends it as typed", async ({ page }) => {
   const added = { ...MUMBAI, name: "Pune", sort: 70 };
   await open(page, { "POST /api/cities": json({ city: added }, 201) });
-  const form = page.getByRole("group", { name: copy.form.addTitle });
+  const form = page.getByRole("group", { name: copy.form.addTitle, exact: true });
   await form.getByLabel(copy.form.name).fill("Pune");
   await form.getByLabel(copy.form.stateCode).fill("mh");
-  await form.getByLabel(copy.form.state).fill("Maharashtra");
+  await form.getByLabel(copy.form.state, { exact: true }).fill("Maharashtra");
   await form.getByRole("button", { name: review.next }).click();
   await expect(form).toContainText(copy.form.adding("Pune", "Maharashtra"));
   const sent = page.waitForRequest((request) => request.url().endsWith("/api/cities") && request.method() === "POST");

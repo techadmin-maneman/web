@@ -86,7 +86,7 @@ only a match is needed. The weekly backup is encrypted again, under our own key,
 ## Routes
 
 A route module sits under the surface that answers it, as `src/app.ts` lists them: `routes/public/`, `routes/client/`,
-`routes/ops/`, `routes/tech/`, and the webhooks under `routes/hooks/`. `health.ts`, `client-errors.ts` (every app
+`routes/ops/` (whose own list is `routes/ops/routes.ts`), `routes/tech/`, and the webhooks under `routes/hooks/`. `health.ts`, `client-errors.ts` (every app
 reports its own page's errors) and the local `dev-visits.ts` stay at the top. A schema more than one surface answers
 with goes in `routes/schemas/`, and a helper two routes share goes to the domain or `http/`. `test/node/architecture/route-imports.test.ts`
 holds the routes to that, from a baseline of today's imports that only shrinks.

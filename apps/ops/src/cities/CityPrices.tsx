@@ -87,7 +87,13 @@ function PriceBoxes({ book, draft, edit }: { book: CitiesBook; draft: Draft; edi
     <div className={styles.fields}>
       <Field label={copy.city} className={styles.field}>
         {(control) => (
-          <Select {...control} value={draft.city} onChange={(event) => { edit({ city: event.target.value }); }}>
+          <Select
+            {...control}
+            value={draft.city}
+            onChange={(event) => {
+              edit({ city: event.target.value });
+            }}
+          >
             {book.cities.map((city) => (
               <option key={city.name} value={city.name}>
                 {city.name}
@@ -98,7 +104,13 @@ function PriceBoxes({ book, draft, edit }: { book: CitiesBook; draft: Draft; edi
       </Field>
       <Field label={copy.item} className={styles.field}>
         {(control) => (
-          <Select {...control} value={draft.item} onChange={(event) => { edit({ item: event.target.value as Item }); }}>
+          <Select
+            {...control}
+            value={draft.item}
+            onChange={(event) => {
+              edit({ item: event.target.value as Item });
+            }}
+          >
             {ITEMS.map((item) => (
               <option key={item} value={item}>
                 {copy.items[item]}
@@ -107,13 +119,24 @@ function PriceBoxes({ book, draft, edit }: { book: CitiesBook; draft: Draft; edi
           </Select>
         )}
       </Field>
+      <PriceFigures draft={draft} edit={edit} />
+    </div>
+  );
+}
+
+/** What the price is: its tier, its figures and its day. */
+function PriceFigures({ draft, edit }: { draft: Draft; edit: (change: Partial<Draft>) => void }) {
+  return (
+    <>
       <Field label={copy.tier} className={styles.field}>
         {(control) => (
           <TextInput
             {...control}
             className={styles.figureBox}
             value={draft.tier}
-            onChange={(event) => { edit({ tier: event.target.value }); }}
+            onChange={(event) => {
+              edit({ tier: event.target.value });
+            }}
           />
         )}
       </Field>
@@ -123,7 +146,9 @@ function PriceBoxes({ book, draft, edit }: { book: CitiesBook; draft: Draft; edi
             {...control}
             className={styles.amountBox}
             value={draft.amount}
-            onChange={(event) => { edit({ amount: event.target.value }); }}
+            onChange={(event) => {
+              edit({ amount: event.target.value });
+            }}
           />
         )}
       </Field>
@@ -133,16 +158,24 @@ function PriceBoxes({ book, draft, edit }: { book: CitiesBook; draft: Draft; edi
             {...control}
             className={styles.figureBox}
             value={draft.gst}
-            onChange={(event) => { edit({ gst: event.target.value }); }}
+            onChange={(event) => {
+              edit({ gst: event.target.value });
+            }}
           />
         )}
       </Field>
       <Field label={copy.from} className={styles.field}>
         {(control) => (
-          <DateInput {...control} value={draft.from} onChange={(event) => { edit({ from: event.target.value }); }} />
+          <DateInput
+            {...control}
+            value={draft.from}
+            onChange={(event) => {
+              edit({ from: event.target.value });
+            }}
+          />
         )}
       </Field>
-    </div>
+    </>
   );
 }
 

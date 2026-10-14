@@ -228,7 +228,8 @@ export const PURPOSES: Readonly<Record<string, string>> = {
   city_blackouts: "Days on which no visit is offered in one city alone (ADR 0119).",
   city_prices: "A price a city sets apart from the book's, from a day, which comes first there (ADR 0198).",
   city_settings: "A rule a city sets apart from the national one: its check-in radius or reminder hour (ADR 0198).",
-  gst_registrations: "A state's own GST registration, which supplies the visits in it, and its Books branch (ADR 0198).",
+  gst_registrations:
+    "A state's own GST registration, which supplies the visits in it, and its Books branch (ADR 0198).",
   visit_changes:
     "Each move or cancel a client made, and each cancel ops made, with its notice and what it cost (ADR 0046).",
   visits:

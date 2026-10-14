@@ -41,7 +41,7 @@ describe("a city", () => {
   it("is added in the console, last in the order, and audited; a name held already is refused", async () => {
     const added = await send("POST", "/api/cities", PUNE);
     expect(added.status).toBe(201);
-    expect(await added.json()).toEqual({ city: expect.objectContaining({ name: "Pune", state: "Maharashtra" }) });
+    expect(await added.json<unknown>()).toMatchObject({ city: { name: "Pune", state: "Maharashtra" } });
     expect((await auditFor("city.add")).results).toEqual([expect.objectContaining({ subject_id: "Pune" })]);
 
     expect((await send("POST", "/api/cities", PUNE)).status).toBe(409);

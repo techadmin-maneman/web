@@ -83,18 +83,40 @@ function CityBoxes(props: { draft: Draft; zones: readonly string[]; edit: (chang
   return (
     <>
       <div className={styles.fields}>
-        <Text label={form.name} value={draft.name} max={60} onChange={(name) => { edit({ name }); }} />
+        <Text
+          label={form.name}
+          value={draft.name}
+          max={60}
+          onChange={(name) => {
+            edit({ name });
+          }}
+        />
         <Text
           label={form.stateCode}
           hint={form.stateCodeHint}
           value={draft.stateCode}
           max={2}
-          onChange={(stateCode) => { edit({ stateCode }); }}
+          onChange={(stateCode) => {
+            edit({ stateCode });
+          }}
         />
-        <Text label={form.state} value={draft.state} max={60} onChange={(state) => { edit({ state }); }} />
+        <Text
+          label={form.state}
+          value={draft.state}
+          max={60}
+          onChange={(state) => {
+            edit({ state });
+          }}
+        />
         <Field label={form.zone} className={styles.field}>
           {(control) => (
-            <Select {...control} value={draft.zone} onChange={(event) => { edit({ zone: event.target.value }); }}>
+            <Select
+              {...control}
+              value={draft.zone}
+              onChange={(event) => {
+                edit({ zone: event.target.value });
+              }}
+            >
               <option value="">{form.noZone}</option>
               {props.zones.map((zone) => (
                 <option key={zone} value={zone}>
@@ -109,12 +131,16 @@ function CityBoxes(props: { draft: Draft; zones: readonly string[]; edit: (chang
         <Checkbox
           label={form.served}
           checked={draft.served}
-          onChange={(event) => { edit({ served: event.target.checked }); }}
+          onChange={(event) => {
+            edit({ served: event.target.checked });
+          }}
         />
         <Checkbox
           label={form.active}
           checked={draft.active}
-          onChange={(event) => { edit({ active: event.target.checked }); }}
+          onChange={(event) => {
+            edit({ active: event.target.checked });
+          }}
         />
       </div>
     </>
