@@ -267,6 +267,8 @@ function InviteForm(props: Props) {
               src={invite === null ? HOUSE_CARD : cardPath(invite, codeInPath())}
               width={CARD_WIDTH}
               height={CARD_HEIGHT}
+              // The page's largest first paint on a wide screen.
+              fetchpriority="high"
               alt=""
               onError={(event) => {
                 event.currentTarget.src = HOUSE_CARD;

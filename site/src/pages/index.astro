@@ -15,10 +15,8 @@ import TryOnTeaser from "../components/home/TryOnTeaser.astro";
 import WhatItIs from "../components/home/WhatItIs.astro";
 import { pageDescriptions, pageTitles } from "../content/site.ts";
 import Site from "../layouts/Site.astro";
-import { heroPosterUrl } from "../lib/hero.ts";
 import { faqPage, localBusiness } from "../lib/structured-data.ts";
 
-const poster = await heroPosterUrl();
 const structuredData = [localBusiness(), faqPage()];
 ---
 
@@ -29,9 +27,8 @@ const structuredData = [localBusiness(), faqPage()];
       if (location.hash === "#tryon") location.replace("/try");
       else if (location.hash === "#book") location.replace("/book");
     </script>
-    {poster !== undefined && <link rel="preload" as="image" href={poster} fetchpriority="high" />}
   </Fragment>
-  <Hero poster={poster} />
+  <Hero />
   <WhatItIs />
   <Norwood />
   <Comparison />

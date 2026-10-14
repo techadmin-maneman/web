@@ -249,6 +249,36 @@ describe("the site Worker on a built film", () => {
     expect(body.length).toBe(0);
   });
 
+  // The Worker read every film whole, 2.3 MB at a time, to cut a part from it.
+  it("passes the part on as the film arrives, and reads no further than the part", async () => {
+    let pulled = 0;
+    const chunks = Array.from({ length: 10 }, (_, index) => FILM.slice(index * 100, index * 100 + 100));
+    const film = new ReadableStream<Uint8Array>({
+      pull(controller) {
+        const chunk = chunks[pulled];
+        pulled += 1;
+        if (chunk === undefined) controller.close();
+        else controller.enqueue(chunk);
+      },
+    });
+    const { env } = filmEnv(200);
+    const streamed: SiteEnv = {
+      ...env,
+      ASSETS: {
+        fetch: () => new Response(film, { headers: { "Content-Type": "video/mp4", "Content-Length": "1000" } }),
+      } as unknown as Fetcher,
+    };
+    const request = new Request(`https://maneman.in${PATH}`, { headers: { Range: "bytes=50-149" } });
+    const response = await createSiteWorker().fetch(request, streamed);
+    const body = new Uint8Array(await response.arrayBuffer());
+
+    expect(response.status).toBe(206);
+    expect(response.headers.get("Content-Range")).toBe("bytes 50-149/1000");
+    expect(response.headers.get("Content-Length")).toBe("100");
+    expect([...body]).toEqual([...FILM.slice(50, 150)]);
+    expect(pulled).toBeLessThan(chunks.length);
+  });
+
   it("passes on what the assets say of a film the browser already has", async () => {
     const { response } = await fetchFilm({ Range: "bytes=0-1", "If-None-Match": '"film"' }, 304);
 
