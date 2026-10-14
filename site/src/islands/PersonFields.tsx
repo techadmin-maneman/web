@@ -9,7 +9,7 @@ import { MOST_NAME_LENGTH } from "@maneman/web-kit/names";
 import styles from "./PersonFields.module.css";
 
 /** A form's words for the two fields: the booking forms' (referral.form) or the gate's (tryOn.gate). */
-export interface PersonWords {
+interface PersonWords {
   readonly name: string;
   readonly namePlaceholder: string;
   readonly nameError: string;

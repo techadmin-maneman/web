@@ -11,7 +11,7 @@ type Body<P extends keyof paths> = paths[P]["post"] extends {
   ? B
   : never;
 export type Attribution = Schemas["Attribution"];
-export type ErrorCode = Schemas["ErrorResponse"]["error"]["code"];
+type ErrorCode = Schemas["ErrorResponse"]["error"]["code"];
 type UploadUrlRequest = Schemas["UploadUrlRequest"];
 type UploadUrlResponse = Schemas["UploadUrlResponse"];
 export type GenerateRequest = Schemas["GenerateRequest"];
