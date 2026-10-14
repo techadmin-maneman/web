@@ -45,8 +45,10 @@ console.log(`${base}'s code, with this branch's migrations, in ${deployed}`);
 // visit's change of status wrote, which a newer trigger adds to; the code itself tells only none from some. One gives
 // a client a stranger's number by hand, which a newer trigger links the chat to, as it would a real change of number.
 // One upserts a visit's outcome by hand, which the view of the outcome table's old name cannot take; the code writes
-// it without one.
+// it without one. The restore's whole-database tests write a row in every table the deployed code knew, some of which
+// a newer schema drops, though the code never reads them.
 const NEWER_SCHEMA_TESTS = [
+  "restoring the whole database",
   "starts from a row in every table",
   "writes last the ones triggers write to",
   "moveVisit .+ from .+ ends ",

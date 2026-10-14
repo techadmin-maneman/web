@@ -198,7 +198,6 @@ export const PURPOSES: Readonly<Record<string, string>> = {
     "Each object client-photos and referral-cards hold, and its size, written as it is stored and deleted as it is, so the storage meter never counts one twice (ADR 0093).",
   storage_meter:
     "What the apps' two buckets, client-photos and referral-cards, hold together: one row, the sum of `stored_objects` kept beside it, and the last mark of the share ops were told of (ADR 0093); and the last mark of the database's own size they were told of.",
-  sync_cursors: "Where each pass of the reconciliation with FSM has reached (ADR 0032).",
   targets:
     "Each month's target for a city, by measure, as set on the console's Targets page; set again, it is replaced (ADR 0154).",
   task_closures:
@@ -239,10 +238,7 @@ export const PURPOSES: Readonly<Record<string, string>> = {
     "What an appointment became once it closed, or ops closed it by hand: the outcome, its reason and its times " +
     "(ADR 0032, ADR 0074).",
   waitlist_entries: "Someone waiting for us to reach their pincode, and whether they were told it launched (ADR 0048).",
-  webhook_inbox: "FSM's webhook deliveries, each kept once (ADR 0032).",
   zones: "A region made of cities, as NCR is, which a grant of staff access may name (ADR 0109).",
   zoho_access_tokens:
     "Each Zoho client's access token, the CRM's, FSM's and Books', and the lease one caller holds while it asks for a new one (ADR 0070, ADR 0110).",
-  zoho_token: "The CRM's access token before migration 0041; unread since, and dropped later (open point 90).",
-  zoho_tokens: "FSM's and Books' access token before migration 0041; unread since, and dropped later (open point 90).",
 };

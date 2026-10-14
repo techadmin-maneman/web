@@ -26,8 +26,6 @@ export const ROWS_AT_T: readonly string[] = [
      VALUES ('MH', '27AAACM1234A1Z1', NULL, 'ops@localhost', '2026-09-20T06:00:00.000Z')`,
   `INSERT INTO counters (scope, key, window_start, count) VALUES ('otp_send', 'a-hash', '${AT}', 1)`,
   `INSERT INTO idempotency (key, route, request_hash, created_at) VALUES ('k1', 'POST /api/holds', 'h-hash', '${AT}')`,
-  `INSERT INTO zoho_token (id, access_token, expires_at) VALUES (1, 'old-token', '${AT}')`,
-  `INSERT INTO zoho_tokens (client, access_token, expires_at) VALUES ('fsm', 'old-token', '${AT}')`,
   `INSERT INTO zoho_access_tokens (client, access_token, expires_at) VALUES ('crm', 'a-token', '${LATER}')`,
   `INSERT INTO events (id, created_at, name) VALUES ('e1', '${AT}', 'lead_created')`,
   `INSERT INTO tryon_jobs (id, created_at, upload_key, state, person_id, lead_id, photo_consent_version, photo_consent_at,
@@ -80,6 +78,8 @@ export const ROWS_AT_T: readonly string[] = [
      VALUES ('cm1', 'cv1', 'in', 'client', 'Hello', '${AT}', '${AT}')`,
   // Their Care person (docs/decisions/0131-care-people.md).
   `INSERT INTO care_owners (person_id, email, since, assigned_by) VALUES ('p1', 'care@maneman.in', '${AT}', 'system')`,
+  `INSERT INTO crm_contact_updates (person_id, owed_at, changed_at) VALUES ('p1', '${AT}', '${AT}')`,
+  `INSERT INTO vendor_breakers (vendor, failures) VALUES ('crm', 1)`,
   // A matter sent to their city (docs/decisions/0135-city-matters.md).
   `INSERT INTO city_matters (id, person_id, conversation_id, city, note, raised_by, raised_at)
      VALUES ('cm-city-1', 'p1', 'cv1', 'Gurgaon', 'Needs a re-fit.', 'care@maneman.in', '${AT}')`,
@@ -112,9 +112,6 @@ export const ROWS_AT_T: readonly string[] = [
   `INSERT INTO appointments (id, fsm_id, person_id, type, window_start, window_end, technician_id, status, synced_at)
      VALUES ('ap3', 'ap3', 'p1', 'replacement', '2026-12-01T03:30:00.000Z', '2026-12-01T06:30:00.000Z', 't1',
              'scheduled', '${AT}')`,
-  `INSERT INTO webhook_inbox (id, source, dedupe_key, module, record_id, received_at)
-     VALUES ('w1', 'fsm', 'w1-key', 'Appointments', 'ap1', '${AT}')`,
-  `INSERT INTO sync_cursors (name, updated_at) VALUES ('fsm_appointments', '${AT}')`,
   `INSERT INTO photo_sets (id, appointment_id, phase, created_at) VALUES ('ps1', 'ap1', 'after', '${AT}')`,
   `INSERT INTO photos (id, photo_set_id, angle, r2_key, content_type, bytes, taken_at, created_at)
      VALUES ('ph1', 'ps1', 'front', 'visits/ap1/after-front.jpg', 'image/jpeg', 1000, '${AT}', '${AT}')`,

@@ -58,6 +58,7 @@ import { runConsumer, type Settle } from "./consumer.ts";
 import { composeRecallNotice } from "../domain/inventory/recall-notice.ts";
 import { composeFollowUp } from "../domain/visits/follow-ups.ts";
 import { ALERT_WORDS } from "../config/alert-words.ts";
+import { hasNumber } from "../lib/mobile.ts";
 
 const RETRY_DELAY_SECONDS = 30;
 /** A send claimed longer ago than this is taken to have died, and may be claimed again. */
@@ -301,7 +302,7 @@ export async function sendMessage({
 
   if (row.erased_at !== null) return skip("person erased");
   // A record whose number a client took over (src/domain/clients/number-change.ts) has none to send to.
-  if (!row.mobile_e164.startsWith("+")) return skip("no number");
+  if (!hasNumber(row.mobile_e164)) return skip("no number");
   if (!messaging.enabled) return skip("messaging is off");
   if (messageHeldBack(messaging, row)) return skip("number not on the allowlist");
   const content = await contentOf(db, config, row, now);

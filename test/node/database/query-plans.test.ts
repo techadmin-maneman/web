@@ -107,7 +107,6 @@ const SMALL_TABLES = new Set([
   "word_versions",
   // One row for each Zoho product.
   "zoho_access_tokens",
-  "sync_cursors",
   "cron_jobs",
   "cron_runs",
   // One row, how far the pass that closes expired credits has got.

@@ -40,7 +40,7 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 | The demand forecast | `forecast_runs`, `forecast_lines`, `demand_events`, `plan_lines`, `forecast_accuracy` | A forecast run since is gone and the last before stands until the next is due, an event ops added or took off since is gone or back, a plan line decided since is proposed again, though its transfer or order stands, and a period measured since is measured again from the movements | Adding the events again on the Supply plan page; the next run is due within the planning period |
 | Worked out from other tables | `last_visits`, `ops_settings_snapshot`, `stock_balances`, `stock_lot_balances` | Nothing of their own: triggers keep each from the table it is worked out from | Putting back that table |
 | The storage meter | `stored_objects`, `storage_meter` | Objects stored or deleted since are counted wrongly, as R2 is not restored | The rows since `<T>` |
-| Housekeeping | `alerts`, `vendor_breakers`, `board_version`, `cron_jobs`, `cron_runs`, `credit_expiry_cursor`, `counters`, `idempotency`, `number_codes`, `otp_challenges`, `tryon_sessions`, `events`, `sync_cursors`, `webhook_inbox`, `zoho_access_tokens`, `zoho_token`, `zoho_tokens` | Nothing that lasts | Nothing |
+| Housekeeping | `alerts`, `vendor_breakers`, `board_version`, `cron_jobs`, `cron_runs`, `credit_expiry_cursor`, `counters`, `idempotency`, `number_codes`, `otp_challenges`, `tryon_sessions`, `events`, `zoho_access_tokens` | Nothing that lasts | Nothing |
 | The database's identity, and the restore's own switch | `deployment_identity`, `maintenance` | The identity is the same at every minute. Going back undoes the switch, so the steps turn it on again | Nothing |
 
 ## Tables
@@ -163,7 +163,6 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 - [supplier_claims](#supplier_claims): Each claim on a supplier: what arrived damaged or failed its check, or a returned piece in warranty, and whether it was sent, credited, replaced, rejected or withdrawn (ADR 0169).
 - [supplier_items](#supplier_items): What each supplier supplies of a stock code: their code, price in their currency, pack, minimum order and lead time (ADR 0165).
 - [suppliers](#suppliers): Each supplier we buy stock from: its terms, currency and warranty, retired rather than deleted (ADR 0165).
-- [sync_cursors](#sync_cursors): Where each pass of the reconciliation with FSM has reached (ADR 0032).
 - [targets](#targets): Each month's target for a city, by measure, as set on the console's Targets page; set again, it is replaced (ADR 0154).
 - [task_closures](#task_closures): A task on the Tasks board ops closed without doing its thing, a visit left partly done alone, with why, who and when, by the task's group and its row's id (ADR 0092).
 - [task_owners](#task_owners): The member of staff a task on the Tasks board is theirs, by Access e-mail, by the task's group, its row's id and, where that row can be a new task again, its episode; a task with no row for it is nobody's (ADR 0092).
@@ -180,11 +179,8 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 - [visit_outcomes](#visit_outcomes): What an appointment became once it closed, or ops closed it by hand: the outcome, its reason and its times (ADR 0032, ADR 0074).
 - [visit_pay_rates](#visit_pay_rates): What a visit pays a technician, beside their salary: per grade and kind of visit, for every city or one, from a date (ADR 0122).
 - [waitlist_entries](#waitlist_entries): Someone waiting for us to reach their pincode, and whether they were told it launched (ADR 0048).
-- [webhook_inbox](#webhook_inbox): FSM's webhook deliveries, each kept once (ADR 0032).
 - [word_versions](#word_versions): Every wording a line of the site or a WhatsApp message has had on the Words page; the newest is in force (ADR 0126).
 - [zoho_access_tokens](#zoho_access_tokens): Each Zoho client's access token, the CRM's, FSM's and Books', and the lease one caller holds while it asks for a new one (ADR 0070, ADR 0110).
-- [zoho_token](#zoho_token): The CRM's access token before migration 0041; unread since, and dropped later (open point 90).
-- [zoho_tokens](#zoho_tokens): FSM's and Books' access token before migration 0041; unread since, and dropped later (open point 90).
 - [zones](#zones): A region made of cities, as NCR is, which a grant of staff access may name (ADR 0109).
 
 ## addresses
@@ -2997,21 +2993,6 @@ Indexes:
 
 - `suppliers_by_name`: unique on (`name`)
 
-## sync_cursors
-
-Where each pass of the reconciliation with FSM has reached (ADR 0032).
-
-Made by `0012_fsm_reconciliation.sql`.
-
-| Column | Type | May be empty | Default | Key | What it holds |
-| --- | --- | --- | --- | --- | --- |
-| `name` | TEXT | no |  | primary key |  |
-| `pass_date` | TEXT | yes |  |  | The India date of the night whose full pass this is. |
-| `next_page` | INTEGER | no | `1` |  | The next page the pass reads; 0 once tonight's pass is done. |
-| `pass_started_at` | TEXT | yes |  |  |  |
-| `repaired` | INTEGER | no | `0` |  | Copies this pass found missing or out of date, which the webhook should have kept. |
-| `updated_at` | TEXT | no |  |  |  |
-
 ## targets
 
 Each month's target for a city, by measure, as set on the console's Targets page; set again, it is replaced (ADR 0154).
@@ -3390,29 +3371,6 @@ Indexes:
 - `waitlist_entries_by_person`: on (`person_id`)
 - `waitlist_entries_by_pincode`: on (`pincode`, `created_at`)
 
-## webhook_inbox
-
-FSM's webhook deliveries, each kept once (ADR 0032).
-
-Made by `0011_fsm_mirror.sql`.
-
-| Column | Type | May be empty | Default | Key | What it holds |
-| --- | --- | --- | --- | --- | --- |
-| `id` | TEXT | no |  | primary key |  |
-| `source` | TEXT | no |  |  |  |
-| `dedupe_key` | TEXT | no |  |  |  |
-| `module` | TEXT | no |  |  |  |
-| `record_id` | TEXT | no |  |  |  |
-| `received_at` | TEXT | no |  |  |  |
-| `processed_at` | TEXT | yes |  |  |  |
-| `attempts` | INTEGER | no | `0` |  |  |
-| `last_error` | TEXT | yes |  |  |  |
-
-Indexes:
-
-- A `UNIQUE` constraint: unique on (`dedupe_key`)
-- `webhook_inbox_unprocessed`: on (`processed_at`, `received_at`)
-
 ## word_versions
 
 Every wording a line of the site or a WhatsApp message has had on the Words page; the newest is in force (ADR 0126).
@@ -3444,30 +3402,6 @@ Made by `0041_vendor_correctness.sql`; changed by `0070_field_record_ours.sql`.
 | `expires_at` | TEXT | yes |  |  |  |
 | `refreshing_until` | TEXT | yes |  |  |  |
 | `cool_down_until` | TEXT | yes |  |  |  |
-
-## zoho_token
-
-The CRM's access token before migration 0041; unread since, and dropped later (open point 90).
-
-Made by `0002_lead_path.sql`.
-
-| Column | Type | May be empty | Default | Key | What it holds |
-| --- | --- | --- | --- | --- | --- |
-| `id` | INTEGER | no |  | primary key |  |
-| `access_token` | TEXT | no |  |  |  |
-| `expires_at` | TEXT | no |  |  |  |
-
-## zoho_tokens
-
-FSM's and Books' access token before migration 0041; unread since, and dropped later (open point 90).
-
-Made by `0010_zoho_tokens.sql`.
-
-| Column | Type | May be empty | Default | Key | What it holds |
-| --- | --- | --- | --- | --- | --- |
-| `client` | TEXT | no |  | primary key |  |
-| `access_token` | TEXT | no |  |  |  |
-| `expires_at` | TEXT | no |  |  |  |
 
 ## zones
 
