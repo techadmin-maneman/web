@@ -158,14 +158,14 @@ function OrdersTable({
 export function CustomOrders({ clientId }: { clientId: string }) {
   const load = useCallback(() => client.get("/api/clients/{id}/custom-orders", { path: { id: clientId } }), [clientId]);
   const [loaded, retry] = useLoad(load);
-  const [customOrders, setBook] = useState<CustomOrders | null>(null);
+  const [customOrders, setCustomOrders] = useState<CustomOrders | null>(null);
   const [raising, setRaising] = useState(false);
   const [said, setSaid] = useState<string | null>(null);
   const [failure, setFailure] = useState<Failure | null>(null);
   const access = useAccess();
   const current = customOrders ?? (loaded.state === "loaded" ? loaded.value : null);
   const changed = (next: CustomOrders, words: string) => {
-    setBook(next);
+    setCustomOrders(next);
     setSaid(words);
     setFailure(null);
     setRaising(false);

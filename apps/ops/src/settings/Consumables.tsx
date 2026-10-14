@@ -17,7 +17,7 @@ import { useLoad } from "@maneman/ui/useLoad";
 import { longDate } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";
 import { useState } from "react";
-import { api, type Consumable, type Consumables as Book } from "../api.ts";
+import { api, type Consumable, type Consumables as ConsumableList } from "../api.ts";
 import { deleting, FAILED } from "../content.ts";
 import { settings } from "../content/settings.ts";
 import { DeleteAction } from "../components/DeleteAction.tsx";
@@ -140,10 +140,10 @@ function ConsumableEditor({
   onSaved,
   onCancel,
 }: {
-  consumables: Book;
+  consumables: ConsumableList;
   doing: Doing;
   mayAdd: boolean;
-  onSaved: (consumables: Book, said: string) => void;
+  onSaved: (consumables: ConsumableList, said: string) => void;
   onCancel: () => void;
 }) {
   const named = doing.kind === "add" ? undefined : consumables.consumables.find((each) => each.code === doing.code);
@@ -203,7 +203,7 @@ function ConsumableEditor({
 export function Consumables() {
   const [loaded, retry] = useLoad(api.consumables);
   /** The list after a change, so the table follows without reading it again. */
-  const [consumables, setBook] = useState<Book | null>(null);
+  const [consumables, setConsumables] = useState<ConsumableList | null>(null);
   const [doing, setDoing] = useState<Doing>({ kind: "add" });
   const [said, setSaid] = useState<string | null>(null);
   const may = useMayDo();
@@ -212,8 +212,8 @@ export function Consumables() {
   if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
   const current = consumables ?? loaded.value;
 
-  const saved = (next: Book, words: string) => {
-    setBook(next);
+  const saved = (next: ConsumableList, words: string) => {
+    setConsumables(next);
     setDoing({ kind: "add" });
     setSaid(words);
   };
@@ -265,7 +265,7 @@ export function Consumables() {
         />
       </Panel>
       {may.addHairSystem && <HairSystemForm consumables={current} onSaved={saved} />}
-      <ServiceUsage consumables={current} onSaved={setBook} />
+      <ServiceUsage consumables={current} onSaved={setConsumables} />
     </>
   );
 }

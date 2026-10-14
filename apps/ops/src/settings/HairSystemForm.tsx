@@ -6,7 +6,7 @@ import { Field, NumberInput, Select } from "@maneman/ui/Field";
 import { Panel } from "@maneman/ui/Panel";
 import { paiseFromRupees, rupees } from "@maneman/web-kit/money";
 import { useState } from "react";
-import { api, client, type Consumables as Book } from "../api.ts";
+import { api, client, type Consumables as ConsumableList } from "../api.ts";
 import { settings } from "../content/settings.ts";
 import styles from "../components/forms.module.css";
 import { SettingForm, useSteps } from "./SettingForm.tsx";
@@ -169,8 +169,8 @@ export function HairSystemForm({
   consumables,
   onSaved,
 }: {
-  consumables: Book;
-  onSaved: (consumables: Book, said: string) => void;
+  consumables: ConsumableList;
+  onSaved: (consumables: ConsumableList, said: string) => void;
 }) {
   const products = consumables.services.filter((each) => each.visit_type === "first_fit" && each.retired_date === null);
   const blank: Draft = {

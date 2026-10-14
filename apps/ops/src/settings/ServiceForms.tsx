@@ -10,7 +10,7 @@ import { CheckPanel } from "../components/CheckPanel.tsx";
 import { addDays, longDate } from "@maneman/web-kit/dates";
 import { paiseFromRupees, rupees, rupeesTyped } from "@maneman/web-kit/money";
 import { useState } from "react";
-import { api, type Kind, type OpsService, type Price, type ServiceBook } from "../api.ts";
+import { api, type Kind, type OpsService, type Price, type ServiceCatalogue } from "../api.ts";
 import { settings } from "../content/settings.ts";
 import { PRICE_TIER, tierCodeOf } from "@rules/policy/services.ts";
 import styles from "../components/forms.module.css";
@@ -22,7 +22,7 @@ const check = copy.check;
 
 /** What a write answered: the book as it now stands, or the refusal, with the boxes it names. */
 export type Written = Sent<{
-  readonly services?: ServiceBook;
+  readonly services?: ServiceCatalogue;
   readonly prices?: readonly Price[];
   readonly said: string;
 }>;
@@ -41,7 +41,7 @@ export const priceWords = (price: { amount_ex_gst: number; gst_percent: number }
   copy.price(rupees(price.amount_ex_gst), price.gst_percent);
 
 /** A service's book, as a write that changes a service answers it. */
-const savedBook = (services: ServiceBook) => ({ services, said: copy.done.saved });
+const savedCatalogue = (services: ServiceCatalogue) => ({ services, said: copy.done.saved });
 
 /**
  * A new price from a day, tomorrow at the earliest, or, given `correcting`, the price still to come it corrects: taken
@@ -226,7 +226,7 @@ export function RenameForm(props: {
   const [name, setName] = useState(service.name);
   const steps = useSteps(async () => {
     const answer = await api.renameService(service.kind, service.tier, name.trim());
-    return sentOf(answer, savedBook);
+    return sentOf(answer, savedCatalogue);
   }, props.onDone);
   return (
     <SettingForm
@@ -269,7 +269,7 @@ export function DescribeForm(props: {
   const [line, setLine] = useState(was);
   const steps = useSteps(async () => {
     const answer = await api.describeService(service.kind, service.tier, line.trim());
-    return sentOf(answer, savedBook);
+    return sentOf(answer, savedCatalogue);
   }, props.onDone);
   return (
     <SettingForm
@@ -311,7 +311,7 @@ export function LengthForm(props: {
   const [minutes, setMinutes] = useState(String(service.minutes));
   const steps = useSteps(async () => {
     const answer = await api.setServiceLength(service.kind, service.tier, Number(minutes));
-    return sentOf(answer, savedBook);
+    return sentOf(answer, savedCatalogue);
   }, props.onDone);
   return (
     <SettingForm
@@ -356,7 +356,7 @@ export function RetireForm(props: {
   const [from, setFrom] = useState(today);
   const steps = useSteps(async () => {
     const answer = await api.retireService(service.kind, service.tier, from);
-    return sentOf(answer, savedBook);
+    return sentOf(answer, savedCatalogue);
   }, props.onDone);
   return (
     <SettingForm
@@ -396,7 +396,7 @@ export function RestoreCheck(props: {
   const { service } = props;
   const steps = useSteps(async () => {
     const answer = await api.restoreService(service.kind, service.tier);
-    return sentOf(answer, savedBook);
+    return sentOf(answer, savedCatalogue);
   }, props.onDone);
   return (
     <>
@@ -425,7 +425,7 @@ export function OrderCheck(props: {
       props.kind,
       props.now.map((service) => service.tier),
     );
-    return sentOf(answer, savedBook);
+    return sentOf(answer, savedCatalogue);
   }, props.onDone);
   return (
     <>
@@ -457,7 +457,7 @@ export function AddForm(props: {
   const codeSent = codeTyped ? code.trim() : (tierCodeOf(name) ?? "");
   const steps = useSteps(async () => {
     const answer = await api.addService({ kind, name: name.trim(), tier: codeSent, minutes: Number(minutes) });
-    return sentOf(answer, savedBook);
+    return sentOf(answer, savedCatalogue);
   }, props.onDone);
   const ready = name.trim() !== "" && PRICE_TIER.test(codeSent) && minutes.trim() !== "";
   return (

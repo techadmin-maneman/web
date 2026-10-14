@@ -142,10 +142,12 @@ function LinesTable({ order, named }: { order: Order; named: (code: string) => s
 }
 
 export function OrderPanel({
+  id,
   orders,
   order,
   onChanged,
 }: {
+  id: string;
   orders: Orders;
   order: Order;
   onChanged: (orders: Orders, said: string) => void;
@@ -161,7 +163,7 @@ export function OrderPanel({
     } else setFailure({ code: answer.code, fields: answer.fields });
   };
   return (
-    <Panel titleId="order-panel" title={`${copy.number(order.number)} · ${supplier}`}>
+    <Panel id={id} opened titleId="order-panel" title={`${copy.number(order.number)} · ${supplier}`}>
       <p className={form.note}>
         {copy.states[order.state] ?? order.state}
         {order.state === "drafted" && order.approved_by !== null && ` · ${copy.awaitingSecond}`}

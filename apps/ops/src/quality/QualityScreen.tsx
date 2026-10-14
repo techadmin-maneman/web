@@ -7,6 +7,7 @@ import { Panel } from "@maneman/ui/Panel";
 import { Button } from "@maneman/ui/Button";
 import { Table } from "@maneman/ui/Table";
 import { useLoad } from "@maneman/ui/useLoad";
+import { useRowPanel, type RowOpener } from "@maneman/ui/useRowPanel";
 import { errorText, type Failure } from "@maneman/web-kit/refusal";
 import { useState } from "react";
 import { client } from "../api.ts";
@@ -21,7 +22,7 @@ import { RaiseRecall, RecallDetail, type Answer, type Quality, type Detail } fro
 
 const loadRecalls = () => client.get("/api/recalls");
 
-function Recalls({ quality, onOpen }: { quality: Quality; onOpen: (id: string) => void }) {
+function Recalls({ quality, opener, onOpen }: { quality: Quality; opener: RowOpener; onOpen: (id: string) => void }) {
   if (quality.recalls.length === 0) return <p className={form.note}>{copy.none}</p>;
   return (
     <Table className={form.table}>
@@ -49,9 +50,9 @@ function Recalls({ quality, onOpen }: { quality: Quality; onOpen: (id: string) =
                 variant="outline"
                 size="small"
                 aria-label={copy.view(copy.number(recall.number))}
-                onClick={() => {
+                {...opener(recall.id, () => {
                   onOpen(recall.id);
-                }}
+                })}
               >
                 {copy.viewShort}
               </Button>
@@ -65,15 +66,16 @@ function Recalls({ quality, onOpen }: { quality: Quality; onOpen: (id: string) =
 
 export function QualityScreen() {
   const [loaded, retry] = useLoad(loadRecalls);
-  const [quality, setBook] = useState<Quality | null>(null);
+  const [quality, setQuality] = useState<Quality | null>(null);
   const [opened, setOpened] = useState<Detail | null>(null);
+  const { open: openId, setOpen, panelId, opener } = useRowPanel();
   const [said, setSaid] = useState<string | null>(null);
   const [failure, setFailure] = useState<Failure | null>(null);
   const access = useAccess();
   const current = quality ?? (loaded.state === "loaded" ? loaded.value : null);
   const reload = () => {
     void loadRecalls().then((answer) => {
-      if (answer.ok) setBook(answer.body);
+      if (answer.ok) setQuality(answer.body);
     });
   };
   const answered = (answer: Answer, words: string) => {
@@ -82,6 +84,7 @@ export function QualityScreen() {
       return;
     }
     setOpened(answer.body);
+    setOpen(answer.body.id);
     setSaid(words);
     setFailure(null);
     reload();
@@ -98,7 +101,7 @@ export function QualityScreen() {
       {current !== null && (
         <div className={form.screen}>
           <Panel titleId="quality-recalls" title={copy.recalls}>
-            <Recalls quality={current} onOpen={open} />
+            <Recalls quality={current} opener={opener} onOpen={open} />
             {access.mayCall("POST /api/recalls") && <RaiseRecall quality={current} onAnswer={answered} />}
             {said !== null && (
               <InlineMessage tone="saved" className={form.saved}>
@@ -111,7 +114,9 @@ export function QualityScreen() {
               </InlineMessage>
             )}
           </Panel>
-          {opened !== null && <RecallDetail key={opened.id} recall={opened} onAnswer={answered} />}
+          {opened !== null && opened.id === openId && (
+            <RecallDetail key={opened.id} id={panelId} recall={opened} onAnswer={answered} />
+          )}
           <FailuresPanel />
           {access.mayCall("GET /api/stock/expiry-risk") && <ExpiryRiskPanel />}
         </div>

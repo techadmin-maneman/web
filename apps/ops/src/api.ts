@@ -114,9 +114,9 @@ export type PayKind = PayRate["kind"];
 type PayRateSet = Sent<paths["/api/technician-pay/rates"]["post"]>;
 type PriceCorrection = Sent<paths["/api/prices/correct"]["post"]>;
 /** The services clients book, kind by kind, each with its prices (docs/decisions/0085-services-ops-can-edit.md). */
-export type ServiceBook = Body<paths["/api/services"]["get"]>;
-export type OpsService = ServiceBook["services"][number];
-export type LateFee = ServiceBook["late_fees"][number];
+export type ServiceCatalogue = Body<paths["/api/services"]["get"]>;
+export type OpsService = ServiceCatalogue["services"][number];
+export type LateFee = ServiceCatalogue["late_fees"][number];
 export type Kind = OpsService["kind"];
 type ServiceAdd = Sent<paths["/api/services"]["post"]>;
 export type ServedPincode = Body<paths["/api/service-area"]["get"]>["pincodes"][number];
@@ -143,11 +143,11 @@ export type StockPlaceAdd = Sent<paths["/api/stock/places"]["post"]>;
 export type StockPlaceChange = Sent<paths["/api/stock/places/{id}"]["post"]>;
 
 /** The Staff list: who may do what, and whether it is enforced. */
-export type StaffBook = Body<paths["/api/staff"]["get"]>;
-export type StaffPerson = StaffBook["people"][number];
+export type StaffList = Body<paths["/api/staff"]["get"]>;
+export type StaffPerson = StaffList["people"][number];
 export type StaffGrant = StaffPerson["grants"][number];
 export type StaffSave = Sent<paths["/api/staff"]["post"]>;
-export type StaffToken = StaffBook["service_tokens"][number];
+export type StaffToken = StaffList["service_tokens"][number];
 type StaffTokenAdd = Sent<paths["/api/staff/service-tokens"]["post"]>;
 
 export type NoShowCase = Body<paths["/api/no-shows"]["get"]>["cases"][number];

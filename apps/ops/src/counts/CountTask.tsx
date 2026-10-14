@@ -193,7 +193,7 @@ function Step({
 export const whatOf = (task: Task["task"]): string =>
   task.item?.name ?? copy.classes[task.count_class] ?? task.count_class;
 
-export function CountTaskPanel({ id, onChanged }: { id: string; onChanged: () => void }) {
+export function CountTaskPanel({ id, panelId, onChanged }: { id: string; panelId: string; onChanged: () => void }) {
   const load = useCallback(() => client.get("/api/count-tasks/{id}", { path: { id } }), [id]);
   const [loaded, retry] = useLoad(load);
   const [task, setTask] = useState<Task | null>(null);
@@ -214,7 +214,7 @@ export function CountTaskPanel({ id, onChanged }: { id: string; onChanged: () =>
     return loaded.state === "failed" ? <PanelFailed onRetry={retry} requestId={loaded.requestId} /> : <Loading />;
   }
   return (
-    <Panel titleId="count-task" title={copy.heading(current.task.place, whatOf(current.task))}>
+    <Panel id={panelId} opened titleId="count-task" title={copy.heading(current.task.place, whatOf(current.task))}>
       <Step task={current} onAnswer={answered} />
       {current.items.map(
         (item) =>

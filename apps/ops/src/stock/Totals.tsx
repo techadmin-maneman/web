@@ -3,7 +3,7 @@
 
 import { Table } from "@maneman/ui/Table";
 import type { Stock } from "../api.ts";
-import { stock as copy } from "../content.ts";
+import { stock as copy } from "../content/stock.ts";
 import { stockViews } from "../content/stock-views.ts";
 import form from "../components/forms.module.css";
 import styles from "./stock.module.css";

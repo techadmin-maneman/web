@@ -19,7 +19,7 @@ import { useLoad } from "@maneman/ui/useLoad";
 import { indiaDate, shortDate } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";
 import { useCallback, useState, type ReactNode } from "react";
-import { api, type DiscountCode, type DiscountCodes as Book } from "../api.ts";
+import { api, type DiscountCode, type DiscountCodes as DiscountCodeList } from "../api.ts";
 import { settings } from "../content/settings.ts";
 import { useAccess } from "../lib/access.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
@@ -44,7 +44,7 @@ const usesOf = (code: DiscountCode): string =>
   code.max_uses === null ? String(code.uses) : copy.usesOf(code.uses, code.max_uses);
 
 /** What every code has come to together, standing uses only. */
-function Figures({ totals }: { totals: Book["totals"] }) {
+function Figures({ totals }: { totals: DiscountCodeList["totals"] }) {
   const figures: readonly (readonly [string, string])[] = [
     [copy.figures.live, String(totals.live)],
     [copy.figures.uses, String(totals.uses)],
@@ -351,7 +351,7 @@ export function DiscountCodes() {
   const load = useCallback(() => api.discountCodes(finding), [finding]);
   const [loaded, retry] = useLoad(load);
   /** The list as it was read again after a change, so what was typed above it stays. */
-  const [refreshed, setRefreshed] = useState<Book | null>(null);
+  const [refreshed, setRefreshed] = useState<DiscountCodeList | null>(null);
   const [making, setMaking] = useState(false);
   const [acting, setActing] = useState<Acting>(null);
   const [said, setSaid] = useState<string | null>(null);

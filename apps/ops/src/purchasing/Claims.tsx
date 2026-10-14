@@ -76,7 +76,7 @@ function ClaimsTable({
 
 export function Claims({ orders }: { orders: Orders }) {
   const [loaded, retry] = useLoad(loadClaims);
-  const [claims, setBook] = useState<SupplierClaims | null>(null);
+  const [claims, setClaims] = useState<SupplierClaims | null>(null);
   const [open, setOpen] = useState<string | null>(null);
   const [said, setSaid] = useState<string | null>(null);
   const [failure, setFailure] = useState<Failure | null>(null);
@@ -84,7 +84,7 @@ export function Claims({ orders }: { orders: Orders }) {
   const supplierOf = (id: string) => orders.suppliers.find((each) => each.id === id)?.name ?? id;
   const answered = (answer: ClaimAnswer, words: string) => {
     if (answer.ok) {
-      setBook(answer.body);
+      setClaims(answer.body);
       setSaid(words);
       setFailure(null);
     } else setFailure({ code: answer.code, fields: answer.fields });

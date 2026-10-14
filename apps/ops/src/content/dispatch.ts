@@ -17,6 +17,8 @@ export const dispatch = {
    * is where we have drawn it.
    */
   peak: 80,
+  /** What the brass says, for a screen reader. */
+  peakDay: "peak day",
   /** A block's second line, as the board writes it: "Sec 65 · service". */
   types: {
     consultation: "consult",
@@ -64,6 +66,8 @@ export const dispatch = {
   board: {
     /** A block, for whoever is reading with a screen reader or moving by keyboard. */
     block: (job: string, date: string, window: string) => `${job}, ${date}, ${window}`,
+    /** What a block's outline says while the search finds it. */
+    found: (block: string) => `${block}, matches the search`,
     /** A block for a visit already done, which stays where it was worked and cannot be moved. */
     doneBlock: (job: string, date: string, window: string) => `${job}, ${date}, ${window}, done`,
     /** How far the technician has got, from their phone. A visit they have begun stays where it is. */

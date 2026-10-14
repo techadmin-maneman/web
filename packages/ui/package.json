@@ -57,6 +57,7 @@
     "./useLoad": "./useLoad.ts",
     "./useOneAtATime": "./useOneAtATime.ts",
     "./useOtpChallenge": "./useOtpChallenge.ts",
+    "./useRowPanel": "./useRowPanel.ts",
     "./useSecondsLeft": "./useSecondsLeft.ts",
     "./VisuallyHidden": "./VisuallyHidden.tsx",
     "./WindowChoice": "./WindowChoice.tsx"

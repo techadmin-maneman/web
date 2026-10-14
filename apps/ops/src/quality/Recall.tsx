@@ -110,16 +110,18 @@ function WornRows({ worn, mayBook }: { worn: readonly Worn[]; mayBook: boolean }
 }
 
 export function RecallDetail({
+  id,
   recall,
   onAnswer,
 }: {
+  id: string;
   recall: Detail;
   onAnswer: (answer: Answer, said: string) => void;
 }) {
   const access = useAccess();
   const title = `${copy.number(recall.number)} · ${copy.lotLabel(recall.name, recall.lot_code)}`;
   return (
-    <Panel titleId="recall-detail" title={title}>
+    <Panel id={id} opened titleId="recall-detail" title={title}>
       <p className={form.note}>{recall.reason}</p>
       <h3 className={form.ruleTitle}>{copy.held}</h3>
       {recall.held.length === 0 ? (

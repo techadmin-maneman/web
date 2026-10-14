@@ -12,7 +12,7 @@ import { settings } from "../content/settings.ts";
 import { useAccess } from "../lib/access.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import styles from "../components/forms.module.css";
-import { SupplierForm, type Supplier, type Suppliers as Book } from "./SupplierForm.tsx";
+import { SupplierForm, type Supplier, type Suppliers as SupplierList } from "./SupplierForm.tsx";
 import { SupplierItems } from "./SupplierItems.tsx";
 import { ActionCheck, sentOf } from "./SettingForm.tsx";
 
@@ -27,7 +27,7 @@ function Actions(props: {
   supplier: Supplier;
   onChange: () => void;
   onItems: () => void;
-  onRetired: (suppliers: Book, said: string) => void;
+  onRetired: (suppliers: SupplierList, said: string) => void;
 }) {
   const access = useAccess();
   const { supplier } = props;
@@ -82,10 +82,10 @@ function Actions(props: {
 }
 
 function SupplierTable(props: {
-  suppliers: Book;
+  suppliers: SupplierList;
   onChange: (id: string) => void;
   onItems: (id: string) => void;
-  onRetired: (suppliers: Book, said: string) => void;
+  onRetired: (suppliers: SupplierList, said: string) => void;
 }) {
   const { suppliers, onChange, onItems, onRetired } = props;
   return suppliers.suppliers.length === 0 ? (
@@ -131,7 +131,7 @@ function SupplierTable(props: {
 
 export function Suppliers() {
   const [loaded, retry] = useLoad(loadSuppliers);
-  const [suppliers, setBook] = useState<Book | null>(null);
+  const [suppliers, setSuppliers] = useState<SupplierList | null>(null);
   const [doing, setDoing] = useState<Doing>({ kind: "add" });
   const [picked, setPicked] = useState<string | null>(null);
   const [said, setSaid] = useState<string | null>(null);
@@ -140,8 +140,8 @@ export function Suppliers() {
   if (loaded.state === "loading") return <Loading />;
   if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
   const current = suppliers ?? loaded.value;
-  const saved = (next: Book, words: string) => {
-    setBook(next);
+  const saved = (next: SupplierList, words: string) => {
+    setSuppliers(next);
     setDoing({ kind: "add" });
     setSaid(words);
   };

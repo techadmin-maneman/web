@@ -6,6 +6,7 @@ import { Panel } from "@maneman/ui/Panel";
 import { Button } from "@maneman/ui/Button";
 import { Table } from "@maneman/ui/Table";
 import { useLoad } from "@maneman/ui/useLoad";
+import { useRowPanel, type RowOpener } from "@maneman/ui/useRowPanel";
 import { useState } from "react";
 import { client } from "../api.ts";
 import { Shell } from "../components/Shell.tsx";
@@ -19,7 +20,7 @@ import { StartCount } from "./StartCount.tsx";
 
 const loadTasks = () => client.get("/api/count-tasks");
 
-function Tasks({ countTasks, onOpen }: { countTasks: CountTasks; onOpen: (id: string) => void }) {
+function Tasks({ countTasks, opener }: { countTasks: CountTasks; opener: RowOpener }) {
   if (countTasks.tasks.length === 0) return <p className={form.note}>{copy.none}</p>;
   return (
     <Table className={form.table}>
@@ -46,9 +47,7 @@ function Tasks({ countTasks, onOpen }: { countTasks: CountTasks; onOpen: (id: st
                 variant="outline"
                 size="small"
                 aria-label={`${copy.open} ${copy.heading(task.place, whatOf(task))}`}
-                onClick={() => {
-                  onOpen(task.id);
-                }}
+                {...opener(task.id)}
               >
                 {copy.open}
               </Button>
@@ -62,13 +61,13 @@ function Tasks({ countTasks, onOpen }: { countTasks: CountTasks; onOpen: (id: st
 
 export function CountsScreen() {
   const [loaded, retry] = useLoad(loadTasks);
-  const [countTasks, setBook] = useState<CountTasks | null>(null);
-  const [open, setOpen] = useState<string | null>(null);
+  const [countTasks, setCountTasks] = useState<CountTasks | null>(null);
+  const { open, setOpen, panelId, opener } = useRowPanel();
   const access = useAccess();
   const current = countTasks ?? (loaded.state === "loaded" ? loaded.value : null);
   const reload = () => {
     void loadTasks().then((answer) => {
-      if (answer.ok) setBook(answer.body);
+      if (answer.ok) setCountTasks(answer.body);
     });
   };
   return (
@@ -78,7 +77,7 @@ export function CountsScreen() {
       {current !== null && (
         <div className={form.screen}>
           <Panel titleId="count-tasks" title={copy.tasks}>
-            <Tasks countTasks={current} onOpen={setOpen} />
+            <Tasks countTasks={current} opener={opener} />
           </Panel>
           {access.mayCall("POST /api/count-tasks") && (
             <StartCount
@@ -89,9 +88,9 @@ export function CountsScreen() {
               }}
             />
           )}
-          {open !== null && <CountTaskPanel key={open} id={open} onChanged={reload} />}
+          {open !== null && <CountTaskPanel key={open} id={open} panelId={panelId} onChanged={reload} />}
           {access.mayCall("POST /api/consumables/{code}/count-class") && (
-            <CountClasses countTasks={current} onBook={setBook} />
+            <CountClasses countTasks={current} onChanged={setCountTasks} />
           )}
         </div>
       )}

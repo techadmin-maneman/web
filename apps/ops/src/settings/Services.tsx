@@ -17,7 +17,7 @@ import { useLoad } from "@maneman/ui/useLoad";
 import { longDate } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";
 import { useState, type ReactNode } from "react";
-import { api, type Kind, type LateFee, type OpsService, type Price, type ServiceBook } from "../api.ts";
+import { api, type Kind, type LateFee, type OpsService, type Price, type ServiceCatalogue } from "../api.ts";
 import { OpsLink } from "../components/Shell.tsx";
 import { settings } from "../content/settings.ts";
 import { useAccess, type OpsCall } from "../lib/access.ts";
@@ -77,7 +77,7 @@ const actionWhere = (action: Action): string => {
 };
 
 /** The services after a price is set or taken back: each service's and late fee's rows, from the book's answer. */
-function withPrices(services: ServiceBook, prices: readonly Price[]): ServiceBook {
+function withPrices(services: ServiceCatalogue, prices: readonly Price[]): ServiceCatalogue {
   const rowsOf = (item: string, tier: string) => prices.filter((row) => row.item === item && row.tier === tier);
   return {
     ...services,
@@ -118,7 +118,7 @@ function pricesOf(target: Priced, today: string) {
 interface Opened {
   readonly action: Action | null;
   readonly outcome: { readonly where: string; readonly said: string } | null;
-  readonly services: ServiceBook;
+  readonly services: ServiceCatalogue;
   /** The row whose Edit is open, if one is. */
   readonly expanded: string | null;
   /** Whether the person's access lets them take this kind of action. */
@@ -491,7 +491,7 @@ function KindSection({ kind, opened }: { kind: Kind; opened: Opened }) {
 export function Services() {
   const [loaded, retry] = useLoad(api.services);
   /** The services after a change, so the panel follows without reading it again. */
-  const [services, setBook] = useState<ServiceBook | null>(null);
+  const [services, setServices] = useState<ServiceCatalogue | null>(null);
   const [action, setAction] = useState<Action | null>(null);
   const [outcome, setOutcome] = useState<Opened["outcome"]>(null);
   const [expanded, setExpanded] = useState<string | null>(null);
@@ -518,8 +518,8 @@ export function Services() {
     },
     onDone: (written) => {
       if (action !== null) setOutcome({ where: actionWhere(action), said: written.said });
-      if (written.services !== undefined) setBook(written.services);
-      else if (written.prices !== undefined) setBook(withPrices(current, written.prices));
+      if (written.services !== undefined) setServices(written.services);
+      else if (written.prices !== undefined) setServices(withPrices(current, written.prices));
       setAction(null);
     },
     onCancel: () => {

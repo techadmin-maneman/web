@@ -16,7 +16,7 @@ import { Checkbox, ChoiceGroup, Field, Label, NumberInput, Radio, Select, TextIn
 import { Button } from "@maneman/ui/Button";
 import { useState } from "react";
 import { api, type Stock } from "../api.ts";
-import { stock as copy } from "../content.ts";
+import { stock as copy } from "../content/stock.ts";
 import { CheckPanel } from "../components/CheckPanel.tsx";
 import form from "../components/forms.module.css";
 import { LotFields } from "./LotFields.tsx";

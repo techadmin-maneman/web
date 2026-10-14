@@ -8,6 +8,7 @@ import { Panel } from "@maneman/ui/Panel";
 import { RowButton } from "@maneman/ui/Button";
 import { Table } from "@maneman/ui/Table";
 import { useLoad } from "@maneman/ui/useLoad";
+import { useRowPanel, type RowOpener } from "@maneman/ui/useRowPanel";
 import { inCurrency } from "@maneman/web-kit/money";
 import { useState } from "react";
 import { client } from "../api.ts";
@@ -24,7 +25,7 @@ import type { Orders } from "./types.ts";
 
 const loadOrders = () => client.get("/api/purchase-orders");
 
-function OrdersTable({ orders, onOpen }: { orders: Orders; onOpen: (id: string) => void }) {
+function OrdersTable({ orders, opener }: { orders: Orders; opener: RowOpener }) {
   const supplierOf = (id: string) => orders.suppliers.find((each) => each.id === id)?.name ?? id;
   if (orders.orders.length === 0) return <p className={form.note}>{copy.none}</p>;
   return (
@@ -45,9 +46,7 @@ function OrdersTable({ orders, onOpen }: { orders: Orders; onOpen: (id: string) 
               <RowButton
                 className={form.inline}
                 aria-label={copy.open(copy.number(order.number))}
-                onClick={() => {
-                  onOpen(order.id);
-                }}
+                {...opener(order.id)}
               >
                 {copy.number(order.number)}
               </RowButton>
@@ -65,13 +64,13 @@ function OrdersTable({ orders, onOpen }: { orders: Orders; onOpen: (id: string) 
 
 export function PurchasingScreen() {
   const [loaded, retry] = useLoad(loadOrders);
-  const [orders, setBook] = useState<Orders | null>(null);
-  const [open, setOpen] = useState<string | null>(null);
+  const [orders, setOrders] = useState<Orders | null>(null);
+  const { open, setOpen, panelId, opener } = useRowPanel();
   const [said, setSaid] = useState<string | null>(null);
   const access = useAccess();
   const current = orders ?? (loaded.state === "loaded" ? loaded.value : null);
   const changed = (next: Orders, words: string) => {
-    setBook(next);
+    setOrders(next);
     setSaid(words);
   };
   const opened = current?.orders.find((each) => each.id === open) ?? null;
@@ -82,14 +81,16 @@ export function PurchasingScreen() {
       {current !== null && (
         <div className={form.screen}>
           <Panel titleId="orders" title={copy.orders}>
-            <OrdersTable orders={current} onOpen={setOpen} />
+            <OrdersTable orders={current} opener={opener} />
             {said !== null && (
               <InlineMessage tone="saved" className={form.saved}>
                 {said}
               </InlineMessage>
             )}
           </Panel>
-          {opened !== null && <OrderPanel key={opened.id} orders={current} order={opened} onChanged={changed} />}
+          {opened !== null && (
+            <OrderPanel key={opened.id} id={panelId} orders={current} order={opened} onChanged={changed} />
+          )}
           {access.mayCall("POST /api/purchase-orders") && (
             <DraftOrder
               orders={current}

@@ -12,7 +12,7 @@ import { useLoad } from "@maneman/ui/useLoad";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { longDate } from "@maneman/web-kit/dates";
 import { useState } from "react";
-import { api, type StaffBook, type StaffToken } from "../api.ts";
+import { api, type StaffList, type StaffToken } from "../api.ts";
 import { settings } from "../content/settings.ts";
 import { useAccess, whoami } from "../lib/access.ts";
 import { DeleteAction } from "../components/DeleteAction.tsx";
@@ -27,8 +27,8 @@ import staffStyles from "./staff.module.css";
 const copy = settings.staff;
 
 interface PanelProps {
-  readonly staff: StaffBook;
-  readonly onChanged: (staff: StaffBook) => void;
+  readonly staff: StaffList;
+  readonly onChanged: (staff: StaffList) => void;
 }
 
 function Enforcement({ staff, onChanged }: PanelProps) {
@@ -184,7 +184,7 @@ interface TokenRowProps {
   readonly token: StaffToken;
   /** Whether the viewer may take it off: only a person with Admin · Manage nationally. */
   readonly removable: boolean;
-  readonly onChanged: (staff: StaffBook) => void;
+  readonly onChanged: (staff: StaffList) => void;
 }
 
 function TokenRow({ token, removable, onChanged }: TokenRowProps) {
@@ -211,7 +211,7 @@ function TokenRow({ token, removable, onChanged }: TokenRowProps) {
   );
 }
 
-function TokenForm({ onChanged }: { onChanged: (staff: StaffBook) => void }) {
+function TokenForm({ onChanged }: { onChanged: (staff: StaffList) => void }) {
   const words = copy.tokens;
   const [clientId, setClientId] = useState("");
   const [label, setLabel] = useState("");
@@ -289,7 +289,7 @@ function ServiceTokens({ staff, onChanged }: PanelProps) {
 export function Staff() {
   const [loaded, retry] = useLoad(api.staff);
   /** The page as the last change left it, so it follows a change without reading it again. */
-  const [changed, setChanged] = useState<StaffBook | null>(null);
+  const [changed, setChanged] = useState<StaffList | null>(null);
 
   if (loaded.state === "loading") return <Loading />;
   if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;

@@ -96,13 +96,14 @@ function BlockButton({ job, found, onOpen, onTake }: BlockButtonProps) {
   const { block } = job;
   const movable = isMovable(block);
   const begun = begunWord(block);
+  const matched = found?.(block) === true;
   return (
     <Tile
       className={classes(styles.block, inkOf(block), sizeOf(block), !movable && styles.finished)}
       data-appointment={block.appointment_id}
-      data-match={found?.(block) === true ? "" : undefined}
+      data-match={matched ? "" : undefined}
       draggable={movable && onTake !== null}
-      aria-label={blockLabel(job)}
+      aria-label={matched ? dispatch.board.found(blockLabel(job)) : blockLabel(job)}
       onDragStart={(event) => {
         if (onTake === null) return;
         event.dataTransfer.effectAllowed = "move";
@@ -232,7 +233,10 @@ export function Grid({ board, rows, inHand, found, onOpen, onTake, onLand, onRou
             return (
               <th className={styles.day} key={date} scope="col">
                 <span className={styles.dayName}>{dayHead(date)}</span>
-                <span className={percent >= dispatch.peak ? styles.peak : styles.util}>{dispatch.util(percent)}</span>
+                <span className={percent >= dispatch.peak ? styles.peak : styles.util}>
+                  {dispatch.util(percent)}
+                  {percent >= dispatch.peak && <VisuallyHidden>, {dispatch.peakDay}</VisuallyHidden>}
+                </span>
                 {onRoutes !== null && (
                   <TextButton
                     tone="muted"

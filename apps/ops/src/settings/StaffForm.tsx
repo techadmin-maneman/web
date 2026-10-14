@@ -6,7 +6,7 @@ import { Checkbox, Fieldset, Label, Select, TextInput } from "@maneman/ui/Field"
 import { errorText } from "@maneman/web-kit/refusal";
 import { Button } from "@maneman/ui/Button";
 import { useState } from "react";
-import { api, type StaffBook, type StaffGrant, type StaffPerson, type StaffSave } from "../api.ts";
+import { api, type StaffList, type StaffGrant, type StaffPerson, type StaffSave } from "../api.ts";
 import { settings } from "../content/settings.ts";
 import { review } from "../content/common.ts";
 import {
@@ -59,7 +59,7 @@ function checkLines(person: StaffPerson | null, sent: StaffSave): string[] {
 function GrantRow(props: {
   index: number;
   grant: StaffGrant;
-  staff: StaffBook;
+  staff: StaffList;
   onChange: (grant: StaffGrant) => void;
   onRemove: () => void;
 }) {
@@ -142,9 +142,9 @@ function GrantRow(props: {
 }
 
 export function StaffForm(props: {
-  staff: StaffBook;
+  staff: StaffList;
   person: StaffPerson | null;
-  onSaved: (staff: StaffBook) => void;
+  onSaved: (staff: StaffList) => void;
   onCancel: () => void;
 }) {
   const { staff, person, onSaved, onCancel } = props;

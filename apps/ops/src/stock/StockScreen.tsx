@@ -17,7 +17,7 @@ import { fullDate, indiaClock, indiaDate, shortDate } from "@maneman/web-kit/dat
 import { Suspense, useState } from "react";
 import { api, type Stock } from "../api.ts";
 import { OpsLink, Shell } from "../components/Shell.tsx";
-import { stock as copy } from "../content.ts";
+import { stock as copy } from "../content/stock.ts";
 import { useAccess, type OpsCall } from "../lib/access.ts";
 import { recordedBy } from "../lib/who.ts";
 import form from "../components/forms.module.css";
@@ -252,7 +252,7 @@ function Movements({ stock }: { stock: Stock }) {
 export function StockScreen() {
   const [loaded, retry] = useLoad(api.stock);
   /** The stock after a movement, so the table follows without reading it again. */
-  const [stock, setBook] = useState<Stock | null>(null);
+  const [stock, setStock] = useState<Stock | null>(null);
   const [by, setBy] = useState<"place" | "zone" | "city">("place");
   /** A hair system's delivery opens its labels at the warehouse, afresh each time. */
   const [labelsFor, setLabelsFor] = useState<{ readonly at: LabelsFor; readonly time: number } | null>(null);
@@ -285,7 +285,7 @@ export function StockScreen() {
               stock={stock ?? loaded.value}
               kinds={[firstKind, ...otherKinds]}
               onRecorded={(after, recorded) => {
-                setBook(after);
+                setStock(after);
                 const hairSystem = after.consumables.some((each) => each.code === recorded.code && each.hair_system);
                 if (recorded.kind === "delivery" && hairSystem) {
                   setLabelsFor({ at: { code: recorded.code, place: "central" }, time: (labelsFor?.time ?? 0) + 1 });
@@ -298,7 +298,7 @@ export function StockScreen() {
           </Suspense>
           {(stock ?? loaded.value).in_transit.length > 0 && (
             <Suspense fallback={<Loading />}>
-              <InTransit stock={stock ?? loaded.value} onChanged={setBook} />
+              <InTransit stock={stock ?? loaded.value} onChanged={setStock} />
             </Suspense>
           )}
           {access.mayCall("GET /api/stock/units") && (
@@ -309,7 +309,7 @@ export function StockScreen() {
           <Movements stock={stock ?? loaded.value} />
           {access.mayCall("POST /api/stock/places") && (
             <Suspense fallback={<Loading />}>
-              <PlacesPanel stock={stock ?? loaded.value} onChanged={setBook} />
+              <PlacesPanel stock={stock ?? loaded.value} onChanged={setStock} />
             </Suspense>
           )}
         </div>

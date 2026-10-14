@@ -20,10 +20,10 @@ const OWN = "";
 
 export function CountClasses({
   countTasks,
-  onBook,
+  onChanged,
 }: {
   countTasks: CountTasks;
-  onBook: (countTasks: CountTasks) => void;
+  onChanged: (countTasks: CountTasks) => void;
 }) {
   const [said, setSaid] = useState<string | null>(null);
   const [failure, setFailure] = useState<Failure | null>(null);
@@ -33,7 +33,7 @@ export function CountClasses({
       body: { count_class: chosen === OWN ? null : (chosen as CountClass) },
     });
     if (answer.ok) {
-      onBook(answer.body);
+      onChanged(answer.body);
       setSaid(copy.classSaid);
       setFailure(null);
     } else setFailure({ code: answer.code, fields: answer.fields });
