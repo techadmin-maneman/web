@@ -8,7 +8,7 @@
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import { draftPlan } from "../../../src/domain/purchasing/supply-plan.ts";
-import { NOW, markDatabase, request } from "../helpers.ts";
+import { A_NUMBER, NOW, markDatabase, request } from "../helpers.ts";
 import { working, type Working } from "../job-fixtures.ts";
 
 interface Plan {
@@ -97,7 +97,7 @@ describe("the supply plan", () => {
     const ordered = await (
       await job.opsPost(`/api/supply-plan/lines/${order?.id ?? ""}/approve`, { quantity: 24 })
     ).json<Plan>();
-    expect(ordered.lines.find((line) => line.id === order?.id)).toMatchObject({ state: "approved", po_number: 1 });
+    expect(ordered.lines.find((line) => line.id === order?.id)).toMatchObject({ state: "approved", po_number: A_NUMBER });
     await job.opsPost(`/api/supply-plan/lines/${send?.id ?? ""}/reject`, {
       reason: "The warehouse keeps it for Noida.",
     });

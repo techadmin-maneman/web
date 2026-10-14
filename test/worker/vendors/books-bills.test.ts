@@ -132,6 +132,10 @@ beforeEach(async () => {
   await received();
 });
 
+/** The order's number as ops and Books read it. */
+const orderNumber = async () =>
+  `PO-${String(await env.DB.prepare("SELECT number FROM purchase_orders").first<number>("number"))}`;
+
 describe("a receipt in Books", () => {
   it("becomes one bill of its supplier's vendor, each line on its account, however often the sync runs", async () => {
     const books = createStubBooks();
@@ -149,6 +153,7 @@ describe("a receipt in Books", () => {
       },
     ]);
     const [bill] = books.made.bills;
+    const po = await orderNumber();
     expect(bill).toMatchObject({
       billNumber: "LUM-2209",
       date: "2026-09-21",
@@ -157,12 +162,12 @@ describe("a receipt in Books", () => {
     });
     expect(bill?.lines).toEqual([
       {
-        description: "Staging test: Mane Man Essential 8x10 1B, 20% grey, 100% (PO-0001)",
+        description: `Staging test: Mane Man Essential 8x10 1B, 20% grey, 100% (${po})`,
         accountId: "acc-cogs",
         unitPrice: 12_000,
         quantity: 2,
       },
-      { description: "Staging test: Solvent (PO-0001)", accountId: "acc-raw", unitPrice: 250, quantity: 10 },
+      { description: `Staging test: Solvent (${po})`, accountId: "acc-raw", unitPrice: 250, quantity: 10 },
     ]);
 
     expect(await pass(books, new Date(NOW.getTime() + RECHECK_AFTER_MS + 1000))).toMatchObject({
@@ -188,15 +193,17 @@ describe("a receipt in Books", () => {
     const books = createStubBooks();
     books.refuseNext("createBill", "57");
     await pass(books);
-    expect(told).toEqual([expect.stringContaining("Books refused the bill of PO-0001's receipt")]);
+    expect(told).toEqual([expect.stringContaining(`Books refused the bill of ${await orderNumber()}'s receipt`)]);
   });
 
   it("is followed by a vendor credit beside it for a claim the supplier credited, once", async () => {
     const books = createStubBooks();
     await pass(books);
-    const claim = await env.DB.prepare("SELECT id FROM supplier_claims WHERE reason = 'qc_failed'").first<string>("id");
-    await job.opsPost(`/api/supplier-claims/${claim ?? ""}/send`, { note: null, photo_id: null });
-    await job.opsPost(`/api/supplier-claims/${claim ?? ""}/decide`, {
+    const { id: claim, number } = (await env.DB.prepare(
+      "SELECT id, number FROM supplier_claims WHERE reason = 'qc_failed'",
+    ).first<{ id: string; number: number }>()) ?? { id: "", number: 0 };
+    await job.opsPost(`/api/supplier-claims/${claim}/send`, { note: null, photo_id: null });
+    await job.opsPost(`/api/supplier-claims/${claim}/decide`, {
       outcome: "credit",
       credit_amount: 12_000,
       note: null,
@@ -212,7 +219,7 @@ describe("a receipt in Books", () => {
         exchangeRate: 83.25,
         lines: [
           {
-            description: "Staging test: Mane Man Essential 8x10 1B, 20% grey, 100% (CL-0001, PO-0001)",
+            description: `Staging test: Mane Man Essential 8x10 1B, 20% grey, 100% (CL-${String(number)}, ${await orderNumber()})`,
             accountId: "acc-cogs",
             unitPrice: 12_000,
             quantity: 1,

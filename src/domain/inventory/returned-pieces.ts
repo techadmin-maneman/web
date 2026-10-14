@@ -8,7 +8,7 @@ import { warrantyEndsOn } from "../../policy/purchasing.ts";
 import { auditStatementWhen, type AuditAction } from "../platform/audit.ts";
 import { unitChanges } from "./stock-units.ts";
 import type { Written } from "./stock.ts";
-import { NEXT_CLAIM_NUMBER } from "../purchasing/supplier-claims.ts";
+import { drawnNumbers, freshNumber } from "../../lib/references.ts";
 
 export interface ReturnedPiece {
   readonly id: string;
@@ -181,13 +181,13 @@ export async function claimReturn(db: D1Database, id: string, written: Written):
       .prepare(
         `INSERT INTO supplier_claims (id, number, supplier_id, consumable_code, quantity, reason, receipt_line_id,
            unit_id, unit_price, currency, state, drafted_by, drafted_at)
-         SELECT ?1, ${NEXT_CLAIM_NUMBER}, o.supplier_id, p.consumable_code, 1, 'warranty', l.id, ?3, p.unit_price,
-           o.currency, 'drafted', ?4, ?5
+         SELECT ?1, ${freshNumber("supplier_claims", "?7")}, o.supplier_id, p.consumable_code, 1, 'warranty', l.id, ?3,
+           p.unit_price, o.currency, 'drafted', ?4, ?5
          FROM receipt_lines l JOIN po_lines p ON p.id = l.po_line_id JOIN purchase_orders o ON o.id = p.po_id
          WHERE l.id = ?2
            AND EXISTS (SELECT 1 FROM piece_returns WHERE id = ?6 AND handed_in_at IS NOT NULL AND settled_at IS NULL)`,
       )
-      .bind(claimId, row.receipt_line_id, row.unit_id, written.actor.id, written.now.toISOString(), id),
+      .bind(claimId, row.receipt_line_id, row.unit_id, written.actor.id, written.now.toISOString(), id, drawnNumbers()),
     ...settlement(db, { row, claimId, reason: null, photoId: null }, { action: "piece_return.claim", token }, written),
   ]);
   return outcome(db, id, token);

@@ -1631,6 +1631,82 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/me/problems": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Tell Care something is wrong with the hair system or a visit */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["ProblemReport"];
+                };
+            };
+            responses: {
+                /** @description Filed for Care, who answer on WhatsApp */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemReported"];
+                    };
+                };
+                /** @description invalid_request: empty, or over 1000 characters */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description session_required */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description not_found: no visit of this client's */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description rate_limited: 5 a day */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/payments": {
         parameters: {
             query?: never;
@@ -3725,6 +3801,21 @@ export interface components {
             /** @description Why the charge is wrong, in the client's words. Ops read it; it reaches no message. */
             reason: string;
         };
+        ProblemReported: {
+            /** @enum {string} */
+            state: "sent";
+        };
+        ProblemReport: {
+            /** @enum {string} */
+            about: "hair_system" | "visit";
+            /**
+             * @description The visit it is about, if one.
+             * @default null
+             */
+            visit_id: string | null;
+            /** @description What is wrong, in their words. */
+            text: string;
+        };
         PaymentEntry: {
             /**
              * @description discriminator enum property added by openapi-typescript
@@ -3768,7 +3859,7 @@ export interface components {
             status: "authorized" | "captured" | "refunded" | "partially_refunded";
             /** @description upi, card, netbanking and so on. */
             method: string | null;
-            /** @description Ours, e.g. MM-2026-0841, once captured. */
+            /** @description Ours, e.g. MM-7KQ3-9F2D, once captured. */
             reference: string | null;
             /** @description In paise: refunds Razorpay has processed. */
             refunded_amount: number;
@@ -3923,7 +4014,7 @@ export interface components {
             status: "authorized" | "captured" | "refunded" | "partially_refunded";
             /** @description upi, card, netbanking and so on. */
             method: string | null;
-            /** @description Ours, e.g. MM-2026-0841, once captured. */
+            /** @description Ours, e.g. MM-7KQ3-9F2D, once captured. */
             reference: string | null;
             /** @description In paise: refunds Razorpay has processed. */
             refunded_amount: number;

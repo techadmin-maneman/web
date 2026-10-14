@@ -15,11 +15,11 @@ import { TASK_SLA_HOURS } from "../../../src/policy/tasks.ts";
 import { type PaymentsProvider } from "../../../src/providers/payments/index.ts";
 import { createStubPayments, type StubPayments } from "../../../src/providers/payments/stub.ts";
 import { ProviderError } from "../../../src/providers/provider-error.ts";
-import { appFor, captureLogs, fakeDependencies, markDatabase, NOW, request, deliverRazorpay } from "../helpers.ts";
+import { A_REFERENCE, appFor, captureLogs, fakeDependencies, markDatabase, NOW, request, deliverRazorpay } from "../helpers.ts";
 import { JOB, PERSON } from "../job-fixtures.ts";
 import {
   NATURAL,
-  LINK_REFERENCE,
+  linkReference,
   TWO_WEEKS_ON,
   A_PIECE,
   oneVisit,
@@ -75,7 +75,8 @@ describe("Razorpay's word that a one visit's link is paid", () => {
 
   it("records the payment as the visit's, with its split before GST and the link's reference, and the task goes", async () => {
     const linkId = await fittedAndClosed(createStubPayments());
-    expect((await deliver(linkPaid({ id: linkId, reference_id: LINK_REFERENCE }), "evt-1")).status).toBe(200);
+    const reference = await linkReference();
+    expect((await deliver(linkPaid({ id: linkId, reference_id: reference }), "evt-1")).status).toBe(200);
 
     const payment = await env.DB.prepare(
       `SELECT person_id, appointment_id, kind, status, amount, amount_ex_gst, gst_percent, reference
@@ -90,7 +91,7 @@ describe("Razorpay's word that a one visit's link is paid", () => {
       amount_ex_gst: NATURAL.amount,
       gst_percent: 0,
       // What the client read on Razorpay's page is what their receipt and the app say.
-      reference: LINK_REFERENCE,
+      reference,
     });
     expect(await linkRow()).toMatchObject({ paid_at: "2026-09-22T08:57:15.000Z" });
     const { tasks } = await outstandingTasks(env.DB, NOW, TASK_SLA_HOURS);
@@ -100,8 +101,9 @@ describe("Razorpay's word that a one visit's link is paid", () => {
   // The largest payment in the product was the only one we never confirmed.
   it("queues the client's receipt once, however often the payment is told of, whatever their consent", async () => {
     const linkId = await fittedAndClosed(createStubPayments());
-    await deliver(linkPaid({ id: linkId, reference_id: LINK_REFERENCE }), "evt-1");
-    await deliver(linkPaid({ id: linkId, reference_id: LINK_REFERENCE }), "evt-2");
+    const reference = await linkReference();
+    await deliver(linkPaid({ id: linkId, reference_id: reference }), "evt-1");
+    await deliver(linkPaid({ id: linkId, reference_id: reference }), "evt-2");
 
     const { results } = await env.DB.prepare(
       "SELECT kind, subject_kind, subject_id, state FROM outbound_messages WHERE kind = 'link_paid'",
@@ -110,16 +112,17 @@ describe("Razorpay's word that a one visit's link is paid", () => {
     const composed = await composeLinkPaid(env.DB, JOB, PERSON);
     expect(composed).toEqual({
       template: "link_paid_v1",
-      params: ["Rohit", "Mane Man Natural hair system", "", "", "", "Rs. 45,000", LINK_REFERENCE],
+      params: ["Rohit", "Mane Man Natural hair system", "", "", "", "Rs. 45,000", reference],
     });
     expect("template" in composed && renderMessage(composed.template, composed.params)).toBe(
       "Hi Rohit, thank you: payment received.\nRs. 45,000 for your Mane Man Natural hair system " +
-        `(ref ${LINK_REFERENCE}). Welcome to Mane Man. Your receipt is in the app.`,
+        `(ref ${reference}). Welcome to Mane Man. Your receipt is in the app.`,
     );
   });
 
-  it("numbers a payment captured while the link waits after the link, never with the link's number", async () => {
+  it("gives a payment captured while the link waits a reference of its own, never the link's", async () => {
     const linkId = await fittedAndClosed(createStubPayments());
+    const reference = await linkReference();
     const another = {
       id: "pay_other",
       amount: 200000,
@@ -130,27 +133,29 @@ describe("Razorpay's word that a one visit's link is paid", () => {
       created_at: 1790067000,
     };
     await recordPayment({ db: env.DB, payment: another, status: "captured", hashSalt: "a-salt", now: NOW });
-    await deliver(linkPaid({ id: linkId, reference_id: LINK_REFERENCE }), "evt-1");
+    await deliver(linkPaid({ id: linkId, reference_id: reference }), "evt-1");
 
     const { results } = await env.DB.prepare(
-      "SELECT razorpay_payment_id, reference FROM payments ORDER BY reference",
+      "SELECT razorpay_payment_id, reference FROM payments ORDER BY razorpay_payment_id",
     ).all();
     expect(results).toEqual([
-      { razorpay_payment_id: "pay_link_1", reference: LINK_REFERENCE },
-      { razorpay_payment_id: "pay_other", reference: "MM-2026-0002" },
+      { razorpay_payment_id: "pay_link_1", reference },
+      { razorpay_payment_id: "pay_other", reference: A_REFERENCE },
     ]);
+    expect(results[1]?.reference).not.toBe(reference);
   });
 
   // Razorpay sends payment.captured for a link's payment too, often first, with the link's notes.
   it("gives the payment the link's reference though its capture arrives before the link's paid event", async () => {
     const linkId = await fittedAndClosed(createStubPayments());
-    const paid = linkPaid({ id: linkId, reference_id: LINK_REFERENCE });
+    const reference = await linkReference();
+    const paid = linkPaid({ id: linkId, reference_id: reference });
     const payment = { ...paid.payload.payment.entity, notes: { appointment_id: JOB, person_id: PERSON } };
     await deliver({ entity: "event", event: "payment.captured", payload: { payment: { entity: payment } } }, "evt-7");
     await deliver(paid, "evt-8");
 
     const { results } = await env.DB.prepare("SELECT reference FROM payments").all();
-    expect(results).toEqual([{ reference: LINK_REFERENCE }]);
+    expect(results).toEqual([{ reference: reference }]);
   });
 
   it("finds the visit by the link's reference where Razorpay's answer to the close never came", async () => {
@@ -163,7 +168,8 @@ describe("Razorpay's word that a one visit's link is paid", () => {
       },
     };
     await fittedAndClosed(answerLost);
-    await deliver(linkPaid({ id: "plink_unseen", reference_id: LINK_REFERENCE }), "evt-6");
+    const reference = await linkReference();
+    await deliver(linkPaid({ id: "plink_unseen", reference_id: reference }), "evt-6");
     expect(await linkRow()).toMatchObject({ made: 0, paid_at: "2026-09-22T08:57:15.000Z" });
   });
 
@@ -185,8 +191,9 @@ describe("Razorpay's word that a one visit's link is paid", () => {
 
   it("cancels nothing when the client pays the visit's own link", async () => {
     const own = await fittedAndClosed(createStubPayments());
+    const reference = await linkReference();
     const payments = createStubPayments();
-    await deliver(linkPaid({ id: own, reference_id: LINK_REFERENCE }), "evt-10", fakeDependencies({ payments }));
+    await deliver(linkPaid({ id: own, reference_id: reference }), "evt-10", fakeDependencies({ payments }));
     expect(payments.made.cancelledLinks).toEqual([]);
   });
 

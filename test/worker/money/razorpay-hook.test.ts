@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { outstandingTasks } from "../../../src/domain/ops/tasks.ts";
 import { TASK_SLA_HOURS } from "../../../src/policy/tasks.ts";
 import { saltedHash } from "../../../src/lib/hash.ts";
-import { LOCAL_SETTINGS, NOW, captureLogs, deliverRazorpay, markDatabase } from "../helpers.ts";
+import { A_REFERENCE, LOCAL_SETTINGS, NOW, captureLogs, deliverRazorpay, markDatabase } from "../helpers.ts";
 
 function paymentEvent(event: string, overrides: Record<string, unknown> = {}) {
   return {
@@ -124,7 +124,7 @@ describe("Razorpay's webhook: what it cannot use", () => {
     expect((await deliver(paymentEvent("payment.captured"), null)).status).toBe(200);
     expect((await deliver(paymentEvent("payment.captured"), null)).status).toBe(200);
     expect(await seenEvents()).toEqual({ n: 1 });
-    expect(await payment()).toMatchObject({ reference: "MM-2026-0001" });
+    expect(await payment()).toMatchObject({ reference: A_REFERENCE });
   });
 });
 
@@ -140,18 +140,21 @@ describe("Razorpay's webhook: payments", () => {
       currency: "INR",
       method: "upi",
       status: "captured",
-      reference: "MM-2026-0001",
+      reference: A_REFERENCE,
       refunded_amount: 0,
     });
     expect(row?.vpa_hash).toBe(await saltedHash(LOCAL_SETTINGS.ipHashSalt, "rohit.m@okaxis"));
     expect(JSON.stringify(row)).not.toContain("okaxis");
   });
 
-  it("numbers each captured payment of the year in turn", async () => {
+  it("gives each captured payment a reference of its own, which tells no one how many came before", async () => {
     await deliver(paymentEvent("payment.captured"), "evt_1");
     await deliver(paymentEvent("payment.captured", { id: "pay_2" }), "evt_2");
-    const second = await env.DB.prepare("SELECT reference FROM payments WHERE razorpay_payment_id = 'pay_2'").first();
-    expect(second).toEqual({ reference: "MM-2026-0002" });
+    const { results } = await env.DB.prepare("SELECT reference FROM payments ORDER BY razorpay_payment_id").all<{
+      reference: string;
+    }>();
+    expect(results).toEqual([{ reference: A_REFERENCE }, { reference: A_REFERENCE }]);
+    expect(results[0]?.reference).not.toBe(results[1]?.reference);
   });
 
   it("never moves a payment back: an authorization arriving after the capture changes nothing", async () => {
@@ -228,7 +231,7 @@ describe("Razorpay's webhook: a refund of a payment whose own events never reach
     const payer = await person("+919810000001");
     const created = await deliver(refundEvent("refund.created", 3540000, "rfnd_1", refundedPayment()), "evt_1");
     expect(created.status).toBe(200);
-    expect(await payment()).toMatchObject({ person_id: payer, status: "captured", reference: "MM-2026-0001" });
+    expect(await payment()).toMatchObject({ person_id: payer, status: "captured", reference: A_REFERENCE });
 
     const processed = await deliver(refundEvent("refund.processed", 3540000, "rfnd_1", refundedPayment()), "evt_2");
     expect(processed.status).toBe(200);

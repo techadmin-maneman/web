@@ -405,7 +405,7 @@ async function linkMadeBefore(payments: PaymentsProvider, reference: string): Pr
   }
 }
 
-/** The hold's link's reference, "MM-2026-0841", which its payment then takes: given it now, or kept from a try before. */
+/** The hold's link's reference, "MM-7KQ3-9F2D", which its payment then takes: given it now, or kept from a try before. */
 async function holdReference(db: D1Database, holdId: string, now: Date): Promise<string> {
   const [, kept] = await db.batch<{ reference: string | null }>([
     referenceHold(db, holdId, now),

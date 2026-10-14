@@ -10,6 +10,7 @@ import type { RazorpayPayment } from "../../../src/providers/payments/razorpay.t
 import { CRON_JOBS } from "../../../src/scheduled/cron.ts";
 import { runCronJobs } from "../../../src/scheduled/cron-runner.ts";
 import {
+  A_REFERENCE,
   captureLogs,
   fakeDependencies,
   fakeQueue,
@@ -139,7 +140,7 @@ describe("a hold paid at Checkout whose webhook never came", () => {
       razorpay_order_id: ordered.orderId,
       status: "captured",
       amount: 200_000,
-      reference: "MM-2026-0001",
+      reference: A_REFERENCE,
     });
     expect((await messagesOf(PERSON)).results).toEqual([{ kind: "payment_receipt" }]);
     expect(deps.alerts).toEqual([

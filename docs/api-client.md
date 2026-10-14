@@ -975,6 +975,58 @@ Request body:
 }
 ```
 
+### POST /api/me/problems
+
+Tell Care something is wrong with the hair system or a visit
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/ProblemReport"
+}
+```
+
+**201**: Filed for Care, who answer on WhatsApp
+
+```json
+{
+  "$ref": "#/components/schemas/ProblemReported"
+}
+```
+
+**400**: invalid_request: empty, or over 1000 characters
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**401**: session_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no visit of this client's
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**429**: rate_limited: 5 a day
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ### GET /api/payments
 
 The client's payments and refunds, newest first
@@ -5015,6 +5067,67 @@ Request body:
 }
 ```
 
+### ProblemReported
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "state": {
+      "type": "string",
+      "enum": [
+        "sent"
+      ]
+    }
+  },
+  "required": [
+    "state"
+  ],
+  "additionalProperties": false
+}
+```
+
+### ProblemReport
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "about": {
+      "type": "string",
+      "enum": [
+        "hair_system",
+        "visit"
+      ]
+    },
+    "visit_id": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "uuid"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "The visit it is about, if one."
+    },
+    "text": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 1000,
+      "description": "What is wrong, in their words."
+    }
+  },
+  "required": [
+    "about",
+    "text"
+  ],
+  "additionalProperties": false
+}
+```
+
 ### PaymentEntry
 
 ```json
@@ -5171,7 +5284,7 @@ Request body:
           "type": "null"
         }
       ],
-      "description": "Ours, e.g. MM-2026-0841, once captured."
+      "description": "Ours, e.g. MM-7KQ3-9F2D, once captured."
     },
     "refunded_amount": {
       "type": "integer",
@@ -5759,7 +5872,7 @@ Request body:
           "type": "null"
         }
       ],
-      "description": "Ours, e.g. MM-2026-0841, once captured."
+      "description": "Ours, e.g. MM-7KQ3-9F2D, once captured."
     },
     "refunded_amount": {
       "type": "integer",

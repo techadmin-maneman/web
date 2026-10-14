@@ -11,7 +11,7 @@
 // with the sheet opened on its day and window; a replacement is booked here like any other visit.
 
 import { TextLink, textLinkLook } from "@maneman/ui/TextLink";
-import { BookButton, BookNext, type ChangingVisit } from "../booking/index.ts";
+import { BookButton, BookNext, ProblemLink, type ChangingVisit } from "../booking/index.ts";
 import { capsLook } from "@maneman/ui/Caps";
 import { ButtonLink } from "@maneman/ui/Button";
 import { lazyScreen } from "@maneman/ui/lazyScreen";
@@ -64,6 +64,7 @@ export function HomeScreen() {
           <CustomOrderCard />
         </Suspense>
         {invoice !== null && <InvoiceLine invoice={invoice} />}
+        {me.state === "fitted" && <ProblemLink about={{ about: "hair_system" }} className={styles.problem} />}
       </div>
     </Shell>
   );

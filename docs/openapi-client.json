@@ -2915,6 +2915,57 @@
         ],
         "additionalProperties": false
       },
+      "ProblemReported": {
+        "type": "object",
+        "properties": {
+          "state": {
+            "type": "string",
+            "enum": [
+              "sent"
+            ]
+          }
+        },
+        "required": [
+          "state"
+        ],
+        "additionalProperties": false
+      },
+      "ProblemReport": {
+        "type": "object",
+        "properties": {
+          "about": {
+            "type": "string",
+            "enum": [
+              "hair_system",
+              "visit"
+            ]
+          },
+          "visit_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "The visit it is about, if one."
+          },
+          "text": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1000,
+            "description": "What is wrong, in their words."
+          }
+        },
+        "required": [
+          "about",
+          "text"
+        ],
+        "additionalProperties": false
+      },
       "PaymentEntry": {
         "type": "object",
         "properties": {
@@ -3068,7 +3119,7 @@
                 "type": "null"
               }
             ],
-            "description": "Ours, e.g. MM-2026-0841, once captured."
+            "description": "Ours, e.g. MM-7KQ3-9F2D, once captured."
           },
           "refunded_amount": {
             "type": "integer",
@@ -3641,7 +3692,7 @@
                 "type": "null"
               }
             ],
-            "description": "Ours, e.g. MM-2026-0841, once captured."
+            "description": "Ours, e.g. MM-7KQ3-9F2D, once captured."
           },
           "refunded_amount": {
             "type": "integer",
@@ -6260,6 +6311,73 @@
           },
           "409": {
             "description": "already_disputed: the charge was disputed before; not_disputable: the charge took nothing to give back; or dispute_window_closed: the days the charge could be disputed are past",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/me/problems": {
+      "post": {
+        "summary": "Tell Care something is wrong with the hair system or a visit",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProblemReport"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Filed for Care, who answer on WhatsApp",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemReported"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid_request: empty, or over 1000 characters",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "session_required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found: no visit of this client's",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "rate_limited: 5 a day",
             "content": {
               "application/json": {
                 "schema": {

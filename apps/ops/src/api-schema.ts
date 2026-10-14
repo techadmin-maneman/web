@@ -15097,7 +15097,7 @@ export interface components {
             status: "authorized" | "captured" | "refunded" | "partially_refunded";
             /** @description upi, card, netbanking and so on. */
             method: string | null;
-            /** @description Ours, e.g. MM-2026-0841, once captured. */
+            /** @description Ours, e.g. MM-7KQ3-9F2D, once captured. */
             reference: string | null;
             /** @description In paise: refunds Razorpay has processed. */
             refunded_amount: number;

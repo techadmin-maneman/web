@@ -11200,7 +11200,7 @@ Request body:
           "type": "null"
         }
       ],
-      "description": "Ours, e.g. MM-2026-0841, once captured."
+      "description": "Ours, e.g. MM-7KQ3-9F2D, once captured."
     },
     "refunded_amount": {
       "type": "integer",

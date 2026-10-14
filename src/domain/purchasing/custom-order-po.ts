@@ -3,6 +3,7 @@
 // line names the custom order. It is drafted, and approved and sent as any order is (./purchase-orders.ts). Drafted
 // once: a second word of the same payment finds the order drafted already.
 
+import { drawnNumbers, freshNumber } from "../../lib/references.ts";
 import { addHairSystem, hairSystemSpecs, matchingCode } from "../inventory/hair-systems.ts";
 import type { Written } from "../inventory/stock.ts";
 
@@ -65,10 +66,20 @@ export async function draftCustomOrderPo(db: D1Database, orderId: string, writte
       .prepare(
         `INSERT INTO purchase_orders (id, number, supplier_id, currency, state, expected_on, note, drafted_by, drafted_at,
            updated_at)
-         SELECT ?1, COALESCE(MAX(number), 0) + 1, ?2, ?3, 'drafted', ?4, ?5, ?6, ?7, ?7 FROM purchase_orders
+         SELECT ?1, ${freshNumber("purchase_orders", "?9")}, ?2, ?3, 'drafted', ?4, ?5, ?6, ?7, ?7
          WHERE NOT EXISTS (SELECT 1 FROM custom_orders WHERE id = ?8 AND po_id IS NOT NULL)`,
       )
-      .bind(poId, order.supplier_id, order.currency, order.promised_on, note, written.actor.id, at, orderId),
+      .bind(
+        poId,
+        order.supplier_id,
+        order.currency,
+        order.promised_on,
+        note,
+        written.actor.id,
+        at,
+        orderId,
+        drawnNumbers(),
+      ),
     db
       .prepare(
         `INSERT INTO po_lines (id, po_id, consumable_code, quantity, unit_price, custom_order_id)

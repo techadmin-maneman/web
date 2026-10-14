@@ -13,6 +13,7 @@ import { type PaymentsProvider } from "../../../src/providers/payments/index.ts"
 import { createStubPayments, type StubPayments } from "../../../src/providers/payments/stub.ts";
 import { ProviderError } from "../../../src/providers/provider-error.ts";
 import {
+  A_REFERENCE,
   appFor,
   captureLogs,
   fakeDependencies,
@@ -38,7 +39,6 @@ import {
 } from "./ops-visits-fixtures.ts";
 
 /** The first reference of NOW's year, which the first link ops send takes before any payment. */
-const FIRST_REFERENCE = "MM-2026-0001";
 
 let payments: StubPayments;
 
@@ -111,7 +111,7 @@ describe("POST /api/visits: a paid visit goes out as a payment link", () => {
     expect(payments.made.links).toEqual([
       {
         amount: NATURAL.amount,
-        reference: FIRST_REFERENCE,
+        reference: A_REFERENCE,
         description: "Mane Man Natural · Fri 25 Sep, morning",
         customer: { name: "Rohit Malhotra", contact: "+919810000001" },
         notes: { hold_id: body.hold_id, person_id: ROHIT },
@@ -125,7 +125,7 @@ describe("POST /api/visits: a paid visit goes out as a payment link", () => {
       confirmed_at: null,
       pay_by_link: 1,
       payment_link_url: body.link.url,
-      reference: FIRST_REFERENCE,
+      reference: payments.made.links[0]?.reference,
       razorpay_order_id: null,
       expires_at: "2026-09-22T06:30:00.000Z",
     });
@@ -199,7 +199,7 @@ describe("POST /api/visits: a paid visit goes out as a payment link", () => {
     expect(answer.status).toBe(201);
     const body = await answer.json<{ hold_id: string; link: object }>();
     expect(body.link).toMatchObject({ url: "https://rzp.io/i/made" });
-    expect(lookedFor).toEqual([FIRST_REFERENCE]);
+    expect(lookedFor).toEqual([(await holdOf(body.hold_id))?.reference]);
     expect(await holdOf(body.hold_id)).toMatchObject({ payment_link_id: "plink_made" });
   });
 
@@ -295,7 +295,7 @@ describe("a payment link for a visit ops booked, paid", () => {
       amount_ex_gst: SERVICE_PRICE,
       status: "captured",
       // What the client read on Razorpay's page is what their receipt says.
-      reference: FIRST_REFERENCE,
+      reference: sent.reference,
     });
     expect(await holdOf(holdId)).toMatchObject({
       razorpay_order_id: "order_link_1",
@@ -381,7 +381,7 @@ describe("a payment link for a visit ops booked, paid", () => {
     const payment = await env.DB.prepare(
       "SELECT reference FROM payments WHERE razorpay_payment_id = 'pay_link_1'",
     ).first<{ reference: string }>();
-    expect(payment?.reference).toBe(FIRST_REFERENCE);
+    expect(payment?.reference).toBe(sent.reference);
   });
 
   it("finds the hold by the link's reference where Razorpay's answer with the link never came", async () => {
