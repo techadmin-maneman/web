@@ -58,7 +58,7 @@ async function open(page: Page, extra: Parameters<typeof answer>[1] = {}) {
 const row = (page: Page) =>
   page.getByRole("row").filter({ has: page.getByRole("rowheader", { name: "Looks Salon, Sector 29" }) });
 
-test("shows last month's fits, what refunds took back, what is due and what is owed", async ({ page }) => {
+test("shows last month’s fits, what refunds took back, what is due and what is owed", async ({ page }) => {
   await open(page);
   await expect(page.getByLabel(copy.month)).toHaveValue("2026-08");
   await expect(row(page).getByRole("cell")).toHaveText([
@@ -72,7 +72,7 @@ test("shows last month's fits, what refunds took back, what is due and what is o
   ]);
 });
 
-test("records the month's payment once it is reviewed", async ({ page }) => {
+test("records the month’s payment once it is reviewed", async ({ page }) => {
   let sent: unknown = null;
   await open(page, {
     "POST /api/partner-statements/{id}/payouts": (route: Route) => {
@@ -107,7 +107,7 @@ test("deletes a payment recorded by mistake", async ({ page }) => {
   await expect(page.getByRole("status")).toHaveText(copy.done.deleted);
 });
 
-test("downloads a partner's statement, with days and amounts and no client", async ({ page }) => {
+test("downloads a partner’s statement, with days and amounts and no client", async ({ page }) => {
   await open(page);
   const saved = page.waitForEvent("download");
   await row(page)

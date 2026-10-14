@@ -34,7 +34,7 @@ const VISIT_BOOKED = {
   payments: [],
   links: [],
 } satisfies OpsReply<"/api/deletion-requests/{id}/decision", "post", 409>;
-const CHECKED = "I've confirmed this with the client, on their own number.";
+const CHECKED = "I’ve confirmed this with the client, on their own number.";
 
 async function open(page: Page, decision = json({ state: "done" })): Promise<void> {
   await page.clock.setFixedTime(TASKS_READ_ON);
@@ -52,7 +52,7 @@ async function ask(page: Page): Promise<void> {
   await expect(page.getByRole("group", { name: "Deleting the account of Rohit Malhotra" })).toBeVisible();
 }
 
-test("lists every request with the client's number, the day, and the days left of the 30", async ({ page }) => {
+test("lists every request with the client’s number, the day, and the days left of the 30", async ({ page }) => {
   await open(page);
   await expect(queue(page).getByRole("listitem")).toHaveCount(3);
   await expect(row(page, "Rohit Malhotra")).toContainText("+91 98100 04417 · requested 28 Aug 2027");
@@ -75,7 +75,7 @@ test("says what a deletion destroys and what it keeps, before it can be sent", a
   await open(page);
   await ask(page);
   const confirm = page.getByRole("group", { name: "Deleting the account of Rohit Malhotra" });
-  await expect(confirm).toContainText("It can't be undone");
+  await expect(confirm).toContainText("It can’t be undone");
   await expect(confirm.getByRole("heading", { name: opsCopy.deletions.queue.deleted.title })).toBeVisible();
   await expect(confirm).toContainText("Every photo: visits and try-ons");
   await expect(confirm.getByRole("heading", { name: "Kept" })).toBeVisible();
@@ -118,7 +118,7 @@ test("keeps the account when the confirmation is called off", async ({ page }) =
   await expect(row(page, "Rohit Malhotra").getByRole("button", { name: DELETE })).toBeFocused();
 });
 
-test("moves the keyboard to the queue's heading once a request is decided", async ({ page }) => {
+test("moves the keyboard to the queue’s heading once a request is decided", async ({ page }) => {
   await open(page);
   await ask(page);
   await page.getByRole("checkbox", { name: CHECKED }).check();
@@ -140,12 +140,12 @@ test("rejects a request with a reason, which it will not send without", async ({
   const send = page.getByRole("button", { name: opsCopy.deletions.queue.reason.confirm });
   await expect(send).toBeDisabled();
 
-  await page.getByRole("textbox", { name: "Reason" }).fill("The number's owner says they did not ask.");
+  await page.getByRole("textbox", { name: "Reason" }).fill("The number’s owner says they did not ask.");
   const sent = page.waitForRequest((request) => request.url().endsWith(DECISION) && request.method() === "POST");
   await send.click();
   expect((await sent).postDataJSON()).toEqual({
     decision: "reject",
-    reason: "The number's owner says they did not ask.",
+    reason: "The number’s owner says they did not ask.",
   });
   await expect(page.getByText("Rohit Malhotra")).toBeHidden();
 });
@@ -162,7 +162,7 @@ test("says so when someone has decided it already, reads the queue again, and th
   );
   await page.getByRole("button", { name: "Delete permanently" }).click();
   await reread;
-  await expect(page.getByText("Already decided. Here's the latest.")).toBeVisible();
+  await expect(page.getByText("Already decided. Here’s the latest.")).toBeVisible();
   await expect(row(page, "Rohit Malhotra")).toBeVisible();
 });
 

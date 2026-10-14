@@ -33,7 +33,7 @@ const availability = (days: Day[], last: string): Availability => ({
   days,
 });
 
-describe("the booking sheet's days", () => {
+describe("the booking sheet’s days", () => {
   const days = [day("2026-10-05", true), day("2026-10-06", false), day("2026-10-07", false), day("2026-10-08", true)];
 
   it("chooses the day offered where it is open, else the first open day after it", () => {
@@ -100,7 +100,7 @@ describe("the days the date step marks inside the notice", () => {
   });
 });
 
-describe("the window step's button", () => {
+describe("the window step’s button", () => {
   it("goes on to payment for a day with a price", () => {
     expect(windowContinue(day("2026-10-05", true))).toBe("Continue to payment");
   });

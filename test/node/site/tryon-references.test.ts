@@ -20,7 +20,7 @@ const HOSTED = [`site/public/refs/${REFERENCE_VERSION}`];
 const sha256 = (path: string) => createHash("sha256").update(readFileSync(path)).digest("hex");
 
 describe("the looks' reference photographs", () => {
-  it("are the manifest's, one a look, under the version the looks name", () => {
+  it("are the manifest’s, one a look, under the version the looks name", () => {
     expect(manifest.version).toBe(REFERENCE_VERSION);
     expect(PRESETS.map((preset) => [preset.id, preset.reference])).toEqual(
       manifest.files.map((file) => [file.id, file.file]),
@@ -41,7 +41,7 @@ describe("the looks' reference photographs", () => {
     for (const preset of PRESETS) expect(existsSync(`site/src/assets/look-${preset.id}.jpg`), preset.id).toBe(true);
   });
 
-  it("are fetched from production's public host on staging and production, under their version", () => {
+  it("are fetched from production’s public host on staging and production, under their version", () => {
     const config = z
       .object({ env: z.record(z.string(), z.object({ vars: z.object({ TRYON_REFS_URL: z.string() }) })) })
       .parse(readJsonc("wrangler.jsonc"));

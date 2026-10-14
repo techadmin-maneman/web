@@ -72,10 +72,10 @@ export const technicianPay = {
     /** "Senior · Service visit · Delhi". */
     where: (grade: string, kind: string, city: string) => `${grade} · ${kind} · ${city}`,
     nothing: "none",
-    everyCitys: "every city's rate",
+    everyCitys: "every city’s rate",
     grade: (name: string, was: string, now: string) => `${name}: ${was} → ${now}`,
     send: "Confirm",
-    saving: "Saving",
+    saving: "Saving…",
     back: "Back",
   },
   /** The month's pay at the rates per visit, with its CSV. */

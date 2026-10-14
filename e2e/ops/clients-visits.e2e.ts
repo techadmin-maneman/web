@@ -28,7 +28,7 @@ const SUGGEST: Call = `POST ${RECORD_PATH}/address/suggestions`;
 const SAVE_ADDRESS: Call = `POST ${RECORD_PATH}/address`;
 
 // The client's hair profile, which no board draws, above the pieces (docs/decisions/0106-a-clients-hair-profile.md).
-test.describe("the client's hair profile", () => {
+test.describe("the client’s hair profile", () => {
   const section = (page: Page) => page.getByRole("region", { name: opsCopy.clients.profile.title });
 
   test("stands above the pieces: the latest, its history, and every version with who recorded it", async ({ page }) => {
@@ -237,7 +237,7 @@ test("asks for what an address cannot do without before it sends one", async ({ 
 });
 
 // The stock the client's profile matches, beneath it (docs/decisions/0173-matching-a-client-to-stock.md).
-test.describe("the client's match to stock", () => {
+test.describe("the client’s match to stock", () => {
   const section = (page: Page) => page.getByRole("region", { name: matchCopy.title });
 
   test("names the code made exactly to the profile and where its pieces are, their city first", async ({ page }) => {
@@ -274,7 +274,7 @@ test.describe("the client's match to stock", () => {
 });
 
 // A hair system made for the client, paid in full before it is ordered (docs/decisions/0174-custom-orders.md).
-test.describe("the client's custom orders", () => {
+test.describe("the client’s custom orders", () => {
   test("raises one to their profile, its price in rupees, and shows its link while unpaid", async ({ page }) => {
     const raised = {
       ...NO_CUSTOM_ORDERS,

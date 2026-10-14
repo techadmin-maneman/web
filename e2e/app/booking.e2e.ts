@@ -68,7 +68,7 @@ test("books and pays for a service visit through Razorpay Checkout", async ({ pa
   await expect(page.getByRole("dialog")).toBeHidden();
 });
 
-test("lets Checkout's own window through, in front of the sheet", async ({ page }) => {
+test("lets Checkout’s own window through, in front of the sheet", async ({ page }) => {
   await checkoutOnTop(page);
   await confirmedByRazorpay(page);
   await toPayment(page);

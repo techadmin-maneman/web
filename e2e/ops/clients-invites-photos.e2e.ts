@@ -57,7 +57,7 @@ test("attaches an invite to a client who came with none, with why, and shows it 
 test.describe("says why an invite was not attached", () => {
   for (const [code, words] of [
     ["unknown_invite", "No invite with that code."],
-    ["own_invite", "That's their own invite."],
+    ["own_invite", "That’s their own invite."],
   ] as const) {
     test(code, async ({ page }) => {
       await openClient(page, `/clients/${CLIENT.id}/referrals`, {
@@ -149,7 +149,7 @@ test("shows nothing, and asks for no photograph, when the opening could not be l
     [VIEW_PHOTOS]: fails(503, "unavailable"),
   });
   await page.getByRole("button", { name: opsCopy.clients.photos.open }).click();
-  await expect(page.getByRole("alert")).toContainText("Couldn't log the view, so photos stay locked.");
+  await expect(page.getByRole("alert")).toContainText("Couldn’t log the view, so photos stay locked.");
   await expect(page.getByRole("img")).toHaveCount(0);
   expect(photos).toBe(0);
 });
@@ -160,7 +160,7 @@ test("shows no photograph the API would not serve", async ({ page }) => {
     [readPhoto(first)]: fails(503, "unavailable"),
   });
   await page.getByRole("button", { name: opsCopy.clients.photos.open }).click();
-  await expect(page.getByRole("alert")).toContainText("Couldn't log the view");
+  await expect(page.getByRole("alert")).toContainText("Couldn’t log the view");
   await expect(page.getByRole("img")).toHaveCount(9);
 });
 

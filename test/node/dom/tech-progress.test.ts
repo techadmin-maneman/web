@@ -110,7 +110,7 @@ describe("what the job has done", () => {
 });
 
 // The checklist, the outcome and the close-out of a one visit follow what the client decided.
-describe("a one visit's choice", () => {
+describe("a one visit’s choice", () => {
   const oneVisit = (choice: Job["client_choice"] = null) =>
     job({ type: "first_fit", one_visit: true, client_choice: choice });
 
@@ -149,7 +149,7 @@ describe("the stage a card is at", () => {
     expect(stageOf(job({}, { checked_in_at: "t" }), moved, TODAY)).toBe("changed");
   });
 
-  it("is started once the job starts, so the door's no-show and Start job are gone", () => {
+  it("is started once the job starts, so the door’s no-show and Start job are gone", () => {
     expect(stageOf(job({}, { checked_in_at: "t", started_at: "t" }), [], TODAY)).toBe("started");
     expect(stageOf(job({}, { checked_in_at: "t" }), [queued("start")], TODAY)).toBe("started");
   });
@@ -158,7 +158,7 @@ describe("the stage a card is at", () => {
     expect(stageOf(job({}, { started_at: "t", outcome: "partial" }), [], TODAY)).toBe("closed");
   });
 
-  it("is not today for tomorrow's unlocked job, which cannot be checked in to yet", () => {
+  it("is not today for tomorrow’s unlocked job, which cannot be checked in to yet", () => {
     expect(stageOf(job({ date: "2030-09-20" }), [], TODAY)).toBe("not_today");
   });
 
@@ -169,23 +169,23 @@ describe("the stage a card is at", () => {
 });
 
 // Today's list said "In progress" for a job its card had closed, and nothing for one begun offline.
-describe("where a row of the day's list stands", () => {
-  it("is closed once the close-out landed, though the visit's status has not caught up", () => {
+describe("where a row of the day’s list stands", () => {
+  it("is closed once the close-out landed, though the visit’s status has not caught up", () => {
     const closedOnAnotherPhone = job({ status: "in_progress" }, { started_at: "t", outcome: "done" });
     expect(rowState(closedOnAnotherPhone, [], undefined)).toBe("closed");
     expect(stageOf(closedOnAnotherPhone, [], TODAY)).toBe("closed");
   });
 
-  it("is in progress once the start landed, before the visit's status says so", () => {
+  it("is in progress once the start landed, before the visit’s status says so", () => {
     expect(rowState(job({}, { started_at: "t" }), [], undefined)).toBe("in_progress");
   });
 
-  it("goes by what a write's answer said since the list was read", () => {
+  it("goes by what a write’s answer said since the list was read", () => {
     expect(rowState(job(), [], { started_at: "t", outcome: null })).toBe("in_progress");
     expect(rowState(job({}, { started_at: "t" }), [], { started_at: "t", outcome: "partial" })).toBe("closed");
   });
 
-  it("counts the phone's writes still on their way, and not those the API stopped, as the card does", () => {
+  it("counts the phone’s writes still on their way, and not those the API stopped, as the card does", () => {
     const begun = job({}, { started_at: "t" });
     const refused = [queued("outcome", { body: { outcome: "done" }, state: "refused" })];
 
@@ -197,7 +197,7 @@ describe("where a row of the day's list stands", () => {
     expect(rowState(job(), [queued("start", { state: "superseded" })], undefined)).toBeNull();
   });
 
-  it("falls back on the visit's status, and is nothing for a job not begun", () => {
+  it("falls back on the visit’s status, and is nothing for a job not begun", () => {
     expect(rowState(job({ status: "completed" }), [], undefined)).toBe("closed");
     expect(rowState(job({ status: "terminated" }), [], undefined)).toBe("closed");
     expect(rowState(job({ status: "in_progress" }), [], undefined)).toBe("in_progress");
@@ -215,7 +215,7 @@ describe("the no-show wait", () => {
     accepted: null,
   };
 
-  it("runs to the end the check-in's answer gave, which the API holds too", () => {
+  it("runs to the end the check-in’s answer gave, which the API holds too", () => {
     expect(theWait(job(), [], answered)).toEqual({ endsAt: Date.parse("2030-09-19T04:20:00.000Z"), confirmed: true });
   });
 

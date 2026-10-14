@@ -31,7 +31,7 @@ const draw = (carePerson: string | null) => {
 };
 
 describe("the Support card", () => {
-  it("names the client's Care person", () => {
+  it("names the client’s Care person", () => {
     draw("Asha");
     expect(page.textContent).toContain("Asha, your Care person · 9 am–9 pm daily");
     expect(page.textContent).toContain(profile.support.message);

@@ -82,7 +82,7 @@ const cellsOf = (page: Page, grade: string) =>
     .filter({ has: page.getByRole("rowheader", { name: grade, exact: true }) })
     .getByRole("cell");
 
-test("lists the grades and each one's rates, every city's first, then a city's own", async ({ page }) => {
+test("lists the grades and each one’s rates, every city’s first, then a city’s own", async ({ page }) => {
   await open(page);
   await expect(cellsOf(page, "Senior")).toHaveText([
     "1",
@@ -119,7 +119,7 @@ test("sets a rate from a date, in rupees, for every city, once it is reviewed", 
   expect(sent).toEqual({ grade_id: TRAINEE, city: null, kind: "replacement", amount: 45000, from: "2026-10-01" });
 });
 
-test("shows last month's pay at the rates per visit, says what no rate covered, and gives it as a CSV", async ({
+test("shows last month’s pay at the rates per visit, says what no rate covered, and gives it as a CSV", async ({
   page,
 }) => {
   await open(page);

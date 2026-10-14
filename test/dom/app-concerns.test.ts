@@ -116,7 +116,7 @@ describe("the concerns a client raised", () => {
     expect(raised).toBe(1);
   });
 
-  it("says when the day's concerns are spent, and keeps the words", async () => {
+  it("says when the day’s concerns are spent, and keeps the words", async () => {
     vi.stubGlobal("fetch", () =>
       Promise.resolve(Response.json({ error: { code: "rate_limited", request_id: "r-1" } }, { status: 429 })),
     );

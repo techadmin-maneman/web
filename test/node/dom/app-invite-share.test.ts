@@ -33,7 +33,7 @@ describe("the card, as the share sheet takes it", () => {
 });
 
 describe("WhatsApp", () => {
-  it("sends the card with the invite's words where the phone can share it as a file", () => {
+  it("sends the card with the invite’s words where the phone can share it as a file", () => {
     const files = phone(true);
     expect(withCard(files, CARD, TEXT)).toEqual({ files: [CARD], text: TEXT });
     // The phone is asked about the file alone, as the site's try-on asks (site/src/islands/tryon/Result.tsx).
@@ -44,7 +44,7 @@ describe("WhatsApp", () => {
     ["the phone shares no files", phone(false)],
     ["the phone cannot say, as a desktop browser without canShare", { share }],
     ["the phone has no share sheet", {}],
-  ])("leaves the words to WhatsApp's link where %s", (_, without: Phone) => {
+  ])("leaves the words to WhatsApp’s link where %s", (_, without: Phone) => {
     expect(withCard(without, CARD, TEXT)).toBeNull();
   });
 
@@ -54,7 +54,7 @@ describe("WhatsApp", () => {
 });
 
 describe("Other apps", () => {
-  it("sends the card with the invite's words where the phone can share it as a file", () => {
+  it("sends the card with the invite’s words where the phone can share it as a file", () => {
     expect(forOtherApps(phone(true), CARD, TEXT)).toEqual({ files: [CARD], text: TEXT });
   });
 

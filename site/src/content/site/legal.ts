@@ -56,7 +56,7 @@ export const legalPages: { readonly privacy: LegalPage; readonly terms: LegalPag
         heading: "Invites and analytics",
         paragraphs: [
           // PLACEHOLDER: the invite's sentence awaits counsel.
-          "When you open a friend's invite, this browser keeps the invite's code for thirty days, so that a consultation you book here later still comes with it; it is removed once a booking has used it, or on your first visit after the thirty days.",
+          "When you open a friend’s invite, this browser keeps the invite’s code for thirty days, so that a consultation you book here later still comes with it; it is removed once a booking has used it, or on your first visit after the thirty days.",
           "We measure our visits and advertising with Google Analytics, Google Ads and Meta, which set their own cookies and never receive your name, number or photograph. Visitors' network addresses are kept only in scrambled form, to limit abuse.",
         ],
       },
@@ -70,7 +70,7 @@ export const legalPages: { readonly privacy: LegalPage; readonly terms: LegalPag
       {
         heading: "Your rights",
         paragraphs: [
-          "Under India's Digital Personal Data Protection Act, 2023, you can ask what we hold about you, have it corrected, or have it erased. In the app you can download your data, correct your details and ask us to delete your account; anyone can message us on WhatsApp at {whatsapp}.",
+          "Under India’s Digital Personal Data Protection Act, 2023, you can ask what we hold about you, have it corrected, or have it erased. In the app you can download your data, correct your details and ask us to delete your account; anyone can message us on WhatsApp at {whatsapp}.",
           "We decide a request to erase within 30 days. Erasing deletes your photographs and clears your name, number and address from our records; your visits, payments and invoices stay as records. If a visit is still booked, or we hold a payment of yours, we settle that first.",
         ],
       },

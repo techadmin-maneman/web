@@ -52,7 +52,7 @@ test("says how long the change has left, as the Tasks board counts it", async ({
   await expect(queue(page).getByRole("listitem")).toContainText("1 day left");
 });
 
-test("reaches the client's record from the name", async ({ page }) => {
+test("reaches the client’s record from the name", async ({ page }) => {
   await open(page);
   await queue(page).getByRole("link", { name: "Rohit Malhotra", exact: true }).click();
   expect(new URL(page.url()).pathname).toBe("/clients/22000000-0000-4000-8000-000000000001/visits");
@@ -115,7 +115,7 @@ test("says so when another client already holds the new number", async ({ page }
 test("says so when someone has decided it already", async ({ page }) => {
   await open(page, fails(404, "not_found"));
   await page.getByRole("button", { name: "Confirm" }).click();
-  await expect(page.getByText("Already decided. Here's the latest.")).toBeVisible();
+  await expect(page.getByText("Already decided. Here’s the latest.")).toBeVisible();
 });
 
 test("says so when nothing is waiting", async ({ page }) => {

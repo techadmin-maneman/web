@@ -38,7 +38,7 @@ describe("sending what the phone holds", () => {
     expect(await events()).toEqual([]);
   });
 
-  it("waits longer after each failure at the API's end while other jobs go on, and stops as stuck after its tries", async () => {
+  it("waits longer after each failure at the API’s end while other jobs go on, and stops as stuck after its tries", async () => {
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(Date.parse("2030-09-01T04:00:00.000Z"));
     await queue("start", "a", null);
@@ -172,7 +172,7 @@ describe("sending what the phone holds", () => {
     expect(await frames()).toEqual([]);
   });
 
-  it("puts each photograph's thumbnail up after the photograph, and lets the pair go together", async () => {
+  it("puts each photograph’s thumbnail up after the photograph, and lets the pair go together", async () => {
     await keepFrame({
       jobId: "a",
       angle: "front",
@@ -238,7 +238,7 @@ describe("sending what the phone holds", () => {
     expect(sent.filter((call) => call.url.includes("/small"))).toEqual([]);
   });
 
-  it("sends no thumbnail when the photograph's answer names no take, as an API from before thumbnails answers", async () => {
+  it("sends no thumbnail when the photograph’s answer names no take, as an API from before thumbnails answers", async () => {
     await keepFrame({
       jobId: "a",
       angle: "front",

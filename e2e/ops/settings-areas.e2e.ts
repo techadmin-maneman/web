@@ -31,7 +31,7 @@ test.describe("the service area, Areas' Served tab", () => {
     await expect(area(page, "122018")).toHaveValue("Sec65");
   });
 
-  test("narrows a city's pincodes to those served or not, or by a search", async ({ page }) => {
+  test("narrows a city’s pincodes to those served or not, or by a search", async ({ page }) => {
     await open(page, "/areas/served");
     const rows = page.getByRole("table").getByRole("row");
     const narrow = page.getByRole("search", { name: opsCopy.areas.served.narrow });
@@ -97,7 +97,7 @@ test.describe("the service area, Areas' Served tab", () => {
     await expect(check).toBeFocused();
     await expect(check).toContainText("Messages 3 people");
     await expect(check).toContainText("110024, Lajpat Nagar: 3 opted in.");
-    await expect(check).toContainText("2 didn't opt in and won't be messaged.");
+    await expect(check).toContainText("2 didn’t opt in and won’t be messaged.");
 
     const sent = posted(page, "/api/service-area");
     await check.getByRole("button", { name: "Save and send to 3" }).click();
@@ -124,7 +124,7 @@ test.describe("the service area, Areas' Served tab", () => {
     });
 
   // The table kept the old values after an upload, and the next Save put them back.
-  test("puts a file's changes in the table, so the one Save sends the file's values", async ({ page }) => {
+  test("puts a file’s changes in the table, so the one Save sends the file’s values", async ({ page }) => {
     await open(page, "/areas/served", {
       "POST /api/service-area": json({ changed: 1, served: 2, alerted: 0 }),
     });
@@ -155,7 +155,7 @@ test.describe("the service area, Areas' Served tab", () => {
   });
 
   // No screen could add a pincode the reference file does not hold.
-  test("adds a pincode the file does not hold, unserved, in its city's list", async ({ page }) => {
+  test("adds a pincode the file does not hold, unserved, in its city’s list", async ({ page }) => {
     const added = {
       pincode: "400050",
       area: "Bandra West",

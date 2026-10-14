@@ -91,14 +91,14 @@ export function publishProblems(
     const placeholders: readonly string[] = DESIGN_PLACEHOLDERS[name];
     const left = stringsIn(block).filter((value) => placeholders.includes(value));
     if (left.length > 0) {
-      problems.push(`${name} is published but still holds the design's placeholder material: ${left.join(" | ")}`);
+      problems.push(`${name} is published but still holds the design’s placeholder material: ${left.join(" | ")}`);
     }
   }
   for (const [name, notice] of Object.entries(notices)) {
     if (!notice.approved) problems.push(`the ${name} notice (${notice.version}) is not approved`);
   }
   for (const [name, page] of Object.entries(legalPages)) {
-    if (!page.approved) problems.push(`the ${name} page's wording is not approved`);
+    if (!page.approved) problems.push(`the ${name} page’s wording is not approved`);
   }
   for (const price of typedPrices(pages)) {
     problems.push(

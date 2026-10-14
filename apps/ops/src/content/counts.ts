@@ -18,7 +18,7 @@ export const counts = {
   open: "Open",
   /** "Imran Qureshi · Weekly" */
   heading: (place: string, countClass: string) => `${place} · ${countClass}`,
-  countNote: "Count what's there.",
+  countNote: "Count what’s there.",
   recountNote: "These differed. Count them again.",
   counted: (name: string) => `Count of ${name}`,
   /** A hair system held under labels: each one scanned, and any with no label counted beside them. */
@@ -37,7 +37,7 @@ export const counts = {
   why: "Why it differs",
   signOff: "Sign off",
   signedSaid: "Signed off.",
-  waiting: "Waiting for a manager's sign-off.",
+  waiting: "Waiting for a manager’s sign-off.",
   done: "Done.",
   classesTitle: "Count classes",
   classesNote: "Hair systems are counted weekly and the rest quarterly, unless set here.",
@@ -54,10 +54,10 @@ export const counts = {
   errors: {
     lines: changed("The items changed since this opened."),
     labels: "Scan each labelled piece once.",
-    counted: "That's fewer than the labels scanned.",
+    counted: "That’s fewer than the labels scanned.",
     consumable_code: "This place holds none of that.",
     order_state: changed("Someone else counted this first."),
-    not_found: changed("That's gone."),
+    not_found: changed("That’s gone."),
     not_permitted: NOT_PERMITTED,
     offline: OFFLINE,
     unconfirmed: UNCONFIRMED,

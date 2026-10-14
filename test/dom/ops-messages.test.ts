@@ -20,7 +20,7 @@ const ARJUN: Conversation = {
   covered_by: null,
   technician: null,
   last_message_at: "2026-09-21T05:12:00.000Z",
-  last_line: "Can I move tomorrow's visit to the evening?",
+  last_line: "Can I move tomorrow’s visit to the evening?",
   waiting_since: "2026-09-21T05:12:00.000Z",
   reply_by: "2026-09-21T06:12:00.000Z",
 };
@@ -209,7 +209,7 @@ async function showSettings() {
 }
 
 describe("the Messages page", () => {
-  it("lists the chats waiting on us, a number we don't know by that", async () => {
+  it("lists the chats waiting on us, a number we don’t know by that", async () => {
     await show();
     expect(asked).toContain("/api/conversations?view=open");
     expect(page.textContent).toContain("Arjun Mehta");
@@ -243,7 +243,7 @@ describe("the Messages page", () => {
     expect(page.textContent).toContain(copy.none);
   });
 
-  it("shows each chat's Care person, and asks for my clients' chats as Mine", async () => {
+  it("shows each chat’s Care person, and asks for my clients' chats as Mine", async () => {
     await show();
     expect(page.textContent).toContain("asha@maneman.test");
     const select = page.querySelector("select");
@@ -286,7 +286,7 @@ describe("the Messages page", () => {
     expect(page.textContent).toContain(`${copy.carePerson.label}: ravi@maneman.test`);
   });
 
-  it("fills a quick reply in with the client's first name and next visit", async () => {
+  it("fills a quick reply in with the client’s first name and next visit", async () => {
     await show();
     await act(async () => {
       page.querySelector<HTMLButtonElement>(`button[aria-label="${copy.openLabel("Arjun Mehta")}"]`)?.click();
@@ -384,7 +384,7 @@ describe("the Messages page", () => {
     expect(panel?.querySelector(`a[href$="/payments"]`)?.textContent).toBe(copy.panel.links.payments);
   });
 
-  it("sends a matter from the chat to the client's city", async () => {
+  it("sends a matter from the chat to the client’s city", async () => {
     await show();
     await act(async () => {
       page.querySelector<HTMLButtonElement>(`button[aria-label="${copy.openLabel("Arjun Mehta")}"]`)?.click();
@@ -412,7 +412,7 @@ describe("the Messages page", () => {
     expect(page.textContent).toContain(copy.cityMatter.sent("Gurgaon"));
   });
 
-  it("links a stranger's chat to the client it turns out to be, or saves them as someone new", async () => {
+  it("links a stranger’s chat to the client it turns out to be, or saves them as someone new", async () => {
     await show();
     const click = async (element: Element | null | undefined) => {
       await act(async () => {
@@ -516,7 +516,7 @@ describe("the Messages page", () => {
     expect(page.textContent).toContain("Asha");
   });
 
-  it("sets a member's days off, adds leave and takes it back", async () => {
+  it("sets a member’s days off, adds leave and takes it back", async () => {
     await showSettings();
     const click = async (element: Element | null | undefined) => {
       await act(async () => {

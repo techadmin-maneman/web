@@ -11,8 +11,8 @@ const PICKER = "apps/ops/src/dispatch/MovePicker.tsx";
 const valueOf = (file: string, selector: string, property: string): string | undefined =>
   declarationsOf(file, selector).findLast(([name]) => name === property)?.[1];
 
-describe("a move's reasons", () => {
-  it("sit on the panel's paper", () => {
+describe("a move’s reasons", () => {
+  it("sit on the panel’s paper", () => {
     expect(valueOf("packages/ui/drawer.module.css", ".drawer", "background")).toBe("var(--surface)");
   });
 

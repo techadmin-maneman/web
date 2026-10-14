@@ -17,7 +17,7 @@ const token = (name: string) => new RegExp(`${name}:\\s*(#[0-9a-f]{6})`, "i").ex
 const COLOURS = { ink: token("--ink"), gilt: token("--gilt"), paper: token("--paper") };
 
 describe("board A1", () => {
-  it("draws the rule, the mark and the wordmark as the card's layout has them", () => {
+  it("draws the rule, the mark and the wordmark as the card’s layout has them", () => {
     expect(A1).toContain(`width:${String(RULE_WIDTH)}px; background:#C9A363`);
     expect(A1).toContain(`right:${String(LOCKUP.right)}px; bottom:${String(LOCKUP.bottom)}px`);
     expect(A1).toContain(`gap:${String(LOCKUP.gap)}px`);
@@ -43,7 +43,7 @@ const near = (rgb: number[], hex: string) =>
     .slice(0, 3)
     .every((value, index) => Math.abs(value - Number.parseInt(hex.slice(1 + index * 2, 3 + index * 2), 16)) < 24);
 
-describe("the overlay the API draws a client's card with", () => {
+describe("the overlay the API draws a client’s card with", () => {
   const overlay = Buffer.from(CARD_OVERLAY_PNG, "base64");
 
   it("is clear over both photographs, with one gilt rule 2 px wide down the middle", async () => {
@@ -74,11 +74,11 @@ describe("the overlay the API draws a client's card with", () => {
 describe("the house card", () => {
   const site = readFileSync("site/public/images/invite-house.jpg");
 
-  it("is the same file on the site's invite and in the app's preview", () => {
+  it("is the same file on the site’s invite and in the app’s preview", () => {
     expect(readFileSync("apps/app/src/refer/invite-house.jpg").equals(site)).toBe(true);
   });
 
-  it("is a 1200 x 630 JPEG under WhatsApp's 300 KB: one field of the deep ink, the lockup at its centre", async () => {
+  it("is a 1200 x 630 JPEG under WhatsApp’s 300 KB: one field of the deep ink, the lockup at its centre", async () => {
     const image = sharp(site);
     expect(await image.metadata()).toMatchObject({ format: "jpeg", width: 1200, height: 630 });
     expect(site.byteLength).toBeLessThan(300 * 1024);

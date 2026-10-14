@@ -98,7 +98,7 @@ async function show() {
   await settle();
 }
 
-describe("the client's custom orders", () => {
+describe("the client’s custom orders", () => {
   it("lists each with its spec, price and where it stands", async () => {
     await show();
     expect(page.textContent).toContain(copy.number(7));
@@ -133,7 +133,7 @@ describe("the client's custom orders", () => {
     expect(page.querySelector("a")?.getAttribute("href")).toBe("https://rzp.io/i/abc");
   });
 
-  it("sends an unpaid order's link again, or cancels it", async () => {
+  it("sends an unpaid order’s link again, or cancels it", async () => {
     await show();
     await press(copy.sendAgain);
     expect(page.textContent).toContain(copy.sent);

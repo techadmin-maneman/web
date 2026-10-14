@@ -117,11 +117,11 @@ export const booking = {
       open: "Have a discount code?",
       label: "Discount code",
       apply: "Apply",
-      applying: "Applying",
+      applying: "Applying…",
       /** "Code TENOFF: Rs. 1,234 off", beneath the price: what it takes off the price shown, GST included. */
       applied: (code: string, off: string) => `Code ${code}: ${off} off`,
       remove: "Remove code",
-      removing: "Removing",
+      removing: "Removing…",
       errors: {
         code_not_applicable: "That code doesn’t apply to this visit.",
         rate_limited: "Too many codes tried. Try again tomorrow.",
@@ -166,7 +166,7 @@ export const booking = {
     note: (name: string) => `Add a note for ${name}`,
     close: "Done",
   },
-  confirming: "Confirming your visit.",
+  confirming: "Confirming your visit…",
   // The hold's time ran out on the phone after Razorpay had taken the payment, which keeps it.
   paidIn: PAID_IN,
   slow: `This is taking longer than usual. ${TOLD_WHEN_BOOKED}`,
@@ -193,7 +193,7 @@ export const note = {
   label: "What should they know at the door?",
   offline: "No connection. Save once you’re back online.",
   save: "Save note",
-  saving: "Saving",
+  saving: "Saving…",
   saved: (technician: string | null) =>
     technician === null
       ? "Saved. Your technician reads it before your visit."
@@ -209,7 +209,7 @@ export const problem = {
   title: { hair_system: "What’s wrong with your hair system?", visit: "What went wrong?" },
   label: "In your words",
   send: "Send to Care",
-  sending: "Sending",
+  sending: "Sending…",
   sent: "Sent. Care will reply on WhatsApp.",
   addPhotos: "Add photos on WhatsApp",
   /** What WhatsApp opens with, for the photographs. */
@@ -223,7 +223,7 @@ export const dispute = {
   title: "Dispute this charge",
   label: "Why is the charge wrong?",
   send: "Send",
-  sending: "Sending",
+  sending: "Sending…",
   sent: "Dispute received. We’ll be in touch.",
   already: "You’ve already disputed this charge. We’ll let you know our decision.",
   closed: "The time to dispute this charge has passed. Message us if something’s wrong.",

@@ -7,15 +7,15 @@ import { photoLines } from "../../../apps/app/src/booking/consents.ts";
 import { booking, profile } from "../../../apps/app/src/content.ts";
 import { findNotice, REMINDER_NOTICE } from "../../../src/config/notices.ts";
 
-describe("the pay step's photograph lines", () => {
-  it("say what every visit's photographs are, as Profile does, and agree to no referral card", () => {
+describe("the pay step’s photograph lines", () => {
+  it("say what every visit’s photographs are, as Profile does, and agree to no referral card", () => {
     expect(photoLines()).toEqual([profile.visitPhotos]);
     expect(photoLines().join(" ")).not.toMatch(/referral|card/i);
   });
 });
 
-describe("the app's other consent lines", () => {
-  it("word the booking sheet's reminder box as the notice its yes is recorded under", () => {
+describe("the app’s other consent lines", () => {
+  it("word the booking sheet’s reminder box as the notice its yes is recorded under", () => {
     expect([booking.pay.remind]).toEqual(findNotice(REMINDER_NOTICE)?.text);
   });
 });

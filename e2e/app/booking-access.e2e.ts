@@ -12,7 +12,7 @@ test.beforeEach(async ({ page }) => {
   await noRealCheckout(page);
 });
 
-test("takes focus to each step's heading as the sheet moves on", async ({ page }) => {
+test("takes focus to each step’s heading as the sheet moves on", async ({ page }) => {
   await fakeCheckout(page, "paid");
   await openSheet(page);
   const sheet = page.getByRole("dialog");
@@ -81,7 +81,7 @@ test("has a Close anyone can see, a full target, ringed in paper on the ground i
 });
 
 // Axe read the date, window and pay steps only; the outcome step's states, where a client is told something went wrong, went unread.
-test("the payment's outcomes meet WCAG 2.2 AA: failed, the slot gone back, and confirmed", async ({ page }) => {
+test("the payment’s outcomes meet WCAG 2.2 AA: failed, the slot gone back, and confirmed", async ({ page }) => {
   await fakeCheckout(page, "failed");
   await page.clock.install();
   await toPayment(page);

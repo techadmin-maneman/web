@@ -16,7 +16,7 @@ export const grievances = {
     raised: (mobile: string, date: string) => `${mobile} · raised ${date}`,
     label: "Your answer",
     send: "Record and close",
-    sending: "Closing",
+    sending: "Closing…",
     empty: "No open concerns.",
     /** Recording an answer sends nothing: the client hears from whoever answers them, and reads it in the app. */
     errors: {
@@ -45,7 +45,7 @@ export const deletions = {
     deleteLabel: (name: string) => `Delete the account of ${name}`,
     rejectLabel: (name: string) => `Reject the request of ${name}`,
     confirmLabel: (name: string) => `Erasing ${name}`,
-    warning: "This erases the client now and tells them on WhatsApp. It can't be undone.",
+    warning: "This erases the client now and tells them on WhatsApp. It can’t be undone.",
     /** What the erasure destroys, in the order src/domain/privacy/erasure.ts destroys it. */
     deleted: {
       title: "Deleted",
@@ -54,7 +54,7 @@ export const deletions = {
         "Their referral card. Invites they sent show the Mane Man example card",
         "Saved addresses, and any number change in progress",
         "Name, number, email, and the text of any concern. Open ones close",
-        "Their sessions. They're signed out at once",
+        "Their sessions. They’re signed out at once",
       ],
     },
     /** What stays, and why. The eight years are the app's own words to the client. */
@@ -67,7 +67,7 @@ export const deletions = {
       ],
     },
     /** The runbook's first step, "Check the request comes from the number's owner". */
-    checked: "I've confirmed this with the client, on their own number.",
+    checked: "I’ve confirmed this with the client, on their own number.",
     confirm: (name: string) => `Erase ${name}`,
     cancel: "Keep client",
     deleting: "Erasing…",
@@ -77,10 +77,10 @@ export const deletions = {
       confirm: "Reject request",
       cancel: "Cancel",
     },
-    rejecting: "Rejecting",
+    rejecting: "Rejecting…",
     /** Above the queue once a decision is made. */
     done: {
-      delete: "Client erased. They're told on WhatsApp.",
+      delete: "Client erased. They’re told on WhatsApp.",
       reject: "Request rejected. The client is told why on WhatsApp.",
     },
     empty: "No deletion requests.",
@@ -90,7 +90,7 @@ export const deletions = {
       /** The API refuses while something is still owed (docs/decisions/0066-erasure-all-or-nothing.md). */
       visit_booked: "They have a visit booked. Cancel it on their Visits tab, which refunds them, then delete.",
       payment_held: "A refund is still owed. Delete once Payments shows it refunded.",
-      payment_owed: "A payment link is still unpaid. Delete once it's paid.",
+      payment_owed: "A payment link is still unpaid. Delete once it’s paid.",
       offline: OFFLINE,
       unconfirmed: UNCONFIRMED,
       unknown: FAILED,
@@ -111,9 +111,9 @@ export const numberChanges = {
     proven: "Both numbers verified by code.",
     /** Another record holding the new number: one that never became a client gives it up; a client's refuses. */
     heldBy: (name: string, client: boolean) => {
-      const whose = name === "" ? "another record" : `${name}'s record`;
+      const whose = name === "" ? "another record" : `${name}’s record`;
       return client
-        ? `This number is on ${whose}, a client. It can't be confirmed while they hold it.`
+        ? `This number is on ${whose}, a client. It can’t be confirmed while they hold it.`
         : `This number is on ${whose}, never a client. Confirming moves it here.`;
     },
     confirm: "Confirm",
@@ -124,7 +124,7 @@ export const numberChanges = {
       confirm: "Reject change",
       cancel: "Cancel",
     },
-    deciding: "Saving",
+    deciding: "Saving…",
     empty: "No number changes.",
     errors: {
       not_permitted: NOT_PERMITTED,

@@ -50,7 +50,7 @@ export const home = {
     accept: (date: string) => `Accept ${date}`,
     pick: "Pick another time",
     gone: "That time has just gone. Pick another.",
-    failed: "That didn't go through. Try again.",
+    failed: "That didn’t go through. Try again.",
   },
   note: "Add a note",
   consultation: {
@@ -138,7 +138,7 @@ export const home = {
     expect: [
       "Your scalp measured and your colour matched.",
       "Choose your hair system, fitted there and then.",
-      "Decide before it's fitted: go ahead and pay by the link we text you, or decide against it and pay nothing.",
+      "Decide before it’s fitted: go ahead and pay by the link we text you, or decide against it and pay nothing.",
     ],
   },
   /** No board draws it. A one visit the client was fitted at and has not paid for yet. */
@@ -173,8 +173,8 @@ export const home = {
    */
   remake: {
     label: { first_fit: "Your first fit", replacement: "Your replacement" },
-    partial: "We'll call you to set a new day.",
-    recall: "We're replacing your hair system, at no cost. We'll call you to set a day.",
+    partial: "We’ll call you to set a new day.",
+    recall: "We’re replacing your hair system, at no cost. We’ll call you to set a day.",
   },
   nothing: {
     title: "Nothing booked",

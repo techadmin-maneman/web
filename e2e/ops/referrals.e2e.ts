@@ -44,7 +44,7 @@ test("says how long each grant has been held, as the board writes it", async ({ 
 });
 
 // The held pair's names were plain text though the route gives both clients' IDs.
-test("reaches either client's page from the pair", async ({ page }) => {
+test("reaches either client’s page from the pair", async ({ page }) => {
   await open(page);
   const grant = page.getByRole("listitem").filter({ hasText: FIRST });
   await grant.getByRole("link", { name: "Vikram Sethi" }).click();
@@ -97,18 +97,18 @@ test("says so when someone else has decided the grant already", async ({ page })
   await grant.getByRole("button", { name: opsCopy.referrals.queue.approve, exact: true }).click();
   await grant.getByLabel(opsCopy.referrals.queue.reason.label.approve).fill("Two households at one address");
   await grant.getByRole("button", { name: opsCopy.referrals.queue.reason.confirm.approve }).click();
-  await expect(page.getByText("Already decided. Here's the latest.")).toBeVisible();
+  await expect(page.getByText("Already decided. Here’s the latest.")).toBeVisible();
   await expect(page.getByText(FIRST)).toBeVisible();
 });
 
 // A grant held for a consultation and fit not yet paid can be rejected, and approved once it is paid.
-test("says an approval waits for the friend's payment, and keeps the grant held", async ({ page }) => {
+test("says an approval waits for the friend’s payment, and keeps the grant held", async ({ page }) => {
   await open(page, fails(409, "not_paid"));
   const grant = page.getByRole("listitem").filter({ hasText: FIRST });
   await grant.getByRole("button", { name: opsCopy.referrals.queue.approve, exact: true }).click();
   await grant.getByLabel(opsCopy.referrals.queue.reason.label.approve).fill("Two households at one address");
   await grant.getByRole("button", { name: opsCopy.referrals.queue.reason.confirm.approve }).click();
-  await expect(page.getByRole("alert")).toContainText("The friend hasn't paid yet");
+  await expect(page.getByRole("alert")).toContainText("The friend hasn’t paid yet");
   await expect(page.getByText(FIRST)).toBeVisible();
 });
 
@@ -118,7 +118,7 @@ test("brings the grant a task named into view, and gives it the keyboard", async
   await expect(page.getByRole("listitem").filter({ hasText: FIRST })).toBeFocused();
 });
 
-test("shows every referrer's figures, the busiest first, as the route orders them", async ({ page }) => {
+test("shows every referrer’s figures, the busiest first, as the route orders them", async ({ page }) => {
   await open(page);
   const rows = page.getByRole("row");
   await expect(rows.nth(1)).toContainText("Karan Bose");

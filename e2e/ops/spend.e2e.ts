@@ -38,7 +38,7 @@ async function open(page: Page, extra: Parameters<typeof answer>[1] = {}) {
   await expect(page.getByRole("heading", { level: 1, name: "Spend" })).toBeVisible();
 }
 
-test("adds a month's offline spend for a city, in whole rupees", async ({ page }) => {
+test("adds a month’s offline spend for a city, in whole rupees", async ({ page }) => {
   let sent: unknown = null;
   await open(page, {
     "POST /api/spend": (route: Route) => {

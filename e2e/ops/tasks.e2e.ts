@@ -4,7 +4,7 @@ import { open, list, row, groupNames } from "./tasks-fixtures.ts";
 import * as opsCopy from "../../apps/ops/src/content.ts";
 
 // The groups were one 484 px column on a 1440 px screen, money between a call about a move and a job on a day off.
-test("stands each group under its department, in the navigation's order, side by side", async ({ page }) => {
+test("stands each group under its department, in the navigation’s order, side by side", async ({ page }) => {
   await open(page);
   await expect(list(page).getByRole("heading", { level: 3 })).toHaveText([
     "Operations",
@@ -44,13 +44,13 @@ test("writes how long each has left in words, and marks what has run over", asyn
 });
 
 // On staging, 19 to 29 rows of one group pushed every other group out of sight.
-test("shows a group's five longest waits, the rest on asking, and unfolds it for an overdue task past them", async ({
+test("shows a group’s five longest waits, the rest on asking, and unfolds it for an overdue task past them", async ({
   page,
 }) => {
   const [first] = TASKS.groups;
-  if (first === undefined) throw new Error("the board's tasks have no group");
+  if (first === undefined) throw new Error("the board’s tasks have no group");
   const [template] = first.tasks;
-  if (template === undefined) throw new Error("the board's first group has no task");
+  if (template === undefined) throw new Error("the board’s first group has no task");
   const names = ["Amit", "Bharat", "Chirag", "Dev", "Eshan", "Farhan", "Gautam"];
   const tasks = names.map((name, index) => ({
     ...template,

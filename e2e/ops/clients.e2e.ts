@@ -108,7 +108,7 @@ test("finds clients by part of a name, and sends it in the body, never in the UR
 });
 
 // Search lived on Clients alone, Back lost the results, and a result named no state or visit.
-test("finds a client from another page's header, keeps the words out of the URL, and keeps the results across Back", async ({
+test("finds a client from another page’s header, keeps the words out of the URL, and keeps the results across Back", async ({
   page,
 }) => {
   const asked: string[] = [];
@@ -186,7 +186,7 @@ test("asks for two letters or four digits when given fewer", async ({ page }) =>
   await expect(page.getByRole("alert")).toContainText("Type 2+ letters of a name, or 4+ digits.");
 });
 
-test("heads the page with the client's standing and the number to reach them on", async ({ page }) => {
+test("heads the page with the client’s standing and the number to reach them on", async ({ page }) => {
   await openClient(page, `/clients/${CLIENT.id}`);
   await expect(page.getByRole("heading", NAME)).toBeVisible();
   // "Fitted" heads a column of the pieces table beneath, so the standing is read from its own list.
@@ -199,7 +199,7 @@ test("heads the page with the client's standing and the number to reach them on"
 });
 
 // Who invited a client was shown only under Payments, below the credits form.
-test("heads the page with who invited the client, a way to their page, and the invite's code", async ({ page }) => {
+test("heads the page with who invited the client, a way to their page, and the invite’s code", async ({ page }) => {
   await openClient(page, `/clients/${CLIENT.id}`);
   await expect(invitedBy(page)).toHaveText("Vikram Sethi (VSAB23)");
   await expect(invitedBy(page).getByRole("link", { name: "Vikram Sethi" })).toHaveAttribute(
@@ -270,7 +270,7 @@ test("opens on the visits, with the invite on a Referrals tab of its own", async
   await expect(page.getByText("Gate 4417, bay B")).toBeVisible();
 });
 
-test("lists the pieces in the board's columns", async ({ page }) => {
+test("lists the pieces in the board’s columns", async ({ page }) => {
   await openClient(page, `/clients/${CLIENT.id}/pieces`);
   const piece = page.getByRole("row").filter({ hasText: "MM-STD-4417-B" });
   await expect(piece).toContainText("Mono");

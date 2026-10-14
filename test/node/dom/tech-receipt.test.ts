@@ -24,7 +24,7 @@ describe("the no-show receipt", () => {
     expect(receiptLine(null, "Rohit")).toEqual({ text: "No WhatsApp went to Rohit.", icon: ICONS.cross });
     // The arrival notice is queued the moment the technician checks in: on its way, not missing.
     expect(receiptLine({ state: "on_its_way", delivered_at: null }, "Rohit")).toEqual({
-      text: "Telling Rohit you're here.",
+      text: "Telling Rohit you’re here.",
       icon: ICONS.sending,
     });
   });

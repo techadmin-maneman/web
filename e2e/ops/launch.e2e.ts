@@ -90,7 +90,7 @@ test("says what the press does when nobody asked to be told, in words that agree
   await page.getByRole("button", { name: "Mark 400050 live, Bandra W" }).click();
   const panel = page.getByRole("region", { name: "Mark 400050 live" });
   await expect(panel).toContainText("No one will be messaged");
-  await expect(panel).toContainText("1 didn't opt in and won't be messaged.");
+  await expect(panel).toContainText("1 didn’t opt in and won’t be messaged.");
   await panel.getByRole("button", { name: "Mark live" }).click();
   await expect(panel.getByRole("status")).toHaveText("Live. No one messaged.");
 });
@@ -117,7 +117,7 @@ test("offers nothing to send where everyone in a live pincode has been told", as
 });
 
 // The message named the area by its post office, with no way to a better name.
-test("says where the message's name for the area comes from, and leads there", async ({ page }) => {
+test("says where the message’s name for the area comes from, and leads there", async ({ page }) => {
   await open(page, { [LAUNCH_BANDRA]: launchRoute(PREVIEW, LAUNCHED) });
   await page.getByRole("button", { name: "Mark 400050 live, Bandra W" }).click();
   await page.getByRole("link", { name: "Rename" }).click();
@@ -126,7 +126,7 @@ test("says where the message's name for the area comes from, and leads there", a
 
 // A launch keeps to the caller's cities, while the service area is set nationally: Growth Manage in one city is not led
 // to a page it cannot change.
-test("leads to the area's name only those whose access reaches Service area", async ({ page }) => {
+test("leads to the area’s name only those whose access reaches Service area", async ({ page }) => {
   const growthInMumbai = json({
     signed_in_as: "growth@maneman.in",
     sign_out: "/cdn-cgi/access/logout",

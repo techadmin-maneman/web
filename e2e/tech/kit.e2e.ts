@@ -43,7 +43,7 @@ function withAKit(fake: Fake): void {
   };
 }
 
-test("opens from today, shows each lot's expiry, and receives a top-up by the pieces scanned", async ({ page }) => {
+test("opens from today, shows each lot’s expiry, and receives a top-up by the pieces scanned", async ({ page }) => {
   const fake = await fakeTech(page);
   withAKit(fake);
   await page.goto("/");

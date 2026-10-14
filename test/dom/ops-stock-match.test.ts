@@ -42,7 +42,7 @@ async function show(match: unknown) {
   });
 }
 
-describe("the client's match to stock", () => {
+describe("the client’s match to stock", () => {
   it("names the code made to the profile, where its pieces are, their city first, and what is on its way", async () => {
     await show({
       kind: "stocked",

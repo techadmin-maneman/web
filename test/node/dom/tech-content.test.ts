@@ -23,18 +23,18 @@ function files(dir: string): string[] {
 
 const sources = files(SOURCE).filter((path) => path.endsWith(".ts") || path.endsWith(".tsx"));
 
-describe("the technician app's content", () => {
-  it("says the design's words for the offline banner", () => {
+describe("the technician app’s content", () => {
+  it("says the design’s words for the offline banner", () => {
     expect(DESIGN).toContain(today.offline.title);
     expect(DESIGN).toContain(plain(today.offline.body));
   });
 
-  it("says the design's words for the empty day", () => {
+  it("says the design’s words for the empty day", () => {
     expect(DESIGN).toContain(today.empty.title);
     expect(DESIGN).toContain(today.empty.label);
   });
 
-  it("names the badges as the design does, in the glossary's words, and carries no amount", () => {
+  it("names the badges as the design does, in the glossary’s words, and carries no amount", () => {
     // The design's Credit and Free read as what they are: a free service visit, and a visit with nothing to charge.
     expect(badges).toMatchObject({ prepaid: "Prepaid", credit: "Free visit", free: "No charge" });
     expect(DESIGN).toContain(badges.prepaid);
@@ -45,7 +45,7 @@ describe("the technician app's content", () => {
   });
 
   // The label's field drew a barcode, though a label is typed, never scanned.
-  it("draws no barcode: a piece's label is typed", () => {
+  it("draws no barcode: a piece’s label is typed", () => {
     expect(sources.filter((path) => readFileSync(path, "utf8").includes("pieceId"))).toEqual([]);
   });
 });
@@ -117,7 +117,7 @@ describe("a job ops moved to another time", () => {
     );
   });
 
-  it("names the day of a job that is not today's, and what it can when the phone holds less", () => {
+  it("names the day of a job that is not today’s, and what it can when the phone holds less", () => {
     expect(jobLabel(relocked, null, NOW)).toBe("Tomorrow 9 am consultation · Gurgaon");
     expect(jobLabel({ ...relocked, one_visit: true }, FOUR_PM, NOW)).toBe("4 pm consultation and fit · Gurgaon");
     expect(jobLabel({ ...relocked, starts_at: "2027-01-18T03:30:00.000Z" }, null, NOW)).toBe(
@@ -157,7 +157,7 @@ describe("the door", () => {
   });
 });
 
-describe("photographs never touch the phone's gallery", () => {
+describe("photographs never touch the phone’s gallery", () => {
   it("has no file input anywhere, which is what could save to the camera roll", () => {
     const withFileInput = sources.filter((path) => /type=["']file["']/.test(readFileSync(path, "utf8")));
     expect(withFileInput).toEqual([]);

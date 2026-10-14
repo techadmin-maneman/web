@@ -105,7 +105,7 @@ test("says why words are refused", async ({ page }) => {
   await expect(page.getByRole("alert")).toHaveText(copy.errors.first_line);
 });
 
-test("puts a line back to the code's wording from its history", async ({ page }) => {
+test("puts a line back to the code’s wording from its history", async ({ page }) => {
   let sent: unknown = null;
   await open(page, {
     "GET /api/words/history": json({
@@ -133,7 +133,7 @@ test("puts a line back to the code's wording from its history", async ({ page })
   expect(sent).toEqual({ key: HERO.key, text: null });
 });
 
-test("publishes the site's changed words once confirmed", async ({ page }) => {
+test("publishes the site’s changed words once confirmed", async ({ page }) => {
   let published = false;
   await open(page, {
     "POST /api/words/publish": (route: Route) => {

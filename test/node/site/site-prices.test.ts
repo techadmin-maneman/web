@@ -7,7 +7,7 @@ import * as site from "../../../site/src/content/site.ts";
 import { readJsonc } from "../../../scripts/lib/jsonc.ts";
 import { publishProblems } from "../../../site/src/lib/publish-gate.ts";
 
-describe("the site's prices", () => {
+describe("the site’s prices", () => {
   it("are given nowhere: no sentence holds a hole for one", () => {
     for (const text of [JSON.stringify(site), JSON.stringify(referral)]) {
       expect(text.match(/\{(?:firstFit|service|replacement|firstYear|firstFitRange)\}/g)).toBeNull();

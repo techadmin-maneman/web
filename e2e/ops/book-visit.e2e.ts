@@ -84,7 +84,7 @@ async function openVisits(page: Page, over: Answers = {}): Promise<void> {
 
 const panel = (page: Page) => page.getByRole("dialog", { name: `Book a visit for ${CLIENT.name}` });
 
-test("books a fitted client's service visit in a window someone is free in, sending the payment link", async ({
+test("books a fitted client’s service visit in a window someone is free in, sending the payment link", async ({
   page,
 }) => {
   const sent: unknown[] = [];

@@ -19,7 +19,7 @@ const TARGET_BYTES = 250 * 1024;
 const THUMBNAIL_LIMIT = 64 * 1024;
 const BEFORE = `/jobs/${JOB_ID}/before-photos`;
 
-test("captures the five before angles into the app's own store, never a file input", async ({ page }) => {
+test("captures the five before angles into the app’s own store, never a file input", async ({ page }) => {
   await fakeTech(page);
   await page.goto(BEFORE);
 
@@ -252,7 +252,7 @@ test("a camera the phone refused can be asked for again", async ({ page }) => {
   await expect(page.getByRole("button", { name: techCopy.capture.take })).toBeEnabled();
 });
 
-test("the frames waiting show on the waiting screen, with the design's line about the gallery", async ({ page }) => {
+test("the frames waiting show on the waiting screen, with the design’s line about the gallery", async ({ page }) => {
   await fakeTech(page);
   await page.goto(BEFORE);
   const capture = page.getByRole("button", { name: techCopy.capture.take });

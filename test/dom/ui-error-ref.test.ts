@@ -49,8 +49,8 @@ async function tapCopy(): Promise<void> {
   });
 }
 
-describe("a failure's reference", () => {
-  it("shows the start of the request ID under the failure's line", () => {
+describe("a failure’s reference", () => {
+  it("shows the start of the request ID under the failure’s line", () => {
     failedWithRef();
     expect(page.querySelector("[role=alert]")?.textContent).toContain("We could not load this.Ref 0192a8e4Copy");
   });

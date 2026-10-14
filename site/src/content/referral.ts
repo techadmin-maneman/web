@@ -192,7 +192,7 @@ export const referral = {
       {
         n: "2",
         title: "The fit, also at home",
-        body: `${capitalised(visitLength.firstFit)}. You're wearing it by the end.`,
+        body: `${capitalised(visitLength.firstFit)}. You’re wearing it by the end.`,
       },
       {
         n: "3",
@@ -207,7 +207,7 @@ export const referral = {
     label: "Pincode",
     placeholder: "122018",
     check: "Check",
-    checking: "Checking",
+    checking: "Checking…",
     empty: "Enter your pincode.",
     invalid: "That isn’t a six-digit Indian pincode.",
     failed: "We couldn’t check that right now. Try again.",
@@ -259,7 +259,7 @@ export const referral = {
     submitOneVisit: "Book the consultation and fit",
     // Not drawn: once the WhatsApp code is on its way, the button confirms it and books.
     confirmOneVisit: "Confirm and book",
-    sending: "Booking",
+    sending: "Booking…",
     told: toldWhenFitted,
   },
   /**
@@ -311,7 +311,7 @@ export const referral = {
     launchAlert: lineOf(notices.launchAlert),
     optional: "Optional",
     submit: "Add me to the list",
-    sending: "Adding",
+    sending: "Adding…",
     // Not drawn: who is told, as the consultation form says it.
     holds: "{name}’s invite stays valid for 12 months after we launch there. {name} is told when you are fitted.",
     holdsUnnamed:

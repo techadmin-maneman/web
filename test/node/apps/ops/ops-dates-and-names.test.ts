@@ -15,7 +15,7 @@ function filesUnder(directory: string): string[] {
 
 const SCREENS = filesUnder("apps/ops/src").map((path) => ({ path, text: readFileSync(path, "utf8") }));
 
-describe("the console's screens", () => {
+describe("the console’s screens", () => {
   it("cut no instant to its UTC day", () => {
     expect(SCREENS.filter(({ text }) => text.includes("_at.slice(0, 10)")).map(({ path }) => path)).toEqual([]);
   });

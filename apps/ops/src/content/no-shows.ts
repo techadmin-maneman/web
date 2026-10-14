@@ -126,7 +126,7 @@ export const noShows = {
       delivered: (when: string) => `Delivered ${when}`,
       // The board's receipt always arrived; the other four are ours.
       sent: "Sent, not delivered",
-      no_consent: "Not sent · client hasn't opted in to WhatsApp",
+      no_consent: "Not sent · client hasn’t opted in to WhatsApp",
       not_sent: "Not sent",
       none: "No reminder sent",
     },
@@ -150,7 +150,7 @@ export const noShows = {
      */
     reason: {
       label: "Your note · required",
-      placeholder: "Why you're charging or waiving",
+      placeholder: "Why you’re charging or waiving",
     },
     /**
      * The board's buttons are Refund and Uphold, which rule on a
@@ -170,15 +170,15 @@ export const noShows = {
       keepsCredit: "Keep the free service visit it was booked with?",
       nothingPaid: "Nothing was paid. Record the charge?",
       creditToo: "The free service visit is kept too.",
-      who: (name: string, day: string) => `Charging ${name} for the visit of ${day} can't be undone.`,
-      working: "Calculating.",
-      failed: "Couldn't calculate the charge. Try again.",
+      who: (name: string, day: string) => `Charging ${name} for the visit of ${day} can’t be undone.`,
+      working: "Calculating…",
+      failed: "Couldn’t calculate the charge. Try again.",
     },
     // A visit that carries no date, as a charge asked about names it.
     noDay: "an unrecorded day",
     confirmCharge: "Confirm charge",
     back: "Back",
-    deciding: "Saving",
+    deciding: "Saving…",
     /** The board draws no empty queue. */
     empty: "Nothing to decide.",
     errors: {
@@ -227,11 +227,11 @@ export const noShows = {
     /** The board's note, "Your note · required", and its placeholder. */
     reason: {
       label: "Your note · required",
-      placeholder: "Why you're refunding or upholding",
+      placeholder: "Why you’re refunding or upholding",
     },
     refund: "Refund",
     uphold: "Uphold",
-    ruling: "Ruling",
+    ruling: "Ruling…",
     /** The board draws one card, with no panel around it. A panel needs a name to be read by. */
     queueTitle: "Disputed charges",
     /** The board always draws one. */

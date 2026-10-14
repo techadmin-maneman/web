@@ -70,7 +70,7 @@ async function show() {
 }
 
 describe("the Usage page", () => {
-  it("sets technicians against expected and opens one to its items, and gives each place's losses", async () => {
+  it("sets technicians against expected and opens one to its items, and gives each place’s losses", async () => {
     await show();
     expect(page.textContent).toContain(copy.over(50));
     expect(page.textContent).toContain(copy.flagged);

@@ -26,7 +26,7 @@ function errorMaps(value: unknown, path: string): [string, Record<string, unknow
 
 const maps = modules.flatMap(([file, exports]) => errorMaps(exports, file.replace(/\.ts$/, "")));
 
-describe("the console's refusals", () => {
+describe("the console’s refusals", () => {
   it("are found", () => {
     expect(maps.length).toBeGreaterThan(60);
   });

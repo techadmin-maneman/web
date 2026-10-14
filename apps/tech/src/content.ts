@@ -133,7 +133,7 @@ export const queue = {
   never: "Never saved to this phone’s gallery.",
   retry: "Retry",
   states: {
-    uploading: "Uploading",
+    uploading: "Uploading…",
     waiting: "Waiting",
     failed: "Failed",
   },
@@ -387,7 +387,7 @@ export const notHome = {
     // as who it went to. The board draws only the delivered one.
     delivered: (who: string, time: string) => `WhatsApp to ${who}: delivered ${time}.`,
     notDelivered: (who: string) => `WhatsApp to ${who}: sent, not delivered.`,
-    onItsWay: (who: string) => `Telling ${who} you're here.`,
+    onItsWay: (who: string) => `Telling ${who} you’re here.`,
     noneSent: (who: string) => `No WhatsApp went to ${who}.`,
     theClient: "the client",
   },
@@ -630,7 +630,7 @@ export const oneVisit = {
   code: {
     label: "Discount code, if the client has one",
     apply: "Apply code",
-    applying: "Checking",
+    applying: "Checking…",
     /** Said once it applies: the link carries it, and nothing else is shown. */
     applied: (code: string) => `Code ${code} applied. The payment link will take it off.`,
     /** A code the client gave as they booked, or ops on the booking: there is no box to type another in. */
@@ -751,7 +751,7 @@ export const session = {
   switchedOff: "Your account is switched off. Ask ops to switch it back on, then sign in.",
   workKept:
     "Your account is switched off. Unsent work stays on this phone for 7 days and sends once you’re switched back on and sign in.",
-  checking: "Loading",
+  checking: "Loading…",
 } as const;
 
 // The kit (docs/decisions/0164-the-kit-screen.md). No board draws it; every line is ours.

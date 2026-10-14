@@ -14,7 +14,7 @@ export const clients = {
   find: {
     label: "Name or number",
     submit: "Find",
-    finding: "Looking",
+    finding: "Looking…",
     /** The matches, by name, each a way to the client's page. */
     found: "Clients",
     none: (text: string) => `No match for “${text}”.`,
@@ -100,11 +100,11 @@ export const clients = {
   openTasks: {
     title: "Open tasks",
     none: "Nothing open.",
-    failed: "Couldn't load open tasks.",
+    failed: "Couldn’t load open tasks.",
     /** A task done on a tab of the client's page: "Go to Payments". */
     toTab: (tab: string) => `Go to ${tab}`,
   },
-  failed: "Couldn't load this client.",
+  failed: "Couldn’t load this client.",
   /*
    * Our words, all of them: the board draws a Visits tab and nothing in it. It
    * is the record's own address and visits, which the page already holds, and
@@ -189,17 +189,17 @@ export const clients = {
       enterLabel: (visit: string) => `Enter a discount code on the visit of ${visit}`,
       label: "Discount code",
       apply: "Apply",
-      applying: "Applying",
+      applying: "Applying…",
       cancel: "Cancel",
       remove: "Remove",
       removeLabel: (visit: string) => `Take the discount code off the visit of ${visit}`,
-      removing: "Removing",
+      removing: "Removing…",
       errors: {
         not_permitted: NOT_PERMITTED,
-        code_not_applicable: "That code doesn't apply to this visit.",
+        code_not_applicable: "That code doesn’t apply to this visit.",
         code_off: "That code is switched off.",
         already_discounted: "This visit already has a code.",
-        price_settled: "Paid or invoiced. The code can't change.",
+        price_settled: "Paid or invoiced. The code can’t change.",
         not_found: "Already removed.",
         offline: OFFLINE,
         unconfirmed: UNCONFIRMED,
@@ -276,19 +276,19 @@ export const clients = {
       },
       link: "Payment link",
       loading: "Finding free windows…",
-      unreadable: "Couldn't load free windows.",
+      unreadable: "Couldn’t load free windows.",
       retry: "Try again",
       errors: {
         taken: "That window was just taken. Choose another.",
         already_booked: "Already booked, or a payment link is open for one.",
-        not_bookable: "That day or service can't be booked.",
+        not_bookable: "That day or service can’t be booked.",
         no_product: "No hair system on sale that day.",
-        code_not_applicable: "That code doesn't apply to this visit.",
+        code_not_applicable: "That code doesn’t apply to this visit.",
         invalid_request: "Already made good, or not owed. Close and look again.",
         code_off: "That code is switched off.",
         terms_changed: "Their free service visit was just used. Try again.",
-        unavailable: "Razorpay couldn't create the link. Try again in a minute.",
-        not_found: "This client can't be booked.",
+        unavailable: "Razorpay couldn’t create the link. Try again in a minute.",
+        not_found: "This client can’t be booked.",
         offline: OFFLINE,
         unconfirmed: UNCONFIRMED,
         unknown: FAILED,
@@ -303,10 +303,10 @@ export const clients = {
       /** The button's whole name, since every row's says the same. */
       openLabel: (visit: string) => `Cancel the visit of ${visit}`,
       drawer: "Cancel visit",
-      title: (name: string) => `Cancel ${name}'s visit`,
+      title: (name: string) => `Cancel ${name}’s visit`,
       close: "Close",
       loading: "Checking refund…",
-      unreadable: "Couldn't check the refund.",
+      unreadable: "Couldn’t check the refund.",
       retry: "Try again",
       paid: {
         money: (amount: string, method: string) => `Paid ${amount} by ${method}.`,
@@ -353,11 +353,11 @@ export const clients = {
     handClose: {
       open: "Close by hand",
       openLabel: (visit: string) => `Close the visit of ${visit} by hand`,
-      title: (name: string) => `Close ${name}'s visit by hand`,
+      title: (name: string) => `Close ${name}’s visit by hand`,
       close: "Close",
       outcome: "Outcome",
       outcomes: { done: "Done", partial: "Partly done", no_show: "No-show" },
-      noShowNote: "From the technician's check-in, once the wait has run out. The case goes to No-shows to rule on.",
+      noShowNote: "From the technician’s check-in, once the wait has run out. The case goes to No-shows to rule on.",
       started: "Started",
       ended: "Finished",
       reason: "What happened",
@@ -371,8 +371,8 @@ export const clients = {
       errors: {
         not_permitted: NOT_PERMITTED,
         already_closed: "Already closed or cancelled.",
-        too_early_to_close: "Too early: the visit, or the no-show's wait, hasn't run yet.",
-        no_check_in: "No check-in from the technician, so it can't close as a no-show.",
+        too_early_to_close: "Too early: the visit, or the no-show’s wait, hasn’t run yet.",
+        no_check_in: "No check-in from the technician, so it can’t close as a no-show.",
         times: "Times must be on the visit day, in order, and not in the future.",
         reason: "Say what happened.",
         not_found: "This visit no longer exists.",
@@ -396,7 +396,7 @@ export const clients = {
       booked: "Booked",
       in_progress: "In progress",
       done: "Done",
-      closing: "Closing",
+      closing: "Closing…",
     },
     outcomes: { done: "Done", partial: "Partly done", no_show: "No-show" },
     statuses: { cancelled: "Cancelled", terminated: "Not done" },
@@ -439,9 +439,9 @@ export const clients = {
     refundAsked: (amount: string) => `Refund of ${amount} on its way.`,
     refundErrors: {
       refund_not_due: "Already refunded, or a refund is on its way.",
-      unavailable: "Razorpay didn't make the refund. Make it by hand in Razorpay, once.",
+      unavailable: "Razorpay didn’t make the refund. Make it by hand in Razorpay, once.",
       invalid_request: "Say why.",
-      not_found: "This payment can't be refunded here.",
+      not_found: "This payment can’t be refunded here.",
       not_permitted: NOT_PERMITTED,
       offline: OFFLINE,
       unconfirmed: UNCONFIRMED,
@@ -457,7 +457,7 @@ export const clients = {
     /** "Natural hair system, visit of 25 Sep 2027". */
     what: (product: string, day: string | null) => (day === null ? product : `${product}, visit of ${day}`),
     states: {
-      making: "Creating",
+      making: "Creating…",
       open: "Unpaid",
       paid: "Paid",
       refused: "Refused by Razorpay",
@@ -494,7 +494,7 @@ export const clients = {
     /** The change refused, with what they hold: no more can be taken away. */
     tooMany: (most: number, held: number) =>
       `Enter -${String(most)} to ${String(most)}. They hold ${String(held)}, so remove at most ${String(held)}.`,
-    saving: "Saving",
+    saving: "Saving…",
     saved: (count: number) => `Done. They now have ${String(count)} ${count === 1 ? "visit" : "visits"}.`,
     errors: {
       not_permitted: NOT_PERMITTED,
@@ -532,11 +532,11 @@ export const clients = {
       code: "Invite code",
       reason: "Reason",
       save: "Attach invite",
-      saving: "Attaching",
+      saving: "Attaching…",
       errors: {
         not_permitted: NOT_PERMITTED,
         unknown_invite: "No invite with that code.",
-        own_invite: "That's their own invite.",
+        own_invite: "That’s their own invite.",
         invalid_request: "Enter the code and a reason.",
         not_found: "This client no longer exists.",
         offline: OFFLINE,
@@ -607,7 +607,7 @@ export const clients = {
     colours: { "1": "#1", "1B": "#1B", "2": "#2", "3": "#3", "4": "#4", "5": "#5", "6": "#6", "7": "#7", "8": "#8" },
     densities: { 80: "80%", 100: "100%", 120: "120%", 140: "140%" },
     waves: { straight: "Straight", slight_wave: "Slight wave", wavy: "Wavy", curly: "Curly" },
-    hairlines: { natural: "Natural", receded: "Receded", straight: "Straight", widows_peak: "Widow's peak" },
+    hairlines: { natural: "Natural", receded: "Receded", straight: "Straight", widows_peak: "Widow’s peak" },
     attachments: { tape: "Tape", glue: "Glue", both: "Tape and glue" },
     remedies: {
       none: "None",
@@ -627,7 +627,7 @@ export const clients = {
     failed: FAILED,
     moved: "The profile changed while you were editing. Review it and try again.",
     save: "Save new version",
-    saving: "Saving",
+    saving: "Saving…",
     cancel: "Cancel",
   },
   photos: {
@@ -665,10 +665,10 @@ export const clients = {
     empty: "No photos yet.",
     errors: {
       not_permitted: NOT_PERMITTED,
-      unavailable: "Couldn't log the view, so photos stay locked.",
+      unavailable: "Couldn’t log the view, so photos stay locked.",
       offline: OFFLINE,
       unconfirmed: UNCONFIRMED,
-      unknown: "Photo didn't load.",
+      unknown: "Photo didn’t load.",
     },
   },
   consents: {
@@ -723,9 +723,9 @@ export const clients = {
     open: "Erase",
     openLabel: (name: string) => `Erase ${name}`,
     confirmLabel: (name: string) => `Erasing ${name}`,
-    warning: "This erases them now. It can't be undone.",
+    warning: "This erases them now. It can’t be undone.",
     /** The runbook's first step, "Check the request comes from the number's owner". */
-    checked: "I've confirmed this with them, on their own number.",
+    checked: "I’ve confirmed this with them, on their own number.",
     confirm: (name: string) => `Erase ${name}`,
     cancel: "Cancel",
     erasing: "Erasing…",
@@ -737,9 +737,9 @@ export const clients = {
     },
     /** To erase today all the same, when what is owed cannot be settled first. */
     settle: {
-      visit_booked: "I'll cancel and refund it by hand today.",
-      payment_held: "I'll make sure it's refunded today.",
-      payment_owed: "Cancel the link and write off what's owed.",
+      visit_booked: "I’ll cancel and refund it by hand today.",
+      payment_held: "I’ll make sure it’s refunded today.",
+      payment_owed: "Cancel the link and write off what’s owed.",
     },
     anyway: "Erase anyway",
     done: {

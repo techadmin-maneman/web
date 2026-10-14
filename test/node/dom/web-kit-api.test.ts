@@ -81,7 +81,7 @@ const refusal = (status: number, code: string, fields?: string[]) =>
   json(status, { error: { code, request_id: "t", ...(fields === undefined ? {} : { fields }) } });
 
 describe("a call", () => {
-  it("fills in its path, and asks with the session's cookie", async () => {
+  it("fills in its path, and asks with the session’s cookie", async () => {
     const sent = answering(() => json(200, { id: "a/b" }));
     const answer = await createClient<Paths, Code>().get("/api/visits/{id}", { path: { id: "a/b" } });
     expect(sent[0]?.url).toBe("/api/visits/a%2Fb");
@@ -106,7 +106,7 @@ describe("a call", () => {
     expect(answer).toMatchObject({ ok: true, status: 202, body: { challenge_id: "c" } });
   });
 
-  it("names the page's build, as its index.html does, so the API's logs can tell an old one", async () => {
+  it("names the page’s build, as its index.html does, so the API’s logs can tell an old one", async () => {
     const sent = answering(() => json(200, { id: "a" }));
     vi.stubGlobal("document", { querySelector: () => ({ content: "7a782035b563" }) });
     await createClient<Paths, Code>().get("/api/visits/{id}", { path: { id: "a" } });
@@ -118,7 +118,7 @@ describe("a call", () => {
     expect(await createClient<Paths, Code>().post("/api/auth/logout")).toMatchObject({ ok: true, body: null });
   });
 
-  it("says when the answer came from the service worker's copy", async () => {
+  it("says when the answer came from the service worker’s copy", async () => {
     answering(() => json(200, { id: "a" }, { "Mm-Served-From": "cache" }));
     const answer = await createClient<Paths, Code>().get("/api/visits/{id}", { path: { id: "a" } });
     expect(answer).toMatchObject({ ok: true, cached: true });
@@ -133,7 +133,7 @@ describe("a call", () => {
     expect(await answer.body.text()).toBe("jpeg");
   });
 
-  it("reads a refused file's code as any other refusal's", async () => {
+  it("reads a refused file’s code as any other refusal’s", async () => {
     answering(() => refusal(404, "not_found"));
     const answer = await createClient<Paths, Code>().request<Blob>("GET", "/api/photo", { file: true });
     expect(answer).toMatchObject({ ok: false, status: 404, code: "not_found" });
@@ -141,7 +141,7 @@ describe("a call", () => {
 });
 
 describe("a refusal", () => {
-  it("carries the API's code and the fields it refused", async () => {
+  it("carries the API’s code and the fields it refused", async () => {
     answering(() => refusal(400, "invalid_request", ["mobile"]));
     const answer = await createClient<Paths, Code>().post("/api/auth/otp", { body: { mobile: "1" } });
     expect(answer).toEqual({
@@ -155,7 +155,7 @@ describe("a refusal", () => {
   });
 
   // The screen shows it, so whoever is told "it failed" can find the call in the logs.
-  it("carries the API's ID for the call, from the refusal or else from its header", async () => {
+  it("carries the API’s ID for the call, from the refusal or else from its header", async () => {
     answering(() => refusal(500, "internal_error"));
     expect(await createClient<Paths, Code>().get("/api/visits/{id}", { path: { id: "a" } })).toMatchObject({
       requestId: "t",
@@ -221,7 +221,7 @@ describe("a keyed write", () => {
 });
 
 describe("a session that has ended", () => {
-  it("is heard in one place, with the API's code, whichever call met it", async () => {
+  it("is heard in one place, with the API’s code, whichever call met it", async () => {
     const heard: string[] = [];
     answering(() => refusal(401, "unauthorized"));
     const client = createClient<Paths, Code>({ onSessionEnded: (code) => heard.push(code) });
@@ -239,7 +239,7 @@ describe("a session that has ended", () => {
     expect(heard).toEqual([]);
   });
 
-  it("can be told apart by the app, as the console tells Access's redirect to its login", async () => {
+  it("can be told apart by the app, as the console tells Access’s redirect to its login", async () => {
     const heard: string[] = [];
     answering(() => Response.redirect("https://team.cloudflareaccess.com/login", 302));
     const client = createClient<Paths, Code>({
@@ -295,14 +295,14 @@ describe("no connection", () => {
     expect(unreached).toBe(1);
   });
 
-  it("is an answer that is not the API's, rather than a page left loading for ever", async () => {
+  it("is an answer that is not the API’s, rather than a page left loading for ever", async () => {
     // A Wi-Fi sign-in page, answering 200 with HTML in place of the API.
     answering(() => new Response("<html>Log in to the Wi-Fi</html>", { status: 200 }));
     const answer = await createClient<Paths, Code>().get("/api/visits/{id}", { path: { id: "a" } });
     expect(answer).toMatchObject({ ok: false, status: 0, code: "offline" });
   });
 
-  it("is a signal that never answers, given up on after the app's patience", async () => {
+  it("is a signal that never answers, given up on after the app’s patience", async () => {
     neverAnswering();
     const client = createClient<Paths, Code>({ patience: { read: 4_000, write: 9_000 } });
     const answer = client.get("/api/visits/{id}", { path: { id: "a" } });
@@ -310,7 +310,7 @@ describe("no connection", () => {
     expect(await answer).toMatchObject({ ok: false, code: "offline" });
   });
 
-  it("is an answer whose body never ends, given up on after the same patience, a file's as well", async () => {
+  it("is an answer whose body never ends, given up on after the same patience, a file’s as well", async () => {
     vi.useFakeTimers();
     vi.stubGlobal("fetch", (_url: string, init: RequestInit) => {
       // Headers at once, then a body that stalls until the call gives up on it.
@@ -333,7 +333,7 @@ describe("no connection", () => {
     expect(file.value).toMatchObject({ ok: false, code: "offline" });
   });
 
-  it("waits a write's patience for anything but a GET", async () => {
+  it("waits a write’s patience for anything but a GET", async () => {
     neverAnswering();
     const client = createClient<Paths, Code>({ patience: { read: 4_000, write: 9_000 } });
     const answer = settled(client.post("/api/auth/otp", { body: { mobile: "9810000001" } }));
@@ -343,7 +343,7 @@ describe("no connection", () => {
     expect(answer.value).toMatchObject({ ok: false, code: "offline" });
   });
 
-  it("waits a call's own patience, where it names one, in place of the client's", async () => {
+  it("waits a call’s own patience, where it names one, in place of the client’s", async () => {
     neverAnswering();
     const client = createClient<Paths, Code>({ patience: { read: 4_000, write: 9_000 } });
     const answer = settled(client.request("PUT", "/api/upload", { body: "jpeg", patience: 60_000 }));
@@ -400,7 +400,7 @@ describe("every answer that reached the API", () => {
 
 // Checked when the tests are type-checked (npm run typecheck), not when they run.
 describe("the types each call is given and answers with", () => {
-  it("are the document's", () => {
+  it("are the document’s", () => {
     expectTypeOf<PathOf<Paths, "get">>().toEqualTypeOf<"/api/visits/{id}" | "/api/availability">();
     expectTypeOf<Success<OperationAt<Paths, "/api/visits/{id}", "get">>>().toEqualTypeOf<{ id: string }>();
     expectTypeOf<Success<OperationAt<Paths, "/api/auth/logout", "post">>>().toEqualTypeOf<null>();
@@ -412,7 +412,7 @@ describe("the types each call is given and answers with", () => {
       .toEqualTypeOf<{ id: string }>();
   });
 
-  it("answer a refusal with one of the document's codes, or the client's own", () => {
+  it("answer a refusal with one of the document’s codes, or the client’s own", () => {
     type Refused = Extract<Answer<unknown, Code>, { ok: false }>["code"];
     expectTypeOf<Refused>().toEqualTypeOf<Code | "offline" | "unconfirmed" | "unknown">();
   });

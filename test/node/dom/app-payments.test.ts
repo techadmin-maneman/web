@@ -117,7 +117,7 @@ const noShow = (decision: "undecided" | "charged" | "waived") => ({
   dispute_closed_at: null,
 });
 
-describe("a visit's payment the client was not home for", () => {
+describe("a visit’s payment the client was not home for", () => {
   const notHome = (decision: "undecided" | "charged" | "waived") => payment({ no_show: noShow(decision) });
 
   it("says nobody was home and how long we waited, in place of the method", () => {
@@ -162,7 +162,7 @@ describe("the credits among the payments", () => {
   });
 
   // An invited friend read that "a friend you invited was fitted", which was the referrer's line.
-  it("say an invite's visits by which side of it the client was", () => {
+  it("say an invite’s visits by which side of it the client was", () => {
     const fromInvite = (side: CreditLine["referral_side"]) =>
       creditMeta(credit({ event: "added", visits: 3, visit: null, source: "referral", referral_side: side }), 2030);
     expect(fromInvite("referrer")).toBe("19 Sep · your friend was fitted");

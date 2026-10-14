@@ -26,8 +26,8 @@ describe("the rules' groups", () => {
   });
 });
 
-describe("the page's sections", () => {
-  it("follow the groups' order and each group's own order, whatever order the API sends", () => {
+describe("the page’s sections", () => {
+  it("follow the groups' order and each group’s own order, whatever order the API sends", () => {
     const sections = sectionsOf([rule("referral_reward"), rule("no_show_charge"), rule("change_notice_hours")]);
     expect(sections).toEqual([
       { id: "moves", rules: [rule("change_notice_hours"), rule("no_show_charge")] },

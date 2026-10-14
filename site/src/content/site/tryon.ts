@@ -40,7 +40,7 @@ export const stageOptions: readonly {
   },
 ];
 if (stageOptions.map((stage) => stage.id).join() !== LOSS_EXTENTS.join()) {
-  throw new Error("stageOptions must list the backend's LOSS_EXTENTS in order");
+  throw new Error("stageOptions must list the backend’s LOSS_EXTENTS in order");
 }
 
 /**
@@ -131,7 +131,7 @@ export const tryOn = {
   },
   looks: {
     title: "Choose a look.",
-    body: "You get one look, so pick the one you'd wear.",
+    body: "You get one look, so pick the one you’d wear.",
     choose: "Choose one to continue",
     continue: "Continue",
   },
@@ -147,13 +147,13 @@ export const tryOn = {
     submit: "Send my look",
     // Not drawn: once the WhatsApp code is on its way, the button confirms it and sends the look.
     confirm: "Confirm and send my look",
-    sending: "Sending",
+    sending: "Sending…",
     /** Said while the look waits on the photograph's upload. */
     photoOnItsWay: "Your photo is still on its way.",
     errors: {
       rateLimited: "This number is out of tries for today. Try again tomorrow.",
       taken: "This look is already on its way to another number.",
-      other: "That didn't go through. Try again in a minute.",
+      other: "That didn’t go through. Try again in a minute.",
       // Not drawn: refusals of the WhatsApp code.
       codes: "That’s too many codes for this number today. Try again tomorrow.",
       turnstile: "We couldn’t confirm you’re a person. Try again.",
@@ -165,7 +165,7 @@ export const tryOn = {
     frame: "On its way to your WhatsApp",
     title: "Your new look is on its way.",
     /** The number the visitor gave goes between the two. */
-    to: { before: "It'll reach WhatsApp on ", after: " within minutes." },
+    to: { before: "It’ll reach WhatsApp on ", after: " within minutes." },
     // Production's RESULT_RETENTION_DAYS, as the privacy notice gives it.
     privacy: "We delete it after 14 days.",
     disclaimer:
@@ -175,7 +175,7 @@ export const tryOn = {
     /** A visitor who has had their look, back again, whose number the page does not know. */
     returning: {
       title: "Your look has already been sent.",
-      body: "We sent it to the WhatsApp number you gave. It's one look per person, every 30 days.",
+      body: "We sent it to the WhatsApp number you gave. It’s one look per person, every 30 days.",
     },
   },
   error: {
@@ -192,7 +192,7 @@ export const tryOn = {
       noFace: {
         step: "Cannot see your face",
         frame: "Face not clear",
-        title: "We couldn't see your face clearly.",
+        title: "We couldn’t see your face clearly.",
         body: "Try a well-lit photograph, taken straight on.",
       },
       shoulders: {
@@ -216,14 +216,14 @@ export const tryOn = {
       notStyleable: {
         step: "Try another photograph",
         frame: "Cannot style this one",
-        title: "We couldn't style this photograph.",
+        title: "We couldn’t style this photograph.",
         body: "Please try another one.",
       },
       refused: {
         step: "Try another photograph",
         frame: "Photograph not accepted",
         title: "Please try another photograph.",
-        body: "We can't use this one.",
+        body: "We can’t use this one.",
       },
       renderFailed: {
         step: "Something went wrong",
@@ -242,7 +242,7 @@ export const tryOn = {
         step: "Not available right now",
         frame: "Paused",
         title: "The try-on is paused.",
-        body: "We send every look on WhatsApp, and that isn't switched on yet. Book a free consultation and see the real thing.",
+        body: "We send every look on WhatsApp, and that isn’t switched on yet. Book a free consultation and see the real thing.",
       },
       /** While the simulation itself cannot run. It has no Choose another either. */
       paused: {
@@ -274,7 +274,7 @@ export const numberCode = {
   expired: "That code has expired. Send a new one.",
   failed: "That didn’t go through. Try again.",
   again: "Send a new code",
-  checking: "Checking",
+  checking: "Checking…",
 };
 
 // ---------------------------------------------------------------------------

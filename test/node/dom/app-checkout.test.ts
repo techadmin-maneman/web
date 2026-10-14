@@ -63,7 +63,7 @@ afterEach(() => {
 
 const checkout = (): Promise<Loader> => import("../../../apps/app/src/booking/checkout.ts");
 
-describe("loading Checkout's script", () => {
+describe("loading Checkout’s script", () => {
   it("loads it once from Razorpay, however many times the pay step asks while it loads", async () => {
     const { loadCheckout } = await checkout();
     const first = loadCheckout();
@@ -149,7 +149,7 @@ describe("paying in Checkout", () => {
   });
 
   // Checkout was headed by a letter "M" where the brand mark belongs.
-  it("opens on our order, under the brand mark on ink, with Checkout's own retry off", async () => {
+  it("opens on our order, under the brand mark on ink, with Checkout’s own retry off", async () => {
     const razorpay = standInRazorpay();
     const { pay } = await checkout();
     const paying = pay(ORDER, payBy());

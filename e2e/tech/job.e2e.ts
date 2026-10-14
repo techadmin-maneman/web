@@ -73,7 +73,7 @@ test("shows the flat, floor, tower, building and landmark, and a way to reach th
   expect(await axeViolations(page)).toEqual([]);
 });
 
-test("shows the piece on the client's head and the last visit's after photograph (board A3)", async ({ page }) => {
+test("shows the piece on the client’s head and the last visit’s after photograph (board A3)", async ({ page }) => {
   const fake = await fakeTech(page);
   fake.pieces = [ROHITS_PIECE];
   fake.lastVisit = true;
@@ -105,7 +105,7 @@ test("says what a first fit was paid for, apart from the hair profile, and warns
   await expect(piece).toContainText("The hair profile says Mane Man Essential. Check with ops before you fit.");
 });
 
-test("gives a consultation's card the hair profile and no piece", async ({ page }) => {
+test("gives a consultation’s card the hair profile and no piece", async ({ page }) => {
   const fake = await fakeTech(page);
   fake.type = "consultation";
   fake.profile = ROHITS_PROFILE;
@@ -313,7 +313,7 @@ test("a closed job reads as closed, with no gold Continue", async ({ page }) => 
   await expect(page.getByRole("heading", { name: "Rohit M. · done" })).toBeVisible();
 });
 
-test("tomorrow's job shows its day, and cannot be checked in to today", async ({ page }) => {
+test("tomorrow’s job shows its day, and cannot be checked in to today", async ({ page }) => {
   const fake = await fakeTech(page);
   fake.tomorrow = true;
   await atTheDoor(page);

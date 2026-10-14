@@ -78,7 +78,7 @@ test.describe("the discount codes", () => {
       "GET /api/discount-codes": (route) => json(deleted ? left : DISCOUNT_CODES)(route),
     });
     await row(page, "TYPO10").getByRole("button", { name: "Delete TYPO10" }).click();
-    await expect(page.getByText("Delete TYPO10? This can't be undone.")).toBeVisible();
+    await expect(page.getByText("Delete TYPO10? This can’t be undone.")).toBeVisible();
     await page.getByRole("button", { name: "Delete permanently" }).click();
 
     await expect(page.getByRole("status").filter({ hasText: "Deleted." })).toBeVisible();
@@ -178,7 +178,7 @@ test.describe("the discount codes", () => {
     await open(page, "/discount-codes", { [off]: empty() });
     await page.getByRole("button", { name: "Switch off WEDDNG25" }).click();
     const panel = page.getByRole("group", { name: "Switch off WEDDNG25?" });
-    await expect(panel).toContainText("It can't be used again. 3 bookings keep it.");
+    await expect(panel).toContainText("It can’t be used again. 3 bookings keep it.");
     const request = posted(page, `/api/discount-codes/${wedding.id}/off`);
     await panel.getByRole("button", { name: review.send }).click();
     await request;

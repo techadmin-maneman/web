@@ -4,7 +4,7 @@ import { logIn, signIn } from "./signed-in.ts";
 import { loggedIn } from "./profile-fixtures.ts";
 import * as appCopy from "../../apps/app/src/content.ts";
 
-test("offers support on WhatsApp, with the design's line", async ({ page }) => {
+test("offers support on WhatsApp, with the design’s line", async ({ page }) => {
   await loggedIn(page);
   await expect(page.getByRole("link", { name: "Message us on WhatsApp" })).toHaveAttribute(
     "href",
@@ -132,7 +132,7 @@ test("lists where the client is signed in, and signs another browser out", async
   await expect(phone.getByRole("heading", { level: 1, name: "Your mobile number" })).toBeVisible();
 });
 
-test("meets WCAG 2.2 AA, with the address form and the card's lines open", async ({ page }) => {
+test("meets WCAG 2.2 AA, with the address form and the card’s lines open", async ({ page }) => {
   await loggedIn(page);
   const scan = async () => {
     expect(await axeViolations(page)).toEqual([]);

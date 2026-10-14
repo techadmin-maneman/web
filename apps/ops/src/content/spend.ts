@@ -22,7 +22,7 @@ export const spend = {
   amount: "Amount, Rs.",
   note: "Note",
   add: "Add",
-  adding: "Adding",
+  adding: "Adding…",
   none: "Nothing yet.",
   columns: { month: "Month", city: "City", channel: "Channel", amount: "Amount", note: "Note", by: "Added by" },
   remove: "Remove",

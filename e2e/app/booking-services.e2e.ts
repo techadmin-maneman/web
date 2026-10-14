@@ -192,7 +192,7 @@ test("books the one service of its kind without asking, and names it on the pay 
   expect(held).toMatchObject([{ type: "service", tier: "standard" }]);
 });
 
-test("names a first fit's service and how long it takes, and sends no one to WhatsApp for another", async ({
+test("names a first fit’s service and how long it takes, and sends no one to WhatsApp for another", async ({
   page,
 }) => {
   await holdAs(page, {
@@ -210,7 +210,7 @@ test("names a first fit's service and how long it takes, and sends no one to Wha
   await expect(pay.locator('a[href*="wa.me"]')).toHaveCount(0);
 });
 
-test("writes a first fit's late fee as charged, with its GST split beside it", async ({ page }) => {
+test("writes a first fit’s late fee as charged, with its GST split beside it", async ({ page }) => {
   await holdAs(page, { type: "first_fit", price: FIRST_FIT, late_fee: LATE_FEE, late_change_charge: "late_fee" });
   await toPayment(page);
   const pay = page.getByRole("dialog", { name: appCopy.booking.pay.title });

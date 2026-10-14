@@ -54,14 +54,14 @@ describe("a screen that failed to draw", () => {
   });
 });
 
-describe("the console's table", () => {
-  it("is a table with the console's rows, and whatever the caller adds", () => {
+describe("the console’s table", () => {
+  it("is a table with the console’s rows, and whatever the caller adds", () => {
     const markup = renderToStaticMarkup(createElement(Table, { className: "mine", children: createElement("tbody") }));
     expect(markup).toMatch(/^<table class="[^"]+ mine">/);
   });
 });
 
-describe("the console's tabs", () => {
+describe("the console’s tabs", () => {
   it("are a navigation named for what they move between", () => {
     const markup = renderToStaticMarkup(createElement(Tabs, { label: "Client", children: createElement("a") }));
     expect(markup).toMatch(/^<nav[^>]* aria-label="Client"/);

@@ -24,13 +24,13 @@ const documented = (route: { method: string; path: string }) =>
 
 describe("the routes the technician app calls", () => {
   it.each(ROUTES.map((route) => [`${route.method} ${route.path}`, route] as const))(
-    "%s is in the technician API's document",
+    "%s is in the technician API’s document",
     (_name, route) => {
       expect(documented(route), `${route.method} /api${route.path} is not in docs/openapi-tech.json`).toBeDefined();
     },
   );
 
-  it("sends each of the outbox's events to a route the document writes", () => {
+  it("sends each of the outbox’s events to a route the document writes", () => {
     const job = "00000000-0000-7000-8000-000000000000";
     const kinds: EventKind[] = [
       "check_in",
@@ -51,8 +51,8 @@ describe("the routes the technician app calls", () => {
 });
 
 // Checked when the tests are type-checked: the outbox can queue no body its route would refuse.
-describe("what each of the outbox's events sends", () => {
-  it("is its route's request body, as the document writes it", () => {
+describe("what each of the outbox’s events sends", () => {
+  it("is its route’s request body, as the document writes it", () => {
     type Schemas = components["schemas"];
     expectTypeOf<EventBody<"check_in">>().toEqualTypeOf<Schemas["CheckInRequest"]>();
     expectTypeOf<EventBody<"start">>().toEqualTypeOf<null>();
@@ -67,7 +67,7 @@ describe("what each of the outbox's events sends", () => {
   });
 });
 
-describe("what the technician API and the app's shell disagreed about", () => {
+describe("what the technician API and the app’s shell disagreed about", () => {
   it("has GET /api/tech/me, which the app asks every time it opens", () => {
     expect(document.paths["/api/tech/me"]?.get).toBeDefined();
     expect(document.components.schemas.TechnicianMe).toBeDefined();
@@ -87,7 +87,7 @@ describe("what the technician API and the app's shell disagreed about", () => {
     expect(readFileSync("apps/tech/src/routes.ts", "utf8")).toContain('DEVICE_REVOKED = "device_revoked"');
   });
 
-  it("answers `technician_inactive` on /me's 401, so a switched-off technician's phone can tell", () => {
+  it("answers `technician_inactive` on /me’s 401, so a switched-off technician’s phone can tell", () => {
     expect(document.paths["/api/tech/me"]?.get?.responses["401"]?.description).toContain("technician_inactive");
     expect(readFileSync("apps/tech/src/routes.ts", "utf8")).toContain('TECHNICIAN_INACTIVE = "technician_inactive"');
   });
@@ -101,7 +101,7 @@ describe("what the technician API and the app's shell disagreed about", () => {
   });
 });
 
-describe("every write is idempotent on the phone's own event ID", () => {
+describe("every write is idempotent on the phone’s own event ID", () => {
   it("carries the header the API makes each write idempotent on", () => {
     const written = JSON.stringify(document).includes(EVENT_ID_HEADER.toLowerCase());
     expect(written, `${EVENT_ID_HEADER} is not in the document`).toBe(true);

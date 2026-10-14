@@ -46,7 +46,7 @@ describe("design tokens", () => {
     expect(used.filter((name) => !defined.has(name) && !local.has(name))).toEqual([]);
   });
 
-  it("holds the brand's five colours as the brand README gives them", () => {
+  it("holds the brand’s five colours as the brand README gives them", () => {
     const tokens = readFileSync(TOKENS, "utf8");
     for (const [name, value] of [
       ["--ink", "#16233a"],

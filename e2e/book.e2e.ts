@@ -671,7 +671,7 @@ test("a booking and a waitlist are both counted, with nothing personal", async (
 
 // A friend who opened an invite, left, and booked here later: the invite came with the booking, and the confirmation
 // says what the landing's does (ADR 0089).
-test("a friend who opened an invite books here with it, and is told the invite's visits land when fitted", async ({
+test("a friend who opened an invite books here with it, and is told the invite’s visits land when fitted", async ({
   page,
 }) => {
   const requests = await mockApi(page, {
@@ -770,7 +770,7 @@ test("an invite opened more than 30 days ago, or one we do not know, is not sent
 });
 
 // A browser can refuse storage outright (private windows, a setting, a policy): both pages still book.
-test("a browser that blocks storage books on the invite's page and here, and sends no remembered invite", async ({
+test("a browser that blocks storage books on the invite’s page and here, and sends no remembered invite", async ({
   page,
 }) => {
   const requests = await mockApi(page);

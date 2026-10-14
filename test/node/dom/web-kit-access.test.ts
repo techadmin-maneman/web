@@ -8,12 +8,12 @@ import { answerFor } from "../../../packages/web-kit/sw-requests.ts";
 const PAGE = "https://app-staging.maneman.in/visits?tab=past#top";
 
 describe("the sign-in mark", () => {
-  it("is what each app's service worker leaves to the network, so the page reaches Access", () => {
+  it("is what each app’s service worker leaves to the network, so the page reaches Access", () => {
     const page = { method: "GET", mode: "navigate", url: markedForSignIn(PAGE) };
     expect(answerFor(page, "https://app-staging.maneman.in", { path: "/api/me", answer: "home" })).toBeNull();
   });
 
-  it("keeps the page's own path, query and fragment, so the founder comes back to where they were", () => {
+  it("keeps the page’s own path, query and fragment, so the founder comes back to where they were", () => {
     const marked = new URL(markedForSignIn(PAGE));
     expect(marked.pathname).toBe("/visits");
     expect(marked.searchParams.get("tab")).toBe("past");

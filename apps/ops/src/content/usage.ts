@@ -8,7 +8,7 @@ export const usage = {
   /** "Since 24 Aug 2026", of the day as YYYY-MM-DD. */
   since: (day: string) => `Since ${fullDate(day)}`,
   technicians: "Against expected",
-  techniciansNote: "Each technician's consumables, valued at cost, against what their visits were expected to use.",
+  techniciansNote: "Each technician’s consumables, valued at cost, against what their visits were expected to use.",
   noTechnicians: "No visits done in these weeks.",
   technicianColumns: ["Technician", "Visits", "Expected", "Used", "Over by", ""],
   items: (name: string) => `Items of ${name}`,

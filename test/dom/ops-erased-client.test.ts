@@ -129,7 +129,7 @@ async function show(element: React.ReactElement) {
 const buttonNamed = (name: string) =>
   [...page.querySelectorAll("button")].find((each) => each.textContent.trim() === name);
 
-describe("an erased client's page", () => {
+describe("an erased client’s page", () => {
   it("says when they were erased, and keeps their visits and money, with nothing to call or message", async () => {
     await show(createElement(ErasedRecord, { record: ERASED, onChanged: () => undefined }));
 
@@ -169,7 +169,7 @@ describe("a deletion decided in the queue", () => {
       await new Promise((resolve) => setTimeout(resolve, 0));
     });
 
-    expect(page.querySelector('[role="status"]')?.textContent).toBe("Client erased. They're told on WhatsApp.");
+    expect(page.querySelector('[role="status"]')?.textContent).toBe("Client erased. They’re told on WhatsApp.");
     expect(page.textContent).toContain("No deletion requests.");
     expect(page.textContent).not.toContain("Rohit Malhotra");
   });

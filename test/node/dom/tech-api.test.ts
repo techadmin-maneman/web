@@ -18,7 +18,7 @@ const json = (status: number, body: unknown, headers: Record<string, string> = {
   new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json", ...headers } });
 
 describe("a 401", () => {
-  it("tells the app the session has ended, with the API's code, whichever call met it", async () => {
+  it("tells the app the session has ended, with the API’s code, whichever call met it", async () => {
     const heard: string[] = [];
     const stop = onSessionEnded((code) => heard.push(code));
     answering(() => json(401, { error: { code: "device_revoked", request_id: "t" } }));
@@ -40,7 +40,7 @@ describe("a 401", () => {
   });
 });
 
-describe("an answer that is not the API's", () => {
+describe("an answer that is not the API’s", () => {
   it("counts as no signal rather than leaving the screen loading for ever", async () => {
     // A Wi-Fi sign-in page, answering 200 with HTML in place of the API.
     answering(() => new Response("<html>Log in to the Wi-Fi</html>", { status: 200 }));

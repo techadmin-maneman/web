@@ -48,7 +48,7 @@ describe("what a refusal means for the round", () => {
     expect(classify(refused(404, "not_found"))).toMatchObject({ kind: "superseded", note: "not_found" });
   });
 
-  it("stops the job for the technician to put right on anything else, with the API's code and fields", () => {
+  it("stops the job for the technician to put right on anything else, with the API’s code and fields", () => {
     const answer = refused(400, "invalid_request", { fields: ["items"] });
     expect(classify(answer)).toEqual({ kind: "refused", note: "invalid_request", fields: ["items"], answer });
   });

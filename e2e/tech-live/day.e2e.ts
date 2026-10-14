@@ -38,7 +38,7 @@ test.beforeEach(async ({ context }) => {
   await context.setGeolocation(AT_THE_DOOR);
 });
 
-test("signs in, checks in, works a service visit's steps in the API's order and closes it", async ({ page }) => {
+test("signs in, checks in, works a service visit’s steps in the API’s order and closes it", async ({ page }) => {
   const { id, startsAt } = day.worked;
   await signIn(page);
   await page.goto(`/jobs/${id}`);

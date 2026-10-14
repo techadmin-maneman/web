@@ -107,7 +107,7 @@ test("shows the loading shape on paper while it asks whether there is a session,
   expect(await page.evaluate(() => document.body.dataset.ground)).toBe("ink");
 });
 
-test("keeps its column to a large phone's width on a wide screen, centred", async ({ page }) => {
+test("keeps its column to a large phone’s width on a wide screen, centred", async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto("/");
   const box = await page.locator("#root").boundingBox();
@@ -120,7 +120,7 @@ test("meets WCAG 2.2 AA", async ({ page }) => {
   expect(await axeViolations(page)).toEqual([]);
 });
 
-test("names each page in the browser's title, and takes focus to its heading", async ({ page }) => {
+test("names each page in the browser’s title, and takes focus to its heading", async ({ page }) => {
   await home(page);
   await expect(page).toHaveTitle("Home · Mane Man");
   const tabs = page.getByRole("navigation");
@@ -153,7 +153,7 @@ test("makes each tab a full 64 px target", async ({ page }) => {
   expect(tab?.height).toBeGreaterThanOrEqual(64);
 });
 
-test("fills a phone wider than the design, its header's rule and tab bar to the edges", async ({ page }) => {
+test("fills a phone wider than the design, its header’s rule and tab bar to the edges", async ({ page }) => {
   await page.setViewportSize({ width: 430, height: 932 });
   await home(page);
   expect((await page.locator("#root").boundingBox())?.width).toBe(430);
@@ -176,7 +176,7 @@ test("fills a phone wider than the design, its header's rule and tab bar to the 
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(430);
 });
 
-test("never cuts a focus ring at the page's scrolling edges", async ({ page }) => {
+test("never cuts a focus ring at the page’s scrolling edges", async ({ page }) => {
   // A small phone, where more of each page sits against the edges it scrolls under.
   await page.setViewportSize({ width: 360, height: 640 });
   await home(page);
@@ -205,7 +205,7 @@ test("never cuts a focus ring at the page's scrolling edges", async ({ page }) =
           box.right + reach <= edge.right + 0.5;
         return inside ? null : focused.textContent.trim().slice(0, 40);
       });
-      expect(cut, `${path}: the focus ring of "${String(cut)}" is cut by the page's edge`).toBeNull();
+      expect(cut, `${path}: the focus ring of "${String(cut)}" is cut by the page’s edge`).toBeNull();
     }
   }
 });

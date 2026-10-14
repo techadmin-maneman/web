@@ -60,7 +60,7 @@ const DAY = {
 
 const MAP = `<svg xmlns="http://www.w3.org/2000/svg" width="640" height="400"><rect width="640" height="400" fill="#ddd"/></svg>`;
 
-test("opens a day's routes from its column's head, and calls out a drive longer than the gap", async ({ page }) => {
+test("opens a day’s routes from its column’s head, and calls out a drive longer than the gap", async ({ page }) => {
   await open(page, {
     "GET /api/dispatch/day": json(DAY),
     "GET /api/dispatch/day/map": (route) => route.fulfill({ body: MAP, contentType: "image/svg+xml" }),
@@ -68,7 +68,7 @@ test("opens a day's routes from its column's head, and calls out a drive longer 
 
   await press(page, "Routes for Fri 19");
   const routes = page.getByRole("dialog", { name: "Routes · Fri 19 Sep" });
-  await expect(routes.getByRole("img", { name: "Map of each technician's route on Fri 19 Sep" })).toBeVisible();
+  await expect(routes.getByRole("img", { name: "Map of each technician’s route on Fri 19 Sep" })).toBeVisible();
   await expect(routes.getByRole("heading", { name: "Imran Qureshi" })).toBeVisible();
   await expect(routes).toContainText("45 min drive, 30 min gap");
   // A visit whose address has no pin is listed, with no drive to it.
@@ -88,7 +88,7 @@ test("says when drive times are off, and still lists the visits", async ({ page 
   await expect(routes.getByRole("img")).toHaveCount(0);
 });
 
-test("offers a job in hand to the nearest technician's day first, with how far", async ({ page }) => {
+test("offers a job in hand to the nearest technician’s day first, with how far", async ({ page }) => {
   const near = {
     ...ROOM,
     rooms: ROOM.rooms.map((room) => {

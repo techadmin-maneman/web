@@ -6,7 +6,7 @@ import * as opsCopy from "../../apps/ops/src/content.ts";
 const DISPUTES_QUEUE = "Disputed charges";
 
 // The money sat under "No-shows", only ever today's.
-test("is the console's Charges, at the address No-shows had", async ({ page }) => {
+test("is the console’s Charges, at the address No-shows had", async ({ page }) => {
   await open(page);
   await expect(page.getByRole("heading", { level: 1, name: "Charges" })).toBeVisible();
   await expect(page.getByRole("navigation").getByRole("link", { name: "Charges" })).toHaveAttribute(
@@ -15,7 +15,7 @@ test("is the console's Charges, at the address No-shows had", async ({ page }) =
   );
 });
 
-test("shows another day's money when asked, and names the day it is for", async ({ page }) => {
+test("shows another day’s money when asked, and names the day it is for", async ({ page }) => {
   const monday = { ...DAY_MONEY, date: "2027-09-20", collected: 1_200_000, charges: [] };
   const asked: string[] = [];
   await open(page);
@@ -37,7 +37,7 @@ test("shows another day's money when asked, and names the day it is for", async 
   expect([...new Set(asked)]).toEqual(["2027-09-20"]);
 });
 
-test("heads the day with the board's three figures, as money", async ({ page }) => {
+test("heads the day with the board’s three figures, as money", async ({ page }) => {
   await open(page);
   const money = page.getByRole("region", { name: MONEY, exact: true });
   await expect(money.getByText("Collected today")).toBeVisible();
@@ -72,7 +72,7 @@ test("lists a charged no-show with what its charge kept, and the evidence", asyn
 });
 
 // A no-show charged before a charge recorded what it kept: words, never a nought.
-test("says a no-show's amount was not recorded where its charge kept none on record", async ({ page }) => {
+test("says a no-show’s amount was not recorded where its charge kept none on record", async ({ page }) => {
   const unrecorded = {
     ...DAY_MONEY,
     charged: 236_000,
@@ -94,7 +94,7 @@ test("lists the disputed charges in a queue with their count, and opens the one 
   await expect(queue.getByRole("listitem").filter({ hasText: DISPUTED })).toBeFocused();
 });
 
-test("draws a disputed charge: the client's words, what the charge took, and the board's four rows", async ({
+test("draws a disputed charge: the client’s words, what the charge took, and the board’s four rows", async ({
   page,
 }) => {
   await open(page);
@@ -114,7 +114,7 @@ test("draws a disputed charge: the client's words, what the charge took, and the
 });
 
 // A check-in held over a day was re-timed to when it reached us, and read as the phone's own time.
-test("says beside a disputed check-in when the bounds moved the phone's time", async ({ page }) => {
+test("says beside a disputed check-in when the bounds moved the phone’s time", async ({ page }) => {
   const dispute = DISPUTES.disputes[0];
   const moved = {
     ...dispute,
@@ -136,7 +136,7 @@ test("says beside a disputed check-in when the bounds moved the phone's time", a
 });
 
 // The name was plain text, and the client could not be reached from the card.
-test("reaches the client's visits from their name, and the client on WhatsApp or by phone", async ({ page }) => {
+test("reaches the client’s visits from their name, and the client on WhatsApp or by phone", async ({ page }) => {
   await open(page);
   const card = disputeCard(page);
   const person = DISPUTES.disputes[0]?.person;
@@ -209,7 +209,7 @@ test("says so when someone else has ruled on the dispute already", async ({ page
   const card = disputeCard(page);
   await card.getByLabel("Your note · required").fill("The bell was broken");
   await card.getByRole("button", { name: opsCopy.noShows.dispute.uphold }).click();
-  await expect(page.getByText("Already ruled on. Here's the latest.")).toBeVisible();
+  await expect(page.getByText("Already ruled on. Here’s the latest.")).toBeVisible();
 });
 
 test("says so when nothing was charged on the day", async ({ page }) => {
@@ -232,7 +232,7 @@ test("says so when nothing was charged on the day", async ({ page }) => {
   await expect(page.getByText("not charged yet")).toBeHidden();
 });
 
-test("says so when the day's money cannot be loaded, and leaves the queue standing", async ({ page }) => {
+test("says so when the day’s money cannot be loaded, and leaves the queue standing", async ({ page }) => {
   await answer(page, { "GET /api/payments": fails(503, "unavailable"), "GET /api/no-shows": json(NO_SHOWS) });
   await page.goto("/payments");
   await expect(page.getByRole("alert")).toContainText(opsCopy.states.failed);

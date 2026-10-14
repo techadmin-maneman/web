@@ -81,15 +81,15 @@ const inTray = (overrides: Partial<Unassigned> = {}): TrayJob => ({
   },
 });
 
-describe("a job's name on the board", () => {
-  it("is the client on the block, else the kind of visit and where, else the board's word for nothing", () => {
+describe("a job’s name on the board", () => {
+  it("is the client on the block, else the kind of visit and where, else the board’s word for nothing", () => {
     expect(nameOf(onBoard())).toBe("Rohit M.");
     expect(nameOf(inTray())).toBe("First fit · DLF 3");
     expect(nameOf(inTray({ type: null }))).toBe("DLF 3");
     expect(nameOf(inTray({ type: null, sector: null }))).not.toBe("");
   });
 
-  it("gives the drawer the client's first name, and a WhatsApp chat with digits only", () => {
+  it("gives the drawer the client’s first name, and a WhatsApp chat with digits only", () => {
     expect(firstNameOf(ROHIT.name)).toBe("Rohit");
     // The drawer's link is web-kit's, as every front end's is (ADR 0076).
     expect(whatsappChat(ROHIT.mobile)).toBe("https://wa.me/919810000001");
@@ -97,7 +97,7 @@ describe("a job's name on the board", () => {
 });
 
 describe("where a job stands, and what a move changes", () => {
-  it("reads a block's day and window from the board, and a tray job's from the window it is offered", () => {
+  it("reads a block’s day and window from the board, and a tray job’s from the window it is offered", () => {
     expect(whenOf(onBoard())).toEqual({ date: "2025-09-19", window: "morning" });
     expect(whenOf(inTray())).toEqual({ date: "2025-09-20", window: "evening" });
   });
@@ -162,7 +162,7 @@ describe("where a job stands, and what a move changes", () => {
   });
 
   // A link names the visit, and the board opens its drawer from the block it finds.
-  it("finds a visit's block on a technician's day, and nothing for a visit it does not hold", () => {
+  it("finds a visit’s block on a technician’s day, and nothing for a visit it does not hold", () => {
     const tuesday = block({ appointment_id: "a7" });
     const board = { technicians: [{ ...ROW, days: [{ date: "2025-09-23", blocks: [block(), tuesday] }] }] };
     expect(blockOn(board, "a7")).toEqual({
@@ -179,13 +179,13 @@ describe("the days something has left", () => {
   // 10:30 in India on 22 September 2027, as the board's tasks are read.
   const NOW = new Date("2027-09-22T05:00:00.000Z");
 
-  it("counts India's days: due today is 0, tomorrow 1, and yesterday overdue by one", () => {
+  it("counts India’s days: due today is 0, tomorrow 1, and yesterday overdue by one", () => {
     expect(daysUntil("2027-09-22T12:00:00.000Z", NOW)).toBe(0);
     expect(daysUntil("2027-09-23T05:00:00.000Z", NOW)).toBe(1);
     expect(daysUntil("2027-09-21T05:00:00.000Z", NOW)).toBe(-1);
   });
 
-  it("goes by India's midnight, not UTC's: 11 pm UTC on the 22nd is already the 23rd there", () => {
+  it("goes by India’s midnight, not UTC’s: 11 pm UTC on the 22nd is already the 23rd there", () => {
     expect(daysUntil("2027-09-22T23:00:00.000Z", NOW)).toBe(1);
     expect(daysUntil("2027-09-22T18:29:00.000Z", NOW)).toBe(0);
   });

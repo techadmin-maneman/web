@@ -159,14 +159,14 @@ test("takes leave back only once asked, saying they can be booked on those days 
     if (request.method() === "POST") posted.push(request.url());
   });
 
-  await main.getByRole("button", { name: "Cancel Sandeep Yadav's leave, 2 Oct 2027 to 6 Oct 2027" }).click();
+  await main.getByRole("button", { name: "Cancel Sandeep Yadav’s leave, 2 Oct 2027 to 6 Oct 2027" }).click();
   const check = main.getByRole("group", { name: "Cancel leave, 2 Oct 2027 to 6 Oct 2027?" });
   await expect(check).toContainText(opsCopy.technicians.leave.check.line);
   await check.getByRole("button", { name: review.cancel }).click();
   await expect(check).toBeHidden();
   expect(posted).toEqual([]);
 
-  await main.getByRole("button", { name: "Cancel Sandeep Yadav's leave, 2 Oct 2027 to 6 Oct 2027" }).click();
+  await main.getByRole("button", { name: "Cancel Sandeep Yadav’s leave, 2 Oct 2027 to 6 Oct 2027" }).click();
   await answer(page, answersWith({ [SANDEEPS_LEAVE]: json(NO_LEAVE) }));
   const sent = page.waitForRequest((request) => request.url().endsWith(CANCEL) && request.method() === "POST");
   await main.getByRole("button", { name: review.send }).click();
@@ -190,6 +190,6 @@ test("meets WCAG 2.2 AA on the roster and the page, with a revoke, the leave for
 
   await backToRoster(page);
   const sandeep = await pageOf(page, "Sandeep Yadav", "Leave");
-  await sandeep.getByRole("button", { name: "Cancel Sandeep Yadav's leave, 2 Oct 2027 to 6 Oct 2027" }).click();
+  await sandeep.getByRole("button", { name: "Cancel Sandeep Yadav’s leave, 2 Oct 2027 to 6 Oct 2027" }).click();
   expect(await axeViolations(page)).toEqual([]);
 });

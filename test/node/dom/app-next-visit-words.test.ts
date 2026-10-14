@@ -18,7 +18,7 @@ const prompt = (fields: Partial<NextVisitPrompt>): NextVisitPrompt => ({
   ...fields,
 });
 
-describe("Home's prompt for the next visit", () => {
+describe("Home’s prompt for the next visit", () => {
   it("names the day a service falls due, and books it for then", () => {
     expect(nextVisitWords(prompt({}), "2026-10")).toEqual({
       line: "Your next service visit is due on Tue 27 Oct, in the morning.",

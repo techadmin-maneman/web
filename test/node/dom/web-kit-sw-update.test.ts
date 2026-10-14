@@ -132,7 +132,7 @@ describe("a page open on an app", () => {
 });
 
 // The worker's code is typed as a worker's (apps/*/sw/tsconfig.json), so it is read here as written.
-describe("a new build's worker", () => {
+describe("a new build’s worker", () => {
   const shell = readFileSync("packages/web-kit/sw-shell.ts", "utf8");
   const install = /addEventListener\("install"[\s\S]*?\n {2}\}\);/.exec(shell)?.[0] ?? "";
 

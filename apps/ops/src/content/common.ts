@@ -11,22 +11,22 @@ export const BOOKING_URL: Readonly<Record<EnvironmentName, string>> = {
 };
 
 /** The API refused a call the person's access does not reach. */
-export const NOT_PERMITTED = "Your access doesn't include this. Ask an admin.";
+export const NOT_PERMITTED = "Your access doesn’t include this. Ask an admin.";
 
 /** No connection: the call never reached the API. */
-export const OFFLINE = "You're offline. Reconnect and try again.";
+export const OFFLINE = "You’re offline. Reconnect and try again.";
 
 /** A change whose answer never came: it may have gone through, and the same change sent again is not made twice. */
-export const UNCONFIRMED = "We couldn't confirm that went through. Check before trying again.";
+export const UNCONFIRMED = "We couldn’t confirm that went through. Check before trying again.";
 
 /** Beneath a list that stops at its first so many. */
 export const firstShown = (count: number) => `Showing the first ${String(count)}`;
 
 /** A refusal with no words of its own. */
-export const FAILED = "That didn't work. Try again.";
+export const FAILED = "That didn’t work. Try again.";
 
 /** Razorpay not answering, wherever a payment, refund or link waits on it. */
-export const RAZORPAY_DOWN = "Razorpay isn't responding. Try again in a minute.";
+export const RAZORPAY_DOWN = "Razorpay isn’t responding. Try again in a minute.";
 
 /** The refusals that say what was acted on had changed or gone since the page opened. */
 const CHANGED = new Set<string>();
@@ -44,21 +44,21 @@ export function changed(said: string): string {
 export const isChanged = (said: string): boolean => CHANGED.has(said);
 
 /** After a changed refusal, the page read again. */
-export const LATEST = "Here's the latest.";
+export const LATEST = "Here’s the latest.";
 
 /** Shown wherever a number would be, for a client erased since, whose number is gone. */
 export const ERASED_MOBILE = "Erased client";
 
 /** What stands in for a page that failed to draw (../states/ErrorBoundary.tsx). */
 export const broken = {
-  message: "This page didn't open.",
+  message: "This page didn’t open.",
   reload: "Reload",
   home: "Open the console",
 } as const;
 
 export const states = {
-  loading: "Loading",
-  failed: "Couldn't load this.",
+  loading: "Loading…",
+  failed: "Couldn’t load this.",
   retry: "Try again",
   /** The failed call's reference, to quote to the developers. */
   ref: { label: "Ref", copy: "Copy", copied: "Copied" },
@@ -78,7 +78,7 @@ export const tables = {
 export const deleting = {
   open: "Delete",
   label: (name: string) => `Delete ${name}`,
-  warning: (name: string) => `Delete ${name}? This can't be undone.`,
+  warning: (name: string) => `Delete ${name}? This can’t be undone.`,
   confirm: "Delete",
   sending: "Deleting…",
   cancel: "Cancel",
@@ -93,7 +93,7 @@ export const review = {
   next: "Review",
   title: "Review the change",
   send: "Confirm",
-  sending: "Saving",
+  sending: "Saving…",
   edit: "Edit",
   cancel: "Cancel",
   nothing: "No changes.",

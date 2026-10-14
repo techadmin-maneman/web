@@ -9,7 +9,7 @@ test("counts a group whole when it lists only its longest waits, and says when i
   page,
 }) => {
   const [first] = TASKS.groups;
-  if (first === undefined) throw new Error("the board's tasks have no group");
+  if (first === undefined) throw new Error("the board’s tasks have no group");
   await open(page, {
     ...TASKS,
     truncated: true,
@@ -21,14 +21,14 @@ test("counts a group whole when it lists only its longest waits, and says when i
   await expect(page.getByText(opsCopy.tasks.truncated)).toBeVisible();
 });
 
-test("offers no close on the board's own groups: only a visit left partly done closes here", async ({ page }) => {
+test("offers no close on the board’s own groups: only a visit left partly done closes here", async ({ page }) => {
   await open(page);
   // Nothing in the board's own groups closes here.
   await expect(list(page).getByRole("button", { name: /^Close without follow-up/ })).toHaveCount(0);
 });
 
 // Whose each task is (docs/decisions/0092-task-owners.md): the design's own column, by first name.
-test("writes each task's owner in the board's column, by first name, and none where nobody has it", async ({
+test("writes each task’s owner in the board’s column, by first name, and none where nobody has it", async ({
   page,
 }) => {
   await open(page);
@@ -75,7 +75,7 @@ test("gives a task to another member of staff who has signed in, and says so whe
 
   await answer(page, { "PUT /api/tasks/{group}/{id}/owner": fails(404, "not_found") });
   await row(page, "Sanjay Bhatia").getByRole("button", { name: "Take · Sanjay Bhatia" }).click();
-  await expect(page.getByText("Already handled. Here's the latest.")).toBeVisible();
+  await expect(page.getByText("Already handled. Here’s the latest.")).toBeVisible();
 });
 
 // A visit left partly done may be closed without a follow-up, with why.
@@ -144,7 +144,7 @@ test("closes a visit left partly done with a reason, and it leaves the list", as
 
 // The call about a move was recorded only from a block ops had to find on the board, and both of the
 // board's tasks opened this week's bare board.
-test("records a call about a move from its row, and opens each of the board's tasks on its visit", async ({ page }) => {
+test("records a call about a move from its row, and opens each of the board’s tasks on its visit", async ({ page }) => {
   const MOVE = "99000000-0000-4000-8000-000000000001";
   const MOVED_VISIT = "77000000-0000-4000-8000-000000000101";
   const ON_LEAVE = "77000000-0000-4000-8000-000000000102";

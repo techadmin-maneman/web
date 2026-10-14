@@ -72,7 +72,7 @@ async function openAs(page: Page, whoami: Answer): Promise<void> {
 
 // The case once gave ops the phone's check-in and the wait the rules asked for,
 // named no client and dated no reminder.
-test("shows each case's client, the booked window, both clocks and the evidence", async ({ page }) => {
+test("shows each case’s client, the booked window, both clocks and the evidence", async ({ page }) => {
   await open(page);
   await expect(page.getByRole("region", { name: QUEUE }).getByRole("listitem")).toHaveCount(2);
 
@@ -112,7 +112,7 @@ test("shows what the phone said when the bounds would not take its time", async 
 // A reminder never sent once read "Never delivered", as if the client's phone had been off.
 test("says no reminder went to a client who never agreed to WhatsApp about visits", async ({ page }) => {
   await open(page);
-  await expect(fact(page, SECOND, "WhatsApp")).toHaveText("Not sent · client hasn't opted in to WhatsApp");
+  await expect(fact(page, SECOND, "WhatsApp")).toHaveText("Not sent · client hasn’t opted in to WhatsApp");
 });
 
 test("tells a reminder sent and never delivered from one that was never sent", async ({ page }) => {
@@ -153,7 +153,7 @@ test("says when ops let the technician check in past the fence, and why", async 
   );
 });
 
-test("reaches the client's visits from the case", async ({ page }) => {
+test("reaches the client’s visits from the case", async ({ page }) => {
   await open(page);
   await caseOf(page, FIRST).getByRole("link", { name: "Vikram Sethi" }).click();
   expect(new URL(page.url()).pathname).toBe(`/clients/${NO_SHOWS.cases[0]?.person.id ?? ""}/visits`);
@@ -179,7 +179,7 @@ test("asks once more before it charges, with what it keeps, and sends the reason
   const confirm = first.getByRole("group", { name: "Keep Rs. 2,360 of the Rs. 2,360 paid?" });
   await expect(confirm).toBeFocused();
   await expect(confirm).toHaveAccessibleDescription(
-    "Charging Vikram Sethi for the visit of Sun 19 Sep can't be undone.",
+    "Charging Vikram Sethi for the visit of Sun 19 Sep can’t be undone.",
   );
   const sent = page.waitForRequest((request) => request.url().includes("/decision") && request.method() === "POST");
   await confirm.getByRole("button", { name: opsCopy.noShows.queue.confirmCharge }).click();
@@ -215,12 +215,12 @@ test("sends no charge until it knows what the charge keeps", async ({ page }) =>
   const first = caseOf(page, FIRST);
   await first.getByLabel("Your note · required").fill("Nobody came down");
   await first.getByRole("button", { name: opsCopy.noShows.queue.charge, exact: true }).click();
-  await expect(first.getByText("Couldn't calculate the charge.")).toBeVisible();
+  await expect(first.getByText("Couldn’t calculate the charge.")).toBeVisible();
   await expect(first.getByRole("button", { name: opsCopy.noShows.queue.confirmCharge })).toBeDisabled();
 });
 
 // After a charge the page once still said "Nothing was charged today", and the case was gone.
-test("lists the cases ruled on today with their ruling, and reads them and the day's money again after a ruling", async ({
+test("lists the cases ruled on today with their ruling, and reads them and the day’s money again after a ruling", async ({
   page,
 }) => {
   await open(page);
@@ -288,7 +288,7 @@ test("says so when someone else has ruled on the case already", async ({ page })
   const first = caseOf(page, FIRST);
   await first.getByLabel("Your note · required").fill("Nobody came down");
   await first.getByRole("button", { name: opsCopy.noShows.queue.waive }).click();
-  await expect(page.getByText("Already decided. Here's the latest.")).toBeVisible();
+  await expect(page.getByText("Already decided. Here’s the latest.")).toBeVisible();
   await expect(page.getByText(FIRST)).toBeVisible();
 });
 
@@ -321,7 +321,7 @@ test("says so when the queue cannot be loaded, and loads it on Try again", async
   await expect(page.getByText(FIRST)).toBeVisible();
 });
 
-test("meets WCAG 2.2 AA with the day's money, a disputed charge and a queue, and with a charge asked about", async ({
+test("meets WCAG 2.2 AA with the day’s money, a disputed charge and a queue, and with a charge asked about", async ({
   page,
 }) => {
   await open(page);

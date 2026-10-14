@@ -209,7 +209,7 @@ test("says what ops set each side gets, and promises the friend nothing ops do n
   await expect(page.getByText(/land when you are fitted/)).toHaveCount(0);
 });
 
-test("an unserved pincode takes the number instead, and the launch alert is the visitor's choice", async ({ page }) => {
+test("an unserved pincode takes the number instead, and the launch alert is the visitor’s choice", async ({ page }) => {
   const requests = await mockApi(page);
   await visit(page, `/r/${CODE}`);
 
@@ -245,7 +245,7 @@ test("an unserved pincode takes the number instead, and the launch alert is the 
   });
 });
 
-test("a code we do not know still books, without the invite's visits", async ({ page }) => {
+test("a code we do not know still books, without the invite’s visits", async ({ page }) => {
   await mockApi(page, {
     invite: {
       state: "unknown",
@@ -443,7 +443,7 @@ test("the form will not send without the address, a name, a number and the agree
 
 // The answer used to replace the focused button, dropping focus to the page and saying nothing. A
 // mistyped pincode could only be undone by reloading the page.
-test("the pincode's answer is announced, and the pincode can be changed", async ({ page }) => {
+test("the pincode’s answer is announced, and the pincode can be changed", async ({ page }) => {
   await mockApi(page);
   await visit(page, `/r/${CODE}`);
   await page.getByLabel("Pincode").fill(UNSERVED.pincode);
@@ -711,9 +711,9 @@ test("a consultation asked for, not booked, still offers the app, where the requ
 });
 
 // At 1440 the card sits beside the headline, and no field runs the width of the page.
-test("the desktop page is the design's two columns, and its fields keep to their column", async ({ page }) => {
+test("the desktop page is the design’s two columns, and its fields keep to their column", async ({ page }) => {
   const width = page.viewportSize()?.width ?? 0;
-  test.skip(width < 1024, "the two columns are the desktop page's");
+  test.skip(width < 1024, "the two columns are the desktop page’s");
   await mockApi(page);
   await visit(page, `/r/${CODE}`);
   const title = await page.getByRole("heading", { level: 1 }).boundingBox();
@@ -762,7 +762,7 @@ test("the form fits a 320 px screen", async ({ page }) => {
 
 // A partner's code (docs/decisions/0123-partner-referral-channels.md): the page names the partner, and offers the
 // friend the partner's own visits, never the reward clients' invites give.
-test("names a partner whose code it is, and offers the partner's own visits to the friend", async ({ page }) => {
+test("names a partner whose code it is, and offers the partner’s own visits to the friend", async ({ page }) => {
   await mockApi(page, {
     invite: {
       state: "valid",
@@ -779,7 +779,7 @@ test("names a partner whose code it is, and offers the partner's own visits to t
 });
 
 // A partner's discount code (docs/decisions/0125-partner-discount-codes.md), which comes off the first fit by itself.
-test("offers what a partner's discount code takes off the first fit", async ({ page }) => {
+test("offers what a partner’s discount code takes off the first fit", async ({ page }) => {
   await mockApi(page, {
     invite: {
       state: "valid",

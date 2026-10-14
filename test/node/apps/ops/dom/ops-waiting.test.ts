@@ -35,8 +35,8 @@ const board = (groups: TaskGroup[]): Tasks => ({
   groups,
 });
 
-describe("the counts beside the console's sections", () => {
-  it("counts every task in Tasks, and each group's in the section that decides it", () => {
+describe("the counts beside the console’s sections", () => {
+  it("counts every task in Tasks, and each group’s in the section that decides it", () => {
     const waiting = waitingIn(
       board([
         group("referral_review", 3, ["2027-09-24T06:00:00.000Z"]),

@@ -43,7 +43,7 @@ describe("a 401", () => {
 
 describe("the building search", () => {
   // Each answer spends from Google's budget, so the query goes in a POST's body, never in a link.
-  it("asks by POST, with what was typed and the search's one token in the body", async () => {
+  it("asks by POST, with what was typed and the search’s one token in the body", async () => {
     const sent: { url: string; init: RequestInit | undefined }[] = [];
     vi.stubGlobal("fetch", (url: string, init?: RequestInit) => {
       sent.push({ url, init });
@@ -62,7 +62,7 @@ describe("the building search", () => {
   });
 });
 
-describe("an answer that is not the API's", () => {
+describe("an answer that is not the API’s", () => {
   it("counts as no connection rather than leaving the page loading for ever", async () => {
     // A Wi-Fi sign-in page, answering 200 with HTML in place of the API.
     answering(() => new Response("<html>Log in to the Wi-Fi</html>", { status: 200 }));
@@ -123,10 +123,10 @@ function settled<T>(call: Promise<T>): { value: T | undefined } {
   return seen;
 }
 
-describe("the API's clock", () => {
+describe("the API’s clock", () => {
   const apiTime = Date.parse("2030-09-16T05:00:00Z");
 
-  it("is the one a hold is counted on, when the phone's is minutes out", async () => {
+  it("is the one a hold is counted on, when the phone’s is minutes out", async () => {
     vi.useFakeTimers({ now: apiTime + 11 * 60_000 });
     answering(() => json(200, {}, { Date: new Date(apiTime).toUTCString() }));
     await api.holdById("a");

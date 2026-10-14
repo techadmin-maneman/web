@@ -136,7 +136,7 @@ describe("the Words page", () => {
     expect(page.querySelector('[role="alert"]')?.textContent).toBe(copy.errors.holes);
   });
 
-  it("puts a line back to the code's wording from its history", async () => {
+  it("puts a line back to the code’s wording from its history", async () => {
     answers.set("GET /api/words/history", () =>
       Response.json({
         versions: [
@@ -162,7 +162,7 @@ describe("the Words page", () => {
     expect(sent).toEqual([{ key: HERO.key, text: null }]);
   });
 
-  it("publishes the site's changed words once confirmed", async () => {
+  it("publishes the site’s changed words once confirmed", async () => {
     answers.set("POST /api/words/publish", () =>
       Response.json({ published: { at: "2026-10-11T06:30:00.000Z", by: "growth@maneman.test", lines: 1 } }),
     );

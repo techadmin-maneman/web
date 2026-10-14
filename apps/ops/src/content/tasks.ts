@@ -250,7 +250,7 @@ export const tasks = {
     errors: {
       not_permitted: NOT_PERMITTED,
       not_found: changed("Already handled."),
-      invalid_request: "That person hasn't used the console recently.",
+      invalid_request: "That person hasn’t used the console recently.",
       offline: OFFLINE,
       unknown: FAILED,
     },
@@ -312,7 +312,7 @@ export const needsAHand = {
   kinds: {
     message_failed: "WhatsApp message failed",
     messages_unsent: "WhatsApp messages stuck for a day",
-    crm_lead: "Lead didn't reach the CRM",
+    crm_lead: "Lead didn’t reach the CRM",
     crm_erasure: "CRM erasure incomplete",
     crm_contact_update: "CRM lead not updated",
     contact_sync: "Contact change failed",
@@ -327,7 +327,7 @@ export const needsAHand = {
     invoice_draft: "Invoice still a draft",
     invoice_unpriced: "Visit has no price to invoice",
     invoice_refused: "Books refused an invoice",
-    invoice_failed: "Invoice didn't reach Books",
+    invoice_failed: "Invoice didn’t reach Books",
     books_unapplied: "Payment not matched to an invoice",
     razorpay_refund_unheard: "Refund seen before its payment",
     low_stock: "Stock low",

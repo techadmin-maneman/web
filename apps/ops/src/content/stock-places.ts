@@ -5,7 +5,7 @@ import { changed, FAILED, NOT_PERMITTED, OFFLINE, UNCONFIRMED } from "./common.t
 
 export const stockPlaces = {
   title: "Places",
-  intro: "Where stock is kept. Each technician's kit comes with them.",
+  intro: "Where stock is kept. Each technician’s kit comes with them.",
   columns: ["Place", "Kind", "Area", ""],
   kinds: { warehouse: "Warehouse", hub: "Hub", stockroom: "Stockroom", kit: "Kit" },
   closed: "Closed",
@@ -33,7 +33,7 @@ export const stockPlaces = {
     parent_id: "Choose an open place above it.",
     zone: "Choose a zone from the list.",
     city: "Choose a city from the list.",
-    active: "Empty it, and move what's under it, first.",
+    active: "Empty it, and move what’s under it, first.",
     not_found: changed("That place is gone."),
     invalid_request: "Give the place a name, and choose where it sits.",
     not_permitted: NOT_PERMITTED,

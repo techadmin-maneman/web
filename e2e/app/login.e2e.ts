@@ -85,7 +85,7 @@ test("a session that ends mid-use goes back to the login, says why, and returns 
   await expect(page.getByText("Nothing to pay yet.")).toBeVisible();
 });
 
-test("logging out takes the API's word for it: offline it waits, and a refusal keeps the client in", async ({
+test("logging out takes the API’s word for it: offline it waits, and a refusal keeps the client in", async ({
   page,
 }) => {
   await sendCode(page, bookedNumber());
@@ -133,7 +133,7 @@ test("the tabs reach Visits and the empty Photos, Payments and Refer", async ({ 
   await expect(page.getByText("Nothing to pay yet.")).toBeVisible();
 });
 
-test("a wrong code says so, in the design's words, and the fifth voids it", async ({ page }) => {
+test("a wrong code says so, in the design’s words, and the fifth voids it", async ({ page }) => {
   await sendCode(page, bookedNumber());
   const field = page.getByRole("textbox", { name: appCopy.login.code.label });
   for (const left of ["Four attempts left.", "Three attempts left.", "Two attempts left.", "One attempt left."]) {
@@ -225,7 +225,7 @@ test("a number with no booking sees the same screen, and no code opens it", asyn
 });
 
 // The site's booking confirmation opens the app with the number typed there.
-test("a link from the site's booking fills in its number, and the code is still asked for", async ({ page }) => {
+test("a link from the site’s booking fills in its number, and the code is still asked for", async ({ page }) => {
   const mobile = randomMobile();
   await page.goto(`/#mobile=${mobile}`);
   await expect(page.getByRole("textbox", { name: appCopy.login.mobile.label })).toHaveValue(mobile);
@@ -248,7 +248,7 @@ test("A3 is reached by choice, and points to booking and WhatsApp", async ({ pag
   await expect(page.getByRole("heading", { level: 1, name: "Enter the code" })).toBeVisible();
 });
 
-test("a phone's Back steps back through the login, as its back arrows do, and never out of the app", async ({
+test("a phone’s Back steps back through the login, as its back arrows do, and never out of the app", async ({
   page,
 }) => {
   await sendCode(page, randomMobile());
@@ -287,7 +287,7 @@ test("the WhatsApp resend counts down from 30 seconds, and SMS is offered after 
   await expect(page.getByRole("status")).toHaveText(appCopy.login.code.canResend);
 });
 
-test("the resend's count runs from when the code was sent, across the help screen and back", async ({ page }) => {
+test("the resend’s count runs from when the code was sent, across the help screen and back", async ({ page }) => {
   await page.clock.install();
   await sendCode(page, randomMobile());
   await page.clock.runFor(3_000);
@@ -319,7 +319,7 @@ test("says the code is read automatically only when it comes by SMS, the one a p
   await expect(page.getByText(appCopy.login.code.automatic)).toBeVisible();
 });
 
-test("names each login screen in the browser's title, and puts focus where the client carries on", async ({ page }) => {
+test("names each login screen in the browser’s title, and puts focus where the client carries on", async ({ page }) => {
   await page.goto("/");
   await expect(page).toHaveTitle("Your mobile number · Mane Man");
   await sendCode(page, bookedNumber());

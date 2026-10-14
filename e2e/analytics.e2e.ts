@@ -10,7 +10,7 @@ const DENIED = {
   analytics_storage: "denied",
 };
 
-test("starts every tag with consent denied, and gives none an address's fragment", async ({ page }) => {
+test("starts every tag with consent denied, and gives none an address’s fragment", async ({ page }) => {
   await page.goto("/#faq");
   const commands = await analyticsCommands(page);
   expect(commands).toContainEqual(["consent", "default", DENIED]);

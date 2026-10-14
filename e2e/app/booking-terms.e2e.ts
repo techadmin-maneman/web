@@ -169,7 +169,7 @@ test("writes the late fee to move a visit as the pay step does, and C7's way to 
   expect(instead?.height).toBeGreaterThanOrEqual(44);
 });
 
-test("draws a change's outcome in the serif's one weight, never a made-up bold", async ({ page }) => {
+test("draws a change’s outcome in the serif’s one weight, never a made-up bold", async ({ page }) => {
   await page.route(/\/api\/appointments\/[0-9a-f-]{36}\/reschedule$/, (route) =>
     route.fulfill({ status: 500, json: { error: { code: "internal_error", request_id: "e2e" } } }),
   );

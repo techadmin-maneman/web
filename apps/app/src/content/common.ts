@@ -144,12 +144,12 @@ export const empty = {
 
 /** The states screen: loading, offline and error. */
 export const states = {
-  loading: "Loading",
+  loading: "Loading…",
   /** On Home, which the phone keeps. */
   offline: "No connection. Showing your last update.",
   // On a page the phone does not keep.
   offlineOnly: "No connection.",
-  waiting: "This page loads when you're back online.",
+  waiting: "This page loads when you’re back online.",
   error: {
     title: "We couldn’t load your visit.",
     /** Said only when the phone has kept a Home with a visit on it. */

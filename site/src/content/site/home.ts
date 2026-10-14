@@ -379,7 +379,7 @@ export const materials: { readonly title: string; readonly intro: string; readon
           { name: "80% · Light", text: "The scalp shows at a parting. For men over sixty." },
           {
             name: "100% · Medium light",
-            text: "Natural, without much volume. Most men's choice, and ours over forty.",
+            text: "Natural, without much volume. Most men’s choice, and ours over forty.",
           },
           {
             name: "120% · Medium",
@@ -456,14 +456,14 @@ export const faq = {
     },
     {
       q: "What if I do not like it at the fit?",
-      a: `Say so before it's fitted and you pay nothing. Once it's fitted: ${GUARANTEE.charAt(0).toLowerCase()}${GUARANTEE.slice(1)}`,
+      a: `Say so before it’s fitted and you pay nothing. Once it’s fitted: ${GUARANTEE.charAt(0).toLowerCase()}${GUARANTEE.slice(1)}`,
     },
     {
       q: "Which cities do you cover?",
       // As built, naming no city; the site's Worker writes in the cities ops serve (site/src/lib/cities.ts).
-      a: "We come by pincode. Check yours on the booking page; if we're not there yet, leave your number and we'll tell you when we are.",
+      a: "We come by pincode. Check yours on the booking page; if we’re not there yet, leave your number and we’ll tell you when we are.",
       cities:
-        "We're in {cities}, by pincode. Check yours on the booking page; if we're not there yet, leave your number and we'll tell you when we are.",
+        "We’re in {cities}, by pincode. Check yours on the booking page; if we’re not there yet, leave your number and we’ll tell you when we are.",
     },
     {
       q: "What does it cost?",

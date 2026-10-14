@@ -6,7 +6,7 @@ import { routeOf, tabOf } from "../../../apps/app/src/route.ts";
 
 const VISIT = "a0000000-0000-4000-8000-000000000001";
 
-describe("the client app's routes", () => {
+describe("the client app’s routes", () => {
   it("opens each tab and the profile at its own path", () => {
     expect(routeOf("/")).toEqual({ page: "home" });
     expect(routeOf("/visits")).toEqual({ page: "visits" });

@@ -145,7 +145,7 @@ test("keeps no API answer but Home, and forgets Home at logout", async ({ page }
   await expect(page.getByRole("heading", { level: 1, name: "We couldn’t load your visit." })).toHaveCount(0);
 });
 
-test("offers a new build's worker on Home, and loads the page on it at the tap", async ({ page }) => {
+test("offers a new build’s worker on Home, and loads the page on it at the tap", async ({ page }) => {
   await signIn(page);
   await keepHome(page);
 

@@ -10,7 +10,7 @@ import { summaryName } from "../../../apps/app/src/lib/visit.ts";
 
 const PRICE = { amount: 3_000_000, from: false, code: null };
 
-describe("a one visit's card", () => {
+describe("a one visit’s card", () => {
   it("says what it costs once fitted, only if the client goes ahead, and that a link comes by text", () => {
     expect(oneVisitLines(PRICE)).toEqual([
       "Rs. 30,000, only if you go ahead",
@@ -37,7 +37,7 @@ describe("a one visit's card", () => {
   });
 });
 
-describe("a visit's name and length", () => {
+describe("a visit’s name and length", () => {
   const summary = (oneVisit: VisitSummary["one_visit"]) => ({ type: "first_fit", one_visit: oneVisit }) as VisitSummary;
 
   it("calls a one visit a consultation and fit, and a first fit by its own name", () => {

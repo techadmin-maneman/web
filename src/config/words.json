@@ -1432,7 +1432,7 @@
     "surface": "site",
     "group": "Home",
     "where": "materials",
-    "text": "Natural, without much volume. Most men's choice, and ours over forty."
+    "text": "Natural, without much volume. Most men’s choice, and ours over forty."
   },
   {
     "key": "site:home/materials.groups.3.items.2.name",
@@ -1600,7 +1600,7 @@
     "surface": "site",
     "group": "Home",
     "where": "guarantee",
-    "text": "If the fit isn't right, tell us within 14 days. We'll refit it free or refund you in full."
+    "text": "If the fit isn’t right, tell us within 14 days. We’ll refit it free or refund you in full."
   },
   {
     "key": "site:home/faq.title",
@@ -1719,7 +1719,7 @@
     "surface": "site",
     "group": "Home",
     "where": "faq",
-    "text": "Say so before it's fitted and you pay nothing. Once it's fitted: if the fit isn't right, tell us within 14 days. We'll refit it free or refund you in full."
+    "text": "Say so before it’s fitted and you pay nothing. Once it’s fitted: if the fit isn’t right, tell us within 14 days. We’ll refit it free or refund you in full."
   },
   {
     "key": "site:home/faq.items.7.q",
@@ -1733,7 +1733,7 @@
     "surface": "site",
     "group": "Home",
     "where": "faq",
-    "text": "We come by pincode. Check yours on the booking page; if we're not there yet, leave your number and we'll tell you when we are."
+    "text": "We come by pincode. Check yours on the booking page; if we’re not there yet, leave your number and we’ll tell you when we are."
   },
   {
     "key": "site:home/faq.items.8.q",
@@ -1810,7 +1810,7 @@
     "surface": "site",
     "group": "Book",
     "where": "booking",
-    "text": "Join the list and we'll WhatsApp you the week we start coming to you."
+    "text": "Join the list and we’ll WhatsApp you the week we start coming to you."
   },
   {
     "key": "site:pages/booking.extent",
@@ -1873,7 +1873,7 @@
     "surface": "site",
     "group": "Book",
     "where": "booking",
-    "text": "One moment"
+    "text": "One moment…"
   },
   {
     "key": "site:pages/booking.bookingFor",
@@ -2076,7 +2076,7 @@
     "surface": "site",
     "group": "Page titles",
     "where": "pageDescriptions",
-    "text": "The terms of Mane Man's hair system service."
+    "text": "The terms of Mane Man’s hair system service."
   },
   {
     "key": "site:tryon/stageOptions.0.title",
@@ -2496,7 +2496,7 @@
     "surface": "site",
     "group": "Try-on",
     "where": "tryOn",
-    "text": "You get one look, so pick the one you'd wear."
+    "text": "You get one look, so pick the one you’d wear."
   },
   {
     "key": "site:tryon/tryOn.looks.choose",
@@ -2573,7 +2573,7 @@
     "surface": "site",
     "group": "Try-on",
     "where": "tryOn",
-    "text": "Sending"
+    "text": "Sending…"
   },
   {
     "key": "site:tryon/tryOn.gate.photoOnItsWay",
@@ -2601,7 +2601,7 @@
     "surface": "site",
     "group": "Try-on",
     "where": "tryOn",
-    "text": "That didn't go through. Try again in a minute."
+    "text": "That didn’t go through. Try again in a minute."
   },
   {
     "key": "site:tryon/tryOn.gate.errors.codes",
@@ -2643,7 +2643,7 @@
     "surface": "site",
     "group": "Try-on",
     "where": "tryOn",
-    "text": "It'll reach WhatsApp on "
+    "text": "It’ll reach WhatsApp on "
   },
   {
     "key": "site:tryon/tryOn.sent.to.after",
@@ -2692,7 +2692,7 @@
     "surface": "site",
     "group": "Try-on",
     "where": "tryOn",
-    "text": "We sent it to the WhatsApp number you gave. It's one look per person, every 30 days."
+    "text": "We sent it to the WhatsApp number you gave. It’s one look per person, every 30 days."
   },
   {
     "key": "site:tryon/tryOn.error.another",
@@ -2755,7 +2755,7 @@
     "surface": "site",
     "group": "Try-on",
     "where": "tryOn",
-    "text": "We couldn't see your face clearly."
+    "text": "We couldn’t see your face clearly."
   },
   {
     "key": "site:tryon/tryOn.error.kinds.noFace.body",
@@ -2867,7 +2867,7 @@
     "surface": "site",
     "group": "Try-on",
     "where": "tryOn",
-    "text": "We couldn't style this photograph."
+    "text": "We couldn’t style this photograph."
   },
   {
     "key": "site:tryon/tryOn.error.kinds.notStyleable.body",
@@ -2902,7 +2902,7 @@
     "surface": "site",
     "group": "Try-on",
     "where": "tryOn",
-    "text": "We can't use this one."
+    "text": "We can’t use this one."
   },
   {
     "key": "site:tryon/tryOn.error.kinds.renderFailed.step",
@@ -2986,7 +2986,7 @@
     "surface": "site",
     "group": "Try-on",
     "where": "tryOn",
-    "text": "We send every look on WhatsApp, and that isn't switched on yet. Book a free consultation and see the real thing."
+    "text": "We send every look on WhatsApp, and that isn’t switched on yet. Book a free consultation and see the real thing."
   },
   {
     "key": "site:tryon/tryOn.error.kinds.paused.step",
@@ -3070,7 +3070,7 @@
     "surface": "site",
     "group": "Try-on",
     "where": "numberCode",
-    "text": "Checking"
+    "text": "Checking…"
   },
   {
     "key": "site:contact/whatsapp.display",
@@ -3091,7 +3091,7 @@
     "surface": "site",
     "group": "Contact",
     "where": "consentBar",
-    "text": "We'd like to measure visits and the ads that bring them, with cookies from Google and Meta. Nothing you type in a form goes to them."
+    "text": "We’d like to measure visits and the ads that bring them, with cookies from Google and Meta. Nothing you type in a form goes to them."
   },
   {
     "key": "site:contact/consentBar.privacy",
@@ -3119,7 +3119,7 @@
     "surface": "site",
     "group": "Contact",
     "where": "islandFailed",
-    "text": "This didn't load. Message us on WhatsApp and we'll help you from there."
+    "text": "This didn’t load. Message us on WhatsApp and we’ll help you from there."
   },
   {
     "key": "site:contact/islandFailed.action",
@@ -3147,7 +3147,7 @@
     "surface": "site",
     "group": "Guides",
     "where": "guidesPage",
-    "text": "Straight answers on hair systems: how they compare with a transplant, and how they're fitted, cared for and priced."
+    "text": "Straight answers on hair systems: how they compare with a transplant, and how they’re fitted, cared for and priced."
   },
   {
     "key": "site:guides/guidesPage.lead",
@@ -3210,7 +3210,7 @@
     "surface": "site",
     "group": "Guides",
     "where": "guides",
-    "text": "Two answers to the same mirror. Here's how they differ."
+    "text": "Two answers to the same mirror. Here’s how they differ."
   },
   {
     "key": "site:guides/guides.0.sections.0.heading",
@@ -3231,7 +3231,7 @@
     "surface": "site",
     "group": "Guides",
     "where": "guides",
-    "text": "A hair system is 100% real human hair on a fine base, shaped to your scalp and bonded over the area you've lost. Nothing is cut or moved, and you leave the visit with the look you chose."
+    "text": "A hair system is 100% real human hair on a fine base, shaped to your scalp and bonded over the area you’ve lost. Nothing is cut or moved, and you leave the visit with the look you chose."
   },
   {
     "key": "site:guides/guides.0.sections.1.heading",
@@ -3252,7 +3252,7 @@
     "surface": "site",
     "group": "Guides",
     "where": "guides",
-    "text": "A hair system shows the day it's fitted. Its density is matched to the hair at your sides, so it reads as yours, not as new."
+    "text": "A hair system shows the day it’s fitted. Its density is matched to the hair at your sides, so it reads as yours, not as new."
   },
   {
     "key": "site:guides/guides.0.sections.2.heading",
@@ -3287,14 +3287,14 @@
     "surface": "site",
     "group": "Guides",
     "where": "guides",
-    "text": "If there's little hair left to move, or you'd rather avoid surgery, a hair system is the straighter road. If you have the hair to move and want something you never think about again, a transplant may suit you better: ask a surgeon."
+    "text": "If there’s little hair left to move, or you’d rather avoid surgery, a hair system is the straighter road. If you have the hair to move and want something you never think about again, a transplant may suit you better: ask a surgeon."
   },
   {
     "key": "site:guides/guides.0.sections.3.paragraphs.1",
     "surface": "site",
     "group": "Guides",
     "where": "guides",
-    "text": "At the free consultation, your technician looks at your hair, tells you honestly what a hair system will and won't do, and quotes before anything is fitted."
+    "text": "At the free consultation, your technician looks at your hair, tells you honestly what a hair system will and won’t do, and quotes before anything is fitted."
   },
   {
     "key": "site:guides/guides.1.title",
@@ -3308,7 +3308,7 @@
     "surface": "site",
     "group": "Guides",
     "where": "guides",
-    "text": "100% real human hair on a fine base, bonded to the skin. What a hair system is made of, and why it isn't a wig."
+    "text": "100% real human hair on a fine base, bonded to the skin. What a hair system is made of, and why it isn’t a wig."
   },
   {
     "key": "site:guides/guides.1.lead",
@@ -3357,14 +3357,14 @@
     "surface": "site",
     "group": "Guides",
     "where": "guides",
-    "text": "Why it isn't a wig"
+    "text": "Why it isn’t a wig"
   },
   {
     "key": "site:guides/guides.1.sections.2.paragraphs.0",
     "surface": "site",
     "group": "Guides",
     "where": "guides",
-    "text": "A wig covers the whole head, is held by tension or clips and comes off at night. A hair system covers only the area you've lost, is bonded to the skin, is cut into your own hair and stays on for weeks at a time. You shower, swim and sleep in it."
+    "text": "A wig covers the whole head, is held by tension or clips and comes off at night. A hair system covers only the area you’ve lost, is bonded to the skin, is cut into your own hair and stays on for weeks at a time. You shower, swim and sleep in it."
   },
   {
     "key": "site:guides/guides.2.title",
@@ -3462,7 +3462,7 @@
     "surface": "site",
     "group": "Guides",
     "where": "guides",
-    "text": "Wash and style it like your own hair, gently. It doesn't grow, so the cut stays as it was left."
+    "text": "Wash and style it like your own hair, gently. It doesn’t grow, so the cut stays as it was left."
   },
   {
     "key": "site:guides/guides.3.sections.0.paragraphs.1",
@@ -3490,7 +3490,7 @@
     "surface": "site",
     "group": "Guides",
     "where": "guides",
-    "text": "When it's time for a new one"
+    "text": "When it’s time for a new one"
   },
   {
     "key": "site:guides/guides.3.sections.2.paragraphs.0",
@@ -3623,7 +3623,7 @@
     "surface": "site",
     "group": "Guides",
     "where": "guides",
-    "text": "At the free consultation, from your technician, before anything is fitted. If it isn't for you, you owe nothing."
+    "text": "At the free consultation, from your technician, before anything is fitted. If it isn’t for you, you owe nothing."
   },
   {
     "key": "site:guides/areasPage.pageTitle",
@@ -3665,7 +3665,7 @@
     "surface": "site",
     "group": "Areas",
     "where": "areasPage",
-    "text": "Not there yet? Leave your number on the booking page, and we'll tell you when we reach your city."
+    "text": "Not there yet? Leave your number on the booking page, and we’ll tell you when we reach your city."
   },
   {
     "key": "site:guides/areasPage.check",
@@ -3980,7 +3980,7 @@
     "surface": "site",
     "group": "Invite page",
     "where": "referral",
-    "text": "Three hours. You're wearing it by the end."
+    "text": "Three hours. You’re wearing it by the end."
   },
   {
     "key": "site:referral/referral.howItWorks.steps.2.title",
@@ -4022,7 +4022,7 @@
     "surface": "site",
     "group": "Invite page",
     "where": "referral",
-    "text": "Checking"
+    "text": "Checking…"
   },
   {
     "key": "site:referral/referral.pincode.empty",
@@ -4246,7 +4246,7 @@
     "surface": "site",
     "group": "Invite page",
     "where": "referral",
-    "text": "Booking"
+    "text": "Booking…"
   },
   {
     "key": "site:referral/referral.address.legend",
@@ -4484,7 +4484,7 @@
     "surface": "site",
     "group": "Invite page",
     "where": "referral",
-    "text": "Adding"
+    "text": "Adding…"
   },
   {
     "key": "site:referral/referral.waitlist.holds",

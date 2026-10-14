@@ -29,7 +29,7 @@ const VISIT = "99000000-0000-4000-8000-000000000001";
 const namesIn = (department: string) =>
   SECTIONS.filter((section) => section.department === department).map((section) => SECTION_NAMES[section.page]);
 
-describe("the ops console's routes", () => {
+describe("the ops console’s routes", () => {
   it("opens every section at the path the navigation links to", () => {
     for (const section of SECTIONS) {
       expect(routeOf(section.path).page, section.path).toBe(section.page);
@@ -84,7 +84,7 @@ describe("the ops console's routes", () => {
     }
   });
 
-  it("opens Settings' tabs and a client's tabs at their own paths", () => {
+  it("opens Settings' tabs and a client’s tabs at their own paths", () => {
     expect(routeOf("/settings")).toEqual({ page: "settings", tab: "rules" });
     expect(routeOf(settingsPath("blackouts"))).toEqual({ page: "settings", tab: "blackouts" });
     // The items and the suppliers are Inventory's now; their old Settings addresses still land.
@@ -96,7 +96,7 @@ describe("the ops console's routes", () => {
   });
 
   // A client's page opened on an empty Pieces tab, and so did every bare link.
-  it("opens a client's page on their visits, and names the tab of every link to it", () => {
+  it("opens a client’s page on their visits, and names the tab of every link to it", () => {
     expect(routeOf("/clients")).toEqual({ page: "clients", clientId: null, tab: "visits" });
     expect(routeOf(`/clients/${CLIENT}`)).toEqual({ page: "clients", clientId: CLIENT, tab: "visits" });
     expect(clientPath(CLIENT, "visits")).toBe(`/clients/${CLIENT}/visits`);
@@ -116,7 +116,7 @@ describe("the ops console's routes", () => {
     expect(keyOf(routeOf("/areas/served"))).toBe(keyOf(routeOf("/areas")));
   });
 
-  it("opens a technician's page on his week, and each of its tabs at its own path", () => {
+  it("opens a technician’s page on his week, and each of its tabs at its own path", () => {
     expect(routeOf("/technicians")).toEqual({ page: "technicians", technicianId: null, tab: "week" });
     expect(routeOf(technicianPath(TECHNICIAN))).toEqual({ page: "technicians", technicianId: TECHNICIAN, tab: "week" });
     expect(technicianPath(TECHNICIAN)).toBe(`/technicians/${TECHNICIAN}`);

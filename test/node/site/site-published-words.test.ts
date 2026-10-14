@@ -7,7 +7,7 @@ import { describe, expect, it } from "vitest";
 import { applyWords } from "../../../site/src/lib/published-words-apply.ts";
 import { publishedWordsPlugin } from "../../../site/src/lib/published-words.ts";
 
-describe("a copy module's published lines", () => {
+describe("a copy module’s published lines", () => {
   it("set the words in place, in objects and in lists", () => {
     const hero = { title: "A hair system, fitted at home.", sequence: ["Natural up close.", "Fitted at home."] };
     applyWords(
@@ -18,7 +18,7 @@ describe("a copy module's published lines", () => {
     expect(hero).toEqual({ title: "Hair, fitted at home.", sequence: ["Natural up close.", "At home."] });
   });
 
-  it("leave another module's lines, and a place that no longer holds words, as the code has them", () => {
+  it("leave another module’s lines, and a place that no longer holds words, as the code has them", () => {
     const hero = { title: "A hair system.", steps: { count: 3 } };
     applyWords("home", { hero }, { "site:pages/hero.title": "Elsewhere", "site:home/hero.steps.count": "4" });
     applyWords("home", { hero }, { "site:home/hero.gone.title": "Moved", "site:home/missing.title": "Gone" });
@@ -26,7 +26,7 @@ describe("a copy module's published lines", () => {
   });
 });
 
-describe("the build's plugin", () => {
+describe("the build’s plugin", () => {
   const site = join(dirname(fileURLToPath(import.meta.url)), "../../../site");
   const plugin = publishedWordsPlugin(site, { "site:home/hero.title": "Hair, fitted at home." });
   const transform = (code: string, id: string) =>

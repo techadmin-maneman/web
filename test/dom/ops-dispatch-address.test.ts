@@ -86,8 +86,8 @@ function choose(control: HTMLInputElement | HTMLSelectElement, value: string) {
   });
 }
 
-describe("the dispatch board's place in the address", () => {
-  it("opens on the week a link asks for, with the visit's drawer open", async () => {
+describe("the dispatch board’s place in the address", () => {
+  it("opens on the week a link asks for, with the visit’s drawer open", async () => {
     await openAt(`/dispatch?from=2025-09-19&visit=${ROHIT}`);
 
     expect(reads).toContain("/api/dispatch?from=2025-09-19");
@@ -141,6 +141,6 @@ describe("the dispatch board's place in the address", () => {
     await openAt(`/dispatch?from=2025-09-19&visit=${NOWHERE}`);
 
     expect(drawer()).toBeNull();
-    expect(page.querySelector("[role=alert]")?.textContent).toBe("That visit isn't on this board.");
+    expect(page.querySelector("[role=alert]")?.textContent).toBe("That visit isn’t on this board.");
   });
 });

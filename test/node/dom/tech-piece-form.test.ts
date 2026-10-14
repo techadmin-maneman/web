@@ -17,7 +17,7 @@ const ONE_VISIT = { one_visit: true };
 const LABEL = "MM-STD-4417-B";
 
 describe("the piece step", () => {
-  it("waits for a label in the API's format, and for one that is not another client's", () => {
+  it("waits for a label in the API’s format, and for one that is not another client’s", () => {
     expect(stillMissing(EMPTY, FIRST_FIT, false)).toBe(copy.piece.checkFirst);
     expect(stillMissing({ ...EMPTY, code: "MM-STD-44" }, FIRST_FIT, false)).toBe(copy.piece.checkFirst);
     expect(stillMissing({ ...EMPTY, code: LABEL }, FIRST_FIT, true)).toBe(copy.piece.notThisClientAction);
@@ -30,7 +30,7 @@ describe("the piece step", () => {
     expect(stillMissing({ ...off, oldReason: "lifted at the front" }, FIRST_FIT, false)).toBeNull();
   });
 
-  it("on a one visit, waits for the client's choice, and asks for no label once they decline", () => {
+  it("on a one visit, waits for the client’s choice, and asks for no label once they decline", () => {
     expect(stillMissing(EMPTY, ONE_VISIT, false)).toBe(oneVisit.chooseFirst);
     expect(stillMissing({ ...EMPTY, choice: DECLINED }, ONE_VISIT, false)).toBeNull();
     expect(pieceBody({ ...EMPTY, choice: DECLINED }, ONE_VISIT)).toEqual({ declined: true });
@@ -58,7 +58,7 @@ describe("the piece step", () => {
   });
 });
 
-describe("the kit's hair systems", () => {
+describe("the kit’s hair systems", () => {
   const spec = { product: "essential", base_width_in: 8, base_length_in: 10, colour: "1B", grey_percent: 20 };
   const kit = (code: string, more: Partial<KitHairSystem>): KitHairSystem => ({
     code,
@@ -71,7 +71,7 @@ describe("the kit's hair systems", () => {
   });
   const profile = { fit: { ...spec, density_percent: 100, product: "natural" } };
 
-  it("lists first those made to the client's profile and the product they paid for", () => {
+  it("lists first those made to the client’s profile and the product they paid for", () => {
     const job = {
       kit_hair_systems: [kit("denser", { density_percent: 120 }), kit("exact", {})],
       profile,

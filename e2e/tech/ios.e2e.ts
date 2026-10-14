@@ -101,7 +101,7 @@ test("draws its screens without one refusal from its own security policy", async
   expect(refused).toEqual([]);
 });
 
-test("keeps a long checklist's action at the foot of the screen, with its head in view", async ({ page }) => {
+test("keeps a long checklist’s action at the foot of the screen, with its head in view", async ({ page }) => {
   const fake = await fakeTech(page);
   fake.type = "first_fit";
   fake.oneVisit = true;

@@ -79,7 +79,7 @@ afterEach(() => {
 });
 
 describe("an open sheet in the history", () => {
-  it("adds one entry at the page's own address", async () => {
+  it("adds one entry at the page’s own address", async () => {
     const { enterSheet } = await load();
     enterSheet(() => undefined);
     expect(tab.paths()).toEqual(["/visits/1", "/visits/1"]);
@@ -122,7 +122,7 @@ describe("an open sheet in the history", () => {
     expect(tab.paths()).toEqual(["/visits/1"]);
   });
 
-  it("opened while the last sheet's entry is on its way out, waits for it to go and then has its own", async () => {
+  it("opened while the last sheet’s entry is on its way out, waits for it to go and then has its own", async () => {
     const { enterSheet } = await load();
     const leave = enterSheet(() => undefined);
     leave();
@@ -136,7 +136,7 @@ describe("an open sheet in the history", () => {
 });
 
 describe("a move to another page with a sheet", () => {
-  it("takes the place of an open sheet's entry, so Back from it returns to the page under the sheet", async () => {
+  it("takes the place of an open sheet’s entry, so Back from it returns to the page under the sheet", async () => {
     const { enterSheet, go } = await load("/jobs/7");
     const onBack = vi.fn();
     const leave = enterSheet(onBack);
@@ -158,7 +158,7 @@ describe("a move to another page with a sheet", () => {
     expect(tab.paths()).toEqual(["/jobs/7", "/jobs/7/done"]);
   });
 
-  it("goes at once where no sheet's entry is on its way out", async () => {
+  it("goes at once where no sheet’s entry is on its way out", async () => {
     const { go } = await load("/");
     go("/visits");
     expect(tab.paths()).toEqual(["/", "/visits"]);

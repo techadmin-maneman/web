@@ -213,7 +213,7 @@ export const STOCK = {
       quantity: 100,
       reason: "received",
       by: "ops@maneman.in",
-      note: "Supplier's note 4417",
+      note: "Supplier’s note 4417",
     },
   ],
   today: "2027-09-21",

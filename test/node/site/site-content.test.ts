@@ -77,13 +77,13 @@ describe("content", () => {
     expect(statSync(path ?? "").size).toBeLessThan(800 * 1024);
   });
 
-  it("offers the backend's six looks in its order, each split at its first dot", () => {
+  it("offers the backend’s six looks in its order, each split at its first dot", () => {
     expect(site.looks.map((look) => look.id)).toEqual(PRESETS.map((preset) => preset.id));
     expect(site.looks[0]).toMatchObject({ name: "Side part", detail: "" });
     expect(site.looks[2]).toMatchObject({ name: "Textured crop", detail: "Low fade" });
   });
 
-  it("builds the consent screen and the gate from the backend's notices, word for word", () => {
+  it("builds the consent screen and the gate from the backend’s notices, word for word", () => {
     const consent = site.consentCopy(site.notices.photo);
     expect(consent.title).toBe("What happens to your photograph.");
     expect(consent.rows.map((row) => row.label)).toEqual([
@@ -113,7 +113,7 @@ describe("content", () => {
     expect(words).not.toMatch(/next screen|Download|Drag the handle|hair patch/i);
   });
 
-  it("makes the small copy the size the API keeps, as the technician's camera makes a visit photograph", () => {
+  it("makes the small copy the size the API keeps, as the technician’s camera makes a visit photograph", () => {
     const encoder = readFileSync("packages/web-kit/small-jpeg.ts", "utf8");
     expect(MAX_COPY_BYTES).toBe(250 * 1024);
     expect(encoder).toContain("SMALL_JPEG_BYTES = 250 * 1024");
@@ -147,7 +147,7 @@ describe("content", () => {
     expect(referral.consultation.body).toBe("An hour, and free. Or have your fit in the same visit.");
     expect(referral.howItWorks.steps.map((step) => step.body)).toEqual([
       "An hour. A scalp template and a colour match.",
-      "Three hours. You're wearing it by the end.",
+      "Three hours. You’re wearing it by the end.",
       "Lifted, cleaned, re-bonded, trimmed. Ninety minutes.",
     ]);
   });
@@ -201,7 +201,7 @@ describe("content", () => {
   });
 
   // Production keeps a result fourteen days (ADR 0039), as the privacy notice says.
-  it("keeps the try-on's result for as long as the privacy notice says", () => {
+  it("keeps the try-on’s result for as long as the privacy notice says", () => {
     expect(textOf(site.legalPages.privacy)).toContain("the simulation itself is kept for fourteen days");
     expect(site.tryOn.sent.privacy).toBe("We delete it after 14 days.");
   });
@@ -260,10 +260,10 @@ describe("the second copy round", () => {
 
   // The site promised a refit or a refund within 14 days; the app's pay step, that the technician stops. The FAQ says
   // first that a client who decides against it before the fit pays nothing, as the one visit's flow has it.
-  it("gives the guarantee in one sentence on the home page, in the FAQ and at the app's pay step", () => {
+  it("gives the guarantee in one sentence on the home page, in the FAQ and at the app’s pay step", () => {
     const answer = site.faq.items.find((item) => item.q === "What if I do not like it at the fit?")?.a ?? "";
     expect(site.guarantee.text).toBe(GUARANTEE);
-    expect(answer.startsWith("Say so before it's fitted and you pay nothing. Once it's fitted: ")).toBe(true);
+    expect(answer.startsWith("Say so before it’s fitted and you pay nothing. Once it’s fitted: ")).toBe(true);
     expect(answer.toLowerCase().endsWith(GUARANTEE.toLowerCase())).toBe(true);
     expect(appBooking.pay.guarantee).toBe(GUARANTEE);
   });
@@ -276,7 +276,7 @@ describe("the second copy round", () => {
   });
 
   // "for just" sneered. "Two of these are not ours." stays.
-  it("keeps the comparison line and gives a transplant's cost without a sneer", () => {
+  it("keeps the comparison line and gives a transplant’s cost without a sneer", () => {
     expect(site.comparison.intro).toBe("Two of these are not ours.");
     expect(JSON.stringify(site.comparison)).not.toMatch(/\bjust\b/);
   });
@@ -328,8 +328,8 @@ describe("the publish gate", () => {
     expect(publishProblems()).toEqual([
       "the photo notice (photo-v5) is not approved",
       "the gate notice (gate-v5) is not approved",
-      "the privacy page's wording is not approved",
-      "the terms page's wording is not approved",
+      "the privacy page’s wording is not approved",
+      "the terms page’s wording is not approved",
     ]);
     expect(publishProblems(undefined, APPROVED, undefined, LEGAL_APPROVED)).toEqual([]);
   });
@@ -338,7 +338,7 @@ describe("the publish gate", () => {
   it("stops a legal page whose wording is not approved", () => {
     const legal = { ...LEGAL_APPROVED, terms: { approved: false } };
     expect(publishProblems(undefined, APPROVED, undefined, legal)).toEqual([
-      "the terms page's wording is not approved",
+      "the terms page’s wording is not approved",
     ]);
   });
 
@@ -349,7 +349,7 @@ describe("the publish gate", () => {
     ]);
   });
 
-  it("stops a published block that still holds the design's placeholder material", () => {
+  it("stops a published block that still holds the design’s placeholder material", () => {
     const blocks = {
       ...BLOCKS,
       technicians: { ...site.technicians, publish: true },
@@ -358,7 +358,7 @@ describe("the publish gate", () => {
     };
     const problems = publishProblems(blocks, APPROVED, undefined, LEGAL_APPROVED);
     expect(problems).toHaveLength(1);
-    expect(problems[0]).toMatch(/^technicians is published but still holds the design's placeholder material: /);
+    expect(problems[0]).toMatch(/^technicians is published but still holds the design’s placeholder material: /);
     expect(problems[0]).toContain("Imran Qureshi");
   });
 

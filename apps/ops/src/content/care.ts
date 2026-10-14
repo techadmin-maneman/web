@@ -13,7 +13,7 @@ export const care = {
   clear: "Clear",
   /** More chats than one page holds. */
   more: "Show older chats",
-  loadingMore: "Loading",
+  loadingMore: "Loading…",
   latest: (count: number) => `The latest ${String(count)}. Find a chat by name or number, or show older ones.`,
   columns: {
     client: "Client",
@@ -24,7 +24,7 @@ export const care = {
     at: "Last",
     open: "Open",
   },
-  unknown: "Number we don't know",
+  unknown: "Number we don’t know",
   /** "Imran Khan · Technician": one of ours writing to our number. */
   technicianName: (name: string) => `${name} · Technician`,
   /** When our reply is due, "21 Sep, 11:42 am"; past it, overdue. */
@@ -45,24 +45,24 @@ export const care = {
     read: "read",
     queued: "waiting to send",
     close: "Close",
-    page: "Client's page",
+    page: "Client’s page",
     notSent: "Not sent",
     technician: "One of our technicians. Operations answer technicians.",
-    technicianPage: "Technician's page",
+    technicianPage: "Technician’s page",
     /** The after-hours answer, kept in the chat under our number. */
     autoReply: "Automatic reply",
   },
   compose: {
     label: "Reply",
     send: "Send",
-    sending: "Sending",
+    sending: "Sending…",
     note: "Add note",
     reason: "What it was about",
     closeChat: "Close chat",
     sent: "Sent.",
     noted: "Note added.",
     closed: "Chat closed.",
-    failed: "That didn't send. Try again, or call the client.",
+    failed: "That didn’t send. Try again, or call the client.",
   },
   carePerson: {
     label: "Care person",
@@ -71,7 +71,7 @@ export const care = {
     /** "care@maneman.in · 12 clients" */
     member: (email: string, clients: number) => `${email} · ${String(clients)} ${clients === 1 ? "client" : "clients"}`,
     move: "Move",
-    moving: "Moving",
+    moving: "Moving…",
     moved: (email: string) => `Moved to ${email}.`,
     noTeam: "Nobody has Customer Care Act or Manage for all cities yet.",
     errors: {
@@ -101,7 +101,7 @@ export const care = {
     waitingOnClient: "Waiting on the client now",
     /** "42 min", in Care hours. */
     minutes: (value: number) => `${String(value)} min`,
-    nothing: "–",
+    nothing: "—",
     reasons: "What chats were about",
     remedies: "Remedies given",
     /** "Fit problem · 4" */
@@ -149,7 +149,7 @@ export const care = {
     none: "No quick replies yet.",
     title: "Title",
     text: "Answer",
-    holes: "{name} becomes the client's first name, and {next_visit} their next visit.",
+    holes: "{name} becomes the client’s first name, and {next_visit} their next visit.",
     add: "Add",
     retire: "Retire",
     retireLabel: (title: string) => `Retire the quick reply ${title}`,
@@ -175,7 +175,7 @@ export const care = {
   },
   /** A chat from a number we don't know (docs/decisions/0138-strangers-in-the-inbox.md). */
   stranger: {
-    title: "A number we don't know. Link it to a client, or save them as someone new.",
+    title: "A number we don’t know. Link it to a client, or save them as someone new.",
     find: "Find a client by name or number",
     search: "Search",
     noneFound: "No client matches.",
@@ -187,7 +187,7 @@ export const care = {
     foundUs: "How they found us",
     /** Each channel a client may say, in the order offered; none chosen where they did not say. */
     foundUsChoices: {
-      "": "Didn't say",
+      "": "Didn’t say",
       google_ads: "Google ad",
       meta_ads: "Facebook or Instagram ad",
       organic_search: "Searched online",
@@ -198,7 +198,7 @@ export const care = {
     },
     save: "Save as someone new",
     errors: {
-      conversation: changed("This chat is a client's already."),
+      conversation: changed("This chat is a client’s already."),
       number_in_use: "One of our clients has this number. Find them and link the chat instead.",
       invalid_request: "Type two letters of a name, or four digits of a number.",
       not_found: changed("Not found."),
@@ -213,9 +213,9 @@ export const care = {
     open: "Send to city",
     label: "What the city team need to know",
     send: "Send",
-    sent: (city: string) => `Sent to ${city}. It's on their Tasks.`,
+    sent: (city: string) => `Sent to ${city}. It’s on their Tasks.`,
     errors: {
-      city: "We don't know this client's city yet. Add their address first.",
+      city: "We don’t know this client’s city yet. Add their address first.",
       note: "Write what they need to know.",
       not_found: changed("Not found."),
       not_permitted: NOT_PERMITTED,
@@ -281,7 +281,7 @@ export const care = {
     },
   },
   reasons: {
-    booking: "Booking",
+    booking: "Booking…",
     move_or_cancel: "Move or cancel",
     fit_problem: "Fit problem",
     aftercare: "Aftercare",
@@ -293,7 +293,7 @@ export const care = {
   },
   errors: {
     text: "Write something first.",
-    unavailable: "Replies can't go from the console yet. Reply on the office WhatsApp.",
+    unavailable: "Replies can’t go from the console yet. Reply on the office WhatsApp.",
     not_found: changed("Not found."),
     not_permitted: NOT_PERMITTED,
     offline: OFFLINE,

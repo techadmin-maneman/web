@@ -168,7 +168,7 @@ test("sends the house card itself, captioned with the invite, where the phone sh
   await expect(preview.getByRole("alert")).toHaveCount(0);
 });
 
-test("keeps WhatsApp's link, with the words alone, where the phone shares no files", async ({ page }) => {
+test("keeps WhatsApp’s link, with the words alone, where the phone shares no files", async ({ page }) => {
   await stubShareSheet(page, false);
   await page.context().route("https://wa.me/**", (route) => route.fulfill({ contentType: "text/html", body: "" }));
   const preview = await toTheExample(page);
@@ -190,7 +190,7 @@ test("keeps WhatsApp's link, with the words alone, where the phone shares no fil
 
 // A client who made their card earlier sees it, and sends it: the preview's own route answers only on the public
 // host, so the app reads the card from its own (GET /api/refer/card). The shared client has none, so it is answered.
-test("shows a client's stored card in the preview, and sends that card", async ({ page }) => {
+test("shows a client’s stored card in the preview, and sends that card", async ({ page }) => {
   const card = await sharp({ create: { width: 1200, height: 630, channels: 3, background: "#1a2740" } })
     .jpeg()
     .toBuffer();
@@ -238,7 +238,7 @@ test("shows a client's stored card in the preview, and sends that card", async (
 });
 
 // The empty tracker's "Share failed" is for a share that failed, not one the client backed out of.
-test("says when the phone refused the card's share, and nothing when the client backed out", async ({ page }) => {
+test("says when the phone refused the card’s share, and nothing when the client backed out", async ({ page }) => {
   await stubShareSheet(page, true);
   const preview = await toTheExample(page);
   const whatsapp = preview.getByRole("link", { name: appCopy.refer.preview.whatsapp });
@@ -263,7 +263,7 @@ test("says when the phone refused the card's share, and nothing when the client 
 
 // Their own card was offered with no first-fit photographs to make it
 // of, and ended in an error. This client's first fit has an after photograph and no before (e2e/app/fitted.ts).
-test("offers their own card only once the first fit's photographs are in", async ({ page }) => {
+test("offers their own card only once the first fit’s photographs are in", async ({ page }) => {
   await toRefer(page);
   await page.getByRole("button", { name: appCopy.refer.share }).click();
   const sheet = page.getByRole("dialog", { name: appCopy.refer.card.title });
@@ -455,7 +455,7 @@ test("draws Refer, its preview and its tracker, with no count, where the answers
   await expect(page.getByText("NaN")).toHaveCount(0);
 });
 
-test("draws a lead's empty Refer, with no count, where the Home carries no reward", async ({ page }) => {
+test("draws a lead’s empty Refer, with no count, where the Home carries no reward", async ({ page }) => {
   outsideContract("GET /api/me 200");
   await changed(page, "/api/me", ({ referral_reward: _gone, ...me }) => me);
   await signIn(page);
@@ -467,7 +467,7 @@ test("draws a lead's empty Refer, with no count, where the Home carries no rewar
 // Before their first fit a client has nothing to vouch for, and the invite's own words would not be
 // true, so Refer is reachable but empty. It once
 // told them that nobody they referred had been fitted.
-test("a client not yet fitted sees Refer's empty state, with no invite to send", async ({ page }) => {
+test("a client not yet fitted sees Refer’s empty state, with no invite to send", async ({ page }) => {
   await signIn(page);
   await page.getByRole("navigation").getByRole("link", { name: "Refer" }).click();
   await expect(page.getByText("Your invite opens after your first fit.")).toBeVisible();

@@ -6,7 +6,7 @@
 import { describe, expect, it } from "vitest";
 import { amountOff, priceFigures } from "../../../apps/app/src/lib/money.ts";
 
-describe("a price's figures", () => {
+describe("a price’s figures", () => {
   it("leads with what is charged and gives the GST split beneath once GST applies", () => {
     expect(priceFigures({ amount_ex_gst: 3000000, amount: 3540000 })).toEqual({
       amount: "Rs. 35,400",
@@ -32,7 +32,7 @@ describe("what a discount code takes off", () => {
     expect(amountOff(before, after)).toBe("Rs. 236");
   });
 
-  it("is the code's own figure while GST is nothing", () => {
+  it("is the code’s own figure while GST is nothing", () => {
     expect(amountOff({ amount_ex_gst: 200000, amount: 200000 }, { amount_ex_gst: 180000, amount: 180000 })).toBe(
       "Rs. 200",
     );

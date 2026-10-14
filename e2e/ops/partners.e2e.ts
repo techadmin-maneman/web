@@ -91,7 +91,7 @@ test("adds a partner in rupees once it is reviewed", async ({ page }) => {
   });
 });
 
-test("changes a partner's commission, and shows only what changes", async ({ page }) => {
+test("changes a partner’s commission, and shows only what changes", async ({ page }) => {
   let sent: unknown = null;
   await open(page, {
     "PATCH /api/referral-channels/{id}": (route: Route) => {
@@ -134,7 +134,7 @@ test("pauses a partner once it is confirmed", async ({ page }) => {
   expect(sent).toEqual({ paused: true });
 });
 
-test("downloads a partner's link as a QR code to print", async ({ page }) => {
+test("downloads a partner’s link as a QR code to print", async ({ page }) => {
   await open(page);
   const saved = page.waitForEvent("download");
   await row(page)
@@ -145,7 +145,7 @@ test("downloads a partner's link as a QR code to print", async ({ page }) => {
   expect(readFileSync(await download.path(), "utf8")).toMatch(/^<svg xmlns="http:\/\/www\.w3\.org\/2000\/svg"/);
 });
 
-test("gives a partner's friends a discount code, shown in the review", async ({ page }) => {
+test("gives a partner’s friends a discount code, shown in the review", async ({ page }) => {
   let sent: unknown = null;
   await open(page, {
     "PATCH /api/referral-channels/{id}": (route: Route) => {

@@ -17,7 +17,7 @@ const ARJUN: Conversation = {
   covered_by: null,
   technician: null,
   last_message_at: "2026-09-21T05:12:00.000Z",
-  last_line: "Can I move tomorrow's visit to the evening?",
+  last_line: "Can I move tomorrow’s visit to the evening?",
   waiting_since: "2026-09-21T05:12:00.000Z",
   reply_by: "2026-09-21T06:12:00.000Z",
 };

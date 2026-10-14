@@ -41,7 +41,7 @@ export const supplyPlan = {
   },
   accuracy: {
     title: "Accuracy",
-    none: "Measured once a forecast's first period has passed.",
+    none: "Measured once a forecast’s first period has passed.",
     note: "Off by: how far the forecast missed what was used. A bias above zero means it ran high.",
     periodColumns: ["Period from", "Expected", "Used", "Off by", "Bias", "Within high case"],
     itemColumns: ["Item", "Expected", "Used", "Off by", "Bias"],
@@ -60,8 +60,8 @@ export const supplyPlan = {
     columns: ["Event", "City", "Days", "Change", ""],
     /** "+20%", "−10%" */
     change: (percent: number) => (percent < 0 ? `−${String(-percent)}%` : `+${String(percent)}%`),
-    /** "1 Nov – 15 Nov 2026" */
-    days: (from: string, to: string) => (from === to ? from : `${from} – ${to}`),
+    /** "1 Nov to 15 Nov 2026" */
+    days: (from: string, to: string) => (from === to ? from : `${from} to ${to}`),
     remove: (name: string) => `Remove ${name}`,
     removeShort: "Remove",
     removed: "Event taken off.",
@@ -75,7 +75,7 @@ export const supplyPlan = {
     added: "Event added.",
     errors: {
       ends_on: "It ends before it starts.",
-      city: "We don't serve that city.",
+      city: "We don’t serve that city.",
       not_found: changed("That event is gone."),
       not_permitted: NOT_PERMITTED,
       offline: OFFLINE,
@@ -86,7 +86,7 @@ export const supplyPlan = {
   errors: {
     order_state: changed("That line is decided already, or no forecast has run."),
     not_found: changed("That line is gone."),
-    invalid_request: changed("That couldn't be made: stock or the supplier moved since."),
+    invalid_request: changed("That couldn’t be made: stock or the supplier moved since."),
     supplier_id: "That supplier is retired. Reject the line, or draft again.",
     not_permitted: NOT_PERMITTED,
     offline: OFFLINE,

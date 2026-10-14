@@ -132,7 +132,7 @@ const cancelPanel = () =>
     onClose: (cancelled: boolean) => closedWith.push(cancelled),
   });
 
-describe("cancelling a client's visit from the console", () => {
+describe("cancelling a client’s visit from the console", () => {
   it("shows what goes back free to the client before anything changes", async () => {
     answers.push(() => Response.json(LATE_TERMS));
     await show(cancelPanel());
@@ -160,7 +160,7 @@ describe("cancelling a client's visit from the console", () => {
     expect(closedWith).toEqual([true]);
   });
 
-  it("applies the client's late terms only when ops tick them, and says what is kept", async () => {
+  it("applies the client’s late terms only when ops tick them, and says what is kept", async () => {
     answers.push(() => Response.json(LATE_TERMS));
     await show(cancelPanel());
 
@@ -178,7 +178,7 @@ describe("cancelling a client's visit from the console", () => {
     });
   });
 
-  it("offers no late terms where the client's own would give the same back", async () => {
+  it("offers no late terms where the client’s own would give the same back", async () => {
     const inTime = { ...LATE_TERMS, notice: "free", client_terms: LATE_TERMS.free };
     answers.push(() => Response.json(inTime));
     await show(cancelPanel());
@@ -236,13 +236,13 @@ const closePanel = () =>
   });
 
 describe("closing a visit by hand from the console", () => {
-  it("sends the times on the visit's own day in India, the outcome and the reason", async () => {
+  it("sends the times on the visit’s own day in India, the outcome and the reason", async () => {
     await show(closePanel());
     expect(button("Close visit").disabled).toBe(true);
 
     fill("Started", "09:20");
     fill("Finished", "10:50");
-    fill("What happened", "Imran's phone was stolen; the client confirmed the visit");
+    fill("What happened", "Imran’s phone was stolen; the client confirmed the visit");
     answers.push(() => Response.json({ visit_id: VISIT, status: "completed", duration_minutes: 90 }));
     await press("Close visit");
 
@@ -253,7 +253,7 @@ describe("closing a visit by hand from the console", () => {
           outcome: "done",
           started_at: "2026-09-21T03:50:00.000Z",
           ended_at: "2026-09-21T05:20:00.000Z",
-          reason: "Imran's phone was stolen; the client confirmed the visit",
+          reason: "Imran’s phone was stolen; the client confirmed the visit",
         },
       },
     ]);

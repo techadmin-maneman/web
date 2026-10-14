@@ -48,7 +48,7 @@ test("names the day and window a consultation was asked for", async ({ page }) =
 
 // The next visit (docs/decisions/0086-the-next-visit-is-offered.md): the design's own At-risk client, a client consulted
 // and not fitted, and a consultation asked for with the first fit to follow.
-test("names an At-risk client's weeks since the last visit, a first fit to book, and a fit asked for", async ({
+test("names an At-risk client’s weeks since the last visit, a first fit to book, and a fit asked for", async ({
   page,
 }) => {
   const body: OpsReply<"/api/tasks"> = {
@@ -129,7 +129,7 @@ test("names an At-risk client's weeks since the last visit, a first fit to book,
 });
 
 // Another group the board does not draw (docs/decisions/0067-alerts-and-silent-failures.md).
-test("names a draft invoice's visit", async ({ page }) => {
+test("names a draft invoice’s visit", async ({ page }) => {
   await open(page, {
     overdue: 0,
     truncated: false,
@@ -160,7 +160,7 @@ test("names a draft invoice's visit", async ({ page }) => {
 
 // A consultation and fit in one visit (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md): the request ops
 // book by hand while self-serve booking is off, and the payment its client still owes once fitted. No board draws either.
-test("names a one visit asked for, and a fitted client's payment still owed, with its product and amount", async ({
+test("names a one visit asked for, and a fitted client’s payment still owed, with its product and amount", async ({
   page,
 }) => {
   const task = (id: string, name: string, detail: string, facts: Facts) => ({
@@ -260,7 +260,7 @@ test("names a one visit asked for, and a fitted client's payment still owed, wit
 });
 
 // Money owed back that no refund reached waited nowhere.
-test("lists each payment to refund, why, and what is owed back, and leads to the client's payments", async ({
+test("lists each payment to refund, why, and what is owed back, and leads to the client’s payments", async ({
   page,
 }) => {
   const task = (id: string, name: string, detail: string, facts: Facts) => ({
@@ -371,7 +371,7 @@ test("names a disputed charge and what it kept, and leads to the dispute in Char
   ).toBeVisible();
 });
 
-test("reaches the client's page from the task that is about them, on the tab it is about", async ({ page }) => {
+test("reaches the client’s page from the task that is about them, on the tab it is about", async ({ page }) => {
   await open(page);
   await row(page, "Rohit Malhotra").getByRole("link", { name: "Rohit Malhotra" }).click();
   expect(new URL(page.url()).pathname).toBe("/clients/22000000-0000-4000-8000-000000000001/pieces");

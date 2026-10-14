@@ -14,7 +14,7 @@ export const booking = {
   titleWaitlist: "Not in your area yet",
   intro: `Your technician measures your scalp and matches your colour: ${visitLength.consultation}, free. Or add the fit and wear your hair system the same day.`,
   /** Where we do not come yet: what the list is for. */
-  introWaitlist: "Join the list and we'll WhatsApp you the week we start coming to you.",
+  introWaitlist: "Join the list and we’ll WhatsApp you the week we start coming to you.",
   extent: "Extent of hair loss (optional)",
   /**
    * Not drawn: the page's steps, the name and number first, kept before anything else
@@ -23,7 +23,7 @@ export const booking = {
   step: "Step {at} of {of} · {name}",
   steps: { you: "You", area: "Your area", visit: "Your visit", address: "Your address", list: "The list" },
   next: "Continue",
-  saving: "One moment",
+  saving: "One moment…",
   /** Beneath the first step, the name and number it kept, and the way back to them. */
   bookingFor: "For {name}, +91 {mobile}",
   changeYou: "Change",
@@ -80,5 +80,5 @@ export const pageDescriptions = {
   tryOn: tryOnTeaser.body,
   book: booking.intro,
   privacy: "What Mane Man keeps about you, who processes it, how long it is kept, and how to have it erased.",
-  terms: "The terms of Mane Man's hair system service.",
+  terms: "The terms of Mane Man’s hair system service.",
 };

@@ -8,7 +8,7 @@ import { asLabel, isLabel } from "../../../apps/tech/src/steps/label.ts";
 import type { Frame, Queued } from "../../../apps/tech/src/store/outbox.ts";
 import { anglesRefused, anglesTaken, photoSets, sentOf } from "../../../apps/tech/src/lib/sets.ts";
 
-describe("a piece's label", () => {
+describe("a piece’s label", () => {
   it("reads a space as the hyphen it stands for, and small letters as capitals", () => {
     expect(asLabel("mm-std-7193 c")).toBe("MM-STD-7193-C");
     expect(asLabel(" MM STD  4417 - B")).toBe("MM-STD-4417-B");
@@ -114,7 +114,7 @@ describe("the angles of a set already taken", () => {
     expect(anglesRefused(held, "a", "before")).toEqual(["top"]);
   });
 
-  it("take nothing from another job's or another phase's frames", () => {
+  it("take nothing from another job’s or another phase’s frames", () => {
     const others = [frame("b", "before", "front", 0), frame("a", "after", "front", 1)];
     expect(anglesTaken(others, [setWrite("b", "before_photos")], "a", "before")).toEqual([]);
     expect(anglesRefused([{ ...frame("b", "before", "top", 0), refused: true }], "a", "before")).toEqual([]);

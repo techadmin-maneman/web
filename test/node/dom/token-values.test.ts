@@ -25,7 +25,7 @@ const declarations = (path: string) =>
       .matchAll(/(--[a-z0-9-]+)\s*:\s*([^;]+);/g),
   ].map((match) => ({ name: match[1] ?? "", value: (match[2] ?? "").trim() }));
 
-describe.each(Object.entries(LOADED_TOGETHER))("%s's tokens", (_surface, files) => {
+describe.each(Object.entries(LOADED_TOGETHER))("%s’s tokens", (_surface, files) => {
   // A type size and a space may share a figure; within each kind a figure has one name.
   it("write each size once, the other names pointing at it", () => {
     const byValue = new Map<string, string[]>();
@@ -39,7 +39,7 @@ describe.each(Object.entries(LOADED_TOGETHER))("%s's tokens", (_surface, files) 
 
 // A screen's own width, as --local-*, is written once across the console and is no token's: a width two screens share
 // is a console token (apps/ops/src/styles/tokens.css), which each names for what its column holds.
-describe("the console's own widths", () => {
+describe("the console’s own widths", () => {
   const sheets = execFileSync("git", ["ls-files", "apps/ops/src"], { encoding: "utf8" })
     .split("\n")
     .filter((path) => path.endsWith(".module.css"));
@@ -51,7 +51,7 @@ describe("the console's own widths", () => {
   );
   const tokenValues = new Set(LOADED_TOGETHER["the ops console"].flatMap(declarations).map(({ value }) => value));
 
-  it("are each written once, and are no token's value", () => {
+  it("are each written once, and are no token’s value", () => {
     const values = local.map(({ value }) => value);
     expect(local.filter(({ value }, index) => values.indexOf(value) !== index || tokenValues.has(value))).toEqual([]);
   });

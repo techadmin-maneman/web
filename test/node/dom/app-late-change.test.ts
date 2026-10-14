@@ -20,18 +20,18 @@ const LATE_FEE = { amount_ex_gst: 400000, amount: 472000, gst_percent: 18 };
 
 const MOVE = { cost: "free", paid: 236000, credit: null } as unknown as MoveTerms;
 
-describe("the pay step's promise", () => {
+describe("the pay step’s promise", () => {
   it("knows a visit sold inside its notice is charged to change from the moment it is booked", () => {
     expect(insideNotice(HOLD, NOW)).toBe(true);
     expect(insideNotice({ free_until: "2026-10-02T03:30:00.000Z" }, Date.parse("2026-10-02T03:30:00Z"))).toBe(true);
     expect(insideNotice({ free_until: "2026-10-03T03:30:00.000Z" }, NOW)).toBe(false);
   });
 
-  it("says a service visit's payment is what a late change takes", () => {
+  it("says a service visit’s payment is what a late change takes", () => {
     expect(atStake(HOLD)).toEqual({ kind: "payment", paid: 200000 });
   });
 
-  it("says a first fit's late fee is what a late change takes", () => {
+  it("says a first fit’s late fee is what a late change takes", () => {
     const firstFit = { ...HOLD, type: "first_fit", late_fee: LATE_FEE, late_change_charge: "late_fee" } as Hold;
     expect(atStake(firstFit)).toEqual({ kind: "late_fee", fee: LATE_FEE });
     expect(atStake({ ...firstFit, late_fee: null })).toEqual({ kind: "nothing" });
@@ -46,14 +46,14 @@ describe("the pay step's promise", () => {
     expect(atStake({ ...HOLD, price: { amount_ex_gst: 0, amount: 0, gst_percent: 0 } })).toEqual({ kind: "nothing" });
   });
 
-  it("puts a moved visit's own payment or credit at stake, never the move's price", () => {
+  it("puts a moved visit’s own payment or credit at stake, never the move’s price", () => {
     const moveHold = { ...HOLD, price: { amount_ex_gst: 0, amount: 0, gst_percent: 0 } };
     expect(atStake(moveHold, MOVE)).toEqual({ kind: "payment", paid: 236000 });
     expect(atStake(moveHold, { ...MOVE, paid: 0, credit: "restored" })).toEqual({ kind: "credit" });
   });
 });
 
-describe("the move sheet's button", () => {
+describe("the move sheet’s button", () => {
   it("only picks a new date for a consultation inside the notice, which moves free", () => {
     expect(moveButton({ cost: "free" })).toBe("Pick a new date");
   });

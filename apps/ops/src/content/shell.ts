@@ -57,7 +57,7 @@ export const shell = {
   palette: {
     title: "Go to",
     label: "A page, or a client",
-    hint: "A page's name, or a client's name or four digits of their number. Enter goes to the first.",
+    hint: "A page’s name, or a client’s name or four digits of their number. Enter goes to the first.",
     found: "Found",
     none: "Nothing matches.",
     client: (name: string, mobile: string) => `${name} · ${mobile}`,
@@ -72,7 +72,7 @@ export const shell = {
   /** The first thing the keyboard reaches, which jumps past the navigation. */
   skip: "Skip to content",
   /** A page opened by its address that the person's access does not reach. */
-  closed: "You don't have access to this page. An admin can grant it on Staff.",
+  closed: "You don’t have access to this page. An admin can grant it on Staff.",
   /** The browser tab's title: "Blackout days · Settings · Mane Man operations". */
   documentTitle: (parts: readonly string[]) => [...parts, "Mane Man operations"].join(" · "),
   /**
@@ -98,5 +98,5 @@ export const shell = {
   lapsed: "Your session has expired. Reload to sign in.",
   reload: "Reload",
   /** A person Access lets in whom the enforced Staff list does not name. */
-  notListed: "You're not on the Staff list. Ask an admin to add you.",
+  notListed: "You’re not on the Staff list. Ask an admin to add you.",
 } as const;

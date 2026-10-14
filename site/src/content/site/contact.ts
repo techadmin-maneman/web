@@ -17,7 +17,7 @@ export const whatsapp = {
  */
 export const consentBar = {
   publish: true,
-  text: "We'd like to measure visits and the ads that bring them, with cookies from Google and Meta. Nothing you type in a form goes to them.",
+  text: "We’d like to measure visits and the ads that bring them, with cookies from Google and Meta. Nothing you type in a form goes to them.",
   privacy: "How we use your details",
   accept: "Allow",
   decline: "No thanks",
@@ -26,7 +26,7 @@ export const consentBar = {
 /** The booking form or the try-on, when it failed to draw: the way to us instead. */
 export const islandFailed = {
   publish: true,
-  message: "This didn't load. Message us on WhatsApp and we'll help you from there.",
+  message: "This didn’t load. Message us on WhatsApp and we’ll help you from there.",
   action: "Message us on WhatsApp",
 };
 

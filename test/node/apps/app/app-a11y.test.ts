@@ -22,7 +22,7 @@ function rulesOf(path: string): [string, string][] {
 
 describe("the client app", () => {
   // The login's number field is the shared MobileInput.
-  it("rings the login's number field as it rings every control: 2 px, in the ground's colour", () => {
+  it("rings the login’s number field as it rings every control: 2 px, in the ground’s colour", () => {
     const field = rulesOf("packages/ui/mobile-input.module.css").find(
       ([selector]) => selector === ".field:focus-within",
     );
@@ -31,7 +31,7 @@ describe("the client app", () => {
   });
 
   // The app's own boxes, and the shared number field it draws on paper.
-  it("writes every placeholder in the hint's colour, which reads at 5:1 on white", () => {
+  it("writes every placeholder in the hint’s colour, which reads at 5:1 on white", () => {
     const placeholders = [...stylesheets("apps/app/src"), "packages/ui/mobile-input.module.css"]
       .flatMap(rulesOf)
       .filter(([selector]) => selector.includes("::placeholder") && !selector.includes("onInk"));

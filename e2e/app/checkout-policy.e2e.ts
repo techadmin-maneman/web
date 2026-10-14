@@ -14,7 +14,7 @@ const PAYMENT_FRAME = "https://api.razorpay.com/";
 
 type Razorpay = new (options: object) => { open(): void };
 
-test("loads and opens Razorpay's own Checkout with nothing refused", async ({ page }) => {
+test("loads and opens Razorpay’s own Checkout with nothing refused", async ({ page }) => {
   const refused = await recordPolicyRefusals(page);
   await page.goto("/");
   await expect(page.getByRole("heading", { level: 1, name: "Your mobile number" })).toBeVisible();
@@ -43,6 +43,6 @@ test("loads and opens Razorpay's own Checkout with nothing refused", async ({ pa
   // Checkout sends its logs once a second.
   await page.waitForTimeout(2_000);
 
-  expect(refused, "the app's policy refused part of Checkout").toEqual([]);
+  expect(refused, "the app’s policy refused part of Checkout").toEqual([]);
   expect((await riskDetection).ok()).toBe(true);
 });

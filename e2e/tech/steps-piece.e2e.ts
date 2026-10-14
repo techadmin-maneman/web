@@ -36,7 +36,7 @@ test.describe("the piece (board B3, step 4)", () => {
     await expect(page.getByText(techCopy.steps.piece.malformed)).toBeVisible();
   });
 
-  test("closes as partly done with no piece fitted, Can't fit today, once asked", async ({ page }) => {
+  test("closes as partly done with no piece fitted, Can’t fit today, once asked", async ({ page }) => {
     const fake = await onThePiece(page);
     const words = techCopy.steps.piece.cannotFit;
     await page.getByRole("button", { name: words.action }).click();
@@ -75,7 +75,7 @@ test.describe("the piece (board B3, step 4)", () => {
     ).toBeVisible();
   });
 
-  test("lists the kit's hair systems, the one made to the profile first, and sends the one picked", async ({
+  test("lists the kit’s hair systems, the one made to the profile first, and sends the one picked", async ({
     page,
   }) => {
     const fake = await fakeTech(page);
@@ -189,7 +189,7 @@ test.describe("the piece (board B3, step 4)", () => {
     await expect(page.getByRole("button", { name: techCopy.steps.next })).toBeEnabled();
   });
 
-  test("will not record another client's piece", async ({ page }) => {
+  test("will not record another client’s piece", async ({ page }) => {
     await onThePiece(page);
     await page.getByRole("textbox", { name: techCopy.steps.piece.label }).fill("MM-STD-9999-Z");
     await page.getByRole("button", { name: techCopy.steps.piece.look }).click();
@@ -201,7 +201,7 @@ test.describe("the piece (board B3, step 4)", () => {
     await expect(page.getByRole("textbox", { name: techCopy.steps.piece.lot, exact: true })).toHaveValue("");
   });
 
-  test("picks the piece from the client's list, and sends its base, its lot and the piece that came off", async ({
+  test("picks the piece from the client’s list, and sends its base, its lot and the piece that came off", async ({
     page,
   }) => {
     const fake = await onThePiece(page);
@@ -262,7 +262,7 @@ test.describe("the piece of a consultation and fit in one visit", () => {
     return fake;
   }
 
-  test("asks the client's choice first, by name, and sends the product with the piece fitted", async ({ page }) => {
+  test("asks the client’s choice first, by name, and sends the product with the piece fitted", async ({ page }) => {
     const fake = await onTheChoice(page);
     await expect(page.getByRole("button", { name: techCopy.oneVisit.chooseFirst })).toBeDisabled();
     expect(await axeViolations(page)).toEqual([]);
@@ -289,7 +289,7 @@ test.describe("the piece of a consultation and fit in one visit", () => {
   });
 
   // The fit's items are never asked of a technician who fitted nothing.
-  test("runs the consultation's checklist alone once the client decided against the fit", async ({ page }) => {
+  test("runs the consultation’s checklist alone once the client decided against the fit", async ({ page }) => {
     const fake = await onTheChoice(page);
     await page.getByRole("button", { name: techCopy.oneVisit.declined, exact: true }).click();
     await page.getByRole("button", { name: techCopy.steps.next }).click();
@@ -307,7 +307,7 @@ test.describe("the piece of a consultation and fit in one visit", () => {
     });
   });
 
-  test("runs the consultation's checklist and the fit's for a client being fitted", async ({ page }) => {
+  test("runs the consultation’s checklist and the fit’s for a client being fitted", async ({ page }) => {
     await onTheChoice(page);
     await page.getByRole("button", { name: "Mane Man Natural" }).click();
     await page.getByRole("textbox", { name: techCopy.steps.piece.label }).fill("MM-NAT-5120-A");

@@ -44,7 +44,7 @@ describe("the hair profile naming another product", () => {
     expect(profileNamesAnother(job({ service: null, profile: profileNaming("active", "Mane Man Active") }))).toBeNull();
   });
 
-  it("is quiet on a replacement, whose services are not the profile's products", () => {
+  it("is quiet on a replacement, whose services are not the profile’s products", () => {
     const replacement = job({ type: "replacement", service: { tier: "standard_plus", name: "Replacement plus" } });
     expect(profileNamesAnother({ ...replacement, profile: profileNaming("active", "Mane Man Active") })).toBeNull();
   });

@@ -129,7 +129,7 @@ export const refer = {
     failed: "That didn’t go through. Your photos are still on the card. Try again.",
   },
   // The card is composed on the phone; the design does not draw its waiting or its failures.
-  composing: "Making your card.",
+  composing: "Making your card…",
   cardFailed: "We couldn’t make your card, so we’ve used our example instead.",
   /** Consent or the example did not go through: nothing changed, and nothing was shared. */
   notChanged: "That didn’t go through, so nothing has changed. Try again.",

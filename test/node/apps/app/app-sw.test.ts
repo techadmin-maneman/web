@@ -8,17 +8,17 @@ import { answerFor } from "../../../../apps/app/sw/requests.ts";
 const ORIGIN = "https://app.maneman.in";
 const get = (path: string, mode = "cors") => ({ method: "GET", mode, url: `${ORIGIN}${path}` });
 
-describe("what the client app's service worker answers", () => {
+describe("what the client app’s service worker answers", () => {
   it("answers every page with the app it keeps, whatever the path", () => {
     expect(answerFor(get("/", "navigate"), ORIGIN)).toBe("shell");
     expect(answerFor(get("/payments/a0000000-0000-4000-8000-000000000001", "navigate"), ORIGIN)).toBe("shell");
   });
 
-  it("sends a page marked for Access's sign-in to the network, where Access can sign the founder in again", () => {
+  it("sends a page marked for Access’s sign-in to the network, where Access can sign the founder in again", () => {
     expect(answerFor(get("/visits?signin=", "navigate"), ORIGIN)).toBeNull();
   });
 
-  it("answers the app's own files from what it keeps", () => {
+  it("answers the app’s own files from what it keeps", () => {
     expect(answerFor(get("/assets/index-abc.js"), ORIGIN)).toBe("file");
     expect(answerFor(get("/manifest.webmanifest"), ORIGIN)).toBe("file");
   });
@@ -27,7 +27,7 @@ describe("what the client app's service worker answers", () => {
     expect(answerFor(get("/api/me"), ORIGIN)).toBe("home");
   });
 
-  it("leaves every other answer of the API's to the network alone, photographs and documents included", () => {
+  it("leaves every other answer of the API’s to the network alone, photographs and documents included", () => {
     expect(answerFor(get("/api/visits"), ORIGIN)).toBeNull();
     expect(answerFor(get("/api/photos"), ORIGIN)).toBeNull();
     expect(answerFor(get("/api/documents/a"), ORIGIN)).toBeNull();
@@ -35,7 +35,7 @@ describe("what the client app's service worker answers", () => {
     expect(answerFor(get("/api/me/export.html"), ORIGIN)).toBeNull();
   });
 
-  it("never touches a write, or another host's request", () => {
+  it("never touches a write, or another host’s request", () => {
     expect(answerFor({ method: "POST", mode: "cors", url: `${ORIGIN}/api/holds` }, ORIGIN)).toBeNull();
     const checkout = { method: "GET", mode: "no-cors", url: "https://checkout.razorpay.com/v1/checkout.js" };
     expect(answerFor(checkout, ORIGIN)).toBeNull();

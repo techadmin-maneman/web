@@ -50,7 +50,7 @@ export const purchasing = {
       `Minimum ${String(minimum)} ${unit}, packs of ${String(pack)} ${unit} · ${price} per ${unit}`,
     /** A price far above what Settings say the item costs: most often a pack's price typed as one unit's. */
     farAbove: (price: string, unit: string, times: number, cost: string) =>
-      `${price} per ${unit} is ${String(times)} times what Settings say one costs (${cost}). Check the supplier's price is per ${unit}, not per pack.`,
+      `${price} per ${unit} is ${String(times)} times what Settings say one costs (${cost}). Check the supplier’s price is per ${unit}, not per pack.`,
     expected: "Expected on (optional)",
     note: "Note (optional)",
     total: (total: string) => `Total ${total}`,
@@ -174,7 +174,7 @@ export const purchasing = {
     why: "Reason",
     confirmWriteOff: "Write it off",
     keep: "Keep stock",
-    claimed: "Claim drafted. It's in Claims.",
+    claimed: "Claim drafted. It’s in Claims.",
     writtenOff: "Written off.",
   },
   scorecard: {
@@ -213,13 +213,13 @@ export const purchasing = {
     rupee_rate: "Give the rupee rate for this currency.",
     order_state: changed("That order has moved on."),
     same_approver: "You gave its first approval. Another Operations manager gives the second.",
-    custom_order: "A client's custom order is on this order. Cancel the custom order, which refunds them.",
+    custom_order: "A client’s custom order is on this order. Cancel the custom order, which refunds them.",
     claim_state: changed("That claim has moved on."),
     return_settled: changed("That piece is settled already."),
     out_of_warranty: "Its warranty has ended. Write it off instead.",
     credit_amount: "Give the credit.",
     photo_id: "Add a photo of the piece.",
-    photo_invalid_file: "That photo couldn't be read. Try another.",
+    photo_invalid_file: "That photo couldn’t be read. Try another.",
     busy: "Photos are paused. Try again later.",
     not_found: changed("That order is gone."),
     invalid_request: "Each line needs an item, a quantity of 1 or more and a price.",

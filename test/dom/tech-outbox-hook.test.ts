@@ -17,7 +17,7 @@ async function readsDone(): Promise<void> {
   for (let turn = 0; turn < 20; turn += 1) await settled();
 }
 
-describe("the outbox's one reader", () => {
+describe("the outbox’s one reader", () => {
   it("is unread until the outbox has been read, then holds what is waiting", async () => {
     await queue("start", "a", null);
     const hook = renderHook(() => useOutboxSubscription());

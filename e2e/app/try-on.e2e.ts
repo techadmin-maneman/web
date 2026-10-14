@@ -19,7 +19,7 @@ const tab = (page: Page, name: string) => page.getByRole("navigation").getByRole
 const arrived = async (button: ReturnType<Page["getByRole"]>) =>
   expect.poll(() => button.locator("img").evaluate((image: HTMLImageElement) => image.naturalWidth)).toBe(600);
 
-test("Photos shows a booked client's before photo beside its look, each kept, each opening in the sheet", async ({
+test("Photos shows a booked client’s before photo beside its look, each kept, each opening in the sheet", async ({
   page,
 }) => {
   const client = tryOnClient();

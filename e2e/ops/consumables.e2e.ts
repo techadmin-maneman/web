@@ -106,7 +106,7 @@ test.describe("a consumable added or changed", () => {
     await add.getByRole("button", { name: review.next, exact: true }).click();
     await page.getByRole("button", { name: "Confirm" }).click();
 
-    await expect(page.getByRole("alert")).toHaveText("That name is taken, or doesn't start with a letter or digit.");
+    await expect(page.getByRole("alert")).toHaveText("That name is taken, or doesn’t start with a letter or digit.");
   });
 
   test("retires one from a day, after saying what that does and what it does not", async ({ page }) => {
@@ -116,7 +116,7 @@ test.describe("a consumable added or changed", () => {
     await page.getByRole("group", { name: "Retire Bonding glue" }).getByRole("button", { name: review.next }).click();
 
     const check = page.getByRole("group", { name: "Review the change" });
-    await expect(check).toContainText("can't log Bonding glue from 15 Oct 2027");
+    await expect(check).toContainText("can’t log Bonding glue from 15 Oct 2027");
     await expect(check).toContainText("Past jobs keep it.");
     const sent = posted(page, "/api/consumables/bonding_glue/retire");
     await check.getByRole("button", { name: "Confirm" }).click();
@@ -132,7 +132,7 @@ test.describe("deleting one", () => {
     };
     await open(page, { "POST /api/consumables/{code}/delete": json(left) });
     await page.getByRole("button", { name: "Delete Bonding glue" }).click();
-    await expect(page.getByText("Delete Bonding glue? This can't be undone.")).toBeVisible();
+    await expect(page.getByText("Delete Bonding glue? This can’t be undone.")).toBeVisible();
 
     const sent = posted(page, "/api/consumables/bonding_glue/delete");
     await page.getByRole("button", { name: "Delete permanently" }).click();
@@ -153,7 +153,7 @@ test.describe("deleting one", () => {
 });
 
 test.describe("what each service uses", () => {
-  test("shows the chosen service's figures, and the change old beside new before it is sent", async ({ page }) => {
+  test("shows the chosen service’s figures, and the change old beside new before it is sent", async ({ page }) => {
     await open(page, { "POST /api/service-usage": json(CONSUMABLES) });
     const uses = page.getByRole("region", { name: settingsCopy.consumables.usage.title });
     // Each service by its name, a kind at a time; a retired one is still there, marked, for a visit sold before.

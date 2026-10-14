@@ -98,7 +98,7 @@ export const dispatch = {
     /** The brief's "referral source": who invited the client, where someone did. */
     referred: (name: string) => `Referred by ${name}`,
     // A job still on a technician who was switched off, which no board draws.
-    was: (name: string) => `Was ${name}'s · switched off`,
+    was: (name: string) => `Was ${name}’s · switched off`,
     // The board draws four waiting and no empty tray.
     empty: "Nothing unassigned.",
   },
@@ -107,7 +107,7 @@ export const dispatch = {
     title: (technician: string) => `Allow ${technician} to check in`,
     reason: "Reason",
     confirm: "Allow check-in",
-    sending: "Allowing",
+    sending: "Allowing…",
     close: "Close",
     done: (technician: string) => `${technician} can check in now. Ask them to tap I have arrived again.`,
     errors: {
@@ -140,7 +140,7 @@ export const dispatch = {
       state: "Status",
       referred: "Referred by",
       // The board draws no note; the technician reads it on the client's card.
-      note: "Client's note",
+      note: "Client’s note",
     },
     /** "Service visit · 1 slot", as the board writes it; a first fit takes 2. */
     type: (name: string, slots: number) => `${name} · ${String(slots)} ${slots === 1 ? "slot" : "slots"}`,
@@ -163,7 +163,7 @@ export const dispatch = {
       closed: "Closed by technician",
     },
     /** A visit the technician has started or closed has no move. */
-    stays: "In progress. Can't be moved.",
+    stays: "In progress. Can’t be moved.",
     /** The warning before ops move a visit the technician has checked in at. */
     checkedIn: (technician: string) =>
       `${technician} has checked in. Moving clears it, and they check in again at the new time.`,
@@ -209,7 +209,7 @@ export const dispatch = {
     /** The board's line, for a client who agreed to WhatsApp about their visits. */
     note: (job: string) => `${job} gets the new window on WhatsApp.`,
     /** One who has not; the move goes to the Tasks board until ops say they called (ADR 0069). */
-    call: (name: string, mobile: string) => `${name} isn't on WhatsApp updates. Call ${mobile} with the new window.`,
+    call: (name: string, mobile: string) => `${name} isn’t on WhatsApp updates. Call ${mobile} with the new window.`,
     /** After the line, where the visit was paid for: prepaid, or with the client's credit. */
     carries: "Their payment carries over.",
     /** A change of technician alone leaves the client's window as it was. */
@@ -230,15 +230,15 @@ export const dispatch = {
      * A client's visit to another day, for a reason other than theirs: they are asked, and the visit stays put until
      * they accept (docs/decisions/0115-a-move-to-another-day-waits-for-the-client.md).
      */
-    ask: (job: string) => `We'll ask ${job} on WhatsApp. It moves when they accept.`,
+    ask: (job: string) => `We’ll ask ${job} on WhatsApp. It moves when they accept.`,
     askCall: (name: string, mobile: string) =>
-      `${name} isn't on WhatsApp updates. Call ${mobile}, and move it once they agree.`,
+      `${name} isn’t on WhatsApp updates. Call ${mobile}, and move it once they agree.`,
     askSend: (job: string) => `Ask ${job} to confirm`,
-    asking: "Asking",
+    asking: "Asking…",
     send: "Move and notify",
     /** The same button where nothing goes to the client, so it does not promise a message. */
     sendQuietly: "Move",
-    sending: "Moving",
+    sending: "Moving…",
     cancel: "Cancel",
   },
   /** A day on the road, opened from a column's head (ADR 0120). */
@@ -247,9 +247,9 @@ export const dispatch = {
     /** The button's whole name, since each column has one. */
     openLabel: (day: string) => `Routes for ${day}`,
     title: (day: string) => `Routes · ${day}`,
-    mapAlt: (day: string) => `Map of each technician's route on ${day}`,
-    loading: "Loading.",
-    failed: "Couldn't load the routes.",
+    mapAlt: (day: string) => `Map of each technician’s route on ${day}`,
+    loading: "Loading…",
+    failed: "Couldn’t load the routes.",
     none: "No visits this day.",
     driveTimes: { off: "Drive times are off.", unavailable: "Some drive times are unavailable." },
     noPin: "no pin",
@@ -264,7 +264,7 @@ export const dispatch = {
     /** "a first fit, 2 slots". */
     size: (type: string, slots: number) => `${type}, ${String(slots)} ${slots === 1 ? "slot" : "slots"}`,
     /** While the board asks where the job would fit. */
-    checking: "Finding space.",
+    checking: "Finding space…",
     /** A day with no window the job would land in; the board offers nothing to drop on. */
     noRoom: "No room",
     /** Each window of each technician's day with room, while a job is in hand. */
@@ -284,7 +284,7 @@ export const dispatch = {
     moved: {
       messaged: (job: string) => `Moved. ${job} gets the new window on WhatsApp.`,
       call: (job: string, name: string, mobile: string) =>
-        `${job} moved. ${name} isn't on WhatsApp updates: call ${mobile} with the new window.`,
+        `${job} moved. ${name} isn’t on WhatsApp updates: call ${mobile} with the new window.`,
       unchanged: (job: string, technician: string) => `${job} is now with ${technician}. Same window.`,
       noClient: (job: string) => `${job} moved. No client to notify.`,
     },
@@ -300,16 +300,16 @@ export const dispatch = {
       not_found: "Already answered or taken back.",
       offline: OFFLINE,
       unconfirmed: UNCONFIRMED,
-      unknown: "Couldn't withdraw. Try again.",
+      unknown: "Couldn’t withdraw. Try again.",
     },
     /** The button that closes the call's task, beside the line that asks for the call. */
     told: "Told by phone",
     toldDone: (name: string) => `Recorded: ${name} told by phone.`,
     /** A visit ops cancelled, or closed by hand, from its drawer. */
-    cancelled: (job: string) => `${job}'s visit cancelled.`,
-    closedByHand: (job: string) => `${job}'s visit closed.`,
+    cancelled: (job: string) => `${job}’s visit cancelled.`,
+    closedByHand: (job: string) => `${job}’s visit closed.`,
     // The board draws no way past the geofence.
-    letIn: (technician: string, job: string) => `${technician} can check in to ${job}'s visit now.`,
+    letIn: (technician: string, job: string) => `${technician} can check in to ${job}’s visit now.`,
     /**
      * A refusal names the technician and the window it asked for: the clash check
      * runs before anything is written (ADR 0034), and the API answers with the
@@ -321,7 +321,7 @@ export const dispatch = {
     onLeave: (technician: string, date: string) => `${technician} is away on ${date}.`,
     /** A technician never takes two of a client's visits in a row (ADR 0111). */
     backToBack: (technician: string) =>
-      `${technician} has this client's visit just before or after. Choose someone else.`,
+      `${technician} has this client’s visit just before or after. Choose someone else.`,
     /** A move lands only at a start still ahead. */
     pastDay: (date: string) => `${date} has passed. Choose a later day.`,
     windowPassed: (date: string, window: string) => `Too late for ${date}, ${window}. Choose a later window.`,
@@ -329,25 +329,25 @@ export const dispatch = {
     blackout: (date: string) => `${date} is a closed day. Choose it again to give a reason.`,
     /** The window is free, but the visit's block has no room in it (ADR 0069). */
     doesNotFit: (type: string, technician: string, date: string, window: string) =>
-      `${type}: no room in ${technician}'s ${window} on ${date}.`,
+      `${type}: no room in ${technician}’s ${window} on ${date}.`,
     /** Another ops user moved the job while this one was choosing (ADR 0069). */
-    superseded: (job: string, where: string) => `${job} was just moved by someone else. It's now ${where}.`,
+    superseded: (job: string, where: string) => `${job} was just moved by someone else. It’s now ${where}.`,
     supersededWhere: (technician: string, date: string, window: string) => `with ${technician}, ${date}, ${window}`,
     /** The job has left this week, or the city asked for, since. */
     supersededGone: "off this board",
     /** Another ops user's move of the same job is still being written. */
     beingMoved: (job: string) => `Someone else is moving ${job} right now.`,
     /** A visit goes only to a technician in its own city; one with no city yet takes none (ADR 0117). */
-    otherCity: (technician: string) => `${technician} doesn't work in this visit's city.`,
+    otherCity: (technician: string) => `${technician} doesn’t work in this visit’s city.`,
     /** A first fit or a replacement goes only to a technician trained to fit (ADR 0119). */
-    notTrained: (technician: string) => `${technician} isn't trained to fit.`,
+    notTrained: (technician: string) => `${technician} isn’t trained to fit.`,
     errors: {
       not_permitted: NOT_PERMITTED,
-      invalid_request: "That move isn't possible. Choose another technician or window.",
+      invalid_request: "That move isn’t possible. Choose another technician or window.",
       not_found: "This visit no longer exists.",
       /** The technician began the visit after the board was read. */
-      in_progress: "The technician has started this visit. It can't be moved.",
-      ask_the_client: "Another day needs the client's OK. If you have it, choose Client asked.",
+      in_progress: "The technician has started this visit. It can’t be moved.",
+      ask_the_client: "Another day needs the client’s OK. If you have it, choose Client asked.",
       offline: OFFLINE,
       unconfirmed: UNCONFIRMED,
       unknown: FAILED,
@@ -361,6 +361,6 @@ export const dispatch = {
       unknown: FAILED,
     },
     /** A link asked for a visit this board does not hold. */
-    notOnBoard: "That visit isn't on this board.",
+    notOnBoard: "That visit isn’t on this board.",
   },
 } as const;

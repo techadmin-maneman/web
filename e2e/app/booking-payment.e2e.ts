@@ -172,7 +172,7 @@ test("starts one payment, and one order, when the failed step is tapped twice", 
 /** "20261013T063000Z", as a calendar link writes an instant. */
 const stamp = (instant: Date): string => instant.toISOString().replace(/[-:]|\.\d{3}/g, "");
 
-test("offers the visit just booked to the client's calendar, at the window held", async ({ page }) => {
+test("offers the visit just booked to the client’s calendar, at the window held", async ({ page }) => {
   await fakeCheckout(page, "paid");
   await confirmedByRazorpay(page);
   const held = page.waitForResponse(
@@ -219,7 +219,7 @@ test("picks another window when one has just gone, and pays for that one", async
   await expect(page.getByRole("dialog").getByRole("status").getByText(appCopy.booking.confirmed.label)).toBeVisible();
 });
 
-test("keeps the window picked while the day's windows are still being asked for again", async ({ page }) => {
+test("keeps the window picked while the day’s windows are still being asked for again", async ({ page }) => {
   await fakeCheckout(page, "paid");
   await confirmedByRazorpay(page);
   let taken = false;
@@ -375,7 +375,7 @@ test("says the slot has gone back, and lets the API let it go, when Checkout clo
   expect(released).toEqual([]);
 });
 
-test("counts the hold on the API's clock, however far out the phone's is", async ({ page }) => {
+test("counts the hold on the API’s clock, however far out the phone’s is", async ({ page }) => {
   await fakeCheckout(page, "paid");
   // Eleven minutes fast: on the phone's own clock, the ten-minute hold would have lapsed before it began.
   await page.clock.install({ time: Date.now() + 11 * 60_000 });

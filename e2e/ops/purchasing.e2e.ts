@@ -134,7 +134,7 @@ test("cancels an order, with why", async ({ page }) => {
   await expect(panel).toContainText(copy.order.cancelledWhy("Out of stock"));
 });
 
-test("drafts an order from a supplier's list, its total shown first", async ({ page }) => {
+test("drafts an order from a supplier’s list, its total shown first", async ({ page }) => {
   await open(page, { "POST /api/purchase-orders": json(BOOK) });
   const draft = page.getByRole("region", { name: copy.draft.title });
   await expect(draft.getByLabel(copy.draft.quantity)).toHaveValue("24");

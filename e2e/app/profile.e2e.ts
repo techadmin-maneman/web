@@ -4,7 +4,7 @@ import { signIn } from "./signed-in.ts";
 import { loggedIn } from "./profile-fixtures.ts";
 import * as appCopy from "../../apps/app/src/content.ts";
 
-test("opens from Home's button, with the client's name and a way back", async ({ page }) => {
+test("opens from Home’s button, with the client’s name and a way back", async ({ page }) => {
   await loggedIn(page);
   await expect(page.getByRole("banner")).toContainText("Rohit Malhotra");
   await page.getByRole("link", { name: "Back" }).click();

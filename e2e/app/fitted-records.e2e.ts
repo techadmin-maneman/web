@@ -51,7 +51,7 @@ test("a past visit carries its own invoice, or says why there is none", async ({
   await expect(page.getByText(appCopy.visits.detail.invoice.free)).toBeVisible();
 });
 
-test("a visit to come offers itself to the client's calendar, at its window; one done does not", async ({ page }) => {
+test("a visit to come offers itself to the client’s calendar, at its window; one done does not", async ({ page }) => {
   const client = fittedClient();
   await logIn(page, client.mobile);
   await expect(page.getByRole("heading", { level: 1, name: "Your next visit" })).toBeVisible();
@@ -158,7 +158,7 @@ test("a photograph whose link has run out is shown again through a fresh one", a
   expect(timelines).toBeGreaterThanOrEqual(2);
 });
 
-test("Payments: one list of payments and refunds, an entry's documents, and a document not ready", async ({ page }) => {
+test("Payments: one list of payments and refunds, an entry’s documents, and a document not ready", async ({ page }) => {
   const client = fittedClient();
   await logIn(page, client.mobile);
   await tab(page, "Payments").click();

@@ -80,7 +80,7 @@ test("each city has a page of its own, linked from /areas, its areas left for th
   ).toHaveCount(4);
 });
 
-test("the home page names the company and the site, with the company's mark", async ({ page }) => {
+test("the home page names the company and the site, with the company’s mark", async ({ page }) => {
   await page.goto("/");
   const data = await structuredData(page);
   expect(data.map((block) => block["@type"])).toEqual(["Organization", "WebSite", "LocalBusiness", "FAQPage"]);

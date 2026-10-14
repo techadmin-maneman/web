@@ -24,7 +24,7 @@ async function open(page: Page, resolve = json({ state: "resolved" })): Promise<
 const queue = (page: Page) => page.getByRole("region", { name: opsCopy.grievances.queue.title });
 const row = (page: Page, name: string) => queue(page).getByRole("listitem").filter({ hasText: name });
 
-test("lists every open grievance with the client's own words, number and day", async ({ page }) => {
+test("lists every open grievance with the client’s own words, number and day", async ({ page }) => {
   await open(page);
   await expect(queue(page).getByRole("listitem")).toHaveCount(2);
 
@@ -39,7 +39,7 @@ test("says how long is left of the answer time, and marks one that has run over"
   await expect(row(page, "Vikram Sethi")).toContainText("22 days overdue");
 });
 
-test("reaches the client's record from the name", async ({ page }) => {
+test("reaches the client’s record from the name", async ({ page }) => {
   await open(page);
   await row(page, "Rohit Malhotra").getByRole("link", { name: "Rohit Malhotra", exact: true }).click();
   expect(new URL(page.url()).pathname).toBe("/clients/22000000-0000-4000-8000-000000000001/consents");
@@ -90,7 +90,7 @@ test("says so when someone has answered it already", async ({ page }) => {
   const first = row(page, "Rohit Malhotra");
   await first.getByRole("textbox", { name: opsCopy.grievances.queue.label }).fill("Answered on WhatsApp.");
   await first.getByRole("button", { name: opsCopy.grievances.queue.send }).click();
-  await expect(page.getByText("Already answered. Here's the latest.")).toBeVisible();
+  await expect(page.getByText("Already answered. Here’s the latest.")).toBeVisible();
 });
 
 test("says when more are open than the queue holds", async ({ page }) => {
