@@ -85,11 +85,15 @@ const SEEDS = [
   { after: "0041", rows: ZOHO },
 ] as const;
 
-/** The table each seeded row is in, and how many rows it gets. */
+/** Tables a later migration renamed, by the name a seed wrote them under. */
+const RENAMED: Readonly<Record<string, string>> = { visits: "visit_outcomes" };
+
+/** The table each seeded row is in, as it is named now, and how many rows it gets. */
 function seededTables(): Map<string, number> {
   const tables = new Map<string, number>();
   for (const statement of SEEDS.flatMap((seed) => seed.rows)) {
-    const table = /INSERT INTO (\w+)/.exec(statement)?.[1] ?? "";
+    const written = /INSERT INTO (\w+)/.exec(statement)?.[1] ?? "";
+    const table = RENAMED[written] ?? written;
     tables.set(table, (tables.get(table) ?? 0) + 1);
   }
   return tables;
