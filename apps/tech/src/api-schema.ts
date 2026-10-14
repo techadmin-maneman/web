@@ -2136,8 +2136,10 @@ export interface components {
                 /** @description Its after photograph, never to be kept on the phone. */
                 photo_url: string;
             } | null;
-            /** @description The day-before or arrival WhatsApp that went to the client, and when it was delivered; null when none went, as when one was skipped or failed. */
+            /** @description The day-before or arrival WhatsApp to the client: on its way, sent, or delivered and when; null when none went, as when one was skipped or failed. */
             reminder: {
+                /** @enum {string} */
+                state: "on_its_way" | "sent" | "delivered";
                 delivered_at: string | null;
             } | null;
             /** @description The steps this visit type runs, in order; a consultation's and a one visit's take the profile. */
@@ -2471,10 +2473,13 @@ export interface components {
             preset: "on_the_way" | "at_gate" | "running_late";
             minutes: number | null;
         };
-        /** @description Whether the label is one of the job's client's pieces. */
+        /** @description What the label names, and whether it is this job's. */
         PieceLookup: {
             piece: components["schemas"]["Piece"];
+            /** @description The label is one of the job's client's pieces, or a unit in the technician's kit, about to be one. */
             belongs_to_this_job: boolean;
+            /** @description A unit in the technician's own kit, not yet fitted: base is its name. */
+            in_kit: boolean;
         };
         TechnicianDiscountCodeApplied: {
             /** @description The code, as it is kept: in capitals. */

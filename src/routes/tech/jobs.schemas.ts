@@ -5,6 +5,7 @@ import { BOOKING_WINDOWS } from "../../config/scheduling.ts";
 import { VISIT_TYPES } from "../../config/visit-types.ts";
 import { ANGLES, PHASES } from "../../domain/field/visit-photos.ts";
 import { APPOINTMENT_STATUSES } from "../../domain/visits/visit-status.ts";
+import { REMINDER_STATES } from "../../domain/field/job-card.ts";
 import { CARD_STEPS } from "../../policy/in-job-steps.ts";
 import { PAYMENT_BADGES } from "../../policy/job-visibility.ts";
 import { BasedOnSchema, FitSpecSchema, HairProfileSchema, HistorySchema } from "../schemas/hair-profile.ts";
@@ -234,10 +235,15 @@ export const JobDetailSchema = JobSummarySchema.extend({
       z.null(),
     ])
     .openapi({ description: "The client's latest earlier visit with after photographs; null for a first visit." }),
-  reminder: z.union([z.object({ delivered_at: z.union([z.iso.datetime(), z.null()]) }).strict(), z.null()]).openapi({
-    description:
-      "The day-before or arrival WhatsApp that went to the client, and when it was delivered; null when none went, as when one was skipped or failed.",
-  }),
+  reminder: z
+    .union([
+      z.object({ state: z.enum(REMINDER_STATES), delivered_at: z.union([z.iso.datetime(), z.null()]) }).strict(),
+      z.null(),
+    ])
+    .openapi({
+      description:
+        "The day-before or arrival WhatsApp to the client: on its way, sent, or delivered and when; null when none went, as when one was skipped or failed.",
+    }),
   steps: z.array(z.enum(CARD_STEPS)).openapi({
     description: "The steps this visit type runs, in order; a consultation's and a one visit's take the profile.",
   }),

@@ -387,6 +387,7 @@ export const notHome = {
     // as who it went to. The board draws only the delivered one.
     delivered: (who: string, time: string) => `WhatsApp to ${who}: delivered ${time}.`,
     notDelivered: (who: string) => `WhatsApp to ${who}: sent, not delivered.`,
+    onItsWay: (who: string) => `Telling ${who} you're here.`,
     noneSent: (who: string) => `No WhatsApp went to ${who}.`,
     theClient: "the client",
   },
@@ -504,6 +505,7 @@ export const steps = {
     checkFirst: "Check the label to continue",
     look: "Check the label",
     unknown: "Unknown label. It’s saved as you typed it.",
+    inKit: (name: string, lot: string | null) => (lot === null ? `From your kit: ${name}.` : `From your kit: ${name} · lot ${lot}.`),
     // The board draws no lookup with no signal.
     offline: "No signal, so it isn’t checked. It’s saved as you typed it.",
     notThisClient: "That piece isn’t this client’s.",

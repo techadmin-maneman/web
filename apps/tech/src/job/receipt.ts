@@ -12,6 +12,7 @@ export interface ReceiptLine {
 /** The evidence chain's receipt beneath the wait: whether a WhatsApp went to the client, and whether it reached their phone. */
 export function receiptLine(reminder: Job["reminder"], who: string): ReceiptLine {
   if (reminder === null) return { text: copy.waiting.noneSent(who), icon: ICONS.cross };
+  if (reminder.state === "on_its_way") return { text: copy.waiting.onItsWay(who), icon: ICONS.sending };
   if (reminder.delivered_at === null) return { text: copy.waiting.notDelivered(who), icon: ICONS.minus };
   return { text: copy.waiting.delivered(who, clock(reminder.delivered_at)), icon: ICONS.tick };
 }

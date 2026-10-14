@@ -269,6 +269,11 @@ export function LabelField(props: {
           {copy.piece.offline}
         </p>
       )}
+      {looked.state === "found" && looked.found.in_kit && (
+        <p className={styles.note} role="status">
+          {copy.piece.inKit(looked.found.piece.base ?? looked.found.piece.piece_code, looked.found.piece.supplier_lot)}
+        </p>
+      )}
       {looked.state === "found" && !looked.found.belongs_to_this_job && (
         <p className={styles.warn} role="alert">
           {copy.piece.notThisClient}

@@ -2285,6 +2285,14 @@ Request body:
         {
           "type": "object",
           "properties": {
+            "state": {
+              "type": "string",
+              "enum": [
+                "on_its_way",
+                "sent",
+                "delivered"
+              ]
+            },
             "delivered_at": {
               "anyOf": [
                 {
@@ -2298,6 +2306,7 @@ Request body:
             }
           },
           "required": [
+            "state",
             "delivered_at"
           ],
           "additionalProperties": false
@@ -2306,7 +2315,7 @@ Request body:
           "type": "null"
         }
       ],
-      "description": "The day-before or arrival WhatsApp that went to the client, and when it was delivered; null when none went, as when one was skipped or failed."
+      "description": "The day-before or arrival WhatsApp to the client: on its way, sent, or delivered and when; null when none went, as when one was skipped or failed."
     },
     "steps": {
       "type": "array",
@@ -4059,15 +4068,21 @@ Request body:
       "$ref": "#/components/schemas/Piece"
     },
     "belongs_to_this_job": {
-      "type": "boolean"
+      "type": "boolean",
+      "description": "The label is one of the job's client's pieces, or a unit in the technician's kit, about to be one."
+    },
+    "in_kit": {
+      "type": "boolean",
+      "description": "A unit in the technician's own kit, not yet fitted: base is its name."
     }
   },
   "required": [
     "piece",
-    "belongs_to_this_job"
+    "belongs_to_this_job",
+    "in_kit"
   ],
   "additionalProperties": false,
-  "description": "Whether the label is one of the job's client's pieces."
+  "description": "What the label names, and whether it is this job's."
 }
 ```
 
