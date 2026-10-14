@@ -2,7 +2,8 @@
 // prompts' budgets. It starts the local mm-api (stub providers) and serves the
 // local builds the way the browser tests do, then audits each page on
 // Lighthouse's mobile profile, its processor slowed four times: the site's home, try-on and booking pages, an
-// invite's landing, and the client and technician apps' first screens.
+// invite's landing, a guide, the cities, the privacy notice and the 404, and the client and technician apps' first
+// screens.
 //
 //   npm run build:site -- --env local && npm run build:app -- --env local && npm run build:tech -- --env local
 //   node scripts/ci/lighthouse.ts
@@ -47,6 +48,12 @@ const SITE_BUDGET: Budget = {
   metrics: { "largest-contentful-paint": 2500, "cumulative-layout-shift": 0.1, "total-blocking-time": 200 },
 };
 
+/** The 404's: the site's, but for search, which is told not to index it, so it gives no description to find it by. */
+const NOT_FOUND_BUDGET: Budget = {
+  scores: { performance: 0.9, accessibility: 0.95, "best-practices": 0.95 },
+  metrics: SITE_BUDGET.metrics,
+};
+
 /**
  * The apps' (docs/prompts/phase2-frontend.md): LCP under 2.5 s, the main thread blocked under 200 ms on the slowed
  * processor, and WCAG 2.2 AA, for which Lighthouse's accessibility audits are the floor. Each app's 150 KB of
@@ -65,6 +72,12 @@ const PAGES: readonly { name: string; url: string; budget: Budget }[] = [
   // Every invite is the same page (docs/decisions/0027-referral-landing.md); the local API does not know this
   // code, so the page shows its unknown-invite state.
   { name: "invite", url: `${SITE}/r/PREVIEW1`, budget: SITE_BUDGET },
+  // The pages search engines are meant to find, and the one they are not.
+  { name: "guide", url: `${SITE}/guides/what-is-a-hair-system`, budget: SITE_BUDGET },
+  { name: "areas", url: `${SITE}/areas`, budget: SITE_BUDGET },
+  { name: "privacy", url: `${SITE}/privacy`, budget: SITE_BUDGET },
+  // Lighthouse audits no page that answers 404, so the 404's own file, which answers 200.
+  { name: "404", url: `${SITE}/404`, budget: NOT_FOUND_BUDGET },
   { name: "app", url: `${APP}/`, budget: APP_BUDGET },
   { name: "tech", url: `${TECH}/`, budget: APP_BUDGET },
 ];

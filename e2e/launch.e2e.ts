@@ -69,11 +69,24 @@ test("the 404 page is not indexed and has no canonical link", async ({ page }) =
   await expect(page.locator('link[rel="canonical"]')).toHaveCount(0);
 });
 
-test("the sitemap lists the pages, and robots.txt keeps this build out of search", async ({ request }) => {
+// The guides are built a folder down, and the sitemap once left them out.
+test("the sitemap lists the pages, a folder down too, and robots.txt keeps this build out of search", async ({
+  request,
+}) => {
   const sitemap = await (await request.get("/sitemap.xml")).text();
-  for (const path of ["/", "/try", "/book", "/privacy", "/terms"]) {
+  for (const path of [
+    "/",
+    "/try",
+    "/book",
+    "/privacy",
+    "/terms",
+    "/guides",
+    "/guides/what-is-a-hair-system",
+    "/areas",
+  ]) {
     expect(sitemap).toContain(`<loc>https://maneman.in${path}</loc>`);
   }
+  for (const path of ["/r", "/stop", "/404"]) expect(sitemap).not.toContain(`<loc>https://maneman.in${path}</loc>`);
   expect(await (await request.get("/robots.txt")).text()).toBe("User-agent: *\nDisallow: /\n");
 });
 
